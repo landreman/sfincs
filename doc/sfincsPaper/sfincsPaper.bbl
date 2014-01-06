@@ -1,0 +1,558 @@
+%merlin.mbs aipnum4-1.bst 2010-07-25 4.21a (PWD, AO, DPC) hacked
+%Control: key (0)
+%Control: author (8) initials jnrlst
+%Control: editor formatted (1) identically to author
+%Control: production of article title (-1) disabled
+%Control: page (0) single
+%Control: year (1) truncated
+%Control: production of eprint (0) enabled
+\begin{thebibliography}{49}%
+\makeatletter
+\providecommand \@ifxundefined [1]{%
+ \@ifx{#1\undefined}
+}%
+\providecommand \@ifnum [1]{%
+ \ifnum #1\expandafter \@firstoftwo
+ \else \expandafter \@secondoftwo
+ \fi
+}%
+\providecommand \@ifx [1]{%
+ \ifx #1\expandafter \@firstoftwo
+ \else \expandafter \@secondoftwo
+ \fi
+}%
+\providecommand \natexlab [1]{#1}%
+\providecommand \enquote  [1]{``#1''}%
+\providecommand \bibnamefont  [1]{#1}%
+\providecommand \bibfnamefont [1]{#1}%
+\providecommand \citenamefont [1]{#1}%
+\providecommand \href@noop [0]{\@secondoftwo}%
+\providecommand \href [0]{\begingroup \@sanitize@url \@href}%
+\providecommand \@href[1]{\@@startlink{#1}\@@href}%
+\providecommand \@@href[1]{\endgroup#1\@@endlink}%
+\providecommand \@sanitize@url [0]{\catcode `\\12\catcode `\$12\catcode
+  `\&12\catcode `\#12\catcode `\^12\catcode `\_12\catcode `\%12\relax}%
+\providecommand \@@startlink[1]{}%
+\providecommand \@@endlink[0]{}%
+\providecommand \url  [0]{\begingroup\@sanitize@url \@url }%
+\providecommand \@url [1]{\endgroup\@href {#1}{\urlprefix }}%
+\providecommand \urlprefix  [0]{URL }%
+\providecommand \Eprint [0]{\href }%
+\providecommand \doibase [0]{http://dx.doi.org/}%
+\providecommand \selectlanguage [0]{\@gobble}%
+\providecommand \bibinfo  [0]{\@secondoftwo}%
+\providecommand \bibfield  [0]{\@secondoftwo}%
+\providecommand \translation [1]{[#1]}%
+\providecommand \BibitemOpen [0]{}%
+\providecommand \bibitemStop [0]{}%
+\providecommand \bibitemNoStop [0]{.\EOS\space}%
+\providecommand \EOS [0]{\spacefactor3000\relax}%
+\providecommand \BibitemShut  [1]{\csname bibitem#1\endcsname}%
+\let\auto@bib@innerbib\@empty
+%</preamble>
+\bibitem [{\citenamefont {Kagan}\ and\ \citenamefont
+  {Catto}(2010)}]{GrishaNeo}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {G.}~\bibnamefont
+  {Kagan}}\ and\ \bibinfo {author} {\bibfnamefont {P.~J.}\ \bibnamefont
+  {Catto}},\ }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal} {Plasma
+  Phys. Controlled Fusion}\ }\textbf {\bibinfo {volume} {52}},\ \bibinfo
+  {pages} {055004} (\bibinfo {year} {2010})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Galeev}\ \emph {et~al.}(1969)\citenamefont {Galeev},
+  \citenamefont {Sagdeev}, \citenamefont {Furth},\ and\ \citenamefont
+  {Rosenbluth}}]{Galeev}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {A.~A.}\ \bibnamefont
+  {Galeev}}, \bibinfo {author} {\bibfnamefont {R.~Z.}\ \bibnamefont {Sagdeev}},
+  \bibinfo {author} {\bibfnamefont {H.~P.}\ \bibnamefont {Furth}}, \ and\
+  \bibinfo {author} {\bibfnamefont {M.~N.}\ \bibnamefont {Rosenbluth}},\
+  }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal} {Phys. Rev. Lett.}\
+  }\textbf {\bibinfo {volume} {22}},\ \bibinfo {pages} {511} (\bibinfo {year}
+  {1969})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Ho}\ and\ \citenamefont {Kulsrud}(1987)}]{HoKulsrud}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {D.~D.-M.}\
+  \bibnamefont {Ho}}\ and\ \bibinfo {author} {\bibfnamefont {R.~M.}\
+  \bibnamefont {Kulsrud}},\ }\href@noop {} {\bibfield  {journal} {\bibinfo
+  {journal} {Phys. Fluids}\ }\textbf {\bibinfo {volume} {30}},\ \bibinfo
+  {pages} {442} (\bibinfo {year} {1987})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Beidler}\ \emph {et~al.}(2011)\citenamefont
+  {Beidler}, \citenamefont {Allmaier}, \citenamefont {Isaev}, \citenamefont
+  {Kasilov}, \citenamefont {Kernbichler}, \citenamefont {Leitold},
+  \citenamefont {Maassberg}, \citenamefont {Mikkelsen}, \citenamefont
+  {Murakami}, \citenamefont {Schmidt}, \citenamefont {Spong}, \citenamefont
+  {Tribaldos},\ and\ \citenamefont {Wakasa}}]{BeidlerBigBenchmarking}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {C.~D.}\ \bibnamefont
+  {Beidler}}, \bibinfo {author} {\bibfnamefont {K.}~\bibnamefont {Allmaier}},
+  \bibinfo {author} {\bibfnamefont {M.~Y.}\ \bibnamefont {Isaev}}, \bibinfo
+  {author} {\bibfnamefont {S.~V.}\ \bibnamefont {Kasilov}}, \bibinfo {author}
+  {\bibfnamefont {W.}~\bibnamefont {Kernbichler}}, \bibinfo {author}
+  {\bibfnamefont {G.~O.}\ \bibnamefont {Leitold}}, \bibinfo {author}
+  {\bibfnamefont {H.}~\bibnamefont {Maassberg}}, \bibinfo {author}
+  {\bibfnamefont {D.~R.}\ \bibnamefont {Mikkelsen}}, \bibinfo {author}
+  {\bibfnamefont {S.}~\bibnamefont {Murakami}}, \bibinfo {author}
+  {\bibfnamefont {M.}~\bibnamefont {Schmidt}}, \bibinfo {author} {\bibfnamefont
+  {D.~A.}\ \bibnamefont {Spong}}, \bibinfo {author} {\bibfnamefont
+  {V.}~\bibnamefont {Tribaldos}}, \ and\ \bibinfo {author} {\bibfnamefont
+  {A.}~\bibnamefont {Wakasa}},\ }\href@noop {} {\bibfield  {journal} {\bibinfo
+  {journal} {Nucl. Fusion}\ }\textbf {\bibinfo {volume} {51}},\ \bibinfo
+  {pages} {076001} (\bibinfo {year} {2011})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Hirshman}\ \emph {et~al.}(1986)\citenamefont
+  {Hirshman}, \citenamefont {Shaing}, \citenamefont {van Rij}, \citenamefont
+  {{Beasley Jr.}},\ and\ \citenamefont {{Crume Jr.}}}]{DKES1}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {S.~P.}\ \bibnamefont
+  {Hirshman}}, \bibinfo {author} {\bibfnamefont {K.~C.}\ \bibnamefont
+  {Shaing}}, \bibinfo {author} {\bibfnamefont {W.~I.}\ \bibnamefont {van Rij}},
+  \bibinfo {author} {\bibfnamefont {C.~O.}\ \bibnamefont {{Beasley Jr.}}}, \
+  and\ \bibinfo {author} {\bibfnamefont {E.~C.}\ \bibnamefont {{Crume Jr.}}},\
+  }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal} {Phys. Fluids}\
+  }\textbf {\bibinfo {volume} {29}},\ \bibinfo {pages} {2951} (\bibinfo {year}
+  {1986})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {van Rij}\ and\ \citenamefont
+  {Hirshman}(1989)}]{DKES2}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {W.~I.}\ \bibnamefont
+  {van Rij}}\ and\ \bibinfo {author} {\bibfnamefont {S.~P.}\ \bibnamefont
+  {Hirshman}},\ }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal}
+  {Phys. Fluids B}\ }\textbf {\bibinfo {volume} {3}},\ \bibinfo {pages} {563}
+  (\bibinfo {year} {1989})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Beidler}\ and\ \citenamefont
+  {D'haeseleer}(1995)}]{GSRAKE}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {C.~D.}\ \bibnamefont
+  {Beidler}}\ and\ \bibinfo {author} {\bibfnamefont {W.~D.}\ \bibnamefont
+  {D'haeseleer}},\ }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal}
+  {Plasma Phys. Controlled Fusion}\ }\textbf {\bibinfo {volume} {37}},\
+  \bibinfo {pages} {463} (\bibinfo {year} {1995})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Tribaldos}(2001)}]{Tribaldos2001}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {V.}~\bibnamefont
+  {Tribaldos}},\ }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal}
+  {Phys. Plasmas}\ }\textbf {\bibinfo {volume} {8}},\ \bibinfo {pages} {1229}
+  (\bibinfo {year} {2001})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Spong}(2005)}]{PENTA}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {D.~A.}\ \bibnamefont
+  {Spong}},\ }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal} {Phys.
+  Plasmas}\ }\textbf {\bibinfo {volume} {12}},\ \bibinfo {pages} {056114}
+  (\bibinfo {year} {2005})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Kernbichler}\ \emph {et~al.}(2006)\citenamefont
+  {Kernbichler}, \citenamefont {Kasilov}, \citenamefont {Leitold},
+  \citenamefont {Nemov},\ and\ \citenamefont {K}}]{Kernbichler1}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {W.}~\bibnamefont
+  {Kernbichler}}, \bibinfo {author} {\bibfnamefont {S.~V.}\ \bibnamefont
+  {Kasilov}}, \bibinfo {author} {\bibfnamefont {G.~O.}\ \bibnamefont
+  {Leitold}}, \bibinfo {author} {\bibfnamefont {V.~V.}\ \bibnamefont {Nemov}},
+  \ and\ \bibinfo {author} {\bibfnamefont {K.~A.}\ \bibnamefont {K}},\
+  }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal} {33rd EPS
+  Conference on Plasma Phys., Rome}\ }\textbf {\bibinfo {volume} {30I}},\
+  \bibinfo {pages} {P} (\bibinfo {year} {2006})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Satake}, \citenamefont {Kanno},\ and\ \citenamefont
+  {Sugama}(2008)}]{FORTEC_PFR}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {S.}~\bibnamefont
+  {Satake}}, \bibinfo {author} {\bibfnamefont {R.}~\bibnamefont {Kanno}}, \
+  and\ \bibinfo {author} {\bibfnamefont {H.}~\bibnamefont {Sugama}},\
+  }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal} {Plasma Fusion
+  Res.}\ }\textbf {\bibinfo {volume} {3}},\ \bibinfo {pages} {S1062} (\bibinfo
+  {year} {2008})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Satake}\ \emph {et~al.}(2010)\citenamefont {Satake},
+  \citenamefont {Idomura}, \citenamefont {Sugama},\ and\ \citenamefont
+  {Watanabe}}]{FORTEC_CPC}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {S.}~\bibnamefont
+  {Satake}}, \bibinfo {author} {\bibfnamefont {Y.}~\bibnamefont {Idomura}},
+  \bibinfo {author} {\bibfnamefont {H.}~\bibnamefont {Sugama}}, \ and\ \bibinfo
+  {author} {\bibfnamefont {T.-H.}\ \bibnamefont {Watanabe}},\ }\href@noop {}
+  {\bibfield  {journal} {\bibinfo  {journal} {Comp. Phys. Comm.}\ }\textbf
+  {\bibinfo {volume} {181}},\ \bibinfo {pages} {1069} (\bibinfo {year}
+  {2010})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {{Garc\'{i}a-Rega\~{n}a}}\ \emph
+  {et~al.}(2013)\citenamefont {{Garc\'{i}a-Rega\~{n}a}}, \citenamefont
+  {Kleiber}, \citenamefont {Beidler}, \citenamefont {Turkin}, \citenamefont
+  {Maassberg},\ and\ \citenamefont {Helander}}]{JOSE}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {J.~M.}\ \bibnamefont
+  {{Garc\'{i}a-Rega\~{n}a}}}, \bibinfo {author} {\bibfnamefont
+  {R.}~\bibnamefont {Kleiber}}, \bibinfo {author} {\bibfnamefont {C.~D.}\
+  \bibnamefont {Beidler}}, \bibinfo {author} {\bibfnamefont {Y.}~\bibnamefont
+  {Turkin}}, \bibinfo {author} {\bibfnamefont {H.}~\bibnamefont {Maassberg}}, \
+  and\ \bibinfo {author} {\bibfnamefont {P.}~\bibnamefont {Helander}},\
+  }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal} {Plasma Phys.
+  Controlled Fusion}\ }\textbf {\bibinfo {volume} {55}},\ \bibinfo {pages}
+  {074008} (\bibinfo {year} {2013})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {{P. Helander}}(2007)}]{HelanderRotation}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibnamefont {{P. Helander}}},\
+  }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal} {Phys. Plasmas}\
+  }\textbf {\bibinfo {volume} {14}},\ \bibinfo {pages} {104501} (\bibinfo
+  {year} {2007})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Sugama}\ \emph {et~al.}(2011)\citenamefont {Sugama},
+  \citenamefont {Watanabe}, \citenamefont {Nunami},\ and\ \citenamefont
+  {Nishimura}}]{SugamaHighFlow}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {H.}~\bibnamefont
+  {Sugama}}, \bibinfo {author} {\bibfnamefont {T.~H.}\ \bibnamefont
+  {Watanabe}}, \bibinfo {author} {\bibfnamefont {M.}~\bibnamefont {Nunami}}, \
+  and\ \bibinfo {author} {\bibfnamefont {S.}~\bibnamefont {Nishimura}},\
+  }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal} {Plasma Phys.
+  Controlled Fusion}\ }\textbf {\bibinfo {volume} {53}},\ \bibinfo {pages}
+  {024004} (\bibinfo {year} {2011})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Beidler}\ \emph {et~al.}(2007)\citenamefont
+  {Beidler}, \citenamefont {Isaev}, \citenamefont {Kasilov}, \citenamefont
+  {Kernbichler}, \citenamefont {Maassberg}, \citenamefont {Murakami},
+  \citenamefont {Nemov},\ and\ \citenamefont {Tribaldos}}]{Beidler}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {C.~D.}\ \bibnamefont
+  {Beidler}}, \bibinfo {author} {\bibfnamefont {M.~Y.}\ \bibnamefont {Isaev}},
+  \bibinfo {author} {\bibfnamefont {S.~V.}\ \bibnamefont {Kasilov}}, \bibinfo
+  {author} {\bibfnamefont {W.}~\bibnamefont {Kernbichler}}, \bibinfo {author}
+  {\bibfnamefont {H.}~\bibnamefont {Maassberg}}, \bibinfo {author}
+  {\bibfnamefont {S.}~\bibnamefont {Murakami}}, \bibinfo {author}
+  {\bibfnamefont {V.~V.}\ \bibnamefont {Nemov}}, \ and\ \bibinfo {author}
+  {\bibfnamefont {D.~A. S.~V.}\ \bibnamefont {Tribaldos}},\ }\href@noop {}
+  {\bibfield  {journal} {\bibinfo  {journal} {Proceedings of the 17th
+  {I}nternational {T}oki {C}onference and 16th {I}nternational
+  {S}tellarator/{H}eliotron {W}orkshop, {T}oki}\ } (\bibinfo {year}
+  {2007})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {{M Landreman}}(2011)}]{meMonoenergetic}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibnamefont {{M Landreman}}},\
+  }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal} {Plasma Phys.
+  Controlled Fusion}\ }\textbf {\bibinfo {volume} {53}},\ \bibinfo {pages}
+  {082003} (\bibinfo {year} {2011})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Sauter}, \citenamefont {Harvey},\ and\ \citenamefont
+  {Hinton}(1994)}]{Sauter0}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {O.}~\bibnamefont
+  {Sauter}}, \bibinfo {author} {\bibfnamefont {R.~W.}\ \bibnamefont {Harvey}},
+  \ and\ \bibinfo {author} {\bibfnamefont {F.~L.}\ \bibnamefont {Hinton}},\
+  }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal} {Comp. Phys.
+  Comm.}\ }\textbf {\bibinfo {volume} {34}},\ \bibinfo {pages} {169} (\bibinfo
+  {year} {1994})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Sauter}, \citenamefont {Angioni},\ and\ \citenamefont
+  {Lin-Liu}(1999)}]{Sauter}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {O.}~\bibnamefont
+  {Sauter}}, \bibinfo {author} {\bibfnamefont {C.}~\bibnamefont {Angioni}}, \
+  and\ \bibinfo {author} {\bibfnamefont {Y.~R.}\ \bibnamefont {Lin-Liu}},\
+  }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal} {Phys. Plasmas}\
+  }\textbf {\bibinfo {volume} {6}},\ \bibinfo {pages} {2834} (\bibinfo {year}
+  {1999})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Wong}\ and\ \citenamefont {Chan}(2011)}]{WongChan}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {S.~K.}\ \bibnamefont
+  {Wong}}\ and\ \bibinfo {author} {\bibfnamefont {V.~S.}\ \bibnamefont
+  {Chan}},\ }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal} {Plasma
+  Phys. Controlled Fusion}\ }\textbf {\bibinfo {volume} {53}},\ \bibinfo
+  {pages} {095005} (\bibinfo {year} {2011})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Belli}\ and\ \citenamefont {Candy}(2012)}]{NEOFP}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {E.~A.}\ \bibnamefont
+  {Belli}}\ and\ \bibinfo {author} {\bibfnamefont {J.}~\bibnamefont {Candy}},\
+  }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal} {Plasma Phys.
+  Controlled Fusion}\ }\textbf {\bibinfo {volume} {54}},\ \bibinfo {pages}
+  {015015} (\bibinfo {year} {2012})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Landreman}\ and\ \citenamefont
+  {Ernst}(2013)}]{speedGrids}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {M.}~\bibnamefont
+  {Landreman}}\ and\ \bibinfo {author} {\bibfnamefont {D.~R.}\ \bibnamefont
+  {Ernst}},\ }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal} {J.
+  Comp. Phys.}\ }\textbf {\bibinfo {volume} {243}},\ \bibinfo {pages} {130}
+  (\bibinfo {year} {2013})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Briesemeister}\ \emph {et~al.}(2013)\citenamefont
+  {Briesemeister}, \citenamefont {Zhai}, \citenamefont {Anderson},
+  \citenamefont {Anderson},\ and\ \citenamefont {Talmadge}}]{Briesemeister}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {A.}~\bibnamefont
+  {Briesemeister}}, \bibinfo {author} {\bibfnamefont {K.}~\bibnamefont {Zhai}},
+  \bibinfo {author} {\bibfnamefont {D.~T.}\ \bibnamefont {Anderson}}, \bibinfo
+  {author} {\bibfnamefont {F.~S.~B.}\ \bibnamefont {Anderson}}, \ and\ \bibinfo
+  {author} {\bibfnamefont {J.~N.}\ \bibnamefont {Talmadge}},\ }\href@noop {}
+  {\bibfield  {journal} {\bibinfo  {journal} {Plasma Phys. Controlled Fusion}\
+  }\textbf {\bibinfo {volume} {55}},\ \bibinfo {pages} {014002} (\bibinfo
+  {year} {2013})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Taguchi}(1992)}]{Taguchi2}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {M.}~\bibnamefont
+  {Taguchi}},\ }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal} {Phys.
+  Fluids B}\ }\textbf {\bibinfo {volume} {4}},\ \bibinfo {pages} {3638}
+  (\bibinfo {year} {1992})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Sugama}\ and\ \citenamefont
+  {Nishimura}(2002)}]{SugamaNishimura}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {H.}~\bibnamefont
+  {Sugama}}\ and\ \bibinfo {author} {\bibfnamefont {S.}~\bibnamefont
+  {Nishimura}},\ }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal}
+  {Phys. Plasmas}\ }\textbf {\bibinfo {volume} {9}},\ \bibinfo {pages} {4637}
+  (\bibinfo {year} {2002})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Maassberg}, \citenamefont {Beidler},\ and\
+  \citenamefont {Turkin}(2009)}]{Maassberg}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {H.}~\bibnamefont
+  {Maassberg}}, \bibinfo {author} {\bibfnamefont {C.~D.}\ \bibnamefont
+  {Beidler}}, \ and\ \bibinfo {author} {\bibfnamefont {Y.}~\bibnamefont
+  {Turkin}},\ }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal} {Phys.
+  Plasmas}\ }\textbf {\bibinfo {volume} {16}},\ \bibinfo {pages} {072504}
+  (\bibinfo {year} {2009})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Hazeltine}(1973)}]{Hazeltine}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {R.~D.}\ \bibnamefont
+  {Hazeltine}},\ }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal}
+  {Plasma Phys.}\ }\textbf {\bibinfo {volume} {15}},\ \bibinfo {pages} {77}
+  (\bibinfo {year} {1973})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Landreman}\ and\ \citenamefont
+  {Ernst}(2012)}]{usPedestal}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {M.}~\bibnamefont
+  {Landreman}}\ and\ \bibinfo {author} {\bibfnamefont {D.~R.}\ \bibnamefont
+  {Ernst}},\ }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal} {Plasma
+  Phys. Controlled Fusion}\ }\textbf {\bibinfo {volume} {54}},\ \bibinfo
+  {pages} {115006} (\bibinfo {year} {2012})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Landreman}\ and\ \citenamefont
+  {Catto}(2013)}]{finiteErOmnigenous}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {M.}~\bibnamefont
+  {Landreman}}\ and\ \bibinfo {author} {\bibfnamefont {P.~J.}\ \bibnamefont
+  {Catto}},\ }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal} {Plasma
+  Phys. Controlled Fusion}\ }\textbf {\bibinfo {volume} {55}},\ \bibinfo
+  {pages} {095017} (\bibinfo {year} {2013})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Rosenbluth}, \citenamefont {MacDonald},\ and\
+  \citenamefont {Judd}(1957)}]{RMJ}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {M.~N.}\ \bibnamefont
+  {Rosenbluth}}, \bibinfo {author} {\bibfnamefont {W.~M.}\ \bibnamefont
+  {MacDonald}}, \ and\ \bibinfo {author} {\bibfnamefont {D.~L.}\ \bibnamefont
+  {Judd}},\ }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal} {Phys.
+  Rev.}\ }\textbf {\bibinfo {volume} {107}},\ \bibinfo {pages} {1} (\bibinfo
+  {year} {1957})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Helander}\ and\ \citenamefont
+  {Sigmar}(2002)}]{PerBook}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {P.}~\bibnamefont
+  {Helander}}\ and\ \bibinfo {author} {\bibfnamefont {D.~J.}\ \bibnamefont
+  {Sigmar}},\ }\href@noop {} {\emph {\bibinfo {title} {Collisional Transport in
+  Magnetized Plasmas}}}\ (\bibinfo  {publisher} {Cambridge University Press},\
+  \bibinfo {address} {Cambridge},\ \bibinfo {year} {2002})\BibitemShut
+  {NoStop}%
+\bibitem [{\citenamefont {Landreman}\ \emph {et~al.}(2013)\citenamefont
+  {Landreman}, \citenamefont {Parra}, \citenamefont {Catto}, \citenamefont
+  {Ernst},\ and\ \citenamefont {Pusztai}}]{PERFECT}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {M.}~\bibnamefont
+  {Landreman}}, \bibinfo {author} {\bibfnamefont {F.~I.}\ \bibnamefont
+  {Parra}}, \bibinfo {author} {\bibfnamefont {P.~J.}\ \bibnamefont {Catto}},
+  \bibinfo {author} {\bibfnamefont {D.~R.}\ \bibnamefont {Ernst}}, \ and\
+  \bibinfo {author} {\bibfnamefont {I.}~\bibnamefont {Pusztai}},\ }\href@noop
+  {} {\bibfield  {journal} {\bibinfo  {journal} {arXiv:1312.2148}\ } (\bibinfo
+  {year} {2013})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Balay}\ \emph
+  {et~al.}(2012{\natexlab{a}})\citenamefont {Balay}, \citenamefont {Brown},
+  \citenamefont {Buschelman}, \citenamefont {Gropp}, \citenamefont {Kaushik},
+  \citenamefont {Knepley}, \citenamefont {McInnes}, \citenamefont {Smith},\
+  and\ \citenamefont {Zhang}}]{petsc-web-page}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {S.}~\bibnamefont
+  {Balay}}, \bibinfo {author} {\bibfnamefont {J.}~\bibnamefont {Brown}},
+  \bibinfo {author} {\bibfnamefont {K.}~\bibnamefont {Buschelman}}, \bibinfo
+  {author} {\bibfnamefont {W.~D.}\ \bibnamefont {Gropp}}, \bibinfo {author}
+  {\bibfnamefont {D.}~\bibnamefont {Kaushik}}, \bibinfo {author} {\bibfnamefont
+  {M.~G.}\ \bibnamefont {Knepley}}, \bibinfo {author} {\bibfnamefont {L.~C.}\
+  \bibnamefont {McInnes}}, \bibinfo {author} {\bibfnamefont {B.~F.}\
+  \bibnamefont {Smith}}, \ and\ \bibinfo {author} {\bibfnamefont
+  {H.}~\bibnamefont {Zhang}},\ }\href@noop {} {\enquote {\bibinfo {title}
+  {{PETSc} {W}eb page},}\ } (\bibinfo {year} {Accessed October 6,
+  2012}{\natexlab{a}}),\ \bibinfo {note}
+  {{http://www.mcs.anl.gov/petsc}}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Balay}\ \emph
+  {et~al.}(2012{\natexlab{b}})\citenamefont {Balay}, \citenamefont {Brown}, ,
+  \citenamefont {Buschelman}, \citenamefont {Eijkhout}, \citenamefont {Gropp},
+  \citenamefont {Kaushik}, \citenamefont {Knepley}, \citenamefont {McInnes},
+  \citenamefont {Smith},\ and\ \citenamefont {Zhang}}]{petsc-user-ref}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {S.}~\bibnamefont
+  {Balay}}, \bibinfo {author} {\bibfnamefont {J.}~\bibnamefont {Brown}}, ,
+  \bibinfo {author} {\bibfnamefont {K.}~\bibnamefont {Buschelman}}, \bibinfo
+  {author} {\bibfnamefont {V.}~\bibnamefont {Eijkhout}}, \bibinfo {author}
+  {\bibfnamefont {W.~D.}\ \bibnamefont {Gropp}}, \bibinfo {author}
+  {\bibfnamefont {D.}~\bibnamefont {Kaushik}}, \bibinfo {author} {\bibfnamefont
+  {M.~G.}\ \bibnamefont {Knepley}}, \bibinfo {author} {\bibfnamefont {L.~C.}\
+  \bibnamefont {McInnes}}, \bibinfo {author} {\bibfnamefont {B.~F.}\
+  \bibnamefont {Smith}}, \ and\ \bibinfo {author} {\bibfnamefont
+  {H.}~\bibnamefont {Zhang}},\ }\href@noop {} {\enquote {\bibinfo {title}
+  {{PETS}c users manual},}\ }\bibinfo {type} {Tech. Rep.}\ \bibinfo {number}
+  {ANL-95/11 - Revision 3.3}\ (\bibinfo  {institution} {Argonne National
+  Laboratory},\ \bibinfo {year} {2012})\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Saad}\ and\ \citenamefont {Schultz}(1986)}]{GMRES}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {Y.}~\bibnamefont
+  {Saad}}\ and\ \bibinfo {author} {\bibfnamefont {M.~H.}\ \bibnamefont
+  {Schultz}},\ }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal} {{SIAM
+  J. Sci. and Stat. Comput.}}\ }\textbf {\bibinfo {volume} {7}},\ \bibinfo
+  {pages} {856} (\bibinfo {year} {1986})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Sleijpen}\ and\ \citenamefont
+  {Fokkema}(1993)}]{BICGstabl}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {G.~L.~G.}\
+  \bibnamefont {Sleijpen}}\ and\ \bibinfo {author} {\bibfnamefont {D.~R.}\
+  \bibnamefont {Fokkema}},\ }\href@noop {} {\bibfield  {journal} {\bibinfo
+  {journal} {{Electr. Trans. Num. Anal.}}\ }\textbf {\bibinfo {volume} {1}},\
+  \bibinfo {pages} {11} (\bibinfo {year} {1993})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Li}\ \emph {et~al.}(1999)\citenamefont {Li},
+  \citenamefont {Demmel}, \citenamefont {Gilbert}, \citenamefont {Grigori},
+  \citenamefont {Shao},\ and\ \citenamefont {Yamazaki}}]{superlu1}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {X.}~\bibnamefont
+  {Li}}, \bibinfo {author} {\bibfnamefont {J.}~\bibnamefont {Demmel}}, \bibinfo
+  {author} {\bibfnamefont {J.}~\bibnamefont {Gilbert}}, \bibinfo {author}
+  {\bibfnamefont {L.}~\bibnamefont {Grigori}}, \bibinfo {author} {\bibfnamefont
+  {M.}~\bibnamefont {Shao}}, \ and\ \bibinfo {author} {\bibfnamefont
+  {I.}~\bibnamefont {Yamazaki}},\ }\href@noop {} {\enquote {\bibinfo {title}
+  {{SuperLU Users' Guide}},}\ }\bibinfo {type} {Tech. Rep.}\ \bibinfo {number}
+  {LBNL-44289}\ (\bibinfo  {institution} {Lawrence Berkeley National
+  Laboratory},\ \bibinfo {year} {1999})\ \bibinfo {note}
+  {\url{http://crd.lbl.gov/~xiaoye/SuperLU/}. Last update: August
+  2011}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Li}\ and\ \citenamefont {Demmel}(2003)}]{superlu2}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {X.~S.}\ \bibnamefont
+  {Li}}\ and\ \bibinfo {author} {\bibfnamefont {J.~W.}\ \bibnamefont
+  {Demmel}},\ }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal} {ACM
+  Trans. Mathematical Software}\ }\textbf {\bibinfo {volume} {29}},\ \bibinfo
+  {pages} {110} (\bibinfo {year} {2003})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Iiyoshi}\ \emph {et~al.}(1990)\citenamefont
+  {Iiyoshi}, \citenamefont {Fujiwara}, \citenamefont {Motojima}, \citenamefont
+  {Ohyabu},\ and\ \citenamefont {Yamazaki}}]{LHD}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {A.}~\bibnamefont
+  {Iiyoshi}}, \bibinfo {author} {\bibfnamefont {M.}~\bibnamefont {Fujiwara}},
+  \bibinfo {author} {\bibfnamefont {O.}~\bibnamefont {Motojima}}, \bibinfo
+  {author} {\bibfnamefont {N.}~\bibnamefont {Ohyabu}}, \ and\ \bibinfo {author}
+  {\bibfnamefont {K.}~\bibnamefont {Yamazaki}},\ }\href@noop {} {\bibfield
+  {journal} {\bibinfo  {journal} {Fusion Tech.}\ }\textbf {\bibinfo {volume}
+  {17}},\ \bibinfo {pages} {169} (\bibinfo {year} {1990})}\BibitemShut
+  {NoStop}%
+\bibitem [{\citenamefont {Beidler}\ \emph {et~al.}(1990)\citenamefont
+  {Beidler}, \citenamefont {Grieger}, \citenamefont {Herrnegger}, \citenamefont
+  {Harmeyer}, \citenamefont {Kisslinger}, \citenamefont {Lotz}, \citenamefont
+  {Maassberg}, \citenamefont {Merkel}, \citenamefont {{N\"{u}henberg}},
+  \citenamefont {Rau}, \citenamefont {Sapper}, \citenamefont {Sardei},
+  \citenamefont {Scardovelli}, \citenamefont {{Schl\"{u}ter}},\ and\
+  \citenamefont {Wobig}}]{W7X1}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {C.~D.}\ \bibnamefont
+  {Beidler}}, \bibinfo {author} {\bibfnamefont {G.}~\bibnamefont {Grieger}},
+  \bibinfo {author} {\bibfnamefont {F.}~\bibnamefont {Herrnegger}}, \bibinfo
+  {author} {\bibfnamefont {W.}~\bibnamefont {Harmeyer}}, \bibinfo {author}
+  {\bibfnamefont {J.}~\bibnamefont {Kisslinger}}, \bibinfo {author}
+  {\bibfnamefont {W.}~\bibnamefont {Lotz}}, \bibinfo {author} {\bibfnamefont
+  {H.}~\bibnamefont {Maassberg}}, \bibinfo {author} {\bibfnamefont
+  {P.}~\bibnamefont {Merkel}}, \bibinfo {author} {\bibfnamefont
+  {J.}~\bibnamefont {{N\"{u}henberg}}}, \bibinfo {author} {\bibfnamefont
+  {F.}~\bibnamefont {Rau}}, \bibinfo {author} {\bibfnamefont {J.}~\bibnamefont
+  {Sapper}}, \bibinfo {author} {\bibfnamefont {F.}~\bibnamefont {Sardei}},
+  \bibinfo {author} {\bibfnamefont {R.}~\bibnamefont {Scardovelli}}, \bibinfo
+  {author} {\bibfnamefont {A.}~\bibnamefont {{Schl\"{u}ter}}}, \ and\ \bibinfo
+  {author} {\bibfnamefont {H.}~\bibnamefont {Wobig}},\ }\href@noop {}
+  {\bibfield  {journal} {\bibinfo  {journal} {Fusion Tech.}\ }\textbf {\bibinfo
+  {volume} {17}},\ \bibinfo {pages} {148} (\bibinfo {year} {1990})}\BibitemShut
+  {NoStop}%
+\bibitem [{\citenamefont {Grieger}\ \emph {et~al.}(1992)\citenamefont
+  {Grieger}, \citenamefont {Beidler}, \citenamefont {Harmeyer}, \citenamefont
+  {Lotz}, \citenamefont {Kisslinger}, \citenamefont {Merkel}, \citenamefont
+  {N{\"{u}}hrenberg}, \citenamefont {Rau}, \citenamefont {Strumberger},\ and\
+  \citenamefont {Wobig}}]{W7X2}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {G.}~\bibnamefont
+  {Grieger}}, \bibinfo {author} {\bibfnamefont {C.~D.}\ \bibnamefont
+  {Beidler}}, \bibinfo {author} {\bibfnamefont {E.}~\bibnamefont {Harmeyer}},
+  \bibinfo {author} {\bibfnamefont {W.}~\bibnamefont {Lotz}}, \bibinfo {author}
+  {\bibfnamefont {J.}~\bibnamefont {Kisslinger}}, \bibinfo {author}
+  {\bibfnamefont {P.}~\bibnamefont {Merkel}}, \bibinfo {author} {\bibfnamefont
+  {J.}~\bibnamefont {N{\"{u}}hrenberg}}, \bibinfo {author} {\bibfnamefont
+  {F.}~\bibnamefont {Rau}}, \bibinfo {author} {\bibfnamefont {E.}~\bibnamefont
+  {Strumberger}}, \ and\ \bibinfo {author} {\bibfnamefont {H.}~\bibnamefont
+  {Wobig}},\ }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal} {Fusion
+  Tech.}\ }\textbf {\bibinfo {volume} {21}},\ \bibinfo {pages} {1767} (\bibinfo
+  {year} {1992})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Turkin}\ \emph {et~al.}(2011)\citenamefont {Turkin},
+  \citenamefont {Beidler}, \citenamefont {Maassberg}, \citenamefont {Murakami},
+  \citenamefont {Tribalos},\ and\ \citenamefont {Wakasa}}]{Turkin}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {Y.}~\bibnamefont
+  {Turkin}}, \bibinfo {author} {\bibfnamefont {C.~D.}\ \bibnamefont {Beidler}},
+  \bibinfo {author} {\bibfnamefont {H.}~\bibnamefont {Maassberg}}, \bibinfo
+  {author} {\bibfnamefont {S.}~\bibnamefont {Murakami}}, \bibinfo {author}
+  {\bibfnamefont {V.}~\bibnamefont {Tribalos}}, \ and\ \bibinfo {author}
+  {\bibfnamefont {A.}~\bibnamefont {Wakasa}},\ }\href@noop {} {\bibfield
+  {journal} {\bibinfo  {journal} {Phys. Plasmas}\ }\textbf {\bibinfo {volume}
+  {18}},\ \bibinfo {pages} {022505} (\bibinfo {year} {2011})}\BibitemShut
+  {NoStop}%
+\bibitem [{\citenamefont {Simakov}\ and\ \citenamefont
+  {Helander}(2009)}]{AndreiPer2009}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {A.~N.}\ \bibnamefont
+  {Simakov}}\ and\ \bibinfo {author} {\bibfnamefont {P.}~\bibnamefont
+  {Helander}},\ }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal}
+  {Phys. Plasmas}\ }\textbf {\bibinfo {volume} {16}},\ \bibinfo {pages}
+  {042503} (\bibinfo {year} {2009})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Braun}\ and\ \citenamefont {Helander}(2010)}]{Braun}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {S.}~\bibnamefont
+  {Braun}}\ and\ \bibinfo {author} {\bibfnamefont {P.}~\bibnamefont
+  {Helander}},\ }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal}
+  {Phys. Plasmas}\ }\textbf {\bibinfo {volume} {17}},\ \bibinfo {pages}
+  {072514} (\bibinfo {year} {2010})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Lore}\ \emph {et~al.}(2010)\citenamefont {Lore},
+  \citenamefont {Guttenfelder}, \citenamefont {Briesemeister}, \citenamefont
+  {Anderson}, \citenamefont {Anderson}, \citenamefont {Deng}, \citenamefont
+  {Likin}, \citenamefont {Spong}, \citenamefont {Talmadge},\ and\ \citenamefont
+  {Zhai}}]{Lore}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {J.}~\bibnamefont
+  {Lore}}, \bibinfo {author} {\bibfnamefont {W.}~\bibnamefont {Guttenfelder}},
+  \bibinfo {author} {\bibfnamefont {A.}~\bibnamefont {Briesemeister}}, \bibinfo
+  {author} {\bibfnamefont {D.~T.}\ \bibnamefont {Anderson}}, \bibinfo {author}
+  {\bibfnamefont {F.~S.~B.}\ \bibnamefont {Anderson}}, \bibinfo {author}
+  {\bibfnamefont {C.~B.}\ \bibnamefont {Deng}}, \bibinfo {author}
+  {\bibfnamefont {K.~M.}\ \bibnamefont {Likin}}, \bibinfo {author}
+  {\bibfnamefont {D.~A.}\ \bibnamefont {Spong}}, \bibinfo {author}
+  {\bibfnamefont {J.~N.}\ \bibnamefont {Talmadge}}, \ and\ \bibinfo {author}
+  {\bibfnamefont {K.}~\bibnamefont {Zhai}},\ }\href@noop {} {\bibfield
+  {journal} {\bibinfo  {journal} {Phys. Plasmas}\ }\textbf {\bibinfo {volume}
+  {17}},\ \bibinfo {pages} {056101} (\bibinfo {year} {2010})}\BibitemShut
+  {NoStop}%
+\bibitem [{\citenamefont {Baldzuhn}\ \emph {et~al.}(1998)\citenamefont
+  {Baldzuhn}, \citenamefont {Kick}, \citenamefont {Maassberg},\ and\
+  \citenamefont {{the W7-AS Team}}}]{Baldzuhn}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {J.}~\bibnamefont
+  {Baldzuhn}}, \bibinfo {author} {\bibfnamefont {M.}~\bibnamefont {Kick}},
+  \bibinfo {author} {\bibfnamefont {H.}~\bibnamefont {Maassberg}}, \ and\
+  \bibinfo {author} {\bibnamefont {{the W7-AS Team}}},\ }\href@noop {}
+  {\bibfield  {journal} {\bibinfo  {journal} {Plasma Phys. Controlled Fusion}\
+  }\textbf {\bibinfo {volume} {40}},\ \bibinfo {pages} {967} (\bibinfo {year}
+  {1998})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {{A. Pytte and A. H. Boozer}}(1981)}]{Pytte}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibnamefont {{A. Pytte and A. H.
+  Boozer}}},\ }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal} {Phys.
+  Fluids}\ }\textbf {\bibinfo {volume} {24}},\ \bibinfo {pages} {88} (\bibinfo
+  {year} {1981})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {{A. H. Boozer}}(1983)}]{Boozer83}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibnamefont {{A. H. Boozer}}},\
+  }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal} {Phys. Fluids}\
+  }\textbf {\bibinfo {volume} {26}},\ \bibinfo {pages} {496} (\bibinfo {year}
+  {1983})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {{M. Landreman and P. J. Catto}}(2011)}]{meQS}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibnamefont {{M. Landreman and P. J.
+  Catto}}},\ }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal} {Plasma
+  Phys. Controlled Fusion}\ }\textbf {\bibinfo {volume} {53}},\ \bibinfo
+  {pages} {015004} (\bibinfo {year} {2011})}\BibitemShut {NoStop}%
+\end{thebibliography}%
