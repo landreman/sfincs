@@ -1,0 +1,22 @@
+Here are notes on getting the fortran version to compile:
+
+module load petsc
+(note that this is version 3.2, not 3.3, so a line at the top of solveDKE.F90 needs to be un-commented)
+module load hdf5-parallel
+
+in makefile:
+commented out the 2 "include" lines
+un-commented FLINKER=ftn
+
+commented out make "cleaner"
+uncommented make "clean"
+
+We were able to compile if we used dynamic rather than static compiling:
+As discussed on 
+http://www.pdc.kth.se/resources/computers/lindgren/how-to/compiling
+to link with dynamic libraries, the magic incantation is:
+export XTPE_LINK_TYPE=dynamic
+
+
+Then at runtime, you have to first run:
+export CRAY_ROOTFS=DSL

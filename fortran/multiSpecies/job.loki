@@ -1,0 +1,48 @@
+#!/bin/bash
+
+### Set the job name
+#PBS -N local
+
+### Set the queue to submit this job.
+#PBS -q default 
+
+### Set the number of nodes that will be used.
+#PBS -l nodes=1:ppn=8
+#PBS -l walltime=12:00:00
+
+# #PBS -m ae
+#PBS -m n
+#PBS -M landrema@mit.edu
+
+#PBS -j oe
+
+PROGRAM="./sfincs"
+
+# Ensure to parse the script to set the env vars for the compiler you used.
+
+#you should not need to modify anything below here.
+export NPROCS=`wc -l $PBS_NODEFILE |gawk '//{print $1}'`
+
+echo The master node of this job is `hostname`
+echo The working directory is `echo $PBS_O_WORKDIR`
+echo The node file is $PBS_NODEFILE
+echo "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
+echo This job runs on the following nodes:
+echo `cat $PBS_NODEFILE`
+echo "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
+echo This job has allocated $NPROCS nodes
+
+
+echo "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
+echo
+echo command to EXE:
+echo
+echo `type -p mpiexec` -n $NPROCS $PROGRAM
+echo
+
+cd $PBS_O_WORKDIR
+echp pwd `pwd`
+mpiexec $PROGRAM
+
+sleep 1
+exit

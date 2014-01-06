@@ -1,0 +1,682 @@
+
+\documentclass[12pt]{article}
+\usepackage{url} 
+%\usepackage[dvips]{graphicx}
+\usepackage[pdftex]{graphicx}
+\usepackage[latin1]{inputenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{fancyhdr}
+\usepackage{bm}
+\usepackage{float}
+\usepackage{color}
+\setlength {\parindent} { 10mm} 
+\setlength{\textheight}{230mm} 
+\setlength{\textwidth}{160mm} 
+\setlength{\oddsidemargin}{0mm}
+\setlength{\topmargin}{-10mm} 
+% newcommands
+\newcommand{\p}{\partial}
+\newcommand{\g}[1]{\mbox{\boldmath $#1$}}
+\newcommand{\vi}{\g V_{\! \! i}}
+\newcommand{\ps}{Pfirsch-Schl\"{u}ter} 
+\newcommand{\lp}{\left(}
+\newcommand{\rp}{\right)}
+\newcommand{\ca}[1]{\mbox{\cal $#1$}}
+\newcommand{\be}{\begin{displaymath}}
+\newcommand{\ee}{\end{displaymath}}
+\newcommand{\bn}{\begin{equation}}
+\newcommand{\en}{\end{equation}}
+\newcommand{\mygtrsim}{\mathrel{\mbox{\raisebox{-1mm}{$\stackrel{>}{\sim}$}}}}
+\newcommand{\mylsim}{\mathrel{\mbox{\raisebox{-1mm}{$\stackrel{<}{\sim}$}}}}
+\newcommand{\vek}{\bf}
+\newcommand{\ten}{\sf}
+\newcommand{\bfm}[1]{\mbox{\boldmath$#1$}}
+\newcommand{\lang}{\left\langle}
+\newcommand{\rang}{\right\rangle}
+\newcommand{\vo}[1]{\left|\begin {array}{l} \mbox{} \\ \mbox{} \\$#1$ \end
+{array}\right .}  
+\newcommand{\von}[2]{\left |\begin {array}{l}
+\mbox{}\\$#1$\\$#2$ \end {array}\right .}
+\newcommand{\simgt}{\:{\raisebox{-1.5mm}{$\stackrel
+{\textstyle{>}}{\sim}$}}\:}
+\newcommand{\simlt}{\:{\raisebox{-1.5mm}{$\stackrel
+{\textstyle{<}}{\sim}$}}\:}
+%\renewcommand {\baselinestretch} {1.67}
+%\pagestyle{empty}
+\newcommand{\todo}[1]{\textbf{\textcolor{red}{TODO: #1}}}
+
+\pagestyle{fancy}
+\fancyhead{}
+\chead{Albert Mollén %850227-2019
+\\ Pfirsch-Schlüter current}
+\cfoot{\thepage}
+\renewcommand{\headrulewidth}{1pt}
+\renewcommand{\footrulewidth}{1pt}
+\setlength{\headheight}{28pt}
+\setlength{\footskip}{25pt}
+
+\newcommand{\red}[1]{\textcolor{red}{#1}}
+\newcommand{\mE}{\mathcal{E}}
+\newcommand{\energy}{\mathcal{E}}
+\newcommand{\mK}{\mathcal{K}}
+\newcommand{\mN}{\mathcal{N}}
+\newcommand{\mD}{\mathcal{D}}
+\newcommand{\ord}{\mathcal{O}}
+\newcommand{\Tpe}{T_\perp}
+\newcommand{\Tpa}{T_\|}
+\newcommand{\vpe}{v_\perp}
+\newcommand{\vpa}{v_\|}
+\newcommand{\kpe}{k_\perp}
+\newcommand{\kpa}{k_\|}
+\newcommand{\Bv}{\mathbf{B}}
+\newcommand{\Ev}{\mathbf{E}}
+\newcommand{\bv}{\mathbf{b}}
+\newcommand{\vv}{\mathbf{v}}
+\newcommand{\cd}{\cdot}
+\newcommand{\na}{\nabla}
+\newcommand{\btheta}{\bar{\theta}}
+\newcommand{\phit}{\tilde{\phi}}
+\newcommand{\oert}{\tilde{\omega}_{Er}}
+
+\begin{document}
+\titlepage
+
+\section*{Equation}
+We wish to find the function $u$ in Eq.~(8) of \cite{simakov},
+\begin{equation}
+\na_{\|} u = \frac{2}{B^2} \mathbf{b} \times \na \psi \cdot \na \ln B \;\; \Leftrightarrow \;\; \mathbf{b} \cdot \na u = \frac{2}{B^4} \na B \times \mathbf{B} \cdot \na \psi.
+\label{eq:parallelU}
+\end{equation}
+The magnetic field can be written
+\begin{equation}
+\mathbf{B} = \na \psi \times \na \theta + \iota \na \varphi \times \na \psi,
+\label{eq:MagneticField}
+\end{equation}
+where $\psi$ is the toroidal flux divided by $2\pi$,
+and in Boozer coordinates
+\begin{equation}
+\mathbf{B} = I \left(\psi\right) \na \theta + J \left(\psi\right) \na \varphi + K \left(\psi, \theta, \varphi\right) \na \psi.
+\label{eq:MagneticFieldBoozer}
+\end{equation}
+In Boozer coordinates the Jacobian is given by
+\begin{equation}
+g^{1/2} = \frac{1}{\na \psi \times \na \theta \cdot \na \varphi} = \frac{\iota I + J}{B^2}.
+\label{eq:JacobianBoozer}
+\end{equation}
+Using
+\begin{equation}
+\na B = \frac{\p B}{\p \psi} \na \psi + \frac{\p B}{\p \theta} \na \theta + \frac{\p B}{\p \varphi} \na \varphi
+\label{eq:GradB}
+\end{equation}
+and Eq.~\ref{eq:MagneticFieldBoozer} for the magnetic field 
+we can write the RHS of Eq.~\ref{eq:parallelU} as
+\begin{multline}
+\frac{2}{B^4} \na B \times \mathbf{B} \cdot \na \psi = \frac{2}{B^4} \left(I \frac{\p B}{\p \varphi} \na \varphi \times \na \theta \cdot \na \psi + J \frac{\p B}{\p \theta} \na \theta \times \na \varphi \cdot \na \psi\right) = \\
+= \frac{2}{B^4} g^{-1/2} \left(J \frac{\p B}{\p \theta} - I \frac{\p B}{\p \varphi}\right) = \frac{2}{B^2} \frac{1}{\iota I + J} \left(J \frac{\p B}{\p \theta} - I \frac{\p B}{\p \varphi}\right).
+\label{eq:RHS}
+\end{multline}
+Using Eq.~\ref{eq:MagneticField} instead for the magnetic field the LHS can be written
+\begin{multline}
+\mathbf{b} \cdot \na u = \frac{1}{B} \mathbf{B} \cdot \na u = \frac{1}{B} \left(\na \psi \times \na \theta + \iota \na \varphi \times \na \psi\right) \cdot \left(\frac{\p u}{\p \psi} \na \psi + \frac{\p u}{\p \theta} \na \theta + \frac{\p u}{\p \varphi} \na \varphi\right) = \\
+= \frac{1}{B} \left(\iota \frac{\p u}{\p \theta} \na \varphi \times \na \psi \cdot \na \theta + \frac{\p u}{\p \varphi} \na \psi \times \na \theta \cdot \na \varphi\right) = \frac{1}{B} g^{-1/2} \left(\iota \frac{\p u}{\p \theta}  + \frac{\p u}{\p \varphi} \right) = \frac{B}{\iota I + J} \left(\iota \frac{\p u}{\p \theta}  + \frac{\p u}{\p \varphi} \right)
+\label{eq:LHS}
+\end{multline}
+Setting Eqs.~\ref{eq:RHS} and \ref{eq:LHS} equal we obtain
+\begin{equation}
+\frac{2}{B^3}  \left(J \frac{\p B}{\p \theta} - I \frac{\p B}{\p \varphi}\right) =  \left(\iota \frac{\p u}{\p \theta}  + \frac{\p u}{\p \varphi} \right).
+\label{eq:EqToSolve}
+\end{equation}
+A homogeneous solution to Eq.~\ref{eq:EqToSolve} would be
+\begin{equation}
+u_h \left(\psi, \theta, \varphi\right) = u_h \left(\psi, \theta - \iota \varphi\right) \equiv u_h \left(\psi, \alpha\right),
+\label{eq:uHomo}
+\end{equation}
+where $\alpha = \theta - \iota \varphi$ is constant along a magnetic field line. Consequently on an irrational surface, where a field line trace out the whole surface, the homogeneous solution must be a flux function
+\begin{equation}
+u_h \left(\psi, \theta, \varphi\right) = u_h \left(\psi\right).
+\label{eq:uHomo2}
+\end{equation}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section*{Solution}
+%To solve Eq.~\ref{eq:EqToSolve} we assume that the solution can be written as a Fourier cosine series in a similar way to how the magnetic field is represented
+%\begin{equation}
+%u \left(\psi, \theta, \varphi\right) = \sum_{n,m} u_{n,m} \left(\psi\right) \cos \left(m \theta - n \varphi\right).
+%\label{eq:uFourierSeries}
+%\end{equation}
+%The RHS of Eq.~\ref{eq:EqToSolve} is then
+%\begin{equation}
+%\iota \frac{\p u}{\p \theta}  + \frac{\p u}{\p \varphi} = \sum_{n,m} u_{n,m} \left(\psi\right)  \sin \left(m \theta - n \varphi\right) \left(n - \iota m\right).
+%\label{eq:RHSexpand}
+%\end{equation}
+%To identify the coefficients in the Cosine series we note that
+%\begin{multline}
+%\int_0^{2\pi} \int_0^{2\pi} \sin \left(M \theta - N \varphi\right) \sum_{n,m} u_{n,m} \left(\psi\right)  \sin \left(m \theta - n \varphi\right) \left(n - \iota m\right) d\theta d\varphi = \\
+%= u_{N,M} \left(\psi\right) \left(N - \iota M\right) \int_0^{2\pi} \int_0^{2\pi} \sin^2 \left(M \theta - N \varphi\right) d\theta d\varphi
+%= 2 \pi^2 u_{N,M} \left(\psi\right) \left(N - \iota M\right).
+%\label{eq:FourierCoeff}
+%\end{multline}
+%This implies that the Fourier cosine coefficients in Eq.~\ref{eq:uFourierSeries} are given by
+%\begin{equation}
+%u_{N,M} \left(\psi\right) = \frac{1}{2 \pi^2 \left(N - \iota M\right)} \int_0^{2\pi} \int_0^{2\pi} \sin \left(M \theta - N \varphi\right) \frac{2}{B^3}  \left(J \frac{\p B}{\p \theta} - I \frac{\p B}{\p \varphi}\right) d\theta d\varphi.
+%\label{eq:FourierCoeff}
+%\end{equation}
+%Since the magnetic field is represented in a cosine series
+%\begin{equation}
+%B \left(\psi, \theta, \varphi\right) = \sum_{n,m} B_{n,m} \left(\psi\right) \cos \left(m \theta - n \varphi\right).
+%\label{eq:uFourierSeries}
+%\end{equation}
+
+To solve Eq.~\ref{eq:EqToSolve} we assume that the solution can be written as a cosine Fourier series in a similar way to how the magnetic field is represented
+\begin{equation}
+u \left(\psi, \theta, \varphi\right) = %\mathrm{Re} \left[
+\sum_{n,m} u_{n,m} \left(\psi\right) \cos \left(m \theta - n \varphi\right), 
+%\right],
+\label{eq:uFourierSeries}
+\end{equation}
+\begin{equation}
+B \left(\psi, \theta, \varphi\right) = %\mathrm{Re} \left[
+\sum_{n,m} B_{n,m} \left(\psi\right) \cos \left(m \theta - n \varphi\right).
+ %\right].
+\label{eq:BFourierSeries}
+\end{equation}
+Then
+\begin{equation}
+\frac{\p u}{\p \theta} = %\mathrm{Re} \left[
+\sum_{n,m} - m \, u_{n,m} \left(\psi\right) \sin \left(m \theta - n \varphi\right),
+%\right],
+\label{eq:dudtheta}
+\end{equation}
+\begin{equation}
+\frac{\p u}{\p \varphi} = %\mathrm{Re} \left[
+\sum_{n,m}  n \, u_{n,m} \left(\psi\right) \sin \left(m \theta - n \varphi\right). 
+%\right].
+\label{eq:dudvarphi}
+\end{equation}
+The LHS of Eq.~\ref{eq:EqToSolve} is 
+\begin{equation}
+\frac{2}{B^3}  \left(J \frac{\p B}{\p \theta} - I \frac{\p B}{\p \varphi}\right) = \left(- J \frac{\p B^{-2}}{\p \theta} + I \frac{\p B^{-2}}{\p \varphi}\right),
+\label{eq:LHSchange}
+\end{equation}
+and we can define a new cosine Fourier series
+\begin{equation}
+B^{-2} \left(\psi, \theta, \varphi\right) \equiv h \left(\psi, \theta, \varphi\right) = %\mathrm{Re} \left[
+\sum_{n,m} h_{n,m} \left(\psi\right) \cos \left(m \theta - n \varphi\right),
+%\right],
+\label{eq:hFourierSeries}
+\end{equation}
+and solve 
+\begin{equation}
+\left(- J \frac{\p h}{\p \theta} + I \frac{\p h}{\p \varphi}\right) =  \left(\iota \frac{\p u}{\p \theta}  + \frac{\p u}{\p \varphi} \right).
+\label{eq:EqToSolveMod}
+\end{equation}
+Substituting Eqs.~\ref{eq:dudtheta} and~\ref{eq:dudvarphi} and the equivalent for $h$ into Eq.~\ref{eq:EqToSolveMod} yields
+\begin{equation}
+%\mathrm{Re} \left[
+\sum_{n,m} \left( J m + n I \right) h_{n,m} \left(\psi\right) \sin \left(m \theta - n \varphi\right)
+% \right] 
+ =  
+% \mathrm{Re} \left[
+ \sum_{n,m} \left( - \iota m + n \right) u_{n,m} \left(\psi\right) \sin \left(m \theta - n \varphi\right)
+% \right],
+\label{eq:EqToSolveFourier}
+\end{equation}
+hence the cosine Fourier coefficients in Eq.~\ref{eq:uFourierSeries} is found from the Fourier coefficients of $h = B^{-2}$,
+\begin{equation}
+u_{n,m} \left(\psi\right) = \frac{J m + n I}{n - \iota m} h_{n,m} \left(\psi\right).
+\label{eq:uFourierCoeff}
+\end{equation}
+Now
+\begin{multline}
+\int_0^{2\pi} \int_0^{2\pi} \cos \left(M \theta - N \varphi\right) \sum_{n,m} h_{n,m} \left(\psi\right)  \cos \left(m \theta - n \varphi\right) d\theta d\varphi = \\
+= h_{N,M} \left(\psi\right) \int_0^{2\pi} \int_0^{2\pi} \cos^2 \left(M \theta - N \varphi\right) d\theta d\varphi
+= \left\{ 
+\begin{array}{ll}
+  4 \pi^2 h_{N,M} \left(\psi\right) & M=N=0 \\
+	2 \pi^2 h_{N,M} \left(\psi\right) & \mathrm{otherwise}
+\end{array}
+ \right..
+\label{eq:hFourierCoeffCalc}
+\end{multline}
+Therefore
+\begin{equation}
+h_{N,M} \left(\psi\right) = \left\{ 
+\begin{array}{ll}
+\frac{1}{4 \pi^2} \int_0^{2\pi} \int_0^{2\pi} B^{-2} d\theta d\varphi & M=N=0 \\
+%\frac{1}{2 \pi^2} \int_0^{2\pi} \int_0^{2\pi} \cos \left(M \theta - N \varphi\right) h d\theta d\varphi =  
+\frac{1}{2 \pi^2} \int_0^{2\pi} \int_0^{2\pi} \cos \left(M \theta - N \varphi\right) B^{-2} d\theta d\varphi & \mathrm{otherwise}
+\end{array}
+\right..
+\label{eq:hFourierCoeff}
+\end{equation}
+However from Eq.~\ref{eq:uFourierCoeff} it is clear that $u_{0,0} \left(\psi\right)$ can not be defined, but $u_{0,0} \left(\psi\right)$ is simply a flux-function constant and can thus be put $u_{0,0} \left(\psi\right)=0$.
+
+\subsection*{Rational surface}
+On a rational surface, where $\iota = N / M$ we observe from Eq.~\ref{eq:uFourierCoeff} that $u_{N,M} \left(\psi\right)$ is infinite. However using $\alpha = \theta - \iota \varphi$ in the Fourier coefficient we obtain
+\begin{multline}
+h_{N,M} \left(\psi\right) = \frac{1}{2 \pi^2} \int_0^{2\pi} \int_0^{2\pi} \cos \left(M \theta - N \varphi\right) B^{-2} d\theta d\varphi 
+= \frac{1}{2 \pi^2} \int_0^{2\pi} \int_0^{2\pi} \cos \left(M \alpha + M \iota \varphi - N \varphi\right) B^{-2} d\alpha d\varphi = \\
+= \frac{1}{2 \pi^2} \int_0^{2\pi} \int_0^{2\pi} \cos \left(M \alpha\right) B^{-2} d\alpha d\varphi
+= \frac{1}{2 \pi^2} \int_0^{2\pi} \cos \left(M \alpha\right) d\alpha \int_0^{2\pi}  B^{-2}  d\varphi.
+\label{eq:hFourierCoeffRational}
+\end{multline}
+We now note that from Eqs.~\ref{eq:MagneticField} and \ref{eq:JacobianBoozer}
+\begin{equation}
+\mathbf{b} \cdot \nabla \varphi = \frac{1}{B} \mathbf{B} \cdot \nabla \varphi = \frac{1}{B} \nabla \psi \times \nabla \theta \cdot \nabla \varphi = \frac{B}{\iota I + J},
+\label{eq:bdotgradvarphi}
+\end{equation}
+and from \cite{nonAxis} p.14 %, p.33 and Eq.~(25)
+\begin{equation}
+d\varphi = \mathbf{b} \cdot \nabla \varphi dl = \frac{B}{\iota I + J} dl 
+\label{eq:dl}
+\end{equation}
+Eq.~\ref{eq:hFourierCoeffRational} can be rewritten as 
+\begin{equation}
+h_{N,M} \left(\psi\right) = \frac{1}{2 \pi^2} \int_0^{2\pi} \cos \left(M \alpha\right) \frac{1}{\iota I + J} d\alpha \oint  \frac{dl}{B}.
+\label{eq:hFourierCoeffRational2}
+\end{equation}
+From \cite{nonAxis} Eq.~(25)
+\begin{equation}
+\frac{\p p}{\p \psi} \frac{\p}{\p \alpha} \oint  \frac{dl}{B} = 0,
+\label{eq:IntZero}
+\end{equation}
+which means that if there exists a pressure gradient (which we can assume) then $\oint  \frac{dl}{B}$ is independent of $\alpha$ and therefore Eq.~\ref{eq:hFourierCoeffRational2} yields 
+\begin{equation}
+h_{N,M} \left(\psi\right) = 0.
+\label{eq:hFourierCoeffRational3}
+\end{equation}
+The singularity in $u_{N,M} \left(\psi\right)$ in Eq.~\ref{eq:uFourierCoeff} from $\iota = N / M$ is cancelled by $h_{N,M} \left(\psi\right) = 0$.
+
+\subsection*{Numerical details}
+The magnetic field in a stellarator can have a $\varphi$-period $T_{\varphi}$ which is shorter than $2\pi$, i.e. the slowest oscillating Fourier component is $N_\varphi = 2\pi / T_{\varphi}$ and all components are multiples of $N_\varphi$.
+Numerically it is thus better to evaluate the coefficients in Eq.~\ref{eq:hFourierCoeff} from
+\begin{equation}
+h_{N_\varphi \cdot N,M} \left(\psi\right) = 
+%\frac{1}{2 \pi^2} \int_0^{2\pi} \int_0^{2\pi} \cos \left(M \theta - N \varphi\right) h d\theta d\varphi =  
+\frac{1}{2 \pi^2} \frac{2 \pi}{T_{\varphi}} \int_0^{T_{\varphi}} \int_0^{2\pi} \cos \left(M \theta - N_\varphi \cdot N \varphi\right) B^{-2} d\theta d\varphi,
+\label{eq:hFourierCoeffNum}
+\end{equation}
+since all other coefficients will be 0.\\
+Fixing $\psi$, (and consequently $I\left(\psi\right)$, $J\left(\psi\right)$) the magnetic field can be evaluated on a grid in $\theta$--$\varphi$ space
+\begin{equation}
+B \left(\psi, \theta, \varphi\right) = B_{i,j}.
+\label{eq:MagnFieldGrid}
+\end{equation}
+Letting the grid consist of $P_\theta$ points in $\theta$-space and $P_\varphi$ points in $\varphi$-space, and defining the step lengths $l_\theta = 2\pi/P_\theta$ and $l_\varphi = T_{\varphi}/P_\varphi$, the grid points $i = 1,2,\ldots,P_\theta$ and $j = 1,2,\ldots,P_\varphi$ corresponds to $\theta_i = 0, l_\theta, 2 l_\theta, \ldots, 2\pi - l_\theta$ and $\varphi_j = 0, l_\varphi, 2 l_\varphi, \ldots, T_{\varphi} - l_\varphi$.\\
+The integral in Eq.~\ref{eq:hFourierCoeffNum} is thus approximated by a Riemann sum, according to
+\begin{equation}
+h_{N_\varphi \cdot N,M} \left(\psi\right) = 
+\frac{1}{2 \pi^2} \frac{2 \pi}{T_{\varphi}} l_\theta l_\varphi \sum_{j=0}^{P_{\varphi}} \sum_{i=0}^{P_{\theta}} \cos \left(M \theta_{i} - N_\varphi \cdot N \varphi_{j} \right) B_{i,j}^{-2} = \frac{2}{P_\theta P_{\varphi}} \sum_{j=0}^{P_{\varphi}} \sum_{i=0}^{P_{\theta}} \cos \left(M \theta_{i} - N_\varphi \cdot N \varphi_{j} \right) B_{i,j}^{-2}.
+\label{eq:hFourierCoeffRiemann}
+\end{equation}
+%and the partial derivatives are given by
+%\begin{equation}
+%\frac{\p B}{\p \theta} = \frac{B\left(\theta + h, \varphi\right) - B\left(\theta - h, \varphi\right)}{2 h} = \frac{B_{i+1,j} - B_{i-1,j}}{2 \Delta \theta}
+%\label{eq:dBdTheta}
+%\end{equation}
+%\begin{equation}
+%\frac{\p B}{\p \varphi} = \frac{B\left(\theta, \varphi + h\right) - B\left(\theta, \varphi - h\right)}{2 h} = \frac{B_{i,j+1} - B_{i,j-1}}{2 \Delta \varphi}
+%\label{eq:dBdVarphi}
+%\end{equation}
+%using central differences.
+
+\textcolor{red}{Note that due to numerical reasons the number of Fourier harmonics used in the expansion should not be larger than the number of grid points, i.e. if $M > P_\theta$ and $N > P_\varphi$ then $h_{N,M} \left(\psi\right) = 0$.}
+
+\section*{Fluxes}
+For any quantity $X$, the flux surface average is computed from \cite{nonAxis} Eq.~(16)
+\begin{equation}
+\left\langle X \right\rangle = \frac{1}{V'} \int_0^{2\pi} \int_0^{2\pi} X g\left(\psi\right)^{1/2} d\theta d\varphi,
+\label{eq:FluxSurfaceAvg}
+\end{equation}
+where 
+\begin{equation}
+V'\left(\psi\right) = \int_0^{2\pi} \int_0^{2\pi} g\left(\psi\right)^{1/2} d\theta d\varphi
+\label{eq:Vprimehat}
+\end{equation}
+and from Eq.~\ref{eq:JacobianBoozer} $g\left(\psi\right)^{1/2} = \left(\iota I\left(\psi\right) + J\left(\psi\right)\right)/B^2$ in Boozer coordinates.
+Thus we can write
+\begin{equation}
+\left\langle X \right\rangle = \int_0^{2\pi} \int_0^{2\pi} \frac{X}{\hat{B}^2} d\theta d\varphi / \int_0^{2\pi} \int_0^{2\pi} \frac{1}{\hat{B}^2} d\theta d\varphi.
+\label{eq:FluxSurfaceAvg2}
+\end{equation}
+where $\hat{B} = B / \bar{B}$ is the magnetic field normalized to some dimension $\bar{B}$.
+
+The flux-surface averaged radial ion heat flux is in the Pfirsch-Schlüter regime given by Eq.~(14) in \cite{simakov}
+\begin{equation}
+\left\langle \mathbf{q} \cdot \nabla \chi \right\rangle = \frac{8}{5} \frac{\nu p}{M} \left(\frac{B}{\Omega}\right)^2 \frac{\p T}{\p \chi} \left(\frac{\left\langle u B^2 \right\rangle^2}{\left\langle B^2 \right\rangle} - \left\langle u^2 B^2 \right\rangle\right)
+= 
+\frac{8}{5} \frac{\nu n T}{M} \left(\frac{M c}{e}\right)^2 \frac{\p T}{\p \chi} \left(\frac{\left\langle u B^2 \right\rangle^2}{\left\langle B^2 \right\rangle} - \left\langle u^2 B^2 \right\rangle\right),
+\label{eq:IonHeatFluxChi}
+\end{equation}
+where $\nu = 4 \pi^{1/2} n e^4 \ln \Lambda / \left(3 M^{1/2} T^{3/2}\right)$ while $M$ and $e$ are the ion mass and magnitude of the electron charge, and $\chi$ is the poloidal flux. Since
+\begin{equation}
+\nabla \chi = \frac{\p \chi}{\p \psi} \nabla \psi = \iota  \nabla \psi
+\label{eq:nablaChi}
+\end{equation}
+and
+\begin{equation}
+\frac{\p }{\p \chi} = \frac{\p }{\p \psi} \frac{\p \psi}{\p \chi} = \frac{1}{\iota} \frac{\p }{\p \psi},
+\label{eq:ddChi}
+\end{equation}
+we can rewrite Eq.~\ref{eq:IonHeatFluxChi} as
+\begin{equation}
+\left\langle \mathbf{q} \cdot \nabla \psi \right\rangle
+= 
+\frac{8}{5} \frac{\nu n T}{M} \left(\frac{M c}{e}\right)^2 \frac{1}{\iota^2} \frac{\p T}{\p \psi} \left(\frac{\left\langle u B^2 \right\rangle^2}{\left\langle B^2 \right\rangle} - \left\langle u^2 B^2 \right\rangle\right).
+\label{eq:IonHeatFlux}
+\end{equation}
+
+\subsection*{Particle flux}
+The coefficient $L_{11}$ is obtained by putting $\frac{\p T}{\ \psi} = 0$ and $\frac{\p \Phi}{\ \psi} = 0$. 
+From Eqs.~(131) and (96) in the SFINCS manual together with
+\begin{equation}
+\Delta = \frac{m c \bar{v}}{e \bar{B} \bar{R}}
+\label{eq:Delta}
+\end{equation}
+we get
+\begin{multline}
+L_{11} = (\mathrm{particleFlux}) \frac{\bar{R}}{V' \bar{B}} \frac{4\left(\hat{J} + \iota \hat{I}\right)}{\hat{J}} \frac{\hat{n}}{\hat{J} \hat{T}^{3/2}} \frac{B_0}{\bar{B}} \left(\frac{d \hat{n}}{d \psi_N}\right)^{-1} = \\
+= \frac{\hat{\psi}_a V' \left\langle \Gamma_i \cdot \nabla \psi \right\rangle}{\Delta^2 n \bar{v} \bar{R}^2}        \, \frac{\bar{R}}{V' \bar{B}} \frac{4\left(\hat{J} + \iota \hat{I}\right)}{\hat{J}} \frac{\hat{n}}{\hat{J} \hat{T}^{3/2}} \frac{B_0}{\bar{B}} \left(\frac{d \hat{n}}{d \psi_N}\right)^{-1} = 
+\frac{e^2 \hat{\psi}_a \bar{R} }{m^2 c^2 \bar{v}^3 }  \frac{4\left(\hat{J} + \iota \hat{I}\right)}{\hat{J}^2} \frac{B_0}{\bar{n} \hat{T}^{3/2}} \left(\frac{d \hat{n}}{d \psi_N}\right)^{-1} \left\langle \Gamma_i \cdot \nabla \psi \right\rangle.
+\label{eq:L11}
+\end{multline}
+From \cite{simakov} Eq.~(26) with $\eta = 0.96 n T / \nu$, $\mathbf{J} = e \Gamma_i$ and using Eqs.~\ref{eq:nablaChi}, \ref{eq:ddChi}, the particle flux is obtained as
+\begin{equation}
+\left\langle \Gamma_i \cdot \nabla \psi \right\rangle = \frac{1}{\iota^2}\frac{3}{4} c^2 \frac{0.96 n T}{\nu} G_1 \left(\psi\right) \frac{T}{e^2 n} \frac{\p n}{\p \psi} =
+\frac{3  c^2}{4 \iota^2 e^2} \frac{0.96 T^2}{\nu} G_1 \left(\psi\right) \frac{\p n}{\p \psi}.
+\label{eq:PartFlux}
+\end{equation}
+Using
+\begin{equation}
+\frac{\p n}{\p \psi} = \frac{\bar{n}}{\psi_a} \frac{\p \hat{n}}{\p \psi_N} = \frac{\bar{n}}{\hat{\psi}_a \bar{R}^2 \bar{B}} \frac{\p \hat{n}}{\p \psi_N},
+\label{eq:dndpsi}
+\end{equation}
+and
+\begin{equation}
+\nu = \left(\frac{T}{m}\right)^{1/2} \frac{B_0}{J + \iota I} \nu' = 
+%\left(\frac{T}{m}\right)^{1/2} \frac{B_0}{\bar{R} \bar{B}\left(\hat{J} + \iota \hat{I}\right)} \nu' =
+\left(\frac{\hat{T}}{2}\right)^{1/2} \bar{v} \frac{B_0}{\bar{R} \bar{B}\left(\hat{J} + \iota \hat{I}\right)} \nu'
+\label{eq:nu}
+\end{equation}
+with Eq.~\ref{eq:PartFlux} into Eq.~\ref{eq:L11} yields
+\begin{multline}
+L_{11} = 
+\frac{e^2 \hat{\psi}_a \bar{R} }{m^2 c^2 \bar{v}^3 }  \frac{4\left(\hat{J} + \iota \hat{I}\right)}{\hat{J}^2} \frac{B_0}{\bar{n} \hat{T}^{3/2}} \left(\frac{d \hat{n}}{d \psi_N}\right)^{-1} \frac{3  c^2}{4 \iota^2 e^2} 0.96 T^2 \frac{\bar{R} \bar{B}\left(\hat{J} + \iota \hat{I}\right)}{\left(\frac{\hat{T}}{2}\right)^{1/2} \bar{v} B_0 \nu'} G_1 \left(\psi\right) \frac{\bar{n}}{\hat{\psi}_a \bar{R}^2 \bar{B}} \frac{\p \hat{n}}{\p \psi_N} = \\ = 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\frac{0.96 \cdot 3 \cdot 2^{1/2} \left(\hat{J} + \iota \hat{I}\right)^2}{ \iota^2 \hat{J}^2} 
+\frac{ 1}{m^2 \bar{v}^4 }  
+\frac{ T^2}{ \hat{T}^{2}} 
+ G_1 \left(\psi\right) \frac{1}{\nu'} =
+ \frac{0.96 \cdot 3 \cdot 2^{1/2} \left(\hat{J} + \iota \hat{I}\right)^2}{ 4\iota^2 \hat{J}^2} 
+ G_1 \left(\psi\right) \frac{1}{\nu'}.
+\label{eq:L11mod}
+\end{multline}
+Before we proceed we define a normalized parallel gradient from Eq.~\ref{eq:LHS}
+\begin{equation}
+\hat{\na}_\| = \bar{R} \, \na_\| = \bar{R} \, \mathbf{b} \cdot \na  = \frac{\bar{R} B}{\left(\iota I + J\right)} \left(\iota \frac{\p }{\p \theta}  + \frac{\p }{\p \varphi} \right) = \frac{ \hat{B}}{\left(\iota \hat{I} + \hat{J}\right)} \left(\iota \frac{\p }{\p \theta}  + \frac{\p }{\p \varphi} \right).
+\label{eq:GradParallelNorm}
+\end{equation}
+$G_1 \left(\psi\right)$ we obtain from Eq.~(27) which, written in terms of SFINCS normalization
+with $\hat{u}$ defined according to
+\begin{equation}
+\hat{u} \equiv u \bar{B} / \bar{R} \;\; \Leftrightarrow \;\; u = \hat{u} \bar{R} / \bar{B}
+\label{eq:uHatDef}
+\end{equation}
+, is
+\begin{multline}
+ G_1 \left(\psi\right) = \frac{\left\langle \left(\frac{1}{\bar{R}} \hat{\nabla}_\| \ln \hat{B}\right) \frac{1}{\bar{R}} \hat{\nabla}_\| \left(\hat{u} \bar{R} / \bar{B} \cdot \bar{B}^2 \hat{B}^2\right)\right\rangle^2}{\left\langle \left(\frac{1}{\bar{R}} \hat{\nabla}_\| \bar{B} \hat{B}\right)^2\right\rangle} -
+ \left\langle \left[\frac{\frac{1}{\bar{R}} \hat{\nabla}_\| \left(\hat{u} \bar{R} / \bar{B} \cdot \bar{B}^2 \hat{B}^2\right)}{\bar{B} \hat{B}}\right]^2\right\rangle = \\
+= \frac{\left\langle \left( \hat{\nabla}_\| \ln \hat{B}\right)  \hat{\nabla}_\| \left(\hat{u} \hat{B}^2\right)\right\rangle^2}{\left\langle \left( \hat{\nabla}_\| \hat{B}\right)^2\right\rangle} -
+ \left\langle \left[\frac{ \hat{\nabla}_\| \left(\hat{u} \hat{B}^2\right)}{\hat{B}}\right]^2\right\rangle.
+\label{eq:G1}
+\end{multline}
+The parallel gradients of interest are
+\begin{equation}
+\hat{\nabla}_\| \ln \hat{B} = \frac{ 1}{\left(\iota \hat{I} + \hat{J}\right)} \left(\iota \frac{\p \hat{B}}{\p \theta}  + \frac{\p \hat{B}}{\p \varphi} \right),
+\label{eq:GradlnBparallel}
+\end{equation}
+\begin{equation}
+\hat{\nabla}_\| \hat{B} = \hat{B} \, \hat{\nabla}_\| \ln \hat{B}
+\label{eq:GradBparallel}
+\end{equation}
+and
+\begin{equation}
+\hat{\nabla}_\| \left(\hat{u} \hat{B}^2\right) = \frac{\hat{B}}{\left(\iota \hat{I} + \hat{J}\right)} \left(\iota \hat{B}^2 \frac{\p \hat{u}}{\p \theta} + 2 \iota \hat{B} \hat{u} \frac{\p \hat{B}}{\p \theta}  + \hat{B}^2 \frac{\p \hat{u}}{\p \varphi} + 2 \hat{B} \hat{u} \frac{\p \hat{B}}{\p \varphi}\right).
+\label{eq:GraduB2parallel}
+\end{equation}
+
+
+
+
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\subsection*{SFINCS}
+\todo{Fix this section, contains error}
+
+In SFINCS
+\begin{equation}
+\mathrm{nu\_ii} = \frac{4 \left(2\pi\right)^{1/2} n Z^4 e^4 \ln \Lambda}{3 M^{1/2} T^{3/2}}  = \sqrt{2} \nu,
+\label{eq:Nuii}
+\end{equation}
+as compared to $\nu$ in \cite{simakov}. Furthermore
+\begin{equation}
+\mathrm{nu\_ii} = \frac{\bar{v}}{\bar{R}} \mathrm{nuN} = \frac{\bar{v}}{\bar{R}}  \frac{\hat{n}}{\hat{T}^{3/2}} \mathrm{nu\_nbar},
+\label{eq:Nuii2}
+\end{equation}
+and therefore
+\begin{equation}
+\nu = \frac{1}{\sqrt{2}} \frac{\bar{v}}{\bar{R}}  \frac{\hat{n}}{\hat{T}^{3/2}} \mathrm{nu\_nbar}.
+\label{eq:NuSimakov}
+\end{equation}
+
+Also in SFINCS
+\begin{equation}
+\frac{M c}{e} = \frac{\bar{B} \bar{R} }{\bar{v}} \mathrm{Delta}
+\label{eq:Mcovere}
+\end{equation}
+in Gaussian units, $n = \hat{n} \bar{n}$, $T = \hat{T} \bar{T}$, $\psi = \psi_N \psi_a$ where $\psi_a$ is the toroidal flux of the last closed flux surface, and
+\begin{equation}
+\frac{\p T}{\p \psi} = \frac{\bar{T}}{\psi_a} \frac{\p \hat{T}}{\p \psi_N},
+\label{eq:dTdpsi}
+\end{equation}
+where
+$\psi_a = \hat{\psi}_a \bar{B} \bar{R}^2$.
+
+From $I = \hat{I} \bar{B} \bar{R}$, $J = \hat{J} \bar{B} \bar{R}$, $h = B^{-2} = \hat{B}^{-2} \bar{B}^{-2} \equiv \hat{h} \bar{B}^{-2}$ and Eq.~\ref{eq:uFourierCoeff} we see that
+\begin{equation}
+u_{n,m} \left(\psi\right) = \frac{\hat{J} \bar{B} \bar{R} m + n \hat{I} \bar{B} \bar{R}}{n - \iota m} \hat{h}_{n,m} \left(\psi\right) \bar{B}^{-2}.
+\label{eq:uFourierCoeff2}
+\end{equation}
+Hence it is convenient to define 
+\begin{equation}
+\hat{u} \equiv u \bar{B} / \bar{R} \;\; \Leftrightarrow \;\; u = \hat{u} \bar{R} / \bar{B}
+\label{eq:uHatDef2}
+\end{equation}
+ with
+\begin{equation}
+\hat{u}_{n,m} \left(\psi\right) = \frac{\hat{J} m + n \hat{I}}{n - \iota m} \hat{h}_{n,m} \left(\psi\right).
+\label{eq:uHatFourierCoeff}
+\end{equation}
+Then Eq.~\ref{eq:IonHeatFlux} is
+\begin{multline}
+\hspace*{-2.5cm}
+\left\langle \mathbf{q} \cdot \nabla \psi \right\rangle
+= 
+\frac{8}{5} \frac{1}{\sqrt{2}} \frac{\bar{v}}{\bar{R}}  \frac{\hat{n}}{\hat{T}^{3/2}} \mathrm{nu\_nbar} \frac{ \hat{n} \bar{n} \hat{T} \bar{T}}{M} \left(\frac{\bar{B} \bar{R} }{\bar{v}} \mathrm{Delta}\right)^2 \frac{1}{\iota^2} \frac{\bar{T}}{\hat{\psi}_a \bar{B} \bar{R}^2} \frac{\p \hat{T}}{\p \psi_N} \left(\frac{\left\langle \hat{u} \bar{R} / \bar{B} \left(\hat{B} \bar{B}\right)^2 \right\rangle^2}{\left\langle \left(\hat{B} \bar{B}\right)^2 \right\rangle} - \left\langle \left(\hat{u} \bar{R} / \bar{B}\right)^2 \left(\hat{B} \bar{B}\right)^2 \right\rangle\right) = \\
+= \frac{8}{5\sqrt{2}}
+\frac{\bar{n} \bar{T}^2 \bar{B} \bar{R}}{\bar{v}} 
+\frac{\hat{n}^2 }{M \iota^2 \hat{\psi}_a \hat{T}^{1/2}} \frac{\p \hat{T}}{\p \psi_N}
+ \left(\frac{\left\langle \hat{u} \hat{B}^2 \right\rangle^2}{\left\langle \hat{B}^2 \right\rangle} - \left\langle \hat{u}^2 \hat{B}^2 \right\rangle\right) 
+\mathrm{nu\_nbar}  \cdot \mathrm{Delta}^2 = \\
+= \frac{\sqrt{2}}{5} \mathrm{Delta}^2
+\frac{n \bar{v}^3 M \bar{B} \bar{R}}{\hat{\psi}_a} 
+\frac{\hat{n} }{\iota^2  \hat{T}^{1/2}} \frac{\p \hat{T}}{\p \psi_N}
+ \left(\frac{\left\langle \hat{u} \hat{B}^2 \right\rangle^2}{\left\langle \hat{B}^2 \right\rangle} - \left\langle \hat{u}^2 \hat{B}^2 \right\rangle\right) 
+\mathrm{nu\_nbar}.
+\label{eq:IonHeatFluxSFINCS}
+\end{multline}
+Furthermore
+\begin{equation}
+\hspace*{-1cm}
+V' = \frac{\p V}{\p \psi} = \int_0^{2\pi} \int_0^{2\pi} g^{1/2} d\theta d\varphi = \int_0^{2\pi} \int_0^{2\pi} \frac{\iota I + J}{B^2} d\theta d\varphi = \int_0^{2\pi} \int_0^{2\pi} \frac{\iota \bar{B} \bar{R} \hat{I} + \bar{B} \bar{R} \hat{J}}{\left(\bar{B} \hat{B}\right)^2} d\theta d\varphi = \frac{\bar{R}}{\bar{B}} \left(\iota \hat{I} + \hat{J}\right) \hat{V}'.
+\label{eq:Vprime}
+\end{equation}
+Combining Eqs.~\ref{eq:IonHeatFluxSFINCS} and \ref{eq:Vprime} the heat flux is
+\begin{equation}
+V' \left\langle \mathbf{q} \cdot \nabla \psi \right\rangle = 
+\mathrm{Delta}^2
+\frac{n \bar{v}^3 M \bar{R}^2}{\hat{\psi}_a} 
+\frac{\sqrt{2}}{5} 
+\frac{\hat{n} \left(\iota \hat{I} + \hat{J}\right) \hat{V}'}{\iota^2  \hat{T}^{1/2}} \frac{\p \hat{T}}{\p \psi_N}
+ \left(\frac{\left\langle \hat{u} \hat{B}^2 \right\rangle^2}{\left\langle \hat{B}^2 \right\rangle} - \left\langle \hat{u}^2 \hat{B}^2 \right\rangle\right) 
+\mathrm{nu\_nbar},
+\label{eq:eq:IonHeatFluxSFINCSmod}
+\end{equation}
+to be compared with Eq.~(104) in the SFINCS Technical Documentation.
+
+The quantity in SFINCS called heatFlux is
+\begin{equation}
+\mathrm{heatFlux} = 
+\frac{\sqrt{2}}{5} 
+\frac{\hat{n} \left(\iota \hat{I} + \hat{J}\right) \hat{V}'}{\iota^2  \hat{T}^{1/2}} \frac{\p \hat{T}}{\p \psi_N}
+ \left(\frac{\left\langle \hat{u} \hat{B}^2 \right\rangle^2}{\left\langle \hat{B}^2 \right\rangle} - \left\langle \hat{u}^2 \hat{B}^2 \right\rangle\right) 
+\mathrm{nu\_nbar}.
+\label{eq:QuantityHeatFluxSFINCS}
+\end{equation}
+Furthermore
+\begin{equation}
+\nu' = \frac{1}{\hat{T}^{1/2}}\frac{\bar{B}}{B_0} \left(\iota \hat{I} + \hat{J}\right) \mathrm{nuN} = \frac{1}{\hat{T}^{1/2}}\frac{\bar{B}}{B_0} \left(\iota \hat{I} + \hat{J}\right) \frac{\hat{n}}{\hat{T}^{3/2}} \mathrm{nu\_nbar}
+\label{eq:nuPrime}
+\end{equation}
+i.e.
+\begin{equation}
+\mathrm{nu\_nbar} = \frac{\hat{T}^{2} B_0}{\hat{n} \bar{B} \left(\iota \hat{I} + \hat{J}\right)}  \nu'.
+\label{eq:nuNbar}
+\end{equation}
+Consequently
+\begin{equation}
+\mathrm{heatFlux} = 
+\frac{\sqrt{2}}{5} 
+\frac{ \hat{V}' \hat{T}^{3/2} }{\iota^2} \frac{\p \hat{T}}{\p \psi_N}
+\frac{B_0}{\bar{B}}
+ \left(\frac{\left\langle \hat{u} \hat{B}^2 \right\rangle^2}{\left\langle \hat{B}^2 \right\rangle} - \left\langle \hat{u}^2 \hat{B}^2 \right\rangle\right) 
+ \nu'.
+\label{eq:QuantityHeatFluxSFINCSnuPrime}
+\end{equation}
+SFINCS Technical Documentation Eq.~(135) gives the coefficient $L_{2,2}$
+\begin{multline}
+\hspace*{-2cm}
+L_{2,2} = \mathrm{heatFlux} 
+\frac{\bar{R}}{V' \bar{B}} \frac{8 \left(\iota \hat{I} + \hat{J}\right) }{\hat{J}} \frac{1}{\hat{T}^{3/2} \hat{J}} \frac{B_0}{\bar{B}} \left(\frac{\p \hat{T}}{\p \psi_N}\right)^{-1} =
+%%
+\frac{\sqrt{2}}{5} 
+\left(\frac{B_0}{\bar{B}}\right)^2
+\frac{\bar{R}}{\bar{B}} \frac{8 \left(\iota \hat{I} + \hat{J}\right) \hat{V}' }{\iota^2 V' \hat{J}^2}
+ \left(\frac{\left\langle \hat{u} \hat{B}^2 \right\rangle^2}{\left\langle \hat{B}^2 \right\rangle} - \left\langle \hat{u}^2 \hat{B}^2 \right\rangle\right) 
+ \nu' = \\
+ %%
+ = 
+ \frac{\sqrt{2}}{5} 
+\left(\frac{B_0}{\bar{B}}\right)^2
+\frac{8 }{\iota^2 \hat{J}^2}
+ \left(\frac{\left\langle \hat{u} \hat{B}^2 \right\rangle^2}{\left\langle \hat{B}^2 \right\rangle} - \left\langle \hat{u}^2 \hat{B}^2 \right\rangle\right) 
+ \nu'.
+\label{eq:L22}
+\end{multline}
+
+
+
+
+
+\section*{Axisymmetric analytical model}
+In the axisymmetric limit $u$ is given by \cite{simakov} Eq.~(15), apart from a flux function
+\begin{equation}
+u_{\mathrm{as}} = - \frac{J}{B^2} =    - \frac{\hat{J} \bar{B} \bar{R}}{\left(\bar{B} \hat{B}\right)^2} =  - \frac{\bar{R}}{\bar{B}} \frac{\hat{J}}{\hat{B}^2} \;\; \Rightarrow \;\;
+\hat{u}_{\mathrm{as}} = - \frac{\hat{J}}{\hat{B}^2}.
+\label{eq:uAxisymmetric}
+\end{equation}
+
+
+\todo{Compare axisymmetric model to Simakov}
+
+\todo{Compare pure helical model to analytical, $\epsilon_t = 0$, $\epsilon_h \neq 0$}
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section*{Pfirsch-Schlüter regime test cases}
+The Pfirsch-Schlüter regime is define from
+\begin{equation}
+\nu^{\ast} \equiv \frac{\nu_{ii} R}{\iota \, v_{T}} \gg 1, 
+\label{eq:PFregime}
+\end{equation}
+which means that in SFINCS
+\begin{equation}
+\nu_{n} \equiv \frac{\nu_{ii} \bar{R}}{\bar{v}} \gg 1.
+\label{eq:PFregimeSFINCS}
+\end{equation}
+Since
+\begin{equation}
+\nu_{n} = \mathrm{nu\_nbar} \frac{\hat{n}}{\hat{T}^{3/2}},
+\label{eq:SFINCSnuN}
+\end{equation}
+we should choose a large $\hat{n}$ and/or a small $\hat{T}$.
+\subsection*{Large-aspect ratio tokamak}
+\subsubsection*{Input}
+\begin{tabular}{|c|c|}
+\hline
+   $B_0 / \bar{B}$ & 1.55  \\
+   $\epsilon_t$ & -0.178539  \\
+   $\epsilon_h$ & 0 \\
+   $\mathrm{helicity}_l$ & 0 \\
+   $\mathrm{helicity}_n$ & 0 \\
+   $\iota$ & 0.397543 \\
+   $\hat{G}$ & 6.2 \\
+   $\hat{I}$ & 0.0785669 \\
+   $\hat{\psi}_a$ & 0.323266 \\
+   $\hat{T}$ & 0.0001 \\
+   $\hat{n}$ & 1.0 \\
+   $\frac{\p \hat{\phi}}{\p \psi}$ & 0 \\
+   $\frac{\p \hat{T}}{\p \psi}$ & -0.2 \\
+   $\frac{\p \hat{n}}{\p \psi}$ & -0.2 \\
+   $\hat{E}$ & 0 \\
+   collisionOperator & 0 \\
+   \hline
+\end{tabular}
+\subsubsection*{Output}
+\begin{verbatim}
+Sources: -0.00140448,  0.000612761
+FSADensityPerturbation:  -1.1166e-15
+FSAFlow:                 -0.000103857
+FSAPressurePerturbation: 0
+particleFlux:            -3.84474e-05
+momentumFlux:            -4.3654e-12
+heatFlux:                0.000161097
+\end{verbatim}
+
+\begin{thebibliography}{99}
+
+\bibitem{simakov} A.~N.~Simakov, P.~Helander,
+  {\em Phys. Plasmas} {\bf 16}, 042503 (2009).
+  
+\bibitem{nonAxis} P.~Helander, Theory of plasma confinement in non-axisymmetric magnetic fields (2013).
+
+%\bibitem{MH} L.~Råde and B.~Westergren, Mathematics Handbook for Science and Engineering, $5^{\mathrm{th}}$ edition, 2004. %\vspace{-5mm}
+
+%\bibitem{Abra} M.~Abramowitz and I.~A.~Stegun, Handbook of Mathematical Functions, $10^{\mathrm{th}}$ printing, 1972.
+
+\end{thebibliography}
+
+\end{document}

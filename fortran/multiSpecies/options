@@ -1,0 +1,420 @@
+--------------------------------------------------------------------------
+Petsc Release Version 3.3.0, Patch 5, Sat Dec  1 15:10:41 CST 2012 
+       The PETSc Team
+    petsc-maint@mcs.anl.gov
+ http://www.mcs.anl.gov/petsc/
+See docs/changes/index.html for recent updates.
+See docs/faq.html for problems.
+See docs/manualpages/index.html for help. 
+Libraries linked from /home/matt2/petsc-3.3-p5/arch-20121226-01/lib
+--------------------------------------------------------------------------
+Options for all PETSc programs:
+ -help: prints help method for each option
+ -on_error_abort: cause an abort when an error is detected. Useful 
+        only when run in the debugger
+ -on_error_attach_debugger [gdb,dbx,xxgdb,ups,noxterm]
+       start the debugger in new xterm
+       unless noxterm is given
+ -start_in_debugger [gdb,dbx,xxgdb,ups,noxterm]
+       start all processes in the debugger
+ -on_error_emacs <machinename>
+    emacs jumps to error file
+ -debugger_nodes [n1,n2,..] Nodes to start in debugger
+ -debugger_pause [m] : delay (in seconds) to attach debugger
+ -stop_for_debugger : prints message on how to attach debugger manually
+                      waits the delay for you to attach
+ -display display: Location where graphics and debuggers are displayed
+ -no_signal_handler: do not trap error signals
+ -mpi_return_on_error: MPI returns error code, rather than abort on internal error
+ -fp_trap: stop on floating point exceptions
+           note on IBM RS6000 this slows run greatly
+ -malloc_dump <optional filename>: dump list of unfreed memory at conclusion
+ -malloc: use our error checking malloc
+ -malloc no: don't use error checking malloc
+ -malloc_info: prints total memory usage
+ -malloc_log: keeps log of all memory allocations
+ -malloc_debug: enables extended checking for memory corruption
+ -options_table: dump list of options inputted
+ -options_left: dump list of unused options
+ -options_left no: don't dump list of unused options
+ -tmp tmpdir: alternative /tmp directory
+ -shared_tmp: tmp directory is shared by all processors
+ -not_shared_tmp: each processor has separate tmp directory
+ -memory_info: print memory usage at end of run
+ -server <port>: Run PETSc webserver (default port is 8080) see PetscWebServe()
+ -get_total_flops: total flops over all processors
+ -log[_all _summary _summary_python]: logging objects and events
+ -log_trace [filename]: prints trace of all PETSc calls
+ -info <optional filename>: print informative messages about the calculations
+ -v: prints PETSc version number and release date
+ -options_file <file>: reads options from file
+ -petsc_sleep n: sleeps n seconds before running program
+-----------------------------------------------
+------Additional PETSc component options--------
+ -log_summary_exclude: <vec,mat,pc.ksp,snes>
+ -info_exclude: <null,vec,mat,pc,ksp,snes,ts>
+-----------------------------------------------
+Distribution Manager (DM) options -------------------------------------------------
+  -dm_view: <FALSE> Information on DM (DMView)
+  -dm_view_detail: <FALSE> Exhaustive mesh description (DMView)
+  -dm_view_vtk: <FALSE> Output mesh in VTK format (DMView)
+  -dm_view_latex: <FALSE> Output mesh in LaTeX TikZ format (DMView)
+  -dm_preallocate_only: <FALSE> only preallocate matrix, but do not set column indices (DMSetMatrixPreallocateOnly)
+  -dm_vec_type <standard>: Vector type used for created vectors (one of) seq mpi standard shared (DMSetVecType)
+  -dm_mat_type <aij>: Matrix type used for created matrices (one of) mffd mpimaij seqmaij maij is shell composite mpiaij
+      seqaij mpiaijperm seqaijperm seqaijcrl mpiaijcrl mpibaij seqbaij mpisbaij seqsbaij mpibstrm seqbstrm mpisbstrm seqsbstrm mpidense seqdense mpiadj scatter blockmat nest ij (DMSetMatType)
+  -dm_is_coloring_type <global> (choose one of) global ghosted (ISColoringType)
+  DMDA Options
+  -da_processors_x <1>: Number of processors in x direction (DMDASetNumProcs)
+  -da_refine_x <2>: Refinement ratio in x direction (DMDASetRefinementFactor)
+DMDA viewing options -------------------------------------------------
+  -da_view: <FALSE> Print information about the DMDA's distribution (DMView)
+  -da_view_draw: <FALSE> Draw how the DMDA is distributed (DMView)
+Options for SEQAIJ matrix -------------------------------------------------
+  -mat_no_unroll: <FALSE> Do not optimize for inodes (slower) (None)
+  -mat_no_inode: <FALSE> Do not optimize for inodes -slower- (None)
+  -mat_inode_limit <5>: Do not use inodes larger then this value (None)
+Options for SEQAIJ matrix -------------------------------------------------
+  -mat_no_unroll: <FALSE> Do not optimize for inodes (slower) (None)
+  -mat_no_inode: <FALSE> Do not optimize for inodes -slower- (None)
+  -mat_inode_limit <5>: Do not use inodes larger then this value (None)
+Options for SEQAIJ matrix -------------------------------------------------
+  -mat_no_unroll: <FALSE> Do not optimize for inodes (slower) (None)
+  -mat_no_inode: <FALSE> Do not optimize for inodes -slower- (None)
+  -mat_inode_limit <5>: Do not use inodes larger then this value (None)
+Matrix (Mat) options -------------------------------------------------
+  -mat_view_info: <FALSE> Information on matrix size (MatView)
+  -mat_view_info_detailed: <FALSE> Nonzeros in the matrix (MatView)
+  -mat_view: <FALSE> Print matrix to stdout (MatView)
+  -mat_view_matlab: <FALSE> Print matrix to stdout in a format Matlab can read (MatView)
+  -mat_view_socket: <FALSE> Send matrix to socket (can be read from matlab) (MatView)
+  -mat_view_binary: <FALSE> Save matrix to file in binary format (MatView)
+  -mat_view_draw: <FALSE> Draw the matrix nonzero structure (MatView)
+Matrix (Mat) options -------------------------------------------------
+  -mat_view_info: <FALSE> Information on matrix size (MatView)
+  -mat_view_info_detailed: <FALSE> Nonzeros in the matrix (MatView)
+  -mat_view: <FALSE> Print matrix to stdout (MatView)
+  -mat_view_matlab: <FALSE> Print matrix to stdout in a format Matlab can read (MatView)
+  -mat_view_socket: <FALSE> Send matrix to socket (can be read from matlab) (MatView)
+  -mat_view_binary: <FALSE> Save matrix to file in binary format (MatView)
+  -mat_view_draw: <FALSE> Draw the matrix nonzero structure (MatView)
+Matrix (Mat) options -------------------------------------------------
+  -mat_view_info: <FALSE> Information on matrix size (MatView)
+  -mat_view_info_detailed: <FALSE> Nonzeros in the matrix (MatView)
+  -mat_view: <FALSE> Print matrix to stdout (MatView)
+  -mat_view_matlab: <FALSE> Print matrix to stdout in a format Matlab can read (MatView)
+  -mat_view_socket: <FALSE> Send matrix to socket (can be read from matlab) (MatView)
+  -mat_view_binary: <FALSE> Save matrix to file in binary format (MatView)
+  -mat_view_draw: <FALSE> Draw the matrix nonzero structure (MatView)
+Options for SEQAIJ matrix -------------------------------------------------
+  -mat_no_unroll: <FALSE> Do not optimize for inodes (slower) (None)
+  -mat_no_inode: <FALSE> Do not optimize for inodes -slower- (None)
+  -mat_inode_limit <5>: Do not use inodes larger then this value (None)
+Options for SEQAIJ matrix -------------------------------------------------
+  -mat_no_unroll: <FALSE> Do not optimize for inodes (slower) (None)
+  -mat_no_inode: <FALSE> Do not optimize for inodes -slower- (None)
+  -mat_inode_limit <5>: Do not use inodes larger then this value (None)
+Options for SEQAIJ matrix -------------------------------------------------
+  -mat_no_unroll: <FALSE> Do not optimize for inodes (slower) (None)
+  -mat_no_inode: <FALSE> Do not optimize for inodes -slower- (None)
+  -mat_inode_limit <5>: Do not use inodes larger then this value (None)
+Matrix (Mat) options -------------------------------------------------
+  -mat_view_info: <FALSE> Information on matrix size (MatView)
+  -mat_view_info_detailed: <FALSE> Nonzeros in the matrix (MatView)
+  -mat_view: <FALSE> Print matrix to stdout (MatView)
+  -mat_view_matlab: <FALSE> Print matrix to stdout in a format Matlab can read (MatView)
+  -mat_view_socket: <FALSE> Send matrix to socket (can be read from matlab) (MatView)
+  -mat_view_binary: <FALSE> Save matrix to file in binary format (MatView)
+  -mat_view_draw: <FALSE> Draw the matrix nonzero structure (MatView)
+Matrix (Mat) options -------------------------------------------------
+  -mat_view_info: <FALSE> Information on matrix size (MatView)
+  -mat_view_info_detailed: <FALSE> Nonzeros in the matrix (MatView)
+  -mat_view: <FALSE> Print matrix to stdout (MatView)
+  -mat_view_matlab: <FALSE> Print matrix to stdout in a format Matlab can read (MatView)
+  -mat_view_socket: <FALSE> Send matrix to socket (can be read from matlab) (MatView)
+  -mat_view_binary: <FALSE> Save matrix to file in binary format (MatView)
+  -mat_view_draw: <FALSE> Draw the matrix nonzero structure (MatView)
+Matrix (Mat) options -------------------------------------------------
+  -mat_view_info: <FALSE> Information on matrix size (MatView)
+  -mat_view_info_detailed: <FALSE> Nonzeros in the matrix (MatView)
+  -mat_view: <FALSE> Print matrix to stdout (MatView)
+  -mat_view_matlab: <FALSE> Print matrix to stdout in a format Matlab can read (MatView)
+  -mat_view_socket: <FALSE> Send matrix to socket (can be read from matlab) (MatView)
+  -mat_view_binary: <FALSE> Save matrix to file in binary format (MatView)
+  -mat_view_draw: <FALSE> Draw the matrix nonzero structure (MatView)
+Vector (Vec) options -------------------------------------------------
+  -vec_view_info: <FALSE> Information on vector size (VecView)
+  -vec_view: <FALSE> Print vector to stdout (VecView)
+  -vec_view_matlab: <FALSE> Print vector to stdout in a format MATLAB can read (VecView)
+  -vec_view_socket: <FALSE> Send vector to socket (can be read from matlab) (VecView)
+  -vec_view_binary: <FALSE> Save vector to file in binary format (VecView)
+Preconditioner (PC) options -------------------------------------------------
+  -pc_type <lu>: Preconditioner (one of) none jacobi pbjacobi bjacobi sor lu shell mg
+      eisenstat ilu icc cholesky asm gasm ksp composite redundant nn mat fieldsplit galerkin exotic hmpi asa cp lsc redistribute svd gamg tfs (PCSetType)
+  LU options
+  -pc_factor_in_place: <FALSE> Form factored matrix in the same memory as the matrix (PCFactorSetUseInPlace)
+  -pc_factor_fill <5>: Expected non-zeros in factored matrix (PCFactorSetFill)
+  -pc_factor_shift_type <NONE> (choose one of) NONE NONZERO POSITIVE_DEFINITE INBLOCKS (PCFactorSetShiftType)
+  -pc_factor_shift_amount <0>: Shift added to diagonal (PCFactorSetShiftAmount)
+  -pc_factor_zeropivot <2.22045e-14>: Pivot is considered zero if less than (PCFactorSetZeroPivot)
+  -pc_factor_column_pivot <1e-06>: Column pivot tolerance (used only for some factorization) (PCFactorSetColumnPivot)
+  -pc_factor_pivot_in_blocks: <TRUE> Pivot inside matrix dense blocks for BAIJ and SBAIJ (PCFactorSetPivotInBlocks)
+  -pc_factor_reuse_fill: <FALSE> Use fill from previous factorization (PCFactorSetReuseFill)
+  -pc_factor_reuse_ordering: <FALSE> Reuse ordering from previous factorization (PCFactorSetReuseOrdering)
+  -pc_factor_mat_ordering_type <nd>: Reordering to reduce nonzeros in factored matrix (one of) natural nd 1wd rcm qmd rowlength (PCFactorSetMatOrderingType)
+  -pc_factor_mat_solver_package <petsc>: Specific direct solver to use (MatGetFactor)
+  -pc_factor_nonzeros_along_diagonal: Reorder to remove zeros from diagonal (PCFactorReorderForNonzeroDiagonal)
+Krylov Method (KSP) options -------------------------------------------------
+  -ksp_type <bcgsl>: Krylov method (one of) cg cgne nash stcg gltr richardson chebyshev gmres
+      tcqmr bcgs ibcgs fbcgs ifbcgs bcgsl cgs tfqmr cr lsqr preonly qcg bicg fgmres minres symmlq lgmres lcd gcr pgmres specest dgmres (KSPSetType)
+  -ksp_max_it <10000>: Maximum number of iterations (KSPSetTolerances)
+  -ksp_rtol <1e-05>: Relative decrease in residual norm (KSPSetTolerances)
+  -ksp_atol <1e-50>: Absolute value of residual norm (KSPSetTolerances)
+  -ksp_divtol <10000>: Residual norm increase cause divergence (KSPSetTolerances)
+  -ksp_converged_use_initial_residual_norm: <FALSE> Use initial residual residual norm for computing relative convergence (KSPDefaultConvergedSetUIRNorm)
+  -ksp_converged_use_min_initial_residual_norm: <FALSE> Use minimum of initial residual norm and b for computing relative convergence (KSPDefaultConvergedSetUMIRNorm)
+  -ksp_initial_guess_nonzero: <FALSE> Use the contents of the solution vector for initial guess (KSPSetInitialNonzero)
+  -ksp_knoll: <FALSE> Use preconditioner applied to b for initial guess (KSPSetInitialGuessKnoll)
+  -ksp_error_if_not_converged: <FALSE> Generate error if solver does not converge (KSPSetErrorIfNotConverged)
+  -ksp_fischer_guess <0>: Use Paul Fischer's algorithm for initial guess (KSPSetUseFischerGuess)
+  -ksp_convergence_test <default> (choose one of) default skip (KSPSetConvergenceTest)
+  -ksp_norm_type <PRECONDITIONED> (choose one of) NONE PRECONDITIONED UNPRECONDITIONED NATURAL (KSPSetNormType)
+  -ksp_check_norm_iteration <-1>: First iteration to compute residual norm (KSPSetCheckNormIteration)
+  -ksp_lag_norm: <FALSE> Lag the calculation of the residual norm (KSPSetLagNorm)
+  -ksp_diagonal_scale: <FALSE> Diagonal scale matrix before building preconditioner (KSPSetDiagonalScale)
+  -ksp_diagonal_scale_fix: <FALSE> Fix diagonally scaled matrix after solve (KSPSetDiagonalScaleFix)
+  -ksp_constant_null_space: <FALSE> Add constant null space to Krylov solver (KSPSetNullSpace)
+  -ksp_converged_reason: <FALSE> Print reason for converged or diverged (KSPSolve)
+  -ksp_monitor_cancel: <FALSE> Remove any hardwired monitor routines (KSPMonitorCancel)
+  -ksp_monitor <stdout>: Monitor preconditioned residual norm (KSPMonitorSet)
+  -ksp_monitor_range <stdout>: Monitor percent of residual entries more than 10 percent of max (KSPMonitorRange)
+  -ksp_monitor_solution: <FALSE> Monitor solution graphically (KSPMonitorSet)
+  -ksp_monitor_true_residual <stdout>: Monitor true residual norm (KSPMonitorSet)
+  -ksp_monitor_singular_value <stdout>: Monitor singular values (KSPMonitorSet)
+  -ksp_monitor_short <stdout>: Monitor preconditioned residual norm with fewer digits (KSPMonitorSet)
+  -ksp_monitor_python <(null)>: Use Python function (KSPMonitorSet)
+  -ksp_monitor_draw: <FALSE> Monitor graphically preconditioned residual norm (KSPMonitorSet)
+  -ksp_monitor_draw_true_residual: <FALSE> Monitor graphically true residual norm (KSPMonitorSet)
+  -ksp_monitor_range_draw: <FALSE> Monitor graphically range of preconditioned residual norm (KSPMonitorSet)
+  -ksp_monitor_ams: <FALSE> Publish KSP progress using AMS (KSPMonitorSet)
+  -ksp_pc_side <LEFT> (choose one of) LEFT RIGHT SYMMETRIC (KSPSetPCSide)
+  -ksp_compute_singularvalues: <FALSE> Compute singular values of preconditioned operator (KSPSetComputeSingularValues)
+  -ksp_compute_eigenvalues: <FALSE> Compute eigenvalues of preconditioned operator (KSPSetComputeSingularValues)
+  -ksp_plot_eigenvalues: <FALSE> Scatter plot extreme eigenvalues (KSPSetComputeSingularValues)
+  KSP BiCGStab(L) Options
+  -ksp_bcgsl_ell <2>: Number of Krylov search directions (KSPBCGSLSetEll)
+  -ksp_bcgsl_cxpoly: <FALSE> Polynomial part of BiCGStabL is MinRes + OR (KSPBCGSLSetPol)
+  -ksp_bcgsl_mrpoly: <FALSE> Polynomial part of BiCGStabL is MinRes (KSPBCGSLSetPol)
+  -ksp_bcgsl_xres <0>: Threshold used to decide when to refresh computed residuals (KSPBCGSLSetXRes)
+  -ksp_view: View linear solver parameters (KSPView)
+Options for SEQAIJ matrix -------------------------------------------------
+  -mat_no_unroll: <FALSE> Do not optimize for inodes (slower) (None)
+  -mat_no_inode: <FALSE> Do not optimize for inodes -slower- (None)
+  -mat_inode_limit <5>: Do not use inodes larger then this value (None)
+Matrix (Mat) options -------------------------------------------------
+  -mat_view_info: <FALSE> Information on matrix size (MatView)
+  -mat_view_info_detailed: <FALSE> Nonzeros in the matrix (MatView)
+  -mat_view: <FALSE> Print matrix to stdout (MatView)
+  -mat_view_matlab: <FALSE> Print matrix to stdout in a format Matlab can read (MatView)
+  -mat_view_socket: <FALSE> Send matrix to socket (can be read from matlab) (MatView)
+  -mat_view_binary: <FALSE> Save matrix to file in binary format (MatView)
+  -mat_view_draw: <FALSE> Draw the matrix nonzero structure (MatView)
+Vector (Vec) options -------------------------------------------------
+  -vec_view_info: <FALSE> Information on vector size (VecView)
+  -vec_view: <FALSE> Print vector to stdout (VecView)
+  -vec_view_matlab: <FALSE> Print vector to stdout in a format MATLAB can read (VecView)
+  -vec_view_socket: <FALSE> Send vector to socket (can be read from matlab) (VecView)
+  -vec_view_binary: <FALSE> Save vector to file in binary format (VecView)
+Preconditioner (PC) options -------------------------------------------------
+  -pc_type <lu>: Preconditioner (one of) none jacobi pbjacobi bjacobi sor lu shell mg
+      eisenstat ilu icc cholesky asm gasm ksp composite redundant nn mat fieldsplit galerkin exotic hmpi asa cp lsc redistribute svd gamg tfs (PCSetType)
+  LU options
+  -pc_factor_in_place: <FALSE> Form factored matrix in the same memory as the matrix (PCFactorSetUseInPlace)
+  -pc_factor_fill <5>: Expected non-zeros in factored matrix (PCFactorSetFill)
+  -pc_factor_shift_type <NONE> (choose one of) NONE NONZERO POSITIVE_DEFINITE INBLOCKS (PCFactorSetShiftType)
+  -pc_factor_shift_amount <0>: Shift added to diagonal (PCFactorSetShiftAmount)
+  -pc_factor_zeropivot <2.22045e-14>: Pivot is considered zero if less than (PCFactorSetZeroPivot)
+  -pc_factor_column_pivot <1e-06>: Column pivot tolerance (used only for some factorization) (PCFactorSetColumnPivot)
+  -pc_factor_pivot_in_blocks: <TRUE> Pivot inside matrix dense blocks for BAIJ and SBAIJ (PCFactorSetPivotInBlocks)
+  -pc_factor_reuse_fill: <FALSE> Use fill from previous factorization (PCFactorSetReuseFill)
+  -pc_factor_reuse_ordering: <FALSE> Reuse ordering from previous factorization (PCFactorSetReuseOrdering)
+  -pc_factor_mat_ordering_type <nd>: Reordering to reduce nonzeros in factored matrix (one of) natural nd 1wd rcm qmd rowlength (PCFactorSetMatOrderingType)
+  -pc_factor_mat_solver_package <petsc>: Specific direct solver to use (MatGetFactor)
+  -pc_factor_nonzeros_along_diagonal: Reorder to remove zeros from diagonal (PCFactorReorderForNonzeroDiagonal)
+Krylov Method (KSP) options -------------------------------------------------
+  -ksp_type <bcgsl>: Krylov method (one of) cg cgne nash stcg gltr richardson chebyshev gmres
+      tcqmr bcgs ibcgs fbcgs ifbcgs bcgsl cgs tfqmr cr lsqr preonly qcg bicg fgmres minres symmlq lgmres lcd gcr pgmres specest dgmres (KSPSetType)
+  -ksp_max_it <10000>: Maximum number of iterations (KSPSetTolerances)
+  -ksp_rtol <1e-05>: Relative decrease in residual norm (KSPSetTolerances)
+  -ksp_atol <1e-50>: Absolute value of residual norm (KSPSetTolerances)
+  -ksp_divtol <10000>: Residual norm increase cause divergence (KSPSetTolerances)
+  -ksp_converged_use_initial_residual_norm: <FALSE> Use initial residual residual norm for computing relative convergence (KSPDefaultConvergedSetUIRNorm)
+  -ksp_converged_use_min_initial_residual_norm: <FALSE> Use minimum of initial residual norm and b for computing relative convergence (KSPDefaultConvergedSetUMIRNorm)
+  -ksp_initial_guess_nonzero: <FALSE> Use the contents of the solution vector for initial guess (KSPSetInitialNonzero)
+  -ksp_knoll: <FALSE> Use preconditioner applied to b for initial guess (KSPSetInitialGuessKnoll)
+  -ksp_error_if_not_converged: <FALSE> Generate error if solver does not converge (KSPSetErrorIfNotConverged)
+  -ksp_fischer_guess <0>: Use Paul Fischer's algorithm for initial guess (KSPSetUseFischerGuess)
+  -ksp_convergence_test <default> (choose one of) default skip (KSPSetConvergenceTest)
+  -ksp_norm_type <PRECONDITIONED> (choose one of) NONE PRECONDITIONED UNPRECONDITIONED NATURAL (KSPSetNormType)
+  -ksp_check_norm_iteration <-1>: First iteration to compute residual norm (KSPSetCheckNormIteration)
+  -ksp_lag_norm: <FALSE> Lag the calculation of the residual norm (KSPSetLagNorm)
+  -ksp_diagonal_scale: <FALSE> Diagonal scale matrix before building preconditioner (KSPSetDiagonalScale)
+  -ksp_diagonal_scale_fix: <FALSE> Fix diagonally scaled matrix after solve (KSPSetDiagonalScaleFix)
+  -ksp_constant_null_space: <FALSE> Add constant null space to Krylov solver (KSPSetNullSpace)
+  -ksp_converged_reason: <FALSE> Print reason for converged or diverged (KSPSolve)
+  -ksp_monitor_cancel: <FALSE> Remove any hardwired monitor routines (KSPMonitorCancel)
+  -ksp_monitor <stdout>: Monitor preconditioned residual norm (KSPMonitorSet)
+  -ksp_monitor_range <stdout>: Monitor percent of residual entries more than 10 percent of max (KSPMonitorRange)
+  -ksp_monitor_solution: <FALSE> Monitor solution graphically (KSPMonitorSet)
+  -ksp_monitor_true_residual <stdout>: Monitor true residual norm (KSPMonitorSet)
+  -ksp_monitor_singular_value <stdout>: Monitor singular values (KSPMonitorSet)
+  -ksp_monitor_short <stdout>: Monitor preconditioned residual norm with fewer digits (KSPMonitorSet)
+  -ksp_monitor_python <(null)>: Use Python function (KSPMonitorSet)
+  -ksp_monitor_draw: <FALSE> Monitor graphically preconditioned residual norm (KSPMonitorSet)
+  -ksp_monitor_draw_true_residual: <FALSE> Monitor graphically true residual norm (KSPMonitorSet)
+  -ksp_monitor_range_draw: <FALSE> Monitor graphically range of preconditioned residual norm (KSPMonitorSet)
+  -ksp_monitor_ams: <FALSE> Publish KSP progress using AMS (KSPMonitorSet)
+  -ksp_pc_side <LEFT> (choose one of) LEFT RIGHT SYMMETRIC (KSPSetPCSide)
+  -ksp_compute_singularvalues: <FALSE> Compute singular values of preconditioned operator (KSPSetComputeSingularValues)
+  -ksp_compute_eigenvalues: <FALSE> Compute eigenvalues of preconditioned operator (KSPSetComputeSingularValues)
+  -ksp_plot_eigenvalues: <FALSE> Scatter plot extreme eigenvalues (KSPSetComputeSingularValues)
+  KSP BiCGStab(L) Options
+  -ksp_bcgsl_ell <2>: Number of Krylov search directions (KSPBCGSLSetEll)
+  -ksp_bcgsl_cxpoly: <FALSE> Polynomial part of BiCGStabL is MinRes + OR (KSPBCGSLSetPol)
+  -ksp_bcgsl_mrpoly: <FALSE> Polynomial part of BiCGStabL is MinRes (KSPBCGSLSetPol)
+  -ksp_bcgsl_xres <0>: Threshold used to decide when to refresh computed residuals (KSPBCGSLSetXRes)
+  -ksp_view: View linear solver parameters (KSPView)
+Options for SEQAIJ matrix -------------------------------------------------
+  -mat_no_unroll: <FALSE> Do not optimize for inodes (slower) (None)
+  -mat_no_inode: <FALSE> Do not optimize for inodes -slower- (None)
+  -mat_inode_limit <5>: Do not use inodes larger then this value (None)
+Matrix (Mat) options -------------------------------------------------
+  -mat_view_info: <FALSE> Information on matrix size (MatView)
+  -mat_view_info_detailed: <FALSE> Nonzeros in the matrix (MatView)
+  -mat_view: <FALSE> Print matrix to stdout (MatView)
+  -mat_view_matlab: <FALSE> Print matrix to stdout in a format Matlab can read (MatView)
+  -mat_view_socket: <FALSE> Send matrix to socket (can be read from matlab) (MatView)
+  -mat_view_binary: <FALSE> Save matrix to file in binary format (MatView)
+  -mat_view_draw: <FALSE> Draw the matrix nonzero structure (MatView)
+Vector (Vec) options -------------------------------------------------
+  -vec_view_info: <FALSE> Information on vector size (VecView)
+  -vec_view: <FALSE> Print vector to stdout (VecView)
+  -vec_view_matlab: <FALSE> Print vector to stdout in a format MATLAB can read (VecView)
+  -vec_view_socket: <FALSE> Send vector to socket (can be read from matlab) (VecView)
+  -vec_view_binary: <FALSE> Save vector to file in binary format (VecView)
+Preconditioner (PC) options -------------------------------------------------
+  -pc_type <lu>: Preconditioner (one of) none jacobi pbjacobi bjacobi sor lu shell mg
+      eisenstat ilu icc cholesky asm gasm ksp composite redundant nn mat fieldsplit galerkin exotic hmpi asa cp lsc redistribute svd gamg tfs (PCSetType)
+  LU options
+  -pc_factor_in_place: <FALSE> Form factored matrix in the same memory as the matrix (PCFactorSetUseInPlace)
+  -pc_factor_fill <5>: Expected non-zeros in factored matrix (PCFactorSetFill)
+  -pc_factor_shift_type <NONE> (choose one of) NONE NONZERO POSITIVE_DEFINITE INBLOCKS (PCFactorSetShiftType)
+  -pc_factor_shift_amount <0>: Shift added to diagonal (PCFactorSetShiftAmount)
+  -pc_factor_zeropivot <2.22045e-14>: Pivot is considered zero if less than (PCFactorSetZeroPivot)
+  -pc_factor_column_pivot <1e-06>: Column pivot tolerance (used only for some factorization) (PCFactorSetColumnPivot)
+  -pc_factor_pivot_in_blocks: <TRUE> Pivot inside matrix dense blocks for BAIJ and SBAIJ (PCFactorSetPivotInBlocks)
+  -pc_factor_reuse_fill: <FALSE> Use fill from previous factorization (PCFactorSetReuseFill)
+  -pc_factor_reuse_ordering: <FALSE> Reuse ordering from previous factorization (PCFactorSetReuseOrdering)
+  -pc_factor_mat_ordering_type <nd>: Reordering to reduce nonzeros in factored matrix (one of) natural nd 1wd rcm qmd rowlength (PCFactorSetMatOrderingType)
+  -pc_factor_mat_solver_package <petsc>: Specific direct solver to use (MatGetFactor)
+  -pc_factor_nonzeros_along_diagonal: Reorder to remove zeros from diagonal (PCFactorReorderForNonzeroDiagonal)
+Krylov Method (KSP) options -------------------------------------------------
+  -ksp_type <bcgsl>: Krylov method (one of) cg cgne nash stcg gltr richardson chebyshev gmres
+      tcqmr bcgs ibcgs fbcgs ifbcgs bcgsl cgs tfqmr cr lsqr preonly qcg bicg fgmres minres symmlq lgmres lcd gcr pgmres specest dgmres (KSPSetType)
+  -ksp_max_it <10000>: Maximum number of iterations (KSPSetTolerances)
+  -ksp_rtol <1e-05>: Relative decrease in residual norm (KSPSetTolerances)
+  -ksp_atol <1e-50>: Absolute value of residual norm (KSPSetTolerances)
+  -ksp_divtol <10000>: Residual norm increase cause divergence (KSPSetTolerances)
+  -ksp_converged_use_initial_residual_norm: <FALSE> Use initial residual residual norm for computing relative convergence (KSPDefaultConvergedSetUIRNorm)
+  -ksp_converged_use_min_initial_residual_norm: <FALSE> Use minimum of initial residual norm and b for computing relative convergence (KSPDefaultConvergedSetUMIRNorm)
+  -ksp_initial_guess_nonzero: <FALSE> Use the contents of the solution vector for initial guess (KSPSetInitialNonzero)
+  -ksp_knoll: <FALSE> Use preconditioner applied to b for initial guess (KSPSetInitialGuessKnoll)
+  -ksp_error_if_not_converged: <FALSE> Generate error if solver does not converge (KSPSetErrorIfNotConverged)
+  -ksp_fischer_guess <0>: Use Paul Fischer's algorithm for initial guess (KSPSetUseFischerGuess)
+  -ksp_convergence_test <default> (choose one of) default skip (KSPSetConvergenceTest)
+  -ksp_norm_type <PRECONDITIONED> (choose one of) NONE PRECONDITIONED UNPRECONDITIONED NATURAL (KSPSetNormType)
+  -ksp_check_norm_iteration <-1>: First iteration to compute residual norm (KSPSetCheckNormIteration)
+  -ksp_lag_norm: <FALSE> Lag the calculation of the residual norm (KSPSetLagNorm)
+  -ksp_diagonal_scale: <FALSE> Diagonal scale matrix before building preconditioner (KSPSetDiagonalScale)
+  -ksp_diagonal_scale_fix: <FALSE> Fix diagonally scaled matrix after solve (KSPSetDiagonalScaleFix)
+  -ksp_constant_null_space: <FALSE> Add constant null space to Krylov solver (KSPSetNullSpace)
+  -ksp_converged_reason: <FALSE> Print reason for converged or diverged (KSPSolve)
+  -ksp_monitor_cancel: <FALSE> Remove any hardwired monitor routines (KSPMonitorCancel)
+  -ksp_monitor <stdout>: Monitor preconditioned residual norm (KSPMonitorSet)
+  -ksp_monitor_range <stdout>: Monitor percent of residual entries more than 10 percent of max (KSPMonitorRange)
+  -ksp_monitor_solution: <FALSE> Monitor solution graphically (KSPMonitorSet)
+  -ksp_monitor_true_residual <stdout>: Monitor true residual norm (KSPMonitorSet)
+  -ksp_monitor_singular_value <stdout>: Monitor singular values (KSPMonitorSet)
+  -ksp_monitor_short <stdout>: Monitor preconditioned residual norm with fewer digits (KSPMonitorSet)
+  -ksp_monitor_python <(null)>: Use Python function (KSPMonitorSet)
+  -ksp_monitor_draw: <FALSE> Monitor graphically preconditioned residual norm (KSPMonitorSet)
+  -ksp_monitor_draw_true_residual: <FALSE> Monitor graphically true residual norm (KSPMonitorSet)
+  -ksp_monitor_range_draw: <FALSE> Monitor graphically range of preconditioned residual norm (KSPMonitorSet)
+  -ksp_monitor_ams: <FALSE> Publish KSP progress using AMS (KSPMonitorSet)
+  -ksp_pc_side <LEFT> (choose one of) LEFT RIGHT SYMMETRIC (KSPSetPCSide)
+  -ksp_compute_singularvalues: <FALSE> Compute singular values of preconditioned operator (KSPSetComputeSingularValues)
+  -ksp_compute_eigenvalues: <FALSE> Compute eigenvalues of preconditioned operator (KSPSetComputeSingularValues)
+  -ksp_plot_eigenvalues: <FALSE> Scatter plot extreme eigenvalues (KSPSetComputeSingularValues)
+  KSP BiCGStab(L) Options
+  -ksp_bcgsl_ell <2>: Number of Krylov search directions (KSPBCGSLSetEll)
+  -ksp_bcgsl_cxpoly: <FALSE> Polynomial part of BiCGStabL is MinRes + OR (KSPBCGSLSetPol)
+  -ksp_bcgsl_mrpoly: <FALSE> Polynomial part of BiCGStabL is MinRes (KSPBCGSLSetPol)
+  -ksp_bcgsl_xres <0>: Threshold used to decide when to refresh computed residuals (KSPBCGSLSetXRes)
+  -ksp_view: View linear solver parameters (KSPView)
+Options for SEQAIJ matrix -------------------------------------------------
+  -mat_no_unroll: <FALSE> Do not optimize for inodes (slower) (None)
+  -mat_no_inode: <FALSE> Do not optimize for inodes -slower- (None)
+  -mat_inode_limit <5>: Do not use inodes larger then this value (None)
+ ****************************************************************************
+ Morpheus: Solving the radially global drift-kinetic equation for ions in a tokamak.
+ Grid in psi and theta, Legendre modal in xi, polynomial spectral collocation in x.
+ Using double precision.
+ Serial job (1 process) detected.
+ Successfully read parameters from flowControl namelist in input.namelist.
+ Successfully read parameters from physicsParameters namelist in input.namelist.
+ Successfully read parameters from resolutionParameters namelist in input.namelist.
+ Successfully read parameters from otherNumericalParameters namelist in input.namelist.
+ mumps detected
+ superlu_dist not detected
+ [           1 ] ---- Physics parameters: ----
+ [           1 ] desiredU =   0.50000000000000000     
+ [           1 ] epsilon =   1.00000000000000002E-002
+ [           1 ] nuStar  =    0.0000000000000000     
+ [           1 ] nuPrime =   0.20000000298023224     
+ [           1 ] Geometry scheme:            0
+ [           1 ] Not making the local approximation
+ [           1 ] ---- Numerical parameters: ----
+ [           1 ] NpsiPerDiameter    =    1.0000000000000000     
+ [           1 ] psiDiameter        =   0.25000000000000000     
+ [           1 ] Npsi               =            5
+ [           1 ] Ntheta             =            5
+ [           1 ] Nxi                =            4
+ [           1 ] NL                 =            4
+ [           1 ] Nx                 =            3
+ [           1 ] NxPotentialsPerVth =    20.000000000000000     
+ [           1 ] xMax               =    5.0000000000000000     
+ [           1 ] solverTolerance    =   1.00000000000000008E-005
+ [           1 ] Psi derivative: centered finite differences, 5-point stencil
+ [           1 ] Theta derivative: spectral collocation
+ [           1 ] Using iterative solver
+ [           1 ] The matrix is          310 x         310  elements.
+ [           1 ] Processor            1  owns psi indices            1  to            5
+ [           1 ] Time to pre-assemble preconditioner matrix:   1.08850002288818359E-002  seconds.
+ [           1 ] Time to assemble preconditioner matrices:   2.18868255615234375E-004  seconds.
+ [           1 ] Time to pre-assemble matrix:   6.88385963439941406E-003  seconds.
+ [           1 ] Time to assemble matrices:   7.60555267333984375E-005  seconds.
+ aaa
+ a250
+ a555
+ bbb
+ [           1 ] Proc           1  is solving local kinetic equation at left boundary ...
+ [           1 ] Done solving for left boundary.  Time to solve:   1.28293037414550781E-003  seconds.
+ [           1 ] Solution at left boundary converged!  KSPConvergedReason =            2
+ [           1 ] Proc           1  is solving local kinetic equation at right boundary ...
+ [           1 ] Done solving for right boundary.  Time to solve:   7.18832015991210938E-004  seconds.
+ [           1 ] Solution at right boundary converged!  KSPConvergedReason =            2
+ ccc
+ ddd
+ eee
+ [           1 ] Using PETSc's serial sparse direct solver to factorize the preconditioner.
+ [           1 ] Beginning the main solve.  This could take a while ...
