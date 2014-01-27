@@ -42,7 +42,7 @@ programMode = 1;
 % The setting below matters for programMode = 3, 5, or 7 only:
 dataFileToPlot = 'm20130318_02_SFINCS_2013-03-18_14-47_convergenceScan_convergenceScan.mat';
 
-RHSMode = 1;
+RHSMode = 2;
 % 1 = Use a single right-hand side.
 % 2 = Use multiple right-hand sides to compute the transport matrix.
 
@@ -68,7 +68,8 @@ geometryScheme = 12;
 % 3 = Four-helicity approximation of the LHD inward-shifted configuration
 % 4 = Three-helicity approximation of the W7-X Standard configuration
 % 10= Read the boozer coordinate data from the file specified as "fort996boozer_file" below
-% 11= Read the boozer coordinate data from the file specified as "JGboozer_file" below
+% 11= Read the boozer coordinate data from the file specified as "JGboozer_file" below (stellarator symmetric file)
+% 12= Read the boozer coordinate data from the file specified as "JGboozer_file" below (non-stellarator symmetric file)
 
 % Additional parameters used only when geometryScheme=1:
 % B = BBar * B0OverBBar * [1 + epsilon_t * cos(theta) + epsilon_h * cos(helicity_l * theta - helicity_n * zeta)]
@@ -2529,7 +2530,6 @@ end
             % Eventually, this subroutine should be expanded to allow more options
             
             [zeta2D, theta2D] = meshgrid(zeta,theta);
-            stellarator_symmetry=1;
             
             switch geometryScheme
                case 1
@@ -2541,6 +2541,7 @@ end
                     BHarmonics_n = [0, 1];
                   end
                   BHarmonics_amplitudes = [epsilon_t, epsilon_h];
+                  BHarmonics_parity = [1, 1];
                   
                case 2
                   % LHD standard configuration.
@@ -2550,6 +2551,7 @@ end
                   BHarmonics_l = [1, 2, 1];
                   BHarmonics_n = [0, 1, 1];
                   BHarmonics_amplitudes = [-0.07053, 0.05067, -0.01476];
+                  BHarmonics_parity = [1, 1, 1];
                   
                   B0OverBBar = 1; % (Tesla)
                   R0 = 3.7481; % (meters)
@@ -2567,6 +2569,7 @@ end
                   BHarmonics_l = [1, 2, 1, 0];
                   BHarmonics_n = [0, 1, 1, 1];
                   BHarmonics_amplitudes = [-0.05927, 0.05267, -0.04956, 0.01045];
+                  BHarmonics_parity = [1, 1, 1, 1];
                   
                   B0OverBBar = 1; % (Tesla)
                   R0 = 3.6024; % (meters)
@@ -2583,6 +2586,7 @@ end
                   BHarmonics_l = [0, 1, 1];
                   BHarmonics_n = [1, 1, 0];
                   BHarmonics_amplitudes = [0.04645, -0.04351, -0.01902];
+                  BHarmonics_parity = [1, 1, 1];
                   
                   B0OverBBar = 3.089; % (Tesla)
                   %R0 = 5.5267; % (meters)
@@ -2637,7 +2641,7 @@ end
                     BHarmonics_l = modes(1,2:end);
                     BHarmonics_n = modes(2,2:end);
                     BHarmonics_amplitudes = modes(3,2:end)/B0OverBBar; % Store the values normalised to the B00 component. 
-                    
+                    BHarmonics_parity = ones(1,length(BHarmonics_amplitudes));
                   catch me
                     error('%s\n\nFile\n\t%s\ndoes not seem to be a valid vmec fort.996 output file.\n',...
                         me.message, fort996boozer_file)
@@ -2762,13 +2766,14 @@ end
                                   BHarmonics_l(nm00ind+1:end)];
                   BHarmonics_n = [BHarmonics_n(1:nm00ind-1),...
                                   BHarmonics_n(nm00ind+1:end)];
+                  BHarmonics_parity = ones(1,length(BHarmonics_amplitudes));
                   
                   dPsidr=2*psiAHat/a*normradius;
                   %nuPrime=nuN*abs(GHat+iota*IHat)/B0OverBBar/sqrt(THat);
                   nuPrime=nuN*(GHat+iota*IHat)/B0OverBBar/sqrt(THat);
                   
              case 12
-                  stellarator_symmetry=0;
+                  %Non-stellarator symmetric case
                   fid = fopen(JGboozer_file);
                   if fid<0
                       error('Unable to open file %s\n',JGboozer_file)
@@ -2786,11 +2791,10 @@ end
                       psiAHat  = header(5)/2/pi; %Convert the flux from Tm^2 to Tm^2/rad
                       a        = header(6);      %minor radius %m
                       
-                      max_no_of_modes=500;
+                      max_no_of_modes=1000;
                       modesm_new=NaN*zeros(1,max_no_of_modes);
                       modesn_new=NaN*zeros(1,max_no_of_modes);
-                      modesbc_new=NaN*zeros(1,max_no_of_modes);
-                      modesbs_new=NaN*zeros(1,max_no_of_modes);
+                      modesb_new=NaN*zeros(1,max_no_of_modes);
                       normradius_new=-inf;
                       no_of_modes_new=NaN;
                       iota_new=NaN;
@@ -2803,8 +2807,7 @@ end
                           no_of_modes_old=no_of_modes_new;
                           modesm_old=modesm_new;
                           modesn_old=modesn_new;
-                          modesbc_old=modesbc_new;
-                          modesbs_old=modesbs_new;
+                          modesb_old=modesb_new;
                           iota_old=iota_new;
                           G_old=G_new;
                           I_old=I_new;
@@ -2833,21 +2836,21 @@ end
                                   tmp=sscanf(tmp_str,'%d %d %f %f %f %f %f %f %f %f',10);
                                   if (abs(tmp(9))>min_Bmn_to_load) || (abs(tmp(10))>min_Bmn_to_load)
                                       modeind=modeind+1;
-                                      %if modeind > max_no_of_modes %Unnecessary to check this in matlab
-                                      %  error(' modeind > max_no_of_modes !')
-                                      %end
                                       modesm_new(modeind)=tmp(1);
                                       modesn_new(modeind)=tmp(2);
-                                      modesbc_new(modeind)=tmp(9);
-                                      modesbs_new(modeind)=tmp(10);
+                                      modesb_new(modeind)=tmp(9); %Cosinus component
+                                      
+                                      modeind=modeind+1;
+                                      modesm_new(modeind)=tmp(1);
+                                      modesn_new(modeind)=tmp(2);
+                                      modesb_new(modeind)=tmp(10); %Sinus component
                                   end
                               end
                           end
                           no_of_modes_new=modeind;
                           modesm_new(no_of_modes_new+1:end)=NaN;
                           modesn_new(no_of_modes_new+1:end)=NaN;
-                          modesbc_new(no_of_modes_new+1:end)=NaN;
-                          modesbs_new(no_of_modes_new+1:end)=NaN;
+                          modesb_new(no_of_modes_new+1:end)=NaN;
                       end
                       fclose(fid);
                   catch me
@@ -2860,8 +2863,7 @@ end
                   if minind==1
                     BHarmonics_l = modesm_old(1:no_of_modes_old);
                     BHarmonics_n = modesn_old(1:no_of_modes_old);
-                    BCosHarmonics_amplitudes = modesbc_old(1:no_of_modes_old);
-                    BSinHarmonics_amplitudes = modesbs_old(1:no_of_modes_old);
+                    BHarmonics_amplitudes = modesb_old(1:no_of_modes_old);
                     iota=iota_old;
                     GHat=G_old;
                     IHat=I_old;
@@ -2869,8 +2871,7 @@ end
                   else %minind=2
                     BHarmonics_l = modesm_new(1:no_of_modes_new);
                     BHarmonics_n = modesn_new(1:no_of_modes_new);
-                    BCosHarmonics_amplitudes = modesbc_new(1:no_of_modes_new);
-                    BSinHarmonics_amplitudes = modesbs_new(1:no_of_modes_new);
+                    BHarmonics_amplitudes = modesb_new(1:no_of_modes_new);
                     iota=iota_new;
                     GHat=G_new;
                     IHat=I_new;
@@ -2884,18 +2885,16 @@ end
                   if isempty(n0m0inds)
                     error(' B00 component is missing!')
                   end
-                  nm00ind=m0inds(n0m0inds);
-                  B0OverBBar=BCosHarmonics_amplitudes(nm00ind); %Assumes \bar{B}=1T
-                  BCosHarmonics_amplitudes=[BCosHarmonics_amplitudes(1:nm00ind-1),...
-                                         BCosHarmonics_amplitudes(nm00ind+1:end)]...
-                                        /B0OverBBar;
-                  BSinHarmonics_amplitudes=[BSinHarmonics_amplitudes(1:nm00ind-1),...
-                                         BSinHarmonics_amplitudes(nm00ind+1:end)]...
-                                        /B0OverBBar;
+                  nm00ind=m0inds(n0m0inds(1));
+                  B0OverBBar=BHarmonics_amplitudes(nm00ind); %Assumes \bar{B}=1T
+                  BHarmonics_amplitudes=[BHarmonics_amplitudes(1:nm00ind-1),...
+                                         BHarmonics_amplitudes(nm00ind+2:end)]...
+                                        /B0OverBBar
                   BHarmonics_l = [BHarmonics_l(1:nm00ind-1),...
-                                  BHarmonics_l(nm00ind+1:end)];
+                                  BHarmonics_l(nm00ind+2:end)]
                   BHarmonics_n = [BHarmonics_n(1:nm00ind-1),...
-                                  BHarmonics_n(nm00ind+1:end)];
+                                  BHarmonics_n(nm00ind+2:end)]
+                  BHarmonics_parity=((-1).^(0:length(BHarmonics_n)-1)+1)/2 %[1,0,1,0,1,0,1,0,...], i.e. cos,sin.cos,sin,...
                   
                   dPsidr=2*psiAHat/a*normradius;
                   nuPrime=nuN*(GHat+iota*IHat)/B0OverBBar/sqrt(THat);
@@ -2903,12 +2902,12 @@ end
              otherwise
                   error('Invalid setting for geometryScheme')
             end
-            if stellarator_symmetry
-              NHarmonics = numel(BHarmonics_amplitudes);
-              BHat = B0OverBBar * ones(Ntheta,Nzeta);
-              dBHatdtheta = zeros(Ntheta,Nzeta);
-              dBHatdzeta = zeros(Ntheta,Nzeta);
-              for i=1:NHarmonics
+            NHarmonics = numel(BHarmonics_amplitudes);
+            BHat = B0OverBBar * ones(Ntheta,Nzeta);
+            dBHatdtheta = zeros(Ntheta,Nzeta);
+            dBHatdzeta = zeros(Ntheta,Nzeta);
+            for i=1:NHarmonics
+              if BHarmonics_parity(i) %The cosine components of BHat
                 BHat = BHat + B0OverBBar * BHarmonics_amplitudes(i) *...
                        cos(BHarmonics_l(i) * theta2D - BHarmonics_n(i) * NPeriods * zeta2D);
                 dBHatdtheta = dBHatdtheta - B0OverBBar * BHarmonics_amplitudes(i) * BHarmonics_l(i) *...
@@ -2916,30 +2915,14 @@ end
                 dBHatdzeta = dBHatdzeta + B0OverBBar * BHarmonics_amplitudes(i) * BHarmonics_n(i) * NPeriods *...
                     sin(BHarmonics_l(i) * theta2D - BHarmonics_n(i) * NPeriods ...
                         * zeta2D);
-              end
-            else %Not stellarator symmetric: include cos and sine terms
-              NHarmonics = numel(BSinHarmonics_amplitudes); 
-              %The number of sin and cos components are equal in
-              %the file formats we can load so far
-              BHat = B0OverBBar * ones(Ntheta,Nzeta);
-              dBHatdtheta = zeros(Ntheta,Nzeta);
-              dBHatdzeta = zeros(Ntheta,Nzeta);
-              for i=1:NHarmonics
-                BHat = BHat ...
-                       + B0OverBBar * BCosHarmonics_amplitudes(i) *...
-                       cos(BHarmonics_l(i) * theta2D - BHarmonics_n(i) * NPeriods * zeta2D) ...
-                       + B0OverBBar * BSinHarmonics_amplitudes(i) *...
+              else  %The sine components of BHat
+                BHat = BHat + B0OverBBar * BHarmonics_amplitudes(i) *...
                        sin(BHarmonics_l(i) * theta2D - BHarmonics_n(i) * NPeriods * zeta2D);
-                dBHatdtheta = dBHatdtheta ...
-                    - B0OverBBar * BCosHarmonics_amplitudes(i) * BHarmonics_l(i) *...
-                    sin(BHarmonics_l(i) * theta2D - BHarmonics_n(i) * NPeriods * zeta2D) ...
-                    + B0OverBBar * BSinHarmonics_amplitudes(i) * BHarmonics_l(i) *...
-                    cos(BHarmonics_l(i) * theta2D - BHarmonics_n(i) * NPeriods * zeta2D);                  
-                dBHatdzeta = dBHatdzeta ...
-                    + B0OverBBar * BCosHarmonics_amplitudes(i) * BHarmonics_n(i) * NPeriods *...
-                    sin(BHarmonics_l(i) * theta2D - BHarmonics_n(i) * NPeriods * zeta2D) ...
-                    - B0OverBBar * BSinHarmonics_amplitudes(i) * BHarmonics_n(i) * NPeriods *...
-                    cos(BHarmonics_l(i) * theta2D - BHarmonics_n(i) * NPeriods * zeta2D);    
+                dBHatdtheta = dBHatdtheta + B0OverBBar * BHarmonics_amplitudes(i) * BHarmonics_l(i) *...
+                    cos(BHarmonics_l(i) * theta2D - BHarmonics_n(i) * NPeriods * zeta2D);
+                dBHatdzeta = dBHatdzeta - B0OverBBar * BHarmonics_amplitudes(i) * BHarmonics_n(i) * NPeriods *...
+                    cos(BHarmonics_l(i) * theta2D - BHarmonics_n(i) * NPeriods ...
+                        * zeta2D);                  
               end
             end
         end  
