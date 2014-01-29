@@ -59,6 +59,34 @@ contains
                "] Successfully opened magnetic equilibrium file ",trim(JGboozer_file),".  Nperiods = ",Nperiods
        end if
 
+    case (12)
+       fileUnit = 11
+       open(unit=fileUnit, file=JGboozer_file_NonStelSym, action="read", status="old", iostat=didFileAccessWork)
+       if (didFileAccessWork /= 0) then
+          print *,"Unable to open magnetic equilibrium file."
+          stop
+       else
+          do
+             read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
+             ! Skip lines that begin with "CC":
+             if (lineOfFile(1:2) /= "CC") exit
+          end do
+          read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) numbers
+          if (didFileAccessWork /= 0) then
+                print *,"Unable to read number of toroidal periods from the magnetic equilibrium file."
+             stop
+          else
+             NPeriods = numbers(4)
+          end if
+
+       end if
+
+       close(unit = fileUnit)
+       if (masterProcInSubComm) then
+          print *,"[",myCommunicatorIndex,&
+               "] Successfully opened magnetic equilibrium file ",trim(JGboozer_file_NonStelSym),".  Nperiods = ",Nperiods
+       end if
+
     case default
        print *,"Error! Invalid setting for geometryScheme."
        stop
@@ -87,6 +115,7 @@ contains
     PetscScalar, dimension(3) :: headerReals
     PetscScalar, dimension(6) :: surfHeader
     PetscScalar, dimension(4) :: dataNumbers
+    PetscScalar, dimension(8) :: data8Numbers
     integer, dimension(2) :: dataIntegers
     integer :: no_of_modes_old, no_of_modes_new, modeind, numB0s
     PetscScalar :: iota_old, iota_new, G_old, G_new, I_old, I_new
@@ -252,10 +281,10 @@ contains
        a = 0.5109d+0 ! (meters)
        GHat = -17.885d+0
        IHat = 0
-       psiAHat = -0.384935d+0 ! Tesla * meters^2
+       psiAHat = -0.384935d+0 ! Tesla * meters^2 / radian
 
     case (11)
-       ! Read VMEC file in .bc format used at IPP Greifswald
+       ! Read Boozer coordinate file in .bc format used at IPP Greifswald
 
        fileUnit = 11
        open(unit=fileUnit, file=JGboozer_file, action="read", status="old", iostat=didFileAccessWork)
@@ -276,8 +305,8 @@ contains
           end if
 
           NPeriods = headerIntegers(4)
-          psiAHat  = headerReals(1)/2/pi; !Convert the flux from Tm^2 to Tm^2/rad
-          a        = headerReals(2);      !minor radius in meters
+          psiAHat  = headerReals(1)/2/pi !Convert the flux from Tm^2 to Tm^2/rad
+          a        = headerReals(2)      !minor radius in meters
 
           end_of_file = .false.
 
@@ -323,10 +352,10 @@ contains
              ! Read the header for the magnetic surface:
              read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) surfHeader
 
-             normradius_new = sqrt(surfHeader(1));       ! r/a = sqrt(psi/psi_a)
-             iota_new = surfHeader(2);
-             G_new = surfHeader(3)*NPeriods/2/pi*(4*pi*1d-7); !Tesla*meter
-             I_new = surfHeader(4)/2/pi*(4*pi*1d-7);          !Tesla*meter
+             normradius_new = sqrt(surfHeader(1))       ! r/a = sqrt(psi/psi_a)
+             iota_new = surfHeader(2)
+             G_new = surfHeader(3)*NPeriods/2/pi*(4*pi*1d-7) !Tesla*meter
+             I_new = surfHeader(4)/2/pi*(4*pi*1d-7)          !Tesla*meter
 
              ! Skip units line:
              read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
@@ -339,7 +368,7 @@ contains
                 if (didFileAccessWork /= 0) then
                    proceed = .false.
                    end_of_file = .true.
-                else if (lineOfFile(8:8) == "s") then
+                else if (index(lineOfFile,"s") > 0) then
                    ! Next flux surface has been reached
                    proceed = .false.
                 else
@@ -414,6 +443,172 @@ contains
                " meters, equivalent to r/a = ",normradius
        end if
 
+    case (12)
+       ! Read Boozer coordinate file in a generalisation of the .bc format used at IPP Greifswald for non-stellarator symmetric equilibria 
+
+       fileUnit = 11
+       open(unit=fileUnit, file=JGboozer_file_NonStelSym, action="read", status="old", iostat=didFileAccessWork)
+       if (didFileAccessWork /= 0) then
+          print *,"Unable to open magnetic equilibrium file ",JGboozer_file_NonStelSym
+          stop
+       else
+          do
+             read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
+             if (lineOfFile(1:2) /= "CC") exit
+          end do
+
+          ! Read header line:
+          read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) headerIntegers, headerReals
+          if (didFileAccessWork /= 0) then
+             print *,"Unable to read header from the magnetic equilibrium file ",JGboozer_file_NonStelSym
+             stop
+          end if
+
+          NPeriods = headerIntegers(4)
+          psiAHat  = headerReals(1)/2/pi !Convert the flux from Tm^2 to Tm^2/rad
+          a        = headerReals(2)      !minor radius in meters
+
+          end_of_file = .false.
+
+          normradius_old = 0
+          no_of_modes_old = 0
+          modesm_old = 0
+          modesn_old = 0
+          modesb_old = 0
+          iota_old = 0
+          G_old = 0
+          I_old = 0
+          B0_old = 0
+
+          normradius_new = 0
+          no_of_modes_new = 0
+          modesm_new = 0
+          modesn_new = 0
+          modesb_new = 0
+          iota_new = 0
+          G_new = 0
+          I_new = 0
+          B0_new = 0
+
+          ! Skip a line
+          read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
+
+          do 
+             if ((normradius_new .ge. normradius_wish) .or. end_of_file) exit
+
+             normradius_old = normradius_new
+             no_of_modes_old = no_of_modes_new
+             modesm_old = modesm_new
+             modesn_old = modesn_new
+             modesb_old = modesb_new
+             iota_old = iota_new
+             G_old = G_new
+             I_old = I_new
+             B0_old = B0_new
+             numB0s = 0
+
+             ! Skip a line:
+             read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
+             ! Read the header for the magnetic surface:
+             read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) surfHeader
+
+             normradius_new = sqrt(surfHeader(1))       ! r/a = sqrt(psi/psi_a)
+             iota_new = surfHeader(2)
+             G_new = surfHeader(3)*NPeriods/2/pi*(4*pi*1d-7) !Tesla*meter
+             I_new = surfHeader(4)/2/pi*(4*pi*1d-7)          !Tesla*meter
+
+             ! Skip units line:
+             read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
+             proceed = .true.
+             modeind = 0
+             do
+                if (.not. proceed) exit
+
+                read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
+                if (didFileAccessWork /= 0) then
+                   proceed = .false.
+                   end_of_file = .true.
+                else if (index(lineOfFile,"s") > 0) then
+                   ! Next flux surface has been reached
+                   proceed = .false.
+                else
+                   read(unit=lineOfFile, fmt=*) dataIntegers, data8Numbers
+                   if (dataIntegers(1) == 0 .and. dataIntegers(2) == 0) then
+                      B0_new = data8Numbers(7)
+                      numB0s = numB0s + 1
+                   else if (abs(data8Numbers(7)) > min_Bmn_to_load) then
+                      if (modeind + 2 > max_no_of_modes) then
+                         print *,"The value of max_no_of_modes in geometry.F90 was insufficient."
+                         print *,"Either increase this value and recompile, or else increase min_Bmn_to_load."
+                         stop
+                      end if
+                      modeind = modeind + 1
+                      modesm_new(modeind) = dataIntegers(1)
+                      modesn_new(modeind) = dataIntegers(2)
+                      modesb_new(modeind) = data8Numbers(7) !Cosinus component
+                      modeind = modeind + 1
+                      modesm_new(modeind) = dataIntegers(1)
+                      modesn_new(modeind) = dataIntegers(2)
+                      modesb_new(modeind) = data8Numbers(8) !Sinus component
+                   end if
+                end if
+             end do
+             if (numB0s == 0) then
+                print *,"Error: no (0,0) mode found in magnetic equilibrium file ",JGboozer_file_NonStelSym
+             else if (numB0s > 1) then
+                print *,"Error: more than 1 (0,0) mode found in magnetic equilibrium file ",JGboozer_file_NonStelSym
+             end if
+             no_of_modes_new = modeind
+          end do
+
+       end if
+
+       close(unit = fileUnit)
+       if (masterProcInSubComm) then
+          print *,"[",myCommunicatorIndex,"] Successfully read magnetic equilibrium from file ",trim(JGboozer_file_NonStelSym)
+       end if
+
+       if (abs(normradius_old - normradius_wish) < abs(normradius_new - normradius_wish)) then
+          iota = iota_old
+          GHat = G_old
+          IHat = I_old
+          normradius = normradius_old
+          B0OverBBar = B0_old
+          NHarmonics = no_of_modes_old
+          allocate(BHarmonics_l(NHarmonics))
+          allocate(BHarmonics_n(NHarmonics))
+          allocate(BHarmonics_amplitudes(NHarmonics))
+          BHarmonics_l = modesm_old(1:NHarmonics)
+          BHarmonics_n = modesn_old(1:NHarmonics)
+          BHarmonics_amplitudes = modesb_old(1:NHarmonics)
+       else
+          iota = iota_new
+          GHat = G_new
+          IHat = I_new
+          normradius = normradius_new
+          B0OverBBar = B0_new
+          NHarmonics = no_of_modes_new
+          allocate(BHarmonics_l(NHarmonics))
+          allocate(BHarmonics_n(NHarmonics))
+          allocate(BHarmonics_amplitudes(NHarmonics))
+          BHarmonics_l = modesm_new(1:NHarmonics)
+          BHarmonics_n = modesn_new(1:NHarmonics)
+          BHarmonics_amplitudes = modesb_new(1:NHarmonics)
+       end if
+
+       allocate(BHarmonics_parity(NHarmonics))
+       do i = 0, NHarmonics/2-1
+          BHarmonics_parity(2*i+1)=.true.
+          BHarmonics_parity(2*i+2)=.false.
+       end do
+
+       BHarmonics_amplitudes = BHarmonics_amplitudes / B0OverBBar
+
+      if (masterProcInSubComm) then
+          print *,"[",myCommunicatorIndex,"] This computation is for the flux surface with minor radius ",normradius*a, &
+               " meters, equivalent to r/a = ",normradius
+       end if
+
     case default
        print *,"Error! Invalid geometryScheme"
        stop
@@ -425,7 +620,7 @@ contains
     dBHatdzeta = 0
 
     do i = 1, NHarmonics
-       if (BHarmonics_parity(i)) then
+       if (BHarmonics_parity(i)) then   ! The cosine components of BHat
           do itheta = 1,Ntheta
              BHat(itheta,:) = BHat(itheta,:) + B0OverBBar * BHarmonics_amplitudes(i) * &
                   cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
@@ -437,7 +632,7 @@ contains
                   sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
 
           end do
-       else
+       else  ! The sine components of BHat
           do itheta = 1,Ntheta
              BHat(itheta,:) = BHat(itheta,:) + B0OverBBar * BHarmonics_amplitudes(i) * &
                   sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)

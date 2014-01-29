@@ -69,7 +69,7 @@ geometryScheme = 12;
 % 4 = Three-helicity approximation of the W7-X Standard configuration
 % 10= Read the boozer coordinate data from the file specified as "fort996boozer_file" below
 % 11= Read the boozer coordinate data from the file specified as "JGboozer_file" below (stellarator symmetric file)
-% 12= Read the boozer coordinate data from the file specified as "JGboozer_file" below (non-stellarator symmetric file)
+% 12= Read the boozer coordinate data from the file specified as "JGboozer_file_NonStelSym" below (non-stellarator symmetric file)
 
 % Additional parameters used only when geometryScheme=1:
 % B = BBar * B0OverBBar * [1 + epsilon_t * cos(theta) + epsilon_h * cos(helicity_l * theta - helicity_n * zeta)]
@@ -95,11 +95,11 @@ fort996boozer_file='TJII-midradius_example_s_0493_fort.996';
 % PsiAHat setting below
 
 % geometryScheme=11 and 12 parameters
-%JGboozer_file='w7x-sc1.bc';
-JGboozer_file='out_neo-2_2_axisym';
+JGboozer_file='w7x-sc1.bc'; % stellarator symmetric example, geometryScheme=11
+JGboozer_file_NonStelSym='out_neo-2_2_axisym'; % non-stellarator symmetric example, geometryScheme=12, requires Nzeta=1
 normradius_wish=0.5;   %The calculation will be performed for the radius
-                       %closest to this one in the JGboozer_file
-min_Bmn_to_load=0;  %Filter out any Bmn components smaller than this
+                       %closest to this one in the JGboozer_file(_NonStelSym)
+min_Bmn_to_load=1e-4;  %Filter out any Bmn components smaller than this
 
 % --------------------------------------------------
 % Physics parameters:
@@ -140,15 +140,15 @@ end
 % psiAHat = psi_a / (\bar{B} * \bar{R}^2) (in both Gaussian and SI units)
 % where 2*pi*psi_a is the toroidal flux at the last closed flux surface
 % (the surface where psi_N = 1.)
-% The value of psiAHat here is over-written for geometryScheme = 2, 3, 4, or 11.
+% The value of psiAHat here is over-written for geometryScheme = 2, 3, 4, 11 and 12.
 psiAHat = 1;
-THat = 0.1;
+THat = 0.05;
 nHat = 1.0;
 
 % The radial electric field may be specified in one of 2 ways.
 % When RHSMode==1, dPhiHatdpsi is used and EStar is ignored.
 % When RHSMode==2, EStar is used and dPhiHatdpsi is ignored.
-dPhiHatdpsi = 3;
+dPhiHatdpsi = 0;
 EStar = 0;
 
 % The following two quantities matter for RHSMode=1 but not for RHSMode=2:
@@ -187,12 +187,12 @@ EHat = 0;
 %
 % Notice that collisionality is defined differently in the multi-species code!
 
-%nuN = nu_nbar * nHat/THat^(3/2);
-nuN = 1.3;
+nuN = nu_nbar * nHat/THat^(3/2);
+%nuN = 1.3;
 % If testQuasisymmetryIsomorphism is true, the value of nuN is changed so the physical collisionality
 % stays constant as the helicity is changed.
 
-nuPrime = NaN;%1;  %This value is over-written for geometryScheme = 4, 11
+nuPrime = NaN;%1;  %This value is over-written for geometryScheme = 4, 11, 12
 
 collisionOperator = 0;
 % 0 = Full linearized Fokker-Planck operator
@@ -234,13 +234,13 @@ include_fDivVE_term = false;
 
 % Number of grid points in the poloidal direction.
 % Memory and time requirements DO depend strongly on this parameter.
-NthetaConverged = 5;
+NthetaConverged = 19;
 Nthetas = floor(linspace(7,20,3));
 
 % Number of grid points in the toroidal direction
 % (per identical segment of the stellarator.)
 % Memory and time requirements DO depend strongly on this parameter.
-NzetaConverged = 7;
+NzetaConverged = 1;
 Nzetas = floor(linspace(7,20,3));
 
 % Number of Legendre polynomials used to represent the distribution
@@ -250,13 +250,13 @@ Nzetas = floor(linspace(7,20,3));
 % the collisionality. At high collisionality, this parameter can be as low
 % as ~ 5. At low collisionality, this parameter may need to be many 10s or
 % even > 100 for convergence.
-NxiConverged = 4;
+NxiConverged = 17;
 Nxis = floor(linspace(9,15,3));
 
 % Number of Legendre polynomials used to represent the Rosenbluth
 % potentials: (Typically 2 or 4 is plenty.)
 % Memory and time requirements do NOT depend strongly on this parameter.
-NLConverged = 2;
+NLConverged = 4;
 NLs = 2:2:6;
 
 % Number of grid points in energy used to represent the distribution
@@ -264,7 +264,7 @@ NLs = 2:2:6;
 % Memory and time requirements DO depend strongly on this parameter.
 % This parameter almost always needs to be at least 5.
 % Usually a value in the range 5-8 is plenty for convergence.
-NxConverged = 3;
+NxConverged = 15;
 Nxs=5:12;
 
 % Number of grid points in energy used to represent the Rosenbluth
@@ -388,6 +388,8 @@ figureOffset=20;
 
 plotSpeedGrid = true;
 %plotSpeedGrid = false;
+
+plotZetaTheta = false;
 
 % --------------------------------------------------
 % --------------------------------------------------
@@ -1475,7 +1477,7 @@ end
         estimated_nnz_original = estimated_nnz;
         fprintf('matrixSize: %d.\n',matrixSize)
         
-        if iteration==1
+        if plotZetaTheta && iteration==1
             figure(figureOffset+4);
             clf
             numRows=3;
@@ -2362,29 +2364,31 @@ end
                 format longg
                 transportMatrix
                 
-                if geometryScheme==11 || geometryScheme==4
-                  TSI=THat*1e3*1.6022e-19; %Assuming Tbar = 1 keV
-                  if species=='p'
-                    vT=sqrt(2*TSI/1.6726e-27);
-                    q=1.6022e-19;
-                  elseif species=='e'
-                    vT=sqrt(2*TSI/9.1094e-31);
-                    q=-1.6022e-19;
-                  end
-                  
-                  transportMatrixSI=zeros(3);
-                  transportMatrixSI(1:2,1:2)=transportMatrix(1:2,1:2) / ...
-                      (-B0OverBBar*(GHat+iota*IHat)/GHat^2/TSI^2*vT* ...
-                       q^2*dPsidr^2);
-                  transportMatrixSI(1:2,3)=transportMatrix(1:2,3) / ...
-                      (B0OverBBar*q/TSI/GHat*dPsidr);
-                  transportMatrixSI(3,1:2)=transportMatrix(3,1:2) / ...
-                      (-B0OverBBar*q/TSI/GHat*dPsidr);
-                  transportMatrixSI(3,3)=transportMatrix(3,3) / ...
-                      (B0OverBBar/vT/(GHat+iota*IHat));
+                if 0 %Uncomment here to print SI version on screen
+                  if geometryScheme==11 || geometryScheme==4
+                    TSI=THat*1e3*1.6022e-19; %Assuming Tbar = 1 keV
+                    if species=='p'
+                      vT=sqrt(2*TSI/1.6726e-27);
+                      q=1.6022e-19;
+                    elseif species=='e'
+                      vT=sqrt(2*TSI/9.1094e-31);
+                      q=-1.6022e-19;
+                    end
+                    
+                    transportMatrixSI=zeros(3);
+                    transportMatrixSI(1:2,1:2)=transportMatrix(1:2,1:2) / ...
+                        (-B0OverBBar*(GHat+iota*IHat)/GHat^2/TSI^2*vT* ...
+                         q^2*dPsidr^2);
+                    transportMatrixSI(1:2,3)=transportMatrix(1:2,3) / ...
+                        (B0OverBBar*q/TSI/GHat*dPsidr);
+                    transportMatrixSI(3,1:2)=transportMatrix(3,1:2) / ...
+                        (-B0OverBBar*q/TSI/GHat*dPsidr);
+                    transportMatrixSI(3,3)=transportMatrix(3,3) / ...
+                        (B0OverBBar/vT/(GHat+iota*IHat));
 
-                  disp(['In SI units for species ',species])
-                  transportMatrixSI
+                    disp(['In SI units for species ',species])
+                    transportMatrixSI
+                  end
                 end
             end
             
@@ -2397,7 +2401,7 @@ end
                 fprintf('   > Modified FSA flow: %g\n',modifiedFSAFlowThatShouldBeConstant)
             end
             
-            if programMode == 1
+            if plotZetaTheta && programMode == 1
                 figure(4+figureOffset)
                 
                 subplot(numRows,numCols,plotNum); plotNum=plotNum+1;
@@ -2504,7 +2508,7 @@ end
                       error('%s\n\nFile\n\t%s\ndoes not seem to be a valid vmec fort.996 output file.\n',...
                             me.message, fort996boozer_file)
                     end
-                case {11,12}
+                case 11
                     fid = fopen(JGboozer_file);
                     if fid<0
                         error('Unable to open file %s\n',JGboozer_file)
@@ -2520,6 +2524,23 @@ end
                     catch me
                       error('%s\n\nFile\n\t%s\ndoes not seem to be a valid vmec .bc output file.\n',...
                             me.message, JGboozer_file)
+                    end
+                case 12
+                    fid = fopen(JGboozer_file_NonStelSym);
+                    if fid<0
+                        error('Unable to open file %s\n',JGboozer_file_NonStelSym)
+                    end
+                    try
+                        tmp_str=fgetl(fid);       %Skip comment line
+                        while strcmp(tmp_str(1:2),'CC');
+                            tmp_str=fgetl(fid);     %Skip comment line
+                        end
+                        header=fscanf(fid,'%d %d %d %d %f %f %f\n',7);
+                        NPeriods = header(4);
+                        fclose(fid);
+                    catch me
+                      error('%s\n\nFile\n\t%s\ndoes not seem to be a valid vmec .bc output file.\n',...
+                            me.message, JGboozer_file_NonStelSym)
                     end
                 otherwise
                     error('Invalid setting for geometryScheme')
@@ -2598,7 +2619,7 @@ end
                   radius=0.2555; %m, radius of the flux surface
                   dPsidr=2*psiAHat/a*(radius/a);
                   %nuPrime=nuN*abs(GHat+iota*IHat)/B0OverBBar/sqrt(THat);
-                  nuPrime=nuN*(GHat+iota*IHat)/B0OverBBar/sqrt(THat);
+                  nuPrime=nuN*(GHat+iota*IHat)/B0OverBBar/sqrt(THat)
 
                case 10
                   fid = fopen(fort996boozer_file);
@@ -2770,13 +2791,13 @@ end
                   
                   dPsidr=2*psiAHat/a*normradius;
                   %nuPrime=nuN*abs(GHat+iota*IHat)/B0OverBBar/sqrt(THat);
-                  nuPrime=nuN*(GHat+iota*IHat)/B0OverBBar/sqrt(THat);
+                  nuPrime=nuN*(GHat+iota*IHat)/B0OverBBar/sqrt(THat)
                   
              case 12
                   %Non-stellarator symmetric case
-                  fid = fopen(JGboozer_file);
+                  fid = fopen(JGboozer_file_NonStelSym);
                   if fid<0
-                      error('Unable to open file %s\n',JGboozer_file)
+                      error('Unable to open file %s\n',JGboozer_file_NonStelSym)
                   end
                   
                   try
@@ -2855,7 +2876,7 @@ end
                       fclose(fid);
                   catch me
                       error('%s\n\nFile\n\t%s\ndoes not seem to be a valid .bc geometry file.\n',...
-                          me.message, JGboozer_file)
+                          me.message, JGboozer_file_NonStelSym)
                   end
 
                   [~,minind]=min([(normradius_old-normradius_wish)^2,...
@@ -2889,16 +2910,20 @@ end
                   B0OverBBar=BHarmonics_amplitudes(nm00ind); %Assumes \bar{B}=1T
                   BHarmonics_amplitudes=[BHarmonics_amplitudes(1:nm00ind-1),...
                                          BHarmonics_amplitudes(nm00ind+2:end)]...
-                                        /B0OverBBar
+                                        /B0OverBBar;
                   BHarmonics_l = [BHarmonics_l(1:nm00ind-1),...
-                                  BHarmonics_l(nm00ind+2:end)]
+                                  BHarmonics_l(nm00ind+2:end)];
                   BHarmonics_n = [BHarmonics_n(1:nm00ind-1),...
-                                  BHarmonics_n(nm00ind+2:end)]
-                  BHarmonics_parity=((-1).^(0:length(BHarmonics_n)-1)+1)/2 %[1,0,1,0,1,0,1,0,...], i.e. cos,sin.cos,sin,...
+                                  BHarmonics_n(nm00ind+2:end)];
+                  BHarmonics_parity=((-1).^(0:length(BHarmonics_n)-1)+1)/2; %[1,0,1,0,1,0,1,0,...], i.e. cos,sin.cos,sin,...
                   
                   dPsidr=2*psiAHat/a*normradius;
                   nuPrime=nuN*(GHat+iota*IHat)/B0OverBBar/sqrt(THat);
-              
+                  
+                  %disp([num2str(iota),', ',num2str(GHat),', ',num2str(IHat),', '...
+                  %      ,num2str(B0OverBBar),', ',num2str(psiAHat),', ' ...
+                  %                    ,num2str(a),', ',num2str(NPeriods)])
+                  
              otherwise
                   error('Invalid setting for geometryScheme')
             end

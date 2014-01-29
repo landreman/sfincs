@@ -1,4 +1,4 @@
-EXTRA_INCLUDE =
+EXTRA_INCLUDE = -I${PETSC_DIR}/include
 EXTRA_LIBS =
 
 include ${PETSC_DIR}/conf/variables

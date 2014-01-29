@@ -38,7 +38,7 @@
   ! If you make the sign of programMode negative, the program will print the number of runs required
   ! for the scan corresponding to abs(programMode) and then exit without actually carrying out any solves.
 
-  RHSMode = 1
+  RHSMode = 2
   ! Options for RHSMode:
   ! 1 = Solve for a single right-hand side.
   ! 2 = Solve for three right-hand sides to get the full 3x3 transport matrix.
@@ -72,13 +72,14 @@
 
 &geometryParameters
 
-  geometryScheme = 4
+  geometryScheme = 12
   ! 1 = Three-helicity model
   ! 2 = Three-helicity approximation of the LHD standard configuration
   ! 3 = Four-helicity approximation of the LHD inward-shifted configuration
   ! 4 = Three-helicity approximation of the W7-X standard configuration
   ! 10= Read the boozer coordinate data from the file specified as "fort996boozer_file" below
-  ! 11= Read the boozer coordinate data from the file specified as "JGboozer_file" below
+  ! 11= Read the boozer coordinate data from the file specified as "JGboozer_file" below (stellarator symmetric file)
+  ! 12= Read the boozer coordinate data from the file specified as "JGboozer_file" below (non-stellarator symmetric file)
  
 
   ! The next few options only matter for geometryScheme = 1, in which the magnetic field is taken to have the form
@@ -119,15 +120,16 @@
   ! Note that PsiA is not stored in the fort.996 file, so we use the
   ! PsiAHat value from the "physics parameters" namelist below.
 
-  ! The remaining options only matter for geometryScheme = 11:
+  ! The remaining options only matter for geometryScheme = 11 and 12:
 
-  JGboozer_file = "../../../equilibria/w7x-sc1.bc"
+  JGboozer_file = "../../equilibria/w7x-sc1.bc"                     ! stellarator symmetric example, geometryScheme = 11
+  JGboozer_file_NonStelSym = "../../equilibria/out_neo-2_2_axisym"  ! non-stellarator symmetric example, geometryScheme = 12, requires Nzeta=1
 
   normradius_wish = 0.5d+0
   !The calculation will be performed for the radius
-  !closest to this one in the JGboozer_file
+  !closest to this one in the JGboozer_file(_NonStelSym)
 
-  min_Bmn_to_load = 1d-15
+  min_Bmn_to_load = 1d-4
   !Filter out any Bmn components smaller than this.
 
 /
@@ -149,20 +151,29 @@
   ! where
   ! c = speed of light
   ! e = proton charge
-  Delta = 0.0011d+0
+  ! Delta = 0.0011d+0
+  
+  Delta = 4.5694d-3 
+  ! reference values: \bar{T}=1 keV, \bar{n}=10^20 m^-3,
+  ! \bar{Phi}=1 kV, \bar{B}=1 T, \bar{R}=1 m, proton mass
 
 
-  omega = 0.0014d+0
+  ! omega = 0.0014d+0
+  
+  omega = 2.2847d-3 
+  ! reference values: \bar{T}=1 keV, \bar{n}=10^20 m^-3,
+  ! \bar{Phi}=1 kV, \bar{B}=1 T, \bar{R}=1 m, proton mass
+
 
   ! psiAHat = psi_a / (\bar{B} * \bar{R}^2) (in both Gaussian and SI units)
   ! where 2*pi*psi_a is the toroidal flux at the last closed flux surface
   ! (the surface where psi_N = 1.)
-  ! The value of psiAHat here is over-written for geometryScheme = 2, 3, 4, or 11.
+  ! The value of psiAHat here is over-written for geometryScheme = 2, 3, 4, 11 and 12.
   psiAHat = 0.03d+0
 
-  THat = 1.6d+0
+  THat = 0.05d+0
 
-  nHat = 0.7d+0
+  nHat = 1.0d+0
 
   ! The following three quantities matter for RHSMode=1 but not for RHSMode=2:
   dTHatdpsi = -0.7d+0
@@ -186,8 +197,11 @@
   EStarMax = 0.1
   NEStar = 3
 
-  nuN = 1.3d+0
-  nuPrime = 0.3d+0
+  !nuN = 0.2681d+0
+  !nuPrime = 4.9085d+0
+
+  nuN = 0.75824d+0
+  nuPrime = 19.6333d+0
   ! There are 2 different ways to specify the collisionality: nuN and nuPrime.
   ! If RHSMode == 1, nuN is used and nuPrime is ignored.
   ! If RHSMode == 2, nuPrime is used and nuN is ignored.
@@ -243,8 +257,8 @@
   ! If useDKESExBDrift=true, the ExB drift term in the df/dtheta and df/dzeta terms is taken
   ! to be E x B / <B^2> instead of E x B / B^2.
 
-  include_fDivVE_term = .true.
-  !include_fDivVE_term = .false.
+  !include_fDivVE_term = .true.
+  include_fDivVE_term = .false.
   ! If true, a term f_1 div (v_E) is included in the kinetic equation.
   ! This term may make sense to include with the partial trajectory model
   ! as it restores Liouville's theorem (particle conservation) and eliminates 
@@ -271,15 +285,15 @@
   
   ! Number of grid points in the poloidal direction.
   ! Memory and time requirements DO depend strongly on this parameter.
-  Ntheta = 9
+  Ntheta = 19
   NthetaMinFactor = 1
   NthetaMaxFactor = 2.5
-  NthetaNumRuns = 0
+  NthetaNumRuns = 3
 
   ! Number of grid points in the toroidal direction
   ! (per identical segment of the stellarator.)
   ! Memory and time requirements DO depend strongly on this parameter.
-  Nzeta = 11
+  Nzeta = 1
   NzetaMinFactor = 1
   NzetaMaxFactor = 1.3
   NzetaNumRuns = 0
@@ -290,10 +304,10 @@
   ! the collisionality. At high collisionality, this parameter can be as low
   ! as ~ 5. At low collisionality, this parameter may need to be many 10s or
   ! even > 100 for convergence.
-  Nxi = 7
+  Nxi = 17
   NxiMinFactor = 0.5
   NxiMaxFactor = 2.2
-  NxiNumRuns = 0
+  NxiNumRuns = 3
   
   ! Number of Legendre polynomials used to represent the Rosenbluth
   ! potentials. Except in exceptional circumstances, this number should be 4.
@@ -308,14 +322,14 @@
   ! This parameter almost always needs to be at least 5.
   ! Usually a value in the range 5-8 is plenty for convergence, though sometimes
   ! you may need to go up to 10-15.
-  Nx = 5
+  Nx = 15
   NxMinFactor = 0.6
   NxMaxFactor = 2
-  NxNumRuns = 0
+  NxNumRuns = 3
 
   ! Number of grid points in energy used to represent the Rosenbluth potentials.
   ! Memory and time requirements do NOT depend strongly on this parameter.
-  NxPotentialsPerVth = 40d+0
+  NxPotentialsPerVth = 40 
   NxPotentialsPerVthMinFactor = 0.5
   NxPotentialsPerVthMaxFactor = 2
   NxPotentialsPerVthNumRuns = 0
