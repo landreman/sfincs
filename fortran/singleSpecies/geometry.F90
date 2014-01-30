@@ -607,7 +607,7 @@ contains
       if (masterProcInSubComm) then
           print *,"[",myCommunicatorIndex,"] This computation is for the flux surface with minor radius ",normradius*a, &
                " meters, equivalent to r/a = ",normradius
-       end if
+      end if
 
     case default
        print *,"Error! Invalid geometryScheme"

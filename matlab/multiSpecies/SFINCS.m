@@ -61,13 +61,14 @@ filenameNote = '';
 % Geometry parameters:
 % --------------------------------------------------
 
-geometryScheme = 11;
+geometryScheme = 12;
 % 1 = Two-helicity model
 % 2 = Three-helicity approximation of the LHD standard configuration
 % 3 = Four-helicity approximation of the LHD inward-shifted configuration
 % 4 = Three-helicity approximation of the W7-X Standard configuration
 % 10= Read the boozer coordinate data from the file specified as "fort996boozer_file" below
-% 11= Read the boozer coordinate data from the file specified as "JGboozer_file" below
+% 11= Read the boozer coordinate data from the file specified as "JGboozer_file" below (stellarator symmetric file)
+% 12= Read the boozer coordinate data from the file specified as "JGboozer_file_NonStelSym" below (non-stellarator symmetric file)
 
 % Additional parameters used only when geometryScheme=1:
 % B = BBar * B0OverBBar * [1 + epsilon_t * cos(theta) + epsilon_h * cos(helicity_l * theta - helicity_n * zeta)]
@@ -92,11 +93,12 @@ fort996boozer_file='TJII-midradius_example_s_0493_fort.996';
 % Note that PsiA is not stored in the fort.996 file, so we use the
 % PsiAHat setting below
 
-% geometryScheme=11 parameters:
-JGboozer_file='w7x-sc1.bc';
+% geometryScheme=11 and 12 parameters:
+JGboozer_file='w7x-sc1.bc'; % stellarator symmetric example, geometryScheme=11
+JGboozer_file_NonStelSym='out_neo-2_2_axisym'; % non-stellarator symmetric example, geometryScheme=12, requires Nzeta=1
 normradius_wish=0.5;   %The calculation will be performed for the radius
-                       %closest to this one in the JGboozer_file
-min_Bmn_to_load=1e-2;  %Filter out any Bmn components smaller than this
+                       %closest to this one in the JGboozer_file(_NonStelSym)
+min_Bmn_to_load=1e-4;  %Filter out any Bmn components smaller than this
 
 % --------------------------------------------------
 % Species parameters:
@@ -113,12 +115,13 @@ min_Bmn_to_load=1e-2;  %Filter out any Bmn components smaller than this
 % Here is an example for 1 species:
 Zs = 1;
 mHats = 1;
-nHats = 0.6;
-dnHatdpsiNs = -0.3;
-THats = 0.8;
-dTHatdpsiNs = -0.2;
+nHats = 1.0;
+dnHatdpsiNs = -0.5;
+THats = 0.1;
+dTHatdpsiNs = -0.7;
 %}
 
+%
 % Here is an example for 2 species:
 Zs = [1, 6];
 mHats = [1, 6];
@@ -126,7 +129,7 @@ nHats = [0.6, 0.009];
 dnHatdpsiNs = [-0.3, -0.001];
 THats = [0.8, 0.8];
 dTHatdpsiNs = [-0.2, -0.2];
-
+%
 
 
 % --------------------------------------------------
@@ -140,16 +143,18 @@ dTHatdpsiNs = [-0.2, -0.2];
 % where
 % c = speed of light
 % e = proton charge
-Delta = 0.001;
+%Delta = 0.001;
+Delta = 4.5694e-3; %reference values: \bar{T}=1 keV, \bar{n}=10^20 m^-3,
+                   %\bar{Phi}=1 kV, \bar{B}=1 T, \bar{R}=1 m, \bar{m}=proton mass
 
 % alpha = e * \bar{Phi} / \bar{T} (in both Gaussian and SI units)
 % where again e = proton charge.
-alpha = 1.0;
+alpha = 1.0;  % \bar{T}=1 keV, \bar{Phi}=1 kV
 
 % psiAHat = psi_a / (\bar{B} * \bar{R}^2) (in both Gaussian and SI units)
 % where 2*pi*psi_a is the toroidal flux at the last closed flux surface
 % (the surface where psi_N = 1.)
-% The value of psiAHat here is over-written for geometryScheme = 2, 3, 4, or 11.
+% The value of psiAHat here is over-written for geometryScheme = 2, 3, 4, 11 and 12.
 psiAHat = 0.03;
 
 % Inductive electric field (often 0).
@@ -161,7 +166,7 @@ psiAHat = 0.03;
 EParallelHat = 0;
 
 % Radial electric field.
-dPhiHatdpsiN = 3.0;
+dPhiHatdpsiN = 0.0;
 
 % nu_n is the collisionality at the reference parameters.
 % More precisely, nu_n = \bar{nu} * \bar{R} / \bar{v} (in both Gaussian and SI units)
@@ -179,7 +184,9 @@ dPhiHatdpsiN = 3.0;
 %
 %
 % Notice that collisionality is defined differently in the single-species code!
-nu_n = 0.00831565d+0;
+%nu_n = 0.00831565d+0;
+nu_n = 8.4774e-3;  %reference values: \bar{T}=1 keV, \bar{n}=10^20 m^-3, \bar{Phi}=1 kV, 
+                   %\bar{B}=1 T, \bar{R}=1 m, \bar{m}=proton mass, ln(Lambda)=17.3
 
 % If testQuasisymmetryIsomorphism is true, the value of nu_n is changed so
 % the physical collisionality stays constant as the helicity is changed.
@@ -224,14 +231,14 @@ include_fDivVE_term = false;
 
 % Number of grid points in the poloidal direction.
 % Memory and time requirements DO depend strongly on this parameter.
-NthetaConverged = 5;
+NthetaConverged = 19;
 %Nthetas = NthetaConverged;
 Nthetas = floor(linspace(5,22,9));
 
 % Number of grid points in the toroidal direction
 % (per identical segment of the stellarator.)
 % Memory and time requirements DO depend strongly on this parameter.
-NzetaConverged = 7;
+NzetaConverged = 5;
 %Nzetas = NzetaConverged;
 Nzetas = floor(linspace(5,20,9));
 
@@ -242,14 +249,14 @@ Nzetas = floor(linspace(5,20,9));
 % the collisionality. At high collisionality, this parameter can be as low
 % as ~ 5. At low collisionality, this parameter may need to be many 10s or
 % even > 100 for convergence.
-NxiConverged = 4;
+NxiConverged = 17;
 %Nxis = NxiConverged;
 Nxis = floor(linspace(4,20,9));
 
 % Number of Legendre polynomials used to represent the Rosenbluth
 % potentials: (Typically 2 or 4 is plenty.)
 % Memory and time requirements do NOT depend strongly on this parameter.
-NLConverged = 2;
+NLConverged = 4;
 %NLs = NLConverged;
 NLs = 4:1:6;
 
@@ -260,7 +267,7 @@ NLs = 4:1:6;
 % Sometimes 5-7 is sufficient, but sometimes it needs to be as high as
 % 10-15.  Typically this parameter needs to be higher as the number of
 % species is increased.
-NxConverged = 3;
+NxConverged = 15;
 Nxs=4:15;
 
 % Number of grid points in energy used to represent the Rosenbluth
@@ -1336,6 +1343,7 @@ end
         end
         
         if RHSMode == 2
+            error('RHSMode = 2 is not correctly implemented yet!')
             nu_n = nuPrime * sqrt(THat) * B0OverBBar / (GHat+iota*IHat);
         end
         
@@ -2662,6 +2670,23 @@ end
                       error('%s\n\nFile\n\t%s\ndoes not seem to be a valid vmec .bc output file.\n',...
                             me.message, JGboozer_file)
                     end
+                case 12
+                    fid = fopen(JGboozer_file_NonStelSym);
+                    if fid<0
+                        error('Unable to open file %s\n',JGboozer_file_NonStelSym)
+                    end
+                    try
+                        tmp_str=fgetl(fid);       %Skip comment line
+                        while strcmp(tmp_str(1:2),'CC');
+                            tmp_str=fgetl(fid);     %Skip comment line
+                        end
+                        header=fscanf(fid,'%d %d %d %d %f %f %f\n',7);
+                        NPeriods = header(4);
+                        fclose(fid);
+                    catch me
+                      error('%s\n\nFile\n\t%s\ndoes not seem to be a valid vmec .bc output file.\n',...
+                            me.message, JGboozer_file_NonStelSym)
+                    end
                 otherwise
                     error('Invalid setting for geometryScheme')
             end
@@ -2682,6 +2707,7 @@ end
                     BHarmonics_n = [0, 1];
                   end
                   BHarmonics_amplitudes = [epsilon_t, epsilon_h];
+                  BHarmonics_parity = [1, 1];
                   
                   %{
                   % Note: the next line should probably be removed
@@ -2697,6 +2723,7 @@ end
                   BHarmonics_l = [1, 2, 1];
                   BHarmonics_n = [0, 1, 1];
                   BHarmonics_amplitudes = [-0.07053, 0.05067, -0.01476];
+                  BHarmonics_parity = [1, 1, 1];
                   
                   B0OverBBar = 1; % (Tesla)
                   R0 = 3.7481; % (meters)
@@ -2714,6 +2741,7 @@ end
                   BHarmonics_l = [1, 2, 1, 0];
                   BHarmonics_n = [0, 1, 1, 1];
                   BHarmonics_amplitudes = [-0.05927, 0.05267, -0.04956, 0.01045];
+                  BHarmonics_parity = [1, 1, 1, 1];
                   
                   B0OverBBar = 1; % (Tesla)
                   R0 = 3.6024; % (meters)
@@ -2730,6 +2758,7 @@ end
                   BHarmonics_l = [0, 1, 1];
                   BHarmonics_n = [1, 1, 0];
                   BHarmonics_amplitudes = [0.04645, -0.04351, -0.01902];
+                  BHarmonics_parity = [1, 1, 1];
                   
                   B0OverBBar = 3.089; % (Tesla)
                   %R0 = 5.5267; % (meters)
@@ -2776,6 +2805,7 @@ end
                     BHarmonics_l = modes(1,2:end);
                     BHarmonics_n = modes(2,2:end);
                     BHarmonics_amplitudes = modes(3,2:end)/B0OverBBar; % Store the values normalised to the B00 component. 
+                    BHarmonics_parity = ones(1,length(BHarmonics_amplitudes));
                     
                   catch me
                     error('%s\n\nFile\n\t%s\ndoes not seem to be a valid vmec fort.996 output file.\n',...
@@ -2838,7 +2868,7 @@ end
                                       proceed=0;
                                       end_of_file=1;
                                   end
-                              elseif tmp_str(8)=='s' %Next flux surface has been reached
+                              elseif not(isempty(find(tmp_str=='s'))) %Next flux surface has been reached
                                   proceed=0;
                               else
                                   tmp=sscanf(tmp_str,'%d %d %f %f %f %f',6);
@@ -2899,6 +2929,130 @@ end
                                   BHarmonics_l(nm00ind+1:end)];
                   BHarmonics_n = [BHarmonics_n(1:nm00ind-1),...
                                   BHarmonics_n(nm00ind+1:end)];
+                  BHarmonics_parity = ones(1,length(BHarmonics_amplitudes));
+             case 12
+                  %Non-stellarator symmetric case
+                  fid = fopen(JGboozer_file_NonStelSym);
+                  if fid<0
+                      error('Unable to open file %s\n',JGboozer_file_NonStelSym)
+                  end
+                  
+                  try
+                      tmp_str=fgetl(fid);
+                      while strcmp(tmp_str(1:2),'CC');
+                          tmp_str=fgetl(fid); %Skip comment line
+                      end
+                      header=fscanf(fid,'%d %d %d %d %f %f %f\n',7);
+                      fgetl(fid);  %Skip variable name line
+                      
+                      NPeriods = header(4);
+                      psiAHat  = header(5)/2/pi; %Convert the flux from Tm^2 to Tm^2/rad
+                      a        = header(6);      %minor radius %m
+                      
+                      max_no_of_modes=1000;
+                      modesm_new=NaN*zeros(1,max_no_of_modes);
+                      modesn_new=NaN*zeros(1,max_no_of_modes);
+                      modesb_new=NaN*zeros(1,max_no_of_modes);
+                      normradius_new=-inf;
+                      no_of_modes_new=NaN;
+                      iota_new=NaN;
+                      G_new=NaN;
+                      I_new=NaN;
+                      end_of_file=0;
+                      
+                      while (normradius_new<normradius_wish) && not(end_of_file)
+                          normradius_old=normradius_new;
+                          no_of_modes_old=no_of_modes_new;
+                          modesm_old=modesm_new;
+                          modesn_old=modesn_new;
+                          modesb_old=modesb_new;
+                          iota_old=iota_new;
+                          G_old=G_new;
+                          I_old=I_new;
+                          
+                          fgetl(fid);
+                          surfheader=fscanf(fid,'%f %f %f %f %f %f\n',6);
+                          
+                          normradius_new=sqrt(surfheader(1)); %r/a=sqrt(psi/psi_a)
+                          iota_new=surfheader(2);
+                          G_new=surfheader(3)*NPeriods/2/pi*(4*pi*1e-7); %Tesla*meter
+                          I_new=surfheader(4)/2/pi*(4*pi*1e-7);          %Tesla*meter
+                          
+                          fgetl(fid); %Skip units line
+                          proceed=1;
+                          modeind=0;
+                          while proceed
+                              tmp_str=fgetl(fid);
+                              if length(tmp_str)==1
+                                  if tmp_str==-1 %End of file has been reached
+                                      proceed=0;
+                                      end_of_file=1;
+                                  end
+                              elseif not(isempty(find(tmp_str=='s'))) %Next flux surface has been reached
+                                  proceed=0;
+                              else
+                                  tmp=sscanf(tmp_str,'%d %d %f %f %f %f %f %f %f %f',10);
+                                  if (abs(tmp(9))>min_Bmn_to_load) || (abs(tmp(10))>min_Bmn_to_load)
+                                      modeind=modeind+1;
+                                      modesm_new(modeind)=tmp(1);
+                                      modesn_new(modeind)=tmp(2);
+                                      modesb_new(modeind)=tmp(9); %Cosinus component
+                                      
+                                      modeind=modeind+1;
+                                      modesm_new(modeind)=tmp(1);
+                                      modesn_new(modeind)=tmp(2);
+                                      modesb_new(modeind)=tmp(10); %Sinus component
+                                  end
+                              end
+                          end
+                          no_of_modes_new=modeind;
+                          modesm_new(no_of_modes_new+1:end)=NaN;
+                          modesn_new(no_of_modes_new+1:end)=NaN;
+                          modesb_new(no_of_modes_new+1:end)=NaN;
+                      end
+                      fclose(fid);
+                  catch me
+                      error('%s\n\nFile\n\t%s\ndoes not seem to be a valid .bc geometry file.\n',...
+                          me.message, JGboozer_file_NonStelSym)
+                  end
+
+                  [~,minind]=min([(normradius_old-normradius_wish)^2,...
+                                  (normradius_new-normradius_wish)^2]);
+                  if minind==1
+                    BHarmonics_l = modesm_old(1:no_of_modes_old);
+                    BHarmonics_n = modesn_old(1:no_of_modes_old);
+                    BHarmonics_amplitudes = modesb_old(1:no_of_modes_old);
+                    iota=iota_old;
+                    GHat=G_old;
+                    IHat=I_old;
+                    normradius=normradius_old;
+                  else %minind=2
+                    BHarmonics_l = modesm_new(1:no_of_modes_new);
+                    BHarmonics_n = modesn_new(1:no_of_modes_new);
+                    BHarmonics_amplitudes = modesb_new(1:no_of_modes_new);
+                    iota=iota_new;
+                    GHat=G_new;
+                    IHat=I_new;
+                    normradius=normradius_new;
+                  end
+                  disp(['The calculation is performed for radius ' ...
+                        ,num2str(normradius*a),' m , r/a=',num2str(normradius)])
+                  
+                  m0inds=find(BHarmonics_l==0);
+                  n0m0inds=find(BHarmonics_n(m0inds)==0);
+                  if isempty(n0m0inds)
+                    error(' B00 component is missing!')
+                  end
+                  nm00ind=m0inds(n0m0inds(1));
+                  B0OverBBar=BHarmonics_amplitudes(nm00ind); %Assumes \bar{B}=1T
+                  BHarmonics_amplitudes=[BHarmonics_amplitudes(1:nm00ind-1),...
+                                         BHarmonics_amplitudes(nm00ind+2:end)]...
+                                        /B0OverBBar;
+                  BHarmonics_l = [BHarmonics_l(1:nm00ind-1),...
+                                  BHarmonics_l(nm00ind+2:end)];
+                  BHarmonics_n = [BHarmonics_n(1:nm00ind-1),...
+                                  BHarmonics_n(nm00ind+2:end)];
+                  BHarmonics_parity=((-1).^(0:length(BHarmonics_n)-1)+1)/2; %[1,0,1,0,1,0,1,0,...], i.e. cos,sin.cos,sin,...
                   
                otherwise
                   error('Invalid setting for geometryScheme')
@@ -2909,12 +3063,23 @@ end
             dBHatdtheta = zeros(Ntheta,Nzeta);
             dBHatdzeta = zeros(Ntheta,Nzeta);
             for i=1:NHarmonics
-              BHat = BHat + B0OverBBar * BHarmonics_amplitudes(i) *...
-                     cos(BHarmonics_l(i) * theta2D - BHarmonics_n(i) * NPeriods * zeta2D);
-              dBHatdtheta = dBHatdtheta - B0OverBBar * BHarmonics_amplitudes(i) * BHarmonics_l(i) *...
-                  sin(BHarmonics_l(i) * theta2D - BHarmonics_n(i) * NPeriods * zeta2D);
-              dBHatdzeta = dBHatdzeta + B0OverBBar * BHarmonics_amplitudes(i) * BHarmonics_n(i) * NPeriods *...
-                  sin(BHarmonics_l(i) * theta2D - BHarmonics_n(i) * NPeriods * zeta2D);            
+              if BHarmonics_parity(i) %The cosine components of BHat
+                BHat = BHat + B0OverBBar * BHarmonics_amplitudes(i) *...
+                       cos(BHarmonics_l(i) * theta2D - BHarmonics_n(i) * NPeriods * zeta2D);
+                dBHatdtheta = dBHatdtheta - B0OverBBar * BHarmonics_amplitudes(i) * BHarmonics_l(i) *...
+                    sin(BHarmonics_l(i) * theta2D - BHarmonics_n(i) * NPeriods * zeta2D);
+                dBHatdzeta = dBHatdzeta + B0OverBBar * BHarmonics_amplitudes(i) * BHarmonics_n(i) * NPeriods *...
+                    sin(BHarmonics_l(i) * theta2D - BHarmonics_n(i) * NPeriods ...
+                        * zeta2D);
+              else  %The sine components of BHat
+                BHat = BHat + B0OverBBar * BHarmonics_amplitudes(i) *...
+                       sin(BHarmonics_l(i) * theta2D - BHarmonics_n(i) * NPeriods * zeta2D);
+                dBHatdtheta = dBHatdtheta + B0OverBBar * BHarmonics_amplitudes(i) * BHarmonics_l(i) *...
+                    cos(BHarmonics_l(i) * theta2D - BHarmonics_n(i) * NPeriods * zeta2D);
+                dBHatdzeta = dBHatdzeta - B0OverBBar * BHarmonics_amplitudes(i) * BHarmonics_n(i) * NPeriods *...
+                    cos(BHarmonics_l(i) * theta2D - BHarmonics_n(i) * NPeriods ...
+                        * zeta2D);                  
+              end       
             end
         end  
     end

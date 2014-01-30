@@ -42,7 +42,7 @@ programMode = 1;
 % The setting below matters for programMode = 3, 5, or 7 only:
 dataFileToPlot = 'm20130318_02_SFINCS_2013-03-18_14-47_convergenceScan_convergenceScan.mat';
 
-RHSMode = 2;
+RHSMode = 1;
 % 1 = Use a single right-hand side.
 % 2 = Use multiple right-hand sides to compute the transport matrix.
 
@@ -79,15 +79,15 @@ epsilon_h = 0.0;
 helicity_l = 2;
 helicity_n = 5;
 % iota is the rotational transform = 1 / (safety factor q)
-iota = 1.31;
+iota = 0.4542;
 % G is c/2 * the poloidal current outside the flux
 % surface. Equivalently, G is the coefficient of grad zeta in the
 % covariant representation of vector B. GHat is G normalized by \bar{B}\bar{R}.
-GHat = 1.0;
+GHat =  3.7481;
 % I is c/2 * the toroidal current inside the flux
 % surface. Equivalently, I is the coefficient of grad theta in the
 % covariant representation of vector B. IHat is I normalized by \bar{B}\bar{R}.
-IHat = 0.8;
+IHat = 0.0;
 
 % geometryScheme=10 parameters
 fort996boozer_file='TJII-midradius_example_s_0493_fort.996';
@@ -148,8 +148,8 @@ nHat = 1.0;
 % The radial electric field may be specified in one of 2 ways.
 % When RHSMode==1, dPhiHatdpsi is used and EStar is ignored.
 % When RHSMode==2, EStar is used and dPhiHatdpsi is ignored.
-dPhiHatdpsi = 0;
-EStar = 0;
+dPhiHatdpsi = 0.0;
+EStar = 0.0;
 
 % The following two quantities matter for RHSMode=1 but not for RHSMode=2:
 dTHatdpsi = -0.7;
@@ -240,7 +240,7 @@ Nthetas = floor(linspace(7,20,3));
 % Number of grid points in the toroidal direction
 % (per identical segment of the stellarator.)
 % Memory and time requirements DO depend strongly on this parameter.
-NzetaConverged = 1;
+NzetaConverged = 5;
 Nzetas = floor(linspace(7,20,3));
 
 % Number of Legendre polynomials used to represent the distribution
@@ -292,7 +292,7 @@ log10tols = 4.5:1:6.5;
 tryIterativeSolver = true;
 %tryIterativeSolver = false;
 
-orderOfSolversToTry = [4, 4, 2];
+orderOfSolversToTry = [4, 2, 5];
 % 1 = BiCGStab
 % 2 = BiCGStab(l)
 % 3 = CGS
@@ -389,7 +389,10 @@ figureOffset=20;
 plotSpeedGrid = true;
 %plotSpeedGrid = false;
 
-plotZetaTheta = false;
+plotZetaTheta = true;
+if NzetaConverged==1 
+  plotZetaTheta = false; % Zeta-Theta plots cannot be made if Nzeta=1
+end
 
 % --------------------------------------------------
 % --------------------------------------------------
@@ -2364,7 +2367,7 @@ end
                 format longg
                 transportMatrix
                 
-                if 0 %Uncomment here to print SI version on screen
+                %{ %Uncomment here to print SI version on screen
                   if geometryScheme==11 || geometryScheme==4
                     TSI=THat*1e3*1.6022e-19; %Assuming Tbar = 1 keV
                     if species=='p'
@@ -2389,7 +2392,7 @@ end
                     disp(['In SI units for species ',species])
                     transportMatrixSI
                   end
-                end
+                %}
             end
             
             if testQuasisymmetryIsomorphism
@@ -2563,7 +2566,7 @@ end
                   end
                   BHarmonics_amplitudes = [epsilon_t, epsilon_h];
                   BHarmonics_parity = [1, 1];
-                  
+
                case 2
                   % LHD standard configuration.
                   % Values taken from Table 1 of
@@ -2918,7 +2921,7 @@ end
                   BHarmonics_parity=((-1).^(0:length(BHarmonics_n)-1)+1)/2; %[1,0,1,0,1,0,1,0,...], i.e. cos,sin.cos,sin,...
                   
                   dPsidr=2*psiAHat/a*normradius;
-                  nuPrime=nuN*(GHat+iota*IHat)/B0OverBBar/sqrt(THat);
+                  nuPrime=nuN*(GHat+iota*IHat)/B0OverBBar/sqrt(THat)
                   
                   %disp([num2str(iota),', ',num2str(GHat),', ',num2str(IHat),', '...
                   %      ,num2str(B0OverBBar),', ',num2str(psiAHat),', ' ...

@@ -73,13 +73,14 @@
 
 &geometryParameters
 
-  geometryScheme = 4
+  geometryScheme = 12
   ! 1 = Three-helicity model
   ! 2 = Three-helicity approximation of the LHD standard configuration
   ! 3 = Four-helicity approximation of the LHD inward-shifted configuration
   ! 4 = Three-helicity approximation of the W7-X standard configuration
   ! 10= Read the boozer coordinate data from the file specified as "fort996boozer_file" below
-  ! 11= Read the boozer coordinate data from the file specified as "JGboozer_file" below
+  ! 11= Read the boozer coordinate data from the file specified as "JGboozer_file" below (stellarator symmetric file)
+  ! 12= Read the boozer coordinate data from the file specified as "JGboozer_file" below (non-stellarator symmetric file)
  
 
   ! The next few options only matter for geometryScheme = 1, in which the magnetic field is taken to have the form
@@ -120,15 +121,16 @@
   ! Note that PsiA is not stored in the fort.996 file, so we use the
   ! PsiAHat value from the "physics parameters" namelist below.
 
-  ! The remaining options only matter for geometryScheme = 11:
+  ! The remaining options only matter for geometryScheme = 11 and 12:
 
-  JGboozer_file = "w7x-sc1.bc"
+  JGboozer_file = "../../equilibria/w7x-sc1.bc"                     ! stellarator symmetric example, geometryScheme = 11
+  JGboozer_file_NonStelSym = "../../equilibria/out_neo-2_2_axisym"  ! non-stellarator symmetric example, geometryScheme = 12, requires Nzeta=1
 
   normradius_wish = 0.5
   !The calculation will be performed for the radius
   !closest to this one in the JGboozer_file
 
-  min_Bmn_to_load = 1d-3
+  min_Bmn_to_load = 1d-4
   !Filter out any Bmn components smaller than this.
 
 /
@@ -148,10 +150,10 @@
   ! Here is an example with 1 species:
   !Zs = 1
   !mHats = 1
-  !nHats = 0.6d+0
-  !dNHatdpsiNs = -0.3d+0
-  !THats = 0.8d+0
-  !dTHatdpsiNs = -0.2d+0
+  !nHats = 1.0d+0
+  !dNHatdpsiNs = -0.5d+0
+  !THats = 0.1d+0
+  !dTHatdpsiNs = -0.7d+0
 
   ! Here is an example with 2 species:
   Zs = 1 6
@@ -180,16 +182,19 @@
   ! where
   ! c = speed of light
   ! e = proton charge
-  Delta = 0.0011d+0
+  ! Delta = 0.0011d+0
+
+  Delta = 4.5694d-3  ! reference values: \bar{T}=1 keV, \bar{n}=10^20 m^-3,
+                     ! \bar{Phi}=1 kV, \bar{B}=1 T, \bar{R}=1 m, proton mass
 
   ! alpha = e * \bar{Phi} / \bar{T} (in both Gaussian and SI units)
   ! where again e = proton charge.
-  alpha = 2.54d+0
+  alpha = 1.0d+0
 
   ! psiAHat = psi_a / (\bar{B} * \bar{R}^2) (in both Gaussian and SI units)
   ! where 2*pi*psi_a is the toroidal flux at the last closed flux surface
   ! (the surface where psi_N = 1.)
-  ! The value of psiAHat here is over-written for geometryScheme = 2, 3, and 11.
+  ! The value of psiAHat here is over-written for geometryScheme = 2, 3, 11 and 12.
   psiAHat = 0.03d+0
 
   ! Inductive electric field (often 0).
@@ -201,7 +206,7 @@
   EParallelHat = 0
 
   ! Radial electric field
-  dPhiHatdpsiN = 0.1d+0
+  dPhiHatdpsiN = 0.0d+0
 
   ! The next 3 parameters set the values of dPhiHatdpsiN to use for an E_r scan
   ! (i.e., for programMode = 8)
@@ -223,7 +228,10 @@
   ! \bar{nu} = -----------------------------------------------------------   (Gaussian units)
   !                       3 * sqrt(\bar{m}} * \bar{T}^(3/2)
   !
-  nu_n = 1.3d+0
+  !nu_n = 1.3d+0
+
+  nu_n = 8.4774d-3  ! reference values: \bar{T}=1 keV, \bar{n}=10^20 m^-3,
+                    ! \bar{Phi}=1 kV, \bar{B}=1 T, \bar{R}=1 m, proton mass
 
   collisionOperator = 0
   ! 0 = Full linearized Fokker-Planck operator
@@ -277,7 +285,7 @@
   
   ! Number of grid points in the poloidal direction.
   ! Memory and time requirements DO depend strongly on this parameter.
-  Ntheta = 11
+  Ntheta = 19
   NthetaMinFactor = 1
   NthetaMaxFactor = 2
   NthetaNumRuns = 0
@@ -285,7 +293,7 @@
   ! Number of grid points in the toroidal direction
   ! (per identical segment of the stellarator.)
   ! Memory and time requirements DO depend strongly on this parameter.
-  Nzeta = 9
+  Nzeta = 1
   NzetaMinFactor = 1
   NzetaMaxFactor = 2
   NzetaNumRuns = 0
@@ -296,7 +304,7 @@
   ! the collisionality. At high collisionality, this parameter can be as low
   ! as ~ 5. At low collisionality, this parameter may need to be many 10s or
   ! even > 100 for convergence.
-  Nxi = 6
+  Nxi = 17
   NxiMinFactor = 1
   NxiMaxFactor = 2
   NxiNumRuns = 0
@@ -314,14 +322,14 @@
   ! This parameter almost always needs to be at least 5.
   ! Usually a value in the range 5-8 is plenty for convergence, though sometimes
   ! you may need to go up to 10-15.
-  Nx = 6
+  Nx = 15
   NxMinFactor = 1
   NxMaxFactor = 2
   NxNumRuns = 2
 
   ! Number of grid points in energy used to represent the Rosenbluth potentials.
   ! Memory and time requirements do NOT depend strongly on this parameter.
-  NxPotentialsPerVth = 41d+0
+  NxPotentialsPerVth = 40
   NxPotentialsPerVthMinFactor = 1
   NxPotentialsPerVthMaxFactor = 2
   NxPotentialsPerVthNumRuns = 0
@@ -337,7 +345,7 @@
   ! Tolerance used to define convergence of the Krylov solver.
   ! This parameter does not affect memory requirements but it does affect the
   ! time required for solution somewhat
-  solverTolerance = 1d-6
+  solverTolerance = 1d-7
   solverToleranceMinFactor = 1d-1
   solverToleranceMaxFactor = 1
   solverToleranceNumRuns = 0

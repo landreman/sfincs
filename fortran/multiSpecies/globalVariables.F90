@@ -40,7 +40,7 @@ module globalVariables
   PetscScalar ::  GHat, IHat, iota, B0OverBBar
   PetscScalar :: epsilon_t, epsilon_h, epsilon_antisymm
   integer :: NPeriods, helicity_l, helicity_n, helicity_antisymm_l, helicity_antisymm_n
-  character(len=200) :: fort996boozer_file, JGboozer_file
+  character(len=200) :: fort996boozer_file, JGboozer_file, JGboozer_file_NonStelSym
   PetscScalar :: normradius_wish, min_Bmn_to_load
 
   ! ********************************************************

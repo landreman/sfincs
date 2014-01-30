@@ -38,7 +38,7 @@
   ! If you make the sign of programMode negative, the program will print the number of runs required
   ! for the scan corresponding to abs(programMode) and then exit without actually carrying out any solves.
 
-  RHSMode = 2
+  RHSMode = 1
   ! Options for RHSMode:
   ! 1 = Solve for a single right-hand side.
   ! 2 = Solve for three right-hand sides to get the full 3x3 transport matrix.
@@ -101,12 +101,12 @@
   iota = 0.4542d+0
   ! iota is the rotational transform = 1 / (safety factor q)
 
-  epsilon_t = -0.07053d+0
+  epsilon_t = 0.13d+0 !-0.07053d+0
 
-  epsilon_h = 0.05067d+0
+  epsilon_h = 0.0d+0 !0.05067d+0
   
   helicity_l = 2
-  helicity_n = 10
+  helicity_n = 5
 
   epsilon_antisymm = 0.0d+0
   helicity_antisymm_l = 3	
@@ -201,7 +201,7 @@
   !nuPrime = 4.9085d+0
 
   nuN = 0.75824d+0
-  nuPrime = 19.6333d+0
+  nuPrime = 5.45932d+0 
   ! There are 2 different ways to specify the collisionality: nuN and nuPrime.
   ! If RHSMode == 1, nuN is used and nuPrime is ignored.
   ! If RHSMode == 2, nuPrime is used and nuN is ignored.
