@@ -1009,6 +1009,7 @@ single ion species is considered. Hence
 \begin{equation} 
 n_a Z_a e \left< B  E_{||} \right> = \left< \vect{B}\cdot(\nabla \cdot \vect{\pi}_a) \right> 
 = \left< (p_\perp - p_\| ) \nabla_\| B \right>.
+\label{ParallelMomentum}
 \end{equation}
 In
 the absence of radial gradients, the pressure anisotropy in the \PS
@@ -1186,6 +1187,78 @@ and
 respectively, where the quantities $C_V$ and $C_q$ should be independent of $M$ and $N$.
 It was verified that the SFINCS code obeyed these isomorphism transformations
 for a range of $y$, collisionality regimes, and collision operators.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%Appendix on Simakov benchmark
+
+\section{Ion transport matrix at high collisionality}
+From the model presented in Ref.~\cite{AndreiPer2009} we can derive expressions for $L_{jk}$ of Eq.~(\ref{eq:matrix}) in the Pfirsch-Schl{\"u}ter regime. 
+The coefficients then depend on the function $u$ given by the solution to Eq.~(8) in Ref.~\cite{AndreiPer2009}, which is proportional to the parallel current divided by $B$. 
+All coefficients but $L_{33}$ are straightforwardly obtained from Eqs.~(14), (18) and (26) in Ref.~\cite{AndreiPer2009} for the radial ion heat flux, the parallel ion flow and the radial current respectively, by %properly choosing 
+suitable choices of 
+the thermodynamic forces in the right-hand-side of Eq.~(\ref{eq:matrix}) for different solves and using the symmetry of the transport matrix.
+To find the parallel conductivity coefficient $L_{33}$ we substitute the pressure anisotropy, given by Eq.~(20) in Ref.~\cite{AndreiPer2009}, into Eq.~(\ref{ParallelMomentum}) (of this paper) 
+in the absence of radial gradients (i.e. when $E_{||}$ is the only thermodynamic force present). $L_{33}$ is then found from the flow $\left< V_\| B \right>$.
+
+Expressions for the matrix coefficients in the Pfirsch-Schl{\"u}ter regime are summarized in Eqs.~(\ref{eq:LPSregime})-(\ref{eq:PSregimeFunctions}). 
+Note that the constants in the function ${K}_2 \left(\psi\right)$ in $L_{23}$ have been modified from their values in ${K}_{2}^{\mathrm{Simakov}} \left(\psi\right)$ obtained from Ref.~\cite{AndreiPer2009}, by a more precise solution to the Spitzer problem.
+
+
+%\begin{equation}
+%\begin{array}{c}
+\begin{align}
+\begin{split}
+L_{11} & = 
+ 0.96 \cdot 2^{1/2} \cdot  \frac{3}{4}  \frac{\left(G + \iota I\right)^2}{ \iota^2 G^2} 
+ {G}_1 \left(\psi\right) \frac{1}{\nu'},\\
+ %%
+L_{12} & = L_{21} =  0.96 \cdot 2^{1/2} \frac{\left({G} + \iota {I}\right)^2}{ \iota^2 {G}^2} \left[ 3.245 \, {G}_1 \left(\psi\right) + 0.085 \, {G}_2 \left(\psi\right)  \right] \frac{1}{\nu'}, \\
+%% 
+L_{13} & = L_{31}  = \frac{\left\langle {u} {B}^2  \right\rangle}{{G} \iota} - \frac{\left\langle {B}^2\right\rangle}{{G} \iota} {K}_1\left(\psi\right), \\
+%%
+L_{22} & = 2^{1/2} \cdot  \frac{8}{5} \frac{1}{\iota^2 {G}^2} B_0^2 {H} \left(\psi\right) \, \nu', \\
+	%\textcolor{red}{+ \left( \,0.96 \cdot 2^{1/2} \cdot \frac{5}{2} \frac{\left({G} + \iota {I}\right)^2}{ \iota^2 {G}^2} \left[ 3.245 {G}_1 \left(\psi\right) + 0.085 {G}_2 \left(\psi\right)  \right] \frac{1}{\nu'}\right)}, \\
+	%%
+L_{23} & = L_{32} = \frac{1}{\iota {G}} \left[\frac{5}{2} \left\langle {u} {B}^2  \right\rangle - \frac{5}{2} {K}_1\left(\psi\right) \left\langle {B}^2\right\rangle + {K}_2\left(\psi\right) \left\langle {B}^2\right\rangle\right], \\
+%%
+L_{33} & = \frac{1}{3 \cdot 0.96 \cdot 2^{1/2}} \frac{1}{\left({G} + \iota {I}\right)^2} \frac{\left\langle {B}^2\right\rangle^2}{\left\langle \left( {\nabla}_\| {B}\right)^2\right\rangle} \, \nu',	
+%\end{array}
+\label{eq:LPSregime}
+\end{split}
+\end{align}
+%\end{equation}
+%where
+\begin{align}
+\begin{split}
+& {G}_1 \left(\psi\right) %& 
+= \frac{\left\langle \left( {\nabla}_\| \ln {B}\right)  {\nabla}_\| \left({u} {B}^2\right)\right\rangle^2}{\left\langle \left( {\nabla}_\| {B}\right)^2\right\rangle} -
+ \left\langle \left[\frac{ {\nabla}_\| \left({u} {B}^2\right)}{{B}}\right]^2\right\rangle,  \\
+ %%
+& {G}_2 \left(\psi\right) %& 
+ = \left\langle {u} \left({\nabla}_\| \ln {B}\right) {\nabla}_\| \left({u} {B}^2\right) \right\rangle
+ - \frac{\left\langle \left( {\nabla}_\| \ln {B}\right)  {\nabla}_\| \left({u} {B}^2\right)\right\rangle
+ \left\langle {u} \left( {\nabla}_\| {B}\right)^2\right\rangle}{\left\langle \left( {\nabla}_\| {B}\right)^2\right\rangle},  \\
+ %%
+& {K}_1 \left(\psi\right) %& 
+ = \frac{\left\langle \left( {\nabla}_\| \ln {B}\right)  {\nabla}_\| \left({u} {B}^2\right)\right\rangle}{2 \left\langle \left( {\nabla}_\| {B}\right)^2\right\rangle}, \\
+ %%
+& {K}_2 \left(\psi\right) %& 
+ = 1.97213 \frac{\left\langle {u} {B}^2  \right\rangle}{\left\langle {B}^2  \right\rangle} - 1.03287 \cdot 2 {K}_1 \left(\psi\right)
+ + 0.09361 \frac{
+ \left\langle {u} \left( {\nabla}_\| {B}\right)^2\right\rangle}{\left\langle \left( {\nabla}_\| {B}\right)^2\right\rangle}, \\
+ %%
+&  {K}_{2}^{\mathrm{Simakov}} \left(\psi\right) %& 
+  = 1.77 \frac{\left\langle {u} {B}^2  \right\rangle}{\left\langle {B}^2  \right\rangle} - 0.91 \cdot 2 {K}_1 \left(\psi\right)
+ + 0.05 \frac{
+ \left\langle {u} \left( {\nabla}_\| {B}\right)^2\right\rangle}{\left\langle \left( {\nabla}_\| {B}\right)^2\right\rangle}, \\
+ %%
+& {H} \left(\psi\right) %& 
+ = \frac{\left\langle {u} {B}^2  \right\rangle^2}{\left\langle {B}^2  \right\rangle} - \left\langle {u}^2 {B}^2  \right\rangle.
+\label{eq:PSregimeFunctions}
+\end{split}
+\end{align}
 
 \bibliography{sfincsPaper}
 
