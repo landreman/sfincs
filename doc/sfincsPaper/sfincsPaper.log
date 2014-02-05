@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=latex 2012.7.6)  5 FEB 2014 13:52
+This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=latex 2012.7.6)  5 FEB 2014 15:48
 entering extended mode
  %&-line parsing enabled.
 **sfincsPaper
@@ -276,28 +276,34 @@ File: m20131212_02_PlotSFINCS2SpeciesEScanForPaper.eps Graphic file (type eps)
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
 [18] [19] [20]
-File: m20140127_01_plotSFINCSFortranAndMatlabNuScansForPaper_LHD.eps Graphic fi
+File: m20140205_01_plotSFINCSFortranAndMatlabNuScansForPaper_LHD.eps Graphic fi
 le (type eps)
 
-<m20140127_01_plotSFINCSFortranAndMatlabNuScansForPaper_LHD.eps>
+<m20140205_01_plotSFINCSFortranAndMatlabNuScansForPaper_LHD.eps>
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-File: m20140127_01_plotSFINCSFortranAndMatlabNuScansForPaper_W7X.eps Graphic fi
+File: m20140205_01_plotSFINCSFortranAndMatlabNuScansForPaper_W7X.eps Graphic fi
 le (type eps)
-<m20140127_01_plotSFINCSFortranAndMatlabNuScansForPaper_W7X.eps>
+<m20140205_01_plotSFINCSFortranAndMatlabNuScansForPaper_W7X.eps>
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-[21] [22] [23] [24] [25] [26] (./sfincsPaper.bbl [27] [28]) [29]
+File: m20140205_02_plotSFINCSVsSimakovHelanderLimitForPaper.eps Graphic file (t
+ype eps)
+<m20140205_02_plotSFINCSVsSimakovHelanderLimitForPaper.eps>
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+[21] [22] [23] [24] [25] [26] (./sfincsPaper.bbl [27] [28] [29]) [30]
 (./sfincsPaper.aux) ) 
 Here is how much of TeX's memory you used:
- 3545 strings out of 495062
- 43812 string characters out of 1182645
- 114448 words of memory out of 3000000
- 6684 multiletter control sequences out of 15000+50000
+ 3547 strings out of 495062
+ 43946 string characters out of 1182645
+ 118463 words of memory out of 3000000
+ 6685 multiletter control sequences out of 15000+50000
  17815 words of font info for 73 fonts, out of 3000000 for 9000
  28 hyphenation exceptions out of 8191
- 34i,18n,30p,922b,399s stack positions out of 5000i,500n,10000p,200000b,50000s
+ 34i,18n,30p,778b,399s stack positions out of 5000i,500n,10000p,200000b,50000s
 
-Output written on sfincsPaper.dvi (29 pages, 109956 bytes).
+Output written on sfincsPaper.dvi (30 pages, 110404 bytes).

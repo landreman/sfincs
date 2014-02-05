@@ -1036,17 +1036,7 @@ At higher collisionality, lower resolution is sufficient, so memory and time req
 computations with $\nu' > 10^{-2}$ can typically be run on a laptop.
 
 \changed{
-In the short-mean-free-path limit $\nu' \gg 1$, the ion transport and flow can be computed
-analytically in terms of the parallel current \cite{AndreiPer2009}.
-The transport matrix elements associated with the Fokker-Planck collision operator
-may therefore be extracted from Ref. \cite{AndreiPer2009} and are summarized in Appendix \ref{apdx:SH}.
-Plotted in figures \ref{fig:collisionComparison_LHD} and \ref{fig:collisionComparison_W7X} (red dashed lines),
-these analytic high-collisionality limits agree quite well with the Fokker-Planck SFINCS computations
-in the appropriate $\nu' \gg 1$ limit.
-}
-
-\changed{
-At any collisionality, when the pure pitch-angle scattering collision operator 
+When the pure pitch-angle scattering collision operator 
 and DKES trajectories are chosen, the kinetic equation
 solved in SFINCS becomes identical to the one solved in the DKES code \cite{DKES1, DKES2}.
 In this case, it was verified that the two codes agreed for all elements of the transport
@@ -1056,8 +1046,18 @@ computed by DKES have been integrated over velocity with the appropriate
 weights and normalized in the same way as (\ref{eq:matrix}).
 }
 
+\changed{
+In the short-mean-free-path limit $\nu' \gg 1$, the ion transport and flow can be computed
+analytically in terms of the parallel current \cite{AndreiPer2009}.
+The transport matrix elements associated with the Fokker-Planck collision operator
+may therefore be extracted from Ref. \cite{AndreiPer2009} and are summarized in Appendix \ref{apdx:SH}.
+Plotted in figure \ref{fig:SimakovHelanderComparison} (dashed and dot-dashed lines),
+these analytic high-collisionality limits agree quite well with the Fokker-Planck SFINCS computations
+in the appropriate $\nu' \gg 1$ limit.
+}
+
 \begin{figure}[h!]
-% Figure generated using m20140127_01_plotSFINCSFortranAndMatlabNuScansForPaper.m
+% Figure generated using m20140205_01_plotSFINCSFortranAndMatlabNuScansForPaper.m
 % *********************************
 % Previous version of figure generated using m20131208_01_plotSFINCSFortranAndMatlabNuScansForPaper.m
 % High collisionality runs done in matlab, with data in
@@ -1071,23 +1071,18 @@ weights and normalized in the same way as (\ref{eq:matrix}).
 % m20130226_04_SFINCS_2013-02-26_21-21_good
 % W7X run was on edison in /global/scratch2/sd/landrema/20131123-01-sfincs/20131125-02-nuPrimeScan0_01to100
 % *********************************
-\includegraphics{m20140127_01_plotSFINCSFortranAndMatlabNuScansForPaper_LHD.eps}
+\includegraphics{m20140205_01_plotSFINCSFortranAndMatlabNuScansForPaper_LHD.eps}
 %\includegraphics{m20131208_01_plotSFINCSFortranAndMatlabNuScansForPaper_LHD.eps}
 %\includegraphics{m20131130_01_plotSFINCSCollisionOperatorComparisonForPaper_LHD.eps}
 \caption{(Color online) 
 The ion transport matrix elements (defined in (\ref{eq:matrix})) are plotted as functions
 of the collisionality (\ref{eq:nuPrime}) for LHD geometry at $E_r=0$.
 SFINCS computations for three different collision operators are compared.
-\changed{
-Dashed red lines indicate the analytic high-collisionality limits
-for Fokker-Planck collisions, discussed in appendix \ref{apdx:SH} and in Ref. \cite{AndreiPer2009},
-which agree quite well with the SFINCS Fokker-Planck computations at high collisionality.
-}
 \label{fig:collisionComparison_LHD}}
 \end{figure}
 
 \begin{figure}[h!]
-% Figure generated using m20140127_01_plotSFINCSFortranAndMatlabNuScansForPaper.m
+% Figure generated using m20140205_01_plotSFINCSFortranAndMatlabNuScansForPaper.m
 % *********************************
 % Previous version of figure generated using m20131208_01_plotSFINCSFortranAndMatlabNuScansForPaper.m
 % High collisionality runs done in matlab, with data in
@@ -1101,22 +1096,36 @@ which agree quite well with the SFINCS Fokker-Planck computations at high collis
 % m20130226_04_SFINCS_2013-02-26_21-21_good
 % W7X run was on edison in /global/scratch2/sd/landrema/20131123-01-sfincs/20131125-02-nuPrimeScan0_01to100
 % *********************************
-\includegraphics{m20140127_01_plotSFINCSFortranAndMatlabNuScansForPaper_W7X.eps}
+\includegraphics{m20140205_01_plotSFINCSFortranAndMatlabNuScansForPaper_W7X.eps}
 %\includegraphics{m20131208_01_plotSFINCSFortranAndMatlabNuScansForPaper_W7X.eps}
 %\includegraphics{m20131130_01_plotSFINCSCollisionOperatorComparisonForPaper_W7X.eps}
 \caption{(Color online)
 The ion transport matrix elements (defined in (\ref{eq:matrix})) are plotted as functions
-of the collisionality (\ref{eq:nuPrime}) for LHD geometry at $E_r=0$.
+of the collisionality (\ref{eq:nuPrime}) for W7-X geometry at $E_r=0$.
 SFINCS computations for three different collision operators are compared.
 \changed{
-Dashed red lines indicate the analytic high-collisionality limits
-for Fokker-Planck collisions, discussed in appendix \ref{apdx:SH} and in Ref. \cite{AndreiPer2009},
-which agree quite well with the SFINCS Fokker-Planck computations at high collisionality.
 Also shown (black crosses) are the transport matrix elements
 computed using the DKES code \cite{DKES1,DKES2}, which uses a pitch-angle scattering collision operator,
 demonstrating excellent agreement with SFINCS when the latter is run with the same collision model. 
 }
 \label{fig:collisionComparison_W7X}}
+\end{figure}
+
+\begin{figure}[h!]
+% Figure generated using m20140205_02_plotSFINCSVsSimakovHelanderLimitForPaper.m
+\includegraphics{m20140205_02_plotSFINCSVsSimakovHelanderLimitForPaper.eps}
+\caption{(Color online)
+\changed{
+The ion transport matrix elements (defined in (\ref{eq:matrix})) are plotted as functions
+of the collisionality (\ref{eq:nuPrime}) for LHD and W7-X geometry at $E_r=0$.
+SFINCS results shown were computed using the linearized Fokker-Planck collision operator
+(so the solid curves here are
+identical to the red curves in figures \ref{fig:collisionComparison_LHD}-\ref{fig:collisionComparison_W7X}.)
+Dashed and dot-dashed lines indicate the analytic high-collisionality limits
+for Fokker-Planck collisions, discussed in Ref. \cite{AndreiPer2009} and in appendix \ref{apdx:SH},
+which agree quite well with the SFINCS computations at high collisionality.
+}
+\label{fig:SimakovHelanderComparison}}
 \end{figure}
 
 
