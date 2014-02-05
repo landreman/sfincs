@@ -1,0 +1,91 @@
+This is BibTeX, Version 0.99c (TeX Live 2009/Debian)
+The top-level auxiliary file: sfincsPaper.aux
+The style file: apsrev.bst
+Reallocated wiz_functions (elt_size=4) to 6000 items from 3000.
+Database file #1: sfincsPaper.bib
+You're missing a field name---line 241 of file sfincsPaper.bib
+ : 
+ : % author="{Belli E A and Candy J}",
+(Error may have been on previous line)
+I'm skipping whatever remains of this entry
+I was expecting a `,' or a `}'---line 2749 of file sfincsPaper.bib
+ :  
+ :  note = "Fig. 5c."
+(Error may have been on previous line)
+I'm skipping whatever remains of this entry
+I was expecting a `,' or a `}'---line 2789 of file sfincsPaper.bib
+ :  
+ :  note = "Fig. 9."
+(Error may have been on previous line)
+I'm skipping whatever remains of this entry
+I was expecting a `,' or a `}'---line 2813 of file sfincsPaper.bib
+ :  
+ :  note = "Figs. 6, 8-9."
+(Error may have been on previous line)
+I'm skipping whatever remains of this entry
+I was expecting a `,' or a `}'---line 2835 of file sfincsPaper.bib
+ :  
+ :  note = "Fig. 5."
+(Error may have been on previous line)
+I'm skipping whatever remains of this entry
+I was expecting a `,' or a `}'---line 2853 of file sfincsPaper.bib
+ :  
+ :  note = "Fig. 2."
+(Error may have been on previous line)
+I'm skipping whatever remains of this entry
+I was expecting a `,' or a `}'---line 2871 of file sfincsPaper.bib
+ :  
+ :  note = "Fig. 2a-2e."
+(Error may have been on previous line)
+I'm skipping whatever remains of this entry
+Warning--jnrlst (dependency: not reversed) set 1
+merlin.mbs aipnum4-1.bst 2010-07-25 4.21a (PWD, AO, DPC) hacked
+Control: key (0) 
+Control: author (8) initials jnrlst
+Control: editor formatted (1) identically to author
+Control: production of article title (-1) disabled
+Control: page (0) single
+Control: year (1) truncated
+Control: production of eprint (0) enabled
+You've used 49 entries,
+            5918 wiz_defined-function locations,
+            1868 strings with 19733 characters,
+and the built_in function-call counts, 53526 in all, are:
+= -- 3230
+> -- 1861
+< -- 328
++ -- 576
+- -- 476
+* -- 8421
+:= -- 5437
+add.period$ -- 52
+call.type$ -- 49
+change.case$ -- 200
+chr.to.int$ -- 48
+cite$ -- 49
+duplicate$ -- 4775
+empty$ -- 3817
+format.name$ -- 978
+if$ -- 10621
+int.to.chr$ -- 2
+int.to.str$ -- 58
+missing$ -- 618
+newline$ -- 199
+num.names$ -- 147
+pop$ -- 2063
+preamble$ -- 1
+purify$ -- 245
+quote$ -- 0
+skip$ -- 1788
+stack$ -- 0
+substring$ -- 1242
+swap$ -- 4689
+text.length$ -- 186
+text.prefix$ -- 0
+top$ -- 8
+type$ -- 729
+warning$ -- 1
+while$ -- 190
+width$ -- 0
+write$ -- 442
+(There were 7 error messages)
