@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=latex 2012.7.6)  21 DEC 2013 18:07
+This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=latex 2012.7.6)  5 FEB 2014 13:52
 entering extended mode
  %&-line parsing enabled.
 **sfincsPaper
@@ -188,43 +188,43 @@ LaTeX Info: Redefining \] on input line 2667.
 ) (./sfincsPaper.aux)
 \openout1 = `sfincsPaper.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 57.
-LaTeX Font Info:    ... okay on input line 57.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 57.
-LaTeX Font Info:    ... okay on input line 57.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 57.
-LaTeX Font Info:    ... okay on input line 57.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 57.
-LaTeX Font Info:    ... okay on input line 57.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 57.
-LaTeX Font Info:    ... okay on input line 57.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 57.
-LaTeX Font Info:    ... okay on input line 57.
-Class revtex4 Info: Patching LaTeX tabular. on input line 57.
-Class revtex4 Info: cite was not loaded (OK!) on input line 57.
-Class revtex4 Info: multicol was not loaded (OK!) on input line 57.
-LaTeX Font Info:    Try loading font information for U+lasy on input line 94.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 59.
+LaTeX Font Info:    ... okay on input line 59.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 59.
+LaTeX Font Info:    ... okay on input line 59.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 59.
+LaTeX Font Info:    ... okay on input line 59.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 59.
+LaTeX Font Info:    ... okay on input line 59.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 59.
+LaTeX Font Info:    ... okay on input line 59.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 59.
+LaTeX Font Info:    ... okay on input line 59.
+Class revtex4 Info: Patching LaTeX tabular. on input line 59.
+Class revtex4 Info: cite was not loaded (OK!) on input line 59.
+Class revtex4 Info: multicol was not loaded (OK!) on input line 59.
+LaTeX Font Info:    Try loading font information for U+lasy on input line 101.
 
 (/usr/share/texmf-texlive/tex/latex/base/ulasy.fd
 File: ulasy.fd 1998/08/17 v2.2e LaTeX symbol font definitions
 )
-LaTeX Font Info:    Try loading font information for U+msa on input line 94.
+LaTeX Font Info:    Try loading font information for U+msa on input line 101.
 
 (/usr/share/texmf-texlive/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2009/06/22 v3.00 AMS symbols A
 )
-LaTeX Font Info:    Try loading font information for U+msb on input line 94.
+LaTeX Font Info:    Try loading font information for U+msb on input line 101.
 
 (/usr/share/texmf-texlive/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2009/06/22 v3.00 AMS symbols B
 )
 LaTeX Font Info:    Font shape `U/lasy/b/n' in size <8> not available
-(Font)              Font shape `U/lasy/m/n' tried instead on input line 94.
+(Font)              Font shape `U/lasy/m/n' tried instead on input line 101.
 LaTeX Font Info:    Font shape `U/lasy/b/n' in size <6> not available
-(Font)              Font shape `U/lasy/m/n' tried instead on input line 94.
+(Font)              Font shape `U/lasy/m/n' tried instead on input line 101.
  [1] [2] [3] [4] [5]
 [6]
-Overfull \hbox (14.7377pt too wide) detected at line 426
+Overfull \hbox (14.7377pt too wide) detected at line 433
 [] \OMS/cmsy/m/n/12 ^^A [][] \OT1/cmr/m/n/12 + [] [][] + [] [][] \OMS/cmsy/m/n/
 12 ^^@ \OML/cmm/m/it/12 C[] \OT1/cmr/m/n/12 = \OMS/cmsy/m/n/12 ^^@\OT1/cmr/m/n/
 12 ([][] \OMS/cmsy/m/n/12 ^^A r\OML/cmm/m/it/12  \OT1/cmr/m/n/12 ) [][] + []\OM
@@ -232,40 +232,37 @@ L/cmm/m/it/12 v[][]F[]:
  []
 
 [7] [8] [9]
-Underfull \hbox (badness 1009) in paragraph at lines 543--557
+Underfull \hbox (badness 1009) in paragraph at lines 550--564
 \OT1/cmr/m/n/12 this par-tial tra-jec-tory model: the $\OML/cmm/m/it/12 d\OT1/c
 mr/m/n/12 ^^H[]\OML/cmm/m/it/12 =d  \OT1/cmr/m/n/12 = 0$ so-lu-tion for $\OML/c
 mm/m/it/12 f[]$ \OT1/cmr/m/n/12 need not sat-isfy
  []
 
 [10]
-Underfull \hbox (badness 3168) in paragraph at lines 576--584
+Underfull \hbox (badness 3168) in paragraph at lines 583--591
 \OT1/cmr/m/n/12 The quan-tity mul-ti-ply-ing $\OML/cmm/m/it/12 d\OT1/cmr/m/n/12
  ^^H[]\OML/cmm/m/it/12 =d $ \OT1/cmr/m/n/12 in (24[]) is pro-por-tional to the 
 ra-dial cur-rent
  []
 
-[11] [12] [13] [14]
-Underfull \hbox (badness 4291) in paragraph at lines 777--791
+[11] [12] [13]
+Underfull \hbox (badness 4291) in paragraph at lines 784--798
 []\OT1/cmr/m/n/12 Several prop-er-ties of the ma-trix $\OML/cmm/m/it/12 L[]$ \O
 T1/cmr/m/n/12 are note-wor-thy. Us-ing the prop-erty
  []
 
-[15]
+[14] [15]
 File: m20131202_01_plotSFINCSErComparisonForPaper_LHD.eps Graphic file (type ep
 s)
  <m20131202_01_plotSFINCSErComparisonForPaper_LHD.eps>
-Overfull \hbox (1.75499pt too wide) in paragraph at lines 861--863
+Overfull \hbox (1.75499pt too wide) in paragraph at lines 862--864
  [][] 
  []
-
-
-LaTeX Warning: `!h' float specifier changed to `!ht'.
 
 File: m20131205_05_plotSFINCSFortranErComparisonForPaper_W7X.eps Graphic file (
 type eps)
 <m20131205_05_plotSFINCSFortranErComparisonForPaper_W7X.eps>
-Overfull \hbox (0.75124pt too wide) in paragraph at lines 881--882
+Overfull \hbox (0.75124pt too wide) in paragraph at lines 882--883
  [][] 
  []
 
@@ -279,27 +276,28 @@ File: m20131212_02_PlotSFINCS2SpeciesEScanForPaper.eps Graphic file (type eps)
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
 [18] [19] [20]
-File: m20131208_01_plotSFINCSFortranAndMatlabNuScansForPaper_LHD.eps Graphic fi
+File: m20140127_01_plotSFINCSFortranAndMatlabNuScansForPaper_LHD.eps Graphic fi
 le (type eps)
 
-<m20131208_01_plotSFINCSFortranAndMatlabNuScansForPaper_LHD.eps>
+<m20140127_01_plotSFINCSFortranAndMatlabNuScansForPaper_LHD.eps>
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-File: m20131208_01_plotSFINCSFortranAndMatlabNuScansForPaper_W7X.eps Graphic fi
+File: m20140127_01_plotSFINCSFortranAndMatlabNuScansForPaper_W7X.eps Graphic fi
 le (type eps)
-<m20131208_01_plotSFINCSFortranAndMatlabNuScansForPaper_W7X.eps>
+<m20140127_01_plotSFINCSFortranAndMatlabNuScansForPaper_W7X.eps>
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-[21] [22] [23] [24] (./sfincsPaper.bbl [25] [26]) [27] (./sfincsPaper.aux) ) 
+[21] [22] [23] [24] [25] [26] (./sfincsPaper.bbl [27] [28]) [29]
+(./sfincsPaper.aux) ) 
 Here is how much of TeX's memory you used:
- 3536 strings out of 495062
- 43702 string characters out of 1182645
- 110350 words of memory out of 3000000
- 6676 multiletter control sequences out of 15000+50000
- 17463 words of font info for 72 fonts, out of 3000000 for 9000
+ 3545 strings out of 495062
+ 43812 string characters out of 1182645
+ 114448 words of memory out of 3000000
+ 6684 multiletter control sequences out of 15000+50000
+ 17815 words of font info for 73 fonts, out of 3000000 for 9000
  28 hyphenation exceptions out of 8191
- 38i,15n,29p,574b,399s stack positions out of 5000i,500n,10000p,200000b,50000s
+ 34i,18n,30p,922b,399s stack positions out of 5000i,500n,10000p,200000b,50000s
 
-Output written on sfincsPaper.dvi (27 pages, 100700 bytes).
+Output written on sfincsPaper.dvi (29 pages, 109956 bytes).
