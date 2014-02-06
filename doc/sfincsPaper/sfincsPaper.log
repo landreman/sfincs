@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=latex 2012.7.6)  5 FEB 2014 15:48
+This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=latex 2012.7.6)  5 FEB 2014 21:33
 entering extended mode
  %&-line parsing enabled.
 **sfincsPaper
@@ -252,17 +252,14 @@ T1/cmr/m/n/12 are note-wor-thy. Us-ing the prop-erty
  []
 
 [14] [15]
-File: m20131202_01_plotSFINCSErComparisonForPaper_LHD.eps Graphic file (type ep
-s)
- <m20131202_01_plotSFINCSErComparisonForPaper_LHD.eps>
-Overfull \hbox (1.75499pt too wide) in paragraph at lines 862--864
- [][] 
- []
-
-File: m20131205_05_plotSFINCSFortranErComparisonForPaper_W7X.eps Graphic file (
+File: m20140205_03_plotSFINCSFortranErComparisonForPaper_LHD.eps Graphic file (
 type eps)
-<m20131205_05_plotSFINCSFortranErComparisonForPaper_W7X.eps>
-Overfull \hbox (0.75124pt too wide) in paragraph at lines 882--883
+ <m20140205_03_plotSFINCSFortranErComparisonForPaper_LHD.eps>
+File: m20140205_03_plotSFINCSFortranErComparisonForPaper_W7X.eps Graphic file (
+type eps)
+
+<m20140205_03_plotSFINCSFortranErComparisonForPaper_W7X.eps>
+Overfull \hbox (0.75124pt too wide) in paragraph at lines 888--890
  [][] 
  []
 
@@ -298,12 +295,12 @@ LaTeX Warning: `!h' float specifier changed to `!ht'.
 [21] [22] [23] [24] [25] [26] (./sfincsPaper.bbl [27] [28] [29]) [30]
 (./sfincsPaper.aux) ) 
 Here is how much of TeX's memory you used:
- 3547 strings out of 495062
- 43946 string characters out of 1182645
- 118463 words of memory out of 3000000
- 6685 multiletter control sequences out of 15000+50000
+ 3546 strings out of 495062
+ 43950 string characters out of 1182645
+ 117463 words of memory out of 3000000
+ 6684 multiletter control sequences out of 15000+50000
  17815 words of font info for 73 fonts, out of 3000000 for 9000
  28 hyphenation exceptions out of 8191
  34i,18n,30p,778b,399s stack positions out of 5000i,500n,10000p,200000b,50000s
 
-Output written on sfincsPaper.dvi (30 pages, 110404 bytes).
+Output written on sfincsPaper.dvi (30 pages, 110752 bytes).
