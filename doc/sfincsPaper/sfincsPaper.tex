@@ -868,7 +868,7 @@ In most of the plasma, $E_*$ is however expected to be smaller than a few percen
 using linearized Fokker-Planck collisions.
 The ion transport matrix elements (defined in (\ref{eq:matrix})) are plotted as functions
 of the normalized radial electric field (\ref{eq:EStar}).
-\changed{Results for $E_r=0$ are inicated by the $\blacktriangleright$ symbol to the left of each plot.}
+\changed{Results for $E_r=0$ are indicated by the $\blacktriangleright$ symbol to the left of each plot.}
 \label{fig:ErComparison_LHD}}
 \end{figure}
 
@@ -891,7 +891,7 @@ of the normalized radial electric field (\ref{eq:EStar}).
 using linearized Fokker-Planck collisions.
 The ion transport matrix elements (defined in (\ref{eq:matrix})) are plotted as functions
 of the normalized radial electric field (\ref{eq:EStar}).
-\changed{Results for $E_r=0$ are inicated by the $\blacktriangleright$ symbol to the left of each plot.}
+\changed{Results for $E_r=0$ are indicated by the $\blacktriangleright$ symbol to the left of each plot.}
 \label{fig:ErComparison_W7X}}
 \end{figure}
 
@@ -1229,13 +1229,33 @@ and to Craig Beidler and Peter Catto for other input on this work.
 A useful test of a stellarator neoclassical code such as the one
 described here is the quasisymmetry isomorphism,
 discussed analytically in Refs. \cite{Pytte, Boozer83, meQS}.
-In this test, the magnetic field is specified as $B(\theta,\zeta) = y(M\theta-N\zeta)$
-for some given periodic function $y$ and integers $M$ and $N$.
-The kinetic equation is solved for several values of $M$ and $N$,
-varying the collision frequency with each run so that
-$\nuii / \left|M - N/\iota \right|$ remains fixed.
-As $M$ and $N$ are varied, $G$, $I$, $\iota$, $dn/d\psi$, $dT/d\psi$, and other input quantities are also kept fixed.
-Under these circumstances, it is known analytically \cite{Pytte, Boozer83, meQS} that the flow
+\changed{
+A quasisymmetric magnetic field is one satisfying $B(\theta,\zeta) = y(M\theta-N\zeta)$
+for some periodic function $y$ and integers $M$ and $N$.
+Magnetic fields with the same $y$ but different $M$ and $N$ are said to be isomorphic in that
+the associated transport matrices must be related in the following manner.
+Suppose the transport matrices are computed for several quasisymmetric magnetic fields with different values of $M$ and $N$,
+varying the collision frequency in each calculation so
+$\nuii / (\iota M - N)$ remains fixed,
+and varying the radial electric field so
+$(d\Phi_0/d\psi)(GM+IN)/(\iota M-N)$
+remains fixed.
+%Other input parameters such as $dn/d\psi$ and $dT/d\psi$ are kept fixed
+%as $M$ and $N$ are varied.
+%Under these circumstances, 
+In such a scan of $M$ and $N$,
+it can be shown analytically \cite{Pytte, Boozer83, meQS} that the 
+transport matrix elements should vary as follows:
+$L_{11}$, $L_{12}$, $L_{21}$, and $L_{22}$ vary
+$\propto (NI+MG)^2/(\iota M-N)$;
+$L_{13}$, $L_{23}$, $L_{31}$, and $L_{32}$ vary
+$\propto (NI+MG)/(\iota M-N)$;
+and $L_{33}$ varies
+$\propto 1/(\iota M-N)$.
+This isomorphism holds for all the trajectory models considered in this paper.
+}
+\begin{comment}
+flow
 and heat flux should obey the transformations
 \begin{equation}
 \left< V_{||} B \right> \frac{M-N/\iota}{NI+MG} = C_V
@@ -1245,10 +1265,33 @@ and
 \left< \int d^3v\, f_{\mathrm{i}1} \frac{v^2}{2}\vect{v}_{\mathrm{m}i}\cdot\nabla\psi \right> \frac{\left| M-N/\iota\right| }{(NI+MG)^2} = C_q
 \end{equation}
 respectively, where the quantities $C_V$ and $C_q$ should be independent of $M$ and $N$.
-It was verified that the SFINCS code obeyed these isomorphism transformations
-for a range of $y$, collisionality regimes, and collision operators.
+\end{comment}
 
+\changed{
+As $\nuii / (\iota M - N)$ is to be held fixed in this test, while $\iota M - N$ can change sign as $M$ and $N$ are varied, 
+the collision frequency to use can be negative.
+While $\nuii <0$ does not make sense physically, it poses no mathematical or numerical problem.
+If the signs of the collision frequency, $\xi$, and $d\Phi_0/d\psi$ are simultaneously
+reversed in the kinetic equation, the part of $f_{i1}$ driven by $\left< E_{||}B\right>$ remains unchanged,
+while the part driven by radial gradients changes sign. Thus, $L_{11}$, $L_{12}$, $L_{21}$, $L_{22}$, and $L_{33}$ change sign, while
+$L_{13}$, $L_{23}$, $L_{31}$, and $L_{32}$ remain unchanged.
+%As discussed previously, reversing the sign of $d\Phi_0/d\psi$ leaves the transport matrix unchanged in a stellarator-symmetric field.
+Therefore, another way to express the quasisymmetry isomorphism 
+(even for non-stellarator-symmetric $y$)
+that preserves $\nuii > 0$ is the following:
+%in a stellarator-symmetric $y$
+if $M$ and $N$ are varied holding 
+$\nuii / \left|\iota M - N\right|$ and $(d\Phi_0/d\psi)(GM+IN)/|\iota M-N|$ fixed,
+$L_{11}$, $L_{12}$, $L_{21}$, and $L_{22}$ should vary
+$\propto (NI+MG)^2/|\iota M-N|$;
+$L_{13}$, $L_{23}$, $L_{31}$, and $L_{32}$ should vary
+$\propto (NI+MG)/(\iota M-N)$;
+and $L_{33}$ should vary
+$\propto 1/|\iota M-N|$.
+}
 
+It was verified that the SFINCS code obeyed both versions of these isomorphism transformations
+for various $y$, collisionality regimes, \changed{radial electric fields, trajectory models}, and collision operators.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%Appendix on Simakov benchmark

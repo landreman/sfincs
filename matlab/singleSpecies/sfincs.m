@@ -51,6 +51,10 @@ RHSMode = 1;
 %testQuasisymmetryIsomorphism = true;
 testQuasisymmetryIsomorphism = false;
 
+% The value of the variable below only matters in rare testing circumstances.
+preservePositiveNuInQuasisymmetryIsomorphism = true;
+%preservePositiveNuInQuasisymmetryIsomorphism = false;
+
 %saveStuff = true;
 saveStuff = false;
 
@@ -62,8 +66,8 @@ filenameNote = 'myFirstScan';
 % Geometry parameters:
 % --------------------------------------------------
 
-geometryScheme = 12;
-% 1 = Two-helicity model
+geometryScheme = 1;
+% 1 = Three-helicity model
 % 2 = Three-helicity approximation of the LHD standard configuration
 % 3 = Four-helicity approximation of the LHD inward-shifted configuration
 % 4 = Three-helicity approximation of the W7-X Standard configuration
@@ -73,28 +77,45 @@ geometryScheme = 12;
 
 % Additional parameters used only when geometryScheme=1:
 % B = BBar * B0OverBBar * [1 + epsilon_t * cos(theta) + epsilon_h * cos(helicity_l * theta - helicity_n * zeta)]
+%                            + epsilon_antisymm * sin(helicity_antisymm_l * theta - helicity_antisymm_n * zeta)]
 B0OverBBar = 1;
-epsilon_t = 0.13;
-epsilon_h = 0.0;
-helicity_l = 2;
+
+epsilon_t = 0.1;
+
+epsilon_h = 0.1;
+helicity_l = 1;
 helicity_n = 5;
+
+epsilon_antisymm = 0;
+% Note: when testQuasisymmetryIsomorphism=true, helicity_antisymm_l and helicity_antisymm_n will be over-written.
+helicity_antisymm_l = 0;
+helicity_antisymm_n = 0;
+
 % iota is the rotational transform = 1 / (safety factor q)
 iota = 0.4542;
+
 % G is c/2 * the poloidal current outside the flux
 % surface. Equivalently, G is the coefficient of grad zeta in the
 % covariant representation of vector B. GHat is G normalized by \bar{B}\bar{R}.
 GHat =  3.7481;
+
 % I is c/2 * the toroidal current inside the flux
 % surface. Equivalently, I is the coefficient of grad theta in the
 % covariant representation of vector B. IHat is I normalized by \bar{B}\bar{R}.
-IHat = 0.0;
+IHat = 0;
 
-% geometryScheme=10 parameters
+% End of parameters that matter only for geometryScheme=1.
+
+% geometryScheme=10 parameters:
+
 fort996boozer_file='TJII-midradius_example_s_0493_fort.996';
 % Note that PsiA is not stored in the fort.996 file, so we use the
 % PsiAHat setting below
 
-% geometryScheme=11 and 12 parameters
+% End of geometryScheme=10 parameters.
+
+% geometryScheme=11 and 12 parameters:
+
 JGboozer_file='w7x-sc1.bc'; % stellarator symmetric example, geometryScheme=11
 JGboozer_file_NonStelSym='out_neo-2_2_axisym'; % non-stellarator symmetric example, geometryScheme=12, requires Nzeta=1
 normradius_wish=0.5;   %The calculation will be performed for the radius
@@ -142,14 +163,14 @@ end
 % (the surface where psi_N = 1.)
 % The value of psiAHat here is over-written for geometryScheme = 2, 3, 4, 11 and 12.
 psiAHat = 1;
-THat = 0.05;
+THat = 1.0;
 nHat = 1.0;
 
 % The radial electric field may be specified in one of 2 ways.
 % When RHSMode==1, dPhiHatdpsi is used and EStar is ignored.
 % When RHSMode==2, EStar is used and dPhiHatdpsi is ignored.
 dPhiHatdpsi = 0.0;
-EStar = 0.0;
+EStar = 0;
 
 % The following two quantities matter for RHSMode=1 but not for RHSMode=2:
 dTHatdpsi = -0.7;
@@ -187,8 +208,9 @@ EHat = 0;
 %
 % Notice that collisionality is defined differently in the multi-species code!
 
-nuN = nu_nbar * nHat/THat^(3/2);
-%nuN = 1.3;
+%nuN = nu_nbar * nHat/THat^(3/2);
+%nuN = 0.2 * sqrt(THat)/(B0OverBBar * (GHat + iota*IHat));
+nuN = 1;
 % If testQuasisymmetryIsomorphism is true, the value of nuN is changed so the physical collisionality
 % stays constant as the helicity is changed.
 
@@ -234,14 +256,14 @@ include_fDivVE_term = false;
 
 % Number of grid points in the poloidal direction.
 % Memory and time requirements DO depend strongly on this parameter.
-NthetaConverged = 19;
-Nthetas = floor(linspace(7,20,3));
+NthetaConverged = 11;
+Nthetas = floor(linspace(9,30,11));
 
 % Number of grid points in the toroidal direction
 % (per identical segment of the stellarator.)
 % Memory and time requirements DO depend strongly on this parameter.
 NzetaConverged = 5;
-Nzetas = floor(linspace(7,20,3));
+Nzetas = floor(linspace(5,20,3));
 
 % Number of Legendre polynomials used to represent the distribution
 % function.
@@ -250,35 +272,35 @@ Nzetas = floor(linspace(7,20,3));
 % the collisionality. At high collisionality, this parameter can be as low
 % as ~ 5. At low collisionality, this parameter may need to be many 10s or
 % even > 100 for convergence.
-NxiConverged = 17;
-Nxis = floor(linspace(9,15,3));
+NxiConverged = 10;
+Nxis = floor(linspace(10,40,13));
 
 % Number of Legendre polynomials used to represent the Rosenbluth
 % potentials: (Typically 2 or 4 is plenty.)
 % Memory and time requirements do NOT depend strongly on this parameter.
 NLConverged = 4;
-NLs = 2:2:6;
+NLs = 2:6;
 
 % Number of grid points in energy used to represent the distribution
 % function.
 % Memory and time requirements DO depend strongly on this parameter.
 % This parameter almost always needs to be at least 5.
 % Usually a value in the range 5-8 is plenty for convergence.
-NxConverged = 15;
-Nxs=5:12;
+NxConverged = 5;
+Nxs=5:8;
 
 % Number of grid points in energy used to represent the Rosenbluth
 % potentials.
 % Memory and time requirements do NOT depend strongly on this parameter.
 NxPotentialsPerVthConverged = 40;
-%NxPotentialsPerVths = [40, 81];
-NxPotentialsPerVths = floor(linspace(20,80,5));
+NxPotentialsPerVths = [40, 81];
+%NxPotentialsPerVths = floor(linspace(20,80,5));
 
 % Tolerance used to define convergence of the Krylov solver.
 % This parameter does not affect memory requirements but it does affect the
 % time required for solution.
 log10tolConverged = 6;
-log10tols = 4.5:1:6.5;
+log10tols = 4.5:1:5.5;
 
 
 % --------------------------------------------------
@@ -330,7 +352,7 @@ preconditioner_x = 1;
 % 4 = Keep diagonal and superdiagonal in x.
 % This parameter should almost always be 1.
 
-preconditioner_x_min_L = 2;
+preconditioner_x_min_L = 0;
 % The simplified x coupling is used in the preconditioner only when the
 % Legendre index L is >= this value; otherwise the full x coupling is used
 % in the preconditioner.  Set to 0 to precondition at every L.
@@ -429,12 +451,45 @@ if testQuasisymmetryIsomorphism
         error('To test the quasisymmetry isomorphism, you should set epsilon_t=0.')
     end
     
+    %{
     if RHSMode ~= 1
         error('testQuasisymmetryIsomorphism and RHSMode=2 are not presently compatible.')
     end
+    %}
     
-    nuStarS = nuN;
-    nuN = nuStarS*abs(helicity_n/iota - helicity_l);
+    if RHSMode == 1 && dPhiHatdpsi ~= 0
+        error('The quasisymmetry isomorphism does not behave well for RHSMode = 1 when dPhiHatdpsi is nonzero.')
+    end
+    
+    % Ensure the non-stellarator-symmetric component has the same helicity as the main helical component:
+    helicity_antisymm_l = 2 * helicity_l;
+    helicity_antisymm_n = 2 * helicity_n;
+    
+    if RHSMode == 1
+        nuStarS = nuN;
+        if preservePositiveNuInQuasisymmetryIsomorphism
+            nuN = nuStarS*abs(helicity_l - helicity_n/iota);
+        else
+            nuN = nuStarS*(helicity_l - helicity_n/iota);
+        end
+    else
+        if preservePositiveNuInQuasisymmetryIsomorphism
+            nuStarS = nuPrime;
+            nuPrime = nuStarS*abs(helicity_l - helicity_n/iota);
+        
+            EStar_axisymm = EStar * GHat / iota;
+            EStar = EStar_axisymm * abs(iota*helicity_l - helicity_n)/(GHat * helicity_l + IHat * helicity_n);
+        else
+            nuStarS = nuPrime;
+            nuPrime = nuStarS*(helicity_l - helicity_n/iota);
+        
+            EStar_axisymm = EStar * GHat / iota;
+            EStar = EStar_axisymm * (iota*helicity_l - helicity_n)/(GHat * helicity_l + IHat * helicity_n);
+        end
+    end
+    
+    fprintf('Now nuPrime = %g and EStar = %g\n',nuPrime,EStar)
+    
 end
 
 FSADensityPerturbation = 0;
@@ -2396,12 +2451,38 @@ end
             end
             
             if testQuasisymmetryIsomorphism
-                modifiedHeatFluxThatShouldBeConstant = heatFlux*abs(helicity_n/iota-helicity_l)/((helicity_n*IHat+helicity_l*GHat)^2);
+                %modifiedHeatFluxThatShouldBeConstant = heatFlux*abs(helicity_n/iota-helicity_l)/((helicity_n*IHat+helicity_l*GHat)^2);
+                modifiedHeatFluxThatShouldBeConstant = heatFlux*(helicity_l - helicity_n/iota)/((helicity_n*IHat+helicity_l*GHat)^2);
                 modifiedFSAFlowThatShouldBeConstant = FSAFlow*(helicity_n/iota-helicity_l)/(helicity_n*IHat+helicity_l*GHat);
                 fprintf('   > Testing quasisymmetry isomorphism.\n')
-                fprintf('   > Below are the two modified quantities that should be independent of helicity:\n')
-                fprintf('   > Modified heat flux: %g\n',modifiedHeatFluxThatShouldBeConstant)
-                fprintf('   > Modified FSA flow: %g\n',modifiedFSAFlowThatShouldBeConstant)
+                fprintf('   > Below are the modified quantities that should be independent of helicity:\n')
+                if RHSMode == 1
+                    fprintf('   > Modified heat flux: %g\n',modifiedHeatFluxThatShouldBeConstant)
+                    fprintf('   > Modified FSA flow: %g\n',modifiedFSAFlowThatShouldBeConstant)
+                else
+                    if preservePositiveNuInQuasisymmetryIsomorphism
+                        quasisymmetryConstantTransportMatrix = zeros(3,3);
+                        quasisymmetryConstantTransportMatrix(3,3) = transportMatrix(3,3) * abs(helicity_l - helicity_n/iota);
+                        quasisymmetryConstantTransportMatrix(1:2,3) = transportMatrix(1:2,3) * (helicity_l - helicity_n/iota) / (helicity_n*IHat+helicity_l*GHat);
+                        quasisymmetryConstantTransportMatrix(3,1:2) = transportMatrix(3,1:2) * (helicity_l - helicity_n/iota) / (helicity_n*IHat+helicity_l*GHat);
+                        quasisymmetryConstantTransportMatrix(1:2,1:2) = transportMatrix(1:2,1:2) * abs(helicity_l - helicity_n/iota) / (helicity_n*IHat+helicity_l*GHat)^2;
+                    else
+                        quasisymmetryConstantTransportMatrix = transportMatrix * (helicity_l - helicity_n/iota);
+                        quasisymmetryConstantTransportMatrix(1:2,1:3) = quasisymmetryConstantTransportMatrix(1:2,1:3) / (helicity_n*IHat+helicity_l*GHat);
+                        quasisymmetryConstantTransportMatrix(1:3,1:2) = quasisymmetryConstantTransportMatrix(1:3,1:2) / (helicity_n*IHat+helicity_l*GHat);
+                    end
+                    quasisymmetryConstantTransportMatrix
+                    
+                    %fprintf('   > Modified L11: %g\n',L11 * (helicity_l - helicity_n/iota)/((helicity_n*IHat+helicity_l*GHat)^2))
+                    %fprintf('   > Modified L12: %g\n',L12 * (helicity_l - helicity_n/iota)/((helicity_n*IHat+helicity_l*GHat)^2))
+                    %fprintf('   > Modified L13: %g\n',L13 * (helicity_l - helicity_n/iota)/((helicity_n*IHat+helicity_l*GHat)^1))
+                    %fprintf('   > Modified L21: %g\n',L21 * (helicity_l - helicity_n/iota)/((helicity_n*IHat+helicity_l*GHat)^2))
+                    %fprintf('   > Modified L22: %g\n',L22 * (helicity_l - helicity_n/iota)/((helicity_n*IHat+helicity_l*GHat)^2))
+                    %fprintf('   > Modified L23: %g\n',L23 * (helicity_l - helicity_n/iota)/((helicity_n*IHat+helicity_l*GHat)^1))
+                    %fprintf('   > Modified L31: %g\n',L31 * (helicity_l - helicity_n/iota)/((helicity_n*IHat+helicity_l*GHat)^1))
+                    %fprintf('   > Modified L32: %g\n',L32 * (helicity_l - helicity_n/iota)/((helicity_n*IHat+helicity_l*GHat)^1))
+                    %fprintf('   > Modified L33: %g\n',L33 * (helicity_l - helicity_n/iota)/((helicity_n*IHat+helicity_l*GHat)^0))
+                end
             end
             
             if plotZetaTheta && programMode == 1
@@ -2557,15 +2638,20 @@ end
             
             switch geometryScheme
                case 1
-                  % 2-helicity model:
-                  BHarmonics_l = [1, helicity_l];
+                  % 3-helicity model:
+                  BHarmonics_l = [1, helicity_l, helicity_antisymm_l];
                   if helicity_n==0
-                    BHarmonics_n = [0, 0];
+                    BHarmonics_n = [0, 0, helicity_antisymm_n];
                   else
-                    BHarmonics_n = [0, 1];
+                    BHarmonics_n = [0, 1, helicity_antisymm_n / helicity_n];
                   end
-                  BHarmonics_amplitudes = [epsilon_t, epsilon_h];
-                  BHarmonics_parity = [1, 1];
+                  BHarmonics_amplitudes = [epsilon_t, epsilon_h, epsilon_antisymm];
+                  BHarmonics_parity = [1, 1, 0];
+                  
+                  if mod(helicity_antisymm_n, helicity_n) ~= 0
+                    beep
+                    fprintf('Warning! Typically helicity_antisymm_n should be an integer multiple of helicity_n (possibly 0).\n')
+                  end
 
                case 2
                   % LHD standard configuration.
