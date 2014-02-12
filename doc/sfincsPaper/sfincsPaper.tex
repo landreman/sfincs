@@ -418,9 +418,21 @@ once radial coupling is dropped, we must also drop the $dT_a/d\psi$ term
 in (\ref{eq:xdot1}) and the $\vma\cdot\nabla B$ term in (\ref{eq:xidot1})
 in order for $\mu$ to be conserved.
 Third, dropping these terms conveniently eliminates all dependence of the transport matrix (defined in section \ref{sec:transportMatrix})
-on $d T_a/d\psi$ and $dB/d\psi$.
-Fourth, we wish to focus on the effects of the radial electric field.
+on $d T_a/d\psi$, $dB/d\psi$,
+\changed{
+and $\rho_*$.
+Fourth, dropping these terms amounts to taking the limit $\rho_* \to 0$
+(while keeping $d\Phi_0/d\psi$ finite), 
+and this limit is already complicated and interesting to explore without the extra complexity
+of finite-$\rho_*$ corrections.
+Fifth, 
+we wish to focus on the effects of the radial electric field.
 The omitted terms may be important in other situations, but here our primary interest is the treatment of the $d\Phi_0/d\psi$ terms.
+Finally,
+these omitted terms would significantly complicate the analysis in section III,
+in which we will examine moments of the kinetic equation.
+}
+
 Our kinetic equation then becomes
 \begin{equation}
 \dot{\vect{r}}\cdot \left(\nabla f_{a1}\right)_{x_a,\xi}
@@ -703,7 +715,10 @@ The preconditioner is $LU$-factorized directly using the SuperLU-dist\cite{super
 
 Note that poloidal and toroidal magnetic drifts could be included in the kinetic equation
 without increasing the density of the matrix, i.e. without increasing the computational expense
-of the method here.  However, to include radial drifts acting on $f_{a1}$,
+of the method here.  
+\changed{We do not expect any fundamental new complications to arise
+if poloidal and toroidal magnetic drift terms are retained.}
+However, to include radial drifts acting on $f_{a1}$,
 the number of independent variables would increase from 4 to 5 since different flux surfaces
 would couple. This increase in dimensionality would be numerically challenging.
 
@@ -835,23 +850,27 @@ convection time \cite{HoKulsrud}. This behavior is not likely to be
 affected by the approximations 
 made in the DKES and partial trajectory models.
 
-In most plasma scenarios, $E_*$ can be estimated by noting that the
+In \changed{the typical ``ion root'' scenario}, $E_*$ can be estimated by noting that the
 ambipolar electric field arises to bring the ion particle transport
 down to the electron level, and is therefore approximately determined so 
-as to reduce the magnitude of the ``thermodynamic
-force'' appearing as the first component of the vector on the
+as to reduce the magnitude of the thermodynamic
+force appearing as the first component of the vector on the
 right-hand side of (\ref{eq:matrix}). The electric field is thus of
 order $E_r \sim T/(eL_\perp)$, where $L_\perp$ denotes the length
 scale corresponding to the pressure gradient. It is thus expected that $E_*$
 is of order $E_* \sim \rho_\theta / L_\perp$, where $\rho_{\theta} =
-\rho / (\iota \epsilon)$, with $\epsilon$ the inverse aspect ratio. In
-W7-X, $E_r$ is predicted to be particularly large in regions with
-steep density gradients and will in normal plasma scenarios stay below
-a few tens of kV/m, corresponding to $E_*$ up to a few tenths\cite{Turkin}.
-In most of the plasma, $E_*$ is however expected to be smaller than a few percent.
-
-
-
+\rho / (\iota \epsilon)$ and $\epsilon$ is the inverse aspect ratio,
+\changed{
+and the ratio $\rho_\theta / L_\perp$ is typically $\ll 1$.
+In W7-X, $E_*$ is predicted to be a few percent in normal plasma scenarios \cite{Turkin}.
+The largest $E_r$ in normal W7-X scenarios is predicted to be a few tens of kV/m, in the
+edge where density gradients are steep,
+corresponding to $E_*$ up to a few tenths\cite{Turkin}.
+However, in other previous experiments, scenarios with strong electron heating
+can cause $T_e \gg T_i$,
+giving rise to large positive ``electron root'' electric fields \cite{YokoyamaCERC}.
+In these scenarios, $E_*$ may be $\sim 1$. 
+}
 
 \begin{figure}[h!]
 % Figure generated using m20140205_03_plotSFINCSFortranErComparisonForPaper.m
@@ -1271,7 +1290,8 @@ respectively, where the quantities $C_V$ and $C_q$ should be independent of $M$ 
 As $\nuii / (\iota M - N)$ is to be held fixed in this test, while $\iota M - N$ can change sign as $M$ and $N$ are varied, 
 the collision frequency to use can be negative.
 While $\nuii <0$ does not make sense physically, it poses no mathematical or numerical problem.
-If the signs of the collision frequency, $\xi$, and $d\Phi_0/d\psi$ are simultaneously
+In any stellarator (even a non-quasisymmetric and/or non-stellarator-symmetric one),
+if the signs of the collision frequency, $\xi$, and $d\Phi_0/d\psi$ are simultaneously
 reversed in the kinetic equation, the part of $f_{i1}$ driven by $\left< E_{||}B\right>$ remains unchanged,
 while the part driven by radial gradients changes sign. Thus, $L_{11}$, $L_{12}$, $L_{21}$, $L_{22}$, and $L_{33}$ change sign, while
 $L_{13}$, $L_{23}$, $L_{31}$, and $L_{32}$ remain unchanged.
