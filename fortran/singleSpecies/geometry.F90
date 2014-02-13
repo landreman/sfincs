@@ -162,11 +162,16 @@ contains
        i = 3
        BHarmonics_parity(i) = .false.
        BHarmonics_l(i) = helicity_antisymm_l
-       BHarmonics_n(i) = helicity_antisymm_n / helicity_n
+       if (helicity_n == 0) then
+          BHarmonics_n(i) = helicity_antisymm_n
+       else
+          print *,"Should not get here!"
+          BHarmonics_n(i) = helicity_antisymm_n / helicity_n
+       end if
        BHarmonics_amplitudes(i) = epsilon_antisymm
 
-       if (helicity_antisymm_n .ne. helicity_n .and. helicity_antisymm_n .ne. 0) then
-          print *,"WARNING: Typically, helicity_antisymm_n should be either 0 or equal to helicity_n"
+       if ((helicity_n .eq. 0 .and. helicity_antisymm_n .ne. 0) .or. (mod(helicity_antisymm_n, helicity_n) .ne. 0)) then
+          print *,"WARNING: Typically, helicity_antisymm_n should be an integer multiple of helicity_n (possibly zero)."
        end if
 
     case (2)

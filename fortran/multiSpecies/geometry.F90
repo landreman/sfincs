@@ -162,11 +162,16 @@ contains
        i = 3
        BHarmonics_parity(i) = .false.
        BHarmonics_l(i) = helicity_antisymm_l
-       BHarmonics_n(i) = helicity_antisymm_n / helicity_n
+       if (helicity_n == 0) then
+          BHarmonics_n(i) = helicity_antisymm_n
+       else
+          print *,"Should not get here!"
+          BHarmonics_n(i) = helicity_antisymm_n / helicity_n
+       end if
        BHarmonics_amplitudes(i) = epsilon_antisymm
 
-       if (helicity_antisymm_n .ne. helicity_n .and. helicity_antisymm_n .ne. 0) then
-          print *,"WARNING: Typically, helicity_antisymm_n should be either 0 or equal to helicity_n"
+       if ((helicity_n .eq. 0 .and. helicity_antisymm_n .ne. 0) .or. (mod(helicity_antisymm_n, helicity_n) .ne. 0)) then
+          print *,"WARNING: Typically, helicity_antisymm_n should be an integer multiple of helicity_n (possibly zero)."
        end if
 
     case (2)
@@ -281,10 +286,10 @@ contains
        a = 0.5109d+0 ! (meters)
        GHat = -17.885d+0
        IHat = 0
-       psiAHat = -0.384935d+0 ! Tesla * meters^2
+       psiAHat = -0.384935d+0 ! Tesla * meters^2 / radian
 
     case (11)
-       ! Read VMEC file in .bc format used at IPP Greifswald
+       ! Read Boozer coordinate file in .bc format used at IPP Greifswald
 
        fileUnit = 11
        open(unit=fileUnit, file=JGboozer_file, action="read", status="old", iostat=didFileAccessWork)
@@ -305,8 +310,8 @@ contains
           end if
 
           NPeriods = headerIntegers(4)
-          psiAHat  = headerReals(1)/2/pi; !Convert the flux from Tm^2 to Tm^2/rad
-          a        = headerReals(2);      !minor radius in meters
+          psiAHat  = headerReals(1)/2/pi !Convert the flux from Tm^2 to Tm^2/rad
+          a        = headerReals(2)      !minor radius in meters
 
           end_of_file = .false.
 
@@ -352,10 +357,10 @@ contains
              ! Read the header for the magnetic surface:
              read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) surfHeader
 
-             normradius_new = sqrt(surfHeader(1));       ! r/a = sqrt(psi/psi_a)
-             iota_new = surfHeader(2);
-             G_new = surfHeader(3)*NPeriods/2/pi*(4*pi*1d-7); !Tesla*meter
-             I_new = surfHeader(4)/2/pi*(4*pi*1d-7);          !Tesla*meter
+             normradius_new = sqrt(surfHeader(1))       ! r/a = sqrt(psi/psi_a)
+             iota_new = surfHeader(2)
+             G_new = surfHeader(3)*NPeriods/2/pi*(4*pi*1d-7) !Tesla*meter
+             I_new = surfHeader(4)/2/pi*(4*pi*1d-7)          !Tesla*meter
 
              ! Skip units line:
              read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
@@ -620,7 +625,7 @@ contains
     dBHatdzeta = 0
 
     do i = 1, NHarmonics
-       if (BHarmonics_parity(i)) then
+       if (BHarmonics_parity(i)) then   ! The cosine components of BHat
           do itheta = 1,Ntheta
              BHat(itheta,:) = BHat(itheta,:) + B0OverBBar * BHarmonics_amplitudes(i) * &
                   cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
@@ -632,7 +637,7 @@ contains
                   sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
 
           end do
-       else
+       else  ! The sine components of BHat
           do itheta = 1,Ntheta
              BHat(itheta,:) = BHat(itheta,:) + B0OverBBar * BHarmonics_amplitudes(i) * &
                   sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)

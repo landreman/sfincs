@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=latex 2012.7.6)  5 FEB 2014 21:33
+This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=latex 2012.7.6)  10 FEB 2014 12:42
 entering extended mode
  %&-line parsing enabled.
 **sfincsPaper
@@ -292,15 +292,15 @@ ype eps)
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-[21] [22] [23] [24] [25] [26] (./sfincsPaper.bbl [27] [28] [29]) [30]
+[21] [22] [23] [24] [25] [26] [27] (./sfincsPaper.bbl [28] [29]) [30]
 (./sfincsPaper.aux) ) 
 Here is how much of TeX's memory you used:
- 3546 strings out of 495062
- 43950 string characters out of 1182645
- 117463 words of memory out of 3000000
- 6684 multiletter control sequences out of 15000+50000
+ 3548 strings out of 495062
+ 43971 string characters out of 1182645
+ 116463 words of memory out of 3000000
+ 6686 multiletter control sequences out of 15000+50000
  17815 words of font info for 73 fonts, out of 3000000 for 9000
  28 hyphenation exceptions out of 8191
  34i,18n,30p,778b,399s stack positions out of 5000i,500n,10000p,200000b,50000s
 
-Output written on sfincsPaper.dvi (30 pages, 110752 bytes).
+Output written on sfincsPaper.dvi (30 pages, 112776 bytes).

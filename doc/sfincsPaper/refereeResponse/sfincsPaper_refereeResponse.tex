@@ -14,6 +14,7 @@
 
 % newcommands
 \newcommand{\vect}[1]{\mbox{\boldmath $#1$}}
+\newcommand{\todo}[1]{{\color{red}#1}}
 \newenvironment{referee}{\begin{quote}\it\color{Blue}}{\end{quote}}
 
 \begin{document}  
@@ -29,8 +30,8 @@ Below we address each of your points in detail.
 
 \begin{referee}
 If it is not difficult numerically to retain the poloidal and toroidal magnetic drifts in the
-equations of motion, as it is written in the middle of page 13, why do authors keep these term
-and remove only the component from eqs.(12) and (14)? I understand that it is to make
+equations of motion, as it is written in the middle of page 13, why do authors [not] keep these term
+and remove only the $v_{ma}\cdot\nabla\psi$ component from eqs.(12) and (14)? I understand that it is to make
 the ``DKES trajectories'', but it seems that approximating in (12) and (14) still
 holds the conservation of $\mu$. Is it just because ``The omitted terms may be important in other
 situations, but here our primary interest is the treatment of the $d\Phi/d\psi$ terms'' that the magnetic
@@ -38,7 +39,32 @@ drift term is completely dropped from (12) and (14), or is there any other unexp
 in solving the transport equation with the poloidal and toroidal magnetic drift terms kept?
 \end{referee}
 
-Response goes here.
+We do not expect any fundamental complications to arise if the poloidal and toroidal magnetic drifts
+were retained in the kinetic equation. 
+However, we have several reasons for neglecting these magnetic drifts
+ in this manuscript.
+\begin{enumerate}
+\item The ratio of these magnetic drifts to the parallel streaming term we keep is $\sim \rho_* = \rho / L$
+ (the gyroradius to scale length), so neglecting the poloidal and toroidal magnetic drifts is
+equivalent to considering the $\rho_* \to 0$ limit.
+Since our primary interest in this paper is to compare the various options for the electric field
+terms and collision operator, it is reasonable to take this $\rho_* \to 0$ limit for simplicity.
+\item
+Retaining these drifts would make the transport matrix (and figures 1, 2, 4, and 4)
+depend on $\rho_*$ in addition to $\nu'$ and $E_*$. 
+The dependence of the matrix elements on $\nu'$ and $E_*$ is already  complicated
+and interesting to discuss in the $\rho_* \to 0$ limit,
+without the extra complexity of finite-$\rho_*$ effects.
+%\item Including these magnetic drift terms would also introduce dependence on the radial
+%derivatives of the magnetic field
+\item The poloidal and toroidal magnetic drifts would add extra complicating
+terms to the analysis of moments of the kinetic equation in section III.
+%\item If the poloidal and toroidal magnetic drifts are retained without the radial magnetic drift, ????
+%\item The poloidal and magnetic drift terms will take additional time to implement in the code, 
+%and the 
+\end{enumerate}
+
+We have added some text to section II (between (14)-(15)) and a sentence to section IV (between \todo{(26)-(27)}) to clarify these issues.
 
 \begin{referee}
 Here the conservation properties of mass and energy in three trajectory models are discussed,
@@ -55,7 +81,7 @@ balance equation as eq.(36)? Or more simply, do these three trajectory models ev
 parallel viscosity $\left<\vect{b}\cdot\nabla\cdot\vect{\pi}\right>$ correctly?
 \end{referee}
 
-Response goes here.
+\todo{Response goes here.}
 
 \begin{referee}
 I do not understand why the source term (25) does not work well with the pitch-angle scattering
@@ -70,7 +96,23 @@ Please explain the reason of changing the source term according to the collision
 detail.
 \end{referee}
 
-Response goes here.
+Probably this issue was unclear because the sources actually serve two independent purposes,
+not only to circumvent the conservation problems when $E_r$ is nonzero, but also to eliminate the null
+space of the kinetic equation which is a problem even at $E_r=0$.
+
+First, consider the case $E_r=0$, so there is no difference between the trajectory models.
+Consider the homogeneous solutions of the kinetic equation, i.e. the null space of the linear system
+we solve if no sources or constraints are included. 
+When the linearized Fokker-Planck operator is used, 
+there are 2 linearly independent homogeneous solutions:
+a Maxwellian flux function,
+and a Maxwellian flux function times $v^2$.
+However, if the pure pitch-angle scattering operator or momentum-conserving model
+collision operator are used, there are $N_x$ independent homogeneous solutions,
+since any function of $v$ (independent of $\theta$,$\zeta$, and $\xi$)
+is in the null space. 
+
+\todo{Now consider the case of nonzero $E_r$...}
 
 \begin{referee}
 Concerning the source/sink term, I think that the usage of such an artificial term is relevant if
@@ -79,7 +121,7 @@ some cases shown in Section VI, by comparing $\left< \int d^3v\, S(\psi,v) \righ
 $\Delta t$ is some characteristic time scale such as collision time or transport time scale.
 \end{referee}
 
-Response goes here.
+\todo{Response goes here.}
 
 \begin{referee}
 Explanation for Fig 1 and 2: Though authors write ``As $E_r \to 0$, all the matrix elements converge
@@ -88,7 +130,7 @@ cannot judge if their claim is true or not. Please show the value of $L_{jk}(E_r
 too.
 \end{referee}
 
-The values for $E_r=0$ are now plotted on figures (1)-(2), as $\blacktriangleright$ symbols on the left axis
+Computations for $E_r=0$ are now plotted on figures (1)-(2), as $\blacktriangleright$ symbols on the left axis
 of each sub-figure.
 
 \begin{referee}
@@ -100,7 +142,11 @@ I think therefore the statement ``In most of the plasma, $E_*$ is however expect
 than a few percent.'' is too strong and may be misleading.
 \end{referee}
 
-Response goes here.
+We agree that in scenarios with $T_e \gg T_i$, such as a Core Electron Root Confinement regime,
+$E_*$ may be larger than a few percent. (Our original statement
+was meant only to apply to a standard ion-root W7-X regime,
+but this should have been clarified.) The text in the manuscript has now been updated to acknowledge
+the possibility of an electron root and that $E_*$ may not be small. 
 
 \begin{referee}
 Appendix: The authors claims that the parallel flow and heat flux solved by SFINCS code obeys the
@@ -110,7 +156,15 @@ suppose that the usage of source term in the full trajectory model is justified 
 quasisymmetric systems. Can author comment on this point in Appendix?
 \end{referee}
 
-Response goes here.
+We have changed and expanded the text in this appendix for clarification. 
+For all of the trajectory models described, an isomorphism does hold for the transport matrix elements
+if the electric field is varied so
+$(GM+IN)(\iota M-N)^{-1} d\Phi_0/d\psi$ remains constant as $M$ and $N$ are varied.
+%This required transformation of $d\Phi_0/d\psi$ can be found in the last line of table 1 in Ref. [49].
+
+The second part of your question is an interesting observation: when the full trajectory model
+is applied to a quasisymmetric field, the source vanishes for any $E_r$, not just the ambipolar one (as in a non-quasisymmetric field.)
+We now highlight this point in Appendix A and in \todo{the new discussion of intrinsic ambipolarity in section III.}
 
 \vspace{0.3in}
 
