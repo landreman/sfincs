@@ -6,7 +6,7 @@
 %Control: page (0) single
 %Control: year (1) truncated
 %Control: production of eprint (0) enabled
-\begin{thebibliography}{49}%
+\begin{thebibliography}{52}%
 \makeatletter
 \providecommand \@ifxundefined [1]{%
  \@ifx{#1\undefined}
@@ -339,6 +339,22 @@
   Magnetized Plasmas}}}\ (\bibinfo  {publisher} {Cambridge University Press},\
   \bibinfo {address} {Cambridge},\ \bibinfo {year} {2002})\BibitemShut
   {NoStop}%
+\bibitem [{\citenamefont {Simakov}\ and\ \citenamefont
+  {Catto}(2005)}]{SimakovCattoSecondOrderDKE}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {A.~N.}\ \bibnamefont
+  {Simakov}}\ and\ \bibinfo {author} {\bibfnamefont {P.~J.}\ \bibnamefont
+  {Catto}},\ }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal} {Phys.
+  Plasmas}\ }\textbf {\bibinfo {volume} {12}},\ \bibinfo {pages} {012105}
+  (\bibinfo {year} {2005})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Helander}\ and\ \citenamefont
+  {Simakov}(2008)}]{PerAndreiPRL}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {P.}~\bibnamefont
+  {Helander}}\ and\ \bibinfo {author} {\bibfnamefont {A.~N.}\ \bibnamefont
+  {Simakov}},\ }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal} {Phys.
+  Rev. Lett.}\ }\textbf {\bibinfo {volume} {101}},\ \bibinfo {pages} {145003}
+  (\bibinfo {year} {2008})}\BibitemShut {NoStop}%
 \bibitem [{\citenamefont {Landreman}\ \emph {et~al.}(2013)\citenamefont
   {Landreman}, \citenamefont {Parra}, \citenamefont {Catto}, \citenamefont
   {Ernst},\ and\ \citenamefont {Pusztai}}]{PERFECT}%
@@ -492,6 +508,29 @@
   {journal} {\bibinfo  {journal} {Phys. Plasmas}\ }\textbf {\bibinfo {volume}
   {18}},\ \bibinfo {pages} {022505} (\bibinfo {year} {2011})}\BibitemShut
   {NoStop}%
+\bibitem [{\citenamefont {Yokoyama}\ \emph {et~al.}(2007)\citenamefont
+  {Yokoyama}, \citenamefont {Maassberg}, \citenamefont {Beidler}, \citenamefont
+  {Tribaldos}, \citenamefont {Ida}, \citenamefont {Estrada}, \citenamefont
+  {Castejon}, \citenamefont {Fujisawa}, \citenamefont {Minami}, \citenamefont
+  {Shimozuma}, \citenamefont {Takeiri}, \citenamefont {Dinklage}, \citenamefont
+  {Murakami},\ and\ \citenamefont {Yamada}}]{YokoyamaCERC}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {M.}~\bibnamefont
+  {Yokoyama}}, \bibinfo {author} {\bibfnamefont {H.}~\bibnamefont {Maassberg}},
+  \bibinfo {author} {\bibfnamefont {C.~D.}\ \bibnamefont {Beidler}}, \bibinfo
+  {author} {\bibfnamefont {V.}~\bibnamefont {Tribaldos}}, \bibinfo {author}
+  {\bibfnamefont {K.}~\bibnamefont {Ida}}, \bibinfo {author} {\bibfnamefont
+  {T.}~\bibnamefont {Estrada}}, \bibinfo {author} {\bibfnamefont
+  {F.}~\bibnamefont {Castejon}}, \bibinfo {author} {\bibfnamefont
+  {A.}~\bibnamefont {Fujisawa}}, \bibinfo {author} {\bibfnamefont
+  {T.}~\bibnamefont {Minami}}, \bibinfo {author} {\bibfnamefont
+  {T.}~\bibnamefont {Shimozuma}}, \bibinfo {author} {\bibfnamefont
+  {Y.}~\bibnamefont {Takeiri}}, \bibinfo {author} {\bibfnamefont
+  {A.}~\bibnamefont {Dinklage}}, \bibinfo {author} {\bibfnamefont
+  {S.}~\bibnamefont {Murakami}}, \ and\ \bibinfo {author} {\bibfnamefont
+  {H.}~\bibnamefont {Yamada}},\ }\href@noop {} {\bibfield  {journal} {\bibinfo
+  {journal} {Nucl. Fusion}\ }\textbf {\bibinfo {volume} {47}},\ \bibinfo
+  {pages} {1213} (\bibinfo {year} {2007})}\BibitemShut {NoStop}%
 \bibitem [{\citenamefont {Simakov}\ and\ \citenamefont
   {Helander}(2009)}]{AndreiPer2009}%
   \BibitemOpen
