@@ -2422,6 +2422,7 @@ end
                 format longg
                 transportMatrix
                 
+                if 0
                 %{ %Uncomment here to print SI version on screen
                   if geometryScheme==11 || geometryScheme==4
                     TSI=THat*1e3*1.6022e-19; %Assuming Tbar = 1 keV
@@ -2448,6 +2449,7 @@ end
                     transportMatrixSI
                   end
                 %}
+                end
             end
             
             if testQuasisymmetryIsomorphism
@@ -2704,12 +2706,13 @@ end
                   %psiAHat = -B0OverBBar*a^2/2;
                   GHat = -17.885;%B0OverBBar * R0;
                   IHat = 0;
-                  psiAHat = -0.384935;
+                  psiAHat = -0.384935; %Does not affect solution
+                  %psiAHat = -40;
                   radius=0.2555; %m, radius of the flux surface
                   dPsidr=2*psiAHat/a*(radius/a);
                   %nuPrime=nuN*abs(GHat+iota*IHat)/B0OverBBar/sqrt(THat);
                   nuPrime=nuN*(GHat+iota*IHat)/B0OverBBar/sqrt(THat)
-
+                  
                case 10
                   fid = fopen(fort996boozer_file);
                   if fid<0
@@ -3008,11 +3011,7 @@ end
                   
                   dPsidr=2*psiAHat/a*normradius;
                   nuPrime=nuN*(GHat+iota*IHat)/B0OverBBar/sqrt(THat)
-                  
-                  %disp([num2str(iota),', ',num2str(GHat),', ',num2str(IHat),', '...
-                  %      ,num2str(B0OverBBar),', ',num2str(psiAHat),', ' ...
-                  %                    ,num2str(a),', ',num2str(NPeriods)])
-                  
+                                    
              otherwise
                   error('Invalid setting for geometryScheme')
             end
