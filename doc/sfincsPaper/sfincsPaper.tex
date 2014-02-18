@@ -307,7 +307,11 @@ but when the collisionality is low, the solution of the full equation becomes
 asymptotically close to the solution of the bounce-averaged equation.)
 
 As shown in Appendix C of Ref. \cite{usPedestal}, we may choose the gauge
-for the electromagnetic potentials such that $-c^{-1}\vect{b}\cdot\partial\vect{A}/\partial t = \left<E_{||} B\right> B/\left<B^2\right>$
+for the electromagnetic potentials such that 
+\begin{equation}
+-c^{-1}\vect{b}\cdot\partial\vect{A}/\partial t = \left<E_{||} B\right> B/\left<B^2\right>
+\label{eq:gauge}
+\end{equation}
 on the right-hand side of (\ref{eq:kinetic1}).
 Here, angle brackets denote a flux surface average:
 \begin{equation}
@@ -674,23 +678,33 @@ limit of the momentum moment equation.
 
 \changed{
 Nonetheless, it is interesting to compare the $\int d^3v\, m_a v_{||} (\ldots)$ moment equations
-for each trajectory model to the full parallel momentum fluid equation. This later equation is
+for each drift-kinetic trajectory model to the full parallel momentum fluid equation. This later equation,
+the moment of the full Fokker-Planck equation, is
 \begin{equation}
-???
+0 = -\vect{b}\cdot\left( \nabla\cdot\tens{\Pi}_a\right)
++ Z_a e n_a E_{||} + F_{a||}
+\label{eq:fluidParallelMomentum}
 \end{equation}
+where $\tens{\Pi_a} = m_a \int d^3v\, f_a \vect{v}\vect{v}$ is the stress tensor
+and $F_{a||}$ is the parallel component of friction.
 First, consider the case of no radial electric field.
-The stress tensor is given to the accuracy needed by $\tens{\Pi}_a \approx \tens{\Pi}_{a||}$
-where $\tens{\Pi}_{a||} = p_{a \bot} \tens{I} + (p_{a||} - p_{a\bot}) \vect{b}\vect{b}$,
-$p_{a||} = m_a \int d^3v\, f_{a1} v_{||}^2$, and $p_{a\bot} = m_a \int d^3v\, f_{a1} v_{\bot}^2/2$.
-Then noting the $\int d^3v\, m_a v_{||} (\ldots)$ moment of the streaming and mirror terms is
+Recalling
+$f_a = F_a(\psi)\left[ 1 - Z_a e \Phi_1/T_a\right] + f_{a1}$, 
+the stress tensor is given to the accuracy needed by 
+$\tens{\Pi}_a \approx p_a(\psi)\left[1 - Z_a e \Phi_1/T_a\right] \tens{I} + \tens{\Pi}_{a1}$
+where $\tens{\Pi}_{a1} = p_{a 1 \bot} \tens{I} + (p_{a1||} - p_{a1\bot}) \vect{b}\vect{b}$,
+$p_{a1||} = m_a \int d^3v\, f_{a1} v_{||}^2$, and $p_{a1\bot} = m_a \int d^3v\, f_{a1} v_{\bot}^2/2$.
+Notice the $\int d^3v\, m_a v_{||} (\ldots)$ moment of the streaming and mirror terms in (\ref{eq:kinetic4})-(\ref{eq:fullTrajectories}) is
 \begin{eqnarray}
 \int d^3v\, m_a v_{||} \left[ v_{||} \vect{b}\cdot\nabla f_{a1} - \frac{1-\xi^2}{2B}v(\vect{b}\cdot\nabla B) \frac{\partial f_{a1}}{\partial \xi} \right]
 & = &
-\vect{b}\cdot\nabla p_{a||1} + \frac{ p_{a\bot 1} - p_{a || 1}}{B} \vect{b}\cdot\nabla B \nonumber \\
+\vect{b}\cdot\nabla p_{a1||} + \frac{ p_{a1\bot} - p_{a1 ||}}{B} \vect{b}\cdot\nabla B \nonumber \\
 & = &
- -\vect{b} \cdot \left(\nabla \cdot \tens{\Pi}_{a||} \right),
+\vect{b} \cdot \left(\nabla \cdot \tens{\Pi}_{a1} \right).
 \end{eqnarray}
-one can see the drift-kinetic equation (\ref{}) is consistent with the full fluid parallel momentum equation
+Using this result with (\ref{eq:gauge}), the $m_a v_{||}$ moment of 
+the drift-kinetic equation (\ref{eq:kinetic4})-(\ref{eq:fullTrajectories}) matches
+the full fluid parallel momentum equation (\ref{eq:fluidParallelMomentum})
 at least when $E_r=0$.
 }
 
@@ -702,7 +716,7 @@ Examining the $\left( \vect{E} + c^{-1} \vect{v}\times\vect{B}\right) \cdot \nab
 the full Fokker-Planck equation and integrating in gyrophase, one sees the gyrophase-dependent part of the 
 distribution function $\tilde{f}_a$ will include the following terms proportional to the electric field:
 \begin{equation}
-\tilde{f}_{aE} = -\frac{c}{B} \vect{v}\cdot\vect{b}\times\nabla\Phi \left[ \frac{1}{v} \frac{\partial \bar{f}_a}{\partial v}
+\tilde{f}_{aE} = \frac{c}{B} \vect{v}\cdot\vect{b}\times\vect{E} \left[ \frac{1}{v} \frac{\partial \bar{f}_a}{\partial v}
 -\frac{\xi}{v^2} \frac{\partial \bar{f}_a}{\partial \xi} \right]
 \label{eq:fTilde}
 \end{equation}
@@ -715,8 +729,8 @@ with the result
 \tens{\Pi}_{aE} = m_a n_a V_{a||} \left( \vect{b}\vect{v}_E + \vect{v}_E \vect{b} \right)
 \label{eq:PiE}
 \end{equation}
-where $n_a V_{a||} = \int d^3v\, \bar{f}_a v_{||}$. Note that this contribution to the stress tensor is a part of the gyroviscosity and is off-diagonal.
-Using $\Phi \approx \Phi_0(\psi)$ and $\vect{B} \cdot \left\{ \nabla \cdot \left[ \vect{B}\vect{B}\times\nabla\psi + (\vect{B}\times\nabla\psi) \vect{B} \right] \right\}
+where $n_a V_{a||} = \int d^3v\, f_a v_{||}$. Note that this contribution to the stress tensor is a part of the gyroviscosity and is off-diagonal.
+Using $\vect{E} \approx -\nabla \Phi_0(\psi)$ and $\vect{B} \cdot \left\{ \nabla \cdot \left[ \vect{B}\vect{B}\times\nabla\psi + (\vect{B}\times\nabla\psi) \vect{B} \right] \right\}
 =2B^2\nabla\psi\cdot\nabla\times\vect{B}=0$,
 we then find the contribution to the parallel momentum equation from (\ref{eq:fTilde})-(\ref{eq:PiE}) is
 \begin{equation}
@@ -728,7 +742,7 @@ c m_a B (d\Phi_0/d\psi)
 }
 
 \changed{
-Finally, let us consider the $\int d^3v\, m_a v_{||} (\ldots)$ moment of the radial electric field
+For comparison, let us consider the $\int d^3v\, m_a v_{||} (\ldots)$ moment of the radial electric field
 terms in the drift-kinetic equation for various trajectory models, to see if the results agree with (\ref{eq:PiEParallel}).
 For the full trajectories, the moment of the $d\Phi_0/d\psi$ terms in (\ref{eq:kinetic4})-(\ref{eq:fullTrajectories}) is
 \begin{eqnarray}
@@ -781,15 +795,19 @@ when the $E_r$ terms are retained in the full trajectory
 drift-kinetic equation, but not for the DKES or partial trajectory kinetic equations.
 This result follows from the $-\sum_a Z_a \left< \int d^3v\, A v_{||} / \Omega_a (\ldots)\right>$
 moment of the kinetic equations, i.e. a spatially weighted average of the parallel momentum
-moment. For the full trajectories, the $d\Phi_0/d\psi$ terms
-may be integrated by parts, canceling each other to leave
+moment. For the full trajectories, 
+(\ref{eq:fullViscosity}) vanishes in this spatial average, leaving
 \begin{equation}
 \sum_a Z_a \left< \int d^3v\, f_{a1} \vma\cdot\nabla\psi\right>=0,
 \label{eq:noCurrent}
 \end{equation}
-meaning the radial current vanishes. However, for the DKES and partial trajectory models, the $d\Phi_0/d\psi$ terms
-do not cancel, leaving an additional term in (\ref{eq:noCurrent}) proportional to $d\Phi_0/d\psi$,
-meaning the radial current is generally nonzero.  Notice that when the full trajectory model is applied in quasisymmetry,
+meaning there is no radial current. However, for the DKES and partial trajectory models, the
+spatial average does not annihilate the $d\Phi_0/d\psi$ terms,
+leaving an additional term in (\ref{eq:noCurrent}) proportional to $d\Phi_0/d\psi$,
+and therefore the radial current is generally nonzero.  
+Consequently, the full trajectory model is the only one of the models that preserves
+intrinsic ambipolarity in quasisymmetry for $E_r \ne 0$.
+Notice that when the full trajectory model is applied in quasisymmetry,
 intrinsic ambipolarity means (\ref{eq:unphysicalEnergyConservation2}) is satisfied even when $d\Phi_0/d\psi \ne 0$,
 so the net heat source vanishes for any radial electric field.
 }
@@ -1149,17 +1167,18 @@ friction force and one related to parallel viscosity \cite{AndreiPer2009, Braun}
 \begin{equation}
 m_a n_a \vect{V}_a \cdot \nabla \vect{V}_a = n_a e_a \left( - \nabla \phi + c^{-1}\vect{V}_a \times \vect{B} \right)
 - \nabla p_a - \nabla \cdot \vect{\pi}_a + \vect{F}_a, 
+\label{eq:vectorMomentum}
 \end{equation}
 neglecting the left-hand side. Since $\nabla \cdot \vect{J} = 0$ and $n_a$ is a flux function in lowest order, we obtain
-	\begin{equation}
-	 \left< n_a \vect{V}_a \cdot \nabla \psi \right> 
-	= \frac{1}{e_a p'(\psi)} \left< \vect{J} \cdot \left( \vect{F}_a - \nabla \cdot \vect{\pi}_a \right) \right>,
-	\end{equation}
+\begin{equation}
+  \left< n_a \vect{V}_a \cdot \nabla \psi \right> 
+  = \frac{1}{e_a p'(\psi)} \left< \vect{J} \cdot \left( \vect{F}_a - \nabla \cdot \vect{\pi}_a \right) \right>,
+\end{equation}
 where the term corresponding to the perpendicular component of the friction force $\vect{F}_a$ represents the classical particle flux and the other terms the neoclassical flux,
-		\begin{equation}
-	 \left< n_a \vect{V}_a \cdot \nabla \psi \right>_{nc} = \frac{1}{e_ap'} \left< J_\| F_{a\|} + \vect{\pi}:\nabla \vect{J} \right>
-	 \label{PS flux}
-	 \end{equation}
+\begin{equation}
+  \left< n_a \vect{V}_a \cdot \nabla \psi \right>_{nc} = \frac{1}{e_ap'} \left< J_\| F_{a\|} + \vect{\pi}:\nabla \vect{J} \right>
+  \label{PS flux}
+\end{equation}
 where the viscosity tensor is $\vect{\pi}_a =(p_{\|} - p_{\perp})(\vect{b b} - {\bf I}/3)$.
 The first term in (\ref{PS flux}) is proportional to $\nu$ and
 therefore dominates at high collisionality, but vanishes when there is only a 
@@ -1177,10 +1196,10 @@ while the blue and red curves have the slope -1.
 A similar difference between the momentum-conserving and
 pitch-angle-scattering operators is evident in the parallel
 conductivity coefficient $L_{33}$. The flow that arises in response to
-a parallel electric field is determined by the parallel momentum equation
-\begin{equation} 
-n_a Z_a e E_{||} = \vect{b}\cdot \nabla p_a + \vect{b}\cdot(\nabla \cdot \vect{\pi}_a )+ F_{a||}, 
-\end{equation} 
+a parallel electric field is determined by the parallel momentum equation $\vect{b}\cdot$(\ref{eq:vectorMomentum}),
+%\begin{equation} 
+%n_a Z_a e E_{||} = \vect{b}\cdot \nabla p_a + \vect{b}\cdot(\nabla \cdot \vect{\pi}_a )+ F_{a||}, 
+%\end{equation} 
 where the parallel friction force $F_{\|a}$ again vanishes when only a
 single ion species is considered. Hence 
 \begin{equation} 
