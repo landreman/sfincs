@@ -802,7 +802,7 @@ moment. For the full trajectories,
 \label{eq:noCurrent}
 \end{equation}
 meaning there is no radial current. However, for the DKES and partial trajectory models, the
-spatial average does not annihilate the $d\Phi_0/d\psi$ terms,
+spatial average does not annihilate the $d\Phi_0/d\psi$ term,
 leaving an additional term in (\ref{eq:noCurrent}) proportional to $d\Phi_0/d\psi$,
 and therefore the radial current is generally nonzero.  
 Consequently, the full trajectory model is the only one of the models that preserves
@@ -1121,18 +1121,43 @@ in the full trajectory model changes sign, whereas there is no sign change in th
 
 
 \begin{figure}[h!]
-% Figure generated using m20131212_02_PlotSFINCS2SpeciesEScanForPaper.m
+% Figure generated using m20140219_02_PlotSFINCS2SpeciesEScanForPaper_withSources.m
+% ----------------------------------------
+% Previous version of figure generated using m20131212_02_PlotSFINCS2SpeciesEScanForPaper.m
 % SFINCS run on hopper and edison in 
 % /global/scratch2/sd/landrema/20131204-02-sfincs-fortran-hopper-intel
-\includegraphics{m20131212_02_PlotSFINCS2SpeciesEScanForPaper.eps}
+\includegraphics[height=7.5in]{m20140219_02_PlotSFINCS2SpeciesEScanForPaper_withSources.eps}
+%\includegraphics{m20131212_02_PlotSFINCS2SpeciesEScanForPaper.eps}
 \caption{(Color online)
-Fluxes and flows computed for a scenario of steep pressure gradient near the edge of W7-X.
+Fluxes (A)-(B), flow (C), and bootstrap current (D)
+computed for a scenario of steep pressure gradient near the edge of W7-X.
 Magenta dotted line is the ambipolar $E_r$, effectively identical for the three
 trajectory models.
+\changed{
+The ion particle and heat sources in (D)-(E) are normalized
+by a gyro-Bohm transport time $t_{gB}$.}
 \label{fig:2species}}
 \end{figure}
 
 
+\changed{
+Figures (\ref{fig:2species}).E-F illustrate the ion particle and heat sources computed as part of the calculation.
+As expected, the particle and heat sources are zero for the DKES model,
+and for the full trajectory model, 
+the particle source is always zero and the heat source vanishes at the ambipolar $E_r$.
+Electron sources are negligible.
+The plots show $S_{H\mathrm{p}}$ and $S_{H\mathrm{h}}$ from (\ref{eq:sources}) normalized to a gyro-Bohm transport time scale
+$t_{gB} = L^2/D_{gB}$ with $D_{gB} = (\rho_i / L) cT/(eB_0)$, thereby
+roughly normalizing the numerical sources to the scale of real physical sources arising from 
+the divergence of the turbulent and neoclassical fluxes.
+For this comparison we choose $L = -n / (dn/dr)$ to be the density scale length.
+For the range of electric fields considered, the numerical sources are small on this transport time scale,
+giving confidence in the model.
+For the parameters considered, $\nuii t_{gB} = 0.4$, 
+so dividing the values in figures (\ref{fig:2species}).E-F by this factor,
+the source terms evidently remain much smaller
+than the collision term in the kinetic equation for this calculation.
+}
 
 \section{Comparison of collision operators}
 \label{sec:collisionComparison}

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=latex 2012.7.6)  18 FEB 2014 10:19
+This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=latex 2012.7.6)  20 FEB 2014 15:32
 entering extended mode
  %&-line parsing enabled.
 **sfincsPaper
@@ -275,16 +275,13 @@ LaTeX Warning: `!h' float specifier changed to `!ht'.
 File: m20140205_03_plotSFINCSFortranErComparisonForPaper_W7X.eps Graphic file (
 type eps)
 <m20140205_03_plotSFINCSFortranErComparisonForPaper_W7X.eps>
-Overfull \hbox (0.75124pt too wide) in paragraph at lines 1074--1076
- [][] 
- []
-
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
 [19] [20]
-File: m20131212_02_PlotSFINCS2SpeciesEScanForPaper.eps Graphic file (type eps)
- <m20131212_02_PlotSFINCS2SpeciesEScanForPaper.eps>
+File: m20140219_02_PlotSFINCS2SpeciesEScanForPaper_withSources.eps Graphic file
+ (type eps)
+ <m20140219_02_PlotSFINCS2SpeciesEScanForPaper_withSources.eps>
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
@@ -293,9 +290,11 @@ File: m20140205_01_plotSFINCSFortranAndMatlabNuScansForPaper_LHD.eps Graphic fi
 le (type eps)
 
 <m20140205_01_plotSFINCSFortranAndMatlabNuScansForPaper_LHD.eps>
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
 File: m20140205_01_plotSFINCSFortranAndMatlabNuScansForPaper_W7X.eps Graphic fi
 le (type eps)
-
 <m20140205_01_plotSFINCSFortranAndMatlabNuScansForPaper_W7X.eps>
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
@@ -310,11 +309,11 @@ LaTeX Warning: `!h' float specifier changed to `!ht'.
 (./sfincsPaper.aux) ) 
 Here is how much of TeX's memory you used:
  3571 strings out of 495062
- 44381 string characters out of 1182645
- 116878 words of memory out of 3000000
+ 44406 string characters out of 1182645
+ 117878 words of memory out of 3000000
  6708 multiletter control sequences out of 15000+50000
  18162 words of font info for 74 fonts, out of 3000000 for 9000
  28 hyphenation exceptions out of 8191
  34i,19n,30p,778b,403s stack positions out of 5000i,500n,10000p,200000b,50000s
 
-Output written on sfincsPaper.dvi (34 pages, 128752 bytes).
+Output written on sfincsPaper.dvi (34 pages, 130472 bytes).
