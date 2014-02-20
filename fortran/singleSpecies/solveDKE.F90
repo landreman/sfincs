@@ -1176,10 +1176,12 @@
                    rowIndex = (ix-1)*Nxi*Ntheta*Nzeta + L*Ntheta*Nzeta + (itheta-1)*Nzeta + izeta-1
 
                    colIndex = matrixSize-2
-                   call MatSetValueSparse(matrix, rowIndex, colIndex, xPartOfSource1, ADD_VALUES, ierr)
+                   call MatSetValueSparse(matrix, rowIndex, colIndex, xPartOfSource1 / (BHat(itheta,izeta) ** 2),&
+                        ADD_VALUES, ierr)
 
                    colIndex = matrixSize-1
-                   call MatSetValueSparse(matrix, rowIndex, colIndex, xPartOfSource2, ADD_VALUES, ierr)
+                   call MatSetValueSparse(matrix, rowIndex, colIndex, xPartOfSource2 / (BHat(itheta,izeta) ** 2),&
+                        ADD_VALUES, ierr)
                 end do
              end do
           end do
@@ -1192,7 +1194,8 @@
                 do izeta = 1,Nzeta
                    rowIndex = (ix-1)*Nxi*Ntheta*Nzeta + L*Ntheta*Nzeta + (itheta-1)*Nzeta + izeta-1
                    colIndex = Nx*Nxi*Ntheta*Nzeta + ix - 1
-                   call MatSetValue(matrix, rowIndex, colIndex, one, ADD_VALUES, ierr)
+                   call MatSetValue(matrix, rowIndex, colIndex, one / (BHat(itheta,izeta) ** 2),&
+                        ADD_VALUES, ierr)
                 end do
              end do
           end do

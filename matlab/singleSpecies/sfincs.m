@@ -2115,7 +2115,8 @@ end
             % --------------------------------------------------
             % Add sources.
             % --------------------------------------------------
-            
+
+            spatialPart = 1./(BHat.^2);
             switch constraintScheme
                 case 0
                     % Do nothing
@@ -2124,23 +2125,32 @@ end
                     xPartOfSource1 = (x2-5/2).*expx2;
                     xPartOfSource2 = (x2-3/2).*expx2;
                     
-                    for ix=1:Nx
-                        rowIndices = (ix-1)*Nxi*Ntheta*Nzeta + (1:(Ntheta*Nzeta));
+                    for itheta=1:Ntheta
+                        for ix=1:Nx
+                            rowIndices = (ix-1)*Nxi*Ntheta*Nzeta + ...
+                                (itheta-1)*Nzeta + (1:Nzeta);
                         
-                        colIndex = matrixSize-1;
-                        addSparseBlock(rowIndices, colIndex, xPartOfSource1(ix)*ones(Ntheta*Nzeta,1))
+                            colIndex = matrixSize-1;
+                            addSparseBlock(rowIndices, colIndex, xPartOfSource1(ix)*spatialPart(itheta,:)')
                         
-                        colIndex = matrixSize;
-                        addSparseBlock(rowIndices, colIndex, xPartOfSource2(ix)*ones(Ntheta*Nzeta,1))
+                            colIndex = matrixSize;
+                            addSparseBlock(rowIndices, colIndex, ...
+                                           xPartOfSource2(ix)*spatialPart(itheta,:)')
+                        end
                     end
                     
                 case 2
                     
-                    for ix=1:Nx
-                        rowIndices = (ix-1)*Nxi*Ntheta*Nzeta + (1:(Ntheta*Nzeta));
-                        colIndex = Nx*Nxi*Ntheta*Nzeta + ix;
-                        addSparseBlock(rowIndices, colIndex, ones(Ntheta*Nzeta,1))
-                    end
+                  for itheta=1:Ntheta
+                      for ix=1:Nx
+                          rowIndices = (ix-1)*Nxi*Ntheta*Nzeta + ...
+                              (itheta-1)*Nzeta + (1:Nzeta);
+
+                          colIndex = Nx*Nxi*Ntheta*Nzeta + ix;
+                          addSparseBlock(rowIndices, colIndex, ...
+                                         spatialPart(itheta,:)')
+                      end
+                  end
                 otherwise
                     error('Invalid constraintScheme')
             end

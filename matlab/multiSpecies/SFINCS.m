@@ -61,7 +61,7 @@ filenameNote = '';
 % Geometry parameters:
 % --------------------------------------------------
 
-geometryScheme = 12;
+geometryScheme = 1;
 % 1 = Two-helicity model
 % 2 = Three-helicity approximation of the LHD standard configuration
 % 3 = Four-helicity approximation of the LHD inward-shifted configuration
@@ -231,14 +231,14 @@ include_fDivVE_term = false;
 
 % Number of grid points in the poloidal direction.
 % Memory and time requirements DO depend strongly on this parameter.
-NthetaConverged = 19;
+NthetaConverged = 5;
 %Nthetas = NthetaConverged;
 Nthetas = floor(linspace(5,22,9));
 
 % Number of grid points in the toroidal direction
 % (per identical segment of the stellarator.)
 % Memory and time requirements DO depend strongly on this parameter.
-NzetaConverged = 5;
+NzetaConverged = 11;
 %Nzetas = NzetaConverged;
 Nzetas = floor(linspace(5,20,9));
 
@@ -249,7 +249,7 @@ Nzetas = floor(linspace(5,20,9));
 % the collisionality. At high collisionality, this parameter can be as low
 % as ~ 5. At low collisionality, this parameter may need to be many 10s or
 % even > 100 for convergence.
-NxiConverged = 17;
+NxiConverged = 8;
 %Nxis = NxiConverged;
 Nxis = floor(linspace(4,20,9));
 
@@ -267,7 +267,7 @@ NLs = 4:1:6;
 % Sometimes 5-7 is sufficient, but sometimes it needs to be as high as
 % 10-15.  Typically this parameter needs to be higher as the number of
 % species is increased.
-NxConverged = 15;
+NxConverged = 5;
 Nxs=4:15;
 
 % Number of grid points in energy used to represent the Rosenbluth
@@ -2070,6 +2070,11 @@ end
             % Add sources.
             % --------------------------------------------------
             
+            % Even though the source is independent of theta and
+            % zeta, the kinetic equation is normalized by
+            % multiplying through with 1/(B dot grad zeta) ~ 1/B^2
+            spatialPart = 1./BHat.^2;
+
             switch constraintScheme
                 case 0
                     % Do nothing
@@ -2085,10 +2090,10 @@ end
                                 rowIndices = getIndices(ispecies, ix, L+1, itheta, 1:Nzeta, 0);
                                 
                                 colIndex = getIndices(ispecies, 1, 1, 1, 1, 1);
-                                addSparseBlock(rowIndices, colIndex, xPartOfSource1(ix)*ones(Nzeta,1))
+                                addSparseBlock(rowIndices, colIndex, xPartOfSource1(ix)*spatialPart(itheta,:)')
                                 
                                 colIndex = getIndices(ispecies, 1, 1, 1, 1, 2);
-                                addSparseBlock(rowIndices, colIndex, xPartOfSource2(ix)*ones(Nzeta,1))
+                                addSparseBlock(rowIndices, colIndex, xPartOfSource2(ix)*spatialPart(itheta,:)')
                             end
                         end
                     end
@@ -2099,10 +2104,8 @@ end
                         for ix=1:Nx
                             colIndex = getIndices(ispecies, ix, 1, 1, 1, 3);
                             for itheta=1:Ntheta
-                                %rowIndices = (ix-1)*Nxi*Ntheta*Nzeta + (1:(Ntheta*Nzeta));
-                                %colIndex = Nx*Nxi*Ntheta*Nzeta + ix;
                                 rowIndices = getIndices(ispecies, ix, L+1, itheta, 1:Nzeta, 0);
-                                addSparseBlock(rowIndices, colIndex, ones(Nzeta,1))
+                                addSparseBlock(rowIndices, colIndex, spatialPart(itheta,:)')
                             end
                         end
                     end
