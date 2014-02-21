@@ -106,23 +106,21 @@ Please explain the reason of changing the source term according to the collision
 detail.
 \end{referee}
 
-Probably this issue was unclear because the sources actually serve two independent purposes,
+We have expanded the discussion at the end of section III to clarify this issue.
+
+The system of sources and extra constraint equations actually serves two independent purposes,
 not only to circumvent the conservation problems when $E_r$ is nonzero, but also to eliminate the null
-space of the kinetic equation which is a problem even at $E_r=0$.
-
-First, consider the case $E_r=0$, so there is no difference between the trajectory models.
-Consider the homogeneous solutions of the kinetic equation, i.e. the null space of the linear system
-we solve if no sources or constraints are included. 
-When the linearized Fokker-Planck operator is used, 
-there are 2 linearly independent homogeneous solutions:
-a Maxwellian flux function,
-and a Maxwellian flux function times $v^2$.
-However, if the pure pitch-angle scattering operator or momentum-conserving model
-collision operator are used, there are $N_x$ independent homogeneous solutions,
-since any function of $v$ (independent of $\theta$,$\zeta$, and $\xi$)
-is in the null space. 
-
-\todo{Now consider the case of nonzero $E_r$...}
+space of the kinetic equation. This latter problem arises even for the DKES trajectories 
+and even at $E_r=0$.  
+When $E_r \ne 0$, the sources are needed to eliminate the conservation problems, and the extra constraints 
+can be thought of as a convenient way to keep the linear system square (number of equations = number of unknowns) upon discretizatiton.
+Even when $E_r = 0$, and even for the DKES trajectories in which sources are not required, the constraints are needed to eliminate
+the null space in the kinetic equation, and the source terms can be thought of as
+a convenient way to keep the linear system square upon discretization.
+Any particle and heat source will be sufficient to solve the first problem (conservation), but to solve the second problem (null space),
+the number of constraints should match the dimensionality of the null space.  This dimension is set by the collision operator (2 for
+Fokker-Planck, $N_x$ for the other two operators.)
+This is why the source/constraint scheme is chosen based on the collision operator.
 
 \begin{referee}
 Concerning the source/sink term, I think that the usage of such an artificial term is relevant if

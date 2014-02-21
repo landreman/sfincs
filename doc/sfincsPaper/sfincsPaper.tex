@@ -510,6 +510,24 @@ represent an intermediate step between (\ref{eq:DKESTrajectories}) and (\ref{eq:
 in that (\ref{eq:partialTrajectories}) includes the correct $\vect{E}\times\vect{B}$ drift, but not the
 $d\Phi_0/d\psi$ terms in $\dot{x}_a$ and $\dot{\xi}_a$ required to conserve $\mu$.
 
+\changed{
+Note that for both the DKES and full trajectories, the left-hand side of the
+kinetic equation (\ref{eq:kinetic4})
+can be written in the conservative form
+\begin{equation}
+\frac{1}{J}\left[
+\nabla\cdot\left( J \dot{\vect{r}}_a f_{a1} \right) 
++ \frac{\partial}{\partial \xi}\left( J \dot{\xi}_a f_{a1} \right)
++ \frac{\partial}{\partial x_a} \left( J \dot{x}_a f_{a1} \right)
+\right] - C_a
+\label{eq:conservativeForm}
+\end{equation}
+where $J=x_a^2$ is the Jacobian of the transformation between Cartesian velocity coordinates
+and the coordinates $x_a$, $\xi$, and gyrophase. However, for the partial trajectories,
+the left-hand side of (\ref{eq:kinetic4}) is not equivalent
+to (\ref{eq:conservativeForm}).
+}
+
 For all three trajectory models, the quasineutrality equation is effectively decoupled from the kinetic equation (\ref{eq:kinetic4}).
 At leading order, quasineutrality implies $\sum_a Z_a n_a = 0$.
 At next order, noting that both $f_{a0}$ and $f_{a1}$ contribute to density variation on a flux surface,
@@ -647,6 +665,43 @@ are ad-hoc and are not derived rigorously. However, by the techniques proposed h
 compare the three different trajectory models, and for most experimentally relevant values of $E_r$, we will show
 that the three models give nearly identical results. As already mentioned, the need for source terms disappears when the radial electric field equals the value required for ambipolarity, so the source terms do not interfere with the aim of eventually calculating the actual plasma transport. 
 
+\changed{
+This system of sources and constraints solves not only the problem described above when $E_r \ne 0$,
+but also a different problem that remains even when $E_r=0$ and/or when the DKES trajectories are used:
+the kinetic equation has a null space.
+If the conditions $\left< \int d^3v \,f_{a1}\right>=0$ and $\left< \int d^3v\, v^2 f_{a1}\right>=0$
+were not imposed, any linear combination of $F_{a}$ and $F_{a} v^2$ could be added to one solution
+of the kinetic equation to obtain another solution. Upon discretization, one would obtain a non-invertible
+(or at least very poorly conditioned) linear system, but the imposition of these two extra constraints
+makes the system of equations invertible. 
+}
+
+\changed{
+Such is the case when the full linearized Fokker-Planck 
+collision operator is used, but the situation is different when either the pitch-angle scattering
+operator or momentum-conserving model operator are used instead, for then the kinetic equation has a larger null space:
+any function of $v$ is then a homogeneous solution of the kinetic equation.
+As the dimension of the null space is then equal to $N_x$ (the number of grid points in $x_a$) rather than
+2, it takes $N_x$ rather than 2 constraint equations to eliminate the null space for these collision operators.
+We choose these $N_x$ constraints to be $\left< \int_{-1}^1 d\xi\, f_{a1}\right>=0$ (imposed at each grid point in $x_a$.)
+To keep the linear system square, we must then have $N_x$ rather than 2 unknowns related to the sources. 
+This is accomplished by letting the source be a general function of $x_a$ instead
+of (\ref{eq:sources}) when either the pitch-angle scattering or momentum-conserving model collision operator are used.
+This alternative system of $N_x$ sources and constraints is an equally reasonable solution to the earlier
+conservation problem.
+}
+
+\changed{
+To summarize, the sources and extra constraint equations serve two independent purposes.
+First, when $E_r \ne 0$, the sources are needed to eliminate the conservation problems, and the extra constraints then keep the linear system square (number of equations = number of unknowns) upon discretizatiton.
+Second, even when $E_r = 0$, and even for the DKES trajectories in which sources are not required, the constraints are needed to eliminate the null space in the kinetic equation, and the source terms are a convenient way to keep the linear system square upon discretization.
+The first problem can be solved with either the source (\ref{eq:sources}) or a general speed-dependent source $S_a(x_a)$.
+However, to solve the second problem, the number of constraints should match the dimensionality of the null space.
+For this reason, we apply the source (\ref{eq:sources}) with 2 constraints when the Fokker-Planck operator is used,
+while we apply the general speed-dependent source $S_a(x_a)$ with $N_x$ constraints when either of the other two collision operators is used.
+}
+
+\begin{comment}
 The aforemention mass and energy sources and constraints work when the Fokker-Planck collision operator
 is used, 
 but not when the pure pitch-angle scattering or momentum-conserving model collision operator is used, since in these cases the kinetic equation has a larger null space
@@ -655,6 +710,7 @@ For these collision operators, we instead allow a general source $S_a(\psi,v)$,
 introducing $N_x$ unknowns on each flux surface, where $N_x$ is the number of grid points in $v$.
 To supply an equal number of constraints, we impose the equations $\left< \int_{-1}^1 d\xi\, f_{a1}\right>=0$
 at each grid point in $v$.
+\end{comment}
 
 \section{Momentum moment equations}
 \label{sec:momentum}

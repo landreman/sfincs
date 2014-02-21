@@ -228,6 +228,33 @@ constraintScheme = -1;
 %  1 = 2 constraints: <n_1> = 0 and <p_1> = 0.
 %  2 = Nx constraints: <f>=0 at each x.
 
+% To use one of the 4 most common trajectory models, the remaining parameters
+% in this section should be set as follows:
+%
+% Full trajectories:
+%   includeXDotTerm = true
+%   includeElectricFieldTermInXiDot = true
+%   useDKESExBDrift = false
+%   include_fDivVE_term = false
+%
+% Partial trajectories: (non-conservative, as defined in the paper.)
+%   includeXDotTerm = false
+%   includeElectricFieldTermInXiDot = false
+%   useDKESExBDrift = false
+%   include_fDivVE_term = false
+%
+% Conservative partial trajectories: (Not discussed in the paper.)
+%   includeXDotTerm = false
+%   includeElectricFieldTermInXiDot = false
+%   useDKESExBDrift = false
+%   include_fDivVE_term = true
+%
+% DKES trajectories:
+%   includeXDotTerm = false
+%   includeElectricFieldTermInXiDot = false
+%   useDKESExBDrift = true
+%   include_fDivVE_term = false
+
 includeXDotTerm = true;
 %includeXDotTerm = false;
 

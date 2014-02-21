@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=latex 2012.7.6)  20 FEB 2014 15:32
+This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=latex 2012.7.6)  21 FEB 2014 11:08
 entering extended mode
  %&-line parsing enabled.
 **sfincsPaper
@@ -232,40 +232,40 @@ L/cmm/m/it/12 v[][]F[]:
  []
 
 [8] [9]
-Underfull \hbox (badness 1009) in paragraph at lines 572--586
+Underfull \hbox (badness 1009) in paragraph at lines 590--604
 \OT1/cmr/m/n/12 this par-tial tra-jec-tory model: the $\OML/cmm/m/it/12 d\OT1/c
 mr/m/n/12 ^^H[]\OML/cmm/m/it/12 =d  \OT1/cmr/m/n/12 = 0$ so-lu-tion for $\OML/c
 mm/m/it/12 f[]$ \OT1/cmr/m/n/12 need not sat-isfy
  []
 
 [10]
-Underfull \hbox (badness 3168) in paragraph at lines 605--613
+Underfull \hbox (badness 3168) in paragraph at lines 623--631
 \OT1/cmr/m/n/12 The quan-tity mul-ti-ply-ing $\OML/cmm/m/it/12 d\OT1/cmr/m/n/12
- ^^H[]\OML/cmm/m/it/12 =d $ \OT1/cmr/m/n/12 in (25[]) is pro-por-tional to the 
+ ^^H[]\OML/cmm/m/it/12 =d $ \OT1/cmr/m/n/12 in (26[]) is pro-por-tional to the 
 ra-dial cur-rent
  []
 
-[11] [12]
-Underfull \hbox (badness 1648) in paragraph at lines 742--742
+[11] [12] [13]
+Underfull \hbox (badness 1648) in paragraph at lines 798--798
 \OT1/cmr/m/n/12 where $\OML/cmm/m/it/12 n[]V[] \OT1/cmr/m/n/12 = [] \OML/cmm/m/
 it/12 d[]v f[]v[]$\OT1/cmr/m/n/12 . Note that this con-tri-bu-tion to the stres
 s ten-sor is
  []
 
 
-Underfull \hbox (badness 1067) in paragraph at lines 742--742
+Underfull \hbox (badness 1067) in paragraph at lines 798--798
 \OT1/cmr/m/n/12 a part of the gy-ro-vis-cos-ity and is off-diagonal. Us-ing $[]
  \OMS/cmsy/m/n/12 ^^Y ^^@r\OT1/cmr/m/n/12 ^^H[](\OML/cmm/m/it/12  \OT1/cmr/m/n/
 12 )$ and $[] \OMS/cmsy/m/n/12 ^^A
  []
 
-[13] [14] [15] [16]
-Underfull \hbox (badness 4291) in paragraph at lines 966--980
+[14] [15] [16] [17]
+Underfull \hbox (badness 4291) in paragraph at lines 1022--1036
 []\OT1/cmr/m/n/12 Several prop-er-ties of the ma-trix $\OML/cmm/m/it/12 L[]$ \O
 T1/cmr/m/n/12 are note-wor-thy. Us-ing the prop-erty
  []
 
-[17] [18]
+[18] [19]
 File: m20140205_03_plotSFINCSFortranErComparisonForPaper_LHD.eps Graphic file (
 type eps)
  <m20140205_03_plotSFINCSFortranErComparisonForPaper_LHD.eps>
@@ -278,14 +278,14 @@ type eps)
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-[19] [20]
+[20] [21]
 File: m20140219_02_PlotSFINCS2SpeciesEScanForPaper_withSources.eps Graphic file
  (type eps)
  <m20140219_02_PlotSFINCS2SpeciesEScanForPaper_withSources.eps>
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-[21] [22] [23] [24]
+[22] [23] [24] [25]
 File: m20140205_01_plotSFINCSFortranAndMatlabNuScansForPaper_LHD.eps Graphic fi
 le (type eps)
 
@@ -305,15 +305,15 @@ ype eps)
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-[25] [26] [27] [28] [29] [30] (./sfincsPaper.bbl [31] [32] [33]) [34]
+[26] [27] [28] [29] [30] [31] (./sfincsPaper.bbl [32] [33] [34]) [35]
 (./sfincsPaper.aux) ) 
 Here is how much of TeX's memory you used:
- 3571 strings out of 495062
+ 3570 strings out of 495062
  44406 string characters out of 1182645
- 117878 words of memory out of 3000000
- 6708 multiletter control sequences out of 15000+50000
+ 117893 words of memory out of 3000000
+ 6707 multiletter control sequences out of 15000+50000
  18162 words of font info for 74 fonts, out of 3000000 for 9000
  28 hyphenation exceptions out of 8191
  34i,19n,30p,778b,403s stack positions out of 5000i,500n,10000p,200000b,50000s
 
-Output written on sfincsPaper.dvi (34 pages, 130472 bytes).
+Output written on sfincsPaper.dvi (35 pages, 134776 bytes).

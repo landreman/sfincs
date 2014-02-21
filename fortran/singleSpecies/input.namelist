@@ -72,7 +72,7 @@
 
 &geometryParameters
 
-  geometryScheme = 12
+  geometryScheme = 1
   ! 1 = Three-helicity model
   ! 2 = Three-helicity approximation of the LHD standard configuration
   ! 3 = Four-helicity approximation of the LHD inward-shifted configuration
@@ -103,10 +103,10 @@
 
   epsilon_t = 0.13d+0 !-0.07053d+0
 
-  epsilon_h = 0.0d+0 !0.05067d+0
+  epsilon_h = 0.12d+0 !0.05067d+0
   
-  helicity_l = 2
-  helicity_n = 5
+  helicity_l = 1
+  helicity_n = 0
 
   epsilon_antisymm = 0.0d+0
   helicity_antisymm_l = 3	
@@ -245,6 +245,34 @@
   !  1 = 2 constraints: <n1>=0 and <p1>=0
   !  2 = Nx constraints: <f(L=0)>=0 at each x
   ! You should probably set constraintScheme to -1 except in rare circumstances.
+
+  ! To use one of the 4 most common trajectory models, the remaining parameters
+  ! in this namelist should be set as follows:
+  !
+  ! Full trajectories:
+  !   includeXDotTerm = .true.
+  !   includeElectricFieldTermInXiDot = .true.
+  !   useDKESExBDrift = .false.
+  !   include_fDivVE_term = .false.
+  !
+  ! Partial trajectories: (non-conservative, as defined in the paper.)
+  !   includeXDotTerm =	.false.
+  !   includeElectricFieldTermInXiDot = .false.
+  !   useDKESExBDrift = .false.
+  !   include_fDivVE_term = .false.
+  !
+  ! Conservative partial trajectories: (Not discussed in the paper.)
+  !   includeXDotTerm =	.false.
+  !   includeElectricFieldTermInXiDot = .false.
+  !   useDKESExBDrift = .false.
+  !   include_fDivVE_term = .true.
+  !
+  ! DKES trajectories:
+  !   includeXDotTerm =	.false.
+  !   includeElectricFieldTermInXiDot = .false.
+  !   useDKESExBDrift = .true.
+  !   include_fDivVE_term = .false.
+
 
   includeXDotTerm = .true.
 !  includeXDotTerm = .false.
