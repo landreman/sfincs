@@ -4,7 +4,7 @@ Uses the w7x-sc1.bc numerical equilibrium file.
 
 Expected results:
 The transport matrix should be the following:
--0.000630586, -0.00199776, 0.0620745,
--0.00199966, -0.0107542, 0.171768,
-0.0621547, 0.172102, 35.0602
+-0.000631, -0.00200, 0.0621,
+-0.00200, -0.0108, 0.172,
+0.0622, 0.172, 35.1
  
