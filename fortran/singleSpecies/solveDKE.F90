@@ -104,9 +104,12 @@
        stop
     end if
 
-    if (forceOddNtheta) then
+    if (forceOddNthetaAndNzeta) then
        if (mod(Ntheta, 2) == 0) then
           Ntheta = Ntheta + 1
+       end if
+       if (mod(Nzeta, 2) == 0) then
+          Nzeta = Nzeta + 1
        end if
     end if
 

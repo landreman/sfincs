@@ -25,7 +25,7 @@ contains
          dnHatdpsi, dTHatdpsi, dPhiHatdpsi, EStar, collisionOperator, constraintScheme, includeXDotTerm, &
          includeElectricFieldTermInXiDot, useDKESExBDrift, include_fDivVE_term, EStarMin, EStarMax, NEStar
 
-    namelist / resolutionParameters / forceOddNtheta, &
+    namelist / resolutionParameters / forceOddNthetaAndNzeta, &
          Ntheta, NthetaMaxFactor, NthetaMinFactor, NthetaNumRuns, &
          Nzeta, NzetaMaxFactor, NzetaMinFactor, NzetaNumRuns, &
          Nxi, NxiMaxFactor, NxiMinFactor, NxiNumRuns, &
