@@ -9,7 +9,9 @@
 
 \newcommand{\red}[1]{\textcolor{red}{#1}}
 \newcommand{\vect}[1]{\mbox{\boldmath $#1$}}
-\newcommand{\tens}[1]{\overleftrightarrow{#1}}
+%\newcommand{\tens}[1]{\overleftrightarrow{#1}}
+%\newcommand{\tens}[1]{\overleftrightarrow{\vect{#1}}}
+\newcommand{\tens}[1]{\vect{#1}}
 \newcommand{\erf}{\mathrm{erf}}
 \newcommand{\PS}{Pfirsch-Schl\"{u}ter~}
 \newcommand{\ExB}{\vect{E}\times\vect{B}}
@@ -1247,20 +1249,20 @@ particle flux consists of two terms: one related to the parallel
 friction force and one related to parallel viscosity \cite{AndreiPer2009, Braun}. This is most easily seen by taking the scalar product of the lowest-order plasma current, which satisfies $\vect{J} \times \vect{B} = c p'(\psi) \nabla \psi$, with the momentum equation,
 \begin{equation}
 m_a n_a \vect{V}_a \cdot \nabla \vect{V}_a = n_a e_a \left( - \nabla \phi + c^{-1}\vect{V}_a \times \vect{B} \right)
-- \nabla p_a - \nabla \cdot \vect{\pi}_a + \vect{F}_a, 
+- \nabla p_a - \nabla \cdot \tens{\pi}_a + \vect{F}_a, 
 \label{eq:vectorMomentum}
 \end{equation}
 neglecting the left-hand side. Since $\nabla \cdot \vect{J} = 0$ and $n_a$ is a flux function in lowest order, we obtain
 \begin{equation}
   \left< n_a \vect{V}_a \cdot \nabla \psi \right> 
-  = \frac{1}{e_a p'(\psi)} \left< \vect{J} \cdot \left( \vect{F}_a - \nabla \cdot \vect{\pi}_a \right) \right>,
+  = \frac{1}{e_a p'(\psi)} \left< \vect{J} \cdot \left( \vect{F}_a - \nabla \cdot \tens{\pi}_a \right) \right>,
 \end{equation}
 where the term corresponding to the perpendicular component of the friction force $\vect{F}_a$ represents the classical particle flux and the other terms the neoclassical flux,
 \begin{equation}
-  \left< n_a \vect{V}_a \cdot \nabla \psi \right>_{nc} = \frac{1}{e_ap'} \left< J_\| F_{a\|} + \vect{\pi}:\nabla \vect{J} \right>
+  \left< n_a \vect{V}_a \cdot \nabla \psi \right>_{nc} = \frac{1}{e_ap'} \left< J_\| F_{a\|} + \tens{\pi}_a:\nabla \vect{J} \right>
   \label{PS flux}
 \end{equation}
-where the viscosity tensor is $\vect{\pi}_a =(p_{\|} - p_{\perp})(\vect{b b} - {\bf I}/3)$.
+where the viscosity tensor is $\tens{\pi}_a =(p_{a\|} - p_{a\perp})(\vect{b b} - \tens{I}/3)$.
 The first term in (\ref{PS flux}) is proportional to $\nu$ and
 therefore dominates at high collisionality, but vanishes when there is only a 
 single ion species because of momentum conservation in like-particle
@@ -1279,12 +1281,12 @@ pitch-angle-scattering operators is evident in the parallel
 conductivity coefficient $L_{33}$. The flow that arises in response to
 a parallel electric field is determined by the parallel momentum equation $\vect{b}\cdot$(\ref{eq:vectorMomentum}),
 %\begin{equation} 
-%n_a Z_a e E_{||} = \vect{b}\cdot \nabla p_a + \vect{b}\cdot(\nabla \cdot \vect{\pi}_a )+ F_{a||}, 
+%n_a Z_a e E_{||} = \vect{b}\cdot \nabla p_a + \vect{b}\cdot(\nabla \cdot \tens{\pi}_a )+ F_{a||}, 
 %\end{equation} 
 where the parallel friction force $F_{\|a}$ again vanishes when only a
 single ion species is considered. Hence 
 \begin{equation} 
-n_a Z_a e \left< B  E_{||} \right> = \left< \vect{B}\cdot(\nabla \cdot \vect{\pi}_a) \right> 
+n_a Z_a e \left< B  E_{||} \right> = \left< \vect{B}\cdot(\nabla \cdot \tens{\pi}_a) \right> 
 = \left< (p_\perp - p_\| ) \nabla_\| B \right>.
 \label{ParallelMomentum}
 \end{equation}

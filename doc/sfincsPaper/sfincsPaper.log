@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=latex 2012.7.6)  21 FEB 2014 11:08
+This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=latex 2012.7.6)  22 FEB 2014 21:03
 entering extended mode
  %&-line parsing enabled.
 **sfincsPaper
@@ -188,43 +188,43 @@ LaTeX Info: Redefining \] on input line 2667.
 ) (./sfincsPaper.aux)
 \openout1 = `sfincsPaper.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 60.
-LaTeX Font Info:    ... okay on input line 60.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 60.
-LaTeX Font Info:    ... okay on input line 60.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 60.
-LaTeX Font Info:    ... okay on input line 60.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 60.
-LaTeX Font Info:    ... okay on input line 60.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 60.
-LaTeX Font Info:    ... okay on input line 60.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 60.
-LaTeX Font Info:    ... okay on input line 60.
-Class revtex4 Info: Patching LaTeX tabular. on input line 60.
-Class revtex4 Info: cite was not loaded (OK!) on input line 60.
-Class revtex4 Info: multicol was not loaded (OK!) on input line 60.
-LaTeX Font Info:    Try loading font information for U+lasy on input line 102.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 62.
+LaTeX Font Info:    ... okay on input line 62.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 62.
+LaTeX Font Info:    ... okay on input line 62.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 62.
+LaTeX Font Info:    ... okay on input line 62.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 62.
+LaTeX Font Info:    ... okay on input line 62.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 62.
+LaTeX Font Info:    ... okay on input line 62.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 62.
+LaTeX Font Info:    ... okay on input line 62.
+Class revtex4 Info: Patching LaTeX tabular. on input line 62.
+Class revtex4 Info: cite was not loaded (OK!) on input line 62.
+Class revtex4 Info: multicol was not loaded (OK!) on input line 62.
+LaTeX Font Info:    Try loading font information for U+lasy on input line 104.
 
 (/usr/share/texmf-texlive/tex/latex/base/ulasy.fd
 File: ulasy.fd 1998/08/17 v2.2e LaTeX symbol font definitions
 )
-LaTeX Font Info:    Try loading font information for U+msa on input line 102.
+LaTeX Font Info:    Try loading font information for U+msa on input line 104.
 
 (/usr/share/texmf-texlive/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2009/06/22 v3.00 AMS symbols A
 )
-LaTeX Font Info:    Try loading font information for U+msb on input line 102.
+LaTeX Font Info:    Try loading font information for U+msb on input line 104.
 
 (/usr/share/texmf-texlive/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2009/06/22 v3.00 AMS symbols B
 )
 LaTeX Font Info:    Font shape `U/lasy/b/n' in size <8> not available
-(Font)              Font shape `U/lasy/m/n' tried instead on input line 102.
+(Font)              Font shape `U/lasy/m/n' tried instead on input line 104.
 LaTeX Font Info:    Font shape `U/lasy/b/n' in size <6> not available
-(Font)              Font shape `U/lasy/m/n' tried instead on input line 102.
+(Font)              Font shape `U/lasy/m/n' tried instead on input line 104.
  [1] [2] [3] [4] [5]
 [6] [7]
-Overfull \hbox (14.7377pt too wide) detected at line 453
+Overfull \hbox (14.7377pt too wide) detected at line 455
 [] \OMS/cmsy/m/n/12 ^^A [][] \OT1/cmr/m/n/12 + [] [][] + [] [][] \OMS/cmsy/m/n/
 12 ^^@ \OML/cmm/m/it/12 C[] \OT1/cmr/m/n/12 = \OMS/cmsy/m/n/12 ^^@\OT1/cmr/m/n/
 12 ([][] \OMS/cmsy/m/n/12 ^^A r\OML/cmm/m/it/12  \OT1/cmr/m/n/12 ) [][] + []\OM
@@ -232,35 +232,35 @@ L/cmm/m/it/12 v[][]F[]:
  []
 
 [8] [9]
-Underfull \hbox (badness 1009) in paragraph at lines 590--604
+Underfull \hbox (badness 1009) in paragraph at lines 592--606
 \OT1/cmr/m/n/12 this par-tial tra-jec-tory model: the $\OML/cmm/m/it/12 d\OT1/c
 mr/m/n/12 ^^H[]\OML/cmm/m/it/12 =d  \OT1/cmr/m/n/12 = 0$ so-lu-tion for $\OML/c
 mm/m/it/12 f[]$ \OT1/cmr/m/n/12 need not sat-isfy
  []
 
 [10]
-Underfull \hbox (badness 3168) in paragraph at lines 623--631
+Underfull \hbox (badness 3168) in paragraph at lines 625--633
 \OT1/cmr/m/n/12 The quan-tity mul-ti-ply-ing $\OML/cmm/m/it/12 d\OT1/cmr/m/n/12
  ^^H[]\OML/cmm/m/it/12 =d $ \OT1/cmr/m/n/12 in (26[]) is pro-por-tional to the 
 ra-dial cur-rent
  []
 
 [11] [12] [13]
-Underfull \hbox (badness 1648) in paragraph at lines 798--798
+Underfull \hbox (badness 1648) in paragraph at lines 800--800
 \OT1/cmr/m/n/12 where $\OML/cmm/m/it/12 n[]V[] \OT1/cmr/m/n/12 = [] \OML/cmm/m/
 it/12 d[]v f[]v[]$\OT1/cmr/m/n/12 . Note that this con-tri-bu-tion to the stres
 s ten-sor is
  []
 
 
-Underfull \hbox (badness 1067) in paragraph at lines 798--798
+Underfull \hbox (badness 1067) in paragraph at lines 800--800
 \OT1/cmr/m/n/12 a part of the gy-ro-vis-cos-ity and is off-diagonal. Us-ing $[]
  \OMS/cmsy/m/n/12 ^^Y ^^@r\OT1/cmr/m/n/12 ^^H[](\OML/cmm/m/it/12  \OT1/cmr/m/n/
 12 )$ and $[] \OMS/cmsy/m/n/12 ^^A
  []
 
 [14] [15] [16] [17]
-Underfull \hbox (badness 4291) in paragraph at lines 1022--1036
+Underfull \hbox (badness 4291) in paragraph at lines 1024--1038
 []\OT1/cmr/m/n/12 Several prop-er-ties of the ma-trix $\OML/cmm/m/it/12 L[]$ \O
 T1/cmr/m/n/12 are note-wor-thy. Us-ing the prop-erty
  []
@@ -314,6 +314,6 @@ Here is how much of TeX's memory you used:
  6707 multiletter control sequences out of 15000+50000
  18162 words of font info for 74 fonts, out of 3000000 for 9000
  28 hyphenation exceptions out of 8191
- 34i,19n,30p,778b,403s stack positions out of 5000i,500n,10000p,200000b,50000s
+ 34i,18n,30p,778b,403s stack positions out of 5000i,500n,10000p,200000b,50000s
 
-Output written on sfincsPaper.dvi (35 pages, 134776 bytes).
+Output written on sfincsPaper.dvi (35 pages, 134548 bytes).
