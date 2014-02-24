@@ -66,7 +66,7 @@ filenameNote = 'myFirstScan';
 % Geometry parameters:
 % --------------------------------------------------
 
-geometryScheme = 1;
+geometryScheme = 12;
 % 1 = Three-helicity model
 % 2 = Three-helicity approximation of the LHD standard configuration
 % 3 = Four-helicity approximation of the LHD inward-shifted configuration
@@ -117,7 +117,7 @@ fort996boozer_file='TJII-midradius_example_s_0493_fort.996';
 % geometryScheme=11 and 12 parameters:
 
 JGboozer_file='w7x-sc1.bc'; % stellarator symmetric example, geometryScheme=11
-JGboozer_file_NonStelSym='out_neo-2_2_axisym'; % non-stellarator symmetric example, geometryScheme=12, requires Nzeta=1
+JGboozer_file_NonStelSym='out_neo-2_n2_sym_c_m64_n16';
 normradius_wish=0.5;   %The calculation will be performed for the radius
                        %closest to this one in the JGboozer_file(_NonStelSym)
 min_Bmn_to_load=1e-4;  %Filter out any Bmn components smaller than this
@@ -163,7 +163,7 @@ end
 % (the surface where psi_N = 1.)
 % The value of psiAHat here is over-written for geometryScheme = 2, 3, 4, 11 and 12.
 psiAHat = 1;
-THat = 1.0;
+THat = 0.1;
 nHat = 1.0;
 
 % The radial electric field may be specified in one of 2 ways.
@@ -208,9 +208,9 @@ EHat = 0;
 %
 % Notice that collisionality is defined differently in the multi-species code!
 
-%nuN = nu_nbar * nHat/THat^(3/2);
+nuN = nu_nbar * nHat/THat^(3/2);
 %nuN = 0.2 * sqrt(THat)/(B0OverBBar * (GHat + iota*IHat));
-nuN = 1;
+%nuN = 1;
 % If testQuasisymmetryIsomorphism is true, the value of nuN is changed so the physical collisionality
 % stays constant as the helicity is changed.
 
