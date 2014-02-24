@@ -23,7 +23,7 @@ subroutine interpolationMatrix(N, M, x, y, matrix, scheme, L)
   ! The x grid points must be sorted in increasing order.
   ! Extrapolation to the right of the x grid is allowed but extrapolation
   ! to the left of the x grid is not allowed, since the former
-  ! can occur in morpheus but the latter should not.
+  ! can occur but the latter should not.
   !
   ! Possible values for scheme:
   ! -1 = Do not allow extrapolation to the right.
@@ -73,7 +73,7 @@ subroutine interpolationMatrix(N, M, x, y, matrix, scheme, L)
   do i=1,M
      if (y(i) < x(1)) then
         ! We are extrapolating off the left end of the x grid.
-        ! This should never happen in morpheus.
+        ! This should never happen in sfincs.
         print *,"Error! Attempt to extrapolate to the left.  This should not happen."
         stop
      else

@@ -38,7 +38,7 @@
   ! If you make the sign of programMode negative, the program will print the number of runs required
   ! for the scan corresponding to abs(programMode) and then exit without actually carrying out any solves.
 
-  RHSMode = 1
+  RHSMode = 2
   ! Options for RHSMode:
   ! 1 = Solve for a single right-hand side.
   ! 2 = Solve for three right-hand sides to get the full 3x3 transport matrix.
@@ -72,7 +72,7 @@
 
 &geometryParameters
 
-  geometryScheme = 1
+  geometryScheme = 11
   ! 1 = Three-helicity model
   ! 2 = Three-helicity approximation of the LHD standard configuration
   ! 3 = Four-helicity approximation of the LHD inward-shifted configuration
@@ -122,14 +122,14 @@
 
   ! The remaining options only matter for geometryScheme = 11 and 12:
 
-  JGboozer_file = "../../equilibria/w7x-sc1.bc"                     ! stellarator symmetric example, geometryScheme = 11
+  JGboozer_file = "../../../../equilibria/w7x-sc1.bc"                     ! stellarator symmetric example, geometryScheme = 11
   JGboozer_file_NonStelSym = "../../equilibria/out_neo-2_2_axisym"  ! non-stellarator symmetric example, geometryScheme = 12, requires Nzeta=1
 
   normradius_wish = 0.5d+0
   !The calculation will be performed for the radius
   !closest to this one in the JGboozer_file(_NonStelSym)
 
-  min_Bmn_to_load = 1d-4
+  min_Bmn_to_load = 0
   !Filter out any Bmn components smaller than this.
 
 /
@@ -197,11 +197,8 @@
   EStarMax = 0.1
   NEStar = 3
 
-  !nuN = 0.2681d+0
-  !nuPrime = 4.9085d+0
-
-  nuN = 0.75824d+0
-  nuPrime = 5.45932d+0 
+  nuN = 0
+  nuPrime = 1d+0 
   ! There are 2 different ways to specify the collisionality: nuN and nuPrime.
   ! If RHSMode == 1, nuN is used and nuPrime is ignored.
   ! If RHSMode == 2, nuPrime is used and nuN is ignored.
@@ -313,7 +310,7 @@
   
   ! Number of grid points in the poloidal direction.
   ! Memory and time requirements DO depend strongly on this parameter.
-  Ntheta = 7
+  Ntheta = 13
   NthetaMinFactor = 1
   NthetaMaxFactor = 2.5
   NthetaNumRuns = 3
@@ -321,7 +318,7 @@
   ! Number of grid points in the toroidal direction
   ! (per identical segment of the stellarator.)
   ! Memory and time requirements DO depend strongly on this parameter.
-  Nzeta = 11
+  Nzeta = 31
   NzetaMinFactor = 1
   NzetaMaxFactor = 1.3
   NzetaNumRuns = 0
@@ -332,7 +329,7 @@
   ! the collisionality. At high collisionality, this parameter can be as low
   ! as ~ 5. At low collisionality, this parameter may need to be many 10s or
   ! even > 100 for convergence.
-  Nxi = 8
+  Nxi = 24
   NxiMinFactor = 0.5
   NxiMaxFactor = 2.2
   NxiNumRuns = 3
@@ -350,7 +347,7 @@
   ! This parameter almost always needs to be at least 5.
   ! Usually a value in the range 5-8 is plenty for convergence, though sometimes
   ! you may need to go up to 10-15.
-  Nx = 5
+  Nx = 6
   NxMinFactor = 0.6
   NxMaxFactor = 2
   NxNumRuns = 3
@@ -380,7 +377,7 @@
 
   forceOddNthetaAndNzeta = .true.
   ! If forceOddNthetaAndNzeta is set to true, 1 is added to Ntheta any time a run is attempted with even Ntheta,
-  ! and 1 is added to Nzeta any time a run is attempted with even Nzeta.
+  ! and 1 is added to Nzeta any time a run is attempted with even Nzeta
   ! This can be useful because the iterative solvers sometimes do not work with even Ntheta or Nzeta.
   ! This parameter should be true unless you know what you are doing.
 /
@@ -435,7 +432,7 @@
   ! 4 = keep only the diagonal and superdiagonal in x
   ! This parameter should almost always be 1.
 
-  preconditioner_x_min_L = 2
+  preconditioner_x_min_L = 0
   ! The x structure of the matrix will only be simplified for L >= this value.
   ! Set preconditioner_x_min_L=0 to simplify the matrix for every L.
   ! Usually, good values for this parameter are 0, 1, or 2.

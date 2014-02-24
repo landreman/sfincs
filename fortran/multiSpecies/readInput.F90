@@ -29,7 +29,7 @@ contains
          includeElectricFieldTermInXiDot, useDKESExBDrift, include_fDivVE_term, &
          dPhiHatdpsiN_min, dPhiHatdpsiN_max, NErs
 
-    namelist / resolutionParameters / forceOddNtheta, &
+    namelist / resolutionParameters / forceOddNthetaAndNzeta, &
          Ntheta, NthetaMaxFactor, NthetaMinFactor, NthetaNumRuns, &
          Nzeta, NzetaMaxFactor, NzetaMinFactor, NzetaNumRuns, &
          Nxi, NxiMaxFactor, NxiMinFactor, NxiNumRuns, &

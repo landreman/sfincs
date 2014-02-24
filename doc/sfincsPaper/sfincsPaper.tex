@@ -9,6 +9,9 @@
 
 \newcommand{\red}[1]{\textcolor{red}{#1}}
 \newcommand{\vect}[1]{\mbox{\boldmath $#1$}}
+%\newcommand{\tens}[1]{\overleftrightarrow{#1}}
+%\newcommand{\tens}[1]{\overleftrightarrow{\vect{#1}}}
+\newcommand{\tens}[1]{\vect{#1}}
 \newcommand{\erf}{\mathrm{erf}}
 \newcommand{\PS}{Pfirsch-Schl\"{u}ter~}
 \newcommand{\ExB}{\vect{E}\times\vect{B}}
@@ -235,6 +238,9 @@ For several of the particle trajectory models,
 additional sources/sinks and constraints must be included in the system of equations
 for the equations to be well posed and for the solutions to be well behaved.
 These issues are explored in section \ref{sec:sources}.
+\changed{In section \ref{sec:momentum}, we discuss some observations regarding momentum conservation,
+and demonstrate that the electric field terms in the kinetic description
+correspond to a component of gyroviscosity in a fluid description.}
 Details of the numerical implementation are given in section \ref{sec:numerics}.
 Some of the numerical results presented are given in terms of a transport
 matrix, which is defined in section \ref{sec:transportMatrix}.
@@ -303,7 +309,11 @@ but when the collisionality is low, the solution of the full equation becomes
 asymptotically close to the solution of the bounce-averaged equation.)
 
 As shown in Appendix C of Ref. \cite{usPedestal}, we may choose the gauge
-for the electromagnetic potentials such that $-c^{-1}\vect{b}\cdot\partial\vect{A}/\partial t = \left<E_{||} B\right> B/\left<B^2\right>$
+for the electromagnetic potentials such that 
+\begin{equation}
+-c^{-1}\vect{b}\cdot\partial\vect{A}/\partial t = \left<E_{||} B\right> B/\left<B^2\right>
+\label{eq:gauge}
+\end{equation}
 on the right-hand side of (\ref{eq:kinetic1}).
 Here, angle brackets denote a flux surface average:
 \begin{equation}
@@ -422,14 +432,14 @@ on $d T_a/d\psi$, $dB/d\psi$,
 \changed{
 and $\rho_*$.
 Fourth, dropping these terms amounts to taking the limit $\rho_* \to 0$
-(while keeping $d\Phi_0/d\psi$ finite), 
+(while keeping the $d\Phi_0/d\psi$ terms finite), 
 and this limit is already complicated and interesting to explore without the extra complexity
 of finite-$\rho_*$ corrections.
 Fifth, 
 we wish to focus on the effects of the radial electric field.
 The omitted terms may be important in other situations, but here our primary interest is the treatment of the $d\Phi_0/d\psi$ terms.
 Finally,
-these omitted terms would significantly complicate the analysis in section III,
+these omitted terms would significantly complicate the analysis in section \ref{sec:sources},
 in which we will examine moments of the kinetic equation.
 }
 
@@ -502,6 +512,24 @@ represent an intermediate step between (\ref{eq:DKESTrajectories}) and (\ref{eq:
 in that (\ref{eq:partialTrajectories}) includes the correct $\vect{E}\times\vect{B}$ drift, but not the
 $d\Phi_0/d\psi$ terms in $\dot{x}_a$ and $\dot{\xi}_a$ required to conserve $\mu$.
 
+\changed{
+Note that for both the DKES and full trajectories, the left-hand side of the
+kinetic equation (\ref{eq:kinetic4})
+can be written in the conservative form
+\begin{equation}
+\frac{1}{J}\left[
+\nabla\cdot\left( J \dot{\vect{r}}_a f_{a1} \right) 
++ \frac{\partial}{\partial \xi}\left( J \dot{\xi}_a f_{a1} \right)
++ \frac{\partial}{\partial x_a} \left( J \dot{x}_a f_{a1} \right)
+\right] - C_a
+\label{eq:conservativeForm}
+\end{equation}
+where $J=x_a^2$ is the Jacobian of the transformation between Cartesian velocity coordinates
+and the coordinates $x_a$, $\xi$, and gyrophase. However, for the partial trajectories,
+the left-hand side of (\ref{eq:kinetic4}) is not equivalent
+to (\ref{eq:conservativeForm}).
+}
+
 For all three trajectory models, the quasineutrality equation is effectively decoupled from the kinetic equation (\ref{eq:kinetic4}).
 At leading order, quasineutrality implies $\sum_a Z_a n_a = 0$.
 At next order, noting that both $f_{a0}$ and $f_{a1}$ contribute to density variation on a flux surface,
@@ -530,7 +558,7 @@ One such operator we will consider later consists of the pitch-angle scattering 
 plus an ad-hoc momentum-restoring term, given for the case of self-collisions
 by eq (3.69) in Ref. \cite{PerBook}.
 
-\section{Conservation properties and sources}
+\section{Particle and energy moment equations, conservation properties, and sources}
 \label{sec:sources}
 
 If one attempts to solve the kinetic equation (\ref{eq:kinetic4}) numerically using either the full or partial trajectories
@@ -538,6 +566,8 @@ and $E_r \neq 0$, unphysical results will be obtained, with
 the numerical solution not converging as resolution parameters are increased.
 We now explore the reason for this behavior.
 We will then describe a modified form of the kinetic equation which robustly produces more sensible results.
+\changed{The issues discussed in this section are related to moment equations for mass and energy; momentum has a different status
+and will be examined in the next section.}
 
 Consider the result of applying the operation
 \begin{equation}
@@ -637,6 +667,43 @@ are ad-hoc and are not derived rigorously. However, by the techniques proposed h
 compare the three different trajectory models, and for most experimentally relevant values of $E_r$, we will show
 that the three models give nearly identical results. As already mentioned, the need for source terms disappears when the radial electric field equals the value required for ambipolarity, so the source terms do not interfere with the aim of eventually calculating the actual plasma transport. 
 
+\changed{
+This system of sources and constraints solves not only the problem described above when $E_r \ne 0$,
+but also a different problem that remains even when $E_r=0$ and/or when the DKES trajectories are used:
+the kinetic equation has a null space.
+If the conditions $\left< \int d^3v \,f_{a1}\right>=0$ and $\left< \int d^3v\, v^2 f_{a1}\right>=0$
+were not imposed, any linear combination of $F_{a}$ and $F_{a} v^2$ could be added to one solution
+of the kinetic equation to obtain another solution. Upon discretization, one would obtain a non-invertible
+(or at least very poorly conditioned) linear system, but the imposition of these two extra constraints
+makes the system of equations invertible. 
+}
+
+\changed{
+Such is the case when the full linearized Fokker-Planck 
+collision operator is used, but the situation is different when either the pitch-angle scattering
+operator or momentum-conserving model operator are used instead, for then the kinetic equation has a larger null space:
+any function of $v$ is then a homogeneous solution of the kinetic equation.
+As the dimension of the null space is then equal to $N_x$ (the number of grid points in $x_a$) rather than
+2, it takes $N_x$ rather than 2 constraint equations to eliminate the null space for these collision operators.
+We choose these $N_x$ constraints to be $\left< \int_{-1}^1 d\xi\, f_{a1}\right>=0$ (imposed at each grid point in $x_a$.)
+To keep the linear system square, we must then have $N_x$ rather than 2 unknowns related to the sources. 
+This is accomplished by letting the source be a general function of $x_a$ instead
+of (\ref{eq:sources}) when either the pitch-angle scattering or momentum-conserving model collision operator are used.
+This alternative system of $N_x$ sources and constraints is an equally reasonable solution to the earlier
+conservation problem.
+}
+
+\changed{
+To summarize, the sources and extra constraint equations serve two independent purposes.
+First, when $E_r \ne 0$, the sources are needed to eliminate the conservation problems, and the extra constraints then keep the linear system square (number of equations = number of unknowns) upon discretizatiton.
+Second, even when $E_r = 0$, and even for the DKES trajectories in which sources are not required, the constraints are needed to eliminate the null space in the kinetic equation, and the source terms are a convenient way to keep the linear system square upon discretization.
+The first problem can be solved with either the source (\ref{eq:sources}) or a general speed-dependent source $S_a(x_a)$.
+However, to solve the second problem, the number of constraints should match the dimensionality of the null space.
+For this reason, we apply the source (\ref{eq:sources}) with 2 constraints when the Fokker-Planck operator is used,
+while we apply the general speed-dependent source $S_a(x_a)$ with $N_x$ constraints when either of the other two collision operators is used.
+}
+
+\begin{comment}
 The aforemention mass and energy sources and constraints work when the Fokker-Planck collision operator
 is used, 
 but not when the pure pitch-angle scattering or momentum-conserving model collision operator is used, since in these cases the kinetic equation has a larger null space
@@ -645,6 +712,164 @@ For these collision operators, we instead allow a general source $S_a(\psi,v)$,
 introducing $N_x$ unknowns on each flux surface, where $N_x$ is the number of grid points in $v$.
 To supply an equal number of constraints, we impose the equations $\left< \int_{-1}^1 d\xi\, f_{a1}\right>=0$
 at each grid point in $v$.
+\end{comment}
+
+\section{Momentum moment equations}
+\label{sec:momentum}
+
+\changed{
+Parallel momentum has a different status to density and energy, in that density and energy are conserved by
+the collisionless motion while parallel momentum is not, due to the mirror force.
+(For example, considering the simple case of a single ion species with $d\Phi_0/d\psi=0$, $F_i$ and $v^2 F_i$ are homogeneous
+solutions to the kinetic equation, whereas $v_{||} F_i$ is not.)
+A consequence is that there does not appear to be a false constraint for $E_r \ne 0$ arising
+from the $\left< \int d^3 v\, v_{||} (\ldots)\right>$ moment of the various forms of the kinetic equation,
+i.e. there is no exact analogue to (\ref{eq:unphysicalMassConservation}), (\ref{eq:unphysicalEnergyConservation1}),
+or (\ref{eq:unphysicalEnergyConservation2}) for momentum.
+When the momentum moment of the various forms of the drift-kinetic equation is taken,
+even if a factor of $B$ or $1/B$ is included in the flux surface average, 
+a collisionless term remains that is not proportional to $d\Phi_0/d\psi$.
+Consequently, for all the trajectory models,
+$d\Phi_0/d\psi=0$ is a well behaved rather than singular
+limit of the momentum moment equation.
+}
+
+\changed{
+Nonetheless, it is interesting to compare the $\int d^3v\, m_a v_{||} (\ldots)$ moment equations
+for each drift-kinetic trajectory model to the full parallel momentum fluid equation. This later equation,
+the moment of the full Fokker-Planck equation, is
+\begin{equation}
+0 = -\vect{b}\cdot\left( \nabla\cdot\tens{\Pi}_a\right)
++ Z_a e n_a E_{||} + F_{a||}
+\label{eq:fluidParallelMomentum}
+\end{equation}
+where $\tens{\Pi_a} = m_a \int d^3v\, f_a \vect{v}\vect{v}$ is the stress tensor
+and $F_{a||}$ is the parallel component of friction.
+First, consider the case of no radial electric field.
+Recalling
+$f_a = F_a(\psi)\left[ 1 - Z_a e \Phi_1/T_a\right] + f_{a1}$, 
+the stress tensor is given to the accuracy needed by 
+$\tens{\Pi}_a \approx p_a(\psi)\left[1 - Z_a e \Phi_1/T_a\right] \tens{I} + \tens{\Pi}_{a1}$
+where $\tens{\Pi}_{a1} = p_{a 1 \bot} \tens{I} + (p_{a1||} - p_{a1\bot}) \vect{b}\vect{b}$,
+$p_{a1||} = m_a \int d^3v\, f_{a1} v_{||}^2$, and $p_{a1\bot} = m_a \int d^3v\, f_{a1} v_{\bot}^2/2$.
+Notice the $\int d^3v\, m_a v_{||} (\ldots)$ moment of the streaming and mirror terms in (\ref{eq:kinetic4})-(\ref{eq:fullTrajectories}) is
+\begin{eqnarray}
+\int d^3v\, m_a v_{||} \left[ v_{||} \vect{b}\cdot\nabla f_{a1} - \frac{1-\xi^2}{2B}v(\vect{b}\cdot\nabla B) \frac{\partial f_{a1}}{\partial \xi} \right]
+& = &
+\vect{b}\cdot\nabla p_{a1||} + \frac{ p_{a1\bot} - p_{a1 ||}}{B} \vect{b}\cdot\nabla B \nonumber \\
+& = &
+\vect{b} \cdot \left(\nabla \cdot \tens{\Pi}_{a1} \right).
+\end{eqnarray}
+Using this result with (\ref{eq:gauge}), the $m_a v_{||}$ moment of 
+the drift-kinetic equation (\ref{eq:kinetic4})-(\ref{eq:fullTrajectories}) matches
+the full fluid parallel momentum equation (\ref{eq:fluidParallelMomentum})
+at least when $E_r=0$.
+}
+
+\changed{
+Now consider how the situation changes when a radial electric field is introduced. We first
+compute the change to the fluid parallel momentum equation caused by a new contribution
+to the viscosity.
+Examining the $\left( \vect{E} + c^{-1} \vect{v}\times\vect{B}\right) \cdot \nabla_{\vect{v}} f_a$ terms in 
+the full Fokker-Planck equation and integrating in gyrophase, one sees the gyrophase-dependent part of the 
+distribution function $\tilde{f}_a$ will include the following terms proportional to the electric field:
+\begin{equation}
+\tilde{f}_{aE} = \frac{c}{B} \vect{v}\cdot\vect{b}\times\vect{E} \left[ \frac{1}{v} \frac{\partial \bar{f}_a}{\partial v}
+-\frac{\xi}{v^2} \frac{\partial \bar{f}_a}{\partial \xi} \right]
+\label{eq:fTilde}
+\end{equation}
+as reflected (using different indepedent variables) in eq (17) of Ref. \cite{Hazeltine} and eq (6) of Ref. \cite{SimakovCattoSecondOrderDKE}.
+Here, $\bar{f}_a$ is the gyrophase-independent part of the distribution function.
+The associated contribution $\tens{\Pi}_{aE} = m_a \int d^3v\, \tilde{f}_{aE}\vect{v}\vect{v}$
+to the pressure tensor is calculated in equations (27)-(36) of Ref. \cite{SimakovCattoSecondOrderDKE},
+with the result
+\begin{equation}
+\tens{\Pi}_{aE} = m_a n_a V_{a||} \left( \vect{b}\vect{v}_E + \vect{v}_E \vect{b} \right)
+\label{eq:PiE}
+\end{equation}
+where $n_a V_{a||} = \int d^3v\, f_a v_{||}$. Note that this contribution to the stress tensor is a part of the gyroviscosity and is off-diagonal.
+Using $\vect{E} \approx -\nabla \Phi_0(\psi)$ and $\vect{B} \cdot \left\{ \nabla \cdot \left[ \vect{B}\vect{B}\times\nabla\psi + (\vect{B}\times\nabla\psi) \vect{B} \right] \right\}
+=2B^2\nabla\psi\cdot\nabla\times\vect{B}=0$,
+we then find the contribution to the parallel momentum equation from (\ref{eq:fTilde})-(\ref{eq:PiE}) is
+\begin{equation}
+\vect{b}\cdot(\nabla\cdot\tens{\Pi}_{aE}) = 
+c m_a B (d\Phi_0/d\psi)
+\vect{B}\times\nabla\psi\cdot\nabla\left(n_a V_{a||}/B^3\right).
+\label{eq:PiEParallel}
+\end{equation}
+}
+
+\changed{
+For comparison, let us consider the $\int d^3v\, m_a v_{||} (\ldots)$ moment of the radial electric field
+terms in the drift-kinetic equation for various trajectory models, to see if the results agree with (\ref{eq:PiEParallel}).
+For the full trajectories, the moment of the $d\Phi_0/d\psi$ terms in (\ref{eq:kinetic4})-(\ref{eq:fullTrajectories}) is
+\begin{eqnarray}
+\int d^3v\, m_a v_{||} \left[ 
+\frac{c}{B^2} \frac{d\Phi_0}{d\psi} \vect{B}\times\nabla\psi\cdot\nabla f_{a1}
+- (\vma \cdot\nabla\psi) \frac{Z_a e}{2 T_a x_a} \frac{d\Phi_0}{d\psi} \frac{\partial f_{a1}}{\partial x_a}
+\right.
+\nonumber \\
+\left.
++ \xi(1-\xi^2) \frac{c}{2B^3} \frac{d\Phi_0}{d\psi} (\vect{B}\times\nabla\psi\cdot\nabla B)\frac{\partial f_{a}}{\partial \xi}
+\right]
+\nonumber \\
+= 
+c m_a B (d\Phi_0/d\psi)
+\vect{B}\times\nabla\psi\cdot\nabla\left(n_a V_{a||}/B^3\right),
+\label{eq:fullViscosity}
+\end{eqnarray}
+obtained by integrating by parts in $x_a$ and $\xi$.
+Thus, the full-trajectory model agrees with the full fluid parallel momentum equation: (\ref{eq:fullViscosity}) = (\ref{eq:PiEParallel}).
+However, this agreement is
+not shared by the DKES model: the moment of the $d\Phi_0/d\psi$ term in (\ref{eq:DKESTrajectories}) is
+\begin{eqnarray}
+\int d^3v\, m_a v_{||} \left[ 
+\frac{c}{\left< B^2 \right> } \frac{d\Phi_0}{d\psi} \vect{B}\times\nabla\psi\cdot\nabla f_{a1}
+\right]
+= 
+\frac{c m_a}{ \left< B^2 \right>}
+\frac{d\Phi_0}{d\psi}
+\vect{B}\times\nabla\psi\cdot\nabla (n_a V_{a||}),
+\label{eq:DKESViscosity}
+\end{eqnarray}
+which does not equal (\ref{eq:PiEParallel}). The corresponding result for the partial trajectories,
+obtained by replacing $\left< B^2 \right> \to B^2 $ in (\ref{eq:DKESViscosity}), also does not match
+(\ref{eq:PiEParallel}). Thus, the DKES and partial trajectory models do not correctly account for the parallel
+viscous force as the full trajectory model does.
+}
+
+\changed{
+We close this section by noting another an important difference between the trajectory models
+related to the parallel momentum equations.
+Consider the case of \emph{quasisymmetry}, which is the condition \cite{PerAndreiPRL} that
+$\vect{B}\times\nabla\psi\cdot\nabla B = A(\psi) \vect{B}\cdot\nabla B$ for some flux function
+$A(\psi)$.  It was known previously \cite{PerAndreiPRL} that when the $E_r$ terms are not included
+in the trajectories (but retained in the $\partial F_a/\partial \psi$ drive term in (\ref{eq:kinetic4})), the radial neoclassical
+current vanishes for all values of $d \Phi_0/d\psi$
+if and only if the flux surface is quasisymmetric. This property of quasisymmetric flux surfaces
+is known as intrinsic ambipolarity.
+Here, we show that intrinsic ambipolarity persists in quasisymmetric geometry
+when the $E_r$ terms are retained in the full trajectory
+drift-kinetic equation, but not for the DKES or partial trajectory kinetic equations.
+This result follows from the $-\sum_a Z_a \left< \int d^3v\, A v_{||} / \Omega_a (\ldots)\right>$
+moment of the kinetic equations, i.e. a spatially weighted average of the parallel momentum
+moment. For the full trajectories, 
+(\ref{eq:fullViscosity}) vanishes in this spatial average, leaving
+\begin{equation}
+\sum_a Z_a \left< \int d^3v\, f_{a1} \vma\cdot\nabla\psi\right>=0,
+\label{eq:noCurrent}
+\end{equation}
+meaning there is no radial current. However, for the DKES and partial trajectory models, the
+spatial average does not annihilate the $d\Phi_0/d\psi$ term,
+leaving an additional term in (\ref{eq:noCurrent}) proportional to $d\Phi_0/d\psi$,
+and therefore the radial current is generally nonzero.  
+Consequently, the full trajectory model is the only one of the models that preserves
+intrinsic ambipolarity in quasisymmetry for $E_r \ne 0$.
+Notice that when the full trajectory model is applied in quasisymmetry,
+intrinsic ambipolarity means (\ref{eq:unphysicalEnergyConservation2}) is satisfied even when $d\Phi_0/d\psi \ne 0$,
+so the net heat source vanishes for any radial electric field.
+}
+
 
 \section{Numerical implementation}
 \label{sec:numerics}
@@ -954,18 +1179,43 @@ in the full trajectory model changes sign, whereas there is no sign change in th
 
 
 \begin{figure}[h!]
-% Figure generated using m20131212_02_PlotSFINCS2SpeciesEScanForPaper.m
+% Figure generated using m20140219_02_PlotSFINCS2SpeciesEScanForPaper_withSources.m
+% ----------------------------------------
+% Previous version of figure generated using m20131212_02_PlotSFINCS2SpeciesEScanForPaper.m
 % SFINCS run on hopper and edison in 
 % /global/scratch2/sd/landrema/20131204-02-sfincs-fortran-hopper-intel
-\includegraphics{m20131212_02_PlotSFINCS2SpeciesEScanForPaper.eps}
+\includegraphics[height=7.5in]{m20140219_02_PlotSFINCS2SpeciesEScanForPaper_withSources.eps}
+%\includegraphics{m20131212_02_PlotSFINCS2SpeciesEScanForPaper.eps}
 \caption{(Color online)
-Fluxes and flows computed for a scenario of steep pressure gradient near the edge of W7-X.
+Fluxes (A)-(B), flow (C), and bootstrap current (D)
+computed for a scenario of steep pressure gradient near the edge of W7-X.
 Magenta dotted line is the ambipolar $E_r$, effectively identical for the three
 trajectory models.
+\changed{
+The ion particle and heat sources in (D)-(E) are normalized
+by a gyro-Bohm transport time $t_{gB}$.}
 \label{fig:2species}}
 \end{figure}
 
 
+\changed{
+Figures (\ref{fig:2species}).E-F illustrate the ion particle and heat sources computed as part of the calculation.
+As expected, the particle and heat sources are zero for the DKES model,
+and for the full trajectory model, 
+the particle source is always zero and the heat source vanishes at the ambipolar $E_r$.
+Electron sources are negligible.
+The plots show $S_{H\mathrm{p}}$ and $S_{H\mathrm{h}}$ from (\ref{eq:sources}) normalized to a gyro-Bohm transport time scale
+$t_{gB} = L^2/D_{gB}$ with $D_{gB} = (\rho_i / L) cT/(eB_0)$, thereby
+roughly normalizing the numerical sources to the scale of real physical sources arising from 
+the divergence of the turbulent and neoclassical fluxes.
+For this comparison we choose $L = -n / (dn/dr)$ to be the density scale length.
+For the range of electric fields considered, the numerical sources are small on this transport time scale,
+giving confidence in the model.
+For the parameters considered, $\nuii t_{gB} = 0.4$, 
+so dividing the values in figures (\ref{fig:2species}).E-F by this factor,
+the source terms evidently remain much smaller
+than the collision term in the kinetic equation for this calculation.
+}
 
 \section{Comparison of collision operators}
 \label{sec:collisionComparison}
@@ -999,19 +1249,20 @@ particle flux consists of two terms: one related to the parallel
 friction force and one related to parallel viscosity \cite{AndreiPer2009, Braun}. This is most easily seen by taking the scalar product of the lowest-order plasma current, which satisfies $\vect{J} \times \vect{B} = c p'(\psi) \nabla \psi$, with the momentum equation,
 \begin{equation}
 m_a n_a \vect{V}_a \cdot \nabla \vect{V}_a = n_a e_a \left( - \nabla \phi + c^{-1}\vect{V}_a \times \vect{B} \right)
-- \nabla p_a - \nabla \cdot \vect{\pi}_a + \vect{F}_a, 
+- \nabla p_a - \nabla \cdot \tens{\pi}_a + \vect{F}_a, 
+\label{eq:vectorMomentum}
 \end{equation}
 neglecting the left-hand side. Since $\nabla \cdot \vect{J} = 0$ and $n_a$ is a flux function in lowest order, we obtain
-	\begin{equation}
-	 \left< n_a \vect{V}_a \cdot \nabla \psi \right> 
-	= \frac{1}{e_a p'(\psi)} \left< \vect{J} \cdot \left( \vect{F}_a - \nabla \cdot \vect{\pi}_a \right) \right>,
-	\end{equation}
+\begin{equation}
+  \left< n_a \vect{V}_a \cdot \nabla \psi \right> 
+  = \frac{1}{e_a p'(\psi)} \left< \vect{J} \cdot \left( \vect{F}_a - \nabla \cdot \tens{\pi}_a \right) \right>,
+\end{equation}
 where the term corresponding to the perpendicular component of the friction force $\vect{F}_a$ represents the classical particle flux and the other terms the neoclassical flux,
-		\begin{equation}
-	 \left< n_a \vect{V}_a \cdot \nabla \psi \right>_{nc} = \frac{1}{e_ap'} \left< J_\| F_{a\|} + \vect{\pi}:\nabla \vect{J} \right>
-	 \label{PS flux}
-	 \end{equation}
-where the viscosity tensor is $\vect{\pi}_a =(p_{\|} - p_{\perp})(\vect{b b} - {\bf I}/3)$.
+\begin{equation}
+  \left< n_a \vect{V}_a \cdot \nabla \psi \right>_{nc} = \frac{1}{e_ap'} \left< J_\| F_{a\|} + \tens{\pi}_a:\nabla \vect{J} \right>
+  \label{PS flux}
+\end{equation}
+where the viscosity tensor is $\tens{\pi}_a =(p_{a\|} - p_{a\perp})(\vect{b b} - \tens{I}/3)$.
 The first term in (\ref{PS flux}) is proportional to $\nu$ and
 therefore dominates at high collisionality, but vanishes when there is only a 
 single ion species because of momentum conservation in like-particle
@@ -1028,14 +1279,14 @@ while the blue and red curves have the slope -1.
 A similar difference between the momentum-conserving and
 pitch-angle-scattering operators is evident in the parallel
 conductivity coefficient $L_{33}$. The flow that arises in response to
-a parallel electric field is determined by the parallel momentum equation
-\begin{equation} 
-n_a Z_a e E_{||} = \vect{b}\cdot \nabla p_a + \vect{b}\cdot(\nabla \cdot \vect{\pi}_a )+ F_{a||}, 
-\end{equation} 
+a parallel electric field is determined by the parallel momentum equation $\vect{b}\cdot$(\ref{eq:vectorMomentum}),
+%\begin{equation} 
+%n_a Z_a e E_{||} = \vect{b}\cdot \nabla p_a + \vect{b}\cdot(\nabla \cdot \tens{\pi}_a )+ F_{a||}, 
+%\end{equation} 
 where the parallel friction force $F_{\|a}$ again vanishes when only a
 single ion species is considered. Hence 
 \begin{equation} 
-n_a Z_a e \left< B  E_{||} \right> = \left< \vect{B}\cdot(\nabla \cdot \vect{\pi}_a) \right> 
+n_a Z_a e \left< B  E_{||} \right> = \left< \vect{B}\cdot(\nabla \cdot \tens{\pi}_a) \right> 
 = \left< (p_\perp - p_\| ) \nabla_\| B \right>.
 \label{ParallelMomentum}
 \end{equation}
@@ -1059,8 +1310,13 @@ giving a $2,166,302 \times 2,166,302$ linear system.
 Here, $N_j$ is the number of grid points or modes in coordinate $j$.
 Each calculation at this resolution with the Fokker-Planck collision operator
 required $\sim 30-50$ minutes to run on 4 nodes of the Edison computer at NERSC.
-At higher collisionality, lower resolution is sufficient, so memory and time requirements are reduced;
-computations with $\nu' > 10^{-2}$ can typically be run on a laptop.
+At higher collisionality, or if fewer harmonics are retained in $B(\theta,\zeta)$, 
+lower resolution is sufficient, so memory and time requirements are reduced;
+\changed{
+for example, in the same W7-X geometry at $\nu'=10^{-2}$, sufficient resolution parameters for convergence
+were $N_\theta=11$, $N_\zeta=64$, $N_\xi=100$, and $N_x=5$,
+and computations required 3 minutes on 1 node of Edison.}
+Computations with $\nu' > 10^{-2}$ can typically be run on a laptop.
 
 \changed{
 When the pure pitch-angle scattering collision operator 
@@ -1249,7 +1505,8 @@ A useful test of a stellarator neoclassical code such as the one
 described here is the quasisymmetry isomorphism,
 discussed analytically in Refs. \cite{Pytte, Boozer83, meQS}.
 \changed{
-A quasisymmetric magnetic field is one satisfying $B(\theta,\zeta) = y(M\theta-N\zeta)$
+Equivalent to the definition at the end of section \ref{sec:sources} \cite{PerAndreiPRL},
+a quasisymmetric magnetic field is one satisfying $B(\theta,\zeta) = y(M\theta-N\zeta)$
 for some periodic function $y$ and integers $M$ and $N$.
 Magnetic fields with the same $y$ but different $M$ and $N$ are said to be isomorphic in that
 the associated transport matrices must be related in the following manner.
@@ -1337,7 +1594,7 @@ Eqs.~(\ref{eq:LPSregime})-(\ref{eq:PSregimeFunctions}).
 Three numerical coefficients in the function ${K}_2^{\mathrm{Simakov}} \left(\psi\right)$
 arise from generalized Spitzer problems, 
 which were solved in Ref.~\cite{AndreiPer2009} by keeping a small number of Laguerre polynomials in kinetic energy.
-When these generalized Spitzer problems are solved numerically keeping many more energy polynomials,
+When these generalized Spitzer problems are solved keeping more energy polynomials,
 we obtain the more accurate coefficients given in ${K}_{2}$ below.
 }
 

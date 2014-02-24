@@ -171,10 +171,13 @@ contains
        stop
     end if
 
-    if (forceOddNtheta) then
+    if (forceOddNthetaAndNzeta) then
        do i=1,numRunsInScan
           if (mod(NthetasForScan(i), 2) == 0) then
              NthetasForScan(i) = NthetasForScan(i) + 1
+          end if
+          if (mod(NzetasForScan(i), 2) == 0) then
+             NzetasForScan(i) = NzetasForScan(i) + 1
           end if
        end do
     end if

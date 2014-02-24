@@ -246,6 +246,33 @@
   !  2 = Nx constraints: <f(L=0)>=0 at each x
   ! You should probably set constraintScheme to -1 except in rare circumstances.
 
+  ! To use one of the 4 most common trajectory models, the remaining parameters
+  ! in this namelist should be set as follows:
+  !
+  ! Full trajectories:
+  !   includeXDotTerm = .true.
+  !   includeElectricFieldTermInXiDot = .true.
+  !   useDKESExBDrift = .false.
+  !   include_fDivVE_term = .false.
+  !
+  ! Partial trajectories: (non-conservative, as defined in the paper.)
+  !   includeXDotTerm =	  .false.
+  !   includeElectricFieldTermInXiDot = .false.
+  !   useDKESExBDrift = .false.
+  !   include_fDivVE_term = .false.
+  !
+  ! Conservative partial trajectories: (Not discussed in the paper.)
+  !   includeXDotTerm =	 .false.
+  !   includeElectricFieldTermInXiDot = .false.
+  !   useDKESExBDrift = .false.
+  !   include_fDivVE_term = .true.
+  !
+  ! DKES trajectories:
+  !   includeXDotTerm =	.false.
+  !   includeElectricFieldTermInXiDot = .false.
+  !   useDKESExBDrift = .true.
+  !   include_fDivVE_term = .false.
+
   includeXDotTerm = .true.
 !  includeXDotTerm = .false.
 
@@ -285,7 +312,7 @@
   
   ! Number of grid points in the poloidal direction.
   ! Memory and time requirements DO depend strongly on this parameter.
-  Ntheta = 19
+  Ntheta = 7
   NthetaMinFactor = 1
   NthetaMaxFactor = 2
   NthetaNumRuns = 0
@@ -293,7 +320,7 @@
   ! Number of grid points in the toroidal direction
   ! (per identical segment of the stellarator.)
   ! Memory and time requirements DO depend strongly on this parameter.
-  Nzeta = 1
+  Nzeta = 11
   NzetaMinFactor = 1
   NzetaMaxFactor = 2
   NzetaNumRuns = 0
@@ -304,7 +331,7 @@
   ! the collisionality. At high collisionality, this parameter can be as low
   ! as ~ 5. At low collisionality, this parameter may need to be many 10s or
   ! even > 100 for convergence.
-  Nxi = 17
+  Nxi = 8
   NxiMinFactor = 1
   NxiMaxFactor = 2
   NxiNumRuns = 0
@@ -322,7 +349,7 @@
   ! This parameter almost always needs to be at least 5.
   ! Usually a value in the range 5-8 is plenty for convergence, though sometimes
   ! you may need to go up to 10-15.
-  Nx = 15
+  Nx = 5
   NxMinFactor = 1
   NxMaxFactor = 2
   NxNumRuns = 2
@@ -350,9 +377,11 @@
   solverToleranceMaxFactor = 1
   solverToleranceNumRuns = 0
 
-  forceOddNtheta = .true.
-  ! If forceOddNtheta is set to true, 1 is added to Ntheta any time a run is attempted with even Ntheta.
-  ! This can be useful because the iterative solvers sometimes do not work with even Ntheta.
+  forceOddNthetaAndNzeta = .true.
+  ! If forceOddNthetaAndNzeta is set to true, 1 is added to Ntheta any time a run is attempted with even Ntheta,
+  ! and 1 is added to Nzeta any time a run is attempted with even Nzeta.
+  ! This can be useful because the iterative solvers sometimes do not work with even Ntheta or Nzeta.
+  ! This parameter should be true unless you know what you are doing.
 /
 
 &otherNumericalParameters

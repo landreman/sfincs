@@ -228,6 +228,33 @@ constraintScheme = -1;
 %  1 = 2 constraints: <n_1> = 0 and <p_1> = 0.
 %  2 = Nx constraints: <f>=0 at each x.
 
+% To use one of the 4 most common trajectory models, the remaining parameters
+% in this section should be set as follows:
+%
+% Full trajectories:
+%   includeXDotTerm = true
+%   includeElectricFieldTermInXiDot = true
+%   useDKESExBDrift = false
+%   include_fDivVE_term = false
+%
+% Partial trajectories: (non-conservative, as defined in the paper.)
+%   includeXDotTerm = false
+%   includeElectricFieldTermInXiDot = false
+%   useDKESExBDrift = false
+%   include_fDivVE_term = false
+%
+% Conservative partial trajectories: (Not discussed in the paper.)
+%   includeXDotTerm = false
+%   includeElectricFieldTermInXiDot = false
+%   useDKESExBDrift = false
+%   include_fDivVE_term = true
+%
+% DKES trajectories:
+%   includeXDotTerm = false
+%   includeElectricFieldTermInXiDot = false
+%   useDKESExBDrift = true
+%   include_fDivVE_term = false
+
 includeXDotTerm = true;
 %includeXDotTerm = false;
 
@@ -2115,7 +2142,8 @@ end
             % --------------------------------------------------
             % Add sources.
             % --------------------------------------------------
-            
+
+            spatialPart = 1./(BHat.^2);
             switch constraintScheme
                 case 0
                     % Do nothing
@@ -2124,23 +2152,32 @@ end
                     xPartOfSource1 = (x2-5/2).*expx2;
                     xPartOfSource2 = (x2-3/2).*expx2;
                     
-                    for ix=1:Nx
-                        rowIndices = (ix-1)*Nxi*Ntheta*Nzeta + (1:(Ntheta*Nzeta));
+                    for itheta=1:Ntheta
+                        for ix=1:Nx
+                            rowIndices = (ix-1)*Nxi*Ntheta*Nzeta + ...
+                                (itheta-1)*Nzeta + (1:Nzeta);
                         
-                        colIndex = matrixSize-1;
-                        addSparseBlock(rowIndices, colIndex, xPartOfSource1(ix)*ones(Ntheta*Nzeta,1))
+                            colIndex = matrixSize-1;
+                            addSparseBlock(rowIndices, colIndex, xPartOfSource1(ix)*spatialPart(itheta,:)')
                         
-                        colIndex = matrixSize;
-                        addSparseBlock(rowIndices, colIndex, xPartOfSource2(ix)*ones(Ntheta*Nzeta,1))
+                            colIndex = matrixSize;
+                            addSparseBlock(rowIndices, colIndex, ...
+                                           xPartOfSource2(ix)*spatialPart(itheta,:)')
+                        end
                     end
                     
                 case 2
                     
-                    for ix=1:Nx
-                        rowIndices = (ix-1)*Nxi*Ntheta*Nzeta + (1:(Ntheta*Nzeta));
-                        colIndex = Nx*Nxi*Ntheta*Nzeta + ix;
-                        addSparseBlock(rowIndices, colIndex, ones(Ntheta*Nzeta,1))
-                    end
+                  for itheta=1:Ntheta
+                      for ix=1:Nx
+                          rowIndices = (ix-1)*Nxi*Ntheta*Nzeta + ...
+                              (itheta-1)*Nzeta + (1:Nzeta);
+
+                          colIndex = Nx*Nxi*Ntheta*Nzeta + ix;
+                          addSparseBlock(rowIndices, colIndex, ...
+                                         spatialPart(itheta,:)')
+                      end
+                  end
                 otherwise
                     error('Invalid constraintScheme')
             end

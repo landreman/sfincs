@@ -134,9 +134,11 @@ module globalVariables
   PetscScalar :: solverToleranceMaxFactor = 1
   integer :: solverToleranceNumRuns = 0
 
-  logical :: forceOddNtheta = .true.
-  ! If forceOddNtheta is set to true, 1 is added to Ntheta any time a run is attempted with even Ntheta.
-  ! This can be useful because the iterative solvers sometimes do not work with even Ntheta.
+  logical :: forceOddNthetaAndNzeta = .true.
+  ! If forceOddNthetaAndNzeta is set to true, 1 is added to Ntheta any time a run is attempted with even Ntheta,
+  ! and 1 is added to Nzeta any time a run is attempted with even Nzeta.
+  ! This can be useful because the iterative solvers sometimes do not work with even Ntheta or Nzeta.
+  ! This parameter should be true unless you know what you are doing.
 
   logical :: useIterativeSolver = .false.
 
