@@ -1,10 +1,9 @@
 Example 1:
-Compute the ion transport matrix for W7-X at E_r = 0 and nuPrime = 1.
-Uses the w7x-sc1.bc numerical equilibrium file.
+Compute the ion transport matrix for LHD at E_r = 0 and nuPrime = 1.
+Uses the 3-helicity model for LHD (geometryScheme=2)
 
 Expected results:
 The transport matrix should be the following:
--0.000631, -0.00200, 0.0621,
--0.00200, -0.0108, 0.172,
-0.0622, 0.172, 35.1
- 
+-1.14E-002,  -4.15E-002,   2.77E-002
+-4.15E-002,  -0.315,      -2.38E-002
+ 2.77E-002,  -2.40E-002,  25.9

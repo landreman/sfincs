@@ -72,7 +72,7 @@
 
 &geometryParameters
 
-  geometryScheme = 2
+  geometryScheme = 11
   ! 1 = Three-helicity model
   ! 2 = Three-helicity approximation of the LHD standard configuration
   ! 3 = Four-helicity approximation of the LHD inward-shifted configuration
@@ -310,7 +310,7 @@
   
   ! Number of grid points in the poloidal direction.
   ! Memory and time requirements DO depend strongly on this parameter.
-  Ntheta = 15
+  Ntheta = 13
   NthetaMinFactor = 1
   NthetaMaxFactor = 2.5
   NthetaNumRuns = 3
@@ -318,7 +318,7 @@
   ! Number of grid points in the toroidal direction
   ! (per identical segment of the stellarator.)
   ! Memory and time requirements DO depend strongly on this parameter.
-  Nzeta = 13
+  Nzeta = 31
   NzetaMinFactor = 1
   NzetaMaxFactor = 1.3
   NzetaNumRuns = 0
@@ -329,7 +329,7 @@
   ! the collisionality. At high collisionality, this parameter can be as low
   ! as ~ 5. At low collisionality, this parameter may need to be many 10s or
   ! even > 100 for convergence.
-  Nxi = 14
+  Nxi = 24
   NxiMinFactor = 0.5
   NxiMaxFactor = 2.2
   NxiNumRuns = 3
@@ -347,7 +347,7 @@
   ! This parameter almost always needs to be at least 5.
   ! Usually a value in the range 5-8 is plenty for convergence, though sometimes
   ! you may need to go up to 10-15.
-  Nx = 8
+  Nx = 6
   NxMinFactor = 0.6
   NxMaxFactor = 2
   NxNumRuns = 3
