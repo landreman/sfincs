@@ -170,6 +170,7 @@
       case (1)
          if (constraintScheme .ne. 1) then
             print *,"Error! f_or_sources=1 requires constraintScheme=1"
+            print *,"Now, constraintScheme = ",constraintScheme
             stop
          end if
          getIndex = Nspecies*Nx*Nxi*Ntheta*Nzeta &
@@ -178,14 +179,16 @@
       case (2)
          if (constraintScheme .ne. 1) then
             print *,"Error! f_or_sources=2 requires constraintScheme=1"
+            print *,"Now, constraintScheme = ",constraintScheme
             stop
          end if
          getIndex = Nspecies*Nx*Nxi*Ntheta*Nzeta &
               + (i_species-1)*2 + 1
 
       case (3)
-         if (constraintScheme .ne. 1) then
+         if (constraintScheme .ne. 2) then
             print *,"Error! f_or_sources=3 requires constraintScheme=2"
+            print *,"Now, constraintScheme = ",constraintScheme
             stop
          end if
          getIndex = Nspecies*Nx*Nxi*Ntheta*Nzeta &

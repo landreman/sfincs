@@ -194,7 +194,6 @@ nu_n = 8.4774e-3;  %reference values: \bar{T}=1 keV, \bar{n}=10^20 m^-3, \bar{Ph
 collisionOperator = 0;
 % 0 = Full linearized Fokker-Planck operator
 % 1 = Pitch angle scattering, with no momentum conservation
-% 2 = Pitch angle scattering, with a model momentum-conserving field term
 
 % Unless you know what you are doing, keep constraintScheme = -1.
 constraintScheme = -1;
@@ -1875,177 +1874,220 @@ end
             % End of original 1-species collision operator
             %}
             
-            % Start of new multi-species Fokker-Planck collision operator
-            if collisionOperator ~= 0
-                error('Only the Fokker-Planck operator is presently implemented')
-            end
+            % Start of new multi-species collision operators
+            switch (collisionOperator)
+              case 0
+                % Linearized Fokker-Planck operator
                 
-            xWith0s = [0, xPotentials(2:(end-1))', 0];
-            M21 = 4*pi*diag(xWith0s.^2) * regridPolynomialToUniform;
-            xWith0s = [0, xPotentials(2:(end-1))', 0];
-            M32 = -2*diag(xWith0s.^2);
-            LaplacianTimesX2WithoutL = diag(xPotentials.^2)*d2dx2Potentials + 2*diag(xPotentials)*ddxPotentials;
-            
-            x2 = x.*x;
-            expx2 = exp(-x.*x);
-            
-            CE = zeros(Nx, Nx, Nspecies);
-            nuD = zeros(Nx, Nspecies);
-            regridSpecies = zeros(Nx, Nx, Nspecies, Nspecies);
-            M12IncludingX0 = zeros(Nx, NxPotentials, Nspecies, Nspecies, NL);
-            M13IncludingX0 = zeros(Nx, NxPotentials, Nspecies, Nspecies, NL);
-            for speciesA = 1:Nspecies
-                for speciesB = 1:Nspecies
-                    speciesFactorTest = 3*sqrtpi/4*nHats(speciesB) * Zs(speciesA)*Zs(speciesA)*Zs(speciesB)*Zs(speciesB)/(THats(speciesA)^(3/2)*sqrt(mHats(speciesA)));
-                    xb = x * sqrt(THats(speciesA)*mHats(speciesB)/(THats(speciesB)*mHats(speciesA)));
-                    erfs = erf(xb);
-                    xb2  = xb.*xb;
-                    expxb2 = exp(-xb2);
-                    Psi = (erfs - 2/sqrtpi*xb .* expxb2) ./ (2*xb2);
-                    nuD(:,speciesA) = nuD(:,speciesA) + (speciesFactorTest * (erfs - Psi) ./ (x.^3));
-                    coefficientOfd2dx2 = Psi./x;
-                    coefficientOfddx = -2*THats(speciesA)*mHats(speciesB)/(THats(speciesB)*mHats(speciesA))*Psi*(1-mHats(speciesA)/mHats(speciesB)) ...
-                        + (erfs - Psi)./(x.*x);
-                    diagonalPartOfCE = 4/sqrtpi*THats(speciesA)/THats(speciesB)*sqrt(THats(speciesA)*mHats(speciesB)/(THats(speciesB)*mHats(speciesA))) .* expxb2;
-                    CE(:,:,speciesA) = CE(:,:,speciesA) + speciesFactorTest*(diag(coefficientOfd2dx2)*d2dx2 + diag(coefficientOfddx)*ddx + diag(diagonalPartOfCE));
-                    
-                    if speciesA==speciesB
-                        regridSpecies(:,:,speciesA,speciesB) = eye(Nx);
-                    else
-                        regridSpecies(:,:,speciesA,speciesB) = m20120703_03_polynomialInterpolationMatrix(x,xb,weight(x),weight(xb));
-                    end
-                    
-                    speciesFactorField = nHats(speciesA) * Zs(speciesA)*Zs(speciesA)*Zs(speciesB)*Zs(speciesB)...
-                        * mHats(speciesA) * THats(speciesB)/(THats(speciesA)^(5/2) * mHats(speciesB) * sqrt(mHats(speciesA)));
-                    for L=0:(NL-1)
-                        regridUniformToPolynomial = m20120925_09_makeHighOrderUniformRegriddingMatrix(xPotentials,xb,L,'H');
-                        M12IncludingX0(:,:,speciesA, speciesB, L+1) = -3/(2*pi)*speciesFactorField*diag(expx2)* regridUniformToPolynomial...
-                            * (diag(xPotentials*(1-mHats(speciesA)/mHats(speciesB)))*ddxPotentials + eye(NxPotentials)) ;
-                        regridUniformToPolynomial = m20120925_09_makeHighOrderUniformRegriddingMatrix(xPotentials,xb,L,'G');
-                        M13IncludingX0(:,:,speciesA, speciesB, L+1) = 3/(2*pi) * speciesFactorField * diag(x2.*expx2) * regridUniformToPolynomial* d2dx2Potentials;
-                    end
-                end
-            end
-            
-            for L=0:(Nxi-1)
-                if L <= (NL-1)
-                    % Add Rosenbluth potential stuff
-                    
-                    M22 = LaplacianTimesX2WithoutL-L*(L+1)*eye(NxPotentials);
-                    % Add Dirichlet or Neumann boundary condition for
-                    % potentials at x=0:
-                    if L==0
-                        M22(1,:)=ddxPotentials(1,:);
-                    else
-                        M22(1,:) = 0;
-                        M22(1,1) = 1;
-                    end
-                    M33 = M22;
-                    
-                    % Add Robin boundary condition for potentials at x=xMaxPotentials:
-                    M22(NxPotentials,:) = xMaxPotentials*ddxPotentials(NxPotentials,:);
-                    M22(NxPotentials,NxPotentials) = M22(NxPotentials,NxPotentials) + L+1;
-                    
-                    % Boundary conditions:
-                    M33(NxPotentials,:) = xMaxPotentials*xMaxPotentials*d2dx2Potentials(NxPotentials,:) + (2*L+1)*xMaxPotentials*ddxPotentials(NxPotentials,:);
-                    M33(NxPotentials,NxPotentials) = M33(NxPotentials,NxPotentials) + (L*L-1);
-                    
-                    if L~=0
-                        M22(NxPotentials,1)=0;
-                        M33(NxPotentials,1)=0;
-                    end
-                    
-                    M22BackslashM21 = M22 \ M21;
-                    M33BackslashM32 = M33 \ M32;
-                    
-                end
+                xWith0s = [0, xPotentials(2:(end-1))', 0];
+                M21 = 4*pi*diag(xWith0s.^2) * regridPolynomialToUniform;
+                xWith0s = [0, xPotentials(2:(end-1))', 0];
+                M32 = -2*diag(xWith0s.^2);
+                LaplacianTimesX2WithoutL = diag(xPotentials.^2)*d2dx2Potentials + 2*diag(xPotentials)*ddxPotentials;
                 
+                x2 = x.*x;
+                expx2 = exp(-x.*x);
+                
+                CE = zeros(Nx, Nx, Nspecies);
+                nuD = zeros(Nx, Nspecies);
+                regridSpecies = zeros(Nx, Nx, Nspecies, Nspecies);
+                M12IncludingX0 = zeros(Nx, NxPotentials, Nspecies, Nspecies, NL);
+                M13IncludingX0 = zeros(Nx, NxPotentials, Nspecies, Nspecies, NL);
                 for speciesA = 1:Nspecies
-                    if whichMatrixToMake == 1
-                        % We're making the main matrix.
-                        speciesBToUse = 1:Nspecies;
-                    else
-                        % We're making the preconditioner.
-                        switch preconditioner_species
-                            case 0
+                    for speciesB = 1:Nspecies
+                        speciesFactorTest = 3*sqrtpi/4*nHats(speciesB) * Zs(speciesA)*Zs(speciesA)*Zs(speciesB)*Zs(speciesB)/(THats(speciesA)^(3/2)*sqrt(mHats(speciesA)));
+                        xb = x * sqrt(THats(speciesA)*mHats(speciesB)/(THats(speciesB)*mHats(speciesA)));
+                        erfs = erf(xb);
+                        xb2  = xb.*xb;
+                        expxb2 = exp(-xb2);
+                        Psi = (erfs - 2/sqrtpi*xb .* expxb2) ./ (2*xb2);
+                        nuD(:,speciesA) = nuD(:,speciesA) + (speciesFactorTest * (erfs - Psi) ./ (x.^3));
+                        coefficientOfd2dx2 = Psi./x;
+                        coefficientOfddx = -2*THats(speciesA)*mHats(speciesB)/(THats(speciesB)*mHats(speciesA))*Psi*(1-mHats(speciesA)/mHats(speciesB)) ...
+                            + (erfs - Psi)./(x.*x);
+                        diagonalPartOfCE = 4/sqrtpi*THats(speciesA)/THats(speciesB)*sqrt(THats(speciesA)*mHats(speciesB)/(THats(speciesB)*mHats(speciesA))) .* expxb2;
+                        CE(:,:,speciesA) = CE(:,:,speciesA) + speciesFactorTest*(diag(coefficientOfd2dx2)*d2dx2 + diag(coefficientOfddx)*ddx + diag(diagonalPartOfCE));
+                        
+                        if speciesA==speciesB
+                            regridSpecies(:,:,speciesA,speciesB) = eye(Nx);
+                        else
+                            regridSpecies(:,:,speciesA,speciesB) = m20120703_03_polynomialInterpolationMatrix(x,xb,weight(x),weight(xb));
+                        end
+                        
+                        speciesFactorField = nHats(speciesA) * Zs(speciesA)*Zs(speciesA)*Zs(speciesB)*Zs(speciesB)...
+                            * mHats(speciesA) * THats(speciesB)/(THats(speciesA)^(5/2) * mHats(speciesB) * sqrt(mHats(speciesA)));
+                        for L=0:(NL-1)
+                            regridUniformToPolynomial = m20120925_09_makeHighOrderUniformRegriddingMatrix(xPotentials,xb,L,'H');
+                            M12IncludingX0(:,:,speciesA, speciesB, L+1) = -3/(2*pi)*speciesFactorField*diag(expx2)* regridUniformToPolynomial...
+                                * (diag(xPotentials*(1-mHats(speciesA)/mHats(speciesB)))*ddxPotentials + eye(NxPotentials)) ;
+                            regridUniformToPolynomial = m20120925_09_makeHighOrderUniformRegriddingMatrix(xPotentials,xb,L,'G');
+                            M13IncludingX0(:,:,speciesA, speciesB, L+1) = 3/(2*pi) * speciesFactorField * diag(x2.*expx2) * regridUniformToPolynomial* d2dx2Potentials;
+                        end
+                    end
+                end
+                
+                for L=0:(Nxi-1)
+                    if L <= (NL-1)
+                        % Add Rosenbluth potential stuff
+                        
+                        M22 = LaplacianTimesX2WithoutL-L*(L+1)*eye(NxPotentials);
+                        % Add Dirichlet or Neumann boundary condition for
+                        % potentials at x=0:
+                        if L==0
+                            M22(1,:)=ddxPotentials(1,:);
+                        else
+                            M22(1,:) = 0;
+                            M22(1,1) = 1;
+                        end
+                        M33 = M22;
+                        
+                        % Add Robin boundary condition for potentials at x=xMaxPotentials:
+                        M22(NxPotentials,:) = xMaxPotentials*ddxPotentials(NxPotentials,:);
+                        M22(NxPotentials,NxPotentials) = M22(NxPotentials,NxPotentials) + L+1;
+                        
+                        % Boundary conditions:
+                        M33(NxPotentials,:) = xMaxPotentials*xMaxPotentials*d2dx2Potentials(NxPotentials,:) + (2*L+1)*xMaxPotentials*ddxPotentials(NxPotentials,:);
+                        M33(NxPotentials,NxPotentials) = M33(NxPotentials,NxPotentials) + (L*L-1);
+                        
+                        if L~=0
+                            M22(NxPotentials,1)=0;
+                            M33(NxPotentials,1)=0;
+                        end
+                        
+                        M22BackslashM21 = M22 \ M21;
+                        M33BackslashM32 = M33 \ M32;
+                        
+                    end
+                    
+                    for speciesA = 1:Nspecies
+                        if whichMatrixToMake == 1
+                            % We're making the main matrix.
+                            speciesBToUse = 1:Nspecies;
+                        else
+                            % We're making the preconditioner.
+                            switch preconditioner_species
+                              case 0
                                 % Full inter-species coupling
                                 speciesBToUse = 1:Nspecies;
-                            case 1
+                              case 1
                                 % No inter-species coupling
                                 speciesBToUse = speciesA;
-                            otherwise
+                              otherwise
                                 error('Invalid preconditioner_species')
+                            end
                         end
-                    end
-                    for speciesB = speciesBToUse
-                        % Add CD
-                        CD = 3*nHats(speciesA)*Zs(speciesA)*Zs(speciesA)*Zs(speciesB)*Zs(speciesB)...
-                            * mHats(speciesA)/(mHats(speciesB)*THats(speciesA)*sqrt(THats(speciesA)*mHats(speciesA))) ...
-                            * diag(expx2) * regridSpecies(:,:,speciesA, speciesB);
-                        
-                        if speciesA == speciesB
-                            M11 = -0.5*diag(nuD(:,speciesA))*L*(L+1) + CE(:,:,speciesA) + CD;
-                        else
-                            M11 = CD;
-                        end
-                        
-                        if L <= (NL-1)
-                            % Add terms of the collision operator involving
-                            % the Rosenbluth potentials.
+                        for speciesB = speciesBToUse
+                            % Add CD
+                            CD = 3*nHats(speciesA)*Zs(speciesA)*Zs(speciesA)*Zs(speciesB)*Zs(speciesB)...
+                                 * mHats(speciesA)/(mHats(speciesB)*THats(speciesA)*sqrt(THats(speciesA)*mHats(speciesA))) ...
+                                 * diag(expx2) * regridSpecies(:,:,speciesA, speciesB);
                             
-                            M13 = M13IncludingX0(:,:,speciesA, speciesB, L+1);
-                            M12 = M12IncludingX0(:,:,speciesA, speciesB, L+1);
-                            
-                            % Add Dirichlet or Neumann boundary condition for
-                            % potentials at x=0:
-                            if L~=0
-                                M12(:,1) = 0;
-                                M13(:,1) = 0;
+                            if speciesA == speciesB
+                                M11 = -0.5*diag(nuD(:,speciesA))*L*(L+1) + CE(:,:,speciesA) + CD;
+                            else
+                                M11 = CD;
                             end
                             
-                            CHat = M11 -  (M12 - M13 * M33BackslashM32) * M22BackslashM21;
-                        else
-                            CHat = M11;
-                        end
-                        
-                        % The lines below are invoked to make the local preconditioner.
-                        if whichMatrixToMake == 0 && L >= preconditioner_x_min_L
-                            switch preconditioner_x
-                                case 0
+                            if L <= (NL-1)
+                                % Add terms of the collision operator involving
+                                % the Rosenbluth potentials.
+                                
+                                M13 = M13IncludingX0(:,:,speciesA, speciesB, L+1);
+                                M12 = M12IncludingX0(:,:,speciesA, speciesB, L+1);
+                                
+                                % Add Dirichlet or Neumann boundary condition for
+                                % potentials at x=0:
+                                if L~=0
+                                    M12(:,1) = 0;
+                                    M13(:,1) = 0;
+                                end
+                                
+                                CHat = M11 -  (M12 - M13 * M33BackslashM32) * M22BackslashM21;
+                            else
+                                CHat = M11;
+                            end
+                            
+                            % The lines below are invoked to make the local preconditioner.
+                            if whichMatrixToMake == 0 && L >= preconditioner_x_min_L
+                                switch preconditioner_x
+                                  case 0
                                     % Nothing to do here.
-                                case 1
+                                  case 1
                                     CHat = diag(diag(CHat));
-                                case 2
+                                  case 2
                                     CHat = triu(CHat);
-                                case 3
+                                  case 3
                                     mask = eye(Nx) + diag(ones(Nx-1,1),1) + diag(ones(Nx-1,1),-1);
                                     CHat = CHat .* mask;
-                                case 4
+                                  case 4
                                     mask = eye(Nx) + diag(ones(Nx-1,1),1);
                                     CHat = CHat .* mask;
-                                otherwise
+                                  otherwise
                                     error('Invalid preconditionerMethod_x')
+                                end
+                                
                             end
                             
-                        end
-                        
-                        % At this point, CHat holds the collision operator
-                        % divided by \bar{nu}
-                        
-                        for itheta = 1:Ntheta
-                            for izeta = 1:Nzeta
-                                rowIndices = getIndices(speciesA, 1:Nx, L+1, itheta, izeta, 0);
-                                colIndices = getIndices(speciesB, 1:Nx, L+1, itheta, izeta, 0);
-                                addSparseBlock(rowIndices, colIndices, -nu_n*(GHat+iota*IHat)/(BHat(itheta,izeta)^2)*CHat)
+                            % At this point, CHat holds the collision operator
+                            % divided by \bar{nu}
+                            
+                            for itheta = 1:Ntheta
+                                for izeta = 1:Nzeta
+                                    rowIndices = getIndices(speciesA, 1:Nx, L+1, itheta, izeta, 0);
+                                    colIndices = getIndices(speciesB, 1:Nx, L+1, itheta, izeta, 0);
+                                    addSparseBlock(rowIndices, colIndices, -nu_n*(GHat+iota*IHat)/(BHat(itheta,izeta)^2)*CHat)
+                                end
                             end
+                            
+                            
                         end
-                        
-                        
+                    end
+                    
+                end
+                % End of new multi-species Fokker-Planck collision
+                % operator.
+                
+              case (1)
+                % Pure pitch angle scattering collision operator
+            
+                % First, assemble the deflection frequency nuD for
+                % species A, which involves a sum over species B:
+                nuD = zeros(Nx, Nspecies);
+                for speciesA = 1:Nspecies
+                    for speciesB = 1:Nspecies
+                        speciesFactorTest = 3*sqrtpi/4*nHats(speciesB) * Zs(speciesA)*Zs(speciesA)*Zs(speciesB)*Zs(speciesB)/(THats(speciesA)^(3/2)*sqrt(mHats(speciesA)));
+                        xb = x * sqrt(THats(speciesA)*mHats(speciesB)/(THats(speciesB)*mHats(speciesA)));
+                        erfs = erf(xb);
+                        xb2  = xb.*xb;
+                        expxb2 = exp(-xb2);
+                        Psi = (erfs - 2/sqrtpi*xb .* expxb2) ./ (2*xb2);
+                        nuD(:,speciesA) = nuD(:,speciesA) + (speciesFactorTest * (erfs - Psi) ./ (x.^3));
                     end
                 end
                 
+                % Now that nuD has been assembled, 
+                for L=0:(Nxi-1)                    
+                    for iSpecies = 1:Nspecies
+                        CHat = -0.5*diag(nuD(:,iSpecies))*L*(L+1);
+                                                        
+                        % At this point, CHat holds the collision operator
+                        % divided by \bar{nu}
+                            
+                        for itheta = 1:Ntheta
+                            for izeta = 1:Nzeta
+                                indices = getIndices(iSpecies, 1:Nx, L+1, itheta, izeta, 0);
+                                addToSparse(indices, indices, -nu_n*(GHat+iota*IHat)/(BHat(itheta,izeta)^2)*CHat)
+                            end
+                        end
+                    end
+                end
+                
+                % End of new multi-species pitch-angle scattering collision
+                % operator.
+              
+              otherwise
+                error('collisionOperator must be 0 or 1.')
             end
-            % End of new multi-species Fokker-Planck collision operator
             
             % --------------------------------------------------
             % Add constraints.

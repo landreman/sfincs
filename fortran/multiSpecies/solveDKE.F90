@@ -1293,12 +1293,8 @@
              end do
           end do
 
-       case (2)
-          print *,"Error! collisionOperator=2 has not yet been implemented for the multi-species version of SFINCS."
-          stop
-
        case default
-          print *,"Error! collisionOperator must be 0, 1, or 2."
+          print *,"Error! collisionOperator must be 0 or 1."
           stop
 
        end select
