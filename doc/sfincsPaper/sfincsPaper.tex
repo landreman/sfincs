@@ -81,8 +81,8 @@
 \author{H M Smith}
 \affiliation{Max-Planck-Institut f\"{u}r Plasmaphysik, 17491 Greifswald, Germany}
 \author{A Moll\'{e}n}
-\affiliation{Department of Applied Physics, Nuclear Engineering,
-  Chalmers University of Technology and Euratom-VR Association,
+\affiliation{Department of Applied Physics, %Nuclear Engineering,
+  Chalmers University of Technology, %and Euratom-VR Association,
   G\"oteborg,
   Sweden}
 \author{P Helander}
@@ -372,7 +372,7 @@ term in (\ref{eq:kinetic2}) may be neglected. Thus, we obtain
 \left(\vpar \vect{b} + \vEo + \vma\right) \cdot\left(\nabla f_{a1}\right)_{W_{a0},\mu}
 -C_{a}
 =-(\vma\cdot\nabla\psi) \left(\frac{\partial F_{a}}{\partial \psi}\right)_{W_{a0}}
-+\frac{Z_a e}{T_a}\vpar\frac{B\left<E_{||} B\right>}{\left< B^2\right>} F_{a}.
++\frac{Z_a e}{T_a}\vpar\frac{B\left<E_{||} B\right>}{\left< B^2\right>} F_{a},
 \label{eq:kinetic3}
 \end{equation}
 where $C_a$ is now the collision operator linearized about $F_a$ rather than $f_{a0}$,
@@ -421,7 +421,7 @@ and
 For the rest of this work, we will neglect the $\vma$ term in (\ref{eq:rdot1}), the $dT_a/d\psi$ term
 in (\ref{eq:xdot1}), and the $\vma\cdot\nabla B$ term in (\ref{eq:xidot1}),
 for several reasons.
-First, if the  $\vma$ term in (\ref{eq:rdot1}) were retained, we would need to solve a 5D rather
+First, if the  $\vma$ term in (\ref{eq:rdot1}) was retained, we would need to solve a 5D rather
 than 4D problem due to the radial coupling (i.e. $\psi$ appearing
 as a derivative rather than merely as a parameter). Second,
 once radial coupling is dropped, we must also drop the $dT_a/d\psi$ term
@@ -450,7 +450,7 @@ Our kinetic equation then becomes
 +\dot{\xi}_a \left(\frac{\partial f_{a1}}{\partial \xi}\right)_{\vect{r},x_a}
 -C_{a}
 =-(\vma\cdot\nabla\psi) \left(\frac{\partial F_{a}}{\partial \psi}\right)_{W_{a0}}
-+\frac{Z_a e}{T_a}\vpar\frac{B\left<E_{||} B\right>}{\left< B^2\right>} F_{a}.
++\frac{Z_a e}{T_a}\vpar\frac{B\left<E_{||} B\right>}{\left< B^2\right>} F_{a},
 \label{eq:kinetic4}
 \end{equation}
 where the effective particle trajectory equations are
@@ -695,7 +695,7 @@ conservation problem.
 
 \changed{
 To summarize, the sources and extra constraint equations serve two independent purposes.
-First, when $E_r \ne 0$, the sources are needed to eliminate the conservation problems, and the extra constraints then keep the linear system square (number of equations = number of unknowns) upon discretizatiton.
+First, when $E_r \ne 0$, the sources are needed to eliminate the conservation problems, and the extra constraints then keep the linear system square (number of equations = number of unknowns) upon discretization.
 Second, even when $E_r = 0$, and even for the DKES trajectories in which sources are not required, the constraints are needed to eliminate the null space in the kinetic equation, and the source terms are a convenient way to keep the linear system square upon discretization.
 The first problem can be solved with either the source (\ref{eq:sources}) or a general speed-dependent source $S_a(x_a)$.
 However, to solve the second problem, the number of constraints should match the dimensionality of the null space.
@@ -839,11 +839,12 @@ viscous force as the full trajectory model does.
 }
 
 \changed{
-We close this section by noting another an important difference between the trajectory models
+We close this section by noting another important difference between the trajectory models
 related to the parallel momentum equations.
-Consider the case of \emph{quasisymmetry}, which is the condition \cite{PerAndreiPRL} that
+Consider the case of \emph{quasisymmetry}, which is the condition %\cite{PerAndreiPRL} 
+that
 $\vect{B}\times\nabla\psi\cdot\nabla B = A(\psi) \vect{B}\cdot\nabla B$ for some flux function
-$A(\psi)$.  It was known previously \cite{PerAndreiPRL} that when the $E_r$ terms are not included
+$A(\psi)$ \cite{PerAndreiPRL}.  It was known previously \cite{PerAndreiPRL} that when the $E_r$ terms are not included
 in the trajectories (but retained in the $\partial F_a/\partial \psi$ drive term in (\ref{eq:kinetic4})), the radial neoclassical
 current vanishes for all values of $d \Phi_0/d\psi$
 if and only if the flux surface is quasisymmetric. This property of quasisymmetric flux surfaces
@@ -1192,7 +1193,7 @@ computed for a scenario of steep pressure gradient near the edge of W7-X.
 Magenta dotted line is the ambipolar $E_r$, effectively identical for the three
 trajectory models.
 \changed{
-The ion particle and heat sources in (D)-(E) are normalized
+The ion particle and heat sources in (E)-(F) are normalized
 by a gyro-Bohm transport time $t_{gB}$.}
 \label{fig:2species}}
 \end{figure}
