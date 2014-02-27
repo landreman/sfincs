@@ -1,21 +1,12 @@
-This is pdfTeX, Version 3.1415926-1.40.11 (MiKTeX 2.9) (preloaded format=latex 2014.2.21)  26 FEB 2014 15:57
+This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=latex 2012.7.6)  27 FEB 2014 09:59
 entering extended mode
-**sfincsPaper.tex
-
-("C:\Users\Albert Mollén\Documents\GitHub\sfincs\doc\sfincsPaper\sfincsPaper.te
-x"
+ %&-line parsing enabled.
+**sfincsPaper
+(./sfincsPaper.tex
 LaTeX2e <2009/09/24>
-Babel <v3.8l> and hyphenation patterns for english, afrikaans, ancientgreek, ar
-abic, armenian, assamese, basque, bengali, bokmal, bulgarian, catalan, coptic, 
-croatian, czech, danish, dutch, esperanto, estonian, farsi, finnish, french, ga
-lician, german, german-x-2009-06-19, greek, gujarati, hindi, hungarian, iceland
-ic, indonesian, interlingua, irish, italian, kannada, kurmanji, lao, latin, lat
-vian, lithuanian, malayalam, marathi, mongolian, mongolianlmc, monogreek, ngerm
-an, ngerman-x-2009-06-19, nynorsk, oriya, panjabi, pinyin, polish, portuguese, 
-romanian, russian, sanskrit, serbian, slovak, slovenian, spanish, swedish, swis
-sgerman, tamil, telugu, turkish, turkmen, ukenglish, ukrainian, uppersorbian, u
-senglishmax, welsh, loaded.
-("C:\Users\Albert Mollén\Documents\GitHub\sfincs\doc\sfincsPaper\revtex4.cls"
+Babel <v3.8l> and hyphenation patterns for english, usenglishmax, dumylang, noh
+yphenation, loaded.
+(./revtex4.cls
 Document Class: revtex4 2001/08/03 v4.0 (http://publish.aps.org/revtex4/ for do
 cumentation)
  Copyright (c) 2001 The American Physical Society.
@@ -41,7 +32,7 @@ ltxgrid: portions licensed from W. E. Baxter (web@superscript.com)
 \pagegrid@col=\count82
 Class revtex4 Info: Incorporating package {textcase}  [1998/11/12 v0.06 Text on
 ly upper/lower case changing (DPC)]. on input line 3682.
-("C:\Program Files\MiKTeX 2.9\tex\latex\ltxmisc\url.sty"
+(/usr/share/texmf-texlive/tex/latex/ltxmisc/url.sty
 \Urlmuskip=\muskip10
 Package: url 2006/04/12  ver 3.3  Verb mode for urls, etc.
 )
@@ -58,9 +49,8 @@ Package: url 2006/04/12  ver 3.3  Verb mode for urls, etc.
 \c@figure=\count90
 \c@table=\count91
 
-("C:\Users\Albert Mollén\AppData\Roaming\MiKTeX\2.9\tex\latex\natbib\natbib.sty
-"
-Package: natbib 2010/09/13 8.31b (PWD, AO)
+(/usr/share/texmf-texlive/tex/latex/natbib/natbib.sty
+Package: natbib 2009/07/16 8.31 (PWD, AO)
 \bibhang=\skip43
 \bibsep=\skip44
 LaTeX Info: Redefining \cite on input line 694.
@@ -68,7 +58,7 @@ LaTeX Info: Redefining \cite on input line 694.
 )
 \widetext@top=\box32
 \widetext@bot=\box33
- ("C:\Users\Albert Mollén\Documents\GitHub\sfincs\doc\sfincsPaper\revsymb.sty"
+ (./revsymb.sty
 Package: revsymb 2001/08/03 v4.0 (http://publish.aps.org/revtex4/ for documenta
 tion)
 LaTeX Info: Redefining \REV@mathfrak on input line 118.
@@ -76,63 +66,59 @@ LaTeX Info: Redefining \REV@mathfrak on input line 118.
 
 Class revtex4 Warning: No Society specified, using generic APS style.
 
-("C:\Users\Albert Mollén\Documents\GitHub\sfincs\doc\sfincsPaper\aps.rtx"
+(./aps.rtx
 File: aps.rtx 2001/08/03 v4.0 (http://publish.aps.org/revtex4/ for documentatio
 n)
-)
-("C:\Users\Albert Mollén\Documents\GitHub\sfincs\doc\sfincsPaper\12pt.rtx"
+) (./12pt.rtx
 File: 12pt.rtx 2001/08/03 v4.0 (http://publish.aps.org/revtex4/ for documentati
 on)
-)
-("C:\Program Files\MiKTeX 2.9\tex\latex\base\latexsym.sty"
+) (/usr/share/texmf-texlive/tex/latex/base/latexsym.sty
 Package: latexsym 1998/08/17 v2.2e Standard LaTeX package (lasy symbols)
 \symlasy=\mathgroup4
 LaTeX Font Info:    Overwriting symbol font `lasy' in version `bold'
 (Font)                  U/lasy/m/n --> U/lasy/b/n on input line 47.
-)
-("C:\Program Files\MiKTeX 2.9\tex\latex\graphics\color.sty"
+) (/usr/share/texmf-texlive/tex/latex/graphics/color.sty
 Package: color 2005/11/14 v1.0j Standard LaTeX Color (DPC)
 
-("C:\Program Files\MiKTeX 2.9\tex\latex\00miktex\color.cfg"
+(/etc/texmf/tex/latex/config/color.cfg
 File: color.cfg 2007/01/18 v1.5 color configuration of teTeX/TeXLive
 )
 Package color Info: Driver file: dvips.def on input line 130.
 
-("C:\Program Files\MiKTeX 2.9\tex\latex\graphics\dvips.def"
+(/usr/share/texmf-texlive/tex/latex/graphics/dvips.def
 File: dvips.def 1999/02/16 v3.0i Driver-dependant file (DPC,SPQR)
 )
-("C:\Program Files\MiKTeX 2.9\tex\latex\graphics\dvipsnam.def"
+(/usr/share/texmf-texlive/tex/latex/graphics/dvipsnam.def
 File: dvipsnam.def 1999/02/16 v3.0i Driver-dependant file (DPC,SPQR)
 ))
-("C:\Program Files\MiKTeX 2.9\tex\latex\graphics\graphicx.sty"
+(/usr/share/texmf-texlive/tex/latex/graphics/graphicx.sty
 Package: graphicx 1999/02/16 v1.0f Enhanced LaTeX Graphics (DPC,SPQR)
 
-("C:\Program Files\MiKTeX 2.9\tex\latex\graphics\keyval.sty"
+(/usr/share/texmf-texlive/tex/latex/graphics/keyval.sty
 Package: keyval 1999/03/16 v1.13 key=value parser (DPC)
 \KV@toks@=\toks16
 )
-("C:\Program Files\MiKTeX 2.9\tex\latex\graphics\graphics.sty"
+(/usr/share/texmf-texlive/tex/latex/graphics/graphics.sty
 Package: graphics 2009/02/05 v1.0o Standard LaTeX Graphics (DPC,SPQR)
 
-("C:\Program Files\MiKTeX 2.9\tex\latex\graphics\trig.sty"
+(/usr/share/texmf-texlive/tex/latex/graphics/trig.sty
 Package: trig 1999/03/16 v1.09 sin cos tan (DPC)
 )
-("C:\Program Files\MiKTeX 2.9\tex\latex\00miktex\graphics.cfg"
-File: graphics.cfg 2007/01/18 v1.5 graphics configuration of teTeX/TeXLive
+(/etc/texmf/tex/latex/config/graphics.cfg
+File: graphics.cfg 2009/08/28 v1.8 graphics configuration of TeX Live
 )
 Package graphics Info: Driver file: dvips.def on input line 91.
 )
 \Gin@req@height=\dimen102
 \Gin@req@width=\dimen103
-)
-("C:\Users\Albert Mollén\Documents\GitHub\sfincs\doc\sfincsPaper\comment.sty"
+) (./comment.sty
 \CommentStream=\write3
 
 Excluding comment 'comment')
-("C:\Program Files\MiKTeX 2.9\tex\latex\amsfonts\amssymb.sty"
+(/usr/share/texmf-texlive/tex/latex/amsfonts/amssymb.sty
 Package: amssymb 2009/06/22 v3.00
 
-("C:\Program Files\MiKTeX 2.9\tex\latex\amsfonts\amsfonts.sty"
+(/usr/share/texmf-texlive/tex/latex/amsfonts/amsfonts.sty
 Package: amsfonts 2009/06/22 v3.00 Basic AMSFonts support
 \@emptytoks=\toks17
 \symAMSa=\mathgroup5
@@ -142,24 +128,24 @@ LaTeX Font Info:    Overwriting math alphabet `\mathfrak' in version `bold'
 LaTeX Info: Redefining \frak on input line 99.
 LaTeX Info: Redefining \Bbb on input line 101.
 ))
-("C:\Program Files\MiKTeX 2.9\tex\latex\ams\math\amsmath.sty"
+(/usr/share/texmf-texlive/tex/latex/amsmath/amsmath.sty
 Package: amsmath 2000/07/18 v2.13 AMS math features
 \@mathmargin=\skip45
 
 For additional information on amsmath, use the `?' option.
-("C:\Program Files\MiKTeX 2.9\tex\latex\ams\math\amstext.sty"
+(/usr/share/texmf-texlive/tex/latex/amsmath/amstext.sty
 Package: amstext 2000/06/29 v2.01
 
-("C:\Program Files\MiKTeX 2.9\tex\latex\ams\math\amsgen.sty"
+(/usr/share/texmf-texlive/tex/latex/amsmath/amsgen.sty
 File: amsgen.sty 1999/11/30 v2.0
 \@emptytoks=\toks18
 \ex@=\dimen104
 ))
-("C:\Program Files\MiKTeX 2.9\tex\latex\ams\math\amsbsy.sty"
+(/usr/share/texmf-texlive/tex/latex/amsmath/amsbsy.sty
 Package: amsbsy 1999/11/29 v1.2d
 \pmbraise@=\dimen105
 )
-("C:\Program Files\MiKTeX 2.9\tex\latex\ams\math\amsopn.sty"
+(/usr/share/texmf-texlive/tex/latex/amsmath/amsopn.sty
 Package: amsopn 1999/12/14 v2.01 operator names
 )
 \inf@bad=\count93
@@ -199,9 +185,9 @@ LaTeX Font Info:    Redeclaring font encoding OMS on input line 568.
 \mathdisplay@stack=\toks22
 LaTeX Info: Redefining \[ on input line 2666.
 LaTeX Info: Redefining \] on input line 2667.
-)
-("C:\Users\Albert Mollén\Documents\GitHub\sfincs\doc\sfincsPaper\sfincsPaper.au
-x")
+) (./sfincsPaper.aux)
+\openout1 = `sfincsPaper.aux'.
+
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 62.
 LaTeX Font Info:    ... okay on input line 62.
 LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 62.
@@ -218,43 +204,44 @@ Class revtex4 Info: Patching LaTeX tabular. on input line 62.
 Class revtex4 Info: cite was not loaded (OK!) on input line 62.
 Class revtex4 Info: multicol was not loaded (OK!) on input line 62.
 LaTeX Font Info:    Try loading font information for U+lasy on input line 104.
- ("C:\Program Files\MiKTeX 2.9\tex\latex\base\ulasy.fd"
+
+(/usr/share/texmf-texlive/tex/latex/base/ulasy.fd
 File: ulasy.fd 1998/08/17 v2.2e LaTeX symbol font definitions
 )
 LaTeX Font Info:    Try loading font information for U+msa on input line 104.
 
-("C:\Program Files\MiKTeX 2.9\tex\latex\amsfonts\umsa.fd"
+(/usr/share/texmf-texlive/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2009/06/22 v3.00 AMS symbols A
 )
 LaTeX Font Info:    Try loading font information for U+msb on input line 104.
 
-("C:\Program Files\MiKTeX 2.9\tex\latex\amsfonts\umsb.fd"
+(/usr/share/texmf-texlive/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2009/06/22 v3.00 AMS symbols B
 )
 LaTeX Font Info:    Font shape `U/lasy/b/n' in size <8> not available
 (Font)              Font shape `U/lasy/m/n' tried instead on input line 104.
 LaTeX Font Info:    Font shape `U/lasy/b/n' in size <6> not available
 (Font)              Font shape `U/lasy/m/n' tried instead on input line 104.
- [1] [2] [3] [4]
-[5] [6] [7]
+ [1] [2] [3] [4] [5]
+[6] [7]
 Overfull \hbox (14.7377pt too wide) detected at line 455
-[] \OMS/cmsy/m/n/12  [][] \OT1/cmr/m/n/12 + [] [][] + [] [][] \OMS/cmsy/m/n/12
-   \OML/cmm/m/it/12 C[] \OT1/cmr/m/n/12 = \OMS/cmsy/m/n/12  \OT1/cmr/m/n/12 ([]
-[] \OMS/cmsy/m/n/12  r\OML/cmm/m/it/12  \OT1/cmr/m/n/12 ) [][] + []\OML/cmm/m/
-it/12 v[][]F[];
+[] \OMS/cmsy/m/n/12 ^^A [][] \OT1/cmr/m/n/12 + [] [][] + [] [][] \OMS/cmsy/m/n/
+12 ^^@ \OML/cmm/m/it/12 C[] \OT1/cmr/m/n/12 = \OMS/cmsy/m/n/12 ^^@\OT1/cmr/m/n/
+12 ([][] \OMS/cmsy/m/n/12 ^^A r\OML/cmm/m/it/12  \OT1/cmr/m/n/12 ) [][] + []\OM
+L/cmm/m/it/12 v[][]F[];
  []
 
 [8] [9]
 Underfull \hbox (badness 1009) in paragraph at lines 592--606
 \OT1/cmr/m/n/12 this par-tial tra-jec-tory model: the $\OML/cmm/m/it/12 d\OT1/c
-mr/m/n/12 []\OML/cmm/m/it/12 =d  \OT1/cmr/m/n/12 = 0$ so-lu-tion for $\OML/cmm
-/m/it/12 f[]$ \OT1/cmr/m/n/12 need not sat-isfy
+mr/m/n/12 ^^H[]\OML/cmm/m/it/12 =d  \OT1/cmr/m/n/12 = 0$ so-lu-tion for $\OML/c
+mm/m/it/12 f[]$ \OT1/cmr/m/n/12 need not sat-isfy
  []
 
 [10]
 Underfull \hbox (badness 3168) in paragraph at lines 625--633
-[]\OT1/cmr/m/n/12 The quan-tity mul-ti-ply-ing $\OML/cmm/m/it/12 d\OT1/cmr/m/n/
-12 []\OML/cmm/m/it/12 =d $ \OT1/cmr/m/n/12 in (26[]) is pro-por-tional to the 
+\OT1/cmr/m/n/12 The quan-tity mul-ti-ply-ing $\OML/cmm/m/it/12 d\OT1/cmr/m/n/12
+ ^^H[]\OML/cmm/m/it/12 =d $ \OT1/cmr/m/n/12 in (26[]) is pro-por-tional to the 
 ra-dial cur-rent
  []
 
@@ -268,14 +255,14 @@ s ten-sor is
 
 Underfull \hbox (badness 1067) in paragraph at lines 800--800
 \OT1/cmr/m/n/12 a part of the gy-ro-vis-cos-ity and is off-diagonal. Us-ing $[]
- \OMS/cmsy/m/n/12   r\OT1/cmr/m/n/12 [](\OML/cmm/m/it/12  \OT1/cmr/m/n/12 )$ 
-and $[] \OMS/cmsy/m/n/12 
+ \OMS/cmsy/m/n/12 ^^Y ^^@r\OT1/cmr/m/n/12 ^^H[](\OML/cmm/m/it/12  \OT1/cmr/m/n/
+12 )$ and $[] \OMS/cmsy/m/n/12 ^^A
  []
 
 [14] [15] [16] [17]
 Underfull \hbox (badness 4291) in paragraph at lines 1025--1039
-[][]\OT1/cmr/m/n/12 Several prop-er-ties of the ma-trix $\OML/cmm/m/it/12 L[]$ 
-\OT1/cmr/m/n/12 are note-wor-thy. Us-ing the prop-erty
+[]\OT1/cmr/m/n/12 Several prop-er-ties of the ma-trix $\OML/cmm/m/it/12 L[]$ \O
+T1/cmr/m/n/12 are note-wor-thy. Us-ing the prop-erty
  []
 
 [18] [19]
@@ -318,18 +305,15 @@ ype eps)
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-[26] [27] [28] [29] [30] [31]
-("C:\Users\Albert Mollén\Documents\GitHub\sfincs\doc\sfincsPaper\sfincsPaper.bb
-l" [32] [33] [34]) [35]
-("C:\Users\Albert Mollén\Documents\GitHub\sfincs\doc\sfincsPaper\sfincsPaper.au
-x") ) 
+[26] [27] [28] [29] [30] [31] (./sfincsPaper.bbl [32] [33] [34]) [35]
+(./sfincsPaper.aux) ) 
 Here is how much of TeX's memory you used:
- 3573 strings out of 494020
- 45827 string characters out of 3146497
- 119453 words of memory out of 3000000
- 6822 multiletter control sequences out of 15000+200000
+ 3570 strings out of 495062
+ 44406 string characters out of 1182645
+ 118893 words of memory out of 3000000
+ 6707 multiletter control sequences out of 15000+50000
  18162 words of font info for 74 fonts, out of 3000000 for 9000
- 714 hyphenation exceptions out of 8191
- 34i,18n,30p,782b,405s stack positions out of 5000i,500n,10000p,200000b,50000s
+ 28 hyphenation exceptions out of 8191
+ 34i,18n,30p,778b,403s stack positions out of 5000i,500n,10000p,200000b,50000s
 
-Output written on sfincsPaper.dvi (35 pages, 149140 bytes).
+Output written on sfincsPaper.dvi (35 pages, 134796 bytes).

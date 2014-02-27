@@ -1427,13 +1427,17 @@ These three sets of expressions for $\vect{\dot{r}}_a$,
 $\dot{x}_a$, and $\dot{\xi}_a$ may be interpreted as effective
 particle trajectories (although we solve each form of the kinetic equation
 using continuum numerical methods).
-At first glance,  (\ref{eq:fullTrajectories}) and  (\ref{eq:partialTrajectories})
-appear more accurate than  (\ref{eq:DKESTrajectories}).
+Equations  (\ref{eq:fullTrajectories}) and  (\ref{eq:partialTrajectories})
+appear more accurate than  (\ref{eq:DKESTrajectories}),
+\changed{and as we have shown in section \ref{sec:momentum},
+the full trajectory model (\ref{eq:fullTrajectories}) is the only
+one of the three models which gives the correct parallel viscous force 
+and which preserves intrinsic ambipolarity in quasisymmetry.}
 However, as we have shown in section \ref{sec:sources},
 the kinetic equation (\ref{eq:kinetic4})
 with  (\ref{eq:fullTrajectories}) or  (\ref{eq:partialTrajectories})
 is not well behaved when $E_r \ne 0$,
-with an unphysical constraint forced upon the distribution function.
+with one or two unphysical constraints forced upon the distribution function.
 This analytic property of the kinetic equation must be dealt with
 before attempting to solve the equation numerically.
 
@@ -1459,7 +1463,7 @@ and this process is retained (at least approximately) in all three trajectory mo
 Once $E_r$ approaches the resonance, however, the three trajectory models
 yield substantially different results.
 This $E_r \sim \Erres$ regime can be relevant to experiments with high ratios $\Te / \Ti$
-\cite{Lore, Briesemeister} and strong gradients \cite{Baldzuhn}.
+\cite{YokoyamaCERC, Lore, Briesemeister} and strong gradients \cite{Baldzuhn}.
 In figure \ref{fig:2species}, we find that in the large-$E_r$ region anticipated for the edge of W7-X,
 the bootstrap current density in the full trajectory model is modestly reduced (by $8\%$)
 compared to an incompressible-$\vect{E}\times\vect{B}$ calculation,
