@@ -2423,7 +2423,7 @@ end
                 
                 FSADensityPerturbation = (1/VPrimeHat) * thetaWeights' * (densityPerturbation./(BHat.^2)) * zetaWeights;
                 FSAFlow = (1/VPrimeHat) * thetaWeights' * (flow./BHat) * zetaWeights;
-                FSADensityPerturbation = (1/VPrimeHat) * thetaWeights' * (pressurePerturbation./(BHat.^2)) * zetaWeights;
+                FSAPressurePerturbation = (1/VPrimeHat) * thetaWeights' * (pressurePerturbation./(BHat.^2)) * zetaWeights;
                 
                 particleFlux = thetaWeights' * particleFluxBeforeSurfaceIntegral * zetaWeights;
                 momentumFlux = thetaWeights' * momentumFluxBeforeSurfaceIntegral * zetaWeights;
