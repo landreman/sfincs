@@ -2366,6 +2366,7 @@ end
                 particleFluxBeforeSurfaceIntegral = zeros(Ntheta,Nzeta);
                 momentumFluxBeforeSurfaceIntegral = zeros(Ntheta,Nzeta);
                 heatFluxBeforeSurfaceIntegral = zeros(Ntheta,Nzeta);
+                NTVBeforeSurfaceIntegral = zeros(Ntheta,Nzeta);
                 
                 densityPerturbationIntegralWeight = x.^2;
                 flowIntegralWeight = x.^3;
@@ -2421,6 +2422,9 @@ end
                 heatFluxBeforeSurfaceIntegral = -(THat^(7/2))*(GHat*dBHatdtheta-IHat*dBHatdzeta)./(2*sqrtpi*BHat.^3) ...
                     .* heatFluxBeforeSurfaceIntegral;
                 
+                NTVBeforeSurfaceIntegral = (THat^(5/2))*(dBHatdzeta)./(sqrtpi*BHat.^3) ...
+                    .* particleFluxBeforeSurfaceIntegral; %HS 11.03.14.
+
                 FSADensityPerturbation = (1/VPrimeHat) * thetaWeights' * (densityPerturbation./(BHat.^2)) * zetaWeights;
                 FSAFlow = (1/VPrimeHat) * thetaWeights' * (flow./BHat) * zetaWeights;
                 FSAPressurePerturbation = (1/VPrimeHat) * thetaWeights' * (pressurePerturbation./(BHat.^2)) * zetaWeights;
@@ -2428,10 +2432,13 @@ end
                 particleFlux = thetaWeights' * particleFluxBeforeSurfaceIntegral * zetaWeights;
                 momentumFlux = thetaWeights' * momentumFluxBeforeSurfaceIntegral * zetaWeights;
                 heatFlux = thetaWeights' * heatFluxBeforeSurfaceIntegral * zetaWeights;
+
+                NTV = thetaWeights' * NTVBeforeSurfaceIntegral * zetaWeights; %HS 11.03.14.
                 
                 fprintf('FSADensityPerturbation:  %g\n',FSADensityPerturbation)
                 fprintf('FSAFlow:                 %g\n',FSAFlow)
                 fprintf('FSAPressurePerturbation: %g\n',FSAPressurePerturbation)
+                fprintf('NTV:                     %g\n',NTV) %HS 11.03.14.
                 fprintf('particleFlux:            %g\n',particleFlux)
                 fprintf('momentumFlux:            %g\n',momentumFlux)
                 fprintf('heatFlux:                %g\n',heatFlux)

@@ -2283,6 +2283,7 @@ end
                 particleFluxBeforeSurfaceIntegral = zeros(Ntheta,Nzeta,Nspecies);
                 momentumFluxBeforeSurfaceIntegral = zeros(Ntheta,Nzeta,Nspecies);
                 heatFluxBeforeSurfaceIntegral = zeros(Ntheta,Nzeta,Nspecies);
+                NTVBeforeSurfaceIntegral = zeros(Ntheta,Nzeta,Nspecies);
                 
                 FSADensityPerturbation = zeros(Nspecies,1);
                 FSABFlow = zeros(Nspecies,1);
@@ -2291,6 +2292,7 @@ end
                 particleFlux = zeros(Nspecies,1);
                 momentumFlux = zeros(Nspecies,1);
                 heatFlux = zeros(Nspecies,1);
+                NTV = zeros(Nspecies,1);
                 
                 jHat = zeros(Ntheta, Nzeta);
                 FSABjHat = 0;
@@ -2356,13 +2358,19 @@ end
                         *(GHat*dBHatdtheta-IHat*dBHatdzeta)./(BHat.^3) ...
                         .* heatFluxBeforeSurfaceIntegral(:,:,ispecies);
                     
+                    NTVBeforeSurfaceIntegral(:,:,ispecies) = factorToIncludeInFNormalization*2*pi*THats(ispecies)*((THats(ispecies)/mHats(ispecies)).^(3/2)) ...
+                        .*dBHatdzeta./(BHat.^3) ...
+                        .* particleFluxBeforeSurfaceIntegral(:,:,ispecies); %11.03.14/HS
+                    
                     FSADensityPerturbation(ispecies) = (1/VPrimeHat) * thetaWeights' * (densityPerturbation(:,:,ispecies)./(BHat.^2)) * zetaWeights;
                     FSABFlow(ispecies) = (1/VPrimeHat) * thetaWeights' * (flow(:,:,ispecies)./BHat) * zetaWeights;
-                    FSADensityPerturbation(ispecies) = (1/VPrimeHat) * thetaWeights' * (pressurePerturbation(:,:,ispecies)./(BHat.^2)) * zetaWeights;
+                    FSAPressurePerturbation(ispecies) = (1/VPrimeHat) * thetaWeights' * (pressurePerturbation(:,:,ispecies)./(BHat.^2)) * zetaWeights;
                     
                     particleFlux(ispecies) = thetaWeights' * particleFluxBeforeSurfaceIntegral(:,:,ispecies) * zetaWeights;
                     momentumFlux(ispecies) = thetaWeights' * momentumFluxBeforeSurfaceIntegral(:,:,ispecies) * zetaWeights;
                     heatFlux(ispecies) = thetaWeights' * heatFluxBeforeSurfaceIntegral(:,:,ispecies) * zetaWeights;
+                    
+                    NTV(ispecies) = thetaWeights' * NTVBeforeSurfaceIntegral(:,:,ispecies) * zetaWeights; %11.03.14/HS
                     
                     jHat = jHat + Zs(ispecies)*flow(:,:,ispecies);
                     FSABjHat = FSABjHat + Zs(ispecies)*FSABFlow(ispecies);
@@ -2371,6 +2379,7 @@ end
                     fprintf('FSADensityPerturbation:  %g\n',FSADensityPerturbation(ispecies))
                     fprintf('FSABFlow:                 %g\n',FSABFlow(ispecies))
                     fprintf('FSAPressurePerturbation: %g\n',FSAPressurePerturbation(ispecies))
+                    fprintf('NTV:                     %g\n',NTV(ispecies))
                     fprintf('particleFlux:            %g\n',particleFlux(ispecies))
                     fprintf('momentumFlux:            %g\n',momentumFlux(ispecies))
                     fprintf('heatFlux:                %g\n',heatFlux(ispecies))
