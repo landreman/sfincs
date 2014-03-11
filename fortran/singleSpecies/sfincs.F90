@@ -1,5 +1,5 @@
 ! For PETSc versions 3.4 and later, the line below should be un-commented:
-!#define PetscGetTime PetscTime
+#define PetscGetTime PetscTime
 
 ! Main program
 

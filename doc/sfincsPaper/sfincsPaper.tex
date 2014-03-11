@@ -55,8 +55,8 @@
 \newcommand{\Bpol}{B_{\mathrm{pol}}}
 \newcommand{\Sap}{S_{a\mathrm{p}}}
 \newcommand{\Sah}{S_{a\mathrm{h}}}
-%\newcommand{\changed}[1]{#1}
-\newcommand{\changed}[1]{\textcolor{red}{#1}}
+\newcommand{\changed}[1]{#1}
+%\newcommand{\changed}[1]{\textcolor{red}{#1}}
 
 
 \begin{document}
@@ -81,8 +81,8 @@
 \author{H M Smith}
 \affiliation{Max-Planck-Institut f\"{u}r Plasmaphysik, 17491 Greifswald, Germany}
 \author{A Moll\'{e}n}
-\affiliation{Department of Applied Physics, Nuclear Engineering,
-  Chalmers University of Technology and Euratom-VR Association,
+\affiliation{Department of Applied Physics, %Nuclear Engineering,
+  Chalmers University of Technology, %and Euratom-VR Association,
   G\"oteborg,
   Sweden}
 \author{P Helander}
@@ -97,8 +97,11 @@
 
 \begin{abstract}
 
-In this work, we test the validity of several common simplifying assumptions used in numerical neoclassical calculations
-for nonaxisymmetric plasmas.
+In this work, we examine the validity of several common simplifying assumptions used in numerical neoclassical calculations
+for nonaxisymmetric plasmas,
+\changed{
+both by using a new continuum drift-kinetic code
+and by considering analytic properties of the kinetic equation.}
 First, neoclassical phenomena are computed for the LHD and W7-X stellarators using several versions of the drift-kinetic
 equation, 
 including the commonly used incompressible-$\vect{E}\times\vect{B}$-drift approximation
@@ -189,7 +192,7 @@ is that they are often performed with simplified models for collisions.
 The linearized Fokker-Planck collision operator -- the most accurate linear operator available -- 
 has been implemented in a variety of 
 tokamak neoclassical codes \cite{Sauter0, Sauter, WongChan, NEOFP, speedGrids}.
-However, due to the numerical challenge of the extra toroidal dimension in stellarators, 
+However, due to the numerical challenge of the extra dimension in stellarators (i.e., the lack of toroidal symmetry), 
 many stellarator neoclassical codes retain only pitch-angle scattering collisions,
 so coupling in the energy dimension is eliminated.
 The pitch-angle scattering operator
@@ -225,7 +228,7 @@ As we shall demonstrate, retaining the true form of the $\vect{E}\times\vect{B}$
 drift comes at a cost, requiring sources/sinks in the kinetic equation
 in order for the solutions to be well behaved.
 While all of the various options for the particle trajectories have disadvantages,
-SFINCS allows the three options to be compared.
+SFINCS allows the options to be compared.
 As we will show in several calculations for the LHD and W7-X stellarators,
 in many experimentally relevant cases,
 the transport matrix elements are nearly identical for the various choices of particle trajectories.
@@ -240,7 +243,8 @@ for the equations to be well posed and for the solutions to be well behaved.
 These issues are explored in section \ref{sec:sources}.
 \changed{In section \ref{sec:momentum}, we discuss some observations regarding momentum conservation,
 and demonstrate that the electric field terms in the kinetic description
-correspond to a component of gyroviscosity in a fluid description.}
+correspond to a component of gyroviscosity in a fluid description
+only for the most accurate trajectory model.}
 Details of the numerical implementation are given in section \ref{sec:numerics}.
 Some of the numerical results presented are given in terms of a transport
 matrix, which is defined in section \ref{sec:transportMatrix}.
@@ -372,7 +376,7 @@ term in (\ref{eq:kinetic2}) may be neglected. Thus, we obtain
 \left(\vpar \vect{b} + \vEo + \vma\right) \cdot\left(\nabla f_{a1}\right)_{W_{a0},\mu}
 -C_{a}
 =-(\vma\cdot\nabla\psi) \left(\frac{\partial F_{a}}{\partial \psi}\right)_{W_{a0}}
-+\frac{Z_a e}{T_a}\vpar\frac{B\left<E_{||} B\right>}{\left< B^2\right>} F_{a}.
++\frac{Z_a e}{T_a}\vpar\frac{B\left<E_{||} B\right>}{\left< B^2\right>} F_{a},
 \label{eq:kinetic3}
 \end{equation}
 where $C_a$ is now the collision operator linearized about $F_a$ rather than $f_{a0}$,
@@ -421,7 +425,7 @@ and
 For the rest of this work, we will neglect the $\vma$ term in (\ref{eq:rdot1}), the $dT_a/d\psi$ term
 in (\ref{eq:xdot1}), and the $\vma\cdot\nabla B$ term in (\ref{eq:xidot1}),
 for several reasons.
-First, if the  $\vma$ term in (\ref{eq:rdot1}) were retained, we would need to solve a 5D rather
+First, if the  $\vma$ term in (\ref{eq:rdot1}) was retained, we would need to solve a 5D rather
 than 4D problem due to the radial coupling (i.e. $\psi$ appearing
 as a derivative rather than merely as a parameter). Second,
 once radial coupling is dropped, we must also drop the $dT_a/d\psi$ term
@@ -450,7 +454,7 @@ Our kinetic equation then becomes
 +\dot{\xi}_a \left(\frac{\partial f_{a1}}{\partial \xi}\right)_{\vect{r},x_a}
 -C_{a}
 =-(\vma\cdot\nabla\psi) \left(\frac{\partial F_{a}}{\partial \psi}\right)_{W_{a0}}
-+\frac{Z_a e}{T_a}\vpar\frac{B\left<E_{||} B\right>}{\left< B^2\right>} F_{a}.
++\frac{Z_a e}{T_a}\vpar\frac{B\left<E_{||} B\right>}{\left< B^2\right>} F_{a},
 \label{eq:kinetic4}
 \end{equation}
 where the effective particle trajectory equations are
@@ -639,7 +643,7 @@ of an $E_r = 0$ calculation.
 
 The aforementioned problems with the partial and full trajectory models may be eliminated 
 in the following manner.
-The kinetic equation becomes well behaved if we introduce small particle and heat sources
+The kinetic equation becomes well behaved if we introduce particle and heat sources
 \begin{equation}
 S_a(\psi, v) = \Sap(\psi) F_{a}(\psi,v) \left[ x_a^2 - \frac{5}{2}\right] + \Sah(\psi) F_a(\psi, v) \left[x_a^2 - \frac{3}{2}\right]
 \label{eq:sources}
@@ -650,9 +654,9 @@ a heat source but no particle source.)
 As these two new unknowns are now included in the system of equations on each flux surface, we must supply an equal number of additional constraints.
 The constraints we supply are $\left< \int d^3v\, f_{a1}\right>=0$ and $\left< \int d^3v\, v^2 f_{a1}\right>=0$,
 the sensible requirements that all the flux-surface-averaged density and pressure reside in $F_a$ rather than $f_{a1}$.
-This method of modifying the system of equations has the added benefit 
-(even in the $d\Phi_0/d\psi=0$ limit)
-of eliminating the null solutions $f_{a1} = F_a$ and $f_{a1} = F_a v^2$.
+%This method of modifying the system of equations has the added benefit 
+%(even in the $d\Phi_0/d\psi=0$ limit)
+%of eliminating the null solutions $f_{a1} = F_a$ and $f_{a1} = F_a v^2$.
 When $S_a$ is included in the kinetic equation, new terms proportional to $\Sap$ and/or $\Sah$
 now appear in the mass and energy conservation equations such as (\ref{eq:unphysicalMassConservation})-(\ref{eq:unphysicalEnergyConservation2}).
 These conservation equations imply that when $d\Phi_0/d\psi=0$, $\Sap$ and $\Sah$ must vanish.
@@ -665,7 +669,10 @@ $E_r=0$ results as $E_r$ is decreased.
 We do not claim that the method proposed here is an ideal solution: the sources (\ref{eq:sources})
 are ad-hoc and are not derived rigorously. However, by the techniques proposed here, we can at least
 compare the three different trajectory models, and for most experimentally relevant values of $E_r$, we will show
-that the three models give nearly identical results. As already mentioned, the need for source terms disappears when the radial electric field equals the value required for ambipolarity, so the source terms do not interfere with the aim of eventually calculating the actual plasma transport. 
+that the three models give nearly identical results. 
+And as already mentioned, the source terms for the full trajectory model are both zero when the radial electric field equals the value required 
+for ambipolarity, so for this model the source terms are really a numerical expedient that
+do not affect the transport computations in the end.
 
 \changed{
 This system of sources and constraints solves not only the problem described above when $E_r \ne 0$,
@@ -695,7 +702,7 @@ conservation problem.
 
 \changed{
 To summarize, the sources and extra constraint equations serve two independent purposes.
-First, when $E_r \ne 0$, the sources are needed to eliminate the conservation problems, and the extra constraints then keep the linear system square (number of equations = number of unknowns) upon discretizatiton.
+First, when $E_r \ne 0$, the sources are needed to eliminate the conservation problems, and the extra constraints then keep the linear system square (number of equations = number of unknowns) upon discretization.
 Second, even when $E_r = 0$, and even for the DKES trajectories in which sources are not required, the constraints are needed to eliminate the null space in the kinetic equation, and the source terms are a convenient way to keep the linear system square upon discretization.
 The first problem can be solved with either the source (\ref{eq:sources}) or a general speed-dependent source $S_a(x_a)$.
 However, to solve the second problem, the number of constraints should match the dimensionality of the null space.
@@ -778,7 +785,7 @@ distribution function $\tilde{f}_a$ will include the following terms proportiona
 -\frac{\xi}{v^2} \frac{\partial \bar{f}_a}{\partial \xi} \right]
 \label{eq:fTilde}
 \end{equation}
-as reflected (using different indepedent variables) in eq (17) of Ref. \cite{Hazeltine} and eq (6) of Ref. \cite{SimakovCattoSecondOrderDKE}.
+as reflected (using different independent variables) in eq (17) of Ref. \cite{Hazeltine} and eq (6) of Ref. \cite{SimakovCattoSecondOrderDKE}.
 Here, $\bar{f}_a$ is the gyrophase-independent part of the distribution function.
 The associated contribution $\tens{\Pi}_{aE} = m_a \int d^3v\, \tilde{f}_{aE}\vect{v}\vect{v}$
 to the pressure tensor is calculated in equations (27)-(36) of Ref. \cite{SimakovCattoSecondOrderDKE},
@@ -790,7 +797,7 @@ with the result
 where $n_a V_{a||} = \int d^3v\, f_a v_{||}$. Note that this contribution to the stress tensor is a part of the gyroviscosity and is off-diagonal.
 Using $\vect{E} \approx -\nabla \Phi_0(\psi)$ and $\vect{B} \cdot \left\{ \nabla \cdot \left[ \vect{B}\vect{B}\times\nabla\psi + (\vect{B}\times\nabla\psi) \vect{B} \right] \right\}
 =2B^2\nabla\psi\cdot\nabla\times\vect{B}=0$,
-we then find the contribution to the parallel momentum equation from (\ref{eq:fTilde})-(\ref{eq:PiE}) is
+we then find the contribution to the parallel momentum equation (\ref{eq:fluidParallelMomentum}) from (\ref{eq:fTilde})-(\ref{eq:PiE}) is
 \begin{equation}
 \vect{b}\cdot(\nabla\cdot\tens{\Pi}_{aE}) = 
 c m_a B (d\Phi_0/d\psi)
@@ -839,11 +846,12 @@ viscous force as the full trajectory model does.
 }
 
 \changed{
-We close this section by noting another an important difference between the trajectory models
+We close this section by noting another important difference between the trajectory models
 related to the parallel momentum equations.
-Consider the case of \emph{quasisymmetry}, which is the condition \cite{PerAndreiPRL} that
+Consider the case of \emph{quasisymmetry}, which is the condition %\cite{PerAndreiPRL} 
+that
 $\vect{B}\times\nabla\psi\cdot\nabla B = A(\psi) \vect{B}\cdot\nabla B$ for some flux function
-$A(\psi)$.  It was known previously \cite{PerAndreiPRL} that when the $E_r$ terms are not included
+$A(\psi)$ \cite{PerAndreiPRL}.  It was known previously \cite{PerAndreiPRL} that when the $E_r$ terms are not included
 in the trajectories (but retained in the $\partial F_a/\partial \psi$ drive term in (\ref{eq:kinetic4})), the radial neoclassical
 current vanishes for all values of $d \Phi_0/d\psi$
 if and only if the flux surface is quasisymmetric. This property of quasisymmetric flux surfaces
@@ -876,7 +884,7 @@ so the net heat source vanishes for any radial electric field.
 
 The SFINCS code solves the drift-kinetic equation (\ref{eq:kinetic4})
 with (\ref{eq:sources})
-for the three trajectory models (\ref{eq:fullTrajectories})-(\ref{eq:partialTrajectories}),
+for any of the three trajectory models (\ref{eq:fullTrajectories})-(\ref{eq:partialTrajectories}),
 for general nonaxisymmetric nested flux surface geometry, and for an arbitrary number of species.
 SFINCS is based on the Fokker-Planck code described in Ref. \cite{speedGrids},
 generalized to allow nonaxisymmetry.
@@ -1047,8 +1055,9 @@ The calculations in figure (\ref{fig:ErComparison_LHD}) are performed for the $r
 the LHD stellarator \cite{LHD} in its standard configuration. (Here the flux function $r$ is defined to be proportional to the square root of the toroidal flux enclosed by the flux surface in question.)
 The calculations in figure (\ref{fig:ErComparison_W7X}) are performed for the $r/a=0.5$ surface of
 the W7-X stellarator \cite{W7X1,W7X2} in its standard configuration.
-In the LHD calculation, only the Boozer harmonics of $B(\theta,\zeta)/B_0$ with amplitude larger than $10^{-2}$
-are retained, as listed in Table 1 of Ref. \cite{BeidlerBigBenchmarking}.
+In the LHD calculation, only the Boozer harmonics of $B(\theta,\zeta)/B_0$ with amplitude $>10^{-2}$
+are retained, as listed in Table 1 of Ref. \cite{BeidlerBigBenchmarking},
+whereas all harmonics with relative amplitude $>4\times 10^{-5}$ are retained for the W7-X calculations.
 For both figures, the Fokker-Planck collision operator is used, and the collisionality
 is set to $\nu'=0.01$.
 As both figures illustrate, the electric field has negligible
@@ -1192,7 +1201,7 @@ computed for a scenario of steep pressure gradient near the edge of W7-X.
 Magenta dotted line is the ambipolar $E_r$, effectively identical for the three
 trajectory models.
 \changed{
-The ion particle and heat sources in (D)-(E) are normalized
+The ion particle and heat sources in (E)-(F) are normalized
 by a gyro-Bohm transport time $t_{gB}$.}
 \label{fig:2species}}
 \end{figure}
@@ -1426,13 +1435,17 @@ These three sets of expressions for $\vect{\dot{r}}_a$,
 $\dot{x}_a$, and $\dot{\xi}_a$ may be interpreted as effective
 particle trajectories (although we solve each form of the kinetic equation
 using continuum numerical methods).
-At first glance,  (\ref{eq:fullTrajectories}) and  (\ref{eq:partialTrajectories})
-appear more accurate than  (\ref{eq:DKESTrajectories}).
+Equations  (\ref{eq:fullTrajectories}) and  (\ref{eq:partialTrajectories})
+appear more accurate than  (\ref{eq:DKESTrajectories}),
+\changed{and as we have shown in section \ref{sec:momentum},
+the full trajectory model (\ref{eq:fullTrajectories}) is the only
+one of the three models which gives the correct parallel viscous force 
+and which preserves intrinsic ambipolarity in quasisymmetry.}
 However, as we have shown in section \ref{sec:sources},
 the kinetic equation (\ref{eq:kinetic4})
 with  (\ref{eq:fullTrajectories}) or  (\ref{eq:partialTrajectories})
 is not well behaved when $E_r \ne 0$,
-with an unphysical constraint forced upon the distribution function.
+with one or two unphysical constraints forced upon the distribution function.
 This analytic property of the kinetic equation must be dealt with
 before attempting to solve the equation numerically.
 
@@ -1458,7 +1471,7 @@ and this process is retained (at least approximately) in all three trajectory mo
 Once $E_r$ approaches the resonance, however, the three trajectory models
 yield substantially different results.
 This $E_r \sim \Erres$ regime can be relevant to experiments with high ratios $\Te / \Ti$
-\cite{Lore, Briesemeister} and strong gradients \cite{Baldzuhn}.
+\cite{YokoyamaCERC, Lore, Briesemeister} and strong gradients \cite{Baldzuhn}.
 In figure \ref{fig:2species}, we find that in the large-$E_r$ region anticipated for the edge of W7-X,
 the bootstrap current density in the full trajectory model is modestly reduced (by $8\%$)
 compared to an incompressible-$\vect{E}\times\vect{B}$ calculation,

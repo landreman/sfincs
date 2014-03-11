@@ -73,7 +73,7 @@
 
 &geometryParameters
 
-  geometryScheme = 12
+  geometryScheme = 2
   ! 1 = Three-helicity model
   ! 2 = Three-helicity approximation of the LHD standard configuration
   ! 3 = Four-helicity approximation of the LHD inward-shifted configuration
@@ -160,8 +160,8 @@
   mHats = 1 6
   nHats = 0.6d+0 0.009d+0
   dNHatdpsiNs = -0.3d+0 -0.001d+0
-  THats = 0.8d+0 0.8d+0
-  dTHatdpsiNs = -0.2d+0 -0.2d+0
+  THats = 0.5d+0 0.8d+0
+  dTHatdpsiNs = -0.3d+0 -0.2d+0
 
 /
 
@@ -236,7 +236,6 @@
   collisionOperator = 0
   ! 0 = Full linearized Fokker-Planck operator
   ! 1 = pitch-angle scattering with no momentum-conserving term
-  ! 2 = pitch-angle scattering with a model momentum conserving term
 
   constraintScheme = -1
   ! -1 = automatic: if collisionOperator==0 then set constraintScheme=1, 
@@ -312,7 +311,7 @@
   
   ! Number of grid points in the poloidal direction.
   ! Memory and time requirements DO depend strongly on this parameter.
-  Ntheta = 7
+  Ntheta = 5
   NthetaMinFactor = 1
   NthetaMaxFactor = 2
   NthetaNumRuns = 0
@@ -320,7 +319,7 @@
   ! Number of grid points in the toroidal direction
   ! (per identical segment of the stellarator.)
   ! Memory and time requirements DO depend strongly on this parameter.
-  Nzeta = 11
+  Nzeta = 7
   NzetaMinFactor = 1
   NzetaMaxFactor = 2
   NzetaNumRuns = 0
@@ -372,7 +371,7 @@
   ! Tolerance used to define convergence of the Krylov solver.
   ! This parameter does not affect memory requirements but it does affect the
   ! time required for solution somewhat
-  solverTolerance = 1d-7
+  solverTolerance = 1d-6
   solverToleranceMinFactor = 1d-1
   solverToleranceMaxFactor = 1
   solverToleranceNumRuns = 0
@@ -437,7 +436,7 @@
   ! 3 = keep only the tridiagonal terms in x
   ! 4 = keep only the diagonal and superdiagonal in x
 
-  preconditioner_x_min_L = 2
+  preconditioner_x_min_L = 1
   ! The x structure of the matrix will only be simplified for L >= this value.
   ! Set preconditioner_x_min_L=0 to simplify the matrix for every L.
 

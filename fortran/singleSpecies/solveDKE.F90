@@ -9,7 +9,7 @@
 !#define MatCreateAIJ MatCreateMPIAIJ
 
 ! For PETSc versions 3.4 and later, the line below should be un-commented:
-!#define PetscGetTime PetscTime
+#define PetscGetTime PetscTime
 
 #include <finclude/petsckspdef.h>
 #include <finclude/petscdmdadef.h>
@@ -55,7 +55,7 @@
     PetscScalar, dimension(:,:), allocatable :: M22BackslashM21, M33BackslashM32, fieldTerm
     integer, dimension(:), allocatable :: IPIV  ! Needed by LAPACK
     integer :: LAPACKInfo, predictedNNZForEachRowOfPreconditioner, predictedNNZForEachRowOfTotalMatrix
-    integer, dimension(:), allocatable :: predictedNNZsForEachRow
+    integer, dimension(:), allocatable :: predictedNNZsForEachRow, predictedNNZsForEachRowDiagonal
     PetscScalar :: collisionTermFactor, xDotFactor, LFactor, temp1, temp2
     integer :: rowIndex, colIndex
     PetscScalar :: densityFactor, flowFactor, pressureFactor
@@ -409,12 +409,21 @@
     !predictedNNZForEachRowOfTotalMatrix = 4*(3*Nx + 5*3 + 5*3 + 5 + Nx)
     !predictedNNZForEachRowOfTotalMatrix = 4*(3*Nx + 5*3 + 5*3 + 5 + Nx + Ntheta*Nzeta)
     !predictedNNZForEachRowOfTotalMatrix = 2*(3*Nx + 5*3 + 5*3 + 5 + Nx)
-    predictedNNZForEachRowOfTotalMatrix = (3*Nx + 5*3 + 5*3 + 5 + Nx + Ntheta*Nzeta*Nx)
+    tempInt1 = 3*Nx + 5*3 + 5*3 + 5 + Nx + Ntheta*Nzeta*Nx
+    if (tempInt1 > matrixSize) then
+       tempInt1 = matrixSize
+    end if
+    predictedNNZForEachRowOfTotalMatrix = tempInt1
 
     predictedNNZForEachRowOfPreconditioner = predictedNNZForEachRowOfTotalMatrix
 
     allocate(predictedNNZsForEachRow(matrixSize))
-    predictedNNZsForEachRow = 5*3 + 5*3 + 3*Nx
+    allocate(predictedNNZsForEachRowDiagonal(matrixSize))
+    tempInt1 = 5*3 + 5*3 + 3*Nx
+    if (tempInt1 > matrixSize) then
+       tempInt1 = matrixSize
+    end if
+    predictedNNZsForEachRow = tempInt1
 
     select case (constraintScheme)
     case (0)
@@ -426,6 +435,7 @@
        predictedNNZsForEachRow((Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta
     case default
     end select
+    predictedNNZsForEachRowDiagonal = predictedNNZsForEachRow
 
     if (useIterativeSolver) then
        whichMatrixMin = 0
@@ -437,17 +447,7 @@
        ! When whichMatrix = 1, build the final matrix.
 
        ! Allocate the main global matrix:
-!       if (whichMatrix==0) then
-!          call MatCreateAIJ(MPIComm, PETSC_DECIDE, PETSC_DECIDE, matrixSize, matrixSize, &
-!               predictedNNZForEachRowOfPreconditioner, PETSC_NULL_INTEGER, &
-!               predictedNNZForEachRowOfPreconditioner, PETSC_NULL_INTEGER, &
-!               matrix, ierr)
-!       else
-!          call MatCreateAIJ(MPIComm, PETSC_DECIDE, PETSC_DECIDE, matrixSize, matrixSize, &
-!               predictedNNZForEachRowOfTotalMatrix, PETSC_NULL_INTEGER, &
-!               predictedNNZForEachRowOfTotalMatrix, PETSC_NULL_INTEGER, &
-!               matrix, ierr)
-!       end if
+
        select case (PETSCPreallocationStrategy)
        case (0)
           ! 0 = Old method with high estimated number-of-nonzeros.
@@ -466,7 +466,7 @@
 
        case (1)
           ! 1 = New method with lower, more precise estimated number-of-nonzeros.
-          ! Not sure if this works yet, but it should use less memory.
+          ! This method is less thoroghly tested, but it should use much less memory.
 
           call MatCreate(MPIComm, matrix, ierr)
           !call MatSetType(matrix, MATMPIAIJ, ierr)
@@ -487,12 +487,23 @@
           
           call MatGetOwnershipRange(matrix, firstRowThisProcOwns, lastRowThisProcOwns, ierr)
           !print *,"I am proc ",myRank," and I own rows ",firstRowThisProcOwns," to ",lastRowThisProcOwns-1
-          
+
+          ! To avoid a PETSc error message, the predicted nnz for each row of the diagonal blocks must be no greater than the # of columns this proc owns:
+          ! But we must not lower the predicted nnz for the off-diagonal blocks, because then the total predicted nnz for the row 
+          ! would be too low.
+          tempInt1 = lastRowThisProcOwns - firstRowThisProcOwns
+          do i=firstRowThisProcOwns+1,lastRowThisProcOwns
+             if (predictedNNZsForEachRowDiagonal(i) > tempInt1) then
+                predictedNNZsForEachRowDiagonal(i) = tempInt1
+             end if
+          end do
+
           ! Now, set the real estimated number-of-nonzeros:
           if (numProcsInSubComm == 1) then
              call MatSeqAIJSetPreallocation(matrix, 0, predictedNNZsForEachRow(firstRowThisProcOwns+1:lastRowThisProcOwns), ierr)
           else
-             call MatMPIAIJSetPreallocation(matrix, 0, predictedNNZsForEachRow(firstRowThisProcOwns+1:lastRowThisProcOwns), &
+             call MatMPIAIJSetPreallocation(matrix, &
+                  0, predictedNNZsForEachRowDiagonal(firstRowThisProcOwns+1:lastRowThisProcOwns), &
                   0, predictedNNZsForEachRow(firstRowThisProcOwns+1:lastRowThisProcOwns), ierr)
           end if
 
