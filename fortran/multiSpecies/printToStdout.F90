@@ -102,6 +102,7 @@ contains
           print *,"[",myCommunicatorIndex,"]   FSADensityPerturbation:  ", FSADensityPerturbation(ispecies)
           print *,"[",myCommunicatorIndex,"]   FSABFlow:                ", FSABFlow(ispecies)
           print *,"[",myCommunicatorIndex,"]   FSAPressurePerturbation: ", FSAPressurePerturbation(ispecies)
+          print *,"[",myCommunicatorIndex,"]   NTV:                     ", NTV(ispecies)
           print *,"[",myCommunicatorIndex,"]   particleFlux:            ", particleflux(ispecies)
           print *,"[",myCommunicatorIndex,"]   momentumFlux:            ", momentumflux(ispecies)
           print *,"[",myCommunicatorIndex,"]   heatFlux:                ", heatflux(ispecies)

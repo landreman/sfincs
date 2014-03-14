@@ -171,8 +171,9 @@ module globalVariables
   PetscScalar, dimension(:,:,:), allocatable :: particleFluxBeforeSurfaceIntegral
   PetscScalar, dimension(:,:,:), allocatable :: momentumFluxBeforeSurfaceIntegral
   PetscScalar, dimension(:,:,:), allocatable :: heatFluxBeforeSurfaceIntegral
+  PetscScalar, dimension(:,:,:), allocatable :: NTVBeforeSurfaceIntegral
   PetscScalar, dimension(:), allocatable :: FSADensityPerturbation, FSABFlow, FSAPressurePerturbation
-  PetscScalar, dimension(:), allocatable :: particleFlux, momentumFlux, heatFlux
+  PetscScalar, dimension(:), allocatable :: particleFlux, momentumFlux, heatFlux, NTV
   PetscScalar :: VPrimeHat, FSABHat2, FSABjHat
 
   PetscLogDouble :: elapsedTime
@@ -275,12 +276,14 @@ contains
        deallocate(particleFlux)
        deallocate(momentumFlux)
        deallocate(heatFlux)
+       deallocate(NTV)
 
        deallocate(pressurePerturbation)
        deallocate(flow)
        deallocate(particleFluxBeforeSurfaceIntegral)
        deallocate(momentumFluxBeforeSurfaceIntegral)
        deallocate(heatFluxBeforeSurfaceIntegral)
+       deallocate(NTVBeforeSurfaceIntegral)
 
        deallocate(jHat)
 

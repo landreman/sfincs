@@ -2375,6 +2375,7 @@ end
                 particleFluxIntegralWeight = x.^4;
                 momentumFluxIntegralWeight = x.^5;
                 heatFluxIntegralWeight = x.^6;
+                NTVIntegralWeight = x.^4;
                 
                 for itheta=1:Ntheta
                     for izeta = 1:Nzeta
@@ -2385,6 +2386,7 @@ end
                         pressurePerturbation(itheta,izeta) = xWeights' * (pressurePerturbationIntegralWeight .* fSlice);
                         particleFluxBeforeSurfaceIntegral(itheta,izeta) = (8/3)*xWeights' * (particleFluxIntegralWeight .* fSlice);
                         heatFluxBeforeSurfaceIntegral(itheta,izeta) = (8/3)*xWeights' * (heatFluxIntegralWeight .* fSlice);
+                        NTVBeforeSurfaceIntegral(itheta,izeta) = (8/3)*xWeights' * (NTVIntegralWeight .* fSlice);
                         
                         L=1;
                         indices = ((1:Nx)-1)*Nxi*Ntheta*Nzeta + L*Ntheta*Nzeta + (itheta-1)*Nzeta + izeta;
@@ -2399,6 +2401,8 @@ end
                             + (4/15)*xWeights' * (particleFluxIntegralWeight .* fSlice);
                         heatFluxBeforeSurfaceIntegral(itheta,izeta) = heatFluxBeforeSurfaceIntegral(itheta,izeta) ...
                             + (4/15)*xWeights' * (heatFluxIntegralWeight .* fSlice);
+                        NTVBeforeSurfaceIntegral(itheta,izeta) = NTVBeforeSurfaceIntegral(itheta,izeta) ...
+                            + (4/15)*xWeights' * (NTVIntegralWeight .* fSlice);
                         
                         L=3;
                         indices = ((1:Nx)-1)*Nxi*Ntheta*Nzeta + L*Ntheta*Nzeta + (itheta-1)*Nzeta + izeta;
@@ -2423,7 +2427,7 @@ end
                     .* heatFluxBeforeSurfaceIntegral;
                 
                 NTVBeforeSurfaceIntegral = (THat^(5/2))*(dBHatdzeta)./(sqrtpi*BHat.^3) ...
-                    .* particleFluxBeforeSurfaceIntegral; %HS 11.03.14.
+                    .* NTVBeforeSurfaceIntegral; %HS 11.03.14.
 
                 FSADensityPerturbation = (1/VPrimeHat) * thetaWeights' * (densityPerturbation./(BHat.^2)) * zetaWeights;
                 FSAFlow = (1/VPrimeHat) * thetaWeights' * (flow./BHat) * zetaWeights;

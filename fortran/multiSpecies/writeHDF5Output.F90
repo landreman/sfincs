@@ -83,12 +83,14 @@ module writeHDF5Output
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_particleFluxBeforeSurfaceIntegral
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_momentumFluxBeforeSurfaceIntegral
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_heatFluxBeforeSurfaceIntegral
+  integer(HID_T), dimension(:), allocatable, private :: dsetIDs_NTVBeforeSurfaceIntegral  !HS 13.03.2014
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_FSADensityPerturbation
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_FSABFlow
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_FSAPressurePerturbation
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_particleFlux
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_momentumFlux
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_heatFlux
+  integer(HID_T), dimension(:), allocatable, private :: dsetIDs_NTV        !HS 13.03.2014
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_jHat
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_FSABjHat
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_elapsedTime
@@ -222,12 +224,14 @@ contains
        allocate(dsetIDs_particleFluxBeforeSurfaceIntegral(numRunsInScan))
        allocate(dsetIDs_momentumFluxBeforeSurfaceIntegral(numRunsInScan))
        allocate(dsetIDs_heatFluxBeforeSurfaceIntegral(numRunsInScan))
+       allocate(dsetIDs_NTVBeforeSurfaceIntegral(numRunsInScan)) !HS 13.03.2014
        allocate(dsetIDs_FSADensityPerturbation(numRunsInScan))
        allocate(dsetIDs_FSABFlow(numRunsInScan))
        allocate(dsetIDs_FSAPressurePerturbation(numRunsInScan))
        allocate(dsetIDs_particleFlux(numRunsInScan))
        allocate(dsetIDs_momentumFlux(numRunsInScan))
        allocate(dsetIDs_heatFlux(numRunsInScan))
+       allocate(dsetIDs_NTV(numRunsInScan))      !HS 13.03.2014
        allocate(dsetIDs_jHat(numRunsInScan))
        allocate(dsetIDs_FSABjHat(numRunsInScan))
        allocate(dsetIDs_elapsedTime(numRunsInScan))
@@ -486,6 +490,9 @@ contains
           call h5dcreate_f(groupIDs(i), "heatFluxBeforeSurfaceIntegral", H5T_NATIVE_DOUBLE, dspaceIDForSpeciesThetaZeta(i), &
                dsetIDs_heatFluxBeforeSurfaceIntegral(i), HDF5Error)
 
+          call h5dcreate_f(groupIDs(i), "NTVBeforeSurfaceIntegral", H5T_NATIVE_DOUBLE, dspaceIDForSpeciesThetaZeta(i), &
+               dsetIDs_NTVBeforeSurfaceIntegral(i), HDF5Error)   !HS 13.03.2014
+
           call h5dcreate_f(groupIDs(i), "FSADensityPerturbation", H5T_NATIVE_DOUBLE, dspaceIDForSpecies, &
                dsetIDs_FSADensityPerturbation(i), HDF5Error)
 
@@ -503,6 +510,9 @@ contains
 
           call h5dcreate_f(groupIDs(i), "heatFlux", H5T_NATIVE_DOUBLE, dspaceIDForSpecies, &
                dsetIDs_heatFlux(i), HDF5Error)
+
+          call h5dcreate_f(groupIDs(i), "NTV", H5T_NATIVE_DOUBLE, dspaceIDForSpecies, &
+               dsetIDs_NTV(i), HDF5Error)  !HS 13.03.2014
 
           call h5dcreate_f(groupIDs(i), "jHat", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta(i), &
                dsetIDs_jHat(i), HDF5Error)
@@ -755,6 +765,9 @@ contains
        call h5dwrite_f(dsetIDs_heatFluxBeforeSurfaceIntegral(runNum), H5T_NATIVE_DOUBLE, &
             heatFluxBeforeSurfaceIntegral, dimForSpeciesThetaZeta(runNum,:), HDF5Error)
 
+       call h5dwrite_f(dsetIDs_NTVBeforeSurfaceIntegral(runNum), H5T_NATIVE_DOUBLE, &
+            NTVBeforeSurfaceIntegral, dimForSpeciesThetaZeta(runNum,:), HDF5Error)  !HS 13.03.2014
+
        call h5dwrite_f(dsetIDs_FSADensityPerturbation(runNum), H5T_NATIVE_DOUBLE, &
             FSADensityPerturbation, dimForSpecies, HDF5Error)
 
@@ -772,6 +785,9 @@ contains
 
        call h5dwrite_f(dsetIDs_heatFlux(runNum), H5T_NATIVE_DOUBLE, &
             heatFlux, dimForSpecies, HDF5Error)
+
+       call h5dwrite_f(dsetIDs_NTV(runNum), H5T_NATIVE_DOUBLE, &
+            NTV, dimForSpecies, HDF5Error)  !HS 13.03.2014
 
        call h5dwrite_f(dsetIDs_jHat(runNum), H5T_NATIVE_DOUBLE, &
             jHat, dimForThetaZeta(runNum,:), HDF5Error)
@@ -887,12 +903,14 @@ contains
           call h5dclose_f(dsetIDs_particleFluxBeforeSurfaceIntegral(i), HDF5Error)
           call h5dclose_f(dsetIDs_momentumFluxBeforeSurfaceIntegral(i), HDF5Error)
           call h5dclose_f(dsetIDs_heatFluxBeforeSurfaceIntegral(i), HDF5Error)
+          call h5dclose_f(dsetIDs_NTVBeforeSurfaceIntegral(i), HDF5Error) !HS 13.03.2014
           call h5dclose_f(dsetIDs_FSADensityPerturbation(i), HDF5Error)
           call h5dclose_f(dsetIDs_FSABFlow(i), HDF5Error)
           call h5dclose_f(dsetIDs_FSAPressurePerturbation(i), HDF5Error)
           call h5dclose_f(dsetIDs_particleFlux(i), HDF5Error)
           call h5dclose_f(dsetIDs_momentumFlux(i), HDF5Error)
           call h5dclose_f(dsetIDs_heatFlux(i), HDF5Error)
+          call h5dclose_f(dsetIDs_NTV(i), HDF5Error)       !HS 13.03.2014
           call h5dclose_f(dsetIDs_jHat(i), HDF5Error)
           call h5dclose_f(dsetIDs_FSABjHat(i), HDF5Error)
           call h5dclose_f(dsetIDs_elapsedTime(i), HDF5Error)

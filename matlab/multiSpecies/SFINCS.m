@@ -2304,6 +2304,7 @@ end
                 particleFluxIntegralWeight = x.^4;
                 momentumFluxIntegralWeight = x.^5;
                 heatFluxIntegralWeight = x.^6;
+                NTVIntegralWeight = x.^4;
                 
                 for ispecies = 1:Nspecies
                     for itheta=1:Ntheta
@@ -2315,6 +2316,7 @@ end
                             pressurePerturbation(itheta,izeta,ispecies) = xWeights' * (pressurePerturbationIntegralWeight .* fSlice);
                             particleFluxBeforeSurfaceIntegral(itheta,izeta,ispecies) = (8/3)*xWeights' * (particleFluxIntegralWeight .* fSlice);
                             heatFluxBeforeSurfaceIntegral(itheta,izeta,ispecies) = (8/3)*xWeights' * (heatFluxIntegralWeight .* fSlice);
+                            NTVBeforeSurfaceIntegral(itheta,izeta,ispecies) = (8/3)*xWeights' * (NTVIntegralWeight .* fSlice);
                             
                             L=1;
                             indices = getIndices(ispecies, 1:Nx, L+1, itheta, izeta, 0);
@@ -2329,6 +2331,8 @@ end
                                 + (4/15)*xWeights' * (particleFluxIntegralWeight .* fSlice);
                             heatFluxBeforeSurfaceIntegral(itheta,izeta,ispecies) = heatFluxBeforeSurfaceIntegral(itheta,izeta,ispecies) ...
                                 + (4/15)*xWeights' * (heatFluxIntegralWeight .* fSlice);
+                            NTVBeforeSurfaceIntegral(itheta,izeta,ispecies) = NTVBeforeSurfaceIntegral(itheta,izeta,ispecies) ...
+                                + (4/15)*xWeights' * (NTVIntegralWeight .* fSlice);
                             
                             L=3;
                             indices = getIndices(ispecies, 1:Nx, L+1, itheta, izeta, 0);
@@ -2360,7 +2364,7 @@ end
                     
                     NTVBeforeSurfaceIntegral(:,:,ispecies) = factorToIncludeInFNormalization*2*pi*THats(ispecies)*((THats(ispecies)/mHats(ispecies)).^(3/2)) ...
                         .*dBHatdzeta./(BHat.^3) ...
-                        .* particleFluxBeforeSurfaceIntegral(:,:,ispecies); %11.03.14/HS
+                        .* NTVBeforeSurfaceIntegral(:,:,ispecies); %11.03.14/HS
                     
                     FSADensityPerturbation(ispecies) = (1/VPrimeHat) * thetaWeights' * (densityPerturbation(:,:,ispecies)./(BHat.^2)) * zetaWeights;
                     FSABFlow(ispecies) = (1/VPrimeHat) * thetaWeights' * (flow(:,:,ispecies)./BHat) * zetaWeights;
