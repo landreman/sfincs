@@ -15,7 +15,8 @@ contains
     integer :: NMHats, NZs, NNHats, NTHats, NDNHatdpsiNs, NDTHatdpsiNs, i
 
     namelist / flowControl / programMode, saveMatlabOutput, outputScheme, MatlabOutputFilename, &
-         outputFilename, parallelizeOverScan, solveSystem, RHSMode
+         outputFilename, parallelizeOverScan, solveSystem, RHSMode, &
+         saveMatricesAndVectorsInBinary, binaryOutputFilename
 
     namelist / geometryParameters / GHat, IHat, iota, epsilon_t, epsilon_h, &
          helicity_l, helicity_n, B0OverBBar, geometryScheme, &

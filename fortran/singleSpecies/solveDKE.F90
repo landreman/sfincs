@@ -31,7 +31,7 @@
     Vec :: rhs, soln, solnOnProc0
     integer :: whichRHS
     Mat :: matrix, preconditionerMatrix
-    PetscViewer MatlabOutput
+    PetscViewer :: MatlabOutput, binaryOutputViewer
     PetscScalar :: dnHatdpsiToUse, dTHatdpsiToUse, EHatToUse, dPhiHatdpsiToUse
     PetscScalar, dimension(:), allocatable :: thetaWeights, zetaWeights, B2
     PetscScalar, dimension(:,:), allocatable :: ddtheta, d2dtheta2
@@ -1819,6 +1819,43 @@
 
        call PetscViewerDestroy(MatlabOutput, ierr)
        CHKERRQ(ierr)
+    end if
+
+
+    if (saveMatricesAndVectorsInBinary) then
+       call PetscViewerBinaryOpen(MPIComm, &
+            & trim(binaryOutputFilename) // '_rhs', &
+            & FILE_MODE_WRITE, &
+            & binaryOutputViewer, ierr)
+       CHKERRQ(ierr)
+       call VecView(rhs, binaryOutputViewer, ierr)       
+       call PetscViewerDestroy(binaryOutputViewer, ierr)       
+
+       call PetscViewerBinaryOpen(MPIComm, &
+            & trim(binaryOutputFilename) // '_matrix', &
+            & FILE_MODE_WRITE, &
+            & binaryOutputViewer, ierr)
+       CHKERRQ(ierr)
+       call MatView(matrix, binaryOutputViewer, ierr)       
+       call PetscViewerDestroy(binaryOutputViewer, ierr)       
+
+       if (useIterativeSolver) then
+          call PetscViewerBinaryOpen(MPIComm, &
+               & trim(binaryOutputFilename) // '_pc', &
+               & FILE_MODE_WRITE, &
+               & binaryOutputViewer, ierr)
+          CHKERRQ(ierr)
+          call MatView(preconditionerMatrix, binaryOutputViewer, ierr)       
+          call PetscViewerDestroy(binaryOutputViewer, ierr)       
+       end if
+
+       call PetscViewerBinaryOpen(MPIComm, &
+            & trim(binaryOutputFilename) // '_soln', &
+            & FILE_MODE_WRITE, &
+            & binaryOutputViewer, ierr)
+       CHKERRQ(ierr)
+       call VecView(soln, binaryOutputViewer, ierr)       
+       call PetscViewerDestroy(binaryOutputViewer, ierr)       
     end if
 
     !    call VecDestroy(rhs, ierr)
