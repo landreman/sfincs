@@ -22,9 +22,10 @@ module globalVariables
   ! ********************************************************
 
   integer :: programMode, RHSMode, numRHSs
-  logical :: saveMatlabOutput
+  logical :: saveMatlabOutput, saveMatricesAndVectorsInBinary
   integer :: outputScheme
   character(len=200) :: MatlabOutputFilename
+  character(len=200) :: binaryOutputFilename
   character(len=200) :: outputFilename
   logical :: solveSystem
 
