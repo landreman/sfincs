@@ -79,12 +79,14 @@ module writeHDF5Output
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_particleFluxBeforeSurfaceIntegral
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_momentumFluxBeforeSurfaceIntegral
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_heatFluxBeforeSurfaceIntegral
+  integer(HID_T), dimension(:), allocatable, private :: dsetIDs_NTVBeforeSurfaceIntegral
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_FSADensityPerturbation
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_FSAFlow
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_FSAPressurePerturbation
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_particleFlux
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_momentumFlux
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_heatFlux
+  integer(HID_T), dimension(:), allocatable, private :: dsetIDs_NTV
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_elapsedTime
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_didItConverge
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_integerToRepresentTrue
@@ -214,12 +216,14 @@ contains
        allocate(dsetIDs_particleFluxBeforeSurfaceIntegral(numRunsInScan))
        allocate(dsetIDs_momentumFluxBeforeSurfaceIntegral(numRunsInScan))
        allocate(dsetIDs_heatFluxBeforeSurfaceIntegral(numRunsInScan))
+       allocate(dsetIDs_NTVBeforeSurfaceIntegral(numRunsInScan))
        allocate(dsetIDs_FSADensityPerturbation(numRunsInScan))
        allocate(dsetIDs_FSAFlow(numRunsInScan))
        allocate(dsetIDs_FSAPressurePerturbation(numRunsInScan))
        allocate(dsetIDs_particleFlux(numRunsInScan))
        allocate(dsetIDs_momentumFlux(numRunsInScan))
        allocate(dsetIDs_heatFlux(numRunsInScan))
+       allocate(dsetIDs_NTV(numRunsInScan))
        allocate(dsetIDs_elapsedTime(numRunsInScan))
        allocate(dsetIDs_didItConverge(numRunsInScan))
        allocate(dsetIDs_integerToRepresentTrue(numRunsInScan))
@@ -458,6 +462,9 @@ contains
           call h5dcreate_f(groupIDs(i), "heatFluxBeforeSurfaceIntegral", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta(i), &
                dsetIDs_heatFluxBeforeSurfaceIntegral(i), HDF5Error)
 
+          call h5dcreate_f(groupIDs(i), "NTVBeforeSurfaceIntegral", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta(i), &
+               dsetIDs_NTVBeforeSurfaceIntegral(i), HDF5Error)
+
           call h5dcreate_f(groupIDs(i), "FSADensityPerturbation", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_FSADensityPerturbation(i), HDF5Error)
 
@@ -475,6 +482,9 @@ contains
 
           call h5dcreate_f(groupIDs(i), "heatFlux", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_heatFlux(i), HDF5Error)
+
+          call h5dcreate_f(groupIDs(i), "NTV", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
+               dsetIDs_NTV(i), HDF5Error)
 
           call h5dcreate_f(groupIDs(i), "elapsed time (s)", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_elapsedTime(i), HDF5Error)
@@ -718,6 +728,9 @@ contains
        call h5dwrite_f(dsetIDs_heatFluxBeforeSurfaceIntegral(runNum), H5T_NATIVE_DOUBLE, &
             heatFluxBeforeSurfaceIntegral, dimForThetaZeta(runNum,:), HDF5Error)
 
+       call h5dwrite_f(dsetIDs_NTVBeforeSurfaceIntegral(runNum), H5T_NATIVE_DOUBLE, &
+            NTVBeforeSurfaceIntegral, dimForThetaZeta(runNum,:), HDF5Error)
+
        call h5dwrite_f(dsetIDs_FSADensityPerturbation(runNum), H5T_NATIVE_DOUBLE, &
             FSADensityPerturbation, dimForScalar, HDF5Error)
 
@@ -735,6 +748,9 @@ contains
 
        call h5dwrite_f(dsetIDs_heatFlux(runNum), H5T_NATIVE_DOUBLE, &
             heatFlux, dimForScalar, HDF5Error)
+
+       call h5dwrite_f(dsetIDs_NTV(runNum), H5T_NATIVE_DOUBLE, &
+            NTV, dimForScalar, HDF5Error)
 
        call h5dwrite_f(dsetIDs_elapsedTime(runNum), H5T_NATIVE_DOUBLE, &
             elapsedTime, dimForScalar, HDF5Error)
@@ -845,12 +861,14 @@ contains
           call h5dclose_f(dsetIDs_particleFluxBeforeSurfaceIntegral(i), HDF5Error)
           call h5dclose_f(dsetIDs_momentumFluxBeforeSurfaceIntegral(i), HDF5Error)
           call h5dclose_f(dsetIDs_heatFluxBeforeSurfaceIntegral(i), HDF5Error)
+          call h5dclose_f(dsetIDs_NTVBeforeSurfaceIntegral(i), HDF5Error)
           call h5dclose_f(dsetIDs_FSADensityPerturbation(i), HDF5Error)
           call h5dclose_f(dsetIDs_FSAFlow(i), HDF5Error)
           call h5dclose_f(dsetIDs_FSAPressurePerturbation(i), HDF5Error)
           call h5dclose_f(dsetIDs_particleFlux(i), HDF5Error)
           call h5dclose_f(dsetIDs_momentumFlux(i), HDF5Error)
           call h5dclose_f(dsetIDs_heatFlux(i), HDF5Error)
+          call h5dclose_f(dsetIDs_NTV(i), HDF5Error)
           call h5dclose_f(dsetIDs_elapsedTime(i), HDF5Error)
           call h5dclose_f(dsetIDs_didItConverge(i), HDF5Error)
           call h5dclose_f(dsetIDs_integerToRepresentTrue(i), HDF5Error)

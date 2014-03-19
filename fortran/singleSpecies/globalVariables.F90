@@ -161,8 +161,9 @@ module globalVariables
   PetscScalar, dimension(:,:), allocatable :: particleFluxBeforeSurfaceIntegral
   PetscScalar, dimension(:,:), allocatable :: momentumFluxBeforeSurfaceIntegral
   PetscScalar, dimension(:,:), allocatable :: heatFluxBeforeSurfaceIntegral
+  PetscScalar, dimension(:,:), allocatable :: NTVBeforeSurfaceIntegral
   PetscScalar :: FSADensityPerturbation, FSAFlow, FSAPressurePerturbation
-  PetscScalar :: particleFlux, momentumFlux, heatFlux, VPrimeHat, FSABHat2
+  PetscScalar :: particleFlux, momentumFlux, heatFlux, NTV, VPrimeHat, FSABHat2
 
   PetscLogDouble :: elapsedTime
   integer :: didItConverge
@@ -264,6 +265,7 @@ contains
        deallocate(particleFluxBeforeSurfaceIntegral)
        deallocate(momentumFluxBeforeSurfaceIntegral)
        deallocate(heatFluxBeforeSurfaceIntegral)
+       deallocate(NTVBeforeSurfaceIntegral)
        if (constraintScheme > 0) then
           deallocate(sources)
        end if
