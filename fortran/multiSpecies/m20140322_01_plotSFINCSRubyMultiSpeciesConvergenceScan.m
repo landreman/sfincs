@@ -1,10 +1,10 @@
-function m20140223_01_plotSFINCSRuby1SpeciesConvergenceScan()
+function m20140322_01_plotSFINCSRubyMultiSpeciesConvergenceScan()
 
 % Name of .h5 HDF5 file from SFINCS:
 h5filename='sfincsOutput.h5';
 
-%excludeRunsThatDidntConverge = true;
-excludeRunsThatDidntConverge = false;
+excludeRunsThatDidntConverge = true;
+%excludeRunsThatDidntConverge = false;
 
 figureOffset = 0;
 
@@ -20,7 +20,7 @@ colors = [1,0,0;
 linespecs = {'.-r','.-g','.-b','.-m','.-c','.-r','.-r','.-b','.-m'};
 
 numRuns = 0;
-RHSMode1s = 0;
+RHSMode1s = 1;
 RHSMode2s = 0;
 files = dir();
 dumpedFieldsYet = false;
@@ -34,6 +34,7 @@ NxPotentialsPerVths = [];
 xMaxs = [];
 log10tols = [];
 outputs = [];
+Nspecies = -1;
 
 for iFile = 1:size(files,1)
     if ~ files(iFile).isdir
@@ -72,11 +73,11 @@ for iFile = 1:size(files,1)
     location  = getLocationString(1);
     integerToRepresentTrue = h5read(filename,[location,'integerToRepresentTrue']);
     didItConverge = h5read(filename,[location,'didItConverge']);
-
     if excludeRunsThatDidntConverge && (didItConverge ~= integerToRepresentTrue)
         fprintf('Ignoring this run since it did not converge.\n')
         continue
     end
+
 
     % If we made it this far, then let's count the run.
     numRuns = numRuns + 1;
@@ -86,6 +87,7 @@ for iFile = 1:size(files,1)
         fprintf('Warning: run %d did not converge.\n',i)
     end
 
+    %{
     RHSMode = h5read(filename,[location,'RHSMode']);
     switch RHSMode
         case 1
@@ -97,6 +99,16 @@ for iFile = 1:size(files,1)
     end
     if RHSMode1s > 0 && RHSMode2s > 0
         error('Runs must either all have RHSMode=1 or RHSMode=2')
+    end
+    %}
+
+    Nspecies_new = h5read(filename,[location,'Nspecies']);
+    if Nspecies < 0
+        Nspecies = Nspecies_new;
+    else
+        if Nspecies ~= Nspecies_new
+            error('Number of species is not consistent among runs')
+        end
     end
 
     runNum = numRuns;
@@ -112,10 +124,19 @@ for iFile = 1:size(files,1)
             Nzetas(runNum),Nxis(runNum),NLs(runNum),Nxs(runNum), ...
             NxPotentialsPerVths(runNum), xMaxs(runNum), log10tols(runNum))
 
+    outputs(runNum,((1:Nspecies)-1)*3+1) = h5read(filename,[location,'particleFlux']);
+    outputs(runNum,((1:Nspecies)-1)*3+2) = h5read(filename,[location,'heatFlux']);
+    outputs(runNum,((1:Nspecies)-1)*3+3) = h5read(filename,[location,'FSABFlow']);
+    if Nspecies == 1
+        outputs(runNum,4) = h5read(filename,[location,'didItConverge']);
+        outputs(runNum,5) = h5read(filename,[location,'elapsed time (s)']);
+    end
+    
+    %{
     if RHSMode1s > 0
         outputs(runNum,1) = h5read(filename,[location,'particleFlux']);
         outputs(runNum,2) = h5read(filename,[location,'heatFlux']);
-        outputs(runNum,3) = h5read(filename,[location,'FSAFlow']);
+        outputs(runNum,3) = h5read(filename,[location,'FSABFlow']);
         outputs(runNum,4) = h5read(filename,[location,'didItConverge']);
         outputs(runNum,5) = h5read(filename,[location,'elapsed time (s)']);
     else
@@ -129,9 +150,30 @@ for iFile = 1:size(files,1)
         outputs(runNum,7) = transportMatrix(3,1);
         outputs(runNum,8) = transportMatrix(3,2);
         outputs(runNum,9) = transportMatrix(3,3);
+        
     end
+    %}
+    
 end
 
+if Nspecies == 1
+    yAxesLabels = {'Particle flux','q','<V|| B>','Did it converge','elapsed time'};
+    numQuantities = numel(yAxesLabels);
+    plotRows = 1:numQuantities;
+    numRows=numQuantities;
+else
+    yAxesLabels=cell(0);
+    for i=1:Nspecies
+        yAxesLabels{end+1} = ['Particle flux, species ', num2str(i)];
+        yAxesLabels{end+1} = ['Heat flux, species ', num2str(i)];
+        yAxesLabels{end+1} = ['<V|| B>, species ', num2str(i)];
+    end
+    numQuantities = numel(yAxesLabels);
+    plotRows = 1:numQuantities;
+    numRows=numQuantities;
+end
+
+%{
 if RHSMode1s > 0
     % Scan used RHSMode = 1
     yAxesLabels = {'Particle flux','q','<V|| B>','Did it converge','elapsed time'};
@@ -145,7 +187,7 @@ else
     numQuantities = 9;
     numRows = 6;
 end
-
+%}
 
 parametersToVary = {};
 abscissae = {};
@@ -362,8 +404,11 @@ end
 
 
 figure(1+figureOffset)
-numCols = numParameters;
 clf
+set(gcf,'Color','w')
+
+numCols = numParameters;
+
 for iQuantity = 1:numQuantities
     if maxs(iQuantity) <= mins(iQuantity)
         maxs(iQuantity) = mins(iQuantity)+1;
@@ -378,14 +423,27 @@ for iQuantity = 1:numQuantities
         ylabel(yAxesLabels{plotRows(iQuantity)})
     end
 end
-stringForTop=sprintf('Convergence scan from fortran version of SFINCS (1 species)');
+
+temp=dbstack;
+nameOfThisProgram=sprintf('%s',temp(1).file);
+stringForTop = ['Convergence scan from fortran multi-species version of SFINCS, plotted using ',nameOfThisProgram];
+
 
 annotation('textbox',[0 0.96 1 .04],'HorizontalAlignment','center',...
     'Interpreter','none','VerticalAlignment','bottom',...
     'FontSize',12,'LineStyle','none','String',stringForTop);
 
+stringForBottom = ['Run in: ',pwd];
+
+annotation('textbox',[0 0 1 .04],'HorizontalAlignment','center',...
+           'Interpreter','none','VerticalAlignment','top',...
+           'FontSize',12,'LineStyle','none','String', ...
+           stringForBottom);
+
 figure(2+figureOffset)
 clf
+set(gcf,'Color','w')
+
 for iQuantity = 1:numQuantities
     if maxs(iQuantity) <= mins(iQuantity)
         maxs(iQuantity) = mins(iQuantity)+1;
@@ -404,6 +462,12 @@ end
 annotation('textbox',[0 0.96 1 .04],'HorizontalAlignment','center',...
     'Interpreter','none','VerticalAlignment','bottom',...
     'FontSize',12,'LineStyle','none','String',stringForTop);
+
+annotation('textbox',[0 0 1 .04],'HorizontalAlignment','center',...
+           'Interpreter','none','VerticalAlignment','top',...
+           'FontSize',12,'LineStyle','none','String', ...
+           stringForBottom);
+
 
 % --------------------------------------------------------
 
