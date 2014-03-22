@@ -82,7 +82,7 @@
 
 &geometryParameters
 
-  geometryScheme = 2
+  geometryScheme = 11
   ! 1 = Three-helicity model
   ! 2 = Three-helicity approximation of the LHD standard configuration
   ! 3 = Four-helicity approximation of the LHD inward-shifted configuration

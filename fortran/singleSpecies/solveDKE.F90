@@ -59,13 +59,14 @@
     PetscScalar :: collisionTermFactor, xDotFactor, LFactor, temp1, temp2
     integer :: rowIndex, colIndex
     PetscScalar :: densityFactor, flowFactor, pressureFactor
-    PetscScalar :: particleFluxFactor, momentumFluxFactor, heatFluxFactor
+    PetscScalar :: particleFluxFactor, momentumFluxFactor, heatFluxFactor, NTVFactor
     PetscScalar, dimension(:), allocatable :: densityIntegralWeights
     PetscScalar, dimension(:), allocatable :: flowIntegralWeights
     PetscScalar, dimension(:), allocatable :: pressureIntegralWeights
     PetscScalar, dimension(:), allocatable :: particleFluxIntegralWeights
     PetscScalar, dimension(:), allocatable :: momentumFluxIntegralWeights
     PetscScalar, dimension(:), allocatable :: heatFluxIntegralWeights
+    PetscScalar, dimension(:), allocatable :: NTVIntegralWeights
     character :: trans='n'
     PetscLogDouble :: time1, time2, startTime
     KSP :: KSPInstance
@@ -1421,6 +1422,7 @@
     allocate(particleFluxBeforeSurfaceIntegral(Ntheta,Nzeta))
     allocate(momentumFluxBeforeSurfaceIntegral(Ntheta,Nzeta))
     allocate(heatFluxBeforeSurfaceIntegral(Ntheta,Nzeta))
+    allocate(NTVBeforeSurfaceIntegral(Ntheta,Nzeta))
 
     allocate(densityIntegralWeights(Nx))
     allocate(flowIntegralWeights(Nx))
@@ -1428,6 +1430,7 @@
     allocate(particleFluxIntegralWeights(Nx))
     allocate(momentumFluxIntegralWeights(Nx))
     allocate(heatFluxIntegralWeights(Nx))
+    allocate(NTVIntegralWeights(Nx))
 
 
     ! ***********************************************************************
@@ -1611,6 +1614,7 @@
           particleFluxIntegralWeights = x*x*x*x
           momentumFluxIntegralWeights = x*x*x*x*x
           heatFluxIntegralWeights = x*x*x*x*x*x
+          NTVIntegralWeights = x*x*x*x
 
           densityFactor = Delta*4*THat*sqrtTHat/(sqrtpi*psiAHat)
           flowFactor = 4/(three*sqrtpi)*THat*THat
@@ -1618,6 +1622,7 @@
           particleFluxFactor = - (THat ** (5/two))/(sqrtpi)
           momentumFluxFactor = - (THat ** 3)/(sqrtpi)
           heatFluxFactor = - (THat ** (7/two))/(2*sqrtpi)
+          NTVFactor =  (THat ** (5/two))/(sqrtpi) !HS 13.03.2014
 
           ! Convert the PETSc vector into a normal Fortran array:
           call VecGetArrayF90(solnOnProc0, solnArray, ierr)
@@ -1660,6 +1665,10 @@
                 heatFluxBeforeSurfaceIntegral(itheta,izeta) = factor * (8/three) * heatFluxFactor &
                      * dot_product(xWeights, heatFluxIntegralWeights * solnArray(indices))
 
+                NTVBeforeSurfaceIntegral(itheta,izeta) = dBHatdzeta(itheta,izeta)/(BHat(itheta,izeta) ** 3) &
+                     * (8/three) * NTVFactor &
+                     * dot_product(xWeights, NTVIntegralWeights * solnArray(indices))
+
              end do
           end do
 
@@ -1693,6 +1702,9 @@
                      + factor * (four/15) * heatFluxFactor &
                      * dot_product(xWeights, heatFluxIntegralWeights * solnArray(indices))
 
+                NTVBeforeSurfaceIntegral(itheta,izeta) = NTVBeforeSurfaceIntegral(itheta,izeta) &
+                     + dBHatdzeta(itheta,izeta)/(BHat(itheta,izeta) ** 3) * (four/15) * NTVFactor &
+                     * dot_product(xWeights, NTVIntegralWeights * solnArray(indices))
              end do
           end do
 
@@ -1718,6 +1730,7 @@
           particleFlux=0
           momentumFlux=0
           heatFlux=0
+          NTV=0
           allocate(B2(Ntheta))
           do izeta=1,Nzeta
              B2 = BHat(:,izeta)*BHat(:,izeta)
@@ -1739,6 +1752,10 @@
 
              heatFlux = heatFlux + zetaWeights(izeta) &
                   * dot_product(thetaWeights, heatFluxBeforeSurfaceIntegral(:,izeta))
+
+             NTV = NTV + zetaWeights(izeta) &
+                  * dot_product(thetaWeights, NTVBeforeSurfaceIntegral(:,izeta))
+
           end do
           deallocate(B2)
 

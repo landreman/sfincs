@@ -94,6 +94,7 @@ contains
        print *,"[",myCommunicatorIndex,"] FSADensityPerturbation:  ", FSADensityPerturbation
        print *,"[",myCommunicatorIndex,"] FSAFlow:                 ", FSAFlow
        print *,"[",myCommunicatorIndex,"] FSAPressurePerturbation: ", FSAPressurePerturbation
+       print *,"[",myCommunicatorIndex,"] NTV:                     ", NTV
        print *,"[",myCommunicatorIndex,"] particleFlux:            ", particleflux
        print *,"[",myCommunicatorIndex,"] momentumFlux:            ", momentumflux
        print *,"[",myCommunicatorIndex,"] heatFlux:                ", heatflux
