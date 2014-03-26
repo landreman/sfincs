@@ -66,7 +66,7 @@ filenameNote = 'myFirstScan';
 % Geometry parameters:
 % --------------------------------------------------
 
-geometryScheme = 12;
+geometryScheme = 11;
 % 1 = Three-helicity model
 % 2 = Three-helicity approximation of the LHD standard configuration
 % 3 = Four-helicity approximation of the LHD inward-shifted configuration
@@ -103,6 +103,9 @@ GHat =  3.7481;
 % surface. Equivalently, I is the coefficient of grad theta in the
 % covariant representation of vector B. IHat is I normalized by \bar{B}\bar{R}.
 IHat = 0;
+
+% gammaHat = G'/(\mu_0 p') \bar{B}/\bar{R} is only used for NTV calculation, see notes_NTV.pdf.
+gammaHat=NaN;
 
 % End of parameters that matter only for geometryScheme=1.
 
@@ -2332,6 +2335,8 @@ end
         
         fprintf('Total elapsed time: %g sec.\n',toc(startTimeForThisRun))
 
+        NTVkernel; %This is a dummy line which is only here to let the variable NTVkernel
+                   %from the subroutine computeBHat() be known also in computeOutputs().       
         computeOutputs()
         
         % ------------------------------------------------------
@@ -2386,7 +2391,6 @@ end
                         pressurePerturbation(itheta,izeta) = xWeights' * (pressurePerturbationIntegralWeight .* fSlice);
                         particleFluxBeforeSurfaceIntegral(itheta,izeta) = (8/3)*xWeights' * (particleFluxIntegralWeight .* fSlice);
                         heatFluxBeforeSurfaceIntegral(itheta,izeta) = (8/3)*xWeights' * (heatFluxIntegralWeight .* fSlice);
-                        NTVBeforeSurfaceIntegral(itheta,izeta) = (8/3)*xWeights' * (NTVIntegralWeight .* fSlice);
                         
                         L=1;
                         indices = ((1:Nx)-1)*Nxi*Ntheta*Nzeta + L*Ntheta*Nzeta + (itheta-1)*Nzeta + izeta;
@@ -2401,8 +2405,7 @@ end
                             + (4/15)*xWeights' * (particleFluxIntegralWeight .* fSlice);
                         heatFluxBeforeSurfaceIntegral(itheta,izeta) = heatFluxBeforeSurfaceIntegral(itheta,izeta) ...
                             + (4/15)*xWeights' * (heatFluxIntegralWeight .* fSlice);
-                        NTVBeforeSurfaceIntegral(itheta,izeta) = NTVBeforeSurfaceIntegral(itheta,izeta) ...
-                            + (4/15)*xWeights' * (NTVIntegralWeight .* fSlice);
+                        NTVBeforeSurfaceIntegral(itheta,izeta) = xWeights' * (NTVIntegralWeight .* fSlice);
                         
                         L=3;
                         indices = ((1:Nx)-1)*Nxi*Ntheta*Nzeta + L*Ntheta*Nzeta + (itheta-1)*Nzeta + izeta;
@@ -2426,8 +2429,7 @@ end
                 heatFluxBeforeSurfaceIntegral = -(THat^(7/2))*(GHat*dBHatdtheta-IHat*dBHatdzeta)./(2*sqrtpi*BHat.^3) ...
                     .* heatFluxBeforeSurfaceIntegral;
                 
-                NTVBeforeSurfaceIntegral = (THat^(5/2))*(dBHatdzeta)./(sqrtpi*BHat.^3) ...
-                    .* NTVBeforeSurfaceIntegral; %HS 11.03.14.
+                NTVBeforeSurfaceIntegral = (THat^(5/2)) * NTVkernel .* NTVBeforeSurfaceIntegral;
 
                 FSADensityPerturbation = (1/VPrimeHat) * thetaWeights' * (densityPerturbation./(BHat.^2)) * zetaWeights;
                 FSAFlow = (1/VPrimeHat) * thetaWeights' * (flow./BHat) * zetaWeights;
@@ -2437,12 +2439,12 @@ end
                 momentumFlux = thetaWeights' * momentumFluxBeforeSurfaceIntegral * zetaWeights;
                 heatFlux = thetaWeights' * heatFluxBeforeSurfaceIntegral * zetaWeights;
 
-                NTV = thetaWeights' * NTVBeforeSurfaceIntegral * zetaWeights; %HS 11.03.14.
+                NTV = thetaWeights' * NTVBeforeSurfaceIntegral * zetaWeights;
                 
                 fprintf('FSADensityPerturbation:  %g\n',FSADensityPerturbation)
                 fprintf('FSAFlow:                 %g\n',FSAFlow)
                 fprintf('FSAPressurePerturbation: %g\n',FSAPressurePerturbation)
-                fprintf('NTV:                     %g\n',NTV) %HS 11.03.14.
+                fprintf('NTV:                     %g\n',NTV)
                 fprintf('particleFlux:            %g\n',particleFlux)
                 fprintf('momentumFlux:            %g\n',momentumFlux)
                 fprintf('heatFlux:                %g\n',heatFlux)
@@ -2720,6 +2722,7 @@ end
                   %IHat = GHat*3; % Change this to 0 eventually.
                   IHat = 0;
                   psiAHat = B0OverBBar*a^2/2;
+                  gammaHat=NaN;
                   
                case 3
                   % LHD inward-shifted configuration.
@@ -2737,6 +2740,7 @@ end
                   GHat = B0OverBBar * R0;
                   IHat = 0;
                   psiAHat = B0OverBBar*a^2/2;
+                  gammaHat=NaN;
                   
                case 4
                   % W7-X Standard configuration
@@ -2760,6 +2764,7 @@ end
                   dPsidr=2*psiAHat/a*(radius/a);
                   %nuPrime=nuN*abs(GHat+iota*IHat)/B0OverBBar/sqrt(THat);
                   nuPrime=nuN*(GHat+iota*IHat)/B0OverBBar/sqrt(THat)
+                  gammaHat=NaN;
                   
                case 10
                   fid = fopen(fort996boozer_file);
@@ -2803,6 +2808,7 @@ end
                     BHarmonics_n = modes(2,2:end);
                     BHarmonics_amplitudes = modes(3,2:end)/B0OverBBar; % Store the values normalised to the B00 component. 
                     BHarmonics_parity = ones(1,length(BHarmonics_amplitudes));
+                    gammaHat=NaN; %Not implemented yet
                   catch me
                     error('%s\n\nFile\n\t%s\ndoes not seem to be a valid vmec fort.996 output file.\n',...
                         me.message, fort996boozer_file)
@@ -2835,6 +2841,7 @@ end
                       iota_new=NaN;
                       G_new=NaN;
                       I_new=NaN;
+                      pPrimeHat_new=NaN;
                       end_of_file=0;
                       
                       while (normradius_new<normradius_wish) && not(end_of_file)
@@ -2846,6 +2853,7 @@ end
                           iota_old=iota_new;
                           G_old=G_new;
                           I_old=I_new;
+                          pPrimeHat_old=pPrimeHat_new;
                           
                           fgetl(fid);
                           surfheader=fscanf(fid,'%f %f %f %f %f %f\n',6);
@@ -2854,6 +2862,7 @@ end
                           iota_new=surfheader(2);
                           G_new=surfheader(3)*NPeriods/2/pi*(4*pi*1e-7); %Tesla*meter
                           I_new=surfheader(4)/2/pi*(4*pi*1e-7);          %Tesla*meter
+                          pPrimeHat_new=surfheader(5)*(4*pi*1e-7);       % p=pHat \bar{B}^2 / \mu_0
                           
                           fgetl(fid); %Skip units line
                           proceed=1;
@@ -2900,6 +2909,7 @@ end
                     iota=iota_old;
                     GHat=G_old;
                     IHat=I_old;
+                    pPrimeHat=pPrimeHat_old;
                     normradius=normradius_old;
                   else %minind=2
                     BHarmonics_l = modesm_new(1:no_of_modes_new);
@@ -2908,8 +2918,11 @@ end
                     iota=iota_new;
                     GHat=G_new;
                     IHat=I_new;
+                    pPrimeHat=pPrimeHat_new;
                     normradius=normradius_new;
                   end
+                  gammaHat=(G_new-G_old)/(normradius_new^2-normradius_old^2)/pPrimeHat;
+                  
                   disp(['The calculation is performed for radius ' ...
                         ,num2str(normradius*a),' m , r/a=',num2str(normradius)])
                   
@@ -2961,6 +2974,7 @@ end
                       iota_new=NaN;
                       G_new=NaN;
                       I_new=NaN;
+                      pPrimeHat_new=NaN;
                       end_of_file=0;
                       
                       while (normradius_new<normradius_wish) && not(end_of_file)
@@ -2972,6 +2986,7 @@ end
                           iota_old=iota_new;
                           G_old=G_new;
                           I_old=I_new;
+                          pPrimeHat_old=pPrimeHat_new;
                           
                           fgetl(fid);
                           surfheader=fscanf(fid,'%f %f %f %f %f %f\n',6);
@@ -2980,6 +2995,7 @@ end
                           iota_new=surfheader(2);
                           G_new=surfheader(3)*NPeriods/2/pi*(4*pi*1e-7); %Tesla*meter
                           I_new=surfheader(4)/2/pi*(4*pi*1e-7);          %Tesla*meter
+                          pPrimeHat_new=surfheader(5)*(4*pi*1e-7);       % p=pHat \bar{B}^2 / \mu_0
                           
                           fgetl(fid); %Skip units line
                           proceed=1;
@@ -3028,6 +3044,7 @@ end
                     iota=iota_old;
                     GHat=G_old;
                     IHat=I_old;
+                    pPrimeHat=pPrimeHat_old;
                     normradius=normradius_old;
                   else %minind=2
                     BHarmonics_l = modesm_new(1:no_of_modes_new);
@@ -3036,8 +3053,11 @@ end
                     iota=iota_new;
                     GHat=G_new;
                     IHat=I_new;
+                    pPrimeHat=pPrimeHat_new;
                     normradius=normradius_new;
                   end
+                  gammaHat=(G_new-G_old)/(normradius_new^2-normradius_old^2)/pPrimeHat;
+                  
                   disp(['The calculation is performed for radius ' ...
                         ,num2str(normradius*a),' m , r/a=',num2str(normradius)])
                   
@@ -3086,6 +3106,32 @@ end
                         * zeta2D);                  
               end
             end
+            % ---------------------------------------------------------------------------------------
+            % Calculate parallel current u from cosine harmonics in 1/B^2. Used in NTV calculation
+            % ---------------------------------------------------------------------------------------
+            uHat = zeros(Ntheta,Nzeta);
+            duHatdtheta = zeros(Ntheta,Nzeta);
+            duHatdzeta = zeros(Ntheta,Nzeta);
+            hHat=1./(BHat.^2);
+            for m=0:Ntheta-1
+              for n=0:Nzeta-1
+                if not(m==0 && n==0)
+                  hHatHarmonics_amplitude = 2/(Ntheta*Nzeta) *...
+                      sum(sum(cos(m * theta2D  - n * NPeriods * zeta2D).*hHat));
+                  uHatHarmonics_amplitude = ...
+                      iota*(GHat*m + IHat*n * NPeriods)/(n * NPeriods - iota*m) * hHatHarmonics_amplitude;
+                  uHat = uHat + uHatHarmonics_amplitude * cos(m * theta2D - n * NPeriods * zeta2D);
+                  duHatdtheta = duHatdtheta ...
+                      - uHatHarmonics_amplitude * m * sin(m * theta2D - n * NPeriods * zeta2D);
+                  duHatdzeta = duHatdzeta ...
+                      + uHatHarmonics_amplitude * n * NPeriods * sin(m * theta2D - n * NPeriods * zeta2D);     
+                end
+              end
+            end
+            NTVkernel = 2/5 * ( ...
+                gammaHat ./ BHat .* (iota * dBHatdtheta + dBHatdzeta) + ...
+                iota/2 * (iota * (duHatdtheta + uHat * 2./BHat .* dBHatdtheta) ...
+                          + duHatdzeta + uHat * 2./BHat .* dBHatdzeta) );
         end  
     end
 end
