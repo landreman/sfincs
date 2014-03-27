@@ -66,7 +66,7 @@ filenameNote = 'myFirstScan';
 % Geometry parameters:
 % --------------------------------------------------
 
-geometryScheme = 11;
+geometryScheme = 12;
 % 1 = Three-helicity model
 % 2 = Three-helicity approximation of the LHD standard configuration
 % 3 = Four-helicity approximation of the LHD inward-shifted configuration
@@ -3107,7 +3107,7 @@ end
               end
             end
             % ---------------------------------------------------------------------------------------
-            % Calculate parallel current u from cosine harmonics in 1/B^2. Used in NTV calculation
+            % Calculate parallel current u from harmonics of 1/B^2. Used in NTV calculation.
             % \nabla_\parallel u = (2/B^4) \nabla B \times \vector{B} \cdot \iota \nabla \psi 
             % ---------------------------------------------------------------------------------------
             uHat = zeros(Ntheta,Nzeta);
