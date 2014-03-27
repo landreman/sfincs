@@ -567,7 +567,7 @@ switch programMode
         
         switch RHSMode
             case 1
-                quantitiesToRecord = {'FSAFlow','particleFlux','momentumFlux','heatFlux'};
+                quantitiesToRecord = {'FSAFlow','particleFlux','momentumFlux','heatFlux','NTV'};
             case 2
                 quantitiesToRecord = {'L11','L12=L21','L13=L31','L12=L21','L22','L23=L32','L13=L31','L23=L32','L33'};
             otherwise
@@ -608,6 +608,7 @@ switch programMode
                     quantities{parameterScanNum}(iii,2)=particleFlux;
                     quantities{parameterScanNum}(iii,3)=momentumFlux;
                     quantities{parameterScanNum}(iii,4)=heatFlux;
+                    quantities{parameterScanNum}(iii,5)=NTV;
                 case 2
                     quantities{parameterScanNum}(iii,:)=reshape(transportMatrix,[9,1]);
             end
@@ -630,6 +631,7 @@ switch programMode
                     quantities{parameterScanNum}(iii,2)=particleFlux;
                     quantities{parameterScanNum}(iii,3)=momentumFlux;
                     quantities{parameterScanNum}(iii,4)=heatFlux;
+                    quantities{parameterScanNum}(iii,5)=NTV;
                 case 2
                     quantities{parameterScanNum}(iii,:)=reshape(transportMatrix,[9,1]);
             end
@@ -652,6 +654,7 @@ switch programMode
                     quantities{parameterScanNum}(iii,2)=particleFlux;
                     quantities{parameterScanNum}(iii,3)=momentumFlux;
                     quantities{parameterScanNum}(iii,4)=heatFlux;
+                    quantities{parameterScanNum}(iii,5)=NTV;
                 case 2
                     quantities{parameterScanNum}(iii,:)=reshape(transportMatrix,[9,1]);
             end
@@ -674,6 +677,7 @@ switch programMode
                     quantities{parameterScanNum}(iii,2)=particleFlux;
                     quantities{parameterScanNum}(iii,3)=momentumFlux;
                     quantities{parameterScanNum}(iii,4)=heatFlux;
+                    quantities{parameterScanNum}(iii,5)=NTV;
                 case 2
                     quantities{parameterScanNum}(iii,:)=reshape(transportMatrix,[9,1]);
             end
@@ -697,6 +701,7 @@ switch programMode
                     quantities{parameterScanNum}(iii,2)=particleFlux;
                     quantities{parameterScanNum}(iii,3)=momentumFlux;
                     quantities{parameterScanNum}(iii,4)=heatFlux;
+                    quantities{parameterScanNum}(iii,5)=NTV;
                 case 2
                     quantities{parameterScanNum}(iii,:)=reshape(transportMatrix,[9,1]);
             end
@@ -719,6 +724,7 @@ switch programMode
                     quantities{parameterScanNum}(iii,2)=particleFlux;
                     quantities{parameterScanNum}(iii,3)=momentumFlux;
                     quantities{parameterScanNum}(iii,4)=heatFlux;
+                    quantities{parameterScanNum}(iii,5)=NTV;
                 case 2
                     quantities{parameterScanNum}(iii,:)=reshape(transportMatrix,[9,1]);
             end
@@ -741,6 +747,7 @@ switch programMode
                     quantities{parameterScanNum}(iii,2)=particleFlux;
                     quantities{parameterScanNum}(iii,3)=momentumFlux;
                     quantities{parameterScanNum}(iii,4)=heatFlux;
+                    quantities{parameterScanNum}(iii,5)=NTV;
                 case 2
                     quantities{parameterScanNum}(iii,:)=reshape(transportMatrix,[9,1]);
             end
