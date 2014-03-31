@@ -1,7 +1,13 @@
-! For PETSc versions 3.4 and later, the line below should be un-commented:
-#define PetscGetTime PetscTime
-
 ! Main program
+
+#include <finclude/petscsysdef.h>
+#include <petscversion.h>
+
+! For PETSc versions prior to 3.4, the PetscTime subroutine was called PetscGetTime.
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 4))
+#define PetscTime PetscGetTime
+#endif
+!Hereafter in this code, use PetscTime.
 
 program sfincs
   use globalVariables
@@ -12,8 +18,6 @@ program sfincs
   use petscsysdef
 
   implicit none
-
-#include <finclude/petscsysdef.h>
 
   PetscErrorCode ierr
   PetscLogDouble :: time1, time2
@@ -82,7 +86,7 @@ program sfincs
      call setMPICommunicatorsForScan()
      call openOutputFile()
      call createHDF5Structures()
-     call PetscGetTime(time1, ierr)
+     call PetscTime(time1, ierr)
 
      do runNum = minScanUnit,maxScanUnit
         if (masterProcInSubComm) then
@@ -101,7 +105,7 @@ program sfincs
         call writeRunToOutputFile(runNum)
         call deallocateArrays()
      end do
-     call PetscGetTime(time2, ierr)
+     call PetscTime(time2, ierr)
      if (masterProcInSubComm) then
         print *,"[",myCommunicatorIndex,"] --------------------------------------------------------------"
         print *,"[",myCommunicatorIndex,"] Total time for scan on this communicator: ", &
@@ -120,7 +124,7 @@ program sfincs
      call setMPICommunicatorsForScan()
      call openOutputFile()
      call createHDF5Structures()
-     call PetscGetTime(time1, ierr)
+     call PetscTime(time1, ierr)
 
      do runNum = minScanUnit,maxScanUnit
         if (masterProcInSubComm) then
@@ -132,7 +136,7 @@ program sfincs
         call writeRunToOutputFile(runNum)
         call deallocateArrays()
      end do
-     call PetscGetTime(time2, ierr)
+     call PetscTime(time2, ierr)
      if (masterProcInSubComm) then
         print *,"[",myCommunicatorIndex,"] --------------------------------------------------------------"
         print *,"[",myCommunicatorIndex,"] Total time for scan on this communicator: ", &

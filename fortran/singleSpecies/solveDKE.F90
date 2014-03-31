@@ -5,15 +5,22 @@
 ! 1:         Use Gnu Scientific Library's erf()
 ! otherwise: Use a rough approximation erf(x) \approx x / (exp(-2*x)+x)
 
-! For PETSc versions prior to 3.3, the line below should be un-commented:
-!#define MatCreateAIJ MatCreateMPIAIJ
-
-! For PETSc versions 3.4 and later, the line below should be un-commented:
-#define PetscGetTime PetscTime
-
 #include <finclude/petsckspdef.h>
 #include <finclude/petscdmdadef.h>
+#include <petscversion.h>
   
+! For PETSc versions prior to 3.3, the MatCreateAIJ subroutine was called MatCreateMPIAIJ.
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 3))
+#define MatCreateAIJ MatCreateMPIAIJ
+#endif
+! Hereafter in this code, use MatCreateAIJ.
+
+! For PETSc versions prior to 3.4, the PetscTime subroutine was called PetscGetTime.
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 4))
+#define PetscTime PetscGetTime
+#endif
+!Hereafter in this code, use PetscTime.
+
   subroutine solveDKE()
 
     use globalVariables
@@ -94,7 +101,7 @@
     ! Do a few sundry initialization tasks:
     ! *******************************************************************************
 
-    call PetscGetTime(time1, ierr)
+    call PetscTime(time1, ierr)
     startTime = time1
 
     if ((.not. isAParallelDirectSolverInstalled) .and. (numProcsInSubComm > 1)) then
@@ -1281,7 +1288,7 @@
        ! Now finalize the matrices:
        ! *******************************************************************************
 
-       call PetscGetTime(time2, ierr)
+       call PetscTime(time2, ierr)
        if (masterProcInSubComm) then
           if (whichMatrix==0) then
              print *,"[",myCommunicatorIndex,"] Time to pre-assemble preconditioner matrix: ", time2-time1, " seconds."
@@ -1289,7 +1296,7 @@
              print *,"[",myCommunicatorIndex,"] Time to pre-assemble matrix: ", time2-time1, " seconds."
           end if
        end if
-       call PetscGetTime(time1, ierr)
+       call PetscTime(time1, ierr)
 
        call MatAssemblyBegin(matrix, MAT_FINAL_ASSEMBLY, ierr)
        call MatAssemblyEnd(matrix, MAT_FINAL_ASSEMBLY, ierr)
@@ -1299,7 +1306,7 @@
           preconditionerMatrix = matrix
        end if
 
-       call PetscGetTime(time2, ierr)
+       call PetscTime(time2, ierr)
        if (masterProcInSubComm) then
           if (whichMatrix==0) then
              print *,"[",myCommunicatorIndex,"] Time to assemble preconditioner matrices: ", time2-time1, " seconds."
@@ -1307,7 +1314,7 @@
              print *,"[",myCommunicatorIndex,"] Time to assemble matrices: ", time2-time1, " seconds."
           end if
        end if
-       call PetscGetTime(time1, ierr)
+       call PetscTime(time1, ierr)
 
     end do
 
@@ -1561,11 +1568,11 @@
        end if
        CHKERRQ(ierr)
 
-       call PetscGetTime(time2, ierr)
+       call PetscTime(time2, ierr)
        if (masterProcInSubComm) then
           print *,"[",myCommunicatorIndex,"] Done with the main solve.  Time to solve: ", time2-time1, " seconds."
        end if
-       call PetscGetTime(time1, ierr)
+       call PetscTime(time1, ierr)
 
        if (useIterativeSolver) then
           call KSPGetConvergedReason(KSPInstance, reason, ierr)
@@ -1828,11 +1835,11 @@
           CHKERRQ(ierr)
        end if
 
-       call PetscGetTime(time2, ierr)
+       call PetscTime(time2, ierr)
        if (masterProcInSubComm) then
           print *,"[",myCommunicatorIndex,"] Time to write output: ", time2-time1, " seconds."
        end if
-       call PetscGetTime(time1, ierr)
+       call PetscTime(time1, ierr)
 
        call PetscViewerDestroy(MatlabOutput, ierr)
        CHKERRQ(ierr)
@@ -1887,7 +1894,7 @@
     CHKERRQ(ierr)
 
 
-    call PetscGetTime(time2, ierr)
+    call PetscTime(time2, ierr)
     elapsedTime = time2 - startTime
 
     call printOutputs()
