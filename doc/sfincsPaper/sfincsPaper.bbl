@@ -116,7 +116,7 @@
   \bibfield  {author} {\bibinfo {author} {\bibfnamefont {W.~I.}\ \bibnamefont
   {van Rij}}\ and\ \bibinfo {author} {\bibfnamefont {S.~P.}\ \bibnamefont
   {Hirshman}},\ }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal}
-  {Phys. Fluids B}\ }\textbf {\bibinfo {volume} {3}},\ \bibinfo {pages} {563}
+  {Phys. Fluids B}\ }\textbf {\bibinfo {volume} {1}},\ \bibinfo {pages} {563}
   (\bibinfo {year} {1989})}\BibitemShut {NoStop}%
 \bibitem [{\citenamefont {Beidler}\ and\ \citenamefont
   {D'haeseleer}(1995)}]{GSRAKE}%
@@ -230,8 +230,8 @@
   \bibfield  {author} {\bibinfo {author} {\bibfnamefont {O.}~\bibnamefont
   {Sauter}}, \bibinfo {author} {\bibfnamefont {R.~W.}\ \bibnamefont {Harvey}},
   \ and\ \bibinfo {author} {\bibfnamefont {F.~L.}\ \bibnamefont {Hinton}},\
-  }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal} {Comp. Phys.
-  Comm.}\ }\textbf {\bibinfo {volume} {34}},\ \bibinfo {pages} {169} (\bibinfo
+  }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal} {Contrib. Plasma
+  Phys.}\ }\textbf {\bibinfo {volume} {34}},\ \bibinfo {pages} {169} (\bibinfo
   {year} {1994})}\BibitemShut {NoStop}%
 \bibitem [{\citenamefont {Sauter}, \citenamefont {Angioni},\ and\ \citenamefont
   {Lin-Liu}(1999)}]{Sauter}%
@@ -355,7 +355,7 @@
   {Simakov}},\ }\href@noop {} {\bibfield  {journal} {\bibinfo  {journal} {Phys.
   Rev. Lett.}\ }\textbf {\bibinfo {volume} {101}},\ \bibinfo {pages} {145003}
   (\bibinfo {year} {2008})}\BibitemShut {NoStop}%
-\bibitem [{\citenamefont {Landreman}\ \emph {et~al.}(2013)\citenamefont
+\bibitem [{\citenamefont {Landreman}\ \emph {et~al.}(2014)\citenamefont
   {Landreman}, \citenamefont {Parra}, \citenamefont {Catto}, \citenamefont
   {Ernst},\ and\ \citenamefont {Pusztai}}]{PERFECT}%
   \BibitemOpen
@@ -364,8 +364,9 @@
   {Parra}}, \bibinfo {author} {\bibfnamefont {P.~J.}\ \bibnamefont {Catto}},
   \bibinfo {author} {\bibfnamefont {D.~R.}\ \bibnamefont {Ernst}}, \ and\
   \bibinfo {author} {\bibfnamefont {I.}~\bibnamefont {Pusztai}},\ }\href@noop
-  {} {\bibfield  {journal} {\bibinfo  {journal} {arXiv:1312.2148}\ } (\bibinfo
-  {year} {2013})}\BibitemShut {NoStop}%
+  {} {\bibfield  {journal} {\bibinfo  {journal} {Plasma Phys. Controlled
+  Fusion}\ }\textbf {\bibinfo {volume} {56}},\ \bibinfo {pages} {045005}
+  (\bibinfo {year} {2014})}\BibitemShut {NoStop}%
 \bibitem [{\citenamefont {Balay}\ \emph
   {et~al.}(2012{\natexlab{a}})\citenamefont {Balay}, \citenamefont {Brown},
   \citenamefont {Buschelman}, \citenamefont {Gropp}, \citenamefont {Kaushik},

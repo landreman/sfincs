@@ -305,7 +305,7 @@ To retain $\vect{E}\times\vect{B}$ precession, we also keep the term $(\vE+\vma)
 in (\ref{eq:kinetic1}), even though according to the formal ordering it should
 appear at next order.  A similar step is made in other stellarator neoclassical
 calculations \cite{DKES1, DKES2}.
-The mathematical reason why this term is important at low collisionality is that it has different symmetry properties than other, possible larger, terms in (\ref{eq:kinetic1}). For instance, it 
+The mathematical reason why this term is important at low collisionality is that it has different symmetry properties than other, possibly larger, terms in (\ref{eq:kinetic1}). For instance, it 
 survives if a bounce average is used to annihilate the first term.
 (We will not bounce average the kinetic equation here,
 but when the collisionality is low, the solution of the full equation becomes
@@ -633,7 +633,7 @@ again implies a small nonzero $E_r$ would be a singular perturbation of the
 $E_r=0$ limit.
 
 One motivation for use of the DKES trajectory model is now apparent:
-it is the only model that avoids the imposition of one or more unphysical
+it is the only model (of the three condered here) that avoids the imposition of one or more unphysical
 constraints on the distribution function when $d\Phi_0/d\psi \ne 0$,
 constraints which cause an $E_r \ne 0$ calculation to be a singular perturbation
 of an $E_r = 0$ calculation.
@@ -707,11 +707,11 @@ while we apply the general speed-dependent source $S_a(x_a)$ with $N_x$ constrai
 
 Parallel momentum has a different status to density and energy, in that density and energy are conserved by
 the collisionless motion while parallel momentum is not, due to the mirror force.
-(For example, considering the simple case of a single ion species with $d\Phi_0/d\psi=0$, $F_i$ and $v^2 F_i$ are homogeneous
+(For example, considering the case of a single ion species with $d\Phi_0/d\psi=0$, $F_i$ and $v^2 F_i$ are homogeneous
 solutions to the kinetic equation, whereas $v_{||} F_i$ is not.)
 A consequence is that there does not appear to be a false constraint for $E_r \ne 0$ arising
 from the $\left< \int d^3 v\, v_{||} (\ldots)\right>$ moment of the various forms of the kinetic equation,
-i.e. there is no exact analogue to (\ref{eq:unphysicalMassConservation}), (\ref{eq:unphysicalEnergyConservation1}),
+i.e. there is no analogue to (\ref{eq:unphysicalMassConservation}), (\ref{eq:unphysicalEnergyConservation1}),
 or (\ref{eq:unphysicalEnergyConservation2}) for momentum.
 When the momentum moment of the various forms of the drift-kinetic equation is taken,
 even if a factor of $B$ or $1/B$ is included in the flux surface average, 
@@ -1138,7 +1138,7 @@ The radial fluxes of ions and electrons as functions of $E_r$ are shown in figur
 The electron fluxes (dashed curves) are very small $(\sim \sqrt{\me/\mi})$ compared to the ion fluxes
 and are identical between the three trajectory models. No difference between the models is expected for
 the electrons, since $E_*$ defined using the electron rather than ion thermal speed is always $\ll 1$.
-The vertical magenta dotted line indicates the ambipolar value of $E_r \approx $ 33 kV/m, which is effectively
+The vertical magenta dotted line indicates the ambipolar value of $E_r \approx -33$  kV/m, which is effectively
 identical for the three trajectory models, and comparable to the value predicted in \cite{Turkin}.
 This electric field is roughly one third of the resonant value, and therefore the ion transport coefficients are
 just beginning to separate for the three models. Heat fluxes are shown in figure \ref{fig:2species}.B, showing similar
@@ -1225,7 +1225,7 @@ Note in Figs.~(\ref{fig:collisionComparison_LHD})-(\ref{fig:collisionComparison_
 particle flux consists of two terms: one related to the parallel
 friction force and one related to parallel viscosity \cite{AndreiPer2009, Braun}. This is most easily seen by taking the scalar product of the lowest-order plasma current, which satisfies $\vect{J} \times \vect{B} = c p'(\psi) \nabla \psi$, with the momentum equation,
 \begin{equation}
-m_a n_a \vect{V}_a \cdot \nabla \vect{V}_a = n_a e_a \left( - \nabla \phi + c^{-1}\vect{V}_a \times \vect{B} \right)
+m_a n_a \vect{V}_a \cdot \nabla \vect{V}_a = n_a e_a \left( - \nabla \Phi + c^{-1}\vect{V}_a \times \vect{B} \right)
 - \nabla p_a - \nabla \cdot \tens{\pi}_a + \vect{F}_a, 
 \label{eq:vectorMomentum}
 \end{equation}
@@ -1383,10 +1383,9 @@ which agree quite well with the SFINCS computations at high collisionality.
 \section{Discussion and conclusions}
 \label{sec:conclusions}
 
-Different stellarator transport codes make different assumptions about the
-details of the drift-kinetic equation, and our goal in this work has been
-to examine the consequences of these details.
-In this work, we have compared three versions of the drift-kinetic equation
+In this work, we have examined the impact of several approximations made in 
+stellarator kinetic codes, approximations related to the electric field and the collision operator.
+We have compared three versions of the drift-kinetic equation
 for a stellarator, consisting of (\ref{eq:kinetic4}) with
 the coefficients (\ref{eq:fullTrajectories}), (\ref{eq:DKESTrajectories}),
 or (\ref{eq:partialTrajectories}).
@@ -1395,7 +1394,7 @@ $\dot{x}_a$, and $\dot{\xi}_a$ may be interpreted as effective
 particle trajectories (although we solve each form of the kinetic equation
 using continuum numerical methods).
 Equations  (\ref{eq:fullTrajectories}) and  (\ref{eq:partialTrajectories})
-appear more accurate than  (\ref{eq:DKESTrajectories}),
+appear to be more accurate than  (\ref{eq:DKESTrajectories}),
 and as we have shown in section \ref{sec:momentum},
 the full trajectory model (\ref{eq:fullTrajectories}) is the only
 one of the three models which gives the correct parallel viscous force 
@@ -1467,6 +1466,9 @@ Fusion Energy Postdoctoral Research Program
 administered by the Oak Ridge Institute for Science and Education.
 We are thankful to J. Geiger for providing the W7-X equilibrium data,
 and to Craig Beidler and Peter Catto for other input on this work.
+We also thank the anonymous referee for making several suggestions
+that substantially improved the paper.
+
 \end{acknowledgments}
 
 
@@ -1476,7 +1478,7 @@ and to Craig Beidler and Peter Catto for other input on this work.
 A useful test of a stellarator neoclassical code such as the one
 described here is the quasisymmetry isomorphism,
 discussed analytically in Refs. \cite{Pytte, Boozer83, meQS}.
-Equivalent to the definition at the end of section \ref{sec:sources} \cite{PerAndreiPRL},
+Equivalent to the definition at the end of section \ref{sec:momentum} \cite{PerAndreiPRL},
 a quasisymmetric magnetic field is one satisfying $B(\theta,\zeta) = y(M\theta-N\zeta)$
 for some periodic function $y$ and integers $M$ and $N$.
 Magnetic fields with the same $y$ but different $M$ and $N$ are said to be isomorphic in that
