@@ -42,7 +42,7 @@ module globalVariables
   PetscScalar :: epsilon_t, epsilon_h, epsilon_antisymm
   integer :: NPeriods, helicity_l, helicity_n, helicity_antisymm_l, helicity_antisymm_n
   character(len=200) :: fort996boozer_file, JGboozer_file, JGboozer_file_NonStelSym
-  PetscScalar :: normradius_wish, min_Bmn_to_load
+  PetscScalar :: normradius_wish, min_Bmn_to_load, gammaHat
 
   ! ********************************************************
   ! ********************************************************
@@ -162,7 +162,7 @@ module globalVariables
   PetscScalar, dimension(:,:), allocatable :: particleFluxBeforeSurfaceIntegral
   PetscScalar, dimension(:,:), allocatable :: momentumFluxBeforeSurfaceIntegral
   PetscScalar, dimension(:,:), allocatable :: heatFluxBeforeSurfaceIntegral
-  PetscScalar, dimension(:,:), allocatable :: NTVBeforeSurfaceIntegral
+  PetscScalar, dimension(:,:), allocatable :: NTVBeforeSurfaceIntegral, NTVKernel
   PetscScalar :: FSADensityPerturbation, FSAFlow, FSAPressurePerturbation
   PetscScalar :: particleFlux, momentumFlux, heatFlux, NTV, VPrimeHat, FSABHat2
 
@@ -258,6 +258,7 @@ contains
     deallocate(BHat)
     deallocate(dBHatdtheta)
     deallocate(dBHatdzeta)
+    deallocate(NTVKernel)
    
     if (masterProcInSubComm) then
        deallocate(densityPerturbation)

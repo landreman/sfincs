@@ -372,6 +372,7 @@
     allocate(BHat(Ntheta,Nzeta))
     allocate(dBHatdtheta(Ntheta,Nzeta))
     allocate(dBHatdzeta(Ntheta,Nzeta))
+    allocate(NTVKernel(Ntheta,Nzeta))
 
     call computeBHat()
 

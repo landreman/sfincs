@@ -359,6 +359,7 @@
     allocate(BHat(Ntheta,Nzeta))
     allocate(dBHatdtheta(Ntheta,Nzeta))
     allocate(dBHatdzeta(Ntheta,Nzeta))
+    allocate(NTVKernel(Ntheta,Nzeta))
 
     call computeBHat()
 
@@ -1622,7 +1623,7 @@
           particleFluxFactor = - (THat ** (5/two))/(sqrtpi)
           momentumFluxFactor = - (THat ** 3)/(sqrtpi)
           heatFluxFactor = - (THat ** (7/two))/(2*sqrtpi)
-          NTVFactor =  (THat ** (5/two))/(sqrtpi) !HS 13.03.2014
+          NTVFactor =  (THat ** (5/two))/(sqrtpi)
 
           ! Convert the PETSc vector into a normal Fortran array:
           call VecGetArrayF90(solnOnProc0, solnArray, ierr)
@@ -1665,10 +1666,6 @@
                 heatFluxBeforeSurfaceIntegral(itheta,izeta) = factor * (8/three) * heatFluxFactor &
                      * dot_product(xWeights, heatFluxIntegralWeights * solnArray(indices))
 
-                NTVBeforeSurfaceIntegral(itheta,izeta) = dBHatdzeta(itheta,izeta)/(BHat(itheta,izeta) ** 3) &
-                     * (8/three) * NTVFactor &
-                     * dot_product(xWeights, NTVIntegralWeights * solnArray(indices))
-
              end do
           end do
 
@@ -1702,9 +1699,9 @@
                      + factor * (four/15) * heatFluxFactor &
                      * dot_product(xWeights, heatFluxIntegralWeights * solnArray(indices))
 
-                NTVBeforeSurfaceIntegral(itheta,izeta) = NTVBeforeSurfaceIntegral(itheta,izeta) &
-                     + dBHatdzeta(itheta,izeta)/(BHat(itheta,izeta) ** 3) * (four/15) * NTVFactor &
-                     * dot_product(xWeights, NTVIntegralWeights * solnArray(indices))
+                NTVBeforeSurfaceIntegral(itheta,izeta) =  &
+                      NTVFactor * NTVKernel(itheta,izeta) &
+                      * dot_product(xWeights, NTVIntegralWeights * solnArray(indices))
              end do
           end do
 

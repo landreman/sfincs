@@ -103,10 +103,11 @@ contains
 
     implicit none
 
-    integer :: itheta, NHarmonics, i
+    integer :: itheta, izeta, NHarmonics, i, m, n
     integer, dimension(:), allocatable :: BHarmonics_l, BHarmonics_n
     PetscScalar, dimension(:), allocatable :: BHarmonics_amplitudes
     logical, dimension(:), allocatable :: BHarmonics_parity
+    PetscScalar, dimension(:,:), allocatable :: hHat, uHat, duHatdtheta, duHatdzeta
     PetscScalar :: a, R0
     
     integer :: fileUnit, didFileAccessWork
@@ -119,11 +120,13 @@ contains
     integer, dimension(2) :: dataIntegers
     integer :: no_of_modes_old, no_of_modes_new, modeind, numB0s
     PetscScalar :: iota_old, iota_new, G_old, G_new, I_old, I_new
+    PetscScalar :: pPrimeHat, pPrimeHat_old, pPrimeHat_new
     logical :: end_of_file, proceed
     integer, parameter :: max_no_of_modes = 10000
     integer, dimension(max_no_of_modes) :: modesm_old, modesm_new, modesn_old, modesn_new
     PetscScalar, dimension(max_no_of_modes) :: modesb_old, modesb_new
     PetscScalar :: normradius_old,  normradius_new, normradius, B0_old, B0_new
+    PetscScalar :: hHatHarmonics_amplitude, uHatHarmonics_amplitude
 
     ! For the BHarmonics_parity array, 
     ! true indicates the contribution to B(theta,zeta) has the form
@@ -173,6 +176,7 @@ contains
        if ((helicity_n .eq. 0 .and. helicity_antisymm_n .ne. 0) .or. (mod(helicity_antisymm_n, helicity_n) .ne. 0)) then
           print *,"WARNING: Typically, helicity_antisymm_n should be an integer multiple of helicity_n (possibly zero)."
        end if
+       gammaHat = 0 !Not implemented as an input for this case yet, could be put in namelist input if needed
 
     case (2)
        ! A three-harmonic approximation of the LHD standard configuration.
@@ -209,6 +213,7 @@ contains
        GHat = B0OverBBar * R0
        IHat = 0
        psiAHat = B0OverBBar * (a ** 2) / two
+       gammaHat = 0
                     
     case (3)
        ! A four-harmonic approximation of the LHD inward-shifted configuration.
@@ -250,6 +255,7 @@ contains
        GHat = B0OverBBar * R0
        IHat = 0
        psiAHat = B0OverBBar * (a ** 2) / two
+       gammaHat = 0
                     
 
     case (4)
@@ -287,6 +293,7 @@ contains
        GHat = -17.885d+0
        IHat = 0
        psiAHat = -0.384935d+0 ! Tesla * meters^2 / radian
+       gammaHat = 0
 
     case (11)
        ! Read Boozer coordinate file in .bc format used at IPP Greifswald
@@ -324,6 +331,7 @@ contains
           G_old = 0
           I_old = 0
           B0_old = 0
+          pPrimeHat_old = 0
 
           normradius_new = 0
           no_of_modes_new = 0
@@ -334,6 +342,7 @@ contains
           G_new = 0
           I_new = 0
           B0_new = 0
+          pPrimeHat_new = 0
 
           ! Skip a line
           read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
@@ -350,6 +359,7 @@ contains
              G_old = G_new
              I_old = I_new
              B0_old = B0_new
+             pPrimeHat_old = pPrimeHat_new
              numB0s = 0
 
              ! Skip a line:
@@ -361,6 +371,7 @@ contains
              iota_new = surfHeader(2)
              G_new = surfHeader(3)*NPeriods/2/pi*(4*pi*1d-7) !Tesla*meter
              I_new = surfHeader(4)/2/pi*(4*pi*1d-7)          !Tesla*meter
+             pPrimeHat_new = surfheader(5)*(4*pi*1e-7)       ! p=pHat \bar{B}^2 / \mu_0
 
              ! Skip units line:
              read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
@@ -416,6 +427,7 @@ contains
           normradius = normradius_old
           B0OverBBar = B0_old
           NHarmonics = no_of_modes_old
+          pPrimeHat=pPrimeHat_old
           allocate(BHarmonics_l(NHarmonics))
           allocate(BHarmonics_n(NHarmonics))
           allocate(BHarmonics_amplitudes(NHarmonics))
@@ -431,6 +443,7 @@ contains
           normradius = normradius_new
           B0OverBBar = B0_new
           NHarmonics = no_of_modes_new
+          pPrimeHat=pPrimeHat_new
           allocate(BHarmonics_l(NHarmonics))
           allocate(BHarmonics_n(NHarmonics))
           allocate(BHarmonics_amplitudes(NHarmonics))
@@ -440,6 +453,7 @@ contains
           BHarmonics_n = modesn_new(1:NHarmonics)
           BHarmonics_amplitudes = modesb_new(1:NHarmonics)
        end if
+       gammaHat=(G_new-G_old)/(normradius_new*normradius_new-normradius_old*normradius_old)/pPrimeHat
 
        BHarmonics_amplitudes = BHarmonics_amplitudes / B0OverBBar
 
@@ -484,6 +498,7 @@ contains
           G_old = 0
           I_old = 0
           B0_old = 0
+          pPrimeHat_old = 0
 
           normradius_new = 0
           no_of_modes_new = 0
@@ -494,6 +509,7 @@ contains
           G_new = 0
           I_new = 0
           B0_new = 0
+          pPrimeHat_new = 0
 
           ! Skip a line
           read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
@@ -510,6 +526,7 @@ contains
              G_old = G_new
              I_old = I_new
              B0_old = B0_new
+             pPrimeHat_old = pPrimeHat_new
              numB0s = 0
 
              ! Skip a line:
@@ -521,6 +538,7 @@ contains
              iota_new = surfHeader(2)
              G_new = surfHeader(3)*NPeriods/2/pi*(4*pi*1d-7) !Tesla*meter
              I_new = surfHeader(4)/2/pi*(4*pi*1d-7)          !Tesla*meter
+             pPrimeHat_new = surfheader(5)*(4*pi*1e-7)       ! p=pHat \bar{B}^2 / \mu_0
 
              ! Skip units line:
              read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
@@ -580,6 +598,7 @@ contains
           normradius = normradius_old
           B0OverBBar = B0_old
           NHarmonics = no_of_modes_old
+          pPrimeHat=pPrimeHat_old
           allocate(BHarmonics_l(NHarmonics))
           allocate(BHarmonics_n(NHarmonics))
           allocate(BHarmonics_amplitudes(NHarmonics))
@@ -593,6 +612,7 @@ contains
           normradius = normradius_new
           B0OverBBar = B0_new
           NHarmonics = no_of_modes_new
+          pPrimeHat=pPrimeHat_new
           allocate(BHarmonics_l(NHarmonics))
           allocate(BHarmonics_n(NHarmonics))
           allocate(BHarmonics_amplitudes(NHarmonics))
@@ -600,6 +620,7 @@ contains
           BHarmonics_n = modesn_new(1:NHarmonics)
           BHarmonics_amplitudes = modesb_new(1:NHarmonics)
        end if
+       gammaHat=(G_new-G_old)/(normradius_new*normradius_new-normradius_old*normradius_old)/pPrimeHat
 
        allocate(BHarmonics_parity(NHarmonics))
        do i = 0, NHarmonics/2-1
@@ -650,6 +671,99 @@ contains
 
           end do
        end if
+    end do
+    ! ---------------------------------------------------------------------------------------
+    ! Calculate parallel current u from harmonics of 1/B^2. Used in NTV calculation.
+    ! \nabla_\parallel u = (2/B^4) \nabla B \times \vector{B} \cdot \iota \nabla \psi 
+    ! ---------------------------------------------------------------------------------------
+    allocate(hHat(Ntheta,Nzeta))
+    allocate(uHat(Ntheta,Nzeta))
+    allocate(duHatdtheta(Ntheta,Nzeta))
+    allocate(duHatdzeta(Ntheta,Nzeta))
+    
+    uHat = 0
+    duHatdtheta = 0
+    duHatdzeta = 0
+    do itheta = 1,Ntheta
+       do izeta = 1,Nzeta
+          hHat(itheta,izeta) = 1 / BHat(itheta,izeta)
+       end do
+    end do
+    
+    if (any((BHarmonics_parity.eq.0))) then !sine components exist
+       do m = 0,(Ntheta/2-1) !Nyquist max freq.
+          do n = 0,(Nzeta/2-1)
+             if ((m /= 0).or.(n /= 0)) then
+                !cos
+                hHatHarmonics_amplitude = 0
+                do itheta = 1,Ntheta
+                   hHatHarmonics_amplitude = hHatHarmonics_amplitude + 2/(Ntheta*Nzeta) * &
+                        dot_product(cos(m * theta(itheta)  - n * NPeriods * zeta), hHat(itheta,:))
+                end do
+                uHatHarmonics_amplitude = &
+                     iota*(GHat*m + IHat*n * NPeriods)/(n * NPeriods - iota*m) * hHatHarmonics_amplitude
+                do itheta = 1,Ntheta
+                   uHat(itheta,:) = uHat(itheta,:) &
+                        + uHatHarmonics_amplitude * cos(m * theta(itheta) - n * NPeriods * zeta)
+                   duHatdtheta(itheta,:) = duHatdtheta(itheta,:) &
+                        - uHatHarmonics_amplitude * m * sin(m * theta(itheta) - n * NPeriods * zeta)
+                   duHatdzeta(itheta,:) = duHatdzeta(itheta,:) &
+                        + uHatHarmonics_amplitude * n * NPeriods * sin(m * theta(itheta) - n * NPeriods * zeta)
+                end do
+
+                !sin
+                hHatHarmonics_amplitude = 0
+                do itheta = 1,Ntheta
+                   hHatHarmonics_amplitude = hHatHarmonics_amplitude + 2/(Ntheta*Nzeta) * &
+                        dot_product(sin(m * theta(itheta)  - n * NPeriods * zeta), hHat(itheta,:))
+                end do
+                uHatHarmonics_amplitude = &
+                     iota*(GHat*m + IHat*n * NPeriods)/(n * NPeriods - iota*m) * hHatHarmonics_amplitude
+                do itheta = 1,Ntheta
+                   uHat(itheta,:) = uHat(itheta,:) &
+                        + uHatHarmonics_amplitude * sin(m * theta(itheta) - n * NPeriods * zeta)
+                   duHatdtheta(itheta,:) = duHatdtheta(itheta,:) &
+                        + uHatHarmonics_amplitude * m * cos(m * theta(itheta) - n * NPeriods * zeta)
+                   duHatdzeta(itheta,:) = duHatdzeta(itheta,:) &
+                        - uHatHarmonics_amplitude * n * NPeriods * cos(m * theta(itheta) - n * NPeriods * zeta)
+                end do
+             end if
+          end do
+       end do
+    else !only cosinus components
+       do m = 0,(Ntheta-1) !cos-series max freq.
+          do n = 0,(Nzeta-1)
+             if ((m /= 0).or.(n /= 0)) then
+                !cos
+                hHatHarmonics_amplitude = 0
+                do itheta = 1,Ntheta
+                   hHatHarmonics_amplitude = hHatHarmonics_amplitude + 2/(Ntheta*Nzeta) * &
+                        dot_product(cos(m * theta(itheta)  - n * NPeriods * zeta), hHat(itheta,:))
+                end do
+                uHatHarmonics_amplitude = &
+                     iota*(GHat*m + IHat*n * NPeriods)/(n * NPeriods - iota*m) * hHatHarmonics_amplitude
+                do itheta = 1,Ntheta
+                   uHat(itheta,:) = uHat(itheta,:) &
+                        + uHatHarmonics_amplitude * cos(m * theta(itheta) - n * NPeriods * zeta)
+                   duHatdtheta(itheta,:) = duHatdtheta(itheta,:) &
+                        - uHatHarmonics_amplitude * m * sin(m * theta(itheta) - n * NPeriods * zeta)
+                   duHatdzeta(itheta,:) = duHatdzeta(itheta,:) &
+                        + uHatHarmonics_amplitude * n * NPeriods * sin(m * theta(itheta) - n * NPeriods * zeta)
+                end do
+             end if
+          end do
+       end do
+    end if
+
+    do itheta = 1,Ntheta
+       do izeta = 1,Nzeta
+          NTVkernel(itheta,izeta) = 2/5 * ( &
+               gammaHat / BHat(itheta,izeta) * (iota * dBHatdtheta(itheta,izeta) + dBHatdzeta(itheta,izeta)) &
+               + 1/2 * (iota * (duHatdtheta(itheta,izeta) &
+                                + uHat(itheta,izeta) * 2/BHat(itheta,izeta) * dBHatdtheta(itheta,izeta)) &
+                        + duHatdzeta(itheta,izeta) & 
+                        + uHat(itheta,izeta) * 2/BHat(itheta,izeta) * dBHatdzeta(itheta,izeta)) )
+       end do
     end do
 
     deallocate(BHarmonics_l)
