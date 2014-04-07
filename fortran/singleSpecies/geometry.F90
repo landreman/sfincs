@@ -693,8 +693,8 @@ contains
     end do
     
     if (any((BHarmonics_parity.eq.0))) then !sine components exist
-       do m = 0,(Ntheta/2-1) !Nyquist max freq.
-          do n = 0,(Nzeta/2-1)
+       do m = 0,int(Ntheta/2.0-1) !Nyquist max freq.
+          do n = 0,int(Nzeta/2.0-1)
              if ((m /= 0).or.(n /= 0)) then
                 !cos
                 hHatHarmonics_amplitude = 0
@@ -733,8 +733,8 @@ contains
           end do
        end do
     else !only cosinus components
-       do m = 0,(Ntheta-1) !cos-series max freq.
-          do n = 0,(Nzeta-1)
+       do m = 0,int(Ntheta/2.0-1) !Nyquist max freq.
+          do n = 0,int(Nzeta/2.0-1)
              if ((m /= 0).or.(n /= 0)) then
                 !cos
                 hHatHarmonics_amplitude = 0

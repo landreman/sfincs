@@ -3150,8 +3150,8 @@ end
                 end
               end
             else %only cosinus components
-              for m=0:Ntheta-1 %cos-series max freq.
-                for n=0:Nzeta-1
+              for m=0:floor(Ntheta/2)-1 %Nyquist max freq.
+                for n=0:floor(Nzeta/2)-1
                   if not(m==0 && n==0)
                     hHatHarmonics_amplitude = 2/(Ntheta*Nzeta) *...
                       sum(sum(cos(m * theta2D  - n * NPeriods * zeta2D).*hHat));
