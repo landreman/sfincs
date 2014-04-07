@@ -38,7 +38,7 @@ program sfincs
 
   ! Default values for all input parameters are set in parameters.F90.
   ! Defaults are replaced by any values given in the input namelist file:
-  call readNamelistInput("input.namelistHS")
+  call readNamelistInput("input.namelist")
 
   select case (programMode)
   case (-1)
