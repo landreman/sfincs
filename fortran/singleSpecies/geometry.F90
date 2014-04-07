@@ -176,7 +176,7 @@ contains
        if ((helicity_n .eq. 0 .and. helicity_antisymm_n .ne. 0) .or. (mod(helicity_antisymm_n, helicity_n) .ne. 0)) then
           print *,"WARNING: Typically, helicity_antisymm_n should be an integer multiple of helicity_n (possibly zero)."
        end if
-       gammaHat = 0 !Not implemented as an input for this case yet, could be put in namelist input if needed
+       dGdpHat = 0 !Not implemented as an input for this case yet, could be put in namelist input if needed
 
     case (2)
        ! A three-harmonic approximation of the LHD standard configuration.
@@ -213,7 +213,7 @@ contains
        GHat = B0OverBBar * R0
        IHat = 0
        psiAHat = B0OverBBar * (a ** 2) / two
-       gammaHat = 0
+       dGdpHat = 0
                     
     case (3)
        ! A four-harmonic approximation of the LHD inward-shifted configuration.
@@ -255,7 +255,7 @@ contains
        GHat = B0OverBBar * R0
        IHat = 0
        psiAHat = B0OverBBar * (a ** 2) / two
-       gammaHat = 0
+       dGdpHat = 0
                     
 
     case (4)
@@ -293,7 +293,7 @@ contains
        GHat = -17.885d+0
        IHat = 0
        psiAHat = -0.384935d+0 ! Tesla * meters^2 / radian
-       gammaHat = 0
+       dGdpHat = 0
 
     case (11)
        ! Read Boozer coordinate file in .bc format used at IPP Greifswald
@@ -453,7 +453,7 @@ contains
           BHarmonics_n = modesn_new(1:NHarmonics)
           BHarmonics_amplitudes = modesb_new(1:NHarmonics)
        end if
-       gammaHat=(G_new-G_old)/(normradius_new*normradius_new-normradius_old*normradius_old)/pPrimeHat
+       dGdpHat=(G_new-G_old)/(normradius_new*normradius_new-normradius_old*normradius_old)/pPrimeHat
 
        BHarmonics_amplitudes = BHarmonics_amplitudes / B0OverBBar
 
@@ -620,7 +620,7 @@ contains
           BHarmonics_n = modesn_new(1:NHarmonics)
           BHarmonics_amplitudes = modesb_new(1:NHarmonics)
        end if
-       gammaHat=(G_new-G_old)/(normradius_new*normradius_new-normradius_old*normradius_old)/pPrimeHat
+       dGdpHat=(G_new-G_old)/(normradius_new*normradius_new-normradius_old*normradius_old)/pPrimeHat
 
        allocate(BHarmonics_parity(NHarmonics))
        do i = 0, NHarmonics/2-1
@@ -681,12 +681,14 @@ contains
     allocate(duHatdtheta(Ntheta,Nzeta))
     allocate(duHatdzeta(Ntheta,Nzeta))
     
+    write(6,*) dGdpHat
+    
     uHat = 0
     duHatdtheta = 0
     duHatdzeta = 0
     do itheta = 1,Ntheta
        do izeta = 1,Nzeta
-          hHat(itheta,izeta) = 1 / BHat(itheta,izeta)
+          hHat(itheta,izeta) = 1.0 / (BHat(itheta,izeta)*BHat(itheta,izeta))
        end do
     end do
     
@@ -697,7 +699,7 @@ contains
                 !cos
                 hHatHarmonics_amplitude = 0
                 do itheta = 1,Ntheta
-                   hHatHarmonics_amplitude = hHatHarmonics_amplitude + 2/(Ntheta*Nzeta) * &
+                   hHatHarmonics_amplitude = hHatHarmonics_amplitude + 2.0/(Ntheta*Nzeta) * &
                         dot_product(cos(m * theta(itheta)  - n * NPeriods * zeta), hHat(itheta,:))
                 end do
                 uHatHarmonics_amplitude = &
@@ -714,7 +716,7 @@ contains
                 !sin
                 hHatHarmonics_amplitude = 0
                 do itheta = 1,Ntheta
-                   hHatHarmonics_amplitude = hHatHarmonics_amplitude + 2/(Ntheta*Nzeta) * &
+                   hHatHarmonics_amplitude = hHatHarmonics_amplitude + 2.0/(Ntheta*Nzeta) * &
                         dot_product(sin(m * theta(itheta)  - n * NPeriods * zeta), hHat(itheta,:))
                 end do
                 uHatHarmonics_amplitude = &
@@ -737,7 +739,7 @@ contains
                 !cos
                 hHatHarmonics_amplitude = 0
                 do itheta = 1,Ntheta
-                   hHatHarmonics_amplitude = hHatHarmonics_amplitude + 2/(Ntheta*Nzeta) * &
+                   hHatHarmonics_amplitude = hHatHarmonics_amplitude + 2.0/(Ntheta*Nzeta) * &
                         dot_product(cos(m * theta(itheta)  - n * NPeriods * zeta), hHat(itheta,:))
                 end do
                 uHatHarmonics_amplitude = &
@@ -757,12 +759,12 @@ contains
 
     do itheta = 1,Ntheta
        do izeta = 1,Nzeta
-          NTVkernel(itheta,izeta) = 2/5 * ( &
-               gammaHat / BHat(itheta,izeta) * (iota * dBHatdtheta(itheta,izeta) + dBHatdzeta(itheta,izeta)) &
-               + 1/2 * (iota * (duHatdtheta(itheta,izeta) &
-                                + uHat(itheta,izeta) * 2/BHat(itheta,izeta) * dBHatdtheta(itheta,izeta)) &
+          NTVkernel(itheta,izeta) = 2.0/5.0 * ( &
+               dGdpHat / BHat(itheta,izeta) * (iota * dBHatdtheta(itheta,izeta) + dBHatdzeta(itheta,izeta)) &
+               + 1.0/2.0 * (iota * (duHatdtheta(itheta,izeta) &
+                                + uHat(itheta,izeta) * 2.0/BHat(itheta,izeta) * dBHatdtheta(itheta,izeta)) &
                         + duHatdzeta(itheta,izeta) & 
-                        + uHat(itheta,izeta) * 2/BHat(itheta,izeta) * dBHatdzeta(itheta,izeta)) )
+                        + uHat(itheta,izeta) * 2.0/BHat(itheta,izeta) * dBHatdzeta(itheta,izeta)) )
        end do
     end do
 

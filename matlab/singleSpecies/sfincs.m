@@ -104,8 +104,8 @@ GHat =  3.7481;
 % covariant representation of vector B. IHat is I normalized by \bar{B}\bar{R}.
 IHat = 0;
 
-% gammaHat = G'/(\mu_0 p') \bar{B}/\bar{R} is only used for NTV calculation, see notes_NTV.pdf.
-gammaHat=NaN;
+% dGdpHat = G'/(\mu_0 p') \bar{B}/\bar{R} is only used for NTV calculation, see notes_NTV.pdf.
+dGdpHat=NaN;
 
 % End of parameters that matter only for geometryScheme=1.
 
@@ -286,13 +286,13 @@ include_fDivVE_term = false;
 
 % Number of grid points in the poloidal direction.
 % Memory and time requirements DO depend strongly on this parameter.
-NthetaConverged = 11;
+NthetaConverged = 20;
 Nthetas = floor(linspace(9,30,11));
 
 % Number of grid points in the toroidal direction
 % (per identical segment of the stellarator.)
 % Memory and time requirements DO depend strongly on this parameter.
-NzetaConverged = 5;
+NzetaConverged = 20;
 Nzetas = floor(linspace(5,20,3));
 
 % Number of Legendre polynomials used to represent the distribution
@@ -302,7 +302,7 @@ Nzetas = floor(linspace(5,20,3));
 % the collisionality. At high collisionality, this parameter can be as low
 % as ~ 5. At low collisionality, this parameter may need to be many 10s or
 % even > 100 for convergence.
-NxiConverged = 10;
+NxiConverged = 20;
 Nxis = floor(linspace(10,40,13));
 
 % Number of Legendre polynomials used to represent the Rosenbluth
@@ -316,7 +316,7 @@ NLs = 2:6;
 % Memory and time requirements DO depend strongly on this parameter.
 % This parameter almost always needs to be at least 5.
 % Usually a value in the range 5-8 is plenty for convergence.
-NxConverged = 5;
+NxConverged = 10;
 Nxs=5:8;
 
 % Number of grid points in energy used to represent the Rosenbluth
@@ -2729,7 +2729,7 @@ end
                   %IHat = GHat*3; % Change this to 0 eventually.
                   IHat = 0;
                   psiAHat = B0OverBBar*a^2/2;
-                  gammaHat=NaN;
+                  dGdpHat=NaN;
                   
                case 3
                   % LHD inward-shifted configuration.
@@ -2747,7 +2747,7 @@ end
                   GHat = B0OverBBar * R0;
                   IHat = 0;
                   psiAHat = B0OverBBar*a^2/2;
-                  gammaHat=NaN;
+                  dGdpHat=NaN;
                   
                case 4
                   % W7-X Standard configuration
@@ -2771,7 +2771,7 @@ end
                   dPsidr=2*psiAHat/a*(radius/a);
                   %nuPrime=nuN*abs(GHat+iota*IHat)/B0OverBBar/sqrt(THat);
                   nuPrime=nuN*(GHat+iota*IHat)/B0OverBBar/sqrt(THat)
-                  gammaHat=NaN;
+                  dGdpHat=NaN;
                   
                case 10
                   fid = fopen(fort996boozer_file);
@@ -2815,7 +2815,7 @@ end
                     BHarmonics_n = modes(2,2:end);
                     BHarmonics_amplitudes = modes(3,2:end)/B0OverBBar; % Store the values normalised to the B00 component. 
                     BHarmonics_parity = ones(1,length(BHarmonics_amplitudes));
-                    gammaHat=NaN; %Not implemented yet
+                    dGdpHat=NaN; %Not implemented yet
                   catch me
                     error('%s\n\nFile\n\t%s\ndoes not seem to be a valid vmec fort.996 output file.\n',...
                         me.message, fort996boozer_file)
@@ -2928,7 +2928,7 @@ end
                     pPrimeHat=pPrimeHat_new;
                     normradius=normradius_new;
                   end
-                  gammaHat=(G_new-G_old)/(normradius_new^2-normradius_old^2)/pPrimeHat;
+                  dGdpHat=(G_new-G_old)/(normradius_new^2-normradius_old^2)/pPrimeHat;
                   
                   disp(['The calculation is performed for radius ' ...
                         ,num2str(normradius*a),' m , r/a=',num2str(normradius)])
@@ -3063,7 +3063,7 @@ end
                     pPrimeHat=pPrimeHat_new;
                     normradius=normradius_new;
                   end
-                  gammaHat=(G_new-G_old)/(normradius_new^2-normradius_old^2)/pPrimeHat;
+                  dGdpHat=(G_new-G_old)/(normradius_new^2-normradius_old^2)/pPrimeHat;
                   
                   disp(['The calculation is performed for radius ' ...
                         ,num2str(normradius*a),' m , r/a=',num2str(normradius)])
@@ -3167,7 +3167,7 @@ end
               end
             end
             NTVkernel = 2/5 * ( ...
-                gammaHat ./ BHat .* (iota * dBHatdtheta + dBHatdzeta) + ...
+                dGdpHat ./ BHat .* (iota * dBHatdtheta + dBHatdzeta) + ...
                 1/2 * (iota * (duHatdtheta + uHat * 2./BHat .* dBHatdtheta) ...
                           + duHatdzeta + uHat * 2./BHat .* dBHatdzeta) );
         end  

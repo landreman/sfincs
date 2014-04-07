@@ -88,7 +88,7 @@
   ! 4 = Three-helicity approximation of the W7-X standard configuration
   ! 10= Read the boozer coordinate data from the file specified as "fort996boozer_file" below
   ! 11= Read the boozer coordinate data from the file specified as "JGboozer_file" below (stellarator symmetric file)
-  ! 12= Read the boozer coordinate data from the file specified as "JGboozer_file" below (non-stellarator symmetric file)
+  ! 12= Read the boozer coordinate data from the file specified as "JGboozer_file_NonStelSym" below (non-stellarator symmetric file)
  
 
   ! The next few options only matter for geometryScheme = 1, in which the magnetic field is taken to have the form

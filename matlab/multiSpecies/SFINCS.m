@@ -87,8 +87,8 @@ GHat = 1.0;
 % surface. Equivalently, I is the coefficient of grad theta in the
 % covariant representation of vector B. IHat is I normalized by \bar{B}\bar{R}.
 IHat = 0.8;
-% gammaHat = G'/(\mu_0 p') \bar{B}/\bar{R} is only used for NTV calculation, see notes_NTV.pdf.
-gammaHat=NaN;
+% dGdpHat = G'/(\mu_0 p') \bar{B}/\bar{R} is only used for NTV calculation, see notes_NTV.pdf.
+dGdpHat=NaN;
 
 % geometryScheme=10 parameters:
 fort996boozer_file='TJII-midradius_example_s_0493_fort.996';
@@ -2836,7 +2836,7 @@ end
                   %IHat = GHat*3; % Change this to 0 eventually.
                   IHat = 0;
                   psiAHat = B0OverBBar*a^2/2;
-                  gammaHat=NaN;
+                  dGdpHat=NaN;
                   
                case 3
                   % LHD inward-shifted configuration.
@@ -2854,7 +2854,7 @@ end
                   GHat = B0OverBBar * R0;
                   IHat = 0;
                   psiAHat = B0OverBBar*a^2/2;
-                  gammaHat=NaN;
+                  dGdpHat=NaN;
                   
                case 4
                   % W7-X Standard configuration
@@ -2873,7 +2873,7 @@ end
                   GHat = -17.885;%B0OverBBar * R0;
                   IHat = 0;
                   psiAHat = -0.384935;
-                  gammaHat=NaN;
+                  dGdpHat=NaN;
                   
                case 10
                   fid = fopen(fort996boozer_file);
@@ -2913,7 +2913,7 @@ end
                     BHarmonics_n = modes(2,2:end);
                     BHarmonics_amplitudes = modes(3,2:end)/B0OverBBar; % Store the values normalised to the B00 component. 
                     BHarmonics_parity = ones(1,length(BHarmonics_amplitudes));
-                    gammaHat=NaN; %Not implemented yet                    
+                    dGdpHat=NaN; %Not implemented yet                    
                   catch me
                     error('%s\n\nFile\n\t%s\ndoes not seem to be a valid vmec fort.996 output file.\n',...
                         me.message, fort996boozer_file)
@@ -3025,7 +3025,7 @@ end
                     pPrimeHat=pPrimeHat_new;
                     normradius=normradius_new;
                   end
-                  gammaHat=(G_new-G_old)/(normradius_new^2-normradius_old^2)/pPrimeHat;
+                  dGdpHat=(G_new-G_old)/(normradius_new^2-normradius_old^2)/pPrimeHat;
                   
                   disp(['The calculation is performed for the normalised radius ',num2str(normradius)])
 
@@ -3154,7 +3154,7 @@ end
                     pPrimeHat=pPrimeHat_new;
                     normradius=normradius_new;
                   end
-                  gammaHat=(G_new-G_old)/(normradius_new^2-normradius_old^2)/pPrimeHat;
+                  dGdpHat=(G_new-G_old)/(normradius_new^2-normradius_old^2)/pPrimeHat;
                   
                   disp(['The calculation is performed for radius ' ...
                         ,num2str(normradius*a),' m , r/a=',num2str(normradius)])
@@ -3256,7 +3256,7 @@ end
               end
             end
             NTVkernel = 2/5 * ( ...
-                gammaHat ./ BHat .* (iota * dBHatdtheta + dBHatdzeta) + ...
+                dGdpHat ./ BHat .* (iota * dBHatdtheta + dBHatdzeta) + ...
                 1/2 * (iota * (duHatdtheta + uHat * 2./BHat .* dBHatdtheta) ...
                           + duHatdzeta + uHat * 2./BHat .* dBHatdzeta) );
         end  

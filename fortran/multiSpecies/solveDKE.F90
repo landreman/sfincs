@@ -76,7 +76,7 @@
     PetscScalar, dimension(:), allocatable :: particleFluxIntegralWeights
     PetscScalar, dimension(:), allocatable :: momentumFluxIntegralWeights
     PetscScalar, dimension(:), allocatable :: heatFluxIntegralWeights
-    PetscScalar, dimension(:), allocatable :: NTVIntegralWeights   !HS 13.03.2014
+    PetscScalar, dimension(:), allocatable :: NTVIntegralWeights
     character :: trans='n'
     PetscLogDouble :: time1, time2, startTime
     KSP :: KSPInstance
@@ -1592,7 +1592,7 @@
     allocate(particleFlux(Nspecies))
     allocate(momentumFlux(Nspecies))
     allocate(heatFlux(Nspecies))
-    allocate(NTV(Nspecies)) !HS 13.03.2014
+    allocate(NTV(Nspecies)) 
 
     allocate(densityPerturbation(Nspecies,Ntheta,Nzeta))
     allocate(flow(Nspecies,Ntheta,Nzeta))
@@ -1600,7 +1600,7 @@
     allocate(particleFluxBeforeSurfaceIntegral(Nspecies,Ntheta,Nzeta))
     allocate(momentumFluxBeforeSurfaceIntegral(Nspecies,Ntheta,Nzeta))
     allocate(heatFluxBeforeSurfaceIntegral(Nspecies,Ntheta,Nzeta))
-    allocate(NTVBeforeSurfaceIntegral(Nspecies,Ntheta,Nzeta))  !HS 13.03.2014
+    allocate(NTVBeforeSurfaceIntegral(Nspecies,Ntheta,Nzeta)) 
 
     allocate(jHat(Ntheta,Nzeta))
 
@@ -1610,7 +1610,7 @@
     allocate(particleFluxIntegralWeights(Nx))
     allocate(momentumFluxIntegralWeights(Nx))
     allocate(heatFluxIntegralWeights(Nx))
-    allocate(NTVIntegralWeights(Nx)) !HS 13.03.2014
+    allocate(NTVIntegralWeights(Nx))
 
 
     ! ***********************************************************************
@@ -1800,7 +1800,7 @@
           particleFluxBeforeSurfaceIntegral=0
           momentumFluxBeforeSurfaceIntegral=0
           heatFluxBeforeSurfaceIntegral=0
-          NTVBeforeSurfaceIntegral=0  !HS 13.03.2014
+          NTVBeforeSurfaceIntegral=0
 
           FSADensityPerturbation=0
           FSABFlow=0
@@ -1808,7 +1808,7 @@
           particleFlux=0
           momentumFlux=0
           heatFlux=0
-          NTV=0  !HS 13.03.2014
+          NTV=0 
           jHat=0
 
           densityIntegralWeights = x*x
@@ -1817,7 +1817,7 @@
           particleFluxIntegralWeights = x*x*x*x
           momentumFluxIntegralWeights = x*x*x*x*x
           heatFluxIntegralWeights = x*x*x*x*x*x
-          NTVIntegralWeights = x*x*x*x   !HS 13.03.2014
+          NTVIntegralWeights = x*x*x*x 
 
           ! Convert the PETSc vector into a normal Fortran array:
           call VecGetArrayF90(solnOnProc0, solnArray, ierr)
@@ -1860,7 +1860,7 @@
              particleFluxFactor = - pi*Delta*THat*THat*sqrtTHat/(Zs(ispecies)*VPrimeHat*mHat*sqrtMHat*(GHat+iota*IHat))
              momentumFluxFactor = - pi*Delta*THat*THat*THat/(Zs(ispecies)*VPrimeHat*mHat*(GHat+iota*IHat))
              heatFluxFactor = - pi*Delta*THat*THat*THat*sqrtTHat/(2*Zs(ispecies)*VPrimeHat*mHat*sqrtMHat*(GHat+iota*IHat))
-             NTVFactor = 2*pi*THat*THat*sqrtTHat/(mHat*sqrtMHat)
+             NTVFactor = 2*pi*THat*THat*sqrtTHat/(mHat*sqrtMHat*VPrimeHat*(GHat+iota*IHat))
 
              do itheta=1,Ntheta
                 do izeta=1,Nzeta
@@ -1887,11 +1887,6 @@
                            = heatFluxBeforeSurfaceIntegral(ispecies,itheta,izeta) &
                            + factor * (8/three) * heatFluxFactor &
                            * xWeights(ix)*heatFluxIntegralWeights(ix)*solnArray(index)
-
-                      NTVBeforeSurfaceIntegral(ispecies,itheta,izeta) &
-                           = NTVBeforeSurfaceIntegral(ispecies,itheta,izeta) &
-                           + dBHatdzeta(itheta,izeta)/(BHat(itheta,izeta) ** 3) * (8/three) * NTVFactor &
-                           * xWeights(ix)*NTVIntegralWeights(ix)*solnArray(index) !HS 13.03.2014
 
                       L = 1
                       index = getIndex(ispecies, ix, L+1, itheta, izeta, 0)+1
@@ -1920,9 +1915,8 @@
                            * xWeights(ix)*heatFluxIntegralWeights(ix)*solnArray(index)
 
                       NTVBeforeSurfaceIntegral(ispecies,itheta,izeta) &
-                           = NTVBeforeSurfaceIntegral(ispecies,itheta,izeta) &
-                           + dBHatdzeta(itheta,izeta)/(BHat(itheta,izeta) ** 3) * (four/15) * NTVFactor &
-                           * xWeights(ix)*NTVIntegralWeights(ix)*solnArray(index)  !HS 13.03.2014
+                           = NTVFactor * NTVKernel&
+                           * xWeights(ix)*NTVIntegralWeights(ix)*solnArray(index) 
 
                       L = 3
                       index = getIndex(ispecies, ix, L+1, itheta, izeta, 0)+1
@@ -1959,7 +1953,7 @@
                      * dot_product(thetaWeights, heatFluxBeforeSurfaceIntegral(ispecies,:,izeta))
 
                 NTV(ispecies) = NTV(ispecies) + zetaWeights(izeta) &
-                     * dot_product(thetaWeights, NTVBeforeSurfaceIntegral(ispecies,:,izeta)) !HS 13.03.2014
+                     * dot_product(thetaWeights, NTVBeforeSurfaceIntegral(ispecies,:,izeta)) 
 
              end do
 
