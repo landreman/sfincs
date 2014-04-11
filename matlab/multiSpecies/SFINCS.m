@@ -96,6 +96,7 @@ fort996boozer_file='TJII-midradius_example_s_0493_fort.996';
 % PsiAHat setting below
 
 % geometryScheme=11 and 12 parameters:
+addpath('../../equilibria');
 JGboozer_file='w7x-sc1.bc'; % stellarator symmetric example, geometryScheme=11
 JGboozer_file_NonStelSym='out_neo-2_2_axisym'; % non-stellarator symmetric example, geometryScheme=12, requires Nzeta=1
 %JGboozer_file_NonStelSym='out_neo-2_n2_sym_c_m64_n16';

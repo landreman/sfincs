@@ -66,7 +66,7 @@ filenameNote = 'myFirstScan';
 % Geometry parameters:
 % --------------------------------------------------
 
-geometryScheme = 12;
+geometryScheme = 1;
 % 1 = Three-helicity model
 % 2 = Three-helicity approximation of the LHD standard configuration
 % 3 = Four-helicity approximation of the LHD inward-shifted configuration
@@ -118,7 +118,7 @@ fort996boozer_file='TJII-midradius_example_s_0493_fort.996';
 % End of geometryScheme=10 parameters.
 
 % geometryScheme=11 and 12 parameters:
-
+addpath('../../equilibria');
 JGboozer_file='w7x-sc1.bc'; % stellarator symmetric example, geometryScheme=11
 JGboozer_file_NonStelSym='out_neo-2_n2_sym_c_m64_n16';
 normradius_wish=0.5;   %The calculation will be performed for the radius
@@ -3117,59 +3117,64 @@ end
             % Calculate parallel current u from harmonics of 1/B^2. Used in NTV calculation.
             % \nabla_\parallel u = (2/B^4) \nabla B \times \vector{B} \cdot \iota \nabla \psi 
             % ---------------------------------------------------------------------------------------
-            uHat = zeros(Ntheta,Nzeta);
-            duHatdtheta = zeros(Ntheta,Nzeta);
-            duHatdzeta = zeros(Ntheta,Nzeta);
-            hHat=1./(BHat.^2);
-            if any(BHarmonics_parity==0) %sine components exist
-              for m=0:floor(Ntheta/2)-1 %Nyquist max freq.
-                for n=0:floor(Nzeta/2)-1
-                  if not(m==0 && n==0)
-                    %cos
-                    hHatHarmonics_amplitude = 2/(Ntheta*Nzeta) *...
-                      sum(sum(cos(m * theta2D  - n * NPeriods * zeta2D).*hHat));
-                    uHatHarmonics_amplitude = ...
-                        iota*(GHat*m + IHat*n * NPeriods)/(n * NPeriods - iota*m) * hHatHarmonics_amplitude;
-                    uHat = uHat + uHatHarmonics_amplitude * cos(m * theta2D - n * NPeriods * zeta2D);
-                    duHatdtheta = duHatdtheta ...
-                        - uHatHarmonics_amplitude * m * sin(m * theta2D - n * NPeriods * zeta2D);
-                    duHatdzeta = duHatdzeta ...
-                      + uHatHarmonics_amplitude * n * NPeriods * sin(m * theta2D - n * NPeriods * zeta2D); 
-                    
-                    %sin
-                    hHatHarmonics_amplitude = 2/(Ntheta*Nzeta) *...
-                        sum(sum(sin(m * theta2D  - n * NPeriods * zeta2D).*hHat));
-                    uHatHarmonics_amplitude = ...
-                        iota*(GHat*m + IHat*n * NPeriods)/(n * NPeriods - iota*m) * hHatHarmonics_amplitude;
-                    uHat = uHat + uHatHarmonics_amplitude * sin(m * theta2D - n * NPeriods * zeta2D);
-                    duHatdtheta = duHatdtheta ...
-                        + uHatHarmonics_amplitude * m * cos(m * theta2D - n * NPeriods * zeta2D);
-                    duHatdzeta = duHatdzeta ...
-                        - uHatHarmonics_amplitude * n * NPeriods * cos(m * theta2D - n * NPeriods * zeta2D);   
+            if isnan(dGdpHat)
+              NTVkernel=NaN*ones(Ntheta,Nzeta); %Save some time by not performing the
+                                                %calculation below when NTV is not requested
+            else
+              uHat = zeros(Ntheta,Nzeta);
+              duHatdtheta = zeros(Ntheta,Nzeta);
+              duHatdzeta = zeros(Ntheta,Nzeta);
+              hHat=1./(BHat.^2);
+              if any(BHarmonics_parity==0) %sine components exist
+                for m=0:floor(Ntheta/2)-1 %Nyquist max freq.
+                  for n=0:floor(Nzeta/2)-1
+                    if not(m==0 && n==0)
+                      %cos
+                      hHatHarmonics_amplitude = 2/(Ntheta*Nzeta) *...
+                          sum(sum(cos(m * theta2D  - n * NPeriods * zeta2D).*hHat));
+                      uHatHarmonics_amplitude = ...
+                          iota*(GHat*m + IHat*n * NPeriods)/(n * NPeriods - iota*m) * hHatHarmonics_amplitude;
+                      uHat = uHat + uHatHarmonics_amplitude * cos(m * theta2D - n * NPeriods * zeta2D);
+                      duHatdtheta = duHatdtheta ...
+                          - uHatHarmonics_amplitude * m * sin(m * theta2D - n * NPeriods * zeta2D);
+                      duHatdzeta = duHatdzeta ...
+                          + uHatHarmonics_amplitude * n * NPeriods * sin(m * theta2D - n * NPeriods * zeta2D); 
+                      
+                      %sin
+                      hHatHarmonics_amplitude = 2/(Ntheta*Nzeta) *...
+                          sum(sum(sin(m * theta2D  - n * NPeriods * zeta2D).*hHat));
+                      uHatHarmonics_amplitude = ...
+                          iota*(GHat*m + IHat*n * NPeriods)/(n * NPeriods - iota*m) * hHatHarmonics_amplitude;
+                      uHat = uHat + uHatHarmonics_amplitude * sin(m * theta2D - n * NPeriods * zeta2D);
+                      duHatdtheta = duHatdtheta ...
+                          + uHatHarmonics_amplitude * m * cos(m * theta2D - n * NPeriods * zeta2D);
+                      duHatdzeta = duHatdzeta ...
+                          - uHatHarmonics_amplitude * n * NPeriods * cos(m * theta2D - n * NPeriods * zeta2D);   
+                    end
                   end
                 end
+              else %only cosinus components
+                for m=0:floor(Ntheta/2)-1 %Nyquist max freq.
+                  for n=0:floor(Nzeta/2)-1
+                    if not(m==0 && n==0)
+                      hHatHarmonics_amplitude = 2/(Ntheta*Nzeta) *...
+                          sum(sum(cos(m * theta2D  - n * NPeriods * zeta2D).*hHat));
+                      uHatHarmonics_amplitude = ...
+                          iota*(GHat*m + IHat*n * NPeriods)/(n * NPeriods - iota*m) * hHatHarmonics_amplitude;
+                      uHat = uHat + uHatHarmonics_amplitude * cos(m * theta2D - n * NPeriods * zeta2D);
+                      duHatdtheta = duHatdtheta ...
+                          - uHatHarmonics_amplitude * m * sin(m * theta2D - n * NPeriods * zeta2D);
+                      duHatdzeta = duHatdzeta ...
+                          + uHatHarmonics_amplitude * n * NPeriods * sin(m * theta2D - n * NPeriods * zeta2D);   
+                    end
+                  end              
+                end
               end
-            else %only cosinus components
-              for m=0:floor(Ntheta/2)-1 %Nyquist max freq.
-                for n=0:floor(Nzeta/2)-1
-                  if not(m==0 && n==0)
-                    hHatHarmonics_amplitude = 2/(Ntheta*Nzeta) *...
-                      sum(sum(cos(m * theta2D  - n * NPeriods * zeta2D).*hHat));
-                    uHatHarmonics_amplitude = ...
-                        iota*(GHat*m + IHat*n * NPeriods)/(n * NPeriods - iota*m) * hHatHarmonics_amplitude;
-                    uHat = uHat + uHatHarmonics_amplitude * cos(m * theta2D - n * NPeriods * zeta2D);
-                    duHatdtheta = duHatdtheta ...
-                        - uHatHarmonics_amplitude * m * sin(m * theta2D - n * NPeriods * zeta2D);
-                    duHatdzeta = duHatdzeta ...
-                      + uHatHarmonics_amplitude * n * NPeriods * sin(m * theta2D - n * NPeriods * zeta2D);   
-                  end
-                end              
-              end
+              NTVkernel = 2/5 * ( ...
+                  dGdpHat ./ BHat .* (iota * dBHatdtheta + dBHatdzeta) + ...
+                  1/2 * (iota * (duHatdtheta + uHat * 2./BHat .* dBHatdtheta) ...
+                         + duHatdzeta + uHat * 2./BHat .* dBHatdzeta) );
             end
-            NTVkernel = 2/5 * ( ...
-                dGdpHat ./ BHat .* (iota * dBHatdtheta + dBHatdzeta) + ...
-                1/2 * (iota * (duHatdtheta + uHat * 2./BHat .* dBHatdtheta) ...
-                          + duHatdzeta + uHat * 2./BHat .* dBHatdzeta) );
         end  
     end
 end

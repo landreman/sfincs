@@ -164,7 +164,7 @@ module globalVariables
   PetscScalar, dimension(:,:), allocatable :: heatFluxBeforeSurfaceIntegral
   PetscScalar, dimension(:,:), allocatable :: NTVBeforeSurfaceIntegral, NTVKernel
   PetscScalar :: FSADensityPerturbation, FSAFlow, FSAPressurePerturbation
-  PetscScalar :: particleFlux, momentumFlux, heatFlux, NTV, VPrimeHat, FSABHat2
+  PetscScalar :: particleFlux, momentumFlux, heatFlux, NTV, NTVmulti, VPrimeHat, FSABHat2
 
   PetscLogDouble :: elapsedTime
   integer :: didItConverge

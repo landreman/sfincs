@@ -1761,6 +1761,7 @@
                   * dot_product(thetaWeights, NTVBeforeSurfaceIntegral(:,izeta))
 
           end do
+          NTVmulti = NTV * nHat * 2*Delta / (psiAHat * (GHat+iota*IHat) * VPrimeHat)
           deallocate(B2)
 
           FSADensityPerturbation = FSADensityPerturbation / VPrimeHat
