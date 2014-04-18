@@ -1,10 +1,10 @@
 #!/bin/bash
 
 ### Set the job name
-#PBS -N 2xNpsi
+#PBS -N sfincs
 
 ### Set the number of nodes that will be used.
-#PBS -l mppwidth=384
+#PBS -l mppwidth=24
 #PBS -l walltime=00:10:00
 
 ### Set the queue to submit this job.
@@ -14,4 +14,4 @@
 #PBS -j oe
 
 cd $PBS_O_WORKDIR
-aprun -n 384 ./sfincs
+aprun -N 4 -n 4 -S 2 ./sfincs

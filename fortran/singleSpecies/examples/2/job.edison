@@ -14,4 +14,4 @@
 #PBS -j oe
 
 cd $PBS_O_WORKDIR
-aprun -N 4 -n 4 ../../sfincs
+aprun -N 4 -n 4 -S 2 ../../sfincs
