@@ -1,0 +1,448 @@
+! Input file for SFINCS:
+! The Stellarator Fokker-Planck Iterative Neoclassical Conservative Solver.
+! Multiple-species version.
+! Written in 2013 by Matt Landreman
+! Massachusetts Institute of Technology
+! Plasma Science & Fusion Center
+
+! Dimensional quantities in this program are normalized to "reference" values:
+! \bar{B} = reference magnetic field, typically 1 Tesla.
+! \bar{R} = reference length, typically 1 meter.
+! \bar{n} = reference density, typically 10^19 m^{-3}, 10^20 m^{-3}, or something similar.
+! \bar{m} = reference mass, typically either the mass of hydrogen or deuterium.
+! \bar{T} = reference temperature in energy units, typically 1 eV or 1 keV.
+! \bar{v} = \sqrt{2 * \bar{T} / \bar{m}} = reference speed
+! \bar{Phi} = reference electrostatic potential, typically 1 V or 1 kV.
+
+! You can choose any reference parameters you like, not just the values
+! suggested here. The code "knows" about the reference values only through
+! the 3 combinations Delta, alpha, and nu_n, input below.
+
+! Radial gradients of density, temperature, and electrostatic potential are
+! specified as derivatives with respect to psi_N, where psi_N is the
+! toroidal flux normalized to the value at the last closed flux surface.
+! (psi_N=0 is the magnetic axis, and psi_N=1 is the last closed flux
+! surface.)
+
+&flowControl
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Options for program flow control:
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+programMode = 1
+! Options for 'programMode':
+! 1 = Solve for a single set of numerical parameters.
+! 2 = Scan the numerical parameters to test for convergence, keeping the physics parameters fixed.
+! 8 = Scan E_r (i.e., dPhiHatdpsiN)
+
+! If you make the sign of programMode negative, the program will print the number of runs required
+! for the scan corresponding to abs(programMode) and then exit without actually carrying out any solves.
+
+RHSMode = 1
+! Options for RHSMode:
+! 1 = Solve for a single right-hand side.
+! 2 = Solve for three right-hand sides to get the full 3x3 transport matrix.
+! At present, RHSMode 2 is not working for multiple species
+
+outputFilename = "sfincsOutput.h5"
+
+outputScheme = 1
+! Options for outputScheme:
+! 0 = Do not save any HDF5 file.
+! 1 = Do save an HDF5 file.
+
+! If the following switch is set to true, a Matlab m-file is created which
+! stores the matrix, right-hand side, and solution vector.  If an iterative solver is used,
+! the preconditioner matrix is also saved.
+! PETSc usually generates an error message if the size of the linear system is more then 1400 x 1400,
+! so usually this setting should be false.
+!  saveMatlabOutput = .true.
+saveMatlabOutput = .false.
+
+MatlabOutputFilename = "sfincsMatrices.m"
+
+! If the following switch is set to true, the matrix, right-hand-side, and solution of the
+! linear system will be saved in PETSc's binary format.  The preconditioner matrix will also
+! be saved if tryIterativeSolver == .true.
+
+!saveMatricesAndVectorsInBinary = .true.
+saveMatricesAndVectorsInBinary = .false.
+
+binaryOutputFilename = "sfincsBinary"
+
+parallelizeOverScan = .true.
+!  parallelizeOverScan = .false.
+
+! If the parameter below is false, the linear system will not actually be solved.
+! Sometimes it is useful to run the code without solving the system in order to quickly
+! output profiles or for debugging.
+solveSystem = .true.
+!  solveSystem = .false.
+/
+
+&geometryParameters
+
+geometryScheme = 11
+! 1 = Three-helicity model
+! 2 = Three-helicity approximation of the LHD standard configuration
+! 3 = Four-helicity approximation of the LHD inward-shifted configuration
+! 4 = Three-helicity approximation of the W7-X standard configuration
+! 10= Read the boozer coordinate data from the file specified as "fort996boozer_file" below
+! 11= Read the boozer coordinate data from the file specified as "JGboozer_file" below
+
+
+! The next few options only matter for geometryScheme = 1, in which the magnetic field is taken to have the form
+! B = BBar * B0OverBBar * [1 + epsilon_t * cos(theta) + epsilon_h * cos(helicity_l * theta - helicity_n * zeta)]
+!                            + epsilon_antisymm * sin(helicity_antisymm_l * theta - helicity_antisymm_n * zeta)]
+
+B0OverBBar = 0.7d+0
+
+GHat = 1.27d+0
+! G is c/2 * the poloidal current outside the flux
+! surface. Equivalently, G is the coefficient of grad zeta in the
+! covariant representation of vector B. GHat is G normalized by \bar{B}\bar{R}.
+
+IHat = 0.8d+0
+! I is c/2 * the toroidal current inside the flux
+! surface. Equivalently, I is the coefficient of grad theta in the
+! covariant representation of vector B. IHat is I normalized by \bar{B}\bar{R}.
+
+iota = 1.31d+0
+! iota is the rotational transform = 1 / (safety factor q)
+
+epsilon_t = 0.13d+0
+
+epsilon_h = 0.1d+0
+
+helicity_l = 2
+helicity_n = 5
+
+epsilon_antisymm = 0.0d+0
+helicity_antisymm_l = 3
+helicity_antisymm_n = 0
+
+! End of options that only matter for geometryScheme = 1.
+
+! The following option only matters for geometryScheme = 10:
+
+fort996boozer_file = "TJII-midradius_example_s_0493_fort.996"
+! Note that PsiA is not stored in the fort.996 file, so we use the
+! PsiAHat value from the "physics parameters" namelist below.
+
+! The remaining options only matter for geometryScheme = 11:
+
+JGboozer_file = "../../../../equilibria/hsx3free.bc"
+JGboozer_file_NonStelSym = "../../../../equilibria/out_neo-2_2_axisym"  ! non-stellarator symmetric example, geometryScheme = 12, requires Nzeta=1
+
+normradius_wish = 0.22
+!The calculation will be performed for the radius
+!closest to this one in the JGboozer_file
+
+min_Bmn_to_load = 0
+!Filter out any Bmn components smaller than this.
+
+/
+
+&speciesParameters
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Species parameters
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+! Zs          = charges of each species, in units of the proton charge e
+! mHats       = masses of each species, normalized to the reference mass \bar{m}
+! nHats       = densities of each species, normalized to the reference density \bar{n}
+! THats       = temperatures of each species, normalized to the reference temperature \bar{T}
+! dnHatdpsiNs = radial gradient of the density of each species with respect to the normalized toroidal flux psi_N, normalized to the reference density \bar{n}
+! dTHatdpsiNs = radial gradient of the temperature of each species with respect to the normalized toroidal flux psi_N, normalized to the reference temperature \bar{T}
+
+Zs = 1 -1
+mHats = 1 0.000545509d+0
+nHats =  4.05256d+0 4.05256d+0
+dNHatdpsiNs = -5.05932d+0 -5.05932d+0
+THats = 59.0303d+0  734.958d+0
+dTHatdpsiNs = -22.0032d+0 -11045.7d+0
+
+/
+
+&physicsParameters
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Physics parameters:
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+! The speciesMode parameter doesn't do anything yet.
+speciesMode = 0
+! 0 = ions
+! 1 = electrons
+
+! Roughly speaking, Delta is rho_* at the reference parameters.
+! More precisely,
+! Delta = c * \bar{m} * \bar{v} / (e * \bar{B} * \bar{R}) in Gaussian units,
+! Delta =     \bar{m} * \bar{v} / (e * \bar{B} * \bar{R}) in SI units,
+! where
+! c = speed of light
+! e = proton charge
+Delta = 0.000144482d+0
+
+! alpha = e * \bar{Phi} / \bar{T} (in both Gaussian and SI units)
+! where again e = proton charge.
+alpha = 1000
+
+! psiAHat = psi_a / (\bar{B} * \bar{R}^2) (in both Gaussian and SI units)
+! where 2*pi*psi_a is the toroidal flux at the last closed flux surface
+! (the surface where psi_N = 1.)
+! The value of psiAHat here is over-written for geometryScheme = 2, 3.
+psiAHat = 0.03d+0
+
+! Inductive electric field (often 0).
+! EParallelHat = <E dot B> * \bar{R} / (\bar{Phi} * \bar{B})  (in both Gaussian and SI units)
+! where
+! E = electric field vector
+! B = magnetic field vector
+! < ... > denotes a flux surface average.
+EParallelHat = 0
+
+! Radial electric field
+dPhiHatdpsiN = -0.5
+
+! The next 3 parameters set the values of dPhiHatdpsiN to use for an E_r scan
+! (i.e., for programMode = 8)
+dPhiHatdpsiN_min = -2d+0
+dPhiHatdpsiN_max = 2d+0
+NErs = 9
+
+! nu_n is the collisionality at the reference parameters.
+! More precisely, nu_n = \bar{nu} * \bar{R} / \bar{v} (in both Gaussian and SI units)
+! where \bar{nu} is the dimensional collision frequency at the reference parameters:
+!
+!                  4 * sqrt{2*pi} * \bar{n} * e^4 * ln(Lambda)
+! \bar{nu} = -----------------------------------------------------------   (SI units)
+!             3 * (4 * pi * epsilon_0)^2 * sqrt(\bar{m}} * \bar{T}^(3/2)
+!
+! or, equivalently,
+!
+!                  4 * sqrt{2*pi} * \bar{n} * e^4 * ln(Lambda)
+! \bar{nu} = -----------------------------------------------------------   (Gaussian units)
+!                       3 * sqrt(\bar{m}} * \bar{T}^(3/2)
+!
+nu_n = 83.1565d+0
+
+collisionOperator = 1
+! 0 = Full linearized Fokker-Planck operator
+! 1 = pitch-angle scattering with no momentum-conserving term
+
+constraintScheme = -1
+! -1 = automatic: if collisionOperator==0 then set constraintScheme=1,
+!                 otherwise set constraintScheme=2.
+!  0 = no constraints
+!  1 = 2 constraints: <n1>=0 and <p1>=0
+!  2 = Nx constraints: <f(L=0)>=0 at each x
+! You should probably set constraintScheme to -1 except in rare circumstances.
+
+  ! To use one of the 4 most common trajectory models, the remaining parameters
+  ! in this namelist should be set as follows:
+  !
+  ! Full trajectories:
+  !   includeXDotTerm = .true.
+  !   includeElectricFieldTermInXiDot = .true.
+  !   useDKESExBDrift = .false.
+  !   include_fDivVE_term = .false.
+  !
+  ! Partial trajectories: (non-conservative, as defined in the paper.)
+  !   includeXDotTerm =	  .false.
+  !   includeElectricFieldTermInXiDot = .false.
+  !   useDKESExBDrift = .false.
+  !   include_fDivVE_term = .false.
+  !
+  ! Conservative partial trajectories: (Not discussed in the paper.)
+  !   includeXDotTerm =	 .false.
+  !   includeElectricFieldTermInXiDot = .false.
+  !   useDKESExBDrift = .false.
+  !   include_fDivVE_term = .true.
+  !
+  ! DKES trajectories:
+  !   includeXDotTerm =	.false.
+  !   includeElectricFieldTermInXiDot = .false.
+  !   useDKESExBDrift = .true.
+  !   include_fDivVE_term = .false.
+
+includeXDotTerm = .true.
+!  includeXDotTerm = .false.
+
+includeElectricFieldTermInXiDot = .true.
+!  includeElectricFieldTermInXiDot = .false.
+
+!  useDKESExBDrift = .true.
+useDKESExBDrift = .false.
+! If useDKESExBDrift=true, the ExB drift term in the df/dtheta and df/dzeta terms is taken
+! to be E x B / <B^2> instead of E x B / B^2.
+
+!include_fDivVE_term = .true.
+include_fDivVE_term = .false.
+! If true, a term f_{s1} div (v_E) is included in the kinetic equation.
+! This term may make sense to include with the partial trajectory model
+! as it restores Liouville's theorem (particle conservation) and eliminates
+! the need for either a particle or heat source.
+/
+
+&resolutionParameters
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Numerical resolution parameters:
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+! For each set of 4 numbers below, the first is the value used in a single run.
+! The second and third numbers set the range by which the first number is scaled
+! in a convergence scan. The fourth number sets the number of values tried in a
+! convergence scan. The code attempts to space the values evenly in a logarithmic
+! sense, as in Matlab's 'logspace' function. For example, the following settings
+! Ntheta = 6
+! NthetaMinFactor = 0.5
+! NthetaMaxFactor = 2.0
+! NthetaNumRuns = 3
+! would mean the values Ntheta = 3, 6, and 12 would be tried in a scan.
+! If you don't want to scan a variable in a convergence scan, set the associated
+! xxxNumRuns parameter to 0.
+
+! Number of grid points in the poloidal direction.
+! Memory and time requirements DO depend strongly on this parameter.
+Ntheta = 11
+NthetaMinFactor = 1
+NthetaMaxFactor = 2
+NthetaNumRuns = 3
+
+! Number of grid points in the toroidal direction
+! (per identical segment of the stellarator.)
+! Memory and time requirements DO depend strongly on this parameter.
+Nzeta = 115
+NzetaMinFactor = 1
+NzetaMaxFactor = 2
+NzetaNumRuns = 3
+
+! Number of Legendre polynomials used to represent the distribution function.
+! Memory and time requirements DO depend strongly on this parameter.
+! The value of this parameter required for convergence depends strongly on
+! the collisionality. At high collisionality, this parameter can be as low
+! as ~ 5. At low collisionality, this parameter may need to be many 10s or
+! even > 100 for convergence.
+Nxi = 149
+NxiMinFactor = 1
+NxiMaxFactor = 2
+NxiNumRuns = 3
+
+! Number of Legendre polynomials used to represent the Rosenbluth
+! potentials. Except in exceptional circumstances, this number should be 4.
+! Memory and time requirements do NOT depend strongly on this parameter.
+NL = 4
+NLMinFactor = 1
+NLMaxFactor = 2
+NLNumRuns = 0
+
+! Number of grid points in energy used to represent the distribution function.
+! Memory and time requirements DO depend strongly on this parameter.
+! This parameter almost always needs to be at least 5.
+! Usually a value in the range 5-8 is plenty for convergence, though sometimes
+! you may need to go up to 10-15.
+Nx = 5
+NxMinFactor = 0.8
+NxMaxFactor = 1.2
+NxNumRuns = 3
+
+! Number of grid points in energy used to represent the Rosenbluth potentials.
+! Memory and time requirements do NOT depend strongly on this parameter.
+NxPotentialsPerVth = 40d+0
+NxPotentialsPerVthMinFactor = 1
+NxPotentialsPerVthMaxFactor = 1.9
+NxPotentialsPerVthNumRuns = 2
+
+! Maximum normalized speed for the Rosenbluth potential grid.
+! Memory and time requirements do NOT depend strongly on this parameter.
+! Typically a value of 5 is good.
+xMax = 5.0d+0
+xMaxMinFactor = 1
+xMaxMaxFactor = 2
+xMaxNumRuns = 2
+
+! Tolerance used to define convergence of the Krylov solver.
+! This parameter does not affect memory requirements but it does affect the
+! time required for solution somewhat
+solverTolerance = 1d-6
+solverToleranceMinFactor = 1
+solverToleranceMaxFactor = 10
+solverToleranceNumRuns = 2
+
+forceOddNthetaAndNzeta = .true.
+! If forceOddNthetaAndNzeta is set to true, 1 is added to Ntheta any time a run is attempted with even Ntheta,
+! and 1 is added to Nzeta any time a run is attempted with even Nzeta.
+! This can be useful because the iterative solvers sometimes do not work with even Ntheta or Nzeta.
+! This parameter should be true unless you know what you are doing.
+/
+
+&otherNumericalParameters
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Other numerical parameters:
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+thetaDerivativeScheme = 2
+! Options for thetaDerivativeScheme:
+! 0 = Spectral collocation
+! 1 = 2nd order finite differences (3-point stencil)
+! 2 = 4th order finite differences (5-point stencil)
+! You should set this parameter to 2 except in rare circumstances.
+
+! If 'useIterativeSolver' is set to false, a sparse direct solver
+! will be used. The direct solver is faster for small problems and always yields a solution.
+! For large problems, the iterative solver will usually be faster and will use much
+! less memory, but it may not always converge.
+
+useIterativeSolver = .true.
+!  useIterativeSolver = .false.
+
+whichParallelSolverToFactorPreconditioner = 2
+! Options for whichParallelSolverToFactorPreconditioner:
+! 1 = use mumps if it is detected, otherwise use superlu_dist
+! 2 = force use of superlu_dist, if it is available
+!
+! The value of whichParallelSolverToFactorPreconditioner is only used when morpheus is run with
+! more MPI processors than runs desired (1 if a single run, or more if a convergence scan.)
+! Otherwise, matrices are not distributed across processors, so the PETSc built-in serial sparse
+! direct solver is used to factor the preconditioner.
+
+PETSCPreallocationStrategy = 1
+! 0 = Old method with high estimate. Works consistently but uses unnecessary memory.
+! 1 = New method with lower, more precise estimate.  Not sure if this works yet, but it should use less memory.
+/
+
+&preconditionerOptions
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Settings for how to simplify the linear system
+! to obtain the preconditioner:
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+preconditioner_species = 1
+! 0 = keep full species coupling
+! 1 = drop all cross-species coupling
+
+preconditioner_x = 1
+! 0 = keep full x coupling
+! 1 = drop everything off-diagonal in x
+! 2 = keep only upper-triangular part in x
+! 3 = keep only the tridiagonal terms in x
+! 4 = keep only the diagonal and superdiagonal in x
+
+preconditioner_x_min_L = 2
+! The x structure of the matrix will only be simplified for L >= this value.
+! Set preconditioner_x_min_L=0 to simplify the matrix for every L.
+
+preconditioner_theta = 0
+! 0 = keep full theta coupling
+! 1 = use a 3-point finite difference stencil for d/dtheta
+
+preconditioner_zeta = 0
+! 0 = keep full zeta coupling
+! 1 = use a 3-point finite difference stencil for d/dzeta
+
+preconditioner_xi = 0
+! 0 = keep full xi coupling
+! 1 = drop terms that are +/- 2 from the diagonal in xi,
+!     so preconditioner is tridiagonal in xi
+
+/

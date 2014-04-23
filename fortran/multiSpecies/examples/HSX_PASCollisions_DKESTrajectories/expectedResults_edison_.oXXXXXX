@@ -1,0 +1,281 @@
+ ****************************************************************************
+ SFINCS: Stellarator Fokker-Plank Iterative Neoclassical Conservative Solver
+ Grid in theta and zeta, Legendre modal in xi, polynomial spectral collocation i
+ n x.
+ Multi-species version.
+ Using double precision.
+ Parallel job (  36 processes) detected.
+ Successfully read parameters from flowControl namelist in input.namelist.
+ Successfully read parameters from geometryParameters namelist in input.namelist
+ .
+ Successfully read parameters from speciesParameters namelist in input.namelist.
+ Successfully read parameters from physicsParameters namelist in input.namelist.
+ Successfully read parameters from resolutionParameters namelist in 
+ input.namelist.
+ Successfully read parameters from otherNumericalParameters namelist in 
+ input.namelist.
+ Successfully read parameters from preconditionerOptions namelist in 
+ input.namelist.
+ mumps detected
+ superlu_dist detected
+ [           1 ] ---- Physics parameters: ----
+ [           1 ] Number of species =            2
+ [           1 ] Delta     =   1.444820000000000E-004
+ [           1 ] alpha     =    1000.00000000000     
+ [           1 ] nu_n      =    83.1565000000000     
+ [           1 ] dPhiHatdpsiN =  -0.500000000000000     
+ [           1 ] ---- Geometry parameters: ----
+ [           1 ] Geometry scheme =           11
+ [           1 ] iota      =    1.31000000000000     
+ [           1 ] GHat      =    1.27000000000000     
+ [           1 ] IHat      =   0.800000000000000     
+ [           1 ] psiAHat   =   3.000000000000000E-002
+ [           1 ] ---- Numerical parameters: ----
+ [           1 ] Nzeta              =          115
+ [           1 ] Ntheta             =           11
+ [           1 ] Nxi                =          149
+ [           1 ] NL                 =            4
+ [           1 ] Nx                 =            5
+ [           1 ] NxPotentialsPerVth =    40.0000000000000     
+ [           1 ] xMax               =    5.00000000000000     
+ [           1 ] solverTolerance    =   1.000000000000000E-006
+ [           1 ] Theta derivative: centered finite differences, 5-point stencil
+ [           1 ] Using iterative solver
+ [           1 ] The matrix is      1884860 x     1884860  elements.
+ [           1 ] Processor            1  owns theta indices            1  to 
+           1
+ [           1 ] Processor           26  owns theta indices           12  to 
+ [           1 ] Processor           34  owns theta indices           12  to 
+ [           1 ] Processor           28  owns theta indices           12  to 
+          11
+ [           1 ] Processor           29  owns theta indices           12  to 
+          11
+ [           1 ] Processor           36  owns theta indices           12  to 
+ [           1 ] Processor           32  owns theta indices           12  to 
+ [           1 ] Processor           30  owns theta indices           12  to 
+ [           1 ] Processor           27  owns theta indices           12  to 
+          11
+ [           1 ] Processor           31  owns theta indices           12  to 
+ [           1 ] Processor           35  owns theta indices           12  to 
+          11
+          11
+ [           1 ] Processor           33  owns theta indices           12  to 
+ [           1 ] Processor           14  owns theta indices           12  to 
+ [           1 ] Processor           17  owns theta indices           12  to 
+ [           1 ] Processor           13  owns theta indices           12  to 
+ [           1 ] Processor           18  owns theta indices           12  to 
+          11
+ [           1 ] Processor           21  owns theta indices           12  to 
+ [           1 ] Processor           24  owns theta indices           12  to 
+ [           1 ] Processor           19  owns theta indices           12  to 
+ [           1 ] Processor           22  owns theta indices           12  to 
+ [           1 ] Processor           20  owns theta indices           12  to 
+ [           1 ] Processor           16  owns theta indices           12  to 
+ [           1 ] Processor           15  owns theta indices           12  to 
+          11
+          11
+          11
+          11
+ [           1 ] Processor           23  owns theta indices           12  to 
+          11
+          11
+          11
+          11
+          11
+          11
+          11
+ [           1 ] Processor           12  owns theta indices           12  to 
+ [           1 ] Processor            9  owns theta indices            9  to 
+ [           1 ] Processor           11  owns theta indices           11  to 
+ [           1 ] Processor           10  owns theta indices           10  to 
+ [           1 ] Processor            3  owns theta indices            3  to 
+ [           1 ] Processor            2  owns theta indices            2  to 
+ [           1 ] Processor            6  owns theta indices            6  to 
+           2
+          11
+           9
+          10
+ [           1 ] Processor            7  owns theta indices            7  to 
+ [           1 ] Processor            4  owns theta indices            4  to 
+           7
+ [           1 ] Processor            5  owns theta indices            5  to 
+           4
+           6
+           3
+           5
+ [           1 ] Processor            8  owns theta indices            8  to 
+          11
+           8
+          11
+          11
+          11
+          11
+          11
+          11
+ [           1 ] Processor           25  owns theta indices           12  to 
+          11
+ [           1 ] Successfully opened magnetic equilibrium file 
+ ../../../../equilibria/hsx3free.bc.  Nperiods =            4
+ [           1 ] Successfully read magnetic equilibrium from file 
+ ../../../../equilibria/hsx3free.bc
+ [           1 ] This computation is for the flux surface with minor radius 
+  2.758515400819296E-002  meters, equivalent to r/a =   0.227038304594181     
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+               -Infinity
+ [           1 ] Time to pre-assemble preconditioner matrix: 
+  0.729629993438721       seconds.
+ [           1 ] Time to assemble preconditioner matrices: 
+  0.189628124237061       seconds.
+ [           1 ] Time to pre-assemble matrix:   0.381020784378052       seconds.
+ [           1 ] Time to assemble matrices:   0.208416938781738       seconds.
+ [           1 ] Using superlu_dist to factorize the preconditioner.
+ [           1 ] # of nonzeros in matrix:    43120900 , allocated:   180970900 
+ , mallocs:           0  (should be 0)
+ [           1 ] # of nonzeros in preconditioner:    43120900 , allocated:
+   180970900 , mallocs:           0  (should be 0)
+ [           1 ] nnz(preconditioner)/nnz(matrix):   1.00000000000000     
+ [           1 ] Beginning the main solve.  This could take a while ...
+	Nonzeros in L       1754776534
+	Nonzeros in U       1800937172
+	nonzeros in L+U     3553828846
+	nonzeros in LSUB    234663357
+	NUMfact space (MB) sum(procs):  L\U	30824.19	all	30906.67
+	Total highmark (MB):  All	79718.81	Avg	2214.41	Max	2241.55
+        Mat conversion(PETSc->SuperLU_DIST) time (max/min/avg): 
+                              0.00953507 / 0.00827694 / 0.00886013
+	EQUIL time             0.19
+	ROWPERM time          30.32
+	COLPERM time          48.17
+	SYMBFACT time         13.29
+	DISTRIBUTE time        2.58
+	FACTOR time           61.95
+	Factor flops	7.895702e+12	Mflops 	127447.39
+	SOLVE time             0.00
+	SOLVE time             1.34
+	Solve flops	7.156737e+09	Mflops 	 5339.39
+  0 KSP Residual norm 1.900614553909e-03 
+	SOLVE time             1.38
+	Solve flops	7.156734e+09	Mflops 	 5175.67
+  1 KSP Residual norm 7.646562013487e-08 
+	SOLVE time             1.32
+	Solve flops	7.156738e+09	Mflops 	 5404.79
+  2 KSP Residual norm 6.738528509766e-11 
+KSP Object: 36 MPI processes
+  type: gmres
+    GMRES: restart=500, using Classical (unmodified) Gram-Schmidt Orthogonalization with no iterative refinement
+    GMRES: happy breakdown tolerance 1e-30
+  maximum iterations=10000, initial guess is zero
+  tolerances:  relative=1e-06, absolute=1e-50, divergence=10000
+  left preconditioning
+  using PRECONDITIONED norm type for convergence test
+PC Object: 36 MPI processes
+  type: lu
+    LU: out-of-place factorization
+    tolerance for zero pivot 2.22045e-14
+    matrix ordering: natural
+    factor fill ratio given 0, needed 0
+      Factored matrix follows:
+        Matrix Object:         36 MPI processes
+          type: mpiaij
+          rows=1884860, cols=1884860
+          package used to perform factorization: superlu_dist
+          total: nonzeros=0, allocated nonzeros=0
+          total number of mallocs used during MatSetValues calls =0
+            SuperLU_DIST run parameters:
+              Process grid nprow 6 x npcol 6 
+              Equilibrate matrix TRUE 
+              Matrix input mode 1 
+              Replace tiny pivots TRUE 
+              Use iterative refinement FALSE 
+              Processors in row 6 col partition 6 
+              Row permutation LargeDiag 
+              Column permutation METIS_AT_PLUS_A
+              Parallel symbolic factorization FALSE 
+              Repeated factorization SamePattern_SameRowPerm
+  linear system matrix followed by preconditioner matrix:
+  Matrix Object:   36 MPI processes
+    type: mpiaij
+    rows=1884860, cols=1884860
+    total: nonzeros=43120900, allocated nonzeros=180970900
+    total number of mallocs used during MatSetValues calls =0
+      not using I-node (on process 0) routines
+  Matrix Object:   36 MPI processes
+    type: mpiaij
+    rows=1884860, cols=1884860
+    total: nonzeros=43120900, allocated nonzeros=180970900
+    total number of mallocs used during MatSetValues calls =0
+      not using I-node (on process 0) routines
+ [           1 ] Done with the main solve.  Time to solve: 
+   163.665725946426       seconds.
+ [           1 ] Converged!  KSPConvergedReason =            2
+ [           1 ] Total elapsed time:    165.210301160812       seconds.
+ [           1 ] Results for species            1 :
+ [           1 ]   FSADensityPerturbation:    5.888076623815085E-012
+ [           1 ]   FSABFlow:                 -0.770757651696965     
+ [           1 ]   FSAPressurePerturbation:   3.121503013847183E-010
+ [           1 ]   NTV:                                          NaN
+ [           1 ]   particleFlux:             -1.161190184424680E-005
+ [           1 ]   momentumFlux:              3.364181404400954E-005
+ [           1 ]   heatFlux:                 -8.819637499826962E-004
+ [           1 ] Results for species            2 :
+ [           1 ]   FSADensityPerturbation:   -1.244002412568768E-012
+ [           1 ]   FSABFlow:                   58.1306611699325     
+ [           1 ]   FSAPressurePerturbation:  -8.069242703039819E-010
+ [           1 ]   NTV:                                          NaN
+ [           1 ]   particleFlux:             -2.098719213759062E-005
+ [           1 ]   momentumFlux:              3.386575394808480E-008
+ [           1 ]   heatFlux:                 -4.482791404112483E-002
+ [           1 ] FSABjHat (bootstrap current):   -58.9014188216295     
+Application 4467695 resources: utime ~5585s, stime ~372s, Rss ~2554732, inblocks ~9857329, outblocks ~267569
+
+ + --------------------------------------------------------------------------
+ +        Job name: sfincs
+ +          Job Id: 1109032.edique02
+ +          System: edison
+ +     Queued Time: Wed Apr 23 14:32:20 2014
+ +      Start Time: Wed Apr 23 14:34:53 2014
+ + Completion Time: Wed Apr 23 14:37:46 2014
+ +            User: landrema
+ +        MOM Host: nid02433
+ +           Queue: debug
+ +  Req. Resources: mppnodect=3,mppnppn=24,mppwidth=72,walltime=00:30:00
+ +  Used Resources: cput=00:00:01,mem=5776kb,vmem=130420kb,walltime=00:02:55
+ +     Acct String: mp217
+ +   PBS_O_WORKDIR: /global/scratch2/sd/landrema/sfincs/fortran/multiSpecies/examples/HSX_PASCollisions_DKESTrajectories
+ +     Submit Args: job.edison
+ + --------------------------------------------------------------------------
+
