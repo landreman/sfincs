@@ -9,10 +9,10 @@ Documentation is available in several places. The primary published reference is
 
 SFINCS is a descendant of the axisymmetric codes [here](https://github.com/landreman/tokamakDriftKineticEquationSolver).  SFINCS is also closely related to the radially global tokamak code [PERFECT](https://github.com/landreman/perfect).  All of these codes have two independent velocity-space variables: speed and pitch angle.  SFINCS and PERFECT both have two independent spatial variables: poloidal and toroidal angles in SFINCS, and poloidal and radial coordinates in PERFECT.
 
-Versions of SFINCS in both matlab (serial) and fortran (parallel) are available in this repository. The matlab and fortran versions are entirely independent of each other, and they have nearly identical functionality and variable names.  Finer resolution can be used in the fortan version because it is parallelized and therefore able to access more memory.
+Versions of SFINCS in both matlab (serial) and fortran (parallel) are available in this repository. The matlab and fortran versions are entirely independent of each other, and they have nearly identical functionality and variable names.  Finer resolution can be used in the fortan version because it is parallelized and therefore able to access more memory.  To accurately resolve the distribution function for experimentally relevant magnetic fields and collisionality, you will likely need the fortran version to access enough memory.
 
-For historical reasons, both single-species and multi-species versions of sfincs are available here. The single-species version is useful for computing the ion transport matrix. For other applications, the multi-species version is recommended.
+For historical reasons, both single-species and multi-species versions of SFINCS are available here. The single-species version is useful for computing the ion transport matrix. For other applications, the multi-species version is recommended.
 
-The fortran versions rely on the [PETSc library](http://www.mcs.anl.gov/petsc/). The makefiles for the drift-kinetic solver may need to be adapted to link to PETSc libraries on your computing system.
+The fortran versions rely on the [PETSc library](http://www.mcs.anl.gov/petsc/) and use the HDF5 library for output. The makefiles for the fortran versions of SFINCS may need to be adapted to link to these libraries on your computing system.
 
 For inquiries, contact Matt Landreman at matt dot landreman at gmail dot com.

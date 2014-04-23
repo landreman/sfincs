@@ -681,7 +681,7 @@ contains
     allocate(duHatdtheta(Ntheta,Nzeta))
     allocate(duHatdzeta(Ntheta,Nzeta))
     
-    write(6,*) dGdpHat
+    !write(6,*) dGdpHat
     
     uHat = 0
     duHatdtheta = 0
@@ -692,7 +692,7 @@ contains
        end do
     end do
     
-    if (any((BHarmonics_parity.eq.0))) then !sine components exist
+    if (any(.not. BHarmonics_parity)) then !sine components exist
        do m = 0,int(Ntheta/2.0-1) !Nyquist max freq.
           do n = 0,int(Nzeta/2.0-1)
              if ((m /= 0).or.(n /= 0)) then
