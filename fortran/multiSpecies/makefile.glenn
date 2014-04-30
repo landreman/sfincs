@@ -1,0 +1,44 @@
+#EXTRA_INCLUDE =
+#EXTRA_LIBS =
+
+PETSC_INCLUDE = -I$(PETSC_DIR)/include -I$(PETSC_DIR)/$(PETSC_ARCH)/include -I/c3se/apps/Glenn/hdf5/1.8.9-gcc4.7-openmpi1.5.3/include
+
+include ${PETSC_DIR}/conf/variables
+include ${PETSC_DIR}/conf/rules
+
+#FLINKER = ftn
+
+TARGET = sfincs
+
+OBJS = sfincs.o xGrid.o writeHDF5Output.o globalVariables.o scan.o readInput.o \
+	polynomialDiffMatrices.o uniformDiffMatrices.o \
+	uniformInterpolationMatrix.o printToStdout.o  \
+	indices.o sparsify.o geometry.o \
+	polynomialInterpolationMatrix.o solveDKE.o quadpack/quadpack.a 
+
+all: $(OBJS)
+#	$(FLINKER) -o $(TARGET) $(OBJS) $(EXTRA_LIBS) $(PETSC_LIB) $(PETSC_INCLUDE)
+	$(FLINKER) -o $(TARGET) $(OBJS) -lm -lc  $(PETSC_INCLUDE) $(MATTS_LIBS) $(PETSC_LIB)
+
+.PHONY: all clean
+
+%.o: %.F90
+	$(FLINKER) $(EXTRA_INCLUDE) $(PETSC_INCLUDE) -c $<
+
+quadpack/quadpack.a:
+	cd quadpack; make all
+
+cleaner: clean
+	rm -f *.o *.mod *.a *.dat *~ sfincs sfincsMatrices.m sfincsOutput.h5
+	cd quadpack; rm -f *.o *.a
+
+# Dependencies:
+writeHDF5Output.o: globalVariables.o scan.o
+printToStdout.o: globalVariables.o
+readInput.o: globalVariables.o
+geometry.o: globalVariables.o
+solveDKE.o: globalVariables.o xGrid.o polynomialDiffMatrices.o printToStdout.o sparsify.o geometry.o indices.o
+indices.o: globalVariables.o
+scan.o: globalVariables.o
+sfincs.o: globalVariables.o writeHDF5Output.o printToStdout.o solveDKE.o readInput.o scan.o
+
