@@ -167,7 +167,7 @@ module globalVariables
 
   integer :: matrixSize
   PetscScalar, dimension(:), allocatable :: theta, zeta
-  PetscScalar, dimension(:,:), allocatable :: BHat, dBHatdtheta, dBHatdzeta, sources, jHat
+  PetscScalar, dimension(:,:), allocatable :: BHat, dBHatdtheta, dBHatdzeta, sources, jHat, Phi1Hat
   PetscScalar, dimension(:,:,:), allocatable :: flow, densityPerturbation, pressurePerturbation
   PetscScalar, dimension(:,:,:), allocatable :: particleFluxBeforeSurfaceIntegral
   PetscScalar, dimension(:,:,:), allocatable :: momentumFluxBeforeSurfaceIntegral

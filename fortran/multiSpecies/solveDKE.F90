@@ -68,7 +68,7 @@
     integer, dimension(:), allocatable :: predictedNNZsForEachRow, predictedNNZsForEachRowDiagonal
     PetscScalar :: collisionTermFactor, xDotFactor, LFactor, temp, temp1, temp2
     integer :: rowIndex, colIndex, ixi
-    PetscScalar :: densityFactor, flowFactor, pressureFactor
+    PetscScalar :: densityFactor, flowFactor, pressureFactor, Phi1HatDenominator
     PetscScalar :: particleFluxFactor, momentumFluxFactor, heatFluxFactor, NTVFactor
     PetscScalar, dimension(:), allocatable :: densityIntegralWeights
     PetscScalar, dimension(:), allocatable :: flowIntegralWeights
@@ -1603,6 +1603,7 @@
     allocate(NTVBeforeSurfaceIntegral(Nspecies,Ntheta,Nzeta)) 
 
     allocate(jHat(Ntheta,Nzeta))
+    allocate(Phi1Hat(Ntheta,Nzeta))
 
     allocate(densityIntegralWeights(Nx))
     allocate(flowIntegralWeights(Nx))
@@ -1810,6 +1811,8 @@
           heatFlux=0
           NTV=0 
           jHat=0
+          Phi1Hat=0
+          Phi1HatDenominator = 0
 
           densityIntegralWeights = x*x
           flowIntegralWeights = x*x*x
@@ -1958,8 +1961,12 @@
              end do
 
              jHat = jHat + Zs(ispecies)*flow(ispecies,:,:)
+             Phi1Hat = Phi1Hat + Zs(ispecies)*densityPerturbation(ispecies,:,:)
+             Phi1HatDenominator = Phi1HatDenominator + Zs(ispecies)*Zs(ispecies)*nHats(ispecies)/THats(ispecies)
           end do
           deallocate(B2)
+
+          Phi1Hat = Phi1Hat / (alpha * Phi1HatDenominator)
 
           FSADensityPerturbation = FSADensityPerturbation / VPrimeHat
           FSABFlow = FSABFlow / VPrimeHat

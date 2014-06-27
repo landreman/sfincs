@@ -93,6 +93,7 @@ module writeHDF5Output
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_NTV        !HS 13.03.2014
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_jHat
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_FSABjHat
+  integer(HID_T), dimension(:), allocatable, private :: dsetIDs_Phi1Hat
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_elapsedTime
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_didItConverge
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_integerToRepresentTrue
@@ -234,6 +235,7 @@ contains
        allocate(dsetIDs_NTV(numRunsInScan))      !HS 13.03.2014
        allocate(dsetIDs_jHat(numRunsInScan))
        allocate(dsetIDs_FSABjHat(numRunsInScan))
+       allocate(dsetIDs_Phi1Hat(numRunsInScan))
        allocate(dsetIDs_elapsedTime(numRunsInScan))
        allocate(dsetIDs_didItConverge(numRunsInScan))
        allocate(dsetIDs_integerToRepresentTrue(numRunsInScan))
@@ -520,6 +522,9 @@ contains
           call h5dcreate_f(groupIDs(i), "FSABjHat", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_FSABjHat(i), HDF5Error)
 
+          call h5dcreate_f(groupIDs(i), "Phi1Hat", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta(i), &
+               dsetIDs_Phi1Hat(i), HDF5Error)
+
           call h5dcreate_f(groupIDs(i), "elapsed time (s)", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_elapsedTime(i), HDF5Error)
 
@@ -795,6 +800,9 @@ contains
        call h5dwrite_f(dsetIDs_FSABjHat(runNum), H5T_NATIVE_DOUBLE, &
             FSABjHat, dimForScalar, HDF5Error)
 
+       call h5dwrite_f(dsetIDs_Phi1Hat(runNum), H5T_NATIVE_DOUBLE, &
+            Phi1Hat, dimForThetaZeta(runNum,:), HDF5Error)
+
        call h5dwrite_f(dsetIDs_elapsedTime(runNum), H5T_NATIVE_DOUBLE, &
             elapsedTime, dimForScalar, HDF5Error)
 
@@ -913,6 +921,7 @@ contains
           call h5dclose_f(dsetIDs_NTV(i), HDF5Error)       !HS 13.03.2014
           call h5dclose_f(dsetIDs_jHat(i), HDF5Error)
           call h5dclose_f(dsetIDs_FSABjHat(i), HDF5Error)
+          call h5dclose_f(dsetIDs_Phi1Hat(i), HDF5Error)
           call h5dclose_f(dsetIDs_elapsedTime(i), HDF5Error)
           call h5dclose_f(dsetIDs_didItConverge(i), HDF5Error)
           call h5dclose_f(dsetIDs_integerToRepresentTrue(i), HDF5Error)
