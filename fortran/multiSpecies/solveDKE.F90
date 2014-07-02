@@ -1549,8 +1549,18 @@
     else
        if (masterProcInSubComm) then
           print *,"[",myCommunicatorIndex,"] Using PETSc's serial sparse direct solver to factorize the preconditioner."
-          call PCFactorReorderForNonzeroDiagonal(preconditionerContext, 1d-12, ierr)
        end if
+
+       ! When using PETSc's built-in solver (which is only done when running with a single processor),
+       ! I originally always got an error message that there was a zero pivot. The following line seems to solve
+       ! this problem.  The "zero pivot" error seemed to only arise with the "nd" ordering (nested dissection), which is the 
+       ! default.  I'm not sure which of the other orderings is most efficient. I picked "rcm" for no particular reason.
+       call PCFactorSetMatOrderingType(preconditionerContext, MATORDERINGRCM, ierr)
+
+       ! I'm not sure this next line actually accomplishes anything, since it doesn't solve the "zero pivot" problem.
+       ! But it doesn't seem to cost anything, and perhaps it reduces the chance of getting the "zero pivot" error in the future.
+       call PCFactorReorderForNonzeroDiagonal(preconditionerContext, 1d-12, ierr) 
+
     end if
 
     call MatGetInfo(matrix, MAT_GLOBAL_SUM, myMatInfo, ierr)

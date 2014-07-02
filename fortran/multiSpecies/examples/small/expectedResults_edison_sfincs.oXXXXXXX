@@ -1,0 +1,218 @@
+ ****************************************************************************
+ SFINCS: Stellarator Fokker-Plank Iterative Neoclassical Conservative Solver
+ Grid in theta and zeta, Legendre modal in xi, polynomial spectral collocation i
+ n x.
+ Multi-species version.
+ Using double precision.
+ Parallel job (  24 processes) detected.
+ Successfully read parameters from flowControl namelist in input.namelist.
+ Successfully read parameters from geometryParameters namelist in input.namelist
+ .
+ Successfully read parameters from speciesParameters namelist in input.namelist.
+ Successfully read parameters from physicsParameters namelist in input.namelist.
+ Successfully read parameters from resolutionParameters namelist in 
+ input.namelist.
+ Successfully read parameters from otherNumericalParameters namelist in 
+ input.namelist.
+ Successfully read parameters from preconditionerOptions namelist in 
+ input.namelist.
+ mumps detected
+ superlu_dist detected
+ [           1 ] ---- Physics parameters: ----
+ [           1 ] Number of species =            2
+ [           1 ] Delta     =   4.569400000000000E-003
+ [           1 ] alpha     =    1.00000000000000     
+ [           1 ] nu_n      =   8.477400000000000E-003
+ [           1 ] dPhiHatdpsiN =   0.000000000000000E+000
+ [           1 ] ---- Geometry parameters: ----
+ [           1 ] Geometry scheme =            4
+ [           1 ] iota      =    1.31000000000000     
+ [           1 ] GHat      =    1.27000000000000     
+ [           1 ] IHat      =   0.800000000000000     
+ [           1 ] psiAHat   =   3.000000000000000E-002
+ [           1 ] ---- Numerical parameters: ----
+ [           1 ] Nzeta              =            7
+ [           1 ] Ntheta             =            5
+ [           1 ] Nxi                =            8
+ [           1 ] NL                 =            4
+ [           1 ] Nx                 =            5
+ [           1 ] NxPotentialsPerVth =    40.0000000000000     
+ [           1 ] xMax               =    5.00000000000000     
+ [           1 ] solverTolerance    =   1.000000000000000E-006
+ [           1 ] Theta derivative: centered finite differences, 5-point stencil
+ [           1 ] Using iterative solver
+ [           1 ] The matrix is         2804 x        2804  elements.
+ [           1 ] Processor            1  owns theta indices            1  to 
+           1
+ [           1 ] Processor           20  owns theta indices            6  to 
+           5
+ [           1 ] Processor           16  owns theta indices            6  to 
+           5
+ [           1 ] Processor            7  owns theta indices            6  to 
+           5
+ [           1 ] Processor           17  owns theta indices            6  to 
+           5
+ [           1 ] Processor           19  owns theta indices            6  to 
+           5
+ [           1 ] Processor            3  owns theta indices            3  to 
+ [           1 ] Processor           11  owns theta indices            6  to 
+           3
+           5
+ [           1 ] Processor            4  owns theta indices            4  to 
+           4
+ [           1 ] Processor            5  owns theta indices            5  to 
+           5
+ [           1 ] Processor           23  owns theta indices            6  to 
+           5
+ [           1 ] Processor            2  owns theta indices            2  to 
+           2
+ [           1 ] Processor           22  owns theta indices            6  to 
+           5
+ [           1 ] Processor           12  owns theta indices            6  to 
+           5
+ [           1 ] Processor           10  owns theta indices            6  to 
+           5
+ [           1 ] Processor           14  owns theta indices            6  to 
+ [           1 ] Processor           13  owns theta indices            6  to 
+           5
+           5
+ [           1 ] Processor           21  owns theta indices            6  to 
+           5
+ [           1 ] Processor            6  owns theta indices            6  to 
+           5
+ [           1 ] Processor            8  owns theta indices            6  to 
+           5
+ [           1 ] Processor           24  owns theta indices            6  to 
+           5
+ [           1 ] Processor           18  owns theta indices            6  to 
+ [           1 ] Processor            9  owns theta indices            6  to 
+           5
+ [           1 ] Processor           15  owns theta indices            6  to 
+           5
+           5
+ [           1 ] Time to pre-assemble preconditioner matrix: 
+  8.162212371826172E-002  seconds.
+ [           1 ] Time to assemble preconditioner matrices: 
+  1.736879348754883E-003  seconds.
+ [           1 ] Time to pre-assemble matrix:   5.634498596191406E-002  seconds.
+ [           1 ] Time to assemble matrices:   1.472949981689453E-003  seconds.
+ [           1 ] Using superlu_dist to factorize the preconditioner.
+ [           1 ] # of nonzeros in matrix:       72632 , allocated:      269964 
+ , mallocs:           0  (should be 0)
+ [           1 ] # of nonzeros in preconditioner:       49220 , allocated:
+      269964 , mallocs:           0  (should be 0)
+ [           1 ] nnz(preconditioner)/nnz(matrix):  0.677662738187025     
+ [           1 ] Beginning the main solve.  This could take a while ...
+	Nonzeros in L       195441
+	Nonzeros in U       191911
+	nonzeros in L+U     384548
+	nonzeros in LSUB    85608
+	NUMfact space (MB) sum(procs):  L\U	3.86	all	8.14
+	Total highmark (MB):  All	30.05	Avg	1.25	Max	1.25
+        Mat conversion(PETSc->SuperLU_DIST) time (max/min/avg): 
+                              8.39233e-05 / 3.50475e-05 / 6.182e-05
+	EQUIL time             0.00
+	ROWPERM time           0.00
+	COLPERM time           0.03
+	SYMBFACT time          0.00
+	DISTRIBUTE time        0.00
+	FACTOR time            0.01
+	Factor flops	4.323017e+07	Mflops 	 3892.84
+	SOLVE time             0.00
+	SOLVE time             0.00
+	Solve flops	8.087830e+05	Mflops 	  799.12
+  0 KSP Residual norm 1.004444595277e-03 
+	SOLVE time             0.00
+	Solve flops	8.087830e+05	Mflops 	  902.44
+  1 KSP Residual norm 5.364834886623e-04 
+	SOLVE time             0.00
+	Solve flops	8.087830e+05	Mflops 	  927.61
+  2 KSP Residual norm 1.415314364765e-04 
+	SOLVE time             0.00
+	Solve flops	8.087830e+05	Mflops 	  921.31
+  3 KSP Residual norm 8.346912453304e-05 
+	SOLVE time             0.00
+	Solve flops	8.087830e+05	Mflops 	  940.47
+  4 KSP Residual norm 3.937332612018e-05 
+	SOLVE time             0.00
+	Solve flops	8.087830e+05	Mflops 	  942.56
+  5 KSP Residual norm 2.558266336548e-05 
+	SOLVE time             0.00
+	Solve flops	8.087830e+05	Mflops 	  952.62
+  6 KSP Residual norm 2.417926621391e-05 
+	SOLVE time             0.00
+	Solve flops	8.087830e+05	Mflops 	  938.13
+  7 KSP Residual norm 2.288658301177e-05 
+	SOLVE time             0.00
+	Solve flops	8.087830e+05	Mflops 	  954.77
+  8 KSP Residual norm 1.927292078482e-05 
+	SOLVE time             0.00
+	Solve flops	8.087830e+05	Mflops 	  961.80
+  9 KSP Residual norm 7.092482349113e-06 
+	SOLVE time             0.00
+	Solve flops	8.087830e+05	Mflops 	  934.00
+ 10 KSP Residual norm 2.963890498973e-06 
+	SOLVE time             0.00
+	Solve flops	8.087830e+05	Mflops 	  951.55
+ 11 KSP Residual norm 9.239412658848e-07 
+	SOLVE time             0.00
+	Solve flops	8.087830e+05	Mflops 	  940.47
+ 12 KSP Residual norm 3.965339910347e-07 
+	SOLVE time             0.00
+	Solve flops	8.087830e+05	Mflops 	  914.85
+ 13 KSP Residual norm 1.265146544122e-07 
+	SOLVE time             0.00
+	Solve flops	8.087830e+05	Mflops 	  945.98
+ 14 KSP Residual norm 4.907693567987e-08 
+	SOLVE time             0.00
+	Solve flops	8.087830e+05	Mflops 	  941.52
+ 15 KSP Residual norm 1.972192723814e-08 
+	SOLVE time             0.00
+	Solve flops	8.087830e+05	Mflops 	  953.96
+ 16 KSP Residual norm 6.049608894070e-09 
+	SOLVE time             0.00
+	Solve flops	8.087830e+05	Mflops 	  944.93
+ 17 KSP Residual norm 1.611832064971e-09 
+	SOLVE time             0.00
+	Solve flops	8.087830e+05	Mflops 	  962.62
+ 18 KSP Residual norm 4.206436926439e-10 
+ [           1 ] Done with the main solve.  Time to solve: 
+  7.617306709289551E-002  seconds.
+ [           1 ] Converged!  KSPConvergedReason =            2
+ [           1 ] Total elapsed time:   0.218993186950684       seconds.
+ [           1 ] Results for species            1 :
+ [           1 ]   FSADensityPerturbation:    1.651747314022872E-019
+ [           1 ]   FSABFlow:                 -9.459196929759253E-004
+ [           1 ]   FSAPressurePerturbation:  -1.851096127784254E-020
+ [           1 ]   NTV:                      -1.757256025996512E-007
+ [           1 ]   particleFlux:             -8.827673309080052E-009
+ [           1 ]   momentumFlux:             -4.170330319859595E-019
+ [           1 ]   heatFlux:                 -8.418539619831971E-009
+ [           1 ] Results for species            2 :
+ [           1 ]   FSADensityPerturbation:   -6.036259196264470E-017
+ [           1 ]   FSABFlow:                 -1.202828424761789E-005
+ [           1 ]   FSAPressurePerturbation:  -7.087534319407174E-017
+ [           1 ]   NTV:                      -3.135018639462167E-009
+ [           1 ]   particleFlux:              9.012860128087754E-011
+ [           1 ]   momentumFlux:              7.687247926396709E-021
+ [           1 ]   heatFlux:                  2.007511670631882E-011
+ [           1 ] FSABjHat (bootstrap current):  -1.018089398461633E-003
+Application 5964698 resources: utime ~12s, stime ~3s, Rss ~27252, inblocks ~41327, outblocks ~95538
+
+ + --------------------------------------------------------------------------
+ +        Job name: sfincs
+ +          Job Id: 1380783.edique02
+ +          System: edison
+ +     Queued Time: Wed Jul  2 12:24:43 2014
+ +      Start Time: Wed Jul  2 12:25:27 2014
+ + Completion Time: Wed Jul  2 12:25:51 2014
+ +            User: landrema
+ +        MOM Host: nid02434
+ +           Queue: debug
+ +  Req. Resources: mppnodect=1,mppnppn=24,mppwidth=24,walltime=00:10:00
+ +  Used Resources: cput=00:00:01,mem=11324kb,vmem=266292kb,walltime=00:00:09
+ +     Acct String: mp217
+ +   PBS_O_WORKDIR: /global/scratch2/sd/landrema/sfincs/fortran/multiSpecies/examples/small
+ +     Submit Args: job.edison
+ + --------------------------------------------------------------------------
+

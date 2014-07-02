@@ -168,7 +168,6 @@ contains
        if (helicity_n == 0) then
           BHarmonics_n(i) = helicity_antisymm_n
        else
-          print *,"Should not get here!"
           BHarmonics_n(i) = helicity_antisymm_n / helicity_n
        end if
        BHarmonics_amplitudes(i) = epsilon_antisymm
