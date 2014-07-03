@@ -172,9 +172,16 @@ contains
        end if
        BHarmonics_amplitudes(i) = epsilon_antisymm
 
-       if ((helicity_n .eq. 0 .and. helicity_antisymm_n .ne. 0) .or. (mod(helicity_antisymm_n, helicity_n) .ne. 0)) then
-          print *,"WARNING: Typically, helicity_antisymm_n should be an integer multiple of helicity_n (possibly zero)."
+       if (helicity_n == 0) then
+          if (helicity_antisymm_n .ne. 0) then
+             print *,"WARNING: Typically, helicity_antisymm_n should be an integer multiple of helicity_n (possibly zero)."
+          end if
+       else
+          if (mod(helicity_antisymm_n, helicity_n) .ne. 0) then
+             print *,"WARNING: Typically, helicity_antisymm_n should be an integer multiple of helicity_n (possibly zero)."
+          end if
        end if
+
        dGdpHat = 0 !Not implemented as an input for this case yet, could be put in namelist input if needed
 
     case (2)
@@ -679,8 +686,6 @@ contains
     allocate(uHat(Ntheta,Nzeta))
     allocate(duHatdtheta(Ntheta,Nzeta))
     allocate(duHatdzeta(Ntheta,Nzeta))
-    
-    !write(6,*) dGdpHat
     
     uHat = 0
     duHatdtheta = 0
