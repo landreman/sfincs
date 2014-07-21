@@ -125,7 +125,7 @@ contains
     integer, parameter :: max_no_of_modes = 10000
     integer, dimension(max_no_of_modes) :: modesm_old, modesm_new, modesn_old, modesn_new
     PetscScalar, dimension(max_no_of_modes) :: modesb_old, modesb_new
-    PetscScalar :: normradius_old,  normradius_new, normradius, B0_old, B0_new
+    PetscScalar :: normradius_old,  normradius_new, B0_old, B0_new
     PetscScalar :: hHatHarmonics_amplitude, uHatHarmonics_amplitude
 
     ! For the BHarmonics_parity array, 
@@ -183,6 +183,7 @@ contains
        end if
 
        dGdpHat = 0 !Not implemented as an input for this case yet, could be put in namelist input if needed
+       normradius = -1 !dummy
 
     case (2)
        ! A three-harmonic approximation of the LHD standard configuration.
@@ -220,6 +221,7 @@ contains
        IHat = 0
        psiAHat = B0OverBBar * (a ** 2) / two
        dGdpHat = 0
+       normradius = -1 !dummy
                     
     case (3)
        ! A four-harmonic approximation of the LHD inward-shifted configuration.
@@ -262,7 +264,7 @@ contains
        IHat = 0
        psiAHat = B0OverBBar * (a ** 2) / two
        dGdpHat = 0
-                    
+       normradius = -1 !dummy
 
     case (4)
        ! A three-harmonic approximation of the W7-X standard configuration.
@@ -300,6 +302,7 @@ contains
        IHat = 0
        psiAHat = -0.384935d+0 ! Tesla * meters^2 / radian
        dGdpHat = 0
+       normradius = -1 !dummy
 
     case (11)
        ! Read Boozer coordinate file in .bc format used at IPP Greifswald

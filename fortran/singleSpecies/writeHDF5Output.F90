@@ -22,6 +22,7 @@ module writeHDF5Output
 
   integer(HID_T), private :: dsetID_programMode
 
+  integer(HID_T), dimension(:), allocatable, private :: dsetIDs_normradius
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_Ntheta
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_Nzeta
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_Nxi
@@ -159,6 +160,7 @@ contains
 #endif
        allocate(groupIDs(numRunsInScan))
 
+       allocate(dsetIDs_normradius(numRunsInScan))
        allocate(dsetIDs_Ntheta(numRunsInScan))
        allocate(dsetIDs_Nzeta(numRunsInScan))
        allocate(dsetIDs_Nxi(numRunsInScan))
@@ -254,8 +256,10 @@ contains
        ! Save programMode in the file:
        call h5dcreate_f(HDF5FileID, "programMode", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
             dsetID_programMode, HDF5Error)
+
        if (masterProc) then
           call h5dwrite_f(dsetID_programMode, H5T_NATIVE_INTEGER, programMode, dimForScalar, HDF5Error)
+   
        end if
        call h5dclose_f(dsetID_programMode, HDF5Error)
 
@@ -263,20 +267,20 @@ contains
           ! Create a group to hold all data for the run:
           write (groupName, "(a, i3)") "run",i
           call h5gcreate_f(HDF5FileID, groupName, groupIDs(i), HDF5Error)
-
+   
           ! Create dataspaces that depend on resolution parameters:
           rank = 1
           dimForZeta(i,1)=NzetasForScan(i)
           call h5screate_simple_f(rank, dimForZeta(i,:), dspaceIDForZeta(i), HDF5Error)
-
+   
           dimForTheta(i,1)=NthetasForScan(i)
           call h5screate_simple_f(rank, dimForTheta(i,:), dspaceIDForTheta(i), HDF5Error)
-
+   
           rank = 2
           dimForThetaZeta(i,1)=NthetasForScan(i)
           dimForThetaZeta(i,2)=NzetasForScan(i)
           call h5screate_simple_f(rank, dimForThetaZeta(i,:), dspaceIDForThetaZeta(i), HDF5Error)
-
+   
           select case (constraintSchemesForScan(i))
           case (0)
              dimForSources(i,1) = 1
@@ -289,237 +293,241 @@ contains
           end select
           rank = 1
           call h5screate_simple_f(rank, dimForSources(i,:), dspaceIDForSources(i), HDF5Error)
-
+   
           ! Create datasets for each quantity in each run:
+          call h5dcreate_f(groupIDs(i), "normradius", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
+               dsetIDs_normradius(i), HDF5Error)
+             
           call h5dcreate_f(groupIDs(i), "Ntheta", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
                dsetIDs_Ntheta(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "Nzeta", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
                dsetIDs_Nzeta(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "Nxi", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
                dsetIDs_Nxi(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "NL", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
                dsetIDs_NL(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "Nx", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
                dsetIDs_Nx(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "NxPotentialsPerVth", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_NxPotentialsPerVth(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "xMax", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_xMax(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "solverTolerance", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_solverTolerance(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "theta", H5T_NATIVE_DOUBLE, dspaceIDForTheta(i), &
                dsetIDs_theta(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "zeta", H5T_NATIVE_DOUBLE, dspaceIDForZeta(i), &
                dsetIDs_zeta(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "thetaDerivativeScheme", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
                dsetIDs_thetaDerivativeScheme(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "preconditioner_x", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
                dsetIDs_preconditioner_x(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "preconditioner_x_min_L", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
                dsetIDs_preconditioner_x_min_L(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "preconditioner_xi", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
                dsetIDs_preconditioner_xi(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "preconditioner_theta", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
                dsetIDs_preconditioner_theta(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "preconditioner_zeta", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
                dsetIDs_preconditioner_zeta(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "constraintScheme", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
                dsetIDs_constraintScheme(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "BHat", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta(i), &
                dsetIDs_BHat(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "d(BHat)d(theta)", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta(i), &
                dsetIDs_dBHatdtheta(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "d(BHat)d(zeta)", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta(i), &
                dsetIDs_dBHatdzeta(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "B0OverBBar", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_B0OverBBar(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "GHat", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_GHat(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "IHat", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_IHat(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "iota", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_iota(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "epsilon_t", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_epsilon_t(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "epsilon_h", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_epsilon_h(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "epsilon_antisymm", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_epsilon_antisymm(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "NPeriods", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
                dsetIDs_NPeriods(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "helicity_l", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
                dsetIDs_helicity_l(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "helicity_n", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
                dsetIDs_helicity_n(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "helicity_antisymm_l", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
                dsetIDs_helicity_antisymm_l(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "helicity_antisymm_n", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
                dsetIDs_helicity_antisymm_n(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "speciesMode", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
                dsetIDs_speciesMode(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "Delta", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_Delta(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "omega", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_omega(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "psiAHat", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_psiAHat(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "nuN", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_nuN(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "nuPrime", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_nuPrime(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "THat", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_THat(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "nHat", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_nHat(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "d(THat)d(psi)", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_dTHatdpsi(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "d(nHat)d(psi)", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_dnHatdpsi(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "EHat", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_EHat(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "d(PhiHat)d(psi)", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_dPhiHatdpsi(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "EStar", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_EStar(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "collisionOperator", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
                dsetIDs_collisionOperator(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "include_fDivVE_term", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
                dsetIDs_include_fDivVE_term(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "includeXDotTerm", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
                dsetIDs_includeXDotTerm(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "includeElectricFieldTermInXiDot", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
                dsetIDs_includeElectricFieldTermInXiDot(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "useDKESExBDrift", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
                dsetIDs_useDKESExBDrift(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "sources", H5T_NATIVE_DOUBLE, dspaceIDForSources(i), &
                dsetIDs_sources(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "densityPerturbation", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta(i), &
                dsetIDs_densityPerturbation(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "flow", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta(i), &
                dsetIDs_flow(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "pressurePerturbation", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta(i), &
                dsetIDs_pressurePerturbation(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "particleFluxBeforeSurfaceIntegral", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta(i), &
                dsetIDs_particleFluxBeforeSurfaceIntegral(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "momentumFluxBeforeSurfaceIntegral", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta(i), &
                dsetIDs_momentumFluxBeforeSurfaceIntegral(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "heatFluxBeforeSurfaceIntegral", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta(i), &
                dsetIDs_heatFluxBeforeSurfaceIntegral(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "NTVBeforeSurfaceIntegral", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta(i), &
                dsetIDs_NTVBeforeSurfaceIntegral(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "FSADensityPerturbation", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_FSADensityPerturbation(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "FSAFlow", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_FSAFlow(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "FSAPressurePerturbation", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_FSAPressurePerturbation(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "particleFlux", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_particleFlux(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "momentumFlux", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_momentumFlux(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "heatFlux", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_heatFlux(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "NTV", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_NTV(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "elapsed time (s)", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_elapsedTime(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "didItConverge", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
                dsetIDs_didItConverge(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "integerToRepresentTrue", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
                dsetIDs_integerToRepresentTrue(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "integerToRepresentFalse", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
                dsetIDs_integerToRepresentFalse(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "VPrimeHat", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_VPrimeHat(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "FSABHat2", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_FSABHat2(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "useIterativeSolver", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
                dsetIDs_useIterativeSolver(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "transportMatrix", H5T_NATIVE_DOUBLE, dspaceIDForTransportMatrix, &
                dsetIDs_transportMatrix(i), HDF5Error)
-
+   
           call h5dcreate_f(groupIDs(i), "RHSMode", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_RHSMode(i), HDF5Error)
-
+   
        end do
+
     end if
 
   end subroutine createHDF5Structures
 
   ! -----------------------------------------------------------------------------------
-
+  
   subroutine writeRunToOutputFile(runNum)
 
     implicit none
@@ -528,6 +536,9 @@ contains
     integer :: temp
 
     if (outputScheme > 0 .and. masterProcInSubComm) then
+
+       call h5dwrite_f(dsetIDs_normradius(runNum), H5T_NATIVE_DOUBLE, &
+            normradius, dimForScalar, HDF5Error)
 
        call h5dwrite_f(dsetIDs_Ntheta(runNum), H5T_NATIVE_INTEGER, &
             Ntheta, dimForScalar, HDF5Error)
@@ -799,11 +810,12 @@ contains
 #ifdef HAVE_PARALLEL_HDF5
     if (outputScheme > 0) then
 #else
-       if (outputScheme > 0 .and. masterProcInSubComm) then
+    if (outputScheme > 0 .and. masterProcInSubComm) then
 #endif
 
        do i=1,numRunsInScan
 
+          call h5dclose_f(dsetIDs_normradius(i), HDF5Error)
           call h5dclose_f(dsetIDs_Ntheta(i), HDF5Error)
           call h5dclose_f(dsetIDs_Nzeta(i), HDF5Error)
           call h5dclose_f(dsetIDs_Nxi(i), HDF5Error)
@@ -893,6 +905,7 @@ contains
        call h5pclose_f(parallelID, HDF5Error)
        call h5fclose_f(HDF5FileID, HDF5Error)
        call h5close_f(HDF5Error)
+
     end if
 
   end subroutine closeOutputFile

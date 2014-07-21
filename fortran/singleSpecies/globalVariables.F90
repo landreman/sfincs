@@ -156,6 +156,7 @@ module globalVariables
   !
   ! ********************************************************
 
+  PetscScalar :: normradius
   PetscScalar, dimension(:), allocatable :: theta, zeta, sources
   PetscScalar, dimension(:,:), allocatable :: BHat, dBHatdtheta, dBHatdzeta
   PetscScalar, dimension(:,:), allocatable :: flow, densityPerturbation, pressurePerturbation
