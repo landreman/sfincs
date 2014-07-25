@@ -22,6 +22,7 @@ program sfincs
   PetscErrorCode ierr
   PetscLogDouble :: time1, time2
   integer :: runNum
+  character(len=10) :: starttime
 
 
   call PetscInitialize(PETSC_NULL_CHARACTER, ierr)
@@ -66,6 +67,11 @@ program sfincs
      numProcsInSubComm = numProcs
      masterProcInSubComm = masterProc
      myCommunicatorIndex = 1
+
+     if (masterProc) then
+        call date_and_time(TIME=starttime)
+        print *,"Start time: ",starttime
+     end if     
 
      call openOutputFile()
      call allocateArraysForSingleRun()

@@ -87,7 +87,8 @@ module writeHDF5Output
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_particleFlux
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_momentumFlux
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_heatFlux
-  integer(HID_T), dimension(:), allocatable, private :: dsetIDs_NTV
+  integer(HID_T), dimension(:), allocatable, private :: dsetIDs_NTVsingle
+  integer(HID_T), dimension(:), allocatable, private :: dsetIDs_NTVmulti
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_elapsedTime
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_didItConverge
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_integerToRepresentTrue
@@ -225,7 +226,8 @@ contains
        allocate(dsetIDs_particleFlux(numRunsInScan))
        allocate(dsetIDs_momentumFlux(numRunsInScan))
        allocate(dsetIDs_heatFlux(numRunsInScan))
-       allocate(dsetIDs_NTV(numRunsInScan))
+       allocate(dsetIDs_NTVsingle(numRunsInScan))
+       allocate(dsetIDs_NTVmulti(numRunsInScan))
        allocate(dsetIDs_elapsedTime(numRunsInScan))
        allocate(dsetIDs_didItConverge(numRunsInScan))
        allocate(dsetIDs_integerToRepresentTrue(numRunsInScan))
@@ -490,8 +492,11 @@ contains
           call h5dcreate_f(groupIDs(i), "heatFlux", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_heatFlux(i), HDF5Error)
    
-          call h5dcreate_f(groupIDs(i), "NTV", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
-               dsetIDs_NTV(i), HDF5Error)
+          call h5dcreate_f(groupIDs(i), "NTVsingle", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
+               dsetIDs_NTVsingle(i), HDF5Error)
+   
+          call h5dcreate_f(groupIDs(i), "NTVmulti", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
+               dsetIDs_NTVmulti(i), HDF5Error)
    
           call h5dcreate_f(groupIDs(i), "elapsed time (s)", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_elapsedTime(i), HDF5Error)
@@ -760,8 +765,11 @@ contains
        call h5dwrite_f(dsetIDs_heatFlux(runNum), H5T_NATIVE_DOUBLE, &
             heatFlux, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_NTV(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dwrite_f(dsetIDs_NTVsingle(runNum), H5T_NATIVE_DOUBLE, &
             NTV, dimForScalar, HDF5Error)
+
+       call h5dwrite_f(dsetIDs_NTVmulti(runNum), H5T_NATIVE_DOUBLE, &
+            NTVmulti, dimForScalar, HDF5Error)
 
        call h5dwrite_f(dsetIDs_elapsedTime(runNum), H5T_NATIVE_DOUBLE, &
             elapsedTime, dimForScalar, HDF5Error)
@@ -880,7 +888,8 @@ contains
           call h5dclose_f(dsetIDs_particleFlux(i), HDF5Error)
           call h5dclose_f(dsetIDs_momentumFlux(i), HDF5Error)
           call h5dclose_f(dsetIDs_heatFlux(i), HDF5Error)
-          call h5dclose_f(dsetIDs_NTV(i), HDF5Error)
+          call h5dclose_f(dsetIDs_NTVsingle(i), HDF5Error)
+          call h5dclose_f(dsetIDs_NTVmulti(i), HDF5Error)
           call h5dclose_f(dsetIDs_elapsedTime(i), HDF5Error)
           call h5dclose_f(dsetIDs_didItConverge(i), HDF5Error)
           call h5dclose_f(dsetIDs_integerToRepresentTrue(i), HDF5Error)
