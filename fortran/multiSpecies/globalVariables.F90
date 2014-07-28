@@ -281,14 +281,16 @@ contains
        deallocate(heatFlux)
        deallocate(NTV)
 
-       deallocate(pressurePerturbation)
+       deallocate(densityPerturbation)
        deallocate(flow)
+       deallocate(pressurePerturbation)
        deallocate(particleFluxBeforeSurfaceIntegral)
        deallocate(momentumFluxBeforeSurfaceIntegral)
        deallocate(heatFluxBeforeSurfaceIntegral)
        deallocate(NTVBeforeSurfaceIntegral)
 
        deallocate(jHat)
+       deallocate(Phi1Hat)
 
        if (constraintScheme > 0) then
           deallocate(sources)
