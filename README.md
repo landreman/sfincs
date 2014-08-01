@@ -1,9 +1,8 @@
-sfincs
-======
+### SFINCS: the Stellarator Fokker-Planck Iterative Neoclassical Conservative Solver.
 
-SFINCS: the Stellarator Fokker-Planck Iterative Neoclassical Conservative Solver.
+![SFINCS calculation of the parallel current J dot B in W7-X](https://github.com/landreman/sfincs/blob/master/doc/SFINCS_calculation_of_parallel_current_in_W7X_800x339.jpg)
 
-SFINCS is a code designed to compute neoclassical effects in nonaxisymmetric toroidal plasmas, such as stellarators and perturbed tokamaks.  The code solves a linear drift-kinetic equation for the distribution function.  In addition to the neoclassical fluxes, flows, and bootstrap current, one can also obtain other moments such as the density variation on a flux surface.
+SFINCS is a code designed to compute neoclassical effects in nonaxisymmetric toroidal plasmas, such as stellarators and perturbed tokamaks.  The code solves a linear drift-kinetic equation for the distribution function of each species.  In addition to the neoclassical fluxes, flows, and bootstrap current, one can also obtain other moments such as the density variation on a flux surface.
 
 Documentation is available in several places. The primary published reference is [Landreman, Smith, Mollen, and Helander, Physics of Plasmas 21, 042503 (2014)](https://github.com/landreman/sfincs/blob/master/doc/LandremanSmithMollenHelander_2014_PoP_v21_p042503_SFINCS.pdf?raw=true). Further details of the velocity-space discretization and Fokker-Planck collision operator may be found in [Landreman and Ernst, Journal of Computational Physics 243, 130 (2013)](). Also see the [technical documentation](https://github.com/landreman/sfincs/blob/master/doc/20131219-01 Technical documentation for SFINCS with multiple species.pdf?raw=true) and other files in the `/doc/` folder of the repository, as well as [the wiki.](https://github.com/landreman/sfincs/wiki) 
 
