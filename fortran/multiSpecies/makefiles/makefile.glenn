@@ -1,0 +1,10 @@
+# These next 2 includes set FC, FLINKER, and PETSC_LIB:
+include ${PETSC_DIR}/conf/variables
+include ${PETSC_DIR}/conf/rules
+
+# Any other flags for compiling, such as -I include flags:
+EXTRA_COMPILE_FLAGS = -I$(PETSC_DIR)/include -I$(PETSC_DIR)/$(PETSC_ARCH)/include -I/c3se/apps/Glenn/hdf5/1.8.9-gcc4.7-openmpi1.5.3/include
+
+# Any other flags for linking, such as -l library flags:
+EXTRA_LINK_FLAGS =
+

@@ -1,0 +1,11 @@
+# Set command for fortran compiler:
+FC = ftn
+
+# Set command for linker:
+FLINKER = ftn
+
+# Any other flags for compiling, such as -I include flags:
+EXTRA_COMPILE_FLAGS =
+
+# Any other flags for linking, such as -l library flags:
+EXTRA_LINK_FLAGS =
