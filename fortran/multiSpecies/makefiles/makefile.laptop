@@ -1,3 +1,6 @@
+# This makefile is used for a laptop or desktop computer,
+# with 1 to a few processors, and with no job management system.
+
 # These next 2 includes set FC, FLINKER, and PETSC_LIB:
 include ${PETSC_DIR}/conf/variables
 include ${PETSC_DIR}/conf/rules
@@ -8,3 +11,14 @@ EXTRA_COMPILE_FLAGS =
 # Any other flags for linking, such as -l library flags:
 EXTRA_LINK_FLAGS =
 
+# The next parameters are used only for running selected examples "make test"
+
+# For "make test", do you want to run the examples that require multiple nodes worth of memory?
+# The value of this environment variable must be "yes" or "no".
+SFINCS_RUN_LARGE_EXAMPLES=no
+
+# For "make test", are runs submitted using a batch system (such as PBS)?  The value of this environment variable must be "yes" or "no".
+SFINCS_IS_A_BATCH_SYSTEM_USED=no
+
+#SFINCS_COMMAND_TO_SUBMIT_JOB=mpiexec
+SFINCS_COMMAND_TO_SUBMIT_JOB=mpiexec -n 2 ../../$(TARGET)

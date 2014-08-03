@@ -1,3 +1,16 @@
+# Common commands
+# -------------------------------
+# To build SFINCS:
+#   make
+# or, equivalently,
+#   make all
+#
+# To run tests:
+#   make test
+#
+# To delete .mod and .o files:
+#   make clean
+
 # First, make sure the environment variable SFINCS_SYSTEM is set appropriately:
 
 ifndef SFINCS_SYSTEM
@@ -23,9 +36,11 @@ all: $(TARGET)
 
 include $(SYSTEM_MAKEFILE)
 
-# Export variables that will be used in the quadpack subdirectory:
-export FC
-export EXTRA_COMPILE_FLAGS
+# Export variables that will be used in the quadpack subdirectory or for "make test":
+#export FC
+#export EXTRA_COMPILE_FLAGS
+#export SFINCS_RUN_LARGE_EXAMPLES
+export
 
 %.o: %.F90
 	$(FC) $(EXTRA_COMPILE_FLAGS) -c $<
@@ -49,7 +64,10 @@ test_make:
 	@echo EXTRA_LINK_FLAGS is $(EXTRA_LINK_FLAGS)
 	@echo PETSC_LIB is $(PETSC_LIB)
 	@echo TARGET is $(TARGET)
-	@echo OBJS is $(OBJS)
+	@echo OBJ_FILES is $(OBJ_FILES)
+
+test: $(TARGET)
+	@echo "Beginning functional tests." && cd examples && ./runExamples.py
 
 # Dependencies:
 writeHDF5Output.o: globalVariables.o scan.o

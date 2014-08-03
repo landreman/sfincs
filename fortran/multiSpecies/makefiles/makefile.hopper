@@ -1,3 +1,5 @@
+# Hopper is a Cray XE6 at NERSC (Lawrence Berkeley National Laboratory).
+
 # Set command for fortran compiler:
 FC = ftn
 
@@ -9,3 +11,6 @@ EXTRA_COMPILE_FLAGS =
 
 # Any other flags for linking, such as -l library flags:
 EXTRA_LINK_FLAGS =
+
+# For "make test", do run the examples that require multiple nodes worth of memory:
+SFINCS_RUN_LARGE_EXAMPLES = true

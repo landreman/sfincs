@@ -8,3 +8,5 @@ EXTRA_COMPILE_FLAGS = -I$(PETSC_DIR)/include -I$(PETSC_DIR)/$(PETSC_ARCH)/includ
 # Any other flags for linking, such as -l library flags:
 EXTRA_LINK_FLAGS =
 
+# For "make test", do run the examples that require multiple nodes worth of memory:
+SFINCS_RUN_LARGE_EXAMPLES = true
