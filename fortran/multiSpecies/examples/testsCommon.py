@@ -15,7 +15,7 @@ def readHDF5(variableName):
         p = subprocess.Popen("h5dump", stdout=subprocess.PIPE)
     except:
         print "Error! Unable to execute h5dump."
-        exit(1)
+        raise
 
     # If we made it this far, then the h5dump command is indeed accessible to the shell. Next call h5dump with arguments:
 
@@ -23,7 +23,7 @@ def readHDF5(variableName):
         p = subprocess.Popen(["h5dump", "-y", "-d", "/run  1/"+variableName, "sfincsOutput.h5"], stdout=subprocess.PIPE)
     except:
         print "Error! Unable to read sfincsOutput.h5 using h5dump. It is likely that sfincsOutput.h5 is corrupted."
-        exit(1)
+        raise
 
     (output, err) = p.communicate()
 
