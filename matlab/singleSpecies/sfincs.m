@@ -2812,7 +2812,9 @@ end
                       error('The first fort996boozer_file entry is not the B00 component')
                     end
                     BHarmonics_l = modes(1,2:end);
-                    BHarmonics_n = modes(2,2:end);
+                    BHarmonics_n = modes(2,2:end) / NPeriods;
+                    % Make sure all toroidal mode numbers are integers:
+                    assert(all(BHarmonics_n == round(BHarmonics_n)))
                     BHarmonics_amplitudes = modes(3,2:end)/B0OverBBar; % Store the values normalised to the B00 component. 
                     BHarmonics_parity = ones(1,length(BHarmonics_amplitudes));
                     dGdpHat=NaN; %Not implemented yet
