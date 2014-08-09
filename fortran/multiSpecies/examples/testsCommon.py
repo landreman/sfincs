@@ -27,10 +27,17 @@ def readHDF5(variableName):
 
     (output, err) = p.communicate()
 
-    # Pick out the line with the variable contents:
-    resultsString = output.splitlines()[5]
-    # Convert to an array of strings, then to an array of floats:
-    return map(float,resultsString.split(","))
+    # Pick out the lines with the variable contents.
+    temp = output.splitlines()
+    # Try joining lines 5-7 so we can get the 3-line transport matrix if desired.
+    try:
+        resultsString = temp[5] + temp[6] + temp[7]
+        # Convert to an array of strings, then to an array of floats:
+        return map(float,resultsString.split(","))
+    except:
+        resultsString = temp[5]
+        # Convert to an array of strings, then to an array of floats:
+        return map(float,resultsString.split(","))
 
 def shouldBe(variableName, index, trueValue, relativeTolerance):
     latestValue = readHDF5(variableName)[index]
