@@ -70,8 +70,7 @@ test_make:
 	@echo OBJ_FILES is $(OBJ_FILES)
 
 test: $(TARGET)
-	export SFINCS_RETEST=no
-	@echo "Beginning functional tests." && cd examples && ./runExamples.py
+	@echo "Beginning functional tests." && cd examples && export SFINCS_RETEST=no && ./runExamples.py
 
 retest: $(TARGET)
 	@echo "Testing sfincsOutput.h5 for examples without re-running then." && cd examples && export SFINCS_RETEST=yes && ./runExamples.py
