@@ -20,6 +20,15 @@ def verifyVariableExists(str):
 isABatchSystemUsed = verifyVariableExists("SFINCS_IS_A_BATCH_SYSTEM_USED")
 runLargeExamplesStr = verifyVariableExists("SFINCS_RUN_LARGE_EXAMPLES")
 commandToSubmitJob = verifyVariableExists("SFINCS_COMMAND_TO_SUBMIT_JOB")
+retestStr = verifyVariableExists("SFINCS_RETEST")
+
+if retestStr=="yes":
+    retest=True
+elif retestStr=="no":
+    retest=False
+else:
+    print "Error! SFINCS_RETEST must be either 'yes' or 'no'. There is likely an error in the main makefile."
+    exit(1)
 
 if runLargeExamplesStr=="yes":
     runLargeExamples = True
@@ -79,7 +88,7 @@ for example in examplesToRun:
 
 if isABatchSystemUsed == "no":
     for subdirectory in examplesToRun:
-        print "Preparing to run example: "+subdirectory
+        print "Preparing to check example: "+subdirectory
         try:
             os.chdir(subdirectory)
         except:
@@ -88,23 +97,24 @@ if isABatchSystemUsed == "no":
 
         print "Moved to working directory "+os.getcwd()
 
-        try:
-            os.remove("sfincsOutput.h5")
-        except:
-            pass
-        # If sfincsOutput.h5 does not exist, there will be an exception, but we can safely ignore it.
+        if not retest:
+            try:
+                os.remove("sfincsOutput.h5")
+            except:
+                pass
+            # If sfincsOutput.h5 does not exist, there will be an exception, but we can safely ignore it.
 
-        print "Lanching SFINCS..."
-        try:
-            # Next we launch SFINCS.
-            # We need to include .split(" ") to separate the command-line arguments into an array of strings. 
-            # I'm not sure why python requires this.
-            subprocess.call(commandToSubmitJob.split(" "))
-        except:
-            print "An error occurred when attempting to launch sfincs."
-            print "This is likely due to an error in the SFINCS_COMMAND_TO_SUBMIT_JOB parameter in the makefile for your system."
-            print "The present value of SFINCS_COMMAND_TO_SUBMIT_JOB is: " + os.environ["SFINCS_COMMAND_TO_SUBMIT_JOB"]
-            raise
+            print "Lanching SFINCS..."
+            try:
+                # Next we launch SFINCS.
+                # We need to include .split(" ") to separate the command-line arguments into an array of strings. 
+                # I'm not sure why python requires this.
+                subprocess.call(commandToSubmitJob.split(" "))
+            except:
+                print "An error occurred when attempting to launch sfincs."
+                print "This is likely due to an error in the SFINCS_COMMAND_TO_SUBMIT_JOB parameter in the makefile for your system."
+                print "The present value of SFINCS_COMMAND_TO_SUBMIT_JOB is: " + os.environ["SFINCS_COMMAND_TO_SUBMIT_JOB"]
+                raise
 
         print "About to run tests on output."
 
@@ -139,41 +149,44 @@ elif isABatchSystemUsed == "yes":
     examplesNotSubmitted = []
     devnull = open(os.devnull,'w')
 
-    for subdirectory in examplesToRun:
-        print "Preparing to submit example: "+subdirectory
-        try:
-            os.chdir(subdirectory)
-        except:
-            print "Error occurred when trying to change directory to "+subdirectory
-            raise
+    if retest:
+        examplesSubmitted = examplesToRun
+    else:
+        for subdirectory in examplesToRun:
+            print "Preparing to submit example: "+subdirectory
+            try:
+                os.chdir(subdirectory)
+            except:
+                print "Error occurred when trying to change directory to "+subdirectory
+                raise
+            
+            print "Moved to working directory "+os.getcwd()
+            
+            try:
+                os.remove("sfincsOutput.h5")
+            except:
+                pass
+            # If sfincsOutput.h5 does not exist, there will be an exception, but we can safely ignore it.
 
-        print "Moved to working directory "+os.getcwd()
-
-        try:
-            os.remove("sfincsOutput.h5")
-        except:
-            pass
-        # If sfincsOutput.h5 does not exist, there will be an exception, but we can safely ignore it.
-
-        print "Submitting job for example "+subdirectory+"..."
-        try:
-            # Next we launch SFINCS.
-            # We need to include .split(" ") to separate the command-line arguments into an array of strings. 
-            # I'm not sure why python requires this.
-            submissionResult = subprocess.call(commandToSubmitJob.split(" "))
-        except:
-            examplesNotSubmitted.append(subdirectory)
-            print "Unable to submit example "+subdirectory+" for some reason. The problem may be SFINCS_COMMAND_TO_SUBMIT_JOB for your system. Skipping this example."
-        else:
-            if submissionResult==0:
-                examplesSubmitted.append(subdirectory)
-                print "No errors submitting example "+subdirectory+"."
-            else:
+            print "Submitting job for example "+subdirectory+"..."
+            try:
+                # Next we launch SFINCS.
+                # We need to include .split(" ") to separate the command-line arguments into an array of strings. 
+                # I'm not sure why python requires this.
+                submissionResult = subprocess.call(commandToSubmitJob.split(" "))
+            except:
                 examplesNotSubmitted.append(subdirectory)
-                print "Nonzero exit code returned when trying to submit example "+subdirectory+". Skipping this example."
+                print "Unable to submit example "+subdirectory+" for some reason. The problem may be SFINCS_COMMAND_TO_SUBMIT_JOB for your system. Skipping this example."
+            else:
+                if submissionResult==0:
+                    examplesSubmitted.append(subdirectory)
+                    print "No errors submitting example "+subdirectory+"."
+                else:
+                    examplesNotSubmitted.append(subdirectory)
+                    print "Nonzero exit code returned when trying to submit example "+subdirectory+". Skipping this example."
 
-        # Step back one directory
-        os.chdir("..")
+                # Step back one directory
+                os.chdir("..")
 
     if len(examplesSubmitted)==0:
         print "Unable to submit any of the examples."
@@ -211,7 +224,7 @@ elif isABatchSystemUsed == "yes":
                     print "   Example "+subdirectory+" has started but I cannot yet read its sfincsOutput.h5."
                     keepGoing = True
                 else:
-                    print "   Example "+subdirectory+" just completed. Running tests..."
+                    print "   Example "+subdirectory+" has completed. Running tests..."
                     os.chdir(subdirectory)
 
                     hasSmall = os.path.isfile("tests_small.py")

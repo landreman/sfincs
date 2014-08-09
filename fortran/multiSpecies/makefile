@@ -8,6 +8,9 @@
 # To run tests:
 #   make test
 #
+# To run tests on sfincsOutput.h5 for all examples that would be run for this system with "make test", without actually re-running these examples:
+#   make retest
+#
 # To delete .mod and .o files:
 #   make clean
 
@@ -30,7 +33,7 @@ OBJ_FILES = sfincs.o xGrid.o writeHDF5Output.o globalVariables.o scan.o readInpu
 	indices.o sparsify.o geometry.o \
 	polynomialInterpolationMatrix.o solveDKE.o quadpack/quadpack.a 
 
-.PHONY: all clean test
+.PHONY: all clean test retest
 
 all: $(TARGET)
 
@@ -67,7 +70,11 @@ test_make:
 	@echo OBJ_FILES is $(OBJ_FILES)
 
 test: $(TARGET)
+	export SFINCS_RETEST=no
 	@echo "Beginning functional tests." && cd examples && ./runExamples.py
+
+retest: $(TARGET)
+	@echo "Testing sfincsOutput.h5 for examples without re-running then." && cd examples && export SFINCS_RETEST=yes && ./runExamples.py
 
 # Dependencies:
 writeHDF5Output.o: globalVariables.o scan.o
