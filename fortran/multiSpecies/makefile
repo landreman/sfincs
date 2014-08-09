@@ -27,22 +27,15 @@ endif
 
 TARGET = sfincs
 
-OBJ_FILES = sfincs.o xGrid.o writeHDF5Output.o globalVariables.o scan.o readInput.o \
-	polynomialDiffMatrices.o uniformDiffMatrices.o \
-	uniformInterpolationMatrix.o printToStdout.o  \
-	indices.o sparsify.o geometry.o \
-	polynomialInterpolationMatrix.o solveDKE.o quadpack/quadpack.a 
-
 .PHONY: all clean test retest
 
 all: $(TARGET)
 
 include $(SYSTEM_MAKEFILE)
 
+include makefile.depend
+
 # Export variables that will be used in the quadpack subdirectory or for "make test":
-#export FC
-#export EXTRA_COMPILE_FLAGS
-#export SFINCS_RUN_LARGE_EXAMPLES
 export
 
 %.o: %.F90
@@ -74,14 +67,3 @@ test: $(TARGET)
 
 retest: $(TARGET)
 	@echo "Testing sfincsOutput.h5 for examples without re-running then." && cd examples && export SFINCS_RETEST=yes && ./runExamples.py
-
-# Dependencies:
-writeHDF5Output.o: globalVariables.o scan.o
-printToStdout.o: globalVariables.o
-readInput.o: globalVariables.o
-geometry.o: globalVariables.o
-solveDKE.o: globalVariables.o xGrid.o polynomialDiffMatrices.o printToStdout.o sparsify.o geometry.o indices.o
-indices.o: globalVariables.o
-scan.o: globalVariables.o
-sfincs.o: globalVariables.o writeHDF5Output.o printToStdout.o solveDKE.o readInput.o scan.o
-
