@@ -159,9 +159,9 @@
   Zs = 1 -1
   mHats = 1 0.000545509d+0
   nHats = 0.66d+0 0.66d+0
-  dNHatdpsiNs = 4.49d+0 4.49d+0
+  dNHatdpsiNs = -4.49d+0 -4.49d+0
   THats = 1d+0 1d+0
-  dTHatdpsiNs = 3.32d+0 3.32d+0
+  dTHatdpsiNs = -3.32d+0 -3.32d+0
 
 /
 
@@ -205,7 +205,7 @@
   EParallelHat = 0
 
   ! Radial electric field
-  dPhiHatdpsiN = -2.5d+0
+  dPhiHatdpsiN = 2.5d+0
 
   ! The next 3 parameters set the values of dPhiHatdpsiN to use for an E_r scan
   ! (i.e., for programMode = 8)

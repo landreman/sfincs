@@ -23,7 +23,7 @@
  [           1 ] Delta     =   4.569400000000000E-003
  [           1 ] alpha     =    1.00000000000000     
  [           1 ] nu_n      =   8.315650000000001E-003
- [           1 ] dPhiHatdpsiN =   -2.50000000000000     
+ [           1 ] dPhiHatdpsiN =    2.50000000000000     
  [           1 ] ---- Geometry parameters: ----
  [           1 ] Geometry scheme =           11
  [           1 ] iota      =    1.31000000000000     
@@ -44,88 +44,88 @@
  [           1 ] The matrix is       672610 x      672610  elements.
  [           1 ] Processor            1  owns theta indices            1  to 
            1
- [           1 ] Processor           17  owns theta indices           17  to 
-          17
- [           1 ] Processor           10  owns theta indices           10  to 
-          10
+ [           1 ] Successfully opened magnetic equilibrium file 
+ ../../../../equilibria/w7x-sc1.bc.  Nperiods =            5
  [           1 ] Processor            4  owns theta indices            4  to 
            4
- [           1 ] Processor           12  owns theta indices           12  to 
-          12
+ [           1 ] Processor            7  owns theta indices            7  to 
+           7
+ [           1 ] Processor            3  owns theta indices            3  to 
+           3
+ [           1 ] Processor           36  owns theta indices           20  to 
+ [           1 ] Processor           30  owns theta indices           20  to 
+          19
+          19
  [           1 ] Processor            8  owns theta indices            8  to 
            8
+ [           1 ] Processor           24  owns theta indices           20  to 
+          19
+ [           1 ] Processor           12  owns theta indices           12  to 
+          12
+ [           1 ] Processor           10  owns theta indices           10  to 
+          10
  [           1 ] Processor            2  owns theta indices            2  to 
            2
  [           1 ] Processor            6  owns theta indices            6  to 
            6
- [           1 ] Processor            7  owns theta indices            7  to 
-           7
  [           1 ] Processor           11  owns theta indices           11  to 
           11
- [           1 ] Processor            3  owns theta indices            3  to 
-           3
  [           1 ] Processor            9  owns theta indices            9  to 
            9
  [           1 ] Processor            5  owns theta indices            5  to 
            5
- [           1 ] Processor           34  owns theta indices           20  to 
-          19
- [           1 ] Processor           33  owns theta indices           20  to 
-          19
- [           1 ] Processor           35  owns theta indices           20  to 
-          19
- [           1 ] Processor           25  owns theta indices           20  to 
- [           1 ] Processor           29  owns theta indices           20  to 
-          19
-          19
+ [           1 ] Processor           14  owns theta indices           14  to 
+ [           1 ] Processor           13  owns theta indices           13  to 
+          14
+          13
  [           1 ] Processor           26  owns theta indices           20  to 
-          19
- [           1 ] Processor           28  owns theta indices           20  to 
-          19
- [           1 ] Successfully opened magnetic equilibrium file 
- ../../../../equilibria/w7x-sc1.bc.  Nperiods =            5
- [           1 ] Processor           36  owns theta indices           20  to 
           19
  [           1 ] Processor           31  owns theta indices           20  to 
           19
- [           1 ] Processor           30  owns theta indices           20  to 
+ [           1 ] Processor           21  owns theta indices           20  to 
+          19
+ [           1 ] Processor           20  owns theta indices           20  to 
+          19
+ [           1 ] Processor           29  owns theta indices           20  to 
+          19
+ [           1 ] Processor           25  owns theta indices           20  to 
+          19
+ [           1 ] Processor           35  owns theta indices           20  to 
+          19
  [           1 ] Processor           32  owns theta indices           20  to 
           19
- [           1 ] Processor           27  owns theta indices           20  to 
-          19
+ [           1 ] Processor           17  owns theta indices           17  to 
+          17
+ [           1 ] Processor           23  owns theta indices           20  to 
           19
  [           1 ] Processor           22  owns theta indices           20  to 
           19
- [           1 ] Processor           21  owns theta indices           20  to 
- [           1 ] Processor           14  owns theta indices           14  to 
+ [           1 ] Processor           34  owns theta indices           20  to 
           19
-          14
- [           1 ] Processor           23  owns theta indices           20  to 
- [           1 ] Processor           24  owns theta indices           20  to 
+ [           1 ] Processor           27  owns theta indices           20  to 
           19
+ [           1 ] Processor           19  owns theta indices           19  to 
           19
- [           1 ] Processor           13  owns theta indices           13  to 
-          13
- [           1 ] Processor           20  owns theta indices           20  to 
+ [           1 ] Processor           15  owns theta indices           15  to 
+          15
+ [           1 ] Processor           33  owns theta indices           20  to 
+          19
+ [           1 ] Processor           28  owns theta indices           20  to 
           19
  [           1 ] Processor           18  owns theta indices           18  to 
           18
  [           1 ] Processor           16  owns theta indices           16  to 
           16
- [           1 ] Processor           15  owns theta indices           15  to 
-          15
- [           1 ] Processor           19  owns theta indices           19  to 
-          19
  [           1 ] Successfully read magnetic equilibrium from file 
  ../../../../equilibria/w7x-sc1.bc
  [           1 ] This computation is for the flux surface with minor radius 
   0.448449825308277       meters, equivalent to r/a =   0.877730026830574     
  [           1 ] Time to pre-assemble preconditioner matrix: 
-  0.301827907562256       seconds.
+  0.223299026489258       seconds.
  [           1 ] Time to assemble preconditioner matrices: 
-  6.574606895446777E-002  seconds.
- [           1 ] Time to pre-assemble matrix:   8.450102806091309E-002  seconds.
- [           1 ] Time to assemble matrices:   6.859898567199707E-002  seconds.
+  6.550908088684082E-002  seconds.
+ [           1 ] Time to pre-assemble matrix:   8.508610725402832E-002  seconds.
+ [           1 ] Time to assemble matrices:   7.180309295654297E-002  seconds.
  [           1 ] Using superlu_dist to factorize the preconditioner.
  [           1 ] # of nonzeros in matrix:    17957250 , allocated:    64592020 
  , mallocs:           0  (should be 0)
@@ -140,59 +140,59 @@
 	NUMfact space (MB) sum(procs):  L\U	13176.92	all	13234.31
 	Total highmark (MB):  All	32847.95	Avg	912.44	Max	925.91
         Mat conversion(PETSc->SuperLU_DIST) time (max/min/avg): 
-                              0.00397706 / 0.00358605 / 0.00377632
+                              0.00409603 / 0.003546 / 0.00384408
 	EQUIL time             0.06
-	ROWPERM time           4.69
-	COLPERM time          16.51
-	SYMBFACT time          5.49
+	ROWPERM time           4.62
+	COLPERM time          16.67
+	SYMBFACT time          5.57
 	DISTRIBUTE time        1.02
-	FACTOR time           21.35
-	Factor flops	3.356098e+12	Mflops 	157186.42
+	FACTOR time           21.25
+	Factor flops	3.356094e+12	Mflops 	157951.18
 	SOLVE time             0.00
 	SOLVE time             0.50
-	Solve flops	3.040845e+09	Mflops 	 6084.68
-  0 KSP Residual norm 4.470873341158e-02 
+	Solve flops	3.040846e+09	Mflops 	 6100.03
+  0 KSP Residual norm 4.470872929129e-02 
 	SOLVE time             0.48
-	Solve flops	3.040843e+09	Mflops 	 6282.86
-  1 KSP Residual norm 1.361204412855e-06 
+	Solve flops	3.040848e+09	Mflops 	 6279.59
+  1 KSP Residual norm 1.036736545161e-06 
 	SOLVE time             0.47
-	Solve flops	3.040847e+09	Mflops 	 6492.14
-  2 KSP Residual norm 2.986113347832e-12 
+	Solve flops	3.040849e+09	Mflops 	 6531.05
+  2 KSP Residual norm 3.367610055566e-12 
  [           1 ] Done with the main solve.  Time to solve: 
-   51.7775540351868       seconds.
+   51.8602910041809       seconds.
  [           1 ] Converged!  KSPConvergedReason =            2
- [           1 ] Total elapsed time:    52.3118629455566       seconds.
+ [           1 ] Total elapsed time:    52.3197441101074       seconds.
  [           1 ] Results for species            1 :
- [           1 ]   FSADensityPerturbation:    1.661243702577618E-013
- [           1 ]   FSABFlow:                 -6.982140236880133E-003
- [           1 ]   FSAPressurePerturbation:   6.922587123851698E-013
- [           1 ]   NTV:                       7.286868500765822E-005
- [           1 ]   particleFlux:              1.116826148932465E-006
- [           1 ]   momentumFlux:              1.440481514540864E-009
- [           1 ]   heatFlux:                  2.382995682114280E-006
+ [           1 ]   FSADensityPerturbation:   -1.667547019663365E-013
+ [           1 ]   FSABFlow:                  6.982140194109130E-003
+ [           1 ]   FSAPressurePerturbation:  -3.041761734846307E-013
+ [           1 ]   NTV:                      -7.286868502441909E-005
+ [           1 ]   particleFlux:             -1.116826148895042E-006
+ [           1 ]   momentumFlux:              1.440481525631776E-009
+ [           1 ]   heatFlux:                 -2.382995682020366E-006
  [           1 ] Results for species            2 :
- [           1 ]   FSADensityPerturbation:   -4.779184322861285E-014
- [           1 ]   FSABFlow:                  7.812106245409801E-003
- [           1 ]   FSAPressurePerturbation:  -1.187573298997748E-013
- [           1 ]   NTV:                      -3.226595490505985E-006
- [           1 ]   particleFlux:              5.480946026266353E-008
- [           1 ]   momentumFlux:              5.730719846513613E-013
- [           1 ]   heatFlux:                  1.133473454775712E-007
- [           1 ] FSABjHat (bootstrap current):  -1.479424648228993E-002
-Application 6324431 resources: utime ~1822s, stime ~106s, Rss ~1049660, inblocks ~1437068, outblocks ~295087
+ [           1 ]   FSADensityPerturbation:    4.620165076592357E-014
+ [           1 ]   FSABFlow:                 -7.812106253231445E-003
+ [           1 ]   FSAPressurePerturbation:   8.236803815943157E-014
+ [           1 ]   NTV:                       3.226595490250115E-006
+ [           1 ]   particleFlux:             -5.480946022842231E-008
+ [           1 ]   momentumFlux:              5.730719863967398E-013
+ [           1 ]   heatFlux:                 -1.133473454030423E-007
+ [           1 ] FSABjHat (bootstrap current):   1.479424644734057E-002
+Application 6681533 resources: utime ~1802s, stime ~107s, Rss ~1049900, inblocks ~1434837, outblocks ~297970
 
  + --------------------------------------------------------------------------
  +        Job name: sfincs
- +          Job Id: 1465149.edique02
+ +          Job Id: 1548028.edique02
  +          System: edison
- +     Queued Time: Tue Jul 22 07:34:14 2014
- +      Start Time: Tue Jul 22 07:35:02 2014
- + Completion Time: Tue Jul 22 07:36:04 2014
+ +     Queued Time: Sun Aug 10 10:27:52 2014
+ +      Start Time: Sun Aug 10 10:32:15 2014
+ + Completion Time: Sun Aug 10 10:33:14 2014
  +            User: landrema
- +        MOM Host: nid00899
+ +        MOM Host: nid00897
  +           Queue: debug
  +  Req. Resources: mppnodect=3,mppnppn=24,mppwidth=72,walltime=00:30:00
- +  Used Resources: cput=00:00:01,mem=10196kb,vmem=153544kb,walltime=00:01:04
+ +  Used Resources: cput=00:00:01,mem=10172kb,vmem=153516kb,walltime=00:01:00
  +     Acct String: mp217
  +   PBS_O_WORKDIR: /global/scratch2/sd/landrema/sfincs/fortran/multiSpecies/examples/sfincsPaperFigure3_geometryScheme11_PASCollisions_2Species_DKESTrajectories
  +     Submit Args: job.edison
