@@ -118,14 +118,14 @@ contains
     PetscScalar, dimension(4) :: dataNumbers
     PetscScalar, dimension(8) :: data8Numbers
     integer, dimension(2) :: dataIntegers
-    integer :: no_of_modes_old, no_of_modes_new, modeind, numB0s
+    integer :: no_of_modes_old, no_of_modes_new, modeind, numB0s, startn, stopn
     PetscScalar :: iota_old, iota_new, G_old, G_new, I_old, I_new
     PetscScalar :: pPrimeHat, pPrimeHat_old, pPrimeHat_new
     logical :: end_of_file, proceed
     integer, parameter :: max_no_of_modes = 10000
     integer, dimension(max_no_of_modes) :: modesm_old, modesm_new, modesn_old, modesn_new
     PetscScalar, dimension(max_no_of_modes) :: modesb_old, modesb_new
-    PetscScalar :: normradius_old,  normradius_new, normradius, B0_old, B0_new
+    PetscScalar :: normradius_old,  normradius_new, B0_old, B0_new
     PetscScalar :: hHatHarmonics_amplitude, uHatHarmonics_amplitude
 
     ! For the BHarmonics_parity array, 
@@ -183,6 +183,7 @@ contains
        end if
 
        dGdpHat = 0 !Not implemented as an input for this case yet, could be put in namelist input if needed
+       normradius = -1 !dummy
 
     case (2)
        ! A three-harmonic approximation of the LHD standard configuration.
@@ -220,6 +221,7 @@ contains
        IHat = 0
        psiAHat = B0OverBBar * (a ** 2) / two
        dGdpHat = 0
+       normradius = -1 !dummy
                     
     case (3)
        ! A four-harmonic approximation of the LHD inward-shifted configuration.
@@ -262,7 +264,7 @@ contains
        IHat = 0
        psiAHat = B0OverBBar * (a ** 2) / two
        dGdpHat = 0
-                    
+       normradius = -1 !dummy
 
     case (4)
        ! A three-harmonic approximation of the W7-X standard configuration.
@@ -300,6 +302,7 @@ contains
        IHat = 0
        psiAHat = -0.384935d+0 ! Tesla * meters^2 / radian
        dGdpHat = 0
+       normradius = -1 !dummy
 
     case (11)
        ! Read Boozer coordinate file in .bc format used at IPP Greifswald
@@ -698,65 +701,73 @@ contains
     
     if (any(.not. BHarmonics_parity)) then !sine components exist
        do m = 0,int(Ntheta/2.0-1) !Nyquist max freq.
-          do n = 0,int(Nzeta/2.0-1)
-             if ((m /= 0).or.(n /= 0)) then
-                !cos
-                hHatHarmonics_amplitude = 0
-                do itheta = 1,Ntheta
-                   hHatHarmonics_amplitude = hHatHarmonics_amplitude + 2.0/(Ntheta*Nzeta) * &
-                        dot_product(cos(m * theta(itheta)  - n * NPeriods * zeta), hHat(itheta,:))
-                end do
-                uHatHarmonics_amplitude = &
-                     iota*(GHat*m + IHat*n * NPeriods)/(n * NPeriods - iota*m) * hHatHarmonics_amplitude
-                do itheta = 1,Ntheta
-                   uHat(itheta,:) = uHat(itheta,:) &
-                        + uHatHarmonics_amplitude * cos(m * theta(itheta) - n * NPeriods * zeta)
-                   duHatdtheta(itheta,:) = duHatdtheta(itheta,:) &
-                        - uHatHarmonics_amplitude * m * sin(m * theta(itheta) - n * NPeriods * zeta)
-                   duHatdzeta(itheta,:) = duHatdzeta(itheta,:) &
-                        + uHatHarmonics_amplitude * n * NPeriods * sin(m * theta(itheta) - n * NPeriods * zeta)
-                end do
+          if (m == 0) then
+             startn=1
+          else
+             startn=-int(Nzeta/2.0)
+          end if
+          stopn=int(Nzeta/2.0-1)
+          do n = startn,stopn 
+             !cos
+             hHatHarmonics_amplitude = 0
+             do itheta = 1,Ntheta
+                hHatHarmonics_amplitude = hHatHarmonics_amplitude + 2.0/(Ntheta*Nzeta) * &
+                     dot_product(cos(m * theta(itheta)  - n * NPeriods * zeta), hHat(itheta,:))
+             end do
+             uHatHarmonics_amplitude = &
+                  iota*(GHat*m + IHat*n * NPeriods)/(n * NPeriods - iota*m) * hHatHarmonics_amplitude
+             do itheta = 1,Ntheta
+                uHat(itheta,:) = uHat(itheta,:) &
+                     + uHatHarmonics_amplitude * cos(m * theta(itheta) - n * NPeriods * zeta)
+                duHatdtheta(itheta,:) = duHatdtheta(itheta,:) &
+                     - uHatHarmonics_amplitude * m * sin(m * theta(itheta) - n * NPeriods * zeta)
+                duHatdzeta(itheta,:) = duHatdzeta(itheta,:) &
+                     + uHatHarmonics_amplitude * n * NPeriods * sin(m * theta(itheta) - n * NPeriods * zeta)
+             end do
 
-                !sin
-                hHatHarmonics_amplitude = 0
-                do itheta = 1,Ntheta
-                   hHatHarmonics_amplitude = hHatHarmonics_amplitude + 2.0/(Ntheta*Nzeta) * &
-                        dot_product(sin(m * theta(itheta)  - n * NPeriods * zeta), hHat(itheta,:))
-                end do
-                uHatHarmonics_amplitude = &
-                     iota*(GHat*m + IHat*n * NPeriods)/(n * NPeriods - iota*m) * hHatHarmonics_amplitude
-                do itheta = 1,Ntheta
-                   uHat(itheta,:) = uHat(itheta,:) &
-                        + uHatHarmonics_amplitude * sin(m * theta(itheta) - n * NPeriods * zeta)
-                   duHatdtheta(itheta,:) = duHatdtheta(itheta,:) &
-                        + uHatHarmonics_amplitude * m * cos(m * theta(itheta) - n * NPeriods * zeta)
-                   duHatdzeta(itheta,:) = duHatdzeta(itheta,:) &
-                        - uHatHarmonics_amplitude * n * NPeriods * cos(m * theta(itheta) - n * NPeriods * zeta)
-                end do
-             end if
+             !sin
+             hHatHarmonics_amplitude = 0
+             do itheta = 1,Ntheta
+                hHatHarmonics_amplitude = hHatHarmonics_amplitude + 2.0/(Ntheta*Nzeta) * &
+                     dot_product(sin(m * theta(itheta)  - n * NPeriods * zeta), hHat(itheta,:))
+             end do
+             uHatHarmonics_amplitude = &
+                  iota*(GHat*m + IHat*n * NPeriods)/(n * NPeriods - iota*m) * hHatHarmonics_amplitude
+             do itheta = 1,Ntheta
+                uHat(itheta,:) = uHat(itheta,:) &
+                     + uHatHarmonics_amplitude * sin(m * theta(itheta) - n * NPeriods * zeta)
+                duHatdtheta(itheta,:) = duHatdtheta(itheta,:) &
+                     + uHatHarmonics_amplitude * m * cos(m * theta(itheta) - n * NPeriods * zeta)
+                duHatdzeta(itheta,:) = duHatdzeta(itheta,:) &
+                     - uHatHarmonics_amplitude * n * NPeriods * cos(m * theta(itheta) - n * NPeriods * zeta)
+             end do
           end do
        end do
     else !only cosinus components
        do m = 0,int(Ntheta/2.0-1) !Nyquist max freq.
-          do n = 0,int(Nzeta/2.0-1)
-             if ((m /= 0).or.(n /= 0)) then
-                !cos
-                hHatHarmonics_amplitude = 0
-                do itheta = 1,Ntheta
-                   hHatHarmonics_amplitude = hHatHarmonics_amplitude + 2.0/(Ntheta*Nzeta) * &
-                        dot_product(cos(m * theta(itheta)  - n * NPeriods * zeta), hHat(itheta,:))
-                end do
-                uHatHarmonics_amplitude = &
-                     iota*(GHat*m + IHat*n * NPeriods)/(n * NPeriods - iota*m) * hHatHarmonics_amplitude
-                do itheta = 1,Ntheta
-                   uHat(itheta,:) = uHat(itheta,:) &
-                        + uHatHarmonics_amplitude * cos(m * theta(itheta) - n * NPeriods * zeta)
-                   duHatdtheta(itheta,:) = duHatdtheta(itheta,:) &
-                        - uHatHarmonics_amplitude * m * sin(m * theta(itheta) - n * NPeriods * zeta)
-                   duHatdzeta(itheta,:) = duHatdzeta(itheta,:) &
-                        + uHatHarmonics_amplitude * n * NPeriods * sin(m * theta(itheta) - n * NPeriods * zeta)
-                end do
-             end if
+          if (m == 0) then
+             startn=1
+          else
+             startn=-int(Nzeta/2.0)
+          end if
+          stopn=int(Nzeta/2.0-1)
+          do n = startn,stopn 
+             !cos
+             hHatHarmonics_amplitude = 0
+             do itheta = 1,Ntheta
+                hHatHarmonics_amplitude = hHatHarmonics_amplitude + 2.0/(Ntheta*Nzeta) * &
+                     dot_product(cos(m * theta(itheta)  - n * NPeriods * zeta), hHat(itheta,:))
+             end do
+             uHatHarmonics_amplitude = &
+                  iota*(GHat*m + IHat*n * NPeriods)/(n * NPeriods - iota*m) * hHatHarmonics_amplitude
+             do itheta = 1,Ntheta
+                uHat(itheta,:) = uHat(itheta,:) &
+                     + uHatHarmonics_amplitude * cos(m * theta(itheta) - n * NPeriods * zeta)
+                duHatdtheta(itheta,:) = duHatdtheta(itheta,:) &
+                     - uHatHarmonics_amplitude * m * sin(m * theta(itheta) - n * NPeriods * zeta)
+                duHatdzeta(itheta,:) = duHatdzeta(itheta,:) &
+                     + uHatHarmonics_amplitude * n * NPeriods * sin(m * theta(itheta) - n * NPeriods * zeta)
+             end do
           end do
        end do
     end if
