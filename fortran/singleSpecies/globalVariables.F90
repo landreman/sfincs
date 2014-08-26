@@ -170,6 +170,7 @@ module globalVariables
   PetscLogDouble :: elapsedTime
   integer :: didItConverge
   PetscScalar :: transportMatrix(3,3)
+  PetscScalar :: NTVMatrix(3)
 
   ! ********************************************************
   !

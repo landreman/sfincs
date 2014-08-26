@@ -143,6 +143,7 @@
     sqrtTHat = sqrt(THat)
 
     transportMatrix = 0
+    NTVMatrix = 0
 
     ! *******************************************************************************
     ! *******************************************************************************
@@ -1785,14 +1786,17 @@
                 transportMatrix(1,1) = 4*(GHat+iota*IHat)*particleFlux*nHat*B0OverBBar/(GHat*VPrimeHatWithG*(THat*sqrtTHat)*GHat)
                 transportMatrix(2,1) = 8*(GHat+iota*IHat)*heatFlux*nHat*B0OverBBar/(GHat*VPrimeHatWithG*(THat*THat*sqrtTHat)*GHat)
                 transportMatrix(3,1) = 2*nHat*FSAFlow/(GHat*THat)
+                NTVMatrix(1)         = 4*(GHat+iota*IHat)*    NTV     *nHat*B0OverBBar/(GHat*VPrimeHatWithG*(THat*sqrtTHat)*GHat)
              case (2)
                 transportMatrix(1,2) = 4*(GHat+iota*IHat)*particleFlux*B0OverBBar/(GHat*VPrimeHatWithG*sqrtTHat*GHat)
                 transportMatrix(2,2) = 8*(GHat+iota*IHat)*heatFlux*B0OverBBar/(GHat*VPrimeHatWithG*sqrtTHat*THat*GHat)
                 transportMatrix(3,2) = 2*FSAFlow/(GHat)
+                NTVMatrix(2)         = 4*(GHat+iota*IHat)*    NTV     *B0OverBBar/(GHat*VPrimeHatWithG*sqrtTHat*GHat)
              case (3)
                 transportMatrix(1,3) = particleFlux*Delta*Delta*FSABHat2/(VPrimeHatWithG*GHat*psiAHat*omega)
                 transportMatrix(2,3) = 2*Delta*Delta*heatFlux*FSABHat2/(GHat*VPrimeHatWithG*psiAHat*THat*omega)
                 transportMatrix(3,3) = FSAFlow*Delta*Delta*sqrtTHat*FSABHat2/((GHat+iota*IHat)*2*psiAHat*omega*B0OverBBar)
+                NTVMatrix(3)         =     NTV     *Delta*Delta*FSABHat2/(VPrimeHatWithG*GHat*psiAHat*omega)
              end select
           end if
 
