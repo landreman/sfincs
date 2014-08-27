@@ -1641,7 +1641,7 @@
           particleFluxFactor = - (THat ** (5/two))/(sqrtpi)
           momentumFluxFactor = - (THat ** 3)/(sqrtpi)
           heatFluxFactor = - (THat ** (7/two))/(2*sqrtpi)
-          NTVFactor =  (THat ** (5/two))/(sqrtpi)
+          NTVFactor =  2 / iota * (THat ** (5/two))/(sqrtpi)
 
           ! Convert the PETSc vector into a normal Fortran array:
           call VecGetArrayF90(solnOnProc0, solnArray, ierr)
@@ -1772,7 +1772,7 @@
                   * dot_product(thetaWeights, NTVBeforeSurfaceIntegral(:,izeta))
 
           end do
-          NTVmulti = NTV * nHat * 2*Delta / (psiAHat * (GHat+iota*IHat) * VPrimeHat)
+          NTVmulti = NTV * iota * nHat * 2*Delta / (psiAHat * (GHat+iota*IHat) * VPrimeHat)
           deallocate(B2)
 
           FSADensityPerturbation = FSADensityPerturbation / VPrimeHat

@@ -2436,7 +2436,7 @@ end
                 heatFluxBeforeSurfaceIntegral = -(THat^(7/2))*(GHat*dBHatdtheta-IHat*dBHatdzeta)./(2*sqrtpi*BHat.^3) ...
                     .* heatFluxBeforeSurfaceIntegral;
                 
-                NTVBeforeSurfaceIntegral = (THat^(5/2))./sqrtpi * NTVkernel .* NTVBeforeSurfaceIntegral;
+                NTVBeforeSurfaceIntegral = 2/iota * (THat^(5/2))./sqrtpi * NTVkernel .* NTVBeforeSurfaceIntegral;
 
                 FSADensityPerturbation = (1/VPrimeHat) * thetaWeights' * (densityPerturbation./(BHat.^2)) * zetaWeights;
                 FSAFlow = (1/VPrimeHat) * thetaWeights' * (flow./BHat) * zetaWeights;
