@@ -46,7 +46,7 @@
     PetscScalar, dimension(:,:), allocatable :: thetaPartOfTerm, localThetaPartOfTerm, xPartOfXDot
     integer :: i, j, ix, itheta, izeta, L, NxPotentials, matrixSize, index, ixi
     integer :: ithetaRow, ithetaCol, scheme, ell
-    PetscScalar, dimension(:), allocatable :: x, xWeights, xPotentials, xWeightsPotentials
+    PetscScalar, dimension(:), allocatable :: xWeights, xPotentials, xWeightsPotentials
     PetscScalar, dimension(:), allocatable :: x2, xPartOfRHS
     PetscScalar, dimension(:,:), allocatable :: ddx, d2dx2, ddxPotentials, d2dx2Potentials
     PetscScalar, dimension(:,:), allocatable :: ddxPreconditioner, ddxToUse, zetaPartOfTerm
@@ -66,7 +66,7 @@
     PetscScalar :: collisionTermFactor, xDotFactor, LFactor, temp1, temp2
     integer :: rowIndex, colIndex
     PetscScalar :: densityFactor, flowFactor, pressureFactor
-    PetscScalar :: particleFluxFactor, momentumFluxFactor, heatFluxFactor, NTVFactor
+    PetscScalar :: particleFluxFactor, momentumFluxFactor, heatFluxFactor, NTVFactor, fNormFactor
     PetscScalar, dimension(:), allocatable :: densityIntegralWeights
     PetscScalar, dimension(:), allocatable :: flowIntegralWeights
     PetscScalar, dimension(:), allocatable :: pressureIntegralWeights
@@ -1442,6 +1442,7 @@
     allocate(momentumFluxBeforeSurfaceIntegral(Ntheta,Nzeta))
     allocate(heatFluxBeforeSurfaceIntegral(Ntheta,Nzeta))
     allocate(NTVBeforeSurfaceIntegral(Ntheta,Nzeta))
+    allocate(fNormIsotropicBeforeSurfaceIntegral(Ntheta,Nzeta,Nx))
 
     allocate(densityIntegralWeights(Nx))
     allocate(flowIntegralWeights(Nx))
@@ -1450,6 +1451,7 @@
     allocate(momentumFluxIntegralWeights(Nx))
     allocate(heatFluxIntegralWeights(Nx))
     allocate(NTVIntegralWeights(Nx))
+    allocate(fNormIsotropic(Nx))
 
 
     ! ***********************************************************************
@@ -1642,6 +1644,7 @@
           momentumFluxFactor = - (THat ** 3)/(sqrtpi)
           heatFluxFactor = - (THat ** (7/two))/(2*sqrtpi)
           NTVFactor =  2 / iota * (THat ** (5/two))/(sqrtpi)
+          fNormFactor = Delta*THat*sqrtTHat/psiAHat
 
           ! Convert the PETSc vector into a normal Fortran array:
           call VecGetArrayF90(solnOnProc0, solnArray, ierr)
@@ -1683,6 +1686,8 @@
 
                 heatFluxBeforeSurfaceIntegral(itheta,izeta) = factor * (8/three) * heatFluxFactor &
                      * dot_product(xWeights, heatFluxIntegralWeights * solnArray(indices))
+
+                fNormIsotropicBeforeSurfaceIntegral(itheta,izeta,1:Nx) = fNormFactor * solnArray(indices)
 
              end do
           end do
@@ -1746,6 +1751,7 @@
           momentumFlux=0
           heatFlux=0
           NTV=0
+          fNormIsotropic=0
           allocate(B2(Ntheta))
           do izeta=1,Nzeta
              B2 = BHat(:,izeta)*BHat(:,izeta)
@@ -1771,6 +1777,12 @@
              NTV = NTV + zetaWeights(izeta) &
                   * dot_product(thetaWeights, NTVBeforeSurfaceIntegral(:,izeta))
 
+          end do
+          do ix=1,Nx
+             do izeta=1,Nzeta
+                fNormIsotropic(ix) = fNormIsotropic(ix) + zetaWeights(izeta) &
+                  * dot_product(thetaWeights, fNormIsotropicBeforeSurfaceIntegral(:,izeta,ix))
+             end do
           end do
           NTVmulti = NTV * iota * nHat * 2*Delta / (psiAHat * (GHat+iota*IHat) * VPrimeHat)
           deallocate(B2)

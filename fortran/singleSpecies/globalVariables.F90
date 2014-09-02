@@ -157,13 +157,15 @@ module globalVariables
   ! ********************************************************
 
   PetscScalar :: normradius
-  PetscScalar, dimension(:), allocatable :: theta, zeta, sources
+  PetscScalar, dimension(:), allocatable :: theta, zeta, x, sources
   PetscScalar, dimension(:,:), allocatable :: BHat, dBHatdtheta, dBHatdzeta
   PetscScalar, dimension(:,:), allocatable :: flow, densityPerturbation, pressurePerturbation
   PetscScalar, dimension(:,:), allocatable :: particleFluxBeforeSurfaceIntegral
   PetscScalar, dimension(:,:), allocatable :: momentumFluxBeforeSurfaceIntegral
   PetscScalar, dimension(:,:), allocatable :: heatFluxBeforeSurfaceIntegral
   PetscScalar, dimension(:,:), allocatable :: NTVBeforeSurfaceIntegral, NTVKernel
+  PetscScalar, dimension(:,:,:), allocatable :: fNormIsotropicBeforeSurfaceIntegral
+  PetscScalar, dimension(:), allocatable :: fNormIsotropic
   PetscScalar :: FSADensityPerturbation, FSAFlow, FSAPressurePerturbation
   PetscScalar :: particleFlux, momentumFlux, heatFlux, NTV, NTVmulti, VPrimeHat, FSABHat2
 
@@ -270,6 +272,8 @@ contains
        deallocate(momentumFluxBeforeSurfaceIntegral)
        deallocate(heatFluxBeforeSurfaceIntegral)
        deallocate(NTVBeforeSurfaceIntegral)
+       deallocate(fNormIsotropicBeforeSurfaceIntegral)
+       deallocate(fNormIsotropic)
        if (constraintScheme > 0) then
           deallocate(sources)
        end if
