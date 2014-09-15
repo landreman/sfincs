@@ -2,8 +2,8 @@
 # hydra:
 # module load petsc-real/3.3-p3 hdf5-mpi/1.8.11
 # then run 
-# make -f makefileIPPcluster cleaner
-# make -f makefileIPPcluster all
+# make -f makefile.hydra cleaner
+# make -f makefile.hydra all
 
 EXTRA_INCLUDE = -I${HDF5_HOME}/include
 EXTRA_LIBS = -L${HDF5_HOME}/lib -lhdf5_fortran -lhdf5
