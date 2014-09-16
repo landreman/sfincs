@@ -15,9 +15,11 @@ module writeHDF5Output
   integer(HID_T), private :: HDF5FileID, parallelID, dspaceIDForScalar
   integer(HID_T), dimension(:), allocatable, private :: dspaceIDForZeta
   integer(HID_T), dimension(:), allocatable, private :: dspaceIDForTheta
+  integer(HID_T), dimension(:), allocatable, private :: dspaceIDForx
   integer(HID_T), dimension(:), allocatable, private :: dspaceIDForThetaZeta
   integer(HID_T), dimension(:), allocatable, private :: dspaceIDForSources
   integer(HID_T), private :: dspaceIDForTransportMatrix
+  integer(HID_T), private :: dspaceIDForNTVMatrix
   integer(HID_T), dimension(:), allocatable, private :: groupIDs
 
   integer(HID_T), private :: dsetID_programMode
@@ -33,6 +35,7 @@ module writeHDF5Output
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_solverTolerance
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_theta
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_zeta
+  integer(HID_T), dimension(:), allocatable, private :: dsetIDs_x
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_thetaDerivativeScheme
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_preconditioner_x
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_preconditioner_x_min_L
@@ -97,6 +100,8 @@ module writeHDF5Output
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_FSABHat2
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_useIterativeSolver
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_transportMatrix
+  integer(HID_T), dimension(:), allocatable, private :: dsetIDs_NTVMatrix
+  integer(HID_T), dimension(:), allocatable, private :: dsetIDs_fNormIsotropic
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_RHSMode
 
 
@@ -104,9 +109,11 @@ module writeHDF5Output
   integer(HSIZE_T), dimension(1), parameter, private :: dimForScalar = 1
   integer(HSIZE_T), dimension(:,:), allocatable, private :: dimForZeta
   integer(HSIZE_T), dimension(:,:), allocatable, private :: dimForTheta
+  integer(HSIZE_T), dimension(:,:), allocatable, private :: dimForx
   integer(HSIZE_T), dimension(:,:), allocatable, private :: dimForThetaZeta
   integer(HSIZE_T), dimension(:,:), allocatable, private :: dimForSources
   integer(HSIZE_T), dimension(2), parameter, private :: dimForTransportMatrix = 3
+  integer(HSIZE_T), dimension(1), parameter, private :: dimForNTVMatrix = 3
 
 contains
 
@@ -172,6 +179,7 @@ contains
        allocate(dsetIDs_solverTolerance(numRunsInScan))
        allocate(dsetIDs_theta(numRunsInScan))
        allocate(dsetIDs_zeta(numRunsInScan))
+       allocate(dsetIDs_x(numRunsInScan))
        allocate(dsetIDs_thetaDerivativeScheme(numRunsInScan))
        allocate(dsetIDs_preconditioner_x(numRunsInScan))
        allocate(dsetIDs_preconditioner_x_min_L(numRunsInScan))
@@ -236,21 +244,28 @@ contains
        allocate(dsetIDs_FSABHat2(numRunsInScan))
        allocate(dsetIDs_useIterativeSolver(numRunsInScan))
        allocate(dsetIDs_transportMatrix(numRunsInScan))
+       allocate(dsetIDs_NTVMatrix(numRunsInScan))
+       allocate(dsetIDs_fNormIsotropic(numRunsInScan))
        allocate(dsetIDs_RHSMode(numRunsInScan))
 
        allocate(dspaceIDForZeta(numRunsInScan))
        allocate(dspaceIDForTheta(numRunsInScan))
+       allocate(dspaceIDForx(numRunsInScan))
        allocate(dspaceIDForThetaZeta(numRunsInScan))
        allocate(dspaceIDForSources(numRunsInScan))
 
        allocate(dimForZeta(numRunsInScan,1))
        allocate(dimForTheta(numRunsInScan,1))
+       allocate(dimForx(numRunsInScan,1))
        allocate(dimForThetaZeta(numRunsInScan,2))
        allocate(dimForSources(numRunsInScan,1))
 
        ! Create a dataspace for storing single numbers:
        rank = 0
        call h5screate_simple_f(rank, dimForScalar, dspaceIDForScalar, HDF5Error)
+
+       rank = 1
+       call h5screate_simple_f(rank, dimForNTVMatrix, dspaceIDForNTVMatrix, HDF5Error)
 
        rank = 2
        call h5screate_simple_f(rank, dimForTransportMatrix, dspaceIDForTransportMatrix, HDF5Error)
@@ -277,6 +292,9 @@ contains
    
           dimForTheta(i,1)=NthetasForScan(i)
           call h5screate_simple_f(rank, dimForTheta(i,:), dspaceIDForTheta(i), HDF5Error)
+   
+          dimForx(i,1)=NxsForScan(i)
+          call h5screate_simple_f(rank, dimForx(i,:), dspaceIDForx(i), HDF5Error)
    
           rank = 2
           dimForThetaZeta(i,1)=NthetasForScan(i)
@@ -329,6 +347,9 @@ contains
    
           call h5dcreate_f(groupIDs(i), "zeta", H5T_NATIVE_DOUBLE, dspaceIDForZeta(i), &
                dsetIDs_zeta(i), HDF5Error)
+   
+          call h5dcreate_f(groupIDs(i), "x", H5T_NATIVE_DOUBLE, dspaceIDForx(i), &
+               dsetIDs_x(i), HDF5Error)
    
           call h5dcreate_f(groupIDs(i), "thetaDerivativeScheme", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
                dsetIDs_thetaDerivativeScheme(i), HDF5Error)
@@ -522,6 +543,12 @@ contains
           call h5dcreate_f(groupIDs(i), "transportMatrix", H5T_NATIVE_DOUBLE, dspaceIDForTransportMatrix, &
                dsetIDs_transportMatrix(i), HDF5Error)
    
+          call h5dcreate_f(groupIDs(i), "NTVMatrix", H5T_NATIVE_DOUBLE, dspaceIDForNTVMatrix, &
+               dsetIDs_NTVMatrix(i), HDF5Error)
+   
+          call h5dcreate_f(groupIDs(i), "fNormIsotropic", H5T_NATIVE_DOUBLE, dspaceIDForx(i), &
+               dsetIDs_fNormIsotropic(i), HDF5Error)
+
           call h5dcreate_f(groupIDs(i), "RHSMode", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_RHSMode(i), HDF5Error)
    
@@ -574,6 +601,9 @@ contains
 
        call h5dwrite_f(dsetIDs_zeta(runNum), H5T_NATIVE_DOUBLE, &
             zeta, dimForZeta(runNum,:), HDF5Error)
+
+       call h5dwrite_f(dsetIDs_x(runNum), H5T_NATIVE_DOUBLE, &
+            x, dimForx(runNum,:), HDF5Error)
 
        call h5dwrite_f(dsetIDs_thetaDerivativeScheme(runNum), H5T_NATIVE_INTEGER, &
             thetaDerivativeScheme, dimForScalar, HDF5Error)
@@ -800,6 +830,12 @@ contains
        call h5dwrite_f(dsetIDs_transportMatrix(runNum), H5T_NATIVE_DOUBLE, &
             transportMatrix, dimForTransportMatrix, HDF5Error)
 
+       call h5dwrite_f(dsetIDs_NTVMatrix(runNum), H5T_NATIVE_DOUBLE, &
+            NTVMatrix, dimForNTVMatrix, HDF5Error)
+
+       call h5dwrite_f(dsetIDs_fNormIsotropic(runNum), H5T_NATIVE_DOUBLE, &
+            fNormIsotropic, dimForx(runNum,:), HDF5Error)
+
        call h5dwrite_f(dsetIDs_RHSMode(runNum), H5T_NATIVE_INTEGER, &
             RHSMode, dimForScalar, HDF5Error)
 
@@ -834,6 +870,7 @@ contains
           call h5dclose_f(dsetIDs_solverTolerance(i), HDF5Error)
           call h5dclose_f(dsetIDs_theta(i), HDF5Error)
           call h5dclose_f(dsetIDs_zeta(i), HDF5Error)
+          call h5dclose_f(dsetIDs_x(i), HDF5Error)
           call h5dclose_f(dsetIDs_thetaDerivativeScheme(i), HDF5Error)
           call h5dclose_f(dsetIDs_preconditioner_x(i), HDF5Error)
           call h5dclose_f(dsetIDs_preconditioner_x_min_L(i), HDF5Error)
@@ -898,6 +935,8 @@ contains
           call h5dclose_f(dsetIDs_FSABHat2(i), HDF5Error)
           call h5dclose_f(dsetIDs_useIterativeSolver(i), HDF5Error)
           call h5dclose_f(dsetIDs_transportMatrix(i), HDF5Error)
+          call h5dclose_f(dsetIDs_NTVMatrix(i), HDF5Error)
+          call h5dclose_f(dsetIDs_fNormIsotropic(i), HDF5Error)
           call h5dclose_f(dsetIDs_RHSMode(i), HDF5Error)
 
 
@@ -905,12 +944,14 @@ contains
 
           call h5sclose_f(dspaceIDForTheta(i), HDF5Error)
           call h5sclose_f(dspaceIDForZeta(i), HDF5Error)
+          call h5sclose_f(dspaceIDForx(i), HDF5Error)
           call h5sclose_f(dspaceIDForThetaZeta(i), HDF5Error)
           call h5sclose_f(dspaceIDForSources(i), HDF5Error)
        end do
 
        call h5sclose_f(dspaceIDForScalar, HDF5Error)
        call h5sclose_f(dspaceIDForTransportMatrix, HDF5Error)
+       call h5sclose_f(dspaceIDForNTVMatrix, HDF5Error)
        call h5pclose_f(parallelID, HDF5Error)
        call h5fclose_f(HDF5FileID, HDF5Error)
        call h5close_f(HDF5Error)

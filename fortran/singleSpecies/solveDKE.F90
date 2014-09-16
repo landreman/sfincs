@@ -46,7 +46,7 @@
     PetscScalar, dimension(:,:), allocatable :: thetaPartOfTerm, localThetaPartOfTerm, xPartOfXDot
     integer :: i, j, ix, itheta, izeta, L, NxPotentials, matrixSize, index, ixi
     integer :: ithetaRow, ithetaCol, scheme, ell
-    PetscScalar, dimension(:), allocatable :: x, xWeights, xPotentials, xWeightsPotentials
+    PetscScalar, dimension(:), allocatable :: xWeights, xPotentials, xWeightsPotentials
     PetscScalar, dimension(:), allocatable :: x2, xPartOfRHS
     PetscScalar, dimension(:,:), allocatable :: ddx, d2dx2, ddxPotentials, d2dx2Potentials
     PetscScalar, dimension(:,:), allocatable :: ddxPreconditioner, ddxToUse, zetaPartOfTerm
@@ -66,7 +66,7 @@
     PetscScalar :: collisionTermFactor, xDotFactor, LFactor, temp1, temp2
     integer :: rowIndex, colIndex
     PetscScalar :: densityFactor, flowFactor, pressureFactor
-    PetscScalar :: particleFluxFactor, momentumFluxFactor, heatFluxFactor, NTVFactor
+    PetscScalar :: particleFluxFactor, momentumFluxFactor, heatFluxFactor, NTVFactor, fNormFactor
     PetscScalar, dimension(:), allocatable :: densityIntegralWeights
     PetscScalar, dimension(:), allocatable :: flowIntegralWeights
     PetscScalar, dimension(:), allocatable :: pressureIntegralWeights
@@ -143,6 +143,7 @@
     sqrtTHat = sqrt(THat)
 
     transportMatrix = 0
+    NTVMatrix = 0
 
     ! *******************************************************************************
     ! *******************************************************************************
@@ -1441,6 +1442,7 @@
     allocate(momentumFluxBeforeSurfaceIntegral(Ntheta,Nzeta))
     allocate(heatFluxBeforeSurfaceIntegral(Ntheta,Nzeta))
     allocate(NTVBeforeSurfaceIntegral(Ntheta,Nzeta))
+    allocate(fNormIsotropicBeforeSurfaceIntegral(Ntheta,Nzeta,Nx))
 
     allocate(densityIntegralWeights(Nx))
     allocate(flowIntegralWeights(Nx))
@@ -1449,6 +1451,7 @@
     allocate(momentumFluxIntegralWeights(Nx))
     allocate(heatFluxIntegralWeights(Nx))
     allocate(NTVIntegralWeights(Nx))
+    allocate(fNormIsotropic(Nx))
 
 
     ! ***********************************************************************
@@ -1640,7 +1643,8 @@
           particleFluxFactor = - (THat ** (5/two))/(sqrtpi)
           momentumFluxFactor = - (THat ** 3)/(sqrtpi)
           heatFluxFactor = - (THat ** (7/two))/(2*sqrtpi)
-          NTVFactor =  (THat ** (5/two))/(sqrtpi)
+          NTVFactor =  2 / iota * (THat ** (5/two))/(sqrtpi)
+          fNormFactor = Delta*THat*sqrtTHat/psiAHat
 
           ! Convert the PETSc vector into a normal Fortran array:
           call VecGetArrayF90(solnOnProc0, solnArray, ierr)
@@ -1682,6 +1686,8 @@
 
                 heatFluxBeforeSurfaceIntegral(itheta,izeta) = factor * (8/three) * heatFluxFactor &
                      * dot_product(xWeights, heatFluxIntegralWeights * solnArray(indices))
+
+                fNormIsotropicBeforeSurfaceIntegral(itheta,izeta,1:Nx) = fNormFactor * solnArray(indices)
 
              end do
           end do
@@ -1745,6 +1751,7 @@
           momentumFlux=0
           heatFlux=0
           NTV=0
+          fNormIsotropic=0
           allocate(B2(Ntheta))
           do izeta=1,Nzeta
              B2 = BHat(:,izeta)*BHat(:,izeta)
@@ -1771,7 +1778,13 @@
                   * dot_product(thetaWeights, NTVBeforeSurfaceIntegral(:,izeta))
 
           end do
-          NTVmulti = NTV * nHat * 2*Delta / (psiAHat * (GHat+iota*IHat) * VPrimeHat)
+          do ix=1,Nx
+             do izeta=1,Nzeta
+                fNormIsotropic(ix) = fNormIsotropic(ix) + zetaWeights(izeta) &
+                  * dot_product(thetaWeights, fNormIsotropicBeforeSurfaceIntegral(:,izeta,ix))
+             end do
+          end do
+          NTVmulti = NTV * iota * nHat * 2*Delta / (psiAHat * (GHat+iota*IHat) * VPrimeHat)
           deallocate(B2)
 
           FSADensityPerturbation = FSADensityPerturbation / VPrimeHat
@@ -1785,14 +1798,17 @@
                 transportMatrix(1,1) = 4*(GHat+iota*IHat)*particleFlux*nHat*B0OverBBar/(GHat*VPrimeHatWithG*(THat*sqrtTHat)*GHat)
                 transportMatrix(2,1) = 8*(GHat+iota*IHat)*heatFlux*nHat*B0OverBBar/(GHat*VPrimeHatWithG*(THat*THat*sqrtTHat)*GHat)
                 transportMatrix(3,1) = 2*nHat*FSAFlow/(GHat*THat)
+                NTVMatrix(1)         = 4*(GHat+iota*IHat)*    NTV     *nHat*B0OverBBar/(GHat*VPrimeHatWithG*(THat*sqrtTHat)*GHat)
              case (2)
                 transportMatrix(1,2) = 4*(GHat+iota*IHat)*particleFlux*B0OverBBar/(GHat*VPrimeHatWithG*sqrtTHat*GHat)
                 transportMatrix(2,2) = 8*(GHat+iota*IHat)*heatFlux*B0OverBBar/(GHat*VPrimeHatWithG*sqrtTHat*THat*GHat)
                 transportMatrix(3,2) = 2*FSAFlow/(GHat)
+                NTVMatrix(2)         = 4*(GHat+iota*IHat)*    NTV     *B0OverBBar/(GHat*VPrimeHatWithG*sqrtTHat*GHat)
              case (3)
                 transportMatrix(1,3) = particleFlux*Delta*Delta*FSABHat2/(VPrimeHatWithG*GHat*psiAHat*omega)
                 transportMatrix(2,3) = 2*Delta*Delta*heatFlux*FSABHat2/(GHat*VPrimeHatWithG*psiAHat*THat*omega)
                 transportMatrix(3,3) = FSAFlow*Delta*Delta*sqrtTHat*FSABHat2/((GHat+iota*IHat)*2*psiAHat*omega*B0OverBBar)
+                NTVMatrix(3)         =     NTV     *Delta*Delta*FSABHat2/(VPrimeHatWithG*GHat*psiAHat*omega)
              end select
           end if
 

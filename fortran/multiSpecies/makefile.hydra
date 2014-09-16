@@ -1,0 +1,56 @@
+# First load the following modules:
+# hydra:
+# module load petsc-real/3.3-p3 hdf5-mpi/1.8.11
+# then run 
+# make -f makefile.hydra cleaner
+# make -f makefile.hydra all
+
+EXTRA_INCLUDE = -I${HDF5_HOME}/include
+EXTRA_LIBS = -L${HDF5_HOME}/lib -lhdf5_fortran -lhdf5
+
+
+MATTS_INCLUDE =
+MATTS_LIBS =
+
+include ${PETSC_DIR}/conf/variables
+include ${PETSC_DIR}/conf/rules
+#FLINKER = ftn
+
+TARGET = sfincs
+
+OBJS = sfincs.o xGrid.o writeHDF5Output.o globalVariables.o scan.o readInput.o \
+	polynomialDiffMatrices.o uniformDiffMatrices.o \
+	uniformInterpolationMatrix.o printToStdout.o  \
+	indices.o sparsify.o geometry.o \
+	polynomialInterpolationMatrix.o solveDKE.o quadpack/quadpack.a 
+
+# Dependencies:
+writeHDF5Output.o: globalVariables.o scan.o
+printToStdout.o: globalVariables.o
+readInput.o: globalVariables.o
+geometry.o: globalVariables.o
+solveDKE.o: globalVariables.o xGrid.o polynomialDiffMatrices.o printToStdout.o sparsify.o geometry.o indices.o
+indices.o: globalVariables.o
+scan.o: globalVariables.o
+sfincs.o: globalVariables.o writeHDF5Output.o printToStdout.o solveDKE.o readInput.o scan.o
+
+%.o: %.F90
+	$(FC) $(PETSC_FC_INCLUDES) $(EXTRA_INCLUDE) -c $<
+#	$(FLINKER) $(MATTS_INCLUDE) $(EXTRA_INCLUDE) -c $<
+
+#erf.o: erf.c
+#	$(CC) -o erf.o -c erf.c -I$(GSL_DIR)/include
+
+quadpack/quadpack.a:
+	cd quadpack; make all
+
+all: $(OBJS)
+	$(FLINKER) -o $(TARGET) $(OBJS) -lm -lc $(EXTRA_LIBS) $(MATTS_LIBS) $(PETSC_LIB)
+# Note: on nersc, the -lm and -lc flags must be removed!
+#	$(FLINKER) -o $(TARGET) $(OBJS) $(MATTS_LIBS) $(PETSC_LIB)
+
+cleaner: clean
+#clean: 
+	rm -f *.o *.mod *.a *.dat *~ sfincs sfincsMatrices.m sfincsOutput.h5
+	cd quadpack; rm -f *.o *.a
+
