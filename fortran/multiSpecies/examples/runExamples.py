@@ -53,6 +53,7 @@ examplesWithErrors = []
 subdirectories = filter(os.path.isdir, os.listdir("."))
 
 # From this list, keep only subdirectories that have a "tests.py" file:
+# For convenience, run small examples before large ones. Hence, we loop twice.
 examplesToRun = []
 for subdirectory in subdirectories:
     hasSmall = os.path.isfile(subdirectory+"/tests_small.py")
@@ -60,8 +61,13 @@ for subdirectory in subdirectories:
     if hasSmall and hasLarge:
         print "Error! The subdirectory examples/"+subdirectory+" has both a tests_small.py and tests_large.py file. It must have one or the other or neither, but not both."
         exit(1)
-    if hasSmall or (hasLarge and runLargeExamples):
+    if hasSmall:
         examplesToRun.append(subdirectory)
+if runLargeExamples:
+    for subdirectory in subdirectories:
+        hasLarge = os.path.isfile(subdirectory+"/tests_large.py")
+        if hasLarge:
+            examplesToRun.append(subdirectory)
 
 if len(examplesToRun)==0:
     if runLargeExamples:
