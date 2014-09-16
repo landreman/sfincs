@@ -5,6 +5,9 @@
 #include <finclude/petsckspdef.h>
 #include <finclude/petscdmdadef.h>
 #include <petscversion.h>
+
+! Next come some definitions required because the syntax for several PETSc objects
+! has changed from version to version.
   
 ! For PETSc versions prior to 3.3, the MatCreateAIJ subroutine was called MatCreateMPIAIJ.
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 3))
@@ -17,6 +20,18 @@
 #define PetscTime PetscGetTime
 #endif
 !Hereafter in this code, use PetscTime.
+
+! For PETSc versions prior to 3.5, PETSC_DEFAULT_DOUBLE_PRECISION was used in place of PETSC_DEFAULT_REAL.
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
+#define PETSC_DEFAULT_REAL PETSC_DEFAULT_DOUBLE_PRECISION
+#endif
+!Hereafter in this code, use PETSC_DEFAULT_REAL.
+
+! For PETSc versions prior to 3.5, DMDA_BOUNDARY_NONE was used in place of DM_BOUNDARY_NONE.
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
+#define DM_BOUNDARY_NONE DMDA_BOUNDARY_NONE
+#endif
+!Hereafter in this code, use DM_BOUNDARY_NONE.
 
   subroutine solveDKE()
 
@@ -164,7 +179,7 @@
 
     ! Assign a range of theta indices to each processor.
     ! This is done by creating a PETSc DM that is not actually used for anything else.
-    call DMDACreate1d(MPIComm, DMDA_BOUNDARY_NONE, Ntheta, 1, 0, PETSC_NULL_INTEGER, myDM, ierr)
+    call DMDACreate1d(MPIComm, DM_BOUNDARY_NONE, Ntheta, 1, 0, PETSC_NULL_INTEGER, myDM, ierr)
     call DMDAGetCorners(myDM, ithetaMin, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, &
          localNtheta, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr)
     ! Switch to 1-based indices:
@@ -1498,7 +1513,13 @@
     CHKERRQ(ierr)
 
     if (useIterativeSolver) then
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
+       ! Syntax for PETSc versions up through 3.4
        call KSPSetOperators(KSPInstance, matrix, preconditionerMatrix, SAME_PRECONDITIONER, ierr)
+#else
+       ! Syntax for PETSc version 3.5 and later
+       call KSPSetOperators(KSPInstance, matrix, preconditionerMatrix, ierr)
+#endif
        CHKERRQ(ierr)
        call KSPGetPC(KSPInstance, preconditionerContext, ierr)
        CHKERRQ(ierr)
@@ -1508,15 +1529,21 @@
        call KSPSetType(KSPInstance, KSPGMRES, ierr)   ! Set the Krylov solver algorithm to GMRES
        call KSPGMRESSetRestart(KSPInstance, 500, ierr)
        CHKERRQ(ierr)
-       call KSPSetTolerances(KSPInstance, solverTolerance, PETSC_DEFAULT_DOUBLE_PRECISION, &
-            PETSC_DEFAULT_DOUBLE_PRECISION, PETSC_DEFAULT_INTEGER, ierr)
+       call KSPSetTolerances(KSPInstance, solverTolerance, PETSC_DEFAULT_REAL, &
+            PETSC_DEFAULT_REAL, PETSC_DEFAULT_INTEGER, ierr)
        CHKERRQ(ierr)
        call KSPSetFromOptions(KSPInstance, ierr)
        CHKERRQ(ierr)
        call KSPMonitorSet(KSPInstance, KSPMonitorDefault, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
     else
        ! Direct solver:
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
+       ! Syntax for PETSc versions up through 3.4
        call KSPSetOperators(KSPInstance, matrix, matrix, SAME_PRECONDITIONER, ierr)
+#else
+       ! Syntax for PETSc version 3.5 and later
+       call KSPSetOperators(KSPInstance, matrix, matrix, ierr)
+#endif
        CHKERRQ(ierr)
        call KSPGetPC(KSPInstance, preconditionerContext, ierr)
        CHKERRQ(ierr)
