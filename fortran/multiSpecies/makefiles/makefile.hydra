@@ -1,7 +1,7 @@
 # To compile on hydra, first load the following modules:
-# module load petsc-real/3.3-p3 hdf5-mpi/1.8.11
+# module load petsc-real/3.5.1 petsc-real/3.5.1
 # Also set the following environment variable:
-# export PETSC_SYSTEM=hydra
+# export SFINCS_SYSTEM=hydra
 # (You might wish to put the above line in your .bashrc file.)
 # Then run 
 # make clean
@@ -12,7 +12,7 @@ include ${PETSC_DIR}/conf/variables
 include ${PETSC_DIR}/conf/rules
 
 # Any other flags for compiling, such as -I include flags:
-EXTRA_COMPILE_FLAGS = -I${HDF5_HOME}/include
+EXTRA_COMPILE_FLAGS = -I${HDF5_HOME}/include -I${PETSC_DIR}/include
 
 # Any other flags for linking, such as -l library flags:
 EXTRA_LINK_FLAGS = -L${HDF5_HOME}/lib -lhdf5_fortran -lhdf5
@@ -23,15 +23,14 @@ EXTRA_LINK_FLAGS = -L${HDF5_HOME}/lib -lhdf5_fortran -lhdf5
 # For "make test", do you want to run the examples that require multiple nodes wor\
 th of memory?
 # The value of this variable must be "yes" or "no".
-SFINCS_RUN_LARGE_EXAMPLES=yes
+SFINCS_RUN_LARGE_EXAMPLES=no
 
 # For "make test", are runs submitted using a batch system (such as PBS)?
 # The value of this variable must be "yes" or "no".
 SFINCS_IS_A_BATCH_SYSTEM_USED=yes
 
-# (MJL 20140916) I'm guessing at the next line - you might need to change this.
 # Also for any example you wish to run with "make test", you would need to write
 # a job.hydra file.
-SFINCS_COMMAND_TO_SUBMIT_JOB=qsub job.hydra
+SFINCS_COMMAND_TO_SUBMIT_JOB=llsubmit job.hydra
 
 
