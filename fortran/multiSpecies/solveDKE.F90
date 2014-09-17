@@ -53,7 +53,10 @@
     Mat :: matrix, preconditionerMatrix
     PetscViewer :: MatlabOutput, binaryOutputViewer
     PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, xPartOfRHS, speciesFactor, speciesFactor2
-    PetscScalar :: dnHatdpsiToUse, dTHatdpsiToUse, EParallelHatToUse, dPhiHatdpsiNToUse, T32m
+    !!Modified by AM 2014-09!!
+    !PetscScalar :: dnHatdpsiToUse, dTHatdpsiToUse, EParallelHatToUse, dPhiHatdpsiNToUse, T32m
+    PetscScalar :: EParallelHatToUse, dPhiHatdpsiNToUse, T32m
+    !!!!!!!!!!!!!!!!!!!!!!!!!!
     PetscScalar, dimension(:), allocatable :: thetaWeights, zetaWeights, B2, xb, expxb2
     PetscScalar, dimension(:,:), allocatable :: ddtheta, d2dtheta2
     PetscScalar, dimension(:,:), allocatable :: ddzeta, d2dzeta2
@@ -116,6 +119,11 @@
     integer :: mallocsMain, mallocsPreconditioner
     integer :: firstRowThisProcOwns, lastRowThisProcOwns, numLocalRows
     PetscScalar :: maxxPotentials, CHat_element
+
+
+    !!Lines added by AM 2014-09-17
+    PetscScalar, dimension(:), allocatable :: dnHatdpsiNsToUse, dTHatdpsiNsToUse
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     ! *******************************************************************************
     ! Do a few sundry initialization tasks:
@@ -1658,6 +1666,10 @@
     !
     ! ***********************************************************************
     ! ***********************************************************************
+    !MODIFIED BY AM FROM HERE
+    !Nspecies contains number of species
+    allocate(dnHatdpsiNsToUse(Nspecies))
+    allocate(dTHatdpsiNsToUse(Nspecies))
 
     select case (RHSMode)
     case (1)
@@ -1682,35 +1694,46 @@
        ! *******************************************************************************
        ! *******************************************************************************
 
-       dnHatdpsiToUse = dnHatdpsiNs(1)
-       dTHatdpsiToUse = dTHatdpsiNs(1)
+       !dnHatdpsiToUse = dnHatdpsiNs(1)
+       !dTHatdpsiToUse = dTHatdpsiNs(1)
        EParallelHatToUse = EParallelHat
        dPhiHatdpsiNToUse = dPhiHatdpsiN
+
+       dnHatdpsiNsToUse(:) = 0
+       dTHatdpsiNsToUse(:) = 0
 
        select case (RHSMode)
        case (1)
           ! Single solve: nothing more to do here.
 
        case (2)
-          print *,"RHSMode=2 is not yet implemented"
-          stop
+          !print *,"RHSMode=2 is not yet implemented"
+          print *,"Solve  for 3 linearly independent right-hand sides to get L_{11}^{11}, L_{11}^{12} and L_{12}.\n"
+          !stop
 
           ! Solve for 3 linearly independent right-hand sides to get the full 3x3 transport matrix:
           dPhiHatdpsiNToUse = 0
+          EParallelHatToUse = 0
           select case (whichRHS)
           case (1)
-             dnHatdpsiToUse = 1
-             dTHatdpsiToUse = 0
-             EParallelHatToUse = 0
+             !dnHatdpsiToUse = 1
+             !dTHatdpsiToUse = 0
+             !EParallelHatToUse = 0
+             dnHatdpsiNsToUse(1) = 1
           case (2)
              ! The next 2 lines ensure (1/n)*dn/dpsi + (3/2)*dT/dpsi = 0 while dT/dpsi is nonzero.
-             dnHatdpsiToUse = (3/two)*nHats(1)/THats(1)
-             dTHatdpsiToUse = 1
-             EParallelHatToUse = 0
+             !dnHatdpsiToUse = (3/two)*nHats(1)/THats(1)
+             !dTHatdpsiToUse = 1
+             !EParallelHatToUse = 0
+             dnHatdpsiNsToUse(2) = 1
           case (3)
-             dnHatdpsiToUse = 0
-             dTHatdpsiToUse = 0
-             EParallelHatToUse = 1
+             !dnHatdpsiToUse = 0
+             !dTHatdpsiToUse = 0
+             !EParallelHatToUse = 1
+             dnHatdpsiNsToUse(1) = (3/two)*nHats(1)/THats(1)
+             dnHatdpsiNsToUse(2) = (3/two)*nHats(2)/THats(2)
+             dTHatdpsiNsToUse(1) = 1
+             dTHatdpsiNsToUse(2) = 1
           case default
              print *,"Program should not get here"
              stop
@@ -1729,9 +1752,9 @@
           sqrtMHat = sqrt(mHat)
 
           do ix=1,Nx
-             xPartOfRHS = x2(ix)*exp(-x2(ix))*( dnHatdpsiNs(ispecies)/nHats(ispecies) &
+             xPartOfRHS = x2(ix)*exp(-x2(ix))*( dnHatdpsiNsToUse(ispecies)/nHats(ispecies) &
                   + alpha*Zs(ispecies)/THats(ispecies)*dPhiHatdpsiNToUse &
-                  + (x2(ix) - three/two)*dTHatdpsiNs(ispecies)/THats(ispecies))
+                  + (x2(ix) - three/two)*dTHatdpsiNsToUse(ispecies)/THats(ispecies))
              do itheta = ithetaMin,ithetaMax
                 do izeta = 1,Nzeta
 
@@ -2034,6 +2057,11 @@
        end if
 
     end do
+
+    !!Added by AM 2014-09
+    deallocate(dnHatdpsiNsToUse)
+    deallocate(dTHatdpsiNsToUse)
+    !!!!!!!!!!!!!!!!!!!!!
 
     ! ***********************************************************************
     ! ***********************************************************************
