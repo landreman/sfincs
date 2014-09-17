@@ -1,5 +1,5 @@
 # To compile on hydra, first load the following modules:
-# module load petsc-real/3.5.1 petsc-real/3.5.1
+# module load petsc-real/3.5.1 hdf5-mpi
 # Also set the following environment variable:
 # export SFINCS_SYSTEM=hydra
 # (You might wish to put the above line in your .bashrc file.)
