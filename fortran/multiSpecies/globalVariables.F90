@@ -183,6 +183,10 @@ module globalVariables
   integer :: didItConverge
   PetscScalar :: transportMatrix(3,3)
 
+  !!Added by AM 2014-09!!
+  PetscScalar :: ArrayFirstSpeciesParticleFluxCoefficients(3)
+  !!!!!!!!!!!!!!!!!!!!!!!
+
   ! ********************************************************
   !
   !  Variables related to parallelization:

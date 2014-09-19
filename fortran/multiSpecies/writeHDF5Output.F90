@@ -20,6 +20,11 @@ module writeHDF5Output
   integer(HID_T), dimension(:), allocatable, private :: dspaceIDForSpeciesThetaZeta
   integer(HID_T), dimension(:), allocatable, private :: dspaceIDForSources
   integer(HID_T), private :: dspaceIDForTransportMatrix
+
+  !!Added by AM 2014-09!!
+  integer(HID_T), private :: dspaceIDForArrayFirstSpeciesParticleFluxCoefficients
+  !!!!!!!!!!!!!!!!!!!!!!!
+
   integer(HID_T), dimension(:), allocatable, private :: groupIDs
 
   integer(HID_T), private :: dsetID_programMode
@@ -103,6 +108,10 @@ module writeHDF5Output
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_useIterativeSolver
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_transportMatrix
 
+  !!Added by AM 2014-09!!
+  integer(HID_T), dimension(:), allocatable, private :: dsetIDs_ArrayFirstSpeciesParticleFluxCoefficients
+  !!!!!!!!!!!!!!!!!!!!!!!
+
 
   integer(HSIZE_T), dimension(1), parameter, private :: dimForScalar = 1
   integer(HSIZE_T), dimension(1), private :: dimForSpecies
@@ -112,6 +121,10 @@ module writeHDF5Output
   integer(HSIZE_T), dimension(:,:), allocatable, private :: dimForSpeciesThetaZeta
   integer(HSIZE_T), dimension(:,:), allocatable, private :: dimForSources
   integer(HSIZE_T), dimension(2), parameter, private :: dimForTransportMatrix = 3
+
+  !!Added by AM 2014-09!!
+  integer(HSIZE_T), dimension(1), parameter, private :: dimForArrayFirstSpeciesParticleFluxCoefficients = 3
+  !!!!!!!!!!!!!!!!!!!!!!!
 
 contains
 
@@ -245,6 +258,10 @@ contains
        allocate(dsetIDs_useIterativeSolver(numRunsInScan))
        allocate(dsetIDs_transportMatrix(numRunsInScan))
 
+       !!Added by AM 2014-09!!
+       allocate(dsetIDs_ArrayFirstSpeciesParticleFluxCoefficients(numRunsInScan))
+       !!!!!!!!!!!!!!!!!!!!!!!
+
        allocate(dspaceIDForZeta(numRunsInScan))
        allocate(dspaceIDForTheta(numRunsInScan))
        allocate(dspaceIDForThetaZeta(numRunsInScan))
@@ -264,6 +281,10 @@ contains
        rank = 1
        dimForSpecies = Nspecies
        call h5screate_simple_f(rank, dimForSpecies, dspaceIDForSpecies, HDF5Error)
+
+       !!Added by AM 2014-09!!
+       call h5screate_simple_f(rank, dimForArrayFirstSpeciesParticleFluxCoefficients, dspaceIDForArrayFirstSpeciesParticleFluxCoefficients, HDF5Error)
+       !!!!!!!!!!!!!!!!!!!!!!!
 
        rank = 2
        call h5screate_simple_f(rank, dimForTransportMatrix, dspaceIDForTransportMatrix, HDF5Error)
@@ -549,6 +570,12 @@ contains
           call h5dcreate_f(groupIDs(i), "transportMatrix", H5T_NATIVE_DOUBLE, dspaceIDForTransportMatrix, &
                dsetIDs_transportMatrix(i), HDF5Error)
 
+
+          !!Added by AM 2014-09!!
+          call h5dcreate_f(groupIDs(i), "ArrayFirstSpeciesParticleFluxCoefficients", H5T_NATIVE_DOUBLE, dspaceIDForArrayFirstSpeciesParticleFluxCoefficients, &
+               dsetIDs_ArrayFirstSpeciesParticleFluxCoefficients(i), HDF5Error)
+          !!!!!!!!!!!!!!!!!!!!!!!
+
        end do
     end if
 
@@ -832,6 +859,12 @@ contains
        call h5dwrite_f(dsetIDs_transportMatrix(runNum), H5T_NATIVE_DOUBLE, &
             transportMatrix, dimForTransportMatrix, HDF5Error)
 
+
+       !!Added by AM 2014-09!!
+       call h5dwrite_f(dsetIDs_ArrayFirstSpeciesParticleFluxCoefficients(runNum), H5T_NATIVE_DOUBLE, &
+            ArrayFirstSpeciesParticleFluxCoefficients, dimForArrayFirstSpeciesParticleFluxCoefficients, HDF5Error)
+       !!!!!!!!!!!!!!!!!!!!!!!
+
     end if
 
   end subroutine writeRunToOutputFile
@@ -931,6 +964,10 @@ contains
           call h5dclose_f(dsetIDs_useIterativeSolver(i), HDF5Error)
           call h5dclose_f(dsetIDs_transportMatrix(i), HDF5Error)
 
+          !!Added by AM 2014-09!!
+          call h5dclose_f(dsetIDs_ArrayFirstSpeciesParticleFluxCoefficients(i), HDF5Error)
+          !!!!!!!!!!!!!!!!!!!!!!!
+
 
           call h5gclose_f(groupIDs(i), HDF5Error)
 
@@ -944,6 +981,11 @@ contains
        call h5sclose_f(dspaceIDForScalar, HDF5Error)
        call h5sclose_f(dspaceIDForSpecies, HDF5Error)
        call h5sclose_f(dspaceIDForTransportMatrix, HDF5Error)
+
+       !!Added by AM 2014-09!!
+       call h5sclose_f(dspaceIDForArrayFirstSpeciesParticleFluxCoefficients, HDF5Error)
+       !!!!!!!!!!!!!!!!!!!!!!!
+
        call h5pclose_f(parallelID, HDF5Error)
        call h5fclose_f(HDF5FileID, HDF5Error)
        call h5close_f(HDF5Error)

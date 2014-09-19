@@ -177,6 +177,10 @@
 
     transportMatrix = 0
 
+    !!Added by AM 2014-09!!
+    ArrayFirstSpeciesParticleFluxCoefficients = 0
+    !!!!!!!!!!!!!!!!!!!!!!!
+
     ! *******************************************************************************
     ! *******************************************************************************
     !
@@ -1725,15 +1729,30 @@
              !dnHatdpsiToUse = (3/two)*nHats(1)/THats(1)
              !dTHatdpsiToUse = 1
              !EParallelHatToUse = 0
+
+             !!Added by AM 2014-09!!
+             if (Nspecies < 2) then !!Can not do solve because there is only 1 species
+                print *,"WARNING! Trying to calculate transport coefficients with only 1 species.\n"
+                ArrayFirstSpeciesParticleFluxCoefficients(2) = 0
+                cycle
+             end if
+             !!!!!!!!!!!!!!!!!!!!!!!
+
              dnHatdpsiNsToUse(2) = 1
           case (3)
              !dnHatdpsiToUse = 0
              !dTHatdpsiToUse = 0
              !EParallelHatToUse = 1
              dnHatdpsiNsToUse(1) = (3/two)*nHats(1)/THats(1)
-             dnHatdpsiNsToUse(2) = (3/two)*nHats(2)/THats(2)
              dTHatdpsiNsToUse(1) = 1
-             dTHatdpsiNsToUse(2) = 1
+
+             !!Added by AM 2014-09!!
+             if (Nspecies > 1) then
+                dnHatdpsiNsToUse(2) = (3/two)*nHats(2)/THats(2)
+                dTHatdpsiNsToUse(2) = 1
+             end if
+             !!!!!!!!!!!!!!!!!!!!!!!
+
           case default
              print *,"Program should not get here"
              stop
@@ -2033,23 +2052,28 @@
           FSAPressurePerturbation = FSAPressurePerturbation / VPrimeHat
           FSABjHat = dot_product(Zs(1:Nspecies), FSABFlow)
 
-!!$          if (RHSMode==2) then
-!!$             VPrimeHatWithG = VPrimeHat*(GHat+iota*IHat)
-!!$             select case (whichRHS)
-!!$             case (1)
+          !!Section modified by AM 2014-09!!
+          if (RHSMode==2) then
+             !!VPrimeHatWithG = VPrimeHat*(GHat+iota*IHat)
+             select case (whichRHS)
+             case (1)
 !!$                transportMatrix(1,1) = 4*(GHat+iota*IHat)*particleFlux*nHat*B0OverBBar/(GHat*VPrimeHatWithG*(THat*sqrtTHat)*GHat)
 !!$                transportMatrix(2,1) = 8*(GHat+iota*IHat)*heatFlux*nHat*B0OverBBar/(GHat*VPrimeHatWithG*(THat*THat*sqrtTHat)*GHat)
 !!$                transportMatrix(3,1) = 2*nHat*FSABFlow/(GHat*THat)
-!!$             case (2)
+                ArrayFirstSpeciesParticleFluxCoefficients(1) = particleFlux*4*(Zs(1)**2)*psiAHat*(GHat+iota*IHat)*B0OverBBar*sqrt(THats(1)/mHats(1)) / ( (GHat**2)*(THats(1)**2)*(Delta**2) )
+             case (2)
 !!$                transportMatrix(1,2) = 4*(GHat+iota*IHat)*particleFlux*B0OverBBar/(GHat*VPrimeHatWithG*sqrtTHat*GHat)
 !!$                transportMatrix(2,2) = 8*(GHat+iota*IHat)*heatFlux*B0OverBBar/(GHat*VPrimeHatWithG*sqrtTHat*THat*GHat)
 !!$                transportMatrix(3,2) = 2*FSABFlow/(GHat)
-!!$             case (3)
+                ArrayFirstSpeciesParticleFluxCoefficients(2) = particleFlux*(NHats(2)/NHats(1))*4*(Zs(1)**2)*psiAHat*(GHat+iota*IHat)*B0OverBBar*sqrt(THats(1)/mHats(1)) / ( (GHat**2)*(THats(1)**2)*(Delta**2) )
+             case (3)
 !!$                transportMatrix(1,3) = particleFlux*Delta*Delta*FSABHat2/(VPrimeHatWithG*GHat*psiAHat*omega)
 !!$                transportMatrix(2,3) = 2*Delta*Delta*heatFlux*FSABHat2/(GHat*VPrimeHatWithG*psiAHat*THat*omega)
 !!$                transportMatrix(3,3) = FSABFlow*Delta*Delta*sqrtTHat*FSABHat2/((GHat+iota*IHat)*2*psiAHat*omega*B0OverBBar)
-!!$             end select
-!!$          end if
+                ArrayFirstSpeciesParticleFluxCoefficients(3) = particleFlux*4*(Zs(1)**2)*psiAHat*(GHat+iota*IHat)*B0OverBBar*sqrt(THats(1)/mHats(1)) / ( (GHat**2)*(THats(1)*NHats(1))*(Delta**2) )
+             end select
+          end if
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
           call VecRestoreArrayF90(solnOnProc0, solnArray, ierr)
           CHKERRQ(ierr)
