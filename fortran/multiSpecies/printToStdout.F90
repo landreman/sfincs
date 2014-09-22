@@ -113,6 +113,14 @@ contains
           do i=1,3
              print *,"[",myCommunicatorIndex,"]   ", transportMatrix(i,:)
           end do
+
+	  !!Added by AM 2014-09!!
+          print *,"[",myCommunicatorIndex,"] ArrayFirstSpeciesParticleFluxCoefficients:"
+          do i=1,3
+             print *,"[",myCommunicatorIndex,"]   ", ArrayFirstSpeciesParticleFluxCoefficients(i)
+          end do	  
+	  !!!!!!!!!!!!!!!!!!!!!!!
+
        end if
 
     end if

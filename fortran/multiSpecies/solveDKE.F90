@@ -1714,8 +1714,11 @@
 
        case (2)
           !print *,"RHSMode=2 is not yet implemented"
-          print *,"Solve  for 3 linearly independent right-hand sides to get L_{11}^{11}, L_{11}^{12} and L_{12}.\n"
-          !stop
+          if (masterProcInSubComm) then
+	     print *,"Solve  for 3 linearly independent right-hand sides to get L_{11}^{11}, L_{11}^{12} and L_{12}^{11} + L_{12}^{12}."
+          end if
+
+	  !stop
 
           ! Solve for 3 linearly independent right-hand sides to get the full 3x3 transport matrix:
           dPhiHatdpsiNToUse = 0
@@ -1734,8 +1737,11 @@
 
              !!Added by AM 2014-09!!
              if (Nspecies < 2) then !!Can not do solve because there is only 1 species
-                print *,"WARNING! Trying to calculate transport coefficients with only 1 species.\n"
-                ArrayFirstSpeciesParticleFluxCoefficients(2) = 0
+                if (masterProcInSubComm) then
+	     	   print *,"WARNING! Trying to calculate transport coefficients with only 1 species."
+          	end if
+
+		ArrayFirstSpeciesParticleFluxCoefficients(2) = 0
                 cycle
              end if
              !!!!!!!!!!!!!!!!!!!!!!!
