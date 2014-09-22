@@ -170,10 +170,12 @@
 
     call validateInput()
 
-    if (RHSMode==2) then
-       print *,"Error! RHSMode 2 is not yet implemented in this version."
-       stop
-    end if
+!!Commented by AM 2014-09!!
+ !   if (RHSMode==2) then
+ !      print *,"Error! RHSMode 2 is not yet implemented in this version."
+ !      stop
+ !   end if
+!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     transportMatrix = 0
 
