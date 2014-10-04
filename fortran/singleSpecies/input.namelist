@@ -204,7 +204,7 @@
   ! Range of EStar for a scan (programMode = 6)
   EStarMin = 0.01
   EStarMax = 0.1
-  NEStar = 3
+  NEStar = 2
 
   !nuN = 0.2681d+0
   !nuPrime = 4.9085d+0

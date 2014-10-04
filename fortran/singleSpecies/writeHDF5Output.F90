@@ -13,6 +13,7 @@ module writeHDF5Output
 
   integer, private :: HDF5Error
   integer(HID_T), private :: HDF5FileID, parallelID, dspaceIDForScalar
+  integer(HID_T), private :: dspaceIDForInputNamelist
   integer(HID_T), dimension(:), allocatable, private :: dspaceIDForZeta
   integer(HID_T), dimension(:), allocatable, private :: dspaceIDForTheta
   integer(HID_T), dimension(:), allocatable, private :: dspaceIDForx
@@ -23,6 +24,8 @@ module writeHDF5Output
   integer(HID_T), dimension(:), allocatable, private :: groupIDs
 
   integer(HID_T), private :: dsetID_programMode
+  integer(HID_T), private :: dsetID_inputNamelist
+  integer(HID_T), private :: dtypeID_inputNamelist
 
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_normradius
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_Ntheta
@@ -105,7 +108,6 @@ module writeHDF5Output
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_RHSMode
 
 
-  !  integer(HSIZE_T), parameter, private :: dimForScalar = 1
   integer(HSIZE_T), dimension(1), parameter, private :: dimForScalar = 1
   integer(HSIZE_T), dimension(:,:), allocatable, private :: dimForZeta
   integer(HSIZE_T), dimension(:,:), allocatable, private :: dimForTheta
@@ -160,6 +162,10 @@ contains
 
     integer :: i, rank
     character(20) :: groupName
+
+    if (outputScheme > 0) then
+       call saveInputFileToHDF5()
+    end if
 
 #ifdef HAVE_PARALLEL_HDF5
     if (outputScheme > 0) then
@@ -959,6 +965,100 @@ contains
     end if
 
   end subroutine closeOutputFile
+
+
+
+  subroutine saveInputFileToHDF5
+
+    implicit none
+
+! If the file size is larger than this, it will be truncated in the HDF5 output file:
+#define maxInputFileSize 99999
+    character(maxInputFileSize) :: fileContents
+
+    character(100) :: filename
+    character(1) :: oneCharacter
+    integer :: fileunit, didFileAccessWork, fileSize, numRecords, ios
+    integer :: numBytesRead, filePosition, iFileLine, rank
+    PetscErrorCode :: ierr
+
+    filename = inputFilename
+
+    if (masterProc) then
+       ! Read input file into a character array.
+       ! This requires several steps. 
+       fileUnit=11
+       open(unit=fileUnit, file=filename,    action="read", status="old", iostat=didFileAccessWork)
+       if (didFileAccessWork /= 0) then
+          print *, "Error opening input file ", trim(filename)
+          stop
+       end if
+
+       ! Determine how large the input.namelist file is:
+       fileSize = 0
+       numRecords = 0
+       ! A fortran "record" is one line of the file.
+       do
+          read (unit=fileUnit, fmt="(a)", advance="no", &
+               iostat=ios) oneCharacter
+          if (is_iostat_eor(ios)) then
+             numRecords = numRecords + 1
+             cycle
+          else if (is_iostat_end(ios)) then
+             exit
+          else
+             fileSize = fileSize + 1
+          end if
+       end do
+
+       ! For each record, we add a newline: 
+       fileSize = fileSize + numRecords
+
+       if (fileSize > maxInputFileSize) then
+          print *,"WARNING: Input file is very large, so only the beginning of it will be stored in the HDF5 output file."
+          fileSize = maxInputFileSize
+       end if
+
+       rewind(unit=fileUnit)
+       filePosition = 1
+       do iFileLine = 1,numRecords
+          read (unit=fileUnit,fmt="(a)",advance="no",iostat=ios, size=numBytesRead) fileContents(filePosition:fi\
+leSize)
+          filePosition = filePosition + numBytesRead + 1
+          ! Insert newline between records:
+          fileContents(filePosition-1:filePosition-1) = achar(10)
+          if (filePosition>fileSize) then
+             exit
+          end if
+       end do
+
+       close(unit = fileUnit)
+    end if
+
+    call MPI_BCAST(fileSize,1,MPI_INT,0,MPI_COMM_WORLD,ierr)
+
+    ! Done reading the file. Now begin the HDF5 commands.
+
+    ! Create a HDF5 type corresponding to a string of the appropriate length:
+    call h5tcopy_f(H5T_FORTRAN_S1, dtypeID_inputNamelist, HDF5Error)
+    call h5tset_size_f(dtypeID_inputNamelist, fileSize, HDF5Error)
+
+    rank = 1
+    call h5screate_simple_f(rank, dimForScalar, dspaceIDForInputNamelist, HDF5Error)
+
+    call h5dcreate_f(HDF5FileID, "input.namelist", dtypeID_inputNamelist, dspaceIDForInputnamelist, &
+         dsetID_inputnamelist, HDF5Error)
+
+    if (masterProc) then
+       call h5dwrite_f(dsetID_inputNamelist, dtypeID_inputNamelist, fileContents(1:fileSize), dimForScalar, HDF5Error)
+    end if
+
+    ! Destroy HDF5 objects
+    call h5dclose_f(dsetID_inputNamelist, HDF5Error)
+    call h5tclose_f(dtypeID_inputNamelist, HDF5Error)
+    call h5sclose_f(dspaceIDForInputNamelist, HDF5Error)
+  end subroutine saveInputFileToHDF5
+
 
 end module writeHDF5Output
 

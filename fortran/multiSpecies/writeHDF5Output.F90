@@ -13,7 +13,7 @@ module writeHDF5Output
 
   integer, private :: HDF5Error
   integer(HID_T), private :: HDF5FileID, parallelID, dspaceIDForScalar
-  integer(HID_T), private :: dspaceIDForSpecies
+  integer(HID_T), private :: dspaceIDForSpecies, dspaceIDForInputNamelist
   integer(HID_T), dimension(:), allocatable, private :: dspaceIDForZeta
   integer(HID_T), dimension(:), allocatable, private :: dspaceIDForTheta
   integer(HID_T), dimension(:), allocatable, private :: dspaceIDForThetaZeta
@@ -23,6 +23,8 @@ module writeHDF5Output
   integer(HID_T), dimension(:), allocatable, private :: groupIDs
 
   integer(HID_T), private :: dsetID_programMode
+  integer(HID_T), private :: dsetID_inputNamelist
+  integer(HID_T), private :: dtypeID_inputNamelist
 
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_NSpecies
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_Ntheta
@@ -83,14 +85,14 @@ module writeHDF5Output
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_particleFluxBeforeSurfaceIntegral
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_momentumFluxBeforeSurfaceIntegral
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_heatFluxBeforeSurfaceIntegral
-  integer(HID_T), dimension(:), allocatable, private :: dsetIDs_NTVBeforeSurfaceIntegral  !HS 13.03.2014
+  integer(HID_T), dimension(:), allocatable, private :: dsetIDs_NTVBeforeSurfaceIntegral
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_FSADensityPerturbation
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_FSABFlow
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_FSAPressurePerturbation
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_particleFlux
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_momentumFlux
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_heatFlux
-  integer(HID_T), dimension(:), allocatable, private :: dsetIDs_NTV        !HS 13.03.2014
+  integer(HID_T), dimension(:), allocatable, private :: dsetIDs_NTV
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_jHat
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_FSABjHat
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_Phi1Hat
@@ -159,6 +161,10 @@ contains
     integer :: i, rank
     character(20) :: groupName
 
+    if (outputScheme > 0) then
+       call saveInputFileToHDF5()
+    end if
+
 #ifdef HAVE_PARALLEL_HDF5
     if (outputScheme > 0) then
 #else
@@ -225,14 +231,14 @@ contains
        allocate(dsetIDs_particleFluxBeforeSurfaceIntegral(numRunsInScan))
        allocate(dsetIDs_momentumFluxBeforeSurfaceIntegral(numRunsInScan))
        allocate(dsetIDs_heatFluxBeforeSurfaceIntegral(numRunsInScan))
-       allocate(dsetIDs_NTVBeforeSurfaceIntegral(numRunsInScan)) !HS 13.03.2014
+       allocate(dsetIDs_NTVBeforeSurfaceIntegral(numRunsInScan))
        allocate(dsetIDs_FSADensityPerturbation(numRunsInScan))
        allocate(dsetIDs_FSABFlow(numRunsInScan))
        allocate(dsetIDs_FSAPressurePerturbation(numRunsInScan))
        allocate(dsetIDs_particleFlux(numRunsInScan))
        allocate(dsetIDs_momentumFlux(numRunsInScan))
        allocate(dsetIDs_heatFlux(numRunsInScan))
-       allocate(dsetIDs_NTV(numRunsInScan))      !HS 13.03.2014
+       allocate(dsetIDs_NTV(numRunsInScan))
        allocate(dsetIDs_jHat(numRunsInScan))
        allocate(dsetIDs_FSABjHat(numRunsInScan))
        allocate(dsetIDs_Phi1Hat(numRunsInScan))
@@ -257,6 +263,8 @@ contains
        allocate(dimForSpeciesThetaZeta(numRunsInScan,3))
        allocate(dimForSources(numRunsInScan,2))
 
+
+
        ! Create a dataspace for storing single numbers:
        rank = 0
        call h5screate_simple_f(rank, dimForScalar, dspaceIDForScalar, HDF5Error)
@@ -268,12 +276,15 @@ contains
        rank = 2
        call h5screate_simple_f(rank, dimForTransportMatrix, dspaceIDForTransportMatrix, HDF5Error)
 
+
        ! Save programMode in the file:
        call h5dcreate_f(HDF5FileID, "programMode", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
             dsetID_programMode, HDF5Error)
+
        if (masterProc) then
           call h5dwrite_f(dsetID_programMode, H5T_NATIVE_INTEGER, programMode, dimForScalar, HDF5Error)
        end if
+
        call h5dclose_f(dsetID_programMode, HDF5Error)
 
        do i=1,numRunsInScan
@@ -493,7 +504,7 @@ contains
                dsetIDs_heatFluxBeforeSurfaceIntegral(i), HDF5Error)
 
           call h5dcreate_f(groupIDs(i), "NTVBeforeSurfaceIntegral", H5T_NATIVE_DOUBLE, dspaceIDForSpeciesThetaZeta(i), &
-               dsetIDs_NTVBeforeSurfaceIntegral(i), HDF5Error)   !HS 13.03.2014
+               dsetIDs_NTVBeforeSurfaceIntegral(i), HDF5Error) 
 
           call h5dcreate_f(groupIDs(i), "FSADensityPerturbation", H5T_NATIVE_DOUBLE, dspaceIDForSpecies, &
                dsetIDs_FSADensityPerturbation(i), HDF5Error)
@@ -514,7 +525,7 @@ contains
                dsetIDs_heatFlux(i), HDF5Error)
 
           call h5dcreate_f(groupIDs(i), "NTV", H5T_NATIVE_DOUBLE, dspaceIDForSpecies, &
-               dsetIDs_NTV(i), HDF5Error)  !HS 13.03.2014
+               dsetIDs_NTV(i), HDF5Error) 
 
           call h5dcreate_f(groupIDs(i), "jHat", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta(i), &
                dsetIDs_jHat(i), HDF5Error)
@@ -771,7 +782,7 @@ contains
             heatFluxBeforeSurfaceIntegral, dimForSpeciesThetaZeta(runNum,:), HDF5Error)
 
        call h5dwrite_f(dsetIDs_NTVBeforeSurfaceIntegral(runNum), H5T_NATIVE_DOUBLE, &
-            NTVBeforeSurfaceIntegral, dimForSpeciesThetaZeta(runNum,:), HDF5Error)  !HS 13.03.2014
+            NTVBeforeSurfaceIntegral, dimForSpeciesThetaZeta(runNum,:), HDF5Error)
 
        call h5dwrite_f(dsetIDs_FSADensityPerturbation(runNum), H5T_NATIVE_DOUBLE, &
             FSADensityPerturbation, dimForSpecies, HDF5Error)
@@ -792,7 +803,7 @@ contains
             heatFlux, dimForSpecies, HDF5Error)
 
        call h5dwrite_f(dsetIDs_NTV(runNum), H5T_NATIVE_DOUBLE, &
-            NTV, dimForSpecies, HDF5Error)  !HS 13.03.2014
+            NTV, dimForSpecies, HDF5Error) 
 
        call h5dwrite_f(dsetIDs_jHat(runNum), H5T_NATIVE_DOUBLE, &
             jHat, dimForThetaZeta(runNum,:), HDF5Error)
@@ -911,14 +922,14 @@ contains
           call h5dclose_f(dsetIDs_particleFluxBeforeSurfaceIntegral(i), HDF5Error)
           call h5dclose_f(dsetIDs_momentumFluxBeforeSurfaceIntegral(i), HDF5Error)
           call h5dclose_f(dsetIDs_heatFluxBeforeSurfaceIntegral(i), HDF5Error)
-          call h5dclose_f(dsetIDs_NTVBeforeSurfaceIntegral(i), HDF5Error) !HS 13.03.2014
+          call h5dclose_f(dsetIDs_NTVBeforeSurfaceIntegral(i), HDF5Error)
           call h5dclose_f(dsetIDs_FSADensityPerturbation(i), HDF5Error)
           call h5dclose_f(dsetIDs_FSABFlow(i), HDF5Error)
           call h5dclose_f(dsetIDs_FSAPressurePerturbation(i), HDF5Error)
           call h5dclose_f(dsetIDs_particleFlux(i), HDF5Error)
           call h5dclose_f(dsetIDs_momentumFlux(i), HDF5Error)
           call h5dclose_f(dsetIDs_heatFlux(i), HDF5Error)
-          call h5dclose_f(dsetIDs_NTV(i), HDF5Error)       !HS 13.03.2014
+          call h5dclose_f(dsetIDs_NTV(i), HDF5Error) 
           call h5dclose_f(dsetIDs_jHat(i), HDF5Error)
           call h5dclose_f(dsetIDs_FSABjHat(i), HDF5Error)
           call h5dclose_f(dsetIDs_Phi1Hat(i), HDF5Error)
@@ -950,6 +961,99 @@ contains
     end if
 
   end subroutine closeOutputFile
+
+
+
+
+  subroutine saveInputFileToHDF5
+
+    implicit none
+
+! If the file size is larger than this, it will be truncated in the HDF5 output file:
+#define maxInputFileSize 99999
+    character(maxInputFileSize) :: fileContents
+
+    character(100) :: filename
+    character(1) :: oneCharacter
+    integer :: fileunit, didFileAccessWork, fileSize, numRecords, ios
+    integer :: numBytesRead, filePosition, iFileLine, rank
+    PetscErrorCode :: ierr
+
+    filename = inputFilename
+
+    if (masterProc) then
+       ! Read input file into a character array.
+       ! This requires several steps.
+       fileUnit=11
+       open(unit=fileUnit, file=filename,    action="read", status="old", iostat=didFileAccessWork)
+       if (didFileAccessWork /= 0) then
+          print *, "Error opening input file ", trim(filename)
+          stop
+       end if
+       
+       ! Determine how large the input.namelist file is:
+       fileSize = 0
+       numRecords = 0
+       ! A fortran "record" is one line of the file.
+       do
+          read (unit=fileUnit, fmt="(a)", advance="no", &
+               iostat=ios) oneCharacter
+          if (is_iostat_eor(ios)) then
+             numRecords = numRecords + 1
+             cycle
+          else if (is_iostat_end(ios)) then
+             exit
+          else
+             fileSize = fileSize + 1
+          end if
+       end do
+       
+       ! For each record, we add a newline:
+       fileSize = fileSize + numRecords
+       
+       if (fileSize > maxInputFileSize) then
+          print *,"WARNING: Input file is very large, so only the beginning of it will be stored in the HDF5 output file."
+          fileSize = maxInputFileSize
+       end if
+       
+       rewind(unit=fileUnit)
+       filePosition = 1
+       do iFileLine = 1,numRecords
+          read (unit=fileUnit,fmt="(a)",advance="no",iostat=ios, size=numBytesRead) fileContents(filePosition:fileSize)
+          filePosition = filePosition + numBytesRead + 1
+          ! Insert newline between records:
+          fileContents(filePosition-1:filePosition-1) = achar(10)
+          if (filePosition>fileSize) then
+             exit
+          end if
+       end do
+       
+       close(unit = fileUnit)
+    end if
+
+    call MPI_BCAST(fileSize,1,MPI_INT,0,MPI_COMM_WORLD,ierr)
+
+    ! Done reading the file. Now begin the HDF5 commands.
+
+    ! Create a HDF5 type corresponding to a string of the appropriate length:
+    call h5tcopy_f(H5T_FORTRAN_S1, dtypeID_inputNamelist, HDF5Error)
+    call h5tset_size_f(dtypeID_inputNamelist, fileSize, HDF5Error)
+    
+    rank = 1
+    call h5screate_simple_f(rank, dimForScalar, dspaceIDForInputNamelist, HDF5Error)
+
+    call h5dcreate_f(HDF5FileID, "input.namelist", dtypeID_inputNamelist, dspaceIDForInputnamelist, &
+         dsetID_inputnamelist, HDF5Error)
+
+    if (masterProc) then
+       call h5dwrite_f(dsetID_inputNamelist, dtypeID_inputNamelist, fileContents(1:fileSize), dimForScalar, HDF5Error)
+    end if
+
+    ! Destroy HDF5 objects
+    call h5dclose_f(dsetID_inputNamelist, HDF5Error)
+    call h5tclose_f(dtypeID_inputNamelist, HDF5Error)
+    call h5sclose_f(dspaceIDForInputNamelist, HDF5Error)
+  end subroutine saveInputFileToHDF5
 
 end module writeHDF5Output
 
