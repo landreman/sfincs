@@ -981,6 +981,7 @@ contains
     integer :: fileunit, didFileAccessWork, fileSize, numRecords, ios
     integer :: numBytesRead, filePosition, iFileLine, rank
     PetscErrorCode :: ierr
+    integer(SIZE_T) :: fileSizeCopy
 
     filename = inputFilename
 
@@ -1022,8 +1023,7 @@ contains
        rewind(unit=fileUnit)
        filePosition = 1
        do iFileLine = 1,numRecords
-          read (unit=fileUnit,fmt="(a)",advance="no",iostat=ios, size=numBytesRead) fileContents(filePosition:fi\
-leSize)
+          read (unit=fileUnit,fmt="(a)",advance="no",iostat=ios, size=numBytesRead) fileContents(filePosition:fileSize)
           filePosition = filePosition + numBytesRead + 1
           ! Insert newline between records:
           fileContents(filePosition-1:filePosition-1) = achar(10)
@@ -1036,12 +1036,13 @@ leSize)
     end if
 
     call MPI_BCAST(fileSize,1,MPI_INT,0,MPI_COMM_WORLD,ierr)
+    fileSizeCopy = fileSize
 
     ! Done reading the file. Now begin the HDF5 commands.
 
     ! Create a HDF5 type corresponding to a string of the appropriate length:
     call h5tcopy_f(H5T_FORTRAN_S1, dtypeID_inputNamelist, HDF5Error)
-    call h5tset_size_f(dtypeID_inputNamelist, fileSize, HDF5Error)
+    call h5tset_size_f(dtypeID_inputNamelist, fileSizeCopy, HDF5Error)
 
     rank = 1
     call h5screate_simple_f(rank, dimForScalar, dspaceIDForInputNamelist, HDF5Error)

@@ -138,68 +138,76 @@ when 2,9
   Ntheta = readInput("Ntheta",0)
   NthetaMinFactor = readInput("NthetaMinFactor",1)
   NthetaMaxFactor = readInput("NthetaMaxFactor",1)
-  NthetaNumRuns = readInput("NthetaNumRuns",0)
-  Nthetas_tmp = logspace(Ntheta*NthetaMinFactor, Ntheta*NthetaMaxFactor, NthetaNumRuns).collect{|x| x.round}
+  NthetaNumRuns0 = readInput("NthetaNumRuns",0)
+  Nthetas_tmp = logspace(Ntheta*NthetaMinFactor, Ntheta*NthetaMaxFactor, NthetaNumRuns0).collect{|x| x.round}
   # Force Ntheta to be odd:
-  Nthetas = Nthetas_tmp.collect{|x| if (x % 2 == 1) then x else x+1 end}
+  Nthetas = Nthetas_tmp.collect{|x| if (x % 2 == 1) then x else x+1 end}.uniq
+  NthetaNumRuns = Nthetas.size
   puts "Nthetas:"
   p Nthetas
   
   Nzeta = readInput("Nzeta",0)
   NzetaMinFactor = readInput("NzetaMinFactor",1)
   NzetaMaxFactor = readInput("NzetaMaxFactor",1)
-  NzetaNumRuns = readInput("NzetaNumRuns",0)
-  Nzetas_tmp = logspace(Nzeta*NzetaMinFactor, Nzeta*NzetaMaxFactor, NzetaNumRuns).collect{|x| x.round}
+  NzetaNumRuns0 = readInput("NzetaNumRuns",0)
+  Nzetas_tmp = logspace(Nzeta*NzetaMinFactor, Nzeta*NzetaMaxFactor, NzetaNumRuns0).collect{|x| x.round}
   # Force Nzeta to be odd:
-  Nzetas = Nzetas_tmp.collect{|x| if (x % 2 == 1) then x else x+1 end}
+  Nzetas = Nzetas_tmp.collect{|x| if (x % 2 == 1) then x else x+1 end}.uniq
+  NzetaNumRuns = Nzetas.size
   puts "Nzetas:"
   p Nzetas
   
   Nxi = readInput("Nxi",0)
   NxiMinFactor = readInput("NxiMinFactor",1)
   NxiMaxFactor = readInput("NxiMaxFactor",1)
-  NxiNumRuns = readInput("NxiNumRuns",0)
-  Nxis = logspace(Nxi*NxiMinFactor, Nxi*NxiMaxFactor, NxiNumRuns).collect{|x| x.round}
+  NxiNumRuns0 = readInput("NxiNumRuns",0)
+  Nxis = logspace(Nxi*NxiMinFactor, Nxi*NxiMaxFactor, NxiNumRuns0).collect{|x| x.round}.uniq
+  NxiNumRuns = Nxis.size
   puts "Nxis:"
   p Nxis
   
   Nx = readInput("Nx",0)
   NxMinFactor = readInput("NxMinFactor",1)
   NxMaxFactor = readInput("NxMaxFactor",1)
-  NxNumRuns = readInput("NxNumRuns",0)
-  Nxs = logspace(Nx*NxMinFactor, Nx*NxMaxFactor, NxNumRuns).collect{|x| x.round}
+  NxNumRuns0 = readInput("NxNumRuns",0)
+  Nxs = logspace(Nx*NxMinFactor, Nx*NxMaxFactor, NxNumRuns0).collect{|x| x.round}.uniq
+  NxNumRuns = Nxs.size
   puts "Nxs:"
   p Nxs
   
   NL = readInput("NL",0)
   NLMinFactor = readInput("NLMinFactor",1)
   NLMaxFactor = readInput("NLMaxFactor",1)
-  NLNumRuns = readInput("NLNumRuns",0)
-  NLs = logspace(NL*NLMinFactor, NL*NLMaxFactor, NLNumRuns).collect{|x| x.round}
+  NLNumRuns0 = readInput("NLNumRuns",0)
+  NLs = logspace(NL*NLMinFactor, NL*NLMaxFactor, NLNumRuns0).collect{|x| x.round}.uniq
+  NLNumRuns = NLs.size
   puts "NLs:"
   p NLs
   
   NxPotentialsPerVth = readInput("NxPotentialsPerVth",1)
   NxPotentialsPerVthMinFactor = readInput("NxPotentialsPerVthMinFactor",1)
   NxPotentialsPerVthMaxFactor = readInput("NxPotentialsPerVthMaxFactor",1)
-  NxPotentialsPerVthNumRuns = readInput("NxPotentialsPerVthNumRuns",0)
-  NxPotentialsPerVths = logspace(NxPotentialsPerVth*NxPotentialsPerVthMinFactor, NxPotentialsPerVth*NxPotentialsPerVthMaxFactor, NxPotentialsPerVthNumRuns)
+  NxPotentialsPerVthNumRuns0 = readInput("NxPotentialsPerVthNumRuns",0)
+  NxPotentialsPerVths = logspace(NxPotentialsPerVth*NxPotentialsPerVthMinFactor, NxPotentialsPerVth*NxPotentialsPerVthMaxFactor, NxPotentialsPerVthNumRuns0).uniq
+  NxPotentialsPerVthNumRuns = NxPotentialsPerVths.size
   puts "NxPotentialsPerVths:"
   p NxPotentialsPerVths
   
   xMax = readInput("xMax",1)
   xMaxMinFactor = readInput("xMaxMinFactor",1)
   xMaxMaxFactor = readInput("xMaxMaxFactor",1)
-  xMaxNumRuns = readInput("xMaxNumRuns",0)
-  xMaxs = logspace(xMax*xMaxMinFactor, xMax*xMaxMaxFactor, xMaxNumRuns)
+  xMaxNumRuns0 = readInput("xMaxNumRuns",0)
+  xMaxs = logspace(xMax*xMaxMinFactor, xMax*xMaxMaxFactor, xMaxNumRuns0).uniq
+  xMaxNumRuns = xMaxs.size
   puts "xMaxs:"
   p xMaxs
   
   solverTolerance = readInput("solverTolerance",1)
   solverToleranceMinFactor = readInput("solverToleranceMinFactor",1)
   solverToleranceMaxFactor = readInput("solverToleranceMaxFactor",1)
-  solverToleranceNumRuns = readInput("solverToleranceNumRuns",0)
-  solverTolerances = logspace(solverTolerance*solverToleranceMinFactor, solverTolerance*solverToleranceMaxFactor, solverToleranceNumRuns)
+  solverToleranceNumRuns0 = readInput("solverToleranceNumRuns",0)
+  solverTolerances = logspace(solverTolerance*solverToleranceMinFactor, solverTolerance*solverToleranceMaxFactor, solverToleranceNumRuns0).uniq
+  solverToleranceNumRuns = solverTolerances.size
   puts "solverTolerances:"
   p solverTolerances
   

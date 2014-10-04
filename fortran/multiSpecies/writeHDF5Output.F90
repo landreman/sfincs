@@ -978,6 +978,7 @@ contains
     integer :: fileunit, didFileAccessWork, fileSize, numRecords, ios
     integer :: numBytesRead, filePosition, iFileLine, rank
     PetscErrorCode :: ierr
+    integer(SIZE_T) :: fileSizeCopy
 
     filename = inputFilename
 
@@ -1032,12 +1033,13 @@ contains
     end if
 
     call MPI_BCAST(fileSize,1,MPI_INT,0,MPI_COMM_WORLD,ierr)
+    fileSizeCopy = fileSize
 
     ! Done reading the file. Now begin the HDF5 commands.
 
     ! Create a HDF5 type corresponding to a string of the appropriate length:
     call h5tcopy_f(H5T_FORTRAN_S1, dtypeID_inputNamelist, HDF5Error)
-    call h5tset_size_f(dtypeID_inputNamelist, fileSize, HDF5Error)
+    call h5tset_size_f(dtypeID_inputNamelist, fileSizeCopy, HDF5Error)
     
     rank = 1
     call h5screate_simple_f(rank, dimForScalar, dspaceIDForInputNamelist, HDF5Error)
