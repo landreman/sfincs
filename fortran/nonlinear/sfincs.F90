@@ -55,6 +55,8 @@ program sfincs
 
   call readNamelistInput()
 
+  call chooseParallelDirectSolver()
+
   if (masterProc) then
      print *,"---- Physics parameters: ----"
      print *,"Number of particle species = ", Nspecies
@@ -69,17 +71,16 @@ program sfincs
      end if
   end if
 
-  call chooseParallelDirectSolver()
-
   call openOutputFile()
 
+  ! Change this next subroutine?
   call allocateArraysForSingleRun()
 
   call createGrids()
 
   call solveDKE()
 
-  call writeRunToOutputFile(1)
+  call writeOutputFile(1)
 
   call PetscFinalize(ierr)
 

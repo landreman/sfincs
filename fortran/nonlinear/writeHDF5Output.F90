@@ -115,7 +115,7 @@ contains
 
   ! -----------------------------------------------------------------------------------
 
-  subroutine writeRunToOutputFile()
+  subroutine writeOutputFile()
 
     implicit none
 
@@ -129,9 +129,11 @@ contains
 
 
        ! For each variable we want in the HDF5 file, we must do 3 steps:
-       ! 1. Create a dataset id
-       ! 2. Write the dataset to the file
-       ! 3. Destroy the dataset
+       ! 1. Create a dataset id,
+       ! 2. Write the dataset to the file,
+       ! 3. Close the dataset.
+
+       ! ----------------------------------
 
        call h5dcreate_f(HDF5FileID, "Nspecies", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
             dsetID, HDF5Error)
@@ -183,772 +185,754 @@ contains
 
        ! ----------------------------------
 
-          call h5dcreate_f(HDF5FileID, "Nx", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
-               dsetIDs_Nx(i), HDF5Error)
+       call h5dcreate_f(HDF5FileID, "Nx", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
+            dsetID, HDF5Error)
 
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "NxPotentialsPerVth", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
-               dsetIDs_NxPotentialsPerVth(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "xMax", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
-               dsetIDs_xMax(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "solverTolerance", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
-               dsetIDs_solverTolerance(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "theta", H5T_NATIVE_DOUBLE, dspaceIDForTheta(i), &
-               dsetIDs_theta(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "zeta", H5T_NATIVE_DOUBLE, dspaceIDForZeta(i), &
-               dsetIDs_zeta(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "thetaDerivativeScheme", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
-               dsetIDs_thetaDerivativeScheme(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "preconditioner_species", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
-               dsetIDs_preconditioner_species(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "preconditioner_x", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
-               dsetIDs_preconditioner_x(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "preconditioner_x_min_L", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
-               dsetIDs_preconditioner_x_min_L(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "preconditioner_xi", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
-               dsetIDs_preconditioner_xi(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "preconditioner_theta", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
-               dsetIDs_preconditioner_theta(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "preconditioner_zeta", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
-               dsetIDs_preconditioner_zeta(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "constraintScheme", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
-               dsetIDs_constraintScheme(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "BHat", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta(i), &
-               dsetIDs_BHat(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "d(BHat)d(theta)", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta(i), &
-               dsetIDs_dBHatdtheta(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "d(BHat)d(zeta)", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta(i), &
-               dsetIDs_dBHatdzeta(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "B0OverBBar", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
-               dsetIDs_B0OverBBar(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "GHat", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
-               dsetIDs_GHat(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "IHat", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
-               dsetIDs_IHat(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "iota", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
-               dsetIDs_iota(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "epsilon_t", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
-               dsetIDs_epsilon_t(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "epsilon_h", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
-               dsetIDs_epsilon_h(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "epsilon_antisymm", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
-               dsetIDs_epsilon_antisymm(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "NPeriods", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
-               dsetIDs_NPeriods(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "helicity_l", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
-               dsetIDs_helicity_l(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "helicity_n", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
-               dsetIDs_helicity_n(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "helicity_antisymm_l", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
-               dsetIDs_helicity_antisymm_l(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "helicity_antisymm_n", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
-               dsetIDs_helicity_antisymm_n(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "speciesMode", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
-               dsetIDs_speciesMode(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "Delta", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
-               dsetIDs_Delta(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "alpha", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
-               dsetIDs_alpha(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "psiAHat", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
-               dsetIDs_psiAHat(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "nu_n", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
-               dsetIDs_nu_n(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "Zs", H5T_NATIVE_DOUBLE, dspaceIDForSpecies, &
-               dsetIDs_Zs(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "mHats", H5T_NATIVE_DOUBLE, dspaceIDForSpecies, &
-               dsetIDs_mHats(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "THats", H5T_NATIVE_DOUBLE, dspaceIDForSpecies, &
-               dsetIDs_THats(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "nHats", H5T_NATIVE_DOUBLE, dspaceIDForSpecies, &
-               dsetIDs_nHats(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "d(THat)d(psi_N)", H5T_NATIVE_DOUBLE, dspaceIDForSpecies, &
-               dsetIDs_dTHatdpsiNs(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "d(nHat)d(psi_N)", H5T_NATIVE_DOUBLE, dspaceIDForSpecies, &
-               dsetIDs_dnHatdpsiNs(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "EParallelHat", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
-               dsetIDs_EParallelHat(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "d(PhiHat)d(psi_N)", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
-               dsetIDs_dPhiHatdpsiN(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "collisionOperator", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
-               dsetIDs_collisionOperator(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "include_fDivVE_Term", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
-               dsetIDs_include_fDivVE_Term(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "includeXDotTerm", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
-               dsetIDs_includeXDotTerm(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "includeElectricFieldTermInXiDot", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
-               dsetIDs_includeElectricFieldTermInXiDot(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "useDKESExBDrift", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
-               dsetIDs_useDKESExBDrift(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "sources", H5T_NATIVE_DOUBLE, dspaceIDForSources(i), &
-               dsetIDs_sources(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "densityPerturbation", H5T_NATIVE_DOUBLE, dspaceIDForSpeciesThetaZeta(i), &
-               dsetIDs_densityPerturbation(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "flow", H5T_NATIVE_DOUBLE, dspaceIDForSpeciesThetaZeta(i), &
-               dsetIDs_flow(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "pressurePerturbation", H5T_NATIVE_DOUBLE, dspaceIDForSpeciesThetaZeta(i), &
-               dsetIDs_pressurePerturbation(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "particleFluxBeforeSurfaceIntegral", H5T_NATIVE_DOUBLE, dspaceIDForSpeciesThetaZeta(i), &
-               dsetIDs_particleFluxBeforeSurfaceIntegral(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "momentumFluxBeforeSurfaceIntegral", H5T_NATIVE_DOUBLE, dspaceIDForSpeciesThetaZeta(i), &
-               dsetIDs_momentumFluxBeforeSurfaceIntegral(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "heatFluxBeforeSurfaceIntegral", H5T_NATIVE_DOUBLE, dspaceIDForSpeciesThetaZeta(i), &
-               dsetIDs_heatFluxBeforeSurfaceIntegral(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "NTVBeforeSurfaceIntegral", H5T_NATIVE_DOUBLE, dspaceIDForSpeciesThetaZeta(i), &
-               dsetIDs_NTVBeforeSurfaceIntegral(i), HDF5Error) 
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "FSADensityPerturbation", H5T_NATIVE_DOUBLE, dspaceIDForSpecies, &
-               dsetIDs_FSADensityPerturbation(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "FSABFlow", H5T_NATIVE_DOUBLE, dspaceIDForSpecies, &
-               dsetIDs_FSABFlow(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "FSAPressurePerturbation", H5T_NATIVE_DOUBLE, dspaceIDForSpecies, &
-               dsetIDs_FSAPressurePerturbation(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "particleFlux", H5T_NATIVE_DOUBLE, dspaceIDForSpecies, &
-               dsetIDs_particleFlux(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "momentumFlux", H5T_NATIVE_DOUBLE, dspaceIDForSpecies, &
-               dsetIDs_momentumFlux(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "heatFlux", H5T_NATIVE_DOUBLE, dspaceIDForSpecies, &
-               dsetIDs_heatFlux(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "NTV", H5T_NATIVE_DOUBLE, dspaceIDForSpecies, &
-               dsetIDs_NTV(i), HDF5Error) 
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "jHat", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta(i), &
-               dsetIDs_jHat(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "FSABjHat", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
-               dsetIDs_FSABjHat(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "Phi1Hat", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta(i), &
-               dsetIDs_Phi1Hat(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "elapsed time (s)", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
-               dsetIDs_elapsedTime(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "didItConverge", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
-               dsetIDs_didItConverge(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "integerToRepresentTrue", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
-               dsetIDs_integerToRepresentTrue(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "integerToRepresentFalse", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
-               dsetIDs_integerToRepresentFalse(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "VPrimeHat", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
-               dsetIDs_VPrimeHat(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "FSABHat2", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
-               dsetIDs_FSABHat2(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-          call h5dcreate_f(HDF5FileID, "useIterativeSolver", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
-               dsetIDs_useIterativeSolver(i), HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-
-
-
-          ! ---------------------------------
-
-       call h5dwrite_f(dsetIDs_Nx(runNum), H5T_NATIVE_INTEGER, &
+       call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, &
             Nx, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_NxPotentialsPerVth(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "NxPotentialsPerVth", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             NxPotentialsPerVth, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_xMax(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "xMax", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             xMax, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_solverTolerance(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "solverTolerance", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             solverTolerance, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_theta(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "theta", H5T_NATIVE_DOUBLE, dspaceIDForTheta(i), &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             theta, dimForTheta(runNum,:), HDF5Error)
 
-       call h5dwrite_f(dsetIDs_zeta(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "zeta", H5T_NATIVE_DOUBLE, dspaceIDForZeta(i), &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             zeta, dimForZeta(runNum,:), HDF5Error)
 
-       call h5dwrite_f(dsetIDs_thetaDerivativeScheme(runNum), H5T_NATIVE_INTEGER, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "thetaDerivativeScheme", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, &
             thetaDerivativeScheme, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_preconditioner_species(runNum), H5T_NATIVE_INTEGER, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "preconditioner_species", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, &
             preconditioner_species, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_preconditioner_x(runNum), H5T_NATIVE_INTEGER, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "preconditioner_x", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, &
             preconditioner_x, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_preconditioner_x_min_L(runNum), H5T_NATIVE_INTEGER, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "preconditioner_x_min_L", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, &
             preconditioner_x_min_L, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_preconditioner_xi(runNum), H5T_NATIVE_INTEGER, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "preconditioner_xi", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, &
             preconditioner_xi, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_preconditioner_theta(runNum), H5T_NATIVE_INTEGER, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "preconditioner_theta", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, &
             preconditioner_theta, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_preconditioner_zeta(runNum), H5T_NATIVE_INTEGER, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "preconditioner_zeta", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, &
             preconditioner_zeta, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_constraintScheme(runNum), H5T_NATIVE_INTEGER, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "constraintScheme", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, &
             constraintScheme, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_BHat(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "BHat", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta(i), &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             BHat, dimForThetaZeta(runNum,:), HDF5Error)
 
-       call h5dwrite_f(dsetIDs_dBHatdtheta(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "d(BHat)d(theta)", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta(i), &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             dBHatdtheta, dimForThetaZeta(runNum,:), HDF5Error)
 
-       call h5dwrite_f(dsetIDs_dBHatdzeta(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "d(BHat)d(zeta)", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta(i), &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             dBHatdzeta, dimForThetaZeta(runNum,:), HDF5Error)
 
-       call h5dwrite_f(dsetIDs_B0OverBBar(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "B0OverBBar", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             B0OverBBar, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_GHat(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "GHat", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             GHat, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_IHat(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "IHat", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             IHat, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_iota(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "iota", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             iota, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_epsilon_t(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "epsilon_t", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             epsilon_t, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_epsilon_h(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "epsilon_h", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             epsilon_h, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_epsilon_antisymm(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "epsilon_antisymm", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             epsilon_antisymm, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_NPeriods(runNum), H5T_NATIVE_INTEGER, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "NPeriods", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, &
             NPeriods, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_helicity_l(runNum), H5T_NATIVE_INTEGER, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "helicity_l", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, &
             helicity_l, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_helicity_n(runNum), H5T_NATIVE_INTEGER, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "helicity_n", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, &
             helicity_n, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_helicity_antisymm_l(runNum), H5T_NATIVE_INTEGER, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "helicity_antisymm_l", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, &
             helicity_antisymm_l, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_helicity_antisymm_n(runNum), H5T_NATIVE_INTEGER, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "helicity_antisymm_n", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, &
             helicity_antisymm_n, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_speciesMode(runNum), H5T_NATIVE_INTEGER, &
-            speciesMode, dimForScalar, HDF5Error)
+       call h5dclose_f(dsetID, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_Delta(runNum), H5T_NATIVE_DOUBLE, &
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "Delta", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             Delta, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_alpha(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "alpha", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             alpha, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_psiAHat(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "psiAHat", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             psiAHat, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_nu_n(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "nu_n", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             nu_n, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_Zs(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "Zs", H5T_NATIVE_DOUBLE, dspaceIDForSpecies, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             Zs, dimForSpecies, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_mHats(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "mHats", H5T_NATIVE_DOUBLE, dspaceIDForSpecies, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             mHats, dimForSpecies, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_THats(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "THats", H5T_NATIVE_DOUBLE, dspaceIDForSpecies, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             THats, dimForSpecies, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_nHats(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "nHats", H5T_NATIVE_DOUBLE, dspaceIDForSpecies, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             nHats, dimForSpecies, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_dTHatdpsiNs(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "d(THat)d(psi_N)", H5T_NATIVE_DOUBLE, dspaceIDForSpecies, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             dTHatdpsiNs, dimForSpecies, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_dnHatdpsiNs(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "d(nHat)d(psi_N)", H5T_NATIVE_DOUBLE, dspaceIDForSpecies, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             dnHatdpsiNs, dimForSpecies, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_EParallelHat(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "EParallelHat", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             EParallelHat, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_dPhiHatdpsiN(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "d(PhiHat)d(psi_N)", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             dPhiHatdpsiN, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_collisionOperator(runNum), H5T_NATIVE_INTEGER, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "collisionOperator", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, &
             collisionOperator, dimForScalar, HDF5Error)
+
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "include_fDivVE_Term", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
+            dsetID, HDF5Error)
 
        if (include_fDivVE_term) then
           temp = integerToRepresentTrue
        else
           temp = integerToRepresentFalse
        end if
-       call h5dwrite_f(dsetIDs_include_fDivVE_term(runNum), H5T_NATIVE_INTEGER, &
+       call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, &
             temp, dimForScalar, HDF5Error)
+
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "includeXDotTerm", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
+            dsetID, HDF5Error)
 
        if (includeXDotTerm) then
           temp = integerToRepresentTrue
        else
           temp = integerToRepresentFalse
        end if
-       call h5dwrite_f(dsetIDs_includeXDotTerm(runNum), H5T_NATIVE_INTEGER, &
+       call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, &
             temp, dimForScalar, HDF5Error)
+
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "includeElectricFieldTermInXiDot", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
+            dsetID, HDF5Error)
 
        if (includeElectricFieldTermInXiDot) then
           temp = integerToRepresentTrue
        else
           temp = integerToRepresentFalse
        end if
-       call h5dwrite_f(dsetIDs_includeElectricFieldTermInXiDot(runNum), H5T_NATIVE_INTEGER, &
+       call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, &
             temp, dimForScalar, HDF5Error)
+
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "useDKESExBDrift", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
+            dsetID, HDF5Error)
 
        if (useDKESExBDrift) then
           temp = integerToRepresentTrue
        else
           temp = integerToRepresentFalse
        end if
-       call h5dwrite_f(dsetIDs_useDKESExBDrift(runNum), H5T_NATIVE_INTEGER, &
+       call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, &
             temp, dimForScalar, HDF5Error)
+
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "sources", H5T_NATIVE_DOUBLE, dspaceIDForSources(i), &
+            dsetID, HDF5Error)
 
        if (constraintSchemesForScan(runNum)==0) then
           allocate(sources(1,1))
           sources=zero
-          call h5dwrite_f(dsetIDs_sources(runNum), H5T_NATIVE_DOUBLE, &
+          call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
                sources, dimForSources(runNum,:), HDF5Error)
           deallocate(sources)
        else
-          call h5dwrite_f(dsetIDs_sources(runNum), H5T_NATIVE_DOUBLE, &
+          call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
                sources, dimForSources(runNum,:), HDF5Error)
        end if
 
-       call h5dwrite_f(dsetIDs_densityPerturbation(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "densityPerturbation", H5T_NATIVE_DOUBLE, dspaceIDForSpeciesThetaZeta(i), &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             densityPerturbation, dimForSpeciesThetaZeta(runNum,:), HDF5Error)
 
-       call h5dwrite_f(dsetIDs_flow(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "flow", H5T_NATIVE_DOUBLE, dspaceIDForSpeciesThetaZeta(i), &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             flow, dimForSpeciesThetaZeta(runNum,:), HDF5Error)
 
-       call h5dwrite_f(dsetIDs_pressurePerturbation(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "pressurePerturbation", H5T_NATIVE_DOUBLE, dspaceIDForSpeciesThetaZeta(i), &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             pressurePerturbation, dimForSpeciesThetaZeta(runNum,:), HDF5Error)
 
-       call h5dwrite_f(dsetIDs_particleFluxBeforeSurfaceIntegral(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "particleFluxBeforeSurfaceIntegral", H5T_NATIVE_DOUBLE, dspaceIDForSpeciesThetaZeta(i), &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             particleFluxBeforeSurfaceIntegral, dimForSpeciesThetaZeta(runNum,:), HDF5Error)
 
-       call h5dwrite_f(dsetIDs_momentumFluxBeforeSurfaceIntegral(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "momentumFluxBeforeSurfaceIntegral", H5T_NATIVE_DOUBLE, dspaceIDForSpeciesThetaZeta(i), &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             momentumFluxBeforeSurfaceIntegral, dimForSpeciesThetaZeta(runNum,:), HDF5Error)
 
-       call h5dwrite_f(dsetIDs_heatFluxBeforeSurfaceIntegral(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "heatFluxBeforeSurfaceIntegral", H5T_NATIVE_DOUBLE, dspaceIDForSpeciesThetaZeta(i), &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             heatFluxBeforeSurfaceIntegral, dimForSpeciesThetaZeta(runNum,:), HDF5Error)
 
-       call h5dwrite_f(dsetIDs_NTVBeforeSurfaceIntegral(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "NTVBeforeSurfaceIntegral", H5T_NATIVE_DOUBLE, dspaceIDForSpeciesThetaZeta(i), &
+            dsetID, HDF5Error) 
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             NTVBeforeSurfaceIntegral, dimForSpeciesThetaZeta(runNum,:), HDF5Error)
 
-       call h5dwrite_f(dsetIDs_FSADensityPerturbation(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "FSADensityPerturbation", H5T_NATIVE_DOUBLE, dspaceIDForSpecies, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             FSADensityPerturbation, dimForSpecies, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_FSABFlow(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "FSABFlow", H5T_NATIVE_DOUBLE, dspaceIDForSpecies, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             FSABFlow, dimForSpecies, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_FSAPressurePerturbation(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "FSAPressurePerturbation", H5T_NATIVE_DOUBLE, dspaceIDForSpecies, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             FSAPressurePerturbation, dimForSpecies, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_particleFlux(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "particleFlux", H5T_NATIVE_DOUBLE, dspaceIDForSpecies, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             particleFlux, dimForSpecies, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_momentumFlux(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "momentumFlux", H5T_NATIVE_DOUBLE, dspaceIDForSpecies, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             momentumFlux, dimForSpecies, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_heatFlux(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "heatFlux", H5T_NATIVE_DOUBLE, dspaceIDForSpecies, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             heatFlux, dimForSpecies, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_NTV(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "NTV", H5T_NATIVE_DOUBLE, dspaceIDForSpecies, &
+            dsetID, HDF5Error) 
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             NTV, dimForSpecies, HDF5Error) 
 
-       call h5dwrite_f(dsetIDs_jHat(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "jHat", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta(i), &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             jHat, dimForThetaZeta(runNum,:), HDF5Error)
 
-       call h5dwrite_f(dsetIDs_FSABjHat(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "FSABjHat", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             FSABjHat, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_Phi1Hat(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "Phi1Hat", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta(i), &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             Phi1Hat, dimForThetaZeta(runNum,:), HDF5Error)
 
-       call h5dwrite_f(dsetIDs_elapsedTime(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "elapsed time (s)", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             elapsedTime, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_didItConverge(runNum), H5T_NATIVE_INTEGER, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "didItConverge", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, &
             didItConverge, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_integerToRepresentTrue(runNum), H5T_NATIVE_INTEGER, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "integerToRepresentTrue", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, &
             integerToRepresentTrue, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_integerToRepresentFalse(runNum), H5T_NATIVE_INTEGER, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "integerToRepresentFalse", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, &
             integerToRepresentFalse, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_VPrimeHat(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "VPrimeHat", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             VPrimeHat, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_FSABHat2(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "FSABHat2", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             FSABHat2, dimForScalar, HDF5Error)
+
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "useIterativeSolver", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
+            dsetID, HDF5Error)
 
        if (useIterativeSolver) then
           temp = integerToRepresentTrue
        else
           temp = integerToRepresentFalse
        end if
-       call h5dwrite_f(dsetIDs_useIterativeSolver(runNum), H5T_NATIVE_INTEGER, &
+       call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, &
             temp, dimForScalar, HDF5Error)
 
-       call h5dwrite_f(dsetIDs_transportMatrix(runNum), H5T_NATIVE_DOUBLE, &
-            transportMatrix, dimForTransportMatrix, HDF5Error)
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
 
     end if
 
     call closeOutputFile()
 
-  end subroutine writeRunToOutputFile
+  end subroutine writeOutputFile
 
   ! -----------------------------------------------------------------------------------
 
