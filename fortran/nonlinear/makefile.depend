@@ -1,0 +1,16 @@
+OBJ_FILES = sfincs.o xGrid.o writeHDF5Output.o globalVariables.o solver.o readInput.o \
+	polynomialDiffMatrices.o uniformDiffMatrices.o \
+	uniformInterpolationMatrix.o \
+	indices.o sparsify.o geometry.o \
+	polynomialInterpolationMatrix.o solveDKE.o quadpack/quadpack.a 
+
+# Dependencies:
+writeHDF5Output.o: globalVariables.o scan.o
+printToStdout.o: globalVariables.o
+readInput.o: globalVariables.o
+geometry.o: globalVariables.o
+solveDKE.o: globalVariables.o xGrid.o polynomialDiffMatrices.o sparsify.o geometry.o indices.o
+indices.o: globalVariables.o
+solver.o: globalVariables.o
+sfincs.o: globalVariables.o writeHDF5Output.o solveDKE.o readInput.o solver.o
+

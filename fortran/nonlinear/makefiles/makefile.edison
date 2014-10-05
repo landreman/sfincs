@@ -1,0 +1,25 @@
+# Edison is a Cray XC30 at NERSC (Lawrence Berkeley National Laboratory).
+
+# Set command for fortran compiler:
+FC = ftn
+
+# Set command for linker:
+FLINKER = ftn
+
+# Any other flags for compiling, such as -I include flags:
+EXTRA_COMPILE_FLAGS =
+
+# Any other flags for linking, such as -l library flags:
+EXTRA_LINK_FLAGS =
+
+# The next parameters are used only for running selected examples "make test"
+
+# For "make test", do you want to run the examples that require multiple nodes worth of memory?
+# The value of this variable must be "yes" or "no".
+SFINCS_RUN_LARGE_EXAMPLES=yes
+
+# For "make test", are runs submitted using a batch system (such as PBS)?  
+# The value of this variable must be "yes" or "no".
+SFINCS_IS_A_BATCH_SYSTEM_USED=yes
+
+SFINCS_COMMAND_TO_SUBMIT_JOB=qsub job.edison
