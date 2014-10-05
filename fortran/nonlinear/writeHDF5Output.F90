@@ -11,25 +11,23 @@ module writeHDF5Output
   integer, private :: HDF5Error
   integer(HID_T), private :: HDF5FileID
 
-  integer(HID_T), private :: dtypeID_inputNamelist
-
   integer(HSIZE_T), dimension(1), parameter, private :: dimForScalar = 1
   integer(HSIZE_T), dimension(1), private :: dimForSpecies
-  integer(HSIZE_T), dimension(1), private :: dimForZeta
   integer(HSIZE_T), dimension(1), private :: dimForTheta
+  integer(HSIZE_T), dimension(1), private :: dimForZeta
+  integer(HSIZE_T), dimension(1), private :: dimForx
   integer(HSIZE_T), dimension(2), private :: dimForThetaZeta
   integer(HSIZE_T), dimension(3), private :: dimForSpeciesThetaZeta
   integer(HSIZE_T), dimension(2), private :: dimForSources
 
   integer(HID_T), private :: dspaceIDForScalar
-  integer(HID_T), private :: dspaceIDForSpecies, dspaceIDForInputNamelist
-  integer(HID_T), private :: dspaceIDForZeta
+  integer(HID_T), private :: dspaceIDForSpecies
   integer(HID_T), private :: dspaceIDForTheta
+  integer(HID_T), private :: dspaceIDForZeta
+  integer(HID_T), private :: dspaceIDForx
   integer(HID_T), private :: dspaceIDForThetaZeta
   integer(HID_T), private :: dspaceIDForSpeciesThetaZeta
   integer(HID_T), private :: dspaceIDForSources
-
-  integer(HID_T), private :: dsetID
 
 contains
 
@@ -84,6 +82,9 @@ contains
        dimForTheta = Ntheta
        call h5screate_simple_f(rank, dimForTheta, dspaceIDForTheta, HDF5Error)
 
+       dimForx = Nx
+       call h5screate_simple_f(rank, dimForx, dspaceIDForx, HDF5Error)
+
        rank = 2
        dimForThetaZeta(1) = Ntheta
        dimForThetaZeta(2) = Nzetas
@@ -96,7 +97,7 @@ contains
        call h5screate_simple_f(rank, dimForSpeciesThetaZeta, dspaceIDForSpeciesThetaZeta, HDF5Error)
 
        dimForSources(1) = Nspecies
-       select case (constraintSchemesForScan(i))
+       select case (constraintScheme)
        case (0)
           dimForSources(2) = 1
        case (1)
@@ -119,6 +120,7 @@ contains
 
     implicit none
 
+    integer(HID_T), private :: dsetID
     integer :: temp
 
     call createHDF5Structures()
@@ -225,21 +227,31 @@ contains
 
        ! ----------------------------------
 
-       call h5dcreate_f(HDF5FileID, "theta", H5T_NATIVE_DOUBLE, dspaceIDForTheta(i), &
+       call h5dcreate_f(HDF5FileID, "theta", H5T_NATIVE_DOUBLE, dspaceIDForTheta, &
             dsetID, HDF5Error)
 
        call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
-            theta, dimForTheta(runNum,:), HDF5Error)
+            theta, dimForTheta, HDF5Error)
 
        call h5dclose_f(dsetID, HDF5Error)
 
        ! ----------------------------------
 
-       call h5dcreate_f(HDF5FileID, "zeta", H5T_NATIVE_DOUBLE, dspaceIDForZeta(i), &
+       call h5dcreate_f(HDF5FileID, "zeta", H5T_NATIVE_DOUBLE, dspaceIDForZeta, &
             dsetID, HDF5Error)
 
        call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
-            zeta, dimForZeta(runNum,:), HDF5Error)
+            zeta, dimForZeta, HDF5Error)
+
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "x", H5T_NATIVE_DOUBLE, dspaceIDForx, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
+            x, dimForx, HDF5Error)
 
        call h5dclose_f(dsetID, HDF5Error)
 
@@ -325,31 +337,31 @@ contains
 
        ! ----------------------------------
 
-       call h5dcreate_f(HDF5FileID, "BHat", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta(i), &
+       call h5dcreate_f(HDF5FileID, "BHat", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta, &
             dsetID, HDF5Error)
 
        call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
-            BHat, dimForThetaZeta(runNum,:), HDF5Error)
+            BHat, dimForThetaZeta, HDF5Error)
 
        call h5dclose_f(dsetID, HDF5Error)
 
        ! ----------------------------------
 
-       call h5dcreate_f(HDF5FileID, "d(BHat)d(theta)", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta(i), &
+       call h5dcreate_f(HDF5FileID, "d(BHat)d(theta)", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta, &
             dsetID, HDF5Error)
 
        call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
-            dBHatdtheta, dimForThetaZeta(runNum,:), HDF5Error)
+            dBHatdtheta, dimForThetaZeta, HDF5Error)
 
        call h5dclose_f(dsetID, HDF5Error)
 
        ! ----------------------------------
 
-       call h5dcreate_f(HDF5FileID, "d(BHat)d(zeta)", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta(i), &
+       call h5dcreate_f(HDF5FileID, "d(BHat)d(zeta)", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta, &
             dsetID, HDF5Error)
 
        call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
-            dBHatdzeta, dimForThetaZeta(runNum,:), HDF5Error)
+            dBHatdzeta, dimForThetaZeta, HDF5Error)
 
        call h5dclose_f(dsetID, HDF5Error)
 
@@ -665,89 +677,89 @@ contains
 
        ! ----------------------------------
 
-       call h5dcreate_f(HDF5FileID, "sources", H5T_NATIVE_DOUBLE, dspaceIDForSources(i), &
+       call h5dcreate_f(HDF5FileID, "sources", H5T_NATIVE_DOUBLE, dspaceIDForSources, &
             dsetID, HDF5Error)
 
-       if (constraintSchemesForScan(runNum)==0) then
+       if (constraintScheme==0) then
           allocate(sources(1,1))
           sources=zero
           call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
-               sources, dimForSources(runNum,:), HDF5Error)
+               sources, dimForSources, HDF5Error)
           deallocate(sources)
        else
           call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
-               sources, dimForSources(runNum,:), HDF5Error)
+               sources, dimForSources, HDF5Error)
        end if
 
        call h5dclose_f(dsetID, HDF5Error)
 
        ! ----------------------------------
 
-       call h5dcreate_f(HDF5FileID, "densityPerturbation", H5T_NATIVE_DOUBLE, dspaceIDForSpeciesThetaZeta(i), &
+       call h5dcreate_f(HDF5FileID, "densityPerturbation", H5T_NATIVE_DOUBLE, dspaceIDForSpeciesThetaZeta, &
             dsetID, HDF5Error)
 
        call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
-            densityPerturbation, dimForSpeciesThetaZeta(runNum,:), HDF5Error)
+            densityPerturbation, dimForSpeciesThetaZeta, HDF5Error)
 
        call h5dclose_f(dsetID, HDF5Error)
 
        ! ----------------------------------
 
-       call h5dcreate_f(HDF5FileID, "flow", H5T_NATIVE_DOUBLE, dspaceIDForSpeciesThetaZeta(i), &
+       call h5dcreate_f(HDF5FileID, "flow", H5T_NATIVE_DOUBLE, dspaceIDForSpeciesThetaZeta, &
             dsetID, HDF5Error)
 
        call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
-            flow, dimForSpeciesThetaZeta(runNum,:), HDF5Error)
+            flow, dimForSpeciesThetaZeta, HDF5Error)
 
        call h5dclose_f(dsetID, HDF5Error)
 
        ! ----------------------------------
 
-       call h5dcreate_f(HDF5FileID, "pressurePerturbation", H5T_NATIVE_DOUBLE, dspaceIDForSpeciesThetaZeta(i), &
+       call h5dcreate_f(HDF5FileID, "pressurePerturbation", H5T_NATIVE_DOUBLE, dspaceIDForSpeciesThetaZeta, &
             dsetID, HDF5Error)
 
        call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
-            pressurePerturbation, dimForSpeciesThetaZeta(runNum,:), HDF5Error)
+            pressurePerturbation, dimForSpeciesThetaZeta, HDF5Error)
 
        call h5dclose_f(dsetID, HDF5Error)
 
        ! ----------------------------------
 
-       call h5dcreate_f(HDF5FileID, "particleFluxBeforeSurfaceIntegral", H5T_NATIVE_DOUBLE, dspaceIDForSpeciesThetaZeta(i), &
+       call h5dcreate_f(HDF5FileID, "particleFluxBeforeSurfaceIntegral", H5T_NATIVE_DOUBLE, dspaceIDForSpeciesThetaZeta, &
             dsetID, HDF5Error)
 
        call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
-            particleFluxBeforeSurfaceIntegral, dimForSpeciesThetaZeta(runNum,:), HDF5Error)
+            particleFluxBeforeSurfaceIntegral, dimForSpeciesThetaZeta, HDF5Error)
 
        call h5dclose_f(dsetID, HDF5Error)
 
        ! ----------------------------------
 
-       call h5dcreate_f(HDF5FileID, "momentumFluxBeforeSurfaceIntegral", H5T_NATIVE_DOUBLE, dspaceIDForSpeciesThetaZeta(i), &
+       call h5dcreate_f(HDF5FileID, "momentumFluxBeforeSurfaceIntegral", H5T_NATIVE_DOUBLE, dspaceIDForSpeciesThetaZeta, &
             dsetID, HDF5Error)
 
        call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
-            momentumFluxBeforeSurfaceIntegral, dimForSpeciesThetaZeta(runNum,:), HDF5Error)
+            momentumFluxBeforeSurfaceIntegral, dimForSpeciesThetaZeta, HDF5Error)
 
        call h5dclose_f(dsetID, HDF5Error)
 
        ! ----------------------------------
 
-       call h5dcreate_f(HDF5FileID, "heatFluxBeforeSurfaceIntegral", H5T_NATIVE_DOUBLE, dspaceIDForSpeciesThetaZeta(i), &
+       call h5dcreate_f(HDF5FileID, "heatFluxBeforeSurfaceIntegral", H5T_NATIVE_DOUBLE, dspaceIDForSpeciesThetaZeta, &
             dsetID, HDF5Error)
 
        call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
-            heatFluxBeforeSurfaceIntegral, dimForSpeciesThetaZeta(runNum,:), HDF5Error)
+            heatFluxBeforeSurfaceIntegral, dimForSpeciesThetaZeta, HDF5Error)
 
        call h5dclose_f(dsetID, HDF5Error)
 
        ! ----------------------------------
 
-       call h5dcreate_f(HDF5FileID, "NTVBeforeSurfaceIntegral", H5T_NATIVE_DOUBLE, dspaceIDForSpeciesThetaZeta(i), &
+       call h5dcreate_f(HDF5FileID, "NTVBeforeSurfaceIntegral", H5T_NATIVE_DOUBLE, dspaceIDForSpeciesThetaZeta, &
             dsetID, HDF5Error) 
 
        call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
-            NTVBeforeSurfaceIntegral, dimForSpeciesThetaZeta(runNum,:), HDF5Error)
+            NTVBeforeSurfaceIntegral, dimForSpeciesThetaZeta, HDF5Error)
 
        call h5dclose_f(dsetID, HDF5Error)
 
@@ -823,11 +835,11 @@ contains
 
        ! ----------------------------------
 
-       call h5dcreate_f(HDF5FileID, "jHat", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta(i), &
+       call h5dcreate_f(HDF5FileID, "jHat", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta, &
             dsetID, HDF5Error)
 
        call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
-            jHat, dimForThetaZeta(runNum,:), HDF5Error)
+            jHat, dimForThetaZeta, HDF5Error)
 
        call h5dclose_f(dsetID, HDF5Error)
 
@@ -843,11 +855,11 @@ contains
 
        ! ----------------------------------
 
-       call h5dcreate_f(HDF5FileID, "Phi1Hat", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta(i), &
+       call h5dcreate_f(HDF5FileID, "Phi1Hat", H5T_NATIVE_DOUBLE, dspaceIDForThetaZeta, &
             dsetID, HDF5Error)
 
        call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
-            Phi1Hat, dimForThetaZeta(runNum,:), HDF5Error)
+            Phi1Hat, dimForThetaZeta, HDF5Error)
 
        call h5dclose_f(dsetID, HDF5Error)
 
@@ -973,6 +985,11 @@ contains
     integer :: numBytesRead, filePosition, iFileLine, rank
     PetscErrorCode :: ierr
     integer(SIZE_T) :: fileSizeCopy
+    integer(HID_T) :: dspaceIDForInputNamelist
+    integer(HID_T) :: dtypeID_inputNamelist
+    integer(HID_T) :: dsetID
+
+
 
     filename = inputFilename
 
