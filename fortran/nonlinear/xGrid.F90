@@ -6,7 +6,7 @@
   ! The module is presently configured to use the weight exp(-x^2) and to
   ! use the interval [0, Inf), which yields the grid and integration weights
   ! dicussed in the following paper:
-  ! http://arxiv.org/abs/1210.5289
+  ! Landreman & Ernst, Journal of Computational Physics 243, 130 (2013).
   ! This grid is useful for velocity space.
   ! You can change the "weight" function in the module and the integration
   ! domain in the makeXGrid subroutine if you wish.

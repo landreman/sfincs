@@ -214,6 +214,35 @@ contains
 
     Nspecies = NZs
 
+    ! Validate some other input quantities:
+
+    if (preconditioner_theta < 0 .or. preconditioner_theta > 1) then
+       print *,"Error! preconditioner_theta must be 0 or 1."
+       stop
+    end if
+    if (preconditioner_zeta < 0 .or. preconditioner_zeta > 1) then
+       print *,"Error! preconditioner_zeta must be 0 or 1."
+       stop
+    end if
+    if (preconditioner_xi < 0 .or. preconditioner_xi > 1) then
+       print *,"Error! preconditioner_xi must be 0 or 1."
+       stop
+    end if
+    if (preconditioner_x < 0 .or. preconditioner_x > 4) then
+       print *,"Error! preconditioner_x must be in the range [0, 4]."
+       stop
+    end if
+
+    if (collisionOperator < 0 .or. collisionOperator > 2) then
+       print *,"Error! collisionOperator must be 0, 1, or 2."
+       stop
+    end if
+
+    if (constraintScheme < 0 .or. constraintScheme > 2) then
+       print *,"Error! constraintScheme must be 0, 1, or 2."
+       stop
+    end if
+
   end subroutine readNamelistInput
 
 end module readInput

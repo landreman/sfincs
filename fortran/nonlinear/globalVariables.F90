@@ -65,6 +65,7 @@ module globalVariables
   ! ********************************************************
   ! ********************************************************
 
+  logical :: nonlinear
   PetscScalar :: Delta
   PetscScalar :: alpha
   PetscScalar :: nu_n
@@ -126,13 +127,23 @@ module globalVariables
 
   ! ********************************************************
   !
-  !  Outputs and numerical data which will be saved in the output file
+  !  Other variables that are used by multiple subroutines
   !
   ! ********************************************************
 
-  integer :: matrixSize
+  integer :: matrixSize, NxPotentials
   PetscScalar :: normradius
   PetscScalar, dimension(:), allocatable :: theta, zeta, x
+  PetscScalar, dimension(:), allocatable :: thetaWeights, zetaWeights
+  PetscScalar, dimension(:,:), allocatable :: ddtheta, ddzeta
+  PetscScalar, dimension(:), allocatable :: xWeights, xPotentials
+  PetscScalar, dimension(:), allocatable :: x2, expx2
+  PetscScalar, dimension(:,:), allocatable :: ddx, d2dx2, ddxPotentials, d2dx2Potentials
+  PetscScalar, dimension(:,:), allocatable :: ddx_preconditioner
+  PetscScalar, dimension(:,:), allocatable :: ddtheta_preconditioner
+  PetscScalar, dimension(:,:), allocatable :: ddzeta_preconditioner
+  PetscScalar, dimension(:,:), allocatable :: regridPolynomialToUniform
+
   PetscScalar, dimension(:,:), allocatable :: BHat, dBHatdtheta, dBHatdzeta, sources, jHat, Phi1Hat
   PetscScalar, dimension(:,:,:), allocatable :: flow, densityPerturbation, pressurePerturbation
   PetscScalar, dimension(:,:,:), allocatable :: particleFluxBeforeSurfaceIntegral
@@ -145,7 +156,7 @@ module globalVariables
   PetscScalar :: VPrimeHat, FSABHat2, FSABjHat
 
   PetscLogDouble :: elapsedTime
-  integer :: didItConverge
+  integer :: didLinearCalculationConverge, didNonlinearCalculationConverge
 
   ! ********************************************************
   !
@@ -155,101 +166,8 @@ module globalVariables
 
   integer :: numProcs, myRank 
   logical :: masterProc
-
-contains
-
-  ! ------------------------------------------------------------------------
-
-  subroutine setConstraintScheme()
-
-    implicit none
-
-    if (constraintScheme < 0) then
-       if (collisionOperator == 0) then
-          constraintScheme = 1
-       else
-          constraintScheme = 2
-       end if
-    end if
-
-  end subroutine setConstraintScheme
-
-  ! ------------------------------------------------------------------------
-
-  subroutine validateInput()
-
-    implicit none
-
-    ! Validate some input quantities:
-
-    if (preconditioner_theta < 0 .or. preconditioner_theta > 1) then
-       print *,"Error! preconditioner_theta must be 0 or 1."
-       stop
-    end if
-    if (preconditioner_zeta < 0 .or. preconditioner_zeta > 1) then
-       print *,"Error! preconditioner_zeta must be 0 or 1."
-       stop
-    end if
-    if (preconditioner_xi < 0 .or. preconditioner_xi > 1) then
-       print *,"Error! preconditioner_xi must be 0 or 1."
-       stop
-    end if
-    if (preconditioner_x < 0 .or. preconditioner_x > 4) then
-       print *,"Error! preconditioner_x must be in the range [0, 4]."
-       stop
-    end if
-
-    if (collisionOperator < 0 .or. collisionOperator > 2) then
-       print *,"Error! collisionOperator must be 0, 1, or 2."
-       stop
-    end if
-
-    if (constraintScheme < 0 .or. constraintScheme > 2) then
-       print *,"Error! constraintScheme must be 0, 1, or 2."
-       stop
-    end if
-
-  end subroutine validateInput
-
-  ! ------------------------------------------------------------------------
-
-  subroutine deallocateArrays()
-
-    implicit none
-
-    deallocate(zeta)
-    deallocate(theta)
-    deallocate(BHat)
-    deallocate(dBHatdtheta)
-    deallocate(dBHatdzeta)
-    deallocate(NTVKernel)
-   
-    if (masterProcInSubComm) then
-       deallocate(FSADensityPerturbation)
-       deallocate(FSABFlow)
-       deallocate(FSAPressurePerturbation)
-       deallocate(particleFlux)
-       deallocate(momentumFlux)
-       deallocate(heatFlux)
-       deallocate(NTV)
-
-       deallocate(densityPerturbation)
-       deallocate(flow)
-       deallocate(pressurePerturbation)
-       deallocate(particleFluxBeforeSurfaceIntegral)
-       deallocate(momentumFluxBeforeSurfaceIntegral)
-       deallocate(heatFluxBeforeSurfaceIntegral)
-       deallocate(NTVBeforeSurfaceIntegral)
-
-       deallocate(jHat)
-       deallocate(Phi1Hat)
-
-       if (constraintScheme > 0) then
-          deallocate(sources)
-       end if
-    end if
-
-  end subroutine deallocateArrays
+  integer :: izetaMin, izetaMax, localNzeta
+  logical :: procThatHandlesConstraints
 
 end module globalVariables
 

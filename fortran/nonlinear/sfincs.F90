@@ -22,16 +22,12 @@ program sfincs
 
   PetscErrorCode ierr
   PetscLogDouble :: startTime, time1
-  integer :: runNum
 
   call PetscInitialize(PETSC_NULL_CHARACTER, ierr)
 
   call MPI_COMM_SIZE(PETSC_COMM_WORLD, numProcs, ierr)
   call MPI_COMM_RANK(PETSC_COMM_WORLD, myRank, ierr)
-  ! This program uses 1-based indices to number the MPI processes, consistent with the Fortran
-  ! convention for array indices, not the 0-based indexing used by C and MPI.
-  myRank = myRank + 1
-  masterProc = (myRank==1)
+  masterProc = (myRank==0)
 
   if (masterProc) then
      print *,"****************************************************************************"
@@ -55,6 +51,9 @@ program sfincs
 
   call readNamelistInput()
 
+  ! If running with >1 proc,
+  ! make sure either superlu_dist or mumps is installed, and pick which one
+  ! of these packages to use:
   call chooseParallelDirectSolver()
 
   if (masterProc) then
@@ -71,15 +70,26 @@ program sfincs
      end if
   end if
 
+  ! Before investing the time in solving the system, make sure
+  ! it is possible to at least open the output file.
   call openOutputFile()
 
   ! Change this next subroutine?
   call allocateArraysForSingleRun()
 
+  ! Do various calculations that will not need to be repeated at each
+  ! iteration, such as setting up the coordinate grids and evaluating
+  ! the magnetic field and its derivatives on the spatial grid.
   call createGrids()
 
-  call solveDKE()
+  ! Solve the main system, either linear or nonlinear.
+  ! This step takes more time than everything else combined.
+  ! Diagnostics should be computed within the solver, for 2 reasons:
+  !   1. There might be >1 RHS
+  !   2. If doing a nonlinear run, we should also save linear results, which we get for free.
+  call solveSystem()
 
+  ! Build the HDF5 output file:
   call writeOutputFile(1)
 
   call PetscFinalize(ierr)

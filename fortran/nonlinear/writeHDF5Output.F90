@@ -1,3 +1,19 @@
+! For a nonlinear run, it would be nice to save the output from every iteration.
+! Certainly, for a nonlinear run, we particularly want to save the first iteration, which corresponds to a linear run.
+! There could be a few different ways to handle this issue.
+!
+! 1. Each time we get an updated state vector, we could save a completely new .h5 file.
+!    This approach ensures we get as many usable .h5 files as possible, even if the job crashes.
+!    In this approach, I might as well only read in input.namelist once.
+!    The downside of this approach is the output is less organized.
+!
+! 2. I could see if there is a way to append to the h5 file. Each time a new state vector becomes available,
+!    the code could add a new group like "/iteration0001/". If the file is re-opened and closed
+!    each time, this should make it highly likely the file would be usable even if the code crashed during factorization or gmres.
+!
+! 3. Like option 2, I could see if h5 files allow one dimension to be increased when the file is re-opened.
+
+
 module writeHDF5Output
 
   use globalVariables

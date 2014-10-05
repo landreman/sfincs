@@ -213,14 +213,4 @@
 
     end function getIndex
 
-!!$    subroutine getIndicesThetaRange(ispecies, ix, ixi, izeta, outputIndices)
-!!$      integer, intent(in) :: ispecies, ix, ixi, izeta
-!!$      integer, dimension(:), intent(out) :: outputIndices
-!!$      integer :: itheta
-!!$
-!!$      do itheta=1,Ntheta
-!!$         outputIndices(itheta) = getIndices(ispecies, ix, ixi, itheta, izeta, 0)
-!!$      end do
-!!$    end subroutine getIndicesThetaRange
-
   end module indices

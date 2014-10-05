@@ -54,9 +54,8 @@ contains
        end if
 
        close(unit = fileUnit)
-       if (masterProcInSubComm) then
-          print *,"[",myCommunicatorIndex,&
-               "] Successfully opened magnetic equilibrium file ",trim(JGboozer_file),".  Nperiods = ",Nperiods
+       if (masterProc) then
+          print *,"Successfully opened magnetic equilibrium file ",trim(JGboozer_file),".  Nperiods = ",Nperiods
        end if
 
     case (12)
@@ -82,9 +81,8 @@ contains
        end if
 
        close(unit = fileUnit)
-       if (masterProcInSubComm) then
-          print *,"[",myCommunicatorIndex,&
-               "] Successfully opened magnetic equilibrium file ",trim(JGboozer_file_NonStelSym),".  Nperiods = ",Nperiods
+       if (masterProc) then
+          print *,"Successfully opened magnetic equilibrium file ",trim(JGboozer_file_NonStelSym),".  Nperiods = ",Nperiods
        end if
 
     case default
@@ -425,8 +423,8 @@ contains
        end if
 
        close(unit = fileUnit)
-       if (masterProcInSubComm) then
-          print *,"[",myCommunicatorIndex,"] Successfully read magnetic equilibrium from file ",trim(JGboozer_file)
+       if (masterProc) then
+          print *,"Successfully read magnetic equilibrium from file ",trim(JGboozer_file)
        end if
 
        if (abs(normradius_old - normradius_wish) < abs(normradius_new - normradius_wish)) then
@@ -466,8 +464,8 @@ contains
 
        BHarmonics_amplitudes = BHarmonics_amplitudes / B0OverBBar
 
-       if (masterProcInSubComm) then
-          print *,"[",myCommunicatorIndex,"] This computation is for the flux surface with minor radius ",normradius*a, &
+       if (masterProc) then
+          print *,"This computation is for the flux surface with minor radius ",normradius*a, &
                " meters, equivalent to r/a = ",normradius
        end if
 
@@ -596,8 +594,8 @@ contains
        end if
 
        close(unit = fileUnit)
-       if (masterProcInSubComm) then
-          print *,"[",myCommunicatorIndex,"] Successfully read magnetic equilibrium from file ",trim(JGboozer_file_NonStelSym)
+       if (masterProc) then
+          print *,"Successfully read magnetic equilibrium from file ",trim(JGboozer_file_NonStelSym)
        end if
 
        if (abs(normradius_old - normradius_wish) < abs(normradius_new - normradius_wish)) then
@@ -639,8 +637,8 @@ contains
 
        BHarmonics_amplitudes = BHarmonics_amplitudes / B0OverBBar
 
-      if (masterProcInSubComm) then
-          print *,"[",myCommunicatorIndex,"] This computation is for the flux surface with minor radius ",normradius*a, &
+      if (masterProc) then
+          print *,"This computation is for the flux surface with minor radius ",normradius*a, &
                " meters, equivalent to r/a = ",normradius
       end if
 

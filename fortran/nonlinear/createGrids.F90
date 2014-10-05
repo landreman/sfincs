@@ -1,16 +1,9 @@
-#include <finclude/petsckspdef.h>
 #include <finclude/petscdmdadef.h>
 #include <petscversion.h>
 
 ! Next come some definitions required because the syntax for several PETSc objects
 ! has changed from version to version.
   
-! For PETSc versions prior to 3.5, PETSC_DEFAULT_DOUBLE_PRECISION was used in place of PETSC_DEFAULT_REAL.
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
-#define PETSC_DEFAULT_REAL PETSC_DEFAULT_DOUBLE_PRECISION
-#endif
-!Hereafter in this code, use PETSC_DEFAULT_REAL.
-
 ! For PETSc versions prior to 3.5, DMDA_BOUNDARY_NONE was used in place of DM_BOUNDARY_NONE.
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
 #define DM_BOUNDARY_NONE DMDA_BOUNDARY_NONE
@@ -22,7 +15,6 @@
     use globalVariables
     use polynomialDiffMatrices
     use xGrid
-    use petscksp
     use petscdmda
     use geometry
     use indices
@@ -30,78 +22,29 @@
     implicit none
 
     PetscErrorCode :: ierr
-    Vec :: rhs, soln, solnOnProc0
-    integer :: whichRHS
-    Mat :: matrix, preconditionerMatrix
-    PetscViewer :: MatlabOutput, binaryOutputViewer
-    PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, xPartOfRHS, speciesFactor, speciesFactor2
-    PetscScalar :: dnHatdpsiToUse, dTHatdpsiToUse, EParallelHatToUse, dPhiHatdpsiNToUse, T32m
-    PetscScalar, dimension(:), allocatable :: thetaWeights, zetaWeights, B2, xb, expxb2
-    PetscScalar, dimension(:,:), allocatable :: ddtheta, d2dtheta2
-    PetscScalar, dimension(:,:), allocatable :: ddzeta, d2dzeta2
-    PetscScalar, dimension(:,:), allocatable :: thetaPartOfTerm, localThetaPartOfTerm, xPartOfXDot
-    integer :: i, j, ix, ispecies, itheta, izeta, L, NxPotentials, index
-    integer :: ithetaRow, ithetaCol, scheme, ell, iSpeciesA, iSpeciesB
-    integer, dimension(:), allocatable :: rowIndices, colIndices
-    PetscScalar, dimension(:), allocatable :: x, xWeights, xPotentials, xWeightsPotentials
-    PetscScalar, dimension(:), allocatable :: x2
-    PetscScalar, dimension(:,:), allocatable :: ddx, d2dx2, ddxPotentials, d2dx2Potentials
-    PetscScalar, dimension(:,:), allocatable :: ddxPreconditioner, ddxToUse, d2dx2ToUse, zetaPartOfTerm
-    PetscScalar, dimension(:,:), allocatable :: regridPolynomialToUniform, fToFInterpolationMatrix
-    PetscScalar, dimension(:,:), allocatable :: potentialsToFInterpolationMatrix
-    PetscScalar, dimension(:,:,:,:), allocatable :: CECD
-    PetscScalar :: dtheta, xMaxNotTooSmall, BMax, BMin, xPartOfSource1, xPartOfSource2
-    PetscScalar, dimension(:), allocatable :: thetaPartOfRHS
-    PetscScalar, dimension(:,:), allocatable :: M11, M21, M32, LaplacianTimesX2WithoutL, nuDHat
-    PetscScalar, dimension(:,:), allocatable :: xPartOfCECD, M12IncludingX0, M13IncludingX0
-    PetscScalar, dimension(:), allocatable :: erfs, x3, expx2, Psi_Chandra, nuD, PsiPrime
-    PetscScalar, dimension(:,:), allocatable :: CHat, M22, M33, M12, M13
-    PetscScalar, dimension(:), allocatable :: diagonalOfKWithoutThetaPart
-    PetscScalar, dimension(:,:), allocatable :: M22BackslashM21, M33BackslashM32
-    !PetscScalar, dimension(:,:), allocatable :: fieldTerm
-    PetscScalar, dimension(:,:,:), allocatable :: M22BackslashM21s, M33BackslashM32s
-    integer, dimension(:), allocatable :: IPIV  ! Needed by LAPACK
-    integer :: LAPACKInfo, predictedNNZForEachRowOfPreconditioner, predictedNNZForEachRowOfTotalMatrix
-    integer, dimension(:), allocatable :: predictedNNZsForEachRow, predictedNNZsForEachRowDiagonal
-    PetscScalar :: collisionTermFactor, xDotFactor, LFactor, temp, temp1, temp2
-    integer :: rowIndex, colIndex, ixi
-    PetscScalar :: densityFactor, flowFactor, pressureFactor, Phi1HatDenominator
-    PetscScalar :: particleFluxFactor, momentumFluxFactor, heatFluxFactor, NTVFactor
-    PetscScalar, dimension(:), allocatable :: densityIntegralWeights
-    PetscScalar, dimension(:), allocatable :: flowIntegralWeights
-    PetscScalar, dimension(:), allocatable :: pressureIntegralWeights
-    PetscScalar, dimension(:), allocatable :: particleFluxIntegralWeights
-    PetscScalar, dimension(:), allocatable :: momentumFluxIntegralWeights
-    PetscScalar, dimension(:), allocatable :: heatFluxIntegralWeights
-    PetscScalar, dimension(:), allocatable :: NTVIntegralWeights
-    character :: trans='n'
-    PetscLogDouble :: time1, time2, startTime
-    KSP :: KSPInstance
-    PC :: preconditionerContext
-    KSPConvergedReason :: reason
-    PetscScalar, pointer :: solnArray(:)
-    DM :: myDM
-    integer :: ithetaMin, ithetaMax, localNtheta
-    VecScatter :: VecScatterContext
-    logical :: procThatHandlesConstraints
-    integer :: whichMatrix, whichMatrixMin, rowIndexArray(1), tempInt1, tempInt2, keepXCoupling
-    PetscScalar :: singleValueArray(1), factor, zetaMax, VPrimeHatWithG
+    integer :: i, j, itheta, izeta, scheme
+
+    PetscScalar, dimension(:,:), allocatable :: d2dtheta2, d2dzeta2
     PetscScalar, dimension(:), allocatable :: theta_preconditioner, thetaWeights_preconditioner
-    PetscScalar, dimension(:,:), allocatable :: ddtheta_preconditioner, d2dtheta2_preconditioner, ddthetaToUse
-    PetscScalar, dimension(:), allocatable :: zeta_preconditioner, zetaWeights_preconditioner
-    PetscScalar, dimension(:,:), allocatable :: ddzeta_preconditioner, d2dzeta2_preconditioner, ddzetaToUse
-    PetscScalar, dimension(:,:), allocatable :: tempMatrix, tempMatrix2, extrapMatrix
-    Mat :: permutationMatrix, tempMat
-    Vec :: tempVec
-    double precision :: myMatInfo(MAT_INFO_SIZE)
-    integer :: NNZMain, NNZPreconditioner, NNZAllocatedMain, NNZAllocatedPreconditioner
-    integer :: mallocsMain, mallocsPreconditioner
-    integer :: firstRowThisProcOwns, lastRowThisProcOwns, numLocalRows
-    PetscScalar :: maxxPotentials, CHat_element
+    PetscScalar, dimension(:,:), allocatable :: d2dtheta2_preconditioner
+    PetscScalar, dimension(:), allocatable :: zetaWeights_preconditioner, zetaWeights_preconditioner
+    PetscScalar, dimension(:,:), allocatable :: d2dzeta2_preconditioner
+    PetscScalar, dimension(:), allocatable :: xWeightsPotentials
+    PetscScalar :: xMaxNotTooSmall
+
+    DM :: myDM
 
     ! *******************************************************************************
     ! Do a few sundry initialization tasks:
     ! *******************************************************************************
+
+    if (constraintScheme < 0) then
+       if (collisionOperator == 0) then
+          constraintScheme = 1
+       else
+          constraintScheme = 2
+       end if
+    end if
 
     if (forceOddNthetaAndNzeta) then
        if (mod(Ntheta, 2) == 0) then
@@ -133,6 +76,17 @@
           print *,"Error! Invalid setting for thetaDerivativeScheme"
           stop
        end select
+       select case (zetaDerivativeScheme)
+       case (0)
+          print *,"Zeta derivative: spectral collocation"
+       case (1)
+          print *,"Zeta derivative: centered finite differences, 3-point stencil"
+       case (2)
+          print *,"Zeta derivative: centered finite differences, 5-point stencil"
+       case default
+          print *,"Error! Invalid setting for zetaDerivativeScheme"
+          stop
+       end select
        if (useIterativeSolver) then
           print *,"Using iterative solver"
        else
@@ -157,8 +111,6 @@
        print *,"The matrix is ",matrixSize,"x",matrixSize," elements."
     end if
 
-    call validateInput()
-
     ! *******************************************************************************
     ! *******************************************************************************
     !
@@ -169,7 +121,7 @@
 
     ! Assign a range of theta indices to each processor.
     ! This is done by creating a PETSc DM that is not actually used for anything else.
-    call DMDACreate1d(MPIComm, DM_BOUNDARY_NONE, Nzeta, 1, 0, PETSC_NULL_INTEGER, myDM, ierr)
+    call DMDACreate1d(PETSC_COMM_WORLD, DM_BOUNDARY_NONE, Nzeta, 1, 0, PETSC_NULL_INTEGER, myDM, ierr)
     call DMDAGetCorners(myDM, izetaMin, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, &
          localNzeta, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr)
     ! Switch to 1-based indices:
@@ -187,6 +139,15 @@
     ! Build theta grid, integration weights, and differentiation matrices:
     ! *******************************************************************************
 
+    allocate(theta(Ntheta))
+    allocate(thetaWeights(Ntheta))
+    allocate(ddtheta(Ntheta,Ntheta))
+    allocate(d2dtheta2(Ntheta,Ntheta))
+    allocate(theta_preconditioner(Ntheta))
+    allocate(thetaWeights_preconditioner(Ntheta))
+    allocate(ddtheta_preconditioner(Ntheta,Ntheta))
+    allocate(d2dtheta2_preconditioner(Ntheta,Ntheta))
+
     select case (thetaDerivativeScheme)
     case (0)
        scheme = 20
@@ -201,16 +162,6 @@
        stop
     end select
 
-    allocate(theta(Ntheta))
-    allocate(thetaWeights(Ntheta))
-    allocate(ddtheta(Ntheta,Ntheta))
-    allocate(ddthetaToUse(Ntheta,Ntheta))
-    allocate(d2dtheta2(Ntheta,Ntheta))
-    allocate(theta_preconditioner(Ntheta))
-    allocate(thetaWeights_preconditioner(Ntheta))
-    allocate(ddtheta_preconditioner(Ntheta,Ntheta))
-    allocate(d2dtheta2_preconditioner(Ntheta,Ntheta))
-
     call uniformDiffMatrices(Ntheta, 0, two*pi, scheme, theta, thetaWeights, ddtheta, d2dtheta2)
 
     ! If needed, also make a sparser differentiation matrix for the preconditioner:
@@ -218,8 +169,13 @@
        scheme = 0
        call uniformDiffMatrices(Ntheta, 0, two*pi, scheme, theta_preconditioner, &
             thetaWeights_preconditioner, ddtheta_preconditioner, d2dtheta2_preconditioner)
-
     end if
+
+    ! The following arrays will not be needed:
+    deallocate(d2dtheta2)
+    deallocate(theta_preconditioner)
+    deallocate(thetaWeights_preconditioner)
+    deallocate(d2dtheta2_preconditioner)
 
     ! *******************************************************************************
     ! Build zeta grid, integration weights, and differentiation matrices:
@@ -228,6 +184,15 @@
     call setNPeriods()
 
     zetaMax = 2*pi/NPeriods
+
+    allocate(zeta(Nzeta))
+    allocate(zetaWeights(Nzeta))
+    allocate(ddzeta(Nzeta,Nzeta))
+    allocate(d2dzeta2(Nzeta,Nzeta))
+    allocate(zeta_preconditioner(Nzeta))
+    allocate(zetaWeights_preconditioner(Nzeta))
+    allocate(ddzeta_preconditioner(Nzeta,Nzeta))
+    allocate(d2dzeta2_preconditioner(Nzeta,Nzeta))
 
     select case (zetaDerivativeScheme)
     case (0)
@@ -242,16 +207,6 @@
        end if
        stop
     end select
-
-    allocate(zeta(Nzeta))
-    allocate(zetaWeights(Nzeta))
-    allocate(ddzeta(Nzeta,Nzeta))
-    allocate(ddzetaToUse(Nzeta,Nzeta))
-    allocate(d2dzeta2(Nzeta,Nzeta))
-    allocate(zeta_preconditioner(Nzeta))
-    allocate(zetaWeights_preconditioner(Nzeta))
-    allocate(ddzeta_preconditioner(Nzeta,Nzeta))
-    allocate(d2dzeta2_preconditioner(Nzeta,Nzeta))
 
     if (Nzeta==1) then
        ! Axisymmetry:
@@ -279,6 +234,12 @@
 
     zetaWeights = zetaWeights * NPeriods
 
+    ! The following arrays will not be needed:
+    deallocate(d2dzeta2)
+    deallocate(zeta_preconditioner)
+    deallocate(zetaWeights_preconditioner)
+    deallocate(d2dzeta2_preconditioner)
+
     ! *******************************************************************************
     ! Build x grids, integration weights, and differentiation matrices.
     ! Also build interpolation matrices to map functions from one x grid to the other.
@@ -294,11 +255,8 @@
 
     allocate(ddx(Nx,Nx))
     allocate(d2dx2(Nx,Nx))
-    allocate(ddxPreconditioner(Nx,Nx))
-    allocate(ddxToUse(Nx,Nx))
-    allocate(d2dx2ToUse(Nx,Nx))
+    allocate(ddx_preconditioner(Nx,Nx))
     call makeXPolynomialDiffMatrices(x,ddx,d2dx2)
-
 
     NxPotentials = ceiling(xMaxNotTooSmall*NxPotentialsPerVth)
 
@@ -311,28 +269,30 @@
          xWeightsPotentials, ddxPotentials, d2dx2Potentials)
     maxxPotentials = xPotentials(NxPotentials)
 
-    allocate(regridPolynomialToUniform(NxPotentials, Nx))
-    call polynomialInterpolationMatrix(Nx, NxPotentials, x, xPotentials, &
-         exp(-x*x), exp(-xPotentials*xPotentials), regridPolynomialToUniform)
+    deallocate(xWeightsPotentials)
 
     allocate(expx2(Nx))
     expx2 = exp(-x*x)
 
-    ddxPreconditioner = 0
+    allocate(regridPolynomialToUniform(NxPotentials, Nx))
+    call polynomialInterpolationMatrix(Nx, NxPotentials, x, xPotentials, &
+         expx2, exp(-xPotentials*xPotentials), regridPolynomialToUniform)
+
+    ddx_preconditioner = 0
     select case (preconditioner_x)
     case (0)
        ! No simplification in x:
-       ddxPreconditioner = ddx
+       ddx_preconditioner = ddx
     case (1)
        ! Keep only diagonal terms in x:
        do i=1,Nx
-          ddxPreconditioner(i,i) = ddx(i,i)
+          ddx_preconditioner(i,i) = ddx(i,i)
        end do
     case (2)
        ! Keep only upper-triangular terms in x:
        do i=1,Nx
           do j=i,Nx
-             ddxPreconditioner(i,j) = ddx(i,j)
+             ddx_preconditioner(i,j) = ddx(i,j)
           end do
        end do
     case (3)
@@ -340,17 +300,17 @@
        do i=1,Nx
           do j=1,Nx
              if (abs(i-j) <= 1) then
-                ddxPreconditioner(i,j) = ddx(i,j)
+                ddx_preconditioner(i,j) = ddx(i,j)
              end if
           end do
        end do
     case (4)
        ! Keep only diagonal and super-diagonal in x:
        do i=1,Nx
-          ddxPreconditioner(i,i) = ddx(i,i)
+          ddx_preconditioner(i,i) = ddx(i,i)
        end do
        do i=1,(Nx-1)
-          ddxPreconditioner(i,i+1) = ddx(i,i+1)
+          ddx_preconditioner(i,i+1) = ddx(i,i+1)
        end do
     case default
        print *,"Error! Invalid preconditioner_x"
@@ -360,7 +320,7 @@
     ! *******************************************************************************
     ! *******************************************************************************
     !
-    ! Evaluate the magnetic field on the (theta, zeta) grid.
+    ! Evaluate the magnetic field (and its derivatives) on the (theta, zeta) grid.
     !
     ! *******************************************************************************
     ! *******************************************************************************
@@ -371,6 +331,20 @@
     allocate(NTVKernel(Ntheta,Nzeta))
 
     call computeBHat()
+
+    if (masterProc)
+       print *,"---- Geometry parameters: ----"
+       print *,"Geometry scheme = ", geometryScheme
+       print *,"iota (rotational transform) = ", iota
+       print *,"GHat (Toroidal field Boozer component) = ", GHat
+       print *,"IHat (Poloidal field Boozer component) = ", IHat
+       print *,"psiAHat (Normalized toroidal flux at the last closed flux surface) = ", psiAHat
+       if (geometryScheme==1) then
+          print *,"epsilon_t = ", epsilon_t
+          print *,"epsilon_h = ", epsilon_h
+          print *,"epsilon_antisymm = ", epsilon_antisymm
+       end if
+    end if
 
     ! *********************************************************
     ! Compute a few quantities related to the magnetic field:
