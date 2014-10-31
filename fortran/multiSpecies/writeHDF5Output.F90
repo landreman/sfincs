@@ -283,7 +283,8 @@ contains
        call h5screate_simple_f(rank, dimForSpecies, dspaceIDForSpecies, HDF5Error)
 
        !!Added by AM 2014-09!!
-       call h5screate_simple_f(rank, dimForArrayFirstSpeciesParticleFluxCoefficients, dspaceIDForArrayFirstSpeciesParticleFluxCoefficients, HDF5Error)
+       call h5screate_simple_f(rank, dimForArrayFirstSpeciesParticleFluxCoefficients, &
+       dspaceIDForArrayFirstSpeciesParticleFluxCoefficients, HDF5Error)
        !!!!!!!!!!!!!!!!!!!!!!!
 
        rank = 2
@@ -572,8 +573,9 @@ contains
 
 
           !!Added by AM 2014-09!!
-          call h5dcreate_f(groupIDs(i), "ArrayFirstSpeciesParticleFluxCoefficients", H5T_NATIVE_DOUBLE, dspaceIDForArrayFirstSpeciesParticleFluxCoefficients, &
-               dsetIDs_ArrayFirstSpeciesParticleFluxCoefficients(i), HDF5Error)
+          call h5dcreate_f(groupIDs(i), "ArrayFirstSpeciesParticleFluxCoefficients", H5T_NATIVE_DOUBLE, & 
+          dspaceIDForArrayFirstSpeciesParticleFluxCoefficients, &
+          dsetIDs_ArrayFirstSpeciesParticleFluxCoefficients(i), HDF5Error)
           !!!!!!!!!!!!!!!!!!!!!!!
 
        end do

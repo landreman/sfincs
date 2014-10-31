@@ -2068,17 +2068,20 @@
 !!$                transportMatrix(1,1) = 4*(GHat+iota*IHat)*particleFlux*nHat*B0OverBBar/(GHat*VPrimeHatWithG*(THat*sqrtTHat)*GHat)
 !!$                transportMatrix(2,1) = 8*(GHat+iota*IHat)*heatFlux*nHat*B0OverBBar/(GHat*VPrimeHatWithG*(THat*THat*sqrtTHat)*GHat)
 !!$                transportMatrix(3,1) = 2*nHat*FSABFlow/(GHat*THat)
-                ArrayFirstSpeciesParticleFluxCoefficients(1) = particleFlux(1)*4*(Zs(1)**2)*psiAHat*(GHat+iota*IHat)*B0OverBBar*sqrt(THats(1)/mHats(1)) / ( (GHat**2)*(THats(1)**2)*(Delta**2) )
+                ArrayFirstSpeciesParticleFluxCoefficients(1) = particleFlux(1)*4*(Zs(1)**2)*psiAHat*(GHat+iota*IHat)*&
+		B0OverBBar*sqrt(THats(1)/mHats(1)) / ( (GHat**2)*(THats(1)**2)*(Delta**2) )
              case (2)
 !!$                transportMatrix(1,2) = 4*(GHat+iota*IHat)*particleFlux*B0OverBBar/(GHat*VPrimeHatWithG*sqrtTHat*GHat)
 !!$                transportMatrix(2,2) = 8*(GHat+iota*IHat)*heatFlux*B0OverBBar/(GHat*VPrimeHatWithG*sqrtTHat*THat*GHat)
 !!$                transportMatrix(3,2) = 2*FSABFlow/(GHat)
-                ArrayFirstSpeciesParticleFluxCoefficients(2) = particleFlux(1)*(NHats(2)/NHats(1))*4*(Zs(1)**2)*psiAHat*(GHat+iota*IHat)*B0OverBBar*sqrt(THats(1)/mHats(1)) / ( (GHat**2)*(THats(1)**2)*(Delta**2) )
+                ArrayFirstSpeciesParticleFluxCoefficients(2) = particleFlux(1)*(NHats(2)/NHats(1))*4*(Zs(1)**2)*psiAHat*&
+		(GHat+iota*IHat)*B0OverBBar*sqrt(THats(1)/mHats(1)) / ( (GHat**2)*(THats(1)**2)*(Delta**2) )
              case (3)
 !!$                transportMatrix(1,3) = particleFlux*Delta*Delta*FSABHat2/(VPrimeHatWithG*GHat*psiAHat*omega)
 !!$                transportMatrix(2,3) = 2*Delta*Delta*heatFlux*FSABHat2/(GHat*VPrimeHatWithG*psiAHat*THat*omega)
 !!$                transportMatrix(3,3) = FSABFlow*Delta*Delta*sqrtTHat*FSABHat2/((GHat+iota*IHat)*2*psiAHat*omega*B0OverBBar)
-                ArrayFirstSpeciesParticleFluxCoefficients(3) = particleFlux(1)*4*(Zs(1)**2)*psiAHat*(GHat+iota*IHat)*B0OverBBar*sqrt(THats(1)/mHats(1)) / ( (GHat**2)*(THats(1)*NHats(1))*(Delta**2) )
+                ArrayFirstSpeciesParticleFluxCoefficients(3) = particleFlux(1)*4*(Zs(1)**2)*psiAHat*(GHat+iota*IHat)*B0OverBBar*&
+		sqrt(THats(1)/mHats(1)) / ( (GHat**2)*(THats(1)*NHats(1))*(Delta**2) )
              end select
           end if
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
