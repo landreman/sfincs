@@ -27,10 +27,9 @@
     PetscScalar, dimension(:,:), allocatable :: d2dtheta2, d2dzeta2
     PetscScalar, dimension(:), allocatable :: theta_preconditioner, thetaWeights_preconditioner
     PetscScalar, dimension(:,:), allocatable :: d2dtheta2_preconditioner
-    PetscScalar, dimension(:), allocatable :: zetaWeights_preconditioner, zetaWeights_preconditioner
+    PetscScalar, dimension(:), allocatable :: zeta_preconditioner, zetaWeights_preconditioner
     PetscScalar, dimension(:,:), allocatable :: d2dzeta2_preconditioner
     PetscScalar, dimension(:), allocatable :: xWeightsPotentials
-    PetscScalar :: xMaxNotTooSmall
 
     DM :: myDM
 
@@ -114,7 +113,7 @@
     ! *******************************************************************************
     ! *******************************************************************************
     !
-    ! Create grids, integration weights, and differentiation matrices
+    ! Set up ranges of indices owned by each processor.
     !
     ! *******************************************************************************
     ! *******************************************************************************
@@ -124,6 +123,7 @@
     call DMDACreate1d(PETSC_COMM_WORLD, DM_BOUNDARY_NONE, Nzeta, 1, 0, PETSC_NULL_INTEGER, myDM, ierr)
     call DMDAGetCorners(myDM, izetaMin, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, &
          localNzeta, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr)
+    call DMDestroy(myDM, ierr)
     ! Switch to 1-based indices:
     izetaMin = izetaMin + 1
 
@@ -134,6 +134,21 @@
 
     ! Each processor is responsible for building the rows of the matrix and rhs corresponding
     ! to its izetaMin:izetaMax, and each processor is resposible for all columns of the matrix.
+
+
+    ! Do the same with theta:
+    call DMDACreate1d(MPIComm, DM_BOUNDARY_NONE, Ntheta, 1, 0, PETSC_NULL_INTEGER, myDM, ierr)
+    call DMDAGetCorners(myDM, ithetaMin, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, &
+         localNtheta, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr)
+    call DMDestroy(myDM, ierr)
+    ! Switch to 1-based indices:
+    ithetaMin = ithetaMin + 1
+
+    ithetaMax = ithetaMin+localNtheta-1
+
+    CHKERRQ(ierr)
+    print *,"Processor ",myRank," owns theta indices ",ithetaMin," to ",ithetaMax
+
 
     ! *******************************************************************************
     ! Build theta grid, integration weights, and differentiation matrices:
@@ -333,7 +348,7 @@
 
     call computeBHat()
 
-    if (masterProc)
+    if (masterProc) then
        print *,"---- Geometry parameters: ----"
        print *,"Geometry scheme = ", geometryScheme
        print *,"iota (rotational transform) = ", iota

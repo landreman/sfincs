@@ -114,22 +114,22 @@
     ! --------------------------------------------------
 
     ! Distribution function, or DKE
-    integer, parameter :: BLOCK_F                   = 0
+    integer, parameter :: BLOCK_F                   = 9990
 
     ! Quasineutrality condition, or \tilde{\phi}
-    integer, parameter :: BLOCK_QN                  = 1
+    integer, parameter :: BLOCK_QN                  = 9991
 
     ! Enforce <phi_1>=0, or lambda
-    integer, parameter :: BLOCK_PHI1_CONSTRAINT     = 2
+    integer, parameter :: BLOCK_PHI1_CONSTRAINT     = 9992
 
     ! Enforce <n> = <n>_desired, or particle source
-    integer, parameter :: BLOCK_DENSITY_CONSTRAINT  = 3
+    integer, parameter :: BLOCK_DENSITY_CONSTRAINT  = 9993
 
     ! Enforce <p> = <p>_desired, or heat source
-    integer, parameter :: BLOCK_PRESSURE_CONSTRAINT = 4
+    integer, parameter :: BLOCK_PRESSURE_CONSTRAINT = 9994
 
     ! Enforce <f_1> = 0 at each x
-    integer, parameter :: BLOCK_F_CONSTRAINT        = 5
+    integer, parameter :: BLOCK_F_CONSTRAINT        = 9995
 
   contains
 
@@ -141,7 +141,7 @@
       ! The input "local" indices (i_x, i_xi, etc) are 1-based, since small matrices are stored in Fortran.
       ! the output "global" index is 0-based, since PETSc uses 0-based indexing.
 
-      use globalVariables
+      use globalVariables, only: Nspecies, Nx, Nxi, Ntheta, Nzeta, matrixSize, constraintScheme
 
       implicit none
 

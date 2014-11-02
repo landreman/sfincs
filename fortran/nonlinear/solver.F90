@@ -1,160 +1,242 @@
+#include <finclude/petscsnesdef.h>
 #include "PETScVersions.F90"
 
 module solver
 
   use globalVariables
-  use petscsysdef
+  use petscsnesdef
 
   implicit none
 
-#include <finclude/petscsysdef.h>
+  contains
 
-  Mat :: matrix, preconditionerMatrix
-
-  subroutine solveSystem
+  subroutine mainSolverLoop
 
     implicit none
 
     PetscErrorCode :: ierr
     Vec :: solutionVec, residualVec
+    Mat :: matrix, preconditionerMatrix
     SNES :: mysnes
+    KSP :: KSPInstance
+    PC :: preconditionerContext
+    integer :: whichRHS, numRHSs
+    SNESConvergedReason :: reason
+    PetscLogDouble :: time1, time2
 
     external evaluateJacobian, evaluateResidual
 
-    call setMatrixPreallocation()
+    call VecCreate(MPIComm, matrixSize, solutionVec, ierr)
+    call VecDuplicate(solutionVec, residualVec, ierr)
 
-    call SNESCreate(PETSC_COMM_WORLD, mysnes, ierr)
+    call SNESCreate(MPIComm, mysnes, ierr)
     call SNESSetFunction(mysnes, residualVec, evaluateResidual, PETSC_NULL_OBJECT, ierr)
-    call SNESSetJacobian(mysnes, matrix, preconditionerMatrix, evaluateJacobian, PETSC_NULL_OBJECT, ierr)
 
-    call SNESGetKSP(mysnes, myksp, ierr)
-
-
-  end subroutine solveSystem
-
-
-  ! ------------------------------------------------------------------------
-
-  subroutine setMatrixPreallocation()
-
-    implicit none
-
-    !predictedNNZForEachRowOfTotalMatrix = 4*(3*Nx + 5*3 + 5*3 + 5 + Nx)
-    !predictedNNZForEachRowOfTotalMatrix = 4*(3*Nx + 5*3 + 5*3 + 5 + Nx + Ntheta*Nzeta)
-    tempInt1 = Nspecies*Nx + 5*3 + 5*3 + 5 + 3*Nx + 2 + Nx*Ntheta*Nzeta
-    if (tempInt1 > matrixSize) then
-       tempInt1 = matrixSize
+    call preallocateMatrix(matrix, 1)
+    if (useIterativeSolver) then
+       call preallocateMatrix(preconditionerMatrix, 0)
+       call SNESSetJacobian(mysnes, matrix, preconditionerMatrix, evaluateJacobian, PETSC_NULL_OBJECT, ierr)
+    else
+       call SNESSetJacobian(mysnes, matrix, matrix, evaluateJacobian, PETSC_NULL_OBJECT, ierr)
     end if
-    predictedNNZForEachRowOfTotalMatrix = tempInt1
 
-    predictedNNZForEachRowOfPreconditioner = predictedNNZForEachRowOfTotalMatrix
-
-    allocate(predictedNNZsForEachRow(matrixSize))
-    allocate(predictedNNZsForEachRowDiagonal(matrixSize))
-    tempInt1 = 3*Nx + (Nspecies-1)*Nx + (5*3-1) + (5*3-1)
-    if (tempInt1 > matrixSize) then
-       tempInt1 = matrixSize
-    end if
-    predictedNNZsForEachRow = tempInt1
-
-    select case (constraintScheme)
-    case (0)
-    case (1)
-       ! The rows for the constraints have more nonzeros:
-       predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta*Nx
-    case (2)
-       ! The rows for the constraints have more nonzeros:
-       predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta
-    case default
-    end select
-    predictedNNZsForEachRowDiagonal = predictedNNZsForEachRow
+    call SNESGetKSP(mysnes, KSPInstance, ierr)
 
     if (useIterativeSolver) then
-       whichMatrixMin = 0
+!!$#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
+!!$       ! Syntax for PETSc versions up through 3.4
+!!$       call KSPSetOperators(KSPInstance, matrix, preconditionerMatrix, SAME_PRECONDITIONER, ierr)
+!!$#else
+!!$       ! Syntax for PETSc version 3.5 and later
+!!$       call KSPSetOperators(KSPInstance, matrix, preconditionerMatrix, ierr)
+!!$#endif
+       call KSPGetPC(KSPInstance, preconditionerContext, ierr)
+       call PCSetType(preconditionerContext, PCLU, ierr)
+       call KSPSetType(KSPInstance, KSPGMRES, ierr)   ! Set the Krylov solver algorithm to GMRES
+       call KSPGMRESSetRestart(KSPInstance, 2000, ierr)
+       call KSPSetTolerances(KSPInstance, solverTolerance, PETSC_DEFAULT_REAL, &
+            PETSC_DEFAULT_REAL, PETSC_DEFAULT_INTEGER, ierr)
+       call KSPSetFromOptions(KSPInstance, ierr)
+       call KSPMonitorSet(KSPInstance, KSPMonitorDefault, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
     else
-       whichMatrixMin = 1
+       ! Direct solver:
+!!$#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
+!!$       ! Syntax for PETSc versions up through 3.4
+!!$       call KSPSetOperators(KSPInstance, matrix, matrix, SAME_PRECONDITIONER, ierr)
+!!$#else
+!!$       ! Syntax for PETSc version 3.5 and later
+!!$       call KSPSetOperators(KSPInstance, matrix, matrix, ierr)
+!!$#endif
+       call KSPGetPC(KSPInstance, preconditionerContext, ierr)
+       call PCSetType(preconditionerContext, PCLU, ierr)
+       call KSPSetType(KSPInstance, KSPPREONLY, ierr)
+       call KSPSetFromOptions(KSPInstance, ierr)
     end if
-    do whichMatrix = whichMatrixMin,1
-       ! When whichMatrix = 0, build the preconditioner.
-       ! When whichMatrix = 1, build the final matrix.
 
-       ! Allocate the main global matrix:
-       select case (PETSCPreallocationStrategy)
-       case (0)
-          ! 0 = Old method with high estimated number-of-nonzeros.
-          ! This method is simpler and works consistently but uses unnecessary memory.
-          if (whichMatrix==0) then
-             call MatCreateAIJ(MPIComm, PETSC_DECIDE, PETSC_DECIDE, matrixSize, matrixSize, &
-                  predictedNNZForEachRowOfPreconditioner, PETSC_NULL_INTEGER, &
-                  predictedNNZForEachRowOfPreconditioner, PETSC_NULL_INTEGER, &
-                  matrix, ierr)
-          else
-             call MatCreateAIJ(MPIComm, PETSC_DECIDE, PETSC_DECIDE, matrixSize, matrixSize, &
-                  predictedNNZForEachRowOfTotalMatrix, PETSC_NULL_INTEGER, &
-                  predictedNNZForEachRowOfTotalMatrix, PETSC_NULL_INTEGER, &
-                  matrix, ierr)
-          end if
-
+    if (numProcs > 1) then
+       select case (whichParallelSolverToFactorPreconditioner)
        case (1)
-          ! 1 = New method with lower, more precise estimated number-of-nonzeros.
-          ! This method is les thoroughly tested, but it should use much less memory.
-
-          call MatCreate(MPIComm, matrix, ierr)
-          !call MatSetType(matrix, MATMPIAIJ, ierr)
-          call MatSetType(matrix, MATAIJ, ierr)
-
-          numLocalRows = PETSC_DECIDE
-          call PetscSplitOwnership(MPIComm, numLocalRows, matrixSize, ierr)
-
-          call MatSetSizes(matrix, numLocalRows, numLocalRows, PETSC_DETERMINE, PETSC_DETERMINE, ierr)
-
-          ! We first pre-allocate assuming number-of-nonzeros = 0, because due to a quirk in PETSc,
-          ! MatGetOwnershipRange only works after MatXXXSetPreallocation is called:
-          if (numProcsInSubComm == 1) then
-             call MatSeqAIJSetPreallocation(matrix, 0, PETSC_NULL_INTEGER, ierr)
-          else
-             call MatMPIAIJSetPreallocation(matrix, 0, PETSC_NULL_INTEGER, 0, PETSC_NULL_INTEGER, ierr)
+          call PCFactorSetMatSolverPackage(preconditionerContext, MATSOLVERMUMPS, ierr)
+          if (masterProc) then
+             print *,"Using mumps to factorize the preconditioner."
           end if
-          
-          call MatGetOwnershipRange(matrix, firstRowThisProcOwns, lastRowThisProcOwns, ierr)
-          !print *,"I am proc ",myRank," and I own rows ",firstRowThisProcOwns," to ",lastRowThisProcOwns-1
-          
-          ! To avoid a PETSc error message, the predicted nnz for each row of the diagonal blocks must be no greater than the # of columns this proc owns:
-          ! But we must not lower the predicted nnz for the off-diagonal blocks, because then the total predicted nnz for the row
-          ! would be too low.
-          tempInt1 = lastRowThisProcOwns - firstRowThisProcOwns
-          do i=firstRowThisProcOwns+1,lastRowThisProcOwns
-             if (predictedNNZsForEachRowDiagonal(i) > tempInt1) then
-                predictedNNZsForEachRowDiagonal(i) = tempInt1
-             end if
-          end do
-
-          ! Now, set the real estimated number-of-nonzeros:
-          if (numProcsInSubComm == 1) then
-             call MatSeqAIJSetPreallocation(matrix, 0, predictedNNZsForEachRow(firstRowThisProcOwns+1:lastRowThisProcOwns), ierr)
-          else
-             call MatMPIAIJSetPreallocation(matrix, &
-                  0, predictedNNZsForEachRowDiagonal(firstRowThisProcOwns+1:lastRowThisProcOwns), &
-                  0, predictedNNZsForEachRow(firstRowThisProcOwns+1:lastRowThisProcOwns), ierr)
+       case (2)
+          call PCFactorSetMatSolverPackage(preconditionerContext, MATSOLVERSUPERLU_DIST, ierr)
+          if (masterProc) then
+             print *,"Using superlu_dist to factorize the preconditioner."
           end if
-
        case default
-          print *,"Error! Invalid setting for PETSCPreallocationStrategy."
+          if (masterProc) then
+             print *,"Error: Invalid setting for whichParallelSolverToFactorPreconditioner"
+             stop
+          end if
+       end select
+    else
+       if (masterProc) then
+          print *,"Using PETSc's serial sparse direct solver to factorize the preconditioner."
+       end if
+
+       ! When using PETSc's built-in solver (which is only done when running with a single processor),
+       ! I originally always got an error message that there was a zero pivot. The following line seems to solve
+       ! this problem.  The "zero pivot" error seemed to only arise with the "nd" ordering (nested dissection), which is the 
+       ! default.  I'm not sure which of the other orderings is most efficient. I picked "rcm" for no particular reason.
+       call PCFactorSetMatOrderingType(preconditionerContext, MATORDERINGRCM, ierr)
+
+       ! I'm not sure this next line actually accomplishes anything, since it doesn't solve the "zero pivot" problem.
+       ! But it doesn't seem to cost anything, and perhaps it reduces the chance of getting the "zero pivot" error in the future.
+       call PCFactorReorderForNonzeroDiagonal(preconditionerContext, 1d-12, ierr) 
+
+    end if
+
+    call SNESMonitorSet(mysnes, SNESMonitorDefault, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
+    call SNESSetFromOptions(mysnes, ierr)
+
+
+
+    ! ***********************************************************************
+    ! ***********************************************************************
+    ! 
+    !  Beginning of the main solver loop:
+    !
+    ! ***********************************************************************
+    ! ***********************************************************************
+
+    select case (RHSMode)
+    case (1)
+       numRHSs = 1
+    case (2)
+       print *,"RHSMode=2 is not yet implemented"
+       stop
+    case default
+       print *,"Error! Invalid setting for RHSMode."
+       stop
+    end select
+
+    do whichRHS = 1,numRHSs
+       if (RHSMode /= 1 .and. masterProc) then
+          print *,"Solving system with right-hand side ",whichRHS," of ",numRHSs
+       end if
+
+       select case (RHSMode)
+       case (1)
+          ! Single solve: nothing more to do here.
+
+       case (2)
+          print *,"RHSMode=2 is not yet implemented"
+          stop
+
+          ! To get a transport matrix, change the equilibrium gradients here.
+       case default
+          print *,"Program should not get here"
           stop
        end select
 
-       ! If any mallocs are required during matrix assembly, do not generate an error:
-       !call MatSetOption(matrix, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE, ierr)
 
-       if (whichMatrix==0) then
-          preconditionerMatrix = matrix
+       ! ***********************************************************************
+       ! ***********************************************************************
+       ! 
+       !  Set initial guess for the solution:
+       !
+       ! ***********************************************************************
+       ! ***********************************************************************
+
+       call VecSet(solutionVec, zero, ierr)
+
+       ! ***********************************************************************
+       ! ***********************************************************************
+       ! 
+       !  Solve the main linear system:
+       !
+       ! ***********************************************************************
+       ! ***********************************************************************
+
+       if (masterProc) then
+          print *,"Beginning the main solve.  This could take a while ..."
        end if
+
+       call PetscTime(time1, ierr)
+       if (solveSystem) then
+          call SNESSolve(mysnes,PETSC_NULL_OBJECT, solutionVec, ierr)
+          !call KSPSolve(KSPInstance, rhs, soln, ierr)
+       end if
+
+       call PetscTime(time2, ierr)
+       if (masterProc) then
+          print *,"Done with the main solve.  Time to solve: ", time2-time1, " seconds."
+       end if
+       call PetscTime(time1, ierr)
+
+       if (useIterativeSolver) then
+          call SNESGetConvergedReason(KSPInstance, reason, ierr)
+          if (reason>0) then
+             if (masterProc) then
+                print *,"Converged!  SNESConvergedReason = ", reason
+             end if
+             didNonlinearCalculationConverge = integerToRepresentTrue
+          else
+             if (masterProc) then
+                print *,"Did not converge :(   SNESConvergedReason = ", reason
+             end if
+             didNonlinearCalculationConverge = integerToRepresentFalse
+          end if
+       else
+          didNonlinearCalculationConverge = integerToRepresentTrue
+       end if
+
+
+       !**************************************************************************
+       !**************************************************************************
+       ! 
+       !  Call diagnostics here.
+       !
+       !**************************************************************************
+       !**************************************************************************
 
     end do
 
-  end subroutine setMatrixPreallocation
+    ! ***********************************************************************
+    ! ***********************************************************************
+    ! 
+    !  End of the main solver loop.
+    !
+    ! ***********************************************************************
+    ! ***********************************************************************
+
+
+    call VecDestroy(solutionVec, ierr)
+    call VecDestroy(residualVec, ierr)
+    call MatDestroy(matrix, ierr)
+    if (useIterativeSolver) then
+       call MatDestroy(preconditionerMatrix, ierr)
+    end if
+    call SNESDestroy(mysnes,ierr)
+
+
+  end subroutine mainSolverLoop
+
 
   ! ------------------------------------------------------------------------
+
 
   subroutine chooseParallelDirectSolver()
 

@@ -1,17 +1,15 @@
 ! Main program
 
 #include <finclude/petscsysdef.h>
-#include <petscversion.h>
 #include "PETScVersions.F90"
 
 program sfincs
 
   use globalVariables
-  use printToStdout
   use writeHDF5Output
   use readInput
-  use scan
   use petscsysdef
+  use solver
 
   implicit none
 
@@ -23,6 +21,9 @@ program sfincs
   call MPI_COMM_SIZE(PETSC_COMM_WORLD, numProcs, ierr)
   call MPI_COMM_RANK(PETSC_COMM_WORLD, myRank, ierr)
   masterProc = (myRank==0)
+
+  ! In the future, if we want to divide the processors into sub-communicators, this next line would change:
+  MPIComm = PETSC_COMM_WORLD
 
   if (masterProc) then
      print *,"****************************************************************************"
@@ -70,7 +71,7 @@ program sfincs
   call openOutputFile()
 
   ! Change this next subroutine?
-  call allocateArraysForSingleRun()
+  !call allocateArraysForSingleRun()
 
   ! Do various calculations that will not need to be repeated at each
   ! iteration, such as setting up the coordinate grids and evaluating
@@ -82,7 +83,7 @@ program sfincs
   ! Diagnostics should be computed within the solver, for 2 reasons:
   !   1. There might be >1 RHS
   !   2. If doing a nonlinear run, we should also save linear results, which we get for free.
-  call solveSystem()
+  call mainSolverLoop()
 
   ! Build the HDF5 output file:
   call writeOutputFile()

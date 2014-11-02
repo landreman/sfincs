@@ -29,9 +29,8 @@
   ! Options for program flow control:
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  ! If nonlinear = .true., the code will iterate to find the self-consistent poloidal variation
-  ! of the electrostatic potential.
-  nonlinear = .false.
+  ! This next option may be used in the future, but at the moment it doesn't do anything:
+  RHSMode = 1
 
   outputFilename = "sfincsOutput.h5"
 
@@ -268,6 +267,10 @@
   ! This term may make sense to include with the partial trajectory model
   ! as it restores Liouville's theorem (particle conservation) and eliminates 
   ! the need for either a particle or heat source.
+
+  ! If nonlinear = .true., the code will iterate to find the self-consistent poloidal variation
+  ! of the electrostatic potential.
+  nonlinear = .false.
 /
 
 &resolutionParameters

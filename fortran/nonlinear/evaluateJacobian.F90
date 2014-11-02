@@ -4,8 +4,8 @@
 
   subroutine evaluateJacobian(mysnes, stateVec, jacobian, jacobianPC, userContext, ierr)
 
-!    use petscmat
     use petscsnes
+    use globalVariables, only: masterProc
 
     implicit none
 
@@ -14,6 +14,10 @@
     Mat :: jacobian, jacobianPC
     PetscErrorCode :: ierr
     integer :: userContext(*)
+
+    if (masterProc) then
+       print *,"evaluateJacobian called."
+    end if
 
 !!$    PetscScalar :: x, y
 !!$    PetscInt :: rowIndices(1), colIndices(2)

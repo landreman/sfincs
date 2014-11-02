@@ -103,7 +103,7 @@ contains
 
        rank = 2
        dimForThetaZeta(1) = Ntheta
-       dimForThetaZeta(2) = Nzetas
+       dimForThetaZeta(2) = Nzeta
        call h5screate_simple_f(rank, dimForThetaZeta, dspaceIDForThetaZeta, HDF5Error)
 
        rank = 3
@@ -136,7 +136,7 @@ contains
 
     implicit none
 
-    integer(HID_T), private :: dsetID
+    integer(HID_T) :: dsetID
     integer :: temp
 
     call createHDF5Structures()
@@ -891,11 +891,11 @@ contains
 
        ! ----------------------------------
 
-       call h5dcreate_f(HDF5FileID, "didItConverge", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
+       call h5dcreate_f(HDF5FileID, "didNonlinearCalculationConverge", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
             dsetID, HDF5Error)
 
        call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, &
-            didItConverge, dimForScalar, HDF5Error)
+            didNonlinearCalculationConverge, dimForScalar, HDF5Error)
 
        call h5dclose_f(dsetID, HDF5Error)
 

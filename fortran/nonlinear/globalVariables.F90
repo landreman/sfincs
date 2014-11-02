@@ -28,6 +28,7 @@ module globalVariables
   character(len=200) :: binaryOutputFilename
   character(len=200) :: outputFilename
   logical :: solveSystem
+  integer :: RHSMode
 
   ! ********************************************************
   ! ********************************************************
@@ -137,6 +138,7 @@ module globalVariables
   PetscScalar, dimension(:), allocatable :: thetaWeights, zetaWeights
   PetscScalar, dimension(:,:), allocatable :: ddtheta, ddzeta
   PetscScalar, dimension(:), allocatable :: xWeights, xPotentials
+  PetscScalar :: maxxPotentials, zetaMax, xMaxNotTooSmall
   PetscScalar, dimension(:), allocatable :: x2, expx2
   PetscScalar, dimension(:,:), allocatable :: ddx, d2dx2, ddxPotentials, d2dx2Potentials
   PetscScalar, dimension(:,:), allocatable :: ddx_preconditioner
@@ -165,8 +167,11 @@ module globalVariables
   !
   ! ********************************************************
 
+  MPI_Comm :: MPIComm
   integer :: numProcs, myRank 
   logical :: masterProc
+  ! Eventually, keep only the zeta variables, and drop the theta variables
+  integer :: ithetaMin, ithetaMax, localNtheta
   integer :: izetaMin, izetaMax, localNzeta
   logical :: procThatHandlesConstraints
 

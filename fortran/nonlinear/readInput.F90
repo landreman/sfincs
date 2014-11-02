@@ -15,8 +15,8 @@ contains
     integer :: NMHats, NZs, NNHats, NTHats, NDNHatdpsiNs, NDTHatdpsiNs, i
 
     namelist / flowControl / saveMatlabOutput, MatlabOutputFilename, &
-         outputFilename, solveSystem, &
-         saveMatricesAndVectorsInBinary, binaryOutputFilename, nonlinear
+         outputFilename, solveSystem, RHSMode, &
+         saveMatricesAndVectorsInBinary, binaryOutputFilename
 
     namelist / geometryParameters / GHat, IHat, iota, epsilon_t, epsilon_h, &
          helicity_l, helicity_n, B0OverBBar, geometryScheme, &
@@ -28,7 +28,7 @@ contains
 
     namelist / physicsParameters / Delta, alpha, nu_n, EParallelHat, &
          dPhiHatdpsiN, collisionOperator, constraintScheme, includeXDotTerm, &
-         includeElectricFieldTermInXiDot, useDKESExBDrift, include_fDivVE_term
+         includeElectricFieldTermInXiDot, useDKESExBDrift, include_fDivVE_term, nonlinear
 
     namelist / resolutionParameters / forceOddNthetaAndNzeta, &
          Ntheta, &
