@@ -2,12 +2,7 @@
 
 #include <finclude/petscsysdef.h>
 #include <petscversion.h>
-
-! For PETSc versions prior to 3.4, the PetscTime subroutine was called PetscGetTime.
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 4))
-#define PetscTime PetscGetTime
-#endif
-!Hereafter in this code, use PetscTime.
+#include "PETScVersions.F90"
 
 program sfincs
 
@@ -90,7 +85,7 @@ program sfincs
   call solveSystem()
 
   ! Build the HDF5 output file:
-  call writeOutputFile(1)
+  call writeOutputFile()
 
   call PetscFinalize(ierr)
 

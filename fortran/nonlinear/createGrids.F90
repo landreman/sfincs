@@ -94,18 +94,18 @@
        end if
     end if
 
-    matrixSize = Ntheta * Nzeta * Nxi * Nx
+    matrixSize = Nspecies * Ntheta * Nzeta * Nxi * Nx
+    !matrixSize = Nspecies * Ntheta * Nzeta * Nxi * Nx + Ntheta * Nzeta + 1 ! Includes QN
     select case (constraintScheme)
     case (0)
     case (1)
-       matrixSize = matrixSize + 2
+       matrixSize = matrixSize + 2 * Nspecies
     case (2)
-       matrixSize = matrixSize + Nx
+       matrixSize = matrixSize + Nx * Nspecies
     case default
        print *,"Error! Invalid constraintScheme"
        stop
     end select
-    matrixSize = matrixSize * Nspecies
 
     if (masterProc) then
        print *,"The matrix is ",matrixSize,"x",matrixSize," elements."
@@ -119,7 +119,7 @@
     ! *******************************************************************************
     ! *******************************************************************************
 
-    ! Assign a range of theta indices to each processor.
+    ! Assign a range of zeta indices to each processor.
     ! This is done by creating a PETSc DM that is not actually used for anything else.
     call DMDACreate1d(PETSC_COMM_WORLD, DM_BOUNDARY_NONE, Nzeta, 1, 0, PETSC_NULL_INTEGER, myDM, ierr)
     call DMDAGetCorners(myDM, izetaMin, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, &
@@ -328,6 +328,7 @@
     allocate(BHat(Ntheta,Nzeta))
     allocate(dBHatdtheta(Ntheta,Nzeta))
     allocate(dBHatdzeta(Ntheta,Nzeta))
+    allocate(dBHatdrho(Ntheta,Nzeta))
     allocate(NTVKernel(Ntheta,Nzeta))
 
     call computeBHat()

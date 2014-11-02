@@ -144,7 +144,8 @@ module globalVariables
   PetscScalar, dimension(:,:), allocatable :: ddzeta_preconditioner
   PetscScalar, dimension(:,:), allocatable :: regridPolynomialToUniform
 
-  PetscScalar, dimension(:,:), allocatable :: BHat, dBHatdtheta, dBHatdzeta, sources, jHat, Phi1Hat
+  PetscScalar, dimension(:,:), allocatable :: BHat, dBHatdtheta, dBHatdzeta, dBHatdrho
+  PetscScalar, dimension(:,:), allocatable :: sources, jHat, Phi1Hat
   PetscScalar, dimension(:,:,:), allocatable :: flow, densityPerturbation, pressurePerturbation
   PetscScalar, dimension(:,:,:), allocatable :: particleFluxBeforeSurfaceIntegral
   PetscScalar, dimension(:,:,:), allocatable :: momentumFluxBeforeSurfaceIntegral
