@@ -45,10 +45,12 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   case (0)
   case (1)
      ! The rows for the constraints have more nonzeros:
-     predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta*Nx
+     predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta*Nx + 1
+     !predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta*Nx
   case (2)
      ! The rows for the constraints have more nonzeros:
-     predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta
+     predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta + 1
+     !predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta
   case default
   end select
   predictedNNZsForEachRowDiagonal = predictedNNZsForEachRow
@@ -122,4 +124,8 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   ! If any mallocs are required during matrix assembly, do not generate an error:
   !call MatSetOption(matrix, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE, ierr)
   
+  if (masterProc) then
+     print *,"Done with preallocation for whichMatrix = ",whichMatrix
+  end if
+
 end subroutine preallocateMatrix

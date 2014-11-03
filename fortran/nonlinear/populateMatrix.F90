@@ -75,7 +75,15 @@
 
     call PetscTime(time1, ierr)
 
-    call preallocateMatrix(matrix, whichMatrix)
+    !call preallocateMatrix(matrix, whichMatrix)
+
+    ! Sometimes PETSc complains if any of the diagonal elements are not set.
+    ! Therefore, set the entire diagonal to 0 to be safe.
+    if (masterProc) then
+       do i=1,matrixSize
+          call MatSetValue(matrix, i-1, i-1, zero, ADD_VALUES, ierr)
+       end do
+    end if
 
     ! *********************************************************
     ! Allocate small matrices:
@@ -367,7 +375,7 @@
                          call MatSetValueSparse(matrix, rowIndex, rowIndex, &
                               (L+1)*L/((2*L-one)*(2*L+three))*factor, ADD_VALUES, ierr)
 
-                         if (whichMatrix==1 .or. preconditioner_xi==0) then
+                         if (whichMatrix>0 .or. preconditioner_xi==0) then
                             if (L<Nxi-2) then
                                ! Super-super-diagonal term:
                                ell = L+2
@@ -429,7 +437,7 @@
                       call MatSetValuesSparse(matrix, Nx, rowIndices, Nx, colIndices, &
                            LFactor*xPartOfXDot, ADD_VALUES, ierr)
 
-                      if (whichMatrix==1 .or. preconditioner_xi==0) then
+                      if (whichMatrix>0 .or. preconditioner_xi==0) then
                          ! Term that is super-super-diagonal in L:
                          if (L<(Nxi-2)) then
                             ell = L + 2
@@ -684,7 +692,7 @@
           do L=0, Nxi-1
              do iSpeciesB = 1,Nspecies
                 do iSpeciesA = 1,Nspecies
-                   if (iSpeciesA==iSpeciesB .or. whichMatrix==1 .or. preconditioner_species==0) then
+                   if (iSpeciesA==iSpeciesB .or. whichMatrix>0 .or. preconditioner_species==0) then
 
                       speciesFactor = sqrt(THats(iSpeciesA)*mHats(iSpeciesB) &
                            / (THats(iSpeciesB) * mHats(iSpeciesA)))
@@ -1025,7 +1033,7 @@
 
        call PetscTime(time2, ierr)
        if (masterProc) then
-          print *,"Time to pre-assemble ",whichMatrixName," matrix: ", time2-time1, " seconds."
+          print *,"Time to pre-assemble ",trim(whichMatrixName)," matrix: ", time2-time1, " seconds."
        end if
        call PetscTime(time1, ierr)
 
@@ -1034,7 +1042,7 @@
 
        call PetscTime(time2, ierr)
        if (masterProc) then
-          print *,"Time to assemble ",whichMatrixName," matrix: ", time2-time1, " seconds."
+          print *,"Time to assemble ",trim(whichMatrixName)," matrix: ", time2-time1, " seconds."
        end if
        call PetscTime(time1, ierr)
 
@@ -1044,7 +1052,7 @@
     NNZAllocated = nint(myMatInfo(MAT_INFO_NZ_ALLOCATED))
     NMallocs = nint(myMatInfo(MAT_INFO_MALLOCS))
     if (masterProc) then
-       print *,"# of nonzeros in ",whichMatrixName," matrix:",NNZ, ", allocated:",NNZAllocated, &
+       print *,"# of nonzeros in ",trim(whichMatrixName)," matrix:",NNZ, ", allocated:",NNZAllocated, &
             ", mallocs:",NMallocs," (should be 0)"
     end if
 

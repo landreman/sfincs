@@ -270,6 +270,7 @@
 
   ! If nonlinear = .true., the code will iterate to find the self-consistent poloidal variation
   ! of the electrostatic potential.
+  !nonlinear = .true.
   nonlinear = .false.
 /
 
@@ -346,8 +347,8 @@
   ! For large problems, the iterative solver will usually be faster and will use much
   ! less memory, but it may not always converge.
 
-  useIterativeSolver = .true.
-!  useIterativeSolver = .false.
+!  useIterativeSolver = .true.
+  useIterativeSolver = .false.
 
   whichParallelSolverToFactorPreconditioner = 2
   ! Options for whichParallelSolverToFactorPreconditioner:
@@ -375,7 +376,7 @@
   ! 0 = keep full species coupling
   ! 1 = drop all cross-species coupling
 
-  preconditioner_x = 1
+  preconditioner_x = 0
   ! 0 = keep full x coupling
   ! 1 = drop everything off-diagonal in x
   ! 2 = keep only upper-triangular part in x

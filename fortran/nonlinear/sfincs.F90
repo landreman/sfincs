@@ -28,8 +28,8 @@ program sfincs
   if (masterProc) then
      print *,"****************************************************************************"
      print *,"SFINCS: Stellarator Fokker-Plank Iterative Neoclassical Conservative Solver"
-     print *,"Grid in theta and zeta, Legendre modal in xi, polynomial spectral collocation in x."
      print *,"Nonlinear version."
+     print *,"Finite-difference in theta and zeta, Legendre modal in xi, polynomial spectral collocation in x."
 #if defined(PETSC_USE_REAL_SINGLE)
      print *,"Using single precision."
 #else
@@ -86,8 +86,12 @@ program sfincs
   call mainSolverLoop()
 
   ! Build the HDF5 output file:
-  call writeOutputFile()
+  !call writeOutputFile()
 
   call PetscFinalize(ierr)
+
+  if (masterProc) then
+     print *,"Goodbye!"
+  end if
 
 end program sfincs

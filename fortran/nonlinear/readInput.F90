@@ -238,8 +238,8 @@ contains
        stop
     end if
 
-    if (constraintScheme < 0 .or. constraintScheme > 2) then
-       print *,"Error! constraintScheme must be 0, 1, or 2."
+    if (constraintScheme < -1 .or. constraintScheme > 2) then
+       print *,"Error! constraintScheme must be -1, 0, 1, or 2."
        stop
     end if
 

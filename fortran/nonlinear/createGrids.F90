@@ -375,4 +375,9 @@
 
     FSABHat2 = 4*pi*pi/VPrimeHat
 
+    if (masterProc) then
+       print *,"------------------------------------------------------"
+       print *,"Done creating grids."
+    end if
+
   end subroutine createGrids

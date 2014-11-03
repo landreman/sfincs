@@ -3,8 +3,8 @@
 
 module solver
 
-  use globalVariables
   use petscsnesdef
+  use globalVariables
 
   implicit none
 
@@ -26,9 +26,13 @@ module solver
 
     external evaluateJacobian, evaluateResidual
 
-    call VecCreate(MPIComm, matrixSize, solutionVec, ierr)
-    call VecDuplicate(solutionVec, residualVec, ierr)
+    if (masterProc) then
+       print *,"Entering main solver loop."
+    end if
 
+    call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, solutionVec, ierr)
+    call VecDuplicate(solutionVec, residualVec, ierr)
+    
     call SNESCreate(MPIComm, mysnes, ierr)
     call SNESSetFunction(mysnes, residualVec, evaluateResidual, PETSC_NULL_OBJECT, ierr)
 
@@ -78,12 +82,12 @@ module solver
        case (1)
           call PCFactorSetMatSolverPackage(preconditionerContext, MATSOLVERMUMPS, ierr)
           if (masterProc) then
-             print *,"Using mumps to factorize the preconditioner."
+             print *,"We will use mumps to factorize the preconditioner."
           end if
        case (2)
           call PCFactorSetMatSolverPackage(preconditionerContext, MATSOLVERSUPERLU_DIST, ierr)
           if (masterProc) then
-             print *,"Using superlu_dist to factorize the preconditioner."
+             print *,"We will use superlu_dist to factorize the preconditioner."
           end if
        case default
           if (masterProc) then
@@ -93,7 +97,7 @@ module solver
        end select
     else
        if (masterProc) then
-          print *,"Using PETSc's serial sparse direct solver to factorize the preconditioner."
+          print *,"We will use PETSc's serial sparse direct solver to factorize the preconditioner."
        end if
 
        ! When using PETSc's built-in solver (which is only done when running with a single processor),
@@ -109,6 +113,23 @@ module solver
     end if
 
     call SNESMonitorSet(mysnes, SNESMonitorDefault, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
+
+    ! Set the algorithm to use for the nonlinear solver:
+    if (nonlinear) then
+       ! SNESNEWTONLS = Newton's method with an optional line search.
+       ! As of PETSc version 3.5, this is the default algorithm, but I'll set it manually here anyway to be safe.
+       call SNESSetType(mysnes, SNESNEWTONLS, ierr)
+       if (masterProc) then
+          print *,"Since this is a nonlinear run, we will use Newton's method."
+       end if
+    else
+       ! SNESKSPONLY = Only do 1 linear step.
+       call SNESSetType(mysnes, SNESKSPONLY, ierr)
+       if (masterProc) then
+          print *,"Since this is a linear run, we will only take a single step, and not use Newton's method."
+       end if
+    end if
+
     call SNESSetFromOptions(mysnes, ierr)
 
 
@@ -171,6 +192,7 @@ module solver
        ! ***********************************************************************
 
        if (masterProc) then
+          print *,"------------------------------------------------------"
           print *,"Beginning the main solve.  This could take a while ..."
        end if
 
@@ -187,7 +209,7 @@ module solver
        call PetscTime(time1, ierr)
 
        if (useIterativeSolver) then
-          call SNESGetConvergedReason(KSPInstance, reason, ierr)
+          call SNESGetConvergedReason(mysnes, reason, ierr)
           if (reason>0) then
              if (masterProc) then
                 print *,"Converged!  SNESConvergedReason = ", reason

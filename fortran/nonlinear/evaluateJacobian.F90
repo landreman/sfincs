@@ -5,7 +5,7 @@
   subroutine evaluateJacobian(mysnes, stateVec, jacobian, jacobianPC, userContext, ierr)
 
     use petscsnes
-    use globalVariables, only: masterProc
+    use globalVariables, only: masterProc, useIterativeSolver
 
     implicit none
 
@@ -51,7 +51,9 @@
 !!$    call MatAssemblyBegin(jacobian, MAT_FINAL_ASSEMBLY, ierr)
 !!$    call MatAssemblyEnd(jacobian, MAT_FINAL_ASSEMBLY, ierr)
 
-    call populateMatrix(jacobianPC, 0)
+    if (useIterativeSolver) then
+       call populateMatrix(jacobianPC, 0)
+    end if
     call populateMatrix(jacobian, 1)
 
   end subroutine evaluateJacobian
