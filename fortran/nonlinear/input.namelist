@@ -347,8 +347,8 @@
   ! For large problems, the iterative solver will usually be faster and will use much
   ! less memory, but it may not always converge.
 
-!  useIterativeSolver = .true.
-  useIterativeSolver = .false.
+  useIterativeSolver = .true.
+!  useIterativeSolver = .false.
 
   whichParallelSolverToFactorPreconditioner = 2
   ! Options for whichParallelSolverToFactorPreconditioner:

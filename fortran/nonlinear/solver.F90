@@ -24,7 +24,7 @@ module solver
     SNESConvergedReason :: reason
     PetscLogDouble :: time1, time2
 
-    external evaluateJacobian, evaluateResidual
+    external evaluateJacobian, evaluateResidual, diagnostics
 
     if (masterProc) then
        print *,"Entering main solver loop."
@@ -112,7 +112,8 @@ module solver
 
     end if
 
-    call SNESMonitorSet(mysnes, SNESMonitorDefault, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
+    call SNESMonitorSet(mysnes, diagnostics, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
+    !call SNESMonitorSet(mysnes, SNESMonitorDefault, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
 
     ! Set the algorithm to use for the nonlinear solver:
     if (nonlinear) then

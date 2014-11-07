@@ -29,7 +29,6 @@ program sfincs
      print *,"****************************************************************************"
      print *,"SFINCS: Stellarator Fokker-Plank Iterative Neoclassical Conservative Solver"
      print *,"Nonlinear version."
-     print *,"Finite-difference in theta and zeta, Legendre modal in xi, polynomial spectral collocation in x."
 #if defined(PETSC_USE_REAL_SINGLE)
      print *,"Using single precision."
 #else
@@ -66,17 +65,15 @@ program sfincs
      end if
   end if
 
-  ! Before investing the time in solving the system, make sure
-  ! it is possible to at least open the output file.
-  call openOutputFile()
-
-  ! Change this next subroutine?
-  !call allocateArraysForSingleRun()
-
   ! Do various calculations that will not need to be repeated at each
   ! iteration, such as setting up the coordinate grids and evaluating
   ! the magnetic field and its derivatives on the spatial grid.
   call createGrids()
+
+  ! Before investing the time in solving the system, make sure
+  ! it is possible to at least open the output file.
+  ! Note: eventually, save the input file to the HDF5 file at this step.
+  call openOutputFile()
 
   ! Solve the main system, either linear or nonlinear.
   ! This step takes more time than everything else combined.

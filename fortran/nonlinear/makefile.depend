@@ -1,4 +1,4 @@
-OBJ_FILES = createGrids.o evaluateJacobian.o evaluateResidual.o geometry.o \
+OBJ_FILES = createGrids.o diagnostics.o evaluateJacobian.o evaluateResidual.o geometry.o \
 	  globalVariables.o indices.o polynomialDiffMatrices.o polynomialInterpolationMatrix.o \
 	  populateMatrix.o preallocateMatrix.o readInput.o sfincs.o solver.o sparsify.o \
 	  uniformDiffMatrices.o uniformInterpolationMatrix.o writeHDF5Output.o xGrid.o \
@@ -6,7 +6,7 @@ OBJ_FILES = createGrids.o evaluateJacobian.o evaluateResidual.o geometry.o \
 
 # Dependencies:
 createGrids.o: globalVariables.o polynomialDiffMatrices.o xGrid.o geometry.o indices.o
-# diagnostics.o:
+diagnostics.o: globalVariables.o indices.o writeHDF5Output.o
 evaluateJacobian.o: globalVariables.o
 evaluateResidual.o: globalVariables.o indices.o
 geometry.o: globalVariables.o

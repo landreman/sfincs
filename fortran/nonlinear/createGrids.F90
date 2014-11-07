@@ -375,6 +375,41 @@
 
     FSABHat2 = 4*pi*pi/VPrimeHat
 
+    ! *********************************************************
+    ! Allocate some arrays that will be used:
+    ! *********************************************************
+
+    allocate(FSADensityPerturbation(Nspecies))
+    allocate(FSABFlow(Nspecies))
+    allocate(FSAPressurePerturbation(Nspecies))
+    allocate(particleFlux(Nspecies))
+    allocate(momentumFlux(Nspecies))
+    allocate(heatFlux(Nspecies))
+    allocate(NTV(Nspecies)) 
+
+    allocate(densityPerturbation(Nspecies,Ntheta,Nzeta))
+    allocate(flow(Nspecies,Ntheta,Nzeta))
+    allocate(pressurePerturbation(Nspecies,Ntheta,Nzeta))
+    allocate(particleFluxBeforeSurfaceIntegral(Nspecies,Ntheta,Nzeta))
+    allocate(momentumFluxBeforeSurfaceIntegral(Nspecies,Ntheta,Nzeta))
+    allocate(heatFluxBeforeSurfaceIntegral(Nspecies,Ntheta,Nzeta))
+    allocate(NTVBeforeSurfaceIntegral(Nspecies,Ntheta,Nzeta)) 
+
+    allocate(jHat(Ntheta,Nzeta))
+    allocate(Phi1Hat(Ntheta,Nzeta))
+
+    select case (constraintScheme)
+    case (0)
+    case (1)
+       allocate(sources(Nspecies,2))
+    case (2)
+       allocate(sources(Nspecies,Nx))
+    case default
+       print *,"Error! Invalid setting for constraintScheme."
+       stop
+    end select
+
+
     if (masterProc) then
        print *,"------------------------------------------------------"
        print *,"Done creating grids."

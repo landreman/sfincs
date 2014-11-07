@@ -25,7 +25,7 @@
     PetscErrorCode :: ierr
     PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, speciesFactor, speciesFactor2
     PetscScalar :: T32m, factor, LFactor, temp, temp1, temp2, xDotFactor
-    PetscScalar, dimension(:), allocatable :: B2, xb, expxb2
+    PetscScalar, dimension(:), allocatable :: xb, expxb2
     PetscScalar, dimension(:,:), allocatable :: thetaPartOfTerm, localThetaPartOfTerm, xPartOfXDot
     integer :: i, j, ix, ispecies, itheta, izeta, L, ixi, index
     integer :: rowIndex, colIndex

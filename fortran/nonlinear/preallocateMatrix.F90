@@ -124,8 +124,8 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   ! If any mallocs are required during matrix assembly, do not generate an error:
   !call MatSetOption(matrix, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE, ierr)
   
-  if (masterProc) then
-     print *,"Done with preallocation for whichMatrix = ",whichMatrix
-  end if
+  !if (masterProc) then
+  !   print *,"Done with preallocation for whichMatrix = ",whichMatrix
+  !end if
 
 end subroutine preallocateMatrix
