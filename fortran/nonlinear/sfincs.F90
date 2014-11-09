@@ -70,21 +70,15 @@ program sfincs
   ! the magnetic field and its derivatives on the spatial grid.
   call createGrids()
 
-  ! Before investing the time in solving the system, make sure
-  ! it is possible to at least open the output file.
-  ! Note: eventually, save the input file to the HDF5 file at this step.
-  call openOutputFile()
+  ! Create HDF5 data structures, and save the quantities that will not change
+  ! at each iteration of the solver (i.e. save all quantities except diagnostics.)
+  call initializeOutputFile()
 
   ! Solve the main system, either linear or nonlinear.
   ! This step takes more time than everything else combined.
-  ! Diagnostics should be computed within the solver, for 2 reasons:
-  !   1. There might be >1 RHS
-  !   2. If doing a nonlinear run, we should also save linear results, which we get for free.
   call mainSolverLoop()
 
-  ! Build the HDF5 output file:
-  !call writeOutputFile()
-
+  call finalizeHDF5()
   call PetscFinalize(ierr)
 
   if (masterProc) then

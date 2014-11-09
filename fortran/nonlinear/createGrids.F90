@@ -1,14 +1,5 @@
 #include <finclude/petscdmdadef.h>
-#include <petscversion.h>
-
-! Next come some definitions required because the syntax for several PETSc objects
-! has changed from version to version.
-  
-! For PETSc versions prior to 3.5, DMDA_BOUNDARY_NONE was used in place of DM_BOUNDARY_NONE.
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
-#define DM_BOUNDARY_NONE DMDA_BOUNDARY_NONE
-#endif
-!Hereafter in this code, use DM_BOUNDARY_NONE.
+#include "PETScVersions.F90"
 
   subroutine createGrids()
 
@@ -146,7 +137,6 @@
 
     ithetaMax = ithetaMin+localNtheta-1
 
-    CHKERRQ(ierr)
     print *,"Processor ",myRank," owns theta indices ",ithetaMin," to ",ithetaMax
 
 
@@ -376,7 +366,7 @@
     FSABHat2 = 4*pi*pi/VPrimeHat
 
     ! *********************************************************
-    ! Allocate some arrays that will be used:
+    ! Allocate some arrays that will be used later for output quantities:
     ! *********************************************************
 
     allocate(FSADensityPerturbation(Nspecies))

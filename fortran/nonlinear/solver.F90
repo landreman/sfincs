@@ -112,6 +112,7 @@ module solver
 
     end if
 
+    ! Tell PETSc to call the diagnostics subroutine at each iteration of SNES:
     call SNESMonitorSet(mysnes, diagnostics, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
     !call SNESMonitorSet(mysnes, SNESMonitorDefault, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
 
@@ -127,7 +128,7 @@ module solver
        ! SNESKSPONLY = Only do 1 linear step.
        call SNESSetType(mysnes, SNESKSPONLY, ierr)
        if (masterProc) then
-          print *,"Since this is a linear run, we will only take a single step, and not use Newton's method."
+          print *,"Since this is a linear run, we will only take a single step, and not iterate Newton's method."
        end if
     end if
 
@@ -194,13 +195,14 @@ module solver
 
        if (masterProc) then
           print *,"------------------------------------------------------"
+          print *,"Finished initialization."
           print *,"Beginning the main solve.  This could take a while ..."
        end if
 
        call PetscTime(time1, ierr)
        if (solveSystem) then
+          ! All the magic happens in this next line!
           call SNESSolve(mysnes,PETSC_NULL_OBJECT, solutionVec, ierr)
-          !call KSPSolve(KSPInstance, rhs, soln, ierr)
        end if
 
        call PetscTime(time2, ierr)
@@ -225,15 +227,6 @@ module solver
        else
           didNonlinearCalculationConverge = integerToRepresentTrue
        end if
-
-
-       !**************************************************************************
-       !**************************************************************************
-       ! 
-       !  Call diagnostics here.
-       !
-       !**************************************************************************
-       !**************************************************************************
 
     end do
 
@@ -303,7 +296,7 @@ module solver
     if ((.not. isAParallelDirectSolverInstalled) .and. (numProcs > 1)) then
        if (masterProc) then
           print *,"Error! To run with more than 1 processors, you must have either"
-          print *,"mumps no superlu_dist installed."
+          print *,"mumps or superlu_dist installed."
        end if
        stop
     end if

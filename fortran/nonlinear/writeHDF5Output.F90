@@ -47,13 +47,76 @@ module writeHDF5Output
 
 contains
 
+
   ! -----------------------------------------------------------------------------------
 
-  subroutine openOutputFile()
+  subroutine createHDF5Structures()
+
+    ! This subroutine creates the dataspaces.
 
     implicit none
 
+    integer :: i, rank
+
+    ! Create a dataspace for storing single numbers:
+    rank = 0
+    call h5screate_simple_f(rank, dimForScalar, dspaceIDForScalar, HDF5Error)
+
+    ! Create dataspaces that depend on resolution parameters:
+    rank = 1
+    dimForSpecies = Nspecies
+    call h5screate_simple_f(rank, dimForSpecies, dspaceIDForSpecies, HDF5Error)
+
+    rank = 1
+    dimForZeta = Nzeta
+    call h5screate_simple_f(rank, dimForZeta, dspaceIDForZeta, HDF5Error)
+
+    dimForTheta = Ntheta
+    call h5screate_simple_f(rank, dimForTheta, dspaceIDForTheta, HDF5Error)
+
+    dimForx = Nx
+    call h5screate_simple_f(rank, dimForx, dspaceIDForx, HDF5Error)
+
+    rank = 2
+    dimForThetaZeta(1) = Ntheta
+    dimForThetaZeta(2) = Nzeta
+    call h5screate_simple_f(rank, dimForThetaZeta, dspaceIDForThetaZeta, HDF5Error)
+
+    rank = 3
+    dimForSpeciesThetaZeta(1) = Nspecies
+    dimForSpeciesThetaZeta(2) = Ntheta
+    dimForSpeciesThetaZeta(3) = Nzeta
+    call h5screate_simple_f(rank, dimForSpeciesThetaZeta, dspaceIDForSpeciesThetaZeta, HDF5Error)
+
+    dimForSources(1) = Nspecies
+    select case (constraintScheme)
+    case (0)
+       dimForSources(2) = 1
+    case (1)
+       dimForSources(2) = 2
+    case (2)
+       dimForSources(2) = Nx
+    case default
+       print *,"Error in writeHDF5Output! Invalid setting for constraintScheme."
+    end select
+    rank = 2
+    call h5screate_simple_f(rank, dimForSources, dspaceIDForSources, HDF5Error)
+
+
+  end subroutine createHDF5Structures
+
+  ! -----------------------------------------------------------------------------------
+
+  subroutine initializeOutputFile()
+
+    implicit none
+
+    integer(HID_T) :: dsetID
+    integer :: temp
+    PetscErrorCode :: ierr
+
     if (masterProc) then
+
        call h5open_f(HDF5Error)
        if (HDF5Error < 0) then
           print *,"Error initializing HDF5."
@@ -66,85 +129,9 @@ contains
           stop
        end if
 
-    end if
-
-  end subroutine openOutputFile
-
-  ! -----------------------------------------------------------------------------------
-
-  subroutine createHDF5Structures()
-
-    ! This subroutine creates the dataspaces.
-
-    implicit none
-
-    integer :: i, rank
-
-    if (masterProc) then
-
-       ! Create a dataspace for storing single numbers:
-       rank = 0
-       call h5screate_simple_f(rank, dimForScalar, dspaceIDForScalar, HDF5Error)
-
-       ! Create dataspaces that depend on resolution parameters:
-       rank = 1
-       dimForSpecies = Nspecies
-       call h5screate_simple_f(rank, dimForSpecies, dspaceIDForSpecies, HDF5Error)
-
-       rank = 1
-       dimForZeta = Nzeta
-       call h5screate_simple_f(rank, dimForZeta, dspaceIDForZeta, HDF5Error)
-
-       dimForTheta = Ntheta
-       call h5screate_simple_f(rank, dimForTheta, dspaceIDForTheta, HDF5Error)
-
-       dimForx = Nx
-       call h5screate_simple_f(rank, dimForx, dspaceIDForx, HDF5Error)
-
-       rank = 2
-       dimForThetaZeta(1) = Ntheta
-       dimForThetaZeta(2) = Nzeta
-       call h5screate_simple_f(rank, dimForThetaZeta, dspaceIDForThetaZeta, HDF5Error)
-
-       rank = 3
-       dimForSpeciesThetaZeta(1) = Nspecies
-       dimForSpeciesThetaZeta(2) = Ntheta
-       dimForSpeciesThetaZeta(3) = Nzeta
-       call h5screate_simple_f(rank, dimForSpeciesThetaZeta, dspaceIDForSpeciesThetaZeta, HDF5Error)
-
-       dimForSources(1) = Nspecies
-       select case (constraintScheme)
-       case (0)
-          dimForSources(2) = 1
-       case (1)
-          dimForSources(2) = 2
-       case (2)
-          dimForSources(2) = Nx
-       case default
-          print *,"Error in writeHDF5Output! Invalid setting for constraintScheme."
-       end select
-       rank = 2
-       call h5screate_simple_f(rank, dimForSources, dspaceIDForSources, HDF5Error)
-
-    end if
-
-  end subroutine createHDF5Structures
-
-  ! -----------------------------------------------------------------------------------
-
-  subroutine writeOutputFile()
-
-    implicit none
-
-    integer(HID_T) :: dsetID
-    integer :: temp
-
-    call createHDF5Structures()
-
-    if (masterProc) then
+       call createHDF5Structures()
 
        call saveInputFileToHDF5()
-
 
        ! For each variable we want in the HDF5 file, we must do 3 steps:
        ! 1. Create a dataset id,
@@ -693,6 +680,95 @@ contains
 
        ! ----------------------------------
 
+       call h5dcreate_f(HDF5FileID, "integerToRepresentTrue", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, &
+            integerToRepresentTrue, dimForScalar, HDF5Error)
+
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "integerToRepresentFalse", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, &
+            integerToRepresentFalse, dimForScalar, HDF5Error)
+
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "VPrimeHat", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
+            VPrimeHat, dimForScalar, HDF5Error)
+
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "FSABHat2", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
+            FSABHat2, dimForScalar, HDF5Error)
+
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5dcreate_f(HDF5FileID, "useIterativeSolver", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
+            dsetID, HDF5Error)
+
+       if (useIterativeSolver) then
+          temp = integerToRepresentTrue
+       else
+          temp = integerToRepresentFalse
+       end if
+       call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, &
+            temp, dimForScalar, HDF5Error)
+
+       call h5dclose_f(dsetID, HDF5Error)
+
+       ! ----------------------------------
+
+       call h5fclose_f(HDF5FileID, HDF5Error)
+
+    end if
+
+    ! The next line is not strictly needed, but I included it to be safe.
+    ! This way we are sure the HDF5 file is safely closed before the other procs
+    ! move on to the next part of the calculation.
+    call MPI_Barrier(MPIComm, ierr)
+
+  end subroutine initializeOutputFile
+
+  ! -----------------------------------------------------------------------------------
+
+  subroutine updateOutputFile(iterationNum)
+
+    implicit none
+
+    integer, intent(in) :: iterationNum
+    integer(HID_T) :: dsetID
+    integer :: temp
+    PetscErrorCode :: ierr
+
+    if (masterProc) then
+
+       print *,"Saving diagnostics to h5 file for iteration ",iterationNum
+
+       call h5fopen_f(outputFilename, H5F_ACC_RDWR_F, HDF5FileID, HDF5Error)
+       if (HDF5Error < 0) then
+          print *,"Error opening HDF5 output file."
+          stop
+       end if
+
+       ! ----------------------------------
+
        call h5dcreate_f(HDF5FileID, "sources", H5T_NATIVE_DOUBLE, dspaceIDForSources, &
             dsetID, HDF5Error)
 
@@ -901,70 +977,19 @@ contains
 
        ! ----------------------------------
 
-       call h5dcreate_f(HDF5FileID, "integerToRepresentTrue", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
-            dsetID, HDF5Error)
-
-       call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, &
-            integerToRepresentTrue, dimForScalar, HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-       call h5dcreate_f(HDF5FileID, "integerToRepresentFalse", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
-            dsetID, HDF5Error)
-
-       call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, &
-            integerToRepresentFalse, dimForScalar, HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-       call h5dcreate_f(HDF5FileID, "VPrimeHat", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
-            dsetID, HDF5Error)
-
-       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
-            VPrimeHat, dimForScalar, HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-       call h5dcreate_f(HDF5FileID, "FSABHat2", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
-            dsetID, HDF5Error)
-
-       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
-            FSABHat2, dimForScalar, HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
-       call h5dcreate_f(HDF5FileID, "useIterativeSolver", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
-            dsetID, HDF5Error)
-
-       if (useIterativeSolver) then
-          temp = integerToRepresentTrue
-       else
-          temp = integerToRepresentFalse
-       end if
-       call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, &
-            temp, dimForScalar, HDF5Error)
-
-       call h5dclose_f(dsetID, HDF5Error)
-
-       ! ----------------------------------
-
+       call h5fclose_f(HDF5FileID, HDF5Error)
     end if
 
-    call closeOutputFile()
+    ! The next line is not strictly needed, but I included it to be safe.
+    ! This way we are sure the HDF5 file is safely closed before the other procs
+    ! move on to the next part of the calculation.
+    call MPI_Barrier(MPIComm, ierr)
 
-  end subroutine writeOutputFile
+  end subroutine updateOutputFile
 
   ! -----------------------------------------------------------------------------------
 
-  subroutine closeOutputFile()
+  subroutine finalizeHDF5()
 
     implicit none
 
@@ -978,12 +1003,11 @@ contains
        call h5sclose_f(dspaceIDForScalar, HDF5Error)
        call h5sclose_f(dspaceIDForSpecies, HDF5Error)
 
-       call h5fclose_f(HDF5FileID, HDF5Error)
        call h5close_f(HDF5Error)
 
     end if
 
-  end subroutine closeOutputFile
+  end subroutine finalizeHDF5
 
   ! -----------------------------------------------------------------------------------
 
