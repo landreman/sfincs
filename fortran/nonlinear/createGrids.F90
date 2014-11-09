@@ -23,6 +23,7 @@
     PetscScalar, dimension(:), allocatable :: xWeightsPotentials
 
     DM :: myDM
+    character(len=200) :: procAssignments
 
     ! *******************************************************************************
     ! Do a few sundry initialization tasks:
@@ -109,35 +110,32 @@
     ! *******************************************************************************
     ! *******************************************************************************
 
+    ! Each processor is responsible for building the rows of the matrix and rhs corresponding
+    ! to its ithetaMin:ithetaMax and izetaMin:izetaMax, and each processor is resposible for all columns of the matrix.
+
     ! Assign a range of zeta indices to each processor.
     ! This is done by creating a PETSc DM that is not actually used for anything else.
-    call DMDACreate1d(PETSC_COMM_WORLD, DM_BOUNDARY_NONE, Nzeta, 1, 0, PETSC_NULL_INTEGER, myDM, ierr)
-    call DMDAGetCorners(myDM, izetaMin, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, &
-         localNzeta, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr)
+    call DMDACreate2d(PETSC_COMM_WORLD, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX, &
+         Ntheta, Nzeta, PETSC_DECIDE, PETSC_DECIDE, 1, 0, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, myDM, ierr)
+
+    call DMDAGetCorners(myDM, ithetaMin, izetaMin, PETSC_NULL_INTEGER, &
+         localNtheta, localNzeta, PETSC_NULL_INTEGER, ierr)
+
     call DMDestroy(myDM, ierr)
-    ! Switch to 1-based indices:
-    izetaMin = izetaMin + 1
 
-    izetaMax = izetaMin+localNzeta-1
-    procThatHandlesConstraints = masterProc
-
-    print *,"Processor ",myRank," owns zeta indices ",izetaMin," to ",izetaMax
-
-    ! Each processor is responsible for building the rows of the matrix and rhs corresponding
-    ! to its izetaMin:izetaMax, and each processor is resposible for all columns of the matrix.
-
-
-    ! Do the same with theta:
-    call DMDACreate1d(MPIComm, DM_BOUNDARY_NONE, Ntheta, 1, 0, PETSC_NULL_INTEGER, myDM, ierr)
-    call DMDAGetCorners(myDM, ithetaMin, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, &
-         localNtheta, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr)
-    call DMDestroy(myDM, ierr)
     ! Switch to 1-based indices:
     ithetaMin = ithetaMin + 1
-
     ithetaMax = ithetaMin+localNtheta-1
+    izetaMin = izetaMin + 1
+    izetaMax = izetaMin+localNzeta-1
 
-    print *,"Processor ",myRank," owns theta indices ",ithetaMin," to ",ithetaMax
+    procThatHandlesConstraints = masterProc
+
+    write (procAssignments,fmt="(a,i4,a,i3,a,i3,a,i3,a,i3,a)") " Processor ",myRank," owns theta indices ",ithetaMin," to ",ithetaMax,&
+         " and zeta indices ",izetaMin," to ",izetaMax,"\n"
+    call PetscSynchronizedPrintf(MPIComm, procAssignments, ierr)
+    call PetscSynchronizedFlush(MPIComm, ierr)
+
 
 
     ! *******************************************************************************

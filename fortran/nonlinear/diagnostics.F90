@@ -40,7 +40,7 @@
        if (iterationNum > 0) then
           print "(a,i4,a)",    "--------- Completed iteration ",iterationNum," of SNES (nonlinear solver) ----------------"
        end if
-       print "(a,es14.8,a)","--------- Residual function norm: ",residual," -----------------------------"
+       print "(a,es14.7,a)","--------- Residual function norm: ",residual," -----------------------------"
     end if
 
     if (iterationNum==0) then
