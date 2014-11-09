@@ -16,7 +16,7 @@ polynomialInterpolationMatrix.o:
 populateMatrix.o: globalVariables.o sparsify.o indices.o
 preallocateMatrix.o: globalVariables.o
 readInput.o: globalVariables.o
-sfincs.o: globalVariables.o writeHDF5Output.o readInput.o
+sfincs.o: globalVariables.o writeHDF5Output.o readInput.o solver.o
 solver.o: globalVariables.o
 sparsify.o:
 uniformDiffMatrices.o: 
