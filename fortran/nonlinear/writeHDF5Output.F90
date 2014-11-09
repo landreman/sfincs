@@ -9,55 +9,56 @@ module writeHDF5Output
 
 #include <finclude/petscsysdef.h>
 
-  integer, private :: HDF5Error
-  integer(HID_T), private :: HDF5FileID
+  private
+  public :: initializeOutputFile, updateOutputFile, finalizeHDF5
 
-  integer(HSIZE_T), dimension(1), parameter, private :: dimForScalar = 1
-  integer(HSIZE_T), dimension(1), private :: dimForSpecies
-  integer(HSIZE_T), dimension(1), private :: dimForTheta
-  integer(HSIZE_T), dimension(1), private :: dimForZeta
-  integer(HSIZE_T), dimension(1), private :: dimForx
-  integer(HSIZE_T), dimension(2), private :: dimForThetaZeta
+  integer :: HDF5Error
+  integer(HID_T) :: HDF5FileID
 
-  integer(HID_T), private :: dspaceIDForScalar
-  integer(HID_T), private :: dspaceIDForSpecies
-  integer(HID_T), private :: dspaceIDForTheta
-  integer(HID_T), private :: dspaceIDForZeta
-  integer(HID_T), private :: dspaceIDForx
-  integer(HID_T), private :: dspaceIDForThetaZeta
+  integer(HSIZE_T), dimension(1), parameter :: dimForScalar = 1
+  integer(HSIZE_T), dimension(1) :: dimForSpecies
+  integer(HSIZE_T), dimension(1) :: dimForTheta
+  integer(HSIZE_T), dimension(1) :: dimForZeta
+  integer(HSIZE_T), dimension(1) :: dimForx
+  integer(HSIZE_T), dimension(2) :: dimForThetaZeta
+
+  integer(HID_T) :: dspaceIDForScalar
+  integer(HID_T) :: dspaceIDForSpecies
+  integer(HID_T) :: dspaceIDForTheta
+  integer(HID_T) :: dspaceIDForZeta
+  integer(HID_T) :: dspaceIDForx
+  integer(HID_T) :: dspaceIDForThetaZeta
 
   ! Dimension arrays related to arrays that expand with each iteration:
-  integer(HSIZE_T), dimension(1), private :: dimForIteration
-  integer(HSIZE_T), dimension(1), private :: maxDimForIteration
-  integer(HSIZE_T), dimension(1), private :: dimForIterationChunk
-  integer(HID_T), private :: pForIteration
-  integer(HID_T), private :: dspaceIDForIteration
+  integer(HSIZE_T), dimension(1) :: dimForIteration
+  integer(HSIZE_T), dimension(1) :: maxDimForIteration
+  integer(HSIZE_T), dimension(1) :: dimForIterationChunk
+  integer(HID_T) :: pForIteration
+  integer(HID_T) :: dspaceIDForIteration
 
-  integer(HSIZE_T), dimension(2), private :: dimForIterationSpecies
-  integer(HSIZE_T), dimension(2), private :: maxDimForIterationSpecies
-  integer(HSIZE_T), dimension(2), private :: dimForIterationSpeciesChunk
-  integer(HID_T), private :: pForIterationSpecies
-  integer(HID_T), private :: dspaceIDForIterationSpecies
+  integer(HSIZE_T), dimension(2) :: dimForIterationSpecies
+  integer(HSIZE_T), dimension(2) :: maxDimForIterationSpecies
+  integer(HSIZE_T), dimension(2) :: dimForIterationSpeciesChunk
+  integer(HID_T) :: pForIterationSpecies
+  integer(HID_T) :: dspaceIDForIterationSpecies
 
-  integer(HSIZE_T), dimension(3), private :: dimForIterationSpeciesSources
-  integer(HSIZE_T), dimension(3), private :: maxDimForIterationSpeciesSources
-  integer(HSIZE_T), dimension(3), private :: dimForIterationSpeciesSourcesChunk
-  integer(HID_T), private :: pForIterationSpeciesSources
-  integer(HID_T), private :: dspaceIDForIterationSpeciesSources
+  integer(HSIZE_T), dimension(3) :: dimForIterationSpeciesSources
+  integer(HSIZE_T), dimension(3) :: maxDimForIterationSpeciesSources
+  integer(HSIZE_T), dimension(3) :: dimForIterationSpeciesSourcesChunk
+  integer(HID_T) :: pForIterationSpeciesSources
+  integer(HID_T) :: dspaceIDForIterationSpeciesSources
 
-  integer(HSIZE_T), dimension(3), private :: dimForIterationThetaZeta
-  integer(HSIZE_T), dimension(3), private :: maxDimForIterationThetaZeta
-  integer(HSIZE_T), dimension(3), private :: dimForIterationThetaZetaChunk
-  integer(HID_T), private :: pForIterationThetaZeta
-  integer(HID_T), private :: dspaceIDForIterationThetaZeta
+  integer(HSIZE_T), dimension(3) :: dimForIterationThetaZeta
+  integer(HSIZE_T), dimension(3) :: maxDimForIterationThetaZeta
+  integer(HSIZE_T), dimension(3) :: dimForIterationThetaZetaChunk
+  integer(HID_T) :: pForIterationThetaZeta
+  integer(HID_T) :: dspaceIDForIterationThetaZeta
 
-  integer(HSIZE_T), dimension(4), private :: dimForIterationSpeciesThetaZeta
-  integer(HSIZE_T), dimension(4), private :: maxDimForIterationSpeciesThetaZeta
-  integer(HSIZE_T), dimension(4), private :: dimForIterationSpeciesThetaZetaChunk
-  integer(HID_T), private :: pForIterationSpeciesThetaZeta
-  integer(HID_T), private :: dspaceIDForIterationSpeciesThetaZeta
-
-
+  integer(HSIZE_T), dimension(4) :: dimForIterationSpeciesThetaZeta
+  integer(HSIZE_T), dimension(4) :: maxDimForIterationSpeciesThetaZeta
+  integer(HSIZE_T), dimension(4) :: dimForIterationSpeciesThetaZetaChunk
+  integer(HID_T) :: pForIterationSpeciesThetaZeta
+  integer(HID_T) :: dspaceIDForIterationSpeciesThetaZeta
 
   interface writeHDF5Field
      module procedure writeHDF5Integer

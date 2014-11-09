@@ -21,7 +21,7 @@ contains
     namelist / geometryParameters / GHat, IHat, iota, epsilon_t, epsilon_h, &
          helicity_l, helicity_n, B0OverBBar, geometryScheme, &
          epsilon_antisymm, helicity_antisymm_l, helicity_antisymm_n, &
-         fort996boozer_file, JGboozer_file, JGboozer_file_NonStelSym, normradius_wish, min_Bmn_to_load, &
+         JGboozer_file, JGboozer_file_NonStelSym, normradius_wish, min_Bmn_to_load, &
          psiAHat
 
     namelist / speciesParameters / mHats, Zs, nHats, THats, dNHatdpsiNs, dTHatdpsiNs

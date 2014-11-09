@@ -62,7 +62,7 @@
 
 &geometryParameters
 
-  geometryScheme = 4
+  geometryScheme = 1
   ! 1 = Three-helicity model
   ! 2 = Three-helicity approximation of the LHD standard configuration
   ! 3 = Four-helicity approximation of the LHD inward-shifted configuration
@@ -75,14 +75,14 @@
   ! B = BBar * B0OverBBar * [1 + epsilon_t * cos(theta) + epsilon_h * cos(helicity_l * theta - helicity_n * zeta)]
   !                            + epsilon_antisymm * sin(helicity_antisymm_l * theta - helicity_antisymm_n * zeta)]
 
-  B0OverBBar = 0.7d+0
+  B0OverBBar = 1.0d+0
 
-  GHat = 1.27d+0
+  GHat = 1.0d+0
   ! G is c/2 * the poloidal current outside the flux
   ! surface. Equivalently, G is the coefficient of grad zeta in the
   ! covariant representation of vector B. GHat is G normalized by \bar{B}\bar{R}.
 
-  IHat = 0.8d+0
+  IHat = 0.0d+0
   ! I is c/2 * the toroidal current inside the flux
   ! surface. Equivalently, I is the coefficient of grad theta in the
   ! covariant representation of vector B. IHat is I normalized by \bar{B}\bar{R}.
@@ -90,12 +90,12 @@
   iota = 1.31d+0
   ! iota is the rotational transform = 1 / (safety factor q)
 
-  epsilon_t = 0.13d+0
+  epsilon_t = 0.1d+0
 
-  epsilon_h = 0.1d+0
+  epsilon_h = 0.0d+0
   
-  helicity_l = 2
-  helicity_n = 5
+  helicity_l = 1
+  helicity_n = 1
 
   epsilon_antisymm = 0.0d+0
   helicity_antisymm_l = 3	
@@ -104,8 +104,8 @@
   ! psiAHat = psi_a / (\bar{B} * \bar{R}^2) (in both Gaussian and SI units)
   ! where 2*pi*psi_a is the toroidal flux at the last closed flux surface
   ! (the surface where psi_N = 1.)
-  ! The value of psiAHat here is over-written for geometryScheme = .ne. 1
-  psiAHat = 0.03d+0
+  ! The value of psiAHat here is over-written for geometryScheme = 2, 3, 11 and 12.
+  psiAHat = 0.045d+0
 
   ! End of options that only matter for geometryScheme = 1.
 
@@ -136,20 +136,12 @@
   ! dTHatdpsiNs = radial gradient of the temperature of each species with respect to the normalized toroidal flux psi_N, normalized to the reference temperature \bar{T}
 
   ! Here is an example with 1 species:
-  !Zs = 1
-  !mHats = 1
-  !nHats = 1.0d+0
-  !dNHatdpsiNs = -0.5d+0
-  !THats = 0.1d+0
-  !dTHatdpsiNs = -0.7d+0
-
-  ! Here is an example with 2 species:
-  Zs = 1 6
-  mHats = 1 6
-  nHats = 0.6d+0 0.009d+0
-  dNHatdpsiNs = -0.3d+0 -0.001d+0
-  THats = 0.5d+0 0.8d+0
-  dTHatdpsiNs = -0.3d+0 -0.2d+0
+  Zs = 1
+  mHats = 1
+  nHats = 1.0d+0
+  dNHatdpsiNs = -1.0d+0
+  THats = 0.5d+0
+  dTHatdpsiNs = -0.5d+0
 
 /
 
@@ -199,7 +191,6 @@
   ! \bar{nu} = -----------------------------------------------------------   (Gaussian units)
   !                       3 * sqrt(\bar{m}} * \bar{T}^(3/2)
   !
-  !nu_n = 1.3d+0
 
   nu_n = 8.4774d-3  ! reference values: \bar{T}=1 keV, \bar{n}=10^20 m^-3,
                     ! \bar{Phi}=1 kV, \bar{B}=1 T, \bar{R}=1 m, proton mass
@@ -271,15 +262,15 @@
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! Numerical resolution parameters:
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+  
   ! Number of grid points in the poloidal direction.
   ! Memory and time requirements DO depend strongly on this parameter.
-  Ntheta = 5
+  Ntheta = 21
 
   ! Number of grid points in the toroidal direction
   ! (per identical segment of the stellarator.)
   ! Memory and time requirements DO depend strongly on this parameter.
-  Nzeta = 7
+  Nzeta = 1
 
   ! Number of Legendre polynomials used to represent the distribution function.
   ! Memory and time requirements DO depend strongly on this parameter.
@@ -287,7 +278,7 @@
   ! the collisionality. At high collisionality, this parameter can be as low
   ! as ~ 5. At low collisionality, this parameter may need to be many 10s or
   ! even > 100 for convergence.
-  Nxi = 8
+  Nxi = 31
   
   ! Number of Legendre polynomials used to represent the Rosenbluth
   ! potentials. Except in exceptional circumstances, this number should be 4.
@@ -299,7 +290,7 @@
   ! This parameter almost always needs to be at least 5.
   ! Usually a value in the range 5-8 is plenty for convergence, though sometimes
   ! you may need to go up to 10-15.
-  Nx = 5
+  Nx = 8
 
   ! Number of grid points in energy used to represent the Rosenbluth potentials.
   ! Memory and time requirements do NOT depend strongly on this parameter.
@@ -313,7 +304,7 @@
   ! Tolerance used to define convergence of the Krylov solver.
   ! This parameter does not affect memory requirements but it does affect the
   ! time required for solution somewhat
-  solverTolerance = 1d-6
+  solverTolerance = 1d-12
 
   forceOddNthetaAndNzeta = .true.
   ! If forceOddNthetaAndNzeta is set to true, 1 is added to Ntheta any time a run is attempted with even Ntheta,
@@ -365,7 +356,7 @@
   ! to obtain the preconditioner:
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  preconditioner_species = 1
+  preconditioner_species = 0
   ! 0 = keep full species coupling
   ! 1 = drop all cross-species coupling
 
@@ -376,7 +367,7 @@
   ! 3 = keep only the tridiagonal terms in x
   ! 4 = keep only the diagonal and superdiagonal in x
 
-  preconditioner_x_min_L = 1
+  preconditioner_x_min_L = 0
   ! The x structure of the matrix will only be simplified for L >= this value.
   ! Set preconditioner_x_min_L=0 to simplify the matrix for every L.
 

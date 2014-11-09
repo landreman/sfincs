@@ -104,7 +104,7 @@
   ! psiAHat = psi_a / (\bar{B} * \bar{R}^2) (in both Gaussian and SI units)
   ! where 2*pi*psi_a is the toroidal flux at the last closed flux surface
   ! (the surface where psi_N = 1.)
-  ! The value of psiAHat here is over-written for geometryScheme = .ne. 1
+  ! The value of psiAHat here is over-written for geometryScheme = 2, 3, 11 and 12.
   psiAHat = 0.03d+0
 
   ! End of options that only matter for geometryScheme = 1.
@@ -271,7 +271,7 @@
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! Numerical resolution parameters:
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+  
   ! Number of grid points in the poloidal direction.
   ! Memory and time requirements DO depend strongly on this parameter.
   Ntheta = 5
@@ -369,7 +369,7 @@
   ! 0 = keep full species coupling
   ! 1 = drop all cross-species coupling
 
-  preconditioner_x = 0
+  preconditioner_x = 1
   ! 0 = keep full x coupling
   ! 1 = drop everything off-diagonal in x
   ! 2 = keep only upper-triangular part in x
