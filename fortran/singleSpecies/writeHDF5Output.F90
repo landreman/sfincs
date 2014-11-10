@@ -18,6 +18,7 @@ module writeHDF5Output
   integer(HID_T), dimension(:), allocatable, private :: dspaceIDForTheta
   integer(HID_T), dimension(:), allocatable, private :: dspaceIDForx
   integer(HID_T), dimension(:), allocatable, private :: dspaceIDForThetaZeta
+  integer(HID_T), dimension(:), allocatable, private :: dspaceIDForThetaZetax
   integer(HID_T), dimension(:), allocatable, private :: dspaceIDForSources
   integer(HID_T), private :: dspaceIDForTransportMatrix
   integer(HID_T), private :: dspaceIDForNTVMatrix
@@ -105,6 +106,7 @@ module writeHDF5Output
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_transportMatrix
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_NTVMatrix
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_fNormIsotropic
+  integer(HID_T), dimension(:), allocatable, private :: dsetIDs_fNormIsotropicBeforeSurfaceIntegral
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_RHSMode
 
 
@@ -113,6 +115,7 @@ module writeHDF5Output
   integer(HSIZE_T), dimension(:,:), allocatable, private :: dimForTheta
   integer(HSIZE_T), dimension(:,:), allocatable, private :: dimForx
   integer(HSIZE_T), dimension(:,:), allocatable, private :: dimForThetaZeta
+  integer(HSIZE_T), dimension(:,:), allocatable, private :: dimForThetaZetax
   integer(HSIZE_T), dimension(:,:), allocatable, private :: dimForSources
   integer(HSIZE_T), dimension(2), parameter, private :: dimForTransportMatrix = 3
   integer(HSIZE_T), dimension(1), parameter, private :: dimForNTVMatrix = 3
@@ -252,18 +255,21 @@ contains
        allocate(dsetIDs_transportMatrix(numRunsInScan))
        allocate(dsetIDs_NTVMatrix(numRunsInScan))
        allocate(dsetIDs_fNormIsotropic(numRunsInScan))
+       allocate(dsetIDs_fNormIsotropicBeforeSurfaceIntegral(numRunsInScan))
        allocate(dsetIDs_RHSMode(numRunsInScan))
 
        allocate(dspaceIDForZeta(numRunsInScan))
        allocate(dspaceIDForTheta(numRunsInScan))
        allocate(dspaceIDForx(numRunsInScan))
        allocate(dspaceIDForThetaZeta(numRunsInScan))
+       allocate(dspaceIDForThetaZetax(numRunsInScan))
        allocate(dspaceIDForSources(numRunsInScan))
 
        allocate(dimForZeta(numRunsInScan,1))
        allocate(dimForTheta(numRunsInScan,1))
        allocate(dimForx(numRunsInScan,1))
        allocate(dimForThetaZeta(numRunsInScan,2))
+       allocate(dimForThetaZetax(numRunsInScan,3))
        allocate(dimForSources(numRunsInScan,1))
 
        ! Create a dataspace for storing single numbers:
@@ -307,6 +313,12 @@ contains
           dimForThetaZeta(i,2)=NzetasForScan(i)
           call h5screate_simple_f(rank, dimForThetaZeta(i,:), dspaceIDForThetaZeta(i), HDF5Error)
    
+          rank = 3
+          dimForThetaZetax(i,1)=NthetasForScan(i)
+          dimForThetaZetax(i,2)=NzetasForScan(i)
+          dimForThetaZetax(i,3)=NxsForScan(i)
+	  call h5screate_simple_f(rank, dimForThetaZetax(i,:), dspaceIDForThetaZetax(i), HDF5Error)
+
           select case (constraintSchemesForScan(i))
           case (0)
              dimForSources(i,1) = 1
@@ -554,6 +566,9 @@ contains
    
           call h5dcreate_f(groupIDs(i), "fNormIsotropic", H5T_NATIVE_DOUBLE, dspaceIDForx(i), &
                dsetIDs_fNormIsotropic(i), HDF5Error)
+
+          call h5dcreate_f(groupIDs(i), "fNormIsotropicBeforeSurfaceIntegral", H5T_NATIVE_DOUBLE, dspaceIDForThetaZetax(i), &
+               dsetIDs_fNormIsotropicBeforeSurfaceIntegral(i), HDF5Error)
 
           call h5dcreate_f(groupIDs(i), "RHSMode", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_RHSMode(i), HDF5Error)
@@ -842,6 +857,9 @@ contains
        call h5dwrite_f(dsetIDs_fNormIsotropic(runNum), H5T_NATIVE_DOUBLE, &
             fNormIsotropic, dimForx(runNum,:), HDF5Error)
 
+       call h5dwrite_f(dsetIDs_fNormIsotropicBeforeSurfaceIntegral(runNum), H5T_NATIVE_DOUBLE, &
+            fNormIsotropicBeforeSurfaceIntegral, dimForThetaZetax(runNum,:), HDF5Error)
+
        call h5dwrite_f(dsetIDs_RHSMode(runNum), H5T_NATIVE_INTEGER, &
             RHSMode, dimForScalar, HDF5Error)
 
@@ -943,6 +961,7 @@ contains
           call h5dclose_f(dsetIDs_transportMatrix(i), HDF5Error)
           call h5dclose_f(dsetIDs_NTVMatrix(i), HDF5Error)
           call h5dclose_f(dsetIDs_fNormIsotropic(i), HDF5Error)
+          call h5dclose_f(dsetIDs_fNormIsotropicBeforeSurfaceIntegral(i), HDF5Error)
           call h5dclose_f(dsetIDs_RHSMode(i), HDF5Error)
 
 
@@ -952,6 +971,7 @@ contains
           call h5sclose_f(dspaceIDForZeta(i), HDF5Error)
           call h5sclose_f(dspaceIDForx(i), HDF5Error)
           call h5sclose_f(dspaceIDForThetaZeta(i), HDF5Error)
+          call h5sclose_f(dspaceIDForThetaZetax(i), HDF5Error)
           call h5sclose_f(dspaceIDForSources(i), HDF5Error)
        end do
 
