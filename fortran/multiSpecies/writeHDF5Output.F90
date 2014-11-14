@@ -863,7 +863,7 @@ contains
 
 
        !!Added by AM 2014-09!!
-       call h5dwrite_f(dsetIDs_ArrayFirstSpeciesParticleFluxCoefficients(runNum), H5T_NATIVE_DOUBLE, &
+       call h5dwrite_f(dsetIDs_ArrayFirstSpeciesParticleFluxCoefficients(runNum), H5T_NATIVE_DOUBLE, & 
             ArrayFirstSpeciesParticleFluxCoefficients, dimForArrayFirstSpeciesParticleFluxCoefficients, HDF5Error)
        !!!!!!!!!!!!!!!!!!!!!!!
 

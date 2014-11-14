@@ -118,7 +118,7 @@ contains
           print *,"[",myCommunicatorIndex,"] ArrayFirstSpeciesParticleFluxCoefficients:"
           do i=1,3
              print *,"[",myCommunicatorIndex,"]   ", ArrayFirstSpeciesParticleFluxCoefficients(i)
-          end do	  
+          end do	  
 	  !!!!!!!!!!!!!!!!!!!!!!!
 
        end if
