@@ -466,6 +466,11 @@ contains
 
        BHarmonics_amplitudes = BHarmonics_amplitudes / B0OverBBar
 
+       if (GHat*psiAHat<0) then
+          print *,"Error: The Boozer file has a left-handed (r,pol,tor) coordinate system. Please change to a right-handed system before giving it as input to SFINCS!"
+          stop
+       end if
+       
        if (masterProcInSubComm) then
           print *,"[",myCommunicatorIndex,"] This computation is for the flux surface with minor radius ",normradius*a, &
                " meters, equivalent to r/a = ",normradius
@@ -639,6 +644,11 @@ contains
 
        BHarmonics_amplitudes = BHarmonics_amplitudes / B0OverBBar
 
+       if (GHat*psiAHat<0) then
+          print *,"Error: The Boozer file has a left-handed (r,pol,tor) coordinate system. Please change to a right-handed system before giving it as input to SFINCS!"
+          stop
+       end if
+       
       if (masterProcInSubComm) then
           print *,"[",myCommunicatorIndex,"] This computation is for the flux surface with minor radius ",normradius*a, &
                " meters, equivalent to r/a = ",normradius
