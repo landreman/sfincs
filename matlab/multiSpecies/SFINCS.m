@@ -3047,6 +3047,24 @@ end
                   BHarmonics_n = [BHarmonics_n(1:nm00ind-1),...
                                   BHarmonics_n(nm00ind+1:end)];
                   BHarmonics_parity = ones(1,length(BHarmonics_amplitudes));
+
+                  % Sign correction for files from Joachim Geiger
+                  if sign(GHat)==sign(psiAHat)
+                    disp(['This is a stellarator symmetric file from Joachim Geiger.'...
+                          ' It will now be turned 180 degrees around a ' ...
+                          'horizontal axis <=> flip the sign of G and I, so that it matches the sign ' ...
+                          'of its total toroidal flux.'])
+                    GHat = -GHat;
+                    IHat = -IHat;
+                  end
+                  
+                  %Switch from a left-handed to right-handed (radial,poloidal,toroidal) system
+                  psiAHat=psiAHat*(-1);
+                  IHat = IHat*(-1);
+                  GHat = GHat*(-1)^2;
+                  iota = iota*(-1);
+                  BHarmonics_n=BHarmonics_n*(-1);
+                                    
              case 12
                   %Non-stellarator symmetric case
                   fid = fopen(JGboozer_file_NonStelSym);
@@ -3177,6 +3195,13 @@ end
                   BHarmonics_n = [BHarmonics_n(1:nm00ind-1),...
                                   BHarmonics_n(nm00ind+2:end)];
                   BHarmonics_parity=((-1).^(0:length(BHarmonics_n)-1)+1)/2; %[1,0,1,0,1,0,1,0,...], i.e. cos,sin.cos,sin,...
+                  
+                  %Switch from a left-handed to right-handed (radial,poloidal,toroidal) system
+                  psiAHat=psiAHat*(-1);
+                  IHat = IHat*(-1);  
+                  GHat = GHat*(-1)^2;
+                  iota = iota*(-1);
+                  BHarmonics_n=BHarmonics_n*(-1);
                   
                otherwise
                   error('Invalid setting for geometryScheme')

@@ -1,4 +1,4 @@
-function sfincsCORR()
+function sfincs()
 
 % SFINCS:
 % The Stellarator Fokker-Planck Iterative Neoclassical Conservative Solver.
@@ -2961,12 +2961,12 @@ end
                     IHat = -IHat;
                   end
                   
-                  %Switch from a left-handed to right-handed (radial,polidal,toroidal) system
-                  psiAHat=psiAHat*(-1);
-                  IHat = IHat*(-1);
-                  GHat = GHat*(-1)^2;
-                  iota = iota*(-1);
-                  BHarmonics_n=BHarmonics_n*(-1);
+                  %Switch from a left-handed to right-handed (radial,poloidal,toroidal) system
+                  psiAHat=psiAHat*(-1);           %toroidal direction switch sign
+                  IHat = IHat*(-1);               %amperes law minus sign
+                  GHat = GHat*(-1)^2;             %amperes law minus sign and toroidal direction switch sign
+                  iota = iota*(-1);               %toroidal direction switch sign
+                  BHarmonics_n=BHarmonics_n*(-1); %toroidal direction switch sign
                                     
                   dPsidr=2*psiAHat/a*normradius;
                   nuPrime=nuN*(GHat+iota*IHat)/B0OverBBar/sqrt(THat)
@@ -3102,12 +3102,12 @@ end
                                   BHarmonics_n(nm00ind+2:end)];
                   BHarmonics_parity=((-1).^(0:length(BHarmonics_n)-1)+1)/2; %[1,0,1,0,1,0,1,0,...], i.e. cos,sin.cos,sin,...
                   
-                  %Switch from a left-handed to right-handed (radial,polidal,toroidal) system
-                  psiAHat=psiAHat*(-1);
-                  IHat = IHat*(-1);  
-                  GHat = GHat*(-1)^2;
-                  iota = iota*(-1);
-                  BHarmonics_n=BHarmonics_n*(-1);
+                  %Switch from a left-handed to right-handed (radial,poloidal,toroidal) system
+                  psiAHat=psiAHat*(-1);           %toroidal direction switch sign
+                  IHat = IHat*(-1);               %amperes law minus sign
+                  GHat = GHat*(-1)^2;             %amperes law minus sign and toroidal direction switch sign
+                  iota = iota*(-1);               %toroidal direction switch sign
+                  BHarmonics_n=BHarmonics_n*(-1); %toroidal direction switch sign
                   
                   dPsidr=2*psiAHat/a*normradius;
                   nuPrime=nuN*(GHat+iota*IHat)/B0OverBBar/sqrt(THat)
