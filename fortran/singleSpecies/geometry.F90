@@ -378,8 +378,11 @@ contains
 
              normradius_new = sqrt(surfHeader(1))       ! r/a = sqrt(psi/psi_a)
              iota_new = surfHeader(2)
-             G_new = surfHeader(3)*NPeriods/2/pi*(4*pi*1d-7) !Tesla*meter
-             I_new = surfHeader(4)/2/pi*(4*pi*1d-7)          !Tesla*meter
+             ! Note that G and I has a minus sign in the following two lines
+             ! because Ampere's law comes with a minus sign in the left-handed
+             ! (r,pol,tor) system.
+             G_new = -surfHeader(3)*NPeriods/2/pi*(4*pi*1d-7) !Tesla*meter
+             I_new = -surfHeader(4)/2/pi*(4*pi*1d-7)          !Tesla*meter
              pPrimeHat_new = surfheader(5)*(4*pi*1e-7)       ! p=pHat \bar{B}^2 / \mu_0
 
              ! Skip units line:
@@ -467,9 +470,17 @@ contains
        BHarmonics_amplitudes = BHarmonics_amplitudes / B0OverBBar
 
        if (GHat*psiAHat<0) then
-          print *,"Error: The Boozer file has a left-handed (r,pol,tor) coordinate system. Please change to a right-handed system before giving it as input to SFINCS!"
-          stop
+          print *,"This is a stellarator symmetric file from Joachim Geiger. It will now be turned 180 degrees around a horizontal axis <=> flip the sign of G and I, so that it matches the sign of its total toroidal flux."
+          GHat=-GHat
+          IHat=-IHat
+          dGdpHat=-dGdpHat
        end if
+        
+       !Switch from a left-handed to right-handed (radial,poloidal,toroidal) system
+       psiAHat=psiAHat*(-1)           !toroidal direction sign switch
+       GHat = GHat*(-1)               !toroidal direction sign switch
+       iota = iota*(-1)               !toroidal direction sign switch
+       BHarmonics_n=BHarmonics_n*(-1) !toroidal direction sign switch
 
        if (masterProcInSubComm) then
           print *,"[",myCommunicatorIndex,"] This computation is for the flux surface with minor radius ",normradius*a, &
@@ -550,8 +561,11 @@ contains
 
              normradius_new = sqrt(surfHeader(1))       ! r/a = sqrt(psi/psi_a)
              iota_new = surfHeader(2)
-             G_new = surfHeader(3)*NPeriods/2/pi*(4*pi*1d-7) !Tesla*meter
-             I_new = surfHeader(4)/2/pi*(4*pi*1d-7)          !Tesla*meter
+             ! Note that G and I has a minus sign in the following two lines
+             ! because Ampere's law comes with a minus sign in the left-handed
+             ! (r,pol,tor) system.
+             G_new = -surfHeader(3)*NPeriods/2/pi*(4*pi*1d-7) !Tesla*meter
+             I_new = -surfHeader(4)/2/pi*(4*pi*1d-7)          !Tesla*meter
              pPrimeHat_new = surfheader(5)*(4*pi*1e-7)       ! p=pHat \bar{B}^2 / \mu_0
 
              ! Skip units line:
@@ -644,10 +658,11 @@ contains
 
        BHarmonics_amplitudes = BHarmonics_amplitudes / B0OverBBar
 
-       if (GHat*psiAHat<0) then
-          print *,"Error: The Boozer file has a left-handed (r,pol,tor) coordinate system. Please change to a right-handed system before giving it as input to SFINCS!"
-          stop
-       end if
+       !Switch from a left-handed to right-handed (radial,poloidal,toroidal) system
+       psiAHat=psiAHat*(-1)           !toroidal direction sign switch
+       GHat = GHat*(-1)               !toroidal direction sign switch
+       iota = iota*(-1)               !toroidal direction sign switch
+       BHarmonics_n=BHarmonics_n*(-1) !toroidal direction sign switch
        
       if (masterProcInSubComm) then
           print *,"[",myCommunicatorIndex,"] This computation is for the flux surface with minor radius ",normradius*a, &

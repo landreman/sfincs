@@ -2967,8 +2967,11 @@ end
                           
                           normradius_new=sqrt(surfheader(1));
                           iota_new=surfheader(2);
-                          G_new=surfheader(3)*NPeriods/2/pi*(4*pi*1e-7); %Tesla*meter
-                          I_new=surfheader(4)/2/pi*(4*pi*1e-7);          %Tesla*meter
+                          % Note that G and I has a minus sign in the following two lines
+                          % because Ampere's law comes with a minus sign in the left-handed
+                          % (r,pol,tor) system.
+                          G_new=-surfheader(3)*NPeriods/2/pi*(4*pi*1e-7); %Tesla*meter
+                          I_new=-surfheader(4)/2/pi*(4*pi*1e-7);          %Tesla*meter
                           pPrimeHat_new=surfheader(5)*(4*pi*1e-7);       % p=pHat \bar{B}^2 / \mu_0
                           
                           fgetl(fid); %Skip units line
@@ -3049,21 +3052,21 @@ end
                   BHarmonics_parity = ones(1,length(BHarmonics_amplitudes));
 
                   % Sign correction for files from Joachim Geiger
-                  if sign(GHat)==sign(psiAHat)
+                  if GHat*psiAHat<0
                     disp(['This is a stellarator symmetric file from Joachim Geiger.'...
                           ' It will now be turned 180 degrees around a ' ...
                           'horizontal axis <=> flip the sign of G and I, so that it matches the sign ' ...
                           'of its total toroidal flux.'])
                     GHat = -GHat;
                     IHat = -IHat;
+                    dGdpHat=-dGdpHat;
                   end
                   
                   %Switch from a left-handed to right-handed (radial,poloidal,toroidal) system
-                  psiAHat=psiAHat*(-1);
-                  IHat = IHat*(-1);
-                  GHat = GHat*(-1)^2;
-                  iota = iota*(-1);
-                  BHarmonics_n=BHarmonics_n*(-1);
+                  psiAHat=psiAHat*(-1);           %toroidal direction switch sign
+                  GHat = GHat*(-1);               %toroidal direction switch sign
+                  iota = iota*(-1);               %toroidal direction switch sign
+                  BHarmonics_n=BHarmonics_n*(-1); %toroidal direction switch sign
                                     
              case 12
                   %Non-stellarator symmetric case
@@ -3112,8 +3115,11 @@ end
                           
                           normradius_new=sqrt(surfheader(1)); %r/a=sqrt(psi/psi_a)
                           iota_new=surfheader(2);
-                          G_new=surfheader(3)*NPeriods/2/pi*(4*pi*1e-7); %Tesla*meter
-                          I_new=surfheader(4)/2/pi*(4*pi*1e-7);          %Tesla*meter
+                          % Note that G and I has a minus sign in the following two lines
+                          % because Ampere's law comes with a minus sign in the left-handed
+                          % (r,pol,tor) system.
+                          G_new=-surfheader(3)*NPeriods/2/pi*(4*pi*1e-7); %Tesla*meter
+                          I_new=-surfheader(4)/2/pi*(4*pi*1e-7);          %Tesla*meter
                           pPrimeHat_new=surfheader(5)*(4*pi*1e-7);       % p=pHat \bar{B}^2 / \mu_0
                           
                           fgetl(fid); %Skip units line
@@ -3197,11 +3203,10 @@ end
                   BHarmonics_parity=((-1).^(0:length(BHarmonics_n)-1)+1)/2; %[1,0,1,0,1,0,1,0,...], i.e. cos,sin.cos,sin,...
                   
                   %Switch from a left-handed to right-handed (radial,poloidal,toroidal) system
-                  psiAHat=psiAHat*(-1);
-                  IHat = IHat*(-1);  
-                  GHat = GHat*(-1)^2;
-                  iota = iota*(-1);
-                  BHarmonics_n=BHarmonics_n*(-1);
+                  psiAHat=psiAHat*(-1);           %toroidal direction switch sign
+                  GHat = GHat*(-1);               %toroidal direction switch sign
+                  iota = iota*(-1);               %toroidal direction switch sign
+                  BHarmonics_n=BHarmonics_n*(-1); %toroidal direction switch sign
                   
                otherwise
                   error('Invalid setting for geometryScheme')

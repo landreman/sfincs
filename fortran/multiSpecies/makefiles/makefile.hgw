@@ -1,5 +1,5 @@
 # First load the following modules:
-# module load petsc/3.4-intel12-ompi16-real hdf5/1.8-intel12-ompi16
+# module load petsc/3.5-intel12-ompi16-real hdf5/1.8-intel12-ompi16
 # old:
 # module load petsc/3.3-intel12-ompi16-real hdf5/1.8-intel12-ompi16
 # Also set the following environment variable:
