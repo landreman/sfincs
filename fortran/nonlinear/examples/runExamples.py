@@ -221,7 +221,9 @@ elif isABatchSystemUsed == "yes":
                 keepGoing = True
             else:
                 try:
-                    result=subprocess.call(["h5dump",filename],stdout=devnull,stderr=devnull)
+                    # To see if a run is finished, see if the variable "finished" has been written.
+                    result=subprocess.call(["h5dump","-y","-d","/finished",filename],stdout=devnull,stderr=devnull)
+                    #result=subprocess.call(["h5dump",filename],stdout=devnull,stderr=devnull)
                 except:
                     print "Error occurred attempting to run h5dump"
                     raise

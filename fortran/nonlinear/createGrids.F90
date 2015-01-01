@@ -113,7 +113,10 @@
     ! Each processor is responsible for building the rows of the matrix and rhs corresponding
     ! to its ithetaMin:ithetaMax and izetaMin:izetaMax, and each processor is resposible for all columns of the matrix.
 
-    ! Assign a range of zeta indices to each processor.
+    ! PETSc sometimes gives an error for very small (theta,zeta) grids if there are more procs than Ntheta*Nzeta.
+    ! Perhaps I should fix this.
+
+    ! Assign a range of theta and zeta indices to each processor.
     ! This is done by creating a PETSc DM that is not actually used for anything else.
     call DMDACreate2d(PETSC_COMM_WORLD, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX, &
          Ntheta, Nzeta, PETSC_DECIDE, PETSC_DECIDE, 1, 0, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, myDM, ierr)
@@ -133,8 +136,15 @@
 
     write (procAssignments,fmt="(a,i4,a,i3,a,i3,a,i3,a,i3,a)") " Processor ",myRank," owns theta indices ",ithetaMin," to ",ithetaMax,&
          " and zeta indices ",izetaMin," to ",izetaMax,"\n"
-    call PetscSynchronizedPrintf(MPIComm, procAssignments, ierr)
-    call PetscSynchronizedFlush(MPIComm, ierr)
+!    call PetscSynchronizedPrintf(MPIComm, procAssignments, ierr)
+!    call PetscSynchronizedFlush(MPIComm, ierr)
+    print *,procAssignments
+
+!    if (masterProc) then
+!       print *,procAssignments
+!       do 
+!    else
+!    end if
 
 
 
@@ -179,6 +189,7 @@
     deallocate(theta_preconditioner)
     deallocate(thetaWeights_preconditioner)
     deallocate(d2dtheta2_preconditioner)
+
 
     ! *******************************************************************************
     ! Build zeta grid, integration weights, and differentiation matrices:
@@ -240,6 +251,7 @@
     deallocate(zeta_preconditioner)
     deallocate(zetaWeights_preconditioner)
     deallocate(d2dzeta2_preconditioner)
+
 
     ! *******************************************************************************
     ! Build x grids, integration weights, and differentiation matrices.
@@ -354,6 +366,7 @@
     allocate(dBHat_sup_zeta_dtheta(Ntheta,Nzeta))
 
     allocate(NTVKernel(Ntheta,Nzeta))
+
 
     call computeBHat()
 

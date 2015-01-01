@@ -490,7 +490,27 @@ contains
 
     implicit none
 
+    integer :: rank
+
     if (masterProc) then
+
+       ! Re-open the file briefly to add the "finished" variable.
+       call h5fopen_f(outputFilename, H5F_ACC_RDWR_F, HDF5FileID, HDF5Error)
+       if (HDF5Error < 0) then
+          print *,"Error opening HDF5 output file."
+          stop
+       end if
+
+       ! Create a dataspace for storing single numbers:
+       rank = 0
+       call h5screate_simple_f(rank, dimForScalar, dspaceIDForScalar, HDF5Error)
+
+       call writeHDF5Field("finished", integerToRepresentTrue)
+
+       call h5sclose_f(dspaceIDForScalar, HDF5Error)
+       call h5fclose_f(HDF5FileID, HDF5Error)
+
+       ! Done adding the "finished" variable.
 
        call h5pclose_f(pForIteration, HDF5Error)
        call h5pclose_f(pForIterationSpecies, HDF5Error)

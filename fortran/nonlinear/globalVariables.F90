@@ -142,7 +142,6 @@ module globalVariables
   ! ********************************************************
 
   integer :: matrixSize, NxPotentials
-  PetscScalar :: normradius
   PetscScalar, dimension(:), allocatable :: theta, zeta, x
   PetscScalar, dimension(:), allocatable :: thetaWeights, zetaWeights
   PetscScalar, dimension(:,:), allocatable :: ddtheta, ddzeta
