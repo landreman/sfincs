@@ -14,7 +14,6 @@
 
     PetscErrorCode :: ierr
     integer :: i, j, itheta, izeta, scheme
-
     PetscScalar, dimension(:,:), allocatable :: d2dtheta2, d2dzeta2
     PetscScalar, dimension(:), allocatable :: theta_preconditioner, thetaWeights_preconditioner
     PetscScalar, dimension(:,:), allocatable :: d2dtheta2_preconditioner
@@ -23,7 +22,12 @@
     PetscScalar, dimension(:), allocatable :: xWeightsPotentials
 
     DM :: myDM
-    character(len=200) :: procAssignments
+    integer, parameter :: bufferLength = 200
+    character(len=bufferLength) :: procAssignments
+
+    integer :: tag, dummy(1)
+    integer :: status(MPI_STATUS_SIZE)
+
 
     ! *******************************************************************************
     ! Do a few sundry initialization tasks:
@@ -134,17 +138,31 @@
 
     procThatHandlesConstraints = masterProc
 
-    write (procAssignments,fmt="(a,i4,a,i3,a,i3,a,i3,a,i3,a)") " Processor ",myRank," owns theta indices ",ithetaMin," to ",ithetaMax,&
-         " and zeta indices ",izetaMin," to ",izetaMax,"\n"
+    write (procAssignments,fmt="(a,i4,a,i3,a,i3,a,i3,a,i3,a)") "Processor ",myRank," owns theta indices ",ithetaMin," to ",ithetaMax,&
+         " and zeta indices ",izetaMin," to ",izetaMax
+
 !    call PetscSynchronizedPrintf(MPIComm, procAssignments, ierr)
 !    call PetscSynchronizedFlush(MPIComm, ierr)
-    print *,procAssignments
 
-!    if (masterProc) then
-!       print *,procAssignments
-!       do 
-!    else
-!    end if
+    ! PETSc's synchronized printing functions seem buggy, so here I've implemented my own version:
+    if (masterProc) then
+       print *,trim(procAssignments)
+       dummy = 0
+       tag = 0
+       do i = 1,numProcs-1
+          ! To avoid a disordered flood of messages to the masterProc,
+          ! ping each proc 1 at a time by sending a dummy value:
+          call MPI_SEND(dummy,1,MPI_INT,i,tag,MPIComm,ierr)
+          ! Now receive the message from proc i:
+          call MPI_RECV(procAssignments,bufferLength,MPI_CHAR,i,MPI_ANY_TAG,MPIComm,status,ierr)
+          print *,trim(procAssignments)
+       end do
+    else
+       ! First, wait for the dummy message from proc 0:
+       call MPI_RECV(dummy,1,MPI_INT,0,MPI_ANY_TAG,MPIComm,status,ierr)
+       ! Now send the message to proc 0:
+       call MPI_SEND(procAssignments,bufferLength,MPI_CHAR,0,tag,MPIComm,ierr)
+    end if
 
 
 
