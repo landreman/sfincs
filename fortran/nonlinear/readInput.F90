@@ -18,8 +18,6 @@ contains
     integer :: NDNHatdrHats,   NDTHatdrHats
     integer :: NDNHatdrNs,     NDTHatdrNs
 
-NDNHatdrhos, NDTHatdrhos
-
     namelist / flowControl / saveMatlabOutput, MatlabOutputFilename, &
          outputFilename, solveSystem, RHSMode, &
          saveMatricesAndVectorsInBinary, binaryOutputFilename
@@ -28,7 +26,7 @@ NDNHatdrhos, NDTHatdrhos
          helicity_l, helicity_n, B0OverBBar, geometryScheme, &
          epsilon_antisymm, helicity_antisymm_l, helicity_antisymm_n, &
          JGboozer_file, JGboozer_file_NonStelSym, min_Bmn_to_load, &
-         psiAHat, inputRadialCoordinate, aHat, &
+         psiAHat, inputRadialCoordinate, inputRadialCoordinateForGradients, aHat, &
          psiHat_wish, psiN_wish, rHat_wish, rN_wish
 
     namelist / speciesParameters / mHats, Zs, nHats, THats, &
@@ -38,8 +36,9 @@ NDNHatdrhos, NDTHatdrhos
          dNHatdrNs,     dTHatdrNs
 
     namelist / physicsParameters / Delta, alpha, nu_n, EParallelHat, &
-         dPhiHatdpsiN, collisionOperator, constraintScheme, includeXDotTerm, &
-         includeElectricFieldTermInXiDot, useDKESExBDrift, include_fDivVE_term, nonlinear
+         collisionOperator, constraintScheme, includeXDotTerm, &
+         includeElectricFieldTermInXiDot, useDKESExBDrift, include_fDivVE_term, nonlinear, &
+         dPhiHatdpsiHat, dPhiHatdpsiN, dPhiHatdrHat, dPhiHatdrN
 
     namelist / resolutionParameters / forceOddNthetaAndNzeta, &
          Ntheta, &
@@ -62,9 +61,15 @@ NDNHatdrhos, NDTHatdrhos
     Zs = speciesNotInitialized
     mHats = speciesNotInitialized
     nHats = speciesNotInitialized
-    dNHatdpsiNs = speciesNotInitialized
     THats = speciesNotInitialized
+    dNHatdpsiHats = speciesNotInitialized
+    dTHatdpsiHats = speciesNotInitialized
+    dNHatdpsiNs = speciesNotInitialized
     dTHatdpsiNs = speciesNotInitialized
+    dNHatdrHats = speciesNotInitialized
+    dTHatdrHats = speciesNotInitialized
+    dNHatdrNs = speciesNotInitialized
+    dTHatdrNs = speciesNotInitialized
 
     filename = trim(inputFilename)
 
@@ -153,10 +158,14 @@ NDNHatdrhos, NDTHatdrhos
     NMHats = maxNumSpecies
     NNhats = maxNumSpecies
     NTHats = maxNumSpecies
+    NDNhatdpsiHats = maxNumSpecies
+    NDTHatdpsiHats = maxNumSpecies
     NDNhatdpsiNs = maxNumSpecies
     NDTHatdpsiNs = maxNumSpecies
-    NDNhatdrhos = maxNumSpecies
-    NDTHatdrhos = maxNumSpecies
+    NDNhatdrHats = maxNumSpecies
+    NDTHatdrHats = maxNumSpecies
+    NDNhatdrNs = maxNumSpecies
+    NDTHatdrNs = maxNumSpecies
 
     do i=1,maxNumSpecies
        if (Zs(i) == speciesNotInitialized) then
@@ -267,7 +276,7 @@ NDNHatdrhos, NDTHatdrhos
        stop
     end if
 
-    select case (inputRadialCoordinate)
+    select case (inputRadialCoordinateForGradients)
     case (0)
        ! Input radial coordinate is psiHat:
 
@@ -322,17 +331,12 @@ NDNHatdrhos, NDTHatdrhos
 
 
     case default
-       print *,"Error! Invalid gradientInputScheme."
+       print *,"Error! Invalid inputRadialCoordinateForGradients."
        stop
     end select
 
     Nspecies = NZs
 
-    ! Using the selected radial coordinate, set input quantities for the other radial coordinates:
-    call setInputRadialCoordinateWish()
-    ! Note that this call only sets the "wish" radial coordinates, not the final radial coordinates
-    ! or the input gradients. These quantities will be set later after we have loaded the magnetic
-    ! geometry, in case the final radial coordinate is different from the "wish" values.
 
     ! Validate some other input quantities:
 

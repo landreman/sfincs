@@ -184,8 +184,6 @@
     ! Build zeta grid, integration weights, and differentiation matrices:
     ! *******************************************************************************
 
-    call setNPeriods()
-
     zetaMax = 2*pi/NPeriods
 
     allocate(zeta(Nzeta))
@@ -333,7 +331,7 @@
     allocate(BHat(Ntheta,Nzeta))
     allocate(dBHatdtheta(Ntheta,Nzeta))
     allocate(dBHatdzeta(Ntheta,Nzeta))
-    allocate(dBHatdrho(Ntheta,Nzeta))
+    allocate(dBHatdpsiHat(Ntheta,Nzeta))
 
     allocate(BHat_sub_psi(Ntheta,Nzeta))
     allocate(dBHat_sub_psi_dtheta(Ntheta,Nzeta))
@@ -363,11 +361,12 @@
        print *,"---- Geometry parameters: ----"
        print *,"Geometry scheme = ", geometryScheme
        if (coordinateSystem==0) then
-          print *,"iota (rotational transform) = ", iota
+          print *,"iota (Rotational transform) = ", iota
           print *,"GHat (Toroidal field Boozer component) = ", GHat
           print *,"IHat (Poloidal field Boozer component) = ", IHat
        end if
        print *,"psiAHat (Normalized toroidal flux at the last closed flux surface) = ", psiAHat
+       print *,"aHat (Radius of the last closed flux surface in units of RHat) = ", aHat
        if (geometryScheme==1) then
           print *,"epsilon_t = ", epsilon_t
           print *,"epsilon_h = ", epsilon_h

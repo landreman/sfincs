@@ -6,6 +6,7 @@
 module geometry
 
   use globalVariables
+  use radialCoordinates
   use petscsysdef
 
   implicit none
@@ -16,23 +17,65 @@ contains
 
   ! -----------------------------------------------------------------------------------
 
-  subroutine setNPeriods()
+  subroutine initializeGeometry()
+    ! For each geometryScheme, this subroutine must set the following variables:
+    !   NPeriods
+    !   psiAHat (if the value in input.namelist is to be over-written.)
+    !   aHat (if the value in input.namelist is to be over-written.)
+    ! 
     ! This subroutine sets NPeriods, which is the number of identical toroidal segments
     ! in the stellarator (e.g. 5 for W7-X, 10 for LHD, 4 for HSX.)
+    ! Also, if psiAHat and/or aHat from input.namelist are going to be over-written,
+    ! this is done now.  (We need to set psiAHat and aHat early on so the "wish" radius
+    ! can be set from any of the radial coordinates.)
 
     implicit none
 
     integer :: fileUnit, didFileAccessWork
     character(len=200) :: lineOfFile
-    integer, dimension(4) :: numbers
+    integer, dimension(4) :: headerIntegers
+    PetscScalar, dimension(3) :: headerReals
 
     select case (geometryScheme)
     case (1)
        NPeriods = max(1, helicity_n)
-    case (2,3)
+
+    case (2)
        NPeriods = 10
+       aHat = 0.5585d+0 ! (meters)
+       psiAHat = (aHat ** 2) / two
+       rN_wish = 0.5
+       inputRadialCoordinate = 3
+
+       if (masterProc) then
+          print *,"---------------------------------------------------------"
+          print *,"Since geometryScheme=2, we will ignore the *_wish parameters and use the flux surface rN = 0.5."
+       end if
+
+    case (3)
+       NPeriods = 10
+       aHat = 0.5400d+0 ! (meters)
+       psiAHat = (aHat ** 2) / two
+       rN_wish = 0.5
+       inputRadialCoordinate = 3
+
+       if (masterProc) then
+          print *,"---------------------------------------------------------"
+          print *,"Since geometryScheme=3, we will ignore the *_wish parameters and use the flux surface rN = 0.5."
+       end if
+
     case (4)
        NPeriods = 5
+       aHat = 0.5109d+0 ! (meters)
+       psiAHat = -0.384935d+0 ! Tesla * meters^2 / radian
+       rN_wish = 0.5
+       inputRadialCoordinate = 3
+
+       if (masterProc) then
+          print *,"---------------------------------------------------------"
+          print *,"Since geometryScheme=4, we will ignore the *_wish parameters and use the flux surface rN = 0.5."
+       end if
+
     case (10)
        print *,"Error! This geometryScheme has not been implemented yet."
 
@@ -48,13 +91,17 @@ contains
              ! Skip lines that begin with "CC":
              if (lineOfFile(1:2) /= "CC") exit
           end do
-          read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) numbers
+
+          ! Read header line:
+          read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) headerIntegers, headerReals
           if (didFileAccessWork /= 0) then
-                print *,"Unable to read number of toroidal periods from the magnetic equilibrium file."
+             print *,"Unable to read header from the magnetic equilibrium file ",JGboozer_file
              stop
-          else
-             NPeriods = numbers(4)
           end if
+
+          NPeriods = headerIntegers(4)
+          psiAHat  = headerReals(1)/2/pi !Convert the flux from Tm^2 to Tm^2/rad
+          aHat     = headerReals(2)      !minor radius in meters
 
        end if
 
@@ -75,13 +122,17 @@ contains
              ! Skip lines that begin with "CC":
              if (lineOfFile(1:2) /= "CC") exit
           end do
-          read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) numbers
+
+          ! Read header line:
+          read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) headerIntegers, headerReals
           if (didFileAccessWork /= 0) then
-                print *,"Unable to read number of toroidal periods from the magnetic equilibrium file."
+             print *,"Unable to read header from the magnetic equilibrium file ",JGboozer_file_NonStelSym
              stop
-          else
-             NPeriods = numbers(4)
           end if
+
+          NPeriods = headerIntegers(4)
+          psiAHat  = headerReals(1)/2/pi !Convert the flux from Tm^2 to Tm^2/rad
+          aHat     = headerReals(2)      !minor radius in meters
 
        end if
 
@@ -95,7 +146,7 @@ contains
        stop
     end select
 
-  end subroutine setNPeriods
+  end subroutine initializeGeometry
 
   ! -----------------------------------------------------------------------------------
 
@@ -134,7 +185,7 @@ contains
     PetscScalar, dimension(:), allocatable :: BHarmonics_amplitudes
     logical, dimension(:), allocatable :: BHarmonics_parity
     PetscScalar, dimension(:,:), allocatable :: hHat, uHat, duHatdtheta, duHatdzeta
-    PetscScalar :: a, R0
+    PetscScalar :: R0
     
     integer :: fileUnit, didFileAccessWork
     character(len=200) :: lineOfFile
@@ -151,8 +202,17 @@ contains
     integer, parameter :: max_no_of_modes = 10000
     integer, dimension(max_no_of_modes) :: modesm_old, modesm_new, modesn_old, modesn_new
     PetscScalar, dimension(max_no_of_modes) :: modesb_old, modesb_new
-    PetscScalar :: normradius_old,  normradius_new, B0_old, B0_new
+    PetscScalar :: rN_old,  rN_new, B0_old, B0_new
     PetscScalar :: hHatHarmonics_amplitude, uHatHarmonics_amplitude
+
+    ! Using the selected radial coordinate, set input quantities for the other radial coordinates:
+    call setInputRadialCoordinateWish()
+    ! Note that this call only sets the "wish" radial coordinates, not the final radial coordinates
+    ! or the input gradients. These quantities will be set later as we load the magnetic
+    ! geometry, in case the final radial coordinate is different from the "wish" values.
+
+    ! Set the radius to a silly value here to make sure the proper value is set eventually:
+    rN = -9999
 
     ! For the BHarmonics_parity array, 
     ! true indicates the contribution to B(theta,zeta) has the form
@@ -209,7 +269,8 @@ contains
        end if
 
        dGdpHat = 0 !Not implemented as an input for this case yet, could be put in namelist input if needed
-       normradius = -1 !dummy
+       !rN = -1 !dummy
+       rN = rN_wish
 
        coordinateSystem = 0
        BHat_sub_psi = 0
@@ -247,12 +308,11 @@ contains
                     
        B0OverBBar = 1.0d+0  ! (Tesla)
        R0 = 3.7481d+0 ! (meters)
-       a = 0.5585d+0 ! (meters)
        GHat = B0OverBBar * R0
        IHat = 0
-       psiAHat = B0OverBBar * (a ** 2) / two
        dGdpHat = 0
-       normradius = -1 !dummy
+       !rN = -1 !dummy
+       rN = rN_wish
                     
        coordinateSystem = 0
        BHat_sub_psi = 0
@@ -295,12 +355,11 @@ contains
                     
        B0OverBBar = 1.0d+0  ! (Tesla)
        R0 = 3.6024d+0 ! (meters)
-       a = 0.5400d+0 ! (meters)
        GHat = B0OverBBar * R0
        IHat = 0
-       psiAHat = B0OverBBar * (a ** 2) / two
        dGdpHat = 0
-       normradius = -1 !dummy
+       !normradius = -1 !dummy
+       rN = rN_wish
 
        coordinateSystem = 0
        BHat_sub_psi = 0
@@ -338,12 +397,11 @@ contains
                     
        B0OverBBar = 3.089d+0  ! (Tesla)
        R0 = 5.5267d+0 ! (meters)
-       a = 0.5109d+0 ! (meters)
        GHat = -17.885d+0
        IHat = 0
-       psiAHat = -0.384935d+0 ! Tesla * meters^2 / radian
        dGdpHat = 0
-       normradius = -1 !dummy
+       !normradius = -1 !dummy
+       rN = rN_wish
 
        coordinateSystem = 0
        BHat_sub_psi = 0
@@ -371,13 +429,13 @@ contains
              stop
           end if
 
-          NPeriods = headerIntegers(4)
-          psiAHat  = headerReals(1)/2/pi !Convert the flux from Tm^2 to Tm^2/rad
-          a        = headerReals(2)      !minor radius in meters
+          !NPeriods = headerIntegers(4)
+          !psiAHat  = headerReals(1)/2/pi !Convert the flux from Tm^2 to Tm^2/rad
+          !aHat     = headerReals(2)      !minor radius in meters
 
           end_of_file = .false.
 
-          normradius_old = 0
+          rN_old = 0
           no_of_modes_old = 0
           modesm_old = 0
           modesn_old = 0
@@ -388,7 +446,7 @@ contains
           B0_old = 0
           pPrimeHat_old = 0
 
-          normradius_new = 0
+          rN_new = 0
           no_of_modes_new = 0
           modesm_new = 0
           modesn_new = 0
@@ -403,9 +461,9 @@ contains
           read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
 
           do 
-             if ((normradius_new .ge. normradius_wish) .or. end_of_file) exit
+             if ((rN_new .ge. rN_wish) .or. end_of_file) exit
 
-             normradius_old = normradius_new
+             rN_old = rN_new
              no_of_modes_old = no_of_modes_new
              modesm_old = modesm_new
              modesn_old = modesn_new
@@ -422,7 +480,7 @@ contains
              ! Read the header for the magnetic surface:
              read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) surfHeader
 
-             normradius_new = sqrt(surfHeader(1))       ! r/a = sqrt(psi/psi_a)
+             rN_new = sqrt(surfHeader(1))       ! r/a = sqrt(psi/psi_a)
              iota_new = surfHeader(2)
              G_new = surfHeader(3)*NPeriods/2/pi*(4*pi*1d-7) !Tesla*meter
              I_new = surfHeader(4)/2/pi*(4*pi*1d-7)          !Tesla*meter
@@ -475,11 +533,11 @@ contains
           print *,"Successfully read magnetic equilibrium from file ",trim(JGboozer_file)
        end if
 
-       if (abs(normradius_old - normradius_wish) < abs(normradius_new - normradius_wish)) then
+       if (abs(rN_old - rN_wish) < abs(rN_new - rN_wish)) then
           iota = iota_old
           GHat = G_old
           IHat = I_old
-          normradius = normradius_old
+          rN = rN_old
           B0OverBBar = B0_old
           NHarmonics = no_of_modes_old
           pPrimeHat=pPrimeHat_old
@@ -495,7 +553,7 @@ contains
           iota = iota_new
           GHat = G_new
           IHat = I_new
-          normradius = normradius_new
+          rN = rN_new
           B0OverBBar = B0_new
           NHarmonics = no_of_modes_new
           pPrimeHat=pPrimeHat_new
@@ -508,14 +566,9 @@ contains
           BHarmonics_n = modesn_new(1:NHarmonics)
           BHarmonics_amplitudes = modesb_new(1:NHarmonics)
        end if
-       dGdpHat=(G_new-G_old)/(normradius_new*normradius_new-normradius_old*normradius_old)/pPrimeHat
+       dGdpHat=(G_new-G_old)/(rN_new*rN_new-rN_old*rN_old)/pPrimeHat
 
        BHarmonics_amplitudes = BHarmonics_amplitudes / B0OverBBar
-
-       if (masterProc) then
-          print *,"This computation is for the flux surface with minor radius ",normradius*a, &
-               " meters, equivalent to r/a = ",normradius
-       end if
 
        coordinateSystem = 0
        ! These next lines could be replaced with the actual values from the equilibrium:
@@ -544,13 +597,13 @@ contains
              stop
           end if
 
-          NPeriods = headerIntegers(4)
-          psiAHat  = headerReals(1)/2/pi !Convert the flux from Tm^2 to Tm^2/rad
-          a        = headerReals(2)      !minor radius in meters
+          !NPeriods = headerIntegers(4)
+          !psiAHat  = headerReals(1)/2/pi !Convert the flux from Tm^2 to Tm^2/rad
+          !aHat     = headerReals(2)      !minor radius in meters
 
           end_of_file = .false.
 
-          normradius_old = 0
+          rN_old = 0
           no_of_modes_old = 0
           modesm_old = 0
           modesn_old = 0
@@ -561,7 +614,7 @@ contains
           B0_old = 0
           pPrimeHat_old = 0
 
-          normradius_new = 0
+          rN_new = 0
           no_of_modes_new = 0
           modesm_new = 0
           modesn_new = 0
@@ -576,9 +629,9 @@ contains
           read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
 
           do 
-             if ((normradius_new .ge. normradius_wish) .or. end_of_file) exit
+             if ((rN_new .ge. rN_wish) .or. end_of_file) exit
 
-             normradius_old = normradius_new
+             rN_old = rN_new
              no_of_modes_old = no_of_modes_new
              modesm_old = modesm_new
              modesn_old = modesn_new
@@ -595,7 +648,7 @@ contains
              ! Read the header for the magnetic surface:
              read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) surfHeader
 
-             normradius_new = sqrt(surfHeader(1))       ! r/a = sqrt(psi/psi_a)
+             rN_new = sqrt(surfHeader(1))       ! r/a = sqrt(psi/psi_a)
              iota_new = surfHeader(2)
              G_new = surfHeader(3)*NPeriods/2/pi*(4*pi*1d-7) !Tesla*meter
              I_new = surfHeader(4)/2/pi*(4*pi*1d-7)          !Tesla*meter
@@ -652,11 +705,11 @@ contains
           print *,"Successfully read magnetic equilibrium from file ",trim(JGboozer_file_NonStelSym)
        end if
 
-       if (abs(normradius_old - normradius_wish) < abs(normradius_new - normradius_wish)) then
+       if (abs(rN_old - rN_wish) < abs(rN_new - rN_wish)) then
           iota = iota_old
           GHat = G_old
           IHat = I_old
-          normradius = normradius_old
+          rN = rN_old
           B0OverBBar = B0_old
           NHarmonics = no_of_modes_old
           pPrimeHat=pPrimeHat_old
@@ -670,7 +723,7 @@ contains
           iota = iota_new
           GHat = G_new
           IHat = I_new
-          normradius = normradius_new
+          rN = rN_new
           B0OverBBar = B0_new
           NHarmonics = no_of_modes_new
           pPrimeHat=pPrimeHat_new
@@ -681,7 +734,7 @@ contains
           BHarmonics_n = modesn_new(1:NHarmonics)
           BHarmonics_amplitudes = modesb_new(1:NHarmonics)
        end if
-       dGdpHat=(G_new-G_old)/(normradius_new*normradius_new-normradius_old*normradius_old)/pPrimeHat
+       dGdpHat=(G_new-G_old)/(rN_new*rN_new-rN_old*rN_old)/pPrimeHat
 
        allocate(BHarmonics_parity(NHarmonics))
        do i = 0, NHarmonics/2-1
@@ -690,11 +743,6 @@ contains
        end do
 
        BHarmonics_amplitudes = BHarmonics_amplitudes / B0OverBBar
-
-      if (masterProc) then
-          print *,"This computation is for the flux surface with minor radius ",normradius*a, &
-               " meters, equivalent to r/a = ",normradius
-      end if
 
        coordinateSystem = 0
        ! These next 3 lines could be replaced with the actual data from the geometry input file.

@@ -47,6 +47,7 @@ module globalVariables
   PetscScalar :: psiHat_wish, psiN_wish, rHat_wish, rN_wish
   PetscScalar :: psiHat, psiN, rHat, rN
   integer :: inputRadialCoordinate = 2
+  integer :: inputRadialCoordinateForGradients = 2
 
   ! ********************************************************
   ! ********************************************************

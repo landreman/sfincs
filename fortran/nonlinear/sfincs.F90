@@ -10,6 +10,7 @@ program sfincs
   use readInput
   use petscsysdef
   use solver
+  use geometry
   use radialCoordinates
 
   implicit none
@@ -64,6 +65,10 @@ program sfincs
         print *,"Linear run"
      end if
   end if
+
+  ! Initialize NPeriods, psiAHat, and aHat.  We need to know NPeriods before
+  ! we can initialize the zeta grid.
+  call initializeGeometry()
 
   ! Do various calculations that will not need to be repeated at each
   ! iteration, such as setting up the coordinate grids and evaluating

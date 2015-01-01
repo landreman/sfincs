@@ -9,14 +9,14 @@ createGrids.o: globalVariables.o polynomialDiffMatrices.o xGrid.o geometry.o ind
 diagnostics.o: globalVariables.o indices.o writeHDF5Output.o
 evaluateJacobian.o: globalVariables.o
 evaluateResidual.o: globalVariables.o indices.o
-geometry.o: globalVariables.o
+geometry.o: globalVariables.o radialCoordinates.o
 indices.o: globalVariables.o
 polynomialDiffMatrices.o:
 polynomialInterpolationMatrix.o: 
 populateMatrix.o: globalVariables.o sparsify.o indices.o
 preallocateMatrix.o: globalVariables.o
 radialCoordinates.o: globalVariables.o
-readInput.o: globalVariables.o radialCoordinates.o
+readInput.o: globalVariables.o
 sfincs.o: globalVariables.o writeHDF5Output.o readInput.o solver.o radialCoordinates.o
 solver.o: globalVariables.o
 sparsify.o:

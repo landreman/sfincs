@@ -143,16 +143,41 @@ contains
        call writeHDF5Field("preconditioner_theta", preconditioner_theta)
        call writeHDF5Field("preconditioner_zeta", preconditioner_zeta)
        call writeHDF5Field("constraintScheme", constraintScheme)
+
        call writeHDF5Field("DHat", DHat, dspaceIDForThetaZeta, dimForThetaZeta)
        call writeHDF5Field("BHat", BHat, dspaceIDForThetaZeta, dimForThetaZeta)
+       call writeHDF5Field("d(BHat)d(psiHat)", dBHatdpsiHat, dspaceIDForThetaZeta, dimForThetaZeta)
        call writeHDF5Field("d(BHat)d(theta)", dBHatdtheta, dspaceIDForThetaZeta, dimForThetaZeta)
        call writeHDF5Field("d(BHat)d(zeta)", dBHatdzeta, dspaceIDForThetaZeta, dimForThetaZeta)
+
+       call writeHDF5Field("BHat_sub_psi", BHat_sub_psi, dspaceIDForThetaZeta, dimForThetaZeta)
+       call writeHDF5Field("d(BHat_sub_psi)d(theta)", dBHat_sub_psi_dtheta, dspaceIDForThetaZeta, dimForThetaZeta)
+       call writeHDF5Field("d(BHat_sub_psi)d(zeta)", dBHat_sub_psi_dzeta, dspaceIDForThetaZeta, dimForThetaZeta)
+
+       call writeHDF5Field("BHat_sub_theta", BHat_sub_theta, dspaceIDForThetaZeta, dimForThetaZeta)
+       call writeHDF5Field("d(BHat_sub_theta)d(psiHat)", dBHat_sub_theta_dpsiHat, dspaceIDForThetaZeta, dimForThetaZeta)
+       call writeHDF5Field("d(BHat_sub_theta)d(zeta)", dBHat_sub_theta_dzeta, dspaceIDForThetaZeta, dimForThetaZeta)
+
+       call writeHDF5Field("d(BHat_sub_zeta)d(psiHat)", dBHat_sub_zeta_dpsiHat, dspaceIDForThetaZeta, dimForThetaZeta)
+       call writeHDF5Field("d(BHat_sub_zeta)d(theta)", dBHat_sub_zeta_dtheta, dspaceIDForThetaZeta, dimForThetaZeta)
+
+       call writeHDF5Field("BHat_sup_theta", BHat_sup_theta, dspaceIDForThetaZeta, dimForThetaZeta)
+       call writeHDF5Field("d(BHat_sup_theta)d(psiHat)", dBHat_sup_theta_dpsiHat, dspaceIDForThetaZeta, dimForThetaZeta)
+       call writeHDF5Field("d(BHat_sup_theta)d(zeta)", dBHat_sup_theta_dzeta, dspaceIDForThetaZeta, dimForThetaZeta)
+
+       call writeHDF5Field("BHat_sup_zeta", BHat_sup_zeta, dspaceIDForThetaZeta, dimForThetaZeta)
+       call writeHDF5Field("d(BHat_sup_zeta)d(psiHat)", dBHat_sup_zeta_dpsiHat, dspaceIDForThetaZeta, dimForThetaZeta)
+       call writeHDF5Field("d(BHat_sup_zeta)d(theta)", dBHat_sup_zeta_dtheta, dspaceIDForThetaZeta, dimForThetaZeta)
+
        call writeHDF5Field("B0OverBBar", B0OverBBar)
        call writeHDF5Field("inputRadialCoordinate", inputRadialCoordinate)
+       call writeHDF5Field("inputRadialCoordinateForGradients", inputRadialCoordinateForGradients)
+
        call writeHDF5Field("psiHat", psiHat)
        call writeHDF5Field("psiN", psiN)
        call writeHDF5Field("rHat", rHat)
        call writeHDF5Field("rN", rN)
+
        call writeHDF5Field("aHat", aHat)
        call writeHDF5Field("psiAHat", psiAHat)
        if (coordinateSystem==0) then
