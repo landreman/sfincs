@@ -263,16 +263,22 @@ contains
 
     if (NZs /= NMHats) then
        print *,"Error: number of species charges (Zs) differs from the number of species masses (mHats)."
+       print *,"NZs: ",NZs
+       print *,"NMHats: ",NMHats
        stop
     end if
 
     if (NZs /= NNHats) then
        print *,"Error: number of species charges (Zs) differs from the number of species densities (nHats)."
+       print *,"NZs: ",NZs
+       print *,"NNHats: ",NNHats
        stop
     end if
 
     if (NZs /= NTHats) then
        print *,"Error: number of species charges (Zs) differs from the number of species temperatures (THats)."
+       print *,"NZs: ",NZs
+       print *,"NTHats: ",NTHats
        stop
     end if
 
@@ -282,11 +288,15 @@ contains
 
        if (NZs /= NDNHatdpsiHats) then
           print *,"Error: number of species charges (Zs) differs from the number of species density gradients for radial coordinate psiHat."
+          print *,"NZs: ",NZs
+          print *,"NDNHatdpsiHats: ",NDNHatdpsiHats
           stop
        end if
 
        if (NZs /= NDTHatdpsiHats) then
           print *,"Error: number of species charges (Zs) differs from the number of species temperature gradients for radial coordinate psiHat."
+          print *,"NZs: ",NZs
+          print *,"NDTHatdpsiHats: ",NDTHatdpsiHats
           stop
        end if
 
@@ -295,11 +305,15 @@ contains
 
        if (NZs /= NDNHatdpsiNs) then
           print *,"Error: number of species charges (Zs) differs from the number of species density gradients for radial coordinate psiN."
+          print *,"NZs: ",NZs
+          print *,"NDNHatdpsiNs: ",NDNHatdpsiNs
           stop
        end if
 
        if (NZs /= NDTHatdpsiNs) then
           print *,"Error: number of species charges (Zs) differs from the number of species temperature gradients for radial coordinate psiN."
+          print *,"NZs: ",NZs
+          print *,"NDTHatdpsiNs: ",NDTHatdpsiNs
           stop
        end if
 
@@ -308,11 +322,15 @@ contains
 
        if (NZs /= NDNHatdrHats) then
           print *,"Error: number of species charges (Zs) differs from the number of species density gradients for radial coordinate rHat."
+          print *,"NZs: ",NZs
+          print *,"NDNHatdrHats: ",NDNHatdrHats
           stop
        end if
 
        if (NZs /= NDTHatdrHats) then
           print *,"Error: number of species charges (Zs) differs from the number of species temperature gradients for radial coordinate rHat."
+          print *,"NZs: ",NZs
+          print *,"NDTHatdrHats: ",NDTHatdrHats
           stop
        end if
 
@@ -321,11 +339,15 @@ contains
 
        if (NZs /= NDNHatdrNs) then
           print *,"Error: number of species charges (Zs) differs from the number of species density gradients for radial coordinate rN."
+          print *,"NZs: ",NZs
+          print *,"NDNHatdrNs: ",NDNHatdrNs
           stop
        end if
 
        if (NZs /= NDTHatdrNs) then
           print *,"Error: number of species charges (Zs) differs from the number of species temperature gradients for radial coordinate rN."
+          print *,"NZs: ",NZs
+          print *,"NDTHatdrNs: ",NDTHatdrNs
           stop
        end if
 

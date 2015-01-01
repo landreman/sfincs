@@ -173,6 +173,9 @@ module globalVariables
   PetscScalar, dimension(:), allocatable :: particleFlux, momentumFlux, heatFlux, NTV
   PetscScalar :: VPrimeHat, FSABHat2, FSABjHat
 
+  PetscScalar :: ddpsiN2ddpsiHat, ddrHat2ddpsiHat, ddrN2ddpsiHat
+  PetscScalar :: ddpsiHat2ddpsiN, ddpsiHat2ddrHat, ddpsiHat2ddrN
+
   PetscLogDouble :: elapsedTime
   integer :: didLinearCalculationConverge, didNonlinearCalculationConverge
 

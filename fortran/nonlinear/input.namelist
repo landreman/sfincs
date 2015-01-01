@@ -179,7 +179,6 @@
   mHats = 1 6
   nHats = 0.6d+0 0.009d+0
   THats = 0.5d+0 0.8d+0 
-
   ! Only 1 of the following 4 pairs will be used, depending on inputRadialCoordinateForGradients:
   dNHatdpsiHats = 0 0
   dTHatdpsiHats = 0 0

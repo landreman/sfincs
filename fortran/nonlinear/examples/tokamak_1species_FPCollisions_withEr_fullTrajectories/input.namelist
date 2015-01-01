@@ -62,11 +62,41 @@
 
 &geometryParameters
 
+  inputRadialCoordinate = 3
+  inputRadialCoordinateForGradients = 1
+  ! These 2 parameters select which radial coordinate is used to specify the input.
+  ! inputRadialCoordinate only affects the "wish" parameters that select the flux surface of interest.
+  ! inputRadialCoordinateForGradients determines the radial coordinate used to specify the gradients of density, temperature, and electrostatic potential.
+  !
+  ! 0 = Input radial coordinate is psiHat, which is the toroidal flux divided by 2 pi and normalized by RBar^2 * BBar.
+  !     In this approach, aBar and normradius_wish are ignored (unless normradius_wish is required for the magnetic geometry.)
+  !
+  ! 1 = Input radial coordinate is psi_N = psi / psi_a = psiHat / psiAHat, i.e. the toroidal flux normalized to its value at the last closed flux surface.
+  !     In this approach, aBar and normradius_wish are ignored (unless normradius_wish is required for the magnetic geometry.)
+  !
+  ! 2 = Input radial coordinate is rHat = aHat * sqrt(psi_N), i.e. the effective minor radius normalized to RBar.
+  !     In this approach, both aBar and normradius_wish are required.
+  !
+  ! 3 = Input radial coordinate is r_N = sqrt(psi_N), i.e. the effective minor radius normalized to the last closed flux surface.
+  !     In this approach, aBar is ignored but normradius_wish is required.
+  !
+  ! Whichever values are specified, output quantities will be given with respect to all of these radial coordinates.
+
+  ! Choose the radial coordinate of the flux surface to use.
+  ! No more than 1 of these next 4 variables will be used, depending on inputRadialCoordinate:
+  psiHat_wish = -1
+  psiN_wish = -1
+  rHat_wish = -1
+  rN_wish = 0.3
+  ! For geometryScheme = 1, the radial coordinate will be exactly the specified value.
+  ! For geometryScheme = 11 or 12, the magnetic geometry will be used from the nearest available surface in the geometry input file.
+  ! For geometryScheme = 2, 3, or 4, all these values will be ignored, and the surface at rN = 0.5 will be used.
+
   geometryScheme = 1
   ! 1 = Three-helicity model
-  ! 2 = Three-helicity approximation of the LHD standard configuration
-  ! 3 = Four-helicity approximation of the LHD inward-shifted configuration
-  ! 4 = Three-helicity approximation of the W7-X standard configuration
+  ! 2 = Three-helicity approximation of the LHD standard configuration at rN = 0.5
+  ! 3 = Four-helicity approximation of the LHD inward-shifted configuration at rN = 0.5
+  ! 4 = Three-helicity approximation of the W7-X standard configuration at rN = 0.5
   ! 11= Read the boozer coordinate data from the file specified as "JGboozer_file" below (stellarator symmetric file)
   ! 12= Read the boozer coordinate data from the file specified as "JGboozer_file" below (non-stellarator symmetric file)
  
@@ -107,16 +137,17 @@
   ! The value of psiAHat here is over-written for geometryScheme = 2, 3, 11 and 12.
   psiAHat = 0.045d+0
 
+  aHat = 0.1
+  ! aHat is the effective minor radius at the last closed flux surface in units of RBar.
+  ! Sfincs only uses aBar for converting input and output quantities between units of flux and units of RBar.
+  ! For geometryScheme .ne. 1, the value of aHat here will be ignored.
+
   ! End of options that only matter for geometryScheme = 1.
 
   ! The remaining options only matter for geometryScheme = 11 and 12:
 
   JGboozer_file = "../../equilibria/w7x-sc1.bc"                     ! stellarator symmetric example, geometryScheme = 11
   JGboozer_file_NonStelSym = "../../equilibria/out_neo-2_2_axisym"  ! non-stellarator symmetric example, geometryScheme = 12, requires Nzeta=1
-
-  normradius_wish = 0.5
-  !The calculation will be performed for the radius
-  !closest to this one in the JGboozer_file
 
   min_Bmn_to_load = 1d-4
   !Filter out any Bmn components smaller than this.
@@ -139,9 +170,16 @@
   Zs = 1
   mHats = 1
   nHats = 1.0d+0
-  dNHatdpsiNs = -1.0d+0
   THats = 0.5d+0
+  ! Only 1 of the following 4 pairs will be used, depending on inputRadialCoordinateForGradients:
+  dNHatdpsiHats = 0
+  dTHatdpsiHats = 0
+  dNHatdpsiNs = -1.0d+0
   dTHatdpsiNs = -0.5d+0
+  dNHatdrHats = 0
+  dTHatdrHats = 0
+  dNHatdrNs = 0
+  dTHatdrNs = 0
 
 /
 
@@ -175,7 +213,11 @@
   EParallelHat = 0
 
   ! Radial electric field
-  dPhiHatdpsiN = 5.0d+0
+  ! Only 1 of the following 4 values will be used, depending on inputRadialCoordinateForGradients:
+  dPhiHatdpsiHat = 0.0d+0
+  dPhiHatdpsiN   = 5.0d+0
+  dPhiHatdrHat   = 0.0d+0
+  dPhiHatdrN     = 0.0d+0
 
   ! nu_n is the collisionality at the reference parameters.
   ! More precisely, nu_n = \bar{nu} * \bar{R} / \bar{v} (in both Gaussian and SI units)

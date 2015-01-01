@@ -87,8 +87,6 @@ contains
 
     implicit none
 
-    integer :: i
-
     ! At this point, rN should have been set by computeBHat!
 
     if (abs(rN+9999) < 1e-6) then
@@ -121,7 +119,17 @@ contains
     end if
 
 
-    ! Next, set the d/dpsiHat quantities:
+    ! Conversion factors for converting TO d/dpsiHat:
+    ddpsiN2ddpsiHat = one / psiAHat
+    ddrHat2ddpsiHat = one / (two * psiAHat * sqrt(psiN))
+    ddrN2ddpsiHat = aHat / (two * psiAHat * sqrt(psiN))
+
+    ! Conversion factors for converting FROM d/dpsiHat:
+    ddpsiHat2ddpsiN = psiAHat
+    ddpsiHat2ddrHat = one * (two * psiAHat * sqrt(psiN))
+    ddpsiHat2ddrN = one / aHat * (two * psiAHat * sqrt(psiN))
+
+    ! Next, set the d/dpsiHat quantities related to input gradients:
 
     select case (inputRadialCoordinateForGradients)
     case (0)
@@ -134,11 +142,9 @@ contains
 
     case (1)
        ! Selected input radial coordinate is psiN.
-       dPhiHatdpsiHat = ddpsiN2ddpsiHat(dPhiHatdpsiN)
-       do i=1,Nspecies
-          dnHatdpsiHats(i) = ddpsiN2ddpsiHat(dnHatdpsiNs(i))
-          dTHatdpsiHats(i) = ddpsiN2ddpsiHat(dTHatdpsiNs(i))
-       end do
+       dPhiHatdpsiHat = ddpsiN2ddpsiHat * dPhiHatdpsiN
+       dnHatdpsiHats  = ddpsiN2ddpsiHat * dnHatdpsiNs
+       dTHatdpsiHats  = ddpsiN2ddpsiHat * dTHatdpsiNs
 
        if (masterProc) then
           print *,"Selecting the input gradients (of n, T, & Phi) from the specified ddpsiN values."
@@ -146,11 +152,9 @@ contains
 
     case (2)
        ! Selected input radial coordinate is rHat.
-       dPhiHatdpsiHat = ddrN2ddpsiHat(dPhiHatdrHat)
-       do i=1,Nspecies
-          dnHatdpsiHats(i) = ddrHat2ddpsiHat(dnHatdrHats(i))
-          dTHatdpsiHats(i) = ddrHat2ddpsiHat(dTHatdrHats(i))
-       end do
+       dPhiHatdpsiHat = ddrN2ddpsiHat   * dPhiHatdrHat
+       dnHatdpsiHats  = ddrHat2ddpsiHat * dnHatdrHats
+       dTHatdpsiHats  = ddrHat2ddpsiHat * dTHatdrHats
 
        if (masterProc) then
           print *,"Selecting the input gradients (of n, T, & Phi) from the specified ddrHat values."
@@ -158,11 +162,9 @@ contains
 
     case (3)
        ! Selected input radial coordinate is rN.
-       dPhiHatdpsiHat = ddrN2ddpsiHat(dPhiHatdrN)
-       do i=1,Nspecies
-          dnHatdpsiHats(i) = ddrN2ddpsiHat(dnHatdrNs(i))
-          dTHatdpsiHats(i) = ddrN2ddpsiHat(dTHatdrNs(i))
-       end do
+       dPhiHatdpsiHat = ddrN2ddpsiHat * dPhiHatdrN
+       dnHatdpsiHats  = ddrN2ddpsiHat * dnHatdrNs
+       dTHatdpsiHats  = ddrN2ddpsiHat * dTHatdrNs
 
        if (masterProc) then
           print *,"Selecting the input gradients (of n, T, & Phi) from the specified ddrN values."
@@ -176,93 +178,20 @@ contains
 
     ! Finally, convert the input gradients from psiHat to all the other radial coordinates:
 
-    dPhiHatdpsiN = ddpsiHat2ddpsiN(dPhiHatdpsiHat)
-    dPhiHatdrHat = ddpsiHat2ddrHat(dPhiHatdpsiHat)
-    dPhiHatdrN   = ddpsiHat2ddrN(  dPhiHatdpsiHat)
+    dPhiHatdpsiN = ddpsiHat2ddpsiN * dPhiHatdpsiHat
+    dPhiHatdrHat = ddpsiHat2ddrHat * dPhiHatdpsiHat
+    dPhiHatdrN   = ddpsiHat2ddrN   * dPhiHatdpsiHat
     
-    do i=1,Nspecies   
-       dnHatdpsiNs(i)  = ddpsiHat2ddpsiN(dnHatdpsiHats(i))
-       dnHatdrHats(i)  = ddpsiHat2ddrHat(dnHatdpsiHats(i))
-       dnHatdrNs(i)    = ddpsiHat2ddrN(  dnHatdpsiHats(i))
+    dnHatdpsiNs  = ddpsiHat2ddpsiN * dnHatdpsiHats
+    dnHatdrHats  = ddpsiHat2ddrHat * dnHatdpsiHats
+    dnHatdrNs    = ddpsiHat2ddrN   * dnHatdpsiHats
 
-       dTHatdpsiNs(i)  = ddpsiHat2ddpsiN(dTHatdpsiHats(i))
-       dTHatdrHats(i)  = ddpsiHat2ddrHat(dTHatdpsiHats(i))
-       dTHatdrNs(i)    = ddpsiHat2ddrN(  dTHatdpsiHats(i))
-    end do
+    dTHatdpsiNs  = ddpsiHat2ddpsiN * dTHatdpsiHats
+    dTHatdrHats  = ddpsiHat2ddrHat * dTHatdpsiHats
+    dTHatdrNs    = ddpsiHat2ddrN   * dTHatdpsiHats
 
   end subroutine setInputRadialCoordinate
 
-  ! -----------------------------------------------------------------------------------------
-
-  PetscScalar function ddpsiN2ddpsiHat(x)
-
-    implicit none
-
-    PetscScalar, intent(in) :: x
-
-    ddpsiN2ddpsiHat = x / psiAHat
-
-  end function ddpsiN2ddpsiHat
-
-  ! -----------------------------------------------------------------------------------------
-
-  PetscScalar function ddrHat2ddpsiHat(x)
-
-    implicit none
-
-    PetscScalar, intent(in) :: x
-
-    ddrHat2ddpsiHat = x / (2 * psiAHat * sqrt(psiN))
-
-  end function ddrHat2ddpsiHat
-
-  ! -----------------------------------------------------------------------------------------
-
-  PetscScalar function ddrN2ddpsiHat(x)
-
-    implicit none
-
-    PetscScalar, intent(in) :: x
-
-    ddrN2ddpsiHat = x * aHat / (2 * psiAHat * sqrt(psiN))
-
-  end function ddrN2ddpsiHat
-
-  ! -----------------------------------------------------------------------------------------
-
-  PetscScalar function ddpsiHat2ddpsiN(x)
-
-    implicit none
-
-    PetscScalar, intent(in) :: x
-
-    ddpsiHat2ddpsiN = x * psiAHat
-
-  end function ddpsiHat2ddpsiN
-
-  ! -----------------------------------------------------------------------------------------
-
-  PetscScalar function ddpsiHat2ddrHat(x)
-
-    implicit none
-
-    PetscScalar, intent(in) :: x
-
-    ddpsiHat2ddrHat = x * (2 * psiAHat * sqrt(psiN))
-
-  end function ddpsiHat2ddrHat
-
-  ! -----------------------------------------------------------------------------------------
-
-  PetscScalar function ddpsiHat2ddrN(x)
-
-    implicit none
-
-    PetscScalar, intent(in) :: x
-
-    ddpsiHat2ddrN = x / aHat * (2 * psiAHat * sqrt(psiN))
-
-  end function ddpsiHat2ddrN
 
 end module radialCoordinates
 
