@@ -42,7 +42,7 @@ programMode = 1;
 % The setting below matters for programMode = 3, 5, or 7 only:
 dataFileToPlot = 'm20130318_02_SFINCS_2013-03-18_14-47_convergenceScan_convergenceScan.mat';
 
-RHSMode = 1;
+RHSMode = 2;
 % 1 = Use a single right-hand side.
 % 2 = Use multiple right-hand sides to compute the transport matrix.
 
@@ -66,7 +66,7 @@ filenameNote = 'myFirstScan';
 % Geometry parameters:
 % --------------------------------------------------
 
-geometryScheme = 1;
+geometryScheme = 11;
 % 1 = Three-helicity model
 % 2 = Three-helicity approximation of the LHD standard configuration
 % 3 = Four-helicity approximation of the LHD inward-shifted configuration
@@ -166,14 +166,14 @@ end
 % (the surface where psi_N = 1.)
 % The value of psiAHat here is over-written for geometryScheme = 2, 3, 4, 11 and 12.
 psiAHat = 1;
-THat = 0.1;
+THat = 0.25;
 nHat = 1.0;
 
 % The radial electric field may be specified in one of 2 ways.
 % When RHSMode==1, dPhiHatdpsi is used and EStar is ignored.
 % When RHSMode==2, EStar is used and dPhiHatdpsi is ignored.
 dPhiHatdpsi = 0.0;
-EStar = 0;
+EStar = 0.0;
 
 % The following two quantities matter for RHSMode=1 but not for RHSMode=2:
 dTHatdpsi = -0.7;
@@ -286,13 +286,13 @@ include_fDivVE_term = false;
 
 % Number of grid points in the poloidal direction.
 % Memory and time requirements DO depend strongly on this parameter.
-NthetaConverged = 20;
+NthetaConverged = 13;
 Nthetas = floor(linspace(9,30,11));
 
 % Number of grid points in the toroidal direction
 % (per identical segment of the stellarator.)
 % Memory and time requirements DO depend strongly on this parameter.
-NzetaConverged = 20;
+NzetaConverged = 37;
 Nzetas = floor(linspace(5,20,3));
 
 % Number of Legendre polynomials used to represent the distribution
@@ -302,7 +302,7 @@ Nzetas = floor(linspace(5,20,3));
 % the collisionality. At high collisionality, this parameter can be as low
 % as ~ 5. At low collisionality, this parameter may need to be many 10s or
 % even > 100 for convergence.
-NxiConverged = 20;
+NxiConverged = 37;
 Nxis = floor(linspace(10,40,13));
 
 % Number of Legendre polynomials used to represent the Rosenbluth
@@ -316,7 +316,7 @@ NLs = 2:6;
 % Memory and time requirements DO depend strongly on this parameter.
 % This parameter almost always needs to be at least 5.
 % Usually a value in the range 5-8 is plenty for convergence.
-NxConverged = 10;
+NxConverged = 5;
 Nxs=5:8;
 
 % Number of grid points in energy used to represent the Rosenbluth
@@ -2869,8 +2869,11 @@ end
                           
                           normradius_new=sqrt(surfheader(1)); %r/a=sqrt(psi/psi_a)
                           iota_new=surfheader(2);
-                          G_new=surfheader(3)*NPeriods/2/pi*(4*pi*1e-7); %Tesla*meter
-                          I_new=surfheader(4)/2/pi*(4*pi*1e-7);          %Tesla*meter
+                          % Note that G and I has a minus sign in the following two lines
+                          % because Ampere's law comes with a minus sign in the left-handed
+                          % (r,pol,tor) system.
+                          G_new=-surfheader(3)*NPeriods/2/pi*(4*pi*1e-7); %Tesla*meter
+                          I_new=-surfheader(4)/2/pi*(4*pi*1e-7);          %Tesla*meter
                           pPrimeHat_new=surfheader(5)*(4*pi*1e-7);       % p=pHat \bar{B}^2 / \mu_0
                           
                           fgetl(fid); %Skip units line
@@ -2951,8 +2954,24 @@ end
                                   BHarmonics_n(nm00ind+1:end)];
                   BHarmonics_parity = ones(1,length(BHarmonics_amplitudes));
                   
+                  % Sign correction for files from Joachim Geiger
+                  if GHat*psiAHat<0
+                    disp(['This is a stellarator symmetric file from Joachim Geiger.'...
+                          ' It will now be turned 180 degrees around a ' ...
+                          'horizontal axis <=> flip the sign of G and I, so that it matches the sign ' ...
+                          'of its total toroidal flux.'])
+                    GHat = -GHat;
+                    IHat = -IHat;
+                    dGdpHat=-dGdpHat;
+                  end
+                  
+                  %Switch from a left-handed to right-handed (radial,poloidal,toroidal) system
+                  psiAHat=psiAHat*(-1);           %toroidal direction switch sign
+                  GHat = GHat*(-1);               %toroidal direction switch sign
+                  iota = iota*(-1);               %toroidal direction switch sign
+                  BHarmonics_n=BHarmonics_n*(-1); %toroidal direction switch sign
+                                    
                   dPsidr=2*psiAHat/a*normradius;
-                  %nuPrime=nuN*abs(GHat+iota*IHat)/B0OverBBar/sqrt(THat);
                   nuPrime=nuN*(GHat+iota*IHat)/B0OverBBar/sqrt(THat)
                   
              case 12
@@ -3002,8 +3021,11 @@ end
                           
                           normradius_new=sqrt(surfheader(1)); %r/a=sqrt(psi/psi_a)
                           iota_new=surfheader(2);
-                          G_new=surfheader(3)*NPeriods/2/pi*(4*pi*1e-7); %Tesla*meter
-                          I_new=surfheader(4)/2/pi*(4*pi*1e-7);          %Tesla*meter
+                          % Note that G and I has a minus sign in the following two lines
+                          % because Ampere's law comes with a minus sign in the left-handed
+                          % (r,pol,tor) system.
+                          G_new=-surfheader(3)*NPeriods/2/pi*(4*pi*1e-7); %Tesla*meter
+                          I_new=-surfheader(4)/2/pi*(4*pi*1e-7);          %Tesla*meter
                           pPrimeHat_new=surfheader(5)*(4*pi*1e-7);       % p=pHat \bar{B}^2 / \mu_0
                           
                           fgetl(fid); %Skip units line
@@ -3086,9 +3108,15 @@ end
                                   BHarmonics_n(nm00ind+2:end)];
                   BHarmonics_parity=((-1).^(0:length(BHarmonics_n)-1)+1)/2; %[1,0,1,0,1,0,1,0,...], i.e. cos,sin.cos,sin,...
                   
+                  %Switch from a left-handed to right-handed (radial,poloidal,toroidal) system
+                  psiAHat=psiAHat*(-1);           %toroidal direction switch sign
+                  GHat = GHat*(-1);               %toroidal direction switch sign
+                  iota = iota*(-1);               %toroidal direction switch sign
+                  BHarmonics_n=BHarmonics_n*(-1); %toroidal direction switch sign
+                  
                   dPsidr=2*psiAHat/a*normradius;
                   nuPrime=nuN*(GHat+iota*IHat)/B0OverBBar/sqrt(THat)
-                                    
+                  
              otherwise
                   error('Invalid setting for geometryScheme')
             end

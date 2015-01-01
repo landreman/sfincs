@@ -49,7 +49,7 @@
 
     implicit none
 
-    PetscErrorCode :: ierr
+    PetscErrorCode :: ierr, ierr2
     Vec :: rhs, soln, solnOnProc0
     integer :: whichRHS
     Mat :: matrix, preconditionerMatrix
@@ -1316,7 +1316,31 @@
        call PetscTime(time1, ierr)
 
        call MatAssemblyBegin(matrix, MAT_FINAL_ASSEMBLY, ierr)
+       if (ierr/=0) then
+         print *,"[",myCommunicatorIndex,"] after MatAssemblyBegin: ierr=",ierr
+       end if
+       if ((masterProcInSubComm).and.(ierr/=0)) then
+          call PetscTime(time2, ierr2)
+          if (whichMatrix==0) then
+             print *,"[",myCommunicatorIndex,"] Time to fail to MatAssemblyBegin preconditioner matrices: ", time2-time1, " seconds."
+          else
+             print *,"[",myCommunicatorIndex,"] Time to fail to MatAssemblyBegin matrices: ", time2-time1, " seconds."
+          end if
+       end if
+       CHKERRQ(ierr)
+
        call MatAssemblyEnd(matrix, MAT_FINAL_ASSEMBLY, ierr)
+       if (ierr/=0) then
+         print *,"[",myCommunicatorIndex,"] after MatAssemblyEnd: ierr=",ierr
+       end if
+       if ((masterProcInSubComm).and.(ierr/=0)) then
+          call PetscTime(time2, ierr2)
+          if (whichMatrix==0) then
+             print *,"[",myCommunicatorIndex,"] Time to fail to MatAssemblyEnd preconditioner matrices: ", time2-time1, " seconds."
+          else
+             print *,"[",myCommunicatorIndex,"] Time to fail to MatAssemblyEnd matrices: ", time2-time1, " seconds."
+          end if
+       end if
        CHKERRQ(ierr)
 
        if (whichMatrix==0) then
