@@ -328,10 +328,33 @@
     ! *******************************************************************************
     ! *******************************************************************************
 
+    allocate(DHat(Ntheta,Nzeta))
+
     allocate(BHat(Ntheta,Nzeta))
     allocate(dBHatdtheta(Ntheta,Nzeta))
     allocate(dBHatdzeta(Ntheta,Nzeta))
     allocate(dBHatdrho(Ntheta,Nzeta))
+
+    allocate(BHat_sub_psi(Ntheta,Nzeta))
+    allocate(dBHat_sub_psi_dtheta(Ntheta,Nzeta))
+    allocate(dBHat_sub_psi_dzeta(Ntheta,Nzeta))
+
+    allocate(BHat_sub_theta(Ntheta,Nzeta))
+    allocate(dBHat_sub_theta_dpsiHat(Ntheta,Nzeta))
+    allocate(dBHat_sub_theta_dzeta(Ntheta,Nzeta))
+
+    allocate(BHat_sub_zeta(Ntheta,Nzeta))
+    allocate(dBHat_sub_zeta_dpsiHat(Ntheta,Nzeta))
+    allocate(dBHat_sub_zeta_dtheta(Ntheta,Nzeta))
+
+    allocate(BHat_sup_theta(Ntheta,Nzeta))
+    allocate(dBHat_sup_theta_dpsiHat(Ntheta,Nzeta))
+    allocate(dBHat_sup_theta_dzeta(Ntheta,Nzeta))
+
+    allocate(BHat_sup_zeta(Ntheta,Nzeta))
+    allocate(dBHat_sup_zeta_dpsiHat(Ntheta,Nzeta))
+    allocate(dBHat_sup_zeta_dtheta(Ntheta,Nzeta))
+
     allocate(NTVKernel(Ntheta,Nzeta))
 
     call computeBHat()
@@ -339,9 +362,11 @@
     if (masterProc) then
        print *,"---- Geometry parameters: ----"
        print *,"Geometry scheme = ", geometryScheme
-       print *,"iota (rotational transform) = ", iota
-       print *,"GHat (Toroidal field Boozer component) = ", GHat
-       print *,"IHat (Poloidal field Boozer component) = ", IHat
+       if (coordinateSystem==0) then
+          print *,"iota (rotational transform) = ", iota
+          print *,"GHat (Toroidal field Boozer component) = ", GHat
+          print *,"IHat (Poloidal field Boozer component) = ", IHat
+       end if
        print *,"psiAHat (Normalized toroidal flux at the last closed flux surface) = ", psiAHat
        if (geometryScheme==1) then
           print *,"epsilon_t = ", epsilon_t

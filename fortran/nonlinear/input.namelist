@@ -62,6 +62,26 @@
 
 &geometryParameters
 
+  inputRadialCoordinate = 0
+  ! This parameter controls how the density, temperature, and potential gradients are specified,
+  ! and how the flux surface is chosen for some geometryScheme values.
+  !
+  ! 0 = Input radial coordinate is psiHat, which is the toroidal flux divided by 2 pi and normalized by RBar^2 * BBar.
+  !     In this approach, aBar and normradius_wish are ignored (unless normradius_wish is required for the magnetic geometry.)
+  !
+  ! 1 = Input radial coordinate is psi_N = psi / psi_a = psiHat / psiAHat, i.e. the toroidal flux normalized to its value at the last closed flux surface.
+  !     In this approach, aBar and normradius_wish are ignored (unless normradius_wish is required for the magnetic geometry.)
+  !
+  ! 2 = Input radial coordinate is rHat = aHat * sqrt(psi_N), i.e. the effective minor radius normalized to RBar.
+  !     In this approach, both aBar and normradius_wish are required.
+  !
+  ! 3 = Input radial coordinate is r_N = sqrt(psi_N), i.e. the effective minor radius normalized to the last closed flux surface.
+  !     In this approach, aBar is ignored but normradius_wish is required.
+
+  aHat = 0.1
+  ! aHat is the effective minor radius at the last closed flux surface in units of RBar.
+  ! Sfincs only uses aBar for converting input and output quantities between units of flux and units of RBar.
+
   geometryScheme = 4
   ! 1 = Three-helicity model
   ! 2 = Three-helicity approximation of the LHD standard configuration
@@ -150,6 +170,10 @@
   dNHatdpsiNs = -0.3d+0 -0.001d+0
   THats = 0.5d+0 0.8d+0
   dTHatdpsiNs = -0.3d+0 -0.2d+0
+  dNHatdrhos = 0 0
+  dTHatdrhos = 0 0
+  dNHatdrs = 0 0
+  dTHatdrs = 0 0
 
 /
 

@@ -11,8 +11,14 @@ contains
     implicit none
 
     character(len=100) :: filename
-    integer :: fileUnit, didFileAccessWork
-    integer :: NMHats, NZs, NNHats, NTHats, NDNHatdpsiNs, NDTHatdpsiNs, i
+    integer :: fileUnit, didFileAccessWork, i
+    integer :: NMHats, NZs, NNHats, NTHats
+    integer :: NDNHatdpsiHats, NDTHatdpsiHats
+    integer :: NDNHatdpsiNs,   NDTHatdpsiNs
+    integer :: NDNHatdrHats,   NDTHatdrHats
+    integer :: NDNHatdrNs,     NDTHatdrNs
+
+NDNHatdrhos, NDTHatdrhos
 
     namelist / flowControl / saveMatlabOutput, MatlabOutputFilename, &
          outputFilename, solveSystem, RHSMode, &
@@ -21,10 +27,15 @@ contains
     namelist / geometryParameters / GHat, IHat, iota, epsilon_t, epsilon_h, &
          helicity_l, helicity_n, B0OverBBar, geometryScheme, &
          epsilon_antisymm, helicity_antisymm_l, helicity_antisymm_n, &
-         JGboozer_file, JGboozer_file_NonStelSym, normradius_wish, min_Bmn_to_load, &
-         psiAHat
+         JGboozer_file, JGboozer_file_NonStelSym, min_Bmn_to_load, &
+         psiAHat, inputRadialCoordinate, aHat, &
+         psiHat_wish, psiN_wish, rHat_wish, rN_wish
 
-    namelist / speciesParameters / mHats, Zs, nHats, THats, dNHatdpsiNs, dTHatdpsiNs
+    namelist / speciesParameters / mHats, Zs, nHats, THats, &
+         dNHatdpsiHats, dTHatdpsiHats, &
+         dNHatdpsiNs,   dTHatdpsiNs, &
+         dNHatdrHats,   dTHatdrHats, &
+         dNHatdrNs,     dTHatdrNs
 
     namelist / physicsParameters / Delta, alpha, nu_n, EParallelHat, &
          dPhiHatdpsiN, collisionOperator, constraintScheme, includeXDotTerm, &
@@ -144,6 +155,8 @@ contains
     NTHats = maxNumSpecies
     NDNhatdpsiNs = maxNumSpecies
     NDTHatdpsiNs = maxNumSpecies
+    NDNhatdrhos = maxNumSpecies
+    NDTHatdrhos = maxNumSpecies
 
     do i=1,maxNumSpecies
        if (Zs(i) == speciesNotInitialized) then
@@ -173,6 +186,24 @@ contains
        end if
     end do
 
+    ! --------------
+
+    do i=1,maxNumSpecies
+       if (dNHatdpsiHats(i) == speciesNotInitialized) then
+          NDNHatdpsiHats = i-1
+          exit
+       end if
+    end do
+
+    do i=1,maxNumSpecies
+       if (dTHatdpsiHats(i) == speciesNotInitialized) then
+          NDTHatdpsiHats = i-1
+          exit
+       end if
+    end do
+
+    ! --------------
+
     do i=1,maxNumSpecies
        if (dNHatdpsiNs(i) == speciesNotInitialized) then
           NDNHatdpsiNs = i-1
@@ -186,6 +217,40 @@ contains
           exit
        end if
     end do
+
+    ! --------------
+
+    do i=1,maxNumSpecies
+       if (dNHatdrHats(i) == speciesNotInitialized) then
+          NDNHatdrHats = i-1
+          exit
+       end if
+    end do
+
+    do i=1,maxNumSpecies
+       if (dTHatdrHats(i) == speciesNotInitialized) then
+          NDTHatdrHats = i-1
+          exit
+       end if
+    end do
+
+    ! --------------
+
+    do i=1,maxNumSpecies
+       if (dNHatdrNs(i) == speciesNotInitialized) then
+          NDNHatdrNs = i-1
+          exit
+       end if
+    end do
+
+    do i=1,maxNumSpecies
+       if (dTHatdrNs(i) == speciesNotInitialized) then
+          NDTHatdrNs = i-1
+          exit
+       end if
+    end do
+
+    ! --------------
 
     if (NZs /= NMHats) then
        print *,"Error: number of species charges (Zs) differs from the number of species masses (mHats)."
@@ -202,17 +267,72 @@ contains
        stop
     end if
 
-    if (NZs /= NDNHatdpsiNs) then
-       print *,"Error: number of species charges (Zs) differs from the number of species density gradients (dNHatdpsiNs)."
-       stop
-    end if
+    select case (inputRadialCoordinate)
+    case (0)
+       ! Input radial coordinate is psiHat:
 
-    if (NZs /= NDTHatdpsiNs) then
-       print *,"Error: number of species charges (Zs) differs from the number of species temperature gradients (dTHatdpsiNs)."
+       if (NZs /= NDNHatdpsiHats) then
+          print *,"Error: number of species charges (Zs) differs from the number of species density gradients for radial coordinate psiHat."
+          stop
+       end if
+
+       if (NZs /= NDTHatdpsiHats) then
+          print *,"Error: number of species charges (Zs) differs from the number of species temperature gradients for radial coordinate psiHat."
+          stop
+       end if
+
+    case (1)
+       ! Input radial coordinate is psiN:
+
+       if (NZs /= NDNHatdpsiNs) then
+          print *,"Error: number of species charges (Zs) differs from the number of species density gradients for radial coordinate psiN."
+          stop
+       end if
+
+       if (NZs /= NDTHatdpsiNs) then
+          print *,"Error: number of species charges (Zs) differs from the number of species temperature gradients for radial coordinate psiN."
+          stop
+       end if
+
+    case (2)
+       ! Input radial coordinate is rHat:
+
+       if (NZs /= NDNHatdrHats) then
+          print *,"Error: number of species charges (Zs) differs from the number of species density gradients for radial coordinate rHat."
+          stop
+       end if
+
+       if (NZs /= NDTHatdrHats) then
+          print *,"Error: number of species charges (Zs) differs from the number of species temperature gradients for radial coordinate rHat."
+          stop
+       end if
+
+    case (3)
+       ! Input radial coordinate is rN:
+
+       if (NZs /= NDNHatdrNs) then
+          print *,"Error: number of species charges (Zs) differs from the number of species density gradients for radial coordinate rN."
+          stop
+       end if
+
+       if (NZs /= NDTHatdrNs) then
+          print *,"Error: number of species charges (Zs) differs from the number of species temperature gradients for radial coordinate rN."
+          stop
+       end if
+
+
+    case default
+       print *,"Error! Invalid gradientInputScheme."
        stop
-    end if
+    end select
 
     Nspecies = NZs
+
+    ! Using the selected radial coordinate, set input quantities for the other radial coordinates:
+    call setInputRadialCoordinateWish()
+    ! Note that this call only sets the "wish" radial coordinates, not the final radial coordinates
+    ! or the input gradients. These quantities will be set later after we have loaded the magnetic
+    ! geometry, in case the final radial coordinate is different from the "wish" values.
 
     ! Validate some other input quantities:
 

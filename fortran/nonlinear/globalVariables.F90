@@ -43,7 +43,10 @@ module globalVariables
   PetscScalar :: epsilon_t, epsilon_h, epsilon_antisymm
   integer :: NPeriods, helicity_l, helicity_n, helicity_antisymm_l, helicity_antisymm_n
   character(len=200) :: JGboozer_file, JGboozer_file_NonStelSym
-  PetscScalar :: normradius_wish, min_Bmn_to_load, dGdpHat
+  PetscScalar :: min_Bmn_to_load, dGdpHat, aHat
+  PetscScalar :: psiHat_wish, psiN_wish, rHat_wish, rN_wish
+  PetscScalar :: psiHat, psiN, rHat, rN
+  integer :: inputRadialCoordinate = 2
 
   ! ********************************************************
   ! ********************************************************
@@ -55,8 +58,12 @@ module globalVariables
 
   integer, parameter :: maxNumSpecies = 100
   integer, parameter :: speciesNotInitialized = -9999
-  integer :: NSpecies
-  PetscScalar, dimension(maxNumSpecies) :: Zs, mHats, NHats, THats, dNHatdpsiNs, dTHatdpsiNs
+  integer :: NSpecies = -9999
+  PetscScalar, dimension(maxNumSpecies) :: Zs = 1, mHats = 1.0, NHats = 1.0, THats = 1.0
+  PetscScalar, dimension(maxNumSpecies) :: dNHatdpsiHats = 0, dTHatdpsiHats = 0
+  PetscScalar, dimension(maxNumSpecies) :: dNHatdpsiNs   = 0, dTHatdpsiNs   = 0
+  PetscScalar, dimension(maxNumSpecies) :: dNHatdrHats   = 0, dTHatdrHats   = 0
+  PetscScalar, dimension(maxNumSpecies) :: dNHatdrNs     = 0, dTHatdrNs     = 0
 
   ! ********************************************************
   ! ********************************************************
@@ -66,21 +73,22 @@ module globalVariables
   ! ********************************************************
   ! ********************************************************
 
-  logical :: nonlinear
+  logical :: nonlinear = .false.
   PetscScalar :: Delta
   PetscScalar :: alpha
   PetscScalar :: nu_n
 
-  PetscScalar :: EParallelHat
-  PetscScalar :: dPhiHatdpsiN
+  PetscScalar :: EParallelHat = 0
+  PetscScalar :: dPhiHatdpsiHat = 0, dPhiHatdpsiN = 0, dPhiHatdrHat = 0, dPhiHatdrN = 0
 
-  integer :: collisionOperator
+  integer :: collisionOperator = 0
   ! 0 = Full linearized Fokker-Planck operator
   ! 1 = pitch-angle scattering with no momentum-conserving term
 
-  logical :: includeXDotTerm
-  logical :: includeElectricFieldTermInXiDot
-  logical :: useDKESExBDrift, include_fDivVE_term
+  logical :: includeXDotTerm = .true.
+  logical :: includeElectricFieldTermInXiDot = .true.
+  logical :: useDKESExBDrift = .true.
+  logical :: include_fDivVE_term = .true.
 
 
   ! ********************************************************
@@ -91,8 +99,8 @@ module globalVariables
   ! ********************************************************
   ! ********************************************************
 
-  integer :: thetaDerivativeScheme
-  integer :: zetaDerivativeScheme
+  integer :: thetaDerivativeScheme = 2
+  integer :: zetaDerivativeScheme = 2
   ! 0 = spectral collocation
   ! 1 = 2nd order finite differences
   ! 2 = 4th order dinite differences
@@ -146,7 +154,13 @@ module globalVariables
   PetscScalar, dimension(:,:), allocatable :: ddzeta_preconditioner
   PetscScalar, dimension(:,:), allocatable :: regridPolynomialToUniform
 
-  PetscScalar, dimension(:,:), allocatable :: BHat, dBHatdtheta, dBHatdzeta, dBHatdrho
+  integer :: coordinateSystem
+  PetscScalar, dimension(:,:), allocatable :: BHat, dBHatdtheta, dBHatdzeta, dBHatdpsiHat, DHat
+  PetscScalar, dimension(:,:), allocatable :: BHat_sub_psi, dBHat_sub_psi_dtheta, dBHat_sub_psi_dzeta
+  PetscScalar, dimension(:,:), allocatable :: BHat_sub_theta, dBHat_sub_theta_dzeta, dBHat_sub_theta_dpsiHat
+  PetscScalar, dimension(:,:), allocatable :: BHat_sub_zeta, dBHat_sub_zeta_dtheta, dBHat_sub_zeta_dpsiHat
+  PetscScalar, dimension(:,:), allocatable :: BHat_sup_theta, dBHat_sup_theta_dzeta, dBHat_sup_theta_dpsiHat
+  PetscScalar, dimension(:,:), allocatable :: BHat_sup_zeta, dBHat_sup_zeta_dtheta, dBHat_sup_zeta_dpsiHat
   PetscScalar, dimension(:,:), allocatable :: sources, jHat, Phi1Hat
   PetscScalar, dimension(:,:,:), allocatable :: flow, densityPerturbation, pressurePerturbation
   PetscScalar, dimension(:,:,:), allocatable :: particleFluxBeforeSurfaceIntegral

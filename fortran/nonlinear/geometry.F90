@@ -1,3 +1,8 @@
+! Note: all the "wish" radial coordinates (psiHat_wish, psiN_wish, rHat_wish, and rN_wish)
+! are consistently set to an equivalent radius before any subroutines in this module are run.  
+! However, the computeBHat subroutine in this module must set the final rN.  The other 3
+! final radial coordinates (psiHat, psiN, and rHat) will be set from rN later on.
+
 module geometry
 
   use globalVariables
@@ -95,7 +100,30 @@ contains
   ! -----------------------------------------------------------------------------------
 
   subroutine computeBHat()
-    ! This subroutine evaluates BHat, dBHatdtheta, and dBHatdzeta on the (theta,zeta) grid.
+! This subroutine initializes a bunch of variables, including a bunch of (theta,zeta) arrays
+! that store |B| and the components of \vect{B}, as well as derivatives of these quantities.
+!
+! For Boozer coordinates, you must set the following variables:
+!  BHat, dBHatdpsiHat, dBHatdtheta, dBHatdzeta,
+!  IHat, GHat, iota,
+!  dIHatdpsiHat, dGHatdpsiHat, diotadpsiHat,
+!  BHat_sub_psi, dBHat_sub_psi_dtheta, dBHat_sub_psi_dzeta.
+! Then call setBoozerCoordinates(), which is a subroutine that sets the other arrays.
+!
+! For coordinates other than Boozer coordinates, you must set all the following arrays directly:
+!  BHat, dBHatdtheta, dBHatdzeta, dBHatdpsiHat, DHat
+!  BHat_sub_psi, dBHat_sub_psi_dtheta, dBHat_sub_psi_dzeta
+!  BHat_sub_theta, dBHat_sub_theta_dzeta, dBHat_sub_theta_dpsiHat
+!  BHat_sub_zeta, dBHat_sub_zeta_dtheta, dBHat_sub_zeta_dpsiHat
+!  BHat_sup_theta, dBHat_sup_theta_dzeta, dBHat_sup_theta_dpsiHat
+!  BHat_sup_zeta, dBHat_sup_zeta_dtheta, dBHat_sup_zeta_dpsiHat
+
+
+! Note: all the "wish" radial coordinates (psiHat_wish, psiN_wish, rHat_wish, and rN_wish)
+! are consistently set to an equivalent radius before any subroutines in this module are run.  
+! However, the computeBHat subroutine in this module must set the final rN.  The other 3
+! final radial coordinates (psiHat, psiN, and rHat) will be set from rN later on.
+
 
     ! Note that the BHarmonics_amplitudes are normalized by B0, not by BBar!
 
@@ -183,6 +211,11 @@ contains
        dGdpHat = 0 !Not implemented as an input for this case yet, could be put in namelist input if needed
        normradius = -1 !dummy
 
+       coordinateSystem = 0
+       BHat_sub_psi = 0
+       dBHat_sub_psi_dtheta = 0
+       dBHat_sub_psi_dzeta = 0
+
     case (2)
        ! A three-harmonic approximation of the LHD standard configuration.
        ! Values taken from Table 1 of
@@ -221,6 +254,11 @@ contains
        dGdpHat = 0
        normradius = -1 !dummy
                     
+       coordinateSystem = 0
+       BHat_sub_psi = 0
+       dBHat_sub_psi_dtheta = 0
+       dBHat_sub_psi_dzeta = 0
+
     case (3)
        ! A four-harmonic approximation of the LHD inward-shifted configuration.
        ! Values taken from Table 1 of
@@ -264,6 +302,11 @@ contains
        dGdpHat = 0
        normradius = -1 !dummy
 
+       coordinateSystem = 0
+       BHat_sub_psi = 0
+       dBHat_sub_psi_dtheta = 0
+       dBHat_sub_psi_dzeta = 0
+
     case (4)
        ! A three-harmonic approximation of the W7-X standard configuration.
        ! Values taken from Table 1 of
@@ -301,6 +344,11 @@ contains
        psiAHat = -0.384935d+0 ! Tesla * meters^2 / radian
        dGdpHat = 0
        normradius = -1 !dummy
+
+       coordinateSystem = 0
+       BHat_sub_psi = 0
+       dBHat_sub_psi_dtheta = 0
+       dBHat_sub_psi_dzeta = 0
 
     case (11)
        ! Read Boozer coordinate file in .bc format used at IPP Greifswald
@@ -468,6 +516,12 @@ contains
           print *,"This computation is for the flux surface with minor radius ",normradius*a, &
                " meters, equivalent to r/a = ",normradius
        end if
+
+       coordinateSystem = 0
+       ! These next lines could be replaced with the actual values from the equilibrium:
+       BHat_sub_psi = 0
+       dBHat_sub_psi_dtheta = 0
+       dBHat_sub_psi_dzeta = 0
 
     case (12)
        ! Read Boozer coordinate file in a generalisation of the .bc format used at IPP Greifswald for non-stellarator symmetric equilibria 
@@ -642,6 +696,12 @@ contains
                " meters, equivalent to r/a = ",normradius
       end if
 
+       coordinateSystem = 0
+       ! These next 3 lines could be replaced with the actual data from the geometry input file.
+       BHat_sub_psi = 0
+       dBHat_sub_psi_dtheta = 0
+       dBHat_sub_psi_dzeta = 0
+
     case default
        print *,"Error! Invalid geometryScheme"
        stop
@@ -786,7 +846,46 @@ contains
     deallocate(BHarmonics_amplitudes)
     deallocate(BHarmonics_parity)
 
+    select case (coordinateSystem)
+    case (0)
+       if (masterProc) then
+          print *,"Using Boozer coordinates."
+       end if
+       call setBoozerCoordinates()
+    case default
+       print *,"Error, unrecognized coordinate system."
+       stop
+    end select
+
   end subroutine computeBHat
+
+  ! -----------------------------------------------------------------------------------------
+
+  subroutine setBoozerCoordinates
+
+    implicit none
+
+    DHat = BHat * BHat / (GHat + iota * IHat)
+    BHat_sup_theta = iota * DHat
+    BHat_sub_theta = DHat
+    BHat_sub_theta = IHat
+    BHat_sub_zeta = GHat
+
+    dBHat_sub_theta_dpsiHat = 0
+    dBHat_sub_theta_dzeta = 0
+
+    dBHat_sub_zeta_dpsiHat = 0
+    dBHat_sub_zeta_dtheta = 0
+
+    dBHat_sup_theta_dpsiHat = 0
+    dBHat_sup_theta_dzeta = 0
+
+    dBHat_sup_zeta_dpsiHat = 0
+    dBHat_sup_zeta_dtheta = 0
+
+
+
+  end subroutine setBoozerCoordinates
 
 end module geometry
 

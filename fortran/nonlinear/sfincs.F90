@@ -10,6 +10,7 @@ program sfincs
   use readInput
   use petscsysdef
   use solver
+  use radialCoordinates
 
   implicit none
 
@@ -57,7 +58,6 @@ program sfincs
      print *,"Delta (rho* at reference parameters)          = ", Delta
      print *,"alpha (e Phi / T at reference parameters)     = ", alpha
      print *,"nu_n (collisionality at reference parameters) = ", nu_n
-     print *,"dPhiHatdpsiN (radial electric field)          = ", dPhiHatdpsiN
      if (nonlinear) then
         print *,"Nonlinear run"
      else
@@ -69,6 +69,10 @@ program sfincs
   ! iteration, such as setting up the coordinate grids and evaluating
   ! the magnetic field and its derivatives on the spatial grid.
   call createGrids()
+
+  ! For input quantities that depend on the radial coordinate, pick out the values for the selected
+  ! radial coordinate, and use these values to over-write values for the other radial coordinates.
+  call setInputRadialCoordinate()
 
   ! Create HDF5 data structures, and save the quantities that will not change
   ! at each iteration of the solver (i.e. save all quantities except diagnostics.)
