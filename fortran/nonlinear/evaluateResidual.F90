@@ -19,7 +19,7 @@
     integer :: ix, L, itheta, izeta, ispecies, index
     PetscScalar :: THat, mHat, sqrtTHat, sqrtmHat
     Mat :: residualMatrix
-    PetscScalar :: EParallelHatToUse, dPhiHatdpsiNToUse
+    PetscScalar :: EParallelHatToUse, dPhiHatdpsiHatToUse
 
 
     if (masterProc) then
@@ -58,7 +58,7 @@
 
     ! If we ever run with multiple RHS's, these next lines might change:
     EParallelHatToUse = EParallelHat
-    dPhiHatdpsiNToUse = dPhiHatdpsiN
+    dPhiHatdpsiHatToUse = dPhiHatdpsiHat
 
     ! First add the term arising from radial gradients:
     x2 = x*x
@@ -69,16 +69,24 @@
        sqrtMHat = sqrt(mHat)
        
        do ix=1,Nx
-          xPartOfRHS = x2(ix)*exp(-x2(ix))*( dnHatdpsiNs(ispecies)/nHats(ispecies) &
-               + alpha*Zs(ispecies)/THats(ispecies)*dPhiHatdpsiNToUse &
-               + (x2(ix) - three/two)*dTHatdpsiNs(ispecies)/THats(ispecies))
+          !xPartOfRHS = x2(ix)*exp(-x2(ix))*( dnHatdpsiNs(ispecies)/nHats(ispecies) &
+          !     + alpha*Zs(ispecies)/THats(ispecies)*dPhiHatdpsiNToUse &
+          !     + (x2(ix) - three/two)*dTHatdpsiNs(ispecies)/THats(ispecies))
+          xPartOfRHS = x2(ix)*exp(-x2(ix))*( dnHatdpsiHats(ispecies)/nHats(ispecies) &
+               + alpha*Zs(ispecies)/THats(ispecies)*dPhiHatdpsiHatToUse &
+               + (x2(ix) - three/two)*dTHatdpsiHats(ispecies)/THats(ispecies))
           do itheta = ithetaMin,ithetaMax
              do izeta = 1,Nzeta
                 
+                !factor = Delta*nHats(ispecies)*mHat*sqrtMHat &
+                !     /(2*pi*sqrtpi*Zs(ispecies)*psiAHat*(BHat(itheta,izeta)**3)*sqrtTHat) &
+                !     *(GHat*dBHatdtheta(itheta,izeta) - IHat*dBHatdzeta(itheta,izeta))&
+                !     *xPartOfRHS
                 factor = Delta*nHats(ispecies)*mHat*sqrtMHat &
-                     /(2*pi*sqrtpi*Zs(ispecies)*psiAHat*(BHat(itheta,izeta)**3)*sqrtTHat) &
-                     *(GHat*dBHatdtheta(itheta,izeta) - IHat*dBHatdzeta(itheta,izeta))&
-                     *xPartOfRHS
+                     /(2*pi*sqrtpi*Zs(ispecies)*(BHat(itheta,izeta)**3)*sqrtTHat) &
+                     *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
+                     - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
+                     * DHat(itheta,izeta) * xPartOfRHS
                 
                 L = 0
                 index = getIndex(ispecies, ix, L+1, itheta, izeta, 0)

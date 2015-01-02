@@ -154,7 +154,9 @@
        allocate(colIndices(Ntheta))
        do izeta=izetaMin,izetaMax
           do itheta=1,Ntheta
-             thetaPartOfTerm(itheta,:) = iota*sqrtTHat/sqrtMHat * ddthetaToUse(itheta,:) &
+             !thetaPartOfTerm(itheta,:) = iota*sqrtTHat/sqrtMHat * ddthetaToUse(itheta,:) &
+             thetaPartOfTerm(itheta,:) = BHat_sup_theta(itheta,izeta) &
+                  * sqrtTHat/sqrtMHat * ddthetaToUse(itheta,:) &
                   / BHat(itheta,izeta)
           end do
 
@@ -209,7 +211,9 @@
        allocate(colIndices(Nzeta))
        do itheta=ithetaMin, ithetaMax
           do izeta=1,Nzeta
-             zetaPartOfTerm(izeta,:) = sqrtTHat/sqrtMHat * ddzetaToUse(izeta,:) / BHat(itheta,izeta)
+             !zetaPartOfTerm(izeta,:) = sqrtTHat/sqrtMHat * ddzetaToUse(izeta,:) / BHat(itheta,izeta)
+             zetaPartOfTerm(izeta,:) = sqrtTHat/sqrtMHat * BHat_sup_zeta(itheta,izeta) &
+                  * ddzetaToUse(izeta,:) / BHat(itheta,izeta)
           end do
 
           ! PETSc uses the opposite convention to Fortran:
@@ -257,17 +261,24 @@
        ! Add the ExB d/dtheta term:
        ! *********************************************************
 
-       factor = alpha*Delta*GHat/(2*psiAHat)*dPhiHatdpsiN
+       !factor = alpha*Delta*GHat/(2*psiAHat)*dPhiHatdpsiN
+       factor = alpha*Delta/two*dPhiHatdpsiHat
        allocate(thetaPartOfTerm(Ntheta,Ntheta))
        allocate(localThetaPartOfTerm(Ntheta,localNtheta))
        allocate(rowIndices(localNtheta))
        allocate(colIndices(Ntheta))
        do izeta=izetaMin,izetaMax
           if (useDKESExBDrift) then
-             thetaPartOfTerm = ddthetaToUse / FSABHat2
+             !thetaPartOfTerm = ddthetaToUse / FSABHat2
+             do itheta=1,Ntheta
+                thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / FSABHat2 &
+                     * DHat(itheta,izeta) * BHat_sub_zeta(itheta,izeta)
+             end do
           else
              do itheta=1,Ntheta
-                thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2)
+                !thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2)
+                thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2) &
+                     * DHat(itheta,izeta) * BHat_sub_zeta(itheta,izeta)
              end do
           end if
 
@@ -298,17 +309,24 @@
        ! Add the ExB d/dzeta term:
        ! *********************************************************
 
-       factor = -alpha*Delta*IHat/(2*psiAHat)*dPhiHatdpsiN
+       !factor = -alpha*Delta*IHat/(2*psiAHat)*dPhiHatdpsiN
+       factor = -alpha*Delta/two*dPhiHatdpsiHat
        allocate(zetaPartOfTerm(Nzeta,Nzeta))
        allocate(localZetaPartOfTerm(Nzeta,localNzeta))
        allocate(rowIndices(localNzeta))
        allocate(colIndices(Nzeta))
        do itheta=ithetaMin, ithetaMax
           if (useDKESExBDrift) then
-             zetaPartOfTerm = ddzetaToUse / FSABHat2
+             !zetaPartOfTerm = ddzetaToUse / FSABHat2
+             do izeta=1,Nzeta
+                zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / FSABHat2 &
+                     * DHat(itheta,izeta) * BHat_sub_theta(itheta,izeta)
+             end do
           else
              do izeta=1,Nzeta
-                zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2)
+                !zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2)
+                zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2) &
+                     * DHat(itheta,izeta) * BHat_sub_theta(itheta,izeta)
              end do
           end if
 
@@ -342,7 +360,9 @@
        do itheta=ithetaMin,ithetaMax
           do izeta=izetaMin,izetaMax
              factor = -sqrtTHat/(2*sqrtMHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
-                  * (iota*dBHatdtheta(itheta,izeta) + dBHatdzeta(itheta,izeta))
+                  * (BHat_sup_theta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
+                  + BHat_sup_zeta(itheta,izeta) * dBHatdzeta(itheta,izeta))
+                 !* (iota*dBHatdtheta(itheta,izeta) + dBHatdzeta(itheta,izeta))
 
              do ix=1,Nx
                 do L=0,(Nxi-1)
@@ -375,8 +395,20 @@
        if (includeElectricFieldTermInXiDot) then
           do itheta=ithetaMin,ithetaMax
              do izeta=izetaMin,izetaMax
-                factor = alpha*Delta*dPhiHatdpsiN/(4*psiAHat*(BHat(itheta,izeta)**3)) &
-                     * (GHat*dBHatdtheta(itheta,izeta) - IHat* dBHatdzeta(itheta,izeta))
+                !factor = alpha*Delta*dPhiHatdpsiN/(4*psiAHat*(BHat(itheta,izeta)**3)) &
+                !     * (GHat*dBHatdtheta(itheta,izeta) - IHat* dBHatdzeta(itheta,izeta))
+
+                temp = BHat_sub_zeta(itheta,izeta) * dBHatdtheta(itheta,izeta) &
+                     - BHat_sub_theta(itheta,izeta) * dBHatdzeta(itheta,izeta)
+
+                if (.not. force0RadialCurrentInEquilibrium) then
+                   temp = temp - 2 * BHat(itheta,izeta) &
+                        * (dBHat_sub_zeta_dtheta(itheta,izeta) - dBHat_sub_theta_dzeta(itheta,izeta))
+                end if
+
+                factor = alpha*Delta*dPhiHatdpsiHat/(4*(BHat(itheta,izeta)**3)) &
+                     * DHat(itheta,izeta) * temp
+                     
 
                 do ix=1,Nx
                    do L=0,(Nxi-1)
@@ -831,8 +863,9 @@
                             colIndices(ix)=getIndex(iSpeciesB,ix,L+1,itheta,izeta,0)
                          end do
                          call MatSetValuesSparse(matrix, Nx, rowIndices, Nx, colIndices, &
-                              -nu_n*(GHat+iota*IHat)/(BHat(itheta,izeta)*BHat(itheta,izeta))*CHat, &
-                              ADD_VALUES, ierr)
+                              -nu_n*CHat, ADD_VALUES, ierr)
+                              !-nu_n*(GHat+iota*IHat)/(BHat(itheta,izeta)*BHat(itheta,izeta))*CHat, &
+                              ! ADD_VALUES, ierr)
                       end do
                    end do
 
@@ -901,8 +934,9 @@
                    do izeta=izetaMin,izetaMax
                       index=getIndex(iSpeciesA,ix,L+1,itheta,izeta,0)
                       call MatSetValueSparse(matrix, index, index, &
-                           -nu_n*(GHat+iota*IHat)/(BHat(itheta,izeta)*BHat(itheta,izeta))*CHat_element, &
-                           ADD_VALUES, ierr)
+                           -nu_n*CHat_element, ADD_VALUES, ierr)
+                           !-nu_n*(GHat+iota*IHat)/(BHat(itheta,izeta)*BHat(itheta,izeta))*CHat_element, &
+                           !ADD_VALUES, ierr)
                    end do
                 end do
              end do
@@ -945,12 +979,14 @@
                    rowIndex = getIndex(ispecies, ix, L+1, itheta, izeta, 0)
 
                    colIndex = getIndex(ispecies, 1, 1, 1, 1, 1)
-                   call MatSetValueSparse(matrix, rowIndex, colIndex, xPartOfSource1 / (BHat(itheta,izeta) ** 2), &
-                        ADD_VALUES, ierr)
+                   !call MatSetValueSparse(matrix, rowIndex, colIndex, xPartOfSource1 / (BHat(itheta,izeta) ** 2), &
+                   !     ADD_VALUES, ierr)
+                   call MatSetValueSparse(matrix, rowIndex, colIndex, xPartOfSource1, ADD_VALUES, ierr)
 
                    colIndex = getIndex(ispecies, 1, 1, 1, 1, 2)
-                   call MatSetValueSparse(matrix, rowIndex, colIndex, xPartOfSource2 / (BHat(itheta,izeta) ** 2), &
-                        ADD_VALUES, ierr)
+                   !call MatSetValueSparse(matrix, rowIndex, colIndex, xPartOfSource2 / (BHat(itheta,izeta) ** 2), &
+                   !     ADD_VALUES, ierr)
+                   call MatSetValueSparse(matrix, rowIndex, colIndex, xPartOfSource2, ADD_VALUES, ierr)
                 end do
              end do
           end do
@@ -965,8 +1001,9 @@
                 do ispecies = 1,Nspecies
                    rowIndex = getIndex(ispecies, ix, L+1, itheta, izeta, 0)
                    colIndex = getIndex(ispecies, ix, 1, 1, 1, 3)
-                   call MatSetValue(matrix, rowIndex, colIndex, one / (BHat(itheta,izeta) ** 2), &
-                        ADD_VALUES, ierr)
+                   !call MatSetValue(matrix, rowIndex, colIndex, one / (BHat(itheta,izeta) ** 2), &
+                   !     ADD_VALUES, ierr)
+                   call MatSetValue(matrix, rowIndex, colIndex, one, ADD_VALUES, ierr)
                 end do
              end do
           end do

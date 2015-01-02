@@ -915,7 +915,7 @@ contains
 
     DHat = BHat * BHat / (GHat + iota * IHat)
     BHat_sup_theta = iota * DHat
-    BHat_sub_theta = DHat
+    BHat_sup_zeta = DHat
     BHat_sub_theta = IHat
     BHat_sub_zeta = GHat
 
