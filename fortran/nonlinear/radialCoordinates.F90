@@ -18,6 +18,11 @@ contains
 
     implicit none
 
+    if (aHat<0) then
+       print *,"Error! aHat cannot be <0."
+       stop
+    end if
+
     ! First, set psiHat_wish itself:
 
     select case (inputRadialCoordinate)
@@ -28,6 +33,14 @@ contains
        if (masterProc) then
           print *,"Selecting the flux surface to use based on psiHat_wish = ",psiHat_wish
        end if
+       if (psiHat_wish / psiAHat < 0) then
+          print *,"Error! psiHat_wish/psiAHat cannot be <0."
+          stop
+       end if
+       if (psiHat_wish / psiAHat > 1) then
+          print *,"Error! psiHat_wish/psiAHat cannot be >1."
+          stop
+       end if
 
     case (1)
        ! Selected input radial coordinate is psiN.
@@ -35,6 +48,14 @@ contains
 
        if (masterProc) then
           print *,"Selecting the flux surface to use based on psiN_wish = ",psiN_wish
+       end if
+       if (psiN_wish<0) then
+          print *,"Error! psiN_wish cannot be <0."
+          stop
+       end if
+       if (psiN_wish>1) then
+          print *,"Error! psiN_wish cannot be >1."
+          stop
        end if
 
     case (2)
@@ -44,6 +65,14 @@ contains
        if (masterProc) then
           print *,"Selecting the flux surface to use based on rHat_wish = ",rHat_wish
        end if
+       if (rHat_wish<0) then
+          print *,"Error! rHat_wish cannot be <0."
+          stop
+       end if
+       if (rHat_wish>aHat) then
+          print *,"Error! rHat_wish cannot be > aHat."
+          stop
+       end if
 
     case (3)
        ! Selected input radial coordinate is rN.
@@ -51,6 +80,14 @@ contains
 
        if (masterProc) then
           print *,"Selecting the flux surface to use based on rN_wish = ",rN_wish
+       end if
+       if (rN_wish<0) then
+          print *,"Error! rN_wish cannot be <0."
+          stop
+       end if
+       if (rN_wish>1) then
+          print *,"Error! rN_wish cannot be >1."
+          stop
        end if
 
     case default
@@ -64,7 +101,7 @@ contains
     rHat_wish = sqrt(aHat * aHat * psiHat_wish / psiAHat)
     rN_wish = sqrt(psiHat_wish / psiAHat)
 
-    ! Validate input:
+    ! Validate input again, just to be safe:
 
     if (rN_wish<0) then
        print *,"Error! Requested flux surface has a negative normalized radius.  (rN < 0)"

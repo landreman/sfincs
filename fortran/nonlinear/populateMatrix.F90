@@ -262,7 +262,7 @@
        allocate(localThetaPartOfTerm(Ntheta,localNtheta))
        allocate(rowIndices(localNtheta))
        allocate(colIndices(Ntheta))
-       do izeta=1,Nzeta
+       do izeta=izetaMin,izetaMax
           if (useDKESExBDrift) then
              thetaPartOfTerm = ddthetaToUse / FSABHat2
           else
