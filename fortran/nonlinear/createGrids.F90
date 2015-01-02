@@ -145,10 +145,10 @@
 !    call PetscSynchronizedFlush(MPIComm, ierr)
 
     ! PETSc's synchronized printing functions seem buggy, so here I've implemented my own version:
+    dummy = 0
+    tag = 0
     if (masterProc) then
        print *,trim(procAssignments)
-       dummy = 0
-       tag = 0
        do i = 1,numProcs-1
           ! To avoid a disordered flood of messages to the masterProc,
           ! ping each proc 1 at a time by sending a dummy value:
