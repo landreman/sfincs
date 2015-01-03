@@ -75,8 +75,6 @@
 
     call PetscTime(time1, ierr)
 
-    !call preallocateMatrix(matrix, whichMatrix)
-
     ! Sometimes PETSc complains if any of the diagonal elements are not set.
     ! Therefore, set the entire diagonal to 0 to be safe.
     if (masterProc) then
@@ -84,6 +82,18 @@
           call MatSetValue(matrix, i-1, i-1, zero, ADD_VALUES, ierr)
        end do
     end if
+
+    ! Since PETSc's direct sparse solver complains if there are any zeros on the diagonal
+    ! (unlike mumps or superlu_dist), then if we're running with just 1 proc,
+    ! add some values to the diagonals of the preconditioner.
+    if (masterProc .and. numProcs==1) then
+       ! Value to set:
+       temp = 1d+0
+       do i=Nspecies*Nx*Nxi*Ntheta*Nzeta, matrixSize-1
+          call MatSetValue(matrix, i, i, temp, ADD_VALUES, ierr)
+       end do
+    end if
+
 
     ! *********************************************************
     ! Allocate small matrices:
