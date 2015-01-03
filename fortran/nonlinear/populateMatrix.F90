@@ -86,7 +86,7 @@
     ! Since PETSc's direct sparse solver complains if there are any zeros on the diagonal
     ! (unlike mumps or superlu_dist), then if we're running with just 1 proc,
     ! add some values to the diagonals of the preconditioner.
-    if (masterProc .and. numProcs==1) then
+    if (numProcs==1 .and. whichMatrix==0) then
        ! Value to set:
        temp = 1d+0
        do i=Nspecies*Nx*Nxi*Ntheta*Nzeta, matrixSize-1
