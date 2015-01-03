@@ -454,10 +454,10 @@
     case (0)
     case (1)
        ! The rows for the constraints have more nonzeros:
-       predictedNNZsForEachRow((Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta*Nx
+       predictedNNZsForEachRow((Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta*Nx + 1
     case (2)
        ! The rows for the constraints have more nonzeros:
-       predictedNNZsForEachRow((Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta
+       predictedNNZsForEachRow((Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta + 1
     case default
     end select
     predictedNNZsForEachRowDiagonal = predictedNNZsForEachRow
@@ -541,6 +541,16 @@
        !call MatSetOption(matrix, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE, ierr)
 
        CHKERRQ(ierr)
+
+       ! Sometimes PETSc's sparse direct solver, which is used only when running with 1 proc,
+       ! fails with a zero-pivot error (which mumps and superlu_dist do not do.)
+       ! To avoid this error, shift the diagonal for the constraint rows:
+       if (numProcsInSubComm .eq. 1 .and. whichMatrix==0) then
+          temp1 = 1d+0
+          do i = Ntheta*Nzeta*Nx*Nxi,matrixSize-1
+             call MatSetValue(matrix,i,i,temp1,ADD_VALUES,ierr)
+          end do
+       end if
 
        ! *********************************************************
        ! Select appropriate differentiation matrices depending on
