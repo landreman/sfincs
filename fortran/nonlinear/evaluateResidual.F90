@@ -104,13 +104,16 @@
     L=1
     do ispecies = 1,Nspecies
        do ix=1,Nx
-          factor = alpha*Zs(ispecies)*x(ix)*exp(-x2(ix))*EParallelHatToUse*(GHat+iota*IHat)&
+          !factor = alpha*Zs(ispecies)*x(ix)*exp(-x2(ix))*EParallelHatToUse*(GHat+iota*IHat)&
+          !     *nHats(ispecies)*mHats(ispecies)/(pi*sqrtpi*THats(ispecies)*THats(ispecies)*FSABHat2)
+          factor = alpha*Zs(ispecies)*x(ix)*exp(-x2(ix))*EParallelHatToUse &
                *nHats(ispecies)*mHats(ispecies)/(pi*sqrtpi*THats(ispecies)*THats(ispecies)*FSABHat2)
           do itheta=ithetaMin,ithetaMax
              do izeta = 1,Nzeta
                 index = getIndex(ispecies, ix, L+1, itheta, izeta, 0)
                 call VecSetValue(rhs, index, &
-                     factor/BHat(itheta,izeta), INSERT_VALUES, ierr)
+                     factor * BHat(itheta,izeta), INSERT_VALUES, ierr)
+                     !factor/BHat(itheta,izeta), INSERT_VALUES, ierr)
              end do
           end do
        end do
