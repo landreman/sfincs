@@ -1,0 +1,17 @@
+#!/bin/bash
+
+### Set the job name
+#PBS -N sfincs
+
+### Set the number of nodes that will be used.
+#PBS -l mppwidth=24
+#PBS -l walltime=00:10:00
+
+### Set the queue to submit this job.
+#PBS -q debug
+
+#PBS -V
+#PBS -j oe
+
+cd $PBS_O_WORKDIR
+aprun -n 24 ../../sfincs -mat_superlu_dist_statprint
