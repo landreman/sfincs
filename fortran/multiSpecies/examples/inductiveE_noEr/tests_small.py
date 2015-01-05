@@ -11,6 +11,18 @@ desiredTolerance = 0.001
 
 numFailures = 0
 
+# Check the first species:
 species = 0
+numFailures += shouldBe("FSABFlow", species, 308.77570247458709, desiredTolerance)
+numFailures += shouldBe("particleFlux", species, -1.19377717309288199E-004, desiredTolerance)
+numFailures += shouldBe("heatFlux", species, -5.46764373674423623E-005, desiredTolerance)
+
+# Check the second species:
+species = 1
+numFailures += shouldBe("FSABFlow", species, 4.0387888836037282, desiredTolerance)
+numFailures += shouldBe("particleFlux", species, -1.48789578198661934E-006, desiredTolerance)
+numFailures += shouldBe("heatFlux", species, -1.35574234718297328E-006, desiredTolerance)
+
+numFailures += shouldBe("FSABjHat", 0, 333.00843577620947, desiredTolerance)
 
 exit(numFailures > 0)
