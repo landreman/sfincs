@@ -20,7 +20,7 @@
     PetscScalar :: THat, mHat, sqrtTHat, sqrtmHat
     Mat :: residualMatrix
     PetscScalar :: EParallelHatToUse, dPhiHatdpsiHatToUse
-
+    PetscReal :: norm
 
     if (masterProc) then
        print *,"evaluateResidual called."
@@ -45,11 +45,20 @@
 !!$    call VecRestoreArrayF90(stateVec,stateArray,ierr)
 !!$    call VecRestoreArrayF90(residualVec,residualArray,ierr)
 
-    call preallocateMatrix(residualMatrix, 2)
-    call populateMatrix(residualMatrix, 2)
-    call MatMult(residualMatrix, stateVec, residualVec, ierr)
-
-    call MatDestroy(residualMatrix, ierr)
+    ! Often, evaluateResidual is called when the state vector is 0.
+    ! In this case, there is no need to build the matrix.
+    call VecNorm(stateVec, NORM_INFINITY, norm, ierr)
+    if (norm > 0) then
+       call preallocateMatrix(residualMatrix, 2)
+       call populateMatrix(residualMatrix, 2)
+       call MatMult(residualMatrix, stateVec, residualVec, ierr)
+       call MatDestroy(residualMatrix, ierr)
+    else
+       if (masterProc) then
+          print *,"State vector is 0 so I will skip building the matrix when evaluating the residual."
+       end if
+       call VecSet(residualVec, zero, ierr)
+    end if
 
     ! Next, evaluate the "right-hand side", and subtract the result from the residual.
 

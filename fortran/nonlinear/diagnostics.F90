@@ -1,13 +1,11 @@
 #include <finclude/petscsnesdef.h>
 #include "PETScVersions.F90"
 
-! This subroutine is called as a "Monitor" of SNES, set in solver.F90 using SNESSetMonitor.
-  subroutine diagnostics(mysnes, iterationNum, residual, userContext, ierr)
+! This next subroutine is called as a "Monitor" of SNES, set in solver.F90 using SNESSetMonitor.
+  subroutine diagnosticsMonitor(mysnes, iterationNum, residual, userContext, ierr)
 
+    use globalVariables, only: masterProc
     use petscsnes
-    use globalVariables
-    use indices
-    use writeHDF5Output
 
     implicit none
 
@@ -17,8 +15,43 @@
     integer :: userContext(*)
     PetscErrorCode :: ierr
 
+    Vec :: soln
+
+    if (masterProc) then
+       if (iterationNum > 0) then
+          print "(a,i4,a)",    "--------- Completed iteration ",iterationNum," of SNES -----------------------------------"
+       end if
+       print "(a,es14.7,a)","--------- Residual function norm: ",residual," -----------------------------"
+    end if
+
+    if (iterationNum==0) then
+       return
+    end if
+
+    call SNESGetSolution(mysnes, soln, ierr)
+
+    call diagnostics(soln, iterationNum)
+
+  end subroutine diagnosticsMonitor
+
+  ! *******************************************************************************************
+  ! *******************************************************************************************
+
+  subroutine diagnostics(soln, iterationNum)
+
+    use globalVariables
+    use indices
+    use writeHDF5Output
+    use petscvec
+
+    implicit none
+
+    Vec :: soln
+    PetscErrorCode :: ierr
+    PetscInt :: iterationNum
+
     VecScatter :: VecScatterContext
-    Vec :: soln, solnOnProc0
+    Vec :: solnOnProc0
     PetscScalar, pointer :: solnArray(:)
 
     PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat
@@ -43,21 +76,8 @@
 
 
     if (masterProc) then
-       if (iterationNum > 0) then
-          print "(a,i4,a)",    "--------- Completed iteration ",iterationNum," of SNES -----------------------------------"
-       end if
-       print "(a,es14.7,a)","--------- Residual function norm: ",residual," -----------------------------"
-    end if
-
-    if (iterationNum==0) then
-       return
-    end if
-
-    if (masterProc) then
        print *,"Computing diagnostics."
     end if
-
-    call SNESGetSolution(mysnes, soln, ierr)
 
     ! Send the entire solution vector to the master process:
     call VecScatterCreateToZero(soln, VecScatterContext, solnOnProc0, ierr)
@@ -431,7 +451,9 @@
 
     ! updateOutputFile should be called by all procs since it contains MPI_Barrier
     ! (in order to be sure the HDF5 file is safely closed before moving on to the next computation.)
-    call updateOutputFile(iterationNum)
+    if (RHSMode==1) then
+       call updateOutputFile(iterationNum)
+    end if
 
   end subroutine diagnostics
 

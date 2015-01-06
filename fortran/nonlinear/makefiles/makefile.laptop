@@ -21,4 +21,4 @@ SFINCS_RUN_LARGE_EXAMPLES=no
 # The value of this variable must be "yes" or "no".
 SFINCS_IS_A_BATCH_SYSTEM_USED=no
 
-SFINCS_COMMAND_TO_SUBMIT_JOB=mpiexec -n 4 ../../$(TARGET)
+SFINCS_COMMAND_TO_SUBMIT_JOB=mpiexec -n 4 ../../$(TARGET) -mat_mumps_icntl_23 300

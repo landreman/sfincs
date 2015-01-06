@@ -22,9 +22,11 @@ module solver
     PC :: preconditionerContext
     integer :: whichRHS, numRHSs
     SNESConvergedReason :: reason
+    KSPConvergedReason :: KSPReason
     PetscLogDouble :: time1, time2
+    integer :: userContext(1)
 
-    external evaluateJacobian, evaluateResidual, diagnostics
+    external evaluateJacobian, evaluateResidual, diagnosticsMonitor
 
     if (masterProc) then
        print *,"Entering main solver loop."
@@ -60,8 +62,10 @@ module solver
        call KSPGMRESSetRestart(KSPInstance, 2000, ierr)
        call KSPSetTolerances(KSPInstance, solverTolerance, PETSC_DEFAULT_REAL, &
             PETSC_DEFAULT_REAL, PETSC_DEFAULT_INTEGER, ierr)
+
        call KSPSetFromOptions(KSPInstance, ierr)
        call KSPMonitorSet(KSPInstance, KSPMonitorDefault, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
+
     else
        ! Direct solver:
 !!$#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
@@ -113,7 +117,7 @@ module solver
     end if
 
     ! Tell PETSc to call the diagnostics subroutine at each iteration of SNES:
-    call SNESMonitorSet(mysnes, diagnostics, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
+    call SNESMonitorSet(mysnes, diagnosticsMonitor, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
     !call SNESMonitorSet(mysnes, SNESMonitorDefault, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
 
     ! Set the algorithm to use for the nonlinear solver:
@@ -139,59 +143,17 @@ module solver
     ! ***********************************************************************
     ! ***********************************************************************
     ! 
-    !  Beginning of the main solver loop:
+    !  Main solver call:
     !
     ! ***********************************************************************
     ! ***********************************************************************
 
     select case (RHSMode)
     case (1)
-       numRHSs = 1
-    case (2)
-       print *,"RHSMode=2 is not yet implemented"
-       stop
-    case default
-       print *,"Error! Invalid setting for RHSMode."
-       stop
-    end select
+       ! Single solve, either linear or nonlinear.
 
-    do whichRHS = 1,numRHSs
-       if (RHSMode /= 1 .and. masterProc) then
-          print *,"Solving system with right-hand side ",whichRHS," of ",numRHSs
-       end if
-
-       select case (RHSMode)
-       case (1)
-          ! Single solve: nothing more to do here.
-
-       case (2)
-          print *,"RHSMode=2 is not yet implemented"
-          stop
-
-          ! To get a transport matrix, change the equilibrium gradients here.
-       case default
-          print *,"Program should not get here"
-          stop
-       end select
-
-
-       ! ***********************************************************************
-       ! ***********************************************************************
-       ! 
        !  Set initial guess for the solution:
-       !
-       ! ***********************************************************************
-       ! ***********************************************************************
-
        call VecSet(solutionVec, zero, ierr)
-
-       ! ***********************************************************************
-       ! ***********************************************************************
-       ! 
-       !  Solve the main linear system:
-       !
-       ! ***********************************************************************
-       ! ***********************************************************************
 
        if (masterProc) then
           print *,"------------------------------------------------------"
@@ -228,12 +190,120 @@ module solver
           didNonlinearCalculationConverge = integerToRepresentTrue
        end if
 
-    end do
+
+       ! End of RHSMode=1 case, which handles a single linear or nonlinear solve.
+
+    case (2)
+       ! RHSMode = 2:
+       ! Do a linear solve for multiple right-hand sides to get the transport matrix.
+
+       !  Set f=0:
+       call VecSet(solutionVec, zero, ierr)
+
+       ! Build the main linear system matrix:
+       call populateMatrix(matrix,1)
+
+
+       if (useIterativeSolver) then
+
+          ! Build the preconditioner:
+          call populateMatrix(preconditionerMatrix,0)
+
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))                                                                                                                       
+          ! Syntax for PETSc versions up through 3.4
+          call KSPSetOperators(KSPInstance, matrix, preconditionerMatrix, SAME_PRECONDITIONER, ierr)
+#else
+          ! Syntax for PETSc version 3.5 and later
+          call KSPSetOperators(KSPInstance, matrix, preconditionerMatrix, ierr)
+          call KSPSetReusePreconditioner(KSPInstance, PETSC_TRUE, ierr)
+          call PCSetReusePreconditioner(preconditionerContext, PETSC_TRUE, ierr)
+#endif
+
+       else
+          ! Direct solver, so no preconditioner needed.
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))                                                                                                                       
+          ! Syntax for PETSc versions up through 3.4
+          call KSPSetOperators(KSPInstance, matrix, matrix, SAME_PRECONDITIONER, ierr)
+#else
+          ! Syntax for PETSc version 3.5 and later
+          call KSPSetOperators(KSPInstance, matrix, matrix, ierr)
+          call KSPSetReusePreconditioner(KSPInstance, PETSC_TRUE, ierr)
+          call PCSetReusePreconditioner(preconditionerContext, PETSC_TRUE, ierr)
+#endif
+
+       end if
+
+       numRHSs = 3
+       do whichRHS = 1,numRHSs
+          if (masterProc) then
+             print *,"################################################################"
+             print "(a,i1,a,i1)"," Solving system with right-hand side ",whichRHS," of ",numRHSs
+             print *,"################################################################"
+          end if
+
+          ! To get a transport matrix, change the equilibrium gradients here.
+
+          ! To compute the right-hand side, we note the following:
+          ! The right-hand side for a linear problem 
+          ! is the same as 
+          ! (-1) * the residual when f=0.
+
+          !  Set f=0:
+          call VecSet(solutionVec, zero, ierr)
+
+          call evaluateResidual(mysnes, solutionVec, residualVec, userContext, ierr)
+          ! Multiply the residual by (-1):
+          call VecScale(residualVec, -1d+0, ierr)
+
+          if (masterProc) then
+             print *,"Beginning the main solve.  This could take a while ..."
+          end if
+
+          call PetscTime(time1, ierr)
+          if (solveSystem) then
+             ! All the magic happens in this next line!
+             call KSPSolve(KSPInstance,residualVec, solutionVec, ierr)
+          end if
+
+          call PetscTime(time2, ierr)
+          if (masterProc) then
+             print *,"Done with the main solve.  Time to solve: ", time2-time1, " seconds."
+          end if
+          call PetscTime(time1, ierr)
+
+          if (useIterativeSolver) then
+             call KSPGetConvergedReason(KSPInstance, KSPReason, ierr)
+             if (KSPReason>0) then
+                if (masterProc) then
+                   print *,"Converged!  KSPConvergedReason = ", KSPReason
+                end if
+                didNonlinearCalculationConverge = integerToRepresentTrue
+             else
+                if (masterProc) then
+                   print *,"Did not converge :(   KSPConvergedReason = ", KSPReason
+                end if
+                didNonlinearCalculationConverge = integerToRepresentFalse
+             end if
+          else
+             didNonlinearCalculationConverge = integerToRepresentTrue
+          end if
+
+          ! Compute flows, fluxes, etc.:
+          call diagnostics(solutionVec, 1)
+
+       end do
+
+    case default
+       print *,"Error! Invalid setting for RHSMode."
+       stop
+    end select
+
+
 
     ! ***********************************************************************
     ! ***********************************************************************
     ! 
-    !  End of the main solver loop.
+    !  End of the main solver code.
     !
     ! ***********************************************************************
     ! ***********************************************************************

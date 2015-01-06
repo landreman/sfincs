@@ -87,12 +87,12 @@
   psiHat_wish = -1
   psiN_wish = -1
   rHat_wish = -1
-  rN_wish = 0.3
+  rN_wish = -1
   ! For geometryScheme = 1, the radial coordinate will be exactly the specified value.
   ! For geometryScheme = 11 or 12, the magnetic geometry will be used from the nearest available surface in the geometry input file.
   ! For geometryScheme = 2, 3, or 4, all these values will be ignored, and the surface at rN = 0.5 will be used.
 
-  geometryScheme = 4 
+  geometryScheme = 2
   ! 1 = Three-helicity model
   ! 2 = Three-helicity approximation of the LHD standard configuration at rN = 0.5
   ! 3 = Four-helicity approximation of the LHD inward-shifted configuration at rN = 0.5
@@ -134,7 +134,7 @@
   ! psiAHat = psi_a / (\bar{B} * \bar{R}^2) (in both Gaussian and SI units)
   ! where 2*pi*psi_a is the toroidal flux at the last closed flux surface
   ! (the surface where psi_N = 1.)
-  ! The value of psiAHat here is over-written for geometryScheme = .ne. 1
+  ! The value of psiAHat here is over-written for geometryScheme = 2, 3, 11 and 12.
   psiAHat = 0.03d+0
 
   aHat = 0.1
@@ -166,35 +166,19 @@
   ! dnHatdpsiNs = radial gradient of the density of each species with respect to the normalized toroidal flux psi_N, normalized to the reference density \bar{n}
   ! dTHatdpsiNs = radial gradient of the temperature of each species with respect to the normalized toroidal flux psi_N, normalized to the reference temperature \bar{T}
 
-  ! Here is an example with 1 species:
   Zs = 1
   mHats = 1
   nHats = 1.0d+0
-  THats = 0.1d+0
+  THats = 1.0d+0
   ! Only 1 of the following 4 pairs will be used, depending on inputRadialCoordinateForGradients:
   dNHatdpsiHats = 0
   dTHatdpsiHats = 0
-  dNHatdpsiNs = -0.5d+0
-  dTHatdpsiNs = -0.7d+0
+  dNHatdpsiNs = 1d+0
+  dTHatdpsiNs = 0
   dNHatdrHats = 0
   dTHatdrHats = 0
   dNHatdrNs = 0
   dTHatdrNs = 0
-
-  ! Here is an example with 2 species:
-  !Zs = 1 6
-  !mHats = 1 6
-  !nHats = 0.6d+0 0.009d+0
-  !THats = 0.5d+0 0.8d+0 
-  !! Only 1 of the following 4 pairs will be used, depending on inputRadialCoordinateForGradients:
-  !dNHatdpsiHats = 0 0
-  !dTHatdpsiHats = 0 0
-  !dNHatdpsiNs = -0.3d+0 -0.001d+0
-  !dTHatdpsiNs = -0.3d+0 -0.2d+0
-  !dNHatdrHats = 0 0
-  !dTHatdrHats = 0 0
-  !dNHatdrNs = 0 0
-  !dTHatdrNs = 0 0
 
 /
 
@@ -210,7 +194,6 @@
   ! where
   ! c = speed of light
   ! e = proton charge
-  ! Delta = 0.0011d+0
 
   Delta = 4.5694d-3  ! reference values: \bar{T}=1 keV, \bar{n}=10^20 m^-3,
                      ! \bar{Phi}=1 kV, \bar{B}=1 T, \bar{R}=1 m, proton mass
@@ -320,15 +303,15 @@
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! Numerical resolution parameters:
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+  
   ! Number of grid points in the poloidal direction.
   ! Memory and time requirements DO depend strongly on this parameter.
-  Ntheta = 5
+  Ntheta = 15
 
   ! Number of grid points in the toroidal direction
   ! (per identical segment of the stellarator.)
   ! Memory and time requirements DO depend strongly on this parameter.
-  Nzeta = 7
+  Nzeta = 13
 
   ! Number of Legendre polynomials used to represent the distribution function.
   ! Memory and time requirements DO depend strongly on this parameter.
@@ -336,7 +319,7 @@
   ! the collisionality. At high collisionality, this parameter can be as low
   ! as ~ 5. At low collisionality, this parameter may need to be many 10s or
   ! even > 100 for convergence.
-  Nxi = 8
+  Nxi = 14
   
   ! Number of Legendre polynomials used to represent the Rosenbluth
   ! potentials. Except in exceptional circumstances, this number should be 4.
@@ -348,7 +331,7 @@
   ! This parameter almost always needs to be at least 5.
   ! Usually a value in the range 5-8 is plenty for convergence, though sometimes
   ! you may need to go up to 10-15.
-  Nx = 5
+  Nx = 8
 
   ! Number of grid points in energy used to represent the Rosenbluth potentials.
   ! Memory and time requirements do NOT depend strongly on this parameter.
@@ -425,7 +408,7 @@
   ! 3 = keep only the tridiagonal terms in x
   ! 4 = keep only the diagonal and superdiagonal in x
 
-  preconditioner_x_min_L = 2
+  preconditioner_x_min_L = 0
   ! The x structure of the matrix will only be simplified for L >= this value.
   ! Set preconditioner_x_min_L=0 to simplify the matrix for every L.
 

@@ -61,7 +61,7 @@ subroutine validateInput()
 
   ! preconditionerOptions namelist:
 
-  if (preconditioner_x_min_L .ne. 1 .and. masterProc) then
+  if (preconditioner_x .ne. 1 .and. masterProc) then
      print *,line
      print *,line
      print *,"**   WARNING: preconditioner_x should typically be 1."
