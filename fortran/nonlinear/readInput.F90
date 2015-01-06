@@ -18,7 +18,7 @@ contains
     integer :: NDNHatdrHats,   NDTHatdrHats
     integer :: NDNHatdrNs,     NDTHatdrNs
 
-    namelist / flowControl / saveMatlabOutput, MatlabOutputFilename, &
+    namelist / general / saveMatlabOutput, MatlabOutputFilename, &
          outputFilename, solveSystem, RHSMode, &
          saveMatricesAndVectorsInBinary, binaryOutputFilename
 
@@ -79,14 +79,14 @@ contains
        print *,"Proc ",myRank,": Error opening ", trim(filename)
        stop
     else
-       read(fileUnit, nml=flowControl, iostat=didFileAccessWork)
+       read(fileUnit, nml=general, iostat=didFileAccessWork)
        if (didFileAccessWork /= 0) then
           print *,"Proc ",myRank,": Error!  I was able to open the file ", trim(filename), &
-               " but not read data from the flowControl namelist in it."
+               " but not read data from the general namelist in it."
           stop
        end if
        if (masterProc) then
-          print *,"Successfully read parameters from flowControl namelist in ", trim(filename), "."
+          print *,"Successfully read parameters from general namelist in ", trim(filename), "."
        end if
 
        read(fileUnit, nml=geometryParameters, iostat=didFileAccessWork)

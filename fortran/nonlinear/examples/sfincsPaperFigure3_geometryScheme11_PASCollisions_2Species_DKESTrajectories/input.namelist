@@ -24,9 +24,9 @@
 ! (psi_N=0 is the magnetic axis, and psi_N=1 is the last closed flux 
 ! surface.)
 
-&flowControl
+&general
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ! Options for program flow control:
+  ! General program options:
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   ! This next option may be used in the future, but at the moment it doesn't do anything:

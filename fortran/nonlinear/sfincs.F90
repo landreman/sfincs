@@ -47,6 +47,7 @@ program sfincs
   startTime = time1
 
   call readNamelistInput()
+  call validateInput()
 
   ! If running with >1 proc,
   ! make sure either superlu_dist or mumps is installed, and pick which one
