@@ -505,6 +505,12 @@
        stop
     end select
 
+    select case (RHSMode)
+    case (2)
+       transportMatrixSize = 3
+       allocate(transportMatrix(transportMatrixSize, transportMatrixSize))
+       transportMatrix = 0
+    end select
 
     if (masterProc) then
        print *,"------------------------------------------------------"

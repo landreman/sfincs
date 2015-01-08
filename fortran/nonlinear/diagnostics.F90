@@ -392,23 +392,30 @@
        FSABVelocityUsingFSADensityOverB0 = FSABVelocityUsingFSADensity / B0OverBBar
        FSABVelocityUsingFSADensityOverRootFSAB2 = FSABVelocityUsingFSADensity / sqrt(FSABHat2)
 
-!!$          if (RHSMode==2) then
-!!$             VPrimeHatWithG = VPrimeHat*(GHat+iota*IHat)
-!!$             select case (whichRHS)
-!!$             case (1)
-!!$                transportMatrix(1,1) = 4*(GHat+iota*IHat)*particleFlux*nHat*B0OverBBar/(GHat*VPrimeHatWithG*(THat*sqrtTHat)*GHat)
-!!$                transportMatrix(2,1) = 8*(GHat+iota*IHat)*heatFlux*nHat*B0OverBBar/(GHat*VPrimeHatWithG*(THat*THat*sqrtTHat)*GHat)
-!!$                transportMatrix(3,1) = 2*nHat*FSABFlow/(GHat*THat)
-!!$             case (2)
-!!$                transportMatrix(1,2) = 4*(GHat+iota*IHat)*particleFlux*B0OverBBar/(GHat*VPrimeHatWithG*sqrtTHat*GHat)
-!!$                transportMatrix(2,2) = 8*(GHat+iota*IHat)*heatFlux*B0OverBBar/(GHat*VPrimeHatWithG*sqrtTHat*THat*GHat)
-!!$                transportMatrix(3,2) = 2*FSABFlow/(GHat)
-!!$             case (3)
-!!$                transportMatrix(1,3) = particleFlux*Delta*Delta*FSABHat2/(VPrimeHatWithG*GHat*psiAHat*omega)
-!!$                transportMatrix(2,3) = 2*Delta*Delta*heatFlux*FSABHat2/(GHat*VPrimeHatWithG*psiAHat*THat*omega)
-!!$                transportMatrix(3,3) = FSABFlow*Delta*Delta*sqrtTHat*FSABHat2/((GHat+iota*IHat)*2*psiAHat*omega*B0OverBBar)
-!!$             end select
-!!$          end if
+       if (RHSMode==2) then
+          ispecies = 1
+          THat = THats(ispecies)
+          mHat = mHats(ispecies)
+          sqrtTHat = sqrt(THat)
+          sqrtMHat = sqrt(mHat)
+
+          select case (whichRHS)
+          case (1)
+             transportMatrix(1,1) = 4/(Delta*Delta)*sqrtTHat/sqrtmHat*Zs(1)*Zs(1)*(GHat+iota*IHat)&
+                  *particleFlux_vm_psiHat(1)*B0OverBBar/(THat*THat*GHat*GHat)
+             !transportMatrix(1,1) = 4*(GHat+iota*IHat)*particleFlux*nHat*B0OverBBar/(GHat*VPrimeHatWithG*(THat*sqrtTHat)*GHat)
+             !transportMatrix(2,1) = 8*(GHat+iota*IHat)*heatFlux*nHat*B0OverBBar/(GHat*VPrimeHatWithG*(THat*THat*sqrtTHat)*GHat)
+             !transportMatrix(3,1) = 2*nHat*FSABFlow/(GHat*THat)
+          case (2)
+             !transportMatrix(1,2) = 4*(GHat+iota*IHat)*particleFlux*B0OverBBar/(GHat*VPrimeHatWithG*sqrtTHat*GHat)
+             !transportMatrix(2,2) = 8*(GHat+iota*IHat)*heatFlux*B0OverBBar/(GHat*VPrimeHatWithG*sqrtTHat*THat*GHat)
+             !transportMatrix(3,2) = 2*FSABFlow/(GHat)
+          case (3)
+             !transportMatrix(1,3) = particleFlux*Delta*Delta*FSABHat2/(VPrimeHatWithG*GHat*psiAHat*omega)
+             !transportMatrix(2,3) = 2*Delta*Delta*heatFlux*FSABHat2/(GHat*VPrimeHatWithG*psiAHat*THat*omega)
+             !transportMatrix(3,3) = FSABFlow*Delta*Delta*sqrtTHat*FSABHat2/((GHat+iota*IHat)*2*psiAHat*omega*B0OverBBar)
+          end select
+       end if
 
        call VecRestoreArrayF90(solnOnProc0, solnArray, ierr)
 
@@ -427,12 +434,13 @@
           print *,"   heatFlux_vd_psiHat       ", heatFlux_vd_psiHat(ispecies)
        end do
        print *,"FSABjHat (bootstrap current): ", FSABjHat
-!!$    if (rhsMode == 2) then
-!!$       print *,"Transport matrix:"
-!!$       do i=1,3
-!!$          print *,"   ", transportMatrix(i,:)
-!!$       end do
-!!$    end if
+
+       if (rhsMode > 1) then
+          print *,"Transport matrix:"
+          do i=1,transportMatrixSize
+             print *,"   ", transportMatrix(i,:)
+          end do
+       end if
 
 
        deallocate(densityIntegralWeights)
@@ -451,7 +459,7 @@
 
     ! updateOutputFile should be called by all procs since it contains MPI_Barrier
     ! (in order to be sure the HDF5 file is safely closed before moving on to the next computation.)
-    if (RHSMode==1) then
+    if (RHSMode==1 .or. whichRHS==transportMatrixSize) then
        call updateOutputFile(iterationNum)
     end if
 

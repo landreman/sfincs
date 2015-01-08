@@ -19,7 +19,7 @@
     integer :: ix, L, itheta, izeta, ispecies, index
     PetscScalar :: THat, mHat, sqrtTHat, sqrtmHat
     Mat :: residualMatrix
-    PetscScalar :: EParallelHatToUse, dPhiHatdpsiHatToUse
+    PetscScalar :: dPhiHatdpsiHatToUseInRHS
     PetscReal :: norm
 
     if (masterProc) then
@@ -65,9 +65,11 @@
     call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, rhs, ierr)
     call VecSet(rhs, zero, ierr)
 
-    ! If we ever run with multiple RHS's, these next lines might change:
-    EParallelHatToUse = EParallelHat
-    dPhiHatdpsiHatToUse = dPhiHatdpsiHat
+    if (RHSMode==1) then
+       dPhiHatdpsiHatToUseInRHS = dPhiHatdpsiHat
+    else
+       dPhiHatdpsiHatToUseInRHS = 0
+    end if
 
     ! First add the term arising from radial gradients:
     x2 = x*x
@@ -82,7 +84,7 @@
           !     + alpha*Zs(ispecies)/THats(ispecies)*dPhiHatdpsiNToUse &
           !     + (x2(ix) - three/two)*dTHatdpsiNs(ispecies)/THats(ispecies))
           xPartOfRHS = x2(ix)*exp(-x2(ix))*( dnHatdpsiHats(ispecies)/nHats(ispecies) &
-               + alpha*Zs(ispecies)/THats(ispecies)*dPhiHatdpsiHatToUse &
+               + alpha*Zs(ispecies)/THats(ispecies)*dPhiHatdpsiHatToUseInRHS &
                + (x2(ix) - three/two)*dTHatdpsiHats(ispecies)/THats(ispecies))
           do itheta = ithetaMin,ithetaMax
              do izeta = 1,Nzeta
@@ -115,7 +117,7 @@
        do ix=1,Nx
           !factor = alpha*Zs(ispecies)*x(ix)*exp(-x2(ix))*EParallelHatToUse*(GHat+iota*IHat)&
           !     *nHats(ispecies)*mHats(ispecies)/(pi*sqrtpi*THats(ispecies)*THats(ispecies)*FSABHat2)
-          factor = alpha*Zs(ispecies)*x(ix)*exp(-x2(ix))*EParallelHatToUse &
+          factor = alpha*Zs(ispecies)*x(ix)*exp(-x2(ix))*EParallelHat &
                *nHats(ispecies)*mHats(ispecies)/(pi*sqrtpi*THats(ispecies)*THats(ispecies)*FSABHat2)
           do itheta=ithetaMin,ithetaMax
              do izeta = 1,Nzeta

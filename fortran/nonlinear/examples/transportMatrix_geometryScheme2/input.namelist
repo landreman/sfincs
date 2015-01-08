@@ -231,9 +231,13 @@
   ! \bar{nu} = -----------------------------------------------------------   (Gaussian units)
   !                       3 * sqrt(\bar{m}} * \bar{T}^(3/2)
   !
-  !nu_n = 1.3d+0
 
-  nu_n = 8.4774d-3  ! reference values: \bar{T}=1 keV, \bar{n}=10^20 m^-3,
+  ! For THat=1, mHat=1, nHat=1,
+  ! then nu_n = nuPrime * B0OverBBar / (GHat + iota * IHat)
+  ! For LHD, then, nu_n = nuPrime * 0.2668018
+  nu_n = 0.2668018d+0
+
+  !nu_n = 8.4774d-3  ! reference values: \bar{T}=1 keV, \bar{n}=10^20 m^-3,
                     ! \bar{Phi}=1 kV, \bar{B}=1 T, \bar{R}=1 m, proton mass
 
   collisionOperator = 0

@@ -20,7 +20,7 @@ module solver
     SNES :: mysnes
     KSP :: KSPInstance
     PC :: preconditionerContext
-    integer :: whichRHS, numRHSs
+    integer :: numRHSs
     SNESConvergedReason :: reason
     KSPConvergedReason :: KSPReason
     PetscLogDouble :: time1, time2
@@ -242,6 +242,21 @@ module solver
           end if
 
           ! To get a transport matrix, change the equilibrium gradients here.
+          select case (whichRHS)
+          case (1)
+             dnHatdpsiHats = 1
+             dTHatdpsiHats = 0
+             EParallelHat = 0
+          case (2)
+             ! The next 2 lines ensure (1/n)*dn/dpsi + (3/2)*dT/dpsi = 0 while dT/dpsi is nonzero.
+             dnHatdpsiHats = (3/two)*nHats(1)*THats(1)
+             dTHatdpsiHats = 1
+             EParallelHat = 0
+          case (3)
+             dnHatdpsiHats = 0
+             dTHatdpsiHats = 0
+             EParallelHat = 1
+          end select
 
           ! To compute the right-hand side, we note the following:
           ! The right-hand side for a linear problem 

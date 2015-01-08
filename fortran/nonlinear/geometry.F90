@@ -905,6 +905,14 @@ contains
        stop
     end select
 
+    ! Compute G and H for the case of non-Boozer coordinates.
+    ! (We could do this computation on a finer (theta,zeta) grid than the grid
+    ! used for the kinetic calculation. But let's do this on the same grid for 2 reasons:
+    ! (1) simplicity, and (2) since the trapezoid rule is spectrally
+    ! accurate on a uniform periodic grid, so a fine grid is not required.)
+    GHat = dot_product(thetaWeights, matmul(BHat_sub_zeta,  zetaWeights)) / (4*pi*pi)
+    IHat = dot_product(thetaWeights, matmul(BHat_sub_theta, zetaWeights)) / (4*pi*pi)
+
   end subroutine computeBHat
 
   ! -----------------------------------------------------------------------------------------

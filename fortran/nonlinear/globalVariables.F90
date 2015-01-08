@@ -18,7 +18,7 @@ module globalVariables
   ! ********************************************************
   ! ********************************************************
   !
-  ! Options for program flow control:
+  ! General options:
   !
   ! ********************************************************
   ! ********************************************************
@@ -28,7 +28,7 @@ module globalVariables
   character(len=200) :: binaryOutputFilename
   character(len=200) :: outputFilename
   logical :: solveSystem
-  integer :: RHSMode
+  integer :: RHSMode, whichRHS
 
   ! ********************************************************
   ! ********************************************************
@@ -227,6 +227,9 @@ module globalVariables
 
   PetscLogDouble :: elapsedTime
   integer :: didLinearCalculationConverge, didNonlinearCalculationConverge
+
+  integer :: transportMatrixSize = 3
+  PetscScalar, dimension(:,:), allocatable :: transportMatrix
 
   ! ********************************************************
   !

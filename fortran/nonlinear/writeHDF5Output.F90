@@ -21,6 +21,7 @@ module writeHDF5Output
   integer(HSIZE_T), dimension(1) :: dimForZeta
   integer(HSIZE_T), dimension(1) :: dimForx
   integer(HSIZE_T), dimension(2) :: dimForThetaZeta
+  integer(HSIZE_T), dimension(2) :: dimForTransportMatrix
 
   integer(HID_T) :: dspaceIDForScalar
   integer(HID_T) :: dspaceIDForSpecies
@@ -28,6 +29,7 @@ module writeHDF5Output
   integer(HID_T) :: dspaceIDForZeta
   integer(HID_T) :: dspaceIDForx
   integer(HID_T) :: dspaceIDForThetaZeta
+  integer(HID_T) :: dspaceIDForTransportMatrix
 
   ! Dimension arrays related to arrays that expand with each iteration:
   integer(HSIZE_T), dimension(1) :: dimForIteration
@@ -267,6 +269,7 @@ contains
     integer, intent(in) :: iterationNum
     PetscErrorCode :: ierr
     integer(HID_T) :: dsetID
+    integer :: rank
 
     if (masterProc) then
 
@@ -412,6 +415,19 @@ contains
 !!$            didNonlinearCalculationConverge, dimForScalar, HDF5Error)
 !!$
 
+
+       ! Save transport matrix if needed
+       if (RHSMode > 1) then
+          rank = 2
+          dimForTransportMatrix(1) = transportMatrixSize
+          dimForTransportMatrix(2) = transportMatrixSize
+          call h5screate_simple_f(rank, dimForTransportMatrix, dspaceIDForTransportMatrix, HDF5Error)
+
+          call writeHDF5Field("transportMatrix", transportMatrix, dspaceIDForTransportMatrix, dimForTransportMatrix)
+
+          call h5sclose_f(dspaceIDForTransportMatrix, HDF5Error)
+       end if
+
        call h5fclose_f(HDF5FileID, HDF5Error)
     end if
 
@@ -456,7 +472,6 @@ contains
     dimForThetaZeta(1) = Ntheta
     dimForThetaZeta(2) = Nzeta
     call h5screate_simple_f(rank, dimForThetaZeta, dspaceIDForThetaZeta, HDF5Error)
-
 
     ! ------------------------------------------------------------------
     ! Next come the arrays that expand with each iteration of SNES.
