@@ -259,7 +259,7 @@ contains
 
   ! -----------------------------------------------------------------------------------
 
-  subroutine updateOutputFile(iterationNum)
+  subroutine updateOutputFile(iterationNum, writeTransportMatrix)
 
     ! For an example of how to create an extendible array in HDF5, see
     ! http://www.hdfgroup.org/ftp/HDF5/current/src/unpacked/fortran/examples/h5_extend.f90
@@ -267,6 +267,7 @@ contains
     implicit none
 
     integer, intent(in) :: iterationNum
+    logical, intent(in) :: writeTransportMatrix
     PetscErrorCode :: ierr
     integer(HID_T) :: dsetID
     integer :: rank
@@ -417,7 +418,7 @@ contains
 
 
        ! Save transport matrix if needed
-       if (RHSMode > 1) then
+       if (writeTransportMatrix) then
           rank = 2
           dimForTransportMatrix(1) = transportMatrixSize
           dimForTransportMatrix(2) = transportMatrixSize

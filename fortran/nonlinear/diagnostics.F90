@@ -471,8 +471,10 @@
 
     ! updateOutputFile should be called by all procs since it contains MPI_Barrier
     ! (in order to be sure the HDF5 file is safely closed before moving on to the next computation.)
-    if (RHSMode==1 .or. whichRHS==transportMatrixSize) then
-       call updateOutputFile(iterationNum)
+    if (RHSMode >1 .and. whichRHS==transportMatrixSize) then
+       call updateOutputFile(iterationNum, .true.)
+    else
+       call updateOutputFile(iterationNum, .false.)
     end if
 
   end subroutine diagnostics

@@ -304,7 +304,7 @@ module solver
           end if
 
           ! Compute flows, fluxes, etc.:
-          call diagnostics(solutionVec, 1)
+          call diagnostics(solutionVec, whichRHS)
 
        end do
 

@@ -59,12 +59,109 @@ subroutine validateInput()
      print *,line
   end if
 
+  ! otherNumericalParameters namelist:
+
+  if (thetaDerivativeScheme<0) then
+     if (masterProc) then
+        print *,"Error! thetaDerivativeScheme cannot be less than 0."
+     end if
+     stop
+  end if
+  
+  if (thetaDerivativeScheme>2) then
+     if (masterProc) then
+        print *,"Error! thetaDerivativeScheme cannot be more than 2."
+     end if
+     stop
+  end if
+  
+  if (thetaDerivativeScheme == 0 .and. masterProc) then
+     print *,line
+     print *,line
+     print *,"**   WARNING: thetaDerivativeScheme=0 leads to very dense matrices,"
+     print *,"**            meaning a lot of time and memory is required to solve the system."
+     print *,"**            thetaDerivativeScheme = 2 is strongly recommended."
+     print *,line
+     print *,line
+  end if
+
+  if (thetaDerivativeScheme == 1 .and. masterProc) then
+     print *,line
+     print *,line
+     print *,"**   WARNING: thetaDerivativeScheme=2 is typically preferred to thetaDerivativeScheme=1"
+     print *,"**            since accuracy is higher for relatively little additional computational cost."
+     print *,line
+     print *,line
+  end if
+
+  if (zetaDerivativeScheme<0) then
+     if (masterProc) then
+        print *,"Error! zetaDerivativeScheme cannot be less than 0."
+     end if
+     stop
+  end if
+  
+  if (zetaDerivativeScheme>2) then
+     if (masterProc) then
+        print *,"Error! zetaDerivativeScheme cannot be more than 2."
+     end if
+     stop
+  end if
+  
+  if (zetaDerivativeScheme == 0 .and. masterProc) then
+     print *,line
+     print *,line
+     print *,"**   WARNING: zetaDerivativeScheme=0 leads to very dense matrices,"
+     print *,"**            meaning a lot of time and memory is required to solve the system."
+     print *,"**            zetaDerivativeScheme = 2 is strongly recommended."
+     print *,line
+     print *,line
+  end if
+
+  if (zetaDerivativeScheme == 1 .and. masterProc) then
+     print *,line
+     print *,line
+     print *,"**   WARNING: zetaDerivativeScheme=2 is typically preferred to zetaDerivativeScheme=1"
+     print *,"**            since accuracy is higher for relatively little additional computational cost."
+     print *,line
+     print *,line
+  end if
+
+
   ! preconditionerOptions namelist:
 
+  if (preconditioner_species<0) then
+     if (masterProc) then
+        print *,"Error! preconditioner_species should not be less than 0."
+     end if
+     stop
+  end if
+  
+  if (preconditioner_species>1) then
+     if (masterProc) then
+        print *,"Error! preconditioner_species should not be more than 1."
+     end if
+     stop
+  end if
+  
+  if (preconditioner_x<0) then
+     if (masterProc) then
+        print *,"Error! preconditioner_x should not be less than 0."
+     end if
+     stop
+  end if
+  
+  if (preconditioner_x>4) then
+     if (masterProc) then
+        print *,"Error! preconditioner_x should not be more than 4."
+     end if
+     stop
+  end if
+  
   if (preconditioner_x .ne. 1 .and. masterProc) then
      print *,line
      print *,line
-     print *,"**   WARNING: preconditioner_x should typically be 1."
+     print *,"**   WARNING: preconditioner_x = 1 is usually the best option."
      print *,line
      print *,line
   end if
@@ -84,5 +181,65 @@ subroutine validateInput()
      print *,line
   end if
 
+  if (preconditioner_theta<0) then
+     if (masterProc) then
+        print *,"Error! preconditioner_theta cannot be less than 0."
+     end if
+     stop
+  end if
+  
+  if (preconditioner_theta>1) then
+     if (masterProc) then
+        print *,"Error! preconditioner_theta cannot be more than 1."
+     end if
+     stop
+  end if
+  
+  if (preconditioner_theta == 1 .and. masterProc) then
+     print *,line
+     print *,line
+     print *,"**   WARNING: preconditioner_theta = 1 often does not work well (i.e. GMRES/KSP does not converge rapidly.)"
+     print *,"**            preconditioner_theta = 0 is strongly recommended."
+     print *,line
+     print *,line
+  end if
+
+  if (preconditioner_zeta<0) then
+     if (masterProc) then
+        print *,"Error! preconditioner_zeta cannot be less than 0."
+     end if
+     stop
+  end if
+  
+  if (preconditioner_zeta>1) then
+     if (masterProc) then
+        print *,"Error! preconditioner_zeta cannot be more than 1."
+     end if
+     stop
+  end if
+  
+  if (preconditioner_zeta == 1 .and. masterProc) then
+     print *,line
+     print *,line
+     print *,"**   WARNING: preconditioner_zeta = 1 often does not work well (i.e. GMRES/KSP does not converge rapidly.)"
+     print *,"**            preconditioner_zeta = 0 is strongly recommended."
+     print *,line
+     print *,line
+  end if
+
+  if (preconditioner_xi<0) then
+     if (masterProc) then
+        print *,"Error! preconditioner_xi cannot be less than 0."
+     end if
+     stop
+  end if
+  
+  if (preconditioner_xi>1) then
+     if (masterProc) then
+        print *,"Error! preconditioner_xi cannot be more than 1."
+     end if
+     stop
+  end if
+  
 end subroutine validateInput
 
