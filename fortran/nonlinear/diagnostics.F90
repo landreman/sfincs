@@ -54,7 +54,7 @@
     Vec :: solnOnProc0
     PetscScalar, pointer :: solnArray(:)
 
-    PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat
+    PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, nHat
     PetscScalar, dimension(:), allocatable :: B2
     integer :: i, j, ix, ispecies, itheta, izeta, L, index
     PetscScalar :: densityFactor, flowFactor, pressureFactor, Phi1HatDenominator
@@ -394,6 +394,7 @@
 
        if (RHSMode==2) then
           ispecies = 1
+          nHat = nHats(ispecies)
           THat = THats(ispecies)
           mHat = mHats(ispecies)
           sqrtTHat = sqrt(THat)
@@ -403,14 +404,25 @@
           case (1)
              transportMatrix(1,1) = 4/(Delta*Delta)*sqrtTHat/sqrtmHat*Zs(1)*Zs(1)*(GHat+iota*IHat)&
                   *particleFlux_vm_psiHat(1)*B0OverBBar/(THat*THat*GHat*GHat)
+             transportMatrix(2,1) = 8/(Delta*Delta)*sqrtTHat/sqrtmHat*Zs(1)*Zs(1)*(GHat+iota*IHat)&
+                  *heatFlux_vm_psiHat(1)*B0OverBBar/(THat*THat*THat*GHat*GHat)
+             transportMatrix(3,1) = 2*Zs(1)*FSABFlow(1)/(Delta*GHat*THat)
              !transportMatrix(1,1) = 4*(GHat+iota*IHat)*particleFlux*nHat*B0OverBBar/(GHat*VPrimeHatWithG*(THat*sqrtTHat)*GHat)
              !transportMatrix(2,1) = 8*(GHat+iota*IHat)*heatFlux*nHat*B0OverBBar/(GHat*VPrimeHatWithG*(THat*THat*sqrtTHat)*GHat)
              !transportMatrix(3,1) = 2*nHat*FSABFlow/(GHat*THat)
           case (2)
+             transportMatrix(1,2) = 4/(Delta*Delta)*sqrtTHat/sqrtmHat*Zs(1)*Zs(1)*(GHat+iota*IHat)&
+                  *particleFlux_vm_psiHat(1)*B0OverBBar/(nHat*THat*GHat*GHat)
+             transportMatrix(2,2) = 8/(Delta*Delta)*sqrtTHat/sqrtmHat*Zs(1)*Zs(1)*(GHat+iota*IHat)&
+                  *heatFlux_vm_psiHat(1)*B0OverBBar/(nHat*THat*THat*GHat*GHat)
+             transportMatrix(3,2) = 2*Zs(1)*FSABFlow(1)/(Delta*GHat*nHat)
              !transportMatrix(1,2) = 4*(GHat+iota*IHat)*particleFlux*B0OverBBar/(GHat*VPrimeHatWithG*sqrtTHat*GHat)
              !transportMatrix(2,2) = 8*(GHat+iota*IHat)*heatFlux*B0OverBBar/(GHat*VPrimeHatWithG*sqrtTHat*THat*GHat)
              !transportMatrix(3,2) = 2*FSABFlow/(GHat)
           case (3)
+             transportMatrix(1,3) = particleFlux_vm_psiHat(1)*2*FSABHat2/(nHat*alpha*Delta*GHat)
+             transportMatrix(2,3) = heatFlux_vm_psiHat(1)*4*FSABHat2/(nHat*THat*alpha*Delta*GHat)
+             transportMatrix(3,3) = FSABFlow(1)*sqrtTHat*sqrtMHat*FSABHat2/((GHat+iota*IHat)*alpha*Zs(1)*nHat*B0OverBBar)
              !transportMatrix(1,3) = particleFlux*Delta*Delta*FSABHat2/(VPrimeHatWithG*GHat*psiAHat*omega)
              !transportMatrix(2,3) = 2*Delta*Delta*heatFlux*FSABHat2/(GHat*VPrimeHatWithG*psiAHat*THat*omega)
              !transportMatrix(3,3) = FSABFlow*Delta*Delta*sqrtTHat*FSABHat2/((GHat+iota*IHat)*2*psiAHat*omega*B0OverBBar)
