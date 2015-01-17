@@ -34,7 +34,12 @@ module solver
 
     call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, solutionVec, ierr)
     call VecDuplicate(solutionVec, residualVec, ierr)
-    
+
+    call VecDuplicate(solutionVec, f0, ierr)
+    call init_f0()
+    !call VecDuplicate(solutionVec, temperatureEquilibrationTerm, ierr)
+    !call initTemperatureEquilibrationTerm()
+
     call SNESCreate(MPIComm, mysnes, ierr)
     call SNESSetFunction(mysnes, residualVec, evaluateResidual, PETSC_NULL_OBJECT, ierr)
 

@@ -2,7 +2,7 @@ module globalVariables
 
   implicit none
 
-#include <finclude/petscsysdef.h>
+#include <finclude/petscvecdef.h>
 
   character(len=50), parameter :: inputFilename = "input.namelist"
 
@@ -91,7 +91,8 @@ module globalVariables
   logical :: includeElectricFieldTermInXiDot = .true.
   logical :: useDKESExBDrift = .true.
   logical :: include_fDivVE_term = .true.
-
+  logical :: includeTemperatureEquilibrationTerm = .true.
+  logical :: includePhi1 = .true.
 
   ! ********************************************************
   ! ********************************************************
@@ -167,11 +168,17 @@ module globalVariables
   PetscScalar, dimension(:,:,:), allocatable :: pressurePerturbation, totalPressure
   PetscScalar, dimension(:,:,:), allocatable :: flow, velocityUsingFSADensity, velocityUsingTotalDensity
   PetscScalar, dimension(:,:,:), allocatable :: MachUsingFSAThermalSpeed
+  PetscScalar, dimension(:,:,:), allocatable :: particleFluxBeforeSurfaceIntegral_vm0
   PetscScalar, dimension(:,:,:), allocatable :: particleFluxBeforeSurfaceIntegral_vm
+  PetscScalar, dimension(:,:,:), allocatable :: particleFluxBeforeSurfaceIntegral_vE0
   PetscScalar, dimension(:,:,:), allocatable :: particleFluxBeforeSurfaceIntegral_vE
+  PetscScalar, dimension(:,:,:), allocatable :: momentumFluxBeforeSurfaceIntegral_vm0
   PetscScalar, dimension(:,:,:), allocatable :: momentumFluxBeforeSurfaceIntegral_vm
+  PetscScalar, dimension(:,:,:), allocatable :: momentumFluxBeforeSurfaceIntegral_vE0
   PetscScalar, dimension(:,:,:), allocatable :: momentumFluxBeforeSurfaceIntegral_vE
+  PetscScalar, dimension(:,:,:), allocatable :: heatFluxBeforeSurfaceIntegral_vm0
   PetscScalar, dimension(:,:,:), allocatable :: heatFluxBeforeSurfaceIntegral_vm
+  PetscScalar, dimension(:,:,:), allocatable :: heatFluxBeforeSurfaceIntegral_vE0
   PetscScalar, dimension(:,:,:), allocatable :: heatFluxBeforeSurfaceIntegral_vE
   PetscScalar, dimension(:,:,:), allocatable :: NTVBeforeSurfaceIntegral
   PetscScalar, dimension(:,:), allocatable :: NTVKernel
@@ -180,47 +187,99 @@ module globalVariables
   PetscScalar, dimension(:), allocatable :: FSABVelocityUsingFSADensityOverB0
   PetscScalar, dimension(:), allocatable :: FSABVelocityUsingFSADensityOverRootFSAB2
 
+  PetscScalar, dimension(:), allocatable :: particleFlux_vm0_psiHat
+  PetscScalar, dimension(:), allocatable :: particleFlux_vm0_psiN
+  PetscScalar, dimension(:), allocatable :: particleFlux_vm0_rHat
+  PetscScalar, dimension(:), allocatable :: particleFlux_vm0_rN
+
   PetscScalar, dimension(:), allocatable :: particleFlux_vm_psiHat
-  PetscScalar, dimension(:), allocatable :: particleFlux_vE_psiHat
-  PetscScalar, dimension(:), allocatable :: particleFlux_vd_psiHat
   PetscScalar, dimension(:), allocatable :: particleFlux_vm_psiN
-  PetscScalar, dimension(:), allocatable :: particleFlux_vE_psiN
-  PetscScalar, dimension(:), allocatable :: particleFlux_vd_psiN
   PetscScalar, dimension(:), allocatable :: particleFlux_vm_rHat
-  PetscScalar, dimension(:), allocatable :: particleFlux_vE_rHat
-  PetscScalar, dimension(:), allocatable :: particleFlux_vd_rHat
   PetscScalar, dimension(:), allocatable :: particleFlux_vm_rN
+
+  PetscScalar, dimension(:), allocatable :: particleFlux_vE0_psiHat
+  PetscScalar, dimension(:), allocatable :: particleFlux_vE0_psiN
+  PetscScalar, dimension(:), allocatable :: particleFlux_vE0_rHat
+  PetscScalar, dimension(:), allocatable :: particleFlux_vE0_rN
+
+  PetscScalar, dimension(:), allocatable :: particleFlux_vE_psiHat
+  PetscScalar, dimension(:), allocatable :: particleFlux_vE_psiN
+  PetscScalar, dimension(:), allocatable :: particleFlux_vE_rHat
   PetscScalar, dimension(:), allocatable :: particleFlux_vE_rN
+
+  PetscScalar, dimension(:), allocatable :: particleFlux_vd1_psiHat
+  PetscScalar, dimension(:), allocatable :: particleFlux_vd1_psiN
+  PetscScalar, dimension(:), allocatable :: particleFlux_vd1_rHat
+  PetscScalar, dimension(:), allocatable :: particleFlux_vd1_rN
+
+  PetscScalar, dimension(:), allocatable :: particleFlux_vd_psiHat
+  PetscScalar, dimension(:), allocatable :: particleFlux_vd_psiN
+  PetscScalar, dimension(:), allocatable :: particleFlux_vd_rHat
   PetscScalar, dimension(:), allocatable :: particleFlux_vd_rN
 
+  PetscScalar, dimension(:), allocatable :: momentumFlux_vm0_psiHat
+  PetscScalar, dimension(:), allocatable :: momentumFlux_vm0_psiN
+  PetscScalar, dimension(:), allocatable :: momentumFlux_vm0_rHat
+  PetscScalar, dimension(:), allocatable :: momentumFlux_vm0_rN
+
   PetscScalar, dimension(:), allocatable :: momentumFlux_vm_psiHat
-  PetscScalar, dimension(:), allocatable :: momentumFlux_vE_psiHat
-  PetscScalar, dimension(:), allocatable :: momentumFlux_vd_psiHat
   PetscScalar, dimension(:), allocatable :: momentumFlux_vm_psiN
-  PetscScalar, dimension(:), allocatable :: momentumFlux_vE_psiN
-  PetscScalar, dimension(:), allocatable :: momentumFlux_vd_psiN
   PetscScalar, dimension(:), allocatable :: momentumFlux_vm_rHat
-  PetscScalar, dimension(:), allocatable :: momentumFlux_vE_rHat
-  PetscScalar, dimension(:), allocatable :: momentumFlux_vd_rHat
   PetscScalar, dimension(:), allocatable :: momentumFlux_vm_rN
+
+  PetscScalar, dimension(:), allocatable :: momentumFlux_vE0_psiHat
+  PetscScalar, dimension(:), allocatable :: momentumFlux_vE0_psiN
+  PetscScalar, dimension(:), allocatable :: momentumFlux_vE0_rHat
+  PetscScalar, dimension(:), allocatable :: momentumFlux_vE0_rN
+
+  PetscScalar, dimension(:), allocatable :: momentumFlux_vE_psiHat
+  PetscScalar, dimension(:), allocatable :: momentumFlux_vE_psiN
+  PetscScalar, dimension(:), allocatable :: momentumFlux_vE_rHat
   PetscScalar, dimension(:), allocatable :: momentumFlux_vE_rN
+
+  PetscScalar, dimension(:), allocatable :: momentumFlux_vd1_psiHat
+  PetscScalar, dimension(:), allocatable :: momentumFlux_vd1_psiN
+  PetscScalar, dimension(:), allocatable :: momentumFlux_vd1_rHat
+  PetscScalar, dimension(:), allocatable :: momentumFlux_vd1_rN
+
+  PetscScalar, dimension(:), allocatable :: momentumFlux_vd_psiHat
+  PetscScalar, dimension(:), allocatable :: momentumFlux_vd_psiN
+  PetscScalar, dimension(:), allocatable :: momentumFlux_vd_rHat
   PetscScalar, dimension(:), allocatable :: momentumFlux_vd_rN
 
+  PetscScalar, dimension(:), allocatable :: heatFlux_vm0_psiHat
+  PetscScalar, dimension(:), allocatable :: heatFlux_vm0_psiN
+  PetscScalar, dimension(:), allocatable :: heatFlux_vm0_rHat
+  PetscScalar, dimension(:), allocatable :: heatFlux_vm0_rN
+
   PetscScalar, dimension(:), allocatable :: heatFlux_vm_psiHat
-  PetscScalar, dimension(:), allocatable :: heatFlux_vE_psiHat
-  PetscScalar, dimension(:), allocatable :: heatFlux_vd_psiHat
   PetscScalar, dimension(:), allocatable :: heatFlux_vm_psiN
-  PetscScalar, dimension(:), allocatable :: heatFlux_vE_psiN
-  PetscScalar, dimension(:), allocatable :: heatFlux_vd_psiN
   PetscScalar, dimension(:), allocatable :: heatFlux_vm_rHat
-  PetscScalar, dimension(:), allocatable :: heatFlux_vE_rHat
-  PetscScalar, dimension(:), allocatable :: heatFlux_vd_rHat
   PetscScalar, dimension(:), allocatable :: heatFlux_vm_rN
+
+  PetscScalar, dimension(:), allocatable :: heatFlux_vE0_psiHat
+  PetscScalar, dimension(:), allocatable :: heatFlux_vE0_rHat
+  PetscScalar, dimension(:), allocatable :: heatFlux_vE0_rN
+  PetscScalar, dimension(:), allocatable :: heatFlux_vE0_psiN
+
+  PetscScalar, dimension(:), allocatable :: heatFlux_vE_psiHat
+  PetscScalar, dimension(:), allocatable :: heatFlux_vE_rHat
   PetscScalar, dimension(:), allocatable :: heatFlux_vE_rN
+  PetscScalar, dimension(:), allocatable :: heatFlux_vE_psiN
+
+  PetscScalar, dimension(:), allocatable :: heatFlux_vd1_psiHat
+  PetscScalar, dimension(:), allocatable :: heatFlux_vd1_psiN
+  PetscScalar, dimension(:), allocatable :: heatFlux_vd1_rHat
+  PetscScalar, dimension(:), allocatable :: heatFlux_vd1_rN
+
+  PetscScalar, dimension(:), allocatable :: heatFlux_vd_psiHat
+  PetscScalar, dimension(:), allocatable :: heatFlux_vd_psiN
+  PetscScalar, dimension(:), allocatable :: heatFlux_vd_rHat
   PetscScalar, dimension(:), allocatable :: heatFlux_vd_rN
 
   PetscScalar, dimension(:), allocatable :: NTV
   PetscScalar :: VPrimeHat, FSABHat2, FSABjHat, FSABjHatOverB0, FSABjHatOverRootFSAB2
+  PetscScalar :: lambda
 
   PetscScalar :: ddpsiN2ddpsiHat, ddrHat2ddpsiHat, ddrN2ddpsiHat
   PetscScalar :: ddpsiHat2ddpsiN, ddpsiHat2ddrHat, ddpsiHat2ddrN
@@ -230,6 +289,10 @@ module globalVariables
 
   integer :: transportMatrixSize = 3
   PetscScalar, dimension(:,:), allocatable :: transportMatrix
+
+  !Vec :: temperatureEquilibrationTerm
+  Vec :: f0
+  logical :: savedMatlabMatricesYet(4) = .false.
 
   ! ********************************************************
   !

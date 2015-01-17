@@ -294,8 +294,14 @@
   ! as it restores Liouville's theorem (particle conservation) and eliminates 
   ! the need for either a particle or heat source.
 
+  ! If incluePhi1 = .true., the quasineutrality equation will be solved along with the drift-kinetic equation,
+  ! and terms involving variation of the electrostatic potential on a flux surface will be included in the
+  ! drift-kinetic equation.
+  !includePhi1 = .true.
+  includePhi1 = .false.
+
   ! If nonlinear = .true., the code will iterate to find the self-consistent poloidal variation
-  ! of the electrostatic potential.
+  ! of the electrostatic potential, including the nonlinear coupling between Phi_1 and f_1
   !nonlinear = .true.
   nonlinear = .false.
 /

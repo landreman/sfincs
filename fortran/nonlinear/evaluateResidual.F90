@@ -26,41 +26,37 @@
        print *,"evaluateResidual called."
     end if
 
-!!$    PetscScalar :: x, y
-!!$    PetscScalar, pointer, dimension(:) :: stateArray, residualArray
-!!$
-!!$    call VecGetArrayF90(stateVec,stateArray,ierr)
-!!$    call VecGetArrayF90(residualVec,residualArray,ierr)
-!!$
-!!$
-!!$    x = stateArray(1)
-!!$    y = stateArray(2)
-!!$
-!!$    residualArray(1) = x*y - x*x + y + 1
-!!$    residualArray(2) = exp(x+y-1) - 1
-!!$
-!!$    print *,"FormFunction called: x=",x,", y=",y, &
-!!$         ", residual(1)=",residualArray(1),", residual(2)=",residualArray(2)
-!!$
-!!$    call VecRestoreArrayF90(stateVec,stateArray,ierr)
-!!$    call VecRestoreArrayF90(residualVec,residualArray,ierr)
-
     ! Often, evaluateResidual is called when the state vector is 0.
-    ! In this case, there is no need to build the matrix.
+    ! In this case, there is no need to build the first matrix.
     call VecNorm(stateVec, NORM_INFINITY, norm, ierr)
     if (norm > 0) then
-       call preallocateMatrix(residualMatrix, 2)
-       call populateMatrix(residualMatrix, 2)
+
+       ! Some terms in the residual are computed by calling populateMatrix(...,3)
+       ! and multiplying the result by the state vector:
+       call preallocateMatrix(residualMatrix, 3)
+       call populateMatrix(residualMatrix, 3)
        call MatMult(residualMatrix, stateVec, residualVec, ierr)
        call MatDestroy(residualMatrix, ierr)
+
     else
        if (masterProc) then
-          print *,"State vector is 0 so I will skip building the matrix when evaluating the residual."
+          print *,"State vector is 0 so I will skip building the first matrix when evaluating the residual."
        end if
        call VecSet(residualVec, zero, ierr)
     end if
 
+!!$    ! Other terms in the residual are computed by calling populateMatrix(...,2)
+!!$    ! any multiplying the result by the Vec f0:
+!!$    call preallocateMatrix(residualMatrix, 2)
+!!$    call populateMatrix(residualMatrix, 2)
+!!$    call MatMultAdd(residualMatrix, f0, residualVec, residualVec, ierr)
+!!$    call MatDestroy(residualMatrix, ierr)
+
+    ! --------------------------------------------------------------------------------
+    ! --------------------------------------------------------------------------------
     ! Next, evaluate the "right-hand side", and subtract the result from the residual.
+    ! --------------------------------------------------------------------------------
+    ! --------------------------------------------------------------------------------
 
     call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, rhs, ierr)
     call VecSet(rhs, zero, ierr)
@@ -80,12 +76,19 @@
        sqrtMHat = sqrt(mHat)
        
        do ix=1,Nx
+          ! Old linear version:
           !xPartOfRHS = x2(ix)*exp(-x2(ix))*( dnHatdpsiNs(ispecies)/nHats(ispecies) &
           !     + alpha*Zs(ispecies)/THats(ispecies)*dPhiHatdpsiNToUse &
           !     + (x2(ix) - three/two)*dTHatdpsiNs(ispecies)/THats(ispecies))
+
+          ! Old nonlinear version:
           xPartOfRHS = x2(ix)*exp(-x2(ix))*( dnHatdpsiHats(ispecies)/nHats(ispecies) &
                + alpha*Zs(ispecies)/THats(ispecies)*dPhiHatdpsiHatToUseInRHS &
                + (x2(ix) - three/two)*dTHatdpsiHats(ispecies)/THats(ispecies))
+
+          !xPartOfRHS = x2(ix)*exp(-x2(ix))*( dnHatdpsiHats(ispecies)/nHats(ispecies) &
+          !     + (x2(ix) - three/two)*dTHatdpsiHats(ispecies)/THats(ispecies))
+
           do itheta = ithetaMin,ithetaMax
              do izeta = 1,Nzeta
                 
@@ -100,11 +103,11 @@
                      * DHat(itheta,izeta) * xPartOfRHS
                 
                 L = 0
-                index = getIndex(ispecies, ix, L+1, itheta, izeta, 0)
+                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
                 call VecSetValue(rhs, index, (4/three)*factor, INSERT_VALUES, ierr)
                 
                 L = 2
-                index = getIndex(ispecies, ix, L+1, itheta, izeta, 0)
+                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
                 call VecSetValue(rhs, index, (two/three)*factor, INSERT_VALUES, ierr)
              end do
           end do
@@ -121,7 +124,7 @@
                *nHats(ispecies)*mHats(ispecies)/(pi*sqrtpi*THats(ispecies)*THats(ispecies)*FSABHat2)
           do itheta=ithetaMin,ithetaMax
              do izeta = 1,Nzeta
-                index = getIndex(ispecies, ix, L+1, itheta, izeta, 0)
+                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
                 call VecSetValue(rhs, index, &
                      factor * BHat(itheta,izeta), INSERT_VALUES, ierr)
                      !factor/BHat(itheta,izeta), INSERT_VALUES, ierr)
@@ -140,5 +143,11 @@
     scalar = -1
     call VecAXPY(residualVec, scalar, rhs, ierr)
     call VecDestroy(rhs, ierr)
+
+    !! Add the temperature equilibration term:
+    !if (includeTemperatureEquilibrationTerm) then
+    !   scalar = one
+    !   call VecAXPY(residualVec, scalar, temperatureEquilibrationTerm, ierr)
+    !end if
 
   end subroutine evaluateResidual

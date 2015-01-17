@@ -89,22 +89,7 @@
        end if
     end if
 
-    matrixSize = Nspecies * Ntheta * Nzeta * Nxi * Nx
-    !matrixSize = Nspecies * Ntheta * Nzeta * Nxi * Nx + Ntheta * Nzeta + 1 ! Includes QN
-    select case (constraintScheme)
-    case (0)
-    case (1)
-       matrixSize = matrixSize + 2 * Nspecies
-    case (2)
-       matrixSize = matrixSize + Nx * Nspecies
-    case default
-       print *,"Error! Invalid constraintScheme"
-       stop
-    end select
-
-    if (masterProc) then
-       print *,"The matrix is ",matrixSize,"x",matrixSize," elements."
-    end if
+    call computeMatrixSize()
 
     ! *******************************************************************************
     ! *******************************************************************************
@@ -432,43 +417,79 @@
     allocate(FSABVelocityUsingFSADensityOverRootFSAB2(Nspecies))
     allocate(FSAPressurePerturbation(Nspecies))
 
+    allocate(particleFlux_vm0_psiHat(Nspecies))
     allocate(particleFlux_vm_psiHat(Nspecies))
+    allocate(particleFlux_vE0_psiHat(Nspecies))
     allocate(particleFlux_vE_psiHat(Nspecies))
+    allocate(particleFlux_vd1_psiHat(Nspecies))
     allocate(particleFlux_vd_psiHat(Nspecies))
+    allocate(particleFlux_vm0_psiN(Nspecies))
     allocate(particleFlux_vm_psiN(Nspecies))
+    allocate(particleFlux_vE0_psiN(Nspecies))
     allocate(particleFlux_vE_psiN(Nspecies))
+    allocate(particleFlux_vd1_psiN(Nspecies))
     allocate(particleFlux_vd_psiN(Nspecies))
+    allocate(particleFlux_vm0_rHat(Nspecies))
     allocate(particleFlux_vm_rHat(Nspecies))
+    allocate(particleFlux_vE0_rHat(Nspecies))
     allocate(particleFlux_vE_rHat(Nspecies))
+    allocate(particleFlux_vd1_rHat(Nspecies))
     allocate(particleFlux_vd_rHat(Nspecies))
+    allocate(particleFlux_vm0_rN(Nspecies))
     allocate(particleFlux_vm_rN(Nspecies))
+    allocate(particleFlux_vE0_rN(Nspecies))
     allocate(particleFlux_vE_rN(Nspecies))
+    allocate(particleFlux_vd1_rN(Nspecies))
     allocate(particleFlux_vd_rN(Nspecies))
 
+    allocate(momentumFlux_vm0_psiHat(Nspecies))
     allocate(momentumFlux_vm_psiHat(Nspecies))
+    allocate(momentumFlux_vE0_psiHat(Nspecies))
     allocate(momentumFlux_vE_psiHat(Nspecies))
+    allocate(momentumFlux_vd1_psiHat(Nspecies))
     allocate(momentumFlux_vd_psiHat(Nspecies))
+    allocate(momentumFlux_vm0_psiN(Nspecies))
     allocate(momentumFlux_vm_psiN(Nspecies))
+    allocate(momentumFlux_vE0_psiN(Nspecies))
     allocate(momentumFlux_vE_psiN(Nspecies))
+    allocate(momentumFlux_vd1_psiN(Nspecies))
     allocate(momentumFlux_vd_psiN(Nspecies))
+    allocate(momentumFlux_vm0_rHat(Nspecies))
     allocate(momentumFlux_vm_rHat(Nspecies))
+    allocate(momentumFlux_vE0_rHat(Nspecies))
     allocate(momentumFlux_vE_rHat(Nspecies))
+    allocate(momentumFlux_vd1_rHat(Nspecies))
     allocate(momentumFlux_vd_rHat(Nspecies))
+    allocate(momentumFlux_vm0_rN(Nspecies))
     allocate(momentumFlux_vm_rN(Nspecies))
+    allocate(momentumFlux_vE0_rN(Nspecies))
     allocate(momentumFlux_vE_rN(Nspecies))
+    allocate(momentumFlux_vd1_rN(Nspecies))
     allocate(momentumFlux_vd_rN(Nspecies))
 
+    allocate(heatFlux_vm0_psiHat(Nspecies))
     allocate(heatFlux_vm_psiHat(Nspecies))
+    allocate(heatFlux_vE0_psiHat(Nspecies))
     allocate(heatFlux_vE_psiHat(Nspecies))
+    allocate(heatFlux_vd1_psiHat(Nspecies))
     allocate(heatFlux_vd_psiHat(Nspecies))
+    allocate(heatFlux_vm0_psiN(Nspecies))
     allocate(heatFlux_vm_psiN(Nspecies))
+    allocate(heatFlux_vE0_psiN(Nspecies))
     allocate(heatFlux_vE_psiN(Nspecies))
+    allocate(heatFlux_vd1_psiN(Nspecies))
     allocate(heatFlux_vd_psiN(Nspecies))
+    allocate(heatFlux_vm0_rHat(Nspecies))
     allocate(heatFlux_vm_rHat(Nspecies))
+    allocate(heatFlux_vE0_rHat(Nspecies))
     allocate(heatFlux_vE_rHat(Nspecies))
+    allocate(heatFlux_vd1_rHat(Nspecies))
     allocate(heatFlux_vd_rHat(Nspecies))
+    allocate(heatFlux_vm0_rN(Nspecies))
     allocate(heatFlux_vm_rN(Nspecies))
+    allocate(heatFlux_vE0_rN(Nspecies))
     allocate(heatFlux_vE_rN(Nspecies))
+    allocate(heatFlux_vd1_rN(Nspecies))
     allocate(heatFlux_vd_rN(Nspecies))
 
     allocate(NTV(Nspecies)) 
@@ -481,11 +502,18 @@
     allocate(MachUsingFSAThermalSpeed(Nspecies,Ntheta,Nzeta))
     allocate(pressurePerturbation(Nspecies,Ntheta,Nzeta))
     allocate(totalPressure(Nspecies,Ntheta,Nzeta))
+
+    allocate(particleFluxBeforeSurfaceIntegral_vm0(Nspecies,Ntheta,Nzeta))
     allocate(particleFluxBeforeSurfaceIntegral_vm(Nspecies,Ntheta,Nzeta))
+    allocate(particleFluxBeforeSurfaceIntegral_vE0(Nspecies,Ntheta,Nzeta))
     allocate(particleFluxBeforeSurfaceIntegral_vE(Nspecies,Ntheta,Nzeta))
+    allocate(momentumFluxBeforeSurfaceIntegral_vm0(Nspecies,Ntheta,Nzeta))
     allocate(momentumFluxBeforeSurfaceIntegral_vm(Nspecies,Ntheta,Nzeta))
+    allocate(momentumFluxBeforeSurfaceIntegral_vE0(Nspecies,Ntheta,Nzeta))
     allocate(momentumFluxBeforeSurfaceIntegral_vE(Nspecies,Ntheta,Nzeta))
+    allocate(heatFluxBeforeSurfaceIntegral_vm0(Nspecies,Ntheta,Nzeta))
     allocate(heatFluxBeforeSurfaceIntegral_vm(Nspecies,Ntheta,Nzeta))
+    allocate(heatFluxBeforeSurfaceIntegral_vE0(Nspecies,Ntheta,Nzeta))
     allocate(heatFluxBeforeSurfaceIntegral_vE(Nspecies,Ntheta,Nzeta))
     allocate(NTVBeforeSurfaceIntegral(Nspecies,Ntheta,Nzeta)) 
 

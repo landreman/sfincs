@@ -38,7 +38,8 @@ contains
     namelist / physicsParameters / Delta, alpha, nu_n, EParallelHat, &
          collisionOperator, constraintScheme, includeXDotTerm, &
          includeElectricFieldTermInXiDot, useDKESExBDrift, include_fDivVE_term, nonlinear, &
-         dPhiHatdpsiHat, dPhiHatdpsiN, dPhiHatdrHat, dPhiHatdrN
+         dPhiHatdpsiHat, dPhiHatdpsiN, dPhiHatdrHat, dPhiHatdrN, &
+         includeTemperatureEquilibrationTerm, includePhi1
 
     namelist / resolutionParameters / forceOddNthetaAndNzeta, &
          Ntheta, &

@@ -6,7 +6,8 @@ subroutine validateInput()
   implicit none
 
   character(len=*), parameter :: line="******************************************************************"
-
+  PetscScalar :: chargeDensity
+  integer :: ispecies
 
   ! General namelist
 
@@ -58,6 +59,24 @@ subroutine validateInput()
      print *,line
      print *,line
   end if
+
+  ! species namelist:
+
+  chargeDensity = zero
+  do ispecies = 1,Nspecies
+     chargeDensity = chargeDensity + nHats(ispecies)*Zs(ispecies)
+  end do
+  ! More needed here...
+
+  ! physicsParameters namelist:
+  if (nonlinear .and. (.not. includePhi1)) then
+     if (masterProc) then
+        print *,"Error! You requested a nonlinear calculation with includePhi1=.false."
+        print *,"These options are inconsistent since the nonlinear terms involve Phi1."
+     end if
+     stop
+  end if
+
 
   ! otherNumericalParameters namelist:
 
