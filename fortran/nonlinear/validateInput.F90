@@ -8,6 +8,7 @@ subroutine validateInput()
   character(len=*), parameter :: line="******************************************************************"
   PetscScalar :: chargeDensity
   integer :: ispecies
+  logical :: flag
 
   ! General namelist
 
@@ -62,6 +63,56 @@ subroutine validateInput()
 
   ! species namelist:
 
+  flag = .false.
+  do ispecies = 1,Nspecies
+     if (Zs(ispecies) < 0) then
+        if (flag .and. masterProc) then
+           print *,line
+           print *,line
+           print *,"**   WARNING: More than 1 species has negative charge, which is unusual."
+           print *,line
+           print *,line
+        end if
+        flag = .true.
+     end if
+
+     if (abs(Zs(ispecies) - floor(Zs(ispecies))) > 0 .and. masterProc) then
+        print *,line
+        print *,line
+        print *,"**   WARNING: At least one of the charges Zs is not an integer, which is unusual."
+        print *,line
+        print *,line
+     end if
+
+     if (Zs(ispecies) == 0) then
+        if (masterProc) then
+           print *,"Error! Charges Zs cannot be zero."
+        end if
+        stop
+     end if
+
+     if (mHats(ispecies) .le. 0) then
+        if (masterProc) then
+           print *,"Error! Masses mHats must be positive."
+        end if
+        stop
+     end if
+
+     if (THats(ispecies) .le. 0) then
+        if (masterProc) then
+           print *,"Error! Temperatures THats must be positive."
+        end if
+        stop
+     end if
+
+     if (nHats(ispecies) .le. 0) then
+        if (masterProc) then
+           print *,"Error! Densities nHats must be positive."
+        end if
+        stop
+     end if
+  end do
+
   chargeDensity = zero
   do ispecies = 1,Nspecies
      chargeDensity = chargeDensity + nHats(ispecies)*Zs(ispecies)
@@ -69,6 +120,28 @@ subroutine validateInput()
   ! More needed here...
 
   ! physicsParameters namelist:
+
+  if (constraintScheme .ne. -1 .and. masterProc) then
+     print *,line
+     print *,line
+     print *,"**   WARNING: You chose constraintScheme different from -1, which you should not do"
+     print *,"**            unless you know what you are doing."
+     print *,line
+     print *,line
+  end if
+
+  if ((abs(alpha-one)>1d-15) .and. (abs(alpha-1000)>1d-15) .and. (abs(alpha-0.001)>1d-15) .and. masterProc) then
+     print *,line
+     print *,line
+     print *,"**   WARNING: Usually, either"
+     print *,"**            alpha = 1 (if PhiBar = 1 V and TBar = 1 eV, or PhiBar = 1 kV and TBar = 1 keV)"
+     print *,"**            or alpha = 1000 (if PhiBar = 1 kV and TBar = 1 eV)"
+     print *,"**            or alpha = 0.001 (if PhiBar = 1 V and TBar = 1 keV)."
+     print *,"**            Are you sure you want alpha = ",alpha,"?"
+     print *,line
+     print *,line
+  end if
+
   if (nonlinear .and. (.not. includePhi1)) then
      if (masterProc) then
         print *,"Error! You requested a nonlinear calculation with includePhi1=.false."
@@ -77,6 +150,230 @@ subroutine validateInput()
      stop
   end if
 
+
+  ! resolutionParameters namelist:
+
+  if (Ntheta*Nzeta*Nx*Nxi*Nspecies > 1e7 .and. masterProc) then
+     print *,line
+     print *,line
+     print *,"**   WARNING: You have selected large resolution parameters, leading to a matrix size"
+     print *,"**            exceeding 10 million x 10 million.  SFINCS will almost certainly run out"
+     print *,"**            of memory."
+     print *,line
+     print *,line
+  end if
+
+  if (Ntheta<5) then
+     if (masterProc) then
+        print *,"Error! Ntheta must be at least 5."
+     end if
+     stop
+  end if
+
+  if (((Ntheta > 100 .and. Nzeta > 1) .or. (Ntheta>250)) .and. masterProc) then
+     print *,line
+     print *,line
+     print *,"**   WARNING: You chose a very large value for Ntheta."
+     print *,line
+     print *,line
+  end if
+
+  if (Nzeta<1) then
+     if (masterProc) then
+        print *,"Error! Nzeta must be positive."
+     end if
+     stop
+  end if
+
+  if (Ntheta > 200 .and. masterProc) then
+     print *,line
+     print *,line
+     print *,"**   WARNING: You chose a very large value for Nzeta."
+     print *,line
+     print *,line
+  end if
+
+  if (Nxi<1) then
+     if (masterProc) then
+        print *,"Error! Nxi must be positive."
+     end if
+     stop
+  end if
+
+  if (Nxi < 4 .and. masterProc) then
+     print *,line
+     print *,line
+     print *,"**   WARNING: You probably should have Nxi at least 4."
+     print *,line
+     print *,line
+  end if
+
+  if (Nxi > 200 .and. masterProc) then
+     print *,line
+     print *,line
+     print *,"**   WARNING: You chose a very large value for Nxi."
+     print *,line
+     print *,line
+  end if
+
+  if (Nx<1) then
+     if (masterProc) then
+        print *,"Error! Nx must be positive."
+     end if
+     stop
+  end if
+
+  if (masterProc) then
+     if (Nx < 4) then
+        print *,line
+        print *,line
+        print *,"**   WARNING: You almost certainly should have Nx at least 4."
+        print *,line
+        print *,line
+     elseif (Nx > 20) then
+        print *,line
+        print *,line
+        print *,"**   WARNING: You chose a very large value for Nx."
+        print *,"**            Typically Nx should be in the range 5-9."
+        print *,line
+        print *,line
+     elseif ((Nx < 5) .or. (Nx > 9)) then
+        print *,line
+        print *,line
+        print *,"**   WARNING: Typically Nx should be in the range 5-9."
+        print *,line
+        print *,line
+     end if
+  end if
+
+  if (NL<1) then
+     if (masterProc) then
+        print *,"Error! NL must be positive."
+     end if
+     stop
+  end if
+
+  if (masterProc) then
+     if (NL < 2) then
+        print *,line
+        print *,line
+        print *,"**   WARNING: You probably should have NL at least 2."
+        print *,"**            A value which almost always works is NL = 4."
+        print *,line
+        print *,line
+     elseif (NL > 8) then
+        print *,line
+        print *,line
+        print *,"**   WARNING: You chose a very large value for NL."
+        print *,"**            A value which almost always works is NL = 4."
+        print *,line
+        print *,line
+     elseif (NL .ne. 4) then
+        print *,line
+        print *,line
+        print *,"**   WARNING: Although values of NL in the range [2,8] work well, NL = 4 is usually recommended."
+        print *,line
+        print *,line
+     end if
+  end if
+
+  if (NxPotentialsPerVth <= 0) then
+     if (masterProc) then
+        print *,"Error! NxPotentialsPerVth must be positive."
+     end if
+     stop
+  end if
+
+  if (masterProc) then
+     if (NxPotentialsPerVth < 10) then
+        print *,line
+        print *,line
+        print *,"**   WARNING: You probably should have NxPotentialsPerVth at least 10."
+        print *,"**            A value which almost always works is NxPotentialsPerVth = 40."
+        print *,line
+        print *,line
+     elseif (NxPotentialsPerVth > 100) then
+        print *,line
+        print *,line
+        print *,"**   WARNING: You chose a very large value for NxPotentialsPerVth."
+        print *,"**            A value which almost always works is NxPotentialsPerVth = 40."
+        print *,line
+        print *,line
+     elseif (abs(NxPotentialsPerVth - 40) > 1d-15) then
+        print *,line
+        print *,line
+        print *,"**   WARNING: Although values of NxPotentialsPerVth in the range [10,100] work well,"
+        print *,"**            NxPotentialsPerVth = 40 is usually recommended."
+        print *,line
+        print *,line
+     end if
+  end if
+
+  if (xMax <= 0) then
+     if (masterProc) then
+        print *,"Error! xMax must be positive."
+     end if
+     stop
+  end if
+
+  if (xMax < 2 .and. masterProc) then
+     print *,line
+     print *,line
+     print *,"**   WARNING: You probably should have xMax at least 2."
+     print *,"**            A value which almost always works is xMax = 5."
+     print *,line
+     print *,line
+  end if
+
+  if (xMax > 10 .and. masterProc) then
+     print *,line
+     print *,line
+     print *,"**   WARNING: You chose a very large value for xMax."
+     print *,"**            A value which almost always works is xMax = 5."
+     print *,line
+     print *,line
+  end if
+
+  if (solverTolerance < 0) then
+     if (masterProc) then
+        print *,"Error! solverTolerance must be positive."
+     end if
+     stop
+  end if
+
+  if (masterProc) then
+     if (solverTolerance < 1d-10) then
+        print *,line
+        print *,line
+        print *,"**   WARNING: You selected a very small solverTolerance which may be hard for the solver to achieve."
+        print *,"**            Good values for solverTolerance are typically 1e-5 to 1e-7."
+        print *,line
+        print *,line
+     elseif (solverTolerance < 1d-7) then
+        print *,line
+        print *,line
+        print *,"**   WARNING: You selected a small solverTolerance which may require more Krylov/KSP iterations than necessary."
+        print *,"**            Good values for solverTolerance are typically 1e-5 to 1e-7."
+        print *,line
+        print *,line
+     elseif (solverTolerance > 1e-5) then
+        print *,line
+        print *,line
+        print *,"**   WARNING: You selected a large solverTolerance, which may cause the Krylov/KSP iteration"
+        print *,"**            to stop before an accurate solution is obtained."
+        print *,"**            Good values for solverTolerance are typically 1e-5 to 1e-7."
+        print *,line
+        print *,line
+     end if
+  end if
+
+  if ((.not.forceOddNthetaAndNzeta ) .and. masterProc) then
+     print *,line
+     print *,line
+     print *,"**   WARNING: forceOddNthetaAndNzeta = .true. is strongly recommended."
+     print *,line
+     print *,line
+  end if
 
   ! otherNumericalParameters namelist:
 

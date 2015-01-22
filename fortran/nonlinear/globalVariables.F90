@@ -277,6 +277,11 @@ module globalVariables
   PetscScalar, dimension(:), allocatable :: heatFlux_vd_rHat
   PetscScalar, dimension(:), allocatable :: heatFlux_vd_rN
 
+  PetscScalar, dimension(:), allocatable :: heatFlux_withoutPhi1_psiHat
+  PetscScalar, dimension(:), allocatable :: heatFlux_withoutPhi1_psiN
+  PetscScalar, dimension(:), allocatable :: heatFlux_withoutPhi1_rHat
+  PetscScalar, dimension(:), allocatable :: heatFlux_withoutPhi1_rN
+
   PetscScalar, dimension(:), allocatable :: NTV
   PetscScalar :: VPrimeHat, FSABHat2, FSABjHat, FSABjHatOverB0, FSABjHatOverRootFSAB2
   PetscScalar :: lambda

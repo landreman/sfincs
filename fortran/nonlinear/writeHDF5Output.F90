@@ -467,6 +467,11 @@ contains
           call writeHDF5ExtensibleField(iterationNum, "heatFlux_vd_psiN", heatFlux_vd_psiN, ARRAY_ITERATION_SPECIES)
           call writeHDF5ExtensibleField(iterationNum, "heatFlux_vd_rHat", heatFlux_vd_rHat, ARRAY_ITERATION_SPECIES)
           call writeHDF5ExtensibleField(iterationNum, "heatFlux_vd_rN", heatFlux_vd_rN, ARRAY_ITERATION_SPECIES)
+
+          call writeHDF5ExtensibleField(iterationNum, "heatFlux_withoutPhi1_psiHat", heatFlux_withoutPhi1_psiHat, ARRAY_ITERATION_SPECIES)
+          call writeHDF5ExtensibleField(iterationNum, "heatFlux_withoutPhi1_psiN", heatFlux_withoutPhi1_psiN, ARRAY_ITERATION_SPECIES)
+          call writeHDF5ExtensibleField(iterationNum, "heatFlux_withoutPhi1_rHat", heatFlux_withoutPhi1_rHat, ARRAY_ITERATION_SPECIES)
+          call writeHDF5ExtensibleField(iterationNum, "heatFlux_withoutPhi1_rN", heatFlux_withoutPhi1_rN, ARRAY_ITERATION_SPECIES)
        end if
 
        call writeHDF5ExtensibleField(iterationNum, "NTV", NTV, ARRAY_ITERATION_SPECIES)

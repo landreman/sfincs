@@ -492,6 +492,11 @@
     allocate(heatFlux_vd1_rN(Nspecies))
     allocate(heatFlux_vd_rN(Nspecies))
 
+    allocate(heatFlux_withoutPhi1_psiHat(Nspecies))
+    allocate(heatFlux_withoutPhi1_psiN(Nspecies))
+    allocate(heatFlux_withoutPhi1_rHat(Nspecies))
+    allocate(heatFlux_withoutPhi1_rN(Nspecies))
+
     allocate(NTV(Nspecies)) 
 
     allocate(densityPerturbation(Nspecies,Ntheta,Nzeta))

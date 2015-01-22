@@ -335,7 +335,7 @@
                         + factor_vE * particleFluxFactor_vE &
                         * xWeights(ix)*particleFluxIntegralWeights_vE(ix)*solutionWithFullFArray(index)
 
-                   print *,particleFluxBeforeSurfaceIntegral_vE0(ispecies,itheta,izeta),particleFluxBeforeSurfaceIntegral_vE(ispecies,itheta,izeta)
+                   !print *,particleFluxBeforeSurfaceIntegral_vE0(ispecies,itheta,izeta),particleFluxBeforeSurfaceIntegral_vE(ispecies,itheta,izeta)
 
                    heatFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
                         = heatFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
@@ -483,6 +483,16 @@
 
           end do
 
+!!$       print *," "
+!!$       print *,"particleFluxBeforeSurfaceIntegral_vE0:",particleFluxBeforeSurfaceIntegral_vE0
+!!$       print *," "
+!!$       print *,"particleFluxBeforeSurfaceIntegral_vE: ",particleFluxBeforeSurfaceIntegral_vE
+!!$       print *," "
+!!$       print *,"heatFluxBeforeSurfaceIntegral_vE0:",heatFluxBeforeSurfaceIntegral_vE0
+!!$       print *," "
+!!$       print *,"heatFluxBeforeSurfaceIntegral_vE: ",heatFluxBeforeSurfaceIntegral_vE
+!!$       print *," "
+
           jHat = jHat + Zs(ispecies)*flow(ispecies,:,:)
 
           totalDensity(ispecies,:,:) = nHats(ispecies) + densityPerturbation(ispecies,:,:)
@@ -493,8 +503,6 @@
 
        end do
 
-       print *,"particleFluxBeforeSurfaceIntegral_vE0:",particleFluxBeforeSurfaceIntegral_vE0
-       print *,"particleFluxBeforeSurfaceIntegral_vE: ",particleFluxBeforeSurfaceIntegral_vE
 
        particleFlux_vd_psiHat = particleFlux_vm_psiHat + particleFlux_vE_psiHat
        momentumFlux_vd_psiHat = momentumFlux_vm_psiHat + momentumFlux_vE_psiHat
@@ -503,6 +511,8 @@
        particleFlux_vd1_psiHat = particleFlux_vm_psiHat + particleFlux_vE0_psiHat
        momentumFlux_vd1_psiHat = momentumFlux_vm_psiHat + momentumFlux_vE0_psiHat
        heatFlux_vd1_psiHat = heatFlux_vm_psiHat + heatFlux_vE0_psiHat
+
+       heatFlux_withoutPhi1_psiHat = heatFlux_vm_psiHat + (5/three)*heatFlux_vE0_psiHat
 
        particleFlux_vm0_psiN = ddpsiN2ddpsiHat * particleFlux_vm0_psiHat
        particleFlux_vm_psiN = ddpsiN2ddpsiHat * particleFlux_vm_psiHat
@@ -522,6 +532,7 @@
        heatFlux_vE_psiN = ddpsiN2ddpsiHat * heatFlux_vE_psiHat
        heatFlux_vd1_psiN = ddpsiN2ddpsiHat * heatFlux_vd1_psiHat
        heatFlux_vd_psiN = ddpsiN2ddpsiHat * heatFlux_vd_psiHat
+       heatFlux_withoutPhi1_psiN = ddpsiN2ddpsiHat * heatFlux_withoutPhi1_psiHat
 
        particleFlux_vm0_rHat = ddrHat2ddpsiHat * particleFlux_vm0_psiHat
        particleFlux_vm_rHat = ddrHat2ddpsiHat * particleFlux_vm_psiHat
@@ -541,6 +552,7 @@
        heatFlux_vE_rHat = ddrHat2ddpsiHat * heatFlux_vE_psiHat
        heatFlux_vd1_rHat = ddrHat2ddpsiHat * heatFlux_vd1_psiHat
        heatFlux_vd_rHat = ddrHat2ddpsiHat * heatFlux_vd_psiHat
+       heatFlux_withoutPhi1_rHat = ddrHat2ddpsiHat * heatFlux_withoutPhi1_psiHat
 
        particleFlux_vm0_rN = ddrN2ddpsiHat * particleFlux_vm0_psiHat
        particleFlux_vm_rN = ddrN2ddpsiHat * particleFlux_vm_psiHat
@@ -560,6 +572,7 @@
        heatFlux_vE_rN = ddrN2ddpsiHat * heatFlux_vE_psiHat
        heatFlux_vd1_rN = ddrN2ddpsiHat * heatFlux_vd1_psiHat
        heatFlux_vd_rN = ddrN2ddpsiHat * heatFlux_vd_psiHat
+       heatFlux_withoutPhi1_rN = ddrN2ddpsiHat * heatFlux_withoutPhi1_psiHat
 
        FSADensityPerturbation = FSADensityPerturbation / VPrimeHat
        FSABFlow = FSABFlow / VPrimeHat
@@ -648,6 +661,7 @@
              print *,"   heatFlux_vE_psiHat       ", heatFlux_vE_psiHat(ispecies)
              print *,"   heatFlux_vd1_psiHat      ", heatFlux_vd1_psiHat(ispecies)
              print *,"   heatFlux_vd_psiHat       ", heatFlux_vd_psiHat(ispecies)
+             print *,"   heatFlux_withoutPhi1_psiHat ", heatFlux_withoutPhi1_psiHat(ispecies)
           end if
           if (constraintScheme==1) then
              print *,"   particle source          ", sources(ispecies,1)
