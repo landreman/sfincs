@@ -25,7 +25,7 @@
 
     PetscErrorCode :: ierr
     PetscScalar :: nHat, THat, mHat, sqrtTHat, sqrtMHat, speciesFactor, speciesFactor2
-    PetscScalar :: T32m, factor, LFactor, temp, temp1, temp2, xDotFactor
+    PetscScalar :: T32m, factor, LFactor, temp, temp1, temp2, xDotFactor, xDotFactor2, stuffToAdd
     PetscScalar, dimension(:), allocatable :: xb, expxb2
     PetscScalar, dimension(:,:), allocatable :: thetaPartOfTerm, localThetaPartOfTerm, xPartOfXDot
     integer :: i, j, ix, ispecies, itheta, izeta, L, ixi, index
@@ -474,12 +474,15 @@
 
        ! This term always operates on f0, so it should always be included when whichMatrix=2 even if includeXDotTerm=.false.!
        ! This term also operates on f1 if includeXDotTerm=.t.
-       if (includeXDotTerm .or. whichMatrix==2) then
+       !if (includeXDotTerm .or. whichMatrix==2) then
+
+       if (includeXDotTerm .and. (whichMatrix .ne. 2)) then
 
           allocate(xPartOfXDot(Nx,Nx))
           allocate(rowIndices(Nx))
           allocate(colIndices(Nx))
-          factor = alpha*Delta/(4*psiAHat)*dPhiHatdpsiN
+          !factor = alpha*Delta/(4*psiAHat)*dPhiHatdpsiN
+          factor = -alpha*Delta*dPhiHatdpsiHat/4
 
           do L=0,(Nxi-1)
              if (whichMatrix==0 .and. L >= preconditioner_x_min_L) then
@@ -495,8 +498,19 @@
              do itheta=ithetaMin,ithetaMax
 
                 do izeta=izetaMin,izetaMax
-                   xDotFactor = factor/(BHat(itheta,izeta)**3) &
-                        * (GHat*dBHatdtheta(itheta,izeta) - IHat*dBHatdzeta(itheta,izeta))
+                   !xDotFactor = factor/(BHat(itheta,izeta)**3) &
+                   !     * (GHat*dBHatdtheta(itheta,izeta) - IHat*dBHatdzeta(itheta,izeta))
+
+                   xDotFactor = factor*DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
+                        * (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) &
+                        - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))
+
+                   if (force0RadialCurrentInEquilibrium) then
+                      xDotFactor2 = zero
+                   else
+                      xDotFactor2 = factor*DHat(itheta,izeta)/(BHat(itheta,izeta)**2) * 2 &
+                           * (dBHat_sub_zeta_dtheta(itheta,izeta) - dBHat_sub_theta_dzeta(itheta,izeta))
+                   end if
 
                    do ix=1,Nx
                       rowIndices(ix)=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
@@ -504,9 +518,10 @@
 
                    ! Term that is diagonal in L:
                    colIndices = rowIndices
-                   LFactor = two*(3*L*L+3*L-2)/((two*L+3)*(2*L-1))*xDotFactor
+                   stuffToAdd = two*(3*L*L+3*L-2)/((two*L+3)*(2*L-1))*xDotFactor &
+                        + (2*L*L+2*L-one)/((two*L+3)*(2*L-1))*xDotFactor2
                    call MatSetValuesSparse(matrix, Nx, rowIndices, Nx, colIndices, &
-                        LFactor*xPartOfXDot, ADD_VALUES, ierr)
+                        stuffToAdd*xPartOfXDot, ADD_VALUES, ierr)
 
                    if (whichMatrix>0 .or. preconditioner_xi==0) then
                       ! Term that is super-super-diagonal in L:
@@ -515,9 +530,9 @@
                          do ix=1,Nx
                             colIndices(ix)=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
                          end do
-                         LFactor = (L+1)*(L+2)/((two*L+5)*(2*L+3))*xDotFactor
+                         stuffToAdd = (L+1)*(L+2)/((two*L+5)*(2*L+3))*(xDotFactor+xDotFactor2)
                          call MatSetValuesSparse(matrix, Nx, rowIndices, Nx, colIndices, &
-                              LFactor*xPartOfXDot, ADD_VALUES, ierr)
+                              stuffToAdd*xPartOfXDot, ADD_VALUES, ierr)
                       end if
 
                       ! Term that is sub-sub-diagonal in L:
@@ -526,9 +541,9 @@
                          do ix=1,Nx
                             colIndices(ix)=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
                          end do
-                         LFactor = L*(L-1)/((two*L-3)*(2*L-1))*xDotFactor
+                         stuffToAdd = L*(L-1)/((two*L-3)*(2*L-1))*(xDotFactor+xDotFactor2)
                          call MatSetValuesSparse(matrix, Nx, rowIndices, Nx, colIndices, &
-                              LFactor*xPartOfXDot, ADD_VALUES, ierr)
+                              stuffToAdd*xPartOfXDot, ADD_VALUES, ierr)
                       end if
                    end if
 

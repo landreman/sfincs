@@ -304,6 +304,12 @@
   !includePhi1 = .true.
   includePhi1 = .false.
 
+  ! If true, include the term from the linearized collision operator acting on f_Maxwellian,
+  ! which is nonzero for inter-species Fokker-Planck collisions	when temperatures
+  ! are	unequal. This term acts	to equilibrate the temperatures	between	species.
+  !includeTemperatureEquilibrationTerm = .true.
+  includeTemperatureEquilibrationTerm = .false.
+
   ! If nonlinear = .true., the code will iterate to find the self-consistent poloidal variation
   ! of the electrostatic potential, including the nonlinear coupling between Phi_1 and f_1
   !nonlinear = .true.

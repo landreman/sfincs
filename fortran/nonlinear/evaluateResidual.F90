@@ -17,7 +17,7 @@
     Vec :: rhs
     PetscScalar :: scalar, xPartOfRHS, factor
     integer :: ix, L, itheta, izeta, ispecies, index
-    PetscScalar :: THat, mHat, sqrtTHat, sqrtmHat
+    PetscScalar :: THat, mHat, sqrtTHat, sqrtmHat, dfMdx
     Mat :: residualMatrix
     PetscScalar :: dPhiHatdpsiHatToUseInRHS
     PetscReal :: norm
@@ -45,16 +45,18 @@
        call VecSet(residualVec, zero, ierr)
     end if
 
-!!$    ! Other terms in the residual are computed by calling populateMatrix(...,2)
-!!$    ! any multiplying the result by the Vec f0:
-!!$    call preallocateMatrix(residualMatrix, 2)
-!!$    call populateMatrix(residualMatrix, 2)
-!!$    call MatMultAdd(residualMatrix, f0, residualVec, residualVec, ierr)
-!!$    call MatDestroy(residualMatrix, ierr)
+    ! The collision term in the residual is computed by calling populateMatrix(...,2)
+    ! any multiplying the result by the Vec f0:
+    if (includeTemperatureEquilibrationTerm) then
+       call preallocateMatrix(residualMatrix, 2)
+       call populateMatrix(residualMatrix, 2)
+       call MatMultAdd(residualMatrix, f0, residualVec, residualVec, ierr)
+       call MatDestroy(residualMatrix, ierr)
+    end if
 
     ! --------------------------------------------------------------------------------
     ! --------------------------------------------------------------------------------
-    ! Next, evaluate the "right-hand side", and subtract the result from the residual.
+    ! Next, evaluate the terms (other than C[f_M]) that are independent of both f_1 and Phi_1:
     ! --------------------------------------------------------------------------------
     ! --------------------------------------------------------------------------------
 
@@ -67,7 +69,7 @@
        dPhiHatdpsiHatToUseInRHS = 0
     end if
 
-    ! First add the term arising from radial gradients:
+    ! First add the terms arising from \dot{\psi} df_M/d\psi
     x2 = x*x
     do ispecies = 1,Nspecies
        THat = THats(ispecies)
@@ -114,6 +116,36 @@
        end do
     end do
 
+!!$    ! Next add the terms arising from \dot{x} df_M/dx
+!!$    do ispecies = 1,Nspecies
+!!$       THat = THats(ispecies)
+!!$       mHat = mHats(ispecies)
+!!$       sqrtTHat = sqrt(THat)
+!!$       sqrtMHat = sqrt(mHat)
+!!$       
+!!$       do ix=1,Nx
+!!$          dfMdx = -2*x(ix)*mHat*sqrtmHat*nHat*expx2(ix)/(pi*sqrtpi*THat*sqrtTHat)
+!!$
+!!$          do itheta = ithetaMin,ithetaMax
+!!$             do izeta = 1,Nzeta
+!!$                
+!!$                factor = alpha*Delta*x(ix)*DHat(itheta,izeta)/(4*(BHat(itheta,izeta)**3)) &
+!!$                     * (BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
+!!$                     - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta)) &
+!!$                     * dPhiHatdpsiHat
+!!$
+!!$                L = 0
+!!$                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+!!$                call VecSetValue(rhs, index, (4/three)*factor, INSERT_VALUES, ierr)
+!!$                
+!!$                L = 2
+!!$                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+!!$                call VecSetValue(rhs, index, (two/three)*factor, INSERT_VALUES, ierr)
+!!$             end do
+!!$          end do
+!!$       end do
+!!$    end do
+
     ! Add the inductive electric field term:
     L=1
     do ispecies = 1,Nspecies
@@ -143,11 +175,5 @@
     scalar = -1
     call VecAXPY(residualVec, scalar, rhs, ierr)
     call VecDestroy(rhs, ierr)
-
-    !! Add the temperature equilibration term:
-    !if (includeTemperatureEquilibrationTerm) then
-    !   scalar = one
-    !   call VecAXPY(residualVec, scalar, temperatureEquilibrationTerm, ierr)
-    !end if
 
   end subroutine evaluateResidual
