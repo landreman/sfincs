@@ -5,8 +5,9 @@
 import matplotlib.pyplot as plt
 import h5py
 import numpy
+import inspect
 
-print "This is sfincsPlot."
+print "This is "+ inspect.getfile(inspect.currentframe())
 
 try:
     f = h5py.File('sfincsOutput.h5','r')

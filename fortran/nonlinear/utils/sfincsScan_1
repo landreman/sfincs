@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+
+# This script will not work if called directly.
+# From the command line, you should call sfincsScan instead.
+
 import os, inspect
 
 print "This is "+ inspect.getfile(inspect.currentframe())
@@ -103,9 +108,66 @@ except ValueError:
     pass
 print "Nxs:",Nxs
 
-numRunsInScan = 1+len(Nthetas)+len(Nzetas)+len(Nxis)+len(NLs)+len(Nxs)
+NxPotentialsPerVth = readVariable("NxPotentialsPerVth","float")
+NxPotentialsPerVthMaxFactor = readScanVariable("NxPotentialsPerVthMaxFactor","float")
+NxPotentialsPerVthMinFactor = readScanVariable("NxPotentialsPerVthMinFactor","float")
+NxPotentialsPerVthNumRuns = readScanVariable("NxPotentialsPerVthNumRuns","int")
+if NxPotentialsPerVth<0:
+    print "Error! NxPotentialsPerVth must be positive"
+    exit(1)
+if NxPotentialsPerVthMaxFactor<0:
+    print "Error! NxPotentialsPerVthMaxFactor must be positive"
+    exit(1)
+if NxPotentialsPerVthMinFactor<0:
+    print "Error! NxPotentialsPerVthMinFactor must be positive"
+    exit(1)
+NxPotentialsPerVths = logspace(NxPotentialsPerVthMinFactor*NxPotentialsPerVth,NxPotentialsPerVthMaxFactor*NxPotentialsPerVth,NxPotentialsPerVthNumRuns)
+for value in NxPotentialsPerVths:
+    if abs(value-NxPotentialsPerVth)/value < 1e-6:
+        NxPotentialsPerVths.remove(value)
+print "NxPotentialsPerVths:",NxPotentialsPerVths
 
-baseCase = [Ntheta,Nzeta,Nxi,NL,Nx]
+xMax = readVariable("xMax","float")
+xMaxMaxFactor = readScanVariable("xMaxMaxFactor","float")
+xMaxMinFactor = readScanVariable("xMaxMinFactor","float")
+xMaxNumRuns = readScanVariable("xMaxNumRuns","int")
+if xMax<0:
+    print "Error! xMax must be positive"
+    exit(1)
+if xMaxMaxFactor<0:
+    print "Error! xMaxMaxFactor must be positive"
+    exit(1)
+if xMaxMinFactor<0:
+    print "Error! xMaxMinFactor must be positive"
+    exit(1)
+xMaxs = logspace(xMaxMinFactor*xMax,xMaxMaxFactor*xMax,xMaxNumRuns)
+for value in xMaxs:
+    if abs(value-xMax)/value < 1e-6:
+        xMaxs.remove(value)
+print "xMaxs:",xMaxs
+
+solverTolerance = readVariable("solverTolerance","float")
+solverToleranceMaxFactor = readScanVariable("solverToleranceMaxFactor","float")
+solverToleranceMinFactor = readScanVariable("solverToleranceMinFactor","float")
+solverToleranceNumRuns = readScanVariable("solverToleranceNumRuns","int")
+if solverTolerance<0:
+    print "Error! solverTolerance must be positive"
+    exit(1)
+if solverToleranceMaxFactor<0:
+    print "Error! solverToleranceMaxFactor must be positive"
+    exit(1)
+if solverToleranceMinFactor<0:
+    print "Error! solverToleranceMinFactor must be positive"
+    exit(1)
+solverTolerances = logspace(solverToleranceMinFactor*solverTolerance,solverToleranceMaxFactor*solverTolerance,solverToleranceNumRuns)
+for value in solverTolerances:
+    if abs((math.log(value)-math.log(solverTolerance))/math.log(value)) < 1e-6:
+        solverTolerances.remove(value)
+print "solverTolerances:",solverTolerances
+
+numRunsInScan = 1+len(Nthetas)+len(Nzetas)+len(Nxis)+len(NLs)+len(Nxs)+len(NxPotentialsPerVths)+len(xMaxs)+len(solverTolerances)
+
+baseCase = [Ntheta,Nzeta,Nxi,NL,Nx,NxPotentialsPerVth,xMax,solverTolerance]
 
 parametersForScan = []
 for i in range(numRunsInScan):
@@ -139,6 +201,21 @@ for i in range(len(Nxs)):
     descriptions.append("Nx" + str(Nxs[i]))
     currentIndex += 1
 
+for i in range(len(NxPotentialsPerVths)):
+    parametersForScan[currentIndex][5] = NxPotentialsPerVths[i]
+    descriptions.append("NxPotentialsPerVth" + str(NxPotentialsPerVths[i]))
+    currentIndex += 1
+
+for i in range(len(xMaxs)):
+    parametersForScan[currentIndex][6] = xMaxs[i]
+    descriptions.append("xMax" + str(xMaxs[i]))
+    currentIndex += 1
+
+for i in range(len(solverTolerances)):
+    parametersForScan[currentIndex][7] = solverTolerances[i]
+    descriptions.append("solverTolerance" + str(solverTolerances[i]))
+    currentIndex += 1
+
 if currentIndex != numRunsInScan:
     print "Error! Something went wrong."
     exit(1)
@@ -163,8 +240,8 @@ while runNum < numRunsInScan:
 
 print
 print "Here are the parameters for the "+str(numRunsInScan)+" runs we will launch:"
-print "[Ntheta, Nzeta, Nxi, NL, Nx]"
-print "----------------------------"
+print "[Ntheta, Nzeta, Nxi, NL, Nx, NxPotentialsPerVth, xMax, solverTolerance]"
+print "-----------------------------------------------------------------------"
 for line in parametersForScan:
     print line
 
@@ -173,7 +250,7 @@ print "Here are the directories that will be created:"
 print descriptions
 
 while True:
-    proceed=raw_input("Should I go ahead and launch these jobs? [y/n] ")
+    proceed=raw_input("Should I go ahead and launch these "+str(numRunsInScan)+" jobs? [y/n] ")
     if proceed=="y" or proceed=="n":
         break
     print "You must enter either y or n."
@@ -188,7 +265,7 @@ with open(jobFilename, 'r') as f:
 
 for runNum in range(numRunsInScan):
     directory = descriptions[runNum]
-    print "Beginning to handle job "+directory
+    print "Beginning to handle job "+str(runNum+1)+" of "+str(numRunsInScan)+": "+directory
 
     # To be extra safe, check again to see if the directory exists.
     if os.path.exists(directory):
@@ -205,7 +282,7 @@ for runNum in range(numRunsInScan):
 
     # Copy the job.sfincsScan file:
     thisJobFile = list(jobFile)
-    # This next function is defined separately for each system in sfincsScan.py
+    # This next function is defined separately for each system in sfincsScan
     nameJobFile(thisJobFile,directory)
     f = open(jobFilename,"w")
     f.writelines(thisJobFile)
@@ -224,6 +301,12 @@ for runNum in range(numRunsInScan):
             line = "  NL = "+str(parametersForScan[runNum][3])+" ! Set by sfincsScan.\n"
         if namelistLineContains(line,"Nx"):
             line = "  Nx = "+str(parametersForScan[runNum][4])+" ! Set by sfincsScan.\n"
+        if namelistLineContains(line,"NxPotentialsPerVth"):
+            line = "  NxPotentialsPerVth = "+str(parametersForScan[runNum][5])+" ! Set by sfincsScan.\n"
+        if namelistLineContains(line,"xMax"):
+            line = "  xMax = "+str(parametersForScan[runNum][6])+" ! Set by sfincsScan.\n"
+        if namelistLineContains(line,"solverTolerance"):
+            line = "  solverTolerance = "+str(parametersForScan[runNum][7])+" ! Set by sfincsScan.\n"
         f.write(line)
     f.close()
 

@@ -28,8 +28,9 @@ if not os.path.isfile(filename):
 if sfincsSystem=="edison":
     submitCommand = "qsub "+jobFilename
     def nameJobFile(original,name):
-        # Modify the job.sfincsScan file to change the name that appears in the queue
-        original.insert(0,"#PBS -N "+name+"\n")
+        # Modify the job.sfincsScan file to change the name that appears in the queue.
+        # Insert the new line after the original first line, since the first line is a shebang.
+        original.insert(1,"#PBS -N "+name+"\n")
         return original
 
 elif sfincsSystem=="laptop":
@@ -39,8 +40,8 @@ elif sfincsSystem=="laptop":
         return original
 
 else:
-    print "Error! SFINCS_SYSTEM="+sfincsSystem+" is not yet recognized by sfincsScan.py"
-    print "You will need to edit sfincsScan.py to specify a few things for this system."
+    print "Error! SFINCS_SYSTEM="+sfincsSystem+" is not yet recognized by sfincsScan"
+    print "You will need to edit sfincsScan to specify a few things for this system."
     exit(1)
 
 #if sfincsSystem=='edison':
@@ -50,8 +51,8 @@ else:
 #    # Any checks that should be done for SFINCS_SYSTEM=laptop can go here.
 #    jobfileRequired = False
 #else:
-#    print "Error! This system is not known by sfincsScan.py"
-#    print "You will need to edit sfincsScan.py"
+#    print "Error! This system is not known by sfincsScan"
+#    print "You will need to edit sfincsScan"
 
 # Any checks that should be done for other systems can go here.
 
@@ -128,6 +129,8 @@ def readScanVariable(varName, intOrFloat):
             continue
 
         line5 = line4[1:].strip();
+        # python does not recognize fortran's 1d+0 scientific notation
+        line5 = line5.replace('d','e').replace('D','e')
         
         if intOrFloat=="int":
             try:
@@ -186,6 +189,8 @@ def readVariable(varName, intOrFloat):
             continue
 
         line5 = line4[1:].strip();
+        # python does not recognize fortran's 1d+0 scientific notation
+        line5 = line5.replace('d','e').replace('D','e')
         
         if intOrFloat=="int":
             try:
@@ -232,15 +237,16 @@ def namelistLineContains(line,varName):
 
 scanType = readScanVariable("scanType","int")
 
-scriptName =  os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_"+str(scanType)+".py" 
+scriptName =  os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_"+str(scanType) 
+
+if not os.path.isfile(scriptName):
+    print "Error! The file "+scriptName+" does not exist, meaning that plots for scanType = "+str(scanType)+ " are not yet supported."
+    exit(1)
 
 try:
     execfile(scriptName)
 except IOError:
-    print "Unable to run "+scriptName
-    print "This probably means that scanType = "+str(scanType)+ " is not supported."
-    exit(1)
-
-
+    print "Unable to run "+scriptName+" even though the file exists."
+    raise
 
 print "Good bye!"

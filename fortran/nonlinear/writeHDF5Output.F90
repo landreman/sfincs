@@ -124,6 +124,7 @@ contains
        ! and arrays. For arrays, you must provide a dspaceID and dimensions; for scalars you do not
        ! provide these 2 parameters.
 
+       call writeHDF5Field("RHSMode", RHSMode)
        call writeHDF5Field("Nspecies", Nspecies)
        call writeHDF5Field("Ntheta", Ntheta)
        call writeHDF5Field("Nzeta", Nzeta)
