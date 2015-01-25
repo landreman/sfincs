@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import h5py
 import numpy
 
+print "This is sfincsPlot."
+
 try:
     f = h5py.File('sfincsOutput.h5','r')
 except:
@@ -30,6 +32,17 @@ totalPressure = f['totalPressure'][()]
 Zs = f['Zs'][()]
 jHat = f['jHat'][()]
 
+print "Successfully read data from sfincsOutput.h5"
+
+#theta2D,zeta2D = numpy.meshgrid(theta,zeta)
+zeta2D,theta2D = numpy.meshgrid(zeta,theta)
+
+print theta2D
+print theta2D.shape
+print zeta2D.shape
+
+print t
+
 NspeciesToPlot = Nspecies
 if Nspecies>3:
     NspeciesToPlot = 3
@@ -43,8 +56,9 @@ numRows = 2
 numCols = 4
 
 plt.subplot(numRows, numCols, 1)
-plt.contourf(zeta,theta,BHat.transpose(),20)
-plt.title('BHat')
+#plt.contourf(zeta,theta,BHat.transpose(),20)
+plt.contourf(zeta2D,theta2D,BHat.transpose(),20)
+plt.title('BHat with a field line')
 plt.xlabel('zeta')
 plt.ylabel('theta')
 plt.colorbar()
@@ -57,7 +71,7 @@ else:
 plt.subplot(numRows, numCols, 2)
 plt.contourf(zeta,theta,BHat.transpose(),20)
 #plt.pcolormesh(zeta,theta,BHat.transpose())
-plt.title('BHat')
+plt.title('BHat. Dots show (theta,zeta) grid.')
 plt.xlabel('zeta')
 plt.ylabel('theta')
 plt.colorbar()
@@ -99,21 +113,29 @@ plt.xlabel('zeta')
 plt.ylabel('theta')
 plt.colorbar()
 
+plt.figure(2)
+
 plt.subplot(numRows, numCols, 8)
 plt.contourf(zeta,theta,BHat_sub_zeta.transpose(),20)
 plt.title('BHat_sub_zeta')
 plt.xlabel('zeta')
 plt.ylabel('theta')
+#plt.colorbar(plt.gca())
 plt.colorbar()
 
 
 ###############################################3
 # Plot the outputs for iteration 1
 ###############################################3
-plt.figure(2)
 
 numRows = NspeciesToPlot
 numCols = 4
+
+print totalDensity.shape
+ispecies=0
+iteration=0
+temp = totalDensity[:,:,ispecies,iteration].transpose()
+print temp.shape
 
 #if zeta.size>1:
 iteration = 0
@@ -121,11 +143,11 @@ for ispecies in range(0,NspeciesToPlot):
 
     # Plot density
     plt.subplot(numRows, numCols, ispecies*numCols+1)
-    plt.contourf(zeta,theta,totalDensity[:,:,ispecies,iteration].transpose(),20)
+    plt.contourf(zeta2D,theta2D,totalDensity[:,:,ispecies,iteration].transpose(),20)
+    #plt.colorbar()
     plt.title('totalDensity for species {} (Z={})'.format(ispecies+1,Zs[ispecies]))
     plt.xlabel('zeta')
     plt.ylabel('theta')
-    plt.colorbar()
 
     # Plot Mach #
     plt.subplot(numRows, numCols, ispecies*numCols+2)
@@ -133,7 +155,7 @@ for ispecies in range(0,NspeciesToPlot):
     plt.title('Mach # for species {} (Z={})'.format(ispecies+1,Zs[ispecies]))
     plt.xlabel('zeta')
     plt.ylabel('theta')
-    plt.colorbar()
+    #plt.colorbar()
 
     # Plot pressure
     plt.subplot(numRows, numCols, ispecies*numCols+3)
@@ -141,7 +163,7 @@ for ispecies in range(0,NspeciesToPlot):
     plt.title('totalPressure for species {} (Z={})'.format(ispecies+1,Zs[ispecies]))
     plt.xlabel('zeta')
     plt.ylabel('theta')
-    plt.colorbar()
+    #plt.colorbar()
 
 # Plot parallel current
 plt.subplot(numRows, numCols, 4)
@@ -149,10 +171,10 @@ plt.contourf(zeta,theta,jHat[:,:,iteration].transpose(),20)
 plt.title('jHat (parallel current)')
 plt.xlabel('zeta')
 plt.ylabel('theta')
-plt.colorbar()
+#plt.colorbar()
 
-plt.subplot(1,1,1)
-plt.text(0.5,0.9,'Results for first iteration')
+#plt.subplot(1,1,1)
+#plt.text(0.5,0.9,'Results for first iteration')
 
 ###############################################3
 plt.show()

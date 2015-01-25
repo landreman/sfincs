@@ -1,0 +1,246 @@
+#!/usr/bin/env python
+
+# This python script launches various types of scan in which the sfincs executable is run
+# multiple times.  This file contains definitions that are shared among the various
+# types of scan.
+
+import os, inspect, math, subprocess
+
+print "This is "+ inspect.getfile(inspect.currentframe())
+
+filename = "input.namelist"
+jobFilename = "job.sfincsScan"
+commentCode = "!ss"
+
+try:
+    sfincsSystem = os.environ["SFINCS_SYSTEM"]
+except:
+    print "Error! Unable to read the SFINCS_SYSTEM environment variable. Make sure you have set it."
+    raise
+print "I detect SFINCS_SYSTEM = "+sfincsSystem
+
+
+if not os.path.isfile(filename):
+    print "Error! The file "+filename+" must be present in the directory from which you call sfincsScan."
+    exit(1)
+
+# For each system, 
+if sfincsSystem=="edison":
+    submitCommand = "qsub "+jobFilename
+    def nameJobFile(original,name):
+        # Modify the job.sfincsScan file to change the name that appears in the queue
+        original.insert(0,"#PBS -N "+name+"\n")
+        return original
+
+elif sfincsSystem=="laptop":
+    submitCommand = "bash "+jobFilename
+    def nameJobFile(original,name):
+        # No changes needed to the job.sfincsScan file.
+        return original
+
+else:
+    print "Error! SFINCS_SYSTEM="+sfincsSystem+" is not yet recognized by sfincsScan.py"
+    print "You will need to edit sfincsScan.py to specify a few things for this system."
+    exit(1)
+
+#if sfincsSystem=='edison':
+#    # Any checks that should be done for SFINCS_SYSTEM=edison can go here.
+#    jobfileRequired = True
+#elif sfincsSystem=='laptop':
+#    # Any checks that should be done for SFINCS_SYSTEM=laptop can go here.
+#    jobfileRequired = False
+#else:
+#    print "Error! This system is not known by sfincsScan.py"
+#    print "You will need to edit sfincsScan.py"
+
+# Any checks that should be done for other systems can go here.
+
+#if jobfileRequired:
+if not os.path.isfile(jobFilename):
+    print "Error! A "+jobFilename+" file must be present in the directory from which you call sfincsScan (even for systems with no queue)."
+    exit(1)
+
+# Load the input file:
+with open(filename, 'r') as f:
+    inputFile = f.readlines()
+
+# Next come some functions used in convergence scans which might be useful for other types of scans:
+
+def uniq(seq): 
+   checked = []
+   for e in seq:
+       if e not in checked:
+           checked.append(e)
+   return checked
+
+def logspace(min,max,nn):
+    if nn < 1:
+        return []
+    elif nn==1:
+        return [min]
+
+    if min <= 0:
+        print "Error in logspace! min must be positive."
+        exit(1)
+    if max <= 0:
+        print "Error in logspace! max must be positive."
+        exit(1)
+    return [math.exp(x/(nn-1.0)*(math.log(max)-math.log(min))+math.log(min)) for x in range(nn)]
+
+def logspace_int(min,max,nn):
+    return uniq(map(int,logspace(min,max,nn)))
+
+def logspace_odd(min,max,nn):
+    temp = map(int,logspace(min,max,nn))
+    temp2 = []
+    for x in temp:
+        if (x % 2 == 0):
+            temp2.append(x+1)
+        else:
+            temp2.append(x)
+    return uniq(temp2)
+
+
+def readScanVariable(varName, intOrFloat):
+    # This subroutine reads the special scan commands in the input.namelist that are hidden from fortran:
+    returnValue = None
+    numValidLines = 0
+    for line in inputFile:
+        line2 = line.strip()
+        # We need enough characters for the comment code, varName, =, and value: 
+        if len(line2)<len(commentCode)+3:
+            continue
+
+        if not line2[:len(commentCode)]==commentCode:
+            continue
+
+        line3 = line2[len(commentCode):].strip()
+
+        if len(line3) < len(varName)+2:
+            continue
+
+        if not line3[:len(varName)]==varName:
+            continue
+
+        line4 = line3[len(varName):].strip()
+
+        if not line4[0] =="=":
+            continue
+
+        line5 = line4[1:].strip();
+        
+        if intOrFloat=="int":
+            try:
+                returnValue = int(line5)
+                numValidLines += 1
+            except:
+                print "Warning! I found a definition for the variable "+varName+" in "+filename+" but I was unable to parse the line to get an integer."
+                print "Here is the line in question:"
+                print line
+        elif intOrFloat=="float":
+            try:
+                returnValue = float(line5)
+                numValidLines += 1
+            except:
+                print "Warning! I found a definition for the variable "+varName+" in "+filename+" but I was unable to parse the line to get a float."
+                print "Here is the line in question:"
+                print line
+
+    if returnValue==None:
+        print "Error! Unable to find a valid setting for the scan variable "+varName+" in "+filename+"."
+        print "A definition should have the following form:"
+        if intOrFloat=="int":
+            print commentCode+" "+varName+" = 1"
+        elif intOrFloat=="float":
+            print commentCode+" "+varName+" = 1.5"
+        exit(1)
+
+    if numValidLines > 1:
+        print "Warning! More than 1 valid definition was found for the variable "+varName+". The last one will be used."
+
+    print "Read "+varName+" = "+str(returnValue)
+    return returnValue
+
+
+def readVariable(varName, intOrFloat):
+    # This function reads normal fortran variables from the input.namelist file.
+    returnValue = None
+    numValidLines = 0
+    for line in inputFile:
+        line3 = line.strip()
+        if len(line3)<1:
+            continue
+
+        if line3[0]=="!":
+            continue
+
+        if len(line3) < len(varName)+2:
+            continue
+
+        if not line3[:len(varName)]==varName:
+            continue
+
+        line4 = line3[len(varName):].strip()
+
+        if not line4[0] =="=":
+            continue
+
+        line5 = line4[1:].strip();
+        
+        if intOrFloat=="int":
+            try:
+                returnValue = int(line5)
+                numValidLines += 1
+            except:
+                print "Warning! I found a definition for the variable "+varName+" in "+filename+" but I was unable to parse the line to get an integer."
+                print "Here is the line in question:"
+                print line
+        elif intOrFloat=="float":
+            try:
+                returnValue = float(line5)
+                numValidLines += 1
+            except:
+                print "Warning! I found a definition for the variable "+varName+" in "+filename+" but I was unable to parse the line to get a float."
+                print "Here is the line in question:"
+                print line
+
+    if returnValue==None:
+        print "Error! Unable to find a valid setting for the variable "+varName+" in "+filename+"."
+        exit(1)
+
+    if numValidLines > 1:
+        print "Warning! More than 1 valid definition was found for the variable "+varName+". The last one will be used."
+
+    print "Read "+varName+" = "+str(returnValue)
+    return returnValue
+
+def namelistLineContains(line,varName):
+    line2 = line.strip().lower()
+    varName = varName.lower()
+    # We need enough characters for the varName, =, and value: 
+    if len(line2)<len(varName)+2:
+        return False
+
+    if line2[0]=="!":
+        return False
+
+    nextChar = line2[len(varName)]
+    if line2[:len(varName)]==varName and (nextChar==" " or nextChar=="="):
+        return True
+    else:
+        return False
+
+scanType = readScanVariable("scanType","int")
+
+scriptName =  os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_"+str(scanType)+".py" 
+
+try:
+    execfile(scriptName)
+except IOError:
+    print "Unable to run "+scriptName
+    print "This probably means that scanType = "+str(scanType)+ " is not supported."
+    exit(1)
+
+
+
+print "Good bye!"
