@@ -1,0 +1,205 @@
+#!/usr/bin/env python
+
+# This python script plots the output of a SFINCS convergence scan.
+
+outputFilename = "sfincsOutput.h5"
+
+import matplotlib.pyplot as plt
+import h5py
+import numpy
+import inspect, math
+
+print "This is "+ inspect.getfile(inspect.currentframe())
+
+numRuns = 0
+Ers = []
+outputs = []
+
+def uniq(seq):
+   checked = []
+   for e in seq:
+       if e not in checked:
+           checked.append(e)
+   return checked
+
+# Get a list of the subdirectories:                                                                        
+directories = filter(os.path.isdir, os.listdir("."))
+
+for directory in directories:
+    filename = directory+"/"+outputFilename
+    if not os.path.isfile(filename):
+        print "Directory "+directory+" does not have a "+outputFilename+" file (yet)."
+        continue
+
+    try:
+        f = h5py.File(filename,'r')
+    except IOError:
+        print "Unable to open "+filename+" even though this file exists."
+        continue
+
+    try:
+        # Try reading a field that should definitely be present in the output file for any run that completed.
+        dummy = f["FSABFlow"][()]
+    except:
+        print "Unable to read "+filename+" even though this file exists."
+        continue
+
+    try:
+        finished = f["finished"]
+    except KeyError:
+        print "Run in directory "+directory+" does not appear to have finished."
+        continue
+
+    print "Processing directory "+directory
+
+    # The expression [()] converts from an h5py dataset to a numpy ndarray:
+    integerToRepresentTrue = (f["integerToRepresentTrue"][()])
+    inputRadialCoordinateForGradients_new = f["inputRadialCoordinateForGradients"][()]
+    RHSMode_new = f["RHSMode"][()]
+    Nspecies_new = f["Nspecies"][()]
+    includePhi1_new = (f["includePhi1"][()] == integerToRepresentTrue)
+    if numRuns == 0:
+       inputRadialCoordinateForGradients = inputRadialCoordinateForGradients_new
+       RHSMode = RHSMode_new
+       Nspecies = Nspecies_new
+       includePhi1 = includePhi1_new
+    else:
+       if inputRadialCoordinateForGradients != inputRadialCoordinateForGradients_new:
+          print "Error! inputRadialCoordinateForGradients is not consistent among runs."
+          exit(1)
+       if RHSMode != RHSMode_new:
+          print "Error! RHSMode is not consistent among runs."
+          exit(1)
+       if Nspecies != Nspecies_new:
+          print "Error! Nspecies is not consistent among runs."
+          exit(1)
+       if includePhi1 != includePhi1_new:
+          print "Error! includePhi1 is not consistent among runs."
+          exit(1)
+
+    if inputRadialCoordinateForGradients==0:
+       varName = "dPhiHatdpsiHat"
+    elif inputRadialCoordinateForGradients==1:
+       varName = "dPhiHatdpsiN"
+    elif inputRadialCoordinateForGradients==2:
+       varName = "dPhiHatdrHat"
+    elif inputRadialCoordinateForGradients==3:
+       varName = "dPhiHatdrN"
+    else:
+       print "Error! Invalid inputRadialCoordinateForGradients."
+       exit(1)
+
+    if RHSMode != 1 and RHSMode != 2:
+        print "Error! sfincsScanPlot is not yet set up for RHSMode = "+str(RHSMode)
+        exit(1)
+
+    Ers.append(f[varName][()])
+    FSABFlow = f["FSABFlow"][()]
+    FSABjHat = f["FSABjHat"][()]
+    particleFlux_vm = f["particleFlux_vm_psiHat"][()]
+    heatFlux_vm = f["heatFlux_vm_psiHat"][()]
+    elapsedTime = f["elapsed time (s)"][()]
+    if RHSMode==2:
+       transportMatrix = f["transportMatrix"][()]
+    if includePhi1:
+        particleFlux_vd = f["particleFlux_vd_psiHat"][()]
+        heatFlux_vd = f["heatFlux_vd_psiHat"][()]
+
+    if RHSMode == 2:
+       results = []
+       for icol in range(transportMatrix.shape[1]):
+          for irow in range(transportMatrix.shape[0]):
+             results.append(transportMatrix[irow,icol])
+       outputs.append(results)
+    else:
+       if Nspecies==1:
+          if includePhi1:
+             outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],particleFlux_vd[0,0],heatFlux_vm[0,0],heatFlux_vd[0,0]])
+          else:
+             outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],heatFlux_vm[0,0]])
+             #outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],heatFlux_vm[0,0],elapsedTime])
+       else:
+          results = []
+          iteration = -1
+          for ispecies in range(Nspecies):
+             if includePhi1:
+                results.append(FSABFlow[ispecies,iteration])
+                results.append(particleFlux_vm[ispecies,iteration])
+                results.append(particleFlux_vd[ispecies,iteration])
+                results.append(heatFlux_vm[ispecies,iteration])
+                results.append(heatFlux_vd[ispecies,iteration])
+             else:
+                results.append(FSABFlow[ispecies,iteration])
+                results.append(particleFlux_vm[ispecies,iteration])
+                results.append(heatFlux_vm[ispecies,iteration])
+          results.append(FSABjHat[iteration])
+          outputs.append(results)
+
+    numRuns += 1
+
+    print "Successfully read run in directory "+directory
+
+# Sort by Er:
+Ers_sorted = sorted(Ers)
+outputs_sorted = []
+for Er in Ers_sorted:
+   outputs_sorted.append(outputs[Ers.index(Er)])
+ 
+outputs_array = numpy.array(outputs_sorted)
+
+if RHSMode==2:
+   yAxisLabels=[]
+   numQuantities = transportMatrix.shape[0]*transportMatrix.shape[1]
+   for irow in range(transportMatrix.shape[0]):
+      for icol in range(transportMatrix.shape[1]):
+         yAxisLabels.append("L"+str(irow+1)+str(icol+1))
+else:
+   if Nspecies==1:
+      if includePhi1:
+         numQuantities = 5
+         yAxisLabels=["FSABFlow","particleFlux\nvm_psiHat","particleFlux\nvd_psiHat","heatFlux\nvm_psiHat","heatFlux\nvd_psiHat"]
+      else:
+         numQuantities = 3
+         yAxisLabels=["FSABFlow","particleFlux\nvm_psiHat","heatFlux\nvm_psiHat","elapsed time (s)"]
+   else:
+      if includePhi1:
+         numQuantities = Nspecies*5+1
+         yAxisLabels=[]
+         for i in range(1,Nspecies+1):
+            yAxisLabels.append("FSABFlow (species "+str(i)+")")
+            yAxisLabels.append("particleFlux vm_psiHat (species "+str(i)+")")
+            yAxisLabels.append("particleFlux vd_psiHat (species "+str(i)+")")
+            yAxisLabels.append("heatFlux vm_psiHat (species "+str(i)+")")
+            yAxisLabels.append("heatFlux vd_psiHat (species "+str(i)+")")
+         yAxisLabels.append("FSABjHat")
+        
+      else:
+         numQuantities = Nspecies*3+1
+         yAxisLabels=[]
+         for i in range(1,Nspecies+1):
+            yAxisLabels.append("FSABFlow (species "+str(i)+")")
+            yAxisLabels.append("particleFlux_vm_psiHat (species "+str(i)+")")
+            yAxisLabels.append("heatFlux_vm_psiHat (species "+str(i)+")")
+         yAxisLabels.append("FSABjHat")
+            
+
+
+# ***************************************************
+# Now make the plot
+# ***************************************************
+
+fig = plt.figure()
+fig.patch.set_facecolor('white')
+
+numCols = math.ceil(math.sqrt(numQuantities*1.0))
+numRows = math.ceil(numQuantities*1.0/numCols)
+
+for iQuantity in range(numQuantities):
+   plt.subplot(numRows,numCols,iQuantity+1)
+   plt.plot(Ers_sorted,outputs_array[:,iQuantity],'.-')
+   plt.xlabel(varName)
+   plt.ylabel(yAxisLabels[iQuantity])
+   
+
+plt.show()
+

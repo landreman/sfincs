@@ -88,6 +88,13 @@ def logspace(min,max,nn):
         exit(1)
     return [math.exp(x/(nn-1.0)*(math.log(max)-math.log(min))+math.log(min)) for x in range(nn)]
 
+def linspace(min,max,nn):
+    if nn < 1:
+        return []
+    elif nn==1:
+        return [min]
+    return [x/(nn-1.0)*(max-min)+min for x in range(nn)]
+
 def logspace_int(min,max,nn):
     return uniq(map(int,logspace(min,max,nn)))
 

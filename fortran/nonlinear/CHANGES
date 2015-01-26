@@ -1,0 +1,41 @@
+The are a number of differences between this "nonlinear" version of SFINCS and the previous versions ("singleSpecies" and "multiSpecies"):
+
+* There was no quasineutrality condition in the main matrix of previous versions.  In the new version, you have the option of including the quasineutrality equation by setting includePhi1=.true. This option also includes in the kinetic equation terms involving Phi1, the variation of the electrostatic potential on a flux surface.  When includePhi1=.true., there are some new diagnostic output quantities available in sfincsOutput.h5.  For example, radial fluxes are computed using either just the radial magnetic drift, just the radial ExB drift, and both drifts.
+
+* includePhi1=.true. causes changes to the radial fluxes. See the notes ??? in doc/
+
+* Nonlinear terms.
+
+* In previous versions, Boozer coordinates were hard-wired into the code.  In the new version, any flux coordinates (psi, theta, zeta) may be used, including Boozer coordinates, native VMEC coordinates, or even non-straight-field-line coordinates like Miller geometry.  Consequently there are new internal arrays for the covariant and contravariant components of the magnetic field.
+
+* Direct reading of VMEC.
+
+* Radial coordinates.
+
+* Magnetic drifts
+
+* A new term related to temperature equilibration can be included in the kinetic equation by setting includeTemperatureEquilibrationTerm=.true.  This term is C_{ab}[f_{Ma}, f_{Mb}], i.e. the inter-species linearized collision operator acting on the Maxwellians rather than on the non-Maxwellian distribution function.  This term is only nonzero when using the Fokker-Planck operator with >1 species where the temperatures of the species are unequal.  This term really should be present in the kinetic equation, but its effect is probably small in many cases since it will be small in the mass ratio.
+
+* The various utilities for scans and plotting are now consistently written in python, instead of a mixture of python/ruby/matlab.  The plotting routines rely on the python packages numpy, h5py, and matplotlib.
+
+* The functionality for scans (convergence scans, Er scans, etc) within the fortran code itself has been removed.  This functionality never worked well anyway.  Scans are now run using the python script utils/sfincsScan.  Scans are plotted by calling utils/sfincsScanPlot.
+
+* !ss in namelist file
+
+* In the sfincsOutput.h5 file, variables are no longer stored in a "/run  1/" group.  (These groups existed only for the fortran-based scans, which are now removed.)  Thus, for example, the variable previously stored in "/run  1/BHat" is now stored in "/BHat".
+
+* Some variables in input.namelist have moved or changed.  Now psiAHat is located in the geometry namelist rather than the physicsParameters namelist.  The "flowControl" namelist has been renamed "general".
+
+* Many more diagnostic output quantities are now available in sfincsOutput.h5, such as the Mach number, the velocity, etc.
+
+* A new python utility "sfincsPlot" in utils/ will plot the results of a single sfincs run.
+
+* In the new version, writeHDF5Output.F90 is substantially reorganized. Now it takes only 1 line of code to add a new variable to the sfincsOutput.h5 file.
+
+* solveDKE.F90 in the previous versions has been split into several files: createGrids.F90, preallocateMatrix.F90, populateMatrix.F90, evaluateResidual.F90, evaluateJacobian.F90, solver.F90, and diagnostics.F90.
+
+* In previous versions, matrix assembly was parallelized only in the theta coordinate.  Now it is parallelized in both theta and zeta.  Thus, some loops in populateMatrix.F90 now have "do izeta=izetaMin,izetaMax" instead of "do izeta = 1,Nzeta".
+
+* Code in a new validateInput.F890file performs a bunch of tests to make sure in the input parameters make sense.
+
+* In the sfincsOutput.h5 file, the input gradients now have the same variable names as in input.namelist and in the fortran code.  For example, "d(THat)d(psi_N)" is now named "dTHatdpsiN".

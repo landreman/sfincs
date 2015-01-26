@@ -28,7 +28,7 @@ outputs = []
 
 baseCaseIndex = -1
 
-def uniq(seq): 
+def uniq(seq):
    checked = []
    for e in seq:
        if e not in checked:
@@ -76,17 +76,18 @@ for directory in directories:
     xMaxs.append(f["xMax"][()])
     solverTolerances.append(f["solverTolerance"][()])
 
-    RHSMode = f["RHSMode"][()]
-    if RHSMode != 1:
-        print "Error! sfincsScanPlot is not yet set up for RHSMode != 1"
-        exit(1)
 
+    RHSMode_new = f["RHSMode"][()]
     Nspecies_new = f["Nspecies"][()]
     includePhi1_new = (f["includePhi1"][()] == integerToRepresentTrue)
     if numRuns == 0:
+        RHSMode = RHSMode_new
         Nspecies = Nspecies_new
         includePhi1 = includePhi1_new
     else:
+        if RHSMode != RHSMode_new:
+            print "Error! RHSMode is not consistent among runs."
+            exit(1)
         if Nspecies != Nspecies_new:
             print "Error! Nspecies is not consistent among runs."
             exit(1)
@@ -94,36 +95,49 @@ for directory in directories:
             print "Error! includePhi1 is not consistent among runs."
             exit(1)
 
+    if RHSMode != 1 and RHSMode != 2:
+        print "Error! sfincsScanPlot is not yet set up for RHSMode = "+str(RHSMode)
+        exit(1)
+
     FSABFlow = f["FSABFlow"][()]
     FSABjHat = f["FSABjHat"][()]
     particleFlux_vm = f["particleFlux_vm_psiHat"][()]
     heatFlux_vm = f["heatFlux_vm_psiHat"][()]
     elapsedTime = f["elapsed time (s)"][()]
+    if RHSMode==2:
+       transportMatrix = f["transportMatrix"][()]
     if includePhi1:
         particleFlux_vd = f["particleFlux_vd_psiHat"][()]
         heatFlux_vd = f["heatFlux_vd_psiHat"][()]
 
-    if Nspecies==1:
-        if includePhi1:
-            outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],particleFlux_vd[0,0],heatFlux_vm[0,0],heatFlux_vd[0,0]])
-        else:
-            outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],heatFlux_vm[0,0],elapsedTime])
+    if RHSMode == 2:
+       results = []
+       for icol in range(transportMatrix.shape[1]):
+          for irow in range(transportMatrix.shape[0]):
+             results.append(transportMatrix[irow,icol])
+       outputs.append(results)
     else:
-        results = []
-        iteration = -1
-        for ispecies in range(Nspecies):
-            if includePhi1:
+       if Nspecies==1:
+          if includePhi1:
+             outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],particleFlux_vd[0,0],heatFlux_vm[0,0],heatFlux_vd[0,0]])
+          else:
+             outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],heatFlux_vm[0,0],elapsedTime])
+       else:
+          results = []
+          iteration = -1
+          for ispecies in range(Nspecies):
+             if includePhi1:
                 results.append(FSABFlow[ispecies,iteration])
                 results.append(particleFlux_vm[ispecies,iteration])
                 results.append(particleFlux_vd[ispecies,iteration])
                 results.append(heatFlux_vm[ispecies,iteration])
                 results.append(heatFlux_vd[ispecies,iteration])
-            else:
+             else:
                 results.append(FSABFlow[ispecies,iteration])
                 results.append(particleFlux_vm[ispecies,iteration])
                 results.append(heatFlux_vm[ispecies,iteration])
-        results.append(FSABjHat[iteration])
-        outputs.append(results)
+          results.append(FSABjHat[iteration])
+          outputs.append(results)
 
     if directory=="baseCase":
         baseCaseIndex=numRuns
@@ -136,33 +150,40 @@ if baseCaseIndex<0:
     print "Error! No baseCase run available."
     exit(1)
 
-if Nspecies==1:
-    if includePhi1:
-        numRows = 5
-        yAxisLabels=["FSABFlow","particleFlux\nvm_psiHat","particleFlux\nvd_psiHat","heatFlux\nvm_psiHat","heatFlux\nvd_psiHat"]
-    else:
-        numRows = 4
-        yAxisLabels=["FSABFlow","particleFlux\nvm_psiHat","heatFlux\nvm_psiHat","elapsed time (s)"]
+if RHSMode==2:
+   yAxisLabels=[]
+   numRows = transportMatrix.shape[0]*transportMatrix.shape[1]
+   for icol in range(transportMatrix.shape[1]):
+      for irow in range(transportMatrix.shape[0]):
+         yAxisLabels.append("L"+str(irow+1)+str(icol+1))
 else:
-    if includePhi1:
-        numRows = Nspecies*5+1
-        yAxisLabels=[]
-        for i in range(1,Nspecies+1):
+   if Nspecies==1:
+      if includePhi1:
+         numRows = 5
+         yAxisLabels=["FSABFlow","particleFlux\nvm_psiHat","particleFlux\nvd_psiHat","heatFlux\nvm_psiHat","heatFlux\nvd_psiHat"]
+      else:
+         numRows = 4
+         yAxisLabels=["FSABFlow","particleFlux\nvm_psiHat","heatFlux\nvm_psiHat","elapsed time (s)"]
+   else:
+      if includePhi1:
+         numRows = Nspecies*5+1
+         yAxisLabels=[]
+         for i in range(1,Nspecies+1):
             yAxisLabels.append("FSABFlow\n(species "+str(i)+")")
             yAxisLabels.append("particleFlux\nvm_psiHat\n(species "+str(i)+")")
             yAxisLabels.append("particleFlux\nvd_psiHat\n(species "+str(i)+")")
             yAxisLabels.append("heatFlux\nvm_psiHat\n(species "+str(i)+")")
             yAxisLabels.append("heatFlux\nvd_psiHat\n(species "+str(i)+")")
-        yAxisLabels.append("FSABjHat")
+         yAxisLabels.append("FSABjHat")
         
-    else:
-        numRows = Nspecies*3+1
-        yAxisLabels=[]
-        for i in range(1,Nspecies+1):
+      else:
+         numRows = Nspecies*3+1
+         yAxisLabels=[]
+         for i in range(1,Nspecies+1):
             yAxisLabels.append("FSABFlow\n(species "+str(i)+")")
             yAxisLabels.append("particleFlux\nvm_psiHat\n(species "+str(i)+")")
             yAxisLabels.append("heatFlux\nvm_psiHat\n(species "+str(i)+")")
-        yAxisLabels.append("FSABjHat")
+         AxisLabels.append("FSABjHat")
             
 parametersToVary = []
 abscissae = []
@@ -418,9 +439,10 @@ mins = []
 for iQuantity in range(numQuantities):
     thisMax = quantities[0][:,iQuantity].max()
     thisMin = quantities[0][:,iQuantity].min()
-    for iParameter in range(numParameters-1):
-        thisMax = max(thisMax,quantities[iParameter+1][:,iQuantity].max())
-        thisMin = min(thisMin,quantities[iParameter+1][:,iQuantity].min())
+    if numRuns>1:
+        for iParameter in range(numParameters-1):
+            thisMax = max(thisMax,quantities[iParameter+1][:,iQuantity].max())
+            thisMin = min(thisMin,quantities[iParameter+1][:,iQuantity].min())
     if thisMin >= thisMax:
         thisMin -= 0.5
         thisMax += 0.5
@@ -442,7 +464,7 @@ for iQuantity in range(numQuantities):
             if hideRepeatedScales:
                 plt.gca().axes.yaxis.set_ticklabels([])
         plt.ylim(mins[iQuantity],maxs[iQuantity])
-        plt.plot([convergeds[iParameter],convergeds[iParameter]], [mins[iQuantity],maxs[iQuantity]], 'k')
+        plt.plot([convergeds[iParameter],convergeds[iParameter]], [mins[iQuantity],maxs[iQuantity]], 'r')
 
 
 plt.show()
