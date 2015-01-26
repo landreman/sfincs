@@ -33,6 +33,14 @@ if sfincsSystem=="edison":
         original.insert(1,"#PBS -N "+name+"\n")
         return original
 
+elif sfincsSystem=="hydra":
+    submitCommand = "llsubmit "+jobFilename
+    def nameJobFile(original,name):
+        # Modify the job.sfincsScan file to change the name that appears in the queue.
+        # Insert the new line after the original first line, since the first line is a shebang.
+        original.insert(1,"# @ job_name = "+name+"\n")
+        return original
+
 elif sfincsSystem=="laptop":
     submitCommand = "bash "+jobFilename
     def nameJobFile(original,name):
