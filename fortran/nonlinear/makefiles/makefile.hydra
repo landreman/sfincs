@@ -1,3 +1,5 @@
+# -*- mode: makefile -*-
+#
 # To compile on hydra, first load the following modules:
 # module load petsc-real hdf5-serial
 # Also set the following environment variable:

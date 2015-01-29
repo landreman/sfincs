@@ -8,6 +8,7 @@ module geometry
   use globalVariables
   use radialCoordinates
   use petscsysdef
+  use readVMEC
 
   implicit none
 
@@ -76,12 +77,29 @@ contains
           print *,"Since geometryScheme=4, we will ignore the *_wish parameters and use the flux surface rN = 0.5."
        end if
 
+    case (5)
+       ! Read VMEC file, defining the effective minor radius aHat to be VMEC's Aminor_p
+       call read_VMEC(equilibriumfile)
+       NPeriods = vmec%nfp
+       psiAHat = vmec%phi(vmec%ns)/(2*pi)
+       aHat = vmec%Aminor_p
+
+    case (6)
+       ! Read VMEC file, using an effective minor radius aHat which is NOT VMEC's Aminor_p,
+       ! but instead a definition used at IPP
+       call read_VMEC(equilibriumFile)
+       NPeriods = vmec%nfp
+       psiAHat = vmec%phi(vmec%ns)/(2*pi)
+
+       ! This next line is not correct and should be fixed!!!
+       aHat = vmec%Aminor_p
+
     case (10)
        print *,"Error! This geometryScheme has not been implemented yet."
 
     case (11)
        fileUnit = 11
-       open(unit=fileUnit, file=JGboozer_file, action="read", status="old", iostat=didFileAccessWork)
+       open(unit=fileUnit, file=equilibriumFile, action="read", status="old", iostat=didFileAccessWork)
        if (didFileAccessWork /= 0) then
           print *,"Unable to open magnetic equilibrium file."
           stop
@@ -95,7 +113,7 @@ contains
           ! Read header line:
           read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) headerIntegers, headerReals
           if (didFileAccessWork /= 0) then
-             print *,"Unable to read header from the magnetic equilibrium file ",JGboozer_file
+             print *,"Unable to read header from the magnetic equilibrium file ",equilibriumFile
              stop
           end if
 
@@ -107,12 +125,12 @@ contains
 
        close(unit = fileUnit)
        if (masterProc) then
-          print *,"Successfully opened magnetic equilibrium file ",trim(JGboozer_file),".  Nperiods = ",Nperiods
+          print *,"Successfully opened magnetic equilibrium file ",trim(equilibriumFile),".  Nperiods = ",Nperiods
        end if
 
     case (12)
        fileUnit = 11
-       open(unit=fileUnit, file=JGboozer_file_NonStelSym, action="read", status="old", iostat=didFileAccessWork)
+       open(unit=fileUnit, file=equilibriumFile, action="read", status="old", iostat=didFileAccessWork)
        if (didFileAccessWork /= 0) then
           print *,"Unable to open magnetic equilibrium file."
           stop
@@ -126,7 +144,7 @@ contains
           ! Read header line:
           read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) headerIntegers, headerReals
           if (didFileAccessWork /= 0) then
-             print *,"Unable to read header from the magnetic equilibrium file ",JGboozer_file_NonStelSym
+             print *,"Unable to read header from the magnetic equilibrium file ",equilibriumFile
              stop
           end if
 
@@ -138,7 +156,7 @@ contains
 
        close(unit = fileUnit)
        if (masterProc) then
-          print *,"Successfully opened magnetic equilibrium file ",trim(JGboozer_file_NonStelSym),".  Nperiods = ",Nperiods
+          print *,"Successfully opened magnetic equilibrium file ",trim(equilibriumFile),".  Nperiods = ",Nperiods
        end if
 
     case default
@@ -175,8 +193,58 @@ contains
 ! However, the computeBHat subroutine in this module must set the final rN.  The other 3
 ! final radial coordinates (psiHat, psiN, and rHat) will be set from rN later on.
 
+    implicit none
 
-    ! Note that the BHarmonics_amplitudes are normalized by B0, not by BBar!
+    ! Using the selected radial coordinate, set input quantities for the other radial coordinates:
+    call setInputRadialCoordinateWish()
+    ! Note that this call only sets the "wish" radial coordinates, not the final radial coordinates
+    ! or the input gradients. These quantities will be set later as we load the magnetic
+    ! geometry, in case the final radial coordinate is different from the "wish" values.
+
+    ! Set the radius to a silly value here to make sure the proper value is set eventually:
+    rN = -9999
+
+    select case (geometryScheme)
+    case (1,2,3,4,11,12)
+       call computeBHat_Boozer()
+    case (5,6)
+       call computeBHat_VMEC()
+    case default
+       print *,"Error! Invalid setting for geometryScheme."
+       stop
+    end select
+    
+    ! Compute G and H for the case of non-Boozer coordinates.
+    ! We don't actually need G or H for anything, but they are not much work to compute,
+    ! so let's compute them in case it turns out to be convenient.
+    !
+    ! (We could do this computation on a finer (theta,zeta) grid than the grid
+    ! used for the kinetic calculation. But let's do this on the same grid for 2 reasons:
+    ! (1) simplicity, and (2) since the trapezoid rule is spectrally
+    ! accurate on a uniform periodic grid, so a fine grid is not required.)
+    GHat = dot_product(thetaWeights, matmul(BHat_sub_zeta,  zetaWeights)) / (4*pi*pi)
+    IHat = dot_product(thetaWeights, matmul(BHat_sub_theta, zetaWeights)) / (4*pi*pi)
+
+!!$    ! Compute B0, the (m=0,n=0) Boozer harmonic.
+!!$    ! We compute it using B0 = <B^3> / <B^2>, where the right hand side
+!!$    ! can be computed in any coordinate system.
+!!$    B0OverBBar = 0
+!!$    do itheta=1,Ntheta
+!!$       do izeta=1,Nzeta
+!!$          B0OverBBar = B0OverBBar + thetaWeights(itheta) * zetaWeights(izeta) &
+!!$               * (BHat(itheta,izeta) ** 3) / DHat(itheta,izeta)
+!!$       end do
+!!$    end do
+!!$
+!!$    B0OverBBar = B0OverBBar / VPrimeHat / FSABHat2
+
+  end subroutine computeBHat
+
+  ! ---------------------------------------------------------------------------------------
+          
+  subroutine computeBHat_Boozer
+
+    ! Note that the BHarmonics_amplitudes in this subroutine are normalized by B0, not by BBar!
 
     implicit none
 
@@ -205,14 +273,6 @@ contains
     PetscScalar :: rN_old,  rN_new, B0_old, B0_new
     PetscScalar :: hHatHarmonics_amplitude, uHatHarmonics_amplitude
 
-    ! Using the selected radial coordinate, set input quantities for the other radial coordinates:
-    call setInputRadialCoordinateWish()
-    ! Note that this call only sets the "wish" radial coordinates, not the final radial coordinates
-    ! or the input gradients. These quantities will be set later as we load the magnetic
-    ! geometry, in case the final radial coordinate is different from the "wish" values.
-
-    ! Set the radius to a silly value here to make sure the proper value is set eventually:
-    rN = -9999
 
     ! For the BHarmonics_parity array, 
     ! true indicates the contribution to B(theta,zeta) has the form
@@ -412,9 +472,9 @@ contains
        ! Read Boozer coordinate file in .bc format used at IPP Greifswald
 
        fileUnit = 11
-       open(unit=fileUnit, file=JGboozer_file, action="read", status="old", iostat=didFileAccessWork)
+       open(unit=fileUnit, file=equilibriumFile, action="read", status="old", iostat=didFileAccessWork)
        if (didFileAccessWork /= 0) then
-          print *,"Unable to open magnetic equilibrium file ",JGboozer_file
+          print *,"Unable to open magnetic equilibrium file ",equilibriumFile
           stop
        else
           do
@@ -425,7 +485,7 @@ contains
           ! Read header line:
           read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) headerIntegers, headerReals
           if (didFileAccessWork /= 0) then
-             print *,"Unable to read header from the magnetic equilibrium file ",JGboozer_file
+             print *,"Unable to read header from the magnetic equilibrium file ",equilibriumFile
              stop
           end if
 
@@ -519,9 +579,9 @@ contains
                 end if
              end do
              if (numB0s == 0) then
-                print *,"Error: no (0,0) mode found in magnetic equilibrium file ",JGboozer_file
+                print *,"Error: no (0,0) mode found in magnetic equilibrium file ",equilibriumFile
              else if (numB0s > 1) then
-                print *,"Error: more than 1 (0,0) mode found in magnetic equilibrium file ",JGboozer_file
+                print *,"Error: more than 1 (0,0) mode found in magnetic equilibrium file ",equilibriumFile
              end if
              no_of_modes_new = modeind
           end do
@@ -530,7 +590,7 @@ contains
 
        close(unit = fileUnit)
        if (masterProc) then
-          print *,"Successfully read magnetic equilibrium from file ",trim(JGboozer_file)
+          print *,"Successfully read magnetic equilibrium from file ",trim(equilibriumFile)
        end if
 
        if (abs(rN_old - rN_wish) < abs(rN_new - rN_wish)) then
@@ -580,9 +640,9 @@ contains
        ! Read Boozer coordinate file in a generalisation of the .bc format used at IPP Greifswald for non-stellarator symmetric equilibria 
 
        fileUnit = 11
-       open(unit=fileUnit, file=JGboozer_file_NonStelSym, action="read", status="old", iostat=didFileAccessWork)
+       open(unit=fileUnit, file=equilibriumFile, action="read", status="old", iostat=didFileAccessWork)
        if (didFileAccessWork /= 0) then
-          print *,"Unable to open magnetic equilibrium file ",JGboozer_file_NonStelSym
+          print *,"Unable to open magnetic equilibrium file ",equilibriumFile
           stop
        else
           do
@@ -593,7 +653,7 @@ contains
           ! Read header line:
           read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) headerIntegers, headerReals
           if (didFileAccessWork /= 0) then
-             print *,"Unable to read header from the magnetic equilibrium file ",JGboozer_file_NonStelSym
+             print *,"Unable to read header from the magnetic equilibrium file ",equilibriumFile
              stop
           end if
 
@@ -691,9 +751,9 @@ contains
                 end if
              end do
              if (numB0s == 0) then
-                print *,"Error: no (0,0) mode found in magnetic equilibrium file ",JGboozer_file_NonStelSym
+                print *,"Error: no (0,0) mode found in magnetic equilibrium file ",equilibriumFile
              else if (numB0s > 1) then
-                print *,"Error: more than 1 (0,0) mode found in magnetic equilibrium file ",JGboozer_file_NonStelSym
+                print *,"Error: more than 1 (0,0) mode found in magnetic equilibrium file ",equilibriumFile
              end if
              no_of_modes_new = modeind
           end do
@@ -702,7 +762,7 @@ contains
 
        close(unit = fileUnit)
        if (masterProc) then
-          print *,"Successfully read magnetic equilibrium from file ",trim(JGboozer_file_NonStelSym)
+          print *,"Successfully read magnetic equilibrium from file ",trim(equilibriumFile)
        end if
 
        if (abs(rN_old - rN_wish) < abs(rN_new - rN_wish)) then
@@ -894,38 +954,16 @@ contains
     deallocate(BHarmonics_amplitudes)
     deallocate(BHarmonics_parity)
 
-    select case (coordinateSystem)
-    case (0)
-       if (masterProc) then
-          print *,"Using Boozer coordinates."
-       end if
-       call setBoozerCoordinates()
-    case default
-       print *,"Error, unrecognized coordinate system."
-       stop
-    end select
 
-    ! Compute G and H for the case of non-Boozer coordinates.
-    ! (We could do this computation on a finer (theta,zeta) grid than the grid
-    ! used for the kinetic calculation. But let's do this on the same grid for 2 reasons:
-    ! (1) simplicity, and (2) since the trapezoid rule is spectrally
-    ! accurate on a uniform periodic grid, so a fine grid is not required.)
-    GHat = dot_product(thetaWeights, matmul(BHat_sub_zeta,  zetaWeights)) / (4*pi*pi)
-    IHat = dot_product(thetaWeights, matmul(BHat_sub_theta, zetaWeights)) / (4*pi*pi)
-
-  end subroutine computeBHat
-
-  ! -----------------------------------------------------------------------------------------
-
-  subroutine setBoozerCoordinates
-
-    implicit none
+    ! Set the Jacobian and various other components of B:
 
     DHat = BHat * BHat / (GHat + iota * IHat)
     BHat_sup_theta = iota * DHat
     BHat_sup_zeta = DHat
     BHat_sub_theta = IHat
     BHat_sub_zeta = GHat
+
+    ! Eventually we could replace the next lines with a proper calculation:
 
     dBHat_sub_theta_dpsiHat = 0
     dBHat_sub_theta_dzeta = 0
@@ -938,6 +976,330 @@ contains
 
     dBHat_sup_zeta_dpsiHat = 0
     dBHat_sup_zeta_dtheta = 0
+
+  end subroutine computeBHat_Boozer
+
+  ! -----------------------------------------------------------------------------------------
+
+  subroutine computeBHat_VMEC
+
+    implicit none
+
+    integer :: vmecRadialIndex_full(2)
+    integer :: vmecRadialIndex_half(2)
+    PetscScalar :: vmecRadialWeight_full(2)
+    PetscScalar :: vmecRadialWeight_half(2)
+    PetscScalar, dimension(:), allocatable :: dr2, psiN_full, psiN_half
+    integer :: i, j, index, isurf, itheta, izeta, m, n
+    PetscScalar :: min_dr2, angle, sin_angle, cos_angle, b, b00, temp
+
+    ! This subroutine is written so that only psiN_wish is used, not the other *_wish quantities.
+
+    print *,"Here comes phi from VMEC:",vmec%phi
+
+    allocate(psiN_full(vmec%ns))
+    psiN_full = vmec%phi / (2*pi*psiAHat)
+
+    ! Build an array of the half grid
+    allocate(psiN_half(vmec%ns-1))
+    do i = 1,vmec%ns-1
+       psiN_half(i) = (psiN_full(i) + psiN_full(i+1))/two
+    end do
+
+    ! First, choose the "actual" radius to use based on psiN_wish:
+
+    ! VMECRadialOption
+    ! 0 = use exact radius requested.
+    ! 1 = use nearest value of the VMEC full grid.
+    ! 2 = use nearest value of the VMEC half grid.
+    
+    select case (VMECRadialOption)
+    case (0)
+       ! Use exact radius requested.
+       psiN = psiN_wish
+
+    case (1)
+       ! Use nearest value of the VMEC full grid
+
+       ! Compute differences
+       allocate(dr2(vmec%ns))
+       dr2 = (psiN_full - psiN_wish) ** 2
+
+       index = 1
+       min_dr2 = dr2(1)
+       ! Find the index of minimum error:
+       do j=2,vmec%ns
+          if (dr2(j)<min_dr2) then
+             index = j
+             min_dr2 = dr2(j)
+          end if
+       end do
+
+       psiN = psiN_full(index)
+       deallocate(dr2)
+
+    case (2)
+       ! Use nearest value of the VMEC half grid
+
+       ! Compute differences
+       allocate(dr2(vmec%ns-1))
+       dr2 = (psiN_half - psiN_wish) ** 2
+
+       index = 1
+       min_dr2 = dr2(1)
+       ! Find the index of minimum error:
+       do j=2,vmec%ns-1
+          if (dr2(j)<min_dr2) then
+             index = j
+             min_dr2 = dr2(j)
+          end if
+       end do
+
+       psiN = psiN_half(index)
+       deallocate(dr2)
+
+    case default
+       if (masterProc) then
+          print *,"Error! Invalid VMECRadialOption"
+       end if
+       stop
+    end select
+
+
+    ! In general, we get quantities for SFINCS by linear interpolation, taking a weighted average of the quantity from
+    ! 2 surfaces in the VMEC file. Sometimes the weights are 0 and 1, i.e. no interpolation is needed.
+
+    ! For any VMEC quantity Q on the full grid, the value used in SFINCS will be
+    !  Q_sfincs = Q(vmecRadialIndex_full(1))*vmecRadialWeight_full(1) + Q(vmecRadialIndex_full(2))*vmecRadialWeight_full(2)
+
+    ! For any VMEC quantity Q on the half grid, the value used in SFINCS will be
+    !  Q_sfincs = Q(vmecRadialIndex_half(1))*vmecRadialWeight_half(1) + Q(vmecRadialIndex_half(2))*vmecRadialWeight_half(2)
+
+    ! In VMEC, quantities on the half grid have the same number of array elements (vmec%ns) as quantities on the full grid,
+    ! but the first array element is 0.
+
+
+
+    ! Handle quantities for the full grid
+    if (psiN>1) then
+       if (masterProc) then
+          print *,"Error! psiN cannot be >1"
+       end if
+       stop
+    elseif (psiN<0) then
+       if (masterProc) then
+          print *,"Error! psiN cannot be <0"
+       end if
+       stop
+    elseif (psiN==1) then
+       vmecRadialIndex_full(1) = vmec%ns-1
+       vmecRadialIndex_full(2) = vmec%ns
+       vmecRadialWeight_full(1) = zero
+       if (masterProc) then
+          print *,"case A"
+       end if
+    else
+       ! psiN is >= 0 and <1
+       ! This is the most common case.
+       vmecRadialIndex_full(1) = floor(psiN*(vmec%ns-1))+1
+       vmecRadialIndex_full(2) = vmecRadialIndex_full(1) + 1
+       !vmecRadialWeight_full(1) = (psiN - (vmecRadialIndex_full(1)-one)/(vmec%ns-one))&
+       !     * (vmec%ns-one)
+       vmecRadialWeight_full(1) = vmecRadialIndex_full(1) - psiN*(vmec%ns-one)
+       if (masterProc) then
+          print *,"case B"
+       end if
+    end if
+    vmecRadialWeight_full(2) = one - vmecRadialWeight_full(1)
+    
+    ! Handle quantities for the half grid
+    if (psiN < psiN_half(1)) then
+       if (masterProc) then
+          print *,"Warning: extrapolating beyond the end of VMEC's half grid."
+          print *,"(Extrapolating towards the magnetic axis.)"
+       end if
+       ! We start at element 2 since element 1 is always 0 for quantities on the half grid.
+       vmecRadialIndex_half(1) = 2
+       vmecRadialIndex_half(2) = 3
+       ! Next line needs to be fixed!
+       vmecRadialWeight_half(1) = (psiN - psiN_half(2)) / (psiN_half(1) - psiN_half(2))
+
+    elseif (psiN > psiN_half(vmec%ns-1)) then
+       if (masterProc) then
+          print *,"Warning: extrapolating beyond the end of VMEC's half grid."
+          print *,"(Extrapolating towards the last closed flux surface.)"
+       end if
+       vmecRadialIndex_half(1) = vmec%ns-1
+       vmecRadialIndex_half(2) = vmec%ns
+       ! Next line needs to be fixed!
+       vmecRadialWeight_half(1) = (psiN - psiN_half(vmec%ns-1)) &
+            / (psiN_half(vmec%ns-2) - psiN_half(vmec%ns-1))
+
+    elseif (psiN == psiN_half(vmec%ns-1)) then
+       ! We are exactly at the last point of the half grid
+       vmecRadialIndex_half(1) = vmec%ns-1
+       vmecRadialIndex_half(2) = vmec%ns
+       vmecRadialWeight_half(1) = zero
+       if (masterProc) then
+          print *,"case 1"
+       end if
+    else
+       ! psiN is inside the half grid.
+       ! This is the most common case.
+       vmecRadialIndex_half(1) = floor(psiN*(vmec%ns-1) + 0.5)+1
+       vmecRadialIndex_half(2) = vmecRadialIndex_half(1) + 1
+       !vmecRadialWeight_half(1) = (psiN - (vmecRadialIndex_half(1)-(1.5d+0))/(vmec%ns-one))&
+       !     * (vmec%ns-one)
+       vmecRadialWeight_half(1) = vmecRadialIndex_half(1) - psiN*(vmec%ns-one) - (0.5d+0)
+       if (masterProc) then
+          print *,"case 2"
+       end if
+    end if
+    vmecRadialWeight_half(2) = one-vmecRadialWeight_half(1)
+
+    print *,"vmecRadialIndex_full:",vmecRadialIndex_full
+    print *,"vmecRadialWeight_full:",vmecRadialWeight_full
+    print *,"vmecRadialIndex_half:",vmecRadialIndex_half
+    print *,"vmecRadialWeight_half:",vmecRadialWeight_half
+
+    iota = vmec%iotas(vmecRadialIndex_half(1)) * vmecRadialWeight_half(1) &
+         + vmec%iotas(vmecRadialIndex_half(2)) * vmecRadialWeight_half(2)
+
+    BHat = zero
+    DHat = zero
+    dBHatdtheta = zero
+    dBHatdzeta = zero
+    BHat_sub_psi = zero
+    BHat_sub_theta = zero
+    BHat_sub_zeta = zero
+    BHat_sup_theta = zero
+    BHat_sup_zeta = zero
+
+    ! First, get the (m=0,n=0) component of |B|, which will be used for testing whether
+    ! other harmonics of |B| are large enough to include.
+    m = 0
+    n = 0
+    b00 = vmec%bmnc(n,m,vmecRadialIndex_half(1)) * vmecRadialWeight_half(1) &
+               + vmec%bmnc(n,m,vmecRadialIndex_half(2)) * vmecRadialWeight_half(2)
+
+    ! Loop over all the VMEC Fourier modes to build the SFINCS arrays:
+    ! We take the following approach:
+    ! Include a given (m,n) mode of |B|, B sub u, B sup u, etc
+    ! if and only if that (m,n) mode of |B| (normalized to B00) is > min_Bmn_to_load.
+    ! I.e., the size of a |B| harmonic controls not only whether that Fourier mode of |B|
+    ! is included, but also whether that Fourier mode of the other fields like B sub u is included.
+    do n = -vmec%ntor, vmec%ntor
+       do m = 0, vmec%mpol-1
+          ! -----------------------------------------------------
+          ! First, consider just the stellarator-symmetric terms:
+          ! -----------------------------------------------------
+
+          b = vmec%bmnc(n,m,vmecRadialIndex_half(1)) * vmecRadialWeight_half(1) &
+               + vmec%bmnc(n,m,vmecRadialIndex_half(2)) * vmecRadialWeight_half(2)
+
+          if (abs(b/b00) >= min_Bmn_to_load) then
+             if (masterProc) then
+                print *,"Including mode with m = ",m,", n = ",n
+             end if
+             ! This (m,n) mode is sufficiently large to include.
+             do itheta = 1,Ntheta
+                do izeta = 1,Nzeta
+                   angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+                   cos_angle = cos(angle)
+                   sin_angle = sin(angle)
+
+                   BHat(itheta,izeta) = BHat(itheta,izeta) + b * cos_angle
+
+                   dbHatdtheta(itheta,izeta) = dBHatdtheta(itheta,izeta) - m * b * sin_angle
+
+                   dbHatdzeta(itheta,izeta) = dBHatdzeta(itheta,izeta) + n * NPeriods * b * sin_angle
+
+                   do isurf = 1,2
+                      ! Handle Jacobian:
+                      ! DHat is the INVERSE Jacobian of the (psiHat, theta, zeta) coordinates.
+                      ! VMEC's gmnc and gmns are the Jacobian of the (psiN, theta, zeta) coordinates.
+                      ! Because one uses psiHat and the other uses psiN, we need a factor of psiAHat.
+                      ! We will also set DHat = 1 / DHat at the end of this loop.
+                      temp = vmec%gmnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf) / (psiAHat)
+
+                      DHat(itheta,izeta) = DHat(itheta,izeta) + temp * cos_angle
+
+                      ! Handle B sup theta:
+                      ! Divide by 2pi to convert from B sup u to B sup theta
+                      !temp = vmec%bsupumnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf) / (2*pi)
+                      temp = vmec%bsupumnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
+
+                      BHat_sup_theta(itheta,izeta) = BHat_sup_theta(itheta,izeta) + temp * cos_angle
+
+                      dBHat_sup_theta_dzeta(itheta,izeta) = dBHat_sup_theta_dzeta(itheta,izeta) + n * NPeriods * temp * sin_angle
+
+                      ! Handle B sup zeta:
+                      ! Multiply by Nperiods/(2pi) to convert from B sup v to B sup zeta
+                      !temp = vmec%bsupvmnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf) * Nperiods / (2*pi)
+                      temp = vmec%bsupvmnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
+
+                      BHat_sup_zeta(itheta,izeta) = BHat_sup_zeta(itheta,izeta) + temp * cos_angle
+
+                      dBHat_sup_zeta_dtheta(itheta,izeta) = dBHat_sup_zeta_dtheta(itheta,izeta) - m * temp * sin_angle
+
+                      ! Handle B sub theta:
+                      ! Multiply by 2pi to convert from B sub u to B sub theta
+                      temp = vmec%bsubumnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
+
+                      BHat_sub_theta(itheta,izeta) = BHat_sub_theta(itheta,izeta) + temp * cos_angle
+
+                      dBHat_sub_theta_dzeta(itheta,izeta) = dBHat_sub_theta_dzeta(itheta,izeta) + n * NPeriods * temp * sin_angle
+
+                      ! Handle B sub zeta:
+                      ! Multiply by 2pi/Nperiods to convert from B sub v to B sub zeta
+                      !temp = vmec%bsubvmnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf) * 2*pi / Nperiods
+                      temp = vmec%bsubvmnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
+
+                      BHat_sub_zeta(itheta,izeta) = BHat_sub_zeta(itheta,izeta) + temp * cos_angle
+
+                      dBHat_sub_zeta_dtheta(itheta,izeta) = dBHat_sub_zeta_dtheta(itheta,izeta) - m * temp * sin_angle
+
+                   end do
+                end do
+             end do
+          else
+             if (masterProc) then
+                print *,"NOT including mode with m = ",m,", n = ",n
+             end if
+          end if
+       end do
+    end do
+
+    ! Convert Jacobian to inverse Jacobian:
+    DHat = one / DHat
+
+    ! These next lines should be replaced eventually with a proper calculation:
+
+    dBHat_sub_theta_dpsiHat = 0
+    !dBHat_sub_theta_dzeta = 0
+
+    dBHat_sub_zeta_dpsiHat = 0
+    !dBHat_sub_zeta_dtheta = 0
+
+    dBHat_sup_theta_dpsiHat = 0
+    !dBHat_sup_theta_dzeta = 0
+
+    dBHat_sup_zeta_dpsiHat = 0
+    !dBHat_sup_zeta_dtheta = 0
+
+    deallocate(psiN_full)
+    deallocate(psiN_half)
+
+    rN = sqrt(psiN)
+
+  end subroutine computeBHat_VMEC
+
+  ! -----------------------------------------------------------------------------------------
+
+  subroutine setBoozerCoordinates
+
+    implicit none
+
 
 
 

@@ -42,13 +42,14 @@ module globalVariables
   PetscScalar ::  GHat, IHat, iota, B0OverBBar, psiAHat
   PetscScalar :: epsilon_t, epsilon_h, epsilon_antisymm
   integer :: NPeriods, helicity_l, helicity_n, helicity_antisymm_l, helicity_antisymm_n
-  character(len=200) :: JGboozer_file, JGboozer_file_NonStelSym
+  character(len=200) :: equilibriumFile
   PetscScalar :: min_Bmn_to_load, dGdpHat, aHat
   PetscScalar :: psiHat_wish, psiN_wish, rHat_wish, rN_wish
   PetscScalar :: psiHat, psiN, rHat, rN
   integer :: inputRadialCoordinate = 2
   integer :: inputRadialCoordinateForGradients = 2
   logical :: force0RadialCurrentInEquilibrium = .true.
+  integer :: VMECRadialOption = 0
 
   ! ********************************************************
   ! ********************************************************

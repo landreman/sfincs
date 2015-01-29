@@ -1,6 +1,6 @@
 The are a number of differences between this "nonlinear" version of SFINCS and the previous versions ("singleSpecies" and "multiSpecies"):
 
-* There was no quasineutrality condition in the main matrix of previous versions.  In the new version, you have the option of including the quasineutrality equation by setting includePhi1=.true. This option also includes in the kinetic equation terms involving Phi1, the variation of the electrostatic potential on a flux surface.  When includePhi1=.true., there are some new diagnostic output quantities available in sfincsOutput.h5.  For example, radial fluxes are computed using either just the radial magnetic drift, just the radial ExB drift, and both drifts.
+* There was no quasineutrality condition in the main matrix of previous versions.  In the new version, you have the option of including the quasineutrality equation by setting includePhi1=.true. This option also includes in the kinetic equation terms involving Phi1, the variation of the electrostatic potential on a flux surface.  When includePhi1=.true., there are some new diagnostic output quantities available in sfincsOutput.h5.  For example, radial fluxes are computed using either just the radial magnetic drift, just the radial ExB drift, and both drifts.  If you set includePhi1=.false., the system matrix remains exactly as it was in the multiSpecies version.
 
 * includePhi1=.true. causes changes to the radial fluxes. See the notes ??? in doc/
 
@@ -8,7 +8,7 @@ The are a number of differences between this "nonlinear" version of SFINCS and t
 
 * In previous versions, Boozer coordinates were hard-wired into the code.  In the new version, any flux coordinates (psi, theta, zeta) may be used, including Boozer coordinates, native VMEC coordinates, or even non-straight-field-line coordinates like Miller geometry.  Consequently there are new internal arrays for the covariant and contravariant components of the magnetic field.
 
-* Direct reading of VMEC.
+* It is now possible to directly read a VMEC wout file, without first running JMC to produce a .bc file. VMEC files are loaded by selecting geometryScheme=5.  You have the option of picking a specific flux surface in the VMEC grid (either the full grid or the half grid), or interpolating to any intermediate flux surface.
 
 * Radial coordinates.
 
@@ -25,6 +25,8 @@ The are a number of differences between this "nonlinear" version of SFINCS and t
 * In the sfincsOutput.h5 file, variables are no longer stored in a "/run  1/" group.  (These groups existed only for the fortran-based scans, which are now removed.)  Thus, for example, the variable previously stored in "/run  1/BHat" is now stored in "/BHat".
 
 * Some variables in input.namelist have moved or changed.  Now psiAHat is located in the geometry namelist rather than the physicsParameters namelist.  The "flowControl" namelist has been renamed "general".
+
+* In the input namelist, the JGBoozer_file and JGboozer_file_NonStelSym variables have been combined and renamed equilibriumFile. This same variable is used for loading a VMEC file.
 
 * Many more diagnostic output quantities are now available in sfincsOutput.h5, such as the Mach number, the velocity, etc.
 

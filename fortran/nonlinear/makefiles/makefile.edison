@@ -1,3 +1,5 @@
+# -*- mode: makefile -*-
+#
 # Edison is a Cray XC30 at NERSC (Lawrence Berkeley National Laboratory).
 
 # Set command for fortran compiler:

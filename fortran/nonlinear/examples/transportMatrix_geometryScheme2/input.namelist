@@ -97,8 +97,8 @@
   ! 2 = Three-helicity approximation of the LHD standard configuration at rN = 0.5
   ! 3 = Four-helicity approximation of the LHD inward-shifted configuration at rN = 0.5
   ! 4 = Three-helicity approximation of the W7-X standard configuration at rN = 0.5
-  ! 11= Read the boozer coordinate data from the file specified as "JGboozer_file" below (stellarator symmetric file)
-  ! 12= Read the boozer coordinate data from the file specified as "JGboozer_file" below (non-stellarator symmetric file)
+  ! 11= Read the boozer coordinate data from the file specified as "equilibriumFile" below (stellarator symmetric file)
+  ! 12= Read the boozer coordinate data from the file specified as "equilibriumFile" below (non-stellarator symmetric file)
  
 
   ! The next few options only matter for geometryScheme = 1, in which the magnetic field is taken to have the form
@@ -146,9 +146,8 @@
 
   ! The remaining options only matter for geometryScheme = 11 and 12:
 
-  JGboozer_file = "../../equilibria/w7x-sc1.bc"                     ! stellarator symmetric example, geometryScheme = 11
-  JGboozer_file_NonStelSym = "../../equilibria/out_neo-2_2_axisym"  ! non-stellarator symmetric example, geometryScheme = 12, requires Nzeta=1
-
+  equilibriumFile = "../../equilibria/w7x-sc1.bc"
+ 
   min_Bmn_to_load = 1d-4
   !Filter out any Bmn components smaller than this.
 

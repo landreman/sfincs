@@ -39,10 +39,13 @@ include makefile.depend
 export
 
 %.o: %.F90
-	$(FC) $(EXTRA_COMPILE_FLAGS) -c $<
+	$(FC) $(EXTRA_COMPILE_FLAGS) -IreadVMEC -c $<
 
 quadpack/quadpack.a:
 	$(MAKE) -C quadpack
+
+readVMEC/readVMEC.a:
+	$(MAKE) -C readVMEC
 
 $(TARGET): $(OBJ_FILES)
 	$(FLINKER) -o $(TARGET) $(OBJ_FILES) $(EXTRA_LINK_FLAGS) $(PETSC_LIB)
@@ -51,10 +54,19 @@ $(TARGET): $(OBJ_FILES)
 clean::
 	rm -f *.o *.mod *.a *.dat *~ $(TARGET) sfincsMatrices.m sfincsOutput.h5
 	cd quadpack; rm -f *.o *.a
+	cd readVMEC; rm -f *.o *.a
 
 test_make:
 	@echo SFINCS_SYSTEM is $(SFINCS_SYSTEM)
 	@echo FC is $(FC)
+	@echo CC is $(CC)
+	@echo CPP is $(CPP)
+	@echo F77 is $(F77)
+	@echo CFLAGS is $(CFLAGS)
+	@echo CPPFLAGS is $(CPPFLAGS)
+	@echo FFLAGS is $(FFLAGS)
+	@echo FCFLAGS is $(FCFLAGS)
+	@echo LDFLAGS is $(LDFLAGS)
 	@echo FLINKER is $(FLINKER)
 	@echo EXTRA_COMPILE_FLAGS is $(EXTRA_COMPILE_FLAGS)
 	@echo EXTRA_LINK_FLAGS is $(EXTRA_LINK_FLAGS)

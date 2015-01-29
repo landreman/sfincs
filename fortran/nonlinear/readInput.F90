@@ -25,9 +25,10 @@ contains
     namelist / geometryParameters / GHat, IHat, iota, epsilon_t, epsilon_h, &
          helicity_l, helicity_n, B0OverBBar, geometryScheme, &
          epsilon_antisymm, helicity_antisymm_l, helicity_antisymm_n, &
-         JGboozer_file, JGboozer_file_NonStelSym, min_Bmn_to_load, &
+         equilibriumFile, min_Bmn_to_load, &
          psiAHat, inputRadialCoordinate, inputRadialCoordinateForGradients, aHat, &
-         psiHat_wish, psiN_wish, rHat_wish, rN_wish
+         psiHat_wish, psiN_wish, rHat_wish, rN_wish, &
+         VMECRadialOption
 
     namelist / speciesParameters / mHats, Zs, nHats, THats, &
          dNHatdpsiHats, dTHatdpsiHats, &

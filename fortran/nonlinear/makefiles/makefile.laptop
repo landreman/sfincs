@@ -1,3 +1,5 @@
+# -*- mode: makefile -*-
+#
 # This makefile is used for a laptop or desktop computer,
 # with 1 to a few processors, and with no job management system.
 
@@ -6,10 +8,10 @@ include ${PETSC_DIR}/conf/variables
 include ${PETSC_DIR}/conf/rules
 
 # Any other flags for compiling, such as -I include flags:
-EXTRA_COMPILE_FLAGS =
+EXTRA_COMPILE_FLAGS = -I/home/matt2/netcdf-fortran-4.4.1/20150127-01/architecture-independent/include
 
 # Any other flags for linking, such as -l library flags:
-EXTRA_LINK_FLAGS =
+EXTRA_LINK_FLAGS = -L/home/matt2/netcdf-fortran-4.4.1/20150127-01/architecture-independent/lib -lnetcdff  -lnetcdf -lnetcdf
 
 # The next parameters are used only for running and testing selected examples using "make test".
 
