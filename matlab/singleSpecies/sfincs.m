@@ -1,4 +1,4 @@
-function sfincs3D()
+function sfincs()
 
 % SFINCS:
 % The Stellarator Fokker-Planck Iterative Neoclassical Conservative Solver.
@@ -538,6 +538,7 @@ heatFlux = 0;
 transportMatrix = zeros(3);
 transportCoeffs = zeros(2);
 dPsidr = NaN;
+dPsidr_DKES = NaN;
 
 speedGridFigureHandle = 0;
 KrylovFigureHandle = 0;
@@ -2611,11 +2612,12 @@ end
             elseif RHSMode == 3
                 format longg
                 transportCoeffs       
+                disp(['dPsidr_DKES/dPsidr=',num2str(dPsidr_DKES/dPsidr)])
                 DKES_Gamma11=transportCoeffs(1,1)*...
-                    sqrt(pi)/8*(GHat/B0OverBBar)*GHat/(GHat+iota*IHat)/dPsidr^2;
+                    sqrt(pi)/8*(GHat/B0OverBBar)*GHat/(GHat+iota*IHat)/dPsidr_DKES^2;
                 DKES_Gamma31=transportCoeffs(2,1)*...
-                    sqrt(pi)/4*GHat/dPsidr;
-                DKES_Gamma33=-sqrt(pi)/2*(GHat+iota*IHat)*B0OverBBar;
+                    sqrt(pi)/4*GHat/dPsidr_DKES;
+                DKES_Gamma33=-transportCoeffs(2,2)*sqrt(pi)/2*(GHat+iota*IHat)*B0OverBBar;
                 disp(['DKES coefficients Gamma11, Gamma31, Gamma33 for B00 = 1T :'])
                 disp(['[',num2str(DKES_Gamma11*B0OverBBar^2),', ',num2str(DKES_Gamma31),...
                       ', ',num2str(DKES_Gamma33/B0OverBBar^2),']'])
@@ -2881,6 +2883,7 @@ end
                   %psiAHat = -40;
                   radius=0.2555; %m, radius of the flux surface
                   dPsidr=2*psiAHat/a*(radius/a);
+                  dPsidr_DKES=radius*B0OverBBar; %Strange definition used in DKES
                   dGdpHat=NaN;
                   %The following line can be used to override the input nuPrime and
                   %calculate it from nuN instead.
@@ -3085,6 +3088,7 @@ end
                   BHarmonics_n=BHarmonics_n*(-1); %toroidal direction switch sign
                                     
                   dPsidr=2*psiAHat/a*normradius;
+                  dPsidr_DKES=a*normradius*B0OverBBar; %Strange definition used in DKES
                   %The following line can be used to override the input nuPrime and
                   %calculate it from nuN instead.
                   %nuPrime=nuN*(GHat+iota*IHat)/B0OverBBar/sqrt(THat)
@@ -3230,6 +3234,7 @@ end
                   BHarmonics_n=BHarmonics_n*(-1); %toroidal direction switch sign
                   
                   dPsidr=2*psiAHat/a*normradius;
+                  dPsidr_DKES=a*normradius*B0OverBBar; %Strange definition used in DKES
                   %The following line can be used to override the input nuPrime and
                   %calculate it from nuN instead.
                   %nuPrime=nuN*(GHat+iota*IHat)/B0OverBBar/sqrt(THat)

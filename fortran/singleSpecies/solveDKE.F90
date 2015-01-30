@@ -158,6 +158,7 @@
     sqrtTHat = sqrt(THat)
 
     transportMatrix = 0
+    transportCoeffs = 0
     NTVMatrix = 0
 
     ! *******************************************************************************
@@ -288,8 +289,13 @@
 
     allocate(x(Nx))
     allocate(xWeights(Nx))
-    call makeXGrid(Nx, x, xWeights)
-    xWeights = xWeights / exp(-x*x)
+    if (Nx==1) then  !Mono-energetic calculation
+       xWeights = exp(1.0)
+       x=1.0
+    else
+       call makeXGrid(Nx, x, xWeights)
+       xWeights = xWeights / exp(-x*x)
+    end if
     xMaxNotTooSmall = max(x(Nx), xMax)
     allocate(x2(Nx))
     x2=x*x
@@ -298,9 +304,16 @@
     allocate(d2dx2(Nx,Nx))
     allocate(ddxPreconditioner(Nx,Nx))
     allocate(ddxToUse(Nx,Nx))
-    call makeXPolynomialDiffMatrices(x,ddx,d2dx2)
+    if (Nx==1) then  !Mono-energetic calculation
+       ddx = 0
+       d2dx2 = 0
+       NxPotentials = 1
+    else
+       call makeXPolynomialDiffMatrices(x,ddx,d2dx2)
+       NxPotentials = ceiling(xMaxNotTooSmall*NxPotentialsPerVth)
+    end if
 
-    NxPotentials = ceiling(xMaxNotTooSmall*NxPotentialsPerVth)
+ 
 
 
 
@@ -308,14 +321,25 @@
     allocate(xWeightsPotentials(NxPotentials))
     allocate(ddxPotentials(NxPotentials, NxPotentials))
     allocate(d2dx2Potentials(NxPotentials, NxPotentials))
-    call uniformDiffMatrices(NxPotentials, zero, xMaxNotTooSmall, 12, xPotentials, &
-         xWeightsPotentials, ddxPotentials, d2dx2Potentials)
-
+    if (Nx==1) then  !Mono-energetic calculation
+       xPotentials = 0
+       xWeightsPotentials = 0
+       ddxPotentials = 0
+       d2dx2Potentials = 0
+    else
+       call uniformDiffMatrices(NxPotentials, zero, xMaxNotTooSmall, 12, xPotentials, &
+            xWeightsPotentials, ddxPotentials, d2dx2Potentials)
+    end if
     allocate(regridPolynomialToUniform(NxPotentials, Nx))
-    call polynomialInterpolationMatrix(Nx, NxPotentials, x, xPotentials, &
-         exp(-x*x), exp(-xPotentials*xPotentials), regridPolynomialToUniform)
     allocate(regridUniformToPolynomial(Nx,NxPotentials))
-    call interpolationMatrix(NxPotentials, Nx, xPotentials, x, regridUniformToPolynomial, -1, 0)
+    if (Nx==1) then  !Mono-energetic calculation
+       regridPolynomialToUniform = 0
+       regridUniformToPolynomial = 0
+    else
+       call polynomialInterpolationMatrix(Nx, NxPotentials, x, xPotentials, &
+            exp(-x*x), exp(-xPotentials*xPotentials), regridPolynomialToUniform)
+       call interpolationMatrix(NxPotentials, Nx, xPotentials, x, regridUniformToPolynomial, -1, 0)
+    end if
 
     ! We need to evaluate the error function on the x grid.
     ! Some Fortran compilers have this function built in.
@@ -1528,6 +1552,8 @@
        numRHSs = 1
     case (2)
        numRHSs = 3
+    case (3)
+       numRHSs = 2
     case default
        print *,"Error! Invalid setting for RHSMode."
        stop
@@ -1569,6 +1595,22 @@
              dTHatdpsiToUse = 1
              EHatToUse = 0
           case (3)
+             dnHatdpsiToUse = 0
+             dTHatdpsiToUse = 0
+             EHatToUse = 1
+          case default
+             print *,"Program should not get here"
+             stop
+          end select
+       case (3)
+          ! Solve for 2 linearly independent right-hand sides to get the 2x2 mono-energetic transport coefficients:
+          dPhiHatdpsiToUse = 0
+          select case (whichRHS)
+          case (1)
+             dnHatdpsiToUse = 1
+             dTHatdpsiToUse = 0
+             EHatToUse = 0
+          case (2)
              dnHatdpsiToUse = 0
              dTHatdpsiToUse = 0
              EHatToUse = 1
@@ -1870,6 +1912,16 @@
                 transportMatrix(2,3) = 2*Delta*Delta*heatFlux*FSABHat2/(GHat*VPrimeHatWithG*psiAHat*THat*omega)
                 transportMatrix(3,3) = FSAFlow*Delta*Delta*sqrtTHat*FSABHat2/((GHat+iota*IHat)*2*psiAHat*omega*B0OverBBar)
                 NTVMatrix(3)         =     NTV     *Delta*Delta*FSABHat2/(VPrimeHatWithG*GHat*psiAHat*omega)
+             end select
+          elseif (RHSMode==3) then
+             VPrimeHatWithG = VPrimeHat*(GHat+iota*IHat)
+             select case (whichRHS)
+             case (1)
+                transportCoeffs(1,1) = 4*(GHat+iota*IHat)*particleFlux*nHat*B0OverBBar/(GHat*VPrimeHatWithG*(THat*sqrtTHat)*GHat)
+                transportCoeffs(2,1) = 2*nHat*FSAFlow/(GHat*THat)
+             case (2)
+                transportCoeffs(1,2) = particleFlux*Delta*Delta*FSABHat2/(VPrimeHatWithG*GHat*psiAHat*omega)
+                transportCoeffs(2,2) = FSAFlow*Delta*Delta*sqrtTHat*FSABHat2/((GHat+iota*IHat)*2*psiAHat*omega*B0OverBBar)
              end select
           end if
 

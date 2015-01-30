@@ -174,6 +174,7 @@ module globalVariables
   PetscLogDouble :: elapsedTime
   integer :: didItConverge
   PetscScalar :: transportMatrix(3,3)
+  PetscScalar :: transportCoeffs(2,2)
   PetscScalar :: NTVMatrix(3)
 
   ! ********************************************************
@@ -249,6 +250,33 @@ contains
     if (constraintScheme < 0 .or. constraintScheme > 2) then
        print *,"Error! constraintScheme must be 0, 1, or 2."
        stop
+    end if
+
+    if (Nx == 1) then
+       if (RHSMode /= 3) then
+          print *,"Error! Nx=1 => Mono-energetic calculation, RHSMode must be = 3."
+          stop
+       end if
+       if (collisionOperator /= 1) then
+          print *,"Error! Nx=1 => Mono-energetic calculation, collisionOperator must be = 1."
+          stop
+       end if
+       if (includeXDotTerm) then
+          print *,"Error! Nx=1 => Mono-energetic calculation, includeXDotTerm must be false."
+          stop
+       end if
+       if (includeElectricFieldTermInXiDot) then
+          print *,"Error! Nx=1 => Mono-energetic calculation, includeElectricFieldTermInXiDot must be false."
+          stop
+       end if
+       if (.not.useDKESExBDrift) then
+          print *,"Error! Nx=1 => Mono-energetic calculation, useDKESExBDrift must be true."
+          stop
+       end if
+       if (include_fDivVE_term) then
+          print *,"Error! Nx=1 => Mono-energetic calculation, include_fDivVE_term must be false."
+          stop
+       end if
     end if
 
   end subroutine validateInput
