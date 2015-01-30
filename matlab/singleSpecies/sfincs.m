@@ -1,4 +1,4 @@
-function sfincs()
+function sfincs3D()
 
 % SFINCS:
 % The Stellarator Fokker-Planck Iterative Neoclassical Conservative Solver.
@@ -42,9 +42,10 @@ programMode = 1;
 % The setting below matters for programMode = 3, 5, or 7 only:
 dataFileToPlot = 'm20130318_02_SFINCS_2013-03-18_14-47_convergenceScan_convergenceScan.mat';
 
-RHSMode = 2;
+RHSMode = 3;
 % 1 = Use a single right-hand side.
 % 2 = Use multiple right-hand sides to compute the transport matrix.
+% 3 = Use two right hand sides, used iff Nx=1 (mono-energetic calculations)
 
 % The variable below is set to true only for rare testing
 % circumstances. Typically it should be false.
@@ -120,10 +121,11 @@ fort996boozer_file='TJII-midradius_example_s_0493_fort.996';
 % geometryScheme=11 and 12 parameters:
 addpath('../../equilibria');
 JGboozer_file='w7x-sc1.bc'; % stellarator symmetric example, geometryScheme=11
+%JGboozer_file='w7x-sc1-ecb2.bc'; % stellarator symmetric example, geometryScheme=11
 JGboozer_file_NonStelSym='out_neo-2_n2_sym_c_m64_n16';
 normradius_wish=0.5;   %The calculation will be performed for the radius
                        %closest to this one in the JGboozer_file(_NonStelSym)
-min_Bmn_to_load=1e-4;  %Filter out any Bmn components smaller than this
+min_Bmn_to_load=1e-5;  %Filter out any Bmn components smaller than this
 
 % --------------------------------------------------
 % Physics parameters:
@@ -171,7 +173,7 @@ nHat = 1.0;
 
 % The radial electric field may be specified in one of 2 ways.
 % When RHSMode==1, dPhiHatdpsi is used and EStar is ignored.
-% When RHSMode==2, EStar is used and dPhiHatdpsi is ignored.
+% When RHSMode==2,3, EStar is used and dPhiHatdpsi is ignored.
 dPhiHatdpsi = 0.0;
 EStar = 0.0;
 
@@ -182,7 +184,7 @@ EHat = 0;
 
 % There are 2 different ways to specify the collisionality: nuN and nuPrime.
 % If RHSMode == 1, nuN is used and nuPrime is ignored.
-% If RHSMode == 2, nuPrime is used and nuN is ignored.
+% If RHSMode == 2,3, nuPrime is used and nuN is ignored.
 % 
 % nuN = nu_ii * \bar{R} / \bar{v}
 % and
@@ -217,9 +219,9 @@ nuN = nu_nbar * nHat/THat^(3/2);
 % If testQuasisymmetryIsomorphism is true, the value of nuN is changed so the physical collisionality
 % stays constant as the helicity is changed.
 
-nuPrime = NaN;%1;  %This value is over-written for geometryScheme = 4, 11, 12
+nuPrime = 0.1; 
 
-collisionOperator = 0;
+collisionOperator = 1;
 % 0 = Full linearized Fokker-Planck operator
 % 1 = Pitch angle scattering, with no momentum conservation
 % 2 = Pitch angle scattering, with a model momentum-conserving field term
@@ -258,16 +260,16 @@ constraintScheme = -1;
 %   useDKESExBDrift = true
 %   include_fDivVE_term = false
 
-includeXDotTerm = true;
-%includeXDotTerm = false;
+%includeXDotTerm = true;
+includeXDotTerm = false;
 
-includeElectricFieldTermInXiDot = true;
-%includeElectricFieldTermInXiDot = false;
+%includeElectricFieldTermInXiDot = true;
+includeElectricFieldTermInXiDot = false;
 
 % If useDKESExBDrift=true, the ExB drift term in the df/dtheta and df/dzeta terms is taken
 % to be E x B / <B^2> instead of E x B / B^2.
-%useDKESExBDrift = true;
-useDKESExBDrift = false;
+useDKESExBDrift = true;
+%useDKESExBDrift = false;
 
 %include_fDivVE_term = true;
 include_fDivVE_term = false;
@@ -286,13 +288,13 @@ include_fDivVE_term = false;
 
 % Number of grid points in the poloidal direction.
 % Memory and time requirements DO depend strongly on this parameter.
-NthetaConverged = 13;
+NthetaConverged = 15;
 Nthetas = floor(linspace(9,30,11));
 
 % Number of grid points in the toroidal direction
 % (per identical segment of the stellarator.)
 % Memory and time requirements DO depend strongly on this parameter.
-NzetaConverged = 37;
+NzetaConverged = 64;
 Nzetas = floor(linspace(5,20,3));
 
 % Number of Legendre polynomials used to represent the distribution
@@ -302,7 +304,7 @@ Nzetas = floor(linspace(5,20,3));
 % the collisionality. At high collisionality, this parameter can be as low
 % as ~ 5. At low collisionality, this parameter may need to be many 10s or
 % even > 100 for convergence.
-NxiConverged = 37;
+NxiConverged = 68;
 Nxis = floor(linspace(10,40,13));
 
 % Number of Legendre polynomials used to represent the Rosenbluth
@@ -313,11 +315,12 @@ NLs = 2:6;
 
 % Number of grid points in energy used to represent the distribution
 % function.
+% Set this parameter to 1 to run the 3D version of SFINCS.
 % Memory and time requirements DO depend strongly on this parameter.
 % This parameter almost always needs to be at least 5.
 % Usually a value in the range 5-8 is plenty for convergence.
-NxConverged = 5;
-Nxs=5:8;
+NxConverged = 1;
+Nxs=1:1;
 
 % Number of grid points in energy used to represent the Rosenbluth
 % potentials.
@@ -472,6 +475,10 @@ if constraintScheme < 0
     end
 end
 
+if (NxConverged==1 && RHSMode~=3) || (NxConverged~=1 && RHSMode==3)
+  error('Nx=1 <=> RHSMode=3 !')
+end
+
 if testQuasisymmetryIsomorphism
     if geometryScheme ~= 1
         error('To test the quasisymmetry isomorphism, you should set geometryScheme=1.')
@@ -529,6 +536,7 @@ particleFlux = 0;
 momentumFlux = 0;
 heatFlux = 0;
 transportMatrix = zeros(3);
+transportCoeffs = zeros(2);
 dPsidr = NaN;
 
 speedGridFigureHandle = 0;
@@ -570,15 +578,23 @@ switch programMode
                 quantitiesToRecord = {'FSAFlow','particleFlux','momentumFlux','heatFlux','NTV'};
             case 2
                 quantitiesToRecord = {'L11','L12=L21','L13=L31','L12=L21','L22','L23=L32','L13=L31','L23=L32','L33'};
+            case 3
+                quantitiesToRecord = {'L11','L13=L31','L31=L13','L33'};
             otherwise
                 error('Invalid RHSMode')
         end
             
         linespecs = {'.-b','.-r','.-g','.:c','.-m','.-r','.:k','.:b','.-m'};
         
-        parametersToVary = {'N\theta','N\zeta','NL','N\xi','Nx','NxPotentialsPerVth','-log_{10}tol'};
-        abscissae = {Nthetas, Nzetas, NLs, Nxis, Nxs, NxPotentialsPerVths, log10tols};
-        convergeds = {NthetaConverged, NzetaConverged, NLConverged, NxiConverged, NxConverged, NxPotentialsPerVthConverged, log10tolConverged};
+        if NxConverged == 1 %Monoenergetic calculation
+          parametersToVary = {'N\theta','N\zeta','NL','N\xi','NxPotentialsPerVth','-log_{10}tol'};
+          abscissae = {Nthetas, Nzetas, NLs, Nxis, NxPotentialsPerVths, log10tols};
+          convergeds = {NthetaConverged, NzetaConverged, NLConverged, NxiConverged, NxPotentialsPerVthConverged, log10tolConverged};
+        else  
+          parametersToVary = {'N\theta','N\zeta','NL','N\xi','Nx','NxPotentialsPerVth','-log_{10}tol'};
+          abscissae = {Nthetas, Nzetas, NLs, Nxis, Nxs, NxPotentialsPerVths, log10tols};
+          convergeds = {NthetaConverged, NzetaConverged, NLConverged, NxiConverged, NxConverged, NxPotentialsPerVthConverged, log10tolConverged};
+         end
         
         numQuantities = numel(quantitiesToRecord);
         numParameters = numel(parametersToVary);
@@ -611,6 +627,8 @@ switch programMode
                     quantities{parameterScanNum}(iii,5)=NTV;
                 case 2
                     quantities{parameterScanNum}(iii,:)=reshape(transportMatrix,[9,1]);
+                case 3
+                    quantities{parameterScanNum}(iii,:)=reshape(transportCoeffs,[4,1]);
             end
         end
         parameterScanNum = parameterScanNum+1;
@@ -634,6 +652,8 @@ switch programMode
                     quantities{parameterScanNum}(iii,5)=NTV;
                 case 2
                     quantities{parameterScanNum}(iii,:)=reshape(transportMatrix,[9,1]);
+                case 3
+                    quantities{parameterScanNum}(iii,:)=reshape(transportCoeffs,[4,1]);
             end
         end
         parameterScanNum = parameterScanNum+1;
@@ -657,6 +677,8 @@ switch programMode
                     quantities{parameterScanNum}(iii,5)=NTV;
                 case 2
                     quantities{parameterScanNum}(iii,:)=reshape(transportMatrix,[9,1]);
+                case 3
+                    quantities{parameterScanNum}(iii,:)=reshape(transportCoeffs,[4,1]);
             end
         end
         parameterScanNum = parameterScanNum+1;
@@ -680,6 +702,8 @@ switch programMode
                     quantities{parameterScanNum}(iii,5)=NTV;
                 case 2
                     quantities{parameterScanNum}(iii,:)=reshape(transportMatrix,[9,1]);
+                case 3
+                    quantities{parameterScanNum}(iii,:)=reshape(transportCoeffs,[4,1]);
             end
         end
         parameterScanNum = parameterScanNum+1;
@@ -704,6 +728,8 @@ switch programMode
                     quantities{parameterScanNum}(iii,5)=NTV;
                 case 2
                     quantities{parameterScanNum}(iii,:)=reshape(transportMatrix,[9,1]);
+                case 3
+                    quantities{parameterScanNum}(iii,:)=reshape(transportCoeffs,[4,1]);
             end
         end
         parameterScanNum = parameterScanNum+1;
@@ -727,6 +753,8 @@ switch programMode
                     quantities{parameterScanNum}(iii,5)=NTV;
                 case 2
                     quantities{parameterScanNum}(iii,:)=reshape(transportMatrix,[9,1]);
+                case 3
+                    quantities{parameterScanNum}(iii,:)=reshape(transportCoeffs,[4,1]);
             end
         end
         parameterScanNum = parameterScanNum+1;
@@ -750,6 +778,8 @@ switch programMode
                     quantities{parameterScanNum}(iii,5)=NTV;
                 case 2
                     quantities{parameterScanNum}(iii,:)=reshape(transportMatrix,[9,1]);
+                case 3
+                    quantities{parameterScanNum}(iii,:)=reshape(transportCoeffs,[4,1]);
             end
         end
         parameterScanNum = parameterScanNum+1;
@@ -780,8 +810,8 @@ switch programMode
     case 4
         % Do a nuPrime scan:
         
-        if RHSMode ~= 2
-            error('programMode=4 requires RHSMode=2')
+        if RHSMode ~= 2 &&  RHSMode ~= 3
+            error('programMode=4 requires RHSMode=2 or 3')
         end
         
         fprintf('Beginning nuPrime scans.\n')
@@ -826,7 +856,11 @@ switch programMode
         end
         
         numRuns = 3*NConvergence*numNus;
-        scanResults = zeros(3, NConvergence, numNus, 3, 3);
+        if RHSMode == 2
+          scanResults = zeros(3, NConvergence, numNus, 3, 3);
+        elseif RHSMode == 3
+          scanResults = zeros(3, NConvergence, numNus, 2, 2);          
+        end
         
         runNum=0;
         
@@ -879,7 +913,11 @@ switch programMode
                     
                     solveDKE()
                     
-                    scanResults(iCollisionOperator, iConvergence, iNu, :, :) = transportMatrix;
+                    if RHSMode == 2
+                        scanResults(iCollisionOperator, iConvergence, iNu, :, :) = transportMatrix;
+                    elseif RHSMode == 3
+                        scanResults(iCollisionOperator, iConvergence, iNu, :, :) = transportCoeffs;
+                    end
                 end
             end
         end
@@ -944,8 +982,11 @@ switch programMode
         end
         
         numRuns = NErTerms*NConvergence*numEs;
-        scanResults = zeros(NErTerms, NConvergence, numEs, 3, 3);
-        
+        if RHSMode == 2
+          scanResults = zeros(NErTerms, NConvergence, numEs, 3, 3);
+        elseif RHSMode == 2
+          scanResults = zeros(NErTerms, NConvergence, numEs, 2, 2);
+        end
         runNum=0;
         
         NL = NLConverged;
@@ -957,8 +998,12 @@ switch programMode
             Ntheta=floor(NthetaConverged*NthetaMultipliers(iConvergence));
             Nzeta=floor(NzetaConverged*NzetaMultipliers(iConvergence));
             Nxi=floor(NxiConverged*NxiMultipliers(iConvergence));
-            Nx=floor(NxConverged*NxMultipliers(iConvergence));
-
+            if NxConverged==1 %Monoenergetic calculation
+              Nx=1;
+            else
+              Nx=floor(NxConverged*NxMultipliers(iConvergence));
+            end
+            
             for iErTerms = 1:NErTerms
                 
                 useDKESExBDrift = useDKESExBDrifts(iErTerms);
@@ -977,7 +1022,11 @@ switch programMode
                     
                     solveDKE()
                     
-                    scanResults(iErTerms, iConvergence, iE, :, :) = transportMatrix;
+                    if RHSMode == 2
+                      scanResults(iErTerms, iConvergence, iE, :, :) = transportMatrix;
+                    elseif RHSMode == 3
+                      scanResults(iErTerms, iConvergence, iE, :, :) = transportCoeffs;
+                    end
                 end
             end
         end
@@ -998,6 +1047,9 @@ switch programMode
         % Plot results of a previous E_r scan:
         
         load(dataFileToPlot)
+        if size(scanResults,4)==2
+          error('Plotting of mono-energetic transport coefficients not implemented yet!')
+        end
         legendText = {'base case','2x N\theta','2x N\zeta','2x N\xi','2x Nx'};
         colors = [  1,0,0;
                     0.7,0.5,0;
@@ -1172,11 +1224,14 @@ end
         % ------------------------------------------------------
         
         quantityToRowMap = [1, 2, 3, 2, 4, 5, 3, 5, 6];
+        quantityToRowMapMonoEnergetic = [1, 2, 2, 3];
         switch RHSMode
             case 1
                 numRows = numQuantities;
             case 2
                 numRows = 6;
+            case 3
+                numRows = 3;
         end
         numCols = numParameters;
         
@@ -1191,6 +1246,8 @@ end
                     iRow = iQuantity;
                 case 2
                     iRow = quantityToRowMap(iQuantity);
+                case 3
+                    iRow = quantityToRowMapMonoEnergetic(iQuantity);
             end
             for iParameter = 1:numParameters
                 subplot(numRows, numCols, iParameter  + (iRow - 1)*numParameters)
@@ -1209,6 +1266,9 @@ end
             case 2
                 stringForTop = sprintf('SFINCS convergence scan: nuPrime=%g. Base case: Ntheta=%d, Nzeta=%d, NL=%d, Nxi=%d, Nx=%d, NxPotentialsPerVth=%g, -log10tol=%g.', ...
                     nuPrime, NthetaConverged, NzetaConverged, NLConverged, NxiConverged, NxConverged, NxPotentialsPerVthConverged, log10tolConverged);
+            case 3
+                stringForTop = sprintf('SFINCS mono-energetic convergence scan: nuPrime=%g. Base case: Ntheta=%d, Nzeta=%d, NL=%d, Nxi=%d, Nx=%d, NxPotentialsPerVth=%g, -log10tol=%g.', ...
+                    nuPrime, NthetaConverged, NzetaConverged, NLConverged, NxiConverged, NxConverged, NxPotentialsPerVthConverged, log10tolConverged);
         end
         annotation('textbox',[0 0.93 1 .07],'HorizontalAlignment','center',...
             'Interpreter','none','VerticalAlignment','bottom',...
@@ -1225,6 +1285,8 @@ end
                     iRow = iQuantity;
                 case 2
                     iRow = quantityToRowMap(iQuantity);
+                case 3
+                    iRow = quantityToRowMapMonoEnergetic(iQuantity);
             end
             for iParameter = 1:numParameters
                 subplot(numRows, numCols, iParameter  + (iRow - 1)*numParameters)
@@ -1249,6 +1311,9 @@ end
     end
 
     function plotNuPrimeScan()
+        if size(scanResults,4)==2
+          error('Plotting of mono-energetic transport coefficients not implemented yet!')
+        end
         legendText = {'base case','2x N\theta','2x N\zeta','2x N\xi','2x Nx'};
         colors = [  1,0,0;
                     0.7,0.5,0;
@@ -1516,30 +1581,42 @@ end
         
         % Generate abscissae, quadrature weights, and derivative matrices for
         % the energy (x) grid used to represent the distribution function.
-        k=0;
-        scale=1;
-        pointAtZero = false;
-        [x, ddx, d2dx2, xWeights] = m20130312_02_SpectralNodesWeightsAndDifferentiationMatricesForV(Nx, k, scale, pointAtZero);
+        if Nx==1
+          x=1; xWeights=exp(1); ddx=0; d2dx2=0;
+        else
+          k=0;
+          scale=1;
+          pointAtZero = false;
+          [x, ddx, d2dx2, xWeights] = m20130312_02_SpectralNodesWeightsAndDifferentiationMatricesForV(Nx, k, scale, pointAtZero);
+        end  
         
         % Make the energy grid and differentiation matrices for the
-        % Rosenbluth potentials:
-        function y=weight(x)
-            x2=x.*x;
-            y=exp(-x2);
+        % Rosenbluth potentials:       
+        if Nx==1
+          xMax=NaN;xMin=NaN;
+          xPotentials=0;
+          ddxPotentials=0;
+          d2dx2Potentials=0;
+          regridPolynomialToUniform = 0;
+          regridUniformToPolynomial = 0;
+        else
+          %function y=weight(x)
+          %   x2=x.*x;
+          %   y=exp(-x2);
+          %end
+          xMax=max([5, max(x)]);
+          xMin=0;
+          NxPotentials = ceil(xMax * NxPotentialsPerVth);
+          % Uniform grid with 5-point stencil for derivatives:
+          scheme = 12;
+          [xPotentials, ~, ddxPotentials, d2dx2Potentials] = m20121125_04_DifferentiationMatricesForUniformGrid(NxPotentials, xMin, xMax, scheme);
+          
+          % Make the matrices for interpolating between the two energy grids:
+          regridPolynomialToUniform = m20120703_03_polynomialInterpolationMatrix(x,xPotentials,exp(-x.^2),exp(-xPotentials.^2));
+          regridUniformToPolynomial = m20121127_02_makeHighOrderInterpolationMatrix(xPotentials,x,0,'f');
         end
-        xMax=max([5, max(x)]);
-        xMin=0;
-        NxPotentials = ceil(xMax * NxPotentialsPerVth);
-        % Uniform grid with 5-point stencil for derivatives:
-        scheme = 12;
-        [xPotentials, ~, ddxPotentials, d2dx2Potentials] = m20121125_04_DifferentiationMatricesForUniformGrid(NxPotentials, xMin, xMax, scheme);
         
-        % Make the matrices for interpolating between the two energy grids:
-        regridPolynomialToUniform = m20120703_03_polynomialInterpolationMatrix(x,xPotentials,weight(x),weight(xPotentials));
-        regridUniformToPolynomial = m20121127_02_makeHighOrderInterpolationMatrix(xPotentials,x,0,'f');
-        
-        
-        if plotSpeedGrid
+        if plotSpeedGrid && Nx~=1
             if iteration == 1
                 speedGridFigureHandle = figure(figureOffset+7);
             else
@@ -1572,7 +1649,7 @@ end
         estimated_nnz_original = estimated_nnz;
         fprintf('matrixSize: %d.\n',matrixSize)
         
-        if plotZetaTheta && iteration==1
+        if plotZetaTheta && iteration==1 && Nx~=1
             figure(figureOffset+4);
             clf
             numRows=3;
@@ -1604,7 +1681,7 @@ end
             drawnow
         end
         
-        if RHSMode == 2
+        if RHSMode == 2 || RHSMode == 3
             % Ignore previous values of nuN and dPhiHatdpsi,
             % and replace them with the values consistent with
             % nuPrime and EStar:
@@ -1646,6 +1723,8 @@ end
                 RHSSize = 1;
             case 2
                 RHSSize = 3;
+            case 3
+                RHSSize = 2;
             otherwise
                 error('Invalid RHSMode')
         end
@@ -1678,6 +1757,18 @@ end
                             dTHatdpsiToUse = 1;
                             EHatToUse = 0;
                         case 3
+                            dnHatdpsiToUse = 0;
+                            dTHatdpsiToUse = 0;
+                            EHatToUse = 1;
+                    end
+                case 3
+                    dPhiHatdpsiToUse = 0;
+                    switch col
+                        case 1
+                            dnHatdpsiToUse = 1;
+                            dTHatdpsiToUse = 0;
+                            EHatToUse = 0;
+                        case 2
                             dnHatdpsiToUse = 0;
                             dTHatdpsiToUse = 0;
                             EHatToUse = 1;
@@ -2472,7 +2563,17 @@ end
                             transportMatrix(2,3) = 2*Delta*Delta*heatFlux*FSABHat2/(GHat*VPrimeHatWithG*psiAHat*THat*omega);
                             transportMatrix(3,3) = FSAFlow*Delta*Delta*sqrtTHat*FSABHat2/((GHat+iota*IHat)*2*psiAHat*omega*B0OverBBar);
                     end
-                end
+                elseif RHSMode == 3
+                    VPrimeHatWithG = VPrimeHat*(GHat+iota*IHat);
+                    switch col
+                        case 1
+                            transportCoeffs(1,1) = 4*(GHat+iota*IHat)*particleFlux*nHat*B0OverBBar/(GHat*VPrimeHatWithG*(THat^(3/2))*GHat);
+                            transportCoeffs(2,1) = 2*nHat*FSAFlow/(GHat*THat);
+                        case 2
+                            transportCoeffs(1,2) = particleFlux*Delta*Delta*FSABHat2/(VPrimeHatWithG*GHat*psiAHat*omega);
+                            transportCoeffs(2,2) = FSAFlow*Delta*Delta*sqrtTHat*FSABHat2/((GHat+iota*IHat)*2*psiAHat*omega*B0OverBBar);
+                    end
+                 end
             end
             
             if RHSMode == 2
@@ -2507,6 +2608,17 @@ end
                   end
                 %}
                 end
+            elseif RHSMode == 3
+                format longg
+                transportCoeffs       
+                DKES_Gamma11=transportCoeffs(1,1)*...
+                    sqrt(pi)/8*(GHat/B0OverBBar)*GHat/(GHat+iota*IHat)/dPsidr^2;
+                DKES_Gamma31=transportCoeffs(2,1)*...
+                    sqrt(pi)/4*GHat/dPsidr;
+                DKES_Gamma33=-sqrt(pi)/2*(GHat+iota*IHat)*B0OverBBar;
+                disp(['DKES coefficients Gamma11, Gamma31, Gamma33 for B00 = 1T :'])
+                disp(['[',num2str(DKES_Gamma11*B0OverBBar^2),', ',num2str(DKES_Gamma31),...
+                      ', ',num2str(DKES_Gamma33/B0OverBBar^2),']'])
             end
             
             if testQuasisymmetryIsomorphism
@@ -2544,7 +2656,7 @@ end
                 end
             end
             
-            if plotZetaTheta && programMode == 1
+            if plotZetaTheta && programMode == 1 && Nx~=1
                 figure(4+figureOffset)
                 
                 subplot(numRows,numCols,plotNum); plotNum=plotNum+1;
@@ -2769,9 +2881,10 @@ end
                   %psiAHat = -40;
                   radius=0.2555; %m, radius of the flux surface
                   dPsidr=2*psiAHat/a*(radius/a);
-                  %nuPrime=nuN*abs(GHat+iota*IHat)/B0OverBBar/sqrt(THat);
-                  nuPrime=nuN*(GHat+iota*IHat)/B0OverBBar/sqrt(THat)
                   dGdpHat=NaN;
+                  %The following line can be used to override the input nuPrime and
+                  %calculate it from nuN instead.
+                  %nuPrime=nuN*(GHat+iota*IHat)/B0OverBBar/sqrt(THat)
                   
                case 10
                   fid = fopen(fort996boozer_file);
@@ -2972,7 +3085,9 @@ end
                   BHarmonics_n=BHarmonics_n*(-1); %toroidal direction switch sign
                                     
                   dPsidr=2*psiAHat/a*normradius;
-                  nuPrime=nuN*(GHat+iota*IHat)/B0OverBBar/sqrt(THat)
+                  %The following line can be used to override the input nuPrime and
+                  %calculate it from nuN instead.
+                  %nuPrime=nuN*(GHat+iota*IHat)/B0OverBBar/sqrt(THat)
                   
              case 12
                   %Non-stellarator symmetric case
@@ -3115,7 +3230,9 @@ end
                   BHarmonics_n=BHarmonics_n*(-1); %toroidal direction switch sign
                   
                   dPsidr=2*psiAHat/a*normradius;
-                  nuPrime=nuN*(GHat+iota*IHat)/B0OverBBar/sqrt(THat)
+                  %The following line can be used to override the input nuPrime and
+                  %calculate it from nuN instead.
+                  %nuPrime=nuN*(GHat+iota*IHat)/B0OverBBar/sqrt(THat)
                   
              otherwise
                   error('Invalid setting for geometryScheme')
