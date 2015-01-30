@@ -1,7 +1,7 @@
 # -*- mode: makefile -*-
 #
 # To compile on hydra, first load the following modules:
-# module load petsc-real hdf5-serial
+# module load petsc-real hdf5-serial netcdf-serial
 # Also set the following environment variable:
 # export SFINCS_SYSTEM=hydra
 # (You might wish to put the above line in your .bashrc file.)
@@ -18,10 +18,10 @@ include ${PETSC_DIR}/conf/variables
 include ${PETSC_DIR}/conf/rules
 
 # Any other flags for compiling, such as -I include flags:
-EXTRA_COMPILE_FLAGS = -I${HDF5_HOME}/include -I${PETSC_DIR}/include
+EXTRA_COMPILE_FLAGS = -I${HDF5_HOME}/include -I${PETSC_DIR}/include -I${NETCDF_HOME}/include
 
 # Any other flags for linking, such as -l library flags:
-EXTRA_LINK_FLAGS = -L${HDF5_HOME}/lib -lhdf5_fortran -lhdf5
+EXTRA_LINK_FLAGS = -L${HDF5_HOME}/lib -lhdf5_fortran -lhdf5 -L${NETCDF_HOME}/lib -lnetcdf -lnetcdff
 
 
 # The next parameters are used only for running selected examples "make test"
