@@ -3,6 +3,12 @@
 ! However, the computeBHat subroutine in this module must set the final rN.  The other 3
 ! final radial coordinates (psiHat, psiN, and rHat) will be set from rN later on.
 
+! Reading in the magnetic geometry takes a negligible amount of time, so the code here
+! just has every processor independently open and read the input file.  An alternative
+! would be to have one processor read the file and then broadcast the geometry info to the others.
+! Since computing time is not an issue for this part of the code, there is little advantage to the
+! latter approach.
+
 module geometry
 
   use globalVariables
@@ -128,6 +134,9 @@ contains
           print *,"Successfully opened magnetic equilibrium file ",trim(equilibriumFile),".  Nperiods = ",Nperiods
        end if
 
+       !Switch from a left-handed to right-handed (radial,poloidal,toroidal) system
+       psiAHat=psiAHat*(-1)           !toroidal direction sign switch
+
     case (12)
        fileUnit = 11
        open(unit=fileUnit, file=equilibriumFile, action="read", status="old", iostat=didFileAccessWork)
@@ -158,6 +167,9 @@ contains
        if (masterProc) then
           print *,"Successfully opened magnetic equilibrium file ",trim(equilibriumFile),".  Nperiods = ",Nperiods
        end if
+
+       !Switch from a left-handed to right-handed (radial,poloidal,toroidal) system
+       psiAHat=psiAHat*(-1)           !toroidal direction sign switch    
 
     case default
        print *,"Error! Invalid setting for geometryScheme."
@@ -542,8 +554,11 @@ contains
 
              rN_new = sqrt(surfHeader(1))       ! r/a = sqrt(psi/psi_a)
              iota_new = surfHeader(2)
-             G_new = surfHeader(3)*NPeriods/2/pi*(4*pi*1d-7) !Tesla*meter
-             I_new = surfHeader(4)/2/pi*(4*pi*1d-7)          !Tesla*meter
+             ! Note that G and I have a minus sign in the following two lines
+             ! because Ampere's law comes with a minus sign in the left-handed
+             ! (r,pol,tor) system.
+             G_new = -surfHeader(3)*NPeriods/2/pi*(4*pi*1d-7) !Tesla*meter
+             I_new = -surfHeader(4)/2/pi*(4*pi*1d-7)          !Tesla*meter
              pPrimeHat_new = surfheader(5)*(4*pi*1e-7)       ! p=pHat \bar{B}^2 / \mu_0
 
              ! Skip units line:
@@ -636,6 +651,19 @@ contains
        dBHat_sub_psi_dtheta = 0
        dBHat_sub_psi_dzeta = 0
 
+       if (GHat*psiAHat<0) then
+          !print *,"This is a stellarator symmetric file from Joachim Geiger. It will now be turned 180 degrees around a horizontal axis <=> flip the sign of G and I, so that it matches the sign of its total toroidal flux."
+          GHat=-GHat
+          IHat=-IHat
+          dGdpHat=-dGdpHat
+       end if
+       
+       !Switch from a left-handed to right-handed (radial,poloidal,toroidal) system
+       psiAHat=psiAHat*(-1)           !toroidal direction sign switch
+       GHat = GHat*(-1)               !toroidal direction sign switch
+       iota = iota*(-1)               !toroidal direction sign switch
+       BHarmonics_n=BHarmonics_n*(-1) !toroidal direction sign switch
+
     case (12)
        ! Read Boozer coordinate file in a generalisation of the .bc format used at IPP Greifswald for non-stellarator symmetric equilibria 
 
@@ -710,8 +738,11 @@ contains
 
              rN_new = sqrt(surfHeader(1))       ! r/a = sqrt(psi/psi_a)
              iota_new = surfHeader(2)
-             G_new = surfHeader(3)*NPeriods/2/pi*(4*pi*1d-7) !Tesla*meter
-             I_new = surfHeader(4)/2/pi*(4*pi*1d-7)          !Tesla*meter
+             ! Note that G and I has a minus sign in the following two lines
+             ! because Ampere's law comes with a minus sign in the left-handed
+             ! (r,pol,tor) system.
+             G_new = -surfHeader(3)*NPeriods/2/pi*(4*pi*1d-7) !Tesla*meter
+             I_new = -surfHeader(4)/2/pi*(4*pi*1d-7)          !Tesla*meter
              pPrimeHat_new = surfheader(5)*(4*pi*1e-7)       ! p=pHat \bar{B}^2 / \mu_0
 
              ! Skip units line:
@@ -809,6 +840,12 @@ contains
        BHat_sub_psi = 0
        dBHat_sub_psi_dtheta = 0
        dBHat_sub_psi_dzeta = 0
+
+       !Switch from a left-handed to right-handed (radial,poloidal,toroidal) system
+       psiAHat=psiAHat*(-1)           !toroidal direction sign switch
+       GHat = GHat*(-1)               !toroidal direction sign switch
+       iota = iota*(-1)               !toroidal direction sign switch
+       BHarmonics_n=BHarmonics_n*(-1) !toroidal direction sign switch
 
     case default
        print *,"Error! Invalid geometryScheme"
@@ -991,11 +1028,48 @@ contains
     PetscScalar :: vmecRadialWeight_half(2)
     PetscScalar, dimension(:), allocatable :: dr2, psiN_full, psiN_half
     integer :: i, j, index, isurf, itheta, izeta, m, n
-    PetscScalar :: min_dr2, angle, sin_angle, cos_angle, b, b00, temp
+    PetscScalar :: min_dr2, angle, sin_angle, cos_angle, b, b00, temp, dphi
 
     ! This subroutine is written so that only psiN_wish is used, not the other *_wish quantities.
 
-    print *,"Here comes phi from VMEC:",vmec%phi
+    ! --------------------------------------------------------------------------------
+    ! Do some sanity checking to ensure the VMEC arrays have some expected properties.
+    ! --------------------------------------------------------------------------------
+
+    if (abs(vmec%phi(1)) > 1d-14) then
+       if (masterProc) then
+          print *,"Error! VMEC phi array does not begin with 0."
+       end if
+       stop
+    end if
+
+    dphi = vmec%phi(2) - vmec%phi(1)
+    do j=3,vmec%ns
+       if (abs(vmec%phi(j)-vmec%phi(j-1)-dphi) > 1d-14) then
+          if (masterProc) then
+             print *,"Error! VMEC phi array is not uniformly spaced."
+          end if
+          stop
+       end if
+    end do
+
+    ! phips is on the half-mesh, so skip first point.
+    do j=2,vmec%ns
+       if (abs(vmec%phips(j)+vmec%phi(vmec%ns)/(2*pi)) > 1d-14) then
+          if (masterProc) then
+             print *,"Error! VMEC phips array is not constant and equal to -phi(ns)/(2*pi)."
+          end if
+          stop
+       end if
+    end do
+
+    ! --------------------------------------------------------------------------------
+    ! End of sanity checks.
+    ! --------------------------------------------------------------------------------
+
+    if (masterProc) then
+       print *,"Here comes phi from VMEC:",vmec%phi
+    end if
 
     allocate(psiN_full(vmec%ns))
     psiN_full = vmec%phi / (2*pi*psiAHat)
@@ -1006,12 +1080,15 @@ contains
        psiN_half(i) = (psiN_full(i) + psiN_full(i+1))/two
     end do
 
-    ! First, choose the "actual" radius to use based on psiN_wish:
+    ! --------------------------------------------------------------------------------
+    ! Now choose the "actual" radius to use, based on psiN_wish:
+    ! --------------------------------------------------------------------------------
 
     ! VMECRadialOption
     ! 0 = use exact radius requested.
-    ! 1 = use nearest value of the VMEC full grid.
-    ! 2 = use nearest value of the VMEC half grid.
+    ! 1 = use nearest value of the VMEC half grid.
+    ! 2 = use nearest value of the VMEC full grid.  I'm not sure why you would ever want to choose this option,
+    !     but I've implemeneted it for completeness.
     
     select case (VMECRadialOption)
     case (0)
@@ -1019,26 +1096,6 @@ contains
        psiN = psiN_wish
 
     case (1)
-       ! Use nearest value of the VMEC full grid
-
-       ! Compute differences
-       allocate(dr2(vmec%ns))
-       dr2 = (psiN_full - psiN_wish) ** 2
-
-       index = 1
-       min_dr2 = dr2(1)
-       ! Find the index of minimum error:
-       do j=2,vmec%ns
-          if (dr2(j)<min_dr2) then
-             index = j
-             min_dr2 = dr2(j)
-          end if
-       end do
-
-       psiN = psiN_full(index)
-       deallocate(dr2)
-
-    case (2)
        ! Use nearest value of the VMEC half grid
 
        ! Compute differences
@@ -1058,6 +1115,26 @@ contains
        psiN = psiN_half(index)
        deallocate(dr2)
 
+    case (2)
+       ! Use nearest value of the VMEC full grid
+
+       ! Compute differences
+       allocate(dr2(vmec%ns))
+       dr2 = (psiN_full - psiN_wish) ** 2
+
+       index = 1
+       min_dr2 = dr2(1)
+       ! Find the index of minimum error:
+       do j=2,vmec%ns
+          if (dr2(j)<min_dr2) then
+             index = j
+             min_dr2 = dr2(j)
+          end if
+       end do
+
+       psiN = psiN_full(index)
+       deallocate(dr2)
+
     case default
        if (masterProc) then
           print *,"Error! Invalid VMECRadialOption"
@@ -1065,6 +1142,9 @@ contains
        stop
     end select
 
+    ! --------------------------------------------------------------------------------
+    ! Done choosing the actual radius to use.
+    ! --------------------------------------------------------------------------------
 
     ! In general, we get quantities for SFINCS by linear interpolation, taking a weighted average of the quantity from
     ! 2 surfaces in the VMEC file. Sometimes the weights are 0 and 1, i.e. no interpolation is needed.
@@ -1103,8 +1183,6 @@ contains
        ! This is the most common case.
        vmecRadialIndex_full(1) = floor(psiN*(vmec%ns-1))+1
        vmecRadialIndex_full(2) = vmecRadialIndex_full(1) + 1
-       !vmecRadialWeight_full(1) = (psiN - (vmecRadialIndex_full(1)-one)/(vmec%ns-one))&
-       !     * (vmec%ns-one)
        vmecRadialWeight_full(1) = vmecRadialIndex_full(1) - psiN*(vmec%ns-one)
        if (masterProc) then
           print *,"case B"
@@ -1121,8 +1199,8 @@ contains
        ! We start at element 2 since element 1 is always 0 for quantities on the half grid.
        vmecRadialIndex_half(1) = 2
        vmecRadialIndex_half(2) = 3
-       ! Next line needs to be fixed!
-       vmecRadialWeight_half(1) = (psiN - psiN_half(2)) / (psiN_half(1) - psiN_half(2))
+       ! Double-check this next line:
+       vmecRadialWeight_half(1) = (psiN_half(2) - psiN) / (psiN_half(2) - psiN_half(1))
 
     elseif (psiN > psiN_half(vmec%ns-1)) then
        if (masterProc) then
@@ -1131,9 +1209,9 @@ contains
        end if
        vmecRadialIndex_half(1) = vmec%ns-1
        vmecRadialIndex_half(2) = vmec%ns
-       ! Next line needs to be fixed!
-       vmecRadialWeight_half(1) = (psiN - psiN_half(vmec%ns-1)) &
-            / (psiN_half(vmec%ns-2) - psiN_half(vmec%ns-1))
+       ! Double-check this next line:
+       vmecRadialWeight_half(1) = (psiN_half(vmec%ns-1) - psiN) &
+            / (psiN_half(vmec%ns-1) - psiN_half(vmec%ns-2))
 
     elseif (psiN == psiN_half(vmec%ns-1)) then
        ! We are exactly at the last point of the half grid
@@ -1148,8 +1226,6 @@ contains
        ! This is the most common case.
        vmecRadialIndex_half(1) = floor(psiN*(vmec%ns-1) + 0.5)+1
        vmecRadialIndex_half(2) = vmecRadialIndex_half(1) + 1
-       !vmecRadialWeight_half(1) = (psiN - (vmecRadialIndex_half(1)-(1.5d+0))/(vmec%ns-one))&
-       !     * (vmec%ns-one)
        vmecRadialWeight_half(1) = vmecRadialIndex_half(1) - psiN*(vmec%ns-one) - (0.5d+0)
        if (masterProc) then
           print *,"case 2"
@@ -1182,7 +1258,11 @@ contains
     b00 = vmec%bmnc(n,m,vmecRadialIndex_half(1)) * vmecRadialWeight_half(1) &
                + vmec%bmnc(n,m,vmecRadialIndex_half(2)) * vmecRadialWeight_half(2)
 
-    ! Loop over all the VMEC Fourier modes to build the SFINCS arrays:
+    ! --------------------------------------------------------------------------------
+    ! At last, we are now ready to
+    ! loop over all the VMEC Fourier modes to build the SFINCS arrays.
+    ! --------------------------------------------------------------------------------
+
     ! We take the following approach:
     ! Include a given (m,n) mode of |B|, B sub u, B sup u, etc
     ! if and only if that (m,n) mode of |B| (normalized to B00) is > min_Bmn_to_load.
@@ -1216,47 +1296,35 @@ contains
 
                    do isurf = 1,2
                       ! Handle Jacobian:
-                      ! DHat is the INVERSE Jacobian of the (psiHat, theta, zeta) coordinates.
+                      ! SFINCS's DHat is the INVERSE Jacobian of the (psiHat, theta, zeta) coordinates.
                       ! VMEC's gmnc and gmns are the Jacobian of the (psiN, theta, zeta) coordinates.
-                      ! Because one uses psiHat and the other uses psiN, we need a factor of psiAHat.
+                      ! Because one uses psiHat and the other uses psiN, we need a factor of psiAHat for conversion.
                       ! We will also set DHat = 1 / DHat at the end of this loop.
                       temp = vmec%gmnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf) / (psiAHat)
-
                       DHat(itheta,izeta) = DHat(itheta,izeta) + temp * cos_angle
 
                       ! Handle B sup theta:
-                      ! Divide by 2pi to convert from B sup u to B sup theta
-                      !temp = vmec%bsupumnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf) / (2*pi)
+                      ! Note that VMEC's bsupumnc and bsupumns are exactly the same as SFINCS's BHat_sup_theta, with no conversion factors of 2pi needed.
                       temp = vmec%bsupumnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
-
                       BHat_sup_theta(itheta,izeta) = BHat_sup_theta(itheta,izeta) + temp * cos_angle
-
                       dBHat_sup_theta_dzeta(itheta,izeta) = dBHat_sup_theta_dzeta(itheta,izeta) + n * NPeriods * temp * sin_angle
 
                       ! Handle B sup zeta:
-                      ! Multiply by Nperiods/(2pi) to convert from B sup v to B sup zeta
-                      !temp = vmec%bsupvmnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf) * Nperiods / (2*pi)
+                      ! Note that VMEC's bsupvmnc and bsupvmns are exactly the same as SFINCS's BHat_sup_zeta, with no conversion factors of 2pi or Nperiods needed.
                       temp = vmec%bsupvmnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
-
                       BHat_sup_zeta(itheta,izeta) = BHat_sup_zeta(itheta,izeta) + temp * cos_angle
-
                       dBHat_sup_zeta_dtheta(itheta,izeta) = dBHat_sup_zeta_dtheta(itheta,izeta) - m * temp * sin_angle
 
                       ! Handle B sub theta:
-                      ! Multiply by 2pi to convert from B sub u to B sub theta
+                      ! Note that VMEC's bsubumnc and bsubumns are exactly the same as SFINCS's BHat_sub_theta, with no conversion factors of 2pi needed.
                       temp = vmec%bsubumnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
-
                       BHat_sub_theta(itheta,izeta) = BHat_sub_theta(itheta,izeta) + temp * cos_angle
-
                       dBHat_sub_theta_dzeta(itheta,izeta) = dBHat_sub_theta_dzeta(itheta,izeta) + n * NPeriods * temp * sin_angle
 
                       ! Handle B sub zeta:
-                      ! Multiply by 2pi/Nperiods to convert from B sub v to B sub zeta
-                      !temp = vmec%bsubvmnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf) * 2*pi / Nperiods
+                      ! Note that VMEC's bsubvmnc and bsubvmns are exactly the same as SFINCS's BHat_sub_zeta, with no conversion factors of 2pi needed.
                       temp = vmec%bsubvmnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
-
                       BHat_sub_zeta(itheta,izeta) = BHat_sub_zeta(itheta,izeta) + temp * cos_angle
-
                       dBHat_sub_zeta_dtheta(itheta,izeta) = dBHat_sub_zeta_dtheta(itheta,izeta) - m * temp * sin_angle
 
                    end do
@@ -1265,6 +1333,74 @@ contains
           else
              if (masterProc) then
                 print *,"NOT including mode with m = ",m,", n = ",n
+             end if
+          end if
+
+          ! -----------------------------------------------------
+          ! Now consider the stellarator-asymmetric terms.
+          ! NOTE: This functionality has not been tested!!!
+          ! -----------------------------------------------------
+
+          if (vmec%iasym > 0) then
+
+             b = vmec%bmns(n,m,vmecRadialIndex_half(1)) * vmecRadialWeight_half(1) &
+                  + vmec%bmns(n,m,vmecRadialIndex_half(2)) * vmecRadialWeight_half(2)
+             
+             if (abs(b/b00) >= min_Bmn_to_load) then
+                if (masterProc) then
+                   print *,"Including stellarator-asymmetric mode with m = ",m,", n = ",n
+                end if
+                ! This (m,n) mode is sufficiently large to include.
+                do itheta = 1,Ntheta
+                   do izeta = 1,Nzeta
+                      angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+                      cos_angle = cos(angle)
+                      sin_angle = sin(angle)
+                      
+                      BHat(itheta,izeta) = BHat(itheta,izeta) + b * sin_angle
+                      dbHatdtheta(itheta,izeta) = dBHatdtheta(itheta,izeta) + m * b * cos_angle
+                      dbHatdzeta(itheta,izeta) = dBHatdzeta(itheta,izeta) - n * NPeriods * b * cos_angle
+                      
+                      do isurf = 1,2
+                         ! Handle Jacobian:
+                         ! SFINCS's DHat is the INVERSE Jacobian of the (psiHat, theta, zeta) coordinates.
+                         ! VMEC's gmnc and gmns are the Jacobian of the (psiN, theta, zeta) coordinates.
+                         ! Because one uses psiHat and the other uses psiN, we need a factor of psiAHat for conversion.
+                         ! We will also set DHat = 1 / DHat at the end of this loop.
+                         temp = vmec%gmns(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf) / (psiAHat)
+                         DHat(itheta,izeta) = DHat(itheta,izeta) + temp * sin_angle
+                         
+                         ! Handle B sup theta:
+                         ! Note that VMEC's bsupumnc and bsupumns are exactly the same as SFINCS's BHat_sup_theta, with no conversion factors of 2pi needed.
+                         temp = vmec%bsupumns(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
+                         BHat_sup_theta(itheta,izeta) = BHat_sup_theta(itheta,izeta) + temp * sin_angle
+                         dBHat_sup_theta_dzeta(itheta,izeta) = dBHat_sup_theta_dzeta(itheta,izeta) - n * NPeriods * temp * cos_angle
+                         
+                         ! Handle B sup zeta:
+                         ! Note that VMEC's bsupvmnc and bsupvmns are exactly the same as SFINCS's BHat_sup_zeta, with no conversion factors of 2pi or Nperiods needed.
+                         temp = vmec%bsupvmns(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
+                         BHat_sup_zeta(itheta,izeta) = BHat_sup_zeta(itheta,izeta) + temp * sin_angle
+                         dBHat_sup_zeta_dtheta(itheta,izeta) = dBHat_sup_zeta_dtheta(itheta,izeta) + m * temp * cos_angle
+                         
+                         ! Handle B sub theta:
+                         ! Note that VMEC's bsubumnc and bsubumns are exactly the same as SFINCS's BHat_sub_theta, with no conversion factors of 2pi needed.
+                         temp = vmec%bsubumns(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
+                         BHat_sub_theta(itheta,izeta) = BHat_sub_theta(itheta,izeta) + temp * sin_angle
+                         dBHat_sub_theta_dzeta(itheta,izeta) = dBHat_sub_theta_dzeta(itheta,izeta) - n * NPeriods * temp * cos_angle
+                         
+                         ! Handle B sub zeta:
+                         ! Note that VMEC's bsubvmnc and bsubvmns are exactly the same as SFINCS's BHat_sub_zeta, with no conversion factors of 2pi needed.
+                         temp = vmec%bsubvmns(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
+                         BHat_sub_zeta(itheta,izeta) = BHat_sub_zeta(itheta,izeta) + temp * sin_angle
+                         dBHat_sub_zeta_dtheta(itheta,izeta) = dBHat_sub_zeta_dtheta(itheta,izeta) + m * temp * cos_angle
+                         
+                      end do
+                   end do
+                end do
+             else
+                if (masterProc) then
+                   print *,"NOT including mode with m = ",m,", n = ",n
+                end if
              end if
           end if
        end do
@@ -1276,34 +1412,23 @@ contains
     ! These next lines should be replaced eventually with a proper calculation:
 
     dBHat_sub_theta_dpsiHat = 0
-    !dBHat_sub_theta_dzeta = 0
 
     dBHat_sub_zeta_dpsiHat = 0
-    !dBHat_sub_zeta_dtheta = 0
 
     dBHat_sup_theta_dpsiHat = 0
-    !dBHat_sup_theta_dzeta = 0
 
     dBHat_sup_zeta_dpsiHat = 0
-    !dBHat_sup_zeta_dtheta = 0
 
     deallocate(psiN_full)
     deallocate(psiN_half)
 
     rN = sqrt(psiN)
 
+    if (masterProc) then
+       print *,"Successfully read VMEC geometry file ",trim(equilibriumFile)
+    end if
+
   end subroutine computeBHat_VMEC
-
-  ! -----------------------------------------------------------------------------------------
-
-  subroutine setBoozerCoordinates
-
-    implicit none
-
-
-
-
-  end subroutine setBoozerCoordinates
 
 end module geometry
 

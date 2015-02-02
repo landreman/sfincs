@@ -431,9 +431,9 @@ rewind(iunit)
 do j=1,icount
   read(iunit,*,iostat=ios)gam,nfp,ns,mpol,ntor,mnmax,itfsq,nit
 enddo
-print *, "mpol = ",mpol
-print *, "ntor = ",ntor
-print *, "ns = ",ns
+!print *, "mpol = ",mpol
+!print *, "ntor = ",ntor
+!print *, "ns = ",ns
 ! allocate and initialize
 allocate(p_to_rmnc(-ntor:ntor,0:mpol-1,ns),p_to_zmns(-ntor:ntor,0:mpol-1,ns), &
          p_to_lmns(-ntor:ntor,0:mpol-1,ns),&
@@ -597,11 +597,12 @@ character(80),parameter :: format730="(5e20.13)"
 iunit = get_next_io_unit()
 open(unit=iunit, file=filename, action="read")
 read(iunit,'(a15,(a))',iostat=ios)c_vmec_version_string,c_version_number
-write(6,*) "ios = ",ios
-write(6,*) c_vmec_version_string,"|",trim(c_version_number),"|"
+! MJL 20150202 Commenting out some write statements here.
+!write(6,*) "ios = ",ios
+!write(6,*) c_vmec_version_string,"|",trim(c_version_number),"|"
 read(c_version_number(1:len(trim(c_version_number))),*)r_version_number
-write(6,*)len(trim(c_version_number))
-write(6,*)"Version im real-format: ",r_version_number
+!write(6,*)len(trim(c_version_number))
+!write(6,*)"Version im real-format: ",r_version_number
 
 read(iunit,*)wb, wp, gam, pfac, rmax_surf, rmin_surf, zmax_surf
 if(r_version_number > 8.00 ) then
@@ -733,10 +734,10 @@ endif
 
 ! from read_wout_mod.f (LIBSTELL)
 if(real(r_version_number) > 6.10+eps_w) then
-  write(6,*) "Read on !"
+  !write(6,*) "Read on !"
   read(iunit,*,iostat=ios) i  ! nint(signgs) not stored.
   read(iunit, '(a)',iostat=ios) input_extension
-  write(6,*) input_extension
+  !write(6,*) input_extension
   read(iunit,*) IonLarmor, VolAvgB, rbtor0, rbtor, ctor, &
               Aminor_p, Rmajor_p, volume_p
 endif
@@ -1103,7 +1104,7 @@ real(kind=8), dimension(10) :: r10_array
 iunit = get_next_io_unit()
 open(unit=iunit, file=filename, action="read")
 read(iunit,'(a4)',iostat=ios)c_dummy
-write(6,*) "ios = ",ios
+!write(6,*) "ios = ",ios
 close(iunit)
 if(ios < 0) then
   if(ios == -1) stop "file not existing!"
@@ -1181,7 +1182,7 @@ select case (c_dummy)
 ! write(6,*)"c_dummy = ",c_dummy
   stop "Unknown type of file!"
 end select
-write(6,*) "Detected type of input file: ",this_type%typo
+!write(6,*) "Detected type of input file: ",this_type%typo
 
 end subroutine check_wout_file_type
 !-------------------------------------------------------------------------------
