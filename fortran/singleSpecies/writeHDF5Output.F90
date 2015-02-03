@@ -21,6 +21,7 @@ module writeHDF5Output
   integer(HID_T), dimension(:), allocatable, private :: dspaceIDForThetaZetax
   integer(HID_T), dimension(:), allocatable, private :: dspaceIDForSources
   integer(HID_T), private :: dspaceIDForTransportMatrix
+  integer(HID_T), private :: dspaceIDForTransportCoeffs
   integer(HID_T), private :: dspaceIDForNTVMatrix
   integer(HID_T), dimension(:), allocatable, private :: groupIDs
 
@@ -104,6 +105,7 @@ module writeHDF5Output
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_FSABHat2
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_useIterativeSolver
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_transportMatrix
+  integer(HID_T), dimension(:), allocatable, private :: dsetIDs_transportCoeffs
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_NTVMatrix
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_fNormIsotropic
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_fNormIsotropicBeforeSurfaceIntegral
@@ -118,6 +120,7 @@ module writeHDF5Output
   integer(HSIZE_T), dimension(:,:), allocatable, private :: dimForThetaZetax
   integer(HSIZE_T), dimension(:,:), allocatable, private :: dimForSources
   integer(HSIZE_T), dimension(2), parameter, private :: dimForTransportMatrix = 3
+  integer(HSIZE_T), dimension(2), parameter, private :: dimForTransportCoeffs = 2
   integer(HSIZE_T), dimension(1), parameter, private :: dimForNTVMatrix = 3
 
 contains
@@ -253,6 +256,7 @@ contains
        allocate(dsetIDs_FSABHat2(numRunsInScan))
        allocate(dsetIDs_useIterativeSolver(numRunsInScan))
        allocate(dsetIDs_transportMatrix(numRunsInScan))
+       allocate(dsetIDs_transportCoeffs(numRunsInScan))
        allocate(dsetIDs_NTVMatrix(numRunsInScan))
        allocate(dsetIDs_fNormIsotropic(numRunsInScan))
        allocate(dsetIDs_fNormIsotropicBeforeSurfaceIntegral(numRunsInScan))
@@ -281,6 +285,7 @@ contains
 
        rank = 2
        call h5screate_simple_f(rank, dimForTransportMatrix, dspaceIDForTransportMatrix, HDF5Error)
+       call h5screate_simple_f(rank, dimForTransportCoeffs, dspaceIDForTransportCoeffs, HDF5Error)
 
        ! Save programMode in the file:
        call h5dcreate_f(HDF5FileID, "programMode", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
@@ -560,6 +565,9 @@ contains
    
           call h5dcreate_f(groupIDs(i), "transportMatrix", H5T_NATIVE_DOUBLE, dspaceIDForTransportMatrix, &
                dsetIDs_transportMatrix(i), HDF5Error)
+   
+          call h5dcreate_f(groupIDs(i), "transportCoeffs", H5T_NATIVE_DOUBLE, dspaceIDForTransportCoeffs, &
+               dsetIDs_transportCoeffs(i), HDF5Error)
    
           call h5dcreate_f(groupIDs(i), "NTVMatrix", H5T_NATIVE_DOUBLE, dspaceIDForNTVMatrix, &
                dsetIDs_NTVMatrix(i), HDF5Error)
@@ -851,6 +859,9 @@ contains
        call h5dwrite_f(dsetIDs_transportMatrix(runNum), H5T_NATIVE_DOUBLE, &
             transportMatrix, dimForTransportMatrix, HDF5Error)
 
+       call h5dwrite_f(dsetIDs_transportCoeffs(runNum), H5T_NATIVE_DOUBLE, &
+            transportCoeffs, dimForTransportCoeffs, HDF5Error)
+
        call h5dwrite_f(dsetIDs_NTVMatrix(runNum), H5T_NATIVE_DOUBLE, &
             NTVMatrix, dimForNTVMatrix, HDF5Error)
 
@@ -959,6 +970,7 @@ contains
           call h5dclose_f(dsetIDs_FSABHat2(i), HDF5Error)
           call h5dclose_f(dsetIDs_useIterativeSolver(i), HDF5Error)
           call h5dclose_f(dsetIDs_transportMatrix(i), HDF5Error)
+          call h5dclose_f(dsetIDs_transportCoeffs(i), HDF5Error)
           call h5dclose_f(dsetIDs_NTVMatrix(i), HDF5Error)
           call h5dclose_f(dsetIDs_fNormIsotropic(i), HDF5Error)
           call h5dclose_f(dsetIDs_fNormIsotropicBeforeSurfaceIntegral(i), HDF5Error)
@@ -977,6 +989,7 @@ contains
 
        call h5sclose_f(dspaceIDForScalar, HDF5Error)
        call h5sclose_f(dspaceIDForTransportMatrix, HDF5Error)
+       call h5sclose_f(dspaceIDForTransportCoeffs, HDF5Error)
        call h5sclose_f(dspaceIDForNTVMatrix, HDF5Error)
        call h5pclose_f(parallelID, HDF5Error)
        call h5fclose_f(HDF5FileID, HDF5Error)
