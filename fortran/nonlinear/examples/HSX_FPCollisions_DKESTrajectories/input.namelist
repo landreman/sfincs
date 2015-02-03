@@ -1,9 +1,6 @@
 ! Input file for SFINCS:
 ! The Stellarator Fokker-Planck Iterative Neoclassical Conservative Solver.
-! Nonlinear version.
-! Written in 2014 by Matt Landreman
-! University of Maryland,
-! Institute for Research in Electronics and Applied Physics
+! Version 3
 
 ! Dimensional quantities in this program are normalized to "reference" values:
 ! \bar{B} = reference magnetic field, typically 1 Tesla.
@@ -18,19 +15,16 @@
 ! suggested here. The code "knows" about the reference values only through
 ! the 3 combinations Delta, alpha, and nu_n, input below.
 
-! Radial gradients of density, temperature, and electrostatic potential are
-! specified as derivatives with respect to psi_N, where psi_N is the
-! toroidal flux normalized to the value at the last closed flux surface.
-! (psi_N=0 is the magnetic axis, and psi_N=1 is the last closed flux
-! surface.)
-
 &general
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! General program options:
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-! This next option may be used in the future, but at the moment it doesn't do anything:
 RHSMode = 1
+  ! Option related to the number of right-hand sides (i.e. inhomogeneous drive terms) for which the kinetic equation is solved.
+  ! 1: Solve for a single right-hand side. This is the usual setting.
+  ! 2: Solve for 3 right-hand sides to get the 3x3 transport matrix. Presently implemented only for 1 species.
+  ! 3: Solve for the 2x2 monoenergetic transport coefficients. When this option is chosen, Nx is set to 1 and only 1 species is used.
 
 outputFilename = "sfincsOutput.h5"
 
@@ -97,6 +91,8 @@ solveSystem = .true.
   ! 2 = Three-helicity approximation of the LHD standard configuration at rN = 0.5
   ! 3 = Four-helicity approximation of the LHD inward-shifted configuration at rN = 0.5
   ! 4 = Three-helicity approximation of the W7-X standard configuration at rN = 0.5
+  ! 5 = Read the magnetic geometry from a VMEC wout file specified as "equilibriumFile" below. The file can be
+  !     either ASCII format or netCDF format. (SFINCS will auto-detect the format.)
   ! 11= Read the boozer coordinate data from the file specified as "equilibriumFile" below (stellarator symmetric file)
   ! 12= Read the boozer coordinate data from the file specified as "equilibriumFile" below (non-stellarator symmetric file)
 
@@ -144,7 +140,15 @@ helicity_antisymm_n = 0
 
 ! End of options that only matter for geometryScheme = 1.
 
-! The remaining options only matter for geometryScheme = 11:
+  ! This next option only matters for geometryScheme = 5 (Read a VMEC "wout" file):
+  VMECRadialOption = 0
+  ! 0: Use the exact *_wish flux surface requested, by interpolating from the VMEC radial grid.
+  ! 1: Use a surface that may be slightly different from *_wish to get the nearest available flux surface from VMEC's HALF grid.  
+  !    The components of B in VMEC are stored on the half grid, so interpolation is then unnecessary.
+  ! 2: Use a surface that may be slightly different from *_wish to get the nearest available flux surface from VMEC's FULL grid.  
+  !    I'm not sure why you would want this, but the feature is implemented for completeness.
+
+! The remaining options only matter for geometryScheme = 5, 11, and 12:
 
 equilibriumFile = "../../../../equilibria/hsx3free.bc"
 
