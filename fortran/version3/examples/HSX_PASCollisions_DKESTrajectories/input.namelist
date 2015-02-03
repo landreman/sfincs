@@ -15,10 +15,19 @@
 ! suggested here. The code "knows" about the reference values only through
 ! the 3 combinations Delta, alpha, and nu_n, input below.
 
+! Lines beginning with "!ss" are instructions for the sfincsScan python script.
+! The location of these lines within this file is unimportant.
+
 &general
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! General program options:
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!   Which type of scan to run when you run sfincsScan?
+!ss scanType = 1
+!   1: Convergence scan
+!   2: Scan of E_r
+!   (The value of scanType is ignored when you run sfincs directly.)
 
 RHSMode = 1
   ! Option related to the number of right-hand sides (i.e. inhomogeneous drive terms) for which the kinetic equation is solved.
@@ -218,6 +227,26 @@ EParallelHat = 0
   dPhiHatdrHat   = 0.0d+0
   dPhiHatdrN     = 0.0d+0
 
+
+!   Next are some variables related to scans of the radial electric field with sfincsScan.
+!   Values must appear behind !ss
+!
+!   Number of values of the radial electric field to include in a parameter scan:
+!ss NErs = 5
+!
+! Depending on inputRadialCoordinateForGradients, only 1 of the following 4 pairs of variables will be read:
+!ss dPhiHatdpsiHatMin = -1.0d+0
+!ss dPhiHatdpsiHatMax =  1.0d+0
+!
+!ss dPhiHatdpsiNMin = -1.0d+0
+!ss dPhiHatdpsiNMax =  1.0d+0
+!
+!ss dPhiHatdrHatMin = -1.0d+0
+!ss dPhiHatdrHatMax =  1.0d+0
+!
+!ss dPhiHatdrNMin = -1.0d+0
+!ss dPhiHatdrNMax =  1.0d+0
+
 ! nu_n is the collisionality at the reference parameters.
 ! More precisely, nu_n = \bar{nu} * \bar{R} / \bar{v} (in both Gaussian and SI units)
 ! where \bar{nu} is the dimensional collision frequency at the reference parameters:
@@ -314,14 +343,36 @@ include_fDivVE_term = .false.
 ! Numerical resolution parameters:
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  ! For each set of 4 numbers below, the first is the value used in a single run.
+  ! The second and third numbers set the range by which the first number is scaled
+  ! in a convergence scan. The fourth number sets the number of values tried in a
+  ! convergence scan. The code attempts to space the values evenly in a logarithmic
+  ! sense, as in Matlab's 'logspace' function. For example, the following settings
+  !   Nxi = 20
+  !ss NxiMinFactor = 0.5
+  !ss NxiMaxFactor = 2.0
+  !ss NxiNumRuns = 3
+  ! would mean the values Nxi = 10, 20, and 40 would be tried in a scan.
+  ! If you don't want to scan a variable in a convergence scan, set the associated
+  ! ...NumRuns parameter to 0.
+  ! For each resolution parameter (Ntheta, Nzeta, Nxi, etc.), the value itself is read by
+  ! Fortran and so should not be preceded by !ss.  However the ...MinFactor, ...MaxFactor, 
+  ! and ...NumRuns quantities are read by sfincsScan and so must be preceded by !ss
+
 ! Number of grid points in the poloidal direction.
 ! Memory and time requirements DO depend strongly on this parameter.
 Ntheta = 11
+!ss NthetaMinFactor = 0.7
+!ss NthetaMaxFactor = 2
+!ss NthetaNumRuns = 5
 
 ! Number of grid points in the toroidal direction
 ! (per identical segment of the stellarator.)
 ! Memory and time requirements DO depend strongly on this parameter.
 Nzeta = 115
+!ss NzetaMinFactor = 0.8
+!ss NzetaMaxFactor = 2
+!ss NzetaNumRuns = 5
 
 ! Number of Legendre polynomials used to represent the distribution function.
 ! Memory and time requirements DO depend strongly on this parameter.
@@ -330,11 +381,17 @@ Nzeta = 115
 ! as ~ 5. At low collisionality, this parameter may need to be many 10s or
 ! even > 100 for convergence.
 Nxi = 149
+!ss NxiMinFactor = 0.8
+!ss NxiMaxFactor = 2
+!ss NxiNumRuns = 6
 
 ! Number of Legendre polynomials used to represent the Rosenbluth
 ! potentials. Except in exceptional circumstances, this number should be 4.
 ! Memory and time requirements do NOT depend strongly on this parameter.
 NL = 4
+!ss NLMinFactor = 1
+!ss NLMaxFactor = 2
+!ss NLNumRuns = 0
 
 ! Number of grid points in energy used to represent the distribution function.
 ! Memory and time requirements DO depend strongly on this parameter.
@@ -342,20 +399,32 @@ NL = 4
 ! Usually a value in the range 5-8 is plenty for convergence, though sometimes
 ! you may need to go up to 10-15.
 Nx = 5
+!ss NxMinFactor = 0.8
+!ss NxMaxFactor = 2
+!ss NxNumRuns = 3
 
 ! Number of grid points in energy used to represent the Rosenbluth potentials.
 ! Memory and time requirements do NOT depend strongly on this parameter.
 NxPotentialsPerVth = 40d+0
+!ss NxPotentialsPerVthMinFactor = 0.5
+!ss NxPotentialsPerVthMaxFactor = 2
+!ss NxPotentialsPerVthNumRuns = 0
 
 ! Maximum normalized speed for the Rosenbluth potential grid.
 ! Memory and time requirements do NOT depend strongly on this parameter.
 ! Typically a value of 5 is good.
 xMax = 5.0d+0
+!ss xMaxMinFactor = 1
+!ss xMaxMaxFactor = 2
+!ss xMaxNumRuns = 0
 
 ! Tolerance used to define convergence of the Krylov solver.
 ! This parameter does not affect memory requirements but it does affect the
 ! time required for solution somewhat
 solverTolerance = 1d-6
+!ss solverToleranceMinFactor = 0.1
+!ss solverToleranceMaxFactor = 10
+!ss solverToleranceNumRuns = 3
 
 forceOddNthetaAndNzeta = .true.
 ! If forceOddNthetaAndNzeta is set to true, 1 is added to Ntheta any time a run is attempted with even Ntheta,
