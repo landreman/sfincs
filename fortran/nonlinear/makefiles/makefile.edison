@@ -1,6 +1,15 @@
 # -*- mode: makefile -*-
 #
 # Edison is a Cray XC30 at NERSC (Lawrence Berkeley National Laboratory).
+#
+# To compile SFINCS on Edison, you need to load the following modules:
+#   module load cray-petsc netcdf cray-hdf5
+# (These options worked on 2015-02-01. For some reason, loading cray-hdf5 before netcdf
+# yielded an error message.)
+#
+# Also, to use sfincsPlot and sfincsScanPlot, you need the following modules:
+#   module load python numpy matplotlib h5py
+# You might want to add the above line to your ~/.bashrc.ext file
 
 # Set command for fortran compiler:
 FC = ftn
