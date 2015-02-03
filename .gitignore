@@ -4,5 +4,7 @@
 sfincs
 sfincs.o*
 sfincsOutput.h5
+job.out.*
+job.err.*
 *~
 \#*
