@@ -298,8 +298,14 @@
 
     allocate(x(Nx))
     allocate(xWeights(Nx))
-    call makeXGrid(Nx, x, xWeights)
-    xWeights = xWeights / exp(-x*x)
+    if (RHSMode .ne. 3) then
+       call makeXGrid(Nx, x, xWeights)
+       xWeights = xWeights / exp(-x*x)
+    else
+       ! Monoenergetic transport matrix calculation.
+       x = one
+       xWeights = exp(one)
+    end if
     xMaxNotTooSmall = max(x(Nx), xMax)
     allocate(x2(Nx))
     x2=x*x
@@ -307,17 +313,31 @@
     allocate(ddx(Nx,Nx))
     allocate(d2dx2(Nx,Nx))
     allocate(ddx_preconditioner(Nx,Nx))
-    call makeXPolynomialDiffMatrices(x,ddx,d2dx2)
+    if (RHSMode .ne. 3) then
+       call makeXPolynomialDiffMatrices(x,ddx,d2dx2)
+       NxPotentials = ceiling(xMaxNotTooSmall*NxPotentialsPerVth)
+    else
+       ! Monoenergetic transport matrix calculation.
+       ddx = zero
+       d2dx2 = zero
+       NxPotentials = 1
+    end if
 
-    NxPotentials = ceiling(xMaxNotTooSmall*NxPotentialsPerVth)
 
 
     allocate(xPotentials(NxPotentials))
     allocate(xWeightsPotentials(NxPotentials))
     allocate(ddxPotentials(NxPotentials, NxPotentials))
     allocate(d2dx2Potentials(NxPotentials, NxPotentials))
-    call uniformDiffMatrices(NxPotentials, zero, xMaxNotTooSmall, 12, xPotentials, &
-         xWeightsPotentials, ddxPotentials, d2dx2Potentials)
+    if (RHSMode .ne. 3) then
+       call uniformDiffMatrices(NxPotentials, zero, xMaxNotTooSmall, 12, xPotentials, &
+            xWeightsPotentials, ddxPotentials, d2dx2Potentials)
+    else
+       xPotentials = 0
+       xWeightsPotentials = 0
+       ddxPotentials = 0
+       d2dx2Potentials = 0
+    end if
     maxxPotentials = xPotentials(NxPotentials)
 
     deallocate(xWeightsPotentials)
@@ -326,8 +346,12 @@
     expx2 = exp(-x*x)
 
     allocate(regridPolynomialToUniform(NxPotentials, Nx))
-    call polynomialInterpolationMatrix(Nx, NxPotentials, x, xPotentials, &
-         expx2, exp(-xPotentials*xPotentials), regridPolynomialToUniform)
+    if (RHSMode .ne. 3) then
+       call polynomialInterpolationMatrix(Nx, NxPotentials, x, xPotentials, &
+            expx2, exp(-xPotentials*xPotentials), regridPolynomialToUniform)
+    else
+       regridPolynomialToUniform = zero
+    end if
 
     ddx_preconditioner = 0
     select case (preconditioner_x)
@@ -576,6 +600,10 @@
     select case (RHSMode)
     case (2)
        transportMatrixSize = 3
+       allocate(transportMatrix(transportMatrixSize, transportMatrixSize))
+       transportMatrix = 0
+    case (3)
+       transportMatrixSize = 2
        allocate(transportMatrix(transportMatrixSize, transportMatrixSize))
        transportMatrix = 0
     end select

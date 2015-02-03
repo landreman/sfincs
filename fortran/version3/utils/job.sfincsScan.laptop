@@ -1,1 +1,1 @@
-mpiexec -n 2 ~/sfincs/fortran/nonlinear/sfincs &> output
+mpiexec -n 2 ~/sfincs/fortran/version3/sfincs &> output

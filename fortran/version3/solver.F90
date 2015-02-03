@@ -198,8 +198,8 @@ module solver
 
        ! End of RHSMode=1 case, which handles a single linear or nonlinear solve.
 
-    case (2)
-       ! RHSMode = 2:
+    case (2,3)
+       ! RHSMode = 2 or 3:
        ! Do a linear solve for multiple right-hand sides to get the transport matrix.
 
        !  Set f=0:
@@ -238,7 +238,13 @@ module solver
 
        end if
 
-       numRHSs = 3
+       select case (RHSMode)
+       case (2)
+          numRHSs = 3
+       case (3)
+          numRHSs = 2
+       end select
+
        do whichRHS = 1,numRHSs
           if (masterProc) then
              print *,"################################################################"
@@ -247,20 +253,37 @@ module solver
           end if
 
           ! To get a transport matrix, change the equilibrium gradients here.
-          select case (whichRHS)
-          case (1)
-             dnHatdpsiHats = 1
-             dTHatdpsiHats = 0
-             EParallelHat = 0
+          select case (RHSMode)
           case (2)
-             ! The next 2 lines ensure (1/n)*dn/dpsi + (3/2)*dT/dpsi = 0 while dT/dpsi is nonzero.
-             dnHatdpsiHats = (3/two)*nHats(1)*THats(1)
-             dTHatdpsiHats = 1
-             EParallelHat = 0
+             ! Energy-integrated transport matrix
+             select case (whichRHS)
+             case (1)
+                dnHatdpsiHats = 1
+                dTHatdpsiHats = 0
+                EParallelHat = 0
+             case (2)
+                ! The next 2 lines ensure (1/n)*dn/dpsi + (3/2)*dT/dpsi = 0 while dT/dpsi is nonzero.
+                dnHatdpsiHats = (3/two)*nHats(1)*THats(1)
+                dTHatdpsiHats = 1
+                EParallelHat = 0
+             case (3)
+                dnHatdpsiHats = 0
+                dTHatdpsiHats = 0
+                EParallelHat = 1
+             end select
+
           case (3)
-             dnHatdpsiHats = 0
-             dTHatdpsiHats = 0
-             EParallelHat = 1
+             ! Monoenergetic transport matrix
+             select case (whichRHS)
+             case (1)
+                dnHatdpsiHats = 1
+                dTHatdpsiHats = 0
+                EParallelHat = 0
+             case (2)
+                dnHatdpsiHats = 0
+                dTHatdpsiHats = 0
+                EParallelHat = 1
+             end select
           end select
 
           ! To compute the right-hand side, we note the following:

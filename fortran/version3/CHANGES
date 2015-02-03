@@ -1,28 +1,32 @@
-The are a number of differences between this "nonlinear" version of SFINCS and the previous versions ("singleSpecies" and "multiSpecies"):
+The are a number of differences between Version 3 of SFINCS and the previous versions ("singleSpecies" and "multiSpecies"):
 
 * There was no quasineutrality condition in the main matrix of previous versions.  In the new version, you have the option of including the quasineutrality equation by setting includePhi1=.true. This option also includes in the kinetic equation terms involving Phi1, the variation of the electrostatic potential on a flux surface.  When includePhi1=.true., there are some new diagnostic output quantities available in sfincsOutput.h5.  For example, radial fluxes are computed using either just the radial magnetic drift, just the radial ExB drift, and both drifts.  If you set includePhi1=.false., the system matrix remains exactly as it was in the multiSpecies version.
 
 * includePhi1=.true. causes changes to the radial fluxes. See the notes ??? in doc/
 
-* Nonlinear terms.
+* The solver has been reorganized so that in principle, nonlinear terms can be included in the kinetic equation.  Therefore, PETSc's nonlinear equation solver SNES is called, and SFINCS computes a Jacobian matrix and residual.  No nonlinear terms have been implemented yet.  The ability to solve nonlinear equations is motivated by recent papers of Garcia-Regana et al, who found some nonlinear terms to be important for stellarator impurity transport.
 
-* In previous versions, Boozer coordinates were hard-wired into the code.  In the new version, any flux coordinates (psi, theta, zeta) may be used, including Boozer coordinates, native VMEC coordinates, or even non-straight-field-line coordinates like Miller geometry.  Consequently there are new internal arrays for the covariant and contravariant components of the magnetic field.
+* In previous versions, Boozer coordinates were hard-wired into the code.  In the new version, any flux coordinates (psi, theta, zeta) may be used, including Boozer coordinates, native VMEC coordinates, or even non-straight-field-line coordinates.  Consequently there are new internal arrays for the covariant and contravariant components of the magnetic field (BHat_sub_theta, BHat_sup_theta, etc) and the inverse Jacobian (grad psi dot grad theta cross grad zeta, called DHat).  When non-Boozer coordinates are used, SFINCS computes the Boozer quantities GHat and IHat.
 
-* It is now possible to directly read a VMEC wout file, without first running JMC to produce a .bc file. VMEC files are loaded by selecting geometryScheme=5.  You have the option of picking a specific flux surface in the VMEC grid (either the full grid or the half grid), or interpolating to any intermediate flux surface.
+* It is now possible to directly read a VMEC wout file, without first running JMC to produce a .bc file. VMEC files are loaded by selecting geometryScheme=5.  You have the option of picking a specific flux surface in the VMEC grid (either the full grid or the half grid), or interpolating to any intermediate flux surface.  Both ASCII and netCDF format wout files can be read.  Thanks to Joachim Geiger for providing much of the code for this VMEC interface.
 
-* Radial coordinates.
+* Associated with this VMEC interface, it is now necessary to link with the netCDF library.  In the future we might want to make netCDF optional.
 
-* Magnetic drifts
+* In Version 3, there are 4 radial coordinates available: psiHat, psiN, rHat, and rN.  psiHat is the toroidal flux (over 2pi) normalized to RBar^2 * BBar. psiN is the toroidal flux normalized to be 1 at the last close flux surface.  rN = sqrt(psiN).  rHat = rN * aHat, where aHat is some measure of the minor radius.  You can choose to specify the flux surface for the calculation using any of these 4 coordinates, depending on the new parameter inputRadialCoordinate.  You can also choose to specify the input gradients (of density, temperature, and electrostatic) as derivatives with respect to any of the 4 radial coordinates, depending on the new parameter inputRadialCoordinateForGradients.  The values of inputRadialCoordinate and inputRadialCoordinateForGradients need not be the same.  In the output file, the flux surface label, gradients, and fluxes are given with respect to all 4 radial coordinates, regardless of inputRadialCoordinate and inputRadialCoordinateForGradients.
 
-* A new term related to temperature equilibration can be included in the kinetic equation by setting includeTemperatureEquilibrationTerm=.true.  This term is C_{ab}[f_{Ma}, f_{Mb}], i.e. the inter-species linearized collision operator acting on the Maxwellians rather than on the non-Maxwellian distribution function.  This term is only nonzero when using the Fokker-Planck operator with >1 species where the temperatures of the species are unequal.  This term really should be present in the kinetic equation, but its effect is probably small in many cases since it will be small in the mass ratio.
+* Some new arrays involving derivatives of B are now allocated, with the goal of eventually including magnetic drifts.  These arrays include BHat_sub_psi, dBHat_sub_psi_dtheta, dBHat_sub_theta_dzeta, etc. The magnetic drift terms are not yet implemented however.
+
+* A new term related to temperature equilibration can be included in the kinetic equation by setting includeTemperatureEquilibrationTerm=.true.  This term is C_{ab}[f_{Ma}, f_{Mb}], i.e. the inter-species linearized collision operator acting on the Maxwellians rather than on the non-Maxwellian distribution function.  This term is only nonzero when using the Fokker-Planck operator with >1 species where the temperatures of the species are unequal.  This term really should be present in the kinetic equation, but its effect is probably small in many cases since its size is proportional to the mass ratio.
 
 * The various utilities for scans and plotting are now consistently written in python, instead of a mixture of python/ruby/matlab.  The plotting routines rely on the python packages numpy, h5py, and matplotlib.
 
-* The functionality for scans (convergence scans, Er scans, etc) within the fortran code itself has been removed.  This functionality never worked well anyway.  Scans are now run using the python script utils/sfincsScan.  Scans are plotted by calling utils/sfincsScanPlot.
+* The functionality for scans (convergence scans, Er scans, etc) within the fortran code itself has been removed.  This functionality never worked well anyway.  Scans are now run using the python script utils/sfincsScan.  Scans are plotted by calling utils/sfincsScanPlot.  sfincsScan calls the script sfincsScan_N, and sfincsScanPlot calls the script sfincsScanPlot_N, where N is the value of the scanType variable in input.namelist.
 
-* !ss in namelist file
+* Associated with the aforementioned changes to the way parameter scans are done, the parameters for scans (NErs, NthetaNumRuns, NthetaMaxFactor, etc.) must now appear behind the symbol !ss in the input.namelist files.  Since this symbol begins with !, these variables are not read into the fortran code; the variables are only recognized by sfincsScan and sfincsScan_x.  The location of the !ss variables within the input.namelist file is unimportant.
 
 * In the sfincsOutput.h5 file, variables are no longer stored in a "/run  1/" group.  (These groups existed only for the fortran-based scans, which are now removed.)  Thus, for example, the variable previously stored in "/run  1/BHat" is now stored in "/BHat".
+
+* Some variables in sfincsOutput.h5, those corresponding to outputs rather than inputs of the calculation, have an extra dimension corresponding to the nonlinear iteration. For example, the heat flux is saved at each iteration of the nonlinear solver SNES.  There is no iteration dimension for quantities that do not change with each iteration, such as BHat.
 
 * Some variables in input.namelist have moved or changed.  Now psiAHat is located in the geometry namelist rather than the physicsParameters namelist.  The "flowControl" namelist has been renamed "general".
 
@@ -38,6 +42,6 @@ The are a number of differences between this "nonlinear" version of SFINCS and t
 
 * In previous versions, matrix assembly was parallelized only in the theta coordinate.  Now it is parallelized in both theta and zeta.  Thus, some loops in populateMatrix.F90 now have "do izeta=izetaMin,izetaMax" instead of "do izeta = 1,Nzeta".
 
-* Code in a new validateInput.F890file performs a bunch of tests to make sure in the input parameters make sense.
+* Code in a new validateInput.F90 file performs a bunch of tests to make sure in the input parameters make sense.
 
 * In the sfincsOutput.h5 file, the input gradients now have the same variable names as in input.namelist and in the fortran code.  For example, "d(THat)d(psi_N)" is now named "dTHatdpsiN".

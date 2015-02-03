@@ -89,7 +89,7 @@ for directory in directories:
        print "Error! Invalid inputRadialCoordinateForGradients."
        exit(1)
 
-    if RHSMode != 1 and RHSMode != 2:
+    if RHSMode != 1 and RHSMode != 2 and RHSMode != 3:
         print "Error! sfincsScanPlot is not yet set up for RHSMode = "+str(RHSMode)
         exit(1)
 
@@ -99,13 +99,13 @@ for directory in directories:
     particleFlux_vm = f["particleFlux_vm_psiHat"][()]
     heatFlux_vm = f["heatFlux_vm_psiHat"][()]
     elapsedTime = f["elapsed time (s)"][()]
-    if RHSMode==2:
+    if RHSMode>1:
        transportMatrix = f["transportMatrix"][()]
     if includePhi1:
         particleFlux_vd = f["particleFlux_vd_psiHat"][()]
         heatFlux_vd = f["heatFlux_vd_psiHat"][()]
 
-    if RHSMode == 2:
+    if RHSMode > 1:
        results = []
        for icol in range(transportMatrix.shape[1]):
           for irow in range(transportMatrix.shape[0]):
@@ -147,7 +147,7 @@ for Er in Ers_sorted:
  
 outputs_array = numpy.array(outputs_sorted)
 
-if RHSMode==2:
+if RHSMode > 1:
    yAxisLabels=[]
    numQuantities = transportMatrix.shape[0]*transportMatrix.shape[1]
    for irow in range(transportMatrix.shape[0]):

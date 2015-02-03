@@ -19,9 +19,9 @@ subroutine validateInput()
      stop
   end if
   
-  if (RHSMode>2) then
+  if (RHSMode>3) then
      if (masterProc) then
-        print *,"Error! RHSMode must be no more than 2."
+        print *,"Error! RHSMode must be no more than 3."
      end if
      stop
   end if
@@ -39,6 +39,122 @@ subroutine validateInput()
      end if
      stop
   end if
+
+  if (RHSMode == 3) then
+     ! Computing monoenergetic transport coefficients.
+     ! Make sure the code is configured to use the DKES form of the kinetic equation.
+
+     if (nonlinear) then
+        if (masterProc) then
+           print *,line
+           print *,line
+           print *,"**   WARNING: You asked for RHSMode=3 (monoenergetic transport matrix) with nonlinear = .true., which is incompatble."
+           print *,"**            Setting nonlinear = .false."
+           print *,line
+           print *,line
+        end if
+        nonlinear = .false.
+     end if
+
+     if (Nx > 1) then
+        if (masterProc) then
+           print *,line
+           print *,line
+           print *,"**   WARNING: You asked for RHSMode=3 (monoenergetic transport matrix) with Nx > 1, which is incompatble."
+           print *,"**            Setting Nx = 1."
+           print *,line
+           print *,line
+        end if
+        Nx = 1
+     end if
+
+     if (.not. useDKESExBDrift) then
+        if (masterProc) then
+           print *,line
+           print *,line
+           print *,"**   WARNING: You asked for RHSMode=3 (monoenergetic transport matrix) with useDKESExBDrift = .false., which is incompatble."
+           print *,"**            Setting useDKESExBDrift = .true."
+           print *,line
+           print *,line
+        end if
+        useDKESExBDrift = .true.
+     end if
+
+     if (includeXDotTerm) then
+        if (masterProc) then
+           print *,line
+           print *,line
+           print *,"**   WARNING: You asked for RHSMode=3 (monoenergetic transport matrix) with includeXDotTerm = .true., which is incompatble."
+           print *,"**            Setting includeXDotTerm = .false."
+           print *,line
+           print *,line
+        end if
+        includeXDotTerm = .false.
+     end if
+
+     if (includeElectricFieldTermInXiDot) then
+        if (masterProc) then
+           print *,line
+           print *,line
+           print *,"**   WARNING: You asked for RHSMode=3 (monoenergetic transport matrix) with includeElectricFieldTermInXiDot = .true., which is incompatble."
+           print *,"**            Setting includeElectricFieldTermInXiDot = .false."
+           print *,line
+           print *,line
+        end if
+        includeElectricFieldTermInXiDot = .false.
+     end if
+
+     if (NSpecies > 1) then
+        if (masterProc) then
+           print *,line
+           print *,line
+           print *,"**   WARNING: You asked for RHSMode=3 (monoenergetic transport matrix) with >1 species, which is incompatble."
+           print *,"**            Ignoring all species after the first."
+           print *,line
+           print *,line
+        end if
+        Nspecies = 1
+     end if
+
+     if (includePhi1) then
+        if (masterProc) then
+           print *,line
+           print *,line
+           print *,"**   WARNING: You asked for RHSMode=3 (monoenergetic transport matrix) with includePhi1 = .true., which is incompatble."
+           print *,"**            Setting includePhi1 = .false."
+           print *,line
+           print *,line
+        end if
+        includePhi1 = .false.
+     end if
+
+     if (collisionOperator .ne. 1) then
+        if (masterProc) then
+           print *,line
+           print *,line
+           print *,"**   WARNING: You asked for RHSMode=3 (monoenergetic transport matrix) with collisionOperator .ne. 1, which is incompatble."
+           print *,"**            Setting collisionOperator = 1."
+           print *,line
+           print *,line
+        end if
+        collisionOperator = 1
+     end if
+
+     if (includeTemperatureEquilibrationTerm) then
+        if (masterProc) then
+           print *,line
+           print *,line
+           print *,"**   WARNING: You asked for RHSMode=3 (monoenergetic transport matrix) with includeTemperatureEquilibrationTerm = .true., which is incompatble."
+           print *,"**            Setting temperatureEquilibrationTerm = .false."
+           print *,line
+           print *,line
+        end if
+        includeTemperatureEquilibrationTerm = .false.
+     end if
+
+
+  end if
+
   
   if (saveMatlabOutput .and. Nspecies*Ntheta*Nzeta*Nxi*Nx > 5000 .and. masterProc) then
      print *,line
@@ -117,7 +233,7 @@ subroutine validateInput()
   do ispecies = 1,Nspecies
      chargeDensity = chargeDensity + nHats(ispecies)*Zs(ispecies)
   end do
-  ! More needed here...
+  ! More needed here...  Ensure charge neutrality.
 
   ! physicsParameters namelist:
 
@@ -223,11 +339,12 @@ subroutine validateInput()
      stop
   end if
 
-  if (masterProc) then
+  if (masterProc .and. (RHSMode .ne. 3)) then
      if (Nx < 4) then
         print *,line
         print *,line
         print *,"**   WARNING: You almost certainly should have Nx at least 4."
+        print *,"              (The exception is when RHSMode = 3, in which case Nx = 1.)"
         print *,line
         print *,line
      elseif (Nx > 20) then

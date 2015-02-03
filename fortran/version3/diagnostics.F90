@@ -624,6 +624,27 @@
           end select
        end if
 
+       if (RHSMode==3) then
+          ! Monoenergetic transport matrix
+          ispecies = 1
+          nHat = nHats(ispecies)
+          THat = THats(ispecies)
+          mHat = mHats(ispecies)
+          sqrtTHat = sqrt(THat)
+          sqrtMHat = sqrt(mHat)
+
+          ! There are a bunch of overall factors in the matrix elements below which need to be worked out:
+          select case (whichRHS)
+          
+          case (1)
+             transportMatrix(1,1) = particleFlux_vm_psiHat(ispecies) ! * ???
+             transportMatrix(2,1) = FSABFlow(ispecies) ! * ???
+          case (2)
+             transportMatrix(1,2) = particleFlux_vm_psiHat(ispecies) ! * ???
+             transportMatrix(2,2) = FSABFlow(ispecies) ! * ???
+          end select
+       end if
+
        call VecRestoreArrayF90(solutionWithFullFOnProc0, solutionWithFullFArray, ierr)
        call VecRestoreArrayF90(solutionWithDeltaFOnProc0, solutionWithDeltaFArray, ierr)
        call VecRestoreArrayF90(f0OnProc0, f0Array, ierr)
