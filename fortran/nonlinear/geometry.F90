@@ -1029,8 +1029,13 @@ contains
     PetscScalar, dimension(:), allocatable :: dr2, psiN_full, psiN_half
     integer :: i, j, index, isurf, itheta, izeta, m, n
     PetscScalar :: min_dr2, angle, sin_angle, cos_angle, b, b00, temp, dphi
+    integer :: numSymmetricModesIncluded, numAntisymmetricModesIncluded
 
     ! This subroutine is written so that only psiN_wish is used, not the other *_wish quantities.
+
+    if (masterProc) then
+       print *,"Reading VMEC geometry from file ",trim(equilibriumFile)
+    end if
 
     ! --------------------------------------------------------------------------------
     ! Do some sanity checking to ensure the VMEC arrays have some expected properties.
@@ -1066,10 +1071,6 @@ contains
     ! --------------------------------------------------------------------------------
     ! End of sanity checks.
     ! --------------------------------------------------------------------------------
-
-    if (masterProc) then
-       print *,"Here comes phi from VMEC:",vmec%phi
-    end if
 
     allocate(psiN_full(vmec%ns))
     psiN_full = vmec%phi / (2*pi*psiAHat)
@@ -1175,18 +1176,12 @@ contains
        vmecRadialIndex_full(1) = vmec%ns-1
        vmecRadialIndex_full(2) = vmec%ns
        vmecRadialWeight_full(1) = zero
-       if (masterProc) then
-          print *,"case A"
-       end if
     else
        ! psiN is >= 0 and <1
        ! This is the most common case.
        vmecRadialIndex_full(1) = floor(psiN*(vmec%ns-1))+1
        vmecRadialIndex_full(2) = vmecRadialIndex_full(1) + 1
        vmecRadialWeight_full(1) = vmecRadialIndex_full(1) - psiN*(vmec%ns-one)
-       if (masterProc) then
-          print *,"case B"
-       end if
     end if
     vmecRadialWeight_full(2) = one - vmecRadialWeight_full(1)
     
@@ -1199,7 +1194,6 @@ contains
        ! We start at element 2 since element 1 is always 0 for quantities on the half grid.
        vmecRadialIndex_half(1) = 2
        vmecRadialIndex_half(2) = 3
-       ! Double-check this next line:
        vmecRadialWeight_half(1) = (psiN_half(2) - psiN) / (psiN_half(2) - psiN_half(1))
 
     elseif (psiN > psiN_half(vmec%ns-1)) then
@@ -1209,7 +1203,6 @@ contains
        end if
        vmecRadialIndex_half(1) = vmec%ns-1
        vmecRadialIndex_half(2) = vmec%ns
-       ! Double-check this next line:
        vmecRadialWeight_half(1) = (psiN_half(vmec%ns-1) - psiN) &
             / (psiN_half(vmec%ns-1) - psiN_half(vmec%ns-2))
 
@@ -1218,25 +1211,33 @@ contains
        vmecRadialIndex_half(1) = vmec%ns-1
        vmecRadialIndex_half(2) = vmec%ns
        vmecRadialWeight_half(1) = zero
-       if (masterProc) then
-          print *,"case 1"
-       end if
     else
        ! psiN is inside the half grid.
        ! This is the most common case.
        vmecRadialIndex_half(1) = floor(psiN*(vmec%ns-1) + 0.5)+1
+       if (vmecRadialIndex_half(1) < 2) then
+          ! This can occur sometimes due to roundoff error.
+          vmecRadialIndex_half(1) = 2
+       end if
        vmecRadialIndex_half(2) = vmecRadialIndex_half(1) + 1
        vmecRadialWeight_half(1) = vmecRadialIndex_half(1) - psiN*(vmec%ns-one) - (0.5d+0)
-       if (masterProc) then
-          print *,"case 2"
-       end if
     end if
     vmecRadialWeight_half(2) = one-vmecRadialWeight_half(1)
 
-    print *,"vmecRadialIndex_full:",vmecRadialIndex_full
-    print *,"vmecRadialWeight_full:",vmecRadialWeight_full
-    print *,"vmecRadialIndex_half:",vmecRadialIndex_half
-    print *,"vmecRadialWeight_half:",vmecRadialWeight_half
+    if (masterProc) then
+!!$       print *,"vmecRadialIndex_full:",vmecRadialIndex_full
+!!$       print *,"vmecRadialWeight_full:",vmecRadialWeight_full
+!!$       print *,"vmecRadialIndex_half:",vmecRadialIndex_half
+!!$       print *,"vmecRadialWeight_half:",vmecRadialWeight_half
+       if (abs(vmecRadialWeight_half(1)) < 1e-14) then
+          print "(a,i3,a,i3,a)"," Using radial index ",vmecRadialIndex_half(2)," of ",vmec%ns," from vmec's half mesh."
+       elseif (abs(vmecRadialWeight_half(2)) < 1e-14) then
+          print "(a,i3,a,i3,a)"," Using radial index ",vmecRadialIndex_half(1)," of ",vmec%ns," from vmec's half mesh."
+       else
+          print "(a,i3,a,i3,a,i3,a)", " Interpolating using radial indices ",vmecRadialIndex_half(1)," and ",vmecRadialIndex_half(2),&
+               " of ",vmec%ns," from vmec's half mesh."
+       end if
+    end if
 
     iota = vmec%iotas(vmecRadialIndex_half(1)) * vmecRadialWeight_half(1) &
          + vmec%iotas(vmecRadialIndex_half(2)) * vmecRadialWeight_half(2)
@@ -1263,6 +1264,9 @@ contains
     ! loop over all the VMEC Fourier modes to build the SFINCS arrays.
     ! --------------------------------------------------------------------------------
 
+    numSymmetricModesIncluded = 0
+    numAntisymmetricModesIncluded = 0
+
     ! We take the following approach:
     ! Include a given (m,n) mode of |B|, B sub u, B sup u, etc
     ! if and only if that (m,n) mode of |B| (normalized to B00) is > min_Bmn_to_load.
@@ -1278,10 +1282,11 @@ contains
                + vmec%bmnc(n,m,vmecRadialIndex_half(2)) * vmecRadialWeight_half(2)
 
           if (abs(b/b00) >= min_Bmn_to_load) then
-             if (masterProc) then
-                print *,"Including mode with m = ",m,", n = ",n
-             end if
              ! This (m,n) mode is sufficiently large to include.
+             !if (masterProc) then
+             !   print *,"Including mode with m = ",m,", n = ",n
+             !end if
+             numSymmetricModesIncluded = numSymmetricModesIncluded + 1
              do itheta = 1,Ntheta
                 do izeta = 1,Nzeta
                    angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
@@ -1331,9 +1336,9 @@ contains
                 end do
              end do
           else
-             if (masterProc) then
-                print *,"NOT including mode with m = ",m,", n = ",n
-             end if
+             !if (masterProc) then
+             !   print *,"NOT including mode with m = ",m,", n = ",n
+             !end if
           end if
 
           ! -----------------------------------------------------
@@ -1347,10 +1352,11 @@ contains
                   + vmec%bmns(n,m,vmecRadialIndex_half(2)) * vmecRadialWeight_half(2)
              
              if (abs(b/b00) >= min_Bmn_to_load) then
-                if (masterProc) then
-                   print *,"Including stellarator-asymmetric mode with m = ",m,", n = ",n
-                end if
                 ! This (m,n) mode is sufficiently large to include.
+                !if (masterProc) then
+                !   print *,"Including stellarator-asymmetric mode with m = ",m,", n = ",n
+                !end if
+                numAntisymmetricModesIncluded = numAntisymmetricModesIncluded + 1
                 do itheta = 1,Ntheta
                    do izeta = 1,Nzeta
                       angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
@@ -1398,13 +1404,22 @@ contains
                    end do
                 end do
              else
-                if (masterProc) then
-                   print *,"NOT including mode with m = ",m,", n = ",n
-                end if
+                !if (masterProc) then
+                !   print *,"NOT including mode with m = ",m,", n = ",n
+                !end if
              end if
           end if
        end do
     end do
+
+    if (masterProc) then
+       print "(a,i4,a,i4,a)"," Including ",numSymmetricModesIncluded," of ",(2*vmec%ntor+1)*vmec%mpol," stellarator-symmetric modes from the VMEC file."
+       if (vmec%iasym > 0) then
+          print "(a,i4,a,i4,a)"," Including ",numAntisymmetricModesIncluded," of ",(2*vmec%ntor+1)*vmec%mpol," stellarator-antisymmetric modes from the VMEC file."
+       else
+          print *,"Equilibrium is stellarator-symmetric."
+       end if
+    end if
 
     ! Convert Jacobian to inverse Jacobian:
     DHat = one / DHat

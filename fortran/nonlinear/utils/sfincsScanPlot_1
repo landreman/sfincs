@@ -183,7 +183,7 @@ else:
             yAxisLabels.append("FSABFlow\n(species "+str(i)+")")
             yAxisLabels.append("particleFlux\nvm_psiHat\n(species "+str(i)+")")
             yAxisLabels.append("heatFlux\nvm_psiHat\n(species "+str(i)+")")
-         AxisLabels.append("FSABjHat")
+         yAxisLabels.append("FSABjHat")
             
 parametersToVary = []
 abscissae = []

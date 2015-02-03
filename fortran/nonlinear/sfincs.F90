@@ -30,7 +30,7 @@ program sfincs
   if (masterProc) then
      print *,"****************************************************************************"
      print *,"SFINCS: Stellarator Fokker-Plank Iterative Neoclassical Conservative Solver"
-     print *,"Nonlinear version."
+     print *,"Version 3"
 #if defined(PETSC_USE_REAL_SINGLE)
      print *,"Using single precision."
 #else

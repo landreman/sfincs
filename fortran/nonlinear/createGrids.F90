@@ -102,18 +102,53 @@
     ! Each processor is responsible for building the rows of the matrix and rhs corresponding
     ! to its ithetaMin:ithetaMax and izetaMin:izetaMax, and each processor is resposible for all columns of the matrix.
 
-    ! PETSc sometimes gives an error for very small (theta,zeta) grids if there are more procs than Ntheta*Nzeta.
-    ! Perhaps I should fix this.
+    ! In principle we could distribute in both theta and zeta at the same time.
+    ! However, this would lead to negligible increase in speed, since the bottleneck is
+    ! not matrix construction but rather the solve, which is parallelized in a completely different
+    ! way (determined internally by superlu_dist or mumps.)
+    if (Ntheta > Nzeta) then
+       ! Distribute in theta but not in zeta
 
-    ! Assign a range of theta and zeta indices to each processor.
-    ! This is done by creating a PETSc DM that is not actually used for anything else.
-    call DMDACreate2d(PETSC_COMM_WORLD, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX, &
-         Ntheta, Nzeta, PETSC_DECIDE, PETSC_DECIDE, 1, 0, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, myDM, ierr)
+       ! Assign a range of theta indices to each processor.
+       ! This is done by creating a PETSc DM that is not actually used for anything else.
+       call DMDACreate1d(MPIComm, DM_BOUNDARY_NONE, Ntheta, 1, 0, PETSC_NULL_INTEGER, myDM, ierr)
 
-    call DMDAGetCorners(myDM, ithetaMin, izetaMin, PETSC_NULL_INTEGER, &
-         localNtheta, localNzeta, PETSC_NULL_INTEGER, ierr)
+       call DMDAGetCorners(myDM, ithetaMin, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, &
+            localNtheta, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr)
 
-    call DMDestroy(myDM, ierr)
+       call DMDestroy(myDM, ierr)
+
+       izetaMin = 0
+       izetaMax = Nzeta-1
+       localNzeta = Nzeta
+    else
+       ! Distribute in zeta but not in theta
+
+       ! Assign a range of zeta indices to each processor.
+       ! This is done by creating a PETSc DM that is not actually used for anything else.
+       call DMDACreate1d(MPIComm, DM_BOUNDARY_NONE, Nzeta, 1, 0, PETSC_NULL_INTEGER, myDM, ierr)
+
+       call DMDAGetCorners(myDM, izetaMin, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, &
+            localNzeta, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr)
+
+       call DMDestroy(myDM, ierr)
+       ithetaMin = 0
+       ithetaMax = Ntheta-1
+       localNtheta = Ntheta
+    end if
+
+    ! Below is some code that breaks up the theta and zeta ranges at the same time.
+    ! I'm commented it out because PETSc kept giving an error when the number of
+    ! procs was large compared to Ntheta and Nzeta.
+!!$    ! Assign a range of theta and zeta indices to each processor.
+!!$    ! This is done by creating a PETSc DM that is not actually used for anything else.
+!!$    call DMDACreate2d(PETSC_COMM_WORLD, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX, &
+!!$         Ntheta, Nzeta, PETSC_DECIDE, PETSC_DECIDE, 1, 0, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, myDM, ierr)
+!!$
+!!$    call DMDAGetCorners(myDM, ithetaMin, izetaMin, PETSC_NULL_INTEGER, &
+!!$         localNtheta, localNzeta, PETSC_NULL_INTEGER, ierr)
+!!$
+!!$    call DMDestroy(myDM, ierr)
 
     ! Switch to 1-based indices:
     ithetaMin = ithetaMin + 1
