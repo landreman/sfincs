@@ -67,6 +67,7 @@ else:
 #if jobfileRequired:
 if not os.path.isfile(jobFilename):
     print "Error! A "+jobFilename+" file must be present in the directory from which you call sfincsScan (even for systems with no queue)."
+    print "Examples are available in /fortran/version3/utils/job.sfincsScan.xxx"
     exit(1)
 
 # Load the input file:
@@ -119,10 +120,11 @@ def logspace_odd(min,max,nn):
 
 def readScanVariable(varName, intOrFloat):
     # This subroutine reads the special scan commands in the input.namelist that are hidden from fortran:
+    varName = varName.lower()
     returnValue = None
     numValidLines = 0
     for line in inputFile:
-        line2 = line.strip()
+        line2 = line.strip().lower()
         # We need enough characters for the comment code, varName, =, and value: 
         if len(line2)<len(commentCode)+3:
             continue
@@ -182,10 +184,11 @@ def readScanVariable(varName, intOrFloat):
 
 def readVariable(varName, intOrFloat):
     # This function reads normal fortran variables from the input.namelist file.
+    varName = varName.lower()
     returnValue = None
     numValidLines = 0
     for line in inputFile:
-        line3 = line.strip()
+        line3 = line.strip().lower()
         if len(line3)<1:
             continue
 

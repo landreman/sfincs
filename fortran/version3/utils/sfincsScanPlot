@@ -22,10 +22,11 @@ with open(inputFilename, 'r') as f:
 
 def readScanVariable(varName, intOrFloat):
     # This subroutine reads the special scan commands in the input.namelist that are hidden from fortran:
+    varName = varName.lower()
     returnValue = None
     numValidLines = 0
     for line in inputFile:
-        line2 = line.strip()
+        line2 = line.strip().lower()
         # We need enough characters for the comment code, varName, =, and value: 
         if len(line2)<len(commentCode)+3:
             continue
