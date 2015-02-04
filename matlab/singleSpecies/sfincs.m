@@ -588,25 +588,31 @@ switch programMode
         linespecs = {'.-b','.-r','.-g','.:c','.-m','.-r','.:k','.:b','.-m'};
         
         if NxConverged == 1 %Monoenergetic calculation
-          parametersToVary = {'N\theta','N\zeta','NL','N\xi','NxPotentialsPerVth','-log_{10}tol'};
-          abscissae = {Nthetas, Nzetas, NLs, Nxis, NxPotentialsPerVths, log10tols};
-          convergeds = {NthetaConverged, NzetaConverged, NLConverged, NxiConverged, NxPotentialsPerVthConverged, log10tolConverged};
+          parametersToVary = {'N\theta','N\zeta','N\xi','-log_{10}tol'};
+          abscissae = {Nthetas, Nzetas, Nxis, log10tols};
+          convergeds = {NthetaConverged, NzetaConverged, NxiConverged, log10tolConverged};
+          numQuantities = numel(quantitiesToRecord);
+          numParameters = numel(parametersToVary);
+          quantities = cell(numParameters,1);
+          quantities{1} = zeros(numel(Nthetas), numQuantities);
+          quantities{2} = zeros(numel(Nzetas), numQuantities);
+          quantities{3} = zeros(numel(Nxis), numQuantities);
+          quantities{4} = zeros(numel(log10tols), numQuantities);
         else  
           parametersToVary = {'N\theta','N\zeta','NL','N\xi','Nx','NxPotentialsPerVth','-log_{10}tol'};
           abscissae = {Nthetas, Nzetas, NLs, Nxis, Nxs, NxPotentialsPerVths, log10tols};
           convergeds = {NthetaConverged, NzetaConverged, NLConverged, NxiConverged, NxConverged, NxPotentialsPerVthConverged, log10tolConverged};
-         end
-        
-        numQuantities = numel(quantitiesToRecord);
-        numParameters = numel(parametersToVary);
-        quantities = cell(numParameters,1);
-        quantities{1} = zeros(numel(Nthetas), numQuantities);
-        quantities{2} = zeros(numel(Nzetas), numQuantities);
-        quantities{3} = zeros(numel(NLs), numQuantities);
-        quantities{4} = zeros(numel(Nxis), numQuantities);
-        quantities{5} = zeros(numel(Nxs), numQuantities);
-        quantities{6} = zeros(numel(NxPotentialsPerVths), numQuantities);
-        quantities{7} = zeros(numel(log10tols), numQuantities);
+          numQuantities = numel(quantitiesToRecord);
+          numParameters = numel(parametersToVary);
+          quantities = cell(numParameters,1);
+          quantities{1} = zeros(numel(Nthetas), numQuantities);
+          quantities{2} = zeros(numel(Nzetas), numQuantities);
+          quantities{3} = zeros(numel(NLs), numQuantities);
+          quantities{4} = zeros(numel(Nxis), numQuantities);
+          quantities{5} = zeros(numel(Nxs), numQuantities);
+          quantities{6} = zeros(numel(NxPotentialsPerVths), numQuantities);
+          quantities{7} = zeros(numel(log10tols), numQuantities);
+        end
         parameterScanNum = 1;
         
         % Vary Ntheta, keeping other numerical parameters fixed.
@@ -659,30 +665,30 @@ switch programMode
         end
         parameterScanNum = parameterScanNum+1;
         
-        % Vary NL, keeping other numerical parameters fixed.
-        Nzeta = NzetaConverged;
-        Ntheta=NthetaConverged;
-        Nxi=NxiConverged;
-        Nx=NxConverged;
-        NxPotentialsPerVth = NxPotentialsPerVthConverged;
-        tol = 10^(-log10tolConverged);
-        for iii = 1:numel(NLs)
+        if Nx~=1 %Not for the mono-energetic calculations
+          % Vary NL, keeping other numerical parameters fixed.
+          Nzeta = NzetaConverged;
+          Ntheta=NthetaConverged;
+          Nxi=NxiConverged;
+          Nx=NxConverged;
+          NxPotentialsPerVth = NxPotentialsPerVthConverged;
+          tol = 10^(-log10tolConverged);
+          for iii = 1:numel(NLs)
             NL=NLs(iii);
             solveDKE()
             switch RHSMode
-                case 1
-                    quantities{parameterScanNum}(iii,1)=FSAFlow;
-                    quantities{parameterScanNum}(iii,2)=particleFlux;
-                    quantities{parameterScanNum}(iii,3)=momentumFlux;
-                    quantities{parameterScanNum}(iii,4)=heatFlux;
-                    quantities{parameterScanNum}(iii,5)=NTV;
-                case 2
-                    quantities{parameterScanNum}(iii,:)=reshape(transportMatrix,[9,1]);
-                case 3
-                    quantities{parameterScanNum}(iii,:)=reshape(transportCoeffs,[4,1]);
+             case 1
+              quantities{parameterScanNum}(iii,1)=FSAFlow;
+              quantities{parameterScanNum}(iii,2)=particleFlux;
+              quantities{parameterScanNum}(iii,3)=momentumFlux;
+              quantities{parameterScanNum}(iii,4)=heatFlux;
+              quantities{parameterScanNum}(iii,5)=NTV;
+             case 2
+              quantities{parameterScanNum}(iii,:)=reshape(transportMatrix,[9,1]);
             end
+          end
+          parameterScanNum = parameterScanNum+1;
         end
-        parameterScanNum = parameterScanNum+1;
         
         % Vary Nxi, keeping other numerical parameters fixed.
         Ntheta=NthetaConverged;
@@ -710,55 +716,53 @@ switch programMode
         parameterScanNum = parameterScanNum+1;
         
         
-        % Vary Nx, keeping other numerical parameters fixed.
-        Ntheta=NthetaConverged;
-        Nzeta = NzetaConverged;
-        NL=NLConverged;
-        Nxi=NxiConverged;
-        NxPotentialsPerVth = NxPotentialsPerVthConverged;
-        tol = 10^(-log10tolConverged);
-        for iii = 1:numel(Nxs)
+        if Nx~=1 %Not for the mono-energetic calculations
+          % Vary Nx, keeping other numerical parameters fixed.
+          Ntheta=NthetaConverged;
+          Nzeta = NzetaConverged;
+          NL=NLConverged;
+          Nxi=NxiConverged;
+          NxPotentialsPerVth = NxPotentialsPerVthConverged;
+          tol = 10^(-log10tolConverged);
+          for iii = 1:numel(Nxs)
             Nx = Nxs(iii);
             solveDKE()
             switch RHSMode
-                case 1
-                    quantities{parameterScanNum}(iii,1)=FSAFlow;
-                    quantities{parameterScanNum}(iii,2)=particleFlux;
-                    quantities{parameterScanNum}(iii,3)=momentumFlux;
-                    quantities{parameterScanNum}(iii,4)=heatFlux;
-                    quantities{parameterScanNum}(iii,5)=NTV;
-                case 2
-                    quantities{parameterScanNum}(iii,:)=reshape(transportMatrix,[9,1]);
-                case 3
-                    quantities{parameterScanNum}(iii,:)=reshape(transportCoeffs,[4,1]);
+             case 1
+              quantities{parameterScanNum}(iii,1)=FSAFlow;
+              quantities{parameterScanNum}(iii,2)=particleFlux;
+              quantities{parameterScanNum}(iii,3)=momentumFlux;
+              quantities{parameterScanNum}(iii,4)=heatFlux;
+              quantities{parameterScanNum}(iii,5)=NTV;
+             case 2
+              quantities{parameterScanNum}(iii,:)=reshape(transportMatrix,[9,1]);
             end
-        end
-        parameterScanNum = parameterScanNum+1;
-        
-        % Vary NxPotentialsPerVth, keeping other numerical parameters fixed.
-        Ntheta=NthetaConverged;
-        Nzeta = NzetaConverged;
-        NL=NLConverged;
-        Nxi=NxiConverged;
-        Nx=NxConverged;
-        tol = 10^(-log10tolConverged);
-        for iii = 1:numel(NxPotentialsPerVths)
+          end
+          parameterScanNum = parameterScanNum+1;
+          
+          % Vary NxPotentialsPerVth, keeping other numerical parameters fixed.
+          Ntheta=NthetaConverged;
+          Nzeta = NzetaConverged;
+          NL=NLConverged;
+          Nxi=NxiConverged;
+          Nx=NxConverged;
+          tol = 10^(-log10tolConverged);
+          for iii = 1:numel(NxPotentialsPerVths)
             NxPotentialsPerVth = NxPotentialsPerVths(iii);
             solveDKE()
             switch RHSMode
-                case 1
-                    quantities{parameterScanNum}(iii,1)=FSAFlow;
-                    quantities{parameterScanNum}(iii,2)=particleFlux;
-                    quantities{parameterScanNum}(iii,3)=momentumFlux;
-                    quantities{parameterScanNum}(iii,4)=heatFlux;
-                    quantities{parameterScanNum}(iii,5)=NTV;
-                case 2
-                    quantities{parameterScanNum}(iii,:)=reshape(transportMatrix,[9,1]);
-                case 3
-                    quantities{parameterScanNum}(iii,:)=reshape(transportCoeffs,[4,1]);
+             case 1
+              quantities{parameterScanNum}(iii,1)=FSAFlow;
+              quantities{parameterScanNum}(iii,2)=particleFlux;
+              quantities{parameterScanNum}(iii,3)=momentumFlux;
+              quantities{parameterScanNum}(iii,4)=heatFlux;
+              quantities{parameterScanNum}(iii,5)=NTV;
+             case 2
+              quantities{parameterScanNum}(iii,:)=reshape(transportMatrix,[9,1]);
             end
+          end
+          parameterScanNum = parameterScanNum+1;
         end
-        parameterScanNum = parameterScanNum+1;
         
         % Vary tol, keeping other numerical parameters fixed.
         Ntheta=NthetaConverged;
@@ -1496,7 +1500,11 @@ end
         if iteration>1
             fprintf('********************************************************************\n')
         end
-        fprintf('Ntheta = %d,  Nzeta = %d,  NL = %d,  Nxi = %d,  Nx = %d, NxPtentialsPerVth = %g, tol = %g\n',Ntheta, Nzeta,NL,Nxi,Nx,NxPotentialsPerVth,tol)
+        if Nx==1
+          fprintf('Ntheta = %d,  Nzeta = %d,  Nxi = %d,  tol = %g\n',Ntheta,Nzeta,Nxi,tol)          
+        else
+          fprintf('Ntheta = %d,  Nzeta = %d,  NL = %d,  Nxi = %d,  Nx = %d, NxPtentialsPerVth = %g, tol = %g\n',Ntheta, Nzeta,NL,Nxi,Nx,NxPotentialsPerVth,tol)
+        end
         
         tic
         
