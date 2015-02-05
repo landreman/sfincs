@@ -76,6 +76,14 @@ program sfincs
   ! the magnetic field and its derivatives on the spatial grid.
   call createGrids()
 
+  if (RHSMode==3) then
+     ! Monoenergetic coefficient computation.
+     ! Overwrite nu_n and dPhiHatd* using nuPrime and EStar.
+
+     nu_n = nuPrime * B0OverBBar / (GHat + iota * IHat)
+     dPhiHatdpsiHat = 2 / (alpha * Delta) * EStar * iota * B0OverBBar / GHat
+  end if
+
   ! For input quantities that depend on the radial coordinate, pick out the values for the selected
   ! radial coordinate, and use these values to over-write values for the other radial coordinates.
   call setInputRadialCoordinate()

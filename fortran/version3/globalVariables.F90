@@ -95,6 +95,8 @@ module globalVariables
   logical :: includeTemperatureEquilibrationTerm = .true.
   logical :: includePhi1 = .true.
 
+  PetscScalar :: nuPrime = 0, EStar = 0
+
   ! ********************************************************
   ! ********************************************************
   !
@@ -157,7 +159,11 @@ module globalVariables
   PetscScalar, dimension(:,:), allocatable :: ddzeta_preconditioner
   PetscScalar, dimension(:,:), allocatable :: regridPolynomialToUniform
 
-  integer :: coordinateSystem
+  integer, parameter :: COORDINATE_SYSTEM_UNINITIALIZED = -1
+  integer, parameter :: COORDINATE_SYSTEM_BOOZER = 1
+  integer, parameter :: COORDINATE_SYSTEM_VMEC = 2
+  integer :: coordinateSystem = COORDINATE_SYSTEM_UNINITIALIZED
+
   PetscScalar, dimension(:,:), allocatable :: BHat, dBHatdtheta, dBHatdzeta, dBHatdpsiHat, DHat
   PetscScalar, dimension(:,:), allocatable :: BHat_sub_psi, dBHat_sub_psi_dtheta, dBHat_sub_psi_dzeta
   PetscScalar, dimension(:,:), allocatable :: BHat_sub_theta, dBHat_sub_theta_dzeta, dBHat_sub_theta_dpsiHat

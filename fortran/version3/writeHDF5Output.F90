@@ -184,11 +184,11 @@ contains
 
        call writeHDF5Field("aHat", aHat)
        call writeHDF5Field("psiAHat", psiAHat)
-       if (coordinateSystem==0) then
-          call writeHDF5Field("GHat", GHat)
-          call writeHDF5Field("IHat", IHat)
-          call writeHDF5Field("iota", iota)
-       end if
+       call writeHDF5Field("GHat", GHat)
+       call writeHDF5Field("IHat", IHat)
+       call writeHDF5Field("iota", iota)
+       call writeHDF5Field("coordinateSystem", coordinateSystem)
+
        if (geometryScheme==1) then
           call writeHDF5Field("epsilon_t", epsilon_t)
           call writeHDF5Field("epsilon_h", epsilon_h)

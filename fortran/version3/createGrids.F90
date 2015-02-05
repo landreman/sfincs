@@ -453,17 +453,7 @@
     ! Compute a few quantities related to the magnetic field:
     ! *********************************************************
 
-    VPrimeHat = 0
-    FSABHat2 = 0
-    do itheta=1,Ntheta
-       do izeta=1,Nzeta
-          VPrimeHat = VPrimeHat + thetaWeights(itheta) * zetaWeights(izeta) / DHat(itheta,izeta)
-          FSABHat2 = FSABHat2 + thetaWeights(itheta) * zetaWeights(izeta) &
-               * BHat(itheta,izeta) * BHat(itheta,izeta) / DHat(itheta,izeta)
-       end do
-    end do
-
-    FSABHat2 = FSABHat2 / VPrimeHat
+    call computeBIntegrals()
 
     ! *********************************************************
     ! Allocate some arrays that will be used later for output quantities:

@@ -218,38 +218,16 @@ contains
 
     select case (geometryScheme)
     case (1,2,3,4,11,12)
+       coordinateSystem = COORDINATE_SYSTEM_BOOZER
        call computeBHat_Boozer()
     case (5,6)
+       coordinateSystem = COORDINATE_SYSTEM_VMEC
        call computeBHat_VMEC()
     case default
        print *,"Error! Invalid setting for geometryScheme."
        stop
     end select
     
-    ! Compute G and H for the case of non-Boozer coordinates.
-    ! We don't actually need G or H for anything, but they are not much work to compute,
-    ! so let's compute them in case it turns out to be convenient.
-    !
-    ! (We could do this computation on a finer (theta,zeta) grid than the grid
-    ! used for the kinetic calculation. But let's do this on the same grid for 2 reasons:
-    ! (1) simplicity, and (2) since the trapezoid rule is spectrally
-    ! accurate on a uniform periodic grid, so a fine grid is not required.)
-    GHat = dot_product(thetaWeights, matmul(BHat_sub_zeta,  zetaWeights)) / (4*pi*pi)
-    IHat = dot_product(thetaWeights, matmul(BHat_sub_theta, zetaWeights)) / (4*pi*pi)
-
-!!$    ! Compute B0, the (m=0,n=0) Boozer harmonic.
-!!$    ! We compute it using B0 = <B^3> / <B^2>, where the right hand side
-!!$    ! can be computed in any coordinate system.
-!!$    B0OverBBar = 0
-!!$    do itheta=1,Ntheta
-!!$       do izeta=1,Nzeta
-!!$          B0OverBBar = B0OverBBar + thetaWeights(itheta) * zetaWeights(izeta) &
-!!$               * (BHat(itheta,izeta) ** 3) / DHat(itheta,izeta)
-!!$       end do
-!!$    end do
-!!$
-!!$    B0OverBBar = B0OverBBar / VPrimeHat / FSABHat2
-
   end subroutine computeBHat
 
   ! ---------------------------------------------------------------------------------------
@@ -344,7 +322,6 @@ contains
        !rN = -1 !dummy
        rN = rN_wish
 
-       coordinateSystem = 0
        BHat_sub_psi = 0
        dBHat_sub_psi_dtheta = 0
        dBHat_sub_psi_dzeta = 0
@@ -386,7 +363,6 @@ contains
        !rN = -1 !dummy
        rN = rN_wish
                     
-       coordinateSystem = 0
        BHat_sub_psi = 0
        dBHat_sub_psi_dtheta = 0
        dBHat_sub_psi_dzeta = 0
@@ -433,7 +409,6 @@ contains
        !normradius = -1 !dummy
        rN = rN_wish
 
-       coordinateSystem = 0
        BHat_sub_psi = 0
        dBHat_sub_psi_dtheta = 0
        dBHat_sub_psi_dzeta = 0
@@ -475,7 +450,6 @@ contains
        !normradius = -1 !dummy
        rN = rN_wish
 
-       coordinateSystem = 0
        BHat_sub_psi = 0
        dBHat_sub_psi_dtheta = 0
        dBHat_sub_psi_dzeta = 0
@@ -645,7 +619,6 @@ contains
 
        BHarmonics_amplitudes = BHarmonics_amplitudes / B0OverBBar
 
-       coordinateSystem = 0
        ! These next lines could be replaced with the actual values from the equilibrium:
        BHat_sub_psi = 0
        dBHat_sub_psi_dtheta = 0
@@ -835,7 +808,6 @@ contains
 
        BHarmonics_amplitudes = BHarmonics_amplitudes / B0OverBBar
 
-       coordinateSystem = 0
        ! These next 3 lines could be replaced with the actual data from the geometry input file.
        BHat_sub_psi = 0
        dBHat_sub_psi_dtheta = 0
@@ -1444,6 +1416,58 @@ contains
     end if
 
   end subroutine computeBHat_VMEC
+
+  ! ------------------------------------------------------------------------------------------
+
+  subroutine computeBIntegrals
+
+    implicit none
+
+    integer :: itheta, izeta
+
+    ! This subroutine computes VPrimeHat, FSABHat2, and (if needed) B0OverBBar, GHat, and IHat.
+
+    VPrimeHat = 0
+    FSABHat2 = 0
+    do itheta=1,Ntheta
+       do izeta=1,Nzeta
+          VPrimeHat = VPrimeHat + thetaWeights(itheta) * zetaWeights(izeta) / DHat(itheta,izeta)
+          FSABHat2 = FSABHat2 + thetaWeights(itheta) * zetaWeights(izeta) &
+               * BHat(itheta,izeta) * BHat(itheta,izeta) / DHat(itheta,izeta)
+       end do
+    end do
+
+    FSABHat2 = FSABHat2 / VPrimeHat
+
+    if (coordinateSystem .ne. COORDINATE_SYSTEM_BOOZER) then
+       ! Compute B0, the (m=0,n=0) Boozer harmonic.
+       ! We compute it using B0 = <B^3> / <B^2>, where the right hand side
+       ! can be computed in any coordinate system.
+       B0OverBBar = 0
+       do itheta=1,Ntheta
+          do izeta=1,Nzeta
+             B0OverBBar = B0OverBBar + thetaWeights(itheta) * zetaWeights(izeta) &
+                  * (BHat(itheta,izeta) ** 3) / DHat(itheta,izeta)
+          end do
+       end do
+
+       B0OverBBar = B0OverBBar / VPrimeHat / FSABHat2
+
+       ! Compute G and H for the case of non-Boozer coordinates.
+       ! We don't actually need G or H for anything, but they are not much work to compute,
+       ! so let's compute them in case it turns out to be convenient.
+       !
+       ! (We could do this computation on a finer (theta,zeta) grid than the grid
+       ! used for the kinetic calculation. But let's do this on the same grid for 2 reasons:
+       ! (1) simplicity, and (2) since the trapezoid rule is spectrally
+       ! accurate on a uniform periodic grid, so a fine grid is not required.)
+       GHat = dot_product(thetaWeights, matmul(BHat_sub_zeta,  zetaWeights)) / (4*pi*pi)
+       IHat = dot_product(thetaWeights, matmul(BHat_sub_theta, zetaWeights)) / (4*pi*pi)
+
+    end if
+
+  end subroutine computeBIntegrals
+
 
 end module geometry
 

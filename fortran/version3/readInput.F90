@@ -40,7 +40,8 @@ contains
          collisionOperator, constraintScheme, includeXDotTerm, &
          includeElectricFieldTermInXiDot, useDKESExBDrift, include_fDivVE_term, nonlinear, &
          dPhiHatdpsiHat, dPhiHatdpsiN, dPhiHatdrHat, dPhiHatdrN, &
-         includeTemperatureEquilibrationTerm, includePhi1
+         includeTemperatureEquilibrationTerm, includePhi1, &
+         nuPrime, EStar
 
     namelist / resolutionParameters / forceOddNthetaAndNzeta, &
          Ntheta, &

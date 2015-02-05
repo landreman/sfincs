@@ -1102,12 +1102,16 @@ integer, parameter :: s18 = selected_real_kind(p=18)
 real(kind=8), dimension(10) :: r10_array
 
 iunit = get_next_io_unit()
-open(unit=iunit, file=filename, action="read")
+open(unit=iunit, file=filename, action="read", iostat=ios)
+if(ios .ne. 0) then
+   stop "Error! Unable to open the requested equilibriumFile." !MJL 20150204
+end if
 read(iunit,'(a4)',iostat=ios)c_dummy
 !write(6,*) "ios = ",ios
 close(iunit)
 if(ios < 0) then
-  if(ios == -1) stop "file not existing!"
+  !if(ios == -1) stop "file not existing!"
+  if(ios == -1) stop "Error! Unable to read the requested equilibriumFile."  !MJL 20150204
   write(6,*)"Input error:  ios = ",ios
   stop "Program ends with Error!!!"
   write(6,'(a)') "c_dummy = ",c_dummy

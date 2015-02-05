@@ -152,6 +152,22 @@ subroutine validateInput()
         includeTemperatureEquilibrationTerm = .false.
      end if
 
+     mHats = 1
+     nHats = 1
+     THats = 1
+     dnHatdpsiHats = 0
+     dTHatdpsiHats = 0
+     Zs = 1
+     if (masterProc) then
+        print *,"Since RHSMode=3, ignoring the requested values of Zs, nHats, THats, nu_n, and dPhiHatd*."
+     end if
+
+     if (abs(nuPrime) < 1e-14) then
+        if (masterProc) then
+           print *,"Error! When running with RHSMode=3, you must set nuPrime to a nonzero value."
+        end if
+        stop
+     end if
 
   end if
 

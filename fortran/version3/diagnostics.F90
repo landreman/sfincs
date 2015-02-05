@@ -633,15 +633,16 @@
           sqrtTHat = sqrt(THat)
           sqrtMHat = sqrt(mHat)
 
-          ! There are a bunch of overall factors in the matrix elements below which need to be worked out:
+          ! The factors of THat, mHat, nHat, and Z are unnecessary below (since all are 1).
           select case (whichRHS)
           
           case (1)
-             transportMatrix(1,1) = particleFlux_vm_psiHat(ispecies) ! * ???
-             transportMatrix(2,1) = FSABFlow(ispecies) ! * ???
+             transportMatrix(1,1) = 4/(Delta*Delta)*sqrtTHat/sqrtmHat*Zs(1)*Zs(1)*(GHat+iota*IHat)&
+                  *particleFlux_vm_psiHat(1)*B0OverBBar/(THat*THat*GHat*GHat)
+             transportMatrix(2,1) = 2*Zs(1)*FSABFlow(1)/(Delta*GHat*THat)
           case (2)
-             transportMatrix(1,2) = particleFlux_vm_psiHat(ispecies) ! * ???
-             transportMatrix(2,2) = FSABFlow(ispecies) ! * ???
+             transportMatrix(1,2) = particleFlux_vm_psiHat(1)*2*FSABHat2/(nHat*alpha*Delta*GHat)
+             transportMatrix(2,2) = FSABFlow(1)*sqrtTHat*sqrtMHat*FSABHat2/((GHat+iota*IHat)*alpha*Zs(1)*nHat*B0OverBBar)
           end select
        end if
 

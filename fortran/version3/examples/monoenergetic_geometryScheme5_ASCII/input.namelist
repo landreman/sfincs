@@ -159,7 +159,7 @@
 
   ! The remaining options only matter for geometryScheme = 5, 11, and 12:
 
-  equilibriumFile = "../../../../equilibria/wout_w7x_standardConfig.nc"
+  equilibriumFile = "../../../../equilibria/wout_w7x_standardConfig.txt"
 
   min_Bmn_to_load = 0
   !Filter out any Bmn components smaller than this.
@@ -270,9 +270,19 @@
   nu_n = 0.172714565d+0
 
   !nu_n = 8.4774d-3  ! reference values: \bar{T}=1 keV, \bar{n}=10^20 m^-3,
-                    ! \bar{Phi}=1 kV, \bar{B}=1 T, \bar{R}=1 m, proton mass
+                     ! \bar{Phi}=1 kV, \bar{B}=1 T, \bar{R}=1 m, proton mass
 
-  collisionOperator = 0
+  ! When RHSMode=3 (monoenergetic transport coefficient calculation),
+  ! the values of Zs, THats, nHats, mHats, nu_n, and dPhiHatd* are ignored.
+  ! Instead, the collisionality is set by nuPrime, and the radial electric field is set
+  ! by EStar. nuPrime and EStar are defined in Eq (41)-(42) of the 2014 Phys Plasmas paper
+  ! on SFINCS, if you interpret v_i in those equations to be the speed v of interest,
+  ! and you interpret the collision frequency nu_ii in the definition of nuPrime to be
+  ! evaluated at speed v.  When RHSMode .ne. 3, nuPrime and EStar are ignored.
+  nuPrime = 1.0d+0
+  EStar = 0.2d+0
+
+  collisionOperator = 1
   ! 0 = Full linearized Fokker-Planck operator
   ! 1 = pitch-angle scattering with no momentum-conserving term
 

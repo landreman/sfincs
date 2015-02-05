@@ -11,9 +11,9 @@ desiredTolerance = 0.001
 
 numFailures = 0
 
-numFailures += shouldBe("transportMatrix[0,0;;;]", -9.43187887182127862E-008, desiredTolerance)
-numFailures += shouldBe("transportMatrix[0,1;;;]", -3.89107349464080517E-005, desiredTolerance)
-numFailures += shouldBe("transportMatrix[1,0;;;]", -4.99979634257516209E-006, desiredTolerance)
-numFailures += shouldBe("transportMatrix[1,1;;;]", 5.1597834378562917, desiredTolerance)
+numFailures += shouldBe("transportMatrix[0,0;;;]", -2.84704283288131658E-003, desiredTolerance)
+numFailures += shouldBe("transportMatrix[0,1;;;]", -1.07314943693241670E-003, desiredTolerance)
+numFailures += shouldBe("transportMatrix[1,0;;;]", -1.07288314523113848E-003, desiredTolerance)
+numFailures += shouldBe("transportMatrix[1,1;;;]", 0.88506147786933709, desiredTolerance)
 
 exit(numFailures > 0)

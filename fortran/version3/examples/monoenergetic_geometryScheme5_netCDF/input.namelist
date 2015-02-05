@@ -95,7 +95,7 @@
   ! For geometryScheme = 11 or 12, the magnetic geometry will be used from the nearest available surface in the geometry input file.
   ! For geometryScheme = 2, 3, or 4, all these values will be ignored, and the surface at rN = 0.5 will be used.
 
-  geometryScheme = 11
+  geometryScheme = 5
   ! 1 = Three-helicity model
   ! 2 = Three-helicity approximation of the LHD standard configuration at rN = 0.5
   ! 3 = Four-helicity approximation of the LHD inward-shifted configuration at rN = 0.5
@@ -159,7 +159,7 @@
 
   ! The remaining options only matter for geometryScheme = 5, 11, and 12:
 
-  equilibriumFile = "../../../../equilibria/w7x_standardConfig.bc"
+  equilibriumFile = "../../../../equilibria/wout_w7x_standardConfig.nc"
 
   min_Bmn_to_load = 0
   !Filter out any Bmn components smaller than this.
@@ -270,7 +270,7 @@
   nu_n = 0.172714565d+0
 
   !nu_n = 8.4774d-3  ! reference values: \bar{T}=1 keV, \bar{n}=10^20 m^-3,
-                    ! \bar{Phi}=1 kV, \bar{B}=1 T, \bar{R}=1 m, proton mass
+                     ! \bar{Phi}=1 kV, \bar{B}=1 T, \bar{R}=1 m, proton mass
 
   ! When RHSMode=3 (monoenergetic transport coefficient calculation),
   ! the values of Zs, THats, nHats, mHats, nu_n, and dPhiHatd* are ignored.

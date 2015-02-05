@@ -167,51 +167,54 @@ contains
     ddpsiHat2ddrN = one / aHat * (two * psiAHat * sqrt(psiN))
 
     ! Next, set the d/dpsiHat quantities related to input gradients:
-
-    select case (inputRadialCoordinateForGradients)
-    case (0)
-       ! Selected input radial coordinate is psiHat.
+    if (RHSMode==3) then
+       ! Monoenergetic coefficient computation.
        ! Nothing to do here.
-
-       if (masterProc) then
-          print *,"Selecting the input gradients (of n, T, & Phi) from the specified ddpsiHat values."
-       end if
-
-    case (1)
-       ! Selected input radial coordinate is psiN.
-       dPhiHatdpsiHat = ddpsiN2ddpsiHat * dPhiHatdpsiN
-       dnHatdpsiHats  = ddpsiN2ddpsiHat * dnHatdpsiNs
-       dTHatdpsiHats  = ddpsiN2ddpsiHat * dTHatdpsiNs
-
-       if (masterProc) then
-          print *,"Selecting the input gradients (of n, T, & Phi) from the specified ddpsiN values."
-       end if
-
-    case (2)
-       ! Selected input radial coordinate is rHat.
-       dPhiHatdpsiHat = ddrN2ddpsiHat   * dPhiHatdrHat
-       dnHatdpsiHats  = ddrHat2ddpsiHat * dnHatdrHats
-       dTHatdpsiHats  = ddrHat2ddpsiHat * dTHatdrHats
-
-       if (masterProc) then
-          print *,"Selecting the input gradients (of n, T, & Phi) from the specified ddrHat values."
-       end if
-
-    case (3)
-       ! Selected input radial coordinate is rN.
-       dPhiHatdpsiHat = ddrN2ddpsiHat * dPhiHatdrN
-       dnHatdpsiHats  = ddrN2ddpsiHat * dnHatdrNs
-       dTHatdpsiHats  = ddrN2ddpsiHat * dTHatdrNs
-
-       if (masterProc) then
-          print *,"Selecting the input gradients (of n, T, & Phi) from the specified ddrN values."
-       end if
-
-    case default
-       print *,"Error! Invalid inputRadialCoordinateForGradients."
-       stop
-    end select
-
+    else
+       select case (inputRadialCoordinateForGradients)
+       case (0)
+          ! Selected input radial coordinate is psiHat.
+          ! Nothing to do here.
+          
+          if (masterProc) then
+             print *,"Selecting the input gradients (of n, T, & Phi) from the specified ddpsiHat values."
+          end if
+          
+       case (1)
+          ! Selected input radial coordinate is psiN.
+          dPhiHatdpsiHat = ddpsiN2ddpsiHat * dPhiHatdpsiN
+          dnHatdpsiHats  = ddpsiN2ddpsiHat * dnHatdpsiNs
+          dTHatdpsiHats  = ddpsiN2ddpsiHat * dTHatdpsiNs
+          
+          if (masterProc) then
+             print *,"Selecting the input gradients (of n, T, & Phi) from the specified ddpsiN values."
+          end if
+          
+       case (2)
+          ! Selected input radial coordinate is rHat.
+          dPhiHatdpsiHat = ddrN2ddpsiHat   * dPhiHatdrHat
+          dnHatdpsiHats  = ddrHat2ddpsiHat * dnHatdrHats
+          dTHatdpsiHats  = ddrHat2ddpsiHat * dTHatdrHats
+          
+          if (masterProc) then
+             print *,"Selecting the input gradients (of n, T, & Phi) from the specified ddrHat values."
+          end if
+          
+       case (3)
+          ! Selected input radial coordinate is rN.
+          dPhiHatdpsiHat = ddrN2ddpsiHat * dPhiHatdrN
+          dnHatdpsiHats  = ddrN2ddpsiHat * dnHatdrNs
+          dTHatdpsiHats  = ddrN2ddpsiHat * dTHatdrNs
+          
+          if (masterProc) then
+             print *,"Selecting the input gradients (of n, T, & Phi) from the specified ddrN values."
+          end if
+          
+       case default
+          print *,"Error! Invalid inputRadialCoordinateForGradients."
+          stop
+       end select
+    end if
 
     ! Finally, convert the input gradients from psiHat to all the other radial coordinates:
 
