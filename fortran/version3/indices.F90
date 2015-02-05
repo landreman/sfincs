@@ -208,7 +208,7 @@
 
       if (whichBlock==BLOCK_PHI1_CONSTRAINT .and. (.not. includePhi1)) then
          if (masterProc) then
-            print *,"Error! whichBlock==BLOCK_QN but includePhi1=.false."
+            print *,"Error! whichBlock==BLOCK_PHI1_CONSTRAINT but includePhi1=.false."
          end if
          stop
       end if

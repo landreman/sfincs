@@ -483,8 +483,8 @@ contains
 
        if (includePhi1) then
           call writeHDF5ExtensibleField(iterationNum, "Phi1Hat", Phi1Hat, ARRAY_ITERATION_THETA_ZETA)
-          call writeHDF5ExtensibleField(iterationNum, "d(Phi1Hat)d(theta)", dPhi1Hatdtheta, ARRAY_ITERATION_THETA_ZETA)
-          call writeHDF5ExtensibleField(iterationNum, "d(Phi1Hat)d(zeta)", dPhi1Hatdzeta, ARRAY_ITERATION_THETA_ZETA)
+          call writeHDF5ExtensibleField(iterationNum, "dPhi1Hatdtheta", dPhi1Hatdtheta, ARRAY_ITERATION_THETA_ZETA)
+          call writeHDF5ExtensibleField(iterationNum, "dPhi1Hatdzeta", dPhi1Hatdzeta, ARRAY_ITERATION_THETA_ZETA)
           call writeHDF5ExtensibleField(iterationNum, "lambda", lambda, ARRAY_ITERATION)
        end if
 

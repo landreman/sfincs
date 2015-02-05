@@ -1192,10 +1192,12 @@
 
              ! Add the charge density of each species:
              do ispecies = 1,Nspecies
+                speciesFactor = Zs(ispecies)*THats(ispecies)/mHats(ispecies) &
+                     * sqrt(THats(ispecies)/mHats(ispecies))
                 do ix = 1,Nx
                    colIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
                    call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                        Zs(ispecies)*x2(ix)*xWeights(ix), ADD_VALUES, ierr)
+                        speciesFactor*x2(ix)*xWeights(ix), ADD_VALUES, ierr)
                 end do
              end do
 

@@ -435,11 +435,6 @@
     if (masterProc) then
        print *,"---- Geometry parameters: ----"
        print *,"Geometry scheme = ", geometryScheme
-       if (coordinateSystem==0) then
-          print *,"iota (Rotational transform) = ", iota
-          print *,"GHat (Boozer component multiplying grad zeta) = ", GHat
-          print *,"IHat (Boozer component multiplying grad theta) = ", IHat
-       end if
        print *,"psiAHat (Normalized toroidal flux at the last closed flux surface) = ", psiAHat
        print *,"aHat (Radius of the last closed flux surface in units of RHat) = ", aHat
        if (geometryScheme==1) then
@@ -447,6 +442,9 @@
           print *,"epsilon_h = ", epsilon_h
           print *,"epsilon_antisymm = ", epsilon_antisymm
        end if
+       print *,"GHat (Boozer component multiplying grad zeta) = ", GHat
+       print *,"IHat (Boozer component multiplying grad theta) = ", IHat
+       print *,"iota (Rotational transform) = ", iota
     end if
 
     ! *********************************************************
@@ -575,6 +573,9 @@
     allocate(Phi1Hat(Ntheta,Nzeta))
     allocate(dPhi1Hatdtheta(Ntheta,Nzeta))
     allocate(dPhi1Hatdzeta(Ntheta,Nzeta))
+    Phi1Hat = zero
+    dPhi1Hatdtheta = zero
+    dPhi1Hatdzeta = zero
 
     select case (constraintScheme)
     case (0)

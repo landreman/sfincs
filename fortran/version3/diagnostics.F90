@@ -66,7 +66,8 @@
           
           do itheta = 1,Ntheta
              do izeta = 1,Nzeta
-                index = getIndex(1,1,1,itheta,izeta,BLOCK_QN)
+                index = getIndex(1,1,1,itheta,izeta,BLOCK_QN)+1
+                ! Add 1 because getIndex returns 0-based PETSc indices, not 1-based fortran indices.
                 Phi1Hat(itheta,izeta) = solnarray(index)
              end do
           end do
@@ -74,16 +75,8 @@
           call VecRestoreArrayF90(solnOnProc0, solnArray, ierr)
        end if
 
-! I need to fix this next line!!!
-!    call MPI_Bcast(Phi1Hat, Ntheta*Nzeta, 0, MPI_DOUBLE_PRECISION, 0, MPIComm, ierr)
-
-!!$    do itheta = 1,Ntheta
-!!$       dPhi1Hatdzeta(itheta,:) = matmul(ddzeta, Phi1Hat(itheta,:))
-!!$    end do
-!!$
-!!$    do izeta = 1,Nzeta
-!!$       dPhi1Hatdtheta(:,izeta) = matmul(ddtheta, Phi1Hat(:,izeta))
-!!$    end do
+       ! Send Phi1Hat from the masterProc to all procs:
+       call MPI_Bcast(Phi1Hat, Ntheta*Nzeta, MPI_DOUBLE_PRECISION, 0, MPIComm, ierr)
 
        dPhi1Hatdtheta = matmul(ddtheta,Phi1Hat)
        dPhi1Hatdzeta = transpose(matmul(ddzeta,transpose(Phi1Hat)))
@@ -213,7 +206,6 @@
        heatFlux_vE_psiHat=0
        NTV=0 
        jHat=0
-       Phi1Hat=0
 
        densityIntegralWeights = x*x
        flowIntegralWeights = x*x*x
