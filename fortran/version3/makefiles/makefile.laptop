@@ -9,9 +9,11 @@ include ${PETSC_DIR}/conf/rules
 
 # Any other flags for compiling, such as -I include flags:
 EXTRA_COMPILE_FLAGS = -I/home/matt2/netcdf-fortran-4.4.1/20150127-01/architecture-independent/include
+#EXTRA_COMPILE_FLAGS =
 
 # Any other flags for linking, such as -l library flags:
-EXTRA_LINK_FLAGS = -L/home/matt2/netcdf-fortran-4.4.1/20150127-01/architecture-independent/lib -lnetcdff  -lnetcdf -lnetcdf
+EXTRA_LINK_FLAGS = -L/home/matt2/netcdf-fortran-4.4.1/20150127-01/architecture-independent/lib -lnetcdff  -lnetcdf
+#EXTRA_LINK_FLAGS =
 
 # The next parameters are used only for running and testing selected examples using "make test".
 

@@ -14,6 +14,18 @@
 # To delete .mod and .o files:
 #   make clean
 
+
+# Do you want to link to NetCDF?  Doing so is necessary to read VMEC wout files in NetCDF
+# format, but not necessary to read VMEC wout files in ASCII format, or for other geometry input.
+# If you do want to link NetCDF, set the USE_NETCDF variable here to any value; the actual value
+# does not matter.  If you do not want to link NetCDF, do not assign any value to USE_NETCDF here.
+USE_NETCDF ?= X
+
+##############################################################################3
+# End of parameters
+##############################################################################3
+
+
 # First, make sure the environment variable SFINCS_SYSTEM is set appropriately:
 
 ifndef SFINCS_SYSTEM
@@ -32,6 +44,10 @@ TARGET = sfincs
 all: $(TARGET)
 
 include $(SYSTEM_MAKEFILE)
+
+ifdef USE_NETCDF
+	EXTRA_COMPILE_FLAGS += -DUSE_NETCDF
+endif
 
 include makefile.depend
 

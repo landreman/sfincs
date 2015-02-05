@@ -788,6 +788,7 @@ end subroutine read_wout_txt_data
 !> the subroutine reads the netcdf wout-output file of vmec2000 and stores
 !! the data in a data structure of type vmec_wout_cdf_data together with the version
 !! number.
+#ifdef USE_NETCDF
 subroutine read_wout_cdf_data(filename, wout_data)
 use pisa_io
 use ezcdf
@@ -1055,6 +1056,7 @@ wout_data = vmec_wout_cdf_data( c_version_number, wb, wp, gam, pfac, rmax_surf, 
                     bsupumnc, bsupumns, bsupvmnc, bsupvmns)
 
 end subroutine read_wout_cdf_data
+#endif
 !-------------------------------------------------------------------------------
 
 subroutine check_wout_file_type(filename, this_type)

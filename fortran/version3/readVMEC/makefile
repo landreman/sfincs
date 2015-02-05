@@ -5,18 +5,26 @@
 # in which the variables FC and EXTRA_COMPILE_FLAGS are set.
 
 OBJ_FILES = \
-	ezcdf_attrib.o \
-	ezcdf.o \
-	ezcdf_genget.o \
-	ezcdf_genput.o \
-	ezcdf_inqvar.o \
-	ezcdf_opncls.o \
-	handle_err.o \
 	constants.o \
 	kind_defs.o \
 	pisa_io.o \
 	pisa_vmec_module.o \
 	readVMEC.o
+
+DEPENDENCIES = kind_defs.o pisa_io.o
+
+ifdef USE_NETCDF
+	OBJ_FILES += \
+	ezcdf.o \
+	ezcdf_attrib.o \
+	ezcdf_genget.o \
+	ezcdf_genput.o \
+	ezcdf_inqvar.o \
+	ezcdf_opncls.o \
+	handle_err.o
+
+	DEPENDENCIES += ezcdf.o
+endif
 
 all: readVMEC.a
 
@@ -27,6 +35,9 @@ readVMEC.a: $(OBJ_FILES)
 #all: $(OBJ_FILES)
 
 %.o: %.f90
+	$(FC) $(EXTRA_COMPILE_FLAGS) -c $<
+
+%.o: %.F90
 	$(FC) $(EXTRA_COMPILE_FLAGS) -c $<
 
 clean::
@@ -43,6 +54,5 @@ handle_err.o:
 constants.o: kind_defs.o
 kind_defs.o:
 pisa_io.o: kind_defs.o
-pisa_vmec_module.o: kind_defs.o pisa_io.o ezcdf.o
-#wout_data.o: kind_defs.o constants.o pisa_vmec_module.o
+pisa_vmec_module.o: $(DEPENDENCIES)
 readVMEC.o: pisa_vmec_module.o

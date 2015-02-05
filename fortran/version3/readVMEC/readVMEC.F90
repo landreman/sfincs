@@ -27,9 +27,14 @@ module readVMEC
        vmec = extract_vmec_eqdata_from_wout_data(the_txt_data)
     elseif( my_filetype%typo == "cdf")then
        !print *,"VMEC file is in netCDF format."
+#ifdef USE_NETCDF
        call read_wout_cdf_data(filename, the_cdf_data)
        !vmec = extract_fort8_data_from_wout_cdf_data(the_cdf_data)
        vmec = extract_vmec_eqdata_from_wout_cdf_data(the_cdf_data)
+#else
+       print *,"Error! You are attempting to read a NetCDF file, but you did not set USE_NETCDF in the makefile."
+       stop
+#endif
     endif
 
 !!$    print *,"VMEC data:"
