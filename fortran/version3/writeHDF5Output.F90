@@ -4,6 +4,7 @@ module writeHDF5Output
   use globalVariables
   use petscsysdef
   use HDF5
+  use H5DS
 
   implicit none
 
@@ -874,6 +875,18 @@ contains
     
     call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, data, dims, HDF5Error)
     
+    if (dspaceID == dspaceIDForSpecies) then
+       call h5dsset_label_f(dsetID, 1, "species", HDF5Error)
+    elseif (dspaceID == dspaceIDForTheta) then
+       ! No labels applied in this case.
+    elseif (dspaceID == dspaceIDForZeta) then
+       ! No labels applied in this case.
+    elseif (dspaceID == dspaceIDForx) then
+       ! No labels applied in this case.
+    else
+       print *,"WARNING: PROGRAM SHOULD NOT GET HERE. (writeHDF5Doubles)"
+    end if
+
     call h5dclose_f(dsetID, HDF5Error)
 
   end subroutine writeHDF5Doubles
@@ -889,10 +902,20 @@ contains
     integer(HID_T) :: dspaceID
     integer(HSIZE_T), dimension(*) :: dims
     PetscScalar, dimension(:,:) :: data
+    character(len=100) :: label
 
     call h5dcreate_f(HDF5FileID, arrayName, H5T_NATIVE_DOUBLE, dspaceID, dsetID, HDF5Error)
     
     call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, data, dims, HDF5Error)
+
+    if (dspaceID == dspaceIDForThetaZeta) then
+       call h5dsset_label_f(dsetID, 1, "zeta", HDF5Error)
+       call h5dsset_label_f(dsetID, 2, "theta", HDF5Error)
+    elseif (dspaceID == dspaceIDForTransportMatrix) then
+       ! No labels applied in this case.
+    else
+       print *,"WARNING: PROGRAM SHOULD NOT GET HERE. (writeHDF5Doubles2)"
+    end if
     
     call h5dclose_f(dsetID, HDF5Error)
 
@@ -938,6 +961,7 @@ contains
     integer(HSIZE_T) :: offset(rank)
     integer(HSIZE_T), dimension(rank) :: dim, dimForChunk
     integer(HID_T) :: chunkProperties
+    character(len=100) :: label1
 
     offset = (/ iterationNum-1 /)
 
@@ -947,6 +971,7 @@ contains
        dim = dimForIteration
        dimForChunk = dimForIterationChunk
        chunkProperties = pForIteration
+       label1 = "iteration"
     case default
        print *,"This is writeHDF5ExtensibleField1"
        print *,"Error! Invalid arrayType:",arrayType
@@ -959,6 +984,8 @@ contains
 
        call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             data, dimForSpecies, HDF5Error)
+
+       call h5dsset_label_f(dsetID, 1, trim(label1), HDF5Error)
     else
        ! Extend an existing array in the .h5 file:
        call h5dopen_f(HDF5FileID, arrayName, dsetID, HDF5Error)
@@ -993,6 +1020,7 @@ contains
     integer(HSIZE_T) :: offset(rank)
     integer(HSIZE_T), dimension(rank) :: dim, dimForChunk
     integer(HID_T) :: chunkProperties
+    character(len=100) :: label1, label2
 
     offset = (/ iterationNum-1, 0 /)
 
@@ -1002,6 +1030,8 @@ contains
        dim = dimForIterationSpecies
        dimForChunk = dimForIterationSpeciesChunk
        chunkProperties = pForIterationSpecies
+       label1 = "species"
+       label2 = "iteration"
     case default
        print *,"This is writeHDF5ExtensibleField2"
        print *,"Error! Invalid arrayType:",arrayType
@@ -1014,6 +1044,10 @@ contains
 
        call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             data, dimForSpecies, HDF5Error)
+
+       call h5dsset_label_f(dsetID, 1, trim(label1), HDF5Error)
+       call h5dsset_label_f(dsetID, 2, trim(label2), HDF5Error)
+
     else
        ! Extend an existing array in the .h5 file:
        call h5dopen_f(HDF5FileID, arrayName, dsetID, HDF5Error)
@@ -1048,6 +1082,7 @@ contains
     integer(HSIZE_T) :: offset(rank)
     integer(HSIZE_T), dimension(rank) :: dim, dimForChunk
     integer(HID_T) :: chunkProperties
+    character(len=100) :: label1, label2, label3
 
     offset = (/ iterationNum-1, 0, 0 /)
 
@@ -1057,11 +1092,17 @@ contains
        dim = dimForIterationThetaZeta
        dimForChunk = dimForIterationThetaZetaChunk
        chunkProperties = pForIterationThetaZeta
+       label1 = "zeta"
+       label2 = "theta"
+       label3 = "iteration"
     case (ARRAY_ITERATION_SPECIES_SOURCES)
        originalDspaceID = dspaceIDForIterationSpeciesSources
        dim = dimForIterationSpeciesSources
        dimForChunk = dimForIterationSpeciesSourcesChunk
        chunkProperties = pForIterationSpeciesSources
+       label1 = "sources"
+       label2 = "species"
+       label3 = "iteration"
     case default
        print *,"This is writeHDF5ExtensibleField3"
        print *,"Error! Invalid arrayType:",arrayType
@@ -1074,6 +1115,11 @@ contains
 
        call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             data, dimForSpecies, HDF5Error)
+
+       call h5dsset_label_f(dsetID, 1, trim(label1), HDF5Error)
+       call h5dsset_label_f(dsetID, 2, trim(label2), HDF5Error)
+       call h5dsset_label_f(dsetID, 3, trim(label3), HDF5Error)
+
     else
        ! Extend an existing array in the .h5 file:
        call h5dopen_f(HDF5FileID, arrayName, dsetID, HDF5Error)
@@ -1108,6 +1154,7 @@ contains
     integer(HSIZE_T) :: offset(rank)
     integer(HSIZE_T), dimension(rank) :: dim, dimForChunk
     integer(HID_T) :: chunkProperties
+    character(len=100) :: label1, label2, label3, label4
 
     offset = (/ iterationNum-1, 0, 0, 0 /)
 
@@ -1117,6 +1164,10 @@ contains
        dim = dimForIterationSpeciesThetaZeta
        dimForChunk = dimForIterationSpeciesThetaZetaChunk
        chunkProperties = pForIterationSpeciesThetaZeta
+       label1 = "zeta"
+       label2 = "theta"
+       label3 = "species"
+       label4 = "iteration"
     case default
        print *,"This is writeHDF5ExtensibleField4"
        print *,"Error! Invalid arrayType:",arrayType
@@ -1129,6 +1180,11 @@ contains
 
        call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
             data, dimForSpecies, HDF5Error)
+
+       call h5dsset_label_f(dsetID, 1, trim(label1), HDF5Error)
+       call h5dsset_label_f(dsetID, 2, trim(label2), HDF5Error)
+       call h5dsset_label_f(dsetID, 3, trim(label3), HDF5Error)
+       call h5dsset_label_f(dsetID, 4, trim(label4), HDF5Error)
     else
        ! Extend an existing array in the .h5 file:
        call h5dopen_f(HDF5FileID, arrayName, dsetID, HDF5Error)
