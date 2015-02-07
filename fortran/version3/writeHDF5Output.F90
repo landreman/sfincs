@@ -1,10 +1,14 @@
 
+#define attribute_name "Description"
+#define boolDescription "(Interpret this Boolean data by comparing to integerToRepresentTrue/False)"
+
 module writeHDF5Output
 
   use globalVariables
   use petscsysdef
   use HDF5
   use H5DS
+  use H5LT
 
   implicit none
 
@@ -125,119 +129,135 @@ contains
        ! and arrays. For arrays, you must provide a dspaceID and dimensions; for scalars you do not
        ! provide these 2 parameters.
 
-       call writeHDF5Field("RHSMode", RHSMode)
-       call writeHDF5Field("Nspecies", Nspecies)
-       call writeHDF5Field("Ntheta", Ntheta)
-       call writeHDF5Field("Nzeta", Nzeta)
-       call writeHDF5Field("Nxi", Nxi)
-       call writeHDF5Field("NL", NL)
-       call writeHDF5Field("Nx", Nx)
-       call writeHDF5Field("NxPotentialsPerVth", NxPotentialsPerVth)
-       call writeHDF5Field("xMax", xMax)
-       call writeHDF5Field("solverTolerance", solverTolerance)
-       call writeHDF5Field("theta", theta, dspaceIDForTheta, dimForTheta)
-       call writeHDF5Field("zeta", zeta, dspaceIDForZeta, dimForZeta)
-       call writeHDF5Field("x", x, dspaceIDForX, dimForX)
-       call writeHDF5Field("thetaDerivativeScheme", thetaDerivativeScheme)
-       call writeHDF5Field("zetaDerivativeScheme", zetaDerivativeScheme)
-       call writeHDF5Field("preconditioner_species", preconditioner_species)
-       call writeHDF5Field("preconditioner_x", preconditioner_x)
-       call writeHDF5Field("preconditioner_x_min_L", preconditioner_x_min_L)
-       call writeHDF5Field("preconditioner_xi", preconditioner_xi)
-       call writeHDF5Field("preconditioner_theta", preconditioner_theta)
-       call writeHDF5Field("preconditioner_zeta", preconditioner_zeta)
-       call writeHDF5Field("constraintScheme", constraintScheme)
+       call writeHDF5Field("RHSMode", RHSMode, &
+            "Switch that controls how many times the kinetic equation is solved with different right-hand-side drive terms.")
+       call writeHDF5Field("Nspecies", Nspecies, "Number of particle species")
+       call writeHDF5Field("Ntheta", Ntheta, "Number of grid points in the poloidal angle theta")
+       call writeHDF5Field("Nzeta", Nzeta, "Number of grid points in the toroidal angle zeta")
+       call writeHDF5Field("Nxi", Nxi, &
+            "Number of Legendre polynomial modes P(v_parallel / v) for representing the distribution functions.")
+       call writeHDF5Field("NL", NL, &
+            "Number of Legendre polynomial modes P(v_parallel / v) for representing the Rosenbluth potentials in the Fokker-Planck operator.")
+       call writeHDF5Field("Nx", Nx, "Number of grid points in speed for representing the distribution functions.")
+       call writeHDF5Field("NxPotentialsPerVth", NxPotentialsPerVth, "")
+       call writeHDF5Field("xMax", xMax, "")
+       call writeHDF5Field("solverTolerance", solverTolerance, "")
+       call writeHDF5Field("theta", theta, dspaceIDForTheta, dimForTheta, &
+            "Grid points in the poloidal angle, which runs from 0 to 2pi")
+       call writeHDF5Field("zeta", zeta, dspaceIDForZeta, dimForZeta, &
+            "Grid points in the toroidal angle, which runs from 0 to 2pi/Nperiods")
+       call writeHDF5Field("x", x, dspaceIDForX, dimForX, &
+            "Grid points in normalized speed, x_s = v / sqrt{2 T_s / m_s}, the same for each species s.")
+       call writeHDF5Field("thetaDerivativeScheme", thetaDerivativeScheme, "")
+       call writeHDF5Field("zetaDerivativeScheme", zetaDerivativeScheme, "")
+       call writeHDF5Field("preconditioner_species", preconditioner_species, "")
+       call writeHDF5Field("preconditioner_x", preconditioner_x, "")
+       call writeHDF5Field("preconditioner_x_min_L", preconditioner_x_min_L, "")
+       call writeHDF5Field("preconditioner_xi", preconditioner_xi, "")
+       call writeHDF5Field("preconditioner_theta", preconditioner_theta, "")
+       call writeHDF5Field("preconditioner_zeta", preconditioner_zeta, "")
+       call writeHDF5Field("constraintScheme", constraintScheme, "")
 
-       call writeHDF5Field("DHat", DHat, dspaceIDForThetaZeta, dimForThetaZeta)
-       call writeHDF5Field("BHat", BHat, dspaceIDForThetaZeta, dimForThetaZeta)
-       call writeHDF5Field("dBHatdpsiHat", dBHatdpsiHat, dspaceIDForThetaZeta, dimForThetaZeta)
-       call writeHDF5Field("dBHatdtheta", dBHatdtheta, dspaceIDForThetaZeta, dimForThetaZeta)
-       call writeHDF5Field("dBHatdzeta", dBHatdzeta, dspaceIDForThetaZeta, dimForThetaZeta)
+       call writeHDF5Field("DHat", DHat, dspaceIDForThetaZeta, dimForThetaZeta, &
+            "Inverse Jacobian (grad psi dot grad theta cross grad zeta, where 2*pi*psi is the toroidal flux), in units of BBar / RBar")
+       call writeHDF5Field("BHat", BHat, dspaceIDForThetaZeta, dimForThetaZeta, &
+            "Magnitude of the magnetic field, in units of BBar")
+       call writeHDF5Field("dBHatdpsiHat", dBHatdpsiHat, dspaceIDForThetaZeta, dimForThetaZeta, "")
+       call writeHDF5Field("dBHatdtheta", dBHatdtheta, dspaceIDForThetaZeta, dimForThetaZeta, "")
+       call writeHDF5Field("dBHatdzeta", dBHatdzeta, dspaceIDForThetaZeta, dimForThetaZeta, "")
 
-       call writeHDF5Field("BHat_sub_psi", BHat_sub_psi, dspaceIDForThetaZeta, dimForThetaZeta)
-       call writeHDF5Field("dBHat_sub_psi_dtheta", dBHat_sub_psi_dtheta, dspaceIDForThetaZeta, dimForThetaZeta)
-       call writeHDF5Field("dBHat_sub_psi_dzeta", dBHat_sub_psi_dzeta, dspaceIDForThetaZeta, dimForThetaZeta)
+       call writeHDF5Field("BHat_sub_psi", BHat_sub_psi, dspaceIDForThetaZeta, dimForThetaZeta, "")
+       call writeHDF5Field("dBHat_sub_psi_dtheta", dBHat_sub_psi_dtheta, dspaceIDForThetaZeta, dimForThetaZeta, "")
+       call writeHDF5Field("dBHat_sub_psi_dzeta", dBHat_sub_psi_dzeta, dspaceIDForThetaZeta, dimForThetaZeta, "")
 
-       call writeHDF5Field("BHat_sub_theta", BHat_sub_theta, dspaceIDForThetaZeta, dimForThetaZeta)
-       call writeHDF5Field("dBHat_sub_theta_dpsiHat", dBHat_sub_theta_dpsiHat, dspaceIDForThetaZeta, dimForThetaZeta)
-       call writeHDF5Field("dBHat_sub_theta_dzeta", dBHat_sub_theta_dzeta, dspaceIDForThetaZeta, dimForThetaZeta)
+       call writeHDF5Field("BHat_sub_theta", BHat_sub_theta, dspaceIDForThetaZeta, dimForThetaZeta, "")
+       call writeHDF5Field("dBHat_sub_theta_dpsiHat", dBHat_sub_theta_dpsiHat, dspaceIDForThetaZeta, dimForThetaZeta, "")
+       call writeHDF5Field("dBHat_sub_theta_dzeta", dBHat_sub_theta_dzeta, dspaceIDForThetaZeta, dimForThetaZeta, "")
 
-       call writeHDF5Field("BHat_sub_zeta", BHat_sub_zeta, dspaceIDForThetaZeta, dimForThetaZeta)
-       call writeHDF5Field("dBHat_sub_zeta_dpsiHat", dBHat_sub_zeta_dpsiHat, dspaceIDForThetaZeta, dimForThetaZeta)
-       call writeHDF5Field("dBHat_sub_zeta_dtheta", dBHat_sub_zeta_dtheta, dspaceIDForThetaZeta, dimForThetaZeta)
+       call writeHDF5Field("BHat_sub_zeta", BHat_sub_zeta, dspaceIDForThetaZeta, dimForThetaZeta, "")
+       call writeHDF5Field("dBHat_sub_zeta_dpsiHat", dBHat_sub_zeta_dpsiHat, dspaceIDForThetaZeta, dimForThetaZeta, "")
+       call writeHDF5Field("dBHat_sub_zeta_dtheta", dBHat_sub_zeta_dtheta, dspaceIDForThetaZeta, dimForThetaZeta, "")
 
-       call writeHDF5Field("BHat_sup_theta", BHat_sup_theta, dspaceIDForThetaZeta, dimForThetaZeta)
-       call writeHDF5Field("dBHat_sup_theta_dpsiHat", dBHat_sup_theta_dpsiHat, dspaceIDForThetaZeta, dimForThetaZeta)
-       call writeHDF5Field("dBHat_sup_theta_dzeta", dBHat_sup_theta_dzeta, dspaceIDForThetaZeta, dimForThetaZeta)
+       call writeHDF5Field("BHat_sup_theta", BHat_sup_theta, dspaceIDForThetaZeta, dimForThetaZeta, "")
+       call writeHDF5Field("dBHat_sup_theta_dpsiHat", dBHat_sup_theta_dpsiHat, dspaceIDForThetaZeta, dimForThetaZeta, "")
+       call writeHDF5Field("dBHat_sup_theta_dzeta", dBHat_sup_theta_dzeta, dspaceIDForThetaZeta, dimForThetaZeta, "")
 
-       call writeHDF5Field("BHat_sup_zeta", BHat_sup_zeta, dspaceIDForThetaZeta, dimForThetaZeta)
-       call writeHDF5Field("dBHat_sup_zeta_dpsiHat", dBHat_sup_zeta_dpsiHat, dspaceIDForThetaZeta, dimForThetaZeta)
-       call writeHDF5Field("dBHat_sup_zeta_dtheta", dBHat_sup_zeta_dtheta, dspaceIDForThetaZeta, dimForThetaZeta)
+       call writeHDF5Field("BHat_sup_zeta", BHat_sup_zeta, dspaceIDForThetaZeta, dimForThetaZeta, "")
+       call writeHDF5Field("dBHat_sup_zeta_dpsiHat", dBHat_sup_zeta_dpsiHat, dspaceIDForThetaZeta, dimForThetaZeta, "")
+       call writeHDF5Field("dBHat_sup_zeta_dtheta", dBHat_sup_zeta_dtheta, dspaceIDForThetaZeta, dimForThetaZeta, "")
 
-       call writeHDF5Field("B0OverBBar", B0OverBBar)
-       call writeHDF5Field("inputRadialCoordinate", inputRadialCoordinate)
-       call writeHDF5Field("inputRadialCoordinateForGradients", inputRadialCoordinateForGradients)
+       call writeHDF5Field("B0OverBBar", B0OverBBar, "")
+       call writeHDF5Field("inputRadialCoordinate", inputRadialCoordinate, "")
+       call writeHDF5Field("inputRadialCoordinateForGradients", inputRadialCoordinateForGradients, "")
 
-       call writeHDF5Field("psiHat", psiHat)
-       call writeHDF5Field("psiN", psiN)
-       call writeHDF5Field("rHat", rHat)
-       call writeHDF5Field("rN", rN)
+       call writeHDF5Field("psiHat", psiHat, "")
+       call writeHDF5Field("psiN", psiN, "")
+       call writeHDF5Field("rHat", rHat, "")
+       call writeHDF5Field("rN", rN, "")
 
-       call writeHDF5Field("aHat", aHat)
-       call writeHDF5Field("psiAHat", psiAHat)
-       call writeHDF5Field("GHat", GHat)
-       call writeHDF5Field("IHat", IHat)
-       call writeHDF5Field("iota", iota)
-       call writeHDF5Field("coordinateSystem", coordinateSystem)
+       call writeHDF5Field("aHat", aHat, "")
+       call writeHDF5Field("psiAHat", psiAHat, "")
+       call writeHDF5Field("GHat", GHat, "")
+       call writeHDF5Field("IHat", IHat, "")
+       call writeHDF5Field("iota", iota, "(Rationalized) rotational transform = 1 / (safety factor q)")
+       call writeHDF5Field("coordinateSystem", coordinateSystem, "")
 
        if (geometryScheme==1) then
-          call writeHDF5Field("epsilon_t", epsilon_t)
-          call writeHDF5Field("epsilon_h", epsilon_h)
-          call writeHDF5Field("epsilon_antisymm", epsilon_antisymm)
-          call writeHDF5Field("helicity_n", helicity_n)
-          call writeHDF5Field("helicity_l", helicity_l)
-          call writeHDF5Field("helicity_antisymm_n", helicity_antisymm_n)
-          call writeHDF5Field("helicity_antisymm_l", helicity_antisymm_l)
+          call writeHDF5Field("epsilon_t", epsilon_t, "")
+          call writeHDF5Field("epsilon_h", epsilon_h, "")
+          call writeHDF5Field("epsilon_antisymm", epsilon_antisymm, "")
+          call writeHDF5Field("helicity_n", helicity_n, "")
+          call writeHDF5Field("helicity_l", helicity_l, "")
+          call writeHDF5Field("helicity_antisymm_n", helicity_antisymm_n, "")
+          call writeHDF5Field("helicity_antisymm_l", helicity_antisymm_l, "")
        end if
-       call writeHDF5Field("NPeriods", NPeriods)
-       call writeHDF5Field("Delta", Delta)
-       call writeHDF5Field("alpha", alpha)
-       call writeHDF5Field("nu_n", nu_n)
-       call writeHDF5Field("EParallelHat", EParallelHat)
+       call writeHDF5Field("NPeriods", NPeriods, "Number of identical toroidal periods (e.g. 5 for W7-X, 10 for LHD, 4 for HSX)")
+       call writeHDF5Field("Delta", Delta, &
+            "Dimensionless combination of the normalization constants, resembling rho_*: Delta = mBar * vBar / (e * BBar * RBar) (SI units) " // &
+            "or c * mBar * vBar / (e * BBar * RBar) (Gaussian units)")
+       call writeHDF5Field("alpha", alpha, "Dimensionless combination of the normalization constants: alpha = e * PhiBar / TBar.")
+       call writeHDF5Field("nu_n", nu_n, "")
+       call writeHDF5Field("EParallelHat", EParallelHat, "")
 
-       call writeHDF5Field("collisionOperator", collisionOperator)
-       call writeHDF5Field("Zs", Zs, dspaceIDForSpecies, dimForSpecies)
-       call writeHDF5Field("mHats", mHats, dspaceIDForSpecies, dimForSpecies)
-       call writeHDF5Field("THats", THats, dspaceIDForSpecies, dimForSpecies)
-       call writeHDF5Field("nHats", nHats, dspaceIDForSpecies, dimForSpecies)
+       call writeHDF5Field("collisionOperator", collisionOperator, "")
+       call writeHDF5Field("Zs", Zs, dspaceIDForSpecies, dimForSpecies, "Charge of each species, in units of the unit charge e (which is usually the proton charge.)")
+       call writeHDF5Field("mHats", mHats, dspaceIDForSpecies, dimForSpecies, "Mass of each species, in units of mBar.")
+       call writeHDF5Field("THats", THats, dspaceIDForSpecies, dimForSpecies, "Average temperature of each species, in units of TBar.")
+       call writeHDF5Field("nHats", nHats, dspaceIDForSpecies, dimForSpecies, "Flux surface averaged density of each species, in units of nBar.")
 
-       call writeHDF5Field("dPhiHatdpsiHat", dPhiHatdpsiHat)
-       call writeHDF5Field("dPhiHatdpsiN", dPhiHatdpsiN)
-       call writeHDF5Field("dPhiHatdrHat", dPhiHatdrHat)
-       call writeHDF5Field("dPhiHatdrN", dPhiHatdrN)
+       call writeHDF5Field("dPhiHatdpsiHat", dPhiHatdpsiHat, "")
+       call writeHDF5Field("dPhiHatdpsiN", dPhiHatdpsiN, "")
+       call writeHDF5Field("dPhiHatdrHat", dPhiHatdrHat, "")
+       call writeHDF5Field("dPhiHatdrN", dPhiHatdrN, "")
 
-       call writeHDF5Field("dTHatdpsiHat", dTHatdpsiHats, dspaceIDForSpecies, dimForSpecies)
-       call writeHDF5Field("dTHatdpsiN", dTHatdpsiNs, dspaceIDForSpecies, dimForSpecies)
-       call writeHDF5Field("dTHatdrHat", dTHatdrHats, dspaceIDForSpecies, dimForSpecies)
-       call writeHDF5Field("dTHatdrN", dTHatdrNs, dspaceIDForSpecies, dimForSpecies)
+       call writeHDF5Field("dTHatdpsiHat", dTHatdpsiHats, dspaceIDForSpecies, dimForSpecies, "")
+       call writeHDF5Field("dTHatdpsiN", dTHatdpsiNs, dspaceIDForSpecies, dimForSpecies, "")
+       call writeHDF5Field("dTHatdrHat", dTHatdrHats, dspaceIDForSpecies, dimForSpecies, "")
+       call writeHDF5Field("dTHatdrN", dTHatdrNs, dspaceIDForSpecies, dimForSpecies, "")
 
-       call writeHDF5Field("dnHatdpsiHat", dnHatdpsiHats, dspaceIDForSpecies, dimForSpecies)
-       call writeHDF5Field("dnHatdpsiN", dnHatdpsiNs, dspaceIDForSpecies, dimForSpecies)
-       call writeHDF5Field("dnHatdrHat", dnHatdrHats, dspaceIDForSpecies, dimForSpecies)
-       call writeHDF5Field("dnHatdrN", dnHatdrNs, dspaceIDForSpecies, dimForSpecies)
+       call writeHDF5Field("dnHatdpsiHat", dnHatdpsiHats, dspaceIDForSpecies, dimForSpecies, "")
+       call writeHDF5Field("dnHatdpsiN", dnHatdpsiNs, dspaceIDForSpecies, dimForSpecies, "")
+       call writeHDF5Field("dnHatdrHat", dnHatdrHats, dspaceIDForSpecies, dimForSpecies, "")
+       call writeHDF5Field("dnHatdrN", dnHatdrNs, dspaceIDForSpecies, dimForSpecies, "")
 
-       call writeHDF5Field("includeTemperatureEquilibrationTerm", includeTemperatureEquilibrationTerm)
-       call writeHDF5Field("include_fDivVE_Term", include_fDivVE_Term)
-       call writeHDF5Field("includeXDotTerm", includeXDotTerm)
-       call writeHDF5Field("includeElectricFieldTermInXiDot", includeElectricFieldTermInXiDot)
-       call writeHDF5Field("useDKESExBDrift", useDKESExBDrift)
-       call writeHDF5Field("includePhi1", includePhi1)
-       call writeHDF5Field("integerToRepresentTrue", integerToRepresentTrue)
-       call writeHDF5Field("integerToRepresentFalse", integerToRepresentFalse)
-       call writeHDF5Field("VPrimeHat", VPrimeHat)
-       call writeHDF5Field("FSABHat2", FSABHat2)
-       call writeHDF5Field("useIterativeSolver", useIterativeSolver)
-       call writeHDF5Field("NIterations", 0)
+       call writeHDF5Field("includeTemperatureEquilibrationTerm", includeTemperatureEquilibrationTerm, &
+            "Include the inhomogeneous term associated with the collision operator acting on the Maxwellians C[f_M, f_M]? " //&
+            "This term is nonzero only when the Fokker-Planck operator is used with unequal temperatures. "// boolDescription)
+       call writeHDF5Field("include_fDivVE_Term", include_fDivVE_Term, "")
+       call writeHDF5Field("includeXDotTerm", includeXDotTerm, "")
+       call writeHDF5Field("includeElectricFieldTermInXiDot", includeElectricFieldTermInXiDot, "")
+       call writeHDF5Field("useDKESExBDrift", useDKESExBDrift, "")
+       call writeHDF5Field("includePhi1", includePhi1, &
+            "Include a quasineutrality equation, and include variation of the electrostatic potential on a flux surface? " // boolDescription)
+       call writeHDF5Field("integerToRepresentTrue", integerToRepresentTrue, &
+            "Since HDF5 does not have a Boolean datatype, this integer value is used in this file for Boolean quantities.")
+       call writeHDF5Field("integerToRepresentFalse", integerToRepresentFalse, &
+            "Since HDF5 does not have a Boolean datatype, this integer value is used in this file for Boolean quantities.")
+       call writeHDF5Field("VPrimeHat", VPrimeHat, "")
+       call writeHDF5Field("FSABHat2", FSABHat2, &
+            "< B^2 >, the flux-surface-averaged squared magnitude of the magnetic field, in units of BBar^2")
+       call writeHDF5Field("useIterativeSolver", useIterativeSolver, "")
+       call writeHDF5Field("NIterations", 0, "")
 
        ! ----------------------------------------------------------------------
        ! ----------------------------------------------------------------------
@@ -298,201 +318,213 @@ contains
        dimForIterationSpeciesSources(1) = iterationNum
 
        call writeHDF5ExtensibleField(iterationNum, "densityPerturbation", densityPerturbation, &
-            ARRAY_ITERATION_SPECIES_THETA_ZETA)
+            ARRAY_ITERATION_SPECIES_THETA_ZETA, &
+            "Variation of the density over the flux surface, subtracting the flux surface average, in units of nBar.")
 
        call writeHDF5ExtensibleField(iterationNum, "totalDensity", totalDensity, &
-            ARRAY_ITERATION_SPECIES_THETA_ZETA)
+            ARRAY_ITERATION_SPECIES_THETA_ZETA, &
+            "Density of each species, including both the average and the variation on a flux surface, in units of nBar.")
 
        call writeHDF5ExtensibleField(iterationNum, "flow", flow, &
-            ARRAY_ITERATION_SPECIES_THETA_ZETA)
+            ARRAY_ITERATION_SPECIES_THETA_ZETA, "")
 
        call writeHDF5ExtensibleField(iterationNum, "velocityUsingFSADensity", velocityUsingFSADensity, &
-            ARRAY_ITERATION_SPECIES_THETA_ZETA)
+            ARRAY_ITERATION_SPECIES_THETA_ZETA, "")
 
        call writeHDF5ExtensibleField(iterationNum, "velocityUsingTotalDensity", velocityUsingTotalDensity, &
-            ARRAY_ITERATION_SPECIES_THETA_ZETA)
+            ARRAY_ITERATION_SPECIES_THETA_ZETA, "")
 
        call writeHDF5ExtensibleField(iterationNum, "MachUsingFSAThermalSpeed", MachUsingFSAThermalSpeed, &
-            ARRAY_ITERATION_SPECIES_THETA_ZETA)
+            ARRAY_ITERATION_SPECIES_THETA_ZETA, "")
 
        call writeHDF5ExtensibleField(iterationNum, "pressurePerturbation", pressurePerturbation, &
-            ARRAY_ITERATION_SPECIES_THETA_ZETA)
+            ARRAY_ITERATION_SPECIES_THETA_ZETA, "")
 
        call writeHDF5ExtensibleField(iterationNum, "totalPressure", totalPressure, &
-            ARRAY_ITERATION_SPECIES_THETA_ZETA)
+            ARRAY_ITERATION_SPECIES_THETA_ZETA, "")
 
        call writeHDF5ExtensibleField(iterationNum, "particleFluxBeforeSurfaceIntegral_vm0", particleFluxBeforeSurfaceIntegral_vm0, &
-            ARRAY_ITERATION_SPECIES_THETA_ZETA)
+            ARRAY_ITERATION_SPECIES_THETA_ZETA, "")
 
        call writeHDF5ExtensibleField(iterationNum, "particleFluxBeforeSurfaceIntegral_vm", particleFluxBeforeSurfaceIntegral_vm, &
-            ARRAY_ITERATION_SPECIES_THETA_ZETA)
+            ARRAY_ITERATION_SPECIES_THETA_ZETA, "")
 
        call writeHDF5ExtensibleField(iterationNum, "particleFluxBeforeSurfaceIntegral_vE0", particleFluxBeforeSurfaceIntegral_vE0, &
-            ARRAY_ITERATION_SPECIES_THETA_ZETA)
+            ARRAY_ITERATION_SPECIES_THETA_ZETA, "")
 
        call writeHDF5ExtensibleField(iterationNum, "particleFluxBeforeSurfaceIntegral_vE", particleFluxBeforeSurfaceIntegral_vE, &
-            ARRAY_ITERATION_SPECIES_THETA_ZETA)
+            ARRAY_ITERATION_SPECIES_THETA_ZETA, "")
 
        call writeHDF5ExtensibleField(iterationNum, "momentumFluxBeforeSurfaceIntegral_vm0", momentumFluxBeforeSurfaceIntegral_vm0, &
-            ARRAY_ITERATION_SPECIES_THETA_ZETA)
+            ARRAY_ITERATION_SPECIES_THETA_ZETA, "")
 
        call writeHDF5ExtensibleField(iterationNum, "momentumFluxBeforeSurfaceIntegral_vm", momentumFluxBeforeSurfaceIntegral_vm, &
-            ARRAY_ITERATION_SPECIES_THETA_ZETA)
+            ARRAY_ITERATION_SPECIES_THETA_ZETA, "")
 
        call writeHDF5ExtensibleField(iterationNum, "momentumFluxBeforeSurfaceIntegral_vE0", momentumFluxBeforeSurfaceIntegral_vE0, &
-            ARRAY_ITERATION_SPECIES_THETA_ZETA)
+            ARRAY_ITERATION_SPECIES_THETA_ZETA, "")
 
        call writeHDF5ExtensibleField(iterationNum, "momentumFluxBeforeSurfaceIntegral_vE", momentumFluxBeforeSurfaceIntegral_vE, &
-            ARRAY_ITERATION_SPECIES_THETA_ZETA)
+            ARRAY_ITERATION_SPECIES_THETA_ZETA, "")
 
        call writeHDF5ExtensibleField(iterationNum, "heatFluxBeforeSurfaceIntegral_vm0", heatFluxBeforeSurfaceIntegral_vm0, &
-            ARRAY_ITERATION_SPECIES_THETA_ZETA)
+            ARRAY_ITERATION_SPECIES_THETA_ZETA, "")
 
        call writeHDF5ExtensibleField(iterationNum, "heatFluxBeforeSurfaceIntegral_vm", heatFluxBeforeSurfaceIntegral_vm, &
-            ARRAY_ITERATION_SPECIES_THETA_ZETA)
+            ARRAY_ITERATION_SPECIES_THETA_ZETA, "")
 
        call writeHDF5ExtensibleField(iterationNum, "heatFluxBeforeSurfaceIntegral_vE0", heatFluxBeforeSurfaceIntegral_vE0, &
-            ARRAY_ITERATION_SPECIES_THETA_ZETA)
+            ARRAY_ITERATION_SPECIES_THETA_ZETA, "")
 
        call writeHDF5ExtensibleField(iterationNum, "heatFluxBeforeSurfaceIntegral_vE", heatFluxBeforeSurfaceIntegral_vE, &
-            ARRAY_ITERATION_SPECIES_THETA_ZETA)
+            ARRAY_ITERATION_SPECIES_THETA_ZETA, "")
 
        call writeHDF5ExtensibleField(iterationNum, "NTVBeforeSurfaceIntegral", NTVBeforeSurfaceIntegral, &
-            ARRAY_ITERATION_SPECIES_THETA_ZETA)
+            ARRAY_ITERATION_SPECIES_THETA_ZETA, "")
 
-       call writeHDF5ExtensibleField(iterationNum, "FSADensityPerturbation", FSADensityPerturbation, ARRAY_ITERATION_SPECIES)
+       call writeHDF5ExtensibleField(iterationNum, "FSADensityPerturbation", FSADensityPerturbation, ARRAY_ITERATION_SPECIES, &
+            "Flux-surface-averaged density, minus the requested average density, for each species. Should be within machine precision of 0.")
 
-       call writeHDF5ExtensibleField(iterationNum, "FSABFlow", FSABFlow, ARRAY_ITERATION_SPECIES)
+       call writeHDF5ExtensibleField(iterationNum, "FSABFlow", FSABFlow, ARRAY_ITERATION_SPECIES, "")
 
        call writeHDF5ExtensibleField(iterationNum, "FSABVelocityUsingFSADensity", &
-            FSABVelocityUsingFSADensity, ARRAY_ITERATION_SPECIES)
+            FSABVelocityUsingFSADensity, ARRAY_ITERATION_SPECIES, "")
 
        call writeHDF5ExtensibleField(iterationNum, "FSABVelocityUsingFSADensityOverB0", &
-            FSABVelocityUsingFSADensityOverB0, ARRAY_ITERATION_SPECIES)
+            FSABVelocityUsingFSADensityOverB0, ARRAY_ITERATION_SPECIES, "")
 
        call writeHDF5ExtensibleField(iterationNum, "FSABVelocityUsingFSADensityOverRootFSAB2", &
-            FSABVelocityUsingFSADensityOverRootFSAB2, ARRAY_ITERATION_SPECIES)
+            FSABVelocityUsingFSADensityOverRootFSAB2, ARRAY_ITERATION_SPECIES, "")
 
-       call writeHDF5ExtensibleField(iterationNum, "FSAPressurePerturbation", FSAPressurePerturbation, ARRAY_ITERATION_SPECIES)
+       call writeHDF5ExtensibleField(iterationNum, "FSAPressurePerturbation", FSAPressurePerturbation, ARRAY_ITERATION_SPECIES, &
+            "Flux-surface-averaged pressure, minus the requested average pressure, for each species. Should be within machine precision of 0.")
 
-       call writeHDF5ExtensibleField(iterationNum, "particleFlux_vm0_psiHat", particleFlux_vm0_psiHat, ARRAY_ITERATION_SPECIES)
-       call writeHDF5ExtensibleField(iterationNum, "particleFlux_vm0_psiN", particleFlux_vm0_psiN, ARRAY_ITERATION_SPECIES)
-       call writeHDF5ExtensibleField(iterationNum, "particleFlux_vm0_rHat", particleFlux_vm0_rHat, ARRAY_ITERATION_SPECIES)
-       call writeHDF5ExtensibleField(iterationNum, "particleFlux_vm0_rN", particleFlux_vm0_rN, ARRAY_ITERATION_SPECIES)
+       call writeHDF5ExtensibleField(iterationNum, "particleFlux_vm0_psiHat", particleFlux_vm0_psiHat, ARRAY_ITERATION_SPECIES, "")
+       call writeHDF5ExtensibleField(iterationNum, "particleFlux_vm0_psiN", particleFlux_vm0_psiN, ARRAY_ITERATION_SPECIES, "")
+       call writeHDF5ExtensibleField(iterationNum, "particleFlux_vm0_rHat", particleFlux_vm0_rHat, ARRAY_ITERATION_SPECIES, "")
+       call writeHDF5ExtensibleField(iterationNum, "particleFlux_vm0_rN", particleFlux_vm0_rN, ARRAY_ITERATION_SPECIES, "")
 
-       call writeHDF5ExtensibleField(iterationNum, "particleFlux_vm_psiHat", particleFlux_vm_psiHat, ARRAY_ITERATION_SPECIES)
-       call writeHDF5ExtensibleField(iterationNum, "particleFlux_vm_psiN", particleFlux_vm_psiN, ARRAY_ITERATION_SPECIES)
-       call writeHDF5ExtensibleField(iterationNum, "particleFlux_vm_rHat", particleFlux_vm_rHat, ARRAY_ITERATION_SPECIES)
-       call writeHDF5ExtensibleField(iterationNum, "particleFlux_vm_rN", particleFlux_vm_rN, ARRAY_ITERATION_SPECIES)
-
-       if (includePhi1) then
-          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vE0_psiHat", particleFlux_vE0_psiHat, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vE0_psiN", particleFlux_vE0_psiN, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vE0_rHat", particleFlux_vE0_rHat, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vE0_rN", particleFlux_vE0_rN, ARRAY_ITERATION_SPECIES)
-
-          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vE_psiHat", particleFlux_vE_psiHat, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vE_psiN", particleFlux_vE_psiN, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vE_rHat", particleFlux_vE_rHat, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vE_rN", particleFlux_vE_rN, ARRAY_ITERATION_SPECIES)
-
-          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vd1_psiHat", particleFlux_vd1_psiHat, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vd1_psiN", particleFlux_vd1_psiN, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vd1_rHat", particleFlux_vd1_rHat, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vd1_rN", particleFlux_vd1_rN, ARRAY_ITERATION_SPECIES)
-
-          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vd_psiHat", particleFlux_vd_psiHat, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vd_psiN", particleFlux_vd_psiN, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vd_rHat", particleFlux_vd_rHat, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vd_rN", particleFlux_vd_rN, ARRAY_ITERATION_SPECIES)
-       end if
-
-       call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vm0_psiHat", momentumFlux_vm0_psiHat, ARRAY_ITERATION_SPECIES)
-       call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vm0_psiN", momentumFlux_vm0_psiN, ARRAY_ITERATION_SPECIES)
-       call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vm0_rHat", momentumFlux_vm0_rHat, ARRAY_ITERATION_SPECIES)
-       call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vm0_rN", momentumFlux_vm0_rN, ARRAY_ITERATION_SPECIES)
-
-       call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vm_psiHat", momentumFlux_vm_psiHat, ARRAY_ITERATION_SPECIES)
-       call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vm_psiN", momentumFlux_vm_psiN, ARRAY_ITERATION_SPECIES)
-       call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vm_rHat", momentumFlux_vm_rHat, ARRAY_ITERATION_SPECIES)
-       call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vm_rN", momentumFlux_vm_rN, ARRAY_ITERATION_SPECIES)
+       call writeHDF5ExtensibleField(iterationNum, "particleFlux_vm_psiHat", particleFlux_vm_psiHat, ARRAY_ITERATION_SPECIES, "")
+       call writeHDF5ExtensibleField(iterationNum, "particleFlux_vm_psiN", particleFlux_vm_psiN, ARRAY_ITERATION_SPECIES, "")
+       call writeHDF5ExtensibleField(iterationNum, "particleFlux_vm_rHat", particleFlux_vm_rHat, ARRAY_ITERATION_SPECIES, "")
+       call writeHDF5ExtensibleField(iterationNum, "particleFlux_vm_rN", particleFlux_vm_rN, ARRAY_ITERATION_SPECIES, "")
 
        if (includePhi1) then
-          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vE0_psiHat", momentumFlux_vE0_psiHat, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vE0_psiN", momentumFlux_vE0_psiN, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vE0_rHat", momentumFlux_vE0_rHat, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vE0_rN", momentumFlux_vE0_rN, ARRAY_ITERATION_SPECIES)
+          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vE0_psiHat", particleFlux_vE0_psiHat, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vE0_psiN", particleFlux_vE0_psiN, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vE0_rHat", particleFlux_vE0_rHat, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vE0_rN", particleFlux_vE0_rN, ARRAY_ITERATION_SPECIES, "")
 
-          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vE_psiHat", momentumFlux_vE_psiHat, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vE_psiN", momentumFlux_vE_psiN, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vE_rHat", momentumFlux_vE_rHat, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vE_rN", momentumFlux_vE_rN, ARRAY_ITERATION_SPECIES)
+          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vE_psiHat", particleFlux_vE_psiHat, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vE_psiN", particleFlux_vE_psiN, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vE_rHat", particleFlux_vE_rHat, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vE_rN", particleFlux_vE_rN, ARRAY_ITERATION_SPECIES, "")
 
-          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vd1_psiHat", momentumFlux_vd1_psiHat, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vd1_psiN", momentumFlux_vd1_psiN, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vd1_rHat", momentumFlux_vd1_rHat, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vd1_rN", momentumFlux_vd1_rN, ARRAY_ITERATION_SPECIES)
+          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vd1_psiHat", particleFlux_vd1_psiHat, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vd1_psiN", particleFlux_vd1_psiN, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vd1_rHat", particleFlux_vd1_rHat, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vd1_rN", particleFlux_vd1_rN, ARRAY_ITERATION_SPECIES, "")
 
-          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vd_psiHat", momentumFlux_vd_psiHat, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vd_psiN", momentumFlux_vd_psiN, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vd_rHat", momentumFlux_vd_rHat, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vd_rN", momentumFlux_vd_rN, ARRAY_ITERATION_SPECIES)
+          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vd_psiHat", particleFlux_vd_psiHat, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vd_psiN", particleFlux_vd_psiN, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vd_rHat", particleFlux_vd_rHat, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "particleFlux_vd_rN", particleFlux_vd_rN, ARRAY_ITERATION_SPECIES, "")
        end if
 
-       call writeHDF5ExtensibleField(iterationNum, "heatFlux_vm0_psiHat", heatFlux_vm0_psiHat, ARRAY_ITERATION_SPECIES)
-       call writeHDF5ExtensibleField(iterationNum, "heatFlux_vm0_psiN", heatFlux_vm0_psiN, ARRAY_ITERATION_SPECIES)
-       call writeHDF5ExtensibleField(iterationNum, "heatFlux_vm0_rHat", heatFlux_vm0_rHat, ARRAY_ITERATION_SPECIES)
-       call writeHDF5ExtensibleField(iterationNum, "heatFlux_vm0_rN", heatFlux_vm0_rN, ARRAY_ITERATION_SPECIES)
+       call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vm0_psiHat", momentumFlux_vm0_psiHat, ARRAY_ITERATION_SPECIES, "")
+       call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vm0_psiN", momentumFlux_vm0_psiN, ARRAY_ITERATION_SPECIES, "")
+       call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vm0_rHat", momentumFlux_vm0_rHat, ARRAY_ITERATION_SPECIES, "")
+       call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vm0_rN", momentumFlux_vm0_rN, ARRAY_ITERATION_SPECIES, "")
 
-       call writeHDF5ExtensibleField(iterationNum, "heatFlux_vm_psiHat", heatFlux_vm_psiHat, ARRAY_ITERATION_SPECIES)
-       call writeHDF5ExtensibleField(iterationNum, "heatFlux_vm_psiN", heatFlux_vm_psiN, ARRAY_ITERATION_SPECIES)
-       call writeHDF5ExtensibleField(iterationNum, "heatFlux_vm_rHat", heatFlux_vm_rHat, ARRAY_ITERATION_SPECIES)
-       call writeHDF5ExtensibleField(iterationNum, "heatFlux_vm_rN", heatFlux_vm_rN, ARRAY_ITERATION_SPECIES)
+       call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vm_psiHat", momentumFlux_vm_psiHat, ARRAY_ITERATION_SPECIES, "")
+       call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vm_psiN", momentumFlux_vm_psiN, ARRAY_ITERATION_SPECIES, "")
+       call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vm_rHat", momentumFlux_vm_rHat, ARRAY_ITERATION_SPECIES, "")
+       call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vm_rN", momentumFlux_vm_rN, ARRAY_ITERATION_SPECIES, "")
 
        if (includePhi1) then
-          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vE0_psiHat", heatFlux_vE0_psiHat, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vE0_psiN", heatFlux_vE0_psiN, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vE0_rHat", heatFlux_vE0_rHat, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vE0_rN", heatFlux_vE0_rN, ARRAY_ITERATION_SPECIES)
+          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vE0_psiHat", momentumFlux_vE0_psiHat, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vE0_psiN", momentumFlux_vE0_psiN, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vE0_rHat", momentumFlux_vE0_rHat, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vE0_rN", momentumFlux_vE0_rN, ARRAY_ITERATION_SPECIES, "")
 
-          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vE_psiHat", heatFlux_vE_psiHat, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vE_psiN", heatFlux_vE_psiN, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vE_rHat", heatFlux_vE_rHat, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vE_rN", heatFlux_vE_rN, ARRAY_ITERATION_SPECIES)
+          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vE_psiHat", momentumFlux_vE_psiHat, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vE_psiN", momentumFlux_vE_psiN, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vE_rHat", momentumFlux_vE_rHat, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vE_rN", momentumFlux_vE_rN, ARRAY_ITERATION_SPECIES, "")
 
-          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vd1_psiHat", heatFlux_vd1_psiHat, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vd1_psiN", heatFlux_vd1_psiN, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vd1_rHat", heatFlux_vd1_rHat, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vd1_rN", heatFlux_vd1_rN, ARRAY_ITERATION_SPECIES)
+          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vd1_psiHat", momentumFlux_vd1_psiHat, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vd1_psiN", momentumFlux_vd1_psiN, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vd1_rHat", momentumFlux_vd1_rHat, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vd1_rN", momentumFlux_vd1_rN, ARRAY_ITERATION_SPECIES, "")
 
-          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vd_psiHat", heatFlux_vd_psiHat, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vd_psiN", heatFlux_vd_psiN, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vd_rHat", heatFlux_vd_rHat, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vd_rN", heatFlux_vd_rN, ARRAY_ITERATION_SPECIES)
-
-          call writeHDF5ExtensibleField(iterationNum, "heatFlux_withoutPhi1_psiHat", heatFlux_withoutPhi1_psiHat, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "heatFlux_withoutPhi1_psiN", heatFlux_withoutPhi1_psiN, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "heatFlux_withoutPhi1_rHat", heatFlux_withoutPhi1_rHat, ARRAY_ITERATION_SPECIES)
-          call writeHDF5ExtensibleField(iterationNum, "heatFlux_withoutPhi1_rN", heatFlux_withoutPhi1_rN, ARRAY_ITERATION_SPECIES)
+          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vd_psiHat", momentumFlux_vd_psiHat, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vd_psiN", momentumFlux_vd_psiN, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vd_rHat", momentumFlux_vd_rHat, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vd_rN", momentumFlux_vd_rN, ARRAY_ITERATION_SPECIES, "")
        end if
 
-       call writeHDF5ExtensibleField(iterationNum, "NTV", NTV, ARRAY_ITERATION_SPECIES)
-       call writeHDF5ExtensibleField(iterationNum, "jHat", jHat, ARRAY_ITERATION_THETA_ZETA)
-       call writeHDF5ExtensibleField(iterationNum, "FSABjHat", FSABjHat, ARRAY_ITERATION)
-       call writeHDF5ExtensibleField(iterationNum, "FSABjHatOverB0", FSABjHatOverB0, ARRAY_ITERATION)
-       call writeHDF5ExtensibleField(iterationNum, "FSABjHatOverRootFSAB2", FSABjHatOverRootFSAB2, ARRAY_ITERATION)
+       call writeHDF5ExtensibleField(iterationNum, "heatFlux_vm0_psiHat", heatFlux_vm0_psiHat, ARRAY_ITERATION_SPECIES, "")
+       call writeHDF5ExtensibleField(iterationNum, "heatFlux_vm0_psiN", heatFlux_vm0_psiN, ARRAY_ITERATION_SPECIES, "")
+       call writeHDF5ExtensibleField(iterationNum, "heatFlux_vm0_rHat", heatFlux_vm0_rHat, ARRAY_ITERATION_SPECIES, "")
+       call writeHDF5ExtensibleField(iterationNum, "heatFlux_vm0_rN", heatFlux_vm0_rN, ARRAY_ITERATION_SPECIES, "")
+
+       call writeHDF5ExtensibleField(iterationNum, "heatFlux_vm_psiHat", heatFlux_vm_psiHat, ARRAY_ITERATION_SPECIES, "")
+       call writeHDF5ExtensibleField(iterationNum, "heatFlux_vm_psiN", heatFlux_vm_psiN, ARRAY_ITERATION_SPECIES, "")
+       call writeHDF5ExtensibleField(iterationNum, "heatFlux_vm_rHat", heatFlux_vm_rHat, ARRAY_ITERATION_SPECIES, "")
+       call writeHDF5ExtensibleField(iterationNum, "heatFlux_vm_rN", heatFlux_vm_rN, ARRAY_ITERATION_SPECIES, "")
 
        if (includePhi1) then
-          call writeHDF5ExtensibleField(iterationNum, "Phi1Hat", Phi1Hat, ARRAY_ITERATION_THETA_ZETA)
-          call writeHDF5ExtensibleField(iterationNum, "dPhi1Hatdtheta", dPhi1Hatdtheta, ARRAY_ITERATION_THETA_ZETA)
-          call writeHDF5ExtensibleField(iterationNum, "dPhi1Hatdzeta", dPhi1Hatdzeta, ARRAY_ITERATION_THETA_ZETA)
-          call writeHDF5ExtensibleField(iterationNum, "lambda", lambda, ARRAY_ITERATION)
+          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vE0_psiHat", heatFlux_vE0_psiHat, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vE0_psiN", heatFlux_vE0_psiN, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vE0_rHat", heatFlux_vE0_rHat, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vE0_rN", heatFlux_vE0_rN, ARRAY_ITERATION_SPECIES, "")
+
+          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vE_psiHat", heatFlux_vE_psiHat, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vE_psiN", heatFlux_vE_psiN, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vE_rHat", heatFlux_vE_rHat, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vE_rN", heatFlux_vE_rN, ARRAY_ITERATION_SPECIES, "")
+
+          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vd1_psiHat", heatFlux_vd1_psiHat, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vd1_psiN", heatFlux_vd1_psiN, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vd1_rHat", heatFlux_vd1_rHat, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vd1_rN", heatFlux_vd1_rN, ARRAY_ITERATION_SPECIES, "")
+
+          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vd_psiHat", heatFlux_vd_psiHat, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vd_psiN", heatFlux_vd_psiN, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vd_rHat", heatFlux_vd_rHat, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "heatFlux_vd_rN", heatFlux_vd_rN, ARRAY_ITERATION_SPECIES, "")
+
+          call writeHDF5ExtensibleField(iterationNum, "heatFlux_withoutPhi1_psiHat", heatFlux_withoutPhi1_psiHat, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "heatFlux_withoutPhi1_psiN", heatFlux_withoutPhi1_psiN, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "heatFlux_withoutPhi1_rHat", heatFlux_withoutPhi1_rHat, ARRAY_ITERATION_SPECIES, "")
+          call writeHDF5ExtensibleField(iterationNum, "heatFlux_withoutPhi1_rN", heatFlux_withoutPhi1_rN, ARRAY_ITERATION_SPECIES, "")
        end if
 
-       call writeHDF5ExtensibleField(iterationNum, "elapsed time (s)", elapsedTime, ARRAY_ITERATION)
+       call writeHDF5ExtensibleField(iterationNum, "NTV", NTV, ARRAY_ITERATION_SPECIES, "")
+       call writeHDF5ExtensibleField(iterationNum, "jHat", jHat, ARRAY_ITERATION_THETA_ZETA, &
+            "Parallel current j dot B / |B|, in units e * nBar * vBar")
+       call writeHDF5ExtensibleField(iterationNum, "FSABjHat", FSABjHat, ARRAY_ITERATION, &
+            "Flux surface averaged parallel current, <j dot B>, in units e * nBar * vBar * BBar")
+       call writeHDF5ExtensibleField(iterationNum, "FSABjHatOverB0", FSABjHatOverB0, ARRAY_ITERATION, "")
+       call writeHDF5ExtensibleField(iterationNum, "FSABjHatOverRootFSAB2", FSABjHatOverRootFSAB2, ARRAY_ITERATION, "")
+
+       if (includePhi1) then
+          call writeHDF5ExtensibleField(iterationNum, "Phi1Hat", Phi1Hat, ARRAY_ITERATION_THETA_ZETA, &
+               "Electrostatic potential Phi minus its flux-surface-average, in units of PhiBar")
+          call writeHDF5ExtensibleField(iterationNum, "dPhi1Hatdtheta", dPhi1Hatdtheta, ARRAY_ITERATION_THETA_ZETA, &
+               "Derivative of Phi_1 with respect to theta. Phi_1 = Electrostatic potential Phi minus its flux-surface-average, in units of PhiBar." //&
+               "theta = poloidal angle")
+          call writeHDF5ExtensibleField(iterationNum, "dPhi1Hatdzeta", dPhi1Hatdzeta, ARRAY_ITERATION_THETA_ZETA,  &
+               "Derivative of Phi_1 with respect to zeta. Phi_1 = Electrostatic potential Phi minus its flux-surface-average, in units of PhiBar." //&
+               "zeta = toroidal angle")
+          call writeHDF5ExtensibleField(iterationNum, "lambda", lambda, ARRAY_ITERATION, &
+               "Lagrange multiplier associated with the constraint that <Phi_1>=0. Should be within machine precision of 0.")
+       end if
+
+       call writeHDF5ExtensibleField(iterationNum, "elapsed time (s)", elapsedTime, ARRAY_ITERATION, "")
 
        if (constraintScheme .ne. 0) then
-          call writeHDF5ExtensibleField(iterationNum, "sources", sources, ARRAY_ITERATION_SPECIES_SOURCES)
+          call writeHDF5ExtensibleField(iterationNum, "sources", sources, ARRAY_ITERATION_SPECIES_SOURCES, "")
        end if
 
 !!$       ! ----------------------------------
@@ -512,7 +544,8 @@ contains
           dimForTransportMatrix(2) = transportMatrixSize
           call h5screate_simple_f(rank, dimForTransportMatrix, dspaceIDForTransportMatrix, HDF5Error)
 
-          call writeHDF5Field("transportMatrix", transportMatrix, dspaceIDForTransportMatrix, dimForTransportMatrix)
+          call writeHDF5Field("transportMatrix", transportMatrix, dspaceIDForTransportMatrix, dimForTransportMatrix, &
+               "")
 
           call h5sclose_f(dspaceIDForTransportMatrix, HDF5Error)
        end if
@@ -689,7 +722,8 @@ contains
        rank = 0
        call h5screate_simple_f(rank, dimForScalar, dspaceIDForScalar, HDF5Error)
 
-       call writeHDF5Field("finished", integerToRepresentTrue)
+       call writeHDF5Field("finished", integerToRepresentTrue, &
+            "If this variable exists in sfincsOutput.h5, then SFINCS reached the end of all requested computations and exited gracefully.")
 
        call h5sclose_f(dspaceIDForScalar, HDF5Error)
        call h5fclose_f(HDF5FileID, HDF5Error)
@@ -805,25 +839,28 @@ contains
 
   ! -----------------------------------------------------------------------------------
 
-  subroutine writeHDF5Integer(arrayName, data)
+  subroutine writeHDF5Integer(arrayName, data, description)
 
     implicit none
 
     character(len=*) :: arrayName
     integer(HID_T) :: dsetID
     integer :: data
+    character(len=*) :: description
 
     call h5dcreate_f(HDF5FileID, arrayName, H5T_NATIVE_INTEGER, dspaceIDForScalar, dsetID, HDF5Error)
     
     call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, data, dimForScalar, HDF5Error)
     
+    call h5ltset_attribute_string_f(HDF5FileID, arrayName, attribute_name, description, HDF5Error)
+
     call h5dclose_f(dsetID, HDF5Error)
 
   end subroutine writeHDF5Integer
 
   ! -----------------------------------------------------------------------------------
 
-  subroutine writeHDF5Integers(arrayName, data, dspaceID, dims)
+  subroutine writeHDF5Integers(arrayName, data, dspaceID, dims, description)
 
     implicit none
 
@@ -832,36 +869,42 @@ contains
     integer(HID_T) :: dspaceID
     integer(HSIZE_T), dimension(*) :: dims
     integer, dimension(*) :: data
+    character(len=*) :: description
 
     call h5dcreate_f(HDF5FileID, arrayName, H5T_NATIVE_INTEGER, dspaceID, dsetID, HDF5Error)
     
     call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, data, dims, HDF5Error)
     
+    call h5ltset_attribute_string_f(HDF5FileID, arrayName, attribute_name, description, HDF5Error)
+
     call h5dclose_f(dsetID, HDF5Error)
 
   end subroutine writeHDF5Integers
 
   ! -----------------------------------------------------------------------------------
 
-  subroutine writeHDF5Double(arrayName, data)
+  subroutine writeHDF5Double(arrayName, data, description)
 
     implicit none
 
     character(len=*) :: arrayName
     integer(HID_T) :: dsetID
     PetscScalar :: data
+    character(len=*) :: description
 
     call h5dcreate_f(HDF5FileID, arrayName, H5T_NATIVE_DOUBLE, dspaceIDForScalar, dsetID, HDF5Error)
     
     call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, data, dimForScalar, HDF5Error)
     
+    call h5ltset_attribute_string_f(HDF5FileID, arrayName, attribute_name, description, HDF5Error)
+
     call h5dclose_f(dsetID, HDF5Error)
 
   end subroutine writeHDF5Double
 
   ! -----------------------------------------------------------------------------------
 
-  subroutine writeHDF5Doubles(arrayName, data, dspaceID, dims)
+  subroutine writeHDF5Doubles(arrayName, data, dspaceID, dims, description)
 
     implicit none
 
@@ -869,6 +912,7 @@ contains
     integer(HID_T) :: dsetID
     integer(HID_T) :: dspaceID
     integer(HSIZE_T), dimension(*) :: dims
+    character(len=*) :: description
     PetscScalar, dimension(*) :: data
 
     call h5dcreate_f(HDF5FileID, arrayName, H5T_NATIVE_DOUBLE, dspaceID, dsetID, HDF5Error)
@@ -887,13 +931,15 @@ contains
        print *,"WARNING: PROGRAM SHOULD NOT GET HERE. (writeHDF5Doubles)"
     end if
 
+    call h5ltset_attribute_string_f(HDF5FileID, arrayName, attribute_name, description, HDF5Error)
+
     call h5dclose_f(dsetID, HDF5Error)
 
   end subroutine writeHDF5Doubles
 
   ! -----------------------------------------------------------------------------------
 
-  subroutine writeHDF5Doubles2(arrayName, data, dspaceID, dims)
+  subroutine writeHDF5Doubles2(arrayName, data, dspaceID, dims, description)
 
     implicit none
 
@@ -902,6 +948,7 @@ contains
     integer(HID_T) :: dspaceID
     integer(HSIZE_T), dimension(*) :: dims
     PetscScalar, dimension(:,:) :: data
+    character(len=*) :: description
     character(len=100) :: label
 
     call h5dcreate_f(HDF5FileID, arrayName, H5T_NATIVE_DOUBLE, dspaceID, dsetID, HDF5Error)
@@ -917,19 +964,22 @@ contains
        print *,"WARNING: PROGRAM SHOULD NOT GET HERE. (writeHDF5Doubles2)"
     end if
     
+    call h5ltset_attribute_string_f(HDF5FileID, arrayName, attribute_name, description, HDF5Error)
+
     call h5dclose_f(dsetID, HDF5Error)
 
   end subroutine writeHDF5Doubles2
 
   ! -----------------------------------------------------------------------------------
 
-  subroutine writeHDF5Boolean(arrayName, data)
+  subroutine writeHDF5Boolean(arrayName, data, description)
 
     implicit none
 
     character(len=*) :: arrayName
     integer(HID_T) :: dsetID
     logical :: data
+    character(len=*) :: description
     integer :: temp
 
     call h5dcreate_f(HDF5FileID, arrayName, H5T_NATIVE_INTEGER, dspaceIDForScalar, dsetID, HDF5Error)
@@ -941,13 +991,15 @@ contains
     end if
     call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, temp, dimForScalar, HDF5Error)
     
+    call h5ltset_attribute_string_f(HDF5FileID, arrayName, attribute_name, description, HDF5Error)
+
     call h5dclose_f(dsetID, HDF5Error)
 
   end subroutine writeHDF5Boolean
 
   ! -----------------------------------------------------------------------------------
 
-  subroutine writeHDF5ExtensibleField1(iterationNum, arrayName, data, arrayType)
+  subroutine writeHDF5ExtensibleField1(iterationNum, arrayName, data, arrayType, description)
 
     implicit none
 
@@ -957,6 +1009,7 @@ contains
     integer(HID_T) :: dsetID
     integer(HID_T) :: dspaceID, memspaceID, originalDspaceID
     integer :: temp, arrayType
+    character(len=*) :: description
     PetscScalar :: data
     integer(HSIZE_T) :: offset(rank)
     integer(HSIZE_T), dimension(rank) :: dim, dimForChunk
@@ -986,6 +1039,7 @@ contains
             data, dimForSpecies, HDF5Error)
 
        call h5dsset_label_f(dsetID, 1, trim(label1), HDF5Error)
+       call h5ltset_attribute_string_f(HDF5FileID, arrayName, attribute_name, description, HDF5Error)
     else
        ! Extend an existing array in the .h5 file:
        call h5dopen_f(HDF5FileID, arrayName, dsetID, HDF5Error)
@@ -1006,7 +1060,7 @@ contains
 
   ! -----------------------------------------------------------------------------------
 
-  subroutine writeHDF5ExtensibleField2(iterationNum, arrayName, data, arrayType)
+  subroutine writeHDF5ExtensibleField2(iterationNum, arrayName, data, arrayType, description)
 
     implicit none
 
@@ -1016,6 +1070,7 @@ contains
     integer(HID_T) :: dsetID
     integer(HID_T) :: dspaceID, memspaceID, originalDspaceID
     integer :: temp, arrayType
+    character(len=*) :: description
     PetscScalar, dimension(:) :: data
     integer(HSIZE_T) :: offset(rank)
     integer(HSIZE_T), dimension(rank) :: dim, dimForChunk
@@ -1048,6 +1103,7 @@ contains
        call h5dsset_label_f(dsetID, 1, trim(label1), HDF5Error)
        call h5dsset_label_f(dsetID, 2, trim(label2), HDF5Error)
 
+       call h5ltset_attribute_string_f(HDF5FileID, arrayName, attribute_name, description, HDF5Error)
     else
        ! Extend an existing array in the .h5 file:
        call h5dopen_f(HDF5FileID, arrayName, dsetID, HDF5Error)
@@ -1068,7 +1124,7 @@ contains
 
   ! -----------------------------------------------------------------------------------
 
-  subroutine writeHDF5ExtensibleField3(iterationNum, arrayName, data, arrayType)
+  subroutine writeHDF5ExtensibleField3(iterationNum, arrayName, data, arrayType, description)
 
     implicit none
 
@@ -1078,6 +1134,7 @@ contains
     integer(HID_T) :: dsetID
     integer(HID_T) :: dspaceID, memspaceID, originalDspaceID
     integer :: temp, arrayType
+    character(len=*) :: description
     PetscScalar, dimension(:,:) :: data
     integer(HSIZE_T) :: offset(rank)
     integer(HSIZE_T), dimension(rank) :: dim, dimForChunk
@@ -1120,6 +1177,7 @@ contains
        call h5dsset_label_f(dsetID, 2, trim(label2), HDF5Error)
        call h5dsset_label_f(dsetID, 3, trim(label3), HDF5Error)
 
+       call h5ltset_attribute_string_f(HDF5FileID, arrayName, attribute_name, description, HDF5Error)
     else
        ! Extend an existing array in the .h5 file:
        call h5dopen_f(HDF5FileID, arrayName, dsetID, HDF5Error)
@@ -1140,7 +1198,7 @@ contains
 
   ! -----------------------------------------------------------------------------------
 
-  subroutine writeHDF5ExtensibleField4(iterationNum, arrayName, data, arrayType)
+  subroutine writeHDF5ExtensibleField4(iterationNum, arrayName, data, arrayType, description)
 
     implicit none
 
@@ -1150,6 +1208,7 @@ contains
     integer(HID_T) :: dsetID
     integer(HID_T) :: dspaceID, memspaceID, originalDspaceID
     integer :: temp, arrayType
+    character(len=*) :: description
     PetscScalar, dimension(:,:,:) :: data
     integer(HSIZE_T) :: offset(rank)
     integer(HSIZE_T), dimension(rank) :: dim, dimForChunk
@@ -1185,6 +1244,8 @@ contains
        call h5dsset_label_f(dsetID, 2, trim(label2), HDF5Error)
        call h5dsset_label_f(dsetID, 3, trim(label3), HDF5Error)
        call h5dsset_label_f(dsetID, 4, trim(label4), HDF5Error)
+
+       call h5ltset_attribute_string_f(HDF5FileID, arrayName, attribute_name, description, HDF5Error)
     else
        ! Extend an existing array in the .h5 file:
        call h5dopen_f(HDF5FileID, arrayName, dsetID, HDF5Error)
