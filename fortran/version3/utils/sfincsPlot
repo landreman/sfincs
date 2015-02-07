@@ -286,11 +286,15 @@ else:
     totalPressure = f['totalPressure'][()]
     Zs = f['Zs'][()]
     jHat = f['jHat'][()]
+    if includePhi1 == integerToRepresentTrue:
+        Phi1Hat = f['Phi1Hat'][()]
 
     fig = plt.figure(2)
     fig.patch.set_facecolor('white')
 
     numRows = NspeciesToPlot
+    if includePhi1 == integerToRepresentTrue and numRows<2:
+        numRows = 2
     numCols = 4
 
     ispecies=0
@@ -331,6 +335,14 @@ else:
     plt.xlabel('zeta')
     plt.ylabel('theta')
     plt.colorbar()
+
+    if includePhi1 == integerToRepresentTrue:
+        plt.subplot(numRows, numCols, 8)
+        plt.contourf(zeta,theta,Phi1Hat[:,:,iteration].transpose(),20)
+        plt.title('Phi1Hat')
+        plt.xlabel('zeta')
+        plt.ylabel('theta')
+        plt.colorbar()
 
     #plt.subplot(1,1,1)
     #plt.text(0.5,0.9,'Results for first iteration')
