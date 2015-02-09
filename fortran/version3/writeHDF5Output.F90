@@ -112,6 +112,8 @@ contains
     ! 2. The dataspace arrays are created,
     ! 3. Variables that do not change with each iteration of SNES are saved to the .h5 file.
 
+    use export_f
+    
     implicit none
 
     integer(HID_T) :: dsetID
@@ -302,6 +304,11 @@ contains
        call h5sclose_f(dspaceIDForThetaZeta, HDF5Error)
        call h5sclose_f(dspaceIDForScalar, HDF5Error)
        call h5sclose_f(dspaceIDForSpecies, HDF5Error)
+       call h5sclose_f(dspaceIDForx, HDF5Error)
+       call h5sclose_f(dspaceIDForExport_f_theta, HDF5Error)
+       call h5sclose_f(dspaceIDForExport_f_zeta, HDF5Error)
+       call h5sclose_f(dspaceIDForExport_f_xi, HDF5Error)
+       call h5sclose_f(dspaceIDForExport_f_x, HDF5Error)
 
        call h5fclose_f(HDF5FileID, HDF5Error)
 
@@ -588,10 +595,14 @@ contains
        end if
 
        if (export_full_f) then
-          call writeHDF5Field("full f", full_f, dspaceIDForExport_f, dimForExport_f, "")
+          call writeHDF5Field("full_f", full_f, dspaceIDForExport_f, dimForExport_f, &
+               "Full distribution function for each species, normalized by nBar / (vBar ^3)", &
+               iterationNum)
        end if
        if (export_delta_f) then
-          call writeHDF5Field("delta f", delta_f, dspaceIDForExport_f, dimForExport_f, "")
+          call writeHDF5Field("delta_f", delta_f, dspaceIDForExport_f, dimForExport_f, &
+               "Distribution function for each species, normalized by nBar / (vBar ^3), subtracting the leading-order Maxwellian",&
+               iterationNum)
        end if
 
        call h5fclose_f(HDF5FileID, HDF5Error)
@@ -993,6 +1004,14 @@ contains
        ! No labels applied in this case.
     elseif (dspaceID == dspaceIDForx) then
        ! No labels applied in this case.
+    elseif (dspaceID == dspaceIDForExport_f_theta) then
+       ! No labels applied in this case.
+    elseif (dspaceID == dspaceIDForExport_f_zeta) then
+       ! No labels applied in this case.
+    elseif (dspaceID == dspaceIDForExport_f_xi) then
+       ! No labels applied in this case.
+    elseif (dspaceID == dspaceIDForExport_f_x) then
+       ! No labels applied in this case.
     else
        print *,"WARNING: PROGRAM SHOULD NOT GET HERE. (writeHDF5Doubles)"
     end if
@@ -1038,7 +1057,9 @@ contains
 
   ! -----------------------------------------------------------------------------------
 
-  subroutine writeHDF5Doubles5(arrayName, data, dspaceID, dims, description)
+  subroutine writeHDF5Doubles5(arrayName, data, dspaceID, dims, description, iteration)
+
+    use export_f, only: export_f_xi_option
 
     implicit none
 
@@ -1049,17 +1070,22 @@ contains
     PetscScalar, dimension(:,:,:,:,:) :: data
     character(len=*) :: description
     character(len=100) :: label
+    integer :: iteration
 
-    call h5dcreate_f(HDF5FileID, arrayName, H5T_NATIVE_DOUBLE, dspaceID, dsetID, HDF5Error)
-    
+    if (iteration==1) then
+       call h5dcreate_f(HDF5FileID, arrayName, H5T_NATIVE_DOUBLE, dspaceID, dsetID, HDF5Error)
+    else
+       call h5dopen_f(HDF5FileID, arrayName, dsetID, HDF5Error)
+    end if
+
     call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, data, dims, HDF5Error)
 
-    if (dspaceID == dspaceIDForExportF) then
+    if (dspaceID == dspaceIDForExport_f) then
        call h5dsset_label_f(dsetID, 1, "export_f_x", HDF5Error)
        if (export_f_xi_option==0) then
-          call h5dsset_label_f(dsetID, 2, "export_f_xi", HDF5Error)
-       else
           call h5dsset_label_f(dsetID, 2, "Legendre mode number in xi, i.e. n in P_n(xi). First index is P_0(xi)=1.", HDF5Error)
+       else
+          call h5dsset_label_f(dsetID, 2, "export_f_xi", HDF5Error)
        end if
        call h5dsset_label_f(dsetID, 3, "export_f_zeta", HDF5Error)
        call h5dsset_label_f(dsetID, 4, "export_f_theta", HDF5Error)
@@ -1072,7 +1098,7 @@ contains
 
     call h5dclose_f(dsetID, HDF5Error)
 
-  end subroutine writeHDF5Doubles2
+  end subroutine writeHDF5Doubles5
 
   ! -----------------------------------------------------------------------------------
 

@@ -63,7 +63,7 @@ contains
          preconditioner_theta, preconditioner_xi, preconditioner_species
 
     namelist / export_f / export_full_f, export_delta_f, export_f_theta, export_f_zeta, export_f_x, export_f_xi, &
-         export_f_theta_zeta_option, export_f_x_option, export_f_xi_option
+         export_f_theta_option, export_f_zeta_option, export_f_xi_option, export_f_x_option
 
     Zs = speciesNotInitialized
     mHats = speciesNotInitialized

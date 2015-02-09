@@ -9,6 +9,7 @@
     use petscdmda
     use geometry
     use indices
+    use export_f
 
     implicit none
 

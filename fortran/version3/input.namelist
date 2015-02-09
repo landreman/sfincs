@@ -29,7 +29,7 @@
 !   2: Scan of E_r
 !   (The value of scanType is ignored when you run sfincs directly.)
 
-  RHSMode = 2
+  RHSMode = 1
   ! Option related to the number of right-hand sides (i.e. inhomogeneous drive terms) for which the kinetic equation is solved.
   ! 1: Solve for a single right-hand side. This is the usual setting.
   ! 2: Solve for 3 right-hand sides to get the 3x3 transport matrix. Presently implemented only for 1 species.
@@ -545,34 +545,42 @@
   export_full_f = .true.
   export_delta_f = .true.
 
-  export_f_theta_option = 0
-  export_f_zeta_option = 0
+  export_f_theta_option = 1
+  export_f_zeta_option = 1
   ! Controls which grid in theta & zeta is used for exporting the distribution function.
   ! 0: Report the distribution function on the original theta or zeta grid (with Ntheta or Nzeta points) used for solving the kinetic equation.
   ! 1: Interpolate to a different grid, specified by export_f_theta or export_f_zeta. Linear interpolation will be used.
+  !    No sorting of the requested values is performed.
   ! 2: Do not interpolate. Use the values of the (Ntheta * Nzeta) grid that are closest to the values requested in export_f_theta and export_f_zeta.
+  !    Values of theta or zeta will be in increasing order. If multiple requested values are close to the same grid point, the number of
+  !    points returned will be less than the number of points requested.
   ! For all of these options, you can see export_f_theta and export_f_zeta in sfincsOutput.h5 for the actual grid used in the end.
 
-  export_f_theta = 0.0
-  export_f_zeta = 0.0
-  ! mod(2pi, ...) will be applied.
+  export_f_theta = 0
+  ! modulo(..., 2*pi) will be applied.
 
-  export_f_xi_option = 0
-  ! Controls how the pitch-angle dependence of the distribution function
+  export_f_zeta = 0
+  ! modulo(..., 2*pi/Nperiods) will be applied.
+
+  export_f_xi_option = 1
+  ! Controls the discretization/grid for the pitch-angle coordinate in "delta f" and "full f".
   ! 0: Report the distribution function as amplitudes of Nxi Legendre polynomials, as used internally by SFINCS for solving the kinetic equation.
-  ! 1: Report the distribution function on the values of xi specified by export_f_xi
+  ! 1: Report the distribution function on the values of xi specified by export_f_xi. No sorting of the requested values is performed.
 
-  export_f_xi = -1 -0.5 0 0.5 1
+  export_f_xi = -1 -0.9 -0.8 -0.7 -0.6 -0.5 -0.4 -0.3 -0.2 -0.1 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1
   ! Must lie in the range [-1, 1]
 
-  export_f_x_option = 0
+  export_f_x_option = 1
   ! Controls which grid in normalized speed (x = v / sqrt(2*T/m)) is used for exporting the distribution function.
   ! 0: Report the distribution function on the original x grid (with Nx points) used for solving the kinetic equation.
   ! 1: Interpolate to a different grid, specified by export_f_x.  Polynomial spectral interpolation will be used.
+  !    No sorting of the requested values is performed.
   ! 2: Do not interpolate. Use the values of the internal x grid that are closest to the values requested in export_f_x.
+  !    Values of x will be in increasing order. If multiple requested values are close to the same grid point, the number of
+  !    points returned will be less than the number of points requested.
   ! For all of these options, you can see export_f_x in sfincsOutput.h5 for the actual grid used in the end.
 
-  export_f_x = 0.0 1.0 2.0 3.0 4.0
+  export_f_x = 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2 2.1 2.2 2.3 2.4 2.5
   ! Must be >= 0.
 
 /
