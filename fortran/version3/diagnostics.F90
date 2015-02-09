@@ -99,6 +99,7 @@
     use indices
     use writeHDF5Output
     use petscvec
+    use export_f
 
     implicit none
 
@@ -129,7 +130,8 @@
     PetscScalar, dimension(:), allocatable :: heatFluxIntegralWeights_vE
     PetscScalar, dimension(:), allocatable :: NTVIntegralWeights
     PetscScalar :: factor, factor2, factor_vE
-
+    integer :: itheta1, izeta1, ixi1, ix1
+    integer :: itheta2, izeta2, ixi2, ix2
 
     if (masterProc) then
        print *,"Computing diagnostics."
@@ -710,6 +712,71 @@
        deallocate(NTVIntegralWeights)
 
        deallocate(B2)
+
+       print *,"Starting to interpolate full f"
+       if (export_full_f) then
+          full_f = zero
+          do ispecies = 1,Nspecies
+             do itheta1 = 1,Ntheta
+                do izeta1 = 1,Nzeta
+                   do ixi1 = 1,Nxi
+                      do ix1 = 1,Nx
+                         index = getIndex(ispecies, ix1, ixi1, itheta1, izeta1, BLOCK_F)+1
+                         do itheta2 = 1,N_export_f_theta
+                            do izeta2 = 1,N_export_f_zeta
+                               do ixi2 = 1,N_export_f_xi
+                                  do ix2 = 1,N_export_f_x
+                                     full_f(ispecies, itheta2, izeta1, ixi2, ix2) = &
+                                          full_f(ispecies, itheta2, izeta1, ixi2, ix2) + &
+                                          solutionWithFullFArray(index) &
+                                          * map_theta_to_export_f_theta(itheta2, itheta1) &
+                                          * map_zeta_to_export_f_zeta(izeta2, izeta1) &
+                                          * map_xi_to_export_f_xi(ixi2, ixi1) &
+                                          * map_x_to_export_f_x(ix2, ix1) &
+                                  end do
+                               end do
+                            end do
+                         end do
+                      end do
+                   end do
+                end do
+             end do
+          end do
+       end if
+       print *,"Done."
+
+       print *,"Starting to interpolate delta f"
+       if (export_delta_f) then
+          delta_f = zero
+          do ispecies = 1,Nspecies
+             do itheta1 = 1,Ntheta
+                do izeta1 = 1,Nzeta
+                   do ixi1 = 1,Nxi
+                      do ix1 = 1,Nx
+                         index = getIndex(ispecies, ix1, ixi1, itheta1, izeta1, BLOCK_F)+1
+                         do itheta2 = 1,N_export_f_theta
+                            do izeta2 = 1,N_export_f_zeta
+                               do ixi2 = 1,N_export_f_xi
+                                  do ix2 = 1,N_export_f_x
+                                     delta_f(ispecies, itheta2, izeta1, ixi2, ix2) = &
+                                          delta_f(ispecies, itheta2, izeta1, ixi2, ix2) + &
+                                          solutionWithDeltaFArray(index) &
+                                          * map_theta_to_export_f_theta(itheta2, itheta1) &
+                                          * map_zeta_to_export_f_zeta(izeta2, izeta1) &
+                                          * map_xi_to_export_f_xi(ixi2, ixi1) &
+                                          * map_x_to_export_f_x(ix2, ix1) &
+                                  end do
+                               end do
+                            end do
+                         end do
+                      end do
+                   end do
+                end do
+             end do
+          end do
+       end if
+       print *,"Done."
+
     end if
 
     call VecDestroy(solutionWithFullF, ierr)

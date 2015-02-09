@@ -533,3 +533,46 @@
   !     so preconditioner is tridiagonal in xi
 
 /
+
+&export_f
+  ! This namelist controls whether and how the distribution function is saved in sfincsOutput.h5.
+  ! For each of the 4 coordinates (theta, zeta, x, xi), the distribution function can be given with the same discretization
+  ! used for solving the kinetic equation, or you can interpolate to a different grid/discretization.
+  ! For all available settings, the distribution function will be reported on a tensor product grid in the 4 coordinates.
+
+  ! Switches that control whether or not to export the full distribution function ("full f") and/or the departure from a Maxwellian ("delta f").
+  ! The result would appear in sfincsOutput.h5 as "full f" and "delta f" respectively.
+  export_full_f = .true.
+  export_delta_f = .true.
+
+  export_f_theta_option = 0
+  export_f_zeta_option = 0
+  ! Controls which grid in theta & zeta is used for exporting the distribution function.
+  ! 0: Report the distribution function on the original theta or zeta grid (with Ntheta or Nzeta points) used for solving the kinetic equation.
+  ! 1: Interpolate to a different grid, specified by export_f_theta or export_f_zeta. Linear interpolation will be used.
+  ! 2: Do not interpolate. Use the values of the (Ntheta * Nzeta) grid that are closest to the values requested in export_f_theta and export_f_zeta.
+  ! For all of these options, you can see export_f_theta and export_f_zeta in sfincsOutput.h5 for the actual grid used in the end.
+
+  export_f_theta = 0.0
+  export_f_zeta = 0.0
+  ! mod(2pi, ...) will be applied.
+
+  export_f_xi_option = 0
+  ! Controls how the pitch-angle dependence of the distribution function
+  ! 0: Report the distribution function as amplitudes of Nxi Legendre polynomials, as used internally by SFINCS for solving the kinetic equation.
+  ! 1: Report the distribution function on the values of xi specified by export_f_xi
+
+  export_f_xi = -1 -0.5 0 0.5 1
+  ! Must lie in the range [-1, 1]
+
+  export_f_x_option = 0
+  ! Controls which grid in normalized speed (x = v / sqrt(2*T/m)) is used for exporting the distribution function.
+  ! 0: Report the distribution function on the original x grid (with Nx points) used for solving the kinetic equation.
+  ! 1: Interpolate to a different grid, specified by export_f_x.  Polynomial spectral interpolation will be used.
+  ! 2: Do not interpolate. Use the values of the internal x grid that are closest to the values requested in export_f_x.
+  ! For all of these options, you can see export_f_x in sfincsOutput.h5 for the actual grid used in the end.
+
+  export_f_x = 0.0 1.0 2.0 3.0 4.0
+  ! Must be >= 0.
+
+/
