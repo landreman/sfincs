@@ -632,8 +632,12 @@
        end if
 
 
+       ! Interpolate the distribution function from the original grids (used for solving the kinetic equation)
+       ! onto whichever grids are requested in the export_f namelist.  I do this here by multiplying by a dense
+       ! matrix in each of the 4 coordinates (theta, zeta, x, xi).  This is not the fastest way to do what we want,
+       ! but it is relatively simple, and the time required (up to a few seconds) is negligible compared to the time
+       ! required for solving the kinetic equation.
        call PetscTime(time1, ierr)
-       print *,"Starting to interpolate full f"
        if (export_full_f) then
           full_f = zero
           do ispecies = 1,Nspecies
@@ -663,9 +667,7 @@
              end do
           end do
        end if
-       print *,"Done."
 
-       print *,"Starting to interpolate delta f"
        if (export_delta_f) then
           delta_f = zero
           do ispecies = 1,Nspecies
@@ -695,7 +697,6 @@
              end do
           end do
        end if
-       print *,"Done."
        call PetscTime(time2, ierr)
        if (export_delta_f .or. export_full_f) then
           print *,"Time for exporting f: ", time2-time1, " seconds."

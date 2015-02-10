@@ -272,7 +272,18 @@ contains
        call writeHDF5Field("useIterativeSolver", useIterativeSolver, "")
        call writeHDF5Field("NIterations", 0, "")
 
+       call writeHDF5Field("export_full_f",  export_full_f,  "Save the full f distribution function in this file? " // boolDescription)
+       call writeHDF5Field("export_delta_f", export_delta_f, "Save the delta f distribution function in this file? " // boolDescription)
        if (export_full_f .or. export_delta_f) then
+          call writeHDF5Field("export_f_theta_option", export_f_theta_option, &
+               "Which theta grid to use for exporting the distribution function.")
+          call writeHDF5Field("export_f_zeta_option", export_f_zeta_option, &
+               "Which zeta grid to use for exporting the distribution function.")
+          call writeHDF5Field("export_f_xi_option", export_f_xi_option, &
+               "Which xi discretization and grid to use for exporting the distribution function.")
+          call writeHDF5Field("export_f_x_option", export_f_x_option, &
+               "Which x grid to use for exporting the distribution function.")
+
           call writeHDF5Field("N_export_f_theta", N_export_f_theta, &
                "Size of export_f_theta, i.e. the number of theta values on which the distribution function is saved")
           call writeHDF5Field("N_export_f_zeta", N_export_f_zeta, &

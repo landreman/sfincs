@@ -1534,7 +1534,7 @@
   export_full_f = .true.
   export_delta_f = .true.
 
-  export_f_theta_option = 1
+  export_f_theta_option = 0
   export_f_zeta_option = 1
   ! Controls which grid in theta & zeta is used for exporting the distribution function.
   ! 0: Report the distribution function on the original theta or zeta grid (with Ntheta or Nzeta points) used for solving the kinetic equation.
@@ -1556,7 +1556,8 @@
   ! 0: Report the distribution function as amplitudes of Nxi Legendre polynomials, as used internally by SFINCS for solving the kinetic equation.
   ! 1: Report the distribution function on the values of xi specified by export_f_xi. No sorting of the requested values is performed.
 
-  export_f_xi = -1 -0.9 -0.8 -0.7 -0.6 -0.5 -0.4 -0.3 -0.2 -0.1 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1
+  !export_f_xi = -1 -0.9 -0.8 -0.7 -0.6 -0.5 -0.4 -0.3 -0.2 -0.1 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1
+  export_f_xi = 1
   ! Must lie in the range [-1, 1]
 
   export_f_x_option = 1

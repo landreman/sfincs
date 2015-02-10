@@ -533,7 +533,7 @@
   !    points returned will be less than the number of points requested.
   ! For all of these options, you can see export_f_theta and export_f_zeta in sfincsOutput.h5 for the actual grid used in the end.
 
-  export_f_theta = 1.570796326794897
+  export_f_theta = 0
   ! mod(..., 2*pi) will be applied.
 
   export_f_zeta = 0
