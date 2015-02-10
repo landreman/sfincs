@@ -5,6 +5,9 @@
 ispecies = 0
 # Which species to plot (0-based)
 
+iteration = 0
+# Which iteration to plot
+
 import matplotlib.pyplot as plt
 import h5py
 import numpy
@@ -93,7 +96,7 @@ else:
 
 print "plotThisCoordinate: ",plotThisCoordinate
 
-# Dimensions of delta_f and full_f are x, xi, zeta, theta, species
+# Dimensions of delta_f and full_f are x, xi, zeta, theta, species, iteration
 
 N=0
 if plotThisCoordinate == [False,False,True,True]:
@@ -104,9 +107,9 @@ if plotThisCoordinate == [False,False,True,True]:
     ordinate = x
     ordinate_label = "x"
     if full_f_available:
-        full_f_data  =  full_f[:,:,0,0,ispecies]
+        full_f_data  =  full_f[:,:,0,0,ispecies,iteration]
     if delta_f_available:
-        delta_f_data = delta_f[:,:,0,0,ispecies]
+        delta_f_data = delta_f[:,:,0,0,ispecies,iteration]
 
 if plotThisCoordinate == [False,True,False,True]:
     # zeta vs x
@@ -116,9 +119,9 @@ if plotThisCoordinate == [False,True,False,True]:
     ordinate = x
     ordinate_label = "x"
     if full_f_available:
-        full_f_data  =  full_f[:,0,:,0,ispecies]
+        full_f_data  =  full_f[:,0,:,0,ispecies,iteration]
     if delta_f_available:
-        delta_f_data = delta_f[:,0,:,0,ispecies]
+        delta_f_data = delta_f[:,0,:,0,ispecies,iteration]
 
 if plotThisCoordinate == [True,False,False,True]:
     # theta vs x
@@ -128,9 +131,9 @@ if plotThisCoordinate == [True,False,False,True]:
     ordinate = theta
     ordinate_label = "theta"
     if full_f_available:
-        full_f_data  =  full_f[:,0,0,:,ispecies].transpose()
+        full_f_data  =  full_f[:,0,0,:,ispecies,iteration].transpose()
     if delta_f_available:
-        delta_f_data = delta_f[:,0,0,:,ispecies].transpose()
+        delta_f_data = delta_f[:,0,0,:,ispecies,iteration].transpose()
 
 if plotThisCoordinate == [False,True,True,False]:
     # zeta vs xi
@@ -140,9 +143,9 @@ if plotThisCoordinate == [False,True,True,False]:
     ordinate = xi
     ordinate_label = xi_label
     if full_f_available:
-        full_f_data  =  full_f[0,:,:,0,ispecies]
+        full_f_data  =  full_f[0,:,:,0,ispecies,iteration]
     if delta_f_available:
-        delta_f_data = delta_f[0,:,:,0,ispecies]
+        delta_f_data = delta_f[0,:,:,0,ispecies,iteration]
 
 if plotThisCoordinate == [True,False,True,False]:
     # theta vs xi
@@ -152,9 +155,9 @@ if plotThisCoordinate == [True,False,True,False]:
     ordinate = theta
     ordinate_label = "theta"
     if full_f_available:
-        full_f_data  =  full_f[0,:,0,:,ispecies].transpose()
+        full_f_data  =  full_f[0,:,0,:,ispecies,iteration].transpose()
     if delta_f_available:
-        delta_f_data = delta_f[0,:,0,:,ispecies].transpose()
+        delta_f_data = delta_f[0,:,0,:,ispecies,iteration].transpose()
 
 if plotThisCoordinate == [True,True,False,False]:
     # theta vs zeta
@@ -164,9 +167,9 @@ if plotThisCoordinate == [True,True,False,False]:
     ordinate = theta
     ordinate_label = "theta"
     if full_f_available:
-        full_f_data  =  full_f[0,0,:,:,ispecies].transpose()
+        full_f_data  =  full_f[0,0,:,:,ispecies,iteration].transpose()
     if delta_f_available:
-        delta_f_data = delta_f[0,0,:,:,ispecies].transpose()
+        delta_f_data = delta_f[0,0,:,:,ispecies,iteration].transpose()
 
 if N != 1:
     print "Error! Something went wrong. N = ",N

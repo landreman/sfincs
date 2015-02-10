@@ -29,7 +29,7 @@
 !   2: Scan of E_r
 !   (The value of scanType is ignored when you run sfincs directly.)
 
-  RHSMode = 1
+  RHSMode = 2
   ! Option related to the number of right-hand sides (i.e. inhomogeneous drive terms) for which the kinetic equation is solved.
   ! 1: Solve for a single right-hand side. This is the usual setting.
   ! 2: Solve for 3 right-hand sides to get the 3x3 transport matrix. Presently implemented only for 1 species.

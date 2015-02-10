@@ -138,3 +138,10 @@ versions ("singleSpecies" and "multiSpecies"):
 * In sfincsOutput.h5, many of the data fields now have a "Description" attribute
   that explains the quantity. Some arrays also have hdf5 "dimension labels",
   which are hdf5 attributes that explain what each array dimension means.
+
+* The new export_f namelist in the input file allows you to save slices of the
+  distribution function. For each of the 4 coordinates (theta,zeta,xi,x),
+  options in this namelist allow you to use either the same discretization on
+  which the kinetic equation is solved, or you can interpolate to a different
+  grid that you specify. The utility utils/sfincsPlotF can be used to plot the
+  distribution function.

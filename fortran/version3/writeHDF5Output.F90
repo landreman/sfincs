@@ -27,7 +27,6 @@ module writeHDF5Output
   integer(HSIZE_T), dimension(1) :: dimForx
   integer(HSIZE_T), dimension(2) :: dimForThetaZeta
   integer(HSIZE_T), dimension(2) :: dimForTransportMatrix
-  integer(HSIZE_T), dimension(5) :: dimForExport_f
   integer(HSIZE_T), dimension(1) :: dimForExport_f_theta
   integer(HSIZE_T), dimension(1) :: dimForExport_f_zeta
   integer(HSIZE_T), dimension(1) :: dimForExport_f_xi
@@ -40,7 +39,6 @@ module writeHDF5Output
   integer(HID_T) :: dspaceIDForx
   integer(HID_T) :: dspaceIDForThetaZeta
   integer(HID_T) :: dspaceIDForTransportMatrix
-  integer(HID_T) :: dspaceIDForExport_f
   integer(HID_T) :: dspaceIDForExport_f_theta
   integer(HID_T) :: dspaceIDForExport_f_zeta
   integer(HID_T) :: dspaceIDForExport_f_xi
@@ -77,13 +75,18 @@ module writeHDF5Output
   integer(HID_T) :: pForIterationSpeciesThetaZeta
   integer(HID_T) :: dspaceIDForIterationSpeciesThetaZeta
 
+  integer(HSIZE_T), dimension(6) :: dimForExport_f
+  integer(HSIZE_T), dimension(6) :: maxDimForExport_f
+  integer(HSIZE_T), dimension(6) :: dimForExport_fChunk
+  integer(HID_T) :: pForExport_f
+  integer(HID_T) :: dspaceIDForExport_f
+
   interface writeHDF5Field
      module procedure writeHDF5Integer
      module procedure writeHDF5Integers
      module procedure writeHDF5Double
      module procedure writeHDF5Doubles
      module procedure writeHDF5Doubles2
-     module procedure writeHDF5Doubles5
      module procedure writeHDF5Boolean
   end interface writeHDF5Field
 
@@ -92,6 +95,7 @@ module writeHDF5Output
      module procedure writeHDF5ExtensibleField2
      module procedure writeHDF5ExtensibleField3
      module procedure writeHDF5ExtensibleField4
+     module procedure writeHDF5ExtensibleField6
   end interface writeHDF5ExtensibleField
 
   integer, parameter :: ARRAY_ITERATION = 100
@@ -99,6 +103,7 @@ module writeHDF5Output
   integer, parameter :: ARRAY_ITERATION_THETA_ZETA = 102
   integer, parameter :: ARRAY_ITERATION_SPECIES_THETA_ZETA = 103
   integer, parameter :: ARRAY_ITERATION_SPECIES_SOURCES = 104
+  integer, parameter :: ARRAY_EXPORT_F = 105
 
 contains
 
@@ -371,6 +376,7 @@ contains
        dimForIterationThetaZeta(1) = iterationNum
        dimForIterationSpeciesThetaZeta(1) = iterationNum
        dimForIterationSpeciesSources(1) = iterationNum
+       dimForExport_f(1) = iterationNum
 
        call writeHDF5ExtensibleField(iterationNum, "densityPerturbation", densityPerturbation, &
             ARRAY_ITERATION_SPECIES_THETA_ZETA, &
@@ -578,6 +584,15 @@ contains
 
        call writeHDF5ExtensibleField(iterationNum, "elapsed time (s)", elapsedTime, ARRAY_ITERATION, "")
 
+       if (export_full_f) then
+          call writeHDF5ExtensibleField(iterationNum,"full_f", full_f, ARRAY_EXPORT_F, &
+               "Full distribution function for each species, normalized by nBar / (vBar ^3)")
+       end if
+       if (export_delta_f) then
+          call writeHDF5ExtensibleField(iterationNum,"delta_f", delta_f, ARRAY_EXPORT_F, &
+               "Distribution function for each species, normalized by nBar / (vBar ^3), subtracting the leading-order Maxwellian")
+       end if
+
        if (constraintScheme .ne. 0) then
           call writeHDF5ExtensibleField(iterationNum, "sources", sources, ARRAY_ITERATION_SPECIES_SOURCES, "")
        end if
@@ -603,17 +618,6 @@ contains
                "")
 
           call h5sclose_f(dspaceIDForTransportMatrix, HDF5Error)
-       end if
-
-       if (export_full_f) then
-          call writeHDF5Field("full_f", full_f, dspaceIDForExport_f, dimForExport_f, &
-               "Full distribution function for each species, normalized by nBar / (vBar ^3)", &
-               iterationNum)
-       end if
-       if (export_delta_f) then
-          call writeHDF5Field("delta_f", delta_f, dspaceIDForExport_f, dimForExport_f, &
-               "Distribution function for each species, normalized by nBar / (vBar ^3), subtracting the leading-order Maxwellian",&
-               iterationNum)
        end if
 
        call h5fclose_f(HDF5FileID, HDF5Error)
@@ -787,6 +791,38 @@ contains
     call h5pcreate_f(H5P_DATASET_CREATE_F, pForIterationSpeciesThetaZeta, HDF5Error)
     call h5pset_chunk_f(pForIterationSpeciesThetaZeta, rank, dimForIterationSpeciesThetaZetaChunk, HDF5Error)
 
+    ! -------------------------------------
+
+    rank = 6
+    dimForExport_f(1)      = 1
+    maxDimForExport_f(1)   = H5S_UNLIMITED_F
+    dimForExport_fChunk(1) = 1
+
+    dimForExport_f(2)      = Nspecies
+    maxDimForExport_f(2)   = Nspecies
+    dimForExport_fChunk(2) = Nspecies
+
+    dimForExport_f(3)      = N_export_f_theta
+    maxDimForExport_f(3)   = N_export_f_theta
+    dimForExport_fChunk(3) = N_export_f_theta
+
+    dimForExport_f(4)      = N_export_f_zeta
+    maxDimForExport_f(4)   = N_export_f_zeta
+    dimForExport_fChunk(4) = N_export_f_zeta
+
+    dimForExport_f(5)      = N_export_f_xi
+    maxDimForExport_f(5)   = N_export_f_xi
+    dimForExport_fChunk(5) = N_export_f_xi
+
+    dimForExport_f(6)      = N_export_f_x
+    maxDimForExport_f(6)   = N_export_f_x
+    dimForExport_fChunk(6) = N_export_f_x
+
+    call h5screate_simple_f(rank, dimForExport_f, dspaceIDForExport_f, &
+         HDF5Error, maxDimForExport_f)
+    call h5pcreate_f(H5P_DATASET_CREATE_F, pForExport_f, HDF5Error)
+    call h5pset_chunk_f(pForExport_f, rank, dimForExport_fChunk, HDF5Error)
+
   end subroutine createHDF5Structures
 
   ! -----------------------------------------------------------------------------------
@@ -823,6 +859,7 @@ contains
        call h5pclose_f(pForIterationSpeciesThetaZeta, HDF5Error)
        call h5pclose_f(pForIterationThetaZeta, HDF5Error)
        call h5pclose_f(pForIterationSpeciesSources, HDF5Error)
+       call h5pclose_f(pForExport_f, HDF5Error)
 
        call h5close_f(HDF5Error)
 
@@ -1068,48 +1105,48 @@ contains
 
   ! -----------------------------------------------------------------------------------
 
-  subroutine writeHDF5Doubles5(arrayName, data, dspaceID, dims, description, iteration)
-
-    use export_f, only: export_f_xi_option
-
-    implicit none
-
-    character(len=*) :: arrayName
-    integer(HID_T) :: dsetID
-    integer(HID_T) :: dspaceID
-    integer(HSIZE_T), dimension(*) :: dims
-    PetscScalar, dimension(:,:,:,:,:) :: data
-    character(len=*) :: description
-    character(len=100) :: label
-    integer :: iteration
-
-    if (iteration==1) then
-       call h5dcreate_f(HDF5FileID, arrayName, H5T_NATIVE_DOUBLE, dspaceID, dsetID, HDF5Error)
-    else
-       call h5dopen_f(HDF5FileID, arrayName, dsetID, HDF5Error)
-    end if
-
-    call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, data, dims, HDF5Error)
-
-    if (dspaceID == dspaceIDForExport_f) then
-       call h5dsset_label_f(dsetID, 1, "export_f_x", HDF5Error)
-       if (export_f_xi_option==0) then
-          call h5dsset_label_f(dsetID, 2, "Legendre mode number in xi, i.e. n in P_n(xi). First index is P_0(xi)=1.", HDF5Error)
-       else
-          call h5dsset_label_f(dsetID, 2, "export_f_xi", HDF5Error)
-       end if
-       call h5dsset_label_f(dsetID, 3, "export_f_zeta", HDF5Error)
-       call h5dsset_label_f(dsetID, 4, "export_f_theta", HDF5Error)
-       call h5dsset_label_f(dsetID, 5, "species", HDF5Error)
-    else
-       print *,"WARNING: PROGRAM SHOULD NOT GET HERE. (writeHDF5Doubles5)"
-    end if
-    
-    call h5ltset_attribute_string_f(HDF5FileID, arrayName, attribute_name, description, HDF5Error)
-
-    call h5dclose_f(dsetID, HDF5Error)
-
-  end subroutine writeHDF5Doubles5
+!!$  subroutine writeHDF5Doubles5(arrayName, data, dspaceID, dims, description, iteration)
+!!$
+!!$    use export_f, only: export_f_xi_option
+!!$
+!!$    implicit none
+!!$
+!!$    character(len=*) :: arrayName
+!!$    integer(HID_T) :: dsetID
+!!$    integer(HID_T) :: dspaceID
+!!$    integer(HSIZE_T), dimension(*) :: dims
+!!$    PetscScalar, dimension(:,:,:,:,:) :: data
+!!$    character(len=*) :: description
+!!$    character(len=100) :: label
+!!$    integer :: iteration
+!!$
+!!$    if (iteration==1) then
+!!$       call h5dcreate_f(HDF5FileID, arrayName, H5T_NATIVE_DOUBLE, dspaceID, dsetID, HDF5Error)
+!!$    else
+!!$       call h5dopen_f(HDF5FileID, arrayName, dsetID, HDF5Error)
+!!$    end if
+!!$
+!!$    call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, data, dims, HDF5Error)
+!!$
+!!$    if (dspaceID == dspaceIDForExport_f) then
+!!$       call h5dsset_label_f(dsetID, 1, "export_f_x", HDF5Error)
+!!$       if (export_f_xi_option==0) then
+!!$          call h5dsset_label_f(dsetID, 2, "Legendre mode number in xi, i.e. n in P_n(xi). First index is P_0(xi)=1.", HDF5Error)
+!!$       else
+!!$          call h5dsset_label_f(dsetID, 2, "export_f_xi", HDF5Error)
+!!$       end if
+!!$       call h5dsset_label_f(dsetID, 3, "export_f_zeta", HDF5Error)
+!!$       call h5dsset_label_f(dsetID, 4, "export_f_theta", HDF5Error)
+!!$       call h5dsset_label_f(dsetID, 5, "species", HDF5Error)
+!!$    else
+!!$       print *,"WARNING: PROGRAM SHOULD NOT GET HERE. (writeHDF5Doubles5)"
+!!$    end if
+!!$    
+!!$    call h5ltset_attribute_string_f(HDF5FileID, arrayName, attribute_name, description, HDF5Error)
+!!$
+!!$    call h5dclose_f(dsetID, HDF5Error)
+!!$
+!!$  end subroutine writeHDF5Doubles5
 
   ! -----------------------------------------------------------------------------------
 
@@ -1364,10 +1401,12 @@ contains
        dim = dimForIterationSpeciesThetaZeta
        dimForChunk = dimForIterationSpeciesThetaZetaChunk
        chunkProperties = pForIterationSpeciesThetaZeta
+
        label1 = "zeta"
        label2 = "theta"
        label3 = "species"
        label4 = "iteration"
+
     case default
        print *,"This is writeHDF5ExtensibleField4"
        print *,"Error! Invalid arrayType:",arrayType
@@ -1404,6 +1443,86 @@ contains
     call h5dclose_f(dsetID, HDF5Error)
 
   end subroutine writeHDF5ExtensibleField4
+
+  ! -----------------------------------------------------------------------------------
+
+  subroutine writeHDF5ExtensibleField6(iterationNum, arrayName, data, arrayType, description)
+
+    use export_f, only: export_f_xi_option
+
+    implicit none
+
+    integer, parameter :: rank = 6
+    integer, intent(in) :: iterationNum
+    character(len=*) :: arrayName
+    integer(HID_T) :: dsetID
+    integer(HID_T) :: dspaceID, memspaceID, originalDspaceID
+    integer :: temp, arrayType
+    character(len=*) :: description
+    PetscScalar, dimension(:,:,:,:,:) :: data
+    integer(HSIZE_T) :: offset(rank)
+    integer(HSIZE_T), dimension(rank) :: dim, dimForChunk
+    integer(HID_T) :: chunkProperties
+    character(len=100) :: label1, label2, label3, label4, label5, label6
+
+    offset = (/ iterationNum-1, 0, 0, 0, 0, 0 /)
+
+    select case (arrayType)
+    case (ARRAY_EXPORT_F)
+       originalDspaceID = dspaceIDForExport_f
+       dim = dimForExport_f
+       dimForChunk = dimForExport_fChunk
+       chunkProperties = pForExport_f
+
+       label1 = "export_f_x"
+       if (export_f_xi_option==0) then
+          label2 = "Legendre mode number in xi, i.e. n in P_n(xi). First index is P_0(xi)=1."
+       else
+          label2 = "export_f_xi"
+       end if
+       label3 = "export_f_zeta"
+       label4 = "export_f_theta"
+       label5 = "species"
+       label6 = "iteration"
+
+    case default
+       print *,"This is writeHDF5ExtensibleField6"
+       print *,"Error! Invalid arrayType:",arrayType
+       stop
+    end select
+
+    if (iterationNum==1) then
+       call h5dcreate_f(HDF5FileID, arrayName, H5T_NATIVE_DOUBLE, originalDspaceID, &
+            dsetID, HDF5Error, chunkProperties)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, &
+            data, dimForSpecies, HDF5Error)
+
+       call h5dsset_label_f(dsetID, 1, trim(label1), HDF5Error)
+       call h5dsset_label_f(dsetID, 2, trim(label2), HDF5Error)
+       call h5dsset_label_f(dsetID, 3, trim(label3), HDF5Error)
+       call h5dsset_label_f(dsetID, 4, trim(label4), HDF5Error)
+       call h5dsset_label_f(dsetID, 5, trim(label5), HDF5Error)
+       call h5dsset_label_f(dsetID, 6, trim(label6), HDF5Error)
+
+       call h5ltset_attribute_string_f(HDF5FileID, arrayName, attribute_name, description, HDF5Error)
+    else
+       ! Extend an existing array in the .h5 file:
+       call h5dopen_f(HDF5FileID, arrayName, dsetID, HDF5Error)
+       call h5dset_extent_f(dsetID, dim, HDF5Error)
+       call h5dget_space_f(dsetID, dspaceID, HDF5Error)
+       call h5sselect_hyperslab_f(dspaceID, H5S_SELECT_SET_F, offset, &
+            dimForChunk, HDF5Error)
+       call h5screate_simple_f(rank, dimForChunk, memspaceID, HDF5Error)
+       call H5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, data, dimForChunk, HDF5Error, &
+            memspaceID, dspaceID)
+       call h5sclose_f(dspaceID, HDF5Error)
+       call h5sclose_f(memspaceID, HDF5Error)
+    end if
+
+    call h5dclose_f(dsetID, HDF5Error)
+
+  end subroutine writeHDF5ExtensibleField6
 
 end module writeHDF5Output
 
