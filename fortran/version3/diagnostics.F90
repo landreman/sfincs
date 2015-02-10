@@ -129,7 +129,7 @@
     PetscScalar, dimension(:), allocatable :: heatFluxIntegralWeights_vm
     PetscScalar, dimension(:), allocatable :: heatFluxIntegralWeights_vE
     PetscScalar, dimension(:), allocatable :: NTVIntegralWeights
-    PetscScalar :: factor, factor2, factor_vE
+    PetscScalar :: factor, factor2, factor_vE, temp1, temp2, temp3
     integer :: itheta1, izeta1, ixi1, ix1
     integer :: itheta2, izeta2, ixi2, ix2
     PetscLogDouble :: time1, time2
@@ -478,16 +478,6 @@
 
           end do
 
-!!$       print *," "
-!!$       print *,"particleFluxBeforeSurfaceIntegral_vE0:",particleFluxBeforeSurfaceIntegral_vE0
-!!$       print *," "
-!!$       print *,"particleFluxBeforeSurfaceIntegral_vE: ",particleFluxBeforeSurfaceIntegral_vE
-!!$       print *," "
-!!$       print *,"heatFluxBeforeSurfaceIntegral_vE0:",heatFluxBeforeSurfaceIntegral_vE0
-!!$       print *," "
-!!$       print *,"heatFluxBeforeSurfaceIntegral_vE: ",heatFluxBeforeSurfaceIntegral_vE
-!!$       print *," "
-
           jHat = jHat + Zs(ispecies)*flow(ispecies,:,:)
 
           totalDensity(ispecies,:,:) = nHats(ispecies) + densityPerturbation(ispecies,:,:)
@@ -652,18 +642,18 @@
                    do ixi1 = 1,Nxi
                       do ix1 = 1,Nx
                          index = getIndex(ispecies, ix1, ixi1, itheta1, izeta1, BLOCK_F)+1
+                         temp1 = solutionWithFullFArray(index)
                          do itheta2 = 1,N_export_f_theta
+                            temp2 = temp1 * map_theta_to_export_f_theta(itheta2, itheta1)
                             do izeta2 = 1,N_export_f_zeta
-                               do ixi2 = 1,N_export_f_xi
-                                  do ix2 = 1,N_export_f_x
-                                     full_f(ispecies, itheta2, izeta1, ixi2, ix2) = &
-                                          full_f(ispecies, itheta2, izeta1, ixi2, ix2) + &
-                                          solutionWithFullFArray(index) &
-                                          * map_theta_to_export_f_theta(itheta2, itheta1) &
-                                          * map_zeta_to_export_f_zeta(izeta2, izeta1) &
-                                          * map_xi_to_export_f_xi(ixi2, ixi1) &
-                                          * map_x_to_export_f_x(ix2, ix1)
-                                  end do
+                               temp3 = temp2 * map_zeta_to_export_f_zeta(izeta2, izeta1)
+                               do ix2 = 1,N_export_f_x
+                                  ! I arbitrarily chose to replace the loop over export_f_xi with ":"
+                                  ! We could pick any of the 4 coordinates for this.
+                                  full_f(ispecies, itheta2, izeta2, :, ix2) = &
+                                       full_f(ispecies, itheta2, izeta2, :, ix2) + temp3 &
+                                       * map_x_to_export_f_x(ix2, ix1) &
+                                       * map_xi_to_export_f_xi(:, ixi1)
                                end do
                             end do
                          end do
@@ -684,18 +674,18 @@
                    do ixi1 = 1,Nxi
                       do ix1 = 1,Nx
                          index = getIndex(ispecies, ix1, ixi1, itheta1, izeta1, BLOCK_F)+1
+                         temp1 = solutionWithDeltaFArray(index)
                          do itheta2 = 1,N_export_f_theta
+                            temp2 = temp1 * map_theta_to_export_f_theta(itheta2, itheta1)
                             do izeta2 = 1,N_export_f_zeta
-                               do ixi2 = 1,N_export_f_xi
-                                  do ix2 = 1,N_export_f_x
-                                     delta_f(ispecies, itheta2, izeta1, ixi2, ix2) = &
-                                          delta_f(ispecies, itheta2, izeta1, ixi2, ix2) + &
-                                          solutionWithDeltaFArray(index) &
-                                          * map_theta_to_export_f_theta(itheta2, itheta1) &
-                                          * map_zeta_to_export_f_zeta(izeta2, izeta1) &
-                                          * map_xi_to_export_f_xi(ixi2, ixi1) &
-                                          * map_x_to_export_f_x(ix2, ix1)
-                                  end do
+                               temp3 = temp2 * map_zeta_to_export_f_zeta(izeta2, izeta1)
+                               do ix2 = 1,N_export_f_x
+                                  ! I arbitrarily chose to replace the loop over export_f_xi with ":"
+                                  ! We could pick any of the 4 coordinates for this.
+                                  delta_f(ispecies, itheta2, izeta2, :, ix2) = &
+                                       delta_f(ispecies, itheta2, izeta2, :, ix2) + temp3 &
+                                       * map_x_to_export_f_x(ix2, ix1) &
+                                       * map_xi_to_export_f_xi(:, ixi1)
                                end do
                             end do
                          end do
@@ -707,8 +697,9 @@
        end if
        print *,"Done."
        call PetscTime(time2, ierr)
-       print *,"Time for exporting f: ", time2-time1, " seconds."
-      
+       if (export_delta_f .or. export_full_f) then
+          print *,"Time for exporting f: ", time2-time1, " seconds."
+       end if
 
        call VecRestoreArrayF90(solutionWithFullFOnProc0, solutionWithFullFArray, ierr)
        call VecRestoreArrayF90(solutionWithDeltaFOnProc0, solutionWithDeltaFArray, ierr)
