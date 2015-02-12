@@ -174,6 +174,8 @@ contains
        call writeHDF5Field("preconditioner_xi", preconditioner_xi, "")
        call writeHDF5Field("preconditioner_theta", preconditioner_theta, "")
        call writeHDF5Field("preconditioner_zeta", preconditioner_zeta, "")
+       call writeHDF5Field("reusePreconditioner", reusePreconditioner, "Use the same preconditioner matrix at each iteration of the Newton solver? " &
+            // boolDescription)
        call writeHDF5Field("constraintScheme", constraintScheme, "")
 
        call writeHDF5Field("DHat", DHat, dspaceIDForThetaZeta, dimForThetaZeta, &
@@ -274,7 +276,7 @@ contains
        call writeHDF5Field("VPrimeHat", VPrimeHat, "")
        call writeHDF5Field("FSABHat2", FSABHat2, &
             "< B^2 >, the flux-surface-averaged squared magnitude of the magnetic field, in units of BBar^2")
-       call writeHDF5Field("useIterativeSolver", useIterativeSolver, "")
+       call writeHDF5Field("useIterativeLinearSolver", useIterativeLinearSolver, "")
        call writeHDF5Field("NIterations", 0, "")
 
        call writeHDF5Field("export_full_f",  export_full_f,  "Save the full f distribution function in this file? " // boolDescription)

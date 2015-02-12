@@ -66,7 +66,7 @@
 &geometryParameters
 
   inputRadialCoordinate = 3
-  inputRadialCoordinateForGradients = 2
+  inputRadialCoordinateForGradients = 1
   ! These 2 parameters select which radial coordinate is used to specify the input.
   ! inputRadialCoordinate only affects the "wish" parameters that select the flux surface of interest.
   ! inputRadialCoordinateForGradients determines the radial coordinate used to specify the gradients of density, temperature, and electrostatic potential.
@@ -90,12 +90,12 @@
   psiHat_wish = -1
   psiN_wish = -1
   rHat_wish = -1
-  rN_wish = 0.5
+  rN_wish = 0.3
   ! For geometryScheme = 1, the radial coordinate will be exactly the specified value.
   ! For geometryScheme = 11 or 12, the magnetic geometry will be used from the nearest available surface in the geometry input file.
   ! For geometryScheme = 2, 3, or 4, all these values will be ignored, and the surface at rN = 0.5 will be used.
 
-  geometryScheme = 4
+  geometryScheme = 1
   ! 1 = Three-helicity model
   ! 2 = Three-helicity approximation of the LHD standard configuration at rN = 0.5
   ! 3 = Four-helicity approximation of the LHD inward-shifted configuration at rN = 0.5
@@ -110,14 +110,14 @@
   ! B = BBar * B0OverBBar * [1 + epsilon_t * cos(theta) + epsilon_h * cos(helicity_l * theta - helicity_n * zeta)]
   !                            + epsilon_antisymm * sin(helicity_antisymm_l * theta - helicity_antisymm_n * zeta)]
 
-  B0OverBBar = 0.7d+0
+  B0OverBBar = 1.0d+0
 
-  GHat = 1.27d+0
+  GHat = 1.0d+0
   ! G is c/2 * the poloidal current outside the flux
   ! surface. Equivalently, G is the coefficient of grad zeta in the
   ! covariant representation of vector B. GHat is G normalized by \bar{B}\bar{R}.
 
-  IHat = 0.8d+0
+  IHat = 0.0d+0
   ! I is c/2 * the toroidal current inside the flux
   ! surface. Equivalently, I is the coefficient of grad theta in the
   ! covariant representation of vector B. IHat is I normalized by \bar{B}\bar{R}.
@@ -125,12 +125,12 @@
   iota = 1.31d+0
   ! iota is the rotational transform = 1 / (safety factor q)
 
-  epsilon_t = 0.13d+0
+  epsilon_t = 0.1d+0
 
-  epsilon_h = 0.1d+0
+  epsilon_h = 0.0d+0
   
-  helicity_l = 2
-  helicity_n = 5
+  helicity_l = 1
+  helicity_n = 1
 
   epsilon_antisymm = 0.0d+0
   helicity_antisymm_l = 3	
@@ -139,8 +139,8 @@
   ! psiAHat = psi_a / (\bar{B} * \bar{R}^2) (in both Gaussian and SI units)
   ! where 2*pi*psi_a is the toroidal flux at the last closed flux surface
   ! (the surface where psi_N = 1.)
-  ! The value of psiAHat here is over-written for geometryScheme = .ne. 1
-  psiAHat = 0.03d+0
+  ! The value of psiAHat here is over-written for geometryScheme = 2, 3, 11 and 12.
+  psiAHat = 0.045d+0
 
   aHat = 0.1
   ! aHat is the effective minor radius at the last closed flux surface in units of RBar.
@@ -159,9 +159,9 @@
 
   ! The remaining options only matter for geometryScheme = 5, 11, and 12:
 
-  equilibriumFile = "../../../../equilibria/w7x-sc1.bc"
+  equilibriumFile = "../../equilibria/w7x-sc1.bc"
 
-  min_Bmn_to_load = 0
+  min_Bmn_to_load = 1d-4
   !Filter out any Bmn components smaller than this.
 
 /
@@ -178,19 +178,20 @@
   ! dnHatdpsiNs = radial gradient of the density of each species with respect to the normalized toroidal flux psi_N, normalized to the reference density \bar{n}
   ! dTHatdpsiNs = radial gradient of the temperature of each species with respect to the normalized toroidal flux psi_N, normalized to the reference temperature \bar{T}
 
-  Zs = 1 -1
-  mHats = 1 0.000545509d+0
-  nHats = 1.0d+0 1.0d+0
-  THats = 1.0d+0 1.0d+0
+  ! Here is an example with 1 species:
+  Zs = 1
+  mHats = 1
+  nHats = 1.0d+0
+  THats = 0.5d+0
   ! Only 1 of the following 4 pairs will be used, depending on inputRadialCoordinateForGradients:
-  dNHatdpsiHats = 0 0
-  dTHatdpsiHats = 0 0
-  dNHatdpsiNs = 0 0
-  dTHatdpsiNs = 0 0
-  dNHatdrHats = -0.5d+0 -0.5d+0
-  dTHatdrHats = -2.0d+0 -2.0d+0
-  dNHatdrNs = 0 0
-  dTHatdrNs = 0 0
+  dNHatdpsiHats = 0
+  dTHatdpsiHats = 0
+  dNHatdpsiNs = -1.0d+0
+  dTHatdpsiNs = -0.5d+0
+  dNHatdrHats = 0
+  dTHatdrHats = 0
+  dNHatdrNs = 0
+  dTHatdrNs = 0
 
 /
 
@@ -206,13 +207,14 @@
   ! where
   ! c = speed of light
   ! e = proton charge
+  ! Delta = 0.0011d+0
 
   Delta = 4.5694d-3  ! reference values: \bar{T}=1 keV, \bar{n}=10^20 m^-3,
                      ! \bar{Phi}=1 kV, \bar{B}=1 T, \bar{R}=1 m, proton mass
 
   ! alpha = e * \bar{Phi} / \bar{T} (in both Gaussian and SI units)
   ! where again e = proton charge.
-  alpha = 1d+0
+  alpha = 1.0d+0
 
   ! Inductive electric field (often 0).
   ! EParallelHat = <E dot B> * \bar{R} / (\bar{Phi} * \bar{B})  (in both Gaussian and SI units)
@@ -262,7 +264,9 @@
   ! \bar{nu} = -----------------------------------------------------------   (Gaussian units)
   !                       3 * sqrt(\bar{m}} * \bar{T}^(3/2)
   !
-  nu_n = 0.00831565d+0
+
+  nu_n = 8.4774d-3  ! reference values: \bar{T}=1 keV, \bar{n}=10^20 m^-3,
+                    ! \bar{Phi}=1 kV, \bar{B}=1 T, \bar{R}=1 m, proton mass
 
   collisionOperator = 0
   ! 0 = Full linearized Fokker-Planck operator
@@ -335,15 +339,15 @@
 
   ! If nonlinear = .true., the code will iterate to find the self-consistent poloidal variation
   ! of the electrostatic potential, including the nonlinear coupling between Phi_1 and f_1
-  !nonlinear = .true.
-  nonlinear = .false.
+  nonlinear = .true.
+  !nonlinear = .false.
 /
 
 &resolutionParameters
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! Numerical resolution parameters:
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  
+
   ! For each set of 4 numbers below, the first is the value used in a single run.
   ! The second and third numbers set the range by which the first number is scaled
   ! in a convergence scan. The fourth number sets the number of values tried in a
@@ -359,21 +363,21 @@
   ! For each resolution parameter (Ntheta, Nzeta, Nxi, etc.), the value itself is read by
   ! Fortran and so should not be preceded by !ss.  However the ...MinFactor, ...MaxFactor, 
   ! and ...NumRuns quantities are read by sfincsScan and so must be preceded by !ss
-
+  
   ! Number of grid points in the poloidal direction.
   ! Memory and time requirements DO depend strongly on this parameter.
-  Ntheta = 13
-!ss NthetaMinFactor = 0.6
-!ss NthetaMaxFactor = 2.5
-!ss NthetaNumRuns = 15
+  Ntheta = 21
+!ss NthetaMinFactor = 0.7
+!ss NthetaMaxFactor = 2
+!ss NthetaNumRuns = 5
 
   ! Number of grid points in the toroidal direction
   ! (per identical segment of the stellarator.)
   ! Memory and time requirements DO depend strongly on this parameter.
-  Nzeta = 19
-!ss NzetaMinFactor = 0.6
-!ss NzetaMaxFactor = 2.5
-!ss NzetaNumRuns = 15
+  Nzeta = 1
+!ss NzetaMinFactor = 0.8
+!ss NzetaMaxFactor = 2
+!ss NzetaNumRuns = 5
 
   ! Number of Legendre polynomials used to represent the distribution function.
   ! Memory and time requirements DO depend strongly on this parameter.
@@ -381,10 +385,10 @@
   ! the collisionality. At high collisionality, this parameter can be as low
   ! as ~ 5. At low collisionality, this parameter may need to be many 10s or
   ! even > 100 for convergence.
-  Nxi = 48
-!ss NxiMinFactor = 0.7
-!ss NxiMaxFactor = 2.5
-!ss NxiNumRuns = 25
+  Nxi = 31
+!ss NxiMinFactor = 0.8
+!ss NxiMaxFactor = 2
+!ss NxiNumRuns = 6
   
   ! Number of Legendre polynomials used to represent the Rosenbluth
   ! potentials. Except in exceptional circumstances, this number should be 4.
@@ -399,14 +403,14 @@
   ! This parameter almost always needs to be at least 5.
   ! Usually a value in the range 5-8 is plenty for convergence, though sometimes
   ! you may need to go up to 10-15.
-  Nx = 5
+  Nx = 8
 !ss NxMinFactor = 0.8
-!ss NxMaxFactor = 4
-!ss NxNumRuns = 200
+!ss NxMaxFactor = 2
+!ss NxNumRuns = 3
 
   ! Number of grid points in energy used to represent the Rosenbluth potentials.
   ! Memory and time requirements do NOT depend strongly on this parameter.
-  NxPotentialsPerVth = 40d+0
+  NxPotentialsPerVth = 40
 !ss NxPotentialsPerVthMinFactor = 0.5
 !ss NxPotentialsPerVthMaxFactor = 2
 !ss NxPotentialsPerVthNumRuns = 0
@@ -422,7 +426,7 @@
   ! Tolerance used to define convergence of the Krylov solver.
   ! This parameter does not affect memory requirements but it does affect the
   ! time required for solution somewhat
-  solverTolerance = 1d-6
+  solverTolerance = 1d-12
 !ss solverToleranceMinFactor = 0.1
 !ss solverToleranceMaxFactor = 10
 !ss solverToleranceNumRuns = 3
@@ -451,6 +455,7 @@
   ! will be used. The direct solver is faster for small problems and always yields a solution.
   ! For large problems, the iterative solver will usually be faster and will use much
   ! less memory, but it may not always converge.
+
   useIterativeLinearSolver = .true.
 !  useIterativeLinearSolver = .false.
 
@@ -476,11 +481,11 @@
   ! to obtain the preconditioner:
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  preconditioner_species = 1
+  preconditioner_species = 0
   ! 0 = keep full species coupling
   ! 1 = drop all cross-species coupling
 
-  preconditioner_x = 1
+  preconditioner_x = 0
   ! 0 = keep full x coupling
   ! 1 = drop everything off-diagonal in x
   ! 2 = keep only upper-triangular part in x
@@ -504,8 +509,8 @@
   ! 1 = drop terms that are +/- 2 from the diagonal in xi, 
   !     so preconditioner is tridiagonal in xi
 
-  reusePreconditioner = .true.
-  !reusePreconditioner = .false.
+  !reusePreconditioner = .true.
+  reusePreconditioner = .false.
   ! This setting matters only for nonlinear calculations.
   ! If true, the nonlinear term will not be included in the preconditioner matrix, meaning the preconditioner matrix is the same
   ! at every iteration, and so the preconditioner matrix only needs to be LU-factored once.  If false, the preconditioner matrix
@@ -525,8 +530,8 @@
   export_full_f = .true.
   export_delta_f = .true.
 
-  export_f_theta_option = 1
-  export_f_zeta_option = 1
+  export_f_theta_option = 2
+  export_f_zeta_option = 2
   ! Controls which grid in theta & zeta is used for exporting the distribution function.
   ! 0: Report the distribution function on the original theta or zeta grid (with Ntheta or Nzeta points) used for solving the kinetic equation.
   ! 1: Interpolate to a different grid, specified by export_f_theta or export_f_zeta. Linear interpolation will be used.
@@ -536,10 +541,10 @@
   !    points returned will be less than the number of points requested.
   ! For all of these options, you can see export_f_theta and export_f_zeta in sfincsOutput.h5 for the actual grid used in the end.
 
-  export_f_theta = 0.5
+  export_f_theta = 1.57
   ! modulo(..., 2*pi) will be applied.
 
-  export_f_zeta = 0.5
+  export_f_zeta = 0
   ! modulo(..., 2*pi/Nperiods) will be applied.
 
   export_f_xi_option = 1
@@ -550,7 +555,7 @@
   export_f_xi = -1 -0.9 -0.8 -0.7 -0.6 -0.5 -0.4 -0.3 -0.2 -0.1 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1
   ! Must lie in the range [-1, 1]
 
-  export_f_x_option = 1
+  export_f_x_option = 0
   ! Controls which grid in normalized speed (x = v / sqrt(2*T/m)) is used for exporting the distribution function.
   ! 0: Report the distribution function on the original x grid (with Nx points) used for solving the kinetic equation.
   ! 1: Interpolate to a different grid, specified by export_f_x.  Polynomial spectral interpolation will be used.

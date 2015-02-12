@@ -4,8 +4,9 @@
 subroutine preallocateMatrix(matrix, whichMatrix)
 
   use petscmat
-  use globalVariables, only: Nx, Nxi, Ntheta, Nzeta, Nspecies, matrixSize, &
-       constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc
+  use globalVariables, only: Nx, Nxi, Ntheta, Nzeta, Nspecies, matrixSize, includePhi1, &
+       constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, nonlinear
+  use indices
 
   implicit none
 
@@ -14,7 +15,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   integer :: predictedNNZForEachRowOfPreconditioner, predictedNNZForEachRowOfTotalMatrix
   integer, dimension(:), allocatable :: predictedNNZsForEachRow, predictedNNZsForEachRowDiagonal
   PetscErrorCode :: ierr
-  integer :: tempInt1, i
+  integer :: tempInt1, i, itheta, izeta, ispecies, index
   integer :: firstRowThisProcOwns, lastRowThisProcOwns, numLocalRows
 
   if (masterProc) then
@@ -35,7 +36,23 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   
   allocate(predictedNNZsForEachRow(matrixSize))
   allocate(predictedNNZsForEachRowDiagonal(matrixSize))
-  tempInt1 = 3*Nx + (Nspecies-1)*Nx + (5*3-1) + (5*3-1)
+  ! Set tempInt1 to the expected number of nonzeros in a row of the kinetic equation block:
+  !  tempInt1 = 3*Nx + (Nspecies-1)*Nx + (5*3-1) + (5*3-1) ! Works w/o nonlinearity
+  tempInt1 = 3*Nx &        ! ddx terms on diagonal from collision operator, and ell=L +/- 2 in xDot. (Dense in x, and tridiagonal in L.)
+       + (Nspecies-1)*Nx & ! inter-species collisional coupling. (Dense in x and species)
+       + (4*3-1) &         ! d/dtheta terms (pentadiagonal in theta with 0 diagonal, tridiagonal in L)
+       + (4*3-1) &         ! d/dzeta terms (pentadiagonal in zeta with 0 diagonal, tridiagonal in L)
+       + 2 &               ! d/dxi terms with ell = L +/- 1
+       + 2                 ! particle and heat sources
+  if (includePhi1) then
+     tempInt1 = tempInt1 &
+       + 4 &               ! d Phi_1 / d theta term
+       + 4                 ! d Phi_1 / d zeta term, -1 because diagonal was accounted for in the previous line.
+  end if
+  if (nonlinear) then
+     tempInt1 = tempInt1 + 2*Nx -2 ! Nonlinear term is dense in x with ell = L +/- 1, which we have not yet counted. Subtract 2 for the diagonal we already counted.
+  end if
+  ! Note: we do not need extra nonzeros for the d/dxi terms or for the diagonal, since these have already been accounted for in the ddx and ddtheta parts.
   if (tempInt1 > matrixSize) then
      tempInt1 = matrixSize
   end if
@@ -45,14 +62,40 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   case (0)
   case (1)
      ! The rows for the constraints have more nonzeros:
-     predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta*Nx + 1
+     !predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta*Nx + 1
      !predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta*Nx
+     do ispecies=1,Nspecies
+        index = getIndex(ispecies,1,1,1,1,BLOCK_DENSITY_CONSTRAINT)
+        predictedNNZsForEachRow(index+1) = Ntheta*Nzeta*Nx + 1 ! +1 for diagonal
+        index = getIndex(ispecies,1,1,1,1,BLOCK_PRESSURE_CONSTRAINT)
+        predictedNNZsForEachRow(index+1) = Ntheta*Nzeta*Nx + 1 ! +1 for diagonal
+     end do
   case (2)
      ! The rows for the constraints have more nonzeros:
-     predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta + 1
+     !predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta + 1
      !predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta
+     do ispecies=1,Nspecies
+        index = getIndex(ispecies,1,1,1,1,BLOCK_F_CONSTRAINT)
+        predictedNNZsForEachRow(index+1) = Ntheta*Nzeta + 1 ! +1 for diagonal
+     end do
   case default
   end select
+  
+  if (includePhi1) then
+     ! Set rows for the quasineutrality condition:
+     do itheta=1,Ntheta
+        do izeta=1,Nzeta
+           index = getIndex(1,1,1,itheta,izeta,BLOCK_QN)
+           ! Add 1 because we are indexing a Fortran array instead of a PETSc matrix:
+           predictedNNZsForEachRow(index+1) = Nx*Nspecies &  ! Integrals over f to get the density
+                                              + 1 &          ! lambda
+                                              + 1            ! Diagonal entry
+        end do
+     end do
+     ! Set row for lambda constraint:
+     index = getIndex(1,1,1,1,1,BLOCK_PHI1_CONSTRAINT)
+     predictedNNZsForEachRow(index+1) = Ntheta*Nzeta + 1 ! <Phi_1>, plus 1 for diagonal.
+  end if
   predictedNNZsForEachRowDiagonal = predictedNNZsForEachRow
   
   
@@ -121,6 +164,13 @@ subroutine preallocateMatrix(matrix, whichMatrix)
      stop
   end select
   
+!!$  if (whichMatrix==0 .and. masterProc) then
+!!$     print *,"Here comes predictedNNZsForEachRow:"
+!!$     print *,predictedNNZsForEachRow
+!!$     print *,"Here comes predictedNNZsForEachRowDiagonal:"
+!!$     print *,predictedNNZsForEachRowDiagonal
+!!$  end if
+
   ! If any mallocs are required during matrix assembly, do not generate an error:
   !call MatSetOption(matrix, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE, ierr)
   

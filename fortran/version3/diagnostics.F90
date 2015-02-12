@@ -4,7 +4,7 @@
 ! This next subroutine is called as a "Monitor" of SNES, set in solver.F90 using SNESSetMonitor.
   subroutine diagnosticsMonitor(mysnes, iterationNum, residual, userContext, ierr)
 
-    use globalVariables, only: masterProc
+    use globalVariables, only: masterProc, iterationForMatrixOutput
     use petscsnes
 
     implicit none
@@ -28,6 +28,7 @@
        return
     end if
 
+    iterationForMatrixOutput = iterationNum
     call SNESGetSolution(mysnes, soln, ierr)
 
     call diagnostics(soln, iterationNum)
@@ -55,6 +56,10 @@
     integer :: itheta, izeta, index
 
     if (includePhi1) then
+       if (masterProc) then
+          print *,"Computing Phi1"
+       end if
+
        ! Send the entire solution vector to the master process:
        call VecScatterCreateToZero(myVec, VecScatterContext, solnOnProc0, ierr)
        call VecScatterBegin(VecScatterContext, myVec, solnOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)

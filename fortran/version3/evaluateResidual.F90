@@ -34,7 +34,7 @@
        ! Some terms in the residual are computed by calling populateMatrix(...,3)
        ! and multiplying the result by the state vector:
        call preallocateMatrix(residualMatrix, 3)
-       call populateMatrix(residualMatrix, 3)
+       call populateMatrix(residualMatrix, 3, stateVec)
        call MatMult(residualMatrix, stateVec, residualVec, ierr)
        call MatDestroy(residualMatrix, ierr)
 
@@ -45,11 +45,11 @@
        call VecSet(residualVec, zero, ierr)
     end if
 
-    ! The collision term in the residual is computed by calling populateMatrix(...,2)
+    ! The collision term (temperature equilibration) in the residual is computed by calling populateMatrix(...,2)
     ! any multiplying the result by the Vec f0:
     if (includeTemperatureEquilibrationTerm) then
        call preallocateMatrix(residualMatrix, 2)
-       call populateMatrix(residualMatrix, 2)
+       call populateMatrix(residualMatrix, 2, stateVec)
        call MatMultAdd(residualMatrix, f0, residualVec, residualVec, ierr)
        call MatDestroy(residualMatrix, ierr)
     end if

@@ -126,7 +126,7 @@ module globalVariables
   ! This can be useful because the iterative solvers sometimes do not work with even Ntheta or Nzeta.
   ! This parameter should be true unless you know what you are doing.
 
-  logical :: useIterativeSolver
+  logical :: useIterativeLinearSolver
 
   integer :: whichParallelSolverToFactorPreconditioner
   ! Options for whichParallelSolverToFactorPreconditioner:
@@ -135,6 +135,7 @@ module globalVariables
 
   integer :: preconditioner_x, preconditioner_x_min_L, preconditioner_zeta
   integer :: preconditioner_theta, preconditioner_xi, preconditioner_species
+  logical :: reusePreconditioner
 
   integer :: constraintScheme
 
@@ -298,13 +299,13 @@ module globalVariables
 
   PetscLogDouble :: elapsedTime
   integer :: didLinearCalculationConverge, didNonlinearCalculationConverge
+  integer :: iterationForMatrixOutput
+  logical :: firstMatrixCreation
 
   integer :: transportMatrixSize = 3
   PetscScalar, dimension(:,:), allocatable :: transportMatrix
 
-  !Vec :: temperatureEquilibrationTerm
   Vec :: f0
-  logical :: savedMatlabMatricesYet(4) = .false.
 
   ! ********************************************************
   !

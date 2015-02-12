@@ -25,26 +25,27 @@ module solver
     KSPConvergedReason :: KSPReason
     PetscLogDouble :: time1, time2
     integer :: userContext(1)
+    Vec :: dummyVec
 
     external evaluateJacobian, evaluateResidual, diagnosticsMonitor
 
     if (masterProc) then
        print *,"Entering main solver loop."
     end if
+    iterationForMatrixOutput = 0
 
     call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, solutionVec, ierr)
     call VecDuplicate(solutionVec, residualVec, ierr)
 
     call VecDuplicate(solutionVec, f0, ierr)
     call init_f0()
-    !call VecDuplicate(solutionVec, temperatureEquilibrationTerm, ierr)
-    !call initTemperatureEquilibrationTerm()
 
     call SNESCreate(MPIComm, mysnes, ierr)
     call SNESSetFunction(mysnes, residualVec, evaluateResidual, PETSC_NULL_OBJECT, ierr)
 
+    firstMatrixCreation = .true.
     call preallocateMatrix(matrix, 1)
-    if (useIterativeSolver) then
+    if (useIterativeLinearSolver) then
        call preallocateMatrix(preconditionerMatrix, 0)
        call SNESSetJacobian(mysnes, matrix, preconditionerMatrix, evaluateJacobian, PETSC_NULL_OBJECT, ierr)
     else
@@ -53,7 +54,7 @@ module solver
 
     call SNESGetKSP(mysnes, KSPInstance, ierr)
 
-    if (useIterativeSolver) then
+    if (useIterativeLinearSolver) then
 !!$#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
 !!$       ! Syntax for PETSc versions up through 3.4
 !!$       call KSPSetOperators(KSPInstance, matrix, preconditionerMatrix, SAME_PRECONDITIONER, ierr)
@@ -123,7 +124,11 @@ module solver
 
     ! Tell PETSc to call the diagnostics subroutine at each iteration of SNES:
     call SNESMonitorSet(mysnes, diagnosticsMonitor, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
-    !call SNESMonitorSet(mysnes, SNESMonitorDefault, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
+
+    if (reusePreconditioner) then
+       call KSPSetReusePreconditioner(KSPInstance, PETSC_TRUE, ierr)
+       call PCSetReusePreconditioner(preconditionerContext, PETSC_TRUE, ierr)
+    end if
 
     ! Set the algorithm to use for the nonlinear solver:
     if (nonlinear) then
@@ -178,16 +183,46 @@ module solver
        end if
        call PetscTime(time1, ierr)
 
-       if (useIterativeSolver) then
+       if (useIterativeLinearSolver) then
           call SNESGetConvergedReason(mysnes, reason, ierr)
           if (reason>0) then
              if (masterProc) then
                 print *,"Converged!  SNESConvergedReason = ", reason
+                select case (reason)
+                case (2)
+                   print *,"  SNES_CONVERGED_FNORM_ABS: ||F|| < atol"
+                case (3)
+                   print *,"  SNES_CONVERGED_FNORM_RELATIVE: ||F|| < rtol*||F_initial||"
+                case (4)
+                   print *,"  SNES_CONVERGED_SNORM_RELATIVE: Newton computed step size small; || delta x || < stol || x ||"
+                case (5)
+                   print *,"  SNES_CONVERGED_ITS: Maximum iterations reached"
+                case (7)
+                   print *,"  SNES_CONVERGED_TR_DELTA:"
+                end select
              end if
              didNonlinearCalculationConverge = integerToRepresentTrue
           else
              if (masterProc) then
                 print *,"Did not converge :(   SNESConvergedReason = ", reason
+                select case (reason)
+                case (-1)
+                   print *,"  SNES_DIVERGED_FUNCTION_DOMAIN: The new x location passed the function is not in the domain of F"
+                case (-2)
+                   print *,"  SNES_DIVERGED_FUNCTION_COUNT:"
+                case (-3)
+                   print *,"  SNES_DIVERGED_LINEAR_SOLVE: The linear solve failed"
+                case (-4)
+                   print *,"  SNES_DIVERGED_FNORM_NAN"
+                case (-5)
+                   print *,"  SNES_DIVERGED_MAX_IT"
+                case (-6)
+                   print *,"  SNES_DIVERGED_LINE_SEARCH: The line search failed"
+                case (-7)
+                   print *,"  SNES_DIVERGED_INNER: Inner solve failed"
+                case (-8)
+                   print *,"  SNES_DIVERGED_LOCAL_MIN: || J^T b || is small, implies converged to local minimum of F()"
+                end select
              end if
              didNonlinearCalculationConverge = integerToRepresentFalse
           end if
@@ -206,13 +241,13 @@ module solver
        call VecSet(solutionVec, zero, ierr)
 
        ! Build the main linear system matrix:
-       call populateMatrix(matrix,1)
+       call populateMatrix(matrix,1,dummyVec)
 
 
-       if (useIterativeSolver) then
+       if (useIterativeLinearSolver) then
 
           ! Build the preconditioner:
-          call populateMatrix(preconditionerMatrix,0)
+          call populateMatrix(preconditionerMatrix,0,dummyVec)
 
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))                                                                                                                       
           ! Syntax for PETSc versions up through 3.4
@@ -314,7 +349,7 @@ module solver
           end if
           call PetscTime(time1, ierr)
 
-          if (useIterativeSolver) then
+          if (useIterativeLinearSolver) then
              call KSPGetConvergedReason(KSPInstance, KSPReason, ierr)
              if (KSPReason>0) then
                 if (masterProc) then
@@ -354,10 +389,11 @@ module solver
 
     call VecDestroy(solutionVec, ierr)
     call VecDestroy(residualVec, ierr)
-    call MatDestroy(matrix, ierr)
-    if (useIterativeSolver) then
-       call MatDestroy(preconditionerMatrix, ierr)
-    end if
+    ! A seg fault occurs in nonlinear runs if we call MatDestroy here, since the matrix was already destroyed (and a different Mat created) in evaluateJacobian().
+!!$    call MatDestroy(matrix, ierr)
+!!$    if (useIterativeLinearSolver) then
+!!$       call MatDestroy(preconditionerMatrix, ierr)
+!!$    end if
     call SNESDestroy(mysnes,ierr)
 
 

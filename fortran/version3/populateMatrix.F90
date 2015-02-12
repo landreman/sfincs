@@ -6,7 +6,7 @@
 #include "PETScVersions.F90"
 
 
-  subroutine populateMatrix(matrix, whichMatrix)
+  subroutine populateMatrix(matrix, whichMatrix, stateVec)
 
     use petscmat
     use globalVariables
@@ -17,6 +17,8 @@
 
     Mat :: matrix
     integer, intent(in) :: whichMatrix
+    Vec :: stateVec ! stateVec is ignored when nonlinear=false or when evaluating the residual.
+
     ! Allowed values for whichMatrix:
     ! 0 = preconditioner for Jacobian
     ! 1 = Jacobian
@@ -28,7 +30,7 @@
     PetscScalar :: T32m, factor, LFactor, temp, temp1, temp2, xDotFactor, xDotFactor2, stuffToAdd
     PetscScalar, dimension(:), allocatable :: xb, expxb2
     PetscScalar, dimension(:,:), allocatable :: thetaPartOfTerm, localThetaPartOfTerm, xPartOfXDot
-    integer :: i, j, ix, ispecies, itheta, izeta, L, ixi, index
+    integer :: i, j, ix, ispecies, itheta, izeta, L, ixi, index, ix_row, ix_col
     integer :: rowIndex, colIndex
     integer :: ell, iSpeciesA, iSpeciesB
     integer, dimension(:), allocatable :: rowIndices, colIndices
@@ -50,26 +52,40 @@
     double precision :: myMatInfo(MAT_INFO_SIZE)
     integer :: NNZ, NNZAllocated, NMallocs
     PetscScalar :: CHat_element, dfMdx
-    character(len=50) :: whichMatrixName
+    character(len=100) :: whichMatrixName, filename
     PetscViewer :: MatlabOutput
     integer :: ithetaRow, ithetaCol, izetaRow, izetaCol
+    VecScatter :: vecScatterContext
+    Vec :: vecOnEveryProc
+    PetscScalar, pointer :: stateArray(:)
+    logical :: useStateVec
+    PetscScalar, dimension(:,:), allocatable :: nonlinearTerm_Lp1, nonlinearTerm_Lm1
+    PetscScalar, dimension(:), allocatable :: tempVector1, tempVector2
 
     ! *******************************************************************************
     ! Do a few sundry initialization tasks:
     ! *******************************************************************************
 
+    ! This next line only matters for nonlinear calculations, in which the Mat objects for the matrix and preconditioner matrix 
+    ! are reused at each iteration of SNES. In this case we need to clear all the previous entries, or else we would add the new
+    ! values on top of the previous values:
+    call MatZeroEntries(matrix,ierr)
+
     select case (whichMatrix)
     case (0)
-       ! Preconditioner for Jacobian
+       ! Preconditioner matrix for the Jacobian matrix
        whichMatrixName = "Jacobian preconditioner"
     case (1)
-       ! Jacobian
+       ! Jacobian matrix
        whichMatrixName = "Jacobian"
     case (2)
-       ! Matrix multiplied by f0 when evaluating residual
+       ! The matrix which is multiplied by f0 when evaluating the residual.
+       ! This matrix should only contain the collision operator, and it is used for computing temperature equilibration.
        whichMatrixName = "residual f0"
     case (3)
-       ! Matrix multiplied by f1 when evaluating residual
+       ! The matrix which is multiplied by f1 when evaluating the residual.
+       ! This matrix is quite similar to the Jacobian matrix (whichMatrix=1), since most terms in the system of equations are linear.
+       ! However there are a few differences related to the nonlinear term.
        whichMatrixName = "residual f1"
     case default
        if (masterProc) then
@@ -99,6 +115,19 @@
 !!$       end do
 !!$    end if
 
+    useStateVec = (nonlinear .and. (whichMatrix==0 .or. whichMatrix==1))
+    if (useStateVec) then
+       ! We need delta f to evaluate the Jacobian, so send a copy to every proc:
+       call VecScatterCreateToAll(stateVec, vecScatterContext, vecOnEveryProc, ierr)
+       call VecScatterBegin(vecScatterContext, stateVec, vecOnEveryProc, INSERT_VALUES, SCATTER_FORWARD, ierr)
+       call VecScatterEnd(vecScatterContext, stateVec, vecOnEveryProc, INSERT_VALUES, SCATTER_FORWARD, ierr)
+       call VecGetArrayF90(vecOnEveryProc, stateArray, ierr)
+    end if
+
+    ! In nonlinear runs, the Jacobian and residual require Phi1:
+    if (nonlinear .and. (whichMatrix .ne. 2)) then
+       call extractPhi1(stateVec)
+    end if
 
     ! *********************************************************
     ! Allocate small matrices:
@@ -582,7 +611,7 @@
        ! (These are the terms that give the adiabatic response.)
        ! *********************************************************
 
-       if (whichMatrix .ne. 2 .and. includePhi1) then
+       if ((whichMatrix .ne. 2) .and. includePhi1) then
           L=1
           do ix = 1,Nx
 
@@ -628,7 +657,164 @@
           end do
        end if
 
-    end do
+       ! *********************************************************
+       ! Add the nonlinear term in the residual, which also is
+       ! the block in the Jacobian from d(kinetic eqn) / d f.
+       ! *********************************************************
+       ! Note that this term is absent in the first iteration of a nonlinear calculation, because the term is proportional to Phi1.
+       ! Therefore, if reusePreconditioner=true, we do not include this term in the preconditioner (which is great because this term introduces a lot of nonzeros.)
+       ! If reusePreconditioner=false, then we DO include this term in the preconditioner.
+       ! We must use MatSetValue instead of MatSetValueSparse in this term so that we can add some "nonzero" elements whose value is actually 0
+       ! in the first iteration (due to Phi1=0). The reason is that PETSc will re-use the pattern of nonzeros from the first iteration in subsequent iterations.
+       ! However, we need not add elements which are 0 due to ddtheta=0 as opposed to because Phi1=0, since such elements will remain 0 at every iteration of SNES.
+
+       !if (nonlinear .and. (whichMatrix .ne. 2)) then
+       if (nonlinear .and. (whichMatrix == 1 .or. whichMatrix == 3 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then
+
+          !print *,"@@@@@@ ",myRank," max(abs(dPhi1Hatdtheta)): ",maxval(abs(dPhi1Hatdtheta)),maxval(abs(dPhi1Hatdzeta))
+
+          allocate(nonlinearTerm_Lp1(Nx,Nx))
+          allocate(nonlinearTerm_Lm1(Nx,Nx))
+          allocate(rowIndices(Nx))
+          allocate(colIndices(Nx))
+
+          do L=0,(Nxi-1)
+             if (whichMatrix==0 .and. L >= preconditioner_x_min_L) then
+                ddxToUse = ddx_preconditioner
+             else
+                ddxToUse = ddx
+             end if
+             nonlinearTerm_Lp1 = (L+1)/(two*L+3) * ddxToUse
+             nonlinearTerm_Lm1 = L/(two*L-1)     * ddxToUse
+             do ix=1,Nx
+                nonlinearTerm_Lp1(ix,ix) = nonlinearTerm_Lp1(ix,ix) + (L+1)*(L+2)/(two*L+3)/x(ix)
+                nonlinearTerm_Lm1(ix,ix) = nonlinearTerm_Lm1(ix,ix) - (L-1)*L/(two*L-1)/x(ix)
+             end do
+             do itheta=ithetaMin,ithetaMax
+
+                do izeta=izetaMin,izetaMax
+                   factor = -alpha*Zs(ispecies)/(2*BHat(itheta,izeta)*sqrtTHat*sqrtMHat) &
+                        * (BHat_sup_theta(itheta,izeta)*dPhi1Hatdtheta(itheta,izeta) &
+                        + BHat_sup_zeta(itheta,izeta)*dPhi1Hatdzeta(itheta,izeta))
+
+                   do ix_row=1,Nx
+                      rowIndex = getIndex(ispecies,ix_row,L+1,itheta,izeta,BLOCK_F)
+
+                      ! Term that is super-diagonal in L:
+                      if (L<(Nxi-1)) then
+                         ell = L + 1
+                         do ix_col=1,Nx
+                            if (abs(nonlinearTerm_Lp1(ix_row,ix_col))>threshholdForInclusion) then
+                               colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F)
+                               ! We must use MatSetValue instead of MatSetValueSparse here!!
+                               call MatSetValue(matrix, rowIndex, colIndex, &
+                                    factor*nonlinearTerm_Lp1(ix_row,ix_col), ADD_VALUES, ierr)
+                            end if
+                         end do
+                      end if
+                   
+                      ! Term that is sub-diagonal in L:
+                      if (L>0) then
+                         ell = L - 1
+                         do ix_col=1,Nx
+                            if (abs(nonlinearTerm_Lm1(ix_row,ix_col))>threshholdForInclusion) then
+                               colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F)
+                               ! We must use MatSetValue instead of MatSetValueSparse here!!
+                               call MatSetValue(matrix, rowIndex, colIndex, &
+                                    factor*nonlinearTerm_Lm1(ix_row,ix_col), ADD_VALUES, ierr)
+                            end if
+                         end do
+                      end if
+                   end do
+                end do
+             end do
+          end do
+          deallocate(rowIndices)
+          deallocate(colIndices)
+          deallocate(nonlinearTerm_Lp1)
+          deallocate(nonlinearTerm_Lm1)
+          
+       end if
+
+       ! *********************************************************
+       ! Add the block in the Jacobian from d(kinetic eqn) / d Phi1
+       ! associated with the nonlinear term.
+       ! *********************************************************
+       ! Note that this term is absent in the first iteration of a nonlinear calculation, because the term is proportional to delta f.
+       ! Therefore, if reusePreconditioner=true, we do not include this term in the preconditioner (which is great because this term introduces a lot of nonzeros.)
+       ! If reusePreconditioner=false, then we DO include this term in the preconditioner.
+       ! We must use MatSetValue instead of MatSetValueSparse in this term so that we can add some "nonzero" elements whose value is actually 0
+       ! in the first iteration (due to delta f = 0). The reason is that PETSc will re-use the pattern of nonzeros from the first iteration in subsequent iterations.
+       ! However, we need not add elements which are 0 due to ddtheta=0 as opposed to because delta f = 0, since such elements will remain 0 at every iteration of SNES.
+
+       if (nonlinear .and. (whichMatrix==1 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then
+       !if (nonlinear .and. (whichMatrix==1)) then
+       !if (nonlinear .and. (whichMatrix==0 .or. whichMatrix==1)) then
+          allocate(tempVector1(Nx))
+          allocate(tempVector2(Nx))
+          do itheta = ithetaMin,ithetaMax
+             do izeta = izetaMin,izetaMax
+                factor = -alpha*Zs(ispecies)/(2*BHat(itheta,izeta)*sqrtTHat*sqrtMHat)
+                do L=0,(Nxi-1)
+                   tempVector2=0
+
+                   if (L>0) then
+                      ! Add the delta_{L-1, ell} terms:
+                      ell = L-1
+                      do ix=1,Nx
+                         index = getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
+                         ! Add 1 because we are indexing a Fortran array instead of a PETSc object
+                         tempVector1(ix) = stateArray(index+1)
+                         tempVector2(ix) = tempVector2(ix) - (L-1)*L/(two*L-1)*stateArray(index+1)/x(ix)
+                      end do
+                      tempVector2 = tempVector2 + L/(two*L-1) * matmul(ddx,tempVector1)
+                   end if
+
+                   if (L<Nxi-1) then
+                      ! Add the delta_{L+1, ell} terms:
+                      ell = L+1
+                      do ix=1,Nx
+                         index = getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
+                         ! Add 1 because we are indexing a Fortran array instead of a PETSc object
+                         tempVector1(ix) = stateArray(index+1)
+                         tempVector2(ix) = tempVector2(ix) + (L+1)*(L+2)/(two*L+3)*stateArray(index+1)/x(ix)
+                      end do
+                      tempVector2 = tempVector2 + (L+1)/(two*L+3) * matmul(ddx,tempVector1)
+                   end if
+
+                   do ix=1,Nx
+                      rowIndex = getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
+
+                      ! Add the d Phi_1 / d theta term:
+                      do j=1,Ntheta
+                         if (abs(ddtheta(itheta,j))>threshholdForInclusion) then
+                            colIndex = getIndex(1,1,1,j,izeta,BLOCK_QN)
+                            ! We must use MatSetValue instead of MatSetValueSparse here!!
+                            call MatSetValue(matrix, rowIndex, colIndex, &
+                                 factor*BHat_sup_theta(itheta,izeta)*ddtheta(itheta,j)*tempVector2(ix), &
+                                 ADD_VALUES, ierr)
+                         end if
+                      end do
+
+                      ! Add the d Phi_1 / d zeta term:
+                      do j=1,Nzeta
+                         if (abs(ddzeta(izeta,j))>threshholdForInclusion) then
+                            colIndex = getIndex(1,1,1,itheta,j,BLOCK_QN)
+                            ! We must use MatSetValue instead of MatSetValueSparse here!!
+                            call MatSetValue(matrix, rowIndex, colIndex, &
+                                 factor*BHat_sup_zeta(itheta,izeta)*ddzeta(izeta,j)*tempVector2(ix), &
+                                 ADD_VALUES, ierr)
+                         end if
+                      end do
+                   end do
+                end do
+             end do
+          end do
+          deallocate(tempVector1)
+          deallocate(tempVector2)
+       end if
+
+    end do ! End of loop over species for the collisionless terms.
 
     ! *********************************************************
     ! *********************************************************
@@ -1264,12 +1450,13 @@
             ", mallocs:",NMallocs," (should be 0)"
     end if
 
-    if (saveMatlabOutput .and. whichMatrix==1) then
-       print *,"About to save Matlab matrix."
-
-       call PetscViewerASCIIOpen(MPIComm, &
-            & MatlabOutputFilename,&
-            & MatlabOutput, ierr)
+    if (saveMatlabOutput) then
+       write (filename,fmt="(a,i3.3,a,i1,a)") trim(MatlabOutputFilename) // "_iteration_", iterationForMatrixOutput, &
+            "_whichMatrix_",whichMatrix,".m"
+       if (masterProc) then
+          print *,"Saving matrix in matlab format: ",trim(filename)
+       end if
+       call PetscViewerASCIIOpen(MPIComm, trim(filename) , MatlabOutput, ierr)
        call PetscViewerSetFormat(MatlabOutput, PETSC_VIEWER_ASCII_MATLAB, ierr)
 
        call PetscObjectSetName(matrix, "matrix", ierr)
@@ -1278,12 +1465,11 @@
        call PetscViewerDestroy(MatlabOutput, ierr)
     end if
 
-!!$    if (saveMatlabOutput .and. (.not. savedMatlabMatricesYet(whichMatrix+1))) then
-!!$       savedMatlabMatricesYet(whichMatrix+1) = .true.
-!!$
-!!$       
-!!$    end if
-
+    if (useStateVec) then
+       call VecRestoreArrayF90(vecOnEveryProc, stateArray, ierr)
+       call VecScatterDestroy(vecScatterContext, ierr)
+       call VecDestroy(vecOnEveryProc, ierr)
+    end if
 
   end subroutine populateMatrix
 

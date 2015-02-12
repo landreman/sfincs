@@ -83,10 +83,10 @@
           print *,"Error! Invalid setting for zetaDerivativeScheme"
           stop
        end select
-       if (useIterativeSolver) then
-          print *,"Using iterative solver"
+       if (useIterativeLinearSolver) then
+          print *,"For solving large linear systems, an iterative Krylov solver will be used."
        else
-          print *,"Using direct solver"
+          print *,"For solving large linear systems, a direct solver will be used."
        end if
     end if
 

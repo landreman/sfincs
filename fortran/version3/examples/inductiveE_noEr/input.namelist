@@ -458,28 +458,28 @@
   ! 2 = 4th order finite differences (5-point stencil)
   ! You should set these parameters to 2 except in rare circumstances.
 
-  ! If 'useIterativeSolver' is set to false, a sparse direct solver
+  ! If 'useIterativeLinearSolver' is set to false, a sparse direct solver
   ! will be used. The direct solver is faster for small problems and always yields a solution.
   ! For large problems, the iterative solver will usually be faster and will use much
   ! less memory, but it may not always converge.
 
-  useIterativeSolver = .true.
-!  useIterativeSolver = .false.
+  useIterativeLinearSolver = .true.
+!  useIterativeLinearSolver = .false.
 
   whichParallelSolverToFactorPreconditioner = 2
   ! Options for whichParallelSolverToFactorPreconditioner:
   ! 1 = use mumps if it is detected, otherwise use superlu_dist
   ! 2 = force use of superlu_dist, if it is available
   !
-  ! The value of whichParallelSolverToFactorPreconditioner is only used when morpheus is run with 
-  ! more MPI processors than runs desired (1 if a single run, or more if a convergence scan.)
-  ! Otherwise, matrices are not distributed across processors, so the PETSc built-in serial sparse
-  ! direct solver is used to factor the preconditioner.
+  ! The value of whichParallelSolverToFactorPreconditioner is only used when sfincs is run with >1 MPI processors.
+  ! Otherwise, matrices are not distributed across processors, so the PETSc built-in serial sparse direct
+  ! solver is used to factor the preconditioner.
 
   PETSCPreallocationStrategy = 1
   ! This setting changes the estimated number of nonzeros (nnz) used for allocating memory for the matrix and preconditioner.
   ! 0 = Old method with high estimated nnz. This method works consistently but uses WAY more memory than necessary.
-  ! 1 = New method with lower, more precise estimated nnz.  This method has been less thoroughly tested, but it should use much less memory.
+  ! 1 = New method with lower, more precise estimated nnz.  This method should use much less memory.
+  ! Use PETSCPreallocationStrategy = 1 unless you know what you are doing.
 /
 
 &preconditionerOptions
@@ -516,6 +516,14 @@
   ! 1 = drop terms that are +/- 2 from the diagonal in xi, 
   !     so preconditioner is tridiagonal in xi
 
+  !reusePreconditioner = .true.
+  reusePreconditioner = .false.
+  ! This setting matters only for nonlinear calculations.
+  ! If true, the nonlinear term will not be included in the preconditioner matrix, meaning the preconditioner matrix is the same
+  ! at every iteration, and so the preconditioner matrix only needs to be LU-factored once.  If false, the preconditioner matrix
+  ! for the Jacobian will be different at each iteration of the Newton solve, so the preconditioner needs to be LU-factored at
+  ! each iteration.  The nonlinear term also introduces a lot of nonzeros into the preconditioner matrix, so setting
+  ! reusePreconditioner=true not only dramatically reduces the time required for a nonlinear calculation, but also the memory required.
 /
 
 &export_f

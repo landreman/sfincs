@@ -5,7 +5,7 @@
   subroutine evaluateJacobian(mysnes, stateVec, jacobian, jacobianPC, userContext, ierr)
 
     use petscsnes
-    use globalVariables, only: masterProc, useIterativeSolver
+    use globalVariables, only: masterProc, useIterativeLinearSolver, firstMatrixCreation, reusePreconditioner
 
     implicit none
 
@@ -19,41 +19,19 @@
        print *,"evaluateJacobian called."
     end if
 
-!!$    PetscScalar :: x, y
-!!$    PetscInt :: rowIndices(1), colIndices(2)
-!!$    PetscScalar, pointer, dimension(:) :: stateArray
-!!$    PetscScalar :: values(2)
-!!$    PetscInt :: matrixSize=2
-!!$
-!!$    call VecGetArrayF90(stateVec,stateArray,ierr)
-!!$
-!!$    x = stateArray(1)
-!!$    y = stateArray(2)
-!!$    print *,"formJacobian called, x=",x,", y=",y
-!!$
-!!$    colIndices(1) = 0
-!!$    colIndices(2) = 1
-!!$
-!!$    ! Set first row
-!!$    rowIndices = 0
-!!$    values(1) = y - 2*x
-!!$    values(2) = x + 1
-!!$    call MatSetValues(jacobian, 1, rowIndices, matrixSize, colIndices, values, INSERT_VALUES, ierr)
-!!$
-!!$    ! Set second row
-!!$    rowIndices = 1
-!!$    values(1) = exp(x+y-1)
-!!$    values(2) = exp(x+y-1)
-!!$    call MatSetValues(jacobian, 1, rowIndices, matrixSize, colIndices, values, INSERT_VALUES, ierr)
-!!$
-!!$    call VecRestoreArrayF90(stateVec, stateArray, ierr)
-!!$
-!!$    call MatAssemblyBegin(jacobian, MAT_FINAL_ASSEMBLY, ierr)
-!!$    call MatAssemblyEnd(jacobian, MAT_FINAL_ASSEMBLY, ierr)
+    ! When PETSc assembles a matrix, it reduces the structure of nonzeros to the actual number of nonzeros.
+    ! If we try to re-assemble the matrix with additional nonzero entries without first re-allocating space for the nonzeros,
+    ! we get the error about 'new nonzero caused a malloc'. Therefore, here we destroy the matrices and reallocate them.
 
-    if (useIterativeSolver) then
-       call populateMatrix(jacobianPC, 0)
+    if (useIterativeLinearSolver) then
+       ! If reusePreconditioner = true, then we only need to assemble the preconditioner in the first iteration.
+       ! If reusePreconditioner = false, then we need to assemble the preconditioner in every iteration.
+       if (firstMatrixCreation .or. .not. reusePreconditioner) then
+          call populateMatrix(jacobianPC, 0, stateVec)
+       end if
     end if
-    call populateMatrix(jacobian, 1)
+    call populateMatrix(jacobian, 1, stateVec)
+
+    firstMatrixCreation = .false.
 
   end subroutine evaluateJacobian

@@ -8,10 +8,10 @@
 #PBS -l walltime=00:10:00
 
 ### Set the queue to submit this job.
-#PBS -q regular
+#PBS -q debug
 
 #PBS -V
 #PBS -j oe
 
 cd $PBS_O_WORKDIR
-aprun -n 24 ../../sfincs -mat_superlu_dist_statprint
+aprun -n 12 -N 12 ../../sfincs -mat_superlu_dist_statprint

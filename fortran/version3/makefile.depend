@@ -17,7 +17,7 @@ indices.o: globalVariables.o
 polynomialDiffMatrices.o:
 polynomialInterpolationMatrix.o: 
 populateMatrix.o: globalVariables.o sparsify.o indices.o
-preallocateMatrix.o: globalVariables.o
+preallocateMatrix.o: indices.o globalVariables.o
 radialCoordinates.o: globalVariables.o
 readInput.o: export_f.o globalVariables.o
 sfincs.o: geometry.o globalVariables.o writeHDF5Output.o readInput.o solver.o radialCoordinates.o

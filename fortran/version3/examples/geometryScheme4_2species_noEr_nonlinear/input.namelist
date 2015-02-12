@@ -335,8 +335,8 @@
 
   ! If nonlinear = .true., the code will iterate to find the self-consistent poloidal variation
   ! of the electrostatic potential, including the nonlinear coupling between Phi_1 and f_1
-  !nonlinear = .true.
-  nonlinear = .false.
+  nonlinear = .true.
+  !nonlinear = .false.
 /
 
 &resolutionParameters

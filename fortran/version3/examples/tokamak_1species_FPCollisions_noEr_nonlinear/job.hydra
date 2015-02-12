@@ -1,0 +1,26 @@
+# @ shell=/bin/bash
+# @ job_name = sfincs
+#
+# Sample script for LoadLeveler
+#
+# @ error = job.err.$(jobid)
+# @ output = job.out.$(jobid)
+# @ job_type = parallel
+# @ node_usage= not_shared
+# @ node = 1
+# @ tasks_per_node = 4
+# @ resources = ConsumableCpus(4) 
+# @ network.MPI = sn_all,not_shared,us
+# @ wall_clock_limit = 00:10:00
+# @ notification = never
+# @ queue
+
+# Note: The above arrangement uses 4 processors on 1 node.
+
+# We must load the hdf5-serial module to set some environment variables:
+module load hdf5-serial netcdf-serial
+
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HDF5_HOME}/lib:${NETCDF_HOME}/lib
+
+# run the program
+poe ../../sfincs -ksp_view -mat_superlu_dist_statprint

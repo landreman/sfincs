@@ -8,7 +8,7 @@
 #PBS -l walltime=00:10:00
 
 ### Set the queue to submit this job.
-#PBS -q regular
+#PBS -q debug
 
 #PBS -V
 #PBS -j oe

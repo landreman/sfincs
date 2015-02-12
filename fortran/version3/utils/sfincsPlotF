@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 # This python script plots the distribution functions from a single SFINCS run.
+# The script checks to see which dimensions have the highest resolution, and will plot contours of f versus those 2 coordinates.
+# In the other coordinates, the first index is used.
 
 ispecies = 0
 # Which species to plot (0-based)
@@ -63,6 +65,20 @@ else:
     Nxi = int(f['N_export_f_xi'][()])
     xi = f['export_f_xi'][()]
     xi_label = 'xi'
+
+numRepeatedDimensions = 0
+if Ntheta>1:
+    numRepeatedDimensions += 1
+if Nzeta>1:
+    numRepeatedDimensions += 1
+if Nxi>1:
+    numRepeatedDimensions += 1
+if Nx>1:
+    numRepeatedDimensions += 1
+
+if numRepeatedDimensions < 2:
+    print "Error: This script is designed for plots of the distribution function versus 2 phase space coordinates, so you need to export f with >1 grid points in at least 2 of the coordinates."
+    exit(1)
 
 print "Resolution on which the distribution function is available:"
 print "N_export_f_theta: ",Ntheta

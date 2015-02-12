@@ -145,3 +145,5 @@ versions ("singleSpecies" and "multiSpecies"):
   which the kinetic equation is solved, or you can interpolate to a different
   grid that you specify. The utility utils/sfincsPlotF can be used to plot the
   distribution function.
+
+* The useIterativeSolver parameter is renamed useIterativeLinearSolver.
