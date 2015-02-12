@@ -192,7 +192,7 @@ contains
           
        case (2)
           ! Selected input radial coordinate is rHat.
-          dPhiHatdpsiHat = ddrN2ddpsiHat   * dPhiHatdrHat
+          dPhiHatdpsiHat = ddrHat2ddpsiHat * dPhiHatdrHat
           dnHatdpsiHats  = ddrHat2ddpsiHat * dnHatdrHats
           dTHatdpsiHats  = ddrHat2ddpsiHat * dTHatdrHats
           
