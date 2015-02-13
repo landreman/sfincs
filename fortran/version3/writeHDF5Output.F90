@@ -186,27 +186,33 @@ contains
        call writeHDF5Field("dBHatdtheta", dBHatdtheta, dspaceIDForThetaZeta, dimForThetaZeta, "")
        call writeHDF5Field("dBHatdzeta", dBHatdzeta, dspaceIDForThetaZeta, dimForThetaZeta, "")
 
-       call writeHDF5Field("BHat_sub_psi", BHat_sub_psi, dspaceIDForThetaZeta, dimForThetaZeta, "")
+       call writeHDF5Field("BHat_sub_psi", BHat_sub_psi, dspaceIDForThetaZeta, dimForThetaZeta, &
+            "Covariant component of B, the component that multiplies grad psi, in units of 1 / RBar")
        call writeHDF5Field("dBHat_sub_psi_dtheta", dBHat_sub_psi_dtheta, dspaceIDForThetaZeta, dimForThetaZeta, "")
        call writeHDF5Field("dBHat_sub_psi_dzeta", dBHat_sub_psi_dzeta, dspaceIDForThetaZeta, dimForThetaZeta, "")
 
-       call writeHDF5Field("BHat_sub_theta", BHat_sub_theta, dspaceIDForThetaZeta, dimForThetaZeta, "")
+       call writeHDF5Field("BHat_sub_theta", BHat_sub_theta, dspaceIDForThetaZeta, dimForThetaZeta, &
+            "Covariant component of B, the component that multiplies grad theta, in units of BBar * RBar")
        call writeHDF5Field("dBHat_sub_theta_dpsiHat", dBHat_sub_theta_dpsiHat, dspaceIDForThetaZeta, dimForThetaZeta, "")
        call writeHDF5Field("dBHat_sub_theta_dzeta", dBHat_sub_theta_dzeta, dspaceIDForThetaZeta, dimForThetaZeta, "")
 
-       call writeHDF5Field("BHat_sub_zeta", BHat_sub_zeta, dspaceIDForThetaZeta, dimForThetaZeta, "")
+       call writeHDF5Field("BHat_sub_zeta", BHat_sub_zeta, dspaceIDForThetaZeta, dimForThetaZeta, &
+            "Covariant component of B, the component that multiplies grad zeta, in units of BBar * RBar")
        call writeHDF5Field("dBHat_sub_zeta_dpsiHat", dBHat_sub_zeta_dpsiHat, dspaceIDForThetaZeta, dimForThetaZeta, "")
        call writeHDF5Field("dBHat_sub_zeta_dtheta", dBHat_sub_zeta_dtheta, dspaceIDForThetaZeta, dimForThetaZeta, "")
 
-       call writeHDF5Field("BHat_sup_theta", BHat_sup_theta, dspaceIDForThetaZeta, dimForThetaZeta, "")
+       call writeHDF5Field("BHat_sup_theta", BHat_sup_theta, dspaceIDForThetaZeta, dimForThetaZeta, &
+            "Contravariant component of B, the component that multiplies d r / d theta, in units of BBar / RBar")
        call writeHDF5Field("dBHat_sup_theta_dpsiHat", dBHat_sup_theta_dpsiHat, dspaceIDForThetaZeta, dimForThetaZeta, "")
        call writeHDF5Field("dBHat_sup_theta_dzeta", dBHat_sup_theta_dzeta, dspaceIDForThetaZeta, dimForThetaZeta, "")
 
-       call writeHDF5Field("BHat_sup_zeta", BHat_sup_zeta, dspaceIDForThetaZeta, dimForThetaZeta, "")
+       call writeHDF5Field("BHat_sup_zeta", BHat_sup_zeta, dspaceIDForThetaZeta, dimForThetaZeta, &
+            "Contravariant component of B, the component that multiplies d r / d zeta, in units of BBar / RBar")
        call writeHDF5Field("dBHat_sup_zeta_dpsiHat", dBHat_sup_zeta_dpsiHat, dspaceIDForThetaZeta, dimForThetaZeta, "")
        call writeHDF5Field("dBHat_sup_zeta_dtheta", dBHat_sup_zeta_dtheta, dspaceIDForThetaZeta, dimForThetaZeta, "")
 
-       call writeHDF5Field("B0OverBBar", B0OverBBar, "")
+       call writeHDF5Field("B0OverBBar", B0OverBBar, &
+            "m=0, n=0 harmonic of |B| in Boozer coordinates, equivalent to <B^3>/<B^2>, in units of BBar")
        call writeHDF5Field("inputRadialCoordinate", inputRadialCoordinate, "")
        call writeHDF5Field("inputRadialCoordinateForGradients", inputRadialCoordinateForGradients, "")
 

@@ -105,15 +105,43 @@
     end if
 
     ! Since PETSc's direct sparse solver complains if there are any zeros on the diagonal
-    ! (unlike mumps or superlu_dist), then if we're running with just 1 proc,
-    ! add some values to the diagonals of the preconditioner.
-!!$    if (numProcs==1 .and. whichMatrix==0) then
-!!$       ! Value to set:
-!!$       temp = 1d+0
-!!$       do i=Nspecies*Nx*Nxi*Ntheta*Nzeta, matrixSize-1
-!!$          call MatSetValue(matrix, i, i, temp, ADD_VALUES, ierr)
-!!$       end do
-!!$    end if
+    ! (unlike mumps or superlu_dist), then if we're using this solver
+    ! add some values to the diagonals of the preconditioner.  By trial-and-error, I found it works
+    ! best to shift the diagonal of the quasineutrality and constraint blocks but not for the kinetic-equation block.
+    if ((.not. isAParallelDirectSolverInstalled) .and. masterProc .and. whichMatrix==0) then
+       print *,"Since PETSc's built-in solver is being used instead of superlu_dist or mumps, and this"
+       print *,"   fragile solver often gives spurious error messages about zero pivots, the diagonal"
+       print *,"   of the preconditioner is being shifted."
+
+       ! Amount of shift:
+       temp = 1d+0
+
+       if (constraintScheme==1) then
+          do ispecies = 1,Nspecies
+             index = getIndex(ispecies,1,1,1,1,BLOCK_DENSITY_CONSTRAINT)
+             call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
+             index = getIndex(ispecies,1,1,1,1,BLOCK_PRESSURE_CONSTRAINT)
+             call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
+          end do
+       elseif (constraintScheme==2) then
+          do ispecies = 1,Nspecies
+             do ix = 1,Nx
+                index = getIndex(ispecies,ix,1,1,1,BLOCK_F_CONSTRAINT)
+                call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
+             end do
+          end do
+       end if
+       if (includePhi1) then
+          index = getIndex(1,1,1,1,1,BLOCK_PHI1_CONSTRAINT)
+          call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
+          do itheta = 1,Ntheta
+             do izeta = 1,Nzeta
+                index = getIndex(1,1,1,itheta,izeta,BLOCK_QN)
+                call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
+             end do
+          end do
+       end if
+    end if
 
     useStateVec = (nonlinear .and. (whichMatrix==0 .or. whichMatrix==1))
     if (useStateVec) then

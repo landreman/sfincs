@@ -87,7 +87,7 @@ module solver
        call KSPSetFromOptions(KSPInstance, ierr)
     end if
 
-    if (numProcs > 1) then
+    if (isAParallelDirectSolverInstalled) then
        select case (whichParallelSolverToFactorPreconditioner)
        case (1)
           call PCFactorSetMatSolverPackage(preconditionerContext, MATSOLVERMUMPS, ierr)
@@ -111,15 +111,19 @@ module solver
        end if
 
        ! When using PETSc's built-in solver (which is only done when running with a single processor),
-       ! I originally always got an error message that there was a zero pivot. The following line seems to solve
-       ! this problem.  The "zero pivot" error seemed to only arise with the "nd" ordering (nested dissection), which is the 
-       ! default.  I'm not sure which of the other orderings is most efficient. I picked "rcm" for no particular reason.
+       ! I often get 2 kinds of errors. One kind of error is a "zero pivot" error.  Other times, there is
+       ! no explicit error message, but KSP converges really slowly, and the answers come out wrong.
+       ! The next few lines seem to help minimize this problem:
+
+       ! The available orderings are natural, nd, 1wd, rcm, and qmd.
+       ! natural (i.e. no reordering) is horrible since the LU factors are very dense.
+       ! nd, rcm, and qmd all seem to work with some examples but fail with others. You should try one of these 3 options.
+       ! 1wd seems to use more memory.
        call PCFactorSetMatOrderingType(preconditionerContext, MATORDERINGRCM, ierr)
 
-       ! I'm not sure this next line actually accomplishes anything, since it doesn't solve the "zero pivot" problem.
-       ! But it doesn't seem to cost anything, and perhaps it reduces the chance of getting the "zero pivot" error in the future.
        call PCFactorReorderForNonzeroDiagonal(preconditionerContext, 1d-12, ierr) 
 
+       call PCFactorSetZeroPivot(preconditionerContext, 1d-200, ierr) 
     end if
 
     ! Tell PETSc to call the diagnostics subroutine at each iteration of SNES:
@@ -407,8 +411,7 @@ module solver
 
     implicit none
 
-    logical :: isAParallelDirectSolverInstalled
-
+    character(len=*), parameter :: line="******************************************************************"
     isAParallelDirectSolverInstalled = .false.
 
     if ((whichParallelSolverToFactorPreconditioner<1) .or. (whichParallelSolverToFactorPreconditioner>2)) then
@@ -448,6 +451,19 @@ module solver
           print *,"mumps or superlu_dist installed."
        end if
        stop
+    end if
+
+    if (.not. isAParallelDirectSolverInstalled) then
+       if (masterProc) then
+          print *,line
+          print *,line
+          print *,"**   WARNING: As neither mumps nor superlu_dist seems to be available, SFINCS will have to use PETSc's built-in sparse direct solver,"
+          print *,"**            which tends to be fragile.  You may get a zero-pivot error, or sometimes this solver simply gives the wrong"
+          print *,"**            factorization of the preconditioner matrix, leading to slow KSP convergence and/or wrong outputs of sfincs."
+          print *,"**            It is highly recommended that you use instead use a build of PETSc that recognizes mumps or superlu_dist."
+          print *,line
+          print *,line
+       end if
     end if
 
   end subroutine chooseParallelDirectSolver

@@ -172,7 +172,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
 !!$  end if
 
   ! If any mallocs are required during matrix assembly, do not generate an error:
-  !call MatSetOption(matrix, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE, ierr)
+  call MatSetOption(matrix, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE, ierr)
   
   !if (masterProc) then
   !   print *,"Done with preallocation for whichMatrix = ",whichMatrix

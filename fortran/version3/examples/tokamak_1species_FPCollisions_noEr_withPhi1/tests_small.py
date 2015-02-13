@@ -16,8 +16,11 @@ numFailures += shouldBe("FSABFlow[0,0;;;]", 3.31053540633345494E-002, desiredTol
 numFailures += shouldBe("particleFlux_vE0_psiHat[0,0;;;]", -2.35529e-07, desiredTolerance)
 numFailures += shouldBe("particleFlux_vE_psiHat[0,0;;;]",  -2.35529e-07, desiredTolerance)
 numFailures += shouldBe("particleFlux_vm_psiHat[0,0;;;]",   2.35599e-07, desiredTolerance)
-numFailures += shouldBe("particleFlux_vd1_psiHat[0,0;;;]",  6.93197e-11, desiredTolerance)
-numFailures += shouldBe("particleFlux_vd_psiHat[0,0;;;]",   6.93197e-11, desiredTolerance)
+
+# Since the particle flux is ~0, use a wider relative tolerance:
+easyTolerance = 0.1
+numFailures += shouldBe("particleFlux_vd1_psiHat[0,0;;;]",  6.93197e-11, easyTolerance)
+numFailures += shouldBe("particleFlux_vd_psiHat[0,0;;;]",   6.93197e-11, easyTolerance)
 
 numFailures += shouldBe("heatFlux_vE0_psiHat[0,0;;;]", -8.83235e-08, desiredTolerance)
 numFailures += shouldBe("heatFlux_vE_psiHat[0,0;;;]",  -8.83235e-08, desiredTolerance)

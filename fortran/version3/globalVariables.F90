@@ -29,6 +29,7 @@ module globalVariables
   character(len=200) :: outputFilename
   logical :: solveSystem
   integer :: RHSMode, whichRHS
+  logical :: isAParallelDirectSolverInstalled
 
   ! ********************************************************
   ! ********************************************************
