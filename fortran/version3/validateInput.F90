@@ -637,17 +637,18 @@ subroutine validateInput()
      stop
   end if
   
-  if (preconditioner_theta>1) then
+  if (preconditioner_theta>2) then
      if (masterProc) then
         print *,"Error! preconditioner_theta cannot be more than 1."
      end if
      stop
   end if
   
-  if (preconditioner_theta == 1 .and. masterProc) then
+  if (RHSMode .ne. 3 .and. preconditioner_theta>0 .and. masterProc) then
      print *,line
      print *,line
-     print *,"**   WARNING: preconditioner_theta = 1 often does not work well (i.e. GMRES/KSP does not converge rapidly.)"
+     print *,"**   WARNING: preconditioner_theta > 0 often does not work well when RHSMode != 3"
+     print *,"**            (i.e. GMRES/KSP does not converge rapidly.)"
      print *,"**            preconditioner_theta = 0 is strongly recommended."
      print *,line
      print *,line
@@ -660,22 +661,37 @@ subroutine validateInput()
      stop
   end if
   
-  if (preconditioner_zeta>1) then
+  if (preconditioner_zeta>2) then
      if (masterProc) then
         print *,"Error! preconditioner_zeta cannot be more than 1."
      end if
      stop
   end if
   
-  if (preconditioner_zeta == 1 .and. masterProc) then
+  if (RHSMode .ne. 3 .and. preconditioner_zeta>0 .and. masterProc) then
      print *,line
      print *,line
-     print *,"**   WARNING: preconditioner_zeta = 1 often does not work well (i.e. GMRES/KSP does not converge rapidly.)"
+     print *,"**   WARNING: preconditioner_zeta > 0 often does not work well when RHSMode != 3"
+     print *,"**            (i.e. GMRES/KSP does not converge rapidly.)"
      print *,"**            preconditioner_zeta = 0 is strongly recommended."
      print *,line
      print *,line
   end if
 
+  if (preconditioner_theta_min_L<0) then
+     if (masterProc) then
+        print *,"Error! preconditioner_theta_min_L should not be less than 0."
+     end if
+     stop
+  end if
+  
+  if (preconditioner_zeta_min_L<0) then
+     if (masterProc) then
+        print *,"Error! preconditioner_zeta_min_L should not be less than 0."
+     end if
+     stop
+  end if
+  
   if (preconditioner_xi<0) then
      if (masterProc) then
         print *,"Error! preconditioner_xi cannot be less than 0."

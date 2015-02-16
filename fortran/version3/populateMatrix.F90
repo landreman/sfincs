@@ -198,18 +198,6 @@
     ! whether this is the preconditioner or the final matrix:
     ! *********************************************************
 
-    if (whichMatrix>0 .or. preconditioner_theta==0) then
-       ddthetaToUse = ddtheta
-    else
-       ddthetaToUse = ddtheta_preconditioner
-    end if
-
-    if (whichMatrix>0 .or. preconditioner_zeta==0) then
-       ddzetaToUse = ddzeta
-    else
-       ddzetaToUse = ddzeta_preconditioner
-    end if
-
     do ispecies = 1,Nspecies
        nHat = nHats(ispecies)
        THat = THats(ispecies)
@@ -226,20 +214,27 @@
           allocate(localThetaPartOfTerm(Ntheta,localNtheta))
           allocate(rowIndices(localNtheta))
           allocate(colIndices(Ntheta))
-          do izeta=izetaMin,izetaMax
-             do itheta=1,Ntheta
-                !thetaPartOfTerm(itheta,:) = iota*sqrtTHat/sqrtMHat * ddthetaToUse(itheta,:) &
-                thetaPartOfTerm(itheta,:) = BHat_sup_theta(itheta,izeta) &
-                     * sqrtTHat/sqrtMHat * ddthetaToUse(itheta,:) &
-                     / BHat(itheta,izeta)
-             end do
-             
-             ! PETSc uses the opposite convention to Fortran:
-             thetaPartOfTerm = transpose(thetaPartOfTerm)
-             localThetaPartOfTerm = thetaPartOfTerm(:,ithetaMin:ithetaMax)
-             
-             do ix=1,Nx
-                do L=0,(Nxi-1)
+          do L=0,(Nxi-1)
+
+             if (whichMatrix>0 .or. L < preconditioner_theta_min_L) then
+                ddthetaToUse = ddtheta
+             else
+                ddthetaToUse = ddtheta_preconditioner
+             end if
+
+             do izeta=izetaMin,izetaMax
+                do itheta=1,Ntheta
+                   !thetaPartOfTerm(itheta,:) = iota*sqrtTHat/sqrtMHat * ddthetaToUse(itheta,:) &
+                   thetaPartOfTerm(itheta,:) = BHat_sup_theta(itheta,izeta) &
+                        * sqrtTHat/sqrtMHat * ddthetaToUse(itheta,:) &
+                        / BHat(itheta,izeta)
+                end do
+                
+                ! PETSc uses the opposite convention to Fortran:
+                thetaPartOfTerm = transpose(thetaPartOfTerm)
+                localThetaPartOfTerm = thetaPartOfTerm(:,ithetaMin:ithetaMax)
+                
+                do ix=1,Nx
                    do itheta=1,localNtheta
                       rowIndices(itheta) = getIndex(ispecies, ix, L+1, ithetaMin+itheta-1, izeta, BLOCK_F)
                    end do
@@ -285,19 +280,26 @@
           allocate(localZetaPartOfTerm(Nzeta,localNzeta))
           allocate(rowIndices(localNzeta))
           allocate(colIndices(Nzeta))
-          do itheta=ithetaMin, ithetaMax
-             do izeta=1,Nzeta
-                !zetaPartOfTerm(izeta,:) = sqrtTHat/sqrtMHat * ddzetaToUse(izeta,:) / BHat(itheta,izeta)
-                zetaPartOfTerm(izeta,:) = sqrtTHat/sqrtMHat * BHat_sup_zeta(itheta,izeta) &
-                     * ddzetaToUse(izeta,:) / BHat(itheta,izeta)
-             end do
-             
-             ! PETSc uses the opposite convention to Fortran:
-             zetaPartOfTerm = transpose(zetaPartOfTerm)
-             localZetaPartOfTerm = zetaPartOfTerm(:,izetaMin:izetaMax)
-             
-             do ix=1,Nx
-                do L=0,(Nxi-1)
+          do L=0,(Nxi-1)
+
+             if (whichMatrix>0 .or. L < preconditioner_zeta_min_L) then
+                ddzetaToUse = ddzeta
+             else
+                ddzetaToUse = ddzeta_preconditioner
+             end if
+
+             do itheta=ithetaMin, ithetaMax
+                do izeta=1,Nzeta
+                   !zetaPartOfTerm(izeta,:) = sqrtTHat/sqrtMHat * ddzetaToUse(izeta,:) / BHat(itheta,izeta)
+                   zetaPartOfTerm(izeta,:) = sqrtTHat/sqrtMHat * BHat_sup_zeta(itheta,izeta) &
+                        * ddzetaToUse(izeta,:) / BHat(itheta,izeta)
+                end do
+                
+                ! PETSc uses the opposite convention to Fortran:
+                zetaPartOfTerm = transpose(zetaPartOfTerm)
+                localZetaPartOfTerm = zetaPartOfTerm(:,izetaMin:izetaMax)
+                
+                do ix=1,Nx
                    do izeta = 1,localNzeta
                       rowIndices(izeta)=getIndex(ispecies, ix, L+1, itheta, izetaMin+izeta-1, BLOCK_F)
                    end do
@@ -345,27 +347,34 @@
           allocate(localThetaPartOfTerm(Ntheta,localNtheta))
           allocate(rowIndices(localNtheta))
           allocate(colIndices(Ntheta))
-          do izeta=izetaMin,izetaMax
-             if (useDKESExBDrift) then
-                !thetaPartOfTerm = ddthetaToUse / FSABHat2
-                do itheta=1,Ntheta
-                   thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / FSABHat2 &
-                        * DHat(itheta,izeta) * BHat_sub_zeta(itheta,izeta)
-                end do
+          do L=0,(Nxi-1)
+
+             if (whichMatrix>0 .or. L < preconditioner_theta_min_L) then
+                ddthetaToUse = ddtheta
              else
-                do itheta=1,Ntheta
-                   !thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2)
-                   thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2) &
-                        * DHat(itheta,izeta) * BHat_sub_zeta(itheta,izeta)
-                end do
+                ddthetaToUse = ddtheta_preconditioner
              end if
-             
-             ! PETSc uses the opposite convention to Fortran:
-             thetaPartOfTerm = transpose(thetaPartOfTerm*factor)
-             localThetaPartOfTerm = thetaPartOfTerm(:,ithetaMin:ithetaMax)
-             
-             do ix=1,Nx
-                do L=0,(Nxi-1)
+
+             do izeta=izetaMin,izetaMax
+                if (useDKESExBDrift) then
+                   !thetaPartOfTerm = ddthetaToUse / FSABHat2
+                   do itheta=1,Ntheta
+                      thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / FSABHat2 &
+                           * DHat(itheta,izeta) * BHat_sub_zeta(itheta,izeta)
+                   end do
+                else
+                   do itheta=1,Ntheta
+                      !thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2)
+                      thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2) &
+                           * DHat(itheta,izeta) * BHat_sub_zeta(itheta,izeta)
+                   end do
+                end if
+                
+                ! PETSc uses the opposite convention to Fortran:
+                thetaPartOfTerm = transpose(thetaPartOfTerm*factor)
+                localThetaPartOfTerm = thetaPartOfTerm(:,ithetaMin:ithetaMax)
+                
+                do ix=1,Nx
                    do itheta=1,localNtheta
                       rowIndices(itheta)=getIndex(ispecies,ix,L+1,itheta+ithetaMin-1,izeta,BLOCK_F)
                    end do
@@ -395,27 +404,34 @@
           allocate(localZetaPartOfTerm(Nzeta,localNzeta))
           allocate(rowIndices(localNzeta))
           allocate(colIndices(Nzeta))
-          do itheta=ithetaMin, ithetaMax
-             if (useDKESExBDrift) then
-                !zetaPartOfTerm = ddzetaToUse / FSABHat2
-                do izeta=1,Nzeta
-                   zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / FSABHat2 &
-                        * DHat(itheta,izeta) * BHat_sub_theta(itheta,izeta)
-                end do
+          do L=0,(Nxi-1)
+
+             if (whichMatrix>0 .or. L < preconditioner_zeta_min_L) then
+                ddzetaToUse = ddzeta
              else
-                do izeta=1,Nzeta
-                   !zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2)
-                   zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2) &
-                        * DHat(itheta,izeta) * BHat_sub_theta(itheta,izeta)
-                end do
+                ddzetaToUse = ddzeta_preconditioner
              end if
-             
-             ! PETSc uses the opposite convention to Fortran:
-             zetaPartOfTerm = transpose(zetaPartOfTerm*factor)
-             localzetaPartOfTerm = zetaPartOfTerm(:,izetaMin:izetaMax)
-             
-             do ix=1,Nx
-                do L=0,(Nxi-1)
+
+             do itheta=ithetaMin, ithetaMax
+                if (useDKESExBDrift) then
+                   !zetaPartOfTerm = ddzetaToUse / FSABHat2
+                   do izeta=1,Nzeta
+                      zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / FSABHat2 &
+                           * DHat(itheta,izeta) * BHat_sub_theta(itheta,izeta)
+                   end do
+                else
+                   do izeta=1,Nzeta
+                      !zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2)
+                      zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2) &
+                           * DHat(itheta,izeta) * BHat_sub_theta(itheta,izeta)
+                   end do
+                end if
+                
+                ! PETSc uses the opposite convention to Fortran:
+                zetaPartOfTerm = transpose(zetaPartOfTerm*factor)
+                localzetaPartOfTerm = zetaPartOfTerm(:,izetaMin:izetaMax)
+                
+                do ix=1,Nx
                    do izeta=1,localNzeta
                       rowIndices(izeta)=getIndex(ispecies,ix,L+1,itheta,izeta+izetaMin-1,BLOCK_F)
                    end do

@@ -521,10 +521,20 @@
   preconditioner_theta = 0
   ! 0 = keep full theta coupling
   ! 1 = use a 3-point finite difference stencil for d/dtheta
+  ! 2 = drop all theta coupling
+
+  preconditioner_theta_min_L = 2
+  ! The theta structure of the matrix will only be simplified for L >= this value.
+  ! Set preconditioner_theta_min_L=0 to simplify the matrix for every L.
 
   preconditioner_zeta = 0
   ! 0 = keep full zeta coupling
   ! 1 = use a 3-point finite difference stencil for d/dzeta
+  ! 2 = drop all zeta coupling
+
+  preconditioner_zeta_min_L = 2
+  ! The zeta structure of the matrix will only be simplified for L >= this value.
+  ! Set preconditioner_zeta_min_L=0 to simplify the matrix for every L.
 
   preconditioner_xi = 0
   ! 0 = keep full xi coupling

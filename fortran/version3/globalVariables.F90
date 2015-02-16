@@ -121,24 +121,25 @@ module globalVariables
   PetscScalar :: xMax
   PetscScalar :: solverTolerance
 
-  logical :: forceOddNthetaAndNzeta
+  logical :: forceOddNthetaAndNzeta=.true.
   ! If forceOddNthetaAndNzeta is set to true, 1 is added to Ntheta any time a run is attempted with even Ntheta,
   ! and 1 is added to Nzeta any time a run is attempted with even Nzeta.
   ! This can be useful because the iterative solvers sometimes do not work with even Ntheta or Nzeta.
   ! This parameter should be true unless you know what you are doing.
 
-  logical :: useIterativeLinearSolver
+  logical :: useIterativeLinearSolver=.true.
 
   integer :: whichParallelSolverToFactorPreconditioner
   ! Options for whichParallelSolverToFactorPreconditioner:
   ! 1 = use mumps if it is detected, otherwise use superlu_dist
   ! 2 = force use of superlu_dist, if it is available
 
-  integer :: preconditioner_x, preconditioner_x_min_L, preconditioner_zeta
-  integer :: preconditioner_theta, preconditioner_xi, preconditioner_species
-  logical :: reusePreconditioner
+  integer :: preconditioner_x=1, preconditioner_x_min_L=0, preconditioner_zeta=0
+  integer :: preconditioner_theta=0, preconditioner_xi=0, preconditioner_species=1
+  integer :: preconditioner_theta_min_L=0, preconditioner_zeta_min_L=0
+  logical :: reusePreconditioner=.true.
 
-  integer :: constraintScheme
+  integer :: constraintScheme=-1
 
   integer :: PETSCPreallocationStrategy
 

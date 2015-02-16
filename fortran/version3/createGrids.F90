@@ -217,11 +217,29 @@
     call uniformDiffMatrices(Ntheta, 0, two*pi, scheme, theta, thetaWeights, ddtheta, d2dtheta2)
 
     ! If needed, also make a sparser differentiation matrix for the preconditioner:
-    if (preconditioner_theta==1) then
+    select case(preconditioner_theta)
+    case (0)
+
+       ! Theta coupling in preconditioner is identical to the full matrix:
+       ddtheta_preconditioner = ddtheta
+
+    case (1)
+       ! Preconditioner has a 3-point stencil instead of a 5-point stencil:
        scheme = 0
        call uniformDiffMatrices(Ntheta, 0, two*pi, scheme, theta_preconditioner, &
             thetaWeights_preconditioner, ddtheta_preconditioner, d2dtheta2_preconditioner)
-    end if
+
+    case (2)
+       ! All theta coupling is dropped in the preconditioner:
+       ddtheta_preconditioner = zero
+
+    case default
+       if (masterProc) then
+          print *,"Error! Invalid setting for preconditioner_theta."
+       end if
+       stop
+
+    end select
 
     ! The following arrays will not be needed:
     deallocate(d2dtheta2)
@@ -270,17 +288,35 @@
     end if
 
     ! If needed, also make a sparser differentiation matrix for the preconditioner:
-    if (preconditioner_zeta==1) then
-       if (Nzeta==1) then
-          zeta_preconditioner = 0
-          zetaWeights_preconditioner = 2*pi
-          ddzeta_preconditioner = 0
-          d2dzeta2_preconditioner = 0
-       else
+    if (Nzeta==1) then
+       zeta_preconditioner = 0
+       zetaWeights_preconditioner = 2*pi
+       ddzeta_preconditioner = 0
+       d2dzeta2_preconditioner = 0
+    else
+       select case (preconditioner_zeta)
+       case (0)
+          ! Zeta coupling in preconditioner is identical to the full matrix:
+          ddzeta_preconditioner = ddzeta
+
+       case (1)
+          ! Preconditioner has a 3-point stencil instead of a 5-point stencil:
+
           scheme = 0
           call uniformDiffMatrices(Nzeta, 0, zetaMax, scheme, zeta_preconditioner, &
                zetaWeights_preconditioner, ddzeta_preconditioner, d2dzeta2_preconditioner)
-       end if
+
+       case (2)
+          ! All zeta coupling is dropped in the preconditioner:
+          ddzeta_preconditioner = zero
+          
+       case default
+          if (masterProc) then
+             print *,"Error! Invalid setting for preconditioner_zeta."
+          end if
+          stop
+
+       end select
     end if
 
     zetaWeights = zetaWeights * NPeriods
