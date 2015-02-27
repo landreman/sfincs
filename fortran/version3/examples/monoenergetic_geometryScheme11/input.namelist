@@ -541,6 +541,10 @@
   ! for the Jacobian will be different at each iteration of the Newton solve, so the preconditioner needs to be LU-factored at
   ! each iteration.  The nonlinear term also introduces a lot of nonzeros into the preconditioner matrix, so setting
   ! reusePreconditioner=true not only dramatically reduces the time required for a nonlinear calculation, but also the memory required.
+
+  offsetToDiagonalForConstraints=1
+
+  offsetToDiagonalForL0=1.0d+0
 /
 
 &export_f

@@ -104,6 +104,50 @@
        end do
     end if
 
+    if (whichMatrix==0 .and. masterProc) then
+       ! Amount of shift:
+       temp = offsetToDiagonalForConstraints
+
+       if (constraintScheme==1) then
+          do ispecies = 1,Nspecies
+             index = getIndex(ispecies,1,1,1,1,BLOCK_DENSITY_CONSTRAINT)
+             call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
+             index = getIndex(ispecies,1,1,1,1,BLOCK_PRESSURE_CONSTRAINT)
+             call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
+          end do
+       elseif (constraintScheme==2) then
+          do ispecies = 1,Nspecies
+             do ix = 1,Nx
+                index = getIndex(ispecies,ix,1,1,1,BLOCK_F_CONSTRAINT)
+                call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
+             end do
+          end do
+       end if
+       if (includePhi1) then
+          index = getIndex(1,1,1,1,1,BLOCK_PHI1_CONSTRAINT)
+          call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
+          do itheta = 1,Ntheta
+             do izeta = 1,Nzeta
+                index = getIndex(1,1,1,itheta,izeta,BLOCK_QN)
+                call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
+             end do
+          end do
+       end if       
+
+       ! Now, shift the diagonal of the L=0 block
+       L=0
+       do itheta = 1,Ntheta
+          do izeta = 1,Nzeta
+             do ix = 1,Nx
+                do ispecies = 1,Nspecies
+                   index = getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
+                   call MatSetValue(matrix, index, index, offsetToDiagonalForL0, ADD_VALUES, ierr)
+                end do
+             end do
+          end do
+       end do
+    end if
+
     ! Since PETSc's direct sparse solver complains if there are any zeros on the diagonal
     ! (unlike mumps or superlu_dist), then if we're using this solver
     ! add some values to the diagonals of the preconditioner.  By trial-and-error, I found it works

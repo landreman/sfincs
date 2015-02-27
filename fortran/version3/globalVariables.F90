@@ -139,6 +139,8 @@ module globalVariables
   integer :: preconditioner_theta_min_L=0, preconditioner_zeta_min_L=0
   logical :: reusePreconditioner=.true.
 
+  PetscScalar :: offsetToDiagonalForConstraints=0.0d+0, offsetToDiagonalForL0=0.0d+0
+
   integer :: constraintScheme=-1
 
   integer :: PETSCPreallocationStrategy
