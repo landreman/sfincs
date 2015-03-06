@@ -26,5 +26,5 @@ sparsify.o:
 uniformDiffMatrices.o: 
 uniformInterpolationMatrix.o: 
 validateInput.o: globalVariables.o
-writeHDF5Output.o: globalVariables.o
+writeHDF5Output.o: globalVariables.o export_f.o
 xGrid.o:

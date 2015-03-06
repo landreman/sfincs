@@ -244,7 +244,7 @@ contains
        call writeHDF5Field("alpha", alpha, "Dimensionless combination of the normalization constants: alpha = e * PhiBar / TBar.")
        call writeHDF5Field("nu_n", nu_n, "")
        call writeHDF5Field("EParallelHat", EParallelHat, "")
-       if (RHSMode==3)
+       if (RHSMode==3) then
           call writeHDF5Field("nuPrime", nuPrime, "")
           call writeHDF5Field("EStar", EStar, "")
        end if
