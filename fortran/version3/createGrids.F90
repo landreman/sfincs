@@ -233,6 +233,13 @@
        ! All theta coupling is dropped in the preconditioner:
        ddtheta_preconditioner = zero
 
+    case (3)
+       ! Replace d/dtheta with the identity matrix:
+       ddtheta_preconditioner = zero
+       do itheta=1,Ntheta
+          ddtheta_preconditioner(itheta,itheta)=one
+       end do
+
     case default
        if (masterProc) then
           print *,"Error! Invalid setting for preconditioner_theta."
@@ -309,6 +316,13 @@
        case (2)
           ! All zeta coupling is dropped in the preconditioner:
           ddzeta_preconditioner = zero
+          
+       case (3)
+          ! Replace d/dzeta by the identity matrix:
+          ddzeta_preconditioner = zero
+          do izeta=1,Nzeta
+             ddzeta_preconditioner(izeta,izeta)=one
+          end do
           
        case default
           if (masterProc) then

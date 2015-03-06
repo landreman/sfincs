@@ -45,7 +45,7 @@
 !  saveMatlabOutput = .true.
   saveMatlabOutput = .false.
 
-  MatlabOutputFilename = "sfincsMatrices.m"
+  MatlabOutputFilename = "sfincsMatrices"
 
   ! If the following switch is set to true, the matrix, right-hand-side, and solution of the
   ! linear system will be saved in PETSc's binary format.  The preconditioner matrix will also
@@ -503,8 +503,9 @@
   ! 0 = keep full theta coupling
   ! 1 = use a 3-point finite difference stencil for d/dtheta
   ! 2 = drop all theta coupling
+  ! 3 = replace d/dtheta with the identity matrix
 
-  preconditioner_theta_min_L = 2
+  preconditioner_theta_min_L = 0
   ! The theta structure of the matrix will only be simplified for L >= this value.
   ! Set preconditioner_theta_min_L=0 to simplify the matrix for every L.
 
@@ -512,8 +513,9 @@
   ! 0 = keep full zeta coupling
   ! 1 = use a 3-point finite difference stencil for d/dzeta
   ! 2 = drop all zeta coupling
+  ! 3 = replace d/dzeta with the identity matrix
 
-  preconditioner_zeta_min_L = 2
+  preconditioner_zeta_min_L = 0
   ! The zeta structure of the matrix will only be simplified for L >= this value.
   ! Set preconditioner_zeta_min_L=0 to simplify the matrix for every L.
 
