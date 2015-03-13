@@ -28,6 +28,8 @@ def uniq(seq):
 # Get a list of the subdirectories:                                                                        
 directories = filter(os.path.isdir, os.listdir("."))
 
+atLeastOneDirectorySucceeded = False
+
 for directory in directories:
     filename = directory+"/"+outputFilename
     if not os.path.isfile(filename):
@@ -105,6 +107,7 @@ for directory in directories:
     particleFlux_vm = f["particleFlux_vm_psiHat"][()]
     heatFlux_vm = f["heatFlux_vm_psiHat"][()]
     elapsedTime = f["elapsed time (s)"][()]
+    atLeastOneDirectorySucceeded = True
     if RHSMode>1:
        transportMatrix = f["transportMatrix"][()]
     if includePhi1:
@@ -152,6 +155,10 @@ for directory in directories:
     numRuns += 1
 
     print "Successfully read run in directory "+directory
+
+if not atLeastOneDirectorySucceeded:
+   print "Error! There do not seem to be any completed sfincs jobs in subdirectories of this directory."
+   exit(1)
 
 conversionFactorToddpsiHat = f['dPhiHatdpsiHat'][()] / f[varName][()]
 conversionFactorToddpsiN   = f['dPhiHatdpsiN'][()]   / f[varName][()]
