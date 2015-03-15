@@ -43,11 +43,12 @@
 
   contains
 
-    subroutine makeXGrid(N, abscissae, weights)
+    subroutine makeXGrid(N, abscissae, weights, includePointAtX0)
       ! This is the main function of the module.
       !
       ! Inputs:
       !  N = number of grid points to generate.
+      !  pointAtX0 = Should a point be included at x=0?
       !
       ! Outputs:
       !   abscissae = grid points
@@ -60,6 +61,7 @@
 
       integer, intent(in) :: N
       PetscScalar, intent(out) :: abscissae(:), weights(:)
+      logical, intent(in) :: includePointAtX0
 
       integer :: key = 6
       integer :: i, info
@@ -71,6 +73,11 @@
       integer :: ier, inf, last, limit, neval
       PetscScalar, dimension(workspaceSize) :: alist, blist, rlist, elist
       integer, dimension(workspaceSize) :: iord
+      PetscScalar :: X0, lastPolynomialAtX0, penultimatePolynomialAtX0
+
+      X0 = 0.0d+0  ! Special point to include among the abscissae, if requested.
+      lastPolynomialAtX0 = 0.0d+0
+      penultimatePolynomialAtX0 = 0.0d+0
 
       allocate(a(N))
       allocate(b(N))
@@ -145,10 +152,17 @@
          end if
          d(j) = d(j) + amountToAdd
 
-         b(j) = c(j) / oldc;
-         a(j) = d(j) / c(j);
-         oldc = c(j);
+         b(j) = c(j) / oldc
+         a(j) = d(j) / c(j)
+         oldc = c(j)
+
+         penultimatePolynomialAtX0 = lastPolynomialAtX0
+         lastPolynomialAtX0 = evaluatePolynomial(X0)
       end do
+
+      if (includePointAtX0) then
+         a(N) = X0 - b(N) * penultimatePolynomialAtX0 / lastPolynomialAtX0
+      end if
 
       b = sqrt(b)
 

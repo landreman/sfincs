@@ -22,6 +22,11 @@
     PetscScalar, dimension(:,:), allocatable :: d2dzeta2_preconditioner
     PetscScalar, dimension(:), allocatable :: xWeightsPotentials
 
+    PetscScalar, dimension(:), allocatable :: x_plus1, xWeights_plus1
+    PetscScalar, dimension(:,:), allocatable :: ddx_plus1, d2dx2_plus1
+    PetscScalar, dimension(:,:), allocatable :: regridPolynomialToUniform_plus1, extrapMatrix
+
+
     DM :: myDM
     integer, parameter :: bufferLength = 200
     character(len=bufferLength) :: procAssignments
@@ -349,14 +354,46 @@
 
     allocate(x(Nx))
     allocate(xWeights(Nx))
+    ! The next few arrays/matrices are used only when there is a point at x=0.
+    allocate(x_plus1(Nx+1))
+    allocate(xWeights_plus1(Nx+1))
+    allocate(ddx_plus1(Nx+1,Nx+1))
+    allocate(d2dx2_plus1(Nx+1,Nx+1))
+
     if (RHSMode .ne. 3) then
-       call makeXGrid(Nx, x, xWeights)
-       xWeights = xWeights / exp(-x*x)
+       select case (xGridScheme)
+       case (1)
+          pointAtX0 = .false.
+          call makeXGrid(Nx, x, xWeights, .false.)
+          xWeights = xWeights / exp(-x*x)
+
+       case (2)
+          pointAtX0 = .true.
+          call makeXGrid(Nx, x, xWeights, .true.)
+          xWeights = xWeights / exp(-x*x)
+
+       case (3)
+          pointAtX0 = .true.
+
+          scheme = 12
+          call uniformDiffMatrices(Nx+1, 0, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+          x = x_plus1(1:Nx)
+          xWeights = xWeights_plus1(1:Nx)
+
+       case default
+          print *,"Error! Invalid xGridScheme."
+          stop
+       end select
+
     else
        ! Monoenergetic transport matrix calculation.
        x = one
        xWeights = exp(one)
+
+       ! For monoenergetic calculations, we do not want to impose any regularity condition at the first (and only) x index:
+       pointAtX0 = .false.
     end if
+
     xMaxNotTooSmall = max(x(Nx), xMax)
     allocate(x2(Nx))
     x2=x*x
@@ -365,7 +402,17 @@
     allocate(d2dx2(Nx,Nx))
     allocate(ddx_preconditioner(Nx,Nx))
     if (RHSMode .ne. 3) then
-       call makeXPolynomialDiffMatrices(x,ddx,d2dx2)
+
+       select case (xGridScheme)
+       case (1,2)
+          call makeXPolynomialDiffMatrices(x,ddx,d2dx2)
+
+       case (3)
+          ddx = ddx_plus1(1:Nx, 1:Nx)
+          d2dx2 = d2dx2_plus1(1:Nx, 1:Nx)
+
+       end select
+
        NxPotentials = ceiling(xMaxNotTooSmall*NxPotentialsPerVth)
     else
        ! Monoenergetic transport matrix calculation.
@@ -396,10 +443,21 @@
     allocate(expx2(Nx))
     expx2 = exp(-x*x)
 
+    ! Create matrix to interpolate from the distribution-function grid to the Rosenbluth-potential grid:
     allocate(regridPolynomialToUniform(NxPotentials, Nx))
     if (RHSMode .ne. 3) then
-       call polynomialInterpolationMatrix(Nx, NxPotentials, x, xPotentials, &
-            expx2, exp(-xPotentials*xPotentials), regridPolynomialToUniform)
+       select case (xGridScheme)
+       case (1,2)
+          call polynomialInterpolationMatrix(Nx, NxPotentials, x, xPotentials, &
+               expx2, exp(-xPotentials*xPotentials), regridPolynomialToUniform)
+       case (3)
+          allocate(extrapMatrix(NxPotentials, Nx+1))
+          allocate(regridPolynomialToUniform_plus1(NxPotentials, Nx+1))
+          call interpolationMatrix(Nx+1, NxPotentials, x, xPotentials, regridPolynomialToUniform_plus1, extrapMatrix)
+          regridPolynomialToUniform = regridPolynomialToUniform_plus1(:,1:Nx)
+          deallocate(extrapMatrix)
+          deallocate(regridPolynomialToUniform_plus1)
+       end select
     else
        regridPolynomialToUniform = zero
     end if
@@ -442,6 +500,22 @@
        print *,"Error! Invalid preconditioner_x"
        stop
     end select
+
+    deallocate(x_plus1)
+    deallocate(xWeights_plus1)
+    deallocate(ddx_plus1)
+    deallocate(d2dx2_plus1)
+
+    if (masterProc) then
+       print *,"x:"
+       print *,x
+       print *,"xWeights:"
+       print *,xWeights
+       print *,"ddx:"
+       do i=1,Nx
+          print *,ddx(i,:)
+       end do
+    end if
 
     ! *******************************************************************************
 

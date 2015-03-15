@@ -55,7 +55,7 @@ contains
          NxPotentialsPerVth
 
     namelist / otherNumericalParameters /  &
-         useIterativeLinearSolver, thetaDerivativeScheme, zetaDerivativeScheme, &
+         useIterativeLinearSolver, thetaDerivativeScheme, zetaDerivativeScheme, xGridScheme, &
          whichParallelSolverToFactorPreconditioner, &
          PETSCPreallocationStrategy
 

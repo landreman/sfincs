@@ -38,14 +38,11 @@ module export_f
       logical, dimension(:), allocatable :: includeThisZeta
       logical, dimension(:), allocatable :: includeThisX
       PetscScalar :: error, leastError, weight1, weight2
+      PetscScalar, dimension(:,:), allocatable :: extrapMatrix, regridPolynomialToUniform_plus1
 
       ! --------------------------------------------------------
       ! Handle theta coordinate
       ! --------------------------------------------------------
-
-!!$      if (masterProc) then
-!!$         print *,"Before processing, N_export_f_theta=",N_export_f_theta," and export_f_theta=",export_f_theta
-!!$      end if
 
       select case (export_f_theta_option)
       case (0)
@@ -83,10 +80,6 @@ module export_f
          do j=1,N_export_f_theta
             export_f_theta(j) = modulo(export_f_theta(j),2*pi)
          end do
-
-!!$         if (masterProc) then
-!!$            print *,"Here comes export_f_theta after mod: ",export_f_theta
-!!$         end if
 
          allocate(map_theta_to_export_f_theta(N_export_f_theta, Ntheta))
          map_theta_to_export_f_theta = zero
@@ -134,10 +127,6 @@ module export_f
             export_f_theta(j) = modulo(export_f_theta(j),2*pi)
          end do
 
-!!$         if (masterProc) then
-!!$            print *,"Here comes export_f_theta after mod: ",export_f_theta
-!!$         end if
-
          allocate(includeThisTheta(Ntheta))
          includeThisTheta = .false.
 
@@ -161,10 +150,6 @@ module export_f
             end do
             includeThisTheta(indexOfLeastError) = .true.
          end do
-
-!!$         if (masterProc) then
-!!$            print *,"Here comes includeThisTheta: ",includeThisTheta
-!!$         end if
 
          ! Over-write export_f_theta and N_export_f_theta:
          index = 1
@@ -195,22 +180,11 @@ module export_f
          stop
       end select
 
-!!$      if (masterProc) then
-!!$         print *,"After processing, N_export_f_theta=",N_export_f_theta," and export_f_theta=",export_f_theta
-!!$         print *,"Here comes map_theta_to_export_f_theta:"
-!!$         do i=1,N_export_f_theta
-!!$            print *,map_theta_to_export_f_theta(i,:)
-!!$         end do
-!!$      end if
 
 
       ! --------------------------------------------------------
       ! Handle zeta coordinate
       ! --------------------------------------------------------
-
-!!$      if (masterProc) then
-!!$         print *,"Before processing, N_export_f_zeta=",N_export_f_zeta," and export_f_zeta=",export_f_zeta
-!!$      end if
 
       if (Nzeta==1) then
          ! Ignore export_f_zeta_option and export_f_zeta.
@@ -256,10 +230,6 @@ module export_f
             do j=1,N_export_f_zeta
                export_f_zeta(j) = modulo(export_f_zeta(j),2*pi/Nperiods)
             end do
-
-!!$         if (masterProc) then
-!!$            print *,"Here comes export_f_zeta after mod: ",export_f_zeta
-!!$         end if
 
             allocate(map_zeta_to_export_f_zeta(N_export_f_zeta, Nzeta))
             map_zeta_to_export_f_zeta = zero
@@ -307,10 +277,6 @@ module export_f
                export_f_zeta(j) = modulo(export_f_zeta(j),2*pi/Nperiods)
             end do
 
-!!$         if (masterProc) then
-!!$            print *,"Here comes export_f_zeta after mod: ",export_f_zeta
-!!$         end if
-
             allocate(includeThisZeta(Nzeta))
             includeThisZeta = .false.
 
@@ -334,10 +300,6 @@ module export_f
                end do
                includeThisZeta(indexOfLeastError) = .true.
             end do
-
-!!$         if (masterProc) then
-!!$            print *,"Here comes includeThisZeta: ",includeThisZeta
-!!$         end if
 
             ! Over-write export_f_zeta and N_export_f_zeta:
             index = 1
@@ -368,13 +330,6 @@ module export_f
             stop
          end select
       end if
-!!$      if (masterProc) then
-!!$         print *,"After processing, N_export_f_zeta=",N_export_f_zeta," and export_f_zeta=",export_f_zeta
-!!$         print *,"Here comes map_zeta_to_export_f_zeta:"
-!!$         do i=1,N_export_f_zeta
-!!$            print *,map_zeta_to_export_f_zeta(i,:)
-!!$         end do
-!!$      end if
 
 
 
@@ -383,9 +338,6 @@ module export_f
       ! Handle x coordinate
       ! --------------------------------------------------------
 
-!!$      if (masterProc) then
-!!$         print *,"Before processing, N_export_f_x=",N_export_f_x," and export_f_x=",export_f_x
-!!$      end if
 
       select case (export_f_x_option)
       case (0)
@@ -430,8 +382,23 @@ module export_f
          end do
 
          allocate(map_x_to_export_f_x(N_export_f_x, Nx))
-         call polynomialInterpolationMatrix(Nx, N_export_f_x, x, export_f_x, &
-              expx2, exp(-export_f_x*export_f_x), map_x_to_export_f_x)
+         select case (xGridScheme)
+         case (1,2)
+            call polynomialInterpolationMatrix(Nx, N_export_f_x, x, export_f_x, &
+                 expx2, exp(-export_f_x*export_f_x), map_x_to_export_f_x)
+         case (3)
+            allocate(extrapMatrix(N_export_f_x, Nx+1))
+            allocate(regridPolynomialToUniform_plus1(N_export_f_x, Nx+1))
+            call interpolationMatrix(Nx+1, N_export_f_x, x, export_f_x, regridPolynomialToUniform_plus1, extrapMatrix)
+            map_x_to_export_f_x = regridPolynomialToUniform_plus1(:,1:Nx)
+            deallocate(extrapMatrix)
+            deallocate(regridPolynomialToUniform_plus1)
+         case default
+            if (masterProc) then
+               print *,"Error! Invalid xGridScheme."
+            end if
+            stop
+         end select
 
       case (2)
          ! 2: Do not interpolate. Use the values of the internal x grid that are closest to the values requested in export_f_x.
@@ -461,9 +428,6 @@ module export_f
             includeThisX(indexOfLeastError) = .true.
          end do
 
-!!$         if (masterProc) then
-!!$            print *,"Here comes includeThisX: ",includeThisX
-!!$         end if
 
          ! Over-write export_f_x and N_export_f_x:
          index = 1
@@ -494,22 +458,11 @@ module export_f
          stop
       end select
 
-!!$      if (masterProc) then
-!!$         print *,"After processing, N_export_f_x=",N_export_f_x," and export_f_x=",export_f_x
-!!$         print *,"Here comes map_x_to_export_f_x:"
-!!$         do i=1,N_export_f_x
-!!$            print *,map_x_to_export_f_x(i,:)
-!!$         end do
-!!$      end if
-
 
       ! --------------------------------------------------------
       ! Handle xi coordinate
       ! --------------------------------------------------------
 
-!!$      if (masterProc) then
-!!$         print *,"Before processing, N_export_f_xi=",N_export_f_xi," and export_f_xi=",export_f_xi
-!!$      end if
 
       select case (export_f_xi_option)
       case (0)
@@ -562,13 +515,6 @@ module export_f
          stop
       end select
 
-!!$      if (masterProc) then
-!!$         print *,"After processing, N_export_f_xi=",N_export_f_xi," and export_f_xi=",export_f_xi
-!!$         print *,"Here comes map_xi_to_export_f_xi:"
-!!$         do i=1,N_export_f_xi
-!!$            print *,map_xi_to_export_f_xi(i,:)
-!!$         end do
-!!$      end if
 
 
 

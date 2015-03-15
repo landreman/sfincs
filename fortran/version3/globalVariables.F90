@@ -112,6 +112,9 @@ module globalVariables
   ! 1 = 2nd order finite differences
   ! 2 = 4th order dinite differences
 
+  integer :: xGridScheme = 1
+  logical :: pointAtX0
+
   integer :: Ntheta
   integer :: Nzeta
   integer :: Nxi

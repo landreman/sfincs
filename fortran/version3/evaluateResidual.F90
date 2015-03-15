@@ -21,6 +21,7 @@
     Mat :: residualMatrix
     PetscScalar :: dPhiHatdpsiHatToUseInRHS
     PetscReal :: norm
+    integer :: ixMin
 
     if (masterProc) then
        print *,"evaluateResidual called."
@@ -69,6 +70,12 @@
        dPhiHatdpsiHatToUseInRHS = 0
     end if
 
+    if (pointAtX0) then
+       ixMin = 2
+    else
+       ixMin = 1
+    end if
+
     ! First add the terms arising from \dot{\psi} df_M/d\psi
     x2 = x*x
     do ispecies = 1,Nspecies
@@ -77,7 +84,7 @@
        sqrtTHat = sqrt(THat)
        sqrtMHat = sqrt(mHat)
        
-       do ix=1,Nx
+       do ix=ixMin,Nx
           ! Old linear version:
           !xPartOfRHS = x2(ix)*exp(-x2(ix))*( dnHatdpsiNs(ispecies)/nHats(ispecies) &
           !     + alpha*Zs(ispecies)/THats(ispecies)*dPhiHatdpsiNToUse &
@@ -149,7 +156,7 @@
     ! Add the inductive electric field term:
     L=1
     do ispecies = 1,Nspecies
-       do ix=1,Nx
+       do ix=ixMin,Nx
           !factor = alpha*Zs(ispecies)*x(ix)*exp(-x2(ix))*EParallelHatToUse*(GHat+iota*IHat)&
           !     *nHats(ispecies)*mHats(ispecies)/(pi*sqrtpi*THats(ispecies)*THats(ispecies)*FSABHat2)
           factor = alpha*Zs(ispecies)*x(ix)*exp(-x2(ix))*EParallelHat &
