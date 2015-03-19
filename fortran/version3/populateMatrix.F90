@@ -584,7 +584,11 @@
              do ix=1,Nx
                 xPartOfXDot(ix,:) = x(ix) * ddxToUse(ix,:)
              end do
-             xPartOfXDot = transpose(xPartOfXDot)  ! PETSc uses the opposite convention of Fortran
+
+             ! Note: in previous versions I take the transpose of xPartOfXDot here,
+             ! but since I have switched to using MatSetValueSparse instead of MatSetValuesSparse,
+             ! the transpose should no longer be applied here.
+             !xPartOfXDot = transpose(xPartOfXDot)  ! PETSc uses the opposite convention of Fortran
 
              do itheta=ithetaMin,ithetaMax
 
@@ -1214,8 +1218,10 @@
                          
                       end if
                       
-                      ! PETSc and Fortran use row-major vs column-major:
-                      CHat = transpose(CHat)
+                      ! Note: in previous versions I take the transpose of CHat here,
+                      ! but since I have switched to using MatSetValueSparse instead of MatSetValuesSparse,
+                      ! the transpose should no longer be applied here.
+                      !CHat = transpose(CHat)
                       
                       ! At this point, CHat contains the collision operator normalized by
                       ! \bar{nu}, (the collision frequency at the reference mass, density, and temperature.)

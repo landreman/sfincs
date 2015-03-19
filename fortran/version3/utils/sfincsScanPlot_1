@@ -323,13 +323,15 @@ if len(values)>1:
     if numRepeatedValues>1:
         print "Error! Multiple values of "+parametersToVary[-1]+" were repeated."
         exit(1)
-    thisScanResults = []
+    if numRepeatedValues==0:
+       convergedValue = data[baseCaseIndex]
+    thisScanResults = [] 
     for value in values:
-        if value==convergedValue:
-            index = baseCaseIndex
-        else:
-            index = data.index(value)
-        thisScanResults.append(outputs[index])
+       if value==convergedValue:
+          index = baseCaseIndex
+       else:
+          index = data.index(value)
+       thisScanResults.append(outputs[index])
     print "A scan was performed in "+parametersToVary[-1]+", and the repeated value was "+str(convergedValue)
     print "Values of the scanned parameter: ",abscissae[-1]
     convergeds.append(convergedValue)

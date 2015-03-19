@@ -42,8 +42,8 @@
   ! the preconditioner matrix is also saved.
   ! PETSc usually generates an error message if the size of the linear system is more then 1400 x 1400,
   ! so usually this setting should be false.
-!  saveMatlabOutput = .true.
-  saveMatlabOutput = .false.
+  saveMatlabOutput = .true.
+!  saveMatlabOutput = .false.
 
   MatlabOutputFilename = "sfincsMatrices"
 
