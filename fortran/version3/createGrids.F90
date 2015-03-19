@@ -377,6 +377,7 @@
 
           scheme = 12
           call uniformDiffMatrices(Nx+1, 0, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+          x_plus1(1)=0 ! For some reason it usually comes out to be 2d-314
           x = x_plus1(1:Nx)
           xWeights = xWeights_plus1(1:Nx)
 
@@ -393,6 +394,7 @@
        ! For monoenergetic calculations, we do not want to impose any regularity condition at the first (and only) x index:
        pointAtX0 = .false.
     end if
+
 
     xMaxNotTooSmall = max(x(Nx), xMax)
     allocate(x2(Nx))
@@ -453,7 +455,7 @@
        case (3)
           allocate(extrapMatrix(NxPotentials, Nx+1))
           allocate(regridPolynomialToUniform_plus1(NxPotentials, Nx+1))
-          call interpolationMatrix(Nx+1, NxPotentials, x, xPotentials, regridPolynomialToUniform_plus1, extrapMatrix)
+          call interpolationMatrix(Nx+1, NxPotentials, x_plus1, xPotentials, regridPolynomialToUniform_plus1, extrapMatrix)
           regridPolynomialToUniform = regridPolynomialToUniform_plus1(:,1:Nx)
           deallocate(extrapMatrix)
           deallocate(regridPolynomialToUniform_plus1)
