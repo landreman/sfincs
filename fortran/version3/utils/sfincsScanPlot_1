@@ -207,6 +207,8 @@ if len(values)>1:
     if numRepeatedValues>1:
         print "Error! Multiple values of "+parametersToVary[-1]+" were repeated."
         exit(1)
+    if numRepeatedValues==0:
+       convergedValue = data[baseCaseIndex]
     thisScanResults = []
     for value in values:
         if value==convergedValue:
@@ -236,6 +238,8 @@ if len(values)>1:
     if numRepeatedValues>1:
         print "Error! Multiple values of "+parametersToVary[-1]+" were repeated."
         exit(1)
+    if numRepeatedValues==0:
+       convergedValue = data[baseCaseIndex]
     thisScanResults = []
     for value in values:
         if value==convergedValue:
@@ -265,6 +269,8 @@ if len(values)>1:
     if numRepeatedValues>1:
         print "Error! Multiple values of "+parametersToVary[-1]+" were repeated."
         exit(1)
+    if numRepeatedValues==0:
+       convergedValue = data[baseCaseIndex]
     thisScanResults = []
     for value in values:
         if value==convergedValue:
@@ -294,6 +300,8 @@ if len(values)>1:
     if numRepeatedValues>1:
         print "Error! Multiple values of "+parametersToVary[-1]+" were repeated."
         exit(1)
+    if numRepeatedValues==0:
+       convergedValue = data[baseCaseIndex]
     thisScanResults = []
     for value in values:
         if value==convergedValue:
@@ -354,6 +362,8 @@ if len(values)>1:
     if numRepeatedValues>1:
         print "Error! Multiple values of "+parametersToVary[-1]+" were repeated."
         exit(1)
+    if numRepeatedValues==0:
+       convergedValue = data[baseCaseIndex]
     thisScanResults = []
     for value in values:
         if value==convergedValue:
@@ -383,6 +393,8 @@ if len(values)>1:
     if numRepeatedValues>1:
         print "Error! Multiple values of "+parametersToVary[-1]+" were repeated."
         exit(1)
+    if numRepeatedValues==0:
+       convergedValue = data[baseCaseIndex]
     thisScanResults = []
     for value in values:
         if value==convergedValue:
@@ -412,6 +424,8 @@ if len(values)>1:
     if numRepeatedValues>1:
         print "Error! Multiple values of "+parametersToVary[-1]+" were repeated."
         exit(1)
+    if numRepeatedValues==0:
+       convergedValue = data[baseCaseIndex]
     thisScanResults = []
     for value in values:
         if value==convergedValue:

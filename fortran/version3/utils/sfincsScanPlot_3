@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# This python script plots the output of a SFINCS E_r scan.
+# This python script plots the output of a SFINCS nu_n scan.
 
 outputFilename = "sfincsOutput.h5"
 
@@ -8,15 +8,12 @@ import matplotlib.pyplot as plt
 import h5py
 import numpy
 import inspect, math, os
-from scipy.interpolate import interp1d
-from scipy.optimize import brentq
 
 print "This is "+ inspect.getfile(inspect.currentframe())
 
 numRuns = 0
-Ers = []
+nu_ns = []
 outputs = []
-radialCurrents = []
 
 def uniq(seq):
    checked = []
@@ -99,9 +96,7 @@ for directory in directories:
         print "Error! sfincsScanPlot is not yet set up for RHSMode = "+str(RHSMode)
         exit(1)
 
-    doAmbipolaritySolve = (RHSMode==1)
-
-    Ers.append(f[varName][()])
+    nu_ns.append(f["nu_n"][()])
     FSABFlow = f["FSABFlow"][()]
     FSABjHat = f["FSABjHat"][()]
     particleFlux_vm = f["particleFlux_vm_psiHat"][()]
@@ -124,10 +119,8 @@ for directory in directories:
        # RHSMode = 1
        if Nspecies==1:
           if includePhi1:
-             radialCurrents.append(Zs[0]*particleFlux_vd[0,-1])
              outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],particleFlux_vd[0,0],heatFlux_vm[0,0],heatFlux_vd[0,0]])
           else:
-             radialCurrents.append(Zs[0]*particleFlux_vm[0,-1])
              outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],heatFlux_vm[0,0]])
              #outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],heatFlux_vm[0,0],elapsedTime])
        else:
@@ -145,11 +138,6 @@ for directory in directories:
                 results.append(particleFlux_vm[ispecies,iteration])
                 results.append(heatFlux_vm[ispecies,iteration])
           results.append(FSABjHat[iteration])
-          if includePhi1:
-             radialCurrents.append(sum(Zs*particleFlux_vd[:,-1]))
-          else:
-             radialCurrents.append(sum(Zs*particleFlux_vm[:,-1]))
-          results.append(radialCurrents[-1])
           outputs.append(results)
 
     numRuns += 1
@@ -160,23 +148,14 @@ if not atLeastOneDirectorySucceeded:
    print "Error! There do not seem to be any completed sfincs jobs in subdirectories of this directory."
    exit(1)
 
-conversionFactorToddpsiHat = f['dPhiHatdpsiHat'][()] / f[varName][()]
-conversionFactorToddpsiN   = f['dPhiHatdpsiN'][()]   / f[varName][()]
-conversionFactorToddrHat   = f['dPhiHatdrHat'][()]   / f[varName][()]
-conversionFactorToddrN     = f['dPhiHatdrN'][()]     / f[varName][()]
 
-
-# Sort by Er:
-Ers_sorted = sorted(Ers)
+# Sort by nu_n:
+nu_ns_sorted = sorted(nu_ns)
 outputs_sorted = []
-radialCurrents_sorted = []
-for Er in Ers_sorted:
-   outputs_sorted.append(outputs[Ers.index(Er)])
-   radialCurrents_sorted.append(radialCurrents[Ers.index(Er)])
+for nu_n in nu_ns_sorted:
+   outputs_sorted.append(outputs[nu_ns.index(nu_n)])
  
 outputs_array = numpy.array(outputs_sorted)
-
-radialCurrentLabel = "radial current"
 
 if RHSMode > 1:
    yAxisLabels=[]
@@ -194,7 +173,7 @@ else:
          yAxisLabels=["FSABFlow","particleFlux\nvm_psiHat","heatFlux\nvm_psiHat","elapsed time (s)"]
    else:
       if includePhi1:
-         numQuantities = Nspecies*5+2
+         numQuantities = Nspecies*5+1
          yAxisLabels=[]
          for i in range(1,Nspecies+1):
             yAxisLabels.append("FSABFlow (species "+str(i)+")")
@@ -203,65 +182,17 @@ else:
             yAxisLabels.append("heatFlux vm_psiHat (species "+str(i)+")")
             yAxisLabels.append("heatFlux vd_psiHat (species "+str(i)+")")
          yAxisLabels.append("FSABjHat")
-         yAxisLabels.append(radialCurrentLabel)
         
       else:
-         numQuantities = Nspecies*3+2
+         numQuantities = Nspecies*3+1
          yAxisLabels=[]
          for i in range(1,Nspecies+1):
             yAxisLabels.append("FSABFlow (species "+str(i)+")")
             yAxisLabels.append("particleFlux_vm_psiHat (species "+str(i)+")")
             yAxisLabels.append("heatFlux_vm_psiHat (species "+str(i)+")")
          yAxisLabels.append("FSABjHat")
-         yAxisLabels.append(radialCurrentLabel)
             
 
-
-# ***************************************************
-# Solve for the ambipolar E_r
-# ***************************************************
-
-ambipolaritySolveSucceeded = False
-if doAmbipolaritySolve:
-   if max(radialCurrents)>0 and min(radialCurrents)<0:
-      # We have runs that straddle j_psi = 0, so we can find at least 1 ambipolar solution.
-      print "Solving for E_r."
-      interpolator = interp1d(Ers_sorted, radialCurrents_sorted, kind='cubic',  bounds_error=False)
-      # In the next line, 100 is arbitrary, and could be replaced by another large integer.
-      Er_fine = numpy.linspace(min(Ers), max(Ers), num=100)
-      radialCurrent_fine = interpolator(Er_fine)
-      # Approximately find points where the sign of radial current flips:
-      positiveCurrent = (radialCurrent_fine>0)
-      signFlips = (positiveCurrent[:-1] != positiveCurrent[1:])
-      numRoots = sum(1 for x in signFlips if x)
-      print "Number of roots found for E_r: ",numRoots
-      roots = []
-      #for i in range(numRoots):
-      for index,value in enumerate(signFlips):
-         if value:
-            roots.append(brentq(interpolator,Er_fine[index],Er_fine[index+1]))
-      # Convert standard array to numpy array:
-      roots = numpy.array(roots)
-      print "Roots found for the radial derivative of the electrostatic potential, for various radial coordinates:"
-      print "d PhiHat / d psiHat = ",roots * conversionFactorToddpsiHat
-      print "d PhiHat / d psiN   = ",roots * conversionFactorToddpsiN
-      print "d PhiHat / d rHat   = ",roots * conversionFactorToddrHat
-      print "d PhiHat / d rN     = ",roots * conversionFactorToddrN
-
-      # Interpolate the other results onto the ambipolar Er(s):
-      print "**** Output quantities at these ambipolar E_r value(s) ****"
-      outputs_ambipolar = []
-      for iQuantity in range(numQuantities):
-         quantityInterpolator = interp1d(Ers_sorted, outputs_array[:,iQuantity], kind='cubic',  bounds_error=False)
-         thisOutput_ambipolar = quantityInterpolator(roots)
-         outputs_ambipolar.append(thisOutput_ambipolar)
-         print yAxisLabels[iQuantity],": ",thisOutput_ambipolar
-
-      ambipolaritySolveSucceeded = True
-   else:
-      print "All runs have the same sign of radial current, so we cannot solve for the ambipolar E_r."
-else:
-   print "Not doing an ambipolarity solve since RHSMode > 1."
 
 # ***************************************************
 # Now make the plot
@@ -275,16 +206,16 @@ numRows = math.ceil(numQuantities*1.0/numCols)
 
 for iQuantity in range(numQuantities):
    plt.subplot(numRows,numCols,iQuantity+1)
-   plt.plot(Ers_sorted,outputs_array[:,iQuantity],'.-')
-   if ambipolaritySolveSucceeded:
-      for i in range(len(roots)):
-         plt.plot(roots[i],outputs_ambipolar[iQuantity][i],'xr')
-   plt.xlabel(varName)
+   if "FSA" in yAxisLabels[iQuantity]:
+      # Use linear scale for flows
+      plt.plot(nu_ns_sorted,outputs_array[:,iQuantity],'.-')
+   else:
+      # Use log scale for fluxes
+      plt.plot(nu_ns_sorted,abs(outputs_array[:,iQuantity]),'.-')
+      plt.yscale('log')
+   plt.xlabel('nu_n')
    plt.ylabel(yAxisLabels[iQuantity])
-   if yAxisLabels[iQuantity]==radialCurrentLabel:
-      plt.plot([min(Ers),max(Ers)],[0,0],':k')
-      if ambipolaritySolveSucceeded:
-         plt.plot(Er_fine,radialCurrent_fine,'-g')   
+   plt.xscale('log')
 
 titleString = "Plot generated by "+ inspect.getfile(inspect.currentframe()) + "\nRun in "+os.getcwd()
 ax = fig.add_axes([0,0,1,1], frameon=False)
