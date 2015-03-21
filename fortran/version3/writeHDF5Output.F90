@@ -246,7 +246,10 @@ contains
        call writeHDF5Field("alpha", alpha, "Dimensionless combination of the normalization constants: alpha = e * PhiBar / TBar.")
        call writeHDF5Field("nu_n", nu_n, "")
        call writeHDF5Field("EParallelHat", EParallelHat, "")
-
+       if (RHSMode==3) then
+          call writeHDF5Field("nuPrime", nuPrime, "")
+          call writeHDF5Field("EStar", EStar, "")
+       end if
        call writeHDF5Field("collisionOperator", collisionOperator, "")
        call writeHDF5Field("Zs", Zs, dspaceIDForSpecies, dimForSpecies, "Charge of each species, in units of the unit charge e (which is usually the proton charge.)")
        call writeHDF5Field("mHats", mHats, dspaceIDForSpecies, dimForSpecies, "Mass of each species, in units of mBar.")
