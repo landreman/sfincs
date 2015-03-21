@@ -474,7 +474,7 @@
   ! 2 = 4th order finite differences (5-point stencil)
   ! You should set these parameters to 2 except in rare circumstances.
 
-  xGridScheme = 3
+  xGridScheme = 1
   ! 1 = New orthogonal polynomials with no point at x=0.
   ! 2 = New orthogonal polynomials with a point at x=0.
   ! 3 = Uniform finite differences on [0, xMax], forcing f=0 at xMax.

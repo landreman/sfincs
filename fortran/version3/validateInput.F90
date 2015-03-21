@@ -363,14 +363,14 @@ subroutine validateInput()
         print *,"              (The exception is when RHSMode = 3, in which case Nx = 1.)"
         print *,line
         print *,line
-     elseif (Nx > 20) then
+     elseif ((Nx > 20) .and. (xGridScheme .ne. 3)) then
         print *,line
         print *,line
         print *,"**   WARNING: You chose a very large value for Nx."
         print *,"**            Typically Nx should be in the range 5-9."
         print *,line
         print *,line
-     elseif ((Nx < 5) .or. (Nx > 9)) then
+     elseif (((Nx < 5) .or. (Nx > 9)) .and. (xGridScheme .ne. 3)) then
         print *,line
         print *,line
         print *,"**   WARNING: Typically Nx should be in the range 5-9."
@@ -576,6 +576,20 @@ subroutine validateInput()
      print *,line
   end if
 
+  if (xGridScheme<0) then
+     if (masterProc) then
+        print *,"Error! xGridScheme cannot be less than 0."
+     end if
+     stop
+  end if
+  
+  if (xGridScheme>2) then
+     if (masterProc) then
+        print *,"Error! xGridScheme cannot be more than 2."
+     end if
+     stop
+  end if
+  
 
   ! preconditionerOptions namelist:
 
@@ -644,12 +658,12 @@ subroutine validateInput()
      stop
   end if
   
-  if (RHSMode .ne. 3 .and. preconditioner_theta>0 .and. masterProc) then
+  if (RHSMode .ne. 3 .and. (preconditioner_theta==1 .or. preconditioner_theta==2) .and. masterProc) then
      print *,line
      print *,line
-     print *,"**   WARNING: preconditioner_theta > 0 often does not work well when RHSMode != 3"
+     print *,"**   WARNING: preconditioner_theta = 1 or 2 often does not work well when RHSMode != 3"
      print *,"**            (i.e. GMRES/KSP does not converge rapidly.)"
-     print *,"**            preconditioner_theta = 0 is strongly recommended."
+     print *,"**            preconditioner_theta = 0 or 3 is strongly recommended."
      print *,line
      print *,line
   end if

@@ -455,6 +455,11 @@
   ! 2 = 4th order finite differences (5-point stencil)
   ! You should set these parameters to 2 except in rare circumstances.
 
+  xGridScheme = 1
+  ! 1 = New orthogonal polynomials with no point at x=0.
+  ! 2 = New orthogonal polynomials with a point at x=0.
+  ! 3 = Uniform finite differences on [0, xMax], forcing f=0 at xMax.
+
   ! If 'useIterativeLinearSolver' is set to false, a sparse direct solver
   ! will be used. The direct solver is faster for small problems and always yields a solution.
   ! For large problems, the iterative solver will usually be faster and will use much

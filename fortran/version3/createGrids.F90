@@ -508,18 +508,6 @@
     deallocate(ddx_plus1)
     deallocate(d2dx2_plus1)
 
-    if (masterProc) then
-       print *,"x:"
-       print *,x
-       print *,"xWeights:"
-       print *,xWeights
-       print *,"ddx:"
-       do i=1,Nx
-          print *,ddx(i,:)
-       end do
-    end if
-    !stop
-
     ! *******************************************************************************
 
     call setup_grids_for_export_f()
