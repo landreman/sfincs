@@ -379,9 +379,9 @@ subroutine validateInput()
      end if
   end if
 
-  if (NL<1) then
+  if (NL<0) then
      if (masterProc) then
-        print *,"Error! NL must be positive."
+        print *,"Error! NL must be at least 0."
      end if
      stop
   end if
@@ -586,6 +586,20 @@ subroutine validateInput()
   if (xGridScheme>2) then
      if (masterProc) then
         print *,"Error! xGridScheme cannot be more than 2."
+     end if
+     stop
+  end if
+  
+  if (xPotentialsGridScheme<1) then
+     if (masterProc) then
+        print *,"Error! xPotentialsGridScheme cannot be less than 1."
+     end if
+     stop
+  end if
+  
+  if (xPotentialsGridScheme>2) then
+     if (masterProc) then
+        print *,"Error! xPotentialsGridScheme cannot be more than 2."
      end if
      stop
   end if

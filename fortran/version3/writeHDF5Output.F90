@@ -169,6 +169,7 @@ contains
        call writeHDF5Field("thetaDerivativeScheme", thetaDerivativeScheme, "")
        call writeHDF5Field("zetaDerivativeScheme", zetaDerivativeScheme, "")
        call writeHDF5Field("xGridScheme", xGridScheme, "")
+       call writeHDF5Field("xPotentialsGridScheme", xPotentialsGridScheme, "")
        call writeHDF5Field("pointAtX0", pointAtX0, "Does the x grid include a point at x=0? " // boolDescription)
        call writeHDF5Field("preconditioner_species", preconditioner_species, "")
        call writeHDF5Field("preconditioner_x", preconditioner_x, "")

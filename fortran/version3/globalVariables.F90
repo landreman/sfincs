@@ -146,6 +146,8 @@ module globalVariables
 
   integer :: PETSCPreallocationStrategy
 
+  integer :: xPotentialsGridScheme = 2, xPotentialsInterpolationScheme
+
   ! ********************************************************
   !
   !  Other variables that are used by multiple subroutines

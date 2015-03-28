@@ -1126,7 +1126,7 @@
                          
                          ! Build M13:
                          call interpolationMatrix(NxPotentials, Nx, xPotentials, x*speciesFactor2, &
-                              potentialsToFInterpolationMatrix, extrapMatrix)
+                              xPotentialsInterpolationScheme, potentialsToFInterpolationMatrix, extrapMatrix)
                          
                          speciesFactor = 3/(2*pi)*nHats(iSpeciesA) &
                               * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &

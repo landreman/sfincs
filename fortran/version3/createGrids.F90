@@ -352,6 +352,18 @@
     ! Also build interpolation matrices to map functions from one x grid to the other.
     ! *******************************************************************************
 
+    select case (xPotentialsGridScheme)
+    case (1)
+       xPotentialsInterpolationScheme = 1
+    case (2)
+       xPotentialsInterpolationScheme = 2
+    case default
+       if (masterProc) then
+          print *,"Error! Invalid setting for xPotentialsGridScheme."
+       end if
+       stop
+    end select
+
     allocate(x(Nx))
     allocate(xWeights(Nx))
     ! The next few arrays/matrices are used only when there is a point at x=0.
@@ -455,7 +467,8 @@
        case (3)
           allocate(extrapMatrix(NxPotentials, Nx+1))
           allocate(regridPolynomialToUniform_plus1(NxPotentials, Nx+1))
-          call interpolationMatrix(Nx+1, NxPotentials, x_plus1, xPotentials, regridPolynomialToUniform_plus1, extrapMatrix)
+          scheme = 2 ! Note that this setting for the interpolation scheme is independent of the one used to interpolate from the potentials to the distribution function grid.
+          call interpolationMatrix(Nx+1, NxPotentials, x_plus1, xPotentials, scheme, regridPolynomialToUniform_plus1, extrapMatrix)
           regridPolynomialToUniform = regridPolynomialToUniform_plus1(:,1:Nx)
           deallocate(extrapMatrix)
           deallocate(regridPolynomialToUniform_plus1)

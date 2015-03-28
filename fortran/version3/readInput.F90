@@ -57,7 +57,7 @@ contains
     namelist / otherNumericalParameters /  &
          useIterativeLinearSolver, thetaDerivativeScheme, zetaDerivativeScheme, xGridScheme, &
          whichParallelSolverToFactorPreconditioner, &
-         PETSCPreallocationStrategy
+         PETSCPreallocationStrategy, xPotentialsGridScheme
 
     namelist / preconditionerOptions / preconditioner_x, preconditioner_x_min_L, preconditioner_zeta, &
          preconditioner_theta, preconditioner_xi, preconditioner_species, reusePreconditioner, &

@@ -33,7 +33,7 @@ module export_f
 
       implicit none
 
-      integer :: i, j, L, indexOfLeastError, index, index1, index2
+      integer :: i, j, L, indexOfLeastError, index, index1, index2, scheme
       logical, dimension(:), allocatable :: includeThisTheta
       logical, dimension(:), allocatable :: includeThisZeta
       logical, dimension(:), allocatable :: includeThisX
@@ -393,7 +393,8 @@ module export_f
             allocate(x_plus1(Nx+1))
             x_plus1(1:Nx) = x
             x_plus1(Nx+1) = x(Nx)*2-x(Nx-1)
-            call interpolationMatrix(Nx+1, N_export_f_x, x_plus1, export_f_x, regridPolynomialToUniform_plus1, extrapMatrix)
+            scheme = 2 ! Note that this setting for the interpolation scheme is independent of the one used to interpolate from the potentials to the distribution function grid.
+            call interpolationMatrix(Nx+1, N_export_f_x, x_plus1, export_f_x, scheme, regridPolynomialToUniform_plus1, extrapMatrix)
             map_x_to_export_f_x = regridPolynomialToUniform_plus1(:,1:Nx)
             deallocate(extrapMatrix)
             deallocate(regridPolynomialToUniform_plus1)
