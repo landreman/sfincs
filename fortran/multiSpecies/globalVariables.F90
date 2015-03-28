@@ -102,6 +102,8 @@ module globalVariables
   ! 1 = 2nd order finite differences
   ! 2 = 4th order dinite differences
 
+  integer :: xPotentialsGridScheme = 2
+
   integer :: Ntheta = 10
   PetscScalar :: NthetaMinFactor = 0.8d+0, NthetaMaxFactor=2d+0
   integer :: NthetaNumRuns = 2

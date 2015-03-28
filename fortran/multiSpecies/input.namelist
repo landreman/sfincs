@@ -404,6 +404,10 @@
   ! 2 = 4th order finite differences (5-point stencil)
   ! You should set this parameter to 2 except in rare circumstances.
 
+  xPotentialsGridScheme = 2
+  ! 1 = Uniform grid. 5-point stencil for derivatives. 2-point stencil for interpolating to other grids.
+  ! 2 = Uniform grid. 5-point stencil for derivatives. 4-point stencil for interpolating to other grids.
+
   ! If 'useIterativeSolver' is set to false, a sparse direct solver
   ! will be used. The direct solver is faster for small problems and always yields a solution.
   ! For large problems, the iterative solver will usually be faster and will use much

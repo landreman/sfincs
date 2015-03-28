@@ -119,7 +119,7 @@
     integer :: mallocsMain, mallocsPreconditioner
     integer :: firstRowThisProcOwns, lastRowThisProcOwns, numLocalRows
     PetscScalar :: maxxPotentials, CHat_element
-
+    integer :: xPotentialsInterpolationScheme
 
     !!Lines added by AM 2014-09-17
     PetscScalar, dimension(:), allocatable :: dnHatdpsiNsToUse, dTHatdpsiNsToUse
@@ -375,6 +375,16 @@
     ! Build x grids, integration weights, and differentiation matrices.
     ! Also build interpolation matrices to map functions from one x grid to the other.
     ! *******************************************************************************
+
+    select case (xPotentialsGridScheme)
+    case (1)
+       xPotentialsInterpolationScheme = 1
+    case (2)
+       xPotentialsInterpolationScheme = 2
+    case default
+       print *,"Error! Invalid setting for xPotentialsGridScheme."
+       stop
+    end select
 
     allocate(x(Nx))
     allocate(xWeights(Nx))
@@ -1239,7 +1249,7 @@
 
                          ! Build M13:
                          call interpolationMatrix(NxPotentials, Nx, xPotentials, x*speciesFactor2, &
-                              potentialsToFInterpolationMatrix, extrapMatrix)
+                              xPotentialsInterpolationScheme, potentialsToFInterpolationMatrix, extrapMatrix)
 
                          speciesFactor = 3/(2*pi)*nHats(iSpeciesA) &
                               * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &

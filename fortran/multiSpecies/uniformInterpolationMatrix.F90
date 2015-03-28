@@ -1,6 +1,6 @@
 #include <finclude/petscsysdef.h>
 
-subroutine interpolationMatrix(N, M, x, y, matrix, extrapMatrix)
+subroutine interpolationMatrix(N, M, x, y, scheme, matrix, extrapMatrix)
   ! Builds a matrix for interpolating from a uniform grid to any
   ! other grid.
   ! Based on the Matlab function 
@@ -14,6 +14,9 @@ subroutine interpolationMatrix(N, M, x, y, matrix, extrapMatrix)
   ! M = number of points on the grid to which we want to interpolate.
   ! x(N) = locations of the (old) uniform grid points.
   ! y(M) = locations of the (new) grid onto which we interpolate.
+  ! scheme = method for interpolation. Available options are 1 and 2:
+  !          1: Use a 2-point stencil. (Low order)
+  !          2: Use a 4-point stencil. (High order)
   !
   ! Outputs:
   ! matrix(M,N) = interpolation matrix.
@@ -27,7 +30,7 @@ subroutine interpolationMatrix(N, M, x, y, matrix, extrapMatrix)
 
   implicit none
 
-  integer, intent(in) :: N, M
+  integer, intent(in) :: N, M, scheme
   PetscScalar, intent(in) :: x(N), y(M)
   PetscScalar, intent(out) :: matrix(M,N), extrapMatrix(M,N)
   integer :: i, j, index=1
@@ -87,25 +90,51 @@ subroutine interpolationMatrix(N, M, x, y, matrix, extrapMatrix)
            ! We are interpolating rather than extrapolating.
            ! This is the normal condition.
 
-           if (index > N-2) then
-              indicesToUse = [( k+N, k=(-3),0 )]
-           else if (index < 3) then
-              indicesToUse = [( k, k=1,4 )]
-           else
-              indicesToUse = [( k+index, k=(-2),1 )]
-           end if
+           select case (scheme)
+           case (1)
+              if (index==1) then
+                 indicesToUse = [1,2,-1,-1]
+                 ! Only the first 2 entries of indicesToUse matter.
+              else if (index .le. N) then
+                 indicesToUse = [index-1, index,-1,-1]
+              else
+                 print *,"Error! Unexpected value for index."
+                 print *,"index = ",index
+                 print *,"N = ",N
+                 stop
+              end if
 
-           x0 = x(indicesToUse(1))
-           x1 = x(indicesToUse(2))
-           x2 = x(indicesToUse(3))
-           x3 = x(indicesToUse(4))
-           xx = y(i)
+              x0 = x(indicesToUse(1))
+              x1 = x(indicesToUse(2))
+              xx = y(i)
 
-           matrix(i,indicesToUse(1))=(xx-x1)*(xx-x2)*(xx-x3)/((x0-x1)*(x0-x2)*(x0-x3))
-           matrix(i,indicesToUse(2))=(xx-x0)*(xx-x2)*(xx-x3)/((x1-x0)*(x1-x2)*(x1-x3))
-           matrix(i,indicesToUse(3))=(xx-x0)*(xx-x1)*(xx-x3)/((x2-x0)*(x2-x1)*(x2-x3))
-           matrix(i,indicesToUse(4))=(xx-x0)*(xx-x1)*(xx-x2)/((x3-x0)*(x3-x1)*(x3-x2))
+              matrix(i,indicesToUse(1))=(xx-x1)/(x0-x1)
+              matrix(i,indicesToUse(2))=(xx-x0)/(x1-x0)
 
+           case (2)
+              if (index > N-2) then
+                 indicesToUse = [( k+N, k=(-3),0 )]
+              else if (index < 3) then
+                 indicesToUse = [( k, k=1,4 )]
+              else
+                 indicesToUse = [( k+index, k=(-2),1 )]
+              end if
+              
+              x0 = x(indicesToUse(1))
+              x1 = x(indicesToUse(2))
+              x2 = x(indicesToUse(3))
+              x3 = x(indicesToUse(4))
+              xx = y(i)
+
+              matrix(i,indicesToUse(1))=(xx-x1)*(xx-x2)*(xx-x3)/((x0-x1)*(x0-x2)*(x0-x3))
+              matrix(i,indicesToUse(2))=(xx-x0)*(xx-x2)*(xx-x3)/((x1-x0)*(x1-x2)*(x1-x3))
+              matrix(i,indicesToUse(3))=(xx-x0)*(xx-x1)*(xx-x3)/((x2-x0)*(x2-x1)*(x2-x3))
+              matrix(i,indicesToUse(4))=(xx-x0)*(xx-x1)*(xx-x2)/((x3-x0)*(x3-x1)*(x3-x2))
+
+           case default
+              print *,"Error! Invalid value for scheme"
+              stop
+           end select
         end if
      end if
   end do
