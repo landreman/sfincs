@@ -45,7 +45,8 @@ contains
          PETSCPreallocationStrategy
 
     namelist / preconditionerOptions / preconditioner_x, preconditioner_x_min_L, preconditioner_zeta, &
-         preconditioner_theta, preconditioner_xi, preconditioner_species
+         preconditioner_theta, preconditioner_xi, preconditioner_species, &
+         preconditioner_theta_min_L, preconditioner_zeta_min_L
 
     Zs = speciesNotInitialized
     mHats = speciesNotInitialized

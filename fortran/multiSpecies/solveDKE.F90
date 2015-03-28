@@ -239,12 +239,42 @@
     call uniformDiffMatrices(Ntheta, 0, two*pi, scheme, theta, thetaWeights, ddtheta, d2dtheta2)
 
     ! If needed, also make a sparser differentiation matrix for the preconditioner:
-    if (preconditioner_theta==1) then
+!!$    if (preconditioner_theta==1) then
+!!$       scheme = 0
+!!$       call uniformDiffMatrices(Ntheta, 0, two*pi, scheme, theta_preconditioner, &
+!!$            thetaWeights_preconditioner, ddtheta_preconditioner, d2dtheta2_preconditioner)
+!!$
+!!$    end if
+    select case(preconditioner_theta)
+    case (0)
+
+       ! Theta coupling in preconditioner is identical to the full matrix:
+       ddtheta_preconditioner = ddtheta
+
+    case (1)
+       ! Preconditioner has a 3-point stencil instead of a 5-point stencil:
        scheme = 0
        call uniformDiffMatrices(Ntheta, 0, two*pi, scheme, theta_preconditioner, &
             thetaWeights_preconditioner, ddtheta_preconditioner, d2dtheta2_preconditioner)
 
-    end if
+    case (2)
+       ! All theta coupling is dropped in the preconditioner:
+       ddtheta_preconditioner = zero
+
+    case (3)
+       ! Replace d/dtheta with the identity matrix:
+       ddtheta_preconditioner = zero
+       do itheta=1,Ntheta
+          ddtheta_preconditioner(itheta,itheta)=one
+       end do
+
+    case default
+       if (masterProc) then
+          print *,"Error! Invalid setting for preconditioner_theta."
+       end if
+       stop
+
+    end select
 
     ! *******************************************************************************
     ! Build zeta grid, integration weights, and differentiation matrices:
@@ -289,17 +319,54 @@
     end if
 
     ! If needed, also make a sparser differentiation matrix for the preconditioner:
-    if (preconditioner_zeta==1) then
-       if (Nzeta==1) then
-          zeta_preconditioner = 0
-          zetaWeights_preconditioner = 2*pi
-          ddzeta_preconditioner = 0
-          d2dzeta2_preconditioner = 0
-       else
+!!$    if (preconditioner_zeta==1) then
+!!$       if (Nzeta==1) then
+!!$          zeta_preconditioner = 0
+!!$          zetaWeights_preconditioner = 2*pi
+!!$          ddzeta_preconditioner = 0
+!!$          d2dzeta2_preconditioner = 0
+!!$       else
+!!$          scheme = 0
+!!$          call uniformDiffMatrices(Nzeta, 0, zetaMax, scheme, zeta_preconditioner, &
+!!$               zetaWeights_preconditioner, ddzeta_preconditioner, d2dzeta2_preconditioner)
+!!$       end if
+!!$    end if
+    if (Nzeta==1) then
+       zeta_preconditioner = 0
+       zetaWeights_preconditioner = 2*pi
+       ddzeta_preconditioner = 0
+       d2dzeta2_preconditioner = 0
+    else
+       select case (preconditioner_zeta)
+       case (0)
+          ! Zeta coupling in preconditioner is identical to the full matrix:
+          ddzeta_preconditioner = ddzeta
+
+       case (1)
+          ! Preconditioner has a 3-point stencil instead of a 5-point stencil:
+
           scheme = 0
           call uniformDiffMatrices(Nzeta, 0, zetaMax, scheme, zeta_preconditioner, &
                zetaWeights_preconditioner, ddzeta_preconditioner, d2dzeta2_preconditioner)
-       end if
+
+       case (2)
+          ! All zeta coupling is dropped in the preconditioner:
+          ddzeta_preconditioner = zero
+          
+       case (3)
+          ! Replace d/dzeta by the identity matrix:
+          ddzeta_preconditioner = zero
+          do izeta=1,Nzeta
+             ddzeta_preconditioner(izeta,izeta)=one
+          end do
+          
+       case default
+          if (masterProc) then
+             print *,"Error! Invalid setting for preconditioner_zeta."
+          end if
+          stop
+
+       end select
     end if
 
     zetaWeights = zetaWeights * NPeriods
@@ -571,25 +638,6 @@
        ! If any mallocs are required during matrix assembly, do not generate an error:
        !call MatSetOption(matrix, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE, ierr)
 
-       CHKERRQ(ierr)
-
-       ! *********************************************************
-       ! Select appropriate differentiation matrices depending on
-       ! whether this is the preconditioner or the final matrix:
-       ! *********************************************************
-
-       if (whichMatrix==1 .or. preconditioner_theta==0) then
-          ddthetaToUse = ddtheta
-       else
-          ddthetaToUse = ddtheta_preconditioner
-       end if
-
-       if (whichMatrix==1 .or. preconditioner_zeta==0) then
-          ddzetaToUse = ddzeta
-       else
-          ddzetaToUse = ddzeta_preconditioner
-       end if
-
        do ispecies = 1,Nspecies
           THat = THats(ispecies)
           mHat = mHats(ispecies)
@@ -604,18 +652,24 @@
           allocate(localThetaPartOfTerm(Ntheta,localNtheta))
           allocate(rowIndices(localNtheta))
           allocate(colIndices(Ntheta))
-          do izeta=1,Nzeta
-             do itheta=1,Ntheta
-                thetaPartOfTerm(itheta,:) = iota*sqrtTHat/sqrtMHat * ddthetaToUse(itheta,:) &
-                     / BHat(itheta,izeta)
-             end do
+          do L=0,(Nxi-1)
+             if (whichMatrix==1 .or. L < preconditioner_theta_min_L) then
+                ddthetaToUse = ddtheta
+             else
+                ddthetaToUse = ddtheta_preconditioner
+             end if
 
-             ! PETSc uses the opposite convention to Fortran:
-             thetaPartOfTerm = transpose(thetaPartOfTerm)
-             localThetaPartOfTerm = thetaPartOfTerm(:,ithetaMin:ithetaMax)
+             do izeta=1,Nzeta
+                do itheta=1,Ntheta
+                   thetaPartOfTerm(itheta,:) = iota*sqrtTHat/sqrtMHat * ddthetaToUse(itheta,:) &
+                        / BHat(itheta,izeta)
+                end do
 
-             do ix=1,Nx
-                do L=0,(Nxi-1)
+                ! PETSc uses the opposite convention to Fortran:
+                thetaPartOfTerm = transpose(thetaPartOfTerm)
+                localThetaPartOfTerm = thetaPartOfTerm(:,ithetaMin:ithetaMax)
+
+                do ix=1,Nx
                    do itheta=1,localNtheta
                       rowIndices(itheta) = getIndex(ispecies, ix, L+1, ithetaMin+itheta-1, izeta, 0)
                    end do
@@ -658,16 +712,22 @@
           allocate(zetaPartOfTerm(Nzeta,Nzeta))
           allocate(rowIndices(Nzeta))
           allocate(colIndices(Nzeta))
-          do itheta=ithetaMin, ithetaMax
-             do izeta=1,Nzeta
-                zetaPartOfTerm(izeta,:) = sqrtTHat/sqrtMHat * ddzetaToUse(izeta,:) / BHat(itheta,izeta)
-             end do
+          do L=0,(Nxi-1)
+             if (whichMatrix==1 .or. L < preconditioner_zeta_min_L) then
+                ddzetaToUse = ddzeta
+             else
+                ddzetaToUse = ddzeta_preconditioner
+             end if
 
-             ! PETSc uses the opposite convention to Fortran:
-             zetaPartOfTerm = transpose(zetaPartOfTerm)
+             do itheta=ithetaMin, ithetaMax
+                do izeta=1,Nzeta
+                   zetaPartOfTerm(izeta,:) = sqrtTHat/sqrtMHat * ddzetaToUse(izeta,:) / BHat(itheta,izeta)
+                end do
 
-             do ix=1,Nx
-                do L=0,(Nxi-1)
+                ! PETSc uses the opposite convention to Fortran:
+                zetaPartOfTerm = transpose(zetaPartOfTerm)
+
+                do ix=1,Nx
                    do izeta = 1,Nzeta
                       rowIndices(izeta)=getIndex(ispecies, ix, L+1, itheta, izeta, 0)
                    end do
@@ -711,21 +771,27 @@
           allocate(localThetaPartOfTerm(Ntheta,localNtheta))
           allocate(rowIndices(localNtheta))
           allocate(colIndices(Ntheta))
-          do izeta=1,Nzeta
-             if (useDKESExBDrift) then
-                thetaPartOfTerm = ddthetaToUse / FSABHat2
+          do L=0,(Nxi-1)
+             if (whichMatrix==1 .or. L < preconditioner_theta_min_L) then
+                ddthetaToUse = ddtheta
              else
-                do itheta=1,Ntheta
-                   thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2)
-                end do
+                ddthetaToUse = ddtheta_preconditioner
              end if
 
-             ! PETSc uses the opposite convention to Fortran:
-             thetaPartOfTerm = transpose(thetaPartOfTerm*factor)
-             localThetaPartOfTerm = thetaPartOfTerm(:,ithetaMin:ithetaMax)
+             do izeta=1,Nzeta
+                if (useDKESExBDrift) then
+                   thetaPartOfTerm = ddthetaToUse / FSABHat2
+                else
+                   do itheta=1,Ntheta
+                      thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2)
+                   end do
+                end if
 
-             do ix=1,Nx
-                do L=0,(Nxi-1)
+                ! PETSc uses the opposite convention to Fortran:
+                thetaPartOfTerm = transpose(thetaPartOfTerm*factor)
+                localThetaPartOfTerm = thetaPartOfTerm(:,ithetaMin:ithetaMax)
+
+                do ix=1,Nx
                    do itheta=1,localNtheta
                       rowIndices(itheta)=getIndex(ispecies,ix,L+1,itheta+ithetaMin-1,izeta,0)
                    end do
@@ -750,20 +816,26 @@
           factor = -alpha*Delta*IHat/(2*psiAHat)*dPhiHatdpsiN
           allocate(zetaPartOfTerm(Nzeta,Nzeta))
           allocate(rowIndices(Nzeta))
-          do itheta=ithetaMin, ithetaMax
-             if (useDKESExBDrift) then
-                zetaPartOfTerm = ddzetaToUse / FSABHat2
+          do L=0,(Nxi-1)
+             if (whichMatrix==1 .or. L < preconditioner_zeta_min_L) then
+                ddzetaToUse = ddzeta
              else
-                do izeta=1,Nzeta
-                   zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2)
-                end do
+                ddzetaToUse = ddzeta_preconditioner
              end if
 
-             ! PETSc uses the opposite convention to Fortran:
-             zetaPartOfTerm = transpose(zetaPartOfTerm*factor)
+             do itheta=ithetaMin, ithetaMax
+                if (useDKESExBDrift) then
+                   zetaPartOfTerm = ddzetaToUse / FSABHat2
+                else
+                   do izeta=1,Nzeta
+                      zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2)
+                   end do
+                end if
 
-             do ix=1,Nx
-                do L=0,(Nxi-1)
+                ! PETSc uses the opposite convention to Fortran:
+                zetaPartOfTerm = transpose(zetaPartOfTerm*factor)
+
+                do ix=1,Nx
                    do izeta=1,Nzeta
                       rowIndices(izeta)=getIndex(ispecies,ix,L+1,itheta,izeta,0)
                    end do
