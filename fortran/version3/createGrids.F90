@@ -22,9 +22,9 @@
     PetscScalar, dimension(:,:), allocatable :: d2dzeta2_preconditioner
     PetscScalar, dimension(:), allocatable :: xWeightsPotentials
 
-    PetscScalar, dimension(:), allocatable :: x_plus1, xWeights_plus1
+    PetscScalar, dimension(:), allocatable :: xWeights_plus1
     PetscScalar, dimension(:,:), allocatable :: ddx_plus1, d2dx2_plus1
-    PetscScalar, dimension(:,:), allocatable :: regridPolynomialToUniform_plus1, extrapMatrix
+    PetscScalar, dimension(:,:), allocatable :: interpolateXToXPotentials_plus1, extrapMatrix
 
 
     DM :: myDM
@@ -352,10 +352,27 @@
     ! Also build interpolation matrices to map functions from one x grid to the other.
     ! *******************************************************************************
 
+    select case (xGridScheme)
+    case (1,2)
+       ! For these values of xGridScheme, xInterpolationScheme does not matter.                                                                                                                              
+       xInterpolationScheme = -1
+    case (3)
+       xInterpolationScheme = 1
+    case (4)
+       xInterpolationScheme = 2
+    case default
+       print *,"Error! Invalid setting for xGridScheme."
+       stop
+    end select
+
     select case (xPotentialsGridScheme)
     case (1)
        xPotentialsInterpolationScheme = 1
     case (2)
+       xPotentialsInterpolationScheme = 2
+    case (3)
+       xPotentialsInterpolationScheme = 1
+    case (4)
        xPotentialsInterpolationScheme = 2
     case default
        if (masterProc) then
@@ -371,6 +388,7 @@
     allocate(xWeights_plus1(Nx+1))
     allocate(ddx_plus1(Nx+1,Nx+1))
     allocate(d2dx2_plus1(Nx+1,Nx+1))
+    x_plus1 = -1 ! so we know its value if it is not set otherwise.
 
     if (RHSMode .ne. 3) then
        select case (xGridScheme)
@@ -384,7 +402,7 @@
           call makeXGrid(Nx, x, xWeights, .true.)
           xWeights = xWeights / exp(-x*x)
 
-       case (3)
+       case (3,4)
           pointAtX0 = .true.
 
           scheme = 12
@@ -421,13 +439,18 @@
        case (1,2)
           call makeXPolynomialDiffMatrices(x,ddx,d2dx2)
 
-       case (3)
+       case (3,4)
           ddx = ddx_plus1(1:Nx, 1:Nx)
           d2dx2 = d2dx2_plus1(1:Nx, 1:Nx)
 
        end select
 
-       NxPotentials = ceiling(xMaxNotTooSmall*NxPotentialsPerVth)
+       if (xPotentialsGridScheme==3 .or. xPotentialsGridScheme==4) then
+          ! The potentials have an explicit grid point at xMax, whereas the distribution function does not (since f=0 there.)
+          NxPotentials = Nx+1
+       else
+          NxPotentials = ceiling(xMaxNotTooSmall*NxPotentialsPerVth)
+       end if
     else
        ! Monoenergetic transport matrix calculation.
        ddx = zero
@@ -458,23 +481,23 @@
     expx2 = exp(-x*x)
 
     ! Create matrix to interpolate from the distribution-function grid to the Rosenbluth-potential grid:
-    allocate(regridPolynomialToUniform(NxPotentials, Nx))
+    allocate(interpolateXToXPotentials(NxPotentials, Nx))
     if (RHSMode .ne. 3) then
        select case (xGridScheme)
        case (1,2)
           call polynomialInterpolationMatrix(Nx, NxPotentials, x, xPotentials, &
-               expx2, exp(-xPotentials*xPotentials), regridPolynomialToUniform)
-       case (3)
+               expx2, exp(-xPotentials*xPotentials), interpolateXToXPotentials)
+       case (3,4)
           allocate(extrapMatrix(NxPotentials, Nx+1))
-          allocate(regridPolynomialToUniform_plus1(NxPotentials, Nx+1))
-          scheme = 2 ! Note that this setting for the interpolation scheme is independent of the one used to interpolate from the potentials to the distribution function grid.
-          call interpolationMatrix(Nx+1, NxPotentials, x_plus1, xPotentials, scheme, regridPolynomialToUniform_plus1, extrapMatrix)
-          regridPolynomialToUniform = regridPolynomialToUniform_plus1(:,1:Nx)
+          allocate(interpolateXToXPotentials_plus1(NxPotentials, Nx+1))
+          call interpolationMatrix(Nx+1, NxPotentials, x_plus1, xPotentials, &
+               xInterpolationScheme, interpolateXToXPotentials_plus1, extrapMatrix)
+          interpolateXToXPotentials = interpolateXToXPotentials_plus1(:,1:Nx)
           deallocate(extrapMatrix)
-          deallocate(regridPolynomialToUniform_plus1)
+          deallocate(interpolateXToXPotentials_plus1)
        end select
     else
-       regridPolynomialToUniform = zero
+       interpolateXToXPotentials = zero
     end if
 
     ddx_preconditioner = 0
@@ -516,7 +539,40 @@
        stop
     end select
 
-    deallocate(x_plus1)
+    if (masterProc) then
+       print *,"xGridScheme:",xGridScheme
+       print *,"xInterpolationScheme:",xInterpolationScheme
+       print *,"xPotentialsGridScheme:",xPotentialsGridScheme
+       print *,"xPotentialsInterpolationScheme:",xPotentialsInterpolationScheme
+       print *,"NxPotentials:",NxPotentials
+       print *,"x:"
+       print *,x
+       print *,"ddx:"
+       do i=1,Nx
+          print *,ddx(i,:)
+       end do
+       print *,"d2dx2:"
+       do i=1,Nx
+          print *,d2dx2(i,:)
+       end do
+       print *,"xPotentials:"
+       print *,xPotentials
+       if (NxPotentials < 20) then
+          print *,"ddxPotentials:"
+          do i=1,NxPotentials
+             print *,ddxPotentials(i,:)
+          end do
+          print *,"d2dx2Potentials:"
+          do i=1,NxPotentials
+             print *,d2dx2Potentials(i,:)
+          end do
+       end if
+       print *,"interpolateXToXPotentials:"
+       do i=1,NxPotentials
+          print *,interpolateXToXPotentials(i,:)
+       end do
+    end if
+
     deallocate(xWeights_plus1)
     deallocate(ddx_plus1)
     deallocate(d2dx2_plus1)

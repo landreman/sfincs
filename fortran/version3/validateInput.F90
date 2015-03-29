@@ -576,16 +576,16 @@ subroutine validateInput()
      print *,line
   end if
 
-  if (xGridScheme<0) then
+  if (xGridScheme<1) then
      if (masterProc) then
-        print *,"Error! xGridScheme cannot be less than 0."
+        print *,"Error! xGridScheme cannot be less than 1."
      end if
      stop
   end if
   
-  if (xGridScheme>2) then
+  if (xGridScheme>4) then
      if (masterProc) then
-        print *,"Error! xGridScheme cannot be more than 2."
+        print *,"Error! xGridScheme cannot be more than 4."
      end if
      stop
   end if
@@ -597,9 +597,16 @@ subroutine validateInput()
      stop
   end if
   
-  if (xPotentialsGridScheme>2) then
+  if (xPotentialsGridScheme>4) then
      if (masterProc) then
-        print *,"Error! xPotentialsGridScheme cannot be more than 2."
+        print *,"Error! xPotentialsGridScheme cannot be more than 4."
+     end if
+     stop
+  end if
+  
+  if ((xPotentialsGridScheme==3 .or. xPotentialsGridScheme==4) .and. (xGridScheme .ne. 3 .and. xGridScheme .ne. 4)) then
+     if (masterProc) then
+        print *,"Error! When xPotentialsGridScheme is 3 or 4, xGridScheme must be 3 or 4."
      end if
      stop
   end if

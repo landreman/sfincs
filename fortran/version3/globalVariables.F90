@@ -112,7 +112,8 @@ module globalVariables
   ! 1 = 2nd order finite differences
   ! 2 = 4th order dinite differences
 
-  integer :: xGridScheme = 1
+  integer :: xPotentialsGridScheme = 2, xPotentialsInterpolationScheme
+  integer :: xGridScheme = 1, xInterpolationScheme
   logical :: pointAtX0
 
   integer :: Ntheta
@@ -146,8 +147,6 @@ module globalVariables
 
   integer :: PETSCPreallocationStrategy
 
-  integer :: xPotentialsGridScheme = 2, xPotentialsInterpolationScheme
-
   ! ********************************************************
   !
   !  Other variables that are used by multiple subroutines
@@ -155,7 +154,7 @@ module globalVariables
   ! ********************************************************
 
   integer :: matrixSize, NxPotentials
-  PetscScalar, dimension(:), allocatable :: theta, zeta, x
+  PetscScalar, dimension(:), allocatable :: theta, zeta, x, x_plus1
   PetscScalar, dimension(:), allocatable :: thetaWeights, zetaWeights
   PetscScalar, dimension(:,:), allocatable :: ddtheta, ddzeta
   PetscScalar, dimension(:), allocatable :: xWeights, xPotentials
@@ -165,7 +164,7 @@ module globalVariables
   PetscScalar, dimension(:,:), allocatable :: ddx_preconditioner
   PetscScalar, dimension(:,:), allocatable :: ddtheta_preconditioner
   PetscScalar, dimension(:,:), allocatable :: ddzeta_preconditioner
-  PetscScalar, dimension(:,:), allocatable :: regridPolynomialToUniform
+  PetscScalar, dimension(:,:), allocatable :: interpolateXToXPotentials
 
   integer, parameter :: COORDINATE_SYSTEM_UNINITIALIZED = -1
   integer, parameter :: COORDINATE_SYSTEM_BOOZER = 1

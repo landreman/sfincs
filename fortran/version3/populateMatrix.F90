@@ -61,6 +61,7 @@
     logical :: useStateVec
     PetscScalar, dimension(:,:), allocatable :: nonlinearTerm_Lp1, nonlinearTerm_Lm1
     PetscScalar, dimension(:), allocatable :: tempVector1, tempVector2
+    PetscScalar, dimension(:,:), allocatable :: tempExtrapMatrix, fToFInterpolationMatrix_plus1
 
     ! *******************************************************************************
     ! Do a few sundry initialization tasks:
@@ -936,7 +937,7 @@
           ! are independent of psi and independent of species.
           
           M32 = zero
-          M21 = 4*pi*regridPolynomialToUniform
+          M21 = 4*pi*interpolateXToXPotentials
           do i=2,NxPotentials-1
              M21(i,:) = M21(i,:)*xPotentials(i)*xPotentials(i)
              M32(i,i) = -2*xPotentials(i)*xPotentials(i)
@@ -1039,10 +1040,24 @@
                      * nHats(iSpeciesB)*(erfs - Psi_Chandra)/(x*x*x)
                 
                 ! Given a vector of function values on the species-B grid, multiply the vector
-                ! by this regridding matrix to obtain its values on the species-A grid:
+                ! by this interpolation matrix to obtain its values on the species-A grid:
                 if (iSpeciesA /= iSpeciesB) then
-                   call polynomialInterpolationMatrix(Nx, Nx, x, xb, expx2, &
-                        expxb2, fToFInterpolationMatrix)
+                   select case (xGridScheme)
+                   case (1,2)
+                      call polynomialInterpolationMatrix(Nx, Nx, x, xb, expx2, &
+                           expxb2, fToFInterpolationMatrix)
+                   case (3,4)
+                      allocate(tempExtrapMatrix(Nx, Nx+1))
+                      allocate(fToFInterpolationMatrix_plus1(Nx, Nx+1))
+                      call interpolationMatrix(Nx+1, Nx, x_plus1, xb, &
+                           xInterpolationScheme, fToFInterpolationMatrix_plus1, tempExtrapMatrix)
+                      fToFInterpolationMatrix = fToFInterpolationMatrix_plus1(:,1:Nx)
+                      deallocate(tempExtrapMatrix)
+                      deallocate(fToFInterpolationMatrix_plus1)
+                   case default
+                      print *,"Error! Invalid xGridScheme"
+                      stop
+                   end select
                 else
                    fToFInterpolationMatrix = zero
                    do i=1,Nx
@@ -1050,6 +1065,13 @@
                    end do
                 end if
                 
+                if (masterProc) then
+                   print *,"Here comes fToFInterpolationMatrix for ispeciesA=",iSpeciesA,", iSpeciesB=",iSpeciesB
+                   do ix=1,Nx
+                      print *,fToFInterpolationMatrix(ix,:)
+                   end do
+                end if
+
                 ! Using the resulting interpolation matrix,
                 ! add CD (the part of the field term independent of Rosenbluth potentials.
                 ! CD is dense in the species indices.

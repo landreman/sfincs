@@ -456,11 +456,15 @@
   xGridScheme = 1
   ! 1 = New orthogonal polynomials with no point at x=0.
   ! 2 = New orthogonal polynomials with a point at x=0.
-  ! 3 = Uniform finite differences on [0, xMax], forcing f=0 at xMax.
+  ! 3 = Uniform finite differences on [0, xMax], forcing f=0 at xMax. 2-point stencil for interpolating to other grids.
+  ! 4 = Uniform finite differences on [0, xMax], forcing f=0 at xMax. 4-point stencil for interpolating to other grids.
 
   xPotentialsGridScheme = 2
-  ! 1 = Uniform grid. 5-point stencil for derivatives. 4-point stencil for interpolating to other grids.
-  ! 2 = Uniform grid. 5-point stencil for derivatives. 2-point stencil for interpolating to other grids.
+  ! 1 = Uniform grid. 5-point stencil for derivatives. 2-point stencil for interpolating to other grids.
+  ! 2 = Uniform grid. 5-point stencil for derivatives. 4-point stencil for interpolating to other grids.
+  ! 3 = Use same grid as for distribution function, so no interpolation needed for the self-collision operator.
+  !     You must set xGridScheme=3 or 4 to use this setting.  Use 2-point stencil for interpolating to other species' grids.
+  ! 4 = Same as option 3, except use a 4-point stencil for interpolating to other species' grids.
 
   ! If 'useIterativeLinearSolver' is set to false, a sparse direct solver
   ! will be used. The direct solver is faster for small problems and always yields a solution.

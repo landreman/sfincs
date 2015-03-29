@@ -38,7 +38,7 @@ module export_f
       logical, dimension(:), allocatable :: includeThisZeta
       logical, dimension(:), allocatable :: includeThisX
       PetscScalar :: error, leastError, weight1, weight2
-      PetscScalar, dimension(:,:), allocatable :: extrapMatrix, regridPolynomialToUniform_plus1
+      PetscScalar, dimension(:,:), allocatable :: extrapMatrix, map_x_to_export_f_x_plus1
       PetscScalar, dimension(:), allocatable :: x_plus1
 
       ! --------------------------------------------------------
@@ -389,15 +389,15 @@ module export_f
                  expx2, exp(-export_f_x*export_f_x), map_x_to_export_f_x)
          case (3)
             allocate(extrapMatrix(N_export_f_x, Nx+1))
-            allocate(regridPolynomialToUniform_plus1(N_export_f_x, Nx+1))
+            allocate(map_x_to_export_f_x_plus1(N_export_f_x, Nx+1))
             allocate(x_plus1(Nx+1))
             x_plus1(1:Nx) = x
             x_plus1(Nx+1) = x(Nx)*2-x(Nx-1)
             scheme = 2 ! Note that this setting for the interpolation scheme is independent of the one used to interpolate from the potentials to the distribution function grid.
-            call interpolationMatrix(Nx+1, N_export_f_x, x_plus1, export_f_x, scheme, regridPolynomialToUniform_plus1, extrapMatrix)
-            map_x_to_export_f_x = regridPolynomialToUniform_plus1(:,1:Nx)
+            call interpolationMatrix(Nx+1, N_export_f_x, x_plus1, export_f_x, scheme, map_x_to_export_f_x_plus1, extrapMatrix)
+            map_x_to_export_f_x = map_x_to_export_f_x_plus1(:,1:Nx)
             deallocate(extrapMatrix)
-            deallocate(regridPolynomialToUniform_plus1)
+            deallocate(map_x_to_export_f_x_plus1)
             deallocate(x_plus1)
          case default
             if (masterProc) then
