@@ -48,7 +48,7 @@
       !
       ! Inputs:
       !  N = number of grid points to generate.
-      !  pointAtX0 = Should a point be included at x=0?
+      !  includePointAtX0 = Should a point be included at x=0?
       !
       ! Outputs:
       !   abscissae = grid points
