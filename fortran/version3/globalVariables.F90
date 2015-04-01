@@ -166,6 +166,10 @@ module globalVariables
   PetscScalar, dimension(:,:), allocatable :: ddzeta_preconditioner
   PetscScalar, dimension(:,:), allocatable :: interpolateXToXPotentials
 
+  PetscScalar, dimension(:,:,:,:,:), allocatable :: Rosenbluth_H
+  PetscScalar, dimension(:,:,:,:,:), allocatable :: Rosenbluth_dHdxb
+  PetscScalar, dimension(:,:,:,:,:), allocatable :: Rosenbluth_d2Gdxb2
+
   integer, parameter :: COORDINATE_SYSTEM_UNINITIALIZED = -1
   integer, parameter :: COORDINATE_SYSTEM_BOOZER = 1
   integer, parameter :: COORDINATE_SYSTEM_VMEC = 2

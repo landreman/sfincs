@@ -2,6 +2,7 @@
 subroutine validateInput()
 
   use globalVariables
+  use xGrid, only: xGrid_k
 
   implicit none
 
@@ -583,9 +584,9 @@ subroutine validateInput()
      stop
   end if
   
-  if (xGridScheme>4) then
+  if (xGridScheme>6) then
      if (masterProc) then
-        print *,"Error! xGridScheme cannot be more than 4."
+        print *,"Error! xGridScheme cannot be more than 6."
      end if
      stop
   end if
@@ -611,6 +612,17 @@ subroutine validateInput()
      stop
   end if
   
+  if ((xGridScheme==2 .or. xGridScheme==6) .and. (xGrid_k .ne. 0)) then
+     if (masterProc) then
+        print *,line
+        print *,line
+        print *,"** WARNING: Overriding your request for xGrid_k, since"
+        print *,"** for xGridScheme of 2 or 6, you must set xGrid_k to 0."
+        print *,line
+        print *,line
+     end if
+     xGrid_k = 0
+  end if
 
   ! preconditionerOptions namelist:
 

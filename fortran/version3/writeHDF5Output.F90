@@ -118,6 +118,7 @@ contains
     ! 3. Variables that do not change with each iteration of SNES are saved to the .h5 file.
 
     use export_f
+    use xGrid, only: xGrid_k
     
     implicit none
 
@@ -169,6 +170,7 @@ contains
        call writeHDF5Field("thetaDerivativeScheme", thetaDerivativeScheme, "")
        call writeHDF5Field("zetaDerivativeScheme", zetaDerivativeScheme, "")
        call writeHDF5Field("xGridScheme", xGridScheme, "")
+       call writeHDF5Field("xGrid_k", xGrid_k, "Exponent of x in the orthogonality relation for the speed polynomials")
        call writeHDF5Field("xPotentialsGridScheme", xPotentialsGridScheme, "")
        call writeHDF5Field("pointAtX0", pointAtX0, "Does the x grid include a point at x=0? " // boolDescription)
        call writeHDF5Field("preconditioner_species", preconditioner_species, "")

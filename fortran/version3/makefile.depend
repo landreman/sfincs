@@ -11,20 +11,20 @@ createGrids.o: globalVariables.o polynomialDiffMatrices.o xGrid.o geometry.o ind
 diagnostics.o: globalVariables.o indices.o writeHDF5Output.o
 evaluateJacobian.o: globalVariables.o
 evaluateResidual.o: globalVariables.o indices.o
-export_f.o: globalVariables.o
+export_f.o: globalVariables.o xGrid.o
 geometry.o: globalVariables.o radialCoordinates.o readVMEC/readVMEC.a
 indices.o: globalVariables.o
-polynomialDiffMatrices.o:
+polynomialDiffMatrices.o: xGrid.o
 polynomialInterpolationMatrix.o: 
-populateMatrix.o: globalVariables.o sparsify.o indices.o
+populateMatrix.o: globalVariables.o sparsify.o indices.o xGrid.o
 preallocateMatrix.o: indices.o globalVariables.o
 radialCoordinates.o: globalVariables.o
-readInput.o: export_f.o globalVariables.o
+readInput.o: export_f.o globalVariables.o xGrid.o
 sfincs.o: geometry.o globalVariables.o writeHDF5Output.o readInput.o solver.o radialCoordinates.o
 solver.o: globalVariables.o
 sparsify.o:
 uniformDiffMatrices.o: 
 uniformInterpolationMatrix.o: 
 validateInput.o: globalVariables.o
-writeHDF5Output.o: globalVariables.o export_f.o
+writeHDF5Output.o: globalVariables.o export_f.o xGrid.o
 xGrid.o:

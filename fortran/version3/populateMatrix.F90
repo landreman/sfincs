@@ -12,6 +12,7 @@
     use globalVariables
     use sparsify
     use indices
+    use xGrid, only: xGrid_k
 
     implicit none
 
@@ -1043,9 +1044,9 @@
                 ! by this interpolation matrix to obtain its values on the species-A grid:
                 if (iSpeciesA /= iSpeciesB) then
                    select case (xGridScheme)
-                   case (1,2)
-                      call polynomialInterpolationMatrix(Nx, Nx, x, xb, expx2, &
-                           expxb2, fToFInterpolationMatrix)
+                   case (1,2,5,6)
+                      call polynomialInterpolationMatrix(Nx, Nx, x, xb, expx2*(x**xGrid_k), &
+                           expxb2*(xb**xGrid_k), fToFInterpolationMatrix)
                    case (3,4)
                       allocate(tempExtrapMatrix(Nx, Nx+1))
                       allocate(fToFInterpolationMatrix_plus1(Nx, Nx+1))
@@ -1065,12 +1066,12 @@
                    end do
                 end if
                 
-                if (masterProc) then
-                   print *,"Here comes fToFInterpolationMatrix for ispeciesA=",iSpeciesA,", iSpeciesB=",iSpeciesB
-                   do ix=1,Nx
-                      print *,fToFInterpolationMatrix(ix,:)
-                   end do
-                end if
+!!$                if (masterProc) then
+!!$                   print *,"Here comes fToFInterpolationMatrix for ispeciesA=",iSpeciesA,", iSpeciesB=",iSpeciesB
+!!$                   do ix=1,Nx
+!!$                      print *,fToFInterpolationMatrix(ix,:)
+!!$                   end do
+!!$                end if
 
                 ! Using the resulting interpolation matrix,
                 ! add CD (the part of the field term independent of Rosenbluth potentials.
@@ -1142,54 +1143,81 @@
                       if (L < NL) then
                          !   if (.false.) then
                          ! Add Rosenbluth potential terms.
+
+                         if (xGridScheme==5 .or. xGridScheme==6) then
+                            ! New scheme for the Rosenbluth potential terms.
+
+                            speciesFactor = 3/(2*pi)*nHats(iSpeciesA) &
+                                 * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
+                                 / (THats(iSpeciesA) * sqrt(THats(iSpeciesA)*mHats(ispeciesA))) &
+                                 * THats(iSpeciesB)*mHats(iSpeciesA)/(THats(iSpeciesA)*mHats(iSpeciesB))
+
+                            ! Add terms involving H and d H / d x_b:
+                            temp = 1 - mHats(iSpeciesA)/mHats(iSpeciesB)
+                            do i=1,Nx
+                               M12(i,:) = -speciesFactor*expx2(i)*( &
+                                    Rosenbluth_H(iSpeciesA,iSpeciesB,L+1,i,:) &
+                                    + temp * xb(i) * Rosenbluth_dHdxb(iSpeciesA,iSpeciesB,L+1,i,:))
+                            end do
+
+                            ! Add term involving d^2 G / d x_b^2:
+                            do i=1,Nx
+                               M13(i, :) = speciesFactor*expx2(i)*x2(i)&
+                                    * Rosenbluth_d2Gdxb2(iSpeciesA,iSpeciesB,L+1,i,:)
+                            end do
+
+                            CHat = M11 + M12 + M13
+
+                         else
+                            ! Original scheme for the Rosenbluth potential terms.
+
+                            speciesFactor2 = sqrt(THats(iSpeciesA)*mHats(iSpeciesB) &
+                                 / (THats(iSpeciesB) * mHats(iSpeciesA)))
                          
-                         speciesFactor2 = sqrt(THats(iSpeciesA)*mHats(iSpeciesB) &
-                              / (THats(iSpeciesB) * mHats(iSpeciesA)))
+                            ! Build M13:
+                            call interpolationMatrix(NxPotentials, Nx, xPotentials, x*speciesFactor2, &
+                                 xPotentialsInterpolationScheme, potentialsToFInterpolationMatrix, extrapMatrix)
                          
-                         ! Build M13:
-                         call interpolationMatrix(NxPotentials, Nx, xPotentials, x*speciesFactor2, &
-                              xPotentialsInterpolationScheme, potentialsToFInterpolationMatrix, extrapMatrix)
+                            speciesFactor = 3/(2*pi)*nHats(iSpeciesA) &
+                                 * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
+                                 / (THats(iSpeciesA) * sqrt(THats(iSpeciesA)*mHats(ispeciesA))) &
+                                 * THats(iSpeciesB)*mHats(iSpeciesA)/(THats(iSpeciesA)*mHats(iSpeciesB))
                          
-                         speciesFactor = 3/(2*pi)*nHats(iSpeciesA) &
-                              * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
-                              / (THats(iSpeciesA) * sqrt(THats(iSpeciesA)*mHats(ispeciesA))) &
-                              * THats(iSpeciesB)*mHats(iSpeciesA)/(THats(iSpeciesA)*mHats(iSpeciesB))
+                            tempMatrix = matmul(potentialsToFInterpolationMatrix, d2dx2Potentials)
+                            do i=1,Nx
+                               !M13(i, :) = speciesFactor*expx2(i)*x2(i)*tempMatrix(i,:)
+                               M13(i, :) = speciesFactor*expx2(i) * (x2(i)*tempMatrix(i,:) &
+                                    + THats(ispeciesB)*mHats(ispeciesA)/(THats(ispeciesA)*mHats(ispeciesB)) &
+                                    *(L+1)*(L+2)*(maxxPotentials ** (L+1)) * (xb(i) ** (-L-1))*extrapMatrix(i,:))
+                            end do
                          
-                         tempMatrix = matmul(potentialsToFInterpolationMatrix, d2dx2Potentials)
-                         do i=1,Nx
-                            !M13(i, :) = speciesFactor*expx2(i)*x2(i)*tempMatrix(i,:)
-                            M13(i, :) = speciesFactor*expx2(i) * (x2(i)*tempMatrix(i,:) &
-                                 + THats(ispeciesB)*mHats(ispeciesA)/(THats(ispeciesA)*mHats(ispeciesB)) &
-                                 *(L+1)*(L+2)*(maxxPotentials ** (L+1)) * (xb(i) ** (-L-1))*extrapMatrix(i,:))
-                         end do
+                            temp = 1-mHats(iSpeciesA)/mHats(iSpeciesB)
+                            do i=1,NxPotentials
+                               tempMatrix2(i,:) = temp*xPotentials(i)*ddxPotentials(i,:)
+                               tempMatrix2(i,i) = tempMatrix2(i,i) + one
+                            end do
+                            tempMatrix = matmul(potentialsToFInterpolationMatrix, tempMatrix2)
+                            do i=1,Nx
+                               !M12(i,:) = -speciesFactor*expx2(i)*tempMatrix(i,:)
+                               M12(i,:) = -speciesFactor*expx2(i) * ( tempMatrix(i,:) &
+                                    +( -((maxxPotentials/xb(i)) ** (L+1)) &
+                                    * ((L+1)*(1-mHats(ispeciesA)/mHats(ispeciesB)) - 1) &
+                                    -THats(ispeciesB)*mHats(ispeciesA)/(THats(ispeciesA)*mHats(ispeciesB))&
+                                    *((L+1)*(L+2)/(2*L-1) * (maxxPotentials**(L+3))*(xb(i) ** (-L-1)) &
+                                    -L*(L-1)/(2*L-1) * (maxxPotentials ** (L+1))*(xb(i)**(-L+1)))) &
+                                    *extrapMatrix(i,:))
+                            end do
                          
-                         temp = 1-mHats(iSpeciesA)/mHats(iSpeciesB)
-                         do i=1,NxPotentials
-                            tempMatrix2(i,:) = temp*xPotentials(i)*ddxPotentials(i,:)
-                            tempMatrix2(i,i) = tempMatrix2(i,i) + one
-                         end do
-                         tempMatrix = matmul(potentialsToFInterpolationMatrix, tempMatrix2)
-                         do i=1,Nx
-                            !M12(i,:) = -speciesFactor*expx2(i)*tempMatrix(i,:)
-                            M12(i,:) = -speciesFactor*expx2(i) * ( tempMatrix(i,:) &
-                                 +( -((maxxPotentials/xb(i)) ** (L+1)) &
-                                 * ((L+1)*(1-mHats(ispeciesA)/mHats(ispeciesB)) - 1) &
-                                 -THats(ispeciesB)*mHats(ispeciesA)/(THats(ispeciesA)*mHats(ispeciesB))&
-                                 *((L+1)*(L+2)/(2*L-1) * (maxxPotentials**(L+3))*(xb(i) ** (-L-1)) &
-                                 -L*(L-1)/(2*L-1) * (maxxPotentials ** (L+1))*(xb(i)**(-L+1)))) &
-                                 *extrapMatrix(i,:))
-                         end do
+                            ! Possibly add Dirichlet boundary condition for potentials at x=0:
+                            if (L /= 0) then
+                               M12(:,1) = 0
+                               M13(:,1) = 0
+                            end if
                          
-                         ! Possibly add Dirichlet boundary condition for potentials at x=0:
-                         if (L /= 0) then
-                            M12(:,1) = 0
-                            M13(:,1) = 0
+                            !CHat = M11 -  (M12 - M13 * (M33 \ M32)) * (M22 \ M21);
+                            CHat = M11 - matmul(M12 - matmul(M13, M33BackslashM32s(L+1,:,:)),&
+                                 M22BackslashM21s(L+1,:,:))
                          end if
-                         
-                         !CHat = M11 -  (M12 - M13 * (M33 \ M32)) * (M22 \ M21);
-                         CHat = M11 - matmul(M12 - matmul(M13, M33BackslashM32s(L+1,:,:)),&
-                              M22BackslashM21s(L+1,:,:))
-                         
                       else
                          CHat = M11;
                       end if

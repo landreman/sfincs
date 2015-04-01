@@ -31,6 +31,8 @@ module export_f
       ! This subroutine does some preparatory work for exporting the distribution function. 
       ! It is called from createGrids.F90 after the theta/zeta/x grids have been assembled.
 
+      use xGrid, only: xGrid_k
+
       implicit none
 
       integer :: i, j, L, indexOfLeastError, index, index1, index2, scheme
@@ -386,7 +388,7 @@ module export_f
          select case (xGridScheme)
          case (1,2)
             call polynomialInterpolationMatrix(Nx, N_export_f_x, x, export_f_x, &
-                 expx2, exp(-export_f_x*export_f_x), map_x_to_export_f_x)
+                 expx2*(x**xGrid_k), exp(-export_f_x*export_f_x)*(export_f_x**xGrid_k), map_x_to_export_f_x)
          case (3)
             allocate(extrapMatrix(N_export_f_x, Nx+1))
             allocate(map_x_to_export_f_x_plus1(N_export_f_x, Nx+1))

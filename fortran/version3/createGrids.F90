@@ -353,8 +353,8 @@
     ! *******************************************************************************
 
     select case (xGridScheme)
-    case (1,2)
-       ! For these values of xGridScheme, xInterpolationScheme does not matter.                                                                                                                              
+    case (1,2,5,6)
+       ! For these values of xGridScheme, xInterpolationScheme does not matter.
        xInterpolationScheme = -1
     case (3)
        xInterpolationScheme = 1
@@ -392,15 +392,15 @@
 
     if (RHSMode .ne. 3) then
        select case (xGridScheme)
-       case (1)
+       case (1,5)
           pointAtX0 = .false.
           call makeXGrid(Nx, x, xWeights, .false.)
-          xWeights = xWeights / exp(-x*x)
+          xWeights = xWeights / (exp(-x*x)*(x**xGrid_k))
 
-       case (2)
+       case (2,6)
           pointAtX0 = .true.
           call makeXGrid(Nx, x, xWeights, .true.)
-          xWeights = xWeights / exp(-x*x)
+          xWeights = xWeights / (exp(-x*x)*(x**xGrid_k))
 
        case (3,4)
           pointAtX0 = .true.
@@ -425,7 +425,6 @@
        pointAtX0 = .false.
     end if
 
-
     xMaxNotTooSmall = max(x(Nx), xMax)
     allocate(x2(Nx))
     x2=x*x
@@ -436,7 +435,7 @@
     if (RHSMode .ne. 3) then
 
        select case (xGridScheme)
-       case (1,2)
+       case (1,2,5,6)
           call makeXPolynomialDiffMatrices(x,ddx,d2dx2)
 
        case (3,4)
@@ -484,9 +483,9 @@
     allocate(interpolateXToXPotentials(NxPotentials, Nx))
     if (RHSMode .ne. 3) then
        select case (xGridScheme)
-       case (1,2)
+       case (1,2,5,6)
           call polynomialInterpolationMatrix(Nx, NxPotentials, x, xPotentials, &
-               expx2, exp(-xPotentials*xPotentials), interpolateXToXPotentials)
+               expx2*(x**xGrid_k), exp(-xPotentials*xPotentials)*(xPotentials**xGrid_k), interpolateXToXPotentials)
        case (3,4)
           allocate(extrapMatrix(NxPotentials, Nx+1))
           allocate(interpolateXToXPotentials_plus1(NxPotentials, Nx+1))
@@ -539,7 +538,16 @@
        stop
     end select
 
-    if (masterProc) then
+    if (xGridScheme==5 .or. xGridScheme==6) then
+       allocate(Rosenbluth_H(Nspecies,Nspecies,NL,Nx,Nx))
+       allocate(Rosenbluth_dHdxb(Nspecies,Nspecies,NL,Nx,Nx))
+       allocate(Rosenbluth_d2Gdxb2(Nspecies,Nspecies,NL,Nx,Nx))
+       call computeRosenbluthPotentialResponse(Nx, x, xWeights, Nspecies, mHats, THats, NL, &
+         Rosenbluth_H, Rosenbluth_dHdxb, Rosenbluth_d2Gdxb2,.false.)
+         !Rosenbluth_H, Rosenbluth_dHdxb, Rosenbluth_d2Gdxb2,masterProc)
+    end if
+
+    if (.false.) then
        print *,"xGridScheme:",xGridScheme
        print *,"xInterpolationScheme:",xInterpolationScheme
        print *,"xPotentialsGridScheme:",xPotentialsGridScheme

@@ -2,6 +2,7 @@ module readInput
 
   use globalVariables
   use export_f
+  use xGrid, only: xGrid_k
 
   implicit none
 
@@ -57,7 +58,7 @@ contains
     namelist / otherNumericalParameters /  &
          useIterativeLinearSolver, thetaDerivativeScheme, zetaDerivativeScheme, xGridScheme, &
          whichParallelSolverToFactorPreconditioner, &
-         PETSCPreallocationStrategy, xPotentialsGridScheme
+         PETSCPreallocationStrategy, xPotentialsGridScheme, xGrid_k
 
     namelist / preconditionerOptions / preconditioner_x, preconditioner_x_min_L, preconditioner_zeta, &
          preconditioner_theta, preconditioner_xi, preconditioner_species, reusePreconditioner, &
@@ -422,6 +423,8 @@ contains
        end if
     end do
 
+    ! Delete this next line eventually!
+    !xGridScheme = 5
 
   end subroutine readNamelistInput
 
