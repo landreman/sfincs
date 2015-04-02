@@ -47,6 +47,8 @@
 #define zero 0.0d+0
 #endif
 
+#define line "******************************************************************"
+
   module xGrid
 
     implicit none
@@ -136,16 +138,22 @@
          call integrate_semiinf(integrandWithoutX,finiteBound,inf,epsabs,epsrel,limit,c(j),abserr, &
               neval,ier,alist,blist,rlist,elist,iord,last)
          if (ier /= 0) then
-            print *,"Quadrature error A: ier = ",ier
-            stop
+            print *,line
+            print *,line
+            print *,"** WARNING:  Quadrature error A: ier = ",ier
+            print *,line
+            print *,line
          end if
 
          call integrate(integrandWithoutX,zero,finiteBound,epsabs,epsrel,key,limit,amountToAdd,abserr, &
               neval,ier,alist,blist,rlist,elist,iord,last)
 
          if (ier /= 0) then
-            print *,"Quadrature error B: ier = ",ier
-            stop
+            print *,line
+            print *,line
+            print *,"** WARNING:  Quadrature error B: ier = ",ier
+            print *,line
+            print *,line
          end if
          c(j) = c(j) + amountToAdd
 
@@ -153,16 +161,22 @@
               neval,ier,alist,blist,rlist,elist,iord,last)
 
          if (ier /= 0) then
-            print *,"Quadrature error C: ier = ",ier
-            stop
+            print *,line
+            print *,line
+            print *,"** WARNING:  Quadrature error C: ier = ",ier
+            print *,line
+            print *,line
          end if
 
          call integrate(integrandWithX,zero,finiteBound,epsabs,epsrel,key,limit,amountToAdd,abserr, &
               neval,ier,alist,blist,rlist,elist,iord,last)
 
          if (ier /= 0) then
-            print *,"Quadrature error D: ier = ",ier
-            stop
+            print *,line
+            print *,line
+            print *,"** WARNING:  Quadrature error D: ier = ",ier
+            print *,line
+            print *,line
          end if
          d(j) = d(j) + amountToAdd
 
@@ -323,8 +337,11 @@
                           neval,ier,alist,blist,rlist,elist,iord,last)
 
                      if (ier /= 0) then
-                        print *,"Quadrature error AA: ier = ",ier
-                        stop
+                        print *,line
+                        print *,line
+                        print *,"** WARNING:  Quadrature error AA: ier = ",ier
+                        print *,line
+                        print *,line
                      end if
 
                      integrationPower = L+4
@@ -332,8 +349,11 @@
                           neval,ier,alist,blist,rlist,elist,iord,last)
 
                      if (ier /= 0) then
-                        print *,"Quadrature error BB: ier = ",ier
-                        stop
+                        print *,line
+                        print *,line
+                        print *,"** WARNING:  Quadrature error BB: ier = ",ier
+                        print *,line
+                        print *,line
                      end if
 
                      integrationPower = 1-L
@@ -342,8 +362,11 @@
                           neval,ier,alist,blist,rlist,elist,iord,last)
 
                      if (ier /= 0) then
-                        print *,"Quadrature error CC: ier = ",ier
-                        stop
+                        print *,line
+                        print *,line
+                        print *,"** WARNING:  Quadrature error CC: ier = ",ier
+                        print *,line
+                        print *,line
                      end if
 
                      call integrate_semiinf(integrandWithPower,partition,inf,epsabs,epsrel,limit,amountToAdd,abserr, &
@@ -352,8 +375,11 @@
                      I_1mL = I_1mL + amountToAdd
 
                      if (ier /= 0) then
-                        print *,"Quadrature error DD: ier = ",ier
-                        stop
+                        print *,line
+                        print *,line
+                        print *,"** WARNING:  Quadrature error DD: ier = ",ier
+                        print *,line
+                        print *,line
                      end if
 
                      integrationPower = 3-L
@@ -362,8 +388,11 @@
                           neval,ier,alist,blist,rlist,elist,iord,last)
 
                      if (ier /= 0) then
-                        print *,"Quadrature error EE: ier = ",ier
-                        stop
+                        print *,line
+                        print *,line
+                        print *,"** WARNING:  Quadrature error EE: ier = ",ier
+                        print *,line
+                        print *,line
                      end if
 
                      call integrate_semiinf(integrandWithPower,partition,inf,epsabs,epsrel,limit,amountToAdd,abserr, &
@@ -373,8 +402,11 @@
 
                      !print *,"neval=",neval,", last=",last
                      if (ier /= 0) then
-                        print *,"Quadrature error FF: ier = ",ier
-                        stop
+                        print *,line
+                        print *,line
+                        print *,"** WARNING:  Quadrature error FF: ier = ",ier
+                        print *,line
+                        print *,line
                      end if
 
 
