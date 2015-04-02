@@ -119,7 +119,12 @@
     integer :: mallocsMain, mallocsPreconditioner
     integer :: firstRowThisProcOwns, lastRowThisProcOwns, numLocalRows
     PetscScalar :: maxxPotentials, CHat_element
-    integer :: xPotentialsInterpolationScheme
+
+    integer :: xPotentialsInterpolationScheme, xInterpolationScheme, ixMin, ixMinCol, ix_row, ix_col
+    PetscScalar, dimension(:), allocatable :: x_plus1, xWeights_plus1
+    PetscScalar, dimension(:,:), allocatable :: ddx_plus1, d2dx2_plus1
+    PetscScalar, dimension(:,:), allocatable :: regridPolynomialToUniform_plus1
+    PetscScalar, dimension(:,:), allocatable :: fToFInterpolationMatrix_plus1, tempExtrapMatrix
 
     !!Lines added by AM 2014-09-17
     PetscScalar, dimension(:), allocatable :: dnHatdpsiNsToUse, dTHatdpsiNsToUse
@@ -376,10 +381,32 @@
     ! Also build interpolation matrices to map functions from one x grid to the other.
     ! *******************************************************************************
 
+    if ((xPotentialsGridScheme==3 .or. xPotentialsGridScheme==4) .and. (xGridScheme .ne. 3 .and. xGridScheme .ne. 4)) then
+       print *,"Error! When xPotentialsGridScheme==3, you must set xGridScheme=3 or 4"
+       stop
+    end if
+
+    select case (xGridScheme)
+    case (1,2)
+       ! For these values of xGridScheme, xInterpolationScheme does not matter.
+       xInterpolationScheme = -1
+    case (3)
+       xInterpolationScheme = 1
+    case (4)
+       xInterpolationScheme = 2
+    case default
+       print *,"Error! Invalid setting for xGridScheme."
+       stop
+    end select
+
     select case (xPotentialsGridScheme)
     case (1)
        xPotentialsInterpolationScheme = 1
     case (2)
+       xPotentialsInterpolationScheme = 2
+    case (3)
+       xPotentialsInterpolationScheme = 1
+    case (4)
        xPotentialsInterpolationScheme = 2
     case default
        print *,"Error! Invalid setting for xPotentialsGridScheme."
@@ -388,8 +415,37 @@
 
     allocate(x(Nx))
     allocate(xWeights(Nx))
-    call makeXGrid(Nx, x, xWeights)
-    xWeights = xWeights / exp(-x*x)
+
+    ! The next few arrays/matrices are used only when there is a point at x=0.
+    allocate(x_plus1(Nx+1))
+    allocate(xWeights_plus1(Nx+1))
+    allocate(ddx_plus1(Nx+1,Nx+1))
+    allocate(d2dx2_plus1(Nx+1,Nx+1))
+    x_plus1 = -1 ! so we know its value if it is not set otherwise.
+
+    select case (xGridScheme)
+    case (1)
+       pointAtX0 = .false.
+       call makeXGrid(Nx, x, xWeights, pointAtX0)
+       xWeights = xWeights / exp(-x*x)
+    case (2)
+       pointAtX0 = .true.
+       call makeXGrid(Nx, x, xWeights, pointAtX0)
+       xWeights = xWeights / exp(-x*x)
+    case (3,4)
+       pointAtX0 = .true.
+
+       scheme = 12
+       call uniformDiffMatrices(Nx+1, 0, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+       x_plus1(1)=0 ! For some reason it usually comes out to be 2d-314
+       x = x_plus1(1:Nx)
+       xWeights = xWeights_plus1(1:Nx)
+
+    case default
+       print *,"Error! Invalid xGridScheme"
+       stop
+    end select
+
     xMaxNotTooSmall = max(x(Nx), xMax)
     allocate(x2(Nx))
     x2=x*x
@@ -399,11 +455,23 @@
     allocate(ddxPreconditioner(Nx,Nx))
     allocate(ddxToUse(Nx,Nx))
     allocate(d2dx2ToUse(Nx,Nx))
-    call makeXPolynomialDiffMatrices(x,ddx,d2dx2)
+    select case (xGridScheme)
+    case (1,2)
+       call makeXPolynomialDiffMatrices(x,ddx,d2dx2)
+    case (3,4)
+       ddx = ddx_plus1(1:Nx, 1:Nx)
+       d2dx2 = d2dx2_plus1(1:Nx, 1:Nx)
+    case default
+       print *,"Error! Invalid xGridScheme."
+       stop
+    end select
 
-
-    NxPotentials = ceiling(xMaxNotTooSmall*NxPotentialsPerVth)
-
+    if (xPotentialsGridScheme==3 .or. xPotentialsGridScheme==4) then
+       ! The potentials have an explicit grid point at xMax, whereas the distribution function does not (since f=0 there.)
+       NxPotentials = Nx+1
+    else
+       NxPotentials = ceiling(xMaxNotTooSmall*NxPotentialsPerVth)
+    end if
 
     allocate(xPotentials(NxPotentials))
     allocate(xWeightsPotentials(NxPotentials))
@@ -414,8 +482,20 @@
     maxxPotentials = xPotentials(NxPotentials)
 
     allocate(regridPolynomialToUniform(NxPotentials, Nx))
-    call polynomialInterpolationMatrix(Nx, NxPotentials, x, xPotentials, &
-         exp(-x*x), exp(-xPotentials*xPotentials), regridPolynomialToUniform)
+    select case (xGridScheme)
+    case (1,2)
+       call polynomialInterpolationMatrix(Nx, NxPotentials, x, xPotentials, &
+            exp(-x*x), exp(-xPotentials*xPotentials), regridPolynomialToUniform)
+    case (3,4)
+       allocate(extrapMatrix(NxPotentials, Nx+1))
+       allocate(regridPolynomialToUniform_plus1(NxPotentials, Nx+1))
+       call interpolationMatrix(Nx+1, NxPotentials, x_plus1, xPotentials, &
+            xInterpolationScheme, regridPolynomialToUniform_plus1, extrapMatrix)
+       regridPolynomialToUniform = regridPolynomialToUniform_plus1(:,1:Nx)
+       deallocate(extrapMatrix)
+       deallocate(regridPolynomialToUniform_plus1)
+    end select
+
     !    allocate(regridUniformToPolynomial(Nx,NxPotentials))
     !    call interpolationMatrix(NxPotentials, Nx, xPotentials, x, regridUniformToPolynomial, -1, 0)
 
@@ -473,6 +553,50 @@
        print *,"Error! Invalid preconditioner_x"
        stop
     end select
+
+    if (pointAtX0) then
+       ixMin = 2
+    else
+       ixMin = 1
+    end if
+
+    if (masterProcInSubComm) then
+       print *,"xGridScheme:",xGridScheme
+       print *,"xInterpolationScheme:",xInterpolationScheme
+       print *,"xPotentialsGridScheme:",xPotentialsGridScheme
+       print *,"xPotentialsInterpolationScheme:",xPotentialsInterpolationScheme
+       print *,"NxPotentials:",NxPotentials
+       print *,"x:"
+       print *,x
+       print *,"ddx:"
+       do i=1,Nx
+          print *,ddx(i,:)
+       end do
+       print *,"d2dx2:"
+       do i=1,Nx
+          print *,d2dx2(i,:)
+       end do
+       print *,"xPotentials:"
+       print *,xPotentials
+       if (NxPotentials<20) then
+          print *,"ddxPotentials:"
+          do i=1,NxPotentials
+             print *,ddxPotentials(i,:)
+          end do
+          print *,"d2dx2Potentials:"
+          do i=1,NxPotentials
+             print *,d2dx2Potentials(i,:)
+          end do
+       end if
+       print *,"regridPolynomialToUniform:"
+       do i=1,NxPotentials
+          print *,regridPolynomialToUniform(i,:)
+       end do
+    end if
+
+    deallocate(xWeights_plus1)
+    deallocate(ddx_plus1)
+    deallocate(d2dx2_plus1)
 
     ! *******************************************************************************
     ! *******************************************************************************
@@ -679,7 +803,7 @@
                 thetaPartOfTerm = transpose(thetaPartOfTerm)
                 localThetaPartOfTerm = thetaPartOfTerm(:,ithetaMin:ithetaMax)
 
-                do ix=1,Nx
+                do ix=ixMin,Nx
                    do itheta=1,localNtheta
                       rowIndices(itheta) = getIndex(ispecies, ix, L+1, ithetaMin+itheta-1, izeta, 0)
                    end do
@@ -737,7 +861,7 @@
                 ! PETSc uses the opposite convention to Fortran:
                 zetaPartOfTerm = transpose(zetaPartOfTerm)
 
-                do ix=1,Nx
+                do ix=ixMin,Nx
                    do izeta = 1,Nzeta
                       rowIndices(izeta)=getIndex(ispecies, ix, L+1, itheta, izeta, 0)
                    end do
@@ -801,7 +925,7 @@
                 thetaPartOfTerm = transpose(thetaPartOfTerm*factor)
                 localThetaPartOfTerm = thetaPartOfTerm(:,ithetaMin:ithetaMax)
 
-                do ix=1,Nx
+                do ix=ixMin,Nx
                    do itheta=1,localNtheta
                       rowIndices(itheta)=getIndex(ispecies,ix,L+1,itheta+ithetaMin-1,izeta,0)
                    end do
@@ -845,7 +969,7 @@
                 ! PETSc uses the opposite convention to Fortran:
                 zetaPartOfTerm = transpose(zetaPartOfTerm*factor)
 
-                do ix=1,Nx
+                do ix=ixMin,Nx
                    do izeta=1,Nzeta
                       rowIndices(izeta)=getIndex(ispecies,ix,L+1,itheta,izeta,0)
                    end do
@@ -867,7 +991,7 @@
                 factor = -sqrtTHat/(2*sqrtMHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
                      * (iota*dBHatdtheta(itheta,izeta) + dBHatdzeta(itheta,izeta))
 
-                do ix=1,Nx
+                do ix=ixMin,Nx
                    do L=0,(Nxi-1)
                       rowIndex=getIndex(ispecies,ix,L+1,itheta,izeta,0)
 
@@ -901,7 +1025,7 @@
                    factor = alpha*Delta*dPhiHatdpsiN/(4*psiAHat*(BHat(itheta,izeta)**3)) &
                         * (GHat*dBHatdtheta(itheta,izeta) - IHat* dBHatdzeta(itheta,izeta))
 
-                   do ix=1,Nx
+                   do ix=ixMin,Nx
                       do L=0,(Nxi-1)
                          rowIndex=getIndex(ispecies,ix,L+1,itheta,izeta,0)
 
@@ -945,15 +1069,27 @@
              factor = alpha*Delta/(4*psiAHat)*dPhiHatdpsiN
 
              do L=0,(Nxi-1)
+
+                if (L>0 .and. pointAtX0) then
+                   ixMinCol = 2
+                else
+                   ixMinCol = 1
+                end if
+
                 if (whichMatrix==0 .and. L >= preconditioner_x_min_L) then
                    ddxToUse = ddxPreconditioner
                 else
                    ddxToUse = ddx
                 end if
+
                 do ix=1,Nx
                    xPartOfXDot(ix,:) = x(ix) * ddxToUse(ix,:)
                 end do
-                xPartOfXDot = transpose(xPartOfXDot)  ! PETSc uses the opposite convention of Fortran
+                
+                ! Note: in previous versions I take the transpose of xPartOfXDot here,
+                ! but since I have switched to using MatSetValueSparse instead of MatSetValuesSparse,
+                ! the transpose should no longer be applied here.
+                !xPartOfXDot = transpose(xPartOfXDot)  ! PETSc uses the opposite convention of Fortran
 
                 do itheta=ithetaMin,ithetaMax
 
@@ -968,30 +1104,50 @@
                       ! Term that is diagonal in L:
                       colIndices = rowIndices
                       LFactor = two*(3*L*L+3*L-2)/((two*L+3)*(2*L-1))*xDotFactor
-                      call MatSetValuesSparse(matrix, Nx, rowIndices, Nx, colIndices, &
-                           LFactor*xPartOfXDot, ADD_VALUES, ierr)
+                      !call MatSetValuesSparse(matrix, Nx, rowIndices, Nx, colIndices, &
+                      !     LFactor*xPartOfXDot, ADD_VALUES, ierr)
+                      do ix_col=ixMinCol,Nx
+                         do ix_row=ixMin,Nx
+                            call MatSetValueSparse(matrix, rowIndices(ix_row), colIndices(ix_col), &
+                                 LFactor*xPartOfXDot(ix_row,ix_col), ADD_VALUES, ierr)
+                         end do
+                      end do
 
                       if (whichMatrix==1 .or. preconditioner_xi==0) then
                          ! Term that is super-super-diagonal in L:
                          if (L<(Nxi-2)) then
                             ell = L + 2
-                            do ix=1,Nx
-                               colIndices(ix)=getIndex(ispecies,ix,ell+1,itheta,izeta,0)
-                            end do
+                            !do ix=1,Nx
+                            !   colIndices(ix)=getIndex(ispecies,ix,ell+1,itheta,izeta,0)
+                            !end do
                             LFactor = (L+1)*(L+2)/((two*L+5)*(2*L+3))*xDotFactor
-                            call MatSetValuesSparse(matrix, Nx, rowIndices, Nx, colIndices, &
-                                 LFactor*xPartOfXDot, ADD_VALUES, ierr)
+                            !call MatSetValuesSparse(matrix, Nx, rowIndices, Nx, colIndices, &
+                            !     LFactor*xPartOfXDot, ADD_VALUES, ierr)
+                            do ix_col=ixMinCol,Nx
+                               colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,0)
+                               do ix_row=ixMin,Nx
+                                  call MatSetValueSparse(matrix, rowIndices(ix_row), colIndex, &
+                                       LFactor*xPartOfXDot(ix_row,ix_col), ADD_VALUES, ierr)
+                               end do
+                            end do
                          end if
 
                          ! Term that is sub-sub-diagonal in L:
                          if (L>1) then
                             ell = L - 2
-                            do ix=1,Nx
-                               colIndices(ix)=getIndex(ispecies,ix,ell+1,itheta,izeta,0)
-                            end do
+                            !do ix=1,Nx
+                            !   colIndices(ix)=getIndex(ispecies,ix,ell+1,itheta,izeta,0)
+                            !end do
                             LFactor = L*(L-1)/((two*L-3)*(2*L-1))*xDotFactor
-                            call MatSetValuesSparse(matrix, Nx, rowIndices, Nx, colIndices, &
-                                 LFactor*xPartOfXDot, ADD_VALUES, ierr)
+                            !call MatSetValuesSparse(matrix, Nx, rowIndices, Nx, colIndices, &
+                            !     LFactor*xPartOfXDot, ADD_VALUES, ierr)
+                            do ix_col=ixMinCol,Nx
+                               colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,0)
+                               do ix_row=ixMin,Nx
+                                  call MatSetValueSparse(matrix, rowIndices(ix_row), colIndex, &
+                                       LFactor*xPartOfXDot(ix_row,ix_col), ADD_VALUES, ierr)
+                               end do
+                            end do
                          end if
                       end if
 
@@ -1011,7 +1167,7 @@
           if (include_fDivVE_term) then
              do itheta = ithetaMin,ithetaMax
                 do izeta = 1,Nzeta
-                   do ix = 1,Nx
+                   do ix = ixMin,Nx
                       do ixi = 1,Nxi
                          index=getIndex(ispecies,ix,ixi,itheta,izeta,0)
                          call MatSetValueSparse(matrix,index,index, &
@@ -1170,12 +1326,33 @@
                 ! Given a vector of function values on the species-B grid, multiply the vector
                 ! by this regridding matrix to obtain its values on the species-A grid:
                 if (iSpeciesA /= iSpeciesB) then
-                   call polynomialInterpolationMatrix(Nx, Nx, x, xb, expx2, &
-                        expxb2, fToFInterpolationMatrix)
+                   select case (xGridScheme)
+                   case (1,2)
+                      call polynomialInterpolationMatrix(Nx, Nx, x, xb, expx2, &
+                           expxb2, fToFInterpolationMatrix)
+                   case (3,4)
+                      allocate(tempExtrapMatrix(Nx, Nx+1))
+                      allocate(fToFInterpolationMatrix_plus1(Nx, Nx+1))
+                      call interpolationMatrix(Nx+1, Nx, x_plus1, xb, &
+                           xInterpolationScheme, fToFInterpolationMatrix_plus1, tempExtrapMatrix)
+                      fToFInterpolationMatrix = fToFInterpolationMatrix_plus1(:,1:Nx)
+                      deallocate(tempExtrapMatrix)
+                      deallocate(fToFInterpolationMatrix_plus1)
+                   case default
+                      print *,"Error! Invalid xGridScheme"
+                      stop
+                   end select
                 else
                    fToFInterpolationMatrix = zero
                    do i=1,Nx
                       fToFInterpolationMatrix(i, i) = one
+                   end do
+                end if
+
+                if (masterProcInSubComm) then
+                   print *,"Here comes fToFInterpolationMatrix for ispeciesA=",iSpeciesA,", iSpeciesB=",iSpeciesB
+                   do ix=1,Nx
+                      print *,fToFInterpolationMatrix(ix,:)
                    end do
                 end if
 
@@ -1224,6 +1401,12 @@
           ! *****************************************************************
 
           do L=0, Nxi-1
+             if (L>0 .and. pointAtX0) then
+                ixMinCol = 2
+             else
+                ixMinCol = 1
+             end if
+
              do iSpeciesB = 1,Nspecies
                 do iSpeciesA = 1,Nspecies
                    if (iSpeciesA==iSpeciesB .or. whichMatrix==1 .or. preconditioner_species==0) then
@@ -1341,21 +1524,25 @@
 
                       end if
 
-                      ! PETSc and Fortran use row-major vs column-major:
-                      CHat = transpose(CHat)
+                      ! Note: in previous versions I take the transpose of CHat here,
+                      ! but since I have switched to using MatSetValueSparse instead of MatSetValuesSparse,
+                      ! the transpose should no longer be applied here.                     
+                      !CHat = transpose(CHat)
 
                       ! At this point, CHat contains the collision operator normalized by
                       ! \bar{nu}, (the collision frequency at the reference mass, density, and temperature.)
 
                       do itheta=ithetaMin,ithetaMax
                          do izeta=1,Nzeta
-                            do ix=1,Nx
-                               rowIndices(ix)=getIndex(iSpeciesA,ix,L+1,itheta,izeta,0)
-                               colIndices(ix)=getIndex(iSpeciesB,ix,L+1,itheta,izeta,0)
+                            do ix_row=ixMin,Nx
+                               rowIndex=getIndex(iSpeciesA,ix_row,L+1,itheta,izeta,0)
+                               do ix_col = ixMinCol,Nx
+                                  colIndex=getIndex(iSpeciesB,ix_col,L+1,itheta,izeta,0)
+                                  call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                                       -nu_n*(GHat+iota*IHat)/(BHat(itheta,izeta)*BHat(itheta,izeta)) &
+                                       *CHat(ix_row,ix_col), ADD_VALUES, ierr)
+                               end do
                             end do
-                            call MatSetValuesSparse(matrix, Nx, rowIndices, Nx, colIndices, &
-                                 -nu_n*(GHat+iota*IHat)/(BHat(itheta,izeta)*BHat(itheta,izeta))*CHat, &
-                                 ADD_VALUES, ierr)
                          end do
                       end do
 
@@ -1414,7 +1601,7 @@
              end do
 
              do L=1, Nxi-1
-                do ix=1,Nx
+                do ix=ixMin,Nx
                    CHat_element = -oneHalf*nuDHat(iSpeciesA,ix)*L*(L+1)
 
                    ! At this point, CHat contains the collision operator normalized by
@@ -1448,6 +1635,45 @@
        ! *******************************************************************************
 
        ! *******************************************************************************
+       ! If there is a grid point at x=0, add the boundary conditions for f at x=0.
+       ! *******************************************************************************
+       
+       if (pointAtX0) then
+          ! For L > 0 modes, impose f=0 at x=0:
+          ix = 1
+          do L = 1,(Nxi-1)
+             do itheta = ithetaMin,ithetaMax
+                do izeta = 1,Nzeta
+                   do ispecies = 1,Nspecies
+                      index = getIndex(ispecies,ix,L+1,itheta,izeta,0)
+                      call MatSetValue(matrix, index, index, one, ADD_VALUES, ierr)
+                   end do
+                end do
+             end do
+          end do
+          
+          ! For L=0 mode, impose regularity (df/dx=0) at x=0:
+          L=0
+          if (whichMatrix==0 .and. L >= preconditioner_x_min_L) then
+             ddxToUse = ddxPreconditioner
+          else
+             ddxToUse = ddx
+          end if
+          ix_row = 1
+          do itheta = ithetaMin,ithetaMax
+             do izeta = 1,Nzeta
+                do ispecies = 1,Nspecies
+                   rowIndex = getIndex(ispecies,ix_row,L+1,itheta,izeta,0)
+                   do ix_col = 1,Nx
+                      colIndex = getIndex(ispecies,ix_col,L+1,itheta,izeta,0)
+                      call MatSetValueSparse(matrix, rowIndex, colIndex, ddxToUse(ix_row,ix_col), ADD_VALUES, ierr)
+                   end do
+                end do
+             end do
+          end do
+       end if
+
+       ! *******************************************************************************
        ! Add sources:
        ! *******************************************************************************
 
@@ -1459,7 +1685,7 @@
           ! Add a heat source and a particle source.
 
           L=0
-          do ix=1,Nx
+          do ix=ixMin,Nx
              xPartOfSource1 = (x2(ix)-5/two)*exp(-x2(ix)) ! Provides particles but no heat
              xPartOfSource2 = (x2(ix)-3/two)*exp(-x2(ix)) ! Provides heat but no particles
              do itheta=ithetaMin,ithetaMax
@@ -1482,7 +1708,7 @@
        case (2)
           ! Add a L=0 source (which is constant on the flux surface) at each x.
           L=0
-          do ix=1,Nx
+          do ix=ixMin,Nx
              do itheta=ithetaMin,ithetaMax
                 do izeta = 1,Nzeta
                    do ispecies = 1,Nspecies
@@ -1860,7 +2086,7 @@
           sqrtTHat = sqrt(THat)
           sqrtMHat = sqrt(mHat)
 
-          do ix=1,Nx
+          do ix=ixMin,Nx
              xPartOfRHS = x2(ix)*exp(-x2(ix))*( dnHatdpsiNsToUse(ispecies)/nHats(ispecies) &
                   + alpha*Zs(ispecies)/THats(ispecies)*dPhiHatdpsiNToUse &
                   + (x2(ix) - three/two)*dTHatdpsiNsToUse(ispecies)/THats(ispecies))
@@ -1888,7 +2114,7 @@
        ! Add the inductive electric field term:
        L=1
        do ispecies = 1,Nspecies
-          do ix=1,Nx
+          do ix=ixMin,Nx
              factor = alpha*Zs(ispecies)*x(ix)*exp(-x2(ix))*EParallelHatToUse*(GHat+iota*IHat)&
                   *nHats(ispecies)*mHats(ispecies)/(pi*sqrtpi*THats(ispecies)*THats(ispecies)*FSABHat2)
              do itheta=ithetaMin,ithetaMax
