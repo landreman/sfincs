@@ -386,17 +386,16 @@ module export_f
 
          allocate(map_x_to_export_f_x(N_export_f_x, Nx))
          select case (xGridScheme)
-         case (1,2)
+         case (1,2,5,6)
             call polynomialInterpolationMatrix(Nx, N_export_f_x, x, export_f_x, &
                  expx2*(x**xGrid_k), exp(-export_f_x*export_f_x)*(export_f_x**xGrid_k), map_x_to_export_f_x)
-         case (3)
+         case (3,4)
             allocate(extrapMatrix(N_export_f_x, Nx+1))
             allocate(map_x_to_export_f_x_plus1(N_export_f_x, Nx+1))
             allocate(x_plus1(Nx+1))
             x_plus1(1:Nx) = x
             x_plus1(Nx+1) = x(Nx)*2-x(Nx-1)
-            scheme = 2 ! Note that this setting for the interpolation scheme is independent of the one used to interpolate from the potentials to the distribution function grid.
-            call interpolationMatrix(Nx+1, N_export_f_x, x_plus1, export_f_x, scheme, map_x_to_export_f_x_plus1, extrapMatrix)
+            call interpolationMatrix(Nx+1, N_export_f_x, x_plus1, export_f_x, xInterpolationScheme, map_x_to_export_f_x_plus1, extrapMatrix)
             map_x_to_export_f_x = map_x_to_export_f_x_plus1(:,1:Nx)
             deallocate(extrapMatrix)
             deallocate(map_x_to_export_f_x_plus1)

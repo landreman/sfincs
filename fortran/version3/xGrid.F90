@@ -29,6 +29,7 @@
   ! Plasma Science & Fusion Center
   ! November, 2012
   !
+
 #define workspaceSize 5000
 
   ! Call QUADPACK routines to evaluate integrals:
@@ -46,6 +47,13 @@
 #define integrate_semiinf dqagie
 #define zero 0.0d+0
 #endif
+
+! QUADPACK gives ier.ne.0 when it cannot achieve the requested tolerance.
+! When this occurs, it probably just means it is not feasbible to get as many digits
+! of precision as we requested, so we can safely ignore the warnings.
+!#define showQuadpackWarnings .true.
+#define showQuadpackWarnings .false.
+
 
 #define line "******************************************************************"
 
@@ -124,8 +132,9 @@
 
       ! If i denotes the true value of the integral, QUADPACK will try to satisfy
       ! abs(i-result).le.max(epsabs,epsrel*abs(i))
-      EPSABS = 0.0E0
-      EPSREL = 1d-3
+      EPSABS = 0.0D0
+      EPSREL = 1d-13
+      !EPSREL = 1d-3
 
       LIMIT = workspaceSize
 
@@ -137,7 +146,7 @@
 
          call integrate_semiinf(integrandWithoutX,finiteBound,inf,epsabs,epsrel,limit,c(j),abserr, &
               neval,ier,alist,blist,rlist,elist,iord,last)
-         if (ier /= 0) then
+         if (ier /= 0 .and. showQuadpackWarnings) then
             print *,line
             print *,line
             print *,"** WARNING:  Quadrature error A: ier = ",ier
@@ -148,7 +157,7 @@
          call integrate(integrandWithoutX,zero,finiteBound,epsabs,epsrel,key,limit,amountToAdd,abserr, &
               neval,ier,alist,blist,rlist,elist,iord,last)
 
-         if (ier /= 0) then
+         if (ier /= 0 .and. showQuadpackWarnings) then
             print *,line
             print *,line
             print *,"** WARNING:  Quadrature error B: ier = ",ier
@@ -160,7 +169,7 @@
          call integrate_semiinf(integrandWithX,finiteBound,inf,epsabs,epsrel,limit,d(j),abserr, &
               neval,ier,alist,blist,rlist,elist,iord,last)
 
-         if (ier /= 0) then
+         if (ier /= 0 .and. showQuadpackWarnings) then
             print *,line
             print *,line
             print *,"** WARNING:  Quadrature error C: ier = ",ier
@@ -171,7 +180,7 @@
          call integrate(integrandWithX,zero,finiteBound,epsabs,epsrel,key,limit,amountToAdd,abserr, &
               neval,ier,alist,blist,rlist,elist,iord,last)
 
-         if (ier /= 0) then
+         if (ier /= 0 .and. showQuadpackWarnings) then
             print *,line
             print *,line
             print *,"** WARNING:  Quadrature error D: ier = ",ier
@@ -305,8 +314,9 @@
       ! If i denotes the true value of the integral, QUADPACK will try to satisfy
       ! abs(i-result).le.max(epsabs,epsrel*abs(i))
 
-      EPSABS = 0.0E0
-      EPSREL = 1d-3
+      ! Note: If epsabs is set .le. 1d-13 or so, then sometimes there are AA errors (ier=2) indicating pollution by roundoff.
+      EPSABS = 1d-13
+      EPSREL = 1d-13
       LIMIT = workspaceSize
 
       ! This next part could be optimized in several ways: the response for self-collisions
@@ -319,7 +329,7 @@
          end if
 
          alpha = -(2*L-1)/(two*L+3)
-         partition = maxval(x) * 2
+         !partition = maxval(x) * 2
 
          do iSpeciesA = 1,Nspecies
             do iSpeciesB = 1,Nspecies
@@ -333,78 +343,93 @@
                      ! Call QUADPACK routines to evaluate integrals:
 
                      integrationPower = L+2
+
                      call integrate(integrandWithPower,zero,xb,epsabs,epsrel,key,limit,I_2pL,abserr, &
                           neval,ier,alist,blist,rlist,elist,iord,last)
 
-                     if (ier /= 0) then
+                     if (ier /= 0 .and. showQuadpackWarnings) then
                         print *,line
                         print *,line
                         print *,"** WARNING:  Quadrature error AA: ier = ",ier
+                        print *,"xb=",xb,", j=",j,", ix=",ix,", iSpeciesA=",iSpeciesA,", iSpeciesB=",iSpeciesB
                         print *,line
                         print *,line
                      end if
 
+                     ! --------------------------------------
                      integrationPower = L+4
+
                      call integrate(integrandWithPower,zero,xb,epsabs,epsrel,key,limit,I_4pL,abserr, &
                           neval,ier,alist,blist,rlist,elist,iord,last)
 
-                     if (ier /= 0) then
+                     if (ier /= 0 .and. showQuadpackWarnings) then
                         print *,line
                         print *,line
                         print *,"** WARNING:  Quadrature error BB: ier = ",ier
+                        print *,"xb=",xb,", j=",j,", ix=",ix,", iSpeciesA=",iSpeciesA,", iSpeciesB=",iSpeciesB
                         print *,line
                         print *,line
                      end if
 
+                     ! --------------------------------------
                      integrationPower = 1-L
+                     partition = max(10.0,2*xb)
 
+                     ! [xb, partition)
                      call integrate(integrandWithPower,xb,partition,epsabs,epsrel,key,limit,I_1mL,abserr, &
                           neval,ier,alist,blist,rlist,elist,iord,last)
 
-                     if (ier /= 0) then
+                     if (ier /= 0 .and. showQuadpackWarnings) then
                         print *,line
                         print *,line
                         print *,"** WARNING:  Quadrature error CC: ier = ",ier
+                        print *,"xb=",xb,", j=",j,", ix=",ix,", iSpeciesA=",iSpeciesA,", iSpeciesB=",iSpeciesB
                         print *,line
                         print *,line
                      end if
 
+                     ! [partition, Inf)
                      call integrate_semiinf(integrandWithPower,partition,inf,epsabs,epsrel,limit,amountToAdd,abserr, &
                           neval,ier,alist,blist,rlist,elist,iord,last)
 
                      I_1mL = I_1mL + amountToAdd
 
-                     if (ier /= 0) then
+                     if (ier /= 0 .and. showQuadpackWarnings) then
                         print *,line
                         print *,line
                         print *,"** WARNING:  Quadrature error DD: ier = ",ier
+                        print *,"xb=",xb,", j=",j,", ix=",ix,", iSpeciesA=",iSpeciesA,", iSpeciesB=",iSpeciesB
                         print *,line
                         print *,line
                      end if
 
+                     ! --------------------------------------
                      integrationPower = 3-L
 
+                     ! [xb, partition]
                      call integrate(integrandWithPower,xb,partition,epsabs,epsrel,key,limit,I_3mL,abserr, &
                           neval,ier,alist,blist,rlist,elist,iord,last)
 
-                     if (ier /= 0) then
+                     if (ier /= 0 .and. showQuadpackWarnings) then
                         print *,line
                         print *,line
                         print *,"** WARNING:  Quadrature error EE: ier = ",ier
+                        print *,"xb=",xb,", j=",j,", ix=",ix,", iSpeciesA=",iSpeciesA,", iSpeciesB=",iSpeciesB
                         print *,line
                         print *,line
                      end if
 
+                     ! [partition, Inf)
                      call integrate_semiinf(integrandWithPower,partition,inf,epsabs,epsrel,limit,amountToAdd,abserr, &
                           neval,ier,alist,blist,rlist,elist,iord,last)
 
                      I_3mL = I_3mL + amountToAdd
 
-                     !print *,"neval=",neval,", last=",last
-                     if (ier /= 0) then
+                     if (ier /= 0 .and. showQuadpackWarnings) then
                         print *,line
                         print *,line
                         print *,"** WARNING:  Quadrature error FF: ier = ",ier
+                        print *,"xb=",xb,", j=",j,", ix=",ix,", iSpeciesA=",iSpeciesA,", iSpeciesB=",iSpeciesB
                         print *,line
                         print *,line
                      end if
