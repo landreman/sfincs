@@ -363,17 +363,17 @@ subroutine validateInput()
         print *,"              (The exception is when RHSMode = 3, in which case Nx = 1.)"
         print *,line
         print *,line
-     elseif ((Nx > 20) .and. (xGridScheme .ne. 3)) then
+     elseif ((Nx > 20) .and. (xGridScheme==1 .or. xGridScheme==2)) then
         print *,line
         print *,line
         print *,"**   WARNING: You chose a very large value for Nx."
-        print *,"**            Typically Nx should be in the range 5-9."
+        print *,"**            For xGridMode=1 or 2, typically Nx should be in the range 5-9."
         print *,line
         print *,line
-     elseif (((Nx < 5) .or. (Nx > 9)) .and. (xGridScheme .ne. 3)) then
+     elseif (((Nx < 5) .or. (Nx > 9)) .and. (xGridScheme==1 .or. xGridScheme==2)) then
         print *,line
         print *,line
-        print *,"**   WARNING: Typically Nx should be in the range 5-9."
+        print *,"**   WARNING: For xGridMode=1 or 2, typically Nx should be in the range 5-9."
         print *,line
         print *,line
      end if

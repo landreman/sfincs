@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import h5py
 import numpy
 import inspect, math, os
+import pickle
 
 print "This is "+ inspect.getfile(inspect.currentframe())
 
@@ -102,6 +103,7 @@ for directory in directories:
     particleFlux_vm = f["particleFlux_vm_psiHat"][()]
     heatFlux_vm = f["heatFlux_vm_psiHat"][()]
     elapsedTime = f["elapsed time (s)"][()]
+    sources = f["sources"][()]
     atLeastOneDirectorySucceeded = True
     if RHSMode>1:
        transportMatrix = f["transportMatrix"][()]
@@ -137,6 +139,8 @@ for directory in directories:
                 results.append(FSABFlow[ispecies,iteration])
                 results.append(particleFlux_vm[ispecies,iteration])
                 results.append(heatFlux_vm[ispecies,iteration])
+                results.append(sources[0,ispecies,iteration])
+                results.append(sources[1,ispecies,iteration])
           results.append(FSABjHat[iteration])
           outputs.append(results)
 
@@ -184,12 +188,14 @@ else:
          yAxisLabels.append("FSABjHat")
         
       else:
-         numQuantities = Nspecies*3+1
+         numQuantities = Nspecies*5+1
          yAxisLabels=[]
          for i in range(1,Nspecies+1):
             yAxisLabels.append("FSABFlow (species "+str(i)+")")
             yAxisLabels.append("particleFlux_vm_psiHat (species "+str(i)+")")
             yAxisLabels.append("heatFlux_vm_psiHat (species "+str(i)+")")
+            yAxisLabels.append("sources(1) (species "+str(i)+")")
+            yAxisLabels.append("sources(2) (species "+str(i)+")")
          yAxisLabels.append("FSABjHat")
             
 
@@ -197,6 +203,13 @@ else:
 # ***************************************************
 # Now make the plot
 # ***************************************************
+
+outputFile = open('sfincsScan.dat','wb')
+pickle.dump(nu_ns_sorted,outputFile)
+pickle.dump(outputs_array,outputFile)
+pickle.dump(numQuantities,outputFile)
+pickle.dump(yAxisLabels,outputFile)
+outputFile.close()
 
 fig = plt.figure()
 fig.patch.set_facecolor('white')
