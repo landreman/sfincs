@@ -7,10 +7,10 @@ OBJ_FILES = sfincs.o xGrid.o writeHDF5Output.o globalVariables.o scan.o readInpu
 # Dependencies:
 writeHDF5Output.o: globalVariables.o scan.o
 printToStdout.o: globalVariables.o
-readInput.o: globalVariables.o
+readInput.o: globalVariables.o xGrid.o
 geometry.o: globalVariables.o
 solveDKE.o: globalVariables.o xGrid.o polynomialDiffMatrices.o printToStdout.o sparsify.o geometry.o indices.o
 indices.o: globalVariables.o
 scan.o: globalVariables.o
 sfincs.o: globalVariables.o writeHDF5Output.o printToStdout.o solveDKE.o readInput.o scan.o
-
+polynomialDiffMatrices.o: xGrid.o
