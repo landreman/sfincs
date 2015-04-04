@@ -63,6 +63,10 @@ for directory in directories:
         print "Run in directory "+directory+" does not appear to have finished."
         continue
 
+    if math.isnan(dummy[0,0]):
+       print "Run in directory "+directory+" has NaNs, so skippipng it."
+       continue
+
     print "Processing directory "+directory
 
     # The expression [()] converts from an h5py dataset to a numpy ndarray:
