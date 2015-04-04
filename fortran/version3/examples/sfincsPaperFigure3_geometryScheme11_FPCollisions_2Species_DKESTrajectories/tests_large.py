@@ -7,7 +7,7 @@
 
 execfile('../testsCommon.py')
 
-desiredTolerance = 0.002
+desiredTolerance = 0.003
 
 numFailures = 0
 
