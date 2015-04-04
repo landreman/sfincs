@@ -538,7 +538,7 @@
        stop
     end select
 
-    if (xGridScheme==5 .or. xGridScheme==6) then
+    if ((xGridScheme==5 .or. xGridScheme==6) .and. (RHSMode .ne. 3)) then
        allocate(Rosenbluth_H(Nspecies,Nspecies,NL,Nx,Nx))
        allocate(Rosenbluth_dHdxb(Nspecies,Nspecies,NL,Nx,Nx))
        allocate(Rosenbluth_d2Gdxb2(Nspecies,Nspecies,NL,Nx,Nx))
