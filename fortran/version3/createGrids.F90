@@ -204,6 +204,9 @@
     allocate(thetaWeights_preconditioner(Ntheta))
     allocate(ddtheta_preconditioner(Ntheta,Ntheta))
     allocate(d2dtheta2_preconditioner(Ntheta,Ntheta))
+    ! The next 2 arrays are only used when preconditioner_theta=4:
+    allocate(ddtheta_upwind_diagonal(Ntheta,Ntheta))
+    allocate(ddtheta_upwind_offDiagonal(Ntheta,Ntheta))
 
     select case (thetaDerivativeScheme)
     case (0)
@@ -245,6 +248,29 @@
           ddtheta_preconditioner(itheta,itheta)=one
        end do
 
+    case (4)
+       ! For this preconditioner, the ddtheta_preconditioner array will not actually be used in populateMatrix.F90.
+       scheme = 30
+       call uniformDiffMatrices(Ntheta, 0, two*pi, scheme, theta_preconditioner, thetaWeights_preconditioner, &
+            ddtheta_upwind_diagonal, d2dtheta2_preconditioner)
+       ddtheta_upwind_offDiagonal = ddtheta_upwind_diagonal
+       scheme = 40
+       call uniformDiffMatrices(Ntheta, 0, two*pi, scheme, theta_preconditioner, thetaWeights_preconditioner, &
+            ddtheta_preconditioner, d2dtheta2_preconditioner)
+       ddtheta_upwind_diagonal    = ddtheta_upwind_diagonal    - ddtheta_preconditioner
+       ddtheta_upwind_offDiagonal = ddtheta_upwind_offDiagonal + ddtheta_preconditioner
+
+!!$       if (masterProc) then
+!!$          print *,"ddtheta_upwind_diagonal:"
+!!$          do i=1,Ntheta
+!!$             print *,ddtheta_upwind_diagonal(i,:)
+!!$          end do
+!!$          print *,"ddtheta_upwind_offDiagonal:"
+!!$          do i=1,Ntheta
+!!$             print *,ddtheta_upwind_offDiagonal(i,:)
+!!$          end do
+!!$       end if
+
     case default
        if (masterProc) then
           print *,"Error! Invalid setting for preconditioner_theta."
@@ -274,6 +300,9 @@
     allocate(zetaWeights_preconditioner(Nzeta))
     allocate(ddzeta_preconditioner(Nzeta,Nzeta))
     allocate(d2dzeta2_preconditioner(Nzeta,Nzeta))
+    ! The next 2 arrays are only used when preconditioner_zeta=4:
+    allocate(ddzeta_upwind_diagonal(Nzeta,Nzeta))
+    allocate(ddzeta_upwind_offDiagonal(Nzeta,Nzeta))
 
     select case (zetaDerivativeScheme)
     case (0)
@@ -305,6 +334,9 @@
        zetaWeights_preconditioner = 2*pi
        ddzeta_preconditioner = 0
        d2dzeta2_preconditioner = 0
+       ddzeta_upwind_diagonal = 0
+       ddzeta_upwind_offDiagonal = 0
+
     else
        select case (preconditioner_zeta)
        case (0)
@@ -329,6 +361,29 @@
              ddzeta_preconditioner(izeta,izeta)=one
           end do
           
+       case (4)
+          ! For this preconditioner, the ddzeta_preconditioner array will not actually be used in populateMatrix.F90.
+          scheme = 30
+          call uniformDiffMatrices(Nzeta, 0, zetaMax, scheme, zeta_preconditioner, zetaWeights_preconditioner, &
+               ddzeta_upwind_diagonal, d2dzeta2_preconditioner)
+          ddzeta_upwind_offDiagonal = ddzeta_upwind_diagonal
+          scheme = 40
+          call uniformDiffMatrices(Nzeta, 0, zetaMax, scheme, zeta_preconditioner, zetaWeights_preconditioner, &
+               ddzeta_preconditioner, d2dzeta2_preconditioner)
+          ddzeta_upwind_diagonal    = ddzeta_upwind_diagonal    - ddzeta_preconditioner
+          ddzeta_upwind_offDiagonal = ddzeta_upwind_offDiagonal + ddzeta_preconditioner
+
+!!$          if (masterProc) then
+!!$             print *,"ddzeta_upwind_diagonal:"
+!!$             do i=1,Nzeta
+!!$                print *,ddzeta_upwind_diagonal(i,:)
+!!$             end do
+!!$             print *,"ddzeta_upwind_offDiagonal:"
+!!$             do i=1,Nzeta
+!!$                print *,ddzeta_upwind_offDiagonal(i,:)
+!!$             end do
+!!$          end if
+
        case default
           if (masterProc) then
              print *,"Error! Invalid setting for preconditioner_zeta."

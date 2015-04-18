@@ -110,6 +110,28 @@
        end do
     end if
 
+    ! This next section needs to be fixed:
+    if (whichMatrix==0 .and. masterProc .and. (preconditioner_theta==4 .or. preconditioner_zeta==4)) then
+       print *,"Shifting diagonal of the constraint equations for the preconditioner."
+       ! Amount of shift:
+       temp = 1d+0
+       if (constraintScheme==1) then
+          do ispecies = 1,Nspecies
+             index = getIndex(ispecies,1,1,1,1,BLOCK_DENSITY_CONSTRAINT)
+             call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
+             index = getIndex(ispecies,1,1,1,1,BLOCK_PRESSURE_CONSTRAINT)
+             call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
+          end do
+       elseif (constraintScheme==2) then
+          do ispecies = 1,Nspecies
+             do ix = 1,Nx
+                index = getIndex(ispecies,ix,1,1,1,BLOCK_F_CONSTRAINT)
+                call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
+             end do
+          end do
+       end if
+    end if
+
     ! Since PETSc's direct sparse solver complains if there are any zeros on the diagonal
     ! (unlike mumps or superlu_dist), then if we're using this solver
     ! add some values to the diagonals of the preconditioner.  By trial-and-error, I found it works
@@ -227,57 +249,107 @@
           allocate(localThetaPartOfTerm(Ntheta,localNtheta))
           allocate(rowIndices(localNtheta))
           allocate(colIndices(Ntheta))
-          do L=0,(Nxi-1)
 
-             if (whichMatrix>0 .or. L < preconditioner_theta_min_L) then
-                ddthetaToUse = ddtheta
-             else
-                ddthetaToUse = ddtheta_preconditioner
-             end if
+          if (whichMatrix==0 .and. preconditioner_theta==4) then
+          !if (preconditioner_theta==4) then ! Remove this line eventually!
+             do L=0,(Nxi-1)
+                do ix = 1,Nx
+                   do izeta = izetaMin,izetaMax
+                      do ithetaRow = ithetaMin, ithetaMax
+                         rowIndex = getIndex(ispecies, ix, L+1, ithetaRow, izeta, BLOCK_F)
+                         do ithetaCol = 1,Ntheta
 
-             do izeta=izetaMin,izetaMax
-                do itheta=1,Ntheta
-                   !thetaPartOfTerm(itheta,:) = iota*sqrtTHat/sqrtMHat * ddthetaToUse(itheta,:) &
-                   thetaPartOfTerm(itheta,:) = BHat_sup_theta(itheta,izeta) &
-                        * sqrtTHat/sqrtMHat * ddthetaToUse(itheta,:) &
-                        / BHat(itheta,izeta)
-                end do
-                
-                ! PETSc uses the opposite convention to Fortran:
-                thetaPartOfTerm = transpose(thetaPartOfTerm)
-                localThetaPartOfTerm = thetaPartOfTerm(:,ithetaMin:ithetaMax)
-                
-                do ix=ixMin,Nx
-                   do itheta=1,localNtheta
-                      rowIndices(itheta) = getIndex(ispecies, ix, L+1, ithetaMin+itheta-1, izeta, BLOCK_F)
+                            ! Part that is diagonal in L
+                            ell = L
+                            colIndex = getIndex(ispecies, ix, ell+1, ithetaCol, izeta, BLOCK_F)
+                            ! The abs() is present in the next line because if BHat_sup_theta is <0, we should upwind in the other direction.
+                            stuffToAdd = x(ix) * abs(BHat_sup_theta(ithetaRow,izeta)) &
+                                 * sqrtTHat/sqrtMHat * ddtheta_upwind_diagonal(ithetaRow,ithetaCol) &
+                                 / BHat(ithetaRow,izeta)
+                            call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                                 stuffToAdd * (2*L+1)/2*LegendreIntegrals_diagonal(L+1), ADD_VALUES, ierr)
+
+
+                            stuffToAdd = x(ix) * BHat_sup_theta(ithetaRow,izeta) &
+                                 * sqrtTHat/sqrtMHat * ddtheta_upwind_offDiagonal(ithetaRow,ithetaCol) &
+                                 / BHat(ithetaRow,izeta)
+
+                            ! Part that is super-diagonal in L
+                            if (L < Nxi-1) then
+                               ell = L+1
+                               colIndex = getIndex(ispecies, ix, ell+1, ithetaCol, izeta, BLOCK_F)
+                               call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                                    stuffToAdd * (2*L+1)/2*(L+1)/((2*L+1)*(2*L+3)), ADD_VALUES, ierr)
+                            end if
+
+                            ! Part that is sub-diagonal in L
+                            if (L > 0) then
+                               ell = L-1
+                               colIndex = getIndex(ispecies, ix, ell+1, ithetaCol, izeta, BLOCK_F)
+                               call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                                    stuffToAdd * (2*L+1)/2*(ell+1)/((2*ell+1)*(2*ell+3)), ADD_VALUES, ierr)
+                            end if
+
+                         end do
+                      end do
                    end do
-                   
-                   ! Super-diagonal term
-                   if (L < Nxi-1) then
-                      ell = L+1
-                      do itheta=1,Ntheta
-                         colIndices(itheta) = getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F)
-                      end do
-                      
-                      call MatSetValuesSparse(matrix, localNtheta, rowIndices, Ntheta, colIndices, &
-                           (L+1)/(2*L+three)*x(ix)*localThetaPartOfTerm, ADD_VALUES, ierr)
-                   end if
-                   
-                   ! Sub-diagonal term
-                   if (L > 0) then
-                      ell = L-1
-                      do itheta=1,Ntheta
-                         colIndices(itheta) = getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F)
-                      end do
-                      
-                      call MatSetValuesSparse(matrix, localNtheta, rowIndices, Ntheta, colIndices, &
-                           L/(2*L-one)*x(ix)*localThetaPartOfTerm, ADD_VALUES, ierr)
-                   end if
-                   
-                   
                 end do
              end do
-          end do
+          else
+             
+             do L=0,(Nxi-1)
+
+                if (whichMatrix>0 .or. L < preconditioner_theta_min_L) then
+                   ddthetaToUse = ddtheta
+                else
+                   ddthetaToUse = ddtheta_preconditioner
+                end if
+
+                do izeta=izetaMin,izetaMax
+                   do itheta=1,Ntheta
+                      !thetaPartOfTerm(itheta,:) = iota*sqrtTHat/sqrtMHat * ddthetaToUse(itheta,:) &
+                      thetaPartOfTerm(itheta,:) = BHat_sup_theta(itheta,izeta) &
+                           * sqrtTHat/sqrtMHat * ddthetaToUse(itheta,:) &
+                           / BHat(itheta,izeta)
+                   end do
+
+                   ! PETSc uses the opposite convention to Fortran:
+                   thetaPartOfTerm = transpose(thetaPartOfTerm)
+                   localThetaPartOfTerm = thetaPartOfTerm(:,ithetaMin:ithetaMax)
+
+                   do ix=ixMin,Nx
+                      do itheta=1,localNtheta
+                         rowIndices(itheta) = getIndex(ispecies, ix, L+1, ithetaMin+itheta-1, izeta, BLOCK_F)
+                      end do
+
+                      ! Super-diagonal term
+                      if (L < Nxi-1) then
+                         ell = L+1
+                         do itheta=1,Ntheta
+                            colIndices(itheta) = getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F)
+                         end do
+
+                         call MatSetValuesSparse(matrix, localNtheta, rowIndices, Ntheta, colIndices, &
+                              (L+1)/(2*L+three)*x(ix)*localThetaPartOfTerm, ADD_VALUES, ierr)
+                      end if
+
+                      ! Sub-diagonal term
+                      if (L > 0) then
+                         ell = L-1
+                         do itheta=1,Ntheta
+                            colIndices(itheta) = getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F)
+                         end do
+
+                         call MatSetValuesSparse(matrix, localNtheta, rowIndices, Ntheta, colIndices, &
+                              L/(2*L-one)*x(ix)*localThetaPartOfTerm, ADD_VALUES, ierr)
+                      end if
+
+
+                   end do
+                end do
+             end do
+
+          end if
           deallocate(rowIndices)
           deallocate(colIndices)
           deallocate(thetaPartOfTerm)
@@ -293,56 +365,112 @@
           allocate(localZetaPartOfTerm(Nzeta,localNzeta))
           allocate(rowIndices(localNzeta))
           allocate(colIndices(Nzeta))
-          do L=0,(Nxi-1)
 
-             if (whichMatrix>0 .or. L < preconditioner_zeta_min_L) then
-                ddzetaToUse = ddzeta
-             else
-                ddzetaToUse = ddzeta_preconditioner
-             end if
+          if (whichMatrix==0 .and. preconditioner_zeta==4) then
+          !if (preconditioner_zeta==4) then ! Remove this line eventually!
 
-             do itheta=ithetaMin, ithetaMax
-                do izeta=1,Nzeta
-                   !zetaPartOfTerm(izeta,:) = sqrtTHat/sqrtMHat * ddzetaToUse(izeta,:) / BHat(itheta,izeta)
-                   zetaPartOfTerm(izeta,:) = sqrtTHat/sqrtMHat * BHat_sup_zeta(itheta,izeta) &
-                        * ddzetaToUse(izeta,:) / BHat(itheta,izeta)
-                end do
-                
-                ! PETSc uses the opposite convention to Fortran:
-                zetaPartOfTerm = transpose(zetaPartOfTerm)
-                localZetaPartOfTerm = zetaPartOfTerm(:,izetaMin:izetaMax)
-                
-                do ix=ixMin,Nx
-                   do izeta = 1,localNzeta
-                      rowIndices(izeta)=getIndex(ispecies, ix, L+1, itheta, izetaMin+izeta-1, BLOCK_F)
+             ! Next 3 lines for testing:
+             ithetaRow = -1
+             ithetaCol = -1
+             izeta = -1
+
+             do L=0,(Nxi-1)
+                do ix = 1,Nx
+                   do itheta = ithetaMin,ithetaMax
+                      do izetaRow = izetaMin, izetaMax
+                         rowIndex = getIndex(ispecies, ix, L+1, itheta, izetaRow, BLOCK_F)
+                         do izetaCol = 1,Nzeta
+
+                            ! Part that is diagonal in L
+                            ell = L
+                            colIndex = getIndex(ispecies, ix, ell+1, itheta, izetaCol, BLOCK_F)
+                            ! The abs() is present in the next line because if BHat_sup_theta is <0, we should upwind in the other direction.
+                            stuffToAdd = x(ix) * abs(BHat_sup_zeta(itheta,izetaRow)) &
+                                 * sqrtTHat/sqrtMHat * ddzeta_upwind_diagonal(izetaRow,izetaCol) &
+                                 / BHat(itheta,izetaRow)
+                            call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                                 stuffToAdd * (2*L+1)/2*LegendreIntegrals_diagonal(L+1), ADD_VALUES, ierr)
+
+
+                            stuffToAdd = x(ix) * BHat_sup_zeta(itheta,izetaRow) &
+                                 * sqrtTHat/sqrtMHat * ddzeta_upwind_offDiagonal(izetaRow,izetaCol) &
+                                 / BHat(itheta,izetaRow)
+
+                            ! Part that is super-diagonal in L
+                            if (L < Nxi-1) then
+                               ell = L+1
+                               colIndex = getIndex(ispecies, ix, ell+1, itheta, izetaCol, BLOCK_F)
+                               call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                                    stuffToAdd * (2*L+1)/2*(L+1)/((2*L+1)*(2*L+3)), ADD_VALUES, ierr)
+                            end if
+
+                            ! Part that is sub-diagonal in L
+                            if (L > 0) then
+                               ell = L-1
+                               colIndex = getIndex(ispecies, ix, ell+1, itheta, izetaCol, BLOCK_F)
+                               call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                                    stuffToAdd * (2*L+1)/2*(ell+1)/((2*ell+1)*(2*ell+3)), ADD_VALUES, ierr)
+                            end if
+
+                         end do
+                      end do
                    end do
-                   
-                   ! Super-diagonal term
-                   if (L < Nxi-1) then
-                      ell = L + 1
-                      do izeta = 1,Nzeta
-                         colIndices(izeta)=getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F)
-                      end do
-                      
-                      call MatSetValuesSparse(matrix, localNzeta, rowIndices, Nzeta, colIndices, &
-                           (L+1)/(2*L+three)*x(ix)*localZetaPartOfTerm, ADD_VALUES, ierr)
-                   end if
-                   
-                   ! Sub-diagonal term
-                   if (L > 0) then
-                      ell = L - 1
-                      do izeta = 1,Nzeta
-                         colIndices(izeta)=getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F)
-                      end do
-                      
-                      call MatSetValuesSparse(matrix, localNzeta, rowIndices, Nzeta, colIndices, &
-                           L/(2*L-one)*x(ix)*localZetaPartOfTerm, ADD_VALUES, ierr)
-                   end if
-                   
-                   
                 end do
              end do
-          end do
+          else
+
+             do L=0,(Nxi-1)
+
+                if (whichMatrix>0 .or. L < preconditioner_zeta_min_L) then
+                   ddzetaToUse = ddzeta
+                else
+                   ddzetaToUse = ddzeta_preconditioner
+                end if
+
+                do itheta=ithetaMin, ithetaMax
+                   do izeta=1,Nzeta
+                      !zetaPartOfTerm(izeta,:) = sqrtTHat/sqrtMHat * ddzetaToUse(izeta,:) / BHat(itheta,izeta)
+                      zetaPartOfTerm(izeta,:) = sqrtTHat/sqrtMHat * BHat_sup_zeta(itheta,izeta) &
+                           * ddzetaToUse(izeta,:) / BHat(itheta,izeta)
+                   end do
+
+                   ! PETSc uses the opposite convention to Fortran:
+                   zetaPartOfTerm = transpose(zetaPartOfTerm)
+                   localZetaPartOfTerm = zetaPartOfTerm(:,izetaMin:izetaMax)
+
+                   do ix=ixMin,Nx
+                      do izeta = 1,localNzeta
+                         rowIndices(izeta)=getIndex(ispecies, ix, L+1, itheta, izetaMin+izeta-1, BLOCK_F)
+                      end do
+
+                      ! Super-diagonal term
+                      if (L < Nxi-1) then
+                         ell = L + 1
+                         do izeta = 1,Nzeta
+                            colIndices(izeta)=getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F)
+                         end do
+
+                         call MatSetValuesSparse(matrix, localNzeta, rowIndices, Nzeta, colIndices, &
+                              (L+1)/(2*L+three)*x(ix)*localZetaPartOfTerm, ADD_VALUES, ierr)
+                      end if
+
+                      ! Sub-diagonal term
+                      if (L > 0) then
+                         ell = L - 1
+                         do izeta = 1,Nzeta
+                            colIndices(izeta)=getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F)
+                         end do
+
+                         call MatSetValuesSparse(matrix, localNzeta, rowIndices, Nzeta, colIndices, &
+                              L/(2*L-one)*x(ix)*localZetaPartOfTerm, ADD_VALUES, ierr)
+                      end if
+
+
+                   end do
+                end do
+             end do
+
+          end if
           deallocate(rowIndices)
           deallocate(colIndices)
           deallocate(zetaPartOfTerm)

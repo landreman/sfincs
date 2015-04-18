@@ -555,6 +555,7 @@
   ! 1 = use a 3-point finite difference stencil for d/dtheta
   ! 2 = drop all theta coupling
   ! 3 = replace d/dtheta with the identity matrix
+  ! 4 = upwinding d/dtheta, for use with -pc_type gamg
 
   preconditioner_theta_min_L = 0
   ! The theta structure of the matrix will only be simplified for L >= this value.
@@ -565,6 +566,7 @@
   ! 1 = use a 3-point finite difference stencil for d/dzeta
   ! 2 = drop all zeta coupling
   ! 3 = replace d/dzeta with the identity matrix
+  ! 4 = upwinding d/dzeta, for use with -pc_type gamg
 
   preconditioner_zeta_min_L = 0
   ! The zeta structure of the matrix will only be simplified for L >= this value.

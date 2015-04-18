@@ -684,9 +684,9 @@ subroutine validateInput()
      stop
   end if
   
-  if (preconditioner_theta>3) then
+  if (preconditioner_theta>4) then
      if (masterProc) then
-        print *,"Error! preconditioner_theta cannot be more than 3."
+        print *,"Error! preconditioner_theta cannot be more than 4."
      end if
      stop
   end if
@@ -708,9 +708,9 @@ subroutine validateInput()
      stop
   end if
   
-  if (preconditioner_zeta>3) then
+  if (preconditioner_zeta>4) then
      if (masterProc) then
-        print *,"Error! preconditioner_zeta cannot be more than 3."
+        print *,"Error! preconditioner_zeta cannot be more than 4."
      end if
      stop
   end if
