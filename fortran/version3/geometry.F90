@@ -227,6 +227,15 @@ contains
        print *,"Error! Invalid setting for geometryScheme."
        stop
     end select
+
+    BDotCurlB = DHat * (  BHat_sub_theta * dBHat_sub_psi_dzeta &
+                        - BHat_sub_theta * dBHat_sub_zeta_dpsiHat &
+                        + BHat_sub_zeta * dBHat_sub_theta_dpsiHat &
+                        - BHat_sub_zeta * dBHat_sub_psi_dtheta)
+
+    if (.not. force0RadialCurrentInEquilibrium) then
+       BDotCurlB = BDotCurlB + DHat * BHat_sub_psi * (dBHat_sub_zeta_dtheta - dBHat_sub_theta_dzeta)
+    end if
     
   end subroutine computeBHat
 

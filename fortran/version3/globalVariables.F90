@@ -98,6 +98,8 @@ module globalVariables
 
   PetscScalar :: nuPrime = 0, EStar = 0
 
+  integer :: magneticDriftScheme = 0
+
   ! ********************************************************
   ! ********************************************************
   !
@@ -181,6 +183,7 @@ module globalVariables
   PetscScalar, dimension(:,:), allocatable :: BHat_sub_zeta, dBHat_sub_zeta_dtheta, dBHat_sub_zeta_dpsiHat
   PetscScalar, dimension(:,:), allocatable :: BHat_sup_theta, dBHat_sup_theta_dzeta, dBHat_sup_theta_dpsiHat
   PetscScalar, dimension(:,:), allocatable :: BHat_sup_zeta, dBHat_sup_zeta_dtheta, dBHat_sup_zeta_dpsiHat
+  PetscScalar, dimension(:,:), allocatable :: BDotCurlB
   PetscScalar, dimension(:,:), allocatable :: sources, jHat, Phi1Hat, dPhi1Hatdtheta, dPhi1Hatdzeta
   PetscScalar, dimension(:,:,:), allocatable :: densityPerturbation, totalDensity
   PetscScalar, dimension(:,:,:), allocatable :: pressurePerturbation, totalPressure
@@ -326,7 +329,7 @@ module globalVariables
   MPI_Comm :: MPIComm
   integer :: numProcs, myRank 
   logical :: masterProc
-  ! Eventually, keep only the zeta variables, and drop the theta variables
+
   integer :: ithetaMin, ithetaMax, localNtheta
   integer :: izetaMin, izetaMax, localNzeta
   logical :: procThatHandlesConstraints

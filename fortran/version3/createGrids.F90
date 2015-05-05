@@ -600,6 +600,7 @@
     allocate(DHat(Ntheta,Nzeta))
 
     allocate(BHat(Ntheta,Nzeta))
+    allocate(BDotCurlB(Ntheta,Nzeta))
     allocate(dBHatdtheta(Ntheta,Nzeta))
     allocate(dBHatdzeta(Ntheta,Nzeta))
     allocate(dBHatdpsiHat(Ntheta,Nzeta))

@@ -283,6 +283,20 @@ subroutine validateInput()
      stop
   end if
 
+  if (magneticDriftScheme<0) then
+     if (masterProc) then
+        print *,"Error! magneticDriftScheme must be >= 0."
+     end if
+     stop
+  end if
+
+  if (magneticDriftScheme>2) then
+     if (masterProc) then
+        print *,"Error! magneticDriftScheme must be <= 2."
+     end if
+     stop
+  end if
+
 
   ! resolutionParameters namelist:
 

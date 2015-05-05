@@ -190,6 +190,8 @@ contains
        call writeHDF5Field("dBHatdpsiHat", dBHatdpsiHat, dspaceIDForThetaZeta, dimForThetaZeta, "")
        call writeHDF5Field("dBHatdtheta", dBHatdtheta, dspaceIDForThetaZeta, dimForThetaZeta, "")
        call writeHDF5Field("dBHatdzeta", dBHatdzeta, dspaceIDForThetaZeta, dimForThetaZeta, "")
+       call writeHDF5Field("BDotCurlB", BHat, dspaceIDForThetaZeta, dimForThetaZeta, &
+            "\vect{B}\cdot\nabla\times\vect{B}, in units of BBar^2 / RBar")
 
        call writeHDF5Field("BHat_sub_psi", BHat_sub_psi, dspaceIDForThetaZeta, dimForThetaZeta, &
             "Covariant component of B, the component that multiplies grad psi, in units of 1 / RBar")
@@ -232,6 +234,7 @@ contains
        call writeHDF5Field("IHat", IHat, "")
        call writeHDF5Field("iota", iota, "(Rationalized) rotational transform = 1 / (safety factor q)")
        call writeHDF5Field("coordinateSystem", coordinateSystem, "")
+       call writeHDF5Field("magneticDriftScheme", magneticDriftScheme, "Which version of the poloidal and toroidal magnetic drifts to use.")
 
        if (geometryScheme==1) then
           call writeHDF5Field("epsilon_t", epsilon_t, "")
