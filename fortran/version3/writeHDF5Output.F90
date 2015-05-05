@@ -190,7 +190,7 @@ contains
        call writeHDF5Field("dBHatdpsiHat", dBHatdpsiHat, dspaceIDForThetaZeta, dimForThetaZeta, "")
        call writeHDF5Field("dBHatdtheta", dBHatdtheta, dspaceIDForThetaZeta, dimForThetaZeta, "")
        call writeHDF5Field("dBHatdzeta", dBHatdzeta, dspaceIDForThetaZeta, dimForThetaZeta, "")
-       call writeHDF5Field("BDotCurlB", BHat, dspaceIDForThetaZeta, dimForThetaZeta, &
+       call writeHDF5Field("BDotCurlB", BDotCurlB, dspaceIDForThetaZeta, dimForThetaZeta, &
             "\vect{B}\cdot\nabla\times\vect{B}, in units of BBar^2 / RBar")
 
        call writeHDF5Field("BHat_sub_psi", BHat_sub_psi, dspaceIDForThetaZeta, dimForThetaZeta, &
