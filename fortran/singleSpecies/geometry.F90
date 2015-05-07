@@ -799,7 +799,7 @@ contains
 
     do itheta = 1,Ntheta
        do izeta = 1,Nzeta
-          NTVkernel(itheta,izeta) = 2.0/5.0 * ( &
+          NTVKernel(itheta,izeta) = 2.0/5.0 * ( &
                dGdpHat / BHat(itheta,izeta) * (iota * dBHatdtheta(itheta,izeta) + dBHatdzeta(itheta,izeta)) &
                + 1.0/2.0 * (iota * (duHatdtheta(itheta,izeta) &
                                 + uHat(itheta,izeta) * 2.0/BHat(itheta,izeta) * dBHatdtheta(itheta,izeta)) &

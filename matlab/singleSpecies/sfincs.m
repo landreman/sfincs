@@ -30,7 +30,7 @@ function sfincs()
 % Program flow control parameters:
 % --------------------------------------------------
 
-programMode = 1;
+programMode = 2;
 % 1 = single run.
 % 2 = Do a convergence scan and save the results.
 % 3 = Load a previous convergence scan and plot the results. (Doesn't do any new solves.)
@@ -42,7 +42,7 @@ programMode = 1;
 % The setting below matters for programMode = 3, 5, or 7 only:
 dataFileToPlot = 'm20130318_02_SFINCS_2013-03-18_14-47_convergenceScan_convergenceScan.mat';
 
-RHSMode = 3;
+RHSMode = 1;
 % 1 = Use a single right-hand side.
 % 2 = Use multiple right-hand sides to compute the transport matrix.
 % 3 = Use two right hand sides, used iff Nx=1 (mono-energetic calculations)
@@ -120,8 +120,11 @@ fort996boozer_file='TJII-midradius_example_s_0493_fort.996';
 
 % geometryScheme=11 and 12 parameters:
 addpath('../../equilibria');
-JGboozer_file='w7x-sc1.bc'; % stellarator symmetric example, geometryScheme=11
+%JGboozer_file='w7x-sc1.bc'; % stellarator symmetric example, geometryScheme=11
 %JGboozer_file='w7x-sc1-ecb2.bc'; % stellarator symmetric example, geometryScheme=11
+%JGboozer_file='tok-synch2-3-1m3_s0.153.bc';
+%JGboozer_file='wout_augh_tony2.bc';
+JGboozer_file='wout_augh_tony3_short.bc';
 JGboozer_file_NonStelSym='out_neo-2_n2_sym_c_m64_n16';
 normradius_wish=0.5;   %The calculation will be performed for the radius
                        %closest to this one in the JGboozer_file(_NonStelSym)
@@ -174,7 +177,7 @@ nHat = 1.0;
 % The radial electric field may be specified in one of 2 ways.
 % When RHSMode==1, dPhiHatdpsi is used and EStar is ignored.
 % When RHSMode==2,3, EStar is used and dPhiHatdpsi is ignored.
-dPhiHatdpsi = 0.0;
+dPhiHatdpsi = 1.0;
 EStar = 0.0;
 
 % The following two quantities matter for RHSMode=1 but not for RHSMode=2:
@@ -219,9 +222,9 @@ nuN = nu_nbar * nHat/THat^(3/2);
 % If testQuasisymmetryIsomorphism is true, the value of nuN is changed so the physical collisionality
 % stays constant as the helicity is changed.
 
-nuPrime = 0.1; 
+nuPrime = 1; 
 
-collisionOperator = 1;
+collisionOperator = 0;
 % 0 = Full linearized Fokker-Planck operator
 % 1 = Pitch angle scattering, with no momentum conservation
 % 2 = Pitch angle scattering, with a model momentum-conserving field term
@@ -288,14 +291,14 @@ include_fDivVE_term = false;
 
 % Number of grid points in the poloidal direction.
 % Memory and time requirements DO depend strongly on this parameter.
-NthetaConverged = 15;
-Nthetas = floor(linspace(9,30,11));
+NthetaConverged = 21;
+Nthetas = floor(linspace(19,24,5));
 
 % Number of grid points in the toroidal direction
 % (per identical segment of the stellarator.)
 % Memory and time requirements DO depend strongly on this parameter.
-NzetaConverged = 64;
-Nzetas = floor(linspace(5,20,3));
+NzetaConverged = 23;
+Nzetas = floor(linspace(19,24,5));
 
 % Number of Legendre polynomials used to represent the distribution
 % function.
@@ -304,8 +307,8 @@ Nzetas = floor(linspace(5,20,3));
 % the collisionality. At high collisionality, this parameter can be as low
 % as ~ 5. At low collisionality, this parameter may need to be many 10s or
 % even > 100 for convergence.
-NxiConverged = 68;
-Nxis = floor(linspace(10,40,13));
+NxiConverged = 27;
+Nxis = floor(linspace(20,30,5));
 
 % Number of Legendre polynomials used to represent the Rosenbluth
 % potentials: (Typically 2 or 4 is plenty.)
@@ -319,8 +322,8 @@ NLs = 2:6;
 % Memory and time requirements DO depend strongly on this parameter.
 % This parameter almost always needs to be at least 5.
 % Usually a value in the range 5-8 is plenty for convergence.
-NxConverged = 1;
-Nxs=1:1;
+NxConverged = 7;
+Nxs=6:8;
 
 % Number of grid points in energy used to represent the Rosenbluth
 % potentials.
@@ -2443,7 +2446,11 @@ end
         fprintf('Total elapsed time: %g sec.\n',toc(startTimeForThisRun))
 
         NTVkernel; %This is a dummy line which is only here to let the variable NTVkernel
-                   %from the subroutine computeBHat() be known also in computeOutputs().       
+                   %from the subroutine computeBHat() be known also in
+                   %computeOutputs().     
+        NTVkernelA;
+        NTVkernelB;
+        NTVkernel2;
         computeOutputs()
         
         % ------------------------------------------------------
@@ -2536,6 +2543,9 @@ end
                 heatFluxBeforeSurfaceIntegral = -(THat^(7/2))*(GHat*dBHatdtheta-IHat*dBHatdzeta)./(2*sqrtpi*BHat.^3) ...
                     .* heatFluxBeforeSurfaceIntegral;
                 
+                NTVABeforeSurfaceIntegral = 2/iota * (THat^(5/2))./sqrtpi * NTVkernelA .* NTVBeforeSurfaceIntegral;
+                NTVBBeforeSurfaceIntegral = 2/iota * (THat^(5/2))./sqrtpi * NTVkernelB .* NTVBeforeSurfaceIntegral;
+                NTV2BeforeSurfaceIntegral = 2/iota * (THat^(5/2))./sqrtpi * NTVkernel2 .* NTVBeforeSurfaceIntegral;
                 NTVBeforeSurfaceIntegral = 2/iota * (THat^(5/2))./sqrtpi * NTVkernel .* NTVBeforeSurfaceIntegral;
 
                 FSADensityPerturbation = (1/VPrimeHat) * thetaWeights' * (densityPerturbation./(BHat.^2)) * zetaWeights;
@@ -2547,11 +2557,17 @@ end
                 heatFlux = thetaWeights' * heatFluxBeforeSurfaceIntegral * zetaWeights;
 
                 NTV = thetaWeights' * NTVBeforeSurfaceIntegral * zetaWeights;
+                NTVA = thetaWeights' * NTVABeforeSurfaceIntegral * zetaWeights;
+                NTVB = thetaWeights' * NTVBBeforeSurfaceIntegral * zetaWeights;
+                NTV2 = thetaWeights' * NTV2BeforeSurfaceIntegral * zetaWeights;
                 
                 fprintf('FSADensityPerturbation:  %g\n',FSADensityPerturbation)
                 fprintf('FSAFlow:                 %g\n',FSAFlow)
                 fprintf('FSAPressurePerturbation: %g\n',FSAPressurePerturbation)
                 fprintf('NTV:                     %g\n',NTV)
+                fprintf('NTVA:                    %g\n',NTVA)
+                fprintf('NTVB:                    %g\n',NTVB)
+                fprintf('NTV2:                    %g\n',NTV2)
                 fprintf('particleFlux:            %g\n',particleFlux)
                 fprintf('momentumFlux:            %g\n',momentumFlux)
                 fprintf('heatFlux:                %g\n',heatFlux)
@@ -2783,7 +2799,7 @@ end
                         while strcmp(tmp_str(1:2),'CC');
                             tmp_str=fgetl(fid);     %Skip comment line
                         end
-                        header=fscanf(fid,'%d %d %d %d %f %f %f\n',7);
+                        header=fscanf(fid,'%d %d %d %d %f %f %f',7);
                         NPeriods = header(4);
                         fclose(fid);
                     catch me
@@ -2958,7 +2974,8 @@ end
                       while strcmp(tmp_str(1:2),'CC');
                           tmp_str=fgetl(fid); %Skip comment line
                       end
-                      header=fscanf(fid,'%d %d %d %d %f %f %f\n',7);
+                      header=fscanf(fid,'%d %d %d %d %f %f %f',7);
+                      fgetl(fid);  %Skip to the end of the header line
                       fgetl(fid);  %Skip variable name line
                       
                       NPeriods = header(4);
@@ -3285,6 +3302,7 @@ end
               duHatdtheta = zeros(Ntheta,Nzeta);
               duHatdzeta = zeros(Ntheta,Nzeta);
               hHat=1./(BHat.^2);
+              FSA_BHat2=Ntheta*Nzeta/sum(sum(hHat));
               if any(BHarmonics_parity==0) %sine components exist
                 for m=0:floor(Ntheta/2)-1 %Nyquist max freq.
                   if m==0
@@ -3336,10 +3354,42 @@ end
                   end              
                 end
               end
+              gammaHat=-GHat/FSA_BHat2
+              dGdpHat
+              
+              NTVkernelA = 2/5 * ( ...
+                    gammaHat ./ BHat .* (iota * dBHatdtheta + dBHatdzeta) + ...
+                    1/2 * (iota * (duHatdtheta + uHat * 2./BHat .* dBHatdtheta) ...
+                           + duHatdzeta + uHat * 2./BHat .* dBHatdzeta) );
               NTVkernel = 2/5 * ( ...
-                  dGdpHat ./ BHat .* (iota * dBHatdtheta + dBHatdzeta) + ...
-                  1/2 * (iota * (duHatdtheta + uHat * 2./BHat .* dBHatdtheta) ...
-                         + duHatdzeta + uHat * 2./BHat .* dBHatdzeta) );
+                    (gammaHat + uHat)./ BHat .* (iota * dBHatdtheta + dBHatdzeta) + ...
+                     iota./BHat.^3.*(GHat * dBHatdtheta + IHat * dBHatdzeta));
+              %      1/2 * (iota * duHatdtheta + duHatdzeta) );
+              
+              NTVkernelB = 2/5 * ( ...
+                    (dGdpHat + uHat)./ BHat .* (iota * dBHatdtheta + dBHatdzeta) + ...
+                     iota./BHat.^3.*(GHat * dBHatdtheta + IHat * dBHatdzeta));
+              %NTVkernelB = 2/5 * ( ...
+              %      dGdpHat ./ BHat .* (iota * dBHatdtheta + dBHatdzeta) + ...
+              %      1/2 * (iota * (duHatdtheta + uHat * 2./BHat .* dBHatdtheta) ...
+              %             + duHatdzeta + uHat * 2./BHat .* dBHatdzeta) );
+              
+              %NTVkernel2=  2/5 * ( ...
+              %      1/2 * (iota * (duHatdtheta + uHat * 2./BHat .* dBHatdtheta) ...
+              %             + duHatdzeta + uHat * 2./BHat .* dBHatdzeta) );
+              NTVkernel2=  2/5 * ( ...
+                    uHat./ BHat .* (iota * dBHatdtheta + dBHatdzeta) + ...
+                     iota./BHat.^3.*(GHat * dBHatdtheta + IHat * dBHatdzeta));
+                                
+              
+              fig(10)
+              surf([NTVkernel,NTVkernel;NTVkernel,NTVkernel]);view(0,90);colorbar;title('NTV')
+              fig(11)
+              surf([NTVkernelA,NTVkernelA;NTVkernelA,NTVkernelA]);view(0,90);colorbar;title('NTVA')
+              fig(12)
+              surf([NTVkernelB,NTVkernelB;NTVkernelB,NTVkernelB]);view(0,90);colorbar;title('NTVB')
+              fig(13)
+              surf([NTVkernel2,NTVkernel2;NTVkernel2,NTVkernel2]);view(0,90);colorbar;title('NTV2')
             end
         end
     end

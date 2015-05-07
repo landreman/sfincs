@@ -255,7 +255,7 @@ contains
     integer, dimension(2) :: dataIntegers
     integer :: no_of_modes_old, no_of_modes_new, modeind, numB0s, startn, stopn
     PetscScalar :: iota_old, iota_new, G_old, G_new, I_old, I_new
-    PetscScalar :: pPrimeHat, pPrimeHat_old, pPrimeHat_new
+    PetscScalar :: pPrimeHat, pPrimeHat_old, pPrimeHat_new, invFSA_BHat2
     logical :: end_of_file, proceed
     integer, parameter :: max_no_of_modes = 10000
     integer, dimension(max_no_of_modes) :: modesm_old, modesm_new, modesn_old, modesn_new
@@ -868,9 +868,11 @@ contains
     uHat = 0
     duHatdtheta = 0
     duHatdzeta = 0
+    invFSA_BHat2 = 0
     do itheta = 1,Ntheta
        do izeta = 1,Nzeta
           hHat(itheta,izeta) = 1.0 / (BHat(itheta,izeta)*BHat(itheta,izeta))
+          invFSA_BHat2 = invFSA_BHat2 + hHat(itheta,izeta)/Ntheta/Nzeta
        end do
     end do
     
@@ -949,12 +951,16 @@ contains
 
     do itheta = 1,Ntheta
        do izeta = 1,Nzeta
-          NTVkernel(itheta,izeta) = 2.0/5.0 * ( &
-               dGdpHat / BHat(itheta,izeta) * (iota * dBHatdtheta(itheta,izeta) + dBHatdzeta(itheta,izeta)) &
-               + 1.0/2.0 * (iota * (duHatdtheta(itheta,izeta) &
-                                + uHat(itheta,izeta) * 2.0/BHat(itheta,izeta) * dBHatdtheta(itheta,izeta)) &
-                        + duHatdzeta(itheta,izeta) & 
-                        + uHat(itheta,izeta) * 2.0/BHat(itheta,izeta) * dBHatdzeta(itheta,izeta)) )
+          NTVKernel(itheta,izeta) = 2.0/5.0 / BHat(itheta,izeta) * ( &
+               (uHat(itheta,izeta) - GHat*invFSA_BHat2) * (iota * dBHatdtheta(itheta,izeta) + dBHatdzeta(itheta,izeta)) &
+               + iota * hHat(itheta,izeta) * (GHat*dBHatdtheta(itheta,izeta) - IHat*dBHatdzeta(itheta,izeta)) )
+
+!          NTVKernel(itheta,izeta) = 2.0/5.0 * ( &
+!               dGdpHat / BHat(itheta,izeta) * (iota * dBHatdtheta(itheta,izeta) + dBHatdzeta(itheta,izeta)) &
+!               + 1.0/2.0 * (iota * (duHatdtheta(itheta,izeta) &
+!                                + uHat(itheta,izeta) * 2.0/BHat(itheta,izeta) * dBHatdtheta(itheta,izeta)) &
+!                        + duHatdzeta(itheta,izeta) & 
+!                        + uHat(itheta,izeta) * 2.0/BHat(itheta,izeta) * dBHatdzeta(itheta,izeta)) )
        end do
     end do
 
