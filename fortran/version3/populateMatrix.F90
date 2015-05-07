@@ -238,7 +238,6 @@
 
              do izeta=izetaMin,izetaMax
                 do itheta=1,Ntheta
-                   !thetaPartOfTerm(itheta,:) = iota*sqrtTHat/sqrtMHat * ddthetaToUse(itheta,:) &
                    thetaPartOfTerm(itheta,:) = BHat_sup_theta(itheta,izeta) &
                         * sqrtTHat/sqrtMHat * ddthetaToUse(itheta,:) &
                         / BHat(itheta,izeta)
@@ -253,7 +252,7 @@
                       rowIndices(itheta) = getIndex(ispecies, ix, L+1, ithetaMin+itheta-1, izeta, BLOCK_F)
                    end do
                    
-                   ! Super-diagonal term
+                   ! Super-diagonal-in-L term
                    if (L < Nxi-1) then
                       ell = L+1
                       do itheta=1,Ntheta
@@ -264,7 +263,7 @@
                            (L+1)/(2*L+three)*x(ix)*localThetaPartOfTerm, ADD_VALUES, ierr)
                    end if
                    
-                   ! Sub-diagonal term
+                   ! Sub-diagonal-in-L term
                    if (L > 0) then
                       ell = L-1
                       do itheta=1,Ntheta
@@ -304,7 +303,6 @@
 
              do itheta=ithetaMin, ithetaMax
                 do izeta=1,Nzeta
-                   !zetaPartOfTerm(izeta,:) = sqrtTHat/sqrtMHat * ddzetaToUse(izeta,:) / BHat(itheta,izeta)
                    zetaPartOfTerm(izeta,:) = sqrtTHat/sqrtMHat * BHat_sup_zeta(itheta,izeta) &
                         * ddzetaToUse(izeta,:) / BHat(itheta,izeta)
                 end do
@@ -318,7 +316,7 @@
                       rowIndices(izeta)=getIndex(ispecies, ix, L+1, itheta, izetaMin+izeta-1, BLOCK_F)
                    end do
                    
-                   ! Super-diagonal term
+                   ! Super-diagonal-in-L term
                    if (L < Nxi-1) then
                       ell = L + 1
                       do izeta = 1,Nzeta
@@ -329,7 +327,7 @@
                            (L+1)/(2*L+three)*x(ix)*localZetaPartOfTerm, ADD_VALUES, ierr)
                    end if
                    
-                   ! Sub-diagonal term
+                   ! Sub-diagonal-in-L term
                    if (L > 0) then
                       ell = L - 1
                       do izeta = 1,Nzeta
@@ -355,7 +353,6 @@
        ! *********************************************************
 
        if (whichMatrix .ne. 2) then
-          !factor = alpha*Delta*GHat/(2*psiAHat)*dPhiHatdpsiN
           factor = alpha*Delta/two*dPhiHatdpsiHat
           allocate(thetaPartOfTerm(Ntheta,Ntheta))
           allocate(localThetaPartOfTerm(Ntheta,localNtheta))
@@ -371,14 +368,12 @@
 
              do izeta=izetaMin,izetaMax
                 if (useDKESExBDrift) then
-                   !thetaPartOfTerm = ddthetaToUse / FSABHat2
                    do itheta=1,Ntheta
                       thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / FSABHat2 &
                            * DHat(itheta,izeta) * BHat_sub_zeta(itheta,izeta)
                    end do
                 else
                    do itheta=1,Ntheta
-                      !thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2)
                       thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2) &
                            * DHat(itheta,izeta) * BHat_sub_zeta(itheta,izeta)
                    end do
@@ -412,7 +407,6 @@
        ! *********************************************************
 
        if (whichMatrix .ne. 2) then
-          !factor = -alpha*Delta*IHat/(2*psiAHat)*dPhiHatdpsiN
           factor = -alpha*Delta/two*dPhiHatdpsiHat
           allocate(zetaPartOfTerm(Nzeta,Nzeta))
           allocate(localZetaPartOfTerm(Nzeta,localNzeta))
@@ -428,14 +422,12 @@
 
              do itheta=ithetaMin, ithetaMax
                 if (useDKESExBDrift) then
-                   !zetaPartOfTerm = ddzetaToUse / FSABHat2
                    do izeta=1,Nzeta
                       zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / FSABHat2 &
                            * DHat(itheta,izeta) * BHat_sub_theta(itheta,izeta)
                    end do
                 else
                    do izeta=1,Nzeta
-                      !zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2)
                       zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2) &
                            * DHat(itheta,izeta) * BHat_sub_theta(itheta,izeta)
                    end do
@@ -515,30 +507,35 @@
                               stuffToAdd * ddthetaToUse(ithetaRow,ithetaCol), &
                               ADD_VALUES, ierr)
 
-                         ! Super-diagonal term
-                         if (L < Nxi-1) then
-                            ell = L+1
-                            colIndex = getIndex(ispecies, ix, ell+1, ithetaCol, izeta, BLOCK_F)
+                         ! Drop the off-by-2 diagonal terms in L if this is the preconditioner
+                         ! and preconditioner_xi = 1:
+                         if (whichMatrix .ne. 0 .or. preconditioner_xi==0) then
 
-                            stuffToAdd = factor*(L-1)*L/((two*L-3)*(2*L-1)) &
-                                 * (geometricFactor1 + geometricFactor2 - 3*geometricFactor3)
+                            ! Super-super-diagonal-in-L term
+                            if (L < Nxi-2) then
+                               ell = L+2
+                               colIndex = getIndex(ispecies, ix, ell+1, ithetaCol, izeta, BLOCK_F)
 
-                            call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                                 stuffToAdd * ddthetaToUse(ithetaRow,ithetaCol), &
-                                 ADD_VALUES, ierr)
-                         end if
-                   
-                         ! Sub-diagonal term
-                         if (L > 0) then
-                            ell = L-1
-                            colIndex = getIndex(ispecies, ix, ell+1, ithetaCol, izeta, BLOCK_F)
+                               stuffToAdd = factor*(L-1)*L/((two*L-3)*(2*L-1)) &
+                                    * (geometricFactor1 + geometricFactor2 - 3*geometricFactor3)
 
-                            stuffToAdd = factor*(L+2)*(L+1)/((two*L+5)*(2*L+3)) &
-                                 * (geometricFactor1 + geometricFactor2 - 3*geometricFactor3)
+                               call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                                    stuffToAdd * ddthetaToUse(ithetaRow,ithetaCol), &
+                                    ADD_VALUES, ierr)
+                            end if
 
-                            call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                                 stuffToAdd * ddthetaToUse(ithetaRow,ithetaCol), &
-                                 ADD_VALUES, ierr)
+                            ! Sub-sub-diagonal-in-L term
+                            if (L > 1) then
+                               ell = L-2
+                               colIndex = getIndex(ispecies, ix, ell+1, ithetaCol, izeta, BLOCK_F)
+
+                               stuffToAdd = factor*(L+2)*(L+1)/((two*L+5)*(2*L+3)) &
+                                    * (geometricFactor1 + geometricFactor2 - 3*geometricFactor3)
+
+                               call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                                    stuffToAdd * ddthetaToUse(ithetaRow,ithetaCol), &
+                                    ADD_VALUES, ierr)
+                            end if
                          end if
                       end do
                    end do
@@ -598,30 +595,35 @@
                               stuffToAdd * ddzetaToUse(izetaRow,izetaCol), &
                               ADD_VALUES, ierr)
 
-                         ! Super-diagonal term
-                         if (L < Nxi-1) then
-                            ell = L+1
-                            colIndex = getIndex(ispecies, ix, ell+1, itheta, izetaCol, BLOCK_F)
+                         ! Drop the off-by-2 diagonal terms in L if this is the preconditioner
+                         ! and preconditioner_xi = 1:
+                         if (whichMatrix .ne. 0 .or. preconditioner_xi==0) then
 
-                            stuffToAdd = factor*(L-1)*L/((two*L-3)*(2*L-1)) &
-                                 * (geometricFactor1 + geometricFactor2 - 3*geometricFactor3)
+                            ! Super-super-diagonal-in-L term
+                            if (L < Nxi-2) then
+                               ell = L+2
+                               colIndex = getIndex(ispecies, ix, ell+1, itheta, izetaCol, BLOCK_F)
 
-                            call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                                 stuffToAdd * ddzetaToUse(izetaRow,izetaCol), &
-                                 ADD_VALUES, ierr)
-                         end if
-                   
-                         ! Sub-diagonal term
-                         if (L > 0) then
-                            ell = L-1
-                            colIndex = getIndex(ispecies, ix, ell+1, itheta, izetaCol, BLOCK_F)
+                               stuffToAdd = factor*(L-1)*L/((two*L-3)*(2*L-1)) &
+                                    * (geometricFactor1 + geometricFactor2 - 3*geometricFactor3)
 
-                            stuffToAdd = factor*(L+2)*(L+1)/((two*L+5)*(2*L+3)) &
-                                 * (geometricFactor1 + geometricFactor2 - 3*geometricFactor3)
+                               call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                                    stuffToAdd * ddzetaToUse(izetaRow,izetaCol), &
+                                    ADD_VALUES, ierr)
+                            end if
 
-                            call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                                 stuffToAdd * ddzetaToUse(izetaRow,izetaCol), &
-                                 ADD_VALUES, ierr)
+                            ! Sub-sub-diagonal-in-L term
+                            if (L > 1) then
+                               ell = L-2
+                               colIndex = getIndex(ispecies, ix, ell+1, itheta, izetaCol, BLOCK_F)
+
+                               stuffToAdd = factor*(L+2)*(L+1)/((two*L+5)*(2*L+3)) &
+                                    * (geometricFactor1 + geometricFactor2 - 3*geometricFactor3)
+
+                               call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                                    stuffToAdd * ddzetaToUse(izetaRow,izetaCol), &
+                                    ADD_VALUES, ierr)
+                            end if
                          end if
                       end do
                    end do
@@ -640,14 +642,13 @@
                 factor = -sqrtTHat/(2*sqrtMHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
                      * (BHat_sup_theta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
                      + BHat_sup_zeta(itheta,izeta) * dBHatdzeta(itheta,izeta))
-                !* (iota*dBHatdtheta(itheta,izeta) + dBHatdzeta(itheta,izeta))
                 
                 do ix=ixMin,Nx
                    do L=0,(Nxi-1)
                       rowIndex=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
                       
                       if (L<Nxi-1) then
-                         ! Super-diagonal term:
+                         ! Super-diagonal-in-L term:
                          ell = L+1
                          colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
                          call MatSetValueSparse(matrix, rowIndex, colIndex, &
@@ -655,7 +656,7 @@
                       end if
                       
                       if (L>0) then
-                         ! Sub-diagonal term:
+                         ! Sub-diagonal-in-L term:
                          ell = L-1
                          colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
                          call MatSetValueSparse(matrix, rowIndex, colIndex, &
@@ -668,14 +669,12 @@
        end if
 
        ! *********************************************************
-       ! Add the non-standard d/dxi term:
+       ! Add the non-standard d/dxi term associated with E_r:
        ! *********************************************************
 
        if (includeElectricFieldTermInXiDot .and. (whichMatrix .ne. 2)) then
           do itheta=ithetaMin,ithetaMax
              do izeta=izetaMin,izetaMax
-                !factor = alpha*Delta*dPhiHatdpsiN/(4*psiAHat*(BHat(itheta,izeta)**3)) &
-                !     * (GHat*dBHatdtheta(itheta,izeta) - IHat* dBHatdzeta(itheta,izeta))
 
                 temp = BHat_sub_zeta(itheta,izeta) * dBHatdtheta(itheta,izeta) &
                      - BHat_sub_theta(itheta,izeta) * dBHatdzeta(itheta,izeta)
@@ -688,18 +687,20 @@
                 factor = alpha*Delta*dPhiHatdpsiHat/(4*(BHat(itheta,izeta)**3)) &
                      * DHat(itheta,izeta) * temp
                      
-
                 do ix=ixMin,Nx
                    do L=0,(Nxi-1)
                       rowIndex=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
 
-                      ! Diagonal term
+                      ! Diagonal-in-L term
                       call MatSetValueSparse(matrix, rowIndex, rowIndex, &
                            (L+1)*L/((2*L-one)*(2*L+three))*factor, ADD_VALUES, ierr)
 
+                      ! Drop the off-by-2 diagonal terms in L if this is the preconditioner
+                      ! and preconditioner_xi = 1:
                       if (whichMatrix .ne. 0 .or. preconditioner_xi==0) then
+
                          if (L<Nxi-2) then
-                            ! Super-super-diagonal term:
+                            ! Super-super-diagonal-in-L term:
                             ell = L+2
                             colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
                             call MatSetValueSparse(matrix, rowIndex, colIndex, &
@@ -707,7 +708,7 @@
                          end if
 
                          if (L>1) then
-                            ! Sub-sub-diagonal term:
+                            ! Sub-sub-diagonal-in-L term:
                             ell = L-2
                             colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
                             call MatSetValueSparse(matrix, rowIndex, colIndex, &
@@ -722,7 +723,7 @@
        end if
 
        ! *********************************************************
-       ! Add the collisionless d/dx term:
+       ! Add the collisionless d/dx term associated with E_r
        ! *********************************************************
 
        ! This term always operates on f0, so it should always be included when whichMatrix=2 even if includeXDotTerm=.false.!
@@ -791,7 +792,10 @@
                       end do
                    end do
 
+                   ! Drop the off-by-2 diagonal terms in L if this is the preconditioner
+                   ! and preconditioner_xi = 1:
                    if (whichMatrix>0 .or. preconditioner_xi==0) then
+
                       ! Term that is super-super-diagonal in L:
                       if (L<(Nxi-2)) then
                          ell = L + 2

@@ -235,6 +235,10 @@ contains
        call writeHDF5Field("iota", iota, "(Rationalized) rotational transform = 1 / (safety factor q)")
        call writeHDF5Field("coordinateSystem", coordinateSystem, "")
        call writeHDF5Field("magneticDriftScheme", magneticDriftScheme, "Which version of the poloidal and toroidal magnetic drifts to use.")
+       call writeHDF5Field("force0RadialCurrentInEquilibrium", force0RadialCurrentInEquilibrium,&
+            "If true, assume dBHat_sub_zeta_dtheta - dBHat_sub_theta_dzeta = 0, since this relation is implied by the MHD equilibrium relation "//&
+            "curl(B) dot grad psi = 0." //&
+            "If false, allow dBHat_sub_zeta_dtheta - dBHat_sub_theta_dzeta to be nonzero. " // boolDescription)
 
        if (geometryScheme==1) then
           call writeHDF5Field("epsilon_t", epsilon_t, "")
