@@ -1238,6 +1238,7 @@ contains
     DHat = zero
     dBHatdtheta = zero
     dBHatdzeta = zero
+    dBHatdpsiHat = zero
 
     BHat_sub_psi = zero
     dBHat_sub_psi_dtheta = zero
