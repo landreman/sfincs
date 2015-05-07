@@ -51,7 +51,7 @@ contains
        NPeriods = 10
        aHat = 0.5585d+0 ! (meters)
        psiAHat = (aHat ** 2) / two
-       rN_wish = 0.5
+       rN_wish = 0.5d+0
        inputRadialCoordinate = 3
 
        if (masterProc) then
@@ -63,7 +63,7 @@ contains
        NPeriods = 10
        aHat = 0.5400d+0 ! (meters)
        psiAHat = (aHat ** 2) / two
-       rN_wish = 0.5
+       rN_wish = 0.5d+0
        inputRadialCoordinate = 3
 
        if (masterProc) then
@@ -75,7 +75,7 @@ contains
        NPeriods = 5
        aHat = 0.5109d+0 ! (meters)
        psiAHat = -0.384935d+0 ! Tesla * meters^2 / radian
-       rN_wish = 0.5
+       rN_wish = 0.5d+0
        inputRadialCoordinate = 3
 
        if (masterProc) then
@@ -1206,7 +1206,7 @@ contains
     else
        ! psiN is inside the half grid.
        ! This is the most common case.
-       vmecRadialIndex_half(1) = floor(psiN*(vmec%ns-1) + 0.5)+1
+       vmecRadialIndex_half(1) = floor(psiN*(vmec%ns-1) + 0.5d+0)+1
        if (vmecRadialIndex_half(1) < 2) then
           ! This can occur sometimes due to roundoff error.
           vmecRadialIndex_half(1) = 2
@@ -1228,6 +1228,10 @@ contains
        else
           print "(a,i3,a,i3,a,i3,a)", " Interpolating using radial indices ",vmecRadialIndex_half(1)," and ",vmecRadialIndex_half(2),&
                " of ",vmec%ns," from vmec's half mesh."
+          print "(a,f17.14,a,f17.14)", " Weights for half mesh = ",vmecRadialWeight_half(1)," and ",vmecRadialWeight_half(2)
+          print "(a,i3,a,i3,a,i3,a)", " Interpolating using radial indices ",vmecRadialIndex_full(1)," and ",vmecRadialIndex_full(2),&
+               " of ",vmec%ns," from vmec's full mesh."
+          print "(a,f17.14,a,f17.14)", " Weights for full mesh = ",vmecRadialWeight_full(1)," and ",vmecRadialWeight_full(2)
        end if
     end if
 
