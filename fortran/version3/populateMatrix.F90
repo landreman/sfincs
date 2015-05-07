@@ -27,7 +27,7 @@
     ! 3 = matrix which multiplies f1 when evaluating the residual
 
     PetscErrorCode :: ierr
-    PetscScalar :: nHat, THat, mHat, sqrtTHat, sqrtMHat, speciesFactor, speciesFactor2
+    PetscScalar :: Z, nHat, THat, mHat, sqrtTHat, sqrtMHat, speciesFactor, speciesFactor2
     PetscScalar :: T32m, factor, LFactor, temp, temp1, temp2, xDotFactor, xDotFactor2, stuffToAdd
     PetscScalar, dimension(:), allocatable :: xb, expxb2
     PetscScalar, dimension(:,:), allocatable :: thetaPartOfTerm, localThetaPartOfTerm, xPartOfXDot
@@ -39,7 +39,7 @@
     PetscScalar, dimension(:,:), allocatable :: fToFInterpolationMatrix
     PetscScalar, dimension(:,:), allocatable :: potentialsToFInterpolationMatrix
     PetscScalar, dimension(:,:,:,:), allocatable :: CECD
-    PetscScalar :: xPartOfSource1, xPartOfSource2
+    PetscScalar :: xPartOfSource1, xPartOfSource2, geometricFactor1, geometricFactor2, geometricFactor3
     PetscScalar, dimension(:,:), allocatable :: M11, M21, M32, LaplacianTimesX2WithoutL, nuDHat
     PetscScalar, dimension(:), allocatable :: erfs, Psi_Chandra
     PetscScalar, dimension(:,:), allocatable :: CHat, M22, M33, M12, M13
@@ -215,6 +215,7 @@
        nHat = nHats(ispecies)
        THat = THats(ispecies)
        mHat = mHats(ispecies)
+       Z = Zs(ispecies)
        sqrtTHat = sqrt(THat)
        sqrtMHat = sqrt(mHat)
 
@@ -461,6 +462,172 @@
           deallocate(colIndices)
           deallocate(zetaPartOfTerm)
           deallocate(localZetaPartOfTerm)
+       end if
+
+       ! *********************************************************
+       ! Add the magnetic drift d/dtheta term:
+       ! *********************************************************
+
+       itheta = -1  ! So itheta is not used in place of ithetaRow or ithetaCol by mistake.
+       izetaRow = -1 ! So izetaRow is not used in place of izeta by mistake.
+       izetaCol = -1 ! So izetaCol is not used in place of izeta by mistake.
+       if ((whichMatrix .ne. 2) .and. (magneticDriftScheme>0)) then
+          do L = 0, (Nxi-1)
+
+             if (whichMatrix>0 .or. L < preconditioner_theta_min_L) then
+                ddthetaToUse = ddtheta
+             else
+                ddthetaToUse = ddtheta_preconditioner
+             end if
+
+             do izeta = izetaMin, izetaMax                
+                do ithetaRow = ithetaMin, ithetaMax
+                   geometricFactor1 = (BHat_sub_zeta(ithetaRow,izeta)*dBHatdpsiHat(ithetaRow,izeta) &
+                        - BHat_sub_psi(ithetaRow,izeta)*dBHatdzeta(ithetaRow,izeta))
+                   
+                   geometricFactor2 = 2 * BHat(ithetaRow,izeta) &
+                        * (dBHat_sub_psi_dzeta(ithetaRow,izeta) - dBHat_sub_zeta_dpsiHat(ithetaRow,izeta))
+
+                   if (magneticDriftScheme==1) then
+                      geometricFactor3 = BDotCurlB(ithetaRow,izeta)*BHat_sup_theta(ithetaRow,izeta) &
+                           /(BHat(ithetaRow,izeta)*DHat(ithetaRow,izeta))
+                   else
+                      geometricFactor3 = 0
+                   end if
+
+                   do ix = ixMin, Nx
+                      rowIndex = getIndex(ispecies, ix, L+1, ithetaRow, izeta, BLOCK_F)
+                      
+                      factor = Delta*THat*DHat(ithetaRow,izeta)*x(ix)*x(ix) &
+                           / (2*Z*BHat(ithetaRow,izeta)*BHat(ithetaRow,izeta)*BHat(ithetaRow,izeta))
+                   
+                      do ithetaCol = 1, Ntheta
+
+                         ! Diagonal-in-L term
+                         ell = L
+                         colIndex = getIndex(ispecies, ix, ell+1, ithetaCol, izeta, BLOCK_F)
+
+                         stuffToAdd = factor * (2*(3*L*L+3*L-2)/((two*L+3)*(2*L-1)) * geometricFactor1 &
+                              + (2*L*L+2*L-1)/((two*L+3)*(2*L-1)) * geometricFactor2 &
+                              + (-2)*L*(L+1)/((two*L+3)*(2*L-1)) * geometricFactor3)
+
+                         call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                              stuffToAdd * ddthetaToUse(ithetaRow,ithetaCol), &
+                              ADD_VALUES, ierr)
+
+                         ! Super-diagonal term
+                         if (L < Nxi-1) then
+                            ell = L+1
+                            colIndex = getIndex(ispecies, ix, ell+1, ithetaCol, izeta, BLOCK_F)
+
+                            stuffToAdd = factor*(L-1)*L/((two*L-3)*(2*L-1)) &
+                                 * (geometricFactor1 + geometricFactor2 - 3*geometricFactor3)
+
+                            call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                                 stuffToAdd * ddthetaToUse(ithetaRow,ithetaCol), &
+                                 ADD_VALUES, ierr)
+                         end if
+                   
+                         ! Sub-diagonal term
+                         if (L > 0) then
+                            ell = L-1
+                            colIndex = getIndex(ispecies, ix, ell+1, ithetaCol, izeta, BLOCK_F)
+
+                            stuffToAdd = factor*(L+2)*(L+1)/((two*L+5)*(2*L+3)) &
+                                 * (geometricFactor1 + geometricFactor2 - 3*geometricFactor3)
+
+                            call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                                 stuffToAdd * ddthetaToUse(ithetaRow,ithetaCol), &
+                                 ADD_VALUES, ierr)
+                         end if
+                      end do
+                   end do
+                end do
+             end do
+          end do
+       end if
+
+       ! *********************************************************
+       ! Add the magnetic drift d/dzeta term:
+       ! *********************************************************
+
+       izeta = -1  ! So izeta is not used in place of izetaRow or izetaCol by mistake.
+       ithetaRow = -1 ! So ithetaRow is not used in place of itheta by mistake.
+       ithetaCol = -1 ! So ithetaCol is not used in place of itheta by mistake.
+       if ((whichMatrix .ne. 2) .and. (magneticDriftScheme>0)) then
+          do L = 0, (Nxi-1)
+
+             if (whichMatrix>0 .or. L < preconditioner_zeta_min_L) then
+                ddzetaToUse = ddzeta
+             else
+                ddzetaToUse = ddzeta_preconditioner
+             end if
+
+             do itheta = ithetaMin, ithetaMax                
+                do izetaRow = izetaMin, izetaMax
+                   geometricFactor1 = (BHat_sub_psi(itheta,izetaRow)*dBHatdtheta(itheta,izetaRow) &
+                        - BHat_sub_theta(itheta,izetaRow)*dBHatdpsiHat(itheta,izetaRow))
+                   
+                   geometricFactor2 = 2 * BHat(itheta,izetaRow) &
+                        * (dBHat_sub_theta_dpsiHat(itheta,izetaRow) - dBHat_sub_psi_dtheta(itheta,izetaRow))
+
+                   if (magneticDriftScheme==1) then
+                      geometricFactor3 = BDotCurlB(itheta,izetaRow)*BHat_sup_zeta(itheta,izetaRow) &
+                           /(BHat(itheta,izetaRow)*DHat(itheta,izetaRow))
+                   else
+                      geometricFactor3 = 0
+                   end if
+
+                   do ix = ixMin, Nx
+                      rowIndex = getIndex(ispecies, ix, L+1, itheta, izetaRow, BLOCK_F)
+                      
+                      factor = Delta*THat*DHat(itheta,izetaRow)*x(ix)*x(ix) &
+                           / (2*Z*BHat(itheta,izetaRow)*BHat(itheta,izetaRow)*BHat(itheta,izetaRow))
+                   
+                      do izetaCol = 1, Nzeta
+
+                         ! Diagonal-in-L term
+                         ell = L
+                         colIndex = getIndex(ispecies, ix, ell+1, itheta, izetaCol, BLOCK_F)
+
+                         stuffToAdd = factor * (2*(3*L*L+3*L-2)/((two*L+3)*(2*L-1)) * geometricFactor1 &
+                              + (2*L*L+2*L-1)/((two*L+3)*(2*L-1)) * geometricFactor2 &
+                              + (-2)*L*(L+1)/((two*L+3)*(2*L-1)) * geometricFactor3)
+
+                         call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                              stuffToAdd * ddzetaToUse(izetaRow,izetaCol), &
+                              ADD_VALUES, ierr)
+
+                         ! Super-diagonal term
+                         if (L < Nxi-1) then
+                            ell = L+1
+                            colIndex = getIndex(ispecies, ix, ell+1, itheta, izetaCol, BLOCK_F)
+
+                            stuffToAdd = factor*(L-1)*L/((two*L-3)*(2*L-1)) &
+                                 * (geometricFactor1 + geometricFactor2 - 3*geometricFactor3)
+
+                            call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                                 stuffToAdd * ddzetaToUse(izetaRow,izetaCol), &
+                                 ADD_VALUES, ierr)
+                         end if
+                   
+                         ! Sub-diagonal term
+                         if (L > 0) then
+                            ell = L-1
+                            colIndex = getIndex(ispecies, ix, ell+1, itheta, izetaCol, BLOCK_F)
+
+                            stuffToAdd = factor*(L+2)*(L+1)/((two*L+5)*(2*L+3)) &
+                                 * (geometricFactor1 + geometricFactor2 - 3*geometricFactor3)
+
+                            call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                                 stuffToAdd * ddzetaToUse(izetaRow,izetaCol), &
+                                 ADD_VALUES, ierr)
+                         end if
+                      end do
+                   end do
+                end do
+             end do
+          end do
        end if
 
        ! *********************************************************

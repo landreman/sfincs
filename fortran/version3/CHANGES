@@ -13,14 +13,14 @@ versions ("singleSpecies" and "multiSpecies"):
   multiSpecies version.
 
 * Note that includePhi1=.true. causes changes to the radial fluxes. See the
-  notes ??? in doc/
+  notes "20150325-01 Effects on fluxes of including Phi_1.pdf" in doc/
 
-* The solver has been reorganized so that in principle, nonlinear terms can be
-  included in the kinetic equation.  Therefore, PETSc's nonlinear equation
-  solver SNES is called, and SFINCS computes a Jacobian matrix and residual.  No
-  nonlinear terms have been implemented yet.  The ability to solve nonlinear
-  equations is motivated by recent papers of Garcia-Regana et al, who found some
-  nonlinear terms to be important for stellarator impurity transport.
+* The solver has been reorganized so that nonlinear terms can be included in the
+  kinetic equation.  Therefore, PETSc's nonlinear equation solver SNES is
+  called, and SFINCS computes a Jacobian matrix and residual.  The ability to
+  solve nonlinear equations is motivated by recent papers of Garcia-Regana et
+  al, who found some nonlinear terms to be important for stellarator impurity
+  transport.
 
 * In previous versions, Boozer coordinates were hard-wired into the code.  In
   the new version, any flux coordinates (psi, theta, zeta) may be used,
@@ -61,8 +61,7 @@ versions ("singleSpecies" and "multiSpecies"):
 
 * Some new arrays involving derivatives of B are now allocated, with the goal of
   eventually including magnetic drifts.  These arrays include BHat_sub_psi,
-  dBHat_sub_psi_dtheta, dBHat_sub_theta_dzeta, etc. The magnetic drift terms are
-  not yet implemented however.
+  dBHat_sub_psi_dtheta, dBHat_sub_theta_dzeta, etc.
 
 * A new term related to temperature equilibration can be included in the kinetic
   equation by setting includeTemperatureEquilibrationTerm=.true.  This term is
@@ -91,9 +90,9 @@ versions ("singleSpecies" and "multiSpecies"):
   variables are only recognized by sfincsScan and sfincsScan_x.  The location of
   the !ss variables within the input.namelist file is unimportant.
 
-* In the sfincsOutput.h5 file, variables are no longer stored in a "/run 1/"
+* In the sfincsOutput.h5 file, variables are no longer stored in a "/run  1/"
   group.  (These groups existed only for the fortran-based scans, which are now
-  removed.)  Thus, for example, the variable previously stored in "/run 1/BHat"
+  removed.)  Thus, for example, the variable previously stored in "/run  1/BHat"
   is now stored in "/BHat".
 
 * Some variables in sfincsOutput.h5, those corresponding to outputs rather than

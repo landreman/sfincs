@@ -358,6 +358,12 @@
   ! of the electrostatic potential, including the nonlinear coupling between Phi_1 and f_1
   !nonlinear = .true.
   nonlinear = .false.
+
+  magneticDriftScheme = 0
+  ! This variable controls the poloidal and magnetic drifts, and does not affect the radial magnetic drift.
+  ! 0 = No poloidal or toroidal magnetic drift.
+  ! 1 = Use the grad-B and curvature drift, plus the parallel velocity correction v_perp^2/(2 Omega_c) \vect{b} \vect{b} dot curl \vect{b}.
+  ! 2 = Use v_m = (v|| / Omega_c) curl (v|| \vect{b}), which gives the grad-B and curvature drift plus a different parallel drift.
 /
 
 &resolutionParameters
