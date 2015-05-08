@@ -1630,7 +1630,7 @@ outdata = vmec_eqdata(mpol,ntor,ns,nfp,mnmax,itfsq,nit,iasym,gam, &
                    p_to_rmnc,p_to_rmns,p_to_zmns,p_to_zmnc,p_to_lmns,p_to_lmnc, &
                    p_to_bmnc,p_to_bmns,p_to_gmnc,p_to_gmns, &
                    p_to_bsubumnc,p_to_bsubumns,p_to_bsubvmnc,p_to_bsubvmns, &
-                   p_to_bsubsmns,p_to_bsubsmnc, &  !????? Is the order correct here????
+                   p_to_bsubsmnc,p_to_bsubsmns, &  ! Order of c and s corrected. MJL 20150505
                    p_to_bsupumnc,p_to_bsupumns,p_to_bsupvmnc,p_to_bsupvmns)
 
 end function extract_vmec_eqdata_from_fort8_data
@@ -1793,9 +1793,8 @@ outdata = vmec_eqdata(mpol,ntor,ns,nfp,mnmax,itfsq,nit,iasym,gam, &
                    p_to_rmnc,p_to_rmns,p_to_zmns,p_to_zmnc,p_to_lmns,p_to_lmnc, &
                    p_to_bmnc,p_to_bmns,p_to_gmnc,p_to_gmns, &
                    p_to_bsubumnc,p_to_bsubumns,p_to_bsubvmnc,p_to_bsubvmns, &
-                   p_to_bsubsmnc,p_to_bsubsmns, &  ! Order of s and c switched. MJL 20150505
+                   p_to_bsubsmnc,p_to_bsubsmns, &  ! Order of s and c corrected. MJL 20150505
                    p_to_bsupumnc,p_to_bsupumns,p_to_bsupvmnc,p_to_bsupvmns)
-                   !p_to_bsubsmns,p_to_bsubsmnc, &  ! Original line.  ???? I think the order is wrong here
 
 end function extract_vmec_eqdata_from_wout_data
 !-------------------------------------------------------------------------------
@@ -1996,9 +1995,8 @@ outdata = vmec_eqdata(mpol,ntor,ns,nfp,mnmax,itfsq,nit,iasym,gam, &
                    p_to_rmnc,p_to_rmns,p_to_zmns,p_to_zmnc,p_to_lmns,p_to_lmnc, &
                    p_to_bmnc,p_to_bmns,p_to_gmnc,p_to_gmns, &
                    p_to_bsubumnc,p_to_bsubumns,p_to_bsubvmnc,p_to_bsubvmns, &
-                   p_to_bsubsmnc,p_to_bsubsmns, & !Order of s and c switched. MJL 20150505
+                   p_to_bsubsmnc,p_to_bsubsmns, & !Order of s and c corrected. MJL 20150505
                    p_to_bsupumnc,p_to_bsupumns,p_to_bsupvmnc,p_to_bsupvmns)
-                   !p_to_bsubsmns,p_to_bsubsmnc, &  ! Original line.  I think the order of s and c is wrong here???
 
 end function extract_vmec_eqdata_from_wout_cdf_data
 
