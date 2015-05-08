@@ -105,7 +105,7 @@ GHat =  3.7481;
 % covariant representation of vector B. IHat is I normalized by \bar{B}\bar{R}.
 IHat = 0;
 
-% dGdpHat = G'/(\mu_0 p') \bar{B}/\bar{R} is only used for NTV calculation, see notes_NTV.pdf.
+% dGdpHat = G'/(\mu_0 p') \bar{B}/\bar{R} is not used anymore.
 dGdpHat=NaN;
 
 % End of parameters that matter only for geometryScheme=1.
@@ -121,10 +121,6 @@ fort996boozer_file='TJII-midradius_example_s_0493_fort.996';
 % geometryScheme=11 and 12 parameters:
 addpath('../../equilibria');
 %JGboozer_file='w7x-sc1.bc'; % stellarator symmetric example, geometryScheme=11
-%JGboozer_file='w7x-sc1-ecb2.bc'; % stellarator symmetric example, geometryScheme=11
-%JGboozer_file='tok-synch2-3-1m3_s0.153.bc';
-%JGboozer_file='wout_augh_tony2.bc';
-JGboozer_file='wout_augh_tony3_short.bc';
 JGboozer_file_NonStelSym='out_neo-2_n2_sym_c_m64_n16';
 normradius_wish=0.5;   %The calculation will be performed for the radius
                        %closest to this one in the JGboozer_file(_NonStelSym)
@@ -292,13 +288,13 @@ include_fDivVE_term = false;
 % Number of grid points in the poloidal direction.
 % Memory and time requirements DO depend strongly on this parameter.
 NthetaConverged = 21;
-Nthetas = floor(linspace(19,24,5));
+Nthetas = floor(linspace(19,23,3));
 
 % Number of grid points in the toroidal direction
 % (per identical segment of the stellarator.)
 % Memory and time requirements DO depend strongly on this parameter.
 NzetaConverged = 23;
-Nzetas = floor(linspace(19,24,5));
+Nzetas = floor(linspace(21,25,3));
 
 % Number of Legendre polynomials used to represent the distribution
 % function.
@@ -307,8 +303,8 @@ Nzetas = floor(linspace(19,24,5));
 % the collisionality. At high collisionality, this parameter can be as low
 % as ~ 5. At low collisionality, this parameter may need to be many 10s or
 % even > 100 for convergence.
-NxiConverged = 27;
-Nxis = floor(linspace(20,30,5));
+NxiConverged = 23;
+Nxis = floor(linspace(18,28,3));
 
 % Number of Legendre polynomials used to represent the Rosenbluth
 % potentials: (Typically 2 or 4 is plenty.)
@@ -2448,9 +2444,6 @@ end
         NTVkernel; %This is a dummy line which is only here to let the variable NTVkernel
                    %from the subroutine computeBHat() be known also in
                    %computeOutputs().     
-        NTVkernelA;
-        NTVkernelB;
-        NTVkernel2;
         computeOutputs()
         
         % ------------------------------------------------------
@@ -2543,9 +2536,6 @@ end
                 heatFluxBeforeSurfaceIntegral = -(THat^(7/2))*(GHat*dBHatdtheta-IHat*dBHatdzeta)./(2*sqrtpi*BHat.^3) ...
                     .* heatFluxBeforeSurfaceIntegral;
                 
-                NTVABeforeSurfaceIntegral = 2/iota * (THat^(5/2))./sqrtpi * NTVkernelA .* NTVBeforeSurfaceIntegral;
-                NTVBBeforeSurfaceIntegral = 2/iota * (THat^(5/2))./sqrtpi * NTVkernelB .* NTVBeforeSurfaceIntegral;
-                NTV2BeforeSurfaceIntegral = 2/iota * (THat^(5/2))./sqrtpi * NTVkernel2 .* NTVBeforeSurfaceIntegral;
                 NTVBeforeSurfaceIntegral = 2/iota * (THat^(5/2))./sqrtpi * NTVkernel .* NTVBeforeSurfaceIntegral;
 
                 FSADensityPerturbation = (1/VPrimeHat) * thetaWeights' * (densityPerturbation./(BHat.^2)) * zetaWeights;
@@ -2557,17 +2547,11 @@ end
                 heatFlux = thetaWeights' * heatFluxBeforeSurfaceIntegral * zetaWeights;
 
                 NTV = thetaWeights' * NTVBeforeSurfaceIntegral * zetaWeights;
-                NTVA = thetaWeights' * NTVABeforeSurfaceIntegral * zetaWeights;
-                NTVB = thetaWeights' * NTVBBeforeSurfaceIntegral * zetaWeights;
-                NTV2 = thetaWeights' * NTV2BeforeSurfaceIntegral * zetaWeights;
                 
                 fprintf('FSADensityPerturbation:  %g\n',FSADensityPerturbation)
                 fprintf('FSAFlow:                 %g\n',FSAFlow)
                 fprintf('FSAPressurePerturbation: %g\n',FSAPressurePerturbation)
                 fprintf('NTV:                     %g\n',NTV)
-                fprintf('NTVA:                    %g\n',NTVA)
-                fprintf('NTVB:                    %g\n',NTVB)
-                fprintf('NTV2:                    %g\n',NTV2)
                 fprintf('particleFlux:            %g\n',particleFlux)
                 fprintf('momentumFlux:            %g\n',momentumFlux)
                 fprintf('heatFlux:                %g\n',heatFlux)
@@ -3074,7 +3058,7 @@ end
                     pPrimeHat=pPrimeHat_new;
                     normradius=normradius_new;
                   end
-                  dGdpHat=(G_new-G_old)/(normradius_new^2-normradius_old^2)/pPrimeHat;
+                  dGdpHat=(G_new-G_old)/(normradius_new^2-normradius_old^2)/pPrimeHat; %not used
                   
                   disp(['The calculation is performed for radius ' ...
                         ,num2str(normradius*a),' m , r/a=',num2str(normradius)])
@@ -3231,7 +3215,7 @@ end
                     pPrimeHat=pPrimeHat_new;
                     normradius=normradius_new;
                   end
-                  dGdpHat=(G_new-G_old)/(normradius_new^2-normradius_old^2)/pPrimeHat;
+                  dGdpHat=(G_new-G_old)/(normradius_new^2-normradius_old^2)/pPrimeHat; %not used
                   
                   disp(['The calculation is performed for radius ' ...
                         ,num2str(normradius*a),' m , r/a=',num2str(normradius)])
@@ -3354,42 +3338,12 @@ end
                   end              
                 end
               end
-              gammaHat=-GHat/FSA_BHat2
-              dGdpHat
+              gammaHat=-GHat/FSA_BHat2;
               
-              NTVkernelA = 2/5 * ( ...
-                    gammaHat ./ BHat .* (iota * dBHatdtheta + dBHatdzeta) + ...
-                    1/2 * (iota * (duHatdtheta + uHat * 2./BHat .* dBHatdtheta) ...
-                           + duHatdzeta + uHat * 2./BHat .* dBHatdzeta) );
               NTVkernel = 2/5 * ( ...
                     (gammaHat + uHat)./ BHat .* (iota * dBHatdtheta + dBHatdzeta) + ...
                      iota./BHat.^3.*(GHat * dBHatdtheta + IHat * dBHatdzeta));
-              %      1/2 * (iota * duHatdtheta + duHatdzeta) );
-              
-              NTVkernelB = 2/5 * ( ...
-                    (dGdpHat + uHat)./ BHat .* (iota * dBHatdtheta + dBHatdzeta) + ...
-                     iota./BHat.^3.*(GHat * dBHatdtheta + IHat * dBHatdzeta));
-              %NTVkernelB = 2/5 * ( ...
-              %      dGdpHat ./ BHat .* (iota * dBHatdtheta + dBHatdzeta) + ...
-              %      1/2 * (iota * (duHatdtheta + uHat * 2./BHat .* dBHatdtheta) ...
-              %             + duHatdzeta + uHat * 2./BHat .* dBHatdzeta) );
-              
-              %NTVkernel2=  2/5 * ( ...
-              %      1/2 * (iota * (duHatdtheta + uHat * 2./BHat .* dBHatdtheta) ...
-              %             + duHatdzeta + uHat * 2./BHat .* dBHatdzeta) );
-              NTVkernel2=  2/5 * ( ...
-                    uHat./ BHat .* (iota * dBHatdtheta + dBHatdzeta) + ...
-                     iota./BHat.^3.*(GHat * dBHatdtheta + IHat * dBHatdzeta));
-                                
-              
-              fig(10)
-              surf([NTVkernel,NTVkernel;NTVkernel,NTVkernel]);view(0,90);colorbar;title('NTV')
-              fig(11)
-              surf([NTVkernelA,NTVkernelA;NTVkernelA,NTVkernelA]);view(0,90);colorbar;title('NTVA')
-              fig(12)
-              surf([NTVkernelB,NTVkernelB;NTVkernelB,NTVkernelB]);view(0,90);colorbar;title('NTVB')
-              fig(13)
-              surf([NTVkernel2,NTVkernel2;NTVkernel2,NTVkernel2]);view(0,90);colorbar;title('NTV2')
+                               
             end
         end
     end

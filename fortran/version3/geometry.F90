@@ -963,13 +963,6 @@ contains
           NTVKernel(itheta,izeta) = 2.0/5.0 / BHat(itheta,izeta) * ( &
                (uHat(itheta,izeta) - GHat*invFSA_BHat2) * (iota * dBHatdtheta(itheta,izeta) + dBHatdzeta(itheta,izeta)) &
                + iota * hHat(itheta,izeta) * (GHat*dBHatdtheta(itheta,izeta) - IHat*dBHatdzeta(itheta,izeta)) )
-
-!          NTVKernel(itheta,izeta) = 2.0/5.0 * ( &
-!               dGdpHat / BHat(itheta,izeta) * (iota * dBHatdtheta(itheta,izeta) + dBHatdzeta(itheta,izeta)) &
-!               + 1.0/2.0 * (iota * (duHatdtheta(itheta,izeta) &
-!                                + uHat(itheta,izeta) * 2.0/BHat(itheta,izeta) * dBHatdtheta(itheta,izeta)) &
-!                        + duHatdzeta(itheta,izeta) & 
-!                        + uHat(itheta,izeta) * 2.0/BHat(itheta,izeta) * dBHatdzeta(itheta,izeta)) )
        end do
     end do
 
