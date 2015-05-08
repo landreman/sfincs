@@ -5,7 +5,8 @@ subroutine preallocateMatrix(matrix, whichMatrix)
 
   use petscmat
   use globalVariables, only: Nx, Nxi, Ntheta, Nzeta, Nspecies, matrixSize, includePhi1, &
-       constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, nonlinear
+       constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, nonlinear, &
+       thetaDerivativeScheme, zetaDerivativeScheme
   use indices
 
   implicit none
@@ -37,13 +38,25 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   allocate(predictedNNZsForEachRow(matrixSize))
   allocate(predictedNNZsForEachRowDiagonal(matrixSize))
   ! Set tempInt1 to the expected number of nonzeros in a row of the kinetic equation block:
-  !  tempInt1 = 3*Nx + (Nspecies-1)*Nx + (5*3-1) + (5*3-1) ! Works w/o nonlinearity
+
   tempInt1 = 3*Nx &        ! ddx terms on diagonal from collision operator, and ell=L +/- 2 in xDot. (Dense in x, and tridiagonal in L.)
-       + (Nspecies-1)*Nx & ! inter-species collisional coupling. (Dense in x and species)
-       + (4*3-1) &         ! d/dtheta terms (pentadiagonal in theta with 0 diagonal, tridiagonal in L)
-       + (4*3-1) &         ! d/dzeta terms (pentadiagonal in zeta with 0 diagonal, tridiagonal in L)
-       + 2 &               ! d/dxi terms with ell = L +/- 1
+       + (Nspecies-1)*Nx & ! inter-species collisional coupling. (Dense in x and species, -Nx since we already counted the diagonal-in-species block)
        + 2                 ! particle and heat sources
+
+  if (thetaDerivativeScheme==0) then
+     tempInt1 = tempInt1 + Ntheta*5-1  ! d/dtheta terms (dense in theta, pentadiagonal in L, -1 since we already counted the diagonal)
+  else
+     tempInt1 = tempInt1 + 5*5-1       ! d/dtheta terms (pentadiagonal in theta, pentadiagonal in L, -1 since we already counted the diagonal)
+  end if
+
+  if (zetaDerivativeScheme==0) then
+     tempInt1 = tempInt1 + Nzeta*5-1  ! d/dzeta terms (dense in theta, pentadiagonal in L, -1 since we already counted the diagonal)
+  else
+     tempInt1 = tempInt1 + 5*5-1      ! d/dzeta terms (pentadiagonal in theta, pentadiagonal in L, -1 since we already counted the diagonal)
+  end if
+
+  ! We don't need to separately count the d/dxi terms, since they just add to the diagonals of the d/dtheta and d/dzeta terms we already counted.
+
   if (includePhi1) then
      tempInt1 = tempInt1 &
        + 4 &               ! d Phi_1 / d theta term
@@ -172,7 +185,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
 !!$  end if
 
   ! If any mallocs are required during matrix assembly, do not generate an error:
-  call MatSetOption(matrix, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE, ierr)
+  !call MatSetOption(matrix, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE, ierr)
   
   !if (masterProc) then
   !   print *,"Done with preallocation for whichMatrix = ",whichMatrix
