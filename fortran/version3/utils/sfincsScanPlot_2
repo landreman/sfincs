@@ -10,6 +10,7 @@ import numpy
 import inspect, math, os
 from scipy.interpolate import interp1d
 from scipy.optimize import brentq
+import pickle
 
 print "This is "+ inspect.getfile(inspect.currentframe())
 
@@ -224,40 +225,44 @@ else:
 ambipolaritySolveSucceeded = False
 if doAmbipolaritySolve:
    if max(radialCurrents)>0 and min(radialCurrents)<0:
-      # We have runs that straddle j_psi = 0, so we can find at least 1 ambipolar solution.
-      print "Solving for E_r."
-      interpolator = interp1d(Ers_sorted, radialCurrents_sorted, kind='cubic',  bounds_error=False)
-      # In the next line, 100 is arbitrary, and could be replaced by another large integer.
-      Er_fine = numpy.linspace(min(Ers), max(Ers), num=100)
-      radialCurrent_fine = interpolator(Er_fine)
-      # Approximately find points where the sign of radial current flips:
-      positiveCurrent = (radialCurrent_fine>0)
-      signFlips = (positiveCurrent[:-1] != positiveCurrent[1:])
-      numRoots = sum(1 for x in signFlips if x)
-      print "Number of roots found for E_r: ",numRoots
-      roots = []
-      #for i in range(numRoots):
-      for index,value in enumerate(signFlips):
-         if value:
-            roots.append(brentq(interpolator,Er_fine[index],Er_fine[index+1]))
-      # Convert standard array to numpy array:
-      roots = numpy.array(roots)
-      print "Roots found for the radial derivative of the electrostatic potential, for various radial coordinates:"
-      print "d PhiHat / d psiHat = ",roots * conversionFactorToddpsiHat
-      print "d PhiHat / d psiN   = ",roots * conversionFactorToddpsiN
-      print "d PhiHat / d rHat   = ",roots * conversionFactorToddrHat
-      print "d PhiHat / d rN     = ",roots * conversionFactorToddrN
+      try:
+         # We have runs that straddle j_psi = 0, so we can find at least 1 ambipolar solution.
+         print "Solving for E_r."
+         interpolator = interp1d(Ers_sorted, radialCurrents_sorted, kind='cubic',  bounds_error=False)
+         # In the next line, 100 is arbitrary, and could be replaced by another large integer.
+         Er_fine = numpy.linspace(min(Ers), max(Ers), num=100)
+         radialCurrent_fine = interpolator(Er_fine)
+         # Approximately find points where the sign of radial current flips:
+         positiveCurrent = (radialCurrent_fine>0)
+         signFlips = (positiveCurrent[:-1] != positiveCurrent[1:])
+         numRoots = sum(1 for x in signFlips if x)
+         print "Number of roots found for E_r: ",numRoots
+         roots = []
+         #for i in range(numRoots):
+         for index,value in enumerate(signFlips):
+            if value:
+               roots.append(brentq(interpolator,Er_fine[index],Er_fine[index+1]))
+         # Convert standard array to numpy array:
+         roots = numpy.array(roots)
+         print "Roots found for the radial derivative of the electrostatic potential, for various radial coordinates:"
+         print "d PhiHat / d psiHat = ",roots * conversionFactorToddpsiHat
+         print "d PhiHat / d psiN   = ",roots * conversionFactorToddpsiN
+         print "d PhiHat / d rHat   = ",roots * conversionFactorToddrHat
+         print "d PhiHat / d rN     = ",roots * conversionFactorToddrN
 
-      # Interpolate the other results onto the ambipolar Er(s):
-      print "**** Output quantities at these ambipolar E_r value(s) ****"
-      outputs_ambipolar = []
-      for iQuantity in range(numQuantities):
-         quantityInterpolator = interp1d(Ers_sorted, outputs_array[:,iQuantity], kind='cubic',  bounds_error=False)
-         thisOutput_ambipolar = quantityInterpolator(roots)
-         outputs_ambipolar.append(thisOutput_ambipolar)
-         print yAxisLabels[iQuantity],": ",thisOutput_ambipolar
+         # Interpolate the other results onto the ambipolar Er(s):
+         print "**** Output quantities at these ambipolar E_r value(s) ****"
+         outputs_ambipolar = []
+         for iQuantity in range(numQuantities):
+            quantityInterpolator = interp1d(Ers_sorted, outputs_array[:,iQuantity], kind='cubic',  bounds_error=False)
+            thisOutput_ambipolar = quantityInterpolator(roots)
+            outputs_ambipolar.append(thisOutput_ambipolar)
+            print yAxisLabels[iQuantity],": ",thisOutput_ambipolar
 
-      ambipolaritySolveSucceeded = True
+         ambipolaritySolveSucceeded = True
+      except Exception as e:
+         print "For some reason, the ambipolarity solve failed. Here is the error message:"
+         print e
    else:
       print "All runs have the same sign of radial current, so we cannot solve for the ambipolar E_r."
 else:
@@ -273,14 +278,32 @@ fig.patch.set_facecolor('white')
 numCols = math.ceil(math.sqrt(numQuantities*1.0))
 numRows = math.ceil(numQuantities*1.0/numCols)
 
+xdata = []
+ydata = []
+xlabels = []
+ylabels = []
+xscales = []
+yscales = []
+ymins = []
+ymaxs = []
+
 for iQuantity in range(numQuantities):
    plt.subplot(numRows,numCols,iQuantity+1)
-   plt.plot(Ers_sorted,outputs_array[:,iQuantity],'.-')
+   xdata.append(Ers_sorted)
+   ydata.append(outputs_array[:,iQuantity])
+   plt.plot(xdata[-1],ydata[-1],'.-')
    if ambipolaritySolveSucceeded:
       for i in range(len(roots)):
          plt.plot(roots[i],outputs_ambipolar[iQuantity][i],'xr')
-   plt.xlabel(varName)
-   plt.ylabel(yAxisLabels[iQuantity])
+   xlabels.append(varName)
+   ylabels.append(yAxisLabels[iQuantity])
+   plt.xlabel(xlabels[-1])
+   plt.ylabel(ylabels[-1])
+   ymin,ymax = plt.ylim()
+   ymins.append(ymin)
+   ymaxs.append(ymax)
+   xscales.append('linear')
+   yscales.append('linear')
    if yAxisLabels[iQuantity]==radialCurrentLabel:
       plt.plot([min(Ers),max(Ers)],[0,0],':k')
       if ambipolaritySolveSucceeded:
@@ -290,5 +313,24 @@ titleString = "Plot generated by "+ inspect.getfile(inspect.currentframe()) + "\
 ax = fig.add_axes([0,0,1,1], frameon=False)
 ax.text(0.5,0.99,titleString,horizontalalignment='center',verticalalignment='top')
 
-plt.show()
+outputFile = open('sfincsScan.dat','wb')
+scanType=2
+pickle.dump(scanType,outputFile)
+pickle.dump(numQuantities,outputFile)
+pickle.dump(numRows,outputFile)
+pickle.dump(numCols,outputFile)
+pickle.dump(xdata,outputFile)
+pickle.dump(ydata,outputFile)
+pickle.dump(xlabels,outputFile)
+pickle.dump(ylabels,outputFile)
+pickle.dump(xscales,outputFile)
+pickle.dump(yscales,outputFile)
+pickle.dump(ymins,outputFile)
+pickle.dump(ymaxs,outputFile)
+outputFile.close()
+
+
+# If this script was called with any command-line arguments, then do not actually display the plot:
+if len(sys.argv) == 1:
+   plt.show()
 
