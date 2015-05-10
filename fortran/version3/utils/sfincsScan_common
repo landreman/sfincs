@@ -89,9 +89,13 @@ def readScanVariable(varName, intOrFloatOrString):
     return returnValue
 
 
-def readVariable(varName, intOrFloat):
+def readVariable(varName, intOrFloatOrString):
     # This function reads normal fortran variables from the input.namelist file.
     # It is assumed that the input.namelist file has been loaded into the variable "inputFile".
+
+    if (intOrFloatOrString != "int") and (intOrFloatOrString != "float") and (intOrFloatOrString != "string"):
+        print "intOrFloatOrString but be int, float, or string."
+        exit(1)
 
     originalVarName = varName
     varName = varName.lower()
@@ -117,14 +121,15 @@ def readVariable(varName, intOrFloat):
             continue
 
         line5 = line4[1:].strip();
-        # python does not recognize fortran's 1d+0 scientific notation
-        line5 = line5.replace('d','e').replace('D','e')
+        if intOrFloatOrString != "string":
+            # python does not recognize fortran's 1d+0 scientific notation
+            line5 = line5.replace('d','e').replace('D','e')
 
         # Remove any comments:
         if "!" in line5:
             line5 = line5[:string.find(line5,"!")]
 
-        if intOrFloat=="int":
+        if intOrFloatOrString=="int":
             try:
                 returnValue = int(line5)
                 numValidLines += 1
@@ -132,7 +137,7 @@ def readVariable(varName, intOrFloat):
                 print "Warning! I found a definition for the variable "+originalVarName+" in "+filename+" but I was unable to parse the line to get an integer."
                 print "Here is the line in question:"
                 print line
-        elif intOrFloat=="float":
+        elif intOrFloatOrString=="float":
             try:
                 returnValue = float(line5)
                 numValidLines += 1
@@ -140,6 +145,9 @@ def readVariable(varName, intOrFloat):
                 print "Warning! I found a definition for the variable "+originalVarName+" in "+filename+" but I was unable to parse the line to get a float."
                 print "Here is the line in question:"
                 print line
+        elif intOrFloatOrString=="string":
+            returnValue = line5
+            numValidLines += 1
 
     if returnValue==None:
         print "Error! Unable to find a valid setting for the variable "+originalVarName+" in "+filename+"."
