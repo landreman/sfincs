@@ -98,11 +98,12 @@ def readVariable(varName, intOrFloatOrString):
         exit(1)
 
     originalVarName = varName
-    varName = varName.lower()
+    #varName = varName.lower()
     returnValue = None
     numValidLines = 0
     for line in inputFile:
-        line3 = line.strip().lower()
+        #line3 = line.strip().lower()
+        line3 = line.strip()
         if len(line3)<1:
             continue
 
@@ -112,7 +113,7 @@ def readVariable(varName, intOrFloatOrString):
         if len(line3) < len(varName)+2:
             continue
 
-        if not line3[:len(varName)]==varName:
+        if not line3[:len(varName)].lower()==varName.lower():
             continue
 
         line4 = line3[len(varName):].strip()

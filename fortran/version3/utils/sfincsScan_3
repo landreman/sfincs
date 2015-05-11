@@ -8,7 +8,7 @@ import os, inspect
 print "This is "+ inspect.getfile(inspect.currentframe())
 print "Beginning a scan of one specified parameter."
 
-scanVariable = readScanVariable("scanVariable","string")
+scanVariable = readScanVariable("scanVariable","string").lower()
 
 # Validate:
 warningText = "WARNING: While "+scanVariable+" is an input namelist parameter with a numerical value, it is probably a mistake to scan it."
