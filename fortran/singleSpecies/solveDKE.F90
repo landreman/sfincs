@@ -1825,8 +1825,8 @@
                      + factor * (four/15) * heatFluxFactor &
                      * dot_product(xWeights, heatFluxIntegralWeights * solnArray(indices))
 
-                NTVBeforeSurfaceIntegral(itheta,izeta) =  &
-                      NTVFactor * NTVKernel(itheta,izeta) &
+                NTVBeforeSurfaceIntegral(itheta,izeta) =  NTVBeforeSurfaceIntegral(itheta,izeta) &
+                      + NTVFactor * NTVKernel(itheta,izeta) &
                       * dot_product(xWeights, NTVIntegralWeights * solnArray(indices))
              end do
           end do
