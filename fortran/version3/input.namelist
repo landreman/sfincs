@@ -29,9 +29,50 @@
 
 !   Which type of scan to run when you run sfincsScan?
 !ss scanType = 1
-!   1: Convergence scan
-!   2: Scan of E_r
-!   (The value of scanType is ignored when you run sfincs directly.)
+!   1:  Convergence scan. (Scan the parameters in the resolutionParameters namelist.)
+!   2:  Scan of E_r.
+!   3:  Scan any one input parameter that takes a numeric value.
+!   4:  Scan radius, taking the density and temperature profiles (and their gradients) from the 'profiles' file.
+!   21: Read in a list of requested runs from a file runspec.dat. See utils/sfincsScan_21 for an example file.
+!   (As with all !ss parameters, the value of scanType is ignored when you run sfincs directly.)
+!
+!   -----------------------------------------------------------------------------
+!   Settings specific to scanType = 3:
+!   -----------------------------------------------------------------------------
+!   Name of the variable to scan: (case-insensitive)
+!ss scanVariable = min_Bmn_to_load
+!ss scanVariableMin = 1e-6
+!ss scanVariableMax = 1e-3
+!   How many values to try:
+!ss scanVariableN = 5
+!   Scan in a linear or logarithmic manner?  Valid settings are 'linear' and 'log':
+!ss scanVariableScale = log
+!
+!   -----------------------------------------------------------------------------
+!   End of settings specific to scanType = 3.
+!   -----------------------------------------------------------------------------
+!
+!   -----------------------------------------------------------------------------
+!   Settings specific to scanType = 4:
+!   -----------------------------------------------------------------------------
+!ss profilesScheme = 1
+!   Options for profilesScheme:
+!   1: 'profiles' file contains polynomial coefficients for n and T
+!   2: 'profiles' file contains n and T on a grid in rN 
+!ss Nradius = 5
+!   Based on inputRadialCoordinate, only 1 of the following pairs of values will be used:
+!ss psiHat_min = -1
+!ss psiHat_max = -1
+!ss psiN_min = -1
+!ss psiN_max = -1
+!ss rHat_min = 0
+!ss rHat_max = 1
+!ss rN_min = 0
+!ss rN_max = 1
+!   -----------------------------------------------------------------------------
+!   End of settings specific to scanType = 4.
+!   -----------------------------------------------------------------------------
+
 
   RHSMode = 2
   ! Option related to the number of right-hand sides (i.e. inhomogeneous drive terms) for which the kinetic equation is solved.

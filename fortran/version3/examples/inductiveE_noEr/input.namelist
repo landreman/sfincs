@@ -26,10 +26,24 @@
   ! By itself, the sfincs executable solves the kinetic equation(s) for a single E_r, single minor radius, and single set of numerical and
   ! physical parameters. To perform computations over a range of these parameters, you can run sfincsScan (a script in the utils/ directory)
   ! rather than running sfincs directly.
-  ! Which type of scan to run when you run sfincsScan?
+
+!   Which type of scan to run when you run sfincsScan?
 !ss scanType = 1
-!   1: Convergence scan
-!   2: Scan of E_r
+!   1:  Convergence scan. (Scan the parameters in the resolutionParameters namelist.)
+!   2:  Scan of E_r.
+!   3:  Scan any one input parameter that takes a numeric value.
+!   21: Read in a list of requested runs from a file runspec.dat. See utils/sfincsScan_21 for an example file.
+!   (As with all !ss parameters, the value of scanType is ignored when you run sfincs directly.)
+!
+!   Settings specific to scanType = 3:
+!   Name of the variable to scan: (case-insensitive)
+!ss scanVariable = min_Bmn_to_load
+!ss scanVariableMin = 1e-6
+!ss scanVariableMax = 1e-3
+!   How many values to try:
+!ss scanVariableN = 5
+!   Scan in a linear or logarithmic manner?  Valid settings are 'linear' and 'log':
+!ss scanVariableScale = log
 
   RHSMode = 1
   ! Option related to the number of right-hand sides (i.e. inhomogeneous drive terms) for which the kinetic equation is solved.

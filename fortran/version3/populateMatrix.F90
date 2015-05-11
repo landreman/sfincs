@@ -516,7 +516,7 @@
                                ell = L+2
                                colIndex = getIndex(ispecies, ix, ell+1, ithetaCol, izeta, BLOCK_F)
 
-                               stuffToAdd = factor*(L-1)*L/((two*L-3)*(2*L-1)) &
+                               stuffToAdd = factor*(L+2)*(L+1)/((two*L+5)*(2*L+3)) &
                                     * (geometricFactor1 + geometricFactor2 - 3*geometricFactor3)
 
                                call MatSetValueSparse(matrix, rowIndex, colIndex, &
@@ -529,7 +529,7 @@
                                ell = L-2
                                colIndex = getIndex(ispecies, ix, ell+1, ithetaCol, izeta, BLOCK_F)
 
-                               stuffToAdd = factor*(L+2)*(L+1)/((two*L+5)*(2*L+3)) &
+                               stuffToAdd = factor*(L-1)*L/((two*L-3)*(2*L-1)) &
                                     * (geometricFactor1 + geometricFactor2 - 3*geometricFactor3)
 
                                call MatSetValueSparse(matrix, rowIndex, colIndex, &
@@ -688,6 +688,58 @@
                      * DHat(itheta,izeta) * temp
                      
                 do ix=ixMin,Nx
+                   do L=0,(Nxi-1)
+                      rowIndex=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
+
+                      ! Diagonal-in-L term
+                      call MatSetValueSparse(matrix, rowIndex, rowIndex, &
+                           (L+1)*L/((2*L-one)*(2*L+three))*factor, ADD_VALUES, ierr)
+
+                      ! Drop the off-by-2 diagonal terms in L if this is the preconditioner
+                      ! and preconditioner_xi = 1:
+                      if (whichMatrix .ne. 0 .or. preconditioner_xi==0) then
+
+                         if (L<Nxi-2) then
+                            ! Super-super-diagonal-in-L term:
+                            ell = L+2
+                            colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
+                            call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                                 (L+3)*(L+2)*(L+1)/((two*L+5)*(2*L+three))*factor, ADD_VALUES, ierr)
+                         end if
+
+                         if (L>1) then
+                            ! Sub-sub-diagonal-in-L term:
+                            ell = L-2
+                            colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
+                            call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                                 -L*(L-1)*(L-2)/((2*L-3)*(2*L-one))*factor, ADD_VALUES, ierr)
+                         end if
+                      end if
+                   end do
+                end do
+             end do
+          end do
+
+       end if
+
+       ! ****************************************************************
+       ! Add the non-standard d/dxi term associated with magnetic drifts:
+       ! ****************************************************************
+
+       if ((magneticDriftScheme>0) .and. (whichMatrix .ne. 2)) then
+          do itheta=ithetaMin,ithetaMax
+             do izeta=izetaMin,izetaMax
+
+                temp = (dBHat_sub_psi_dzeta(itheta,izeta) - dBHat_sub_zeta_dpsiHat(itheta,izeta)) * dBHatdtheta(itheta,izeta) &
+                     + (dBHat_sub_theta_dpsiHat(itheta,izeta) - dBHat_sub_psi_dtheta(itheta,izeta)) * dBHatdzeta(itheta,izeta)
+
+                if (.not. force0RadialCurrentInEquilibrium) then
+                   temp = temp + (dBHat_sub_zeta_dtheta(itheta,izeta) - dBHat_sub_theta_dzeta(itheta,izeta)) * dBHatdpsiHat(itheta,izeta)
+                end if
+
+                do ix=ixMin,Nx
+                   factor = -Delta*DHat(itheta,izeta)*THat*x(ix)*x(ix)/(2*Z*(BHat(itheta,izeta)**3)) * temp
+                     
                    do L=0,(Nxi-1)
                       rowIndex=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
 

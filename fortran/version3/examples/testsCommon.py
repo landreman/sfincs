@@ -40,7 +40,12 @@ def readHDF5(variableName):
         raise
 
 def shouldBe(variableName, trueValue, relativeTolerance):
-    latestValue = readHDF5(variableName)
+    try:
+        latestValue = readHDF5(variableName)
+    except:
+        print "*** TEST FAILED!!  Unable to read variable "+variableName+" from the output file."
+        return 1
+
     relativeDifference = abs((latestValue - trueValue) / trueValue)
     if relativeDifference > relativeTolerance:
         print "*** TEST FAILED!!  Variable "+variableName+" should be close to "+str(trueValue)+", but it is instead "+str(latestValue)

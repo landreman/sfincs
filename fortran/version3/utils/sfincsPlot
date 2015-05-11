@@ -371,6 +371,14 @@ else:
     plt.ylabel('theta')
     plt.colorbar()
 
+    plt.subplot(numRows, numCols, 4)
+    mu0 = 1.25663706143592e-06
+    plt.contourf(zeta2D,theta2D,(BHat_sup_theta*(dBHat_sub_psi_dtheta-dBHat_sub_theta_dpsiHat)+BHat_sup_zeta*(dBHat_sub_psi_dzeta-dBHat_sub_zeta_dpsiHat)).transpose()/mu0,20)
+    plt.title('dp/dpsi computed from curl(B) cross B')
+    plt.xlabel('zeta')
+    plt.ylabel('theta')
+    plt.colorbar()
+
     plt.subplot(numRows, numCols, 5)
     plt.contourf(zeta,theta,(DHat*(dBHat_sub_zeta_dtheta-dBHat_sub_theta_dzeta)).transpose(),20)
     plt.title('curl(B) dot grad psiHat')
