@@ -409,7 +409,8 @@
                         * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index)
 
                    NTVBeforeSurfaceIntegral(ispecies,itheta,izeta) &
-                        = NTVFactor * NTVKernel(itheta,izeta)&
+                        = NTVBeforeSurfaceIntegral(ispecies,itheta,izeta) &
+                        + NTVFactor * NTVKernel(itheta,izeta)&
                         * xWeights(ix)*NTVIntegralWeights(ix)*solutionWithDeltaFArray(index) 
 
                    L = 3
