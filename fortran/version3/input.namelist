@@ -56,8 +56,8 @@
 !   -----------------------------------------------------------------------------
 !ss profilesScheme = 1
 !   Options for profilesScheme:
-!   1: 'profiles' file contains polynomial coefficients for n and T
-!   2: 'profiles' file contains n and T on a grid in one of the 4 available radial coordinates.
+!   1: 'profiles' file contains n and T on a grid in one of the 4 available radial coordinates.
+!   2: 'profiles' file contains polynomial coefficients for n and T
 !ss Nradius = 5
 !   Based on inputRadialCoordinate, only 1 of the following pairs of values will be used:
 !ss psiHat_min = -1
