@@ -11,6 +11,7 @@ print "This is "+ inspect.getfile(inspect.currentframe())
 print "Beginning a scan over radius."
 
 # Determine radii to use, and n & T at those radii:
+skipExistingDirectories = True
 execfile(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/radialScans")
 
 while True:
@@ -58,8 +59,8 @@ for runNum in range(len(radii)):
         if namelistLineContains(line,radiusName+"_wish"):
             line = "  "+radiusName+"_wish = "+str(radii[runNum])+" ! Set by sfincsScan.\n"
 
-        if namelistLineContains(line,"inputRadialCoordinateForGradients"):
-            line = "  inputRadialCoordinateForGradients = "+str(inputRadialCoordinate)+" ! Set by sfincsScan.\n"
+        #if namelistLineContains(line,"inputRadialCoordinateForGradients"):
+        #    line = "  inputRadialCoordinateForGradients = "+str(inputRadialCoordinate)+" ! Set by sfincsScan.\n"
 
         if namelistLineContains(line,"nHats"):
             line = "  nHats ="
@@ -67,8 +68,8 @@ for runNum in range(len(radii)):
                 line += " "+str(nHats[ispecies][runNum])
             line += " ! Set by sfincsScan.\n"
 
-        if namelistLineContains(line,"dnHatd"+radiusName+"s"):
-            line = "  dnHatd"+radiusName+"s ="
+        if namelistLineContains(line,"dnHatd"+radiusNameForGradients+"s"):
+            line = "  dnHatd"+radiusNameForGradients+"s ="
             for ispecies in range(Nspecies):
                 line += " "+str(dnHatdradii[ispecies][runNum])
             line += " ! Set by sfincsScan.\n"
@@ -79,8 +80,8 @@ for runNum in range(len(radii)):
                 line += " "+str(THats[ispecies][runNum])
             line += " ! Set by sfincsScan.\n"
 
-        if namelistLineContains(line,"dTHatd"+radiusName+"s"):
-            line = "  dTHatd"+radiusName+"s ="
+        if namelistLineContains(line,"dTHatd"+radiusNameForGradients+"s"):
+            line = "  dTHatd"+radiusNameForGradients+"s ="
             for ispecies in range(Nspecies):
                 line += " "+str(dTHatdradii[ispecies][runNum])
             line += " ! Set by sfincsScan.\n"

@@ -3,6 +3,7 @@
 # This python script plots the output of a SFINCS scan for scanType = 3
 # This is a scan in which any 1 numeric input parameter is varied.
 
+inputFilename = "input.namelist"
 outputFilename = "sfincsOutput.h5"
 
 import matplotlib.pyplot as plt
@@ -17,12 +18,13 @@ print "This is "+ inspect.getfile(inspect.currentframe())
 numRuns = 0
 radii = []
 outputs = []
+radii_wish = []
+radii_actual = []
 
 # Load some other required subroutines:
 execfile(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_common")
 
 # Determine which variable was scanned by looking at input.namelist in the main directory:
-inputFilename = "input.namelist"
 with open(inputFilename, 'r') as f:
     inputFile = f.readlines()
 inputRadialCoordinate = readVariable("inputRadialCoordinate","int")
@@ -108,6 +110,10 @@ for directory in directories:
         exit(1)
 
     radii.append(f[radiusName][()])
+    radii_actual.append(f[radiusName][()])
+    with open(directory+"/"+inputFilename, 'r') as localInputFile:
+        inputFile = localInputFile.readlines()
+    radii_wish.append(readVariable(radiusName+"_wish","float"))
 
     FSABFlow = f["FSABFlow"][()]
     FSABjHat = f["FSABjHat"][()]
@@ -210,6 +216,28 @@ else:
          yAxisLabels.append("FSABjHat")
             
 
+
+# ***************************************************
+# Plot actual vs "wish" radii
+# ***************************************************
+
+fig = plt.figure(2)
+fig.patch.set_facecolor('white')
+
+maxRadius = max([max(radii_wish), max(radii_actual), 0])
+minRadius = min([min(radii_wish), min(radii_actual), 0])
+
+plt.plot([minRadius, maxRadius], [minRadius, maxRadius],':k')
+plt.plot(radii_wish, radii_actual,'.')
+plt.xlabel(radiusName+"_wish")
+plt.ylabel("Actual "+radiusName+" used")
+plt.title("All points should lie exactly on the dashed line!")
+# In matplotlib plots, it is sometimes hard to see the first or last points, so add some margin:
+difference = maxRadius - minRadius
+maxRadius += 0.05*difference
+minRadius -= 0.05*difference
+plt.xlim(minRadius,maxRadius)
+plt.ylim(minRadius,maxRadius)
 
 # ***************************************************
 # Now make the plot

@@ -85,6 +85,10 @@ for whichFile in range(1,len(sys.argv)):
         if numCols[-1] != numCols[0]:
             print "ERROR: numCols is not consistent among the directories you requested."
             exit(1)
+        for i in range(numQuantities[0]):
+            if xlabels[-1][i] != xlabels[0][i]:
+                print "ERROR: xlabels are not consistent among the directories you requested."
+                exit(1)
 
 # ***************************************************
 # Now make the plot
