@@ -18,8 +18,8 @@ numRuns = 0
 scanVariableValues = []
 outputs = []
 
-# Load some other required subroutines:
-execfile(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_common")
+## Load some other required subroutines:
+#execfile(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_common")
 
 # Determine which variable was scanned by looking at input.namelist in the main directory:
 inputFilename = "input.namelist"

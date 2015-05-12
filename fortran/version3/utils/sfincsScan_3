@@ -298,7 +298,7 @@ for runNum in range(len(scanVariableValues)):
     f = open(filename,"w")
     for line in inputFile:
         if namelistLineContains(line,scanVariable):
-            line = "  "+scanVariable+" = "+str(scanVariableValues[runNum])+" ! Set by sfincsScan.\n"
+            line = "  "+scanVariable+" = "+str(scanVariableValues[runNum])+" ! Set by sfincsScan_3.\n"
         f.write(line)
     f.close()
 

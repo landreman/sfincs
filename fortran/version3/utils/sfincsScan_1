@@ -292,21 +292,21 @@ for runNum in range(numRunsInScan):
     f = open(filename,"w")
     for line in inputFile:
         if namelistLineContains(line,"Ntheta"):
-            line = "  Ntheta = "+str(parametersForScan[runNum][0])+" ! Set by sfincsScan.\n"
+            line = "  Ntheta = "+str(parametersForScan[runNum][0])+" ! Set by sfincsScan_1.\n"
         if namelistLineContains(line,"Nzeta"):
-            line = "  Nzeta = "+str(parametersForScan[runNum][1])+" ! Set by sfincsScan.\n"
+            line = "  Nzeta = "+str(parametersForScan[runNum][1])+" ! Set by sfincsScan_1.\n"
         if namelistLineContains(line,"Nxi"):
-            line = "  Nxi = "+str(parametersForScan[runNum][2])+" ! Set by sfincsScan.\n"
+            line = "  Nxi = "+str(parametersForScan[runNum][2])+" ! Set by sfincsScan_1.\n"
         if namelistLineContains(line,"NL"):
-            line = "  NL = "+str(parametersForScan[runNum][3])+" ! Set by sfincsScan.\n"
+            line = "  NL = "+str(parametersForScan[runNum][3])+" ! Set by sfincsScan_1.\n"
         if namelistLineContains(line,"Nx"):
-            line = "  Nx = "+str(parametersForScan[runNum][4])+" ! Set by sfincsScan.\n"
+            line = "  Nx = "+str(parametersForScan[runNum][4])+" ! Set by sfincsScan_1.\n"
         if namelistLineContains(line,"NxPotentialsPerVth"):
-            line = "  NxPotentialsPerVth = "+str(parametersForScan[runNum][5])+" ! Set by sfincsScan.\n"
+            line = "  NxPotentialsPerVth = "+str(parametersForScan[runNum][5])+" ! Set by sfincsScan_1.\n"
         if namelistLineContains(line,"xMax"):
-            line = "  xMax = "+str(parametersForScan[runNum][6])+" ! Set by sfincsScan.\n"
+            line = "  xMax = "+str(parametersForScan[runNum][6])+" ! Set by sfincsScan_1.\n"
         if namelistLineContains(line,"solverTolerance"):
-            line = "  solverTolerance = "+str(parametersForScan[runNum][7])+" ! Set by sfincsScan.\n"
+            line = "  solverTolerance = "+str(parametersForScan[runNum][7])+" ! Set by sfincsScan_1.\n"
         f.write(line)
     f.close()
 

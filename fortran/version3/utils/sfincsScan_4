@@ -57,34 +57,31 @@ for runNum in range(len(radii)):
     f = open(filename,"w")
     for line in inputFile:
         if namelistLineContains(line,radiusName+"_wish"):
-            line = "  "+radiusName+"_wish = "+str(radii[runNum])+" ! Set by sfincsScan.\n"
-
-        #if namelistLineContains(line,"inputRadialCoordinateForGradients"):
-        #    line = "  inputRadialCoordinateForGradients = "+str(inputRadialCoordinate)+" ! Set by sfincsScan.\n"
+            line = "  "+radiusName+"_wish = "+str(radii[runNum])+" ! Set by sfincsScan_4.\n"
 
         if namelistLineContains(line,"nHats"):
             line = "  nHats ="
             for ispecies in range(Nspecies):
                 line += " "+str(nHats[ispecies][runNum])
-            line += " ! Set by sfincsScan.\n"
+            line += " ! Set by sfincsScan_4.\n"
 
         if namelistLineContains(line,"dnHatd"+radiusNameForGradients+"s"):
             line = "  dnHatd"+radiusNameForGradients+"s ="
             for ispecies in range(Nspecies):
                 line += " "+str(dnHatdradii[ispecies][runNum])
-            line += " ! Set by sfincsScan.\n"
+            line += " ! Set by sfincsScan_4.\n"
 
         if namelistLineContains(line,"THats"):
             line = "  THats ="
             for ispecies in range(Nspecies):
                 line += " "+str(THats[ispecies][runNum])
-            line += " ! Set by sfincsScan.\n"
+            line += " ! Set by sfincsScan_4.\n"
 
         if namelistLineContains(line,"dTHatd"+radiusNameForGradients+"s"):
             line = "  dTHatd"+radiusNameForGradients+"s ="
             for ispecies in range(Nspecies):
                 line += " "+str(dTHatdradii[ispecies][runNum])
-            line += " ! Set by sfincsScan.\n"
+            line += " ! Set by sfincsScan_4.\n"
 
         f.write(line)
     f.close()

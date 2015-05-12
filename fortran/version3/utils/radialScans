@@ -30,26 +30,6 @@ from math import pi, sqrt
 # We now begin the first of these tasks.
 ######################################################################################3
 
-def findAvailableRadiiInBC():
-    # Parse Joachim Geiger's .bc file format to determine psiAHat, aHat, and the available psiN.
-    available_psiN = []
-    with open(equilibriumFile, 'r') as f:
-        equilibriumFileLines = f.readlines()
-    lineNum = 0
-    while equilibriumFileLines[lineNum][0:2]=="CC":
-        lineNum += 1
-    header = equilibriumFileLines[lineNum+1].split()
-    psiAHat = float(header[4])/(2*pi)
-    aHat = float(header[5])
-    print "psiAHat = ",psiAHat
-    print "aHat = ",aHat
-    for whichLine in range(lineNum+2,len(equilibriumFileLines)):
-        if "iota" in equilibriumFileLines[whichLine]:
-            available_psiN.append(float(equilibriumFileLines[whichLine+2].split()[0]))
-    print "available_psiN:"
-    print available_psiN
-    return available_psiN
-
 def roundRadii(radii,available_psiN):
     print "Rounding requested radii to match available radii in the magnetic equilibrium file."
     # Both VMEC and .bc formats provide a grid of psiN.
@@ -160,9 +140,27 @@ equilibriumFile = readVariable("equilibriumFile","string")
 equilibriumFile = equilibriumFile[1:-1]
 
 if geometryScheme==11 or geometryScheme==12:
-    radii = roundRadii(radii,findAvailableRadiiInBC())
+    # Parse Joachim Geiger's .bc file format to determine psiAHat, aHat, and the available psiN.
+    available_psiN = []
+    with open(equilibriumFile, 'r') as f:
+        equilibriumFileLines = f.readlines()
+    lineNum = 0
+    while equilibriumFileLines[lineNum][0:2]=="CC":
+        lineNum += 1
+    header = equilibriumFileLines[lineNum+1].split()
+    psiAHat = float(header[4])/(2*pi)
+    aHat = float(header[5])
+    print "psiAHat = ",psiAHat
+    print "aHat = ",aHat
+    for whichLine in range(lineNum+2,len(equilibriumFileLines)):
+        if "iota" in equilibriumFileLines[whichLine]:
+            available_psiN.append(float(equilibriumFileLines[whichLine+2].split()[0]))
+    print "available_psiN:"
+    print available_psiN
+    radii = roundRadii(radii,available_psiN)
 
 if geometryScheme==5:
+    # Read VMEC file to determine psiAHat, aHat, and the available psiN.
     try:
         f = netcdf.netcdf_file(equilibriumFile,'r')
     except:
@@ -457,7 +455,7 @@ if profilesScheme == 1:
     readRadialCoordinateYet = False
     for line in profilesFile:
         line = line.strip().lower()
-        if line[0] == '!' or line[0] == '#':
+        if line[0] == '!' or line[0] == '#' or line[0] == '%':
             continue
         if not readRadialCoordinateYet:
             # This must be the first non-comment line in the file.

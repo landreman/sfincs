@@ -121,6 +121,7 @@ for directory in directories:
           for irow in range(transportMatrix.shape[0]):
              results.append(transportMatrix[irow,icol])
        outputs.append(results)
+       radialCurrents.append(0)
     else:
        # RHSMode = 1
        if Nspecies==1:
@@ -171,6 +172,8 @@ conversionFactorToddrN     = f['dPhiHatdrN'][()]     / f[varName][()]
 Ers_sorted = sorted(Ers)
 outputs_sorted = []
 radialCurrents_sorted = []
+print "Here comes radialCurrents"
+print radialCurrents
 for Er in Ers_sorted:
    outputs_sorted.append(outputs[Ers.index(Er)])
    radialCurrents_sorted.append(radialCurrents[Ers.index(Er)])

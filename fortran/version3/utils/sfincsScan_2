@@ -49,14 +49,16 @@ print
 print "Here are the directories that will be created:"
 print directories
 
-while True:
-    proceed=raw_input("Should I go ahead and launch these "+str(len(Ers))+" jobs? [y/n] ")
-    if proceed=="y" or proceed=="n":
-        break
-    print "You must enter either y or n."
+if waitBeforeSubmitting:
+    while True:
+        proceed=raw_input("Should I go ahead and launch these "+str(len(Ers))+" jobs? [y/n] ")
+        if proceed=="y" or proceed=="n":
+            break
+        print "You must enter either y or n."
 
-if proceed=="n":
-    exit(0)
+    if proceed=="n":
+        exit(0)
+
 print "launching jobs..."
 
 # Read in the job.sfincsScan file:
@@ -92,7 +94,7 @@ for runNum in range(len(Ers)):
     f = open(filename,"w")
     for line in inputFile:
         if namelistLineContains(line,varName):
-            line = "  "+varName+" = "+str(Ers[runNum])+" ! Set by sfincsScan.\n"
+            line = "  "+varName+" = "+str(Ers[runNum])+" ! Set by sfincsScan_2.\n"
         f.write(line)
     f.close()
 
