@@ -297,6 +297,16 @@ subroutine validateInput()
      stop
   end if
 
+  if (magneticDriftScheme>0) then
+     if (masterProc) then
+     print *,line
+     print *,line
+     print *,"**   WARNING: magneticDriftScheme>0 is buggy. Do not believe these results."
+     print *,line
+     print *,line
+     end if
+  end if
+
   if ((magneticDriftScheme>0) .and. (geometryScheme .ne. 5)) then
      if (masterProc) then
         print *,"Error! You requested that poloidal/toroidal magnetic drifts be included (magneticDriftScheme>0)"
