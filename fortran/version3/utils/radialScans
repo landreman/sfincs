@@ -22,32 +22,101 @@ import matplotlib.pyplot as plt
 import matplotlib
 from math import pi, sqrt
 
-######################################################################################3
+#######################################################################################
 # There are 2 main parts to this script:
-# 1: Determine the radii to use.
+# 1: Determine the grid of radius values to use.
 # 2: Determine n, T, and their gradients at these radii.
 # 
-# We now begin the first of these tasks.
-######################################################################################3
+# First however come some general functions related to the different available 
+# definitions of radius.
+#######################################################################################
+
+def getRadialCoordinateName(coordinate):
+    if coordinate == 0:
+        return "psiHat"
+    elif coordinate == 1:
+        return "psiN"
+    elif coordinate == 2:
+        return"rHat"
+    elif coordinate == 3:
+        return "rN"
+    else:
+        print "Error! Invalid radial coordinate"
+        raise
+
+def convertRadiiToPsiN(coordinate, oldRadii):
+    # For this function, 'coordinate' describes the OLD coordinate,
+    # and the NEW coordinate is psiN.
+
+    if coordinate == 0:
+        # psiHat
+        return [x/psiAHat for x in oldRadii]
+    elif coordinate == 1:
+        # psiN
+        return [x for x in oldRadii]
+    elif coordinate == 2:
+        # rHat
+        return [(x/aHat)**2 for x in oldRadii]
+    elif coordinate == 3:
+        # rN
+        return [x*x for x in oldRadii]
+    else:
+        print "ERROR! Should not get here."
+        raise
+
+def convertRadiiFromPsiN(coordinate, oldRadii):
+    # For this function, 'coordinate' describes the NEW coordinate,
+    # and the OLD coordinate is psiN.
+
+    if coordinate == 0:
+        # psiHat
+        return [x*psiAHat for x in oldRadii]
+    elif coordinate == 1:
+        # psiN
+        return [x for x in oldRadii]
+    elif coordinate == 2:
+        # rHat
+        return [sqrt(x)*aHat for x in oldRadii]
+    elif coordinate == 3:
+        # rN
+        return [sqrt(x) for x in oldRadii]
+    else:
+        print "ERROR! Should not get here."
+        raise
+
+def convertGradientFromddpsiN(coordinate, radii_psiN):
+    # This function returns the factor which, when multiplied by dnHat/dpsiN, gives dnHat/d(coordinate).
+    if coordinate == 0:
+        # psiHat
+        return [1.0/psiAHat for psiN in radii_psiN]
+    elif coordinate == 1:
+        # psiN
+        return [1.0 for psiN in radii_psiN]
+    elif coordinate == 2:
+        # rHat
+        return [2*sqrt(psiN) for psiN in radii_psiN]
+    elif coordinate == 3:
+        # rN
+        return [2*sqrt(psiN)/aHat for psiN in radii_psiN]
+    else:
+        print "ERROR! Should not get here."
+        raise
+
+def convertGradientToddpsiN(coordinate, radii_psiN):
+    # This function returns the factor which, when multiplied by dnHat/d(coordinate), gives dnHat/dpsiN.
+    return [1.0/x for x in convertGradientFromddpsiN(coordinate, radii_psiN)]
+
+
+#######################################################################################
+# We now begin the first main task, finding the grid of values for radius to use.
+# This part is complicated because we may want the grid to only include surfaces which
+# are present in the magnetic equilibrium file.
+#######################################################################################
 
 def roundRadii(radii,available_psiN):
     print "Rounding requested radii to match available radii in the magnetic equilibrium file."
     # Both VMEC and .bc formats provide a grid of psiN.
-    if inputRadialCoordinate==0:
-        # psiHat
-        availableRadii = [x*psiAHat for x in available_psiN]
-    elif inputRadialCoordinate==1:
-        # psiN
-        availableRadii = available_psiN
-    elif inputRadialCoordinate==2:
-        # rHat
-        availableRadii = [sqrt(x)*aHat for x in available_psiN]
-    elif inputRadialCoordinate==3:
-        # rN
-        availableRadii = [sqrt(x) for x in available_psiN]
-    else:
-        print "Invalid inputRadialCoordinate: ",inputRadialCoordinate
-
+    availableRadii = convertRadiiFromPsiN(inputRadialCoordinate,available_psiN)
     if inputRadialCoordinate != 1:
         print "Available radii for the selected inputRadialCoordinate:"
         print availableRadii
@@ -68,43 +137,20 @@ geometryScheme = readVariable("geometryScheme","int")
 if geometryScheme==5 or geometryScheme==11 or geometryScheme==12:
     pass
 else:
-    print "Error! For scans over radius, you must use geometryScheme=5, 11, or 12."
+    print "Error! For scans over radius, you must use geometryScheme = 5, 11, or 12."
     exit(1)
 
 Nradius = readScanVariable("Nradius","int")
 inputRadialCoordinate = readVariable("inputRadialCoordinate","int")
 inputRadialCoordinateForGradients = readVariable("inputRadialCoordinateForGradients","int")
-#if inputRadialCoordinateForGradients != inputRadialCoordinate:
-#    print "Warning: This script will overwrite the requested value of inputRadialCoordinateForGradients to match inputRadialCoordinate."
 
-if inputRadialCoordinate==0:
-    radiusName = "psiHat"
-elif inputRadialCoordinate==1:
-    radiusName = "psiN"
-elif inputRadialCoordinate==2:
-    radiusName = "rHat"
-elif inputRadialCoordinate==3:
-    radiusName = "rN"
-else:
-    print "Error! Invalid inputRadialCoordinate."
-    exit(1)
-
-if inputRadialCoordinateForGradients==0:
-    radiusNameForGradients = "psiHat"
-elif inputRadialCoordinateForGradients==1:
-    radiusNameForGradients = "psiN"
-elif inputRadialCoordinateForGradients==2:
-    radiusNameForGradients = "rHat"
-elif inputRadialCoordinateForGradients==3:
-    radiusNameForGradients = "rN"
-else:
-    print "Error! Invalid inputRadialCoordinateForGradients."
-    exit(1)
+radiusName             = getRadialCoordinateName(inputRadialCoordinate)
+radiusNameForGradients = getRadialCoordinateName(inputRadialCoordinateForGradients)
 
 radius_min = readScanVariable(radiusName+"_min","float")
 radius_max = readScanVariable(radiusName+"_max","float")
-if radius_max <= radius_min:
-    print "Error! Minimum requested radius must be < maximum requested radius."
+if radius_max < radius_min:
+    print "Error! Minimum requested radius must be <= maximum requested radius."
     exit(1)
 
 # Do some basic validation:
@@ -206,12 +252,12 @@ if inputRadialCoordinate==2 and radius_max > aHat:
 print "Here are the values of "+radiusName+" we will use for this scan:"
 print radii
 
-#exit(0)
-
 directories = [radiusName+"_"+str(radius) for radius in radii]
 
 # For a scan over only radius, we do not want to repeat radii that were already run.
 # But for a scan over Er at each radius, we do want to revisit every radius.
+# To make this switch possible, the variable 'skipExistingDirectories' should be set in whichever
+# sfincsScan_N script call this script.
 if skipExistingDirectories:
     radii_copy = list(radii)
     directories_copy = list(directories)
@@ -225,22 +271,10 @@ if skipExistingDirectories:
             radii.remove(radii_copy[i])
             directories.remove(directory)
 
-# For future use, convert radii into psiN:
-if inputRadialCoordinate == 0:
-    # psiHat
-    radii_psiN = [x/psiAHat for x in radii]
-elif inputRadialCoordinate == 1:
-    # psiN
-    radii_psiN = radii
-elif inputRadialCoordinate == 2:
-    # rHat
-    radii_psiN = [(x/aHat)**2 for x in radii]
-elif inputRadialCoordinate == 3:
-    # rN
-    radii_psiN = [x**2 for x in radii]
-else:
-    print "ERROR! Should not get here."
-    exit(1)
+# For future use, convert radii into psiN, and build a "fine" radial grid for plotting:
+radii_psiN = convertRadiiToPsiN(inputRadialCoordinate,radii)
+psiN_fine = numpy.linspace(0.0, 1.0, 200)
+radii_fine = convertRadiiFromPsiN(inputRadialCoordinate,psiN_fine)
 
 ######################################################################################3
 # At this point, the radii have been finalized.
@@ -262,25 +296,8 @@ print "Number of species determined from the input.namelist file: ",Nspecies
 
 def convertGradients():
     # Given d(n or T)HatdpsiN, multiply by gradientFactor to convert to dnHatd(inputRadialCoordinateForGradients) 
-    if inputRadialCoordinateForGradients == 0:
-        # psiHat
-        gradientFactor = [1.0/psiAHat for psiN in radii_psiN]
-        gradientFactorFine = [1.0/psiAHat for psiN in psiN_fine]
-    elif inputRadialCoordinateForGradients == 1:
-        # psiN
-        gradientFactor = [1.0 for psiN in radii_psiN]
-        gradientFactorFine = [1.0 for psiN in psiN_fine]
-    elif inputRadialCoordinateForGradients == 2:
-        # rHat
-        gradientFactor = [2*sqrt(psiN) for psiN in radii_psiN]
-        gradientFactorFine = [2*sqrt(psiN) for psiN in psiN_fine]
-    elif inputRadialCoordinateForGradients == 3:
-        # rN
-        gradientFactor = [2*sqrt(psiN)/aHat for psiN in radii_psiN]
-        gradientFactorFine = [2*sqrt(psiN)/aHat for psiN in psiN_fine]
-    else:
-        print "ERROR! Should not get here."
-        exit(1)
+    gradientFactor     = convertGradientFromddpsiN(inputRadialCoordinateForGradients, radii_psiN)
+    gradientFactorFine = convertGradientFromddpsiN(inputRadialCoordinateForGradients, psiN_fine)
     
     for ispecies in range(Nspecies):
         thisSpecies_dnHatdradii = []
@@ -305,6 +322,7 @@ def plotProposedProfiles():
     fig.patch.set_facecolor('white')
     # Set the default color cycle:
     matplotlib.rcParams['axes.color_cycle'] = ['b', 'r', 'c','y','g','k']
+
     if Nspecies>1:
         numQuantities = 2*(2*Nspecies+2)+2
     else:
@@ -318,6 +336,7 @@ def plotProposedProfiles():
     else:
         fineLabel="data polynomial"
 
+    # Plot NErs:
     plt.subplot(numRows,numCols,plotNum)
     plt.plot(radii_fine,NErs_fine,'-',label=fineLabel)
     plt.plot(radii,NErs,'x',label="requested")
@@ -328,6 +347,7 @@ def plotProposedProfiles():
     plt.legend(loc=0, borderaxespad=0., prop={'size':9})
     plotNum += 1
 
+    # Plot dPhiHatdXXX_min and dPhiHatdXXX_max:
     plt.subplot(numRows,numCols,plotNum)
     plt.plot(radii_fine,dPhiHatdradius_min_fine,'-b',label=fineLabel)
     plt.plot(radii,dPhiHatdradius_min,'xr',label="requested")
@@ -425,7 +445,6 @@ def plotProposedProfiles():
     ax.text(0.5,0.99,titleString,horizontalalignment='center',verticalalignment='top')
     plt.show(block=False)
 
-
 # Read in profile information.
 try:
     with open(profilesFilename, 'r') as f:
@@ -434,16 +453,32 @@ except:
     print "ERROR! Unable to read profiles file."
     raise
 
-profilesScheme = readScanVariable("profilesScheme","int")
 dnHatdradii = []
 dTHatdradii = []
 dnHatdradii_fine = []
 dTHatdradii_fine = []
+
+nHats = []
+nHats_fine = []
+THats = []
+THats_fine = []
+dnHatdpsiN = []
+dnHatdpsiN_fine = []
+dTHatdpsiN = []
+dTHatdpsiN_fine = []
+NErs = []
+NErs_fine = []
+dPhiHatdradius_max = []
+dPhiHatdradius_max_fine = []
+dPhiHatdradius_min = []
+dPhiHatdradius_min_fine = []
+
+profilesScheme = readScanVariable("profilesScheme","int")
 if profilesScheme == 1:
     #####################################################
     # Read in n and T for each species on a grid.
     #####################################################
-    data_radius = []
+    data_oldRadius = []
     data_nHats = []
     data_THats = []
     data_NErs = []
@@ -460,10 +495,10 @@ if profilesScheme == 1:
         if not readRadialCoordinateYet:
             # This must be the first non-comment line in the file.
             readRadialCoordinateYet = True
-            if line != 'psihat' and line != 'psin' and line != 'rhat' and line != 'rn':
-                print "ERROR!  The first non-comment line in the 'profiles' file must be the radial coordinate (psiHat, psiN, rHat, or rN)"
+            if line != '0' and line != '1' and line != '2' and line != '3':
+                print "ERROR!  The first non-comment line in the 'profiles' file must be an integer corresponding to the radial coordinate (0=psiHat, 1=psiN, 2=rHat, or 3=rN)"
                 exit(1)
-            profilesRadialCoordinate = line
+            profilesRadialCoordinate = int(line)
             continue
         print line.split()
         if Nspecies*2+4 != len(line.split()):
@@ -472,7 +507,7 @@ if profilesScheme == 1:
             exit(1)
         lineSplit = line.split()
         try:
-            data_radius.append(float(lineSplit[0]))
+            data_oldRadius.append(float(lineSplit[0]))
             data_NErs.append(float(lineSplit[1]))
             data_dPhiHatdradius_min.append(float(lineSplit[2]))
             data_dPhiHatdradius_max.append(float(lineSplit[3]))
@@ -485,68 +520,19 @@ if profilesScheme == 1:
             raise
 
     print "Here are the radial coordinates read from the profiles file:"
-    print data_radius
+    print data_oldRadius
     for i in range(Nspecies):
         print "Here comes the data for nHat of species "+str(i+1)+" read from the profiles file:"
         print data_nHats[i]
         print "Here comes the data for THat of species "+str(i+1)+" read from the profiles file:"
         print data_THats[i]
 
-    # Convert radii from the profiles file into psiN:
-    #radii_fine = numpy.linspace(min(data_radius), max(data_radius), 200)
-    if profilesRadialCoordinate == 'psihat':
-        data_psiN = [x/psiAHat for x in data_radius]
-        #psiN_fine = [x/psiAHat for x in radii_fine]
-    elif profilesRadialCoordinate == 'psin':
-        data_psiN = data_radius
-        #psiN_fine = radii_fine
-    elif profilesRadialCoordinate == 'rhat':
-        data_psiN = [(x/aHat)**2 for x in data_radius]
-        #psiN_fine = [(x/aHat)**2 for x in radii_fine]
-    elif profilesRadialCoordinate == 'rn':
-        data_psiN = [x**2 for x in data_radius]
-        #psiN_fine = [x**2 for x in radii_fine]
-    else:
-        print "ERROR! Should not get here."
-        exit(1)
-
-    # Convert data radii from psiN to inputRadialCoordinate:
-    psiN_fine = numpy.linspace(min(data_psiN), max(data_psiN), 200)
-    if inputRadialCoordinate == 0:
-        # psiHat
-        data_radius = [x*psiAHat for x in data_psiN]
-        radii_fine  = [x*psiAHat for x in psiN_fine]
-    elif inputRadialCoordinate == 1:
-        # psiN
-        data_radius = data_psiN
-        radii_fine  = psiN_fine
-    elif inputRadialCoordinate == 2:
-        # rHat
-        data_radius = [aHat*sqrt(x) for x in data_psiN]
-        radii_fine  = [aHat*sqrt(x) for x in psiN_fine]
-    elif inputRadialCoordinate == 3:
-        # rN
-        data_radius = [sqrt(x) for x in data_psiN]
-        radii_fine = [sqrt(x) for x in psiN_fine]
-    else:
-        print "ERROR! Should not get here."
-        exit(1)
+    # Convert the radii used in the profiles file into inputRadialCoordinate.
+    # (We do this in 2 steps, via psiN)
+    data_psiN = convertRadiiToPsiN(profilesRadialCoordinate, data_oldRadius)
+    data_radius = convertRadiiFromPsiN(inputRadialCoordinate, data_psiN)
 
     # Interpolate profiles onto the requested points:
-    nHats = []
-    nHats_fine = []
-    THats = []
-    THats_fine = []
-    dnHatdpsiN = []
-    dnHatdpsiN_fine = []
-    dTHatdpsiN = []
-    dTHatdpsiN_fine = []
-    NErs = []
-    NErs_fine = []
-    dPhiHatdradius_max = []
-    dPhiHatdradius_max_fine = []
-    dPhiHatdradius_min = []
-    dPhiHatdradius_min_fine = []
     #data_radius_half = []
     #for iradius in range (1,len(data_radius)):
     #    data_radius_half.append((data_radius[iradius-1]+data_radius[iradius])/2)
@@ -562,14 +548,15 @@ if profilesScheme == 1:
         #dTHatdradii_finiteDifference.append(dTHatdradius_finiteDifference)
 
         # Fit a cubic spline. See http://docs.scipy.org/doc/scipy/reference/tutorial/interpolate.html
-        #interpolator = interpolate.splrep(data_radius, data_nHats[ispecies], s=0)
+        # The spline fitting is always done with respect to psiN as a radial coordinate,
+        # regardless of the radial coordinates chosen in the input files.
         interpolator = interpolate.splrep(data_psiN, data_nHats[ispecies])
         if len(radii)>0:
             # The if/else block is here because interpolate.splev fails if new grid is empty.
             nHats.append(interpolate.splev(radii_psiN,interpolator, der=0))
             dnHatdpsiN.append(interpolate.splev(radii_psiN,interpolator, der=1))
         else:
-            nHats.append([])
+            nHats.append([]) 
             dnHatdradii.append([])
         nHats_fine.append(interpolate.splev(psiN_fine,interpolator, der=0))
         dnHatdpsiN_fine.append(interpolate.splev(psiN_fine,interpolator, der=1))
@@ -613,19 +600,107 @@ if profilesScheme == 1:
     plotProposedProfiles()
 
 elif profilesScheme == 2:
-    # Need code here...
-    
+    ##############################################################
+    # Read in polynomial coefficients for n and T of each species.
+    ##############################################################
+    data_nHats = []
+    data_THats = []
+    data_NErs = []
+    data_dPhiHatdradius_min = []
+    data_dPhiHatdradius_max = []
+    for i in range(Nspecies):
+        data_nHats.append([])
+        data_THats.append([])
+    readRadialCoordinateYet = False
+    for line in profilesFile:
+        line = line.strip().lower()
+        if line[0] == '!' or line[0] == '#' or line[0] == '%':
+            continue
+        if not readRadialCoordinateYet:
+            # This must be the first non-comment line in the file.
+            readRadialCoordinateYet = True
+            if line != '0' and line != '1' and line != '2' and line != '3':
+                print "ERROR!  The first non-comment line in the 'profiles' file must be an integer corresponding to the radial coordinate (0=psiHat, 1=psiN, 2=rHat, or 3=rN)"
+                exit(1)
+            profilesRadialCoordinate = int(line)
+            continue
+        print line.split()
+        if Nspecies*2+3 != len(line.split()):
+            print "Error! Each line in the profiles file should have 2*Nspecies+3 values. The following line seems to have the wrong number of values:"
+            print line
+            exit(1)
+        lineSplit = line.split()
+        try:
+            data_NErs.append(float(lineSplit[0]))
+            data_dPhiHatdradius_min.append(float(lineSplit[1]))
+            data_dPhiHatdradius_max.append(float(lineSplit[2]))
+            for i in range(Nspecies):
+                data_nHats[i].append(float(lineSplit[2*i+3]))
+                data_THats[i].append(float(lineSplit[2*i+4]))
+        except:
+            print "Error parsing the following line of the profiles file:"
+            print line
+            raise
+
+    for i in range(Nspecies):
+        print "Here comes the polynomial coefficients for nHat of species "+str(i+1)+" read from the profiles file:"
+        print data_nHats[i]
+        print "Here comes the polynomial coefficients for THat of species "+str(i+1)+" read from the profiles file:"
+        print data_THats[i]
+
+    # We need the regular and fine radius arrays in the coordinate used by the 'profiles' file:
+    profilesRadii      = convertRadiiFromPsiN(profilesRadialCoordinate, radii_psiN)
+    profilesRadii_fine = convertRadiiFromPsiN(profilesRadialCoordinate, psiN_fine)
+    gradientFactor     = convertGradientToddpsiN(profilesRadialCoordinate, radii_psiN)
+    gradientFactorFine = convertGradientToddpsiN(profilesRadialCoordinate, psiN_fine)
+
+    # Initialize all arrays to 0
+    Nradii = len(radii)
+    Nradii_fine = len(psiN_fine)
+    NErs = [0] * Nradii
+    NErs_fine = [0] * Nradii_fine
+    dPhiHatdradius_min = [0] * Nradii
+    dPhiHatdradius_min_fine = [0] * Nradii_fine
+    dPhiHatdradius_max = [0] * Nradii
+    dPhiHatdradius_max_fine = [0] * Nradii_fine
+    for ispecies in range(Nspecies):
+        nHats.append([0] * Nradii)
+        nHats_fine.append([0] * Nradii_fine)
+        THats.append([0] * Nradii)
+        THats_fine.append([0] * Nradii_fine)
+        dnHatdpsiN.append([0] * Nradii)
+        dnHatdpsiN_fine.append([0] * Nradii_fine)
+        dTHatdpsiN.append([0] * Nradii)
+        dTHatdpsiN_fine.append([0] * Nradii_fine)
+
+    for exponent in range(len(data_NErs)):
+        for ir in range(Nradii):
+            NErs[ir] += data_NErs[exponent] * (profilesRadii[ir] ** exponent)
+            dPhiHatdradius_min[ir] += data_dPhiHatdradius_min[exponent] * (profilesRadii[ir] ** exponent)
+            dPhiHatdradius_max[ir] += data_dPhiHatdradius_max[exponent] * (profilesRadii[ir] ** exponent)
+            for ispecies in range(Nspecies):
+                nHats[ispecies][ir] += data_nHats[ispecies][exponent] * (profilesRadii[ir] ** exponent)
+                THats[ispecies][ir] += data_THats[ispecies][exponent] * (profilesRadii[ir] ** exponent)
+                if exponent>0:
+                    dnHatdpsiN[ispecies][ir] += gradientFactor[ir] * data_nHats[ispecies][exponent] * exponent * (profilesRadii[ir] ** (exponent-1))
+                    dTHatdpsiN[ispecies][ir] += gradientFactor[ir] * data_THats[ispecies][exponent] * exponent * (profilesRadii[ir] ** (exponent-1))
+        for ir in range(len(psiN_fine)):
+            NErs_fine[ir] += data_NErs[exponent] * (profilesRadii_fine[ir] ** exponent)
+            dPhiHatdradius_min_fine[ir] += data_dPhiHatdradius_min[exponent] * (profilesRadii_fine[ir] ** exponent)
+            dPhiHatdradius_max_fine[ir] += data_dPhiHatdradius_max[exponent] * (profilesRadii_fine[ir] ** exponent)
+            for ispecies in range(Nspecies):
+                nHats_fine[ispecies][ir] += data_nHats[ispecies][exponent] * (profilesRadii_fine[ir] ** exponent)
+                THats_fine[ispecies][ir] += data_THats[ispecies][exponent] * (profilesRadii_fine[ir] ** exponent)
+                if exponent>0:
+                    dnHatdpsiN_fine[ispecies][ir] += gradientFactorFine[ir] * data_nHats[ispecies][exponent] * exponent * (profilesRadii_fine[ir] ** (exponent-1))
+                    dTHatdpsiN_fine[ispecies][ir] += gradientFactorFine[ir] * data_THats[ispecies][exponent] * exponent * (profilesRadii_fine[ir] ** (exponent-1))
+
     convertGradients()
     plotProposedProfiles()
+
 else:
     print "Error! profilesScheme must be set to 1 or 2."
     exit(1)
-
-
-
-
-
-
 
 
 print
