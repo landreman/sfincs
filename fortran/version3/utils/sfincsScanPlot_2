@@ -104,16 +104,16 @@ for directory in directories:
 
     Ers.append(f[varName][()])
     FSABFlow = f["FSABFlow"][()]
-    FSABjHat = f["FSABjHat"][()]
-    particleFlux_vm = f["particleFlux_vm_psiHat"][()]
-    heatFlux_vm = f["heatFlux_vm_psiHat"][()]
+    FSABjHatOverRootFSAB2 = f["FSABjHatOverRootFSAB2"][()]
+    particleFlux_vm = f["particleFlux_vm_rHat"][()]
+    heatFlux_vm = f["heatFlux_vm_rHat"][()]
     elapsedTime = f["elapsed time (s)"][()]
     atLeastOneDirectorySucceeded = True
     if RHSMode>1:
        transportMatrix = f["transportMatrix"][()]
     if includePhi1:
-        particleFlux_vd = f["particleFlux_vd_psiHat"][()]
-        heatFlux_vd = f["heatFlux_vd_psiHat"][()]
+        particleFlux_vd = f["particleFlux_vd_rHat"][()]
+        heatFlux_vd = f["heatFlux_vd_rHat"][()]
 
     if RHSMode > 1:
        results = []
@@ -146,7 +146,7 @@ for directory in directories:
                 results.append(FSABFlow[ispecies,iteration])
                 results.append(particleFlux_vm[ispecies,iteration])
                 results.append(heatFlux_vm[ispecies,iteration])
-          results.append(FSABjHat[iteration])
+          results.append(FSABjHatOverRootFSAB2[iteration])
           if includePhi1:
              radialCurrents.append(sum(Zs*particleFlux_vd[:,-1]))
           else:
@@ -192,21 +192,21 @@ else:
    if Nspecies==1:
       if includePhi1:
          numQuantities = 5
-         yAxisLabels=["FSABFlow","particleFlux\nvm_psiHat","particleFlux\nvd_psiHat","heatFlux\nvm_psiHat","heatFlux\nvd_psiHat"]
+         yAxisLabels=["FSABFlow","particleFlux\nvm_rHat","particleFlux\nvd_rHat","heatFlux\nvm_rHat","heatFlux\nvd_rHat"]
       else:
          numQuantities = 3
-         yAxisLabels=["FSABFlow","particleFlux\nvm_psiHat","heatFlux\nvm_psiHat","elapsed time (s)"]
+         yAxisLabels=["FSABFlow","particleFlux\nvm_rHat","heatFlux\nvm_rHat","elapsed time (s)"]
    else:
       if includePhi1:
          numQuantities = Nspecies*5+2
          yAxisLabels=[]
          for i in range(1,Nspecies+1):
             yAxisLabels.append("FSABFlow (species "+str(i)+")")
-            yAxisLabels.append("particleFlux vm_psiHat (species "+str(i)+")")
-            yAxisLabels.append("particleFlux vd_psiHat (species "+str(i)+")")
-            yAxisLabels.append("heatFlux vm_psiHat (species "+str(i)+")")
-            yAxisLabels.append("heatFlux vd_psiHat (species "+str(i)+")")
-         yAxisLabels.append("FSABjHat")
+            yAxisLabels.append("particleFlux vm_rHat (species "+str(i)+")")
+            yAxisLabels.append("particleFlux vd_rHat (species "+str(i)+")")
+            yAxisLabels.append("heatFlux vm_rHat (species "+str(i)+")")
+            yAxisLabels.append("heatFlux vd_rHat (species "+str(i)+")")
+         yAxisLabels.append("FSABjHatOverRootFSAB2")
          yAxisLabels.append(radialCurrentLabel)
         
       else:
@@ -214,9 +214,9 @@ else:
          yAxisLabels=[]
          for i in range(1,Nspecies+1):
             yAxisLabels.append("FSABFlow (species "+str(i)+")")
-            yAxisLabels.append("particleFlux_vm_psiHat (species "+str(i)+")")
-            yAxisLabels.append("heatFlux_vm_psiHat (species "+str(i)+")")
-         yAxisLabels.append("FSABjHat")
+            yAxisLabels.append("particleFlux_vm_rHat (species "+str(i)+")")
+            yAxisLabels.append("heatFlux_vm_rHat (species "+str(i)+")")
+         yAxisLabels.append("FSABjHatOverRootFSAB2")
          yAxisLabels.append(radialCurrentLabel)
             
 
@@ -231,7 +231,16 @@ if doAmbipolaritySolve:
       try:
          # We have runs that straddle j_psi = 0, so we can find at least 1 ambipolar solution.
          print "Solving for E_r."
-         interpolator = interp1d(Ers_sorted, radialCurrents_sorted, kind='cubic',  bounds_error=False)
+         N = len(Ers_sorted)
+         if N>3:
+            interpolationKind = 'cubic'
+         elif N==3:
+            interpolationKind = 'quadratic'
+         else:
+            # N must be 2
+            interpolationKind = 'linear'
+         print "Interpolation kind that will be used: "+interpolationKind
+         interpolator = interp1d(Ers_sorted, radialCurrents_sorted, kind=interpolationKind,  bounds_error=False)
          # In the next line, 100 is arbitrary, and could be replaced by another large integer.
          Er_fine = numpy.linspace(min(Ers), max(Ers), num=100)
          radialCurrent_fine = interpolator(Er_fine)
@@ -257,7 +266,7 @@ if doAmbipolaritySolve:
          print "**** Output quantities at these ambipolar E_r value(s) ****"
          outputs_ambipolar = []
          for iQuantity in range(numQuantities):
-            quantityInterpolator = interp1d(Ers_sorted, outputs_array[:,iQuantity], kind='cubic',  bounds_error=False)
+            quantityInterpolator = interp1d(Ers_sorted, outputs_array[:,iQuantity], interpolationKind,  bounds_error=False)
             thisOutput_ambipolar = quantityInterpolator(roots)
             outputs_ambipolar.append(thisOutput_ambipolar)
             print yAxisLabels[iQuantity],": ",thisOutput_ambipolar
@@ -266,6 +275,8 @@ if doAmbipolaritySolve:
       except Exception as e:
          print "For some reason, the ambipolarity solve failed. Here is the error message:"
          print e
+         # Eventually remove this next line:
+         raise
    else:
       print "All runs have the same sign of radial current, so we cannot solve for the ambipolar E_r."
 else:

@@ -94,10 +94,10 @@ def convertGradientFromddpsiN(coordinate, radii_psiN):
         return [1.0 for psiN in radii_psiN]
     elif coordinate == 2:
         # rHat
-        return [2*sqrt(psiN) for psiN in radii_psiN]
+        return [2*sqrt(psiN)/aHat for psiN in radii_psiN]
     elif coordinate == 3:
         # rN
-        return [2*sqrt(psiN)/aHat for psiN in radii_psiN]
+        return [2*sqrt(psiN) for psiN in radii_psiN]
     else:
         print "ERROR! Should not get here."
         raise
