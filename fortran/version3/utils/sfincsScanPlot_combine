@@ -31,6 +31,7 @@ xscales = []
 yscales = []
 ymins = []
 ymaxs = []
+linespecs = []
 numScans = 0
 
 directories = []
@@ -54,19 +55,36 @@ for whichFile in range(1,len(sys.argv)):
         inputFile = open(filename,'rb')
 
         numScans += 1
-        scanTypes.append(pickle.load(inputFile))
-        numQuantities.append(pickle.load(inputFile))
-        numRows.append(pickle.load(inputFile))
-        numCols.append(pickle.load(inputFile))
-        xdata.append(pickle.load(inputFile))
-        ydata.append(pickle.load(inputFile))
-        xlabels.append(pickle.load(inputFile))
-        ylabels.append(pickle.load(inputFile))
-        xscales.append(pickle.load(inputFile))
-        yscales.append(pickle.load(inputFile))
-        ymins.append(pickle.load(inputFile))
-        ymaxs.append(pickle.load(inputFile))
+
+        # scanTypes.append(pickle.load(inputFile))
+        # numQuantities.append(pickle.load(inputFile))
+        # numRows.append(pickle.load(inputFile))
+        # numCols.append(pickle.load(inputFile))
+        # xdata.append(pickle.load(inputFile))
+        # ydata.append(pickle.load(inputFile))
+        # xlabels.append(pickle.load(inputFile))
+        # ylabels.append(pickle.load(inputFile))
+        # xscales.append(pickle.load(inputFile))
+        # yscales.append(pickle.load(inputFile))
+        # ymins.append(pickle.load(inputFile))
+        # ymaxs.append(pickle.load(inputFile))
+
+        data = pickle.load(inputFile)
         inputFile.close()
+
+        scanTypes.append(data['scanType'])
+        numQuantities.append(data['numQuantities'])
+        numRows.append(data['numRows'])
+        numCols.append(data['numCols'])
+        xdata.append(data['xdata'])
+        ydata.append(data['ydata'])
+        xlabels.append(data['xlabels'])
+        ylabels.append(data['ylabels'])
+        xscales.append(data['xscales'])
+        yscales.append(data['yscales'])
+        ymins.append(data['ymins'])
+        ymaxs.append(data['ymaxs'])
+        linespecs.append(data['linespec'])
 
     except:
         os.chdir(originalDirectory)
@@ -103,7 +121,7 @@ matplotlib.rcParams['axes.color_cycle'] = ['r', 'b', 'c','y','g','k']
 for iQuantity in range(numQuantities[0]):
    plt.subplot(numRows[0],numCols[0],iQuantity+1)
    for whichScan in range(numScans):
-       plt.plot(xdata[whichScan][iQuantity],ydata[whichScan][iQuantity],'.-',label=directories[whichScan])
+       plt.plot(xdata[whichScan][iQuantity],ydata[whichScan][iQuantity],linespecs[0],label=directories[whichScan])
    plt.xscale(xscales[0][iQuantity])
    plt.yscale(yscales[0][iQuantity])
    plt.xlabel(xlabels[0][iQuantity])

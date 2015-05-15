@@ -2,6 +2,9 @@
 
 # This python file contains several subroutines that are used both in launching and processing parameter scans in sfincs.
 
+inputFilename = "input.namelist"
+outputFilename = "sfincsOutput.h5"
+
 # Code preceding instructions for sfincsScan in the input.namelist file:
 commentCode = "!ss"
 
