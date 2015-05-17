@@ -160,15 +160,15 @@ elif scanVariable == "preconditioner_species":
     mustBeInteger = True
 elif scanVariable == "preconditioner_x":
     mustBeInteger = True
-elif scanVariable == "preconditioner_x_min_L":
+elif scanVariable == "preconditioner_x_min_l":
     mustBeInteger = True
 elif scanVariable == "preconditioner_theta":
     mustBeInteger = True
-elif scanVariable == "preconditioner_theta_min_L":
+elif scanVariable == "preconditioner_theta_min_l":
     mustBeInteger = True
 elif scanVariable == "preconditioner_zeta":
     mustBeInteger = True
-elif scanVariable == "preconditioner_zeta_min_L":
+elif scanVariable == "preconditioner_zeta_min_l":
     mustBeInteger = True
 elif scanVariable == "preconditioner_xi":
     mustBeInteger = True
