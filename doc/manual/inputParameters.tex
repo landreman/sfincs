@@ -1,0 +1,136 @@
+\chapter{Input Parameters}
+
+\newcommand{\param}[5]{{\setlength{\parindent}{0cm} {\ttfamily \bfseries #1}\\{\it Type}: #2\\{\it Default}: #3\\{\it When it matters}: #4\\{\it Meaning}: #5}}
+\newcommand{\ssparam}[4]{{\setlength{\parindent}{0cm} {\ttfamily \bfseries #1}\\{\it Type}: #2\\{\it When it matters}: #3\\{\it Meaning}: #4}}
+\newcommand{\PETScParam}[2]{{\setlength{\parindent}{0cm} {\ttfamily \bfseries #1}\\{\it Meaning}: #2}}
+\newcommand{\myhrule}{{\setlength{\parindent}{0cm} \hrulefill }}
+
+In this chapter we first describe all the parameters which can be included in the {\ttfamily input.namelist} file. 
+Then we list some of the command-line flags associated with \PETSc~which can be useful.
+
+
+
+
+\section{The {\ttfamily general} namelist}
+
+\param{RHSMode}
+{integer}
+{1}
+{Always}
+{Option related to the number of right-hand sides (i.e. inhomogeneous drive terms) for which the kinetic equation is solved.\\
+
+{\ttfamily RHSMode=1}: Solve for a single right-hand side.\\
+
+{\ttfamily RHSMode=2}: Solve for 3 right-hand sides to get the 3x3 transport matrix. Presently implemented only for 1 species.\\
+
+{\ttfamily RHSMode=3}: Solve for the 2x2 monoenergetic transport coefficients. When this option is chosen, {\ttfamily Nx} is set to 1 and only 1 species is used.
+}
+
+\myhrule
+
+\param{outputFileName}
+{string}
+{``sfincsOutput.h5''}
+{Always}
+{Name which will be used for the HDF5 output file.  If this parameter is changed from the default value, \sfincsScan~ will not work.}
+
+\myhrule
+
+\param{saveMatlabOutput}
+{Boolean}
+{false}
+{Always}
+{If this switch is set to true, Matlab m-files are created which
+ store the system matrix, right-hand side, and solution vector.  If an iterative solver is used,
+ the preconditioner matrix is also saved.
+ PETSc usually generates an error message if you ask to save Matlab output when
+the size of the linear system is more then 1400 $\times$ 1400,
+ so usually this setting should be false except for very small test problems.
+}
+
+\myhrule
+
+\param{MatlabOutputFilename}
+{string}
+{``sfincsMatrices''}
+{Only when {\ttfamily saveMatlabOutput == .true.}}
+{Start of the filenames which will be used for Matlab output.}
+
+\myhrule
+
+\param{saveMatricesAndVectorsInBinary}
+{Boolean}
+{false}
+{Always}
+{If this switch is set to true, the matrix, right-hand-side, and solution of the
+linear system will be saved in PETSc's binary format.  The preconditioner matrix will also
+be saved if {\ttfamily tryIterativeSolver == .true.}
+}
+
+\myhrule
+
+\param{binaryOutputFilename}
+{string}
+{``sfincsBinary''}
+{Only when {\ttfamily saveMatricesAndVectorsInBinary == .true.}}
+{Start of the filenames which will be used for binary output.}
+
+\myhrule
+
+\param{solveSystem}
+{Boolean}
+{true}
+{Always}
+{If this parameter is false, the system of equations will not actually be solved.
+ Sometimes it can be useful to set this parameter to {\ttfamily .false.} when debugging.
+}
+
+
+
+
+\section{Directives for \sfincsScan}
+
+The parameters for \sfincsScan~ begin with the code {\ttfamily !ss} and so are not read by the fortran part of \sfincs.
+These parameters matter only when \sfincsScan~is called and are all ignored when \sfincs~is executed directly.
+These parameters can appear anywhere in the {\ttfamily input.namelist} file, in any namelist or outside of any namelist.
+Note that \sfincsScan~ parameters do not have defaults, unlike fortran namelist parameters.\\
+
+\ssparam{scanType}
+{integer}
+{Any time \sfincsScan~is called.}
+{Which type of scan will be run when \sfincsScan~is called.\\
+
+{\ttfamily scanType=1}:  Convergence scan. (Scan the parameters in the resolutionParameters namelist.)\\
+
+{\ttfamily scanType=2}:  Scan of $E_r$.\\
+
+{\ttfamily scanType=3}:  Scan any one input parameter that takes a numeric value.\\
+
+{\ttfamily scanType=4}:  Scan radius, taking the density and temperature profiles from the {\ttfamily profiles} file.
+In this type of scan, the same radial electric field is used at every radius.
+See {\ttfamily utils/profiles.XXX} for examples.\\
+
+{\ttfamily scanType=5}:  Scan radius, and at each radius, scan $E_r$.  Density and temperature profiles are again
+ taken from the {\ttfamily profiles} file; see {\ttfamily utils/profiles.XXX} for examples.\\
+
+{\ttfamily scanType=21}: Read in a list of requested runs from a file {\ttfamily runspec.dat}. See {\ttfamily utils/sfincsScan\_21} for an example file.
+}
+
+\myhrule
+
+
+\section{\PETSc~commands}
+
+Command-line flags can be used to modify the behavior of any \PETSc~application, including \sfincs.
+There are hundreds of \PETSc~options, and a list can be obtained by running with the command-line flag
+{\ttfamily -help}. Here we list some of the more useful options.\\
+
+\PETScParam{-help}
+{Dumps a list of available command-line options to stdout.}
+
+\myhrule
+
+\PETScParam{-ksp\_view}
+{Dumps detailed information to stdout related to the linear solver.}
+
+

@@ -1,0 +1,72 @@
+\chapter{Installation}
+
+
+\section{Requirements}
+
+To compile \sfincs~you need the \href{http://www.mcs.anl.gov/petsc/}{\PETSc} library (real version, as opposed to complex version) 
+and the serial \href{https://www.hdfgroup.org/HDF5/}{\HDF} library.  
+\PETSc~is used for iterative solution of large linear and nonlinear systems of equations, and \HDF~is used for saving output.
+We have developed and tested \sfincs~ with \PETSc~
+versions 3.2 through 3.5.  The commands in \PETSc~often change from version to version, so future versions of \PETSc~may require modifications
+to the \sfincs~source code.
+
+Although \sfincs~can be run on a single processor, usually you want to run it in parallel.  
+In this case, you need {\ttfamily MPI}, and you need either \href{http://mumps-solver.org/}{\mumps}
+or \href{http://crd-legacy.lbl.gov/~xiaoye/SuperLU/}{\superludist}.  (Note that \superludist is a parallel library which is different from the serial library {\ttfamily superlu}).
+Both \mumps~and \superludist~are parallelized libraries for direct solution of large sparse linear systems. 
+\PETSc~has a built-in serial sparse direct linear solver,
+but it sometimes gives an error that there is a ``zero pivot'' when \mumps~and \superludist~have no problem solving the system;
+therefore you may want to use \mumps~or \superludist~even for serial runs.  In our experience,
+\mumps~requires less memory and time than \superludist~for solving a given linear system.
+
+If you want to load {\ttfamily VMEC wout} files in \netCDF~format, then you need the \netCDF~library.
+This library is not required for loading ASCII-format {\ttfamily VMEC wout} files.  If you want to compile \sfincs~without
+\netCDF~, then edit {\ttfamily makefile} so that no value is assigned to {\ttfamily USE\_NETCDF}.
+
+The plotting routines \sfincsPlot~and \sfincsScanPlot~ require python 2.X, {\ttfamily numpy}, {\ttfamily scipy}, and {\ttfamily matplotlib}.
+These python libraries are not required by the core fortran part of \sfincs.
+
+Although older {\ttfamily MATLAB} versions of \sfincs~are included in the \sfincs~repository,
+{\ttfamily MATLAB} is not required for running the fortran version of \sfincs.
+
+\section{Cloning the repository}
+
+The source code for \sfincs~is hosted in a {\ttfamily git} repository at
+\url{https://github.com/landreman/sfincs}.
+You obtain the \sfincs~source code by cloning the repository. This requires several steps.
+
+\begin{enumerate}
+\item Create an account on \url{github.com}, and sign in to {\ttfamily github}.
+\item Go to your account settings page, by clicking the wrench icon on the top right.
+\item Click on ``SSH keys'' on the left, and add an SSH key for the computer you wish to use. To do this, you may wish to read see the ``generating SSH keys'' guide which is linked to from that page.
+\item From a terminal command line in the computer you wish to use, enter {\ttfamily git clone git@github.com:landreman/sfincs.git} to download the repository.
+\end{enumerate}
+
+Any time after you have cloned the repository in this way, you can download future updates to the code by entering {\ttfamily git pull} from any subdirectory within your local copy.
+
+\section{Makefiles and environment variables}
+
+To use \sfincs~ you must set the environment variable {\ttfamily SFINCS\_SYSTEM}.
+(For example, using the {\ttfamily bash} shell on the {\ttfamily edison}
+computer, you would type\\
+{\ttfamily export SFINCS\_SYSTEM=edison}\\
+ at the command line
+or in your {\ttfamily .bashrc} startup script.)
+This variable is used in two ways. 
+First, {\ttfamily make} uses this variable to looks for the 
+appropriate makefile in the {\ttfamily makefiles} directory.  Second, the {\ttfamily SFINCS\_SYSTEM} environment
+variable affects the behavior of
+\sfincsScan~in several ways, such as determining the command used to submit jobs to the system's queue.
+
+\section{Setting up \sfincs~on a new system}
+If you are setting up \sfincs~ on a new system, one for which there is no file {\ttfamily makefiles/makefile.XXX},
+there are several things you need to do.
+
+First, copy one of the existing makefiles, and edit it as appropriate.
+
+Second, you will need to edit {\ttfamily utils/sfincsScan}. Look for the {\ttfamily if} block near the top
+with sections for {\ttfamily sfincsSystem = edison},{\ttfamily hydra}, and {\ttfamily laptop}. Add an analogous block
+for your system to set the command used to submit jobs, and a {\ttfamily nameJobFile} function.
+
+\section{Make test}
+
