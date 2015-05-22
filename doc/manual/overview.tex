@@ -1,7 +1,7 @@
 \chapter{Overview}
 
 
-The \sfincs~code is a free, open-source tool for solving neoclassical-type kinetic problems in nonaxisymmetric or axisymmetric plasmas
+The \sfincs~code is a freely available, open-source tool for solving neoclassical-type kinetic problems in nonaxisymmetric or axisymmetric plasmas
 with nested toroidal flux surfaces.
 The code solves a drift-kinetic equation for an arbitrary number of species.  Optionally, a quasi-neutrality
 equation can also be solved to obtain the self-consistent variation of the electrostatic potential on a flux surface.
@@ -9,13 +9,18 @@ equation can also be solved to obtain the self-consistent variation of the elect
 This manual describes ``version 3'' of \sfincs.  There are two older versions of the
 code called singleSpecies and multiSpecies.
 
-This document discusses use and operation of the code.  For more details about the specific equations implemented,
+This document discusses the practical use and operation of the code.  For more details about the specific equations implemented,
 see the version 3 technical documentation available in the \path{sfincs/docs} directory.
 Ref \cite{sfincsPaper} gives many details and some early physics results.
+
+Often, the limiting factor for \sfincs~is the ability of \mumps~or \superludist~to factorize the preconditioner matrix.
+You may therefore find it useful to see the control parameters and error codes in the \mumps~user manual:
+\url{http://mumps.enseeiht.fr/doc/userguide_5.0.0.pdf}.
 
 
 
 \section{GMRES/KSP and preconditioning}
+\label{sec:gmres}
 
 At its heart, \sfincs~solves one or more large sparse linear systems $Ax=b$.  Here $b$ is a known right-hand side vector,
 $A$ is a large (often millions $\times$ millions) known sparse matrix, and $x$ is the desired and unknown solution vector.
@@ -49,7 +54,25 @@ However, often the goal is to determine the ambipolar $E_r$ at one or more surfa
 For this task, the \sfincsScan~family of \python~scripts is available.
 For a full list of the types of scans available, see section \ref{sec:sfincsScanParams}
 
-\section{Bugs and feedback}
+\section{Input and Output}
+
+The input parameters for a \sfincs~computation are specified in a file named {\ttfamily input.namelist}.
+This file contains both information for the fortran part of \sfincs~(in standard fortran namelist format),
+as well as special lines beginning with {\ttfamily !ss} which are read by \sfincsScan.
+The variables which can be specified in {\ttfamily input.namelist} are detailed in chapter \ref{ch:input}.
+For scans over minor radius, an additional file named {\ttfamily profiles} is used to specify the profiles of density and temperature
+for each species, as well as the range of radial electric field to consider.
+
+The output from a single \sfincs~computation is saved in \HDF~format in the file {\ttfamily sfincsOutput.h5}.
+To browse this file you can enter {\ttfamily h5dump sfincsOutput.h5|less} from the command line.
+Every array saved in this file is annotated with strings that describe the array dimensions,
+for example \Ntheta$\times$ \Nzeta. One of the array dimensions may be {\ttfamily iteration},
+which can either indicate the iteration of the Newton solver for a nonlinear calculation,
+or which right-hand side vector was used when computing a transport matrix.
+Many of the variables in the output file are also annotated with
+text that describes their meaning and normalization.
+
+\section{Questions, Bugs, and Feedback}
 
 To report any bugs, provide feedback, or ask questions, contact Matt Landreman at
 \href{mailto:matt.landreman@gmail.com}{\nolinkurl{matt.landreman@gmail.com} }

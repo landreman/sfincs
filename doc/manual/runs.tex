@@ -9,7 +9,7 @@ $\bar{R}$ = reference length, typically 1 meter.\\
 $\bar{n}$ = reference density, typically $10^{19}$ m$^{-3}$, $10^{20}$ m$^{-3}$, or something similar.\\
 $\bar{m}$ = reference mass, typically either the mass of hydrogen or deuterium.\\
 $\bar{T}$ = reference temperature in energy units, typically 1 eV or 1 keV.\\
-$\bar{v} = \sqrt{2 \bar{T} / \bar{m}}$ = reference speed\\
+$\bar{v} = \sqrt{2 \bar{T} / \bar{m}}$ = thermal speed at the reference temperature and mass\\
 $\bar{\Phi}$ = reference electrostatic potential, typically 1 V or 1 kV.\\
 }
 
@@ -27,30 +27,124 @@ $\hat{B}=B/\bar{B}$, where $\hat{B}$ is called {\ttfamily BHat} in the fortran c
 \label{sec:radialCoordinates}
 
 A variety of flux-surface label coordinates are used in other codes and in the literature.
-One common choice (used in {\ttfamily vmec}) is $\psi_N$, the toroidal flux normalized to its
+One common choice (used in \vmec) is $\psi_N$, the toroidal flux normalized to its
 value at the last closed flux surface.  Another common choice is an ``effective normalized minor radius''
 $r_N$, defined by $r_N=\sqrt{\psi_N}$.  For gradients of density, temperature, and electrostatic potential (i.e. the radial
 electric field), it is useful to use a dimensional local minor radius $r = r_N a$, where $a$ is some
 measure of the plasma effective outer minor radius.  Finally, one could also use $\psi$ directly.
 For maximum flexibility, \sfincs~permits any of these four radial coordinates to be used, and different radial
-coordinates can be used in different parts of a given computation.  Output quantities which depend
+coordinates can be used in different aspects of a given computation.  Output quantities which depend
 on the radial coordinate, such as radial fluxes, are often given with respect to all radial coordinates.
+In \sfincs, the four radial coordinates are named as follows:\\
 
-To specify a run, you can make several independent choices for radial coordinates.  One parameter
-you select is {\ttfamily inputRadialCoordinate} in the {\ttfamily geometryParameters} namelist.
-This parameter controls which coordinate is used to specify the flux surface. The possible values of {\ttfamily inputRadialCoordinate} are:
+{\setlength{\parindent}{0cm}
 
-0: Use {\ttfamily psiHat}, the toroidal flux (divided by $2\pi$) normalized by $\bar{B}\bar{R}^2$.\\
+{\ttfamily psiHat} = $\hat\psi$ is the toroidal flux (divided by $2\pi$), normalized by $\bar{B}\bar{R}^2$.\\
 
-1: Use {\ttfamily psiN}, the toroidal flux normalized by its value at the last closed flux surface.\\
+{\ttfamily psiN} = $\psi_N$ is the toroidal flux normalized by its value at the last closed flux surface.\\
 
-2: Use {\ttfamily rHat}, defined as {\ttfamily aHat}$\sqrt{\mbox{\ttfamily psiN}}$, where {\ttfamily aHat} is an effective minor radius of the last closed flux surface normalized by $\bar{R}$.\\
+{\ttfamily rHat} = $\hat{r}$ is defined as {\ttfamily aHat}$\sqrt{\mbox{\ttfamily psiN}}$, where {\ttfamily aHat} is an effective minor radius of the last closed flux surface normalized by $\bar{R}$.\\
 
-3: Use {\ttfamily rN}, defined as $\sqrt{\mbox{\ttfamily psiN}}$.\\
+{\ttfamily rN} = $r_N$ is defined as $\sqrt{\mbox{\ttfamily psiN}}$.\\
+
+}
+
+These four radial coordinates are identified by the numbers 0, 1, 2, and 3 respectively.
+
+When setting up a run, you can make several independent choices for radial coordinates.  One parameter
+you select is {\ttfamily inputRadialCoordinateForGradients} in the {\ttfamily geometryParameters} namelist.
+This parameter controls which coordinate is used to specify the gradients. The possible values of {\ttfamily inputRadialCoordinateForGradients} are:\\
+
+{\setlength{\parindent}{0cm}
+
+0: Use derivatives with respect to {\ttfamily psiHat}: Density gradients are specified using {\ttfamily dnHatdpsiHats}, 
+temperature gradients are specified using {\ttfamily dTHatdpsiHats},  a single $E_r$ is specified using
+{\ttfamily dPhiHatdpsiHat}, and a range of $E_r$ for a scan is specified using {\ttfamily dPhiHatdpsiHatMin}-{\ttfamily dPhiHatdpsiHatMax}.
+\\
+
+1: Use derivatives with respect to {\ttfamily psiN}: Density gradients are specified using {\ttfamily dnHatdpsiNs}, 
+temperature gradients are specified using {\ttfamily dTHatdpsiNs},  a single $E_r$ is specified using
+{\ttfamily dPhiHatdpsiN}, and a range of $E_r$ for a scan is specified using {\ttfamily dPhiHatdpsiNMin}-{\ttfamily dPhiHatdpsiNMax}.
+\\
+
+2: Use derivatives with respect to {\ttfamily rHat}: Density gradients are specified using {\ttfamily dnHatdrHats}, 
+temperature gradients are specified using {\ttfamily dTHatdrHats},  a single $E_r$ is specified using
+{\ttfamily dPhiHatdrHat}, and a range of $E_r$ for a scan is specified using {\ttfamily dPhiHatdrHatMin}-{\ttfamily dPhiHatdrHatMax}.
+\\
+
+3: Use derivatives with respect to {\ttfamily rN}: Density gradients are specified using {\ttfamily dnHatdrNs}, 
+temperature gradients are specified using {\ttfamily dTHatdrNs},  a single $E_r$ is specified using
+{\ttfamily dPhiHatdrN}, and a range of $E_r$ for a scan is specified using {\ttfamily dPhiHatdrNMin}-{\ttfamily dPhiHatdrNMax}.
+\\
+
+}
+
+Another choice involving radial coordinates is how to specify the flux surface for the computation.
+This choice is made using the parameter {\ttfamily inputRadialCoordinate} in the {\ttfamily geometryParameters}
+namelist, which is again an integer from 0 to 3, and this parameter need not be the same as {\ttfamily inputRadialCoordinateForGradients}.
+An extra complication with specifying the flux surface is that the magnetic equilibrium file will contain data on a finite number of surfaces,
+and you may wish to use one of these surfaces.  For this reason, the parameters for specifying the flux surface have {\ttfamily \_wish}
+appended to the name. In other words, the allowed values for {\ttfamily inputRadialCoordinate} are:\\
+
+{\setlength{\parindent}{0cm}
+
+0: Specify the flux surface using {\ttfamily psiHat\_wish}.\\
+
+1: Specify the flux surface using {\ttfamily psiN\_wish}.\\
+
+2: Specify the flux surface using {\ttfamily rHat\_wish}.\\
+
+3: Specify the flux surface using {\ttfamily rN\_wish}.\\
+
+}
+
+When using {\ttfamily geometryScheme} == 11 or 12, \sfincs~will always shift the ``wish'' value so it matches an available surface in the magnetic equilibrium file.
+For {\ttfamily geometryScheme} == 5, the {\ttfamily VMECRadialOption} parameter lets you can choose whether to shift to the nearest surface in the magnetic equilibrium file,
+or to interpolate the \vmec~data onto the exact value of radius you specify.
+
+If you perform a radial scan, then there is a third choice you can make: which radial coordinate to use in the {\ttfamily profiles} file.
+This choice is made with an integer 0, 1, 2, or 3 in the first non-comment line of the {\ttfamily profiles} file.
+The radial coordinate used in the {\ttfamily profiles} file need not be the same as either
+{\ttfamily inputRadialCoordinate} or {\ttfamily inputRadialCoordinateForGradients}.
+Note however that the maximum and minimum radial electric field specified in the {\ttfamily profiles}
+file must be defined as the derivative of the electrostatic potential with respect to the radial coordinate {\ttfamily inputRadialCoordinateForGradients}.
+
+For more details about the behavior of {\ttfamily inputRadialCoordinate}, {\ttfamily inputRadialCoordinateForGradients}, and {\ttfamily VMECRadialOption},
+see section \ref{sec:geometryParameters}.
 
 
 
+\section{Trajectory models}
 
+As discussed in \cite{sfincsPaper},
+one of the capabilities of \sfincs~is to compare various models for the terms in the kinetic equation involving $E_r$.
+These variations of the kinetic equation are called ``trajectory models'' in \cite{sfincsPaper}.
+The relevant terms in the kinetic equation can be turned off and on by certain Boolean parameters in the {\ttfamily physicsParameters} namelist.
+The models described in \cite{sfincsPaper} are selected as follows:\\
+
+{\setlength{\parindent}{0cm}
+
+\underline{Full trajectories:}\\
+{\ttfamily 
+includeXDotTerm = .true.\\
+includeElectricFieldTermInXiDot = .true.\\
+useDKESExBDrift = .false.\\
+}
+
+\underline{Partial trajectories:}\\
+{\ttfamily
+includeXDotTerm = .false.\\
+includeElectricFieldTermInXiDot = .false.\\
+useDKESExBDrift = .false.\\
+}
+
+\underline{DKES trajectories:}\\
+{\ttfamily
+includeXDotTerm = .false.\\
+includeElectricFieldTermInXiDot = .false.\\
+useDKESExBDrift = .true.\\
+}
+}
 
 \section{Parallelization}
 Choosing the number of nodes and procs.

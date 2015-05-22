@@ -1,4 +1,5 @@
 \chapter{Input Parameters}
+\label{ch:input}
 
 \newcommand{\param}[5]{{\setlength{\parindent}{0cm} {\ttfamily \bfseries #1}\\{\it Type}: #2\\{\it Default}: #3\\{\it When it matters}: #4\\{\it Meaning}: #5}}
 \newcommand{\ssparam}[4]{{\setlength{\parindent}{0cm} {\ttfamily \bfseries #1}\\{\it Type}: #2\\{\it When it matters}: #3\\{\it Meaning}: #4}}
@@ -90,13 +91,50 @@ be saved if {\ttfamily tryIterativeSolver == .true.}
 
 
 \section{The {\ttfamily geometryParameters} namelist}
+\label{sec:geometryParameters}
+
+\param{geometryScheme}
+{integer}
+{1}
+{Always}
+{How the magnetic geometry is specified.\\
+
+{\ttfamily geometryScheme}==1: Use the following 3-helicity model:\\
+\begin{eqnarray}
+\label{eq:Bmodel}
+B(\theta,\zeta)/\bar{B} 
+&=& (\mbox{\ttfamily B0OverBBar}) [1 + (\mbox{\ttfamily epsilon\_t}) \cos(\theta) \\
+&& + (\mbox{\ttfamily epsilon\_h}) \cos((\mbox{\ttfamily helicity\_l}) \theta - (\mbox{\ttfamily helicity\_n}) \zeta) \nonumber \\
+&&  + (\mbox{\ttfamily epsilon\_antisymm}) \nonumber \\
+&& \times \sin((\mbox{ \ttfamily helicity\_antisymm\_l}) \theta - (\mbox{\ttfamily helicity\_antisymm\_n}) \zeta)] \nonumber
+\end{eqnarray}
+
+{\ttfamily geometryScheme}==2: Use a 3-helicity model of the LHD standard configuration at {\ttfamily rN}=0.5.\\
+
+{\ttfamily geometryScheme}==3: Use a 4-helicity model of the LHD inward-shifted configuration at {\ttfamily rN}=0.5.\\
+
+{\ttfamily geometryScheme}==4: Use a 3-helicity model of the W7-X standard configuration at {\ttfamily rN}=0.5.\\
+
+{\ttfamily geometryScheme}==5: Read the {\ttfamily vmec wout} file specified in {\ttfamily equilibriumFile} below. The file can be
+       either ASCII format or \netCDF~format. (\sfincs~will auto-detect the format.).\\
+
+{\ttfamily geometryScheme}==11: Read the IPP {\ttfamily .bc} format Boozer-coordinate file specified in {\ttfamily equilibriumFile} below. 
+The file is assumed to be stellarator-symmetric.\\
+
+{\ttfamily geometryScheme}==12: Read the IPP {\ttfamily .bc} format Boozer-coordinate file specified in {\ttfamily equilibriumFile} below. 
+The file is assumed to be stellarator-asymmetric.
+}
+
+\myhrule
 
 \param{inputRadialCoordinate}
 {integer}
 {3}
-{When {\ttfamily geometryScheme}==5, 11, or 12}
+{When {\ttfamily geometryScheme} == 1, 5, 11, or 12}
 {Which radial coordinate to use to specify the flux surface for a single calculation,
-or to specify the range of flux surfaces for a radial scan. See section \ref{sec:radialCoordinates}
+or to specify the range of flux surfaces for a radial scan. 
+(When {\ttfamily geometryScheme} == 2, 3, or 4, the flux surface used will be {\ttfamily rN}=0.5.)
+See section \ref{sec:radialCoordinates}
 for more information about radial coordinates.\\
 
 {\ttfamily inputRadialCoordinate}==0: Use the flux surface specified by {\ttfamily psiHat\_wish}
@@ -109,8 +147,345 @@ for a single run, and use the range specified by {\ttfamily psiN\_min} and {\ttf
 for a single run, and use the range specified by {\ttfamily rHat\_min} and {\ttfamily rHat\_max} for radial scans.\\
 
 {\ttfamily inputRadialCoordinate}==3: Use the flux surface specified by {\ttfamily rN\_wish}
-for a single run, and use the range specified by {\ttfamily rN\_min} and {\ttfamily rN\_max} for radial scans.
+for a single run, and use the range specified by {\ttfamily rN\_min} and {\ttfamily rN\_max} for radial scans. \\
+
+No matter which option you pick, the value of all 4 radial coordinates used will be saved in the output \HDF~file.
 }
+
+\myhrule
+
+\param{inputRadialCoordinateForGradients}
+{integer}
+{2}
+{Whenever {\ttfamily RHSMode}==1.}
+{Which radial coordinate is used to use to specify the input gradients of density, temperature, and electrostatic potential,
+i.e. which radial coordinate is used in the denominator of these derivatives.
+See section \ref{sec:radialCoordinates}
+for more information about radial coordinates.\\
+
+{\ttfamily inputRadialCoordinateForGradients}==0: Density gradients are specified by {\ttfamily dnHatdpsiHats},
+temperature gradients are specified by {\ttfamily dTHatdpsiHats}, a single $E_r$ is specified by {\ttfamily dPhiHatdpsiHat},
+and the range of an $E_r$ scan is specified by {\ttfamily dPhiHatdpsiHatMin-dPhiHatdpsiHatMax}.\\
+
+{\ttfamily inputRadialCoordinateForGradients}==1: Density gradients are specified by {\ttfamily dnHatdpsiNs},
+temperature gradients are specified by {\ttfamily dTHatdpsiNs}, a single $E_r$ is specified by {\ttfamily dPhiHatdpsiN},
+and the range of an $E_r$ scan is specified by {\ttfamily dPhiHatdpsiNMin-dPhiHatdpsiNMax}.\\
+
+{\ttfamily inputRadialCoordinateForGradients}==2: Density gradients are specified by {\ttfamily dnHatdrHats},
+temperature gradients are specified by {\ttfamily dTHatdrHats}, a single $E_r$ is specified by {\ttfamily dPhiHatdrHat},
+and the range of an $E_r$ scan is specified by {\ttfamily dPhiHatdrHatMin-dPhiHatdrHatMax}.\\
+
+{\ttfamily inputRadialCoordinateForGradients}==3: Density gradients are specified by {\ttfamily dnHatdrNs},
+temperature gradients are specified by {\ttfamily dTHatdrNs}, a single $E_r$ is specified by {\ttfamily dPhiHatdrN},
+and the range of an $E_r$ scan is specified by {\ttfamily dPhiHatdrNMin-dPhiHatdrNMax}.\\
+
+No matter which option you pick, the gradients with respect to all 4 radial coordinates will be saved in the output \HDF~file.
+}
+
+\myhrule
+
+\param{psiHat\_wish}
+{real}
+{-1}
+{Only when {\ttfamily inputRadialCoordinate} == 0 and {\ttfamily geometryScheme} == 1, 5, 11, or 12.}
+{Requested flux surface for the computation.  See section \ref{sec:radialCoordinates}
+for more information about radial coordinates.}
+
+\myhrule
+
+\param{psiN\_wish}
+{real}
+{0.25}
+{Only when {\ttfamily inputRadialCoordinate} == 1 and {\ttfamily geometryScheme} == 1, 5, 11, or 12.}
+{Requested flux surface for the computation.  See section \ref{sec:radialCoordinates}
+for more information about radial coordinates.}
+
+\myhrule
+
+\param{rHat\_wish}
+{real}
+{-1}
+{Only when {\ttfamily inputRadialCoordinate} == 2 and {\ttfamily geometryScheme} == 1, 5, 11, or 12.}
+{Requested flux surface for the computation.  See section \ref{sec:radialCoordinates}
+for more information about radial coordinates.}
+
+\myhrule
+
+\param{rN\_wish}
+{real}
+{0.5}
+{Only when {\ttfamily inputRadialCoordinate} == 3 and {\ttfamily geometryScheme} == 1, 5, 11, or 12.}
+{Requested flux surface for the computation.  See section \ref{sec:radialCoordinates}
+for more information about radial coordinates.}
+
+\myhrule
+
+\param{B0OverBBar}
+{real}
+{1.0}
+{Only when {\ttfamily geometryScheme} == 1. Otherwise, {\ttfamily B0OverBBar} will be set according to the requested {\ttfamily geometryScheme}.}
+{Magnitude of the (0,0) Boozer harmonic of the magnetic field strength, normalized by $\bar{B}$.}
+
+\myhrule
+
+\param{GHat}
+{real}
+{??}
+{Only when {\ttfamily geometryScheme} == 1. Otherwise, {\ttfamily GHat} will be set according to the requested {\ttfamily geometryScheme}.}
+{$G$ is $(c/2)\times$ the poloidal current outside the flux
+ surface. Equivalently, $G$ is the coefficient of $\nabla\zeta_B$ in the
+ covariant representation of $\vect{B}$ in terms of Boozer coordinates $(\theta_B,\zeta_B)$:
+\begin{equation}
+\label{eq:covariant}
+\vect{B}(\psi,\theta_B,\zeta_B) = \beta(\psi,\theta_B,\zeta_B)\nabla\psi + I(\psi)\nabla\theta_B + G(\psi)\nabla\zeta_B.
+\end{equation}
+{\ttfamily GHat} is $G$ normalized by $\bar{B}\bar{R}$.}
+
+\myhrule
+
+\param{IHat}
+{real}
+{0.0}
+{Only when {\ttfamily geometryScheme} == 1. Otherwise, {\ttfamily IHat} will be set according to the requested {\ttfamily geometryScheme}.}
+{$I$ is $(c/2)\times$ the toroidal current inside the flux
+ surface. Equivalently, $I$ is the coefficient of $\nabla\theta_B$ in the
+ covariant representation of $\vect{B}$ in terms of Boozer coordinates $(\theta_B,\zeta_B)$ in (\ref{eq:covariant}).
+{\ttfamily IHat} is $I$ normalized by $\bar{B}\bar{R}$.}
+
+\myhrule
+
+\param{iota}
+{real}
+{0.0}
+{Only when {\ttfamily geometryScheme} == 1. Otherwise, {\ttfamily iota} will be set according to the requested {\ttfamily geometryScheme}.}
+{Rotational transform, equivalent to $1/q$ where $q$ is the safety factor.}
+
+\myhrule
+
+\param{epsilon\_t}
+{real}
+{??}
+{Only when {\ttfamily geometryScheme} == 1.}
+{Toroidal variation in $B$, as defined by (\ref{eq:Bmodel}).}
+
+\myhrule
+
+\param{epsilon\_h}
+{real}
+{??}
+{Only when {\ttfamily geometryScheme} == 1.}
+{Helical variation in $B$, as defined by (\ref{eq:Bmodel}).}
+
+\myhrule
+
+\param{epsilon\_antisymm}
+{real}
+{0.0}
+{Only when {\ttfamily geometryScheme} == 1.}
+{Stellarator-antisymmetric variation in $B$, as defined by (\ref{eq:Bmodel}).}
+
+\myhrule
+
+\param{helicity\_l}
+{integer}
+{??}
+{Only when {\ttfamily geometryScheme} == 1.}
+{Poloidal mode number of the helical variation in $B$, as defined by (\ref{eq:Bmodel}).}
+
+\myhrule
+
+\param{helicity\_n}
+{integer}
+{??}
+{Only when {\ttfamily geometryScheme} == 1.}
+{Toroidal mode number of the helical variation in $B$, as defined by (\ref{eq:Bmodel}).}
+
+\myhrule
+
+\param{helicity\_antisymm\_l}
+{integer}
+{??}
+{Only when {\ttfamily geometryScheme} == 1.}
+{Poloidal mode number of the stellarator-antisymmetric variation in $B$, as defined by (\ref{eq:Bmodel}).}
+
+\myhrule
+
+\param{helicity\_antisymm\_n}
+{integer}
+{??}
+{Only when {\ttfamily geometryScheme} == 1.}
+{Toroidal mode number of the stellarator-antisymmetric variation in $B$, as defined by (\ref{eq:Bmodel}).
+Note that you can create an up-down asymmetric tokamak by setting {\ttfamily helicity\_antisymm\_n}=0, {\ttfamily epsilon\_h}=0,
+and {\ttfamily epsilon\_antisymm}$>$0.}
+
+\myhrule
+
+\param{psiAHat}
+{real}
+{??}
+{Only when {\ttfamily geometryScheme} == 1. Otherwise, {\ttfamily psiAHat} will be set according to the requested {\ttfamily geometryScheme}.}
+{{\ttfamily psiAHat} = $\psi_a / (\bar{B} \bar{R}^2)$
+where $2 \pi \psi_a$ is the toroidal flux at the last closed flux surface.}
+
+\myhrule
+
+\param{aHat}
+{real}
+{??}
+{Only when {\ttfamily geometryScheme} == 1. Otherwise, {\ttfamily aHat} will be set according to the requested {\ttfamily geometryScheme}.}
+{The effective minor radius at the last closed flux surface, in units of $\bar{R}$.
+The code only uses {\ttfamily aBar} for converting between the various radial coordinates in input and output quantities.
+}
+
+\myhrule
+
+\param{equilibriumFile}
+{string}
+{``''}
+{Only when {\ttfamily geometryScheme} == 5, 11, or 12.}
+{Filename from which to load the magnetic equilibrium, either in {\ttfamily vmec wout} ASCII or \netCDF~format, or IPP {\ttfamily .bc} format.}
+
+\myhrule
+
+\param{VMECRadialOption}
+{integer}
+{1}
+{Only when {\ttfamily geometryScheme} == 5.}
+{Controls whether the nearest available flux surface in the {\ttfamily vmec wout} file is used, or whether radial interpolation is applied to the \vmec~data
+to obtain the magnetic field components on the exact surface requested.\\
+
+{\ttfamily VMECRadialOption}=0: Use the exact {\ttfamily XXX\_wish} flux surface requested, by interpolating from the \vmec~radial grid.\\
+
+{\ttfamily VMECRadialOption}=1: Use a surface that may be slightly different from {\ttfamily XXX\_wish} to get the nearest available flux surface from \vmec's HALF grid.  
+   The components of $\vect{B}$ in \vmec~are stored on the half grid, so interpolation is then unnecessary.\\
+
+{\ttfamily VMECRadialOption}=2: Use a surface that may be slightly different from {\ttfamily XXX\_wish} to get the nearest available flux surface from \vmec's FULL grid.
+I'm not sure why you would want this, but the feature is implemented for completeness.
+}
+
+\myhrule
+
+\param{min\_Bmn\_to\_load}
+{real}
+{0.0}
+{Only when {\ttfamily geometryScheme} == 5, 11, or 12.}
+{Filters the magnetic field read from an input file.  Only Fourier modes $(m,n)$ for which $B_{m,n}$ is at least {\ttfamily min\_Bmn\_to\_load} will be included.}
+
+
+
+
+\section{The {\ttfamily speciesParameters}~namelist}
+
+\param{Zs}
+{1D array of reals}
+{1.0}
+{Always}
+{Charges of each species, in units of the proton charge $e$}
+
+\myhrule
+
+\param{mHats}
+{1D array of reals}
+{1.0}
+{Always}
+{Masses of each species, in units of the reference mass $\bar{m}$}
+
+\myhrule
+
+\param{nHats}
+{1D array of reals}
+{1.0}
+{Whenever {\ttfamily RHSMode} == 1}
+{Densities of each species, in units of the reference density $\bar{n}$}
+
+\myhrule
+
+\param{THats}
+{1D array of reals}
+{1.0}
+{Whenever {\ttfamily RHSMode} == 1}
+{Temperatures of each species, in units of the reference temperature $\bar{T}$}
+
+\myhrule
+
+\param{dnHatdpsiHats}
+{1D array of reals}
+{0.0}
+{Whenever {\ttfamily RHSMode} == 1 and {\ttfamily inputRadialCoordinateForGradients} == 0}
+{Radial density gradients of each species, with respect to the radial coordinate $\hat{\psi}$, normalized by the reference density $\bar{n}$.}
+
+\myhrule
+
+\param{dTHatdpsiHats}
+{1D array of reals}
+{0.0}
+{Whenever {\ttfamily RHSMode} == 1 and {\ttfamily inputRadialCoordinateForGradients} == 0}
+{Radial temperature gradients of each species, with respect to the radial coordinate $\hat{\psi}$, normalized by the reference temperature $\bar{T}$.}
+
+\myhrule
+
+\param{dnHatdpsiNs}
+{1D array of reals}
+{0.0}
+{Whenever {\ttfamily RHSMode} == 1 and {\ttfamily inputRadialCoordinateForGradients} == 1}
+{Radial density gradients of each species, with respect to the radial coordinate $\psi_N$, normalized by the reference density $\bar{n}$.}
+
+\myhrule
+
+\param{dTHatdpsiNs}
+{1D array of reals}
+{0.0}
+{Whenever {\ttfamily RHSMode} == 1 and {\ttfamily inputRadialCoordinateForGradients} == 1}
+{Radial temperature gradients of each species, with respect to the radial coordinate $\psi_N$, normalized by the reference temperature $\bar{T}$.}
+
+\myhrule
+
+\param{dnHatdrHats}
+{1D array of reals}
+{0.0}
+{Whenever {\ttfamily RHSMode} == 1 and {\ttfamily inputRadialCoordinateForGradients} == 2}
+{Radial density gradients of each species, with respect to the radial coordinate $\hat{r}$, normalized by the reference density $\bar{n}$.}
+
+\myhrule
+
+\param{dTHatdrHats}
+{1D array of reals}
+{0.0}
+{Whenever {\ttfamily RHSMode} == 1 and {\ttfamily inputRadialCoordinateForGradients} == 2}
+{Radial temperature gradients of each species, with respect to the radial coordinate $\hat{r}$, normalized by the reference temperature $\bar{T}$.}
+
+\myhrule
+
+\param{dnHatdrNs}
+{1D array of reals}
+{0.0}
+{Whenever {\ttfamily RHSMode} == 1 and {\ttfamily inputRadialCoordinateForGradients} == 3}
+{Radial density gradients of each species, with respect to the radial coordinate $r_N$, normalized by the reference density $\bar{n}$.}
+
+\myhrule
+
+\param{dTHatrNs}
+{1D array of reals}
+{0.0}
+{Whenever {\ttfamily RHSMode} == 1 and {\ttfamily inputRadialCoordinateForGradients} == 3}
+{Radial temperature gradients of each species, with respect to the radial coordinate $r_N$, normalized by the reference temperature $\bar{T}$.}
+
+
+
+
+
+
+
+
+
+
+\section{The {\ttfamily physicsParameters}~namelist}
+
+
+
+
+
+
 
 
 \section{Directives for \sfincsScan}
@@ -142,7 +517,12 @@ See {\ttfamily utils/profiles.XXX} for examples.\\
 {\ttfamily scanType=21}: Read in a list of requested runs from a file {\ttfamily runspec.dat}. See {\ttfamily utils/sfincsScan\_21} for an example file.
 }
 
-\myhrule
+
+
+
+
+
+
 
 
 \section{\PETSc~commands}
@@ -158,5 +538,15 @@ There are hundreds of \PETSc~options, and a list can be obtained by running with
 
 \PETScParam{-ksp\_view}
 {Dumps detailed information to stdout related to the linear solver.}
+
+\myhrule
+
+\PETScParam{-ksp\_gmres\_restart {\normalfont \ttfamily$<$integer$>$}}
+{After how many iterations will GMRES restart. Default is 2000. The convergence of GMRES slows every time a restart occurs, but restarts also free up memory.}
+
+\myhrule
+
+\PETScParam{-mat\_mumps\_icntl\_4 {\normalfont \ttfamily$<$integer$>$}}
+{How much diagnostic information will be printed by \mumps. Default is 0. Set to 2 or 3 to print out useful diagnostic information about the memory required for factorizing the preconditioner.}
 
 

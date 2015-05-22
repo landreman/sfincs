@@ -13,9 +13,11 @@ versions 3.2 through 3.5.  The commands in \PETSc~often change from version to v
 to the \sfincs~source code.
 
 Although \sfincs~can be run on a single processor, usually you want to run it in parallel.  
-In this case, you need {\ttfamily MPI}, and you need either \href{http://mumps-solver.org/}{\mumps}
+In this case, you need {\ttfamily MPI}, and you need at least one
+of the two libraries \href{http://mumps-solver.org/}{\mumps}
 or \href{http://crd-legacy.lbl.gov/~xiaoye/SuperLU/}{\superludist}.  (Note that \superludist is a parallel library which is different from the serial library {\ttfamily superlu}).
-Both \mumps~and \superludist~are parallelized libraries for direct solution of large sparse linear systems. 
+Both \mumps~and \superludist~are parallelized libraries for direct solution of large sparse linear systems,
+which \sfincs~uses to factorize the preconditioning matrix (discussed in secton \ref{sec:gmres}).
 \PETSc~has a built-in serial sparse direct linear solver,
 but it sometimes gives an error that there is a ``zero pivot'' when \mumps~and \superludist~have no problem solving the system;
 therefore you may want to use \mumps~or \superludist~even for serial runs.  In our experience,
@@ -41,7 +43,9 @@ You obtain the \sfincs~source code by cloning the repository. This requires seve
 \item Create an account on \url{github.com}, and sign in to {\ttfamily github}.
 \item Go to your account settings page, by clicking the wrench icon on the top right.
 \item Click on ``SSH keys'' on the left, and add an SSH key for the computer you wish to use. To do this, you may wish to read see the ``generating SSH keys'' guide which is linked to from that page.
-\item From a terminal command line in the computer you wish to use, enter {\ttfamily git clone git@github.com:landreman/sfincs.git} to download the repository.
+\item From a terminal command line in the computer you wish to use, enter\\
+{\ttfamily git clone git@github.com:landreman/sfincs.git}\\
+ to download the repository.
 \end{enumerate}
 
 Any time after you have cloned the repository in this way, you can download future updates to the code by entering {\ttfamily git pull} from any subdirectory within your local copy.
@@ -55,17 +59,17 @@ computer, you would type\\
  at the command line
 or in your {\ttfamily .bashrc} startup script.)
 This variable is used in two ways. 
-First, {\ttfamily make} uses this variable to looks for the 
+First, {\ttfamily make} uses this variable to look for the 
 appropriate makefile in the
 \path{sfincs/fortran/version3/makefiles} directory.  Second, the {\ttfamily SFINCS\_SYSTEM} environment
-variable affects the behavior of
-\sfincsScan~in several ways, such as determining the command used to submit jobs to the system's queue.
+variable is used by
+\sfincsScan~to determine the command for submitting jobs to the system's queue.
 
 You will probably want to add the directory \path{sfincs/fortran/version3/utils/} to your
 path.  This directory contains the scripts for plotting output and running parameter scans.
 
 \section{Setting up \sfincs~on a new system}
-If you are setting up \sfincs~ on a new system, one for which there is no file
+If you are setting up \sfincs~on a new system, one for which there is no file
 \path{sfincs/fortran/version3/makefiles/makefile.XXX},
 there are several things you need to do.
 
