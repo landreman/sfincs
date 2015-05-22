@@ -1,26 +1,68 @@
 \chapter{Overview}
 
 
-SFINCS is a nifty code \cite{sfincsPaper}.
+The \sfincs~code is a free, open-source tool for solving neoclassical-type kinetic problems in nonaxisymmetric or axisymmetric plasmas
+with nested toroidal flux surfaces.
+The code solves a drift-kinetic equation for an arbitrary number of species.  Optionally, a quasi-neutrality
+equation can also be solved to obtain the self-consistent variation of the electrostatic potential on a flux surface.
 
+This manual describes ``version 3'' of \sfincs.  There are two older versions of the
+code called singleSpecies and multiSpecies.
+
+This document discusses use and operation of the code.  For more details about the specific equations implemented,
+see the version 3 technical documentation available in the \path{sfincs/docs} directory.
+Ref \cite{sfincsPaper} gives many details and some early physics results.
+
+
+
+\section{GMRES/KSP and preconditioning}
+
+At its heart, \sfincs~solves one or more large sparse linear systems $Ax=b$.  Here $b$ is a known right-hand side vector,
+$A$ is a large (often millions $\times$ millions) known sparse matrix, and $x$ is the desired and unknown solution vector.
+The direct way to solve such systems is to $LU$-factorize
+the matrix $A$ into lower- and upper-triangular factors.
+Once the $L$ and $U$ factors are found, the solution of the linear system
+for any right-hand side vector can be rapidly obtained.  However, even if the original matrix is sparse, the $L$ and $U$ factors
+are generally not sparse, and so a very large amount of memory can be required for a direct $LU$-factorization.
+
+An alternative way to solve
+such large linear systems is with a so-called ``Krylov-space'' iterative method, which can dramatically reduce the memory required
+compared to a direct solution.  For the non-symmetric matrices that arise in \sfincs, the preferred Krylov-space
+algorithm is called GMRES (Generalized Minimal RESidual.)  In \sfincs, the \PETSc~library is used to solve the large systems
+of equations. \PETSc~calls its family of linear solvers KSP, so in the output of \sfincs~you will see a ``KSP residual'' reported
+as GMRES iterates towards the solution.
+
+An important element of Krylov methods is preconditioning.  The art of preconditioning is to find a linear operator which has similar eigenvalues
+to the ``true'' matrix you would like to invert (or more precisely, to $LU$-factorize), but which can be inverted faster.
+If a good preconditioner can be found, the number of GMRES iterations is greatly reduced.  Many schemes for preconditioning exist,
+but the version adopted in \sfincs~is to explicity form and $LU$-factorize a preconditioning matrix which is similar
+to the true matrix (but somewhat simpler).  There is a basic trade-off:
+the more similar the preconditioner matrix is to the true matrix, the fewer iterations will be required, but the more time will
+be required to $LU$-factorize the preconditioning operator.  The usual preconditioner matrix in \sfincs~is obtained by dropping all coupling
+between grid points in the speed coordinate and dropping coupling between species.  The preconditioner matrix need not be a physically
+accurate or meaningful operator; as long as GMRES converges, the solution obtained will be independent of the preconditioner to whatever tolerance is specified.
 
 \section{\sfincs~vs. \sfincsScan}
-The fortran part of \sfincs~ solves the kinetic equation for each species
-at a single flux surface, a single value of $E_r$, and a single set of resolution parameters.
-However, often the goal is to determine the ambipolar $E_r$ at one or more surfaces.
-For this task, the \sfincsScan~family of python scripts
+The core fortran part of \sfincs~solves the kinetic equation for each species
+at a single flux surface, a single value of $E_r$, and a single set of other parameters.
+However, often the goal is to determine the ambipolar $E_r$ at one or more surfaces, or to scan some other parameter.
+For this task, the \sfincsScan~family of \python~scripts is available.
+For a full list of the types of scans available, see section \ref{sec:sfincsScanParams}
 
+\section{Bugs and feedback}
 
+To report any bugs, provide feedback, or ask questions, contact Matt Landreman at
+\href{mailto:matt.landreman@gmail.com}{\nolinkurl{matt.landreman@gmail.com} }
 
-\begin{figure}[htbp]
-\begin{center}
-%\includegraphics[width=1.0\textwidth]{poloidal_cross-sections.pdf}
-\mycaption{Trajectories of trapped particles.  (a) In tokamaks and omnigenous stellarators,
-all collisionless trajectories are confined.  (b) In contrast, trapped particles in other stellarators
-may have a radial drift that does not average to zero.
-\label{fig:poloidal_cross_sections}}
-\end{center}
-\end{figure}
+%\begin{figure}[htbp]
+%\begin{center}
+%%\includegraphics[width=1.0\textwidth]{poloidal_cross-sections.pdf}
+%\mycaption{Trajectories of trapped particles.  (a) In tokamaks and omnigenous stellarators,
+%all collisionless trajectories are confined.  (b) In contrast, trapped particles in other stellarators
+%may have a radial drift that does not average to zero.
+%\label{fig:poloidal_cross_sections}}
+%\end{center}
+%\end{figure}
 
 
 

@@ -1,7 +1,63 @@
 \chapter{Numerical resolution parameters}
 
-\section{Convergence testing}
+Results from \sfincs~should only be believed if you are confident they
+are converged with respect to the numerical resolution parameters
+\Ntheta, \Nzeta, \Nxi, and \Nx.  That is, you want to be sure the
+physics output of the code does not change significantly when any of
+these parameters are increased. The values of \Ntheta, \Nzeta, \Nxi,
+and \Nx~required for convergence depend strongly on the magnetic
+geometry and collisionality, with modest dependence also on the radial
+electric field. It is strongly recommended that you test for
+convergence with respect to \Ntheta, \Nzeta, \Nxi, and \Nx~whenever
+beginning \sfincs~calculations for a new scenario.
 
+Note that ``convergence'' in this sense (convergence with respect to resolution parameters assuming the discretized
+system is solved exactly) is separate from the convergence of GMRES/KSP.
+
+\section{Relatively unimportant resolution parameters}
+
+There are several resolution parameters which are almost never the limiting factor
+for convergence.  You can almost always use {\ttfamily NL=4}, 
+{\ttfamily solverTolerance} = $10^{-5}$ or $10^{-6}$,
+{\ttfamily xMax=5.0},
+and {\ttfamily NxPotentialsPerVth=40.0}.  The latter two of these parameters are in fact ignored
+for the recommended and default {\ttfamily xGridMode} setting, 5.
+
+\section{General suggestions}
+
+The time and memory requirements of the code increase significantly
+when \Ntheta, \Nzeta, \Nxi, or \Nx~are increased. Therefore, you
+probably want to only scan one of these four parameters at a time
+(rather than increasing two or more of them simultaneously) when
+testing for convergence. (This recommended approach is the one taken
+in \sfincsScan~automated convergence scans, discussed in section
+\ref{sec:convergence})
+
+When the mean-free-path is shorter than the parallel length scale of the equilibrium,
+({\ttfamily nuPrime} $\ge$ 1), the parameters required for convergence
+do not depend much on collisionality. In the opposite
+limit in which the mean-free-path is longer than the parallel length scale of the equilibrium,
+({\ttfamily nuPrime} $\le$ 1)
+values of
+\Nzeta~and \Nxi~required for convergence increase dramatically
+as collisionality decreases. The required value of \Ntheta~increases as well, but often
+not quite as dramatically. The \Nx~required for convergence does not depend
+much on collisionality, though typically the required value increases
+slightly with collisionality at high collisionality
+
+The \Nx~required for convergence may need to increase slightly with the number of species.
+Typically you can expect to use \Nx=5-8.
+
+The resolution parameters do not need to vary much with the radial
+electric field as long as the electric field is below about 1/3 of the resonant value.
+(In the notation of \cite{sfincsPaper}, when $E_*<1/3$).
+For almost all experimentally relevant situations (except for HSX where $T_i/T_e$ is extremely small),
+the electric field is far below the resonance, in which case you should not need to vary the resolution
+parameters with the electric field.
+However, if you do approach the $E_r$ resonance, \Nx~will likely need to be increased.
+
+\section{Convergence testing}
+\label{sec:convergence}
 
 \section{Typical resolution requirements}
 

@@ -5,6 +5,9 @@
 \newcommand{\PETScParam}[2]{{\setlength{\parindent}{0cm} {\ttfamily \bfseries #1}\\{\it Meaning}: #2}}
 \newcommand{\myhrule}{{\setlength{\parindent}{0cm} \hrulefill }}
 
+\newcommand{\true}{{\ttfamily .true.}}
+\newcommand{\false}{{\ttfamily .false.}}
+
 In this chapter we first describe all the parameters which can be included in the {\ttfamily input.namelist} file. 
 Then we list some of the command-line flags associated with \PETSc~which can be useful.
 
@@ -38,7 +41,7 @@ Then we list some of the command-line flags associated with \PETSc~which can be 
 
 \param{saveMatlabOutput}
 {Boolean}
-{false}
+{\false}
 {Always}
 {If this switch is set to true, Matlab m-files are created which
  store the system matrix, right-hand side, and solution vector.  If an iterative solver is used,
@@ -60,7 +63,7 @@ the size of the linear system is more then 1400 $\times$ 1400,
 
 \param{saveMatricesAndVectorsInBinary}
 {Boolean}
-{false}
+{\false}
 {Always}
 {If this switch is set to true, the matrix, right-hand-side, and solution of the
 linear system will be saved in PETSc's binary format.  The preconditioner matrix will also
@@ -79,16 +82,39 @@ be saved if {\ttfamily tryIterativeSolver == .true.}
 
 \param{solveSystem}
 {Boolean}
-{true}
+{\true}
 {Always}
 {If this parameter is false, the system of equations will not actually be solved.
  Sometimes it can be useful to set this parameter to {\ttfamily .false.} when debugging.
 }
 
 
+\section{The {\ttfamily geometryParameters} namelist}
+
+\param{inputRadialCoordinate}
+{integer}
+{3}
+{When {\ttfamily geometryScheme}==5, 11, or 12}
+{Which radial coordinate to use to specify the flux surface for a single calculation,
+or to specify the range of flux surfaces for a radial scan. See section \ref{sec:radialCoordinates}
+for more information about radial coordinates.\\
+
+{\ttfamily inputRadialCoordinate}==0: Use the flux surface specified by {\ttfamily psiHat\_wish}
+for a single run, and use the range specified by {\ttfamily psiHat\_min} and {\ttfamily psiHat\_max} for radial scans.\\
+
+{\ttfamily inputRadialCoordinate}==1: Use the flux surface specified by {\ttfamily psiN\_wish}
+for a single run, and use the range specified by {\ttfamily psiN\_min} and {\ttfamily psiN\_max} for radial scans.\\
+
+{\ttfamily inputRadialCoordinate}==2: Use the flux surface specified by {\ttfamily rHat\_wish}
+for a single run, and use the range specified by {\ttfamily rHat\_min} and {\ttfamily rHat\_max} for radial scans.\\
+
+{\ttfamily inputRadialCoordinate}==3: Use the flux surface specified by {\ttfamily rN\_wish}
+for a single run, and use the range specified by {\ttfamily rN\_min} and {\ttfamily rN\_max} for radial scans.
+}
 
 
 \section{Directives for \sfincsScan}
+\label{sec:sfincsScanParams}
 
 The parameters for \sfincsScan~ begin with the code {\ttfamily !ss} and so are not read by the fortran part of \sfincs.
 These parameters matter only when \sfincsScan~is called and are all ignored when \sfincs~is executed directly.
@@ -98,7 +124,7 @@ Note that \sfincsScan~ parameters do not have defaults, unlike fortran namelist 
 \ssparam{scanType}
 {integer}
 {Any time \sfincsScan~is called.}
-{Which type of scan will be run when \sfincsScan~is called.\\
+{Which type of scan will be run when \sfincsScan~is called. \\
 
 {\ttfamily scanType=1}:  Convergence scan. (Scan the parameters in the resolutionParameters namelist.)\\
 

@@ -1,0 +1,58 @@
+\chapter{Specifying and running a computation}
+
+\section{Normalizations}
+
+{\setlength{\parindent}{0cm}
+Dimensional quantities in \sfincs~are normalized to ``reference'' values that are denoted by a bar:\\
+$\bar{B}$ = reference magnetic field, typically 1 Tesla.\\
+$\bar{R}$ = reference length, typically 1 meter.\\
+$\bar{n}$ = reference density, typically $10^{19}$ m$^{-3}$, $10^{20}$ m$^{-3}$, or something similar.\\
+$\bar{m}$ = reference mass, typically either the mass of hydrogen or deuterium.\\
+$\bar{T}$ = reference temperature in energy units, typically 1 eV or 1 keV.\\
+$\bar{v} = \sqrt{2 \bar{T} / \bar{m}}$ = reference speed\\
+$\bar{\Phi}$ = reference electrostatic potential, typically 1 V or 1 kV.\\
+}
+
+You can choose any reference parameters you like, not just the values
+suggested here. However, if you use a {\ttfamily vmec} or {\ttfamily .bc} magnetic equilibrium
+by choosing {\ttfamily geometryScheme} = 5, 11, or 12, then you MUST use $\bar{B}$ = 1 Tesla and $\bar{R}$ = 1 meter.
+The code ``knows'' about the reference values only through
+the 3 combinations {\ttfamily Delta}, {\ttfamily alpha}, and {\ttfamily nu\_n}
+in the {\ttfamily physicsParameters} namelist.
+
+Normalized quantities are denoted by a ``hat''.  Taking the magnetic field as an example,
+$\hat{B}=B/\bar{B}$, where $\hat{B}$ is called {\ttfamily BHat} in the fortran code and \HDF~output file.
+
+\section{Radial coordinates}
+\label{sec:radialCoordinates}
+
+A variety of flux-surface label coordinates are used in other codes and in the literature.
+One common choice (used in {\ttfamily vmec}) is $\psi_N$, the toroidal flux normalized to its
+value at the last closed flux surface.  Another common choice is an ``effective normalized minor radius''
+$r_N$, defined by $r_N=\sqrt{\psi_N}$.  For gradients of density, temperature, and electrostatic potential (i.e. the radial
+electric field), it is useful to use a dimensional local minor radius $r = r_N a$, where $a$ is some
+measure of the plasma effective outer minor radius.  Finally, one could also use $\psi$ directly.
+For maximum flexibility, \sfincs~permits any of these four radial coordinates to be used, and different radial
+coordinates can be used in different parts of a given computation.  Output quantities which depend
+on the radial coordinate, such as radial fluxes, are often given with respect to all radial coordinates.
+
+To specify a run, you can make several independent choices for radial coordinates.  One parameter
+you select is {\ttfamily inputRadialCoordinate} in the {\ttfamily geometryParameters} namelist.
+This parameter controls which coordinate is used to specify the flux surface. The possible values of {\ttfamily inputRadialCoordinate} are:
+
+0: Use {\ttfamily psiHat}, the toroidal flux (divided by $2\pi$) normalized by $\bar{B}\bar{R}^2$.\\
+
+1: Use {\ttfamily psiN}, the toroidal flux normalized by its value at the last closed flux surface.\\
+
+2: Use {\ttfamily rHat}, defined as {\ttfamily aHat}$\sqrt{\mbox{\ttfamily psiN}}$, where {\ttfamily aHat} is an effective minor radius of the last closed flux surface normalized by $\bar{R}$.\\
+
+3: Use {\ttfamily rN}, defined as $\sqrt{\mbox{\ttfamily psiN}}$.\\
+
+
+
+
+
+\section{Parallelization}
+Choosing the number of nodes and procs.
+
+\section{Issues with running on 1 processor}

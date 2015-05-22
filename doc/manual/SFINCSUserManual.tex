@@ -1,7 +1,7 @@
 % -*- Mode:TeX -*-
 
 
-\documentclass[12pt,twoside,singlespace]{mymanual}
+\documentclass[11pt,twoside,singlespace]{mymanual}
 %\pagestyle{plain}
 %\pagestyle{headings}
 %\lhead{\chaptermark}
@@ -17,6 +17,8 @@
 \usepackage[sort&compress,numbers]{natbib} % better citations
 \usepackage{fancyhdr}
 \usepackage{hyperref}
+%\usepackage[nottoc,notlot,notlof]{tocbibind}
+\usepackage{url}
 
 \newcommand{\vv}{\upsilon}
 \newcommand{\vect}[1]{{\mathbf #1}}
@@ -29,6 +31,11 @@
 \newcommand{\netCDF}{{\ttfamily netCDF}}
 \newcommand{\superludist}{{\ttfamily superlu\_dist}}
 \newcommand{\mumps}{{\ttfamily mumps}}
+\newcommand{\python}{{\ttfamily python}}
+\newcommand{\Ntheta}{{\ttfamily Ntheta}}
+\newcommand{\Nzeta}{{\ttfamily Nzeta}}
+\newcommand{\Nxi}{{\ttfamily Nxi}}
+\newcommand{\Nx}{{\ttfamily Nx}}
 
 % uncomment the following line to remove all graphics (for faster compiling)
 %\renewcommand{\includegraphics}[2][x]{}
@@ -84,7 +91,7 @@
 \include{installation}
 \include{inputParameters}
 \include{resolution}
-\include{parallelization}
+\include{runs}
 
 \renewcommand{\chaptermark}[1]{\markboth{\sc{Appendix\ \thechapter.\ #1}}{}}
 \appendix
