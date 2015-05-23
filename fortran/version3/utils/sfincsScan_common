@@ -10,7 +10,7 @@ commentCode = "!ss"
 
 import string
 
-def readScanVariable(varName, intOrFloatOrString):
+def readScanVariable(varName, intOrFloatOrString, required=True):
     # This subroutine reads the special scan commands in the input.namelist that are hidden from fortran:
     # It is assumed that the input.namelist file has been loaded into the variable "inputFile".
 
@@ -75,15 +75,19 @@ def readScanVariable(varName, intOrFloatOrString):
             numValidLines += 1
 
     if returnValue==None:
-        print "Error! Unable to find a valid setting for the scan variable "+originalVarName+" in "+filename+"."
-        print "A definition should have the following form:"
-        if intOrFloatOrString == "int":
-            print commentCode+" "+originalVarName+" = 1"
-        elif intOrFloatOrString == "float":
-            print commentCode+" "+originalVarName+" = 1.5"
-        elif intOrFloatOrString == "string":
-            print commentCode+" "+originalVarName+" = nuPrime"
-        exit(1)
+        if required:
+            print "Error! Unable to find a valid setting for the scan variable "+originalVarName+" in "+filename+"."
+            print "A definition should have the following form:"
+            if intOrFloatOrString == "int":
+                print commentCode+" "+originalVarName+" = 1"
+            elif intOrFloatOrString == "float":
+                print commentCode+" "+originalVarName+" = 1.5"
+            elif intOrFloatOrString == "string":
+                print commentCode+" "+originalVarName+" = nuPrime"
+            exit(1)
+        else:
+            # Exit without printing an error message.
+            raise
 
     if numValidLines > 1:
         print "Warning! More than 1 valid definition was found for the variable "+originalVarName+". The last one will be used."
@@ -92,7 +96,7 @@ def readScanVariable(varName, intOrFloatOrString):
     return returnValue
 
 
-def readVariable(varName, intOrFloatOrString):
+def readVariable(varName, intOrFloatOrString, required=True):
     # This function reads normal fortran variables from the input.namelist file.
     # It is assumed that the input.namelist file has been loaded into the variable "inputFile".
 
@@ -154,8 +158,9 @@ def readVariable(varName, intOrFloatOrString):
             numValidLines += 1
 
     if returnValue==None:
-        print "Error! Unable to find a valid setting for the variable "+originalVarName+" in "+filename+"."
-        exit(1)
+        if required:
+            print "Error! Unable to find a valid setting for the variable "+originalVarName+" in "+filename+"."
+        raise
 
     if numValidLines > 1:
         print "Warning! More than 1 valid definition was found for the variable "+originalVarName+". The last one will be used."

@@ -115,7 +115,7 @@ module globalVariables
   ! 2 = 4th order dinite differences
 
   integer :: xPotentialsGridScheme = 2, xPotentialsInterpolationScheme
-  integer :: xGridScheme = 1, xInterpolationScheme
+  integer :: xGridScheme = 5, xInterpolationScheme
   logical :: pointAtX0
 
   integer :: Ntheta = 15
@@ -135,19 +135,19 @@ module globalVariables
 
   logical :: useIterativeLinearSolver=.true.
 
-  integer :: whichParallelSolverToFactorPreconditioner
+  integer :: whichParallelSolverToFactorPreconditioner = 1
   ! Options for whichParallelSolverToFactorPreconditioner:
   ! 1 = use mumps if it is detected, otherwise use superlu_dist
   ! 2 = force use of superlu_dist, if it is available
 
   integer :: preconditioner_x=1, preconditioner_x_min_L=0, preconditioner_zeta=0
-  integer :: preconditioner_theta=0, preconditioner_xi=0, preconditioner_species=1
+  integer :: preconditioner_theta=0, preconditioner_xi=1, preconditioner_species=1
   integer :: preconditioner_theta_min_L=0, preconditioner_zeta_min_L=0
   logical :: reusePreconditioner=.true.
 
   integer :: constraintScheme=-1
 
-  integer :: PETSCPreallocationStrategy
+  integer :: PETSCPreallocationStrategy=1
 
   ! ********************************************************
   !

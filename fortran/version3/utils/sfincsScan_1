@@ -8,10 +8,31 @@ import os, inspect
 print "This is "+ inspect.getfile(inspect.currentframe())
 print "Beginning a convergence scan."
 
-Ntheta = readVariable("Ntheta","int")
-NthetaMaxFactor = readScanVariable("NthetaMaxFactor","float")
-NthetaMinFactor = readScanVariable("NthetaMinFactor","float")
-NthetaNumRuns = readScanVariable("NthetaNumRuns","int")
+#####################################################################################################################3
+
+try:
+    Ntheta = readVariable("Ntheta","int",required=False)
+    baseValuePresent = True
+except:
+    # Default
+    Ntheta = 15
+    baseValuePresent = False
+
+try:
+    NthetaMaxFactor = readScanVariable("NthetaMaxFactor","float",required=False)
+    NthetaMinFactor = readScanVariable("NthetaMinFactor","float",required=False)
+    NthetaNumRuns = readScanVariable("NthetaNumRuns","int",required=False)
+    scanPresent = True
+except:
+    NthetaMaxFactor = 1
+    NthetaMinFactor = 1
+    NthetaNumRuns = 0
+    scanPresent = False
+
+if scanPresent and (not baseValuePresent):
+    print "Error! If scanning Ntheta, you must set the base value for Ntheta."
+    exit(1)
+
 if Ntheta<0:
     print "Error! Ntheta must be positive"
     exit(1)
@@ -28,10 +49,31 @@ except ValueError:
     pass
 print "Nthetas:",Nthetas
 
-Nzeta = readVariable("Nzeta","int")
-NzetaMaxFactor = readScanVariable("NzetaMaxFactor","float")
-NzetaMinFactor = readScanVariable("NzetaMinFactor","float")
-NzetaNumRuns = readScanVariable("NzetaNumRuns","int")
+#####################################################################################################################3
+
+try:
+    Nzeta = readVariable("Nzeta","int",required=False)
+    baseValuePresent = True
+except:
+    # Default
+    Nzeta = 15
+    baseValuePresent = False
+
+try:
+    NzetaMaxFactor = readScanVariable("NzetaMaxFactor","float",required=False)
+    NzetaMinFactor = readScanVariable("NzetaMinFactor","float",required=False)
+    NzetaNumRuns = readScanVariable("NzetaNumRuns","int",required=False)
+    scanPresent = True
+except:
+    NzetaMaxFactor = 1
+    NzetaMinFactor = 1
+    NzetaNumRuns = 0
+    scanPresent = False
+
+if scanPresent and (not baseValuePresent):
+    print "Error! If scanning Nzeta, you must set the base value for Nzeta."
+    exit(1)
+
 if Nzeta<0:
     print "Error! Nzeta must be positive"
     exit(1)
@@ -48,10 +90,31 @@ except ValueError:
     pass
 print "Nzetas:",Nzetas
 
-Nxi = readVariable("Nxi","int")
-NxiMaxFactor = readScanVariable("NxiMaxFactor","float")
-NxiMinFactor = readScanVariable("NxiMinFactor","float")
-NxiNumRuns = readScanVariable("NxiNumRuns","int")
+#####################################################################################################################3
+
+try:
+    Nxi = readVariable("Nxi","int",required=False)
+    baseValuePresent = True
+except:
+    # Default
+    Nxi = 16
+    baseValuePresent = False
+
+try:
+    NxiMaxFactor = readScanVariable("NxiMaxFactor","float",required=False)
+    NxiMinFactor = readScanVariable("NxiMinFactor","float",required=False)
+    NxiNumRuns = readScanVariable("NxiNumRuns","int",required=False)
+    scanPresent = True
+except:
+    NxiMaxFactor = 1
+    NxiMinFactor = 1
+    NxiNumRuns = 0
+    scanPresent = False
+
+if scanPresent and (not baseValuePresent):
+    print "Error! If scanning Nxi you must set the base value for Nxi."
+    exit(1)
+
 if Nxi<0:
     print "Error! Nxi must be positive"
     exit(1)
@@ -68,10 +131,31 @@ except ValueError:
     pass
 print "Nxis:",Nxis
 
-NL = readVariable("NL","int")
-NLMaxFactor = readScanVariable("NLMaxFactor","float")
-NLMinFactor = readScanVariable("NLMinFactor","float")
-NLNumRuns = readScanVariable("NLNumRuns","int")
+#####################################################################################################################3
+
+try:
+    NL = readVariable("NL","int",required=False)
+    baseValuePresent = True
+except:
+    # Default
+    NL = 4
+    baseValuePresent = False
+
+try:
+    NLMaxFactor = readScanVariable("NLMaxFactor","float",required=False)
+    NLMinFactor = readScanVariable("NLMinFactor","float",required=False)
+    NLNumRuns = readScanVariable("NLNumRuns","int",required=False)
+    scanPresent = True
+except:
+    NLMaxFactor = 1
+    NLMinFactor = 1
+    NLNumRuns = 0
+    scanPresent = False
+
+if scanPresent and (not baseValuePresent):
+    print "Error! If scanning NL, you must set the base value for NL."
+    exit(1)
+
 if NL<0:
     print "Error! NL must be positive"
     exit(1)
@@ -88,10 +172,31 @@ except ValueError:
     pass
 print "NLs:",NLs
 
-Nx = readVariable("Nx","int")
-NxMaxFactor = readScanVariable("NxMaxFactor","float")
-NxMinFactor = readScanVariable("NxMinFactor","float")
-NxNumRuns = readScanVariable("NxNumRuns","int")
+#####################################################################################################################3
+
+try:
+    Nx = readVariable("Nx","int",required=False)
+    baseValuePresent = True
+except:
+    # Default
+    Nx = 5
+    baseValuePresent = False
+
+try:
+    NxMaxFactor = readScanVariable("NxMaxFactor","float",required=False)
+    NxMinFactor = readScanVariable("NxMinFactor","float",required=False)
+    NxNumRuns = readScanVariable("NxNumRuns","int",required=False)
+    scanPresent = True
+except:
+    NxMaxFactor = 1
+    NxMinFactor = 1
+    NxNumRuns = 0
+    scanPresent = False
+
+if scanPresent and (not baseValuePresent):
+    print "Error! If scanning Nx, you must set the base value for Nx."
+    exit(1)
+
 if Nx<0:
     print "Error! Nx must be positive"
     exit(1)
@@ -108,10 +213,31 @@ except ValueError:
     pass
 print "Nxs:",Nxs
 
-NxPotentialsPerVth = readVariable("NxPotentialsPerVth","float")
-NxPotentialsPerVthMaxFactor = readScanVariable("NxPotentialsPerVthMaxFactor","float")
-NxPotentialsPerVthMinFactor = readScanVariable("NxPotentialsPerVthMinFactor","float")
-NxPotentialsPerVthNumRuns = readScanVariable("NxPotentialsPerVthNumRuns","int")
+#####################################################################################################################3
+
+try:
+    NxPotentialsPerVth = readVariable("NxPotentialsPerVth","float",required=False)
+    baseValuePresent = True
+except:
+    # Default
+    NxPotentialsPerVth = 40.0
+    baseValuePresent = False
+
+try:
+    NxPotentialsPerVthMaxFactor = readScanVariable("NxPotentialsPerVthMaxFactor","float",required=False)
+    NxPotentialsPerVthMinFactor = readScanVariable("NxPotentialsPerVthMinFactor","float",required=False)
+    NxPotentialsPerVthNumRuns = readScanVariable("NxPotentialsPerVthNumRuns","int",required=False)
+    scanPresent = True
+except:
+    NxPotentialsPerVthMaxFactor = 1
+    NxPotentialsPerVthMinFactor = 1
+    NxPotentialsPerVthNumRuns = 0
+    scanPresent = False
+
+if scanPresent and (not baseValuePresent):
+    print "Error! If scanning NxPotentialsPerVth, you must set the base value for NxPotentialsPerVth."
+    exit(1)
+
 if NxPotentialsPerVth<0:
     print "Error! NxPotentialsPerVth must be positive"
     exit(1)
@@ -127,10 +253,31 @@ for value in NxPotentialsPerVths:
         NxPotentialsPerVths.remove(value)
 print "NxPotentialsPerVths:",NxPotentialsPerVths
 
-xMax = readVariable("xMax","float")
-xMaxMaxFactor = readScanVariable("xMaxMaxFactor","float")
-xMaxMinFactor = readScanVariable("xMaxMinFactor","float")
-xMaxNumRuns = readScanVariable("xMaxNumRuns","int")
+#####################################################################################################################3
+
+try:
+    xMax = readVariable("xMax","float",required=False)
+    baseValuePresent = True
+except:
+    # Default
+    xMax = 5.0
+    baseValuePresent = False
+
+try:
+    xMaxMaxFactor = readScanVariable("xMaxMaxFactor","float",required=False)
+    xMaxMinFactor = readScanVariable("xMaxMinFactor","float",required=False)
+    xMaxNumRuns = readScanVariable("xMaxNumRuns","int",required=False)
+    scanPresent = True
+except:
+    xMaxMaxFactor = 1
+    xMaxMinFactor = 1
+    xMaxNumRuns = 0
+    scanPresent = False
+
+if scanPresent and (not baseValuePresent):
+    print "Error! If scanning xMax, you must set the base value for xMax."
+    exit(1)
+
 if xMax<0:
     print "Error! xMax must be positive"
     exit(1)
@@ -146,10 +293,31 @@ for value in xMaxs:
         xMaxs.remove(value)
 print "xMaxs:",xMaxs
 
-solverTolerance = readVariable("solverTolerance","float")
-solverToleranceMaxFactor = readScanVariable("solverToleranceMaxFactor","float")
-solverToleranceMinFactor = readScanVariable("solverToleranceMinFactor","float")
-solverToleranceNumRuns = readScanVariable("solverToleranceNumRuns","int")
+#####################################################################################################################3
+
+try:
+    solverTolerance = readVariable("solverTolerance","float",required=False)
+    baseValuePresent = True
+except:
+    # Default
+    solverTolerance = 1e-6
+    baseValuePresent = False
+
+try:
+    solverToleranceMaxFactor = readScanVariable("solverToleranceMaxFactor","float",required=False)
+    solverToleranceMinFactor = readScanVariable("solverToleranceMinFactor","float",required=False)
+    solverToleranceNumRuns = readScanVariable("solverToleranceNumRuns","int",required=False)
+    scanPresent = True
+except:
+    solverToleranceMaxFactor = 1
+    solverToleranceMinFactor = 1
+    solverToleranceNumRuns = 0
+    scanPresent = False
+
+if scanPresent and (not baseValuePresent):
+    print "Error! If scanning solverTolerance, you must set the base value for solverTolerance."
+    exit(1)
+
 if solverTolerance<0:
     print "Error! solverTolerance must be positive"
     exit(1)
@@ -164,6 +332,8 @@ for value in solverTolerances:
     if abs((math.log(value)-math.log(solverTolerance))/math.log(value)) < 1e-6:
         solverTolerances.remove(value)
 print "solverTolerances:",solverTolerances
+
+#####################################################################################################################3
 
 numRunsInScan = 1+len(Nthetas)+len(Nzetas)+len(Nxis)+len(NLs)+len(Nxs)+len(NxPotentialsPerVths)+len(xMaxs)+len(solverTolerances)
 

@@ -19,6 +19,10 @@ are case-insensitive.
 
 \section{The {\ttfamily general} namelist}
 
+The default values are usually best for the parameters in this namelist.
+
+\myhrule
+
 \param{RHSMode}
 {integer}
 {1}
@@ -92,8 +96,18 @@ be saved if {\ttfamily tryIterativeSolver == .true.}
 }
 
 
+
+
+
+
+
+
 \section{The {\ttfamily geometryParameters} namelist}
 \label{sec:geometryParameters}
+
+The parameters in this namelist define the magnetic geometry, and so you will almost certainly want to modify some of these parameters.
+
+\myhrule
 
 \param{geometryScheme}
 {integer}
@@ -378,6 +392,11 @@ I'm not sure why you would want this, but the feature is implemented for complet
 
 \section{The {\ttfamily speciesParameters}~namelist}
 
+This namelist defines which species are included in the calculation, along with the density and temperature and gradients thereof.
+You will definitely want to set the parameters in this namelist.
+
+\myhrule
+
 \param{Zs}
 {1D array of reals}
 {1.0}
@@ -482,6 +501,11 @@ I'm not sure why you would want this, but the feature is implemented for complet
 
 
 \section{The {\ttfamily physicsParameters}~namelist}
+
+The parameters in this namelist determine which terms are included or excluded in the kinetic equation.
+You will want to be aware of most of these parameters.
+
+\myhrule
 
 \param{Delta}
 {real}
@@ -895,6 +919,440 @@ This parameter should be true unless you know what you are doing.
 
 
 
+\section{The {\ttfamily otherNumericalParameters}~namelist}
+
+The parameters in this namelist are advanced, and the default values are best for routine use of the code.
+
+\myhrule
+
+\param{thetaDerivativeScheme}
+{integer}
+{2}
+{Always}
+{Discretization scheme for the poloidal angle coordinate theta.\\
+
+{\ttfamily thetaDerivativeScheme} = 0: Fourier spectral collocation.  The differentiation matrix in theta is dense.\\
+
+{\ttfamily thetaDerivativeScheme} = 1: Finite differences with a 3 point stencil.  (The differentiation matrix in theta is tridiagonal, aside from the corners.)\\
+
+{\ttfamily thetaDerivativeScheme} = 2: Finite differences with a 5 point stencil.  (The differentiation matrix in theta is pendadiagonal, aside from the corners.).\\
+
+The best value for this parameter is usually 2.}
+
+
+\myhrule
+
+\param{zetaDerivativeScheme}
+{integer}
+{2}
+{Always}
+{Discretization scheme for the toroidal angle coordinate zeta.\\
+
+{\ttfamily zetaDerivativeScheme} = 0: Fourier spectral collocation.  The differentiation matrix in zeta is dense.\\
+
+{\ttfamily zetaDerivativeScheme} = 1: Finite differences with a 3 point stencil.  (The differentiation matrix in zeta is tridiagonal, aside from the corners.)\\
+
+{\ttfamily zetaDerivativeScheme} = 2: Finite differences with a 5 point stencil.  (The differentiation matrix in zeta is pendadiagonal, aside from the corners.).\\
+
+The best value for this parameter is usually 2.}
+
+\myhrule
+
+\param{xGridScheme}
+{integer}
+{5}
+{Whenever {\ttfamily RHSMode} is 1 or 2.}
+{Discretization scheme for the speed coordinate $x$.\\
+
+{\ttfamily xGridScheme} = 1: New orthogonal polynomials with no point at $x=0$. Original treatment of Rosenbluth potentials.\\
+
+{\ttfamily xGridScheme} = 2: New orthogonal polynomials with a point at $x=0$. Original treatment of Rosenbluth potentials.\\
+
+{\ttfamily xGridScheme} = 3: Uniform finite differences on [0, {\ttfamily xMax}], forcing $f=0$ at {\ttfamily xMax}. 2-point stencil for interpolating to other grids.\\
+
+{\ttfamily xGridScheme} = 4: Uniform finite differences on [0, {\ttfamily xMax}], forcing $f=0$ at {\ttfamily xMax}. 4-point stencil for interpolating to other grids.\\
+
+{\ttfamily xGridScheme} = 5: New orthogonal polynomials with no point at $x=0$. New treatment of Rosenbluth potentials.\\
+
+{\ttfamily xGridScheme} = 6: New orthogonal polynomials with a point at $x=0$. New treatment of Rosenbluth potentials.\\
+
+The recommended value for this parameter is 5.  
+When {\ttfamily xGridScheme} = 5 or 6, then the following quantities do not matter: 
+{\ttfamily NxPotentialsPerVth}, {\ttfamily xMax}, and {\ttfamily xPotentialsGridScheme}.}
+
+\myhrule
+
+\param{xGrid\_k}
+{integer}
+{0}
+{Whenever {\ttfamily RHSMode} is 1 or 2 and {\ttfamily xGridScheme} = 1, 2, 5, or 6.}
+{For {\ttfamily xGridScheme} = 1, 2, 5, or 6, the distribution function will be represented in terms of polynomials $P_n(x)$
+that are orthogonal under the weight $\int_0^\infty dx\; x^k \exp(-x^2) P_n(x) P_m(x)  \propto  \delta_{n,m}$
+where $k$ is an exponent set by the parameter {\ttfamily xGrid\_k} here.
+A good value to use is 0, 1, or 2.}
+
+\myhrule
+
+\param{xPotentialsGridScheme}
+{integer}
+{2}
+{Whenever {\ttfamily RHSMode} is 1 or 2 and {\ttfamily xGridScheme} is $<$5.
+Since the recommended setting for {\ttfamily xGridScheme} is 5, this parameter is rarely relevant.}
+{When an explicit grid is used for the Rosenbluth potentials, which grid and interpolation scheme to use.\\
+
+{\ttfamily xPotentialsGridScheme} = 1: Uniform grid. 5-point stencil for derivatives. 2-point stencil for interpolating to other grids.\\
+
+{\ttfamily xPotentialsGridScheme} = 2: Uniform grid. 5-point stencil for derivatives. 4-point stencil for interpolating to other grids.\\
+
+{\ttfamily xPotentialsGridScheme} = 3: Use same grid as for distribution function, so no interpolation needed for the self-collision operator.
+  You must set {\ttfamily xGridScheme} = 3 or 4 to use this setting.  Use 2-point stencil for interpolating to other species' grids.\\
+
+{\ttfamily xPotentialsGridScheme} = 4: Same as option 3, except use a 4-point stencil for interpolating to other species' grids.\\
+
+The recommended setting is {\ttfamily xPotentialsGridScheme} = 2.}
+
+\myhrule
+
+\param{useIterativeLinearSolver}
+{Boolean}
+{\true}
+{Always}
+{If false, a sparse direct solver
+will be used. The direct solver is faster for small (i.e. low-resolution) problems and always yields a solution
+(as long as there is sufficient memory).
+For large (high resolution) problems, the iterative solver will usually be faster and will use much
+ less memory, but it may not always converge.
+}
+
+\myhrule
+
+\param{whichParallelSolverToFactorPreconditioner}
+{integer}
+{1}
+{Always}
+{Which software package is used to $LU$-factorize the preconditioner matrix.\\
+
+{\ttfamily whichParallelSolverToFactorPreconditioner} = 1: Use \mumps~if it is available, otherwise use \superludist.\\
+
+{\ttfamily whichParallelSolverToFactorPreconditioner} = 2: Force use of \superludist~ even if \mumps~is available.
+}
+
+\myhrule
+
+\param{PESCPreallocationStrategy}
+{integer}
+{1}
+{Always}
+{This setting changes the estimated number of nonzeros (nnz) used for allocating memory for the system matrix and preconditioner.\\
+
+{\ttfamily PESCPreallocationStrategy} = 0: Old method with high estimated nnz. This method involves relatively simpler code but uses WAY more memory than necessary.\\
+
+{\ttfamily PESCPreallocationStrategy} = 1: New method with lower, more precise estimated nnz.  This method should use much less memory.\\
+
+Use {\ttfamily PETSCPreallocationStrategy} = 1 unless you know what you are doing.}
+
+
+
+
+
+
+
+
+
+\section{The {\ttfamily preconditionerOptions}~namelist}
+
+This namelist controls how elements are removed from the ``real'' matrix in order to obtain
+the preconditioner matrix. The default values are usually best, but if you find that there are more than 100 iterations
+of GMRES/KSP, it may be worth adjusting these settings.  As long as KSP converges, these parameters
+should have no impact (to several digits) on the physical outputs such as parallel flows and radial fluxes.
+Therefore, do not worry about (for example) ``dropping coupling between species'' in the first
+parameter below, since full inter-species coupling will be retained in the real equations that are being solved.
+
+\myhrule
+
+\param{preconditioner\_species}
+{integer}
+{1}
+{Whenever {\ttfamily useIterativeLinearSolver} = \true~and there are 2 or more species.}
+{\\
+{\ttfamily preconditioner\_species} = 0: Keep all coupling between species.\\
+
+{\ttfamily preconditioner\_species} = 1: Drop all coupling between species.\\
+
+The default value of 1 is recommended, except perhaps at high collisionality where 0 may be preferable.}
+
+\myhrule
+
+\param{preconditioner\_x}
+{integer}
+{1}
+{Whenever {\ttfamily useIterativeLinearSolver} = \true~and {\ttfamily RHSMode} = 1 or 2.}
+{\\
+{\ttfamily preconditioner\_x} = 0: Keep full $x$ coupling.\\
+
+{\ttfamily preconditioner\_x} = 1: Drop everything off-diagonal in $x$.\\
+
+{\ttfamily preconditioner\_x} = 2: Keep only upper-triangular part in $x$.\\
+
+{\ttfamily preconditioner\_x} = 3: Keep only the tridiagonal terms in $x$.\\
+
+{\ttfamily preconditioner\_x} = 4: Keep only the diagonal and superdiagonal in $x$.\\
+
+The default value of 1 is strongly recommended, except perhaps at high collisionality where 0 may be preferable.}
+
+\myhrule
+
+\param{preconditioner\_x\_min\_L}
+{integer}
+{0}
+{Whenever {\ttfamily useIterativeLinearSolver} = \true~and {\ttfamily RHSMode} = 1 or 2 and {\ttfamily preconditioner\_x} $>$ 0.}
+{The $x$ structure of the matrix will only be simplified for Legendre index $L$ is $\ge$ this value.
+Set {\ttfamily preconditioner\_x\_min\_L} = 0 to simplify the matrix for every $L$.
+Recommended values are 0, 1, or 2.}
+
+\myhrule
+
+\param{preconditioner\_theta}
+{integer}
+{0}
+{Whenever {\ttfamily useIterativeLinearSolver} = \true}
+{\\
+{\ttfamily preconditioner\_theta} = 0: Keep full $\theta$ coupling.\\
+
+{\ttfamily preconditioner\_theta} = 1: Use a 3-point finite difference stencil for $d/d\theta$.\\
+
+{\ttfamily preconditioner\_theta} = 2: Drop all $\theta$ coupling.\\
+
+{\ttfamily preconditioner\_theta} = 3: Replace $d/d\theta$ with the identity matrix.\\
+
+The default value of 0 is strongly recommended.}
+
+\myhrule
+
+\param{preconditioner\_theta\_min\_L}
+{integer}
+{0}
+{Whenever {\ttfamily useIterativeLinearSolver} = \true~and {\ttfamily preconditioner\_theta} $>$ 0.}
+{The $\theta$ structure of the matrix will only be simplified for Legendre index $L$ is $\ge$ this value.
+Set {\ttfamily preconditioner\_theta\_min\_L} = 0 to simplify the matrix for every $L$.
+}
+
+\myhrule
+
+\param{preconditioner\_zeta}
+{integer}
+{0}
+{Whenever {\ttfamily useIterativeLinearSolver} = \true}
+{\\
+{\ttfamily preconditioner\_zeta} = 0: Keep full $\zeta$ coupling.\\
+
+{\ttfamily preconditioner\_zeta} = 1: Use a 3-point finite difference stencil for $d/d\zeta$.\\
+
+{\ttfamily preconditioner\_zeta} = 2: Drop all $\zeta$ coupling.\\
+
+{\ttfamily preconditioner\_zeta} = 3: Replace $d/d\zeta$ with the identity matrix.\\
+
+The default value of 0 is strongly recommended.}
+
+\myhrule
+
+\param{preconditioner\_zeta\_min\_L}
+{integer}
+{0}
+{Whenever {\ttfamily useIterativeLinearSolver} = \true~and {\ttfamily preconditioner\_zeta} $>$ 0.}
+{The $\zeta$ structure of the matrix will only be simplified for Legendre index $L$ is $\ge$ this value.
+Set {\ttfamily preconditioner\_zeta\_min\_L} = 0 to simplify the matrix for every $L$.
+}
+
+\myhrule
+
+\param{preconditioner\_xi}
+{integer}
+{1}
+{Whenever {\ttfamily useIterativeLinearSolver} = \true}
+{\\
+{\ttfamily preconditioner\_xi} = 0: Keep full $\xi$ coupling.\\
+
+{\ttfamily preconditioner\_xi} = 1: Drop terms that are $\pm 2$ rows from the diagonal in $\xi$, 
+      so the preconditioner matrix becomes tridiagonal in $\xi$.
+(Normally the preconditioner matrix is pentadiagonal in $\xi$.)\\
+
+Either a setting of 0 or 1 can be good for this parameter.}
+
+\myhrule
+
+\param{reusePreconditioner}
+{Boolean}
+{\true}
+{Only when {\ttfamily nonlinear} = \true}
+{If true, the nonlinear term will not be included in the preconditioner matrix, meaning the preconditioner matrix is the same
+at every iteration, and so the preconditioner matrix only needs to be $LU$-factorized once.  If false, the preconditioner matrix
+for the Jacobian will be different at each iteration of the Newton solve, so the preconditioner needs to be $LU$-factorized at
+each iteration.  The nonlinear term also introduces a lot of nonzeros into the preconditioner matrix, so setting
+{\ttfamily reusePreconditioner =}\true~not only dramatically reduces the time required for a nonlinear calculation, but also the memory required.}
+
+
+
+
+
+
+
+
+
+
+\section{The {\ttfamily export\_f}~namelist}
+
+This namelist controls whether and how the distribution function is saved in {\ttfamily sfincsOutput.h5}.
+For each of the 4 coordinates $(\theta, \zeta, x, \xi)$, the distribution function can be given with the same discretization
+used for solving the kinetic equation, or you can interpolate to a different grid/discretization.
+For all available settings, the distribution function will be reported on a tensor product grid in the 4 coordinates.
+
+\myhrule
+
+\param{export\_full\_f}
+{Boolean}
+{\false}
+{Always}
+{Whether or not to save the full distribution function (the sum of the leading-order Maxwellian and the departure from it)
+in the output file.}
+
+\myhrule
+
+\param{export\_delta\_f}
+{Boolean}
+{\false}
+{Always}
+{Whether or not to save the departure from a Maxwellian distribution function in the output file.}
+
+\myhrule
+
+\param{export\_f\_theta\_option}
+{integer}
+{2}
+{Whenever {\ttfamily export\_full\_f} or {\ttfamily export\_delta\_f} is \true}
+{Controls which grid in $\theta$ is used for exporting the distribution function.\\
+
+{\ttfamily export\_f\_theta\_option} = 0: Report the distribution function on the original $\theta$ grid (with \Ntheta~points) used for solving the kinetic equation.\\
+
+{\ttfamily export\_f\_theta\_option} = 1: Interpolate to a different grid, specified by {\ttfamily export\_f\_theta}. Linear interpolation will be used.
+No sorting of the requested values is performed.\\
+
+{\ttfamily export\_f\_theta\_option} = 2: Do not interpolate. Use the
+values of the $\theta$ grid that are closest to the values requested
+in {\ttfamily export\_f\_theta}.  Values of $\theta$ will be in
+increasing order. If multiple requested values are close to the same
+grid point, the number of points returned will be less than the number
+of points requested. \\
+
+For all of these options, you can see {\ttfamily export\_f\_theta} in {\ttfamily sfincsOutput.h5} for the actual grid used in the end.
+}
+
+\myhrule
+
+\param{export\_f\_zeta\_option}
+{integer}
+{2}
+{Whenever {\ttfamily export\_full\_f} or {\ttfamily export\_delta\_f} is \true}
+{Controls which grid in $\zeta$ is used for exporting the distribution function.\\
+
+{\ttfamily export\_f\_zeta\_option} = 0: Report the distribution function on the original $\zeta$ grid (with \Nzeta~points) used for solving the kinetic equation.\\
+
+{\ttfamily export\_f\_zeta\_option} = 1: Interpolate to a different grid, specified by {\ttfamily export\_f\_zeta}. Linear interpolation will be used.
+No sorting of the requested values is performed.\\
+
+{\ttfamily export\_f\_zeta\_option} = 2: Do not interpolate. Use the
+values of the $\zeta$ grid that are closest to the values requested
+in {\ttfamily export\_f\_zeta}.  Values of $\zeta$ will be in
+increasing order. If multiple requested values are close to the same
+grid point, the number of points returned will be less than the number
+of points requested. \\
+
+For all of these options, you can see {\ttfamily export\_f\_zeta} in {\ttfamily sfincsOutput.h5} for the actual grid used in the end.
+}
+
+\myhrule
+
+\param{export\_f\_theta}
+{1D array of reals}
+{0.0}
+{Whenever {\ttfamily export\_full\_f} or {\ttfamily export\_delta\_f} is \true, and {\ttfamily export\_f\_theta\_option} $>0$.}
+{Values of $\theta$ on which you want to save the distribution function.  modulo$(\ldots, 2\pi)$ will be applied.  See {\ttfamily export\_f\_theta\_option} for details}
+
+
+\myhrule
+
+\param{export\_f\_zeta}
+{1D array of reals}
+{0.0}
+{Whenever {\ttfamily export\_full\_f} or {\ttfamily export\_delta\_f} is \true, and {\ttfamily export\_f\_zeta\_option} $>0$.}
+{Values of $\zeta$ on which you want to save the distribution function.  modulo$(\ldots, 2\pi/\mbox{\ttfamily NPeriods})$ will be applied.  See {\ttfamily export\_f\_zeta\_option} for details}
+
+\myhrule
+
+\param{export\_f\_xi\_option}
+{integer}
+{1}
+{Whenever {\ttfamily export\_full\_f} or {\ttfamily export\_delta\_f} is \true}
+{Controls which discretization in $\xi$ is used for exporting the distribution function.\\
+
+{\ttfamily export\_f\_xi\_option} = 0: Report the distribution function as amplitudes of \Nxi~Legendre polynomials, as used internally by \sfincs~for solving the kinetic equation.\\
+
+{\ttfamily export\_f\_xi\_option} = 1: Report the distribution function on the values of $\xi$ specified by {\ttfamily export\_f\_xi}. No sorting of the requested values is performed.
+}
+
+\myhrule
+
+\param{export\_f\_xi}
+{1D array of reals}
+{0.0}
+{Whenever {\ttfamily export\_full\_f} or {\ttfamily export\_delta\_f} is \true, and {\ttfamily export\_f\_xi\_option} = 1.}
+{Values of $\xi$ on which you want to save the distribution function.  Values must lie in the range $[-1,1]$.}
+
+\myhrule
+
+\param{export\_f\_x\_option}
+{integer}
+{0}
+{Whenever {\ttfamily export\_full\_f} or {\ttfamily export\_delta\_f} is \true}
+{Controls which grid in $x = v/\sqrt{2T/m}$ is used for exporting the distribution function.\\
+
+{\ttfamily export\_f\_x\_option} = 0: Report the distribution function on the original $x$ grid (with \Nx~points) used for solving the kinetic equation.\\
+
+{\ttfamily export\_f\_x\_option} = 1: Interpolate to a different grid, specified by {\ttfamily export\_f\_x}.  Polynomial spectral interpolation will be used.
+  No sorting of the requested values is performed.\\
+
+{\ttfamily export\_f\_x\_option} = 2: Do not interpolate. Use the values of the internal $x$ grid that are closest to the values requested in {\ttfamily export\_f\_x}.
+  Values of $x$ will be in increasing order. If multiple requested values are close to the same grid point, the number of
+  points returned will be less than the number of points requested.\\
+
+For all of these options, you can see {\ttfamily export\_f\_x} in {\ttfamily sfincsOutput.h5} for the actual grid used in the end.
+}
+
+\myhrule
+
+\param{export\_f\_x}
+{1D array of reals}
+{1.0}
+{Whenever {\ttfamily export\_full\_f} or {\ttfamily export\_delta\_f} is \true, and {\ttfamily export\_f\_x\_option} $>0$.}
+{Values of $x$ on which you want to save the distribution function.  Values must be $\ge 0$.}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 \section{Directives for \sfincsScan}
@@ -910,20 +1368,20 @@ Note that \sfincsScan~ parameters do not have defaults, unlike fortran namelist 
 {Any time \sfincsScan~is called.}
 {Which type of scan will be run when \sfincsScan~is called. \\
 
-{\ttfamily scanType=1}:  Convergence scan. (Scan the parameters in the resolutionParameters namelist.)\\
+{\ttfamily scanType} = 1:  Convergence scan. (Scan the parameters in the resolutionParameters namelist.)\\
 
-{\ttfamily scanType=2}:  Scan of $E_r$.\\
+{\ttfamily scanType} = 2:  Scan of $E_r$.\\
 
-{\ttfamily scanType=3}:  Scan any one input parameter that takes a numeric value.\\
+{\ttfamily scanType} = 3:  Scan any one input parameter that takes a numeric value.\\
 
-{\ttfamily scanType=4}:  Scan radius, taking the density and temperature profiles from the {\ttfamily profiles} file.
+{\ttfamily scanType} = 4:  Scan radius, taking the density and temperature profiles from the {\ttfamily profiles} file.
 In this type of scan, the same radial electric field is used at every radius.
 See \path{sfincs/fortran/utils/profiles.XXX} for examples.\\
 
-{\ttfamily scanType=5}:  Scan radius, and at each radius, scan $E_r$.  Density and temperature profiles are again
+{\ttfamily scanType} = 5:  Scan radius, and at each radius, scan $E_r$.  Density and temperature profiles are again
  taken from the {\ttfamily profiles} file; see \path{sfincs/fortran/utils/profiles.XXX} for examples.\\
 
-{\ttfamily scanType=21}: Read in a list of requested runs from a file {\ttfamily runspec.dat}. See \path{sfincs/fortran/utils/sfincsScan_21} for an example file.
+{\ttfamily scanType} = 21: Read in a list of requested runs from a file {\ttfamily runspec.dat}. See \path{sfincs/fortran/utils/sfincsScan_21} for an example file.
 }
 
 

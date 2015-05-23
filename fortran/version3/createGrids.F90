@@ -63,8 +63,10 @@
        print *,"Nxi                = ", Nxi
        print *,"NL                 = ", NL
        print *,"Nx                 = ", Nx
-       print *,"NxPotentialsPerVth = ", NxPotentialsPerVth
-       print *,"xMax               = ",xMax
+       if (xGridScheme<5) then
+          print *,"NxPotentialsPerVth = ", NxPotentialsPerVth
+          print *,"xMax               = ",xMax
+       end if
        print *,"solverTolerance    = ",solverTolerance
        select case (thetaDerivativeScheme)
        case (0)

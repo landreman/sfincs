@@ -13,6 +13,9 @@ subroutine validateInput()
 
   ! General namelist
 
+  print *,"NL=",NL
+  print *,"NxPotentialsPerVth=",NxPotentialsPerVth
+
   if (RHSMode<1) then
      if (masterProc) then
         print *,"Error! RHSMode must be at least 1."
