@@ -18,6 +18,13 @@ You may therefore find it useful to see the control parameters and error codes i
 \url{http://mumps.enseeiht.fr/doc/userguide_5.0.0.pdf}.
 
 
+\section{Geometry options}
+In \sfincs, a variety of options are available for the magnetic field geometry.  The geometry can be read directly
+from a {\ttfamily vmec wout}
+file, or from the {\ttfamily .bc} format Boozer-coordinate data files used at the Max Planck Institute for Plasma Physics (IPP).
+A general analytic model for the magnetic field is also available, given by equation (\ref{eq:Bmodel}),
+as are several analytic models for LHD and W7-X in which 3 or 4 Fourier components are retained.
+For more details about geometry options in \sfincs, see section \ref{sec:geometryParameters}.
 
 \section{GMRES/KSP and preconditioning}
 \label{sec:gmres}

@@ -23,12 +23,12 @@ module globalVariables
   ! ********************************************************
   ! ********************************************************
 
-  logical :: saveMatlabOutput, saveMatricesAndVectorsInBinary
-  character(len=200) :: MatlabOutputFilename
-  character(len=200) :: binaryOutputFilename
-  character(len=200) :: outputFilename
-  logical :: solveSystem
-  integer :: RHSMode, whichRHS
+  logical :: saveMatlabOutput = .false., saveMatricesAndVectorsInBinary = .false.
+  character(len=200) :: MatlabOutputFilename = "sfincsMatrices"
+  character(len=200) :: binaryOutputFilename = "sfincsBinary"
+  character(len=200) :: outputFilename = "sfincsOutput.h5"
+  logical :: solveSystem = .true.
+  integer :: RHSMode = 1, whichRHS
   logical :: isAParallelDirectSolverInstalled
 
   ! ********************************************************
@@ -39,18 +39,18 @@ module globalVariables
   ! ********************************************************
   ! ********************************************************
 
-  integer :: geometryScheme
-  PetscScalar ::  GHat, IHat, iota, B0OverBBar, psiAHat
-  PetscScalar :: epsilon_t, epsilon_h, epsilon_antisymm
-  integer :: NPeriods, helicity_l, helicity_n, helicity_antisymm_l, helicity_antisymm_n
-  character(len=200) :: equilibriumFile
-  PetscScalar :: min_Bmn_to_load, dGdpHat, aHat
-  PetscScalar :: psiHat_wish, psiN_wish, rHat_wish, rN_wish
+  integer :: geometryScheme = 1
+  PetscScalar ::  GHat = 3.7481d+0, IHat = 0.0, iota = 0.4542d+0, B0OverBBar = 1.0, psiAHat = 0.15596d+0
+  PetscScalar :: epsilon_t = -0.07053d+0, epsilon_h = 0.05067d+0, epsilon_antisymm = 0.0
+  integer :: NPeriods = 0, helicity_l = 2, helicity_n = 10, helicity_antisymm_l = 1, helicity_antisymm_n = 0
+  character(len=200) :: equilibriumFile = ""
+  PetscScalar :: min_Bmn_to_load = 0.0, dGdpHat, aHat = 0.5585d+0
+  PetscScalar :: psiHat_wish = -1, psiN_wish = 0.25, rHat_wish = -1, rN_wish = 0.5
   PetscScalar :: psiHat, psiN, rHat, rN
-  integer :: inputRadialCoordinate = 2
+  integer :: inputRadialCoordinate = 3
   integer :: inputRadialCoordinateForGradients = 2
   logical :: force0RadialCurrentInEquilibrium = .true.
-  integer :: VMECRadialOption = 0
+  integer :: VMECRadialOption = 1
 
   ! ********************************************************
   ! ********************************************************
@@ -78,9 +78,9 @@ module globalVariables
   ! ********************************************************
 
   logical :: nonlinear = .false.
-  PetscScalar :: Delta
-  PetscScalar :: alpha
-  PetscScalar :: nu_n
+  PetscScalar :: Delta = 4.5694d-3
+  PetscScalar :: alpha = 1.0
+  PetscScalar :: nu_n = 8.330d-3
 
   PetscScalar :: EParallelHat = 0
   PetscScalar :: dPhiHatdpsiHat = 0, dPhiHatdpsiN = 0, dPhiHatdrHat = 0, dPhiHatdrN = 0
@@ -91,12 +91,12 @@ module globalVariables
 
   logical :: includeXDotTerm = .true.
   logical :: includeElectricFieldTermInXiDot = .true.
-  logical :: useDKESExBDrift = .true.
-  logical :: include_fDivVE_term = .true.
-  logical :: includeTemperatureEquilibrationTerm = .true.
-  logical :: includePhi1 = .true.
+  logical :: useDKESExBDrift = .false.
+  logical :: include_fDivVE_term = .false.
+  logical :: includeTemperatureEquilibrationTerm = .false.
+  logical :: includePhi1 = .false.
 
-  PetscScalar :: nuPrime = 0, EStar = 0
+  PetscScalar :: nuPrime = 1, EStar = 0
 
   integer :: magneticDriftScheme = 0
 
@@ -118,14 +118,14 @@ module globalVariables
   integer :: xGridScheme = 1, xInterpolationScheme
   logical :: pointAtX0
 
-  integer :: Ntheta
-  integer :: Nzeta
-  integer :: Nxi
-  integer :: NL
-  integer :: Nx 
-  PetscScalar  :: NxPotentialsPerVth
-  PetscScalar :: xMax
-  PetscScalar :: solverTolerance
+  integer :: Ntheta = 15
+  integer :: Nzeta = 15
+  integer :: Nxi = 16
+  integer :: NL = 4
+  integer :: Nx = 5
+  PetscScalar  :: NxPotentialsPerVth = 40.0
+  PetscScalar :: xMax = 5.0
+  PetscScalar :: solverTolerance = 1d-6
 
   logical :: forceOddNthetaAndNzeta=.true.
   ! If forceOddNthetaAndNzeta is set to true, 1 is added to Ntheta any time a run is attempted with even Ntheta,

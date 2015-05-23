@@ -1,6 +1,7 @@
 \chapter{Specifying and running a computation}
 
 \section{Normalizations}
+\label{sec:normalizations}
 
 {\setlength{\parindent}{0cm}
 Dimensional quantities in \sfincs~are normalized to ``reference'' values that are denoted by a bar:\\
@@ -150,3 +151,29 @@ useDKESExBDrift = .true.\\
 Choosing the number of nodes and procs.
 
 \section{Issues with running on 1 processor}
+
+\section{Monoenergetic transport coefficients}
+\label{sec:monoenergetic}
+
+By setting {\ttfamily RHSMode=3}, \sfincs~can be run in a mode
+where it solves the same kinetic equation (prior to discretization) as {\ttfamily dkes}
+and other monoenergetic codes.
+When {\ttfamily RHSMode=3}, the values of {\ttfamily Zs}, {\ttfamily THats}, {\ttfamily nHats},
+{\ttfamily mHats}, {\ttfamily nu\_n}, and {\ttfamily dPhiHatdXXX} are all ignored.
+Instead, the collisionality is set by {\ttfamily nuPrime}, and the radial electric field is set
+by {\ttfamily EStar}.  The first of these quantities is the dimensionless collisionality
+\begin{equation}
+\mbox{\ttfamily nuPrime} = \frac{(G+\iota I) \nu}{v B_0}
+\end{equation}
+where $G$ and $I$ are defined in (\ref{eq:covariant}), $\iota=1/q$ is the rotational transform,
+$v$ is the speed at which the monoenergetic calculation is being performed, and $B_0$ is the (0,0) Fourier harmonic of $B$
+with respect to the Boozer poloidal and toroidal angles.
+\todo{How is $\nu$ defined here?}
+The normalized radial electric field is
+\begin{equation}
+\mbox{\ttfamily EStar} = \frac{cG}{\iota v B_0} \frac{d\Phi}{d\psi}
+\end{equation}
+(Gaussian units).
+When {\ttfamily RHSMode} == 1, {\ttfamily nuPrime} and {\ttfamily EStar} are ignored.
+\todo{Should be change the behavior of RHSMode=2 so it uses nuPrime and EStar instead of nu\_n?}
+

@@ -1,4 +1,5 @@
 \chapter{Numerical resolution parameters}
+\label{ch:resolution}
 
 Results from \sfincs~should only be believed if you are confident they
 are converged with respect to the numerical resolution parameters
@@ -17,8 +18,9 @@ system is solved exactly) is separate from the convergence of GMRES/KSP.
 \section{Relatively unimportant resolution parameters}
 
 There are several resolution parameters which are almost never the limiting factor
-for convergence.  You can almost always use {\ttfamily NL=4}, 
-{\ttfamily solverTolerance} = $10^{-5}$ or $10^{-6}$,
+for convergence, and so which almost never need to be adjusted.
+These parameters and good values for them are {\ttfamily NL=4}, 
+{\ttfamily solverTolerance} = $10^{-6}$,
 {\ttfamily xMax=5.0},
 and {\ttfamily NxPotentialsPerVth=40.0}.  The latter two of these parameters are in fact ignored
 for the recommended and default {\ttfamily xGridMode} setting, 5.

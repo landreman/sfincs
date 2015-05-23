@@ -11,6 +11,8 @@
 
 In this chapter we first describe all the parameters which can be included in the {\ttfamily input.namelist} file. 
 Then we list some of the command-line flags associated with \PETSc~which can be useful.
+Note that all parameters in {\ttfamily input.namelist}, both for \sfincs~and \sfincsScan,
+are case-insensitive.
 
 
 
@@ -224,13 +226,13 @@ for more information about radial coordinates.}
 {real}
 {1.0}
 {Only when {\ttfamily geometryScheme} == 1. Otherwise, {\ttfamily B0OverBBar} will be set according to the requested {\ttfamily geometryScheme}.}
-{Magnitude of the (0,0) Boozer harmonic of the magnetic field strength, normalized by $\bar{B}$.}
+{Magnitude of the (0,0) Boozer harmonic of the magnetic field strength (equivalent to $\left< B^3\right>/\left<B^2\right>$), normalized by $\bar{B}$.}
 
 \myhrule
 
 \param{GHat}
 {real}
-{??}
+{3.7481}
 {Only when {\ttfamily geometryScheme} == 1. Otherwise, {\ttfamily GHat} will be set according to the requested {\ttfamily geometryScheme}.}
 {$G$ is $(c/2)\times$ the poloidal current outside the flux
  surface. Equivalently, $G$ is the coefficient of $\nabla\zeta_B$ in the
@@ -256,15 +258,15 @@ for more information about radial coordinates.}
 
 \param{iota}
 {real}
-{0.0}
+{0.4542}
 {Only when {\ttfamily geometryScheme} == 1. Otherwise, {\ttfamily iota} will be set according to the requested {\ttfamily geometryScheme}.}
-{Rotational transform, equivalent to $1/q$ where $q$ is the safety factor.}
+{Rotational transform (rationalized), equivalent to $1/q$ where $q$ is the safety factor.}
 
 \myhrule
 
 \param{epsilon\_t}
 {real}
-{??}
+{-0.07053}
 {Only when {\ttfamily geometryScheme} == 1.}
 {Toroidal variation in $B$, as defined by (\ref{eq:Bmodel}).}
 
@@ -272,7 +274,7 @@ for more information about radial coordinates.}
 
 \param{epsilon\_h}
 {real}
-{??}
+{0.05067}
 {Only when {\ttfamily geometryScheme} == 1.}
 {Helical variation in $B$, as defined by (\ref{eq:Bmodel}).}
 
@@ -288,7 +290,7 @@ for more information about radial coordinates.}
 
 \param{helicity\_l}
 {integer}
-{??}
+{2}
 {Only when {\ttfamily geometryScheme} == 1.}
 {Poloidal mode number of the helical variation in $B$, as defined by (\ref{eq:Bmodel}).}
 
@@ -296,7 +298,7 @@ for more information about radial coordinates.}
 
 \param{helicity\_n}
 {integer}
-{??}
+{10}
 {Only when {\ttfamily geometryScheme} == 1.}
 {Toroidal mode number of the helical variation in $B$, as defined by (\ref{eq:Bmodel}).}
 
@@ -304,7 +306,7 @@ for more information about radial coordinates.}
 
 \param{helicity\_antisymm\_l}
 {integer}
-{??}
+{1}
 {Only when {\ttfamily geometryScheme} == 1.}
 {Poloidal mode number of the stellarator-antisymmetric variation in $B$, as defined by (\ref{eq:Bmodel}).}
 
@@ -312,7 +314,7 @@ for more information about radial coordinates.}
 
 \param{helicity\_antisymm\_n}
 {integer}
-{??}
+{0}
 {Only when {\ttfamily geometryScheme} == 1.}
 {Toroidal mode number of the stellarator-antisymmetric variation in $B$, as defined by (\ref{eq:Bmodel}).
 Note that you can create an up-down asymmetric tokamak by setting {\ttfamily helicity\_antisymm\_n}=0, {\ttfamily epsilon\_h}=0,
@@ -322,7 +324,7 @@ and {\ttfamily epsilon\_antisymm}$>$0.}
 
 \param{psiAHat}
 {real}
-{??}
+{0.15596}
 {Only when {\ttfamily geometryScheme} == 1. Otherwise, {\ttfamily psiAHat} will be set according to the requested {\ttfamily geometryScheme}.}
 {{\ttfamily psiAHat} = $\psi_a / (\bar{B} \bar{R}^2)$
 where $2 \pi \psi_a$ is the toroidal flux at the last closed flux surface.}
@@ -331,7 +333,7 @@ where $2 \pi \psi_a$ is the toroidal flux at the last closed flux surface.}
 
 \param{aHat}
 {real}
-{??}
+{0.5585}
 {Only when {\ttfamily geometryScheme} == 1. Otherwise, {\ttfamily aHat} will be set according to the requested {\ttfamily geometryScheme}.}
 {The effective minor radius at the last closed flux surface, in units of $\bar{R}$.
 The code only uses {\ttfamily aBar} for converting between the various radial coordinates in input and output quantities.
@@ -481,6 +483,413 @@ I'm not sure why you would want this, but the feature is implemented for complet
 
 \section{The {\ttfamily physicsParameters}~namelist}
 
+\param{Delta}
+{real}
+{4.5694e-3}
+{Always}
+{Roughly speaking, {\ttfamily Delta} is $\rho_*$ at the reference parameters. The precise definition is
+\begin{eqnarray}
+\mbox{\ttfamily Delta} 
+&=& \frac{c \bar{m} \bar{v}}{e \bar{B} \bar{R}} \;\;\; \mbox{(Gaussian units)} \\
+&=&  \frac{\bar{m} \bar{v}}{e \bar{B} \bar{R}} \;\;\; \mbox{(SI units)}, \nonumber
+\end{eqnarray}
+where $c$ is the speed of light,
+$e$ is the proton mass,
+and quantities with a bar are the normalization reference parameters discussed in section \ref{sec:normalizations}.
+The default value {\ttfamily Delta} = 4.5694e-3 corresponds to $\bar{B}$ = 1 Tesla, $\bar{R}$ = 1 meter,
+$\bar{m}$ = proton mass, and $\bar{T}$ = 1 keV.}
+
+\myhrule
+
+\param{alpha}
+{real}
+{1.0}
+{Whenever {\ttfamily RHSMode} == 1 and $E_r$ is nonzero.}
+{{\ttfamily alpha} $= e \bar{\Phi}/ \bar{T}$ (both Gaussian and SI units) where $e$ is the proton mass,
+and $\bar{\Phi}$ and $\bar{T}$ are the normalization reference parameters discussed in section \ref{sec:normalizations}.
+The default value {\ttfamily alpha} = 1.0 corresponds to $\bar{T}$ = 1 keV and $\bar{\Phi}$ = 1 kV.
+The default value {\ttfamily alpha} = 1.0 also corresponds to $\bar{T}$ = 1 eV and $\bar{\Phi}$ = 1 V.
+}
+
+\myhrule
+
+\param{EParallelHat}
+{real}
+{0.0}
+{Whenever {\ttfamily RHSMode} == 1}
+{Inductive parallel electric field:
+\begin{equation}
+\mbox{\ttfamily EParallelHat} = \left< \vect{E}\cdot\vect{B}\right> \frac{\bar{R}}{\bar{\Phi}\bar{B}}
+\end{equation}
+(in both Gaussian and SI units) where $\left< \ldots \right>$ denotes a flux surface average,
+$\vect{E}$ and $\vect{B}$ are the electric and magnetic field vectors, and 
+quantities with a bar are the normalization reference parameters discussed in section \ref{sec:normalizations}.}
+
+\myhrule
+
+\param{dPhiHatdpsiHat}
+{real}
+{0.0}
+{Whenever {\ttfamily RHSMode} == 1 and {\ttfamily inputRadialCoordinateForGradients} == 0}
+{The derivative of the electrostatic potential with respect to the radial coordinate $\hat{\psi}$,
+i.e. the radial electric field up to a constant.
+Notice that exactly 1 of the 4 variables {\ttfamily dPhiHatdpsiHat}, {\ttfamily dPhiHatdpsiN}, {\ttfamily dPhiHatdrHat}, and {\ttfamily dPhiHatdrN}
+will be used, depending on\\
+{\ttfamily inputRadialCoordinateForGradients}.
+}
+
+\myhrule
+
+\param{dPhiHatdpsiN}
+{real}
+{0.0}
+{Whenever {\ttfamily RHSMode} == 1 and {\ttfamily inputRadialCoordinateForGradients} == 1}
+{The derivative of the electrostatic potential with respect to the radial coordinate $\psi_N$,
+i.e. the radial electric field up to a constant.
+Notice that exactly 1 of the 4 variables {\ttfamily dPhiHatdpsiHat}, {\ttfamily dPhiHatdpsiN}, {\ttfamily dPhiHatdrHat}, and {\ttfamily dPhiHatdrN}
+will be used, depending on\\
+{\ttfamily inputRadialCoordinateForGradients}.
+}
+
+\myhrule
+
+\param{dPhiHatdrHat}
+{real}
+{0.0}
+{Whenever {\ttfamily RHSMode} == 1 and {\ttfamily inputRadialCoordinateForGradients} == 2}
+{The derivative of the electrostatic potential with respect to the radial coordinate $\hat{r}$,
+i.e. the radial electric field up to a constant.
+Notice that exactly 1 of the 4 variables {\ttfamily dPhiHatdpsiHat}, {\ttfamily dPhiHatdpsiN}, {\ttfamily dPhiHatdrHat}, and {\ttfamily dPhiHatdrN}
+will be used, depending on\\
+{\ttfamily inputRadialCoordinateForGradients}.
+}
+
+\myhrule
+
+\param{dPhiHatdrN}
+{real}
+{0.0}
+{Whenever {\ttfamily RHSMode} == 1 and {\ttfamily inputRadialCoordinateForGradients} == 3}
+{The derivative of the electrostatic potential with respect to the radial coordinate $r_N$,
+i.e. the radial electric field up to a constant.
+Notice that exactly 1 of the 4 variables {\ttfamily dPhiHatdpsiHat}, {\ttfamily dPhiHatdpsiN}, {\ttfamily dPhiHatdrHat}, and {\ttfamily dPhiHatdrN}
+will be used, depending on\\
+{\ttfamily inputRadialCoordinateForGradients}.
+}
+
+\myhrule
+
+\param{nu\_n}
+{real}
+{8.330e-3}
+{Whenever {\ttfamily RHSMode} == 1}
+{Dimensionless collisionality at the reference parameters:
+\begin{equation}
+\mbox{\ttfamily nu\_n} = \bar{\nu} \frac{\bar{R}}{\bar{v}},
+\end{equation}
+where $\bar{R}$ and $\bar{v}$ are the normalization reference parameters discussed in section \ref{sec:normalizations},
+and $\bar{\nu}$ is the dimensional collision frequency at the reference parameters. This frequency is defined as
+\begin{eqnarray}
+\bar{\nu}
+&=& \frac{4\sqrt{2\pi} \bar{n} e^4 \ln\Lambda}{3 (4\pi\epsilon_0)^2 \sqrt{\bar{m}} \bar{T}^{3/2}} \;\;\; \mbox{(SI units}) \\
+&=& \frac{4\sqrt{2\pi} \bar{n} e^4 \ln\Lambda}{3 \sqrt{\bar{m}} \bar{T}^{3/2}} \;\;\; \mbox{(Gaussian units}) \nonumber
+\end{eqnarray}
+where $e$ is the proton charge, $\bar{n}$, $\bar{m}$, and $\bar{T}$ are the normalization reference parameters discussed in section \ref{sec:normalizations},
+and $\ln\Lambda$ is the Coulomb logarithm.
+The default value {\ttfamily nu\_n} = 8.330e-3 corresponds to $\bar{R}$ = 1 meter,
+$\bar{m}$ = proton mass, $\bar{n}$ = $10^{20}$ m$^{-3}$, $\bar{T}$ = 1 keV, and $\ln\Lambda = 17$.
+}
+
+\myhrule
+
+\param{nuPrime}
+{real}
+{1.0}
+{Only when {\ttfamily RHSMode} == 3.}
+{Dimensionless collisionality used in place of {\ttfamily nHats}, {\ttfamily THats}, {\ttfamily mHats}, {\ttfamily Zs}, and {\ttfamily nu\_n} for computing monoenergetic transport coefficients.
+See section \ref{sec:monoenergetic} for more details.}
+
+\myhrule
+
+\param{EStar}
+{real}
+{0.0}
+{Only when {\ttfamily RHSMode} == 3.}
+{Normalized radial electric field used in place of {\ttfamily dPhiHatdXXX} for computing monoenergetic transport coefficients.
+See section \ref{sec:monoenergetic} for more details.}
+
+
+\myhrule
+
+\param{collisionOperator}
+{integer}
+{0}
+{Always}
+{Which collision operator to use:\\
+
+{\setlength{\parindent}{0cm}
+
+{\ttfamily collisionOperator} = 0: Full linearized Fokker-Planck operator.\\
+
+{\ttfamily collisionOperator} = 1: Pitch-angle scattering operator (with no momentum-conserving field term).
+}}
+
+\myhrule
+
+\param{constraintScheme}
+{integer}
+{-1}
+{Always}
+{Controls a small number of extra rows and columns of the system matrix
+which (1) eliminate the null space of the matrix, and (2) ensure that a steady-state solution
+to the kinetic equation exists even when phase-space volume and/or energy are not conserved.
+These issues are detailed in section III of Ref \cite{sfincsPaper}.
+\\
+
+{\setlength{\parindent}{0cm}
+
+{\ttfamily constraintScheme} = -1: Automatic. If {\ttfamily collisionOperator}==0 then {\ttfamily constraintScheme} will be set to 1, 
+otherwise {\ttfamily constraintScheme} will be set to 2.\\
+
+{\ttfamily constraintScheme} = 0: No constraints.\\
+
+{\ttfamily constraintScheme} = 1: 2 constraints per species: $\left<n_1\right>=0$ and $\left<p_1\right>=0$.\\
+
+{\ttfamily constraintScheme} = 2: \Nx~constraints per species: $\left< f(L=0)\right>=0$ at each $x$.\\
+
+You should set {\ttfamily constraintScheme} to -1 unless you know what you are doing.
+}}
+
+\myhrule
+
+\param{includeXDotTerm}
+{Boolean}
+{\true}
+{Whenever {\ttfamily RHSMode} $<3$ and the radial electric field is nonzero.}
+{Whether or not to include the term in the kinetic equation corresponding to a change
+in speed proportional to the radial electric field.  This term is given by $\dot{x}$ in
+equation (17) of \cite{sfincsPaper}.}
+
+\myhrule
+
+\param{includeElectricFieldTermInXiDot}
+{Boolean}
+{\true}
+{Whenever {\ttfamily RHSMode} $<3$ and the radial electric field is nonzero.}
+{Whether or not to include the term in the kinetic equation corresponding to a change
+in pitch angle $\xi$ proportional to the radial electric field.  This term is given by the last line of
+equation (17) of \cite{sfincsPaper}.}
+
+\myhrule
+
+\param{useDKESExBDrift}
+{Boolean}
+{\false}
+{Whenever {\ttfamily RHSMode} $<3$ and the radial electric field is nonzero.}
+{If true, the $\vect{E}\times\vect{B}$ drift term 
+multiplying $\partial f/\partial \theta$ and  $\partial f/\partial \zeta$
+is taken to be $\vect{E}\times\vect{B}\cdot \nabla (\theta \;\mbox{or} \;\zeta) / \left< B^2 \right>$
+instead of 
+ $\vect{E}\times\vect{B}\cdot \nabla (\theta \;\mbox{or} \;\zeta) /B^2$.
+}
+
+\myhrule
+
+\param{include\_fDivVE\_term}
+{Boolean}
+{\false}
+{Never}
+{Obsolete}
+
+\myhrule
+
+\param{includePhi1}
+{Boolean}
+{\false}
+{Whenever {\ttfamily RHSMode} == 1.}
+{If false, no terms involving $\Phi_1 = \Phi-\left<\Phi\right>$ are included in the kinetic equation,
+and the quasineutrality equation is not solved.  If true, then terms involving $\Phi_1$ are included
+in the kinetic equation, and the quasineutrality equation is solved at each point on the flux surface.
+In this latter case, many more quantities are computed and saved in the output file, such as radial fluxes
+associated with the radial $\vect{E}\times\vect{B}$ drift.}
+
+\myhrule
+
+\param{nonlinear}
+{Boolean}
+{\false}
+{Whenever {\ttfamily RHSMode} == 1.}
+{If true, certain terms that are nonlinear in the unknowns will be included in the kinetic equation.
+Newton's method will be used to solve the nonlinear system, meaning that the usual linear solve in \sfincs~must
+be iterated several times.
+Running with {\ttfamily nonlinear}=\true requires {\ttfamily includePhi1}=\true
+}
+
+\myhrule
+
+\param{includeTemperatureEquilibrationTerm}
+{Boolean}
+{\false}
+{Whenever {\ttfamily RHSMode} == 1.}
+{When true, the term $C_{ab}[ f_{Ma}, f_{Mb}]$ is included in the kinetic equation,
+i.e. collisions between the leading-order Maxwellians of different species.  This term is nonzero
+when the temperature is not the same for all species.  The resulting contribution to the non-Maxwellian
+distribution function is isotropic and so does not directly give any parallel or radial transport.}
+
+\myhrule
+
+\param{magneticDriftScheme}
+{integer}
+{0}
+{Whenever {\ttfamily RHSMode} == 1.}
+{This variable controls the poloidal and magnetic drifts, and does not affect the radial magnetic drift.
+THIS FUNCTIONALITY IS WORK IN PROGRESS, AND RESULTS ARE BUGGY WHEN THIS VARIABLE IS NONZERO.\\
+
+{\ttfamily magneticDriftScheme} = 0:  No poloidal or toroidal magnetic drift.\\
+
+{\ttfamily magneticDriftScheme} = 1: Use the grad-B and curvature drift, plus the parallel velocity correction $v_{\perp}^2/(2 \Omega_c) \vect{b} \vect{b} \cdot \nabla \times \vect{b}$.\\
+
+{\ttfamily magneticDriftScheme} = 2:   Use the magnetic drift $v_m = (v_{||} / \Omega_c) \nabla (v_{||} \vect{b})$.
+}
+
+
+
+
+
+
+
+
+\section{The {\ttfamily resolutionParameters}~namelist}
+
+In this namelist, there are 4 parameters you definitely need to be aware of and adjust: \Ntheta, \Nzeta, \Nxi, and \Nx.  
+See chapter \ref{ch:resolution} for details. You may or may not
+need to adjust {\ttfamily solverTolerance}.  The other parameters in this namelist almost never need to be adjusted.
+
+\myhrule
+
+\param{Ntheta}
+{integer}
+{15}
+{Always}
+{Number of grid points in the poloidal angle. 
+This parameter should be odd; see {\ttfamily forceOddNthetaAndNzeta} in this namelist.
+Memory and time requirements DO depend strongly on this parameter.
+For stellarator calculations, this parameter can usually be in the range 15-25.
+For tokamak calculations at low collisionality, the value of this parameter may need to be higher.}
+
+
+\myhrule
+
+\param{Nzeta}
+{integer}
+{15}
+{Always}
+{Number of grid points in the toroidal angle (per identical segment of the stellarator.)  
+This parameter should be odd; see {\ttfamily forceOddNthetaAndNzeta} in this namelist.
+Memory and time requirements DO depend strongly on this parameter.
+Set this parameter to 1 for a tokamak calculation.
+For stellarator calculations, the value of this parameter required for convergence depends strongly on
+the collisionality. At high collisionality, this parameter can be several 10s, depending
+on the complexity of $B(\theta,\zeta)$. At low collisionality, this parameter may need to be many 10s or
+even $>$ 100 for convergence.
+}
+
+\myhrule
+
+\param{Nxi}
+{integer}
+{16}
+{Always}
+{Number of Legendre polynomials used to represent the pitch-angle dependence of the distribution function.
+Memory and time requirements DO depend strongly on this parameter.
+The value of this parameter required for convergence depends strongly on
+the collisionality. At high collisionality, this parameter can be as low
+as 5. At low collisionality, this parameter may need to be many 10s or
+even $>$ 100 for convergence.}
+
+\myhrule
+
+\param{Nx}
+{integer}
+{5}
+{Always}
+{Number of grid points in energy used to represent the distribution function.
+Memory and time requirements DO depend strongly on this parameter.
+This parameter almost always needs to be at least 5.
+Usually a value in the range 5-8 is plenty for convergence, though in exceptional circumstances
+you may need to go up to 10-15.
+}
+
+\myhrule
+
+\param{solverTolerance}
+{real}
+{1e-6}
+{Whenever {\ttfamily useIterativeLinearSolver} == \true}
+{
+Tolerance used to define convergence of the Krylov solver.
+This parameter does not affect memory requirements but it does affect the
+time required for solution somewhat.
+Occasionally you may want to ease this tolerance to 1e-5 so fewer iterations of the Krylov solver are needed.
+}
+
+\myhrule
+
+\param{NL}
+{integer}
+{4}
+{Whenever {\ttfamily collisionOperator} == 0.}
+{Number of Legendre polynomials used to represent the Rosenbluth
+potentials. This number can basically always be 4,
+since results barely change when {\ttfamily NL} is increased above this value.
+Memory and time requirements do NOT depend strongly on this parameter.
+}
+
+\myhrule
+
+\param{NxPotentialsPerVth}
+{real}
+{40.0}
+{Only when {\ttfamily collisionOperator} == 0 and {\ttfamily xGridScheme} $<$ 5.
+Since {\ttfamily xGridScheme} = 5 is recommended, this parameter is basically obsolete.}
+{
+Number of grid points in energy used to represent the Rosenbluth potentials
+for the original implementation of the Fokker-Planck operator described in \cite{speedGrids}.
+Memory and time requirements do NOT depend strongly on this parameter.}
+
+\myhrule
+
+\param{xMax}
+{real}
+{5.0}
+{Only when {\ttfamily collisionOperator} == 0 and {\ttfamily xGridScheme} $<$ 5.
+Since {\ttfamily xGridScheme} = 5 is recommended, this parameter is basically obsolete.}
+{
+Maximum normalized speed for the Rosenbluth potential grid
+for the original implementation of the Fokker-Planck operator described in \cite{speedGrids}.
+Memory and time requirements do NOT depend strongly on this parameter.}
+
+\myhrule
+
+\param{forceOddNthetaAndNzeta}
+{Boolean}
+{\true}
+{Always}
+{
+If true, 1 is added to \Ntheta~any time a run is attempted with even \Ntheta,
+and 1 is added to \Nzeta~any time a run is attempted with even \Nzeta.
+When false, the even and odd grid points are effectively decoupled so results are unstable.
+This parameter should be true unless you know what you are doing.
+}
+
+
+
+
+
+
+
+
+
 
 
 
@@ -509,12 +918,12 @@ Note that \sfincsScan~ parameters do not have defaults, unlike fortran namelist 
 
 {\ttfamily scanType=4}:  Scan radius, taking the density and temperature profiles from the {\ttfamily profiles} file.
 In this type of scan, the same radial electric field is used at every radius.
-See {\ttfamily utils/profiles.XXX} for examples.\\
+See \path{sfincs/fortran/utils/profiles.XXX} for examples.\\
 
 {\ttfamily scanType=5}:  Scan radius, and at each radius, scan $E_r$.  Density and temperature profiles are again
- taken from the {\ttfamily profiles} file; see {\ttfamily utils/profiles.XXX} for examples.\\
+ taken from the {\ttfamily profiles} file; see \path{sfincs/fortran/utils/profiles.XXX} for examples.\\
 
-{\ttfamily scanType=21}: Read in a list of requested runs from a file {\ttfamily runspec.dat}. See {\ttfamily utils/sfincsScan\_21} for an example file.
+{\ttfamily scanType=21}: Read in a list of requested runs from a file {\ttfamily runspec.dat}. See \path{sfincs/fortran/utils/sfincsScan_21} for an example file.
 }
 
 
