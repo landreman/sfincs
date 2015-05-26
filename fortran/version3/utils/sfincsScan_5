@@ -56,7 +56,7 @@ for runNum in range(len(radii)):
             line = "!ss scanType = 2  ! set by sfincsScan_5.\n"
 
         if namelistLineContainsSS(line,"NErs"):
-            line = "!ss NErs = "+str(NErs[runNum])+"  ! set by sfincsScan_5.\n"
+            line = "!ss NErs = "+str(int(NErs[runNum]))+"  ! set by sfincsScan_5.\n"
 
         if namelistLineContainsSS(line,"dPhiHatd"+radiusNameForGradients+"Max"):
             line = "!ss dPhiHatd"+radiusNameForGradients+"Max = "+str(dPhiHatdradius_max[runNum])+"  ! set by sfincsScan_5.\n"

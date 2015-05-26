@@ -104,7 +104,7 @@ def convertGradientFromddpsiN(coordinate, radii_psiN):
 
 def convertGradientToddpsiN(coordinate, radii_psiN):
     # This function returns the factor which, when multiplied by dnHat/d(coordinate), gives dnHat/dpsiN.
-    return [1.0/x for x in convertGradientFromddpsiN(coordinate, radii_psiN)]
+    return [1.0/x if x != 0 else float('nan') for x in convertGradientFromddpsiN(coordinate, radii_psiN)]
 
 
 #######################################################################################

@@ -111,7 +111,7 @@ def linspace(min,max,nn):
     return [x/(nn-1.0)*(max-min)+min for x in range(nn)]
 
 def logspace_int(min,max,nn):
-    return uniq(map(int,logspace(min,max,nn)))
+    return uniq(map(int,map(round,logspace(min,max,nn))))
 
 def logspace_odd(min,max,nn):
     temp = map(int,logspace(min,max,nn))
