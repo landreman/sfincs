@@ -167,8 +167,13 @@ by {\ttfamily EStar}.  The first of these quantities is the dimensionless collis
 \end{equation}
 where $G$ and $I$ are defined in (\ref{eq:covariant}), $\iota=1/q$ is the rotational transform,
 $v$ is the speed at which the monoenergetic calculation is being performed, and $B_0$ is the (0,0) Fourier harmonic of $B$
-with respect to the Boozer poloidal and toroidal angles.
-\todo{How is $\nu$ defined here?}
+with respect to the Boozer poloidal and toroidal angles. The collision
+frequency $\nu$ is here the value of $\nu_\mathrm{ii}$ one would have if
+$v$ were the thermal speed. That is, in SI units,
+\begin{equation}
+  \nu=\frac{4}{3\sqrt{\pi}}\frac{n Z^4e^4\ln \Lambda}{4\pi\epsilon_0^2m^2v^3}.
+\end{equation}
+%
 The normalized radial electric field is
 \begin{equation}
 \mbox{\ttfamily EStar} = \frac{cG}{\iota v B_0} \frac{d\Phi}{d\psi}
@@ -177,3 +182,17 @@ The normalized radial electric field is
 When {\ttfamily RHSMode} == 1, {\ttfamily nuPrime} and {\ttfamily EStar} are ignored.
 \todo{Should be change the behavior of RHSMode=2 so it uses nuPrime and EStar instead of nu\_n?}
 
+The two parameters {\ttfamily nuPrime} and {\ttfamily EStar} are
+related to the corresponding DKES parameters {\ttfamily CMUL} and
+{\ttfamily EFIELD} by
+\begin{eqnarray}
+  \mbox{\ttfamily
+    CMUL}&\equiv&\frac{\nu_\mathrm{D}}{v}=\frac{3\sqrt{\pi}}{4}\left(\mathrm{erf}(1)-\mathrm{Ch}(1)\right)
+  \frac{B_0}{G+\iota I}\mbox{\ttfamily nuPrime},\\
+  \mbox{\ttfamily EFIELD}&\equiv&-\left[\frac{d\Phi}{dr}\right]_\mathrm{DKES}\frac{1}{vB_0}=-\frac{\iota}{G}\left[\frac{d\Psi}{dr}\right]_\mathrm{DKES}\mbox{\ttfamily EStar},
+\end{eqnarray}
+where $\mathrm{Ch}$ is the Chandrasekhar function and $\nu_\mathrm{D}$
+is the actual pitch-angle deflection frequency of the particle.
+\todo{These expressions are in SI units. Should there be some
+  factors of $c$ to adhere to the Gaussian standard used here?
+  Probably not.}

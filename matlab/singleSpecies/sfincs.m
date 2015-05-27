@@ -259,16 +259,16 @@ constraintScheme = -1;
 %   useDKESExBDrift = true
 %   include_fDivVE_term = false
 
-%includeXDotTerm = true;
-includeXDotTerm = false;
+includeXDotTerm = true;
+%includeXDotTerm = false;
 
-%includeElectricFieldTermInXiDot = true;
-includeElectricFieldTermInXiDot = false;
+includeElectricFieldTermInXiDot = true;
+%includeElectricFieldTermInXiDot = false;
 
 % If useDKESExBDrift=true, the ExB drift term in the df/dtheta and df/dzeta terms is taken
 % to be E x B / <B^2> instead of E x B / B^2.
-useDKESExBDrift = true;
-%useDKESExBDrift = false;
+%useDKESExBDrift = true;
+useDKESExBDrift = false;
 
 %include_fDivVE_term = true;
 include_fDivVE_term = false;
