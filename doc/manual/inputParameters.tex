@@ -125,6 +125,8 @@ B(\theta,\zeta)/\bar{B}
 && \times \sin((\mbox{ \ttfamily helicity\_antisymm\_l}) \theta - (\mbox{\ttfamily helicity\_antisymm\_n}) \zeta)] \nonumber
 \end{eqnarray}
 
+(All the variables in this formula are discussed later in this namelist.)\\
+
 {\ttfamily geometryScheme}==2: Use a 3-helicity model of the LHD standard configuration at {\ttfamily rN}=0.5.\\
 
 {\ttfamily geometryScheme}==3: Use a 4-helicity model of the LHD inward-shifted configuration at {\ttfamily rN}=0.5.\\
@@ -138,7 +140,7 @@ B(\theta,\zeta)/\bar{B}
 The file is assumed to be stellarator-symmetric.\\
 
 {\ttfamily geometryScheme}==12: Read the IPP {\ttfamily .bc} format Boozer-coordinate file specified in {\ttfamily equilibriumFile} below. 
-The file is assumed to be stellarator-asymmetric.
+The file is assumed to be stellarator-\emph{asymmetric}.
 }
 
 \myhrule
@@ -149,7 +151,7 @@ The file is assumed to be stellarator-asymmetric.
 {When {\ttfamily geometryScheme} == 1, 5, 11, or 12}
 {Which radial coordinate to use to specify the flux surface for a single calculation,
 or to specify the range of flux surfaces for a radial scan. 
-(When {\ttfamily geometryScheme} == 2, 3, or 4, the flux surface used will be {\ttfamily rN}=0.5.)
+(Regardless of the value of this parameter, when {\ttfamily geometryScheme} == 2, 3, or 4, the flux surface used will be {\ttfamily rN}=0.5.)
 See section \ref{sec:radialCoordinates}
 for more information about radial coordinates.\\
 
@@ -394,6 +396,19 @@ I'm not sure why you would want this, but the feature is implemented for complet
 
 This namelist defines which species are included in the calculation, along with the density and temperature and gradients thereof.
 You will definitely want to set the parameters in this namelist.
+Note that only one of the four parameters 
+{\ttfamily dnHatdpsiHats}, 
+{\ttfamily dnHatdpsiNs}, 
+{\ttfamily dnHatdrHats}, or
+{\ttfamily dnHatdrNs}
+will be used, depending on the value of {\ttfamily inputRadialCoordinateForGradients}
+in the {\ttfamily geometryParameters} namelist.
+Similarly, only one of the four parameters
+{\ttfamily dTHatdpsiHats}, 
+{\ttfamily dTHatdpsiNs}, 
+{\ttfamily dTHatdrHats}, or
+{\ttfamily dTHatdrNs}
+will be used.
 
 \myhrule
 

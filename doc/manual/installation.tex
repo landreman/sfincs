@@ -68,6 +68,13 @@ variable is used by
 You will probably want to add the directory \path{sfincs/fortran/version3/utils/} to your
 path.  This directory contains the scripts for plotting output and running parameter scans.
 
+To eliminate the need to set the environment variable and path 
+as described above
+at each login session, you may find it convenient to set both
+in your startup script, such as  {\ttfamily .bashrc}.  In this startup script
+you may also want to load any modules needed by \sfincsScan~such as \python, {\ttfamily numpy},
+{\ttfamily scipy}, and {\ttfamily matplotlib} (if your computing system uses modules).
+
 \section{Setting up \sfincs~on a new system}
 If you are setting up \sfincs~on a new system, one for which there is no file
 \path{sfincs/fortran/version3/makefiles/makefile.XXX},
@@ -76,7 +83,7 @@ there are several things you need to do.
 First, copy one of the existing makefiles, and edit it as appropriate.
 
 Second, you will need to edit {\ttfamily utils/sfincsScan}. Look for the {\ttfamily if} block near the top
-with sections for {\ttfamily sfincsSystem = edison},{\ttfamily hydra}, and {\ttfamily laptop}. Add an analogous block
+with sections for {\ttfamily sfincsSystem = edison}, {\ttfamily hydra}, and {\ttfamily laptop}. Add an analogous block
 for your system to set the command used to submit jobs, and a {\ttfamily nameJobFile} function.
 
 Third, if you want {\ttfamily make test} to work (see section \ref{sec:maketest}),
@@ -110,3 +117,7 @@ will be checked, using the
 If you run {\ttfamily make retest} from the \path{sfincs/fortran/version3/} directory,
 no new runs of \sfincs~will be performed, but the {\ttfamily tests\_small.py} or {\ttfamily tests\_large.py} script
 will be run on any existing {\ttfamily sfincsOutput.h5} files in the \path{sfincs/fortran/version3/examples/} directories.
+
+The {\ttfamily make test} functionality relies on system-specific commands in the
+\path{sfincs/fortran/version3/makefiles/makefile.SFINCS_SYSTEM} file.  If you experience
+problems with  {\ttfamily make test}, it is likely that this file needs modification.

@@ -43,6 +43,16 @@ program sfincs
      end if
   end if
 
+  ! When mumps is the solver, it is very handy to set mumps's control parameter CNTL(1)=1e-15.
+  ! There is not a specific PETSc command to do this, so we set CNTL(1) by "adding" a command-line option here:
+  !call PetscOptionsInsertString("-mat_mumps_cntl_1 1e-6 -options_left", ierr)
+  ! CNTL(1) is a threshhold for pivoting. For the default value of 0.01, there is a lot of pivoting.
+  ! This causes memory demands to increase beyond mumps's initial estimate, causing errors (INFO(1)=-9).
+  ! If we set CNTL(1) all the way to 0, there is sometimes an error about a zero pivot.
+  ! The setting CNTL(1)=1e-6 seems robust.
+  ! I notice that if CNTL(1) is smaller, like 1e-15, the Fokker-Planck calculations work find but pitch-angle-scattering calculations
+  ! fail. There might be value in using different values of CNTL(1) for FP vs PAS.
+
   call PetscTime(time1, ierr)
   startTime = time1
 

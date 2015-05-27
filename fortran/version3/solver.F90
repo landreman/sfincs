@@ -26,6 +26,9 @@ module solver
     PetscLogDouble :: time1, time2
     integer :: userContext(1)
     Vec :: dummyVec
+    Mat :: factorMat
+    PetscInt :: mumps_which_cntl
+    PetscReal :: mumps_value
 
     external evaluateJacobian, evaluateResidual, diagnosticsMonitor
 
@@ -33,16 +36,6 @@ module solver
        print *,"Entering main solver loop."
     end if
     iterationForMatrixOutput = 0
-
-    ! When mumps is the solver, it is very handy to set mumps's control parameter CNTL(1)=1e-15.
-    ! There is not a specific PETSc command to do this, so we set CNTL(1) by "adding" a command-line option here:
-    call PetscOptionsInsertString("-mat_mumps_cntl_1 1e-6 -options_left", ierr)
-    ! CNTL(1) is a threshhold for pivoting. For the default value of 0.01, there is a lot of pivoting.
-    ! This causes memory demands to increase beyond mumps's initial estimate, causing errors (INFO(1)=-9).
-    ! If we set CNTL(1) all the way to 0, there is sometimes an error about a zero pivot.
-    ! The setting CNTL(1)=1e-6 seems robust.
-    ! I notice that if CNTL(1) is smaller, like 1e-15, the Fokker-Planck calculations work find but pitch-angle-scattering calculations
-    ! fail. There might be value in using different values of CNTL(1) for FP vs PAS.
 
     call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, solutionVec, ierr)
     call VecDuplicate(solutionVec, residualVec, ierr)
@@ -79,6 +72,7 @@ module solver
        call KSPSetTolerances(KSPInstance, solverTolerance, PETSC_DEFAULT_REAL, &
             PETSC_DEFAULT_REAL, PETSC_DEFAULT_INTEGER, ierr)
 
+       ! Allow options to be controlled using command-line flags:
        call KSPSetFromOptions(KSPInstance, ierr)
        call KSPMonitorSet(KSPInstance, KSPMonitorDefault, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
 
@@ -94,6 +88,7 @@ module solver
        call KSPGetPC(KSPInstance, preconditionerContext, ierr)
        call PCSetType(preconditionerContext, PCLU, ierr)
        call KSPSetType(KSPInstance, KSPPREONLY, ierr)
+       ! Allow options to be controlled using command-line flags:
        call KSPSetFromOptions(KSPInstance, ierr)
     end if
 
@@ -109,6 +104,8 @@ module solver
           if (masterProc) then
              print *,"We will use superlu_dist to factorize the preconditioner."
           end if
+          ! Turn on superlu_dist diagnostic output:
+          call PetscOptionsInsertString("-mat_superlu_dist_statprint", ierr)
        case default
           if (masterProc) then
              print *,"Error: Invalid setting for whichParallelSolverToFactorPreconditioner"
@@ -136,6 +133,7 @@ module solver
        call PCFactorSetZeroPivot(preconditionerContext, 1d-200, ierr) 
     end if
 
+    
     ! Tell PETSc to call the diagnostics subroutine at each iteration of SNES:
     call SNESMonitorSet(mysnes, diagnosticsMonitor, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
 
@@ -162,7 +160,26 @@ module solver
 
     call SNESSetFromOptions(mysnes, ierr)
 
+    if (isAParallelDirectSolverInstalled .and. (whichParallelSolverToFactorPreconditioner==1)) then
+       ! When mumps is the solver, it is very handy to set mumps's control parameter CNTL(1) to a number like 1e-6.
+       ! CNTL(1) is a threshhold for pivoting. For the default value of 0.01, there is a lot of pivoting.
+       ! This causes memory demands to increase beyond mumps's initial estimate, causing errors (INFO(1)=-9).
+       ! If we set CNTL(1) all the way to 0, there is sometimes an error about a zero pivot.
+       ! The setting CNTL(1)=1e-6 seems robust.
+       ! I notice that if CNTL(1) is smaller, like 1e-15, the Fokker-Planck calculations work find but pitch-angle-scattering calculations
+       ! fail. There might be value in using different values of CNTL(1) for FP vs PAS.
 
+       ! These commands must be AFTER SNESSetFromOptions or else there is a seg fault.
+       call PCFactorSetUpMatSolverPackage(preconditionerContext,ierr)
+       call PCFactorGetMatrix(preconditionerContext,factorMat,ierr)
+       mumps_which_cntl = 1
+       mumps_value = 1.e-6
+       call MatMumpsSetCntl(factorMat,mumps_which_cntl,mumps_value,ierr)
+
+       ! Turn on mumps diagnostic output
+       mumps_which_cntl = 4
+       call MatMumpsSetIcntl(factorMat,mumps_which_cntl,2,ierr)
+    end if
 
     ! ***********************************************************************
     ! ***********************************************************************
