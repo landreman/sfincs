@@ -1378,6 +1378,28 @@ These parameters matter only when \sfincsScan~is called and are all ignored when
 These parameters can appear anywhere in the {\ttfamily input.namelist} file, in any namelist or outside of any namelist.
 Note that \sfincsScan~ parameters do not have defaults, unlike fortran namelist parameters.\\
 
+
+The resolution parameters each have 3 associated sfincsScan parameters
+which are used for convergence scans ({\ttfamily scanType} = 1): {\ttfamily ...MinFactor}, {\ttfamily ...MaxFactor}, and {\ttfamily ...NumRuns}.
+The first two of these set the range by which the associated resolution parameter is scaled
+in a convergence scan. The {\ttfamily ...NumRuns} parameter sets the number of values tried in a
+convergence scan. The code attempts to space the values evenly in a logarithmic
+sense, as in Matlab's 'logspace' function. For example, the following settings\\
+{\ttfamily
+    Nxi = 20\\
+!ss NxiMinFactor = 0.5\\
+!ss NxiMaxFactor = 2.0\\
+!ss NxiNumRuns = 3\\
+}
+would mean the values {\ttfamily Nxi} = 10, 20, and 40 would be tried in a convergence scan.
+If you don't want to scan a variable in a convergence scan, set the associated
+{\ttfamily ...NumRuns} parameter to 0, or do not include this parameter in the input file.
+For each resolution parameter ({\ttfamily Ntheta}, {\ttfamily Nzeta}, {\ttfamily Nxi}, etc.), the value itself is read by
+Fortran and so should not be preceded by {\ttfamily !ss}.  However the {\ttfamily ...MinFactor}, {\ttfamily ...MaxFactor}, and {\ttfamily ...NumRuns}
+quantities are read by \sfincsScan~and so must be preceded by {\ttfamily !ss}
+
+\myhrule
+
 \ssparam{scanType}
 {integer}
 {Any time \sfincsScan~is called.}

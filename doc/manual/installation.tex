@@ -100,7 +100,8 @@ There may be
 instructions for the specific modules required on your system in the comments in the
 appropriate makefile \\{\ttfamily sfincs/fortran/version3/makefiles/makefile.SFINCS\_SYSTEM} for your system.
 
-Next, to compile, go to the directory {\ttfamily sfincs/fortran/version3/} and run {\ttfamily make}.
+Next, to compile, go to the directory {\ttfamily sfincs/fortran/version3/} and run {\ttfamily make -j}.
+(The {\ttfamily -j} flag means compiliation will be done in parallel, i.e. faster.)
 
 \section{Make test}
 \label{sec:maketest}
