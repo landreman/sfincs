@@ -505,7 +505,7 @@
   useIterativeLinearSolver = .true.
 !  useIterativeLinearSolver = .false.
 
-  whichParallelSolverToFactorPreconditioner = 2
+  whichParallelSolverToFactorPreconditioner = 1
   ! Options for whichParallelSolverToFactorPreconditioner:
   ! 1 = use mumps if it is detected, otherwise use superlu_dist
   ! 2 = force use of superlu_dist, if it is available

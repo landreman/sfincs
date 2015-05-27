@@ -604,7 +604,7 @@
                                ell = L+2
                                colIndex = getIndex(ispecies, ix, ell+1, itheta, izetaCol, BLOCK_F)
 
-                               stuffToAdd = factor*(L-1)*L/((two*L-3)*(2*L-1)) &
+                               stuffToAdd = factor*(L+2)*(L+1)/((two*L+5)*(2*L+3)) &
                                     * (geometricFactor1 + geometricFactor2 - 3*geometricFactor3)
 
                                call MatSetValueSparse(matrix, rowIndex, colIndex, &
@@ -617,7 +617,7 @@
                                ell = L-2
                                colIndex = getIndex(ispecies, ix, ell+1, itheta, izetaCol, BLOCK_F)
 
-                               stuffToAdd = factor*(L+2)*(L+1)/((two*L+5)*(2*L+3)) &
+                               stuffToAdd = factor*(L-1)*L/((two*L-3)*(2*L-1)) &
                                     * (geometricFactor1 + geometricFactor2 - 3*geometricFactor3)
 
                                call MatSetValueSparse(matrix, rowIndex, colIndex, &
