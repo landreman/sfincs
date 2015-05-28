@@ -799,6 +799,7 @@ THIS FUNCTIONALITY IS WORK IN PROGRESS, AND RESULTS ARE BUGGY WHEN THIS VARIABLE
 
 
 \section{The {\ttfamily resolutionParameters}~namelist}
+\label{sec:resolutionParameters}
 
 In this namelist, there are 4 parameters you definitely need to be aware of and adjust: \Ntheta, \Nzeta, \Nxi, and \Nx.  
 See chapter \ref{ch:resolution} for details. You may or may not
@@ -1379,7 +1380,38 @@ These parameters can appear anywhere in the {\ttfamily input.namelist} file, in 
 Note that \sfincsScan~ parameters do not have defaults, unlike fortran namelist parameters.\\
 
 
-The resolution parameters each have 3 associated sfincsScan parameters
+\myhrule
+
+\ssparam{scanType}
+{integer}
+{Any time \sfincsScan~is called.}
+{Which type of scan will be run when \sfincsScan~is called. \\
+
+{\ttfamily scanType} = 1:  Resolution convergence scan. (Scan the parameters in the resolutionParameters namelist.)\\
+
+{\ttfamily scanType} = 2:  Scan of $E_r$.\\
+
+{\ttfamily scanType} = 3:  Scan any one input parameter that takes a numeric value.\\
+
+{\ttfamily scanType} = 4:  Scan radius, taking the density and temperature profiles from the {\ttfamily profiles} file.
+In this type of scan, the same radial electric field is used at every radius.
+See \path{sfincs/fortran/utils/profiles.XXX} for examples.\\
+
+{\ttfamily scanType} = 5:  Scan radius, and at each radius, scan $E_r$.  Density and temperature profiles are again
+ taken from the {\ttfamily profiles} file; see \path{sfincs/fortran/utils/profiles.XXX} for examples.
+In this type of scan, \sfincsScan~creates a subdirectory for each value of minor radius, and a
+{\ttfamily scanType} = 2 scan is run in each of these subdirectories.
+\\
+
+{\ttfamily scanType} = 21: Read in a list of requested runs from a file {\ttfamily runspec.dat}. See \path{sfincs/fortran/utils/sfincsScan_21} for an example file.
+}
+
+
+
+\subsection{Parameters related only to {\ttfamily scanType} = 1 (resolution convergence scans).}
+
+The resolution parameters discussed in section \ref{sec:resolutionParameters}
+each have 3 associated \sfincsScan~parameters
 which are used for convergence scans ({\ttfamily scanType} = 1): {\ttfamily ...MinFactor}, {\ttfamily ...MaxFactor}, and {\ttfamily ...NumRuns}.
 The first two of these set the range by which the associated resolution parameter is scaled
 in a convergence scan. The {\ttfamily ...NumRuns} parameter sets the number of values tried in a
@@ -1400,33 +1432,387 @@ quantities are read by \sfincsScan~and so must be preceded by {\ttfamily !ss}
 
 \myhrule
 
-\ssparam{scanType}
+\ssparam{NthetaMaxFactor}
+{real}
+{Only when \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Maximum factor by which \Ntheta~will be multiplied in a convergence scan.}
+
+\myhrule
+
+\ssparam{NthetaMinFactor}
+{real}
+{Only when \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Minimum factor by which \Ntheta~will be multiplied in a convergence scan.}
+
+\myhrule
+
+\ssparam{NthetaNumRuns}
 {integer}
-{Any time \sfincsScan~is called.}
-{Which type of scan will be run when \sfincsScan~is called. \\
+{Only when \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Maximum number of values of \Ntheta~which will be used in a convergence scan.  Only odd integers can be used
+for \Ntheta, so the actual number of \Ntheta~values used in the scan may be less than {\ttfamily NthetaNumRuns}.}
 
-{\ttfamily scanType} = 1:  Convergence scan. (Scan the parameters in the resolutionParameters namelist.)\\
+\myhrule
 
-{\ttfamily scanType} = 2:  Scan of $E_r$.\\
+\ssparam{NzetaMaxFactor}
+{real}
+{Only when \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Maximum factor by which \Nzeta~will be multiplied in a convergence scan.}
 
-{\ttfamily scanType} = 3:  Scan any one input parameter that takes a numeric value.\\
+\myhrule
 
-{\ttfamily scanType} = 4:  Scan radius, taking the density and temperature profiles from the {\ttfamily profiles} file.
-In this type of scan, the same radial electric field is used at every radius.
-See \path{sfincs/fortran/utils/profiles.XXX} for examples.\\
+\ssparam{NzetaMinFactor}
+{real}
+{Only when \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Minimum factor by which \Nzeta~will be multiplied in a convergence scan.}
 
-{\ttfamily scanType} = 5:  Scan radius, and at each radius, scan $E_r$.  Density and temperature profiles are again
- taken from the {\ttfamily profiles} file; see \path{sfincs/fortran/utils/profiles.XXX} for examples.\\
+\myhrule
 
-{\ttfamily scanType} = 21: Read in a list of requested runs from a file {\ttfamily runspec.dat}. See \path{sfincs/fortran/utils/sfincsScan_21} for an example file.
+\ssparam{NzetaNumRuns}
+{integer}
+{Only when \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Maximum number of values of \Nzeta~which will be used in a convergence scan.  Only odd integers can be used
+for \Nzeta, so the actual number of \Nzeta~values used in the scan may be less than {\ttfamily NzetaNumRuns}.}
+
+\myhrule
+
+\ssparam{NxiMaxFactor}
+{real}
+{Only when \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Maximum factor by which \Nxi~will be multiplied in a convergence scan.}
+
+\myhrule
+
+\ssparam{NxiMinFactor}
+{real}
+{Only when \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Minimum factor by which \Nxi~will be multiplied in a convergence scan.}
+
+\myhrule
+
+\ssparam{NxiNumRuns}
+{integer}
+{Only when \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Maximum number of values of \Nxi~which will be used in a convergence scan.  Only integers can be used
+for \Nxi, so the actual number of \Nxi~values used in the scan may be less than {\ttfamily NxiNumRuns}.}
+
+\myhrule
+
+\ssparam{NxMaxFactor}
+{real}
+{Only when \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Maximum factor by which \Nx~will be multiplied in a convergence scan.}
+
+\myhrule
+
+\ssparam{NxMinFactor}
+{real}
+{Only when \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Minimum factor by which \Nx~will be multiplied in a convergence scan.}
+
+\myhrule
+
+\ssparam{NxNumRuns}
+{integer}
+{Only when \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Maximum number of values of \Nx~which will be used in a convergence scan.  Only integers can be used
+for \Nx, so the actual number of \Nx~values used in the scan may be less than {\ttfamily NxNumRuns}.}
+
+\myhrule
+
+\ssparam{solverToleranceMaxFactor}
+{real}
+{Only when \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Maximum factor by which {\ttfamily solverTolerance} will be multiplied in a convergence scan.}
+
+\myhrule
+
+\ssparam{solverToleranceMinFactor}
+{real}
+{Only when \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Minimum factor by which {\ttfamily solverTolerance} will be multiplied in a convergence scan.}
+
+\myhrule
+
+\ssparam{solverToleranceNumRuns}
+{integer}
+{Only when \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Number of values of {\ttfamily solverTolerance} which will be used in a convergence scan.}
+
+\myhrule
+
+\ssparam{NLMaxFactor}
+{real}
+{Only when {\ttfamily collisionOperator} = 0 and \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Maximum factor by which \NL~will be multiplied in a convergence scan.}
+
+\myhrule
+
+\ssparam{NLMinFactor}
+{real}
+{Only when {\ttfamily collisionOperator} = 0 and \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Minimum factor by which \NL~will be multiplied in a convergence scan.}
+
+\myhrule
+
+\ssparam{NLNumRuns}
+{integer}
+{Only when {\ttfamily collisionOperator} = 0 and \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Maximum number of values of \NL~which will be used in a convergence scan.  Only integers can be used
+for \NL, so the actual number of \NL~values used in the scan may be less than {\ttfamily NLNumRuns}.}
+
+\myhrule
+
+\ssparam{NxPotentialsPerVthMaxFactor}
+{real}
+{Only when {\ttfamily collisionOperator} = 0, {\ttfamily xGridScheme} $<$ 5, and \sfincsScan~is run with {\ttfamily scanType} = 1.
+Since the recommended value of {\ttfamily xGridScheme} is 5, this parameter is basically obsolete.}
+{Maximum factor by which {\ttfamily NxPotentialsPerVth} will be multiplied in a convergence scan.}
+
+\myhrule
+
+\ssparam{NxPotentialsPerVthMinFactor}
+{real}
+{Only when {\ttfamily collisionOperator} = 0, {\ttfamily xGridScheme} $<$ 5, and \sfincsScan~is run with {\ttfamily scanType} = 1.
+Since the recommended value of {\ttfamily xGridScheme} is 5, this parameter is basically obsolete.}
+{Minimum factor by which {\ttfamily NxPotentialsPerVth} will be multiplied in a convergence scan.}
+
+\myhrule
+
+\ssparam{NxPotentialsPerVthNumRuns}
+{integer}
+{Only when {\ttfamily collisionOperator} = 0, {\ttfamily xGridScheme} $<$ 5, and \sfincsScan~is run with {\ttfamily scanType} = 1.
+Since the recommended value of {\ttfamily xGridScheme} is 5, this parameter is basically obsolete.}
+{Number of values of {\ttfamily NxPotentialsPerVth} which will be used in a convergence scan.}
+
+\myhrule
+
+\ssparam{xMaxMaxFactor}
+{real}
+{Only when {\ttfamily collisionOperator} = 0, {\ttfamily xGridScheme} $<$ 5, and \sfincsScan~is run with {\ttfamily scanType} = 1.
+Since the recommended value of {\ttfamily xGridScheme} is 5, this parameter is basically obsolete.}
+{Maximum factor by which {\ttfamily xMax} will be multiplied in a convergence scan.}
+
+\myhrule
+
+\ssparam{xMaxMinFactor}
+{real}
+{Only when {\ttfamily collisionOperator} = 0, {\ttfamily xGridScheme} $<$ 5, and \sfincsScan~is run with {\ttfamily scanType} = 1.
+Since the recommended value of {\ttfamily xGridScheme} is 5, this parameter is basically obsolete.}
+{Minimum factor by which {\ttfamily xMax} will be multiplied in a convergence scan.}
+
+\myhrule
+
+\ssparam{xMaxNumRuns}
+{integer}
+{Only when {\ttfamily collisionOperator} = 0, {\ttfamily xGridScheme} $<$ 5, and \sfincsScan~is run with {\ttfamily scanType} = 1.
+Since the recommended value of {\ttfamily xGridScheme} is 5, this parameter is basically obsolete.}
+{Number of values of {\ttfamily xMax} which will be used in a convergence scan.}
+
+
+
+
+\subsection{Parameters related only to {\ttfamily scanType} = 2 (scans of radial electric field).}
+
+In this scan of the radial electric field, the values of electric field used
+will always be uniformly (linearly) spaced.  
+Notice that exactly 1 of the 4 variables {\ttfamily dPhiHatdpsiHatMax}, {\ttfamily dPhiHatdpsiNMax}, {\ttfamily dPhiHatdrHatMax}, and {\ttfamily dPhiHatdrNMax}
+will be used, depending on\\
+{\ttfamily inputRadialCoordinateForGradients}.
+Similarly, exactly 1 of the 4 variables
+{\ttfamily dPhiHatdpsiHatMin}, {\ttfamily dPhiHatdpsiNMin}, {\ttfamily dPhiHatdrHatMin}, and {\ttfamily dPhiHatdrNMin}
+will be used.
+
+\myhrule
+
+\ssparam{NErs}
+{integer}
+{Only when \sfincsScan~is run with {\ttfamily scanType} = 2.}
+{Number of values of radial electric field to consider in a scan.}
+
+\myhrule
+
+\ssparam{dPhiHatdpsiHatMax}
+{real}
+{Only when {\ttfamily inputRadialCoordinateForGradients} = 0 and \sfincsScan~is run with {\ttfamily scanType} = 2.}
+{Maximum value of {\ttfamily dPhiHatdpsiHat} to use in the scan.}
+
+\myhrule
+
+\ssparam{dPhiHatdpsiHatMin}
+{real}
+{Only when {\ttfamily inputRadialCoordinateForGradients} = 0 and \sfincsScan~is run with {\ttfamily scanType} = 2.}
+{Minimum value of {\ttfamily dPhiHatdpsiHat} to use in the scan.}
+
+\myhrule
+
+\ssparam{dPhiHatdpsiNMax}
+{real}
+{Only when {\ttfamily inputRadialCoordinateForGradients} = 1 and \sfincsScan~is run with {\ttfamily scanType} = 2.}
+{Maximum value of {\ttfamily dPhiHatdpsiN} to use in the scan.}
+
+\myhrule
+
+\ssparam{dPhiHatdpsiNMin}
+{real}
+{Only when {\ttfamily inputRadialCoordinateForGradients} = 1 and \sfincsScan~is run with {\ttfamily scanType} = 2.}
+{Minimum value of {\ttfamily dPhiHatdpsiN} to use in the scan.}
+
+\myhrule
+
+\ssparam{dPhiHatdrHatMax}
+{real}
+{Only when {\ttfamily inputRadialCoordinateForGradients} = 2 and \sfincsScan~is run with {\ttfamily scanType} = 2.}
+{Maximum value of {\ttfamily dPhiHatdrHat} to use in the scan.}
+
+\myhrule
+
+\ssparam{dPhiHatdrHatMin}
+{real}
+{Only when {\ttfamily inputRadialCoordinateForGradients} = 2 and \sfincsScan~is run with {\ttfamily scanType} = 2.}
+{Minimum value of {\ttfamily dPhiHatdrHat} to use in the scan.}
+
+\myhrule
+
+\ssparam{dPhiHatdrNMax}
+{real}
+{Only when {\ttfamily inputRadialCoordinateForGradients} = 3 and \sfincsScan~is run with {\ttfamily scanType} = 2.}
+{Maximum value of {\ttfamily dPhiHatdrN} to use in the scan.}
+
+\myhrule
+
+\ssparam{dPhiHatdrNMin}
+{real}
+{Only when {\ttfamily inputRadialCoordinateForGradients} = 3 and \sfincsScan~is run with {\ttfamily scanType} = 2.}
+{Minimum value of {\ttfamily dPhiHatdrN} to use in the scan.}
+
+\subsection{Parameters related only to {\ttfamily scanType} = 3 (scans of an arbitrary input parameter).}
+
+\ssparam{scanVariable}
+{string. Must be of the fortran namelist parameters that takes an integer or real value. Case-insensitive.}
+{Only when \sfincsScan~is run with {\ttfamily scanType} = 3.}
+{Name of the variable to scan in a {\ttfamily scanType} = 3 scan.}
+
+\myhrule
+
+\ssparam{scanVariableMax}
+{real}
+{Only when \sfincsScan~is run with {\ttfamily scanType} = 3.}
+{Maximum value of {\ttfamily scanVariable} to use in a {\ttfamily scanType} = 3 scan.}
+
+\myhrule
+
+\ssparam{scanVariableMin}
+{real}
+{Only when \sfincsScan~is run with {\ttfamily scanType} = 3.}
+{Minimum value of {\ttfamily scanVariable} to use in a {\ttfamily scanType} = 3 scan.}
+
+\myhrule
+
+\ssparam{scanVariableN}
+{integer}
+{Only when \sfincsScan~is run with {\ttfamily scanType} = 3.}
+{Number of values of {\ttfamily scanVariable} to use in a {\ttfamily scanType} = 3 scan.}
+
+\myhrule
+
+\ssparam{scanVariableScale}
+{string. Must be `linear', `lin', 'logarithmic', or 'log'}
+{Only when \sfincsScan~is run with {\ttfamily scanType} = 3.}
+{Whether to space the values of {\ttfamily scanVariable} in a linear or logarithmic manner.
+The settings `linear' and `lin' have identical behavior. 
+The settings `logarithmic' and `log' have identical behavior.}
+
+\myhrule
+
+
+\subsection{Parameters related only to {\ttfamily scanType} = 4 or 5 (radial scans).}
+
+Notice that exactly 1 of the 4 variables {\ttfamily psiHat\_max}, {\ttfamily psiN\_max}, {\ttfamily rHat\_max}, and {\ttfamily rN\_max}
+will be used, depending on
+{\ttfamily inputRadialCoordinate}.
+Similarly, exactly 1 of the 4 variables
+{\ttfamily psiHat\_min}, {\ttfamily psiN\_min}, {\ttfamily rHat\_min}, and {\ttfamily rN\_min}
+will be used.
+
+\myhrule
+
+\ssparam{profilesScheme}
+{integer}
+{Only when \sfincsScan~is run with {\ttfamily scanType} = 4 or 5.}
+{How to specify the profiles of density, temperature, and (when  {\ttfamily scanType} = 5)
+the range of radial electric field to consider.\\
+
+{\ttfamily profilesScheme} = 1: Read a `{\ttfamily profiles}' file which contains the input profiles on a grid in one of the 4 available radial coordinates.\\
+
+{\ttfamily profilesScheme} = 2: Read a `{\ttfamily profiles}' file which contains the input profiles expressed as polynomials in one of the 4 available radial coordinates.
 }
 
+\myhrule
 
+\ssparam{Nradius}
+{integer}
+{Only when \sfincsScan~is run with {\ttfamily scanType} = 4 or 5.}
+{Maximum number of values of minor radius to consider in the scan.
+Depending on {\ttfamily geometryScheme} and {\ttfamily VMECRadialOption},
+it may be that only surfaces available in the magnetic equilibrium file will be
+used, in which case fewer than {\ttfamily Nradius} radii may be used.}
 
+\myhrule
 
+\ssparam{psiHat\_max}
+{real}
+{Only when {\ttfamily inputRadialCoordinate} = 0 and \sfincsScan~is run with {\ttfamily scanType} = 4 or 5.}
+{Maximum value of {\ttfamily psiHat} to use in the scan.}
 
+\myhrule
 
+\ssparam{psiHat\_min}
+{real}
+{Only when {\ttfamily inputRadialCoordinate} = 0 and \sfincsScan~is run with {\ttfamily scanType} = 4 or 5.}
+{Minimum value of {\ttfamily psiHat} to use in the scan.}
 
+\myhrule
+
+\ssparam{psiN\_max}
+{real}
+{Only when {\ttfamily inputRadialCoordinate} = 1 and \sfincsScan~is run with {\ttfamily scanType} = 4 or 5.}
+{Maximum value of {\ttfamily psiN} to use in the scan.}
+
+\myhrule
+
+\ssparam{psiN\_min}
+{real}
+{Only when {\ttfamily inputRadialCoordinate} = 1 and \sfincsScan~is run with {\ttfamily scanType} = 4 or 5.}
+{Minimum value of {\ttfamily psiN} to use in the scan.}
+
+\myhrule
+
+\ssparam{rHat\_max}
+{real}
+{Only when {\ttfamily inputRadialCoordinate} = 2 and \sfincsScan~is run with {\ttfamily scanType} = 4 or 5.}
+{Maximum value of {\ttfamily rHat} to use in the scan.}
+
+\myhrule
+
+\ssparam{rHat\_min}
+{real}
+{Only when {\ttfamily inputRadialCoordinate} = 2 and \sfincsScan~is run with {\ttfamily scanType} = 4 or 5.}
+{Minimum value of {\ttfamily rHat} to use in the scan.}
+
+\myhrule
+
+\ssparam{rN\_max}
+{real}
+{Only when {\ttfamily inputRadialCoordinate} = 3 and \sfincsScan~is run with {\ttfamily scanType} = 4 or 5.}
+{Maximum value of {\ttfamily rN} to use in the scan.}
+
+\myhrule
+
+\ssparam{rN\_min}
+{real}
+{Only when {\ttfamily inputRadialCoordinate} = 3 and \sfincsScan~is run with {\ttfamily scanType} = 4 or 5.}
+{Minimum value of {\ttfamily rN} to use in the scan.}
 
 
 \section{\PETSc~commands}

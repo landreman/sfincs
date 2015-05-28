@@ -1,7 +1,7 @@
 % -*- Mode:TeX -*-
 
 
-\documentclass[11pt,twoside,singlespace]{mymanual}
+\documentclass[11pt,twoside,singlespace]{report}
 %\pagestyle{plain}
 %\pagestyle{headings}
 %\lhead{\chaptermark}
@@ -36,6 +36,7 @@
 \newcommand{\Nzeta}{{\ttfamily Nzeta}}
 \newcommand{\Nxi}{{\ttfamily Nxi}}
 \newcommand{\Nx}{{\ttfamily Nx}}
+\newcommand{\NL}{{\ttfamily NL}}
 \newcommand{\vmec}{{\ttfamily vmec}}
 \newcommand{\todo}[1]{\textcolor{red}{To do: #1}}
 
@@ -44,17 +45,14 @@
 
 \newcommand{\boldkappa}{{\mathbf \kappa}}
 
-\setcounter{tocdepth}{1}
-\begin{document}
-
 \setlength{\oddsidemargin}{0.25in}	% 1.25in left margin
 \setlength{\evensidemargin}{0.25in}	% 1.25in left margin (even pages)
 \setlength{\topmargin}{0.0in}		% 1in top margin
 \setlength{\textwidth}{6.0in}		% 6.0in text - 1.25in rt margin
-\setlength{\textheight}{9in}		% Body ht for 1in margins
-\addtolength{\topmargin}{-\headheight}	% No header, so compensate
-\addtolength{\topmargin}{-\headsep}	% for header height and separation
-\setlength{\footskip}{15pt}
+\setlength{\textheight}{8.6in}		% Body ht for 1in margins
+
+\setcounter{tocdepth}{1}
+\begin{document}
 
 
 \include{cover}
@@ -65,18 +63,8 @@
 \cfoot{\thepage}
 \tableofcontents
 
-\setlength{\textheight}{8.6in}		% Body ht for 1in margins
 \clearpage
 
-\setlength{\oddsidemargin}{0.25in}	% 1.25in left margin
-\setlength{\evensidemargin}{0.25in}	% 1.25in left margin (even pages)
-%\setlength{\topmargin}{0.4in}		% 1in top margin
-\setlength{\topmargin}{0.0in}		% 1in top margin
-\setlength{\textwidth}{6.0in}		% 6.0in text - 1.25in rt margin
-%\setlength{\textheight}{9in}		% Body ht for 1in margins
-%\addtolength{\topmargin}{-\headheight}	% No header, so compensate
-%\addtolength{\topmargin}{-\headsep}	% for header height and separation
-\setlength{\footskip}{30pt}
 
 \pagestyle{fancy}
 \fancyhf{}
@@ -104,9 +92,7 @@
  
 \lhead[\thepage]{\sc Bibliography}
 \rhead[\sc Bibliography]{\thepage}
-\begin{singlespace}
 \bibliography{SFINCSUserManual}
 \bibliographystyle{mymanual}
-\end{singlespace}
 \end{document}
 
