@@ -44,7 +44,10 @@ elif sfincsSystem=="hydra":
     def nameJobFile(original,name):
         # Modify the job.sfincsScan file to change the name that appears in the queue.
         # Insert the new line after the original first line, since the first line is a shebang.
-        original.insert(1,"# @ job_name = "+name+"\n")
+        if "# @ job_name =" in original[1]:
+            original[1]="# @ job_name = "+name+"\n"
+        else:
+            original.insert(1,"# @ job_name = "+name+"\n")
         return original
 
 elif sfincsSystem=="laptop":
