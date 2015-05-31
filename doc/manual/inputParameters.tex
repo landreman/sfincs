@@ -525,7 +525,7 @@ You will want to be aware of most of these parameters.
 \param{Delta}
 {real}
 {4.5694e-3}
-{Always}
+{Whenever {\ttfamily RHSMode} == 1.}
 {Roughly speaking, {\ttfamily Delta} is $\rho_*$ at the reference parameters. The precise definition is
 \begin{eqnarray}
 \mbox{\ttfamily Delta} 
@@ -549,6 +549,47 @@ and $\bar{\Phi}$ and $\bar{T}$ are the normalization reference parameters discus
 The default value {\ttfamily alpha} = 1.0 corresponds to $\bar{T}$ = 1 keV and $\bar{\Phi}$ = 1 kV.
 The default value {\ttfamily alpha} = 1.0 also corresponds to $\bar{T}$ = 1 eV and $\bar{\Phi}$ = 1 V.
 }
+
+\myhrule
+
+\param{nu\_n}
+{real}
+{8.330e-3}
+{Whenever {\ttfamily RHSMode} == 1}
+{Dimensionless collisionality at the reference parameters:
+\begin{equation}
+\mbox{\ttfamily nu\_n} = \bar{\nu} \frac{\bar{R}}{\bar{v}},
+\end{equation}
+where $\bar{R}$ and $\bar{v}$ are the normalization reference parameters discussed in section \ref{sec:normalizations},
+and $\bar{\nu}$ is the dimensional collision frequency at the reference parameters. This frequency is defined as
+\begin{eqnarray}
+\bar{\nu}
+&=& \frac{4\sqrt{2\pi} \bar{n} e^4 \ln\Lambda}{3 (4\pi\epsilon_0)^2 \sqrt{\bar{m}} \bar{T}^{3/2}} \;\;\; \mbox{(SI units}) \\
+&=& \frac{4\sqrt{2\pi} \bar{n} e^4 \ln\Lambda}{3 \sqrt{\bar{m}} \bar{T}^{3/2}} \;\;\; \mbox{(Gaussian units}) \nonumber
+\end{eqnarray}
+where $e$ is the proton charge, $\bar{n}$, $\bar{m}$, and $\bar{T}$ are the normalization reference parameters discussed in section \ref{sec:normalizations},
+and $\ln\Lambda$ is the Coulomb logarithm.
+The default value {\ttfamily nu\_n} = 8.330e-3 corresponds to $\bar{R}$ = 1 meter,
+$\bar{m}$ = proton mass, $\bar{n}$ = $10^{20}$ m$^{-3}$, $\bar{T}$ = 1 keV, and $\ln\Lambda = 17$.
+}
+
+\myhrule
+
+\param{nuPrime}
+{real}
+{1.0}
+{Only when {\ttfamily RHSMode} == 3.}
+{Dimensionless collisionality used in place of {\ttfamily nHats}, {\ttfamily THats}, {\ttfamily mHats}, {\ttfamily Zs}, and {\ttfamily nu\_n} for computing monoenergetic transport coefficients.
+See section \ref{sec:monoenergetic} for more details.}
+
+\myhrule
+
+\param{EStar}
+{real}
+{0.0}
+{Only when {\ttfamily RHSMode} == 3.}
+{Normalized radial electric field used in place of {\ttfamily dPhiHatdXXX} for computing monoenergetic transport coefficients.
+See section \ref{sec:monoenergetic} for more details.}
 
 \myhrule
 
@@ -615,47 +656,6 @@ Notice that exactly 1 of the 4 variables {\ttfamily dPhiHatdpsiHat}, {\ttfamily 
 will be used, depending on\\
 {\ttfamily inputRadialCoordinateForGradients}.
 }
-
-\myhrule
-
-\param{nu\_n}
-{real}
-{8.330e-3}
-{Whenever {\ttfamily RHSMode} == 1}
-{Dimensionless collisionality at the reference parameters:
-\begin{equation}
-\mbox{\ttfamily nu\_n} = \bar{\nu} \frac{\bar{R}}{\bar{v}},
-\end{equation}
-where $\bar{R}$ and $\bar{v}$ are the normalization reference parameters discussed in section \ref{sec:normalizations},
-and $\bar{\nu}$ is the dimensional collision frequency at the reference parameters. This frequency is defined as
-\begin{eqnarray}
-\bar{\nu}
-&=& \frac{4\sqrt{2\pi} \bar{n} e^4 \ln\Lambda}{3 (4\pi\epsilon_0)^2 \sqrt{\bar{m}} \bar{T}^{3/2}} \;\;\; \mbox{(SI units}) \\
-&=& \frac{4\sqrt{2\pi} \bar{n} e^4 \ln\Lambda}{3 \sqrt{\bar{m}} \bar{T}^{3/2}} \;\;\; \mbox{(Gaussian units}) \nonumber
-\end{eqnarray}
-where $e$ is the proton charge, $\bar{n}$, $\bar{m}$, and $\bar{T}$ are the normalization reference parameters discussed in section \ref{sec:normalizations},
-and $\ln\Lambda$ is the Coulomb logarithm.
-The default value {\ttfamily nu\_n} = 8.330e-3 corresponds to $\bar{R}$ = 1 meter,
-$\bar{m}$ = proton mass, $\bar{n}$ = $10^{20}$ m$^{-3}$, $\bar{T}$ = 1 keV, and $\ln\Lambda = 17$.
-}
-
-\myhrule
-
-\param{nuPrime}
-{real}
-{1.0}
-{Only when {\ttfamily RHSMode} == 3.}
-{Dimensionless collisionality used in place of {\ttfamily nHats}, {\ttfamily THats}, {\ttfamily mHats}, {\ttfamily Zs}, and {\ttfamily nu\_n} for computing monoenergetic transport coefficients.
-See section \ref{sec:monoenergetic} for more details.}
-
-\myhrule
-
-\param{EStar}
-{real}
-{0.0}
-{Only when {\ttfamily RHSMode} == 3.}
-{Normalized radial electric field used in place of {\ttfamily dPhiHatdXXX} for computing monoenergetic transport coefficients.
-See section \ref{sec:monoenergetic} for more details.}
 
 
 \myhrule
@@ -1837,6 +1837,8 @@ There are hundreds of \PETSc~options, and a list can be obtained by running with
 \myhrule
 
 \PETScParam{-mat\_mumps\_icntl\_4 {\normalfont \ttfamily$<$integer$>$}}
-{How much diagnostic information will be printed by \mumps. Default is 0. Set to 2 or 3 to print out useful diagnostic information about the memory required for factorizing the preconditioner.}
+{How much diagnostic information will be printed by \mumps. Default is 3, causing extensive diagnostic information to be printed 
+to standard output about the memory required for factorizing the preconditioner.
+Set this parameter to 0 to suppress this output from mumps.}
 
 

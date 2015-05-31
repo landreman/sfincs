@@ -63,11 +63,13 @@ module globalVariables
   integer, parameter :: maxNumSpecies = 100
   integer, parameter :: speciesNotInitialized = -9999
   integer :: NSpecies = -9999
-  PetscScalar, dimension(maxNumSpecies) :: Zs = 1, mHats = 1.0, NHats = 1.0, THats = 1.0
-  PetscScalar, dimension(maxNumSpecies) :: dNHatdpsiHats = 0, dTHatdpsiHats = 0
-  PetscScalar, dimension(maxNumSpecies) :: dNHatdpsiNs   = 0, dTHatdpsiNs   = 0
-  PetscScalar, dimension(maxNumSpecies) :: dNHatdrHats   = 0, dTHatdrHats   = 0
-  PetscScalar, dimension(maxNumSpecies) :: dNHatdrNs     = 0, dTHatdrNs     = 0
+  ! For all the array variables declared in the next 5 lines, default values
+  ! are set in readInput.F90
+  PetscScalar, dimension(maxNumSpecies) :: Zs, mHats, NHats, THats
+  PetscScalar, dimension(maxNumSpecies) :: dNHatdpsiHats, dTHatdpsiHats
+  PetscScalar, dimension(maxNumSpecies) :: dNHatdpsiNs,   dTHatdpsiNs
+  PetscScalar, dimension(maxNumSpecies) :: dNHatdrHats,   dTHatdrHats
+  PetscScalar, dimension(maxNumSpecies) :: dNHatdrNs,     dTHatdrNs
 
   ! ********************************************************
   ! ********************************************************

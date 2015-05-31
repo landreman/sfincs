@@ -85,6 +85,24 @@ contains
     export_f_x = speciesNotInitialized
     export_f_xi = speciesNotInitialized
 
+    ! Set defaults for array parameters:
+    Zs(1) = one
+    mHats(1) = one
+    nHats(1) = one
+    THats(1) = one
+    dNHatdpsiHats(1) = zero
+    dTHatdpsiHats(1) = zero
+    dNHatdpsiNs(1) = zero
+    dTHatdpsiNs(1) = zero
+    dNHatdrHats(1) = zero
+    dTHatdrHats(1) = zero
+    dNHatdrNs(1) = zero
+    dTHatdrNs(1) = zero
+    export_f_theta(1) = zero
+    export_f_zeta(1) = zero
+    export_f_x(1) = one
+    export_f_xi(1) = zero
+
     filename = trim(inputFilename)
 
     fileUnit=11
@@ -422,9 +440,6 @@ contains
           exit
        end if
     end do
-
-    ! Delete this next line eventually!
-    !xGridScheme = 5
 
   end subroutine readNamelistInput
 

@@ -1,628 +1,122 @@
-! Input file for SFINCS:
-! The Stellarator Fokker-Planck Iterative Neoclassical Conservative Solver.
-! Version 3
+! Input file for SFINCS version 3.
+! See the user manual for documentation of the parameters in this file.
+!----------------------------------------------------------------------
 
-! Dimensional quantities in this program are normalized to "reference" values:
-! \bar{B} = reference magnetic field, typically 1 Tesla.
-! \bar{R} = reference length, typically 1 meter.
-! \bar{n} = reference density, typically 10^19 m^{-3}, 10^20 m^{-3}, or something similar.
-! \bar{m} = reference mass, typically either the mass of hydrogen or deuterium.
-! \bar{T} = reference temperature in energy units, typically 1 eV or 1 keV.
-! \bar{v} = \sqrt{2 * \bar{T} / \bar{m}} = reference speed
-! \bar{Phi} = reference electrostatic potential, typically 1 V or 1 kV.
+!ss scanType = 1
 
-! You can choose any reference parameters you like, not just the values
-! suggested here. The code "knows" about the reference values only through
-! the 3 combinations Delta, alpha, and nu_n, input below.
+! Settings specific to scanType = 2:
+!ss NErs = 5
+!ss dPhiHatdpsiNMin = -1.0d+0
+!ss dPhiHatdpsiNMax =  1.0d+0
 
-! Lines beginning with "!ss" are instructions for the sfincsScan python script.
-! The location of these lines within this file is unimportant.
+! Settings specific to scanType = 3:
+!ss scanVariable = iota
+!ss scanVariableMin = 1.01
+!ss scanVariableMax = 2.01
+!ss scanVariableN = 5
+!ss scanVariableScale = linear
+
 
 &general
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ! General program options:
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  ! By itself, the sfincs executable solves the kinetic equation(s) for a single E_r, single minor radius, and single set of numerical and
-  ! physical parameters. To perform computations over a range of these parameters, you can run sfincsScan (a script in the utils/ directory)
-  ! rather than running sfincs directly.
-
-!   Which type of scan to run when you run sfincsScan?
-!ss scanType = 1
-!   1:  Convergence scan. (Scan the parameters in the resolutionParameters namelist.)
-!   2:  Scan of E_r.
-!   3:  Scan any one input parameter that takes a numeric value.
-!   21: Read in a list of requested runs from a file runspec.dat. See utils/sfincsScan_21 for an example file.
-!   (As with all !ss parameters, the value of scanType is ignored when you run sfincs directly.)
-!
-!   Settings specific to scanType = 3:
-!   Name of the variable to scan: (case-insensitive)
-!ss scanVariable = min_Bmn_to_load
-!ss scanVariableMin = 1e-6
-!ss scanVariableMax = 1e-3
-!   How many values to try:
-!ss scanVariableN = 5
-!   Scan in a linear or logarithmic manner?  Valid settings are 'linear' and 'log':
-!ss scanVariableScale = log
-
   RHSMode = 1
-  ! Option related to the number of right-hand sides (i.e. inhomogeneous drive terms) for which the kinetic equation is solved.
-  ! 1: Solve for a single right-hand side. This is the usual setting.
-  ! 2: Solve for 3 right-hand sides to get the 3x3 transport matrix. Presently implemented only for 1 species.
-  ! 3: Solve for the 2x2 monoenergetic transport coefficients. When this option is chosen, Nx is set to 1 and only 1 species is used.
-
-  outputFilename = "sfincsOutput.h5"
-
-  ! If the following switch is set to true, a Matlab m-file is created which
-  ! stores the matrix, right-hand side, and solution vector.  If an iterative solver is used,
-  ! the preconditioner matrix is also saved.
-  ! PETSc usually generates an error message if the size of the linear system is more then 1400 x 1400,
-  ! so usually this setting should be false.
-!  saveMatlabOutput = .true.
-  saveMatlabOutput = .false.
-
-  MatlabOutputFilename = "sfincsMatrices"
-
-  ! If the following switch is set to true, the matrix, right-hand-side, and solution of the
-  ! linear system will be saved in PETSc's binary format.  The preconditioner matrix will also
-  ! be saved if tryIterativeSolver == .true.
-
-  !saveMatricesAndVectorsInBinary = .true.
-  saveMatricesAndVectorsInBinary = .false.
-
-  binaryOutputFilename = "sfincsBinary"
-
-  ! If the parameter below is false, the linear system will not actually be solved.
-  ! Sometimes it is useful to run the code without solving the system in order to quickly
-  ! output profiles or for debugging.
-  solveSystem = .true.
-!  solveSystem = .false.
 /
 
 &geometryParameters
 
   inputRadialCoordinate = 3
   inputRadialCoordinateForGradients = 1
-  ! These 2 parameters select which radial coordinate is used to specify the input.
-  ! inputRadialCoordinate only affects the "wish" parameters that select the flux surface of interest.
-  ! inputRadialCoordinateForGradients determines the radial coordinate used to specify the gradients of density, temperature, and electrostatic potential.
-  !
-  ! 0 = Input radial coordinate is psiHat, which is the toroidal flux divided by 2 pi and normalized by RBar^2 * BBar.
-  !     In this approach, aBar and normradius_wish are ignored (unless normradius_wish is required for the magnetic geometry.)
-  !
-  ! 1 = Input radial coordinate is psi_N = psi / psi_a = psiHat / psiAHat, i.e. the toroidal flux normalized to its value at the last closed flux surface.
-  !     In this approach, aBar and normradius_wish are ignored (unless normradius_wish is required for the magnetic geometry.)
-  !
-  ! 2 = Input radial coordinate is rHat = aHat * sqrt(psi_N), i.e. the effective minor radius normalized to RBar.
-  !     In this approach, both aBar and normradius_wish are required.
-  !
-  ! 3 = Input radial coordinate is r_N = sqrt(psi_N), i.e. the effective minor radius normalized to the last closed flux surface.
-  !     In this approach, aBar is ignored but normradius_wish is required.
-  !
-  ! Whichever values are specified, output quantities will be given with respect to all of these radial coordinates.
-
-  ! Choose the radial coordinate of the flux surface to use.
-  ! No more than 1 of these next 4 variables will be used, depending on inputRadialCoordinate:
-  psiHat_wish = -1
-  psiN_wish = -1
-  rHat_wish = -1
   rN_wish = 0.3
-  ! For geometryScheme = 1, the radial coordinate will be exactly the specified value.
-  ! For geometryScheme = 11 or 12, the magnetic geometry will be used from the nearest available surface in the geometry input file.
-  ! For geometryScheme = 2, 3, or 4, all these values will be ignored, and the surface at rN = 0.5 will be used.
 
   geometryScheme = 1
-  ! 1 = Three-helicity model
-  ! 2 = Three-helicity approximation of the LHD standard configuration at rN = 0.5
-  ! 3 = Four-helicity approximation of the LHD inward-shifted configuration at rN = 0.5
-  ! 4 = Three-helicity approximation of the W7-X standard configuration at rN = 0.5
-  ! 5 = Read the magnetic geometry from a VMEC wout file specified as "equilibriumFile" below. The file can be
-  !     either ASCII format or netCDF format. (SFINCS will auto-detect the format.)
-  ! 11= Read the boozer coordinate data from the file specified as "equilibriumFile" below (stellarator symmetric file)
-  ! 12= Read the boozer coordinate data from the file specified as "equilibriumFile" below (non-stellarator symmetric file)
- 
-
-  ! The next few options only matter for geometryScheme = 1, in which the magnetic field is taken to have the form
-  ! B = BBar * B0OverBBar * [1 + epsilon_t * cos(theta) + epsilon_h * cos(helicity_l * theta - helicity_n * zeta)]
-  !                            + epsilon_antisymm * sin(helicity_antisymm_l * theta - helicity_antisymm_n * zeta)]
-
   B0OverBBar = 1.0d+0
-
   GHat = 1.0d+0
-  ! G is c/2 * the poloidal current outside the flux
-  ! surface. Equivalently, G is the coefficient of grad zeta in the
-  ! covariant representation of vector B. GHat is G normalized by \bar{B}\bar{R}.
-
   IHat = 0.0d+0
-  ! I is c/2 * the toroidal current inside the flux
-  ! surface. Equivalently, I is the coefficient of grad theta in the
-  ! covariant representation of vector B. IHat is I normalized by \bar{B}\bar{R}.
-
   iota = 1.31d+0
-  ! iota is the rotational transform = 1 / (safety factor q)
-
   epsilon_t = 0.1d+0
-
   epsilon_h = 0.0d+0
-  
   helicity_l = 1
   helicity_n = 1
 
-  epsilon_antisymm = 0.0d+0
-  helicity_antisymm_l = 3	
-  helicity_antisymm_n = 0
-
-  ! psiAHat = psi_a / (\bar{B} * \bar{R}^2) (in both Gaussian and SI units)
-  ! where 2*pi*psi_a is the toroidal flux at the last closed flux surface
-  ! (the surface where psi_N = 1.)
-  ! The value of psiAHat here is over-written for geometryScheme = 2, 3, 11 and 12.
   psiAHat = 0.045d+0
-
   aHat = 0.1
-  ! aHat is the effective minor radius at the last closed flux surface in units of RBar.
-  ! Sfincs only uses aBar for converting input and output quantities between units of flux and units of RBar.
-  ! For geometryScheme .ne. 1, the value of aHat here will be ignored.
-
-  ! End of options that only matter for geometryScheme = 1.
-
-  ! This next option only matters for geometryScheme = 5 (Read a VMEC "wout" file):
-  VMECRadialOption = 0
-  ! 0: Use the exact *_wish flux surface requested, by interpolating from the VMEC radial grid.
-  ! 1: Use a surface that may be slightly different from *_wish to get the nearest available flux surface from VMEC's HALF grid.  
-  !    The components of B in VMEC are stored on the half grid, so interpolation is then unnecessary.
-  ! 2: Use a surface that may be slightly different from *_wish to get the nearest available flux surface from VMEC's FULL grid.  
-  !    I'm not sure why you would want this, but the feature is implemented for completeness.
-
-  ! The remaining options only matter for geometryScheme = 5, 11, and 12:
-
-  equilibriumFile = "../../equilibria/w7x-sc1.bc"
-
-  min_Bmn_to_load = 1d-4
-  !Filter out any Bmn components smaller than this.
-
 /
 
 &speciesParameters
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ! Species parameters
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  ! Zs          = charges of each species, in units of the proton charge e
-  ! mHats       = masses of each species, normalized to the reference mass \bar{m}
-  ! nHats       = densities of each species, normalized to the reference density \bar{n}
-  ! THats       = temperatures of each species, normalized to the reference temperature \bar{T}
-  ! dnHatdpsiNs = radial gradient of the density of each species with respect to the normalized toroidal flux psi_N, normalized to the reference density \bar{n}
-  ! dTHatdpsiNs = radial gradient of the temperature of each species with respect to the normalized toroidal flux psi_N, normalized to the reference temperature \bar{T}
-
-  ! Here is an example with 1 species:
   Zs = 1
   mHats = 1
   nHats = 1.0d+0
   THats = 0.5d+0
-  ! Only 1 of the following 4 pairs will be used, depending on inputRadialCoordinateForGradients:
-  dNHatdpsiHats = 0 0
-  dTHatdpsiHats = 0 0
   dNHatdpsiNs = -1.0d+0
   dTHatdpsiNs = -0.5d+0
-  dNHatdrHats = 0 0
-  dTHatdrHats = 0 0
-  dNHatdrNs = 0 0
-  dTHatdrNs = 0 0
-
 /
 
 &physicsParameters
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ! Physics parameters:
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  ! Roughly speaking, Delta is rho_* at the reference parameters.
-  ! More precisely, 
-  ! Delta = c * \bar{m} * \bar{v} / (e * \bar{B} * \bar{R}) in Gaussian units,
-  ! Delta =     \bar{m} * \bar{v} / (e * \bar{B} * \bar{R}) in SI units,
-  ! where
-  ! c = speed of light
-  ! e = proton charge
-  ! Delta = 0.0011d+0
-
-  Delta = 4.5694d-3  ! reference values: \bar{T}=1 keV, \bar{n}=10^20 m^-3,
-                     ! \bar{Phi}=1 kV, \bar{B}=1 T, \bar{R}=1 m, proton mass
-
-  ! alpha = e * \bar{Phi} / \bar{T} (in both Gaussian and SI units)
-  ! where again e = proton charge.
+  Delta = 4.5694d-3
   alpha = 1.0d+0
+  nu_n = 8.4774d-3
 
-  ! Inductive electric field (often 0).
-  ! EParallelHat = <E dot B> * \bar{R} / (\bar{Phi} * \bar{B})  (in both Gaussian and SI units)
-  ! where
-  ! E = electric field vector
-  ! B = magnetic field vector
-  ! < ... > denotes a flux surface average.
-  EParallelHat = 0
-
-  ! Radial electric field
-  ! Only 1 of the following 4 values will be used, depending on inputRadialCoordinateForGradients:
-  dPhiHatdpsiHat = 0.0d+0
   dPhiHatdpsiN   = 0.0d+0
-  dPhiHatdrHat   = 0.0d+0
-  dPhiHatdrN     = 0.0d+0
-
-
-!   Next are some variables related to scans of the radial electric field with sfincsScan.
-!   Values must appear behind !ss
-!
-!   Number of values of the radial electric field to include in a parameter scan:
-!ss NErs = 5
-!
-! Depending on inputRadialCoordinateForGradients, only 1 of the following 4 pairs of variables will be read:
-!ss dPhiHatdpsiHatMin = -1.0d+0
-!ss dPhiHatdpsiHatMax =  1.0d+0
-!
-!ss dPhiHatdpsiNMin = -1.0d+0
-!ss dPhiHatdpsiNMax =  1.0d+0
-!
-!ss dPhiHatdrHatMin = -1.0d+0
-!ss dPhiHatdrHatMax =  1.0d+0
-!
-!ss dPhiHatdrNMin = -1.0d+0
-!ss dPhiHatdrNMax =  1.0d+0
-
-  ! nu_n is the collisionality at the reference parameters.
-  ! More precisely, nu_n = \bar{nu} * \bar{R} / \bar{v} (in both Gaussian and SI units)
-  ! where \bar{nu} is the dimensional collision frequency at the reference parameters:
-  !
-  !                  4 * sqrt{2*pi} * \bar{n} * e^4 * ln(Lambda)
-  ! \bar{nu} = -----------------------------------------------------------   (SI units)
-  !             3 * (4 * pi * epsilon_0)^2 * sqrt(\bar{m}} * \bar{T}^(3/2)
-  !
-  ! or, equivalently,
-  !
-  !                  4 * sqrt{2*pi} * \bar{n} * e^4 * ln(Lambda)
-  ! \bar{nu} = -----------------------------------------------------------   (Gaussian units)
-  !                       3 * sqrt(\bar{m}} * \bar{T}^(3/2)
-  !
-
-  nu_n = 8.4774d-3  ! reference values: \bar{T}=1 keV, \bar{n}=10^20 m^-3,
-                    ! \bar{Phi}=1 kV, \bar{B}=1 T, \bar{R}=1 m, proton mass
 
   collisionOperator = 1
-  ! 0 = Full linearized Fokker-Planck operator
-  ! 1 = pitch-angle scattering with no momentum-conserving term
-
-  constraintScheme = -1
-  ! -1 = automatic: if collisionOperator==0 then set constraintScheme=1, 
-  !                 otherwise set constraintScheme=2.
-  !  0 = no constraints
-  !  1 = 2 constraints: <n1>=0 and <p1>=0
-  !  2 = Nx constraints: <f(L=0)>=0 at each x
-  ! You should probably set constraintScheme to -1 except in rare circumstances.
-
-  ! To use one of the 4 most common trajectory models, the remaining parameters
-  ! in this namelist should be set as follows:
-  !
-  ! Full trajectories:
-  !   includeXDotTerm = .true.
-  !   includeElectricFieldTermInXiDot = .true.
-  !   useDKESExBDrift = .false.
-  !   include_fDivVE_term = .false.
-  !
-  ! Partial trajectories: (non-conservative, as defined in the paper.)
-  !   includeXDotTerm =	  .false.
-  !   includeElectricFieldTermInXiDot = .false.
-  !   useDKESExBDrift = .false.
-  !   include_fDivVE_term = .false.
-  !
-  ! Conservative partial trajectories: (Not discussed in the paper.)
-  !   includeXDotTerm =	 .false.
-  !   includeElectricFieldTermInXiDot = .false.
-  !   useDKESExBDrift = .false.
-  !   include_fDivVE_term = .true.
-  !
-  ! DKES trajectories:
-  !   includeXDotTerm =	.false.
-  !   includeElectricFieldTermInXiDot = .false.
-  !   useDKESExBDrift = .true.
-  !   include_fDivVE_term = .false.
 
   includeXDotTerm = .true.
-!  includeXDotTerm = .false.
-
   includeElectricFieldTermInXiDot = .true.
-!  includeElectricFieldTermInXiDot = .false.
-
-!  useDKESExBDrift = .true.
   useDKESExBDrift = .false.
-  ! If useDKESExBDrift=true, the ExB drift term in the df/dtheta and df/dzeta terms is taken
-  ! to be E x B / <B^2> instead of E x B / B^2.
 
-  !include_fDivVE_term = .true.
-  include_fDivVE_term = .false.
-  ! If true, a term f_{s1} div (v_E) is included in the kinetic equation.
-  ! This term may make sense to include with the partial trajectory model
-  ! as it restores Liouville's theorem (particle conservation) and eliminates 
-  ! the need for either a particle or heat source.
-
-  ! If incluePhi1 = .true., the quasineutrality equation will be solved along with the drift-kinetic equation,
-  ! and terms involving variation of the electrostatic potential on a flux surface will be included in the
-  ! drift-kinetic equation.
-  !includePhi1 = .true.
   includePhi1 = .false.
-
-  ! If true, include the term from the linearized collision operator acting on f_Maxwellian,
-  ! which is nonzero for inter-species Fokker-Planck collisions	when temperatures
-  ! are	unequal. This term acts	to equilibrate the temperatures	between	species.
-  !includeTemperatureEquilibrationTerm = .true.
-  includeTemperatureEquilibrationTerm = .false.
-
-  ! If nonlinear = .true., the code will iterate to find the self-consistent poloidal variation
-  ! of the electrostatic potential, including the nonlinear coupling between Phi_1 and f_1
-  !nonlinear = .true.
   nonlinear = .false.
 /
 
 &resolutionParameters
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ! Numerical resolution parameters:
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  
-  ! For each set of 4 numbers below, the first is the value used in a single run.
-  ! The second and third numbers set the range by which the first number is scaled
-  ! in a convergence scan. The fourth number sets the number of values tried in a
-  ! convergence scan. The code attempts to space the values evenly in a logarithmic
-  ! sense, as in Matlab's 'logspace' function. For example, the following settings
-  !   Nxi = 20
-  !ss NxiMinFactor = 0.5
-  !ss NxiMaxFactor = 2.0
-  !ss NxiNumRuns = 3
-  ! would mean the values Nxi = 10, 20, and 40 would be tried in a scan.
-  ! If you don't want to scan a variable in a convergence scan, set the associated
-  ! ...NumRuns parameter to 0.
-  ! For each resolution parameter (Ntheta, Nzeta, Nxi, etc.), the value itself is read by
-  ! Fortran and so should not be preceded by !ss.  However the ...MinFactor, ...MaxFactor, 
-  ! and ...NumRuns quantities are read by sfincsScan and so must be preceded by !ss
-
-  ! Number of grid points in the poloidal direction.
-  ! Memory and time requirements DO depend strongly on this parameter.
   Ntheta = 21
 !ss NthetaMinFactor = 0.7
 !ss NthetaMaxFactor = 2
 !ss NthetaNumRuns = 5
 
-  ! Number of grid points in the toroidal direction
-  ! (per identical segment of the stellarator.)
-  ! Memory and time requirements DO depend strongly on this parameter.
   Nzeta = 1
 !ss NzetaMinFactor = 0.8
 !ss NzetaMaxFactor = 2
 !ss NzetaNumRuns = 5
 
-  ! Number of Legendre polynomials used to represent the distribution function.
-  ! Memory and time requirements DO depend strongly on this parameter.
-  ! The value of this parameter required for convergence depends strongly on
-  ! the collisionality. At high collisionality, this parameter can be as low
-  ! as ~ 5. At low collisionality, this parameter may need to be many 10s or
-  ! even > 100 for convergence.
   Nxi = 31
 !ss NxiMinFactor = 0.8
 !ss NxiMaxFactor = 2
 !ss NxiNumRuns = 6
   
-  ! Number of Legendre polynomials used to represent the Rosenbluth
-  ! potentials. Except in exceptional circumstances, this number should be 4.
-  ! Memory and time requirements do NOT depend strongly on this parameter.
-  NL = 4
-!ss NLMinFactor = 1
-!ss NLMaxFactor = 2
-!ss NLNumRuns = 0
-  
-  ! Number of grid points in energy used to represent the distribution function.
-  ! Memory and time requirements DO depend strongly on this parameter.
-  ! This parameter almost always needs to be at least 5.
-  ! Usually a value in the range 5-8 is plenty for convergence, though sometimes
-  ! you may need to go up to 10-15.
   Nx = 8
 !ss NxMinFactor = 0.8
 !ss NxMaxFactor = 2
 !ss NxNumRuns = 3
 
-  ! Number of grid points in energy used to represent the Rosenbluth potentials.
-  ! Memory and time requirements do NOT depend strongly on this parameter.
-  ! This parameter is not used when xGridScheme=5 or 6.
-  NxPotentialsPerVth = 40
-!ss NxPotentialsPerVthMinFactor = 0.5
-!ss NxPotentialsPerVthMaxFactor = 2
-!ss NxPotentialsPerVthNumRuns = 0
-  
-  ! Maximum normalized speed for the Rosenbluth potential grid.
-  ! Memory and time requirements do NOT depend strongly on this parameter.
-  ! Typically a value of 5 is good.
-  ! This parameter is not used when xGridScheme=5 or 6.
-  xMax = 5.0d+0
-!ss xMaxMinFactor = 1
-!ss xMaxMaxFactor = 2
-!ss xMaxNumRuns = 0
-
-  ! Tolerance used to define convergence of the Krylov solver.
-  ! This parameter does not affect memory requirements but it does affect the
-  ! time required for solution somewhat
-  solverTolerance = 1d-12
+  solverTolerance = 1d-6
 !ss solverToleranceMinFactor = 0.1
 !ss solverToleranceMaxFactor = 10
 !ss solverToleranceNumRuns = 3
 
-  forceOddNthetaAndNzeta = .true.
-  ! If forceOddNthetaAndNzeta is set to true, 1 is added to Ntheta any time a run is attempted with even Ntheta,
-  ! and 1 is added to Nzeta any time a run is attempted with even Nzeta.
-  ! This can be useful because the iterative solvers sometimes do not work with even Ntheta or Nzeta.
-  ! This parameter should be true unless you know what you are doing.
 /
 
 &otherNumericalParameters
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ! Other numerical parameters:
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- 
-  thetaDerivativeScheme = 2
-  zetaDerivativeScheme = 2
-  ! Options for thetaDerivativeScheme and zetaDerivativeScheme:
-  ! 0 = Spectral collocation
-  ! 1 = 2nd order finite differences (3-point stencil)
-  ! 2 = 4th order finite differences (5-point stencil)
-  ! You should set these parameters to 2 except in rare circumstances.
-
-  xGridScheme = 5
-  ! 1 = New orthogonal polynomials with no point at x=0, original treatment of Rosenbluth potentials.
-  ! 2 = New orthogonal polynomials with a point at x=0, original treatment of Rosenbluth potentials.
-  ! 3 = Uniform finite differences on [0, xMax], forcing f=0 at xMax. 2-point stencil for interpolating to other grids.
-  ! 4 = Uniform finite differences on [0, xMax], forcing f=0 at xMax. 4-point stencil for interpolating to other grids.
-  ! 5 = New orthogonal polynomials with no point at x=0, new treatment of Rosenbluth potentials.
-  ! 6 = New orthogonal polynomials with a point at x=0, new treatment of Rosenbluth potentials.
-  ! The recommended setting is xGridScheme=5.
-
-  ! When xGridScheme = 5 or 6, then the following quantities do not matter: 
-  ! NxPotentialsPerVth, xMax, xPotentialsGridScheme.
-
-  ! For xGridScheme = 1, 2, 5, or 6, the distribution function will be represented in terms of polynomials P_n(x)
-  ! that are orthogonal under the weight \int_0^\infty dx x^k exp(-x^2) P_n(x) P_m(x)  \propro  \delta_{n,m}
-  ! where 'k' is an exponent set by the parameter xGrid_k here.
-  ! A good value to use is 0, 1, or 2.
-  xGrid_k = 0
-
-  xPotentialsGridScheme = 2
-  ! 1 = Uniform grid. 5-point stencil for derivatives. 2-point stencil for interpolating to other grids.
-  ! 2 = Uniform grid. 5-point stencil for derivatives. 4-point stencil for interpolating to other grids.
-  ! 3 = Use same grid as for distribution function, so no interpolation needed for the self-collision operator.
-  !     You must set xGridScheme=3 or 4 to use this setting.  Use 2-point stencil for interpolating to other species' grids.
-  ! 4 = Same as option 3, except use a 4-point stencil for interpolating to other species' grids.
-  ! The recommended setting is xPotentialsGridScheme=2.
-
-  ! If 'useIterativeLinearSolver' is set to false, a sparse direct solver
-  ! will be used. The direct solver is faster for small problems and always yields a solution.
-  ! For large problems, the iterative solver will usually be faster and will use much
-  ! less memory, but it may not always converge.
-
-  useIterativeLinearSolver = .true.
-!  useIterativeLinearSolver = .false.
-
-  whichParallelSolverToFactorPreconditioner = 2
-  ! Options for whichParallelSolverToFactorPreconditioner:
-  ! 1 = use mumps if it is detected, otherwise use superlu_dist
-  ! 2 = force use of superlu_dist, if it is available
-  !
-  ! The value of whichParallelSolverToFactorPreconditioner is only used when sfincs is run with >1 MPI processors.
-  ! Otherwise, matrices are not distributed across processors, so the PETSc built-in serial sparse direct
-  ! solver is used to factor the preconditioner.
-
-  PETSCPreallocationStrategy = 1
-  ! This setting changes the estimated number of nonzeros (nnz) used for allocating memory for the matrix and preconditioner.
-  ! 0 = Old method with high estimated nnz. This method works consistently but uses WAY more memory than necessary.
-  ! 1 = New method with lower, more precise estimated nnz.  This method should use much less memory.
-  ! Use PETSCPreallocationStrategy = 1 unless you know what you are doing.
 /
 
 &preconditionerOptions
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ! Settings for how to simplify the linear system
-  ! to obtain the preconditioner:
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+  ! Since the matrix size is so small for this example, we can afford to make the preconditioner matrix
+  ! the same as the real system matrix.
   preconditioner_species = 0
-  ! 0 = keep full species coupling
-  ! 1 = drop all cross-species coupling
-
   preconditioner_x = 0
-  ! 0 = keep full x coupling
-  ! 1 = drop everything off-diagonal in x
-  ! 2 = keep only upper-triangular part in x
-  ! 3 = keep only the tridiagonal terms in x
-  ! 4 = keep only the diagonal and superdiagonal in x
-
-  preconditioner_x_min_L = 0
-  ! The x structure of the matrix will only be simplified for L >= this value.
-  ! Set preconditioner_x_min_L=0 to simplify the matrix for every L.
-
-  preconditioner_theta = 0
-  ! 0 = keep full theta coupling
-  ! 1 = use a 3-point finite difference stencil for d/dtheta
-  ! 2 = drop all theta coupling
-  ! 3 = replace d/dtheta with the identity matrix
-
-  preconditioner_theta_min_L = 0
-  ! The theta structure of the matrix will only be simplified for L >= this value.
-  ! Set preconditioner_theta_min_L=0 to simplify the matrix for every L.
-
-  preconditioner_zeta = 0
-  ! 0 = keep full zeta coupling
-  ! 1 = use a 3-point finite difference stencil for d/dzeta
-  ! 2 = drop all zeta coupling
-  ! 3 = replace d/dzeta with the identity matrix
-
-  preconditioner_zeta_min_L = 0
-  ! The zeta structure of the matrix will only be simplified for L >= this value.
-  ! Set preconditioner_zeta_min_L=0 to simplify the matrix for every L.
-
   preconditioner_xi = 0
-  ! 0 = keep full xi coupling
-  ! 1 = drop terms that are +/- 2 from the diagonal in xi, 
-  !     so preconditioner is tridiagonal in xi
-
-  !reusePreconditioner = .true.
-  reusePreconditioner = .false.
-  ! This setting matters only for nonlinear calculations.
-  ! If true, the nonlinear term will not be included in the preconditioner matrix, meaning the preconditioner matrix is the same
-  ! at every iteration, and so the preconditioner matrix only needs to be LU-factored once.  If false, the preconditioner matrix
-  ! for the Jacobian will be different at each iteration of the Newton solve, so the preconditioner needs to be LU-factored at
-  ! each iteration.  The nonlinear term also introduces a lot of nonzeros into the preconditioner matrix, so setting
-  ! reusePreconditioner=true not only dramatically reduces the time required for a nonlinear calculation, but also the memory required.
 /
 
 &export_f
-  ! This namelist controls whether and how the distribution function is saved in sfincsOutput.h5.
-  ! For each of the 4 coordinates (theta, zeta, x, xi), the distribution function can be given with the same discretization
-  ! used for solving the kinetic equation, or you can interpolate to a different grid/discretization.
-  ! For all available settings, the distribution function will be reported on a tensor product grid in the 4 coordinates.
-
-  ! Switches that control whether or not to export the full distribution function ("full f") and/or the departure from a Maxwellian ("delta f").
-  ! The result would appear in sfincsOutput.h5 as "full f" and "delta f" respectively.
   export_full_f = .true.
   export_delta_f = .true.
 
-  export_f_theta_option = 0
+  export_f_theta_option = 1
   export_f_zeta_option = 1
-  ! Controls which grid in theta & zeta is used for exporting the distribution function.
-  ! 0: Report the distribution function on the original theta or zeta grid (with Ntheta or Nzeta points) used for solving the kinetic equation.
-  ! 1: Interpolate to a different grid, specified by export_f_theta or export_f_zeta. Linear interpolation will be used.
-  !    No sorting of the requested values is performed.
-  ! 2: Do not interpolate. Use the values of the (Ntheta * Nzeta) grid that are closest to the values requested in export_f_theta and export_f_zeta.
-  !    Values of theta or zeta will be in increasing order. If multiple requested values are close to the same grid point, the number of
-  !    points returned will be less than the number of points requested.
-  ! For all of these options, you can see export_f_theta and export_f_zeta in sfincsOutput.h5 for the actual grid used in the end.
-
   export_f_theta = 0
-  ! modulo(..., 2*pi) will be applied.
-
   export_f_zeta = 0
-  ! modulo(..., 2*pi/Nperiods) will be applied.
-
-  export_f_xi_option = 1
-  ! Controls the discretization/grid for the pitch-angle coordinate in "delta f" and "full f".
-  ! 0: Report the distribution function as amplitudes of Nxi Legendre polynomials, as used internally by SFINCS for solving the kinetic equation.
-  ! 1: Report the distribution function on the values of xi specified by export_f_xi. No sorting of the requested values is performed.
-
+  export_f_xi_option = 0
   export_f_xi = -1 -0.9 -0.8 -0.7 -0.6 -0.5 -0.4 -0.3 -0.2 -0.1 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1
-  ! Must lie in the range [-1, 1]
-
   export_f_x_option = 2
-  ! Controls which grid in normalized speed (x = v / sqrt(2*T/m)) is used for exporting the distribution function.
-  ! 0: Report the distribution function on the original x grid (with Nx points) used for solving the kinetic equation.
-  ! 1: Interpolate to a different grid, specified by export_f_x.  Polynomial spectral interpolation will be used.
-  !    No sorting of the requested values is performed.
-  ! 2: Do not interpolate. Use the values of the internal x grid that are closest to the values requested in export_f_x.
-  !    Values of x will be in increasing order. If multiple requested values are close to the same grid point, the number of
-  !    points returned will be less than the number of points requested.
-  ! For all of these options, you can see export_f_x in sfincsOutput.h5 for the actual grid used in the end.
-
-  export_f_x = 1
-  ! Must be >= 0.
+  export_f_x = 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2 2.1 2.2 2.3 2.4 2.5
 
 /

@@ -14,4 +14,4 @@
 #PBS -j oe
 
 cd $PBS_O_WORKDIR
-aprun -n 24 ../../sfincs -mat_superlu_dist_statprint
+aprun -n 2 -N 2 -S 1 ../../sfincs -ksp_view
