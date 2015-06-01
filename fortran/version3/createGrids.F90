@@ -221,7 +221,7 @@
        stop
     end select
 
-    call uniformDiffMatrices(Ntheta, 0, two*pi, scheme, theta, thetaWeights, ddtheta, d2dtheta2)
+    call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta, thetaWeights, ddtheta, d2dtheta2)
 
     ! If needed, also make a sparser differentiation matrix for the preconditioner:
     select case(preconditioner_theta)
@@ -233,7 +233,7 @@
     case (1)
        ! Preconditioner has a 3-point stencil instead of a 5-point stencil:
        scheme = 0
-       call uniformDiffMatrices(Ntheta, 0, two*pi, scheme, theta_preconditioner, &
+       call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
             thetaWeights_preconditioner, ddtheta_preconditioner, d2dtheta2_preconditioner)
 
     case (2)
@@ -298,7 +298,7 @@
        ddzeta = 0
        d2dzeta2 = 0 ! d2dzeta2 is not actually used.
     else
-       call uniformDiffMatrices(Nzeta, 0, zetaMax, scheme, zeta, zetaWeights, ddzeta, d2dzeta2)
+       call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta, zetaWeights, ddzeta, d2dzeta2)
     end if
 
     ! If needed, also make a sparser differentiation matrix for the preconditioner:
@@ -317,7 +317,7 @@
           ! Preconditioner has a 3-point stencil instead of a 5-point stencil:
 
           scheme = 0
-          call uniformDiffMatrices(Nzeta, 0, zetaMax, scheme, zeta_preconditioner, &
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
                zetaWeights_preconditioner, ddzeta_preconditioner, d2dzeta2_preconditioner)
 
        case (2)
@@ -408,7 +408,7 @@
           pointAtX0 = .true.
 
           scheme = 12
-          call uniformDiffMatrices(Nx+1, 0, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+          call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
           x_plus1(1)=0 ! For some reason it usually comes out to be 2d-314
           x = x_plus1(1:Nx)
           xWeights = xWeights_plus1(1:Nx)

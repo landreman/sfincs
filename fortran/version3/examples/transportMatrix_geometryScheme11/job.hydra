@@ -23,4 +23,4 @@ module load hdf5-serial netcdf-serial
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HDF5_HOME}/lib:${NETCDF_HOME}/lib
 
 # run the program
-poe ../../sfincs -ksp_view -mat_superlu_dist_statprint
+poe ../../sfincs -ksp_view

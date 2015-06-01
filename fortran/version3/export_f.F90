@@ -10,10 +10,11 @@ module export_f
 #include <finclude/petscsysdef.h>
 
   integer, parameter :: max_N_export_f = 500 ! Max grid size in each one of the 4 coordinates (theta, zeta, xi, x)
-  PetscScalar, dimension(max_N_export_f) :: export_f_theta = 0
-  PetscScalar, dimension(max_N_export_f) :: export_f_zeta  = 0
-  PetscScalar, dimension(max_N_export_f) :: export_f_xi    = 0
-  PetscScalar, dimension(max_N_export_f) :: export_f_x     = 1
+  ! Defaults for the next 4 array variables are given in readInput.F90.
+  PetscScalar, dimension(max_N_export_f) :: export_f_theta
+  PetscScalar, dimension(max_N_export_f) :: export_f_zeta
+  PetscScalar, dimension(max_N_export_f) :: export_f_xi
+  PetscScalar, dimension(max_N_export_f) :: export_f_x
   integer :: N_export_f_theta, N_export_f_zeta, N_export_f_xi, N_export_f_x
   PetscScalar, dimension(:,:), allocatable :: map_theta_to_export_f_theta
   PetscScalar, dimension(:,:), allocatable :: map_zeta_to_export_f_zeta

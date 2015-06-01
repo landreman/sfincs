@@ -16,7 +16,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   integer :: predictedNNZForEachRowOfPreconditioner, predictedNNZForEachRowOfTotalMatrix
   integer, dimension(:), allocatable :: predictedNNZsForEachRow, predictedNNZsForEachRowDiagonal
   PetscErrorCode :: ierr
-  integer :: tempInt1, i, itheta, izeta, ispecies, index
+  integer :: tempInt1, i, itheta, izeta, ispecies, ix, index
   integer :: firstRowThisProcOwns, lastRowThisProcOwns, numLocalRows
 
   if (masterProc) then
@@ -88,8 +88,10 @@ subroutine preallocateMatrix(matrix, whichMatrix)
      !predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta + 1
      !predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta
      do ispecies=1,Nspecies
-        index = getIndex(ispecies,1,1,1,1,BLOCK_F_CONSTRAINT)
-        predictedNNZsForEachRow(index+1) = Ntheta*Nzeta + 1 ! +1 for diagonal
+        do ix = 1, Nx
+           index = getIndex(ispecies,ix,1,1,1,BLOCK_F_CONSTRAINT)
+           predictedNNZsForEachRow(index+1) = Ntheta*Nzeta + 1 ! +1 for diagonal
+        end do
      end do
   case default
   end select

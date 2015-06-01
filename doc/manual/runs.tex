@@ -147,6 +147,32 @@ useDKESExBDrift = .true.\\
 }
 }
 
+There is not a significant difference in computational cost between these models.
+
+
+\section{Quasineutrality and variation of the electrostatic potential on the flux surface}
+
+One choice you should consider in setting up a computation is whether or not
+to include variation on the flux surface of the electrostatic potential, $\Phi_1(\theta,\zeta)$.
+Such variation does occur to some degree in a real plasma, but it is 
+neglected in analytical theory and in many codes such as \dkes.  It can be proved
+that including $\Phi_1$ has no effect on the particle or heat fluxes, parallel flows, or bootstrap current
+when $E_r=0$, but generally there can be some difference when $E_r \ne 0$.
+(There is a subtlety in showing that the heat flux is the same with and without $\Phi_1$,
+discussed in the notes 20150325-01 in \path{sfincs/doc/}.)
+
+In \sfincs, you can choose whether or not to
+include $\Phi_1$ using the paramter {\ttfamily includePhi1} in the {\ttfamily physicsParameters}
+namelist.  If and only if $\Phi_1$ is included, a quasineutrality equation is solved
+at each point on the flux surface.  Due to these extra unknowns ($\Phi_1$) and extra equations
+(quasineutrality), the system matrix is slightly larger when {\ttfamily includePhi1} is \true.
+Specifically, the number of rows and columns are each increased by \Ntheta$\times$\Nzeta$+1$.  This increase is miniscule compared
+to the number of rows and columns associated with the kinetic equation, which depends not only on real space
+but also on velocity space and species.  Thus, there is very little extra computational cost associated
+with {\ttfamily includePhi1}.  You may wish to set {\ttfamily includePhi1} = \true~when
+using \sfincs~to model an experiment, and set  {\ttfamily includePhi1} = \false~when
+comparing \sfincs~with analytic theory or with another code that does not include $\Phi_1$.
+
 \section{Parallelization}
 Choosing the number of nodes and procs.
 
