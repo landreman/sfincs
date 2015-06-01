@@ -30,8 +30,6 @@ import os, inspect
 print "This is "+ inspect.getfile(inspect.currentframe())
 print "Beginning a runspec.dat scan."
 
-runspecFilename = "runspec.dat"
-
 ################## Subroutine to read the runspec file #################################
 def readRunspec(therunspecFilename):
     def numberatend(strng):
@@ -41,7 +39,7 @@ def readRunspec(therunspecFilename):
         return thenumb
 
     if not os.path.isfile(therunspecFilename):
-        print "Error! The file "+therunspecFilename+" must be present in the directory from which you call sfincsScan."
+        print "Error! The file "+therunspecFilename+" must be present in the directory from which you call sfincsScan, or the full path must be given."
         exit(1)
     # Load the runspec file:
     with open(therunspecFilename, 'r') as rsf:
@@ -77,6 +75,13 @@ def readRunspec(therunspecFilename):
     return runparamnames, runparams, runnumbersatend, runvectorlength
 
 ##############################################################################
+
+try:
+    runspecFilename = readScanVariable("runSpecFile","string",required=False,stringValueCaseSensitive=True)
+except:
+    # Default
+    runspecFilename = "runspec.dat"
+
 
 runparamnames, runparams, runnumbersatend, runvectorlength=readRunspec(runspecFilename)
 

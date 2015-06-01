@@ -10,7 +10,7 @@ commentCode = "!ss"
 
 import string
 
-def readScanVariable(varName, intOrFloatOrString, required=True):
+def readScanVariable(varName, intOrFloatOrString, required=True, stringValueCaseSensitive=False):
     # This subroutine reads the special scan commands in the input.namelist that are hidden from fortran:
     # It is assumed that the input.namelist file has been loaded into the variable "inputFile".
 
@@ -23,8 +23,12 @@ def readScanVariable(varName, intOrFloatOrString, required=True):
     returnValue = None
     numValidLines = 0
     for line in inputFile:
-        line2 = line.strip().lower()
-        # We need enough characters for the comment code, varName, =, and value: 
+        if not stringValueCaseSensitive:
+            line2 = line.strip().lower()
+        else:
+            line2 = line.strip()
+
+        # We need enough characters for the comment code, varName, =, and value:        
         if len(line2)<len(commentCode)+3:
             continue
 
@@ -36,7 +40,7 @@ def readScanVariable(varName, intOrFloatOrString, required=True):
         if len(line3) < len(varName)+2:
             continue
 
-        if not line3[:len(varName)]==varName:
+        if not line3[:len(varName)].lower()==varName:
             continue
 
         line4 = line3[len(varName):].strip()
@@ -45,6 +49,7 @@ def readScanVariable(varName, intOrFloatOrString, required=True):
             continue
 
         line5 = line4[1:].strip();
+
         if intOrFloatOrString != "string":
             # python does not recognize fortran's 1d+0 scientific notation
             line5 = line5.replace('d','e').replace('D','e')
