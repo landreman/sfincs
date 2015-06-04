@@ -16,10 +16,10 @@ $\bar{\Phi}$ = reference electrostatic potential, typically 1 V or 1 kV.\\
 
 You can choose any reference parameters you like, not just the values
 suggested here. However, if you use a {\ttfamily vmec} or {\ttfamily .bc} magnetic equilibrium
-by choosing {\ttfamily geometryScheme} = 5, 11, or 12, then you MUST use $\bar{B}$ = 1 Tesla and $\bar{R}$ = 1 meter.
+by choosing \parlink{geometryScheme} = 5, 11, or 12, then you MUST use $\bar{B}$ = 1 Tesla and $\bar{R}$ = 1 meter.
 The code ``knows'' about the reference values only through
-the 3 combinations {\ttfamily Delta}, {\ttfamily alpha}, and {\ttfamily nu\_n}
-in the {\ttfamily physicsParameters} namelist.
+the 3 combinations \parlink{Delta}, \parlink{alpha}, and \parlink{nu\_n}
+in the {\ttfamily \hyperref[sec:physicsParameters]{physicsParameters}} namelist.
 
 Normalized quantities are denoted by a ``hat''.  Taking the magnetic field as an example,
 $\hat{B}=B/\bar{B}$, where $\hat{B}$ is called {\ttfamily BHat} in the fortran code and \HDF~output file.
@@ -40,77 +40,78 @@ In \sfincs, the four radial coordinates are named as follows:\\
 
 {\setlength{\parindent}{0cm}
 
-{\ttfamily psiHat} = $\hat\psi$ is the toroidal flux (divided by $2\pi$), normalized by $\bar{B}\bar{R}^2$.\\
+{\ttfamily \hypertarget{psiHat}{psiHat}} = $\hat\psi$ is the toroidal flux (divided by $2\pi$), normalized by $\bar{B}\bar{R}^2$.\\
 
-{\ttfamily psiN} = $\psi_N$ is the toroidal flux normalized by its value at the last closed flux surface.\\
+{\ttfamily \hypertarget{psiN}{psiN}} = $\psi_N$ is the toroidal flux normalized by its value at the last closed flux surface.\\
 
-{\ttfamily rHat} = $\hat{r}$ is defined as {\ttfamily aHat}$\sqrt{\mbox{\ttfamily psiN}}$, where {\ttfamily aHat} is an effective minor radius of the last closed flux surface normalized by $\bar{R}$.\\
+{\ttfamily \hypertarget{rHat}{rHat}} = $\hat{r}$ is defined as {\ttfamily aHat}$\sqrt{\mbox{\ttfamily psiN}}$, where {\ttfamily aHat} is an effective minor radius of the last closed flux surface normalized by $\bar{R}$.\\
 
-{\ttfamily rN} = $r_N$ is defined as $\sqrt{\mbox{\ttfamily psiN}}$.\\
+{\ttfamily \hypertarget{rN}{rN}} = $r_N$ is defined as $\sqrt{\mbox{\ttfamily psiN}}$.\\
 
 }
 
 These four radial coordinates are identified by the numbers 0, 1, 2, and 3 respectively.
 
 When setting up a run, you can make several independent choices for radial coordinates.  One parameter
-you select is {\ttfamily inputRadialCoordinateForGradients} in the {\ttfamily geometryParameters} namelist.
-This parameter controls which coordinate is used to specify the gradients. The possible values of {\ttfamily inputRadialCoordinateForGradients} are:\\
+you select is \parlink{inputRadialCoordinateForGradients} in the 
+{\ttfamily \hyperref[sec:geometryParameters]{geometryParameters}} namelist.
+This parameter controls which coordinate is used to specify the gradients. The possible values of \parlink{inputRadialCoordinateForGradients} are:\\
 
 {\setlength{\parindent}{0cm}
 
-0: Use derivatives with respect to {\ttfamily psiHat}: Density gradients are specified using {\ttfamily dnHatdpsiHats}, 
-temperature gradients are specified using {\ttfamily dTHatdpsiHats},  a single $E_r$ is specified using
-{\ttfamily dPhiHatdpsiHat}, and a range of $E_r$ for a scan is specified using {\ttfamily dPhiHatdpsiHatMin}-{\ttfamily dPhiHatdpsiHatMax}.
+0: Use derivatives with respect to {\ttfamily psiHat}: Density gradients are specified using \parlink{dnHatdpsiHats}, 
+temperature gradients are specified using \parlink{dTHatdpsiHats},  a single $E_r$ is specified using
+\parlink{dPhiHatdpsiHat}, and a range of $E_r$ for a scan is specified using \parlink{dPhiHatdpsiHatMin}-\parlink{dPhiHatdpsiHatMax}.
 \\
 
-1: Use derivatives with respect to {\ttfamily psiN}: Density gradients are specified using {\ttfamily dnHatdpsiNs}, 
-temperature gradients are specified using {\ttfamily dTHatdpsiNs},  a single $E_r$ is specified using
-{\ttfamily dPhiHatdpsiN}, and a range of $E_r$ for a scan is specified using {\ttfamily dPhiHatdpsiNMin}-{\ttfamily dPhiHatdpsiNMax}.
+1: Use derivatives with respect to {\ttfamily psiN}: Density gradients are specified using \parlink{dnHatdpsiNs}, 
+temperature gradients are specified using \parlink{dTHatdpsiNs},  a single $E_r$ is specified using
+\parlink{dPhiHatdpsiN}, and a range of $E_r$ for a scan is specified using \parlink{dPhiHatdpsiNMin}-\parlink{dPhiHatdpsiNMax}.
 \\
 
-2: Use derivatives with respect to {\ttfamily rHat}: Density gradients are specified using {\ttfamily dnHatdrHats}, 
-temperature gradients are specified using {\ttfamily dTHatdrHats},  a single $E_r$ is specified using
-{\ttfamily dPhiHatdrHat}, and a range of $E_r$ for a scan is specified using {\ttfamily dPhiHatdrHatMin}-{\ttfamily dPhiHatdrHatMax}.
+2: Use derivatives with respect to {\ttfamily rHat}: Density gradients are specified using \parlink{dnHatdrHats}, 
+temperature gradients are specified using \parlink{dTHatdrHats},  a single $E_r$ is specified using
+\parlink{dPhiHatdrHat}, and a range of $E_r$ for a scan is specified using \parlink{dPhiHatdrHatMin}-\parlink{dPhiHatdrHatMax}.
 \\
 
-3: Use derivatives with respect to {\ttfamily rN}: Density gradients are specified using {\ttfamily dnHatdrNs}, 
-temperature gradients are specified using {\ttfamily dTHatdrNs},  a single $E_r$ is specified using
-{\ttfamily dPhiHatdrN}, and a range of $E_r$ for a scan is specified using {\ttfamily dPhiHatdrNMin}-{\ttfamily dPhiHatdrNMax}.
+3: Use derivatives with respect to {\ttfamily rN}: Density gradients are specified using \parlink{dnHatdrNs}, 
+temperature gradients are specified using \parlink{dTHatdrNs},  a single $E_r$ is specified using
+\parlink{dPhiHatdrN}, and a range of $E_r$ for a scan is specified using \parlink{dPhiHatdrNMin}-\parlink{dPhiHatdrNMax}.
 \\
 
 }
 
 Another choice involving radial coordinates is how to specify the flux surface for the computation.
-This choice is made using the parameter {\ttfamily inputRadialCoordinate} in the {\ttfamily geometryParameters}
-namelist, which is again an integer from 0 to 3, and this parameter need not be the same as {\ttfamily inputRadialCoordinateForGradients}.
+This choice is made using the parameter \parlink{inputRadialCoordinate} in the {\ttfamily \hyperref[sec:geometryParameters]{geometryParameters}}
+namelist, which is again an integer from 0 to 3, and this parameter need not be the same as \parlink{inputRadialCoordinateForGradients}.
 An extra complication with specifying the flux surface is that the magnetic equilibrium file will contain data on a finite number of surfaces,
 and you may wish to use one of these surfaces.  For this reason, the parameters for specifying the flux surface have {\ttfamily \_wish}
-appended to the name. In other words, the allowed values for {\ttfamily inputRadialCoordinate} are:\\
+appended to the name. In other words, the allowed values for \parlink{inputRadialCoordinate} are:\\
 
 {\setlength{\parindent}{0cm}
 
-0: Specify the flux surface using {\ttfamily psiHat\_wish}.\\
+0: Specify the flux surface using \parlink{psiHat\_wish}.\\
 
-1: Specify the flux surface using {\ttfamily psiN\_wish}.\\
+1: Specify the flux surface using \parlink{psiN\_wish}.\\
 
-2: Specify the flux surface using {\ttfamily rHat\_wish}.\\
+2: Specify the flux surface using \parlink{rHat\_wish}.\\
 
-3: Specify the flux surface using {\ttfamily rN\_wish}.\\
+3: Specify the flux surface using \parlink{rN\_wish}.\\
 
 }
 
-When using {\ttfamily geometryScheme} == 11 or 12, \sfincs~will always shift the ``wish'' value so it matches an available surface in the magnetic equilibrium file.
-For {\ttfamily geometryScheme} == 5, the {\ttfamily VMECRadialOption} parameter lets you can choose whether to shift to the nearest surface in the magnetic equilibrium file,
+When using \parlink{geometryScheme} == 11 or 12, \sfincs~will always shift the ``wish'' value so it matches an available surface in the magnetic equilibrium file.
+For \parlink{geometryScheme} == 5, the \parlink{VMECRadialOption} parameter lets you can choose whether to shift to the nearest surface in the magnetic equilibrium file,
 or to interpolate the \vmec~data onto the exact value of radius you specify.
 
 If you perform a radial scan, then there is a third choice you can make: which radial coordinate to use in the {\ttfamily profiles} file.
 This choice is made with an integer 0, 1, 2, or 3 in the first non-comment line of the {\ttfamily profiles} file.
 The radial coordinate used in the {\ttfamily profiles} file need not be the same as either
-{\ttfamily inputRadialCoordinate} or {\ttfamily inputRadialCoordinateForGradients}.
+\parlink{inputRadialCoordinate} or \parlink{inputRadialCoordinateForGradients}.
 Note however that the maximum and minimum radial electric field specified in the {\ttfamily profiles}
-file must be defined as the derivative of the electrostatic potential with respect to the radial coordinate {\ttfamily inputRadialCoordinateForGradients}.
+file must be defined as the derivative of the electrostatic potential with respect to the radial coordinate \parlink{inputRadialCoordinateForGradients}.
 
-For more details about the behavior of {\ttfamily inputRadialCoordinate}, {\ttfamily inputRadialCoordinateForGradients}, and {\ttfamily VMECRadialOption},
+For more details about the behavior of \parlink{inputRadialCoordinate}, \parlink{inputRadialCoordinateForGradients}, and \parlink{VMECRadialOption},
 see section \ref{sec:geometryParameters}.
 
 
@@ -120,30 +121,30 @@ see section \ref{sec:geometryParameters}.
 As discussed in \cite{sfincsPaper},
 one of the capabilities of \sfincs~is to compare various models for the terms in the kinetic equation involving $E_r$.
 These variations of the kinetic equation are called ``trajectory models'' in \cite{sfincsPaper}.
-The relevant terms in the kinetic equation can be turned off and on by certain Boolean parameters in the {\ttfamily physicsParameters} namelist.
+The relevant terms in the kinetic equation can be turned off and on by certain Boolean parameters in the {\ttfamily \hyperref[sec:physicsParameters]{physicsParameters}} namelist.
 The models described in \cite{sfincsPaper} are selected as follows:\\
 
 {\setlength{\parindent}{0cm}
 
 \underline{Full trajectories:}\\
 {\ttfamily 
-includeXDotTerm = .true.\\
-includeElectricFieldTermInXiDot = .true.\\
-useDKESExBDrift = .false.\\
+\parlink{includeXDotTerm} = .true.\\
+\parlink{includeElectricFieldTermInXiDot} = .true.\\
+\parlink{useDKESExBDrift} = .false.\\
 }
 
 \underline{Partial trajectories:}\\
 {\ttfamily
-includeXDotTerm = .false.\\
-includeElectricFieldTermInXiDot = .false.\\
-useDKESExBDrift = .false.\\
+\parlink{includeXDotTerm} = .false.\\
+\parlink{includeElectricFieldTermInXiDot} = .false.\\
+\parlink{useDKESExBDrift} = .false.\\
 }
 
 \underline{DKES trajectories:}\\
 {\ttfamily
-includeXDotTerm = .false.\\
-includeElectricFieldTermInXiDot = .false.\\
-useDKESExBDrift = .true.\\
+\parlink{includeXDotTerm} = .false.\\
+\parlink{includeElectricFieldTermInXiDot} = .false.\\
+\parlink{useDKESExBDrift} = .true.\\
 }
 }
 
@@ -162,15 +163,16 @@ when $E_r=0$, but generally there can be some difference when $E_r \ne 0$.
 discussed in the notes 20150325-01 in \path{sfincs/doc/}.)
 
 In \sfincs, you can choose whether or not to
-include $\Phi_1$ using the paramter {\ttfamily includePhi1} in the {\ttfamily physicsParameters}
+include $\Phi_1$ using the paramter {\ttfamily \hyperlink{includePhi1}{includePhi1}} in the 
+{\ttfamily \hyperref[sec:physicsParameters]{physicsParameters}}
 namelist.  If and only if $\Phi_1$ is included, a quasineutrality equation is solved
 at each point on the flux surface.  Due to these extra unknowns ($\Phi_1$) and extra equations
-(quasineutrality), the system matrix is slightly larger when {\ttfamily includePhi1} is \true.
+(quasineutrality), the system matrix is slightly larger when \parlink{includePhi1} is \true.
 Specifically, the number of rows and columns are each increased by \Ntheta$\times$\Nzeta$+1$.  This increase is miniscule compared
 to the number of rows and columns associated with the kinetic equation, which depends not only on real space
 but also on velocity space and species.  Thus, there is very little extra computational cost associated
-with {\ttfamily includePhi1}.  You may wish to set {\ttfamily includePhi1} = \true~when
-using \sfincs~to model an experiment, and set  {\ttfamily includePhi1} = \false~when
+with \parlink{includePhi1}.  You may wish to set \parlink{includePhi1} = \true~when
+using \sfincs~to model an experiment, and set \parlink{includePhi1} = \false~when
 comparing \sfincs~with analytic theory or with another code that does not include $\Phi_1$.
 
 \section{Parallelization}
@@ -181,15 +183,15 @@ Choosing the number of nodes and procs.
 \section{Monoenergetic transport coefficients}
 \label{sec:monoenergetic}
 
-By setting {\ttfamily RHSMode=3}, \sfincs~can be run in a mode
-where it solves the same kinetic equation (prior to discretization) as {\ttfamily dkes}
-and other monoenergetic codes.
-When {\ttfamily RHSMode=3}, the values of {\ttfamily Zs}, {\ttfamily THats}, {\ttfamily nHats},
-{\ttfamily mHats}, {\ttfamily nu\_n}, and {\ttfamily dPhiHatdXXX} are all ignored.
-Instead, the collisionality is set by {\ttfamily nuPrime}, and the radial electric field is set
-by {\ttfamily EStar}.  The first of these quantities is the dimensionless collisionality
+By setting \parlink{RHSMode} = 3, \sfincs~can be run in a mode
+where it solves the same kinetic equation (prior to discretization) as 
+\dkes~and other monoenergetic codes.
+When \parlink{RHSMode} = 3, the values of \parlink{Zs}, \parlink{THats}, \parlink{nHats},
+\parlink{mHats}, \parlink{nu\_n}, and {\ttfamily dPhiHatdXXX} are all ignored.
+Instead, the collisionality is set by \parlink{nuPrime}, and the radial electric field is set
+by \parlink{EStar}.  The first of these quantities is the dimensionless collisionality
 \begin{equation}
-\mbox{\ttfamily nuPrime} = \frac{(G+\iota I) \nu}{v B_0}
+\mbox{\parlink{nuPrime}} = \frac{(G+\iota I) \nu}{v B_0}
 \end{equation}
 where $G$ and $I$ are defined in (\ref{eq:covariant}), $\iota=1/q$ is the rotational transform,
 $v$ is the speed at which the monoenergetic calculation is being performed, and $B_0$ is the (0,0) Fourier harmonic of $B$
@@ -202,13 +204,13 @@ $v$ were the thermal speed. That is, in SI units,
 %
 The normalized radial electric field is
 \begin{equation}
-\mbox{\ttfamily EStar} = \frac{cG}{\iota v B_0} \frac{d\Phi}{d\psi}
+\mbox{\parlink{EStar}} = \frac{cG}{\iota v B_0} \frac{d\Phi}{d\psi}
 \end{equation}
 (Gaussian units).
 When {\ttfamily RHSMode} == 1, {\ttfamily nuPrime} and {\ttfamily EStar} are ignored.
 \todo{Should be change the behavior of RHSMode=2 so it uses nuPrime and EStar instead of nu\_n?}
 
-The two parameters {\ttfamily nuPrime} and {\ttfamily EStar} are
+The two parameters \parlink{nuPrime} and \parlink{EStar} are
 related to the corresponding DKES parameters {\ttfamily CMUL} and
 {\ttfamily EFIELD} by
 \begin{eqnarray}

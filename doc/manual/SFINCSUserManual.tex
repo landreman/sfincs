@@ -16,9 +16,10 @@
 %\maxtocdepth{section}
 \usepackage[sort&compress,numbers]{natbib} % better citations
 \usepackage{fancyhdr}
-\usepackage{hyperref}
 %\usepackage[nottoc,notlot,notlof]{tocbibind}
 \usepackage{url}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue}
 
 \newcommand{\vv}{\upsilon}
 \newcommand{\vect}[1]{{\mathbf #1}}
@@ -32,14 +33,17 @@
 \newcommand{\superludist}{{\ttfamily superlu\_dist}}
 \newcommand{\mumps}{{\ttfamily mumps}}
 \newcommand{\python}{{\ttfamily python}}
-\newcommand{\Ntheta}{{\ttfamily Ntheta}}
-\newcommand{\Nzeta}{{\ttfamily Nzeta}}
-\newcommand{\Nxi}{{\ttfamily Nxi}}
-\newcommand{\Nx}{{\ttfamily Nx}}
-\newcommand{\NL}{{\ttfamily NL}}
+\newcommand{\parlink}[1]{{\ttfamily \hyperlink{#1}{#1}}}
+\newcommand{\Ntheta}{\parlink{Ntheta}}
+\newcommand{\Nzeta}{\parlink{Nzeta}}
+\newcommand{\Nxi}{\parlink{Nxi}}
+\newcommand{\Nx}{\parlink{Nx}}
+\newcommand{\NL}{\parlink{NL}}
 \newcommand{\vmec}{{\ttfamily vmec}}
 \newcommand{\dkes}{{\ttfamily dkes}}
 \newcommand{\todo}[1]{\textcolor{red}{To do: #1}}
+
+\graphicspath{{figures/}}
 
 % uncomment the following line to remove all graphics (for faster compiling)
 %\renewcommand{\includegraphics}[2][x]{}
@@ -81,8 +85,8 @@
 \include{overview}
 \include{installation}
 \include{inputParameters}
-\include{resolution} 
 \include{runs}
+\include{resolution} 
 
 \renewcommand{\chaptermark}[1]{\markboth{\sc{Appendix\ \thechapter.\ #1}}{}}
 \appendix

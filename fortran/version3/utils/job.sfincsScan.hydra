@@ -20,4 +20,4 @@ module load hdf5-serial netcdf-serial
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HDF5_HOME}/lib:${NETCDF_HOME}/lib
 
 # run the program
-poe /u/mlan/sfincs/fortran/version3/sfincs -ksp_view -mat_superlu_dist_statprint
+time poe /u/mlan/sfincs/fortran/version3/sfincs -ksp_view

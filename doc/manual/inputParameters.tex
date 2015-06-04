@@ -1,8 +1,8 @@
 \chapter{Input Parameters}
 \label{ch:input}
 
-\newcommand{\param}[5]{{\setlength{\parindent}{0cm} {\ttfamily \bfseries #1}\\{\it Type}: #2\\{\it Default}: #3\\{\it When it matters}: #4\\{\it Meaning}: #5}}
-\newcommand{\ssparam}[4]{{\setlength{\parindent}{0cm} {\ttfamily \bfseries #1}\\{\it Type}: #2\\{\it When it matters}: #3\\{\it Meaning}: #4}}
+\newcommand{\param}[5]{{\setlength{\parindent}{0cm} {\ttfamily \bfseries \hypertarget{#1}{#1}}\\{\it Type}: #2\\{\it Default}: #3\\{\it When it matters}: #4\\{\it Meaning}: #5}}
+\newcommand{\ssparam}[4]{{\setlength{\parindent}{0cm} {\ttfamily \bfseries \hypertarget{#1}{#1}}\\{\it Type}: #2\\{\it When it matters}: #3\\{\it Meaning}: #4}}
 \newcommand{\PETScParam}[2]{{\setlength{\parindent}{0cm} {\ttfamily \bfseries #1}\\{\it Meaning}: #2}}
 \newcommand{\myhrule}{{\setlength{\parindent}{0cm} \hrulefill }}
 
@@ -29,11 +29,11 @@ The default values are usually best for the parameters in this namelist.
 {Always}
 {Option related to the number of right-hand sides (i.e. inhomogeneous drive terms) for which the kinetic equation is solved.\\
 
-{\ttfamily RHSMode=1}: Solve for a single right-hand side.\\
+{\ttfamily RHSMode} = 1: Solve for a single right-hand side.\\
 
-{\ttfamily RHSMode=2}: Solve for 3 right-hand sides to get the 3x3 transport matrix. Presently implemented only for 1 species.\\
+{\ttfamily RHSMode} = 2: Solve for 3 right-hand sides to get the 3$\times$3 transport matrix. Presently implemented only for 1 species.\\
 
-{\ttfamily RHSMode=3}: Solve for the 2x2 monoenergetic transport coefficients. When this option is chosen, {\ttfamily Nx} is set to 1 and only 1 species is used.
+{\ttfamily RHSMode} = 3: Solve for the 2$\times$2 monoenergetic transport coefficients. When this option is chosen, \Nx~is set to 1 and only 1 species is used.
 }
 
 \myhrule
@@ -63,7 +63,7 @@ the size of the linear system is more then 1400 $\times$ 1400,
 \param{MatlabOutputFilename}
 {string}
 {``sfincsMatrices''}
-{Only when {\ttfamily saveMatlabOutput == .true.}}
+{Only when \parlink{saveMatlabOutput} == \true.}
 {Start of the filenames which will be used for Matlab output.}
 
 \myhrule
@@ -74,15 +74,14 @@ the size of the linear system is more then 1400 $\times$ 1400,
 {Always}
 {If this switch is set to true, the matrix, right-hand-side, and solution of the
 linear system will be saved in PETSc's binary format.  The preconditioner matrix will also
-be saved if {\ttfamily tryIterativeSolver == .true.}
-}
+be saved if \parlink{useIterativeLinearSolver} == \true.}
 
 \myhrule
 
 \param{binaryOutputFilename}
 {string}
 {``sfincsBinary''}
-{Only when {\ttfamily saveMatricesAndVectorsInBinary == .true.}}
+{Only when \parlink{saveMatricesAndVectorsInBinary} == \true.}
 {Start of the filenames which will be used for binary output.}
 
 \myhrule
@@ -92,7 +91,7 @@ be saved if {\ttfamily tryIterativeSolver == .true.}
 {\true}
 {Always}
 {If this parameter is false, the system of equations will not actually be solved.
- Sometimes it can be useful to set this parameter to {\ttfamily .false.} when debugging.
+ Sometimes it can be useful to set this parameter to \false~when debugging.
 }
 
 
@@ -119,10 +118,10 @@ The parameters in this namelist define the magnetic geometry, and so you will al
 \begin{eqnarray}
 \label{eq:Bmodel}
 B(\theta,\zeta)/\bar{B} 
-&=& (\mbox{\ttfamily B0OverBBar}) [1 + (\mbox{\ttfamily epsilon\_t}) \cos(\theta) \\
-&& + (\mbox{\ttfamily epsilon\_h}) \cos((\mbox{\ttfamily helicity\_l}) \theta - (\mbox{\ttfamily helicity\_n}) \zeta) \nonumber \\
-&&  + (\mbox{\ttfamily epsilon\_antisymm}) \nonumber \\
-&& \times \sin((\mbox{ \ttfamily helicity\_antisymm\_l}) \theta - (\mbox{\ttfamily helicity\_antisymm\_n}) \zeta)] \nonumber
+&=& (\mbox{\parlink{B0OverBBar}}) [1 + (\mbox{\parlink{epsilon\_t}}) \cos(\theta) \\
+&& + (\mbox{\parlink{epsilon\_h}}) \cos((\mbox{\parlink{helicity\_l}}) \theta - (\mbox{\parlink{helicity\_n}}) \zeta) \nonumber \\
+&&  + (\mbox{\parlink{epsilon\_antisymm}}) \nonumber \\
+&& \times \sin((\mbox{\parlink{helicity\_antisymm\_l}}) \theta - (\mbox{\parlink{helicity\_antisymm\_n}}) \zeta)] \nonumber
 \end{eqnarray}
 
 (All the variables in this formula are discussed later in this namelist.)\\
@@ -133,13 +132,13 @@ B(\theta,\zeta)/\bar{B}
 
 {\ttfamily geometryScheme}==4: Use a 3-helicity model of the W7-X standard configuration at {\ttfamily rN}=0.5.\\
 
-{\ttfamily geometryScheme}==5: Read the {\ttfamily vmec wout} file specified in {\ttfamily equilibriumFile} below. The file can be
+{\ttfamily geometryScheme}==5: Read the {\ttfamily vmec wout} file specified in \parlink{equilibriumFile} below. The file can be
        either ASCII format or \netCDF~format. (\sfincs~will auto-detect the format.).\\
 
-{\ttfamily geometryScheme}==11: Read the IPP {\ttfamily .bc} format Boozer-coordinate file specified in {\ttfamily equilibriumFile} below. 
+{\ttfamily geometryScheme}==11: Read the IPP {\ttfamily .bc} format Boozer-coordinate file specified in \parlink{equilibriumFile} below. 
 The file is assumed to be stellarator-symmetric.\\
 
-{\ttfamily geometryScheme}==12: Read the IPP {\ttfamily .bc} format Boozer-coordinate file specified in {\ttfamily equilibriumFile} below. 
+{\ttfamily geometryScheme}==12: Read the IPP {\ttfamily .bc} format Boozer-coordinate file specified in \parlink{equilibriumFile} below. 
 The file is assumed to be stellarator-\emph{asymmetric}.
 }
 
@@ -148,24 +147,24 @@ The file is assumed to be stellarator-\emph{asymmetric}.
 \param{inputRadialCoordinate}
 {integer}
 {3}
-{When {\ttfamily geometryScheme} == 1, 5, 11, or 12}
+{When \parlink{geometryScheme} == 1, 5, 11, or 12}
 {Which radial coordinate to use to specify the flux surface for a single calculation,
 or to specify the range of flux surfaces for a radial scan. 
-(Regardless of the value of this parameter, when {\ttfamily geometryScheme} == 2, 3, or 4, the flux surface used will be {\ttfamily rN}=0.5.)
+(Regardless of the value of this parameter, when \parlink{geometryScheme} == 2, 3, or 4, the flux surface used will be {\ttfamily rN}=0.5.)
 See section \ref{sec:radialCoordinates}
 for more information about radial coordinates.\\
 
-{\ttfamily inputRadialCoordinate}==0: Use the flux surface specified by {\ttfamily psiHat\_wish}
-for a single run, and use the range specified by {\ttfamily psiHat\_min} and {\ttfamily psiHat\_max} for radial scans.\\
+{\ttfamily inputRadialCoordinate}==0: Use the flux surface specified by \parlink{psiHat\_wish}
+for a single run, and use the range specified by \parlink{psiHat\_min} and \parlink{psiHat\_max} for radial scans.\\
 
-{\ttfamily inputRadialCoordinate}==1: Use the flux surface specified by {\ttfamily psiN\_wish}
-for a single run, and use the range specified by {\ttfamily psiN\_min} and {\ttfamily psiN\_max} for radial scans.\\
+{\ttfamily inputRadialCoordinate}==1: Use the flux surface specified by \parlink{psiN\_wish}
+for a single run, and use the range specified by \parlink{psiN\_min} and \parlink{psiN\_max} for radial scans.\\
 
-{\ttfamily inputRadialCoordinate}==2: Use the flux surface specified by {\ttfamily rHat\_wish}
-for a single run, and use the range specified by {\ttfamily rHat\_min} and {\ttfamily rHat\_max} for radial scans.\\
+{\ttfamily inputRadialCoordinate}==2: Use the flux surface specified by \parlink{rHat\_wish}
+for a single run, and use the range specified by \parlink{rHat\_min} and \parlink{rHat\_max} for radial scans.\\
 
-{\ttfamily inputRadialCoordinate}==3: Use the flux surface specified by {\ttfamily rN\_wish}
-for a single run, and use the range specified by {\ttfamily rN\_min} and {\ttfamily rN\_max} for radial scans. \\
+{\ttfamily inputRadialCoordinate}==3: Use the flux surface specified by \parlink{rN\_wish}
+for a single run, and use the range specified by \parlink{rN\_min} and \parlink{rN\_max} for radial scans. \\
 
 No matter which option you pick, the value of all 4 radial coordinates used will be saved in the output \HDF~file.
 }
@@ -175,27 +174,27 @@ No matter which option you pick, the value of all 4 radial coordinates used will
 \param{inputRadialCoordinateForGradients}
 {integer}
 {2}
-{Whenever {\ttfamily RHSMode}==1.}
+{Whenever \parlink{RHSMode}==1.}
 {Which radial coordinate is used to use to specify the input gradients of density, temperature, and electrostatic potential,
 i.e. which radial coordinate is used in the denominator of these derivatives.
 See section \ref{sec:radialCoordinates}
 for more information about radial coordinates.\\
 
-{\ttfamily inputRadialCoordinateForGradients}==0: Density gradients are specified by {\ttfamily dnHatdpsiHats},
-temperature gradients are specified by {\ttfamily dTHatdpsiHats}, a single $E_r$ is specified by {\ttfamily dPhiHatdpsiHat},
-and the range of an $E_r$ scan is specified by {\ttfamily dPhiHatdpsiHatMin-dPhiHatdpsiHatMax}.\\
+{\ttfamily inputRadialCoordinateForGradients}==0: Density gradients are specified by \parlink{dnHatdpsiHats},
+temperature gradients are specified by \parlink{dTHatdpsiHats}, a single $E_r$ is specified by \parlink{dPhiHatdpsiHat},
+and the range of an $E_r$ scan is specified by \parlink{dPhiHatdpsiHatMin}-\parlink{dPhiHatdpsiHatMax}.\\
 
-{\ttfamily inputRadialCoordinateForGradients}==1: Density gradients are specified by {\ttfamily dnHatdpsiNs},
-temperature gradients are specified by {\ttfamily dTHatdpsiNs}, a single $E_r$ is specified by {\ttfamily dPhiHatdpsiN},
-and the range of an $E_r$ scan is specified by {\ttfamily dPhiHatdpsiNMin-dPhiHatdpsiNMax}.\\
+{\ttfamily inputRadialCoordinateForGradients}==1: Density gradients are specified by \parlink{dnHatdpsiNs},
+temperature gradients are specified by \parlink{dTHatdpsiNs}, a single $E_r$ is specified by \parlink{dPhiHatdpsiN},
+and the range of an $E_r$ scan is specified by \parlink{dPhiHatdpsiNMin}-\parlink{dPhiHatdpsiNMax}.\\
 
-{\ttfamily inputRadialCoordinateForGradients}==2: Density gradients are specified by {\ttfamily dnHatdrHats},
-temperature gradients are specified by {\ttfamily dTHatdrHats}, a single $E_r$ is specified by {\ttfamily dPhiHatdrHat},
-and the range of an $E_r$ scan is specified by {\ttfamily dPhiHatdrHatMin-dPhiHatdrHatMax}.\\
+{\ttfamily inputRadialCoordinateForGradients}==2: Density gradients are specified by \parlink{dnHatdrHats},
+temperature gradients are specified by \parlink{dTHatdrHats}, a single $E_r$ is specified by \parlink{dPhiHatdrHat},
+and the range of an $E_r$ scan is specified by \parlink{dPhiHatdrHatMin}-\parlink{dPhiHatdrHatMax}.\\
 
-{\ttfamily inputRadialCoordinateForGradients}==3: Density gradients are specified by {\ttfamily dnHatdrNs},
-temperature gradients are specified by {\ttfamily dTHatdrNs}, a single $E_r$ is specified by {\ttfamily dPhiHatdrN},
-and the range of an $E_r$ scan is specified by {\ttfamily dPhiHatdrNMin-dPhiHatdrNMax}.\\
+{\ttfamily inputRadialCoordinateForGradients}==3: Density gradients are specified by \parlink{dnHatdrNs},
+temperature gradients are specified by \parlink{dTHatdrNs}, a single $E_r$ is specified by \parlink{dPhiHatdrN},
+and the range of an $E_r$ scan is specified by \parlink{dPhiHatdrNMin}-\parlink{dPhiHatdrNMax}.\\
 
 No matter which option you pick, the gradients with respect to all 4 radial coordinates will be saved in the output \HDF~file.
 }
@@ -205,7 +204,7 @@ No matter which option you pick, the gradients with respect to all 4 radial coor
 \param{psiHat\_wish}
 {real}
 {-1}
-{Only when {\ttfamily inputRadialCoordinate} == 0 and {\ttfamily geometryScheme} == 1, 5, 11, or 12.}
+{Only when \parlink{inputRadialCoordinate} == 0 and \parlink{geometryScheme} == 1, 5, 11, or 12.}
 {Requested flux surface for the computation.  See section \ref{sec:radialCoordinates}
 for more information about radial coordinates.}
 
@@ -214,7 +213,7 @@ for more information about radial coordinates.}
 \param{psiN\_wish}
 {real}
 {0.25}
-{Only when {\ttfamily inputRadialCoordinate} == 1 and {\ttfamily geometryScheme} == 1, 5, 11, or 12.}
+{Only when \parlink{inputRadialCoordinate} == 1 and \parlink{geometryScheme} == 1, 5, 11, or 12.}
 {Requested flux surface for the computation.  See section \ref{sec:radialCoordinates}
 for more information about radial coordinates.}
 
@@ -223,7 +222,7 @@ for more information about radial coordinates.}
 \param{rHat\_wish}
 {real}
 {-1}
-{Only when {\ttfamily inputRadialCoordinate} == 2 and {\ttfamily geometryScheme} == 1, 5, 11, or 12.}
+{Only when \parlink{inputRadialCoordinate} == 2 and \parlink{geometryScheme} == 1, 5, 11, or 12.}
 {Requested flux surface for the computation.  See section \ref{sec:radialCoordinates}
 for more information about radial coordinates.}
 
@@ -232,7 +231,7 @@ for more information about radial coordinates.}
 \param{rN\_wish}
 {real}
 {0.5}
-{Only when {\ttfamily inputRadialCoordinate} == 3 and {\ttfamily geometryScheme} == 1, 5, 11, or 12.}
+{Only when \parlink{inputRadialCoordinate} == 3 and \parlink{geometryScheme} == 1, 5, 11, or 12.}
 {Requested flux surface for the computation.  See section \ref{sec:radialCoordinates}
 for more information about radial coordinates.}
 
@@ -241,7 +240,7 @@ for more information about radial coordinates.}
 \param{B0OverBBar}
 {real}
 {1.0}
-{Only when {\ttfamily geometryScheme} == 1. Otherwise, {\ttfamily B0OverBBar} will be set according to the requested {\ttfamily geometryScheme}.}
+{Only when \parlink{geometryScheme} == 1. Otherwise, {\ttfamily B0OverBBar} will be set according to the requested \parlink{geometryScheme}.}
 {Magnitude of the (0,0) Boozer harmonic of the magnetic field strength (equivalent to $\left< B^3\right>/\left<B^2\right>$), normalized by $\bar{B}$.}
 
 \myhrule
@@ -249,7 +248,7 @@ for more information about radial coordinates.}
 \param{GHat}
 {real}
 {3.7481}
-{Only when {\ttfamily geometryScheme} == 1. Otherwise, {\ttfamily GHat} will be set according to the requested {\ttfamily geometryScheme}.}
+{Only when \parlink{geometryScheme} == 1. Otherwise, {\ttfamily GHat} will be set according to the requested \parlink{geometryScheme}.}
 {$G$ is $(c/2)\times$ the poloidal current outside the flux
  surface. Equivalently, $G$ is the coefficient of $\nabla\zeta_B$ in the
  covariant representation of $\vect{B}$ in terms of Boozer coordinates $(\theta_B,\zeta_B)$:
@@ -264,7 +263,7 @@ for more information about radial coordinates.}
 \param{IHat}
 {real}
 {0.0}
-{Only when {\ttfamily geometryScheme} == 1. Otherwise, {\ttfamily IHat} will be set according to the requested {\ttfamily geometryScheme}.}
+{Only when \parlink{geometryScheme} == 1. Otherwise, {\ttfamily IHat} will be set according to the requested \parlink{geometryScheme}.}
 {$I$ is $(c/2)\times$ the toroidal current inside the flux
  surface. Equivalently, $I$ is the coefficient of $\nabla\theta_B$ in the
  covariant representation of $\vect{B}$ in terms of Boozer coordinates $(\theta_B,\zeta_B)$ in (\ref{eq:covariant}).
@@ -275,7 +274,7 @@ for more information about radial coordinates.}
 \param{iota}
 {real}
 {0.4542}
-{Only when {\ttfamily geometryScheme} == 1. Otherwise, {\ttfamily iota} will be set according to the requested {\ttfamily geometryScheme}.}
+{Only when \parlink{geometryScheme} == 1. Otherwise, {\ttfamily iota} will be set according to the requested \parlink{geometryScheme}.}
 {Rotational transform (rationalized), equivalent to $1/q$ where $q$ is the safety factor.}
 
 \myhrule
@@ -283,7 +282,7 @@ for more information about radial coordinates.}
 \param{epsilon\_t}
 {real}
 {-0.07053}
-{Only when {\ttfamily geometryScheme} == 1.}
+{Only when \parlink{geometryScheme} == 1.}
 {Toroidal variation in $B$, as defined by (\ref{eq:Bmodel}).}
 
 \myhrule
@@ -291,7 +290,7 @@ for more information about radial coordinates.}
 \param{epsilon\_h}
 {real}
 {0.05067}
-{Only when {\ttfamily geometryScheme} == 1.}
+{Only when \parlink{geometryScheme} == 1.}
 {Helical variation in $B$, as defined by (\ref{eq:Bmodel}).}
 
 \myhrule
@@ -299,7 +298,7 @@ for more information about radial coordinates.}
 \param{epsilon\_antisymm}
 {real}
 {0.0}
-{Only when {\ttfamily geometryScheme} == 1.}
+{Only when \parlink{geometryScheme} == 1.}
 {Stellarator-antisymmetric variation in $B$, as defined by (\ref{eq:Bmodel}).}
 
 \myhrule
@@ -307,7 +306,7 @@ for more information about radial coordinates.}
 \param{helicity\_l}
 {integer}
 {2}
-{Only when {\ttfamily geometryScheme} == 1.}
+{Only when \parlink{geometryScheme} == 1.}
 {Poloidal mode number of the helical variation in $B$, as defined by (\ref{eq:Bmodel}).}
 
 \myhrule
@@ -315,7 +314,7 @@ for more information about radial coordinates.}
 \param{helicity\_n}
 {integer}
 {10}
-{Only when {\ttfamily geometryScheme} == 1.}
+{Only when \parlink{geometryScheme} == 1.}
 {Toroidal mode number of the helical variation in $B$, as defined by (\ref{eq:Bmodel}).}
 
 \myhrule
@@ -323,7 +322,7 @@ for more information about radial coordinates.}
 \param{helicity\_antisymm\_l}
 {integer}
 {1}
-{Only when {\ttfamily geometryScheme} == 1.}
+{Only when \parlink{geometryScheme} == 1.}
 {Poloidal mode number of the stellarator-antisymmetric variation in $B$, as defined by (\ref{eq:Bmodel}).}
 
 \myhrule
@@ -331,17 +330,17 @@ for more information about radial coordinates.}
 \param{helicity\_antisymm\_n}
 {integer}
 {0}
-{Only when {\ttfamily geometryScheme} == 1.}
+{Only when \parlink{geometryScheme} == 1.}
 {Toroidal mode number of the stellarator-antisymmetric variation in $B$, as defined by (\ref{eq:Bmodel}).
-Note that you can create an up-down asymmetric tokamak by setting {\ttfamily helicity\_antisymm\_n}=0, {\ttfamily epsilon\_h}=0,
-and {\ttfamily epsilon\_antisymm}$>$0.}
+Note that you can create an up-down asymmetric tokamak by setting \parlink{helicity\_antisymm\_n}=0, \parlink{epsilon\_h}=0,
+and \parlink{epsilon\_antisymm}$>$0.}
 
 \myhrule
 
 \param{psiAHat}
 {real}
 {0.15596}
-{Only when {\ttfamily geometryScheme} == 1. Otherwise, {\ttfamily psiAHat} will be set according to the requested {\ttfamily geometryScheme}.}
+{Only when \parlink{geometryScheme} == 1. Otherwise, {\ttfamily psiAHat} will be set according to the requested \parlink{geometryScheme}.}
 {{\ttfamily psiAHat} = $\psi_a / (\bar{B} \bar{R}^2)$
 where $2 \pi \psi_a$ is the toroidal flux at the last closed flux surface.}
 
@@ -350,7 +349,7 @@ where $2 \pi \psi_a$ is the toroidal flux at the last closed flux surface.}
 \param{aHat}
 {real}
 {0.5585}
-{Only when {\ttfamily geometryScheme} == 1. Otherwise, {\ttfamily aHat} will be set according to the requested {\ttfamily geometryScheme}.}
+{Only when \parlink{geometryScheme} == 1. Otherwise, {\ttfamily aHat} will be set according to the requested \parlink{geometryScheme}.}
 {The effective minor radius at the last closed flux surface, in units of $\bar{R}$.
 The code only uses {\ttfamily aBar} for converting between the various radial coordinates in input and output quantities.
 }
@@ -360,7 +359,7 @@ The code only uses {\ttfamily aBar} for converting between the various radial co
 \param{equilibriumFile}
 {string}
 {``''}
-{Only when {\ttfamily geometryScheme} == 5, 11, or 12.}
+{Only when \parlink{geometryScheme} == 5, 11, or 12.}
 {Filename from which to load the magnetic equilibrium, either in {\ttfamily vmec wout} ASCII or \netCDF~format, or IPP {\ttfamily .bc} format.}
 
 \myhrule
@@ -368,7 +367,7 @@ The code only uses {\ttfamily aBar} for converting between the various radial co
 \param{VMECRadialOption}
 {integer}
 {1}
-{Only when {\ttfamily geometryScheme} == 5.}
+{Only when \parlink{geometryScheme} == 5.}
 {Controls whether the nearest available flux surface in the {\ttfamily vmec wout} file is used, or whether radial interpolation is applied to the \vmec~data
 to obtain the magnetic field components on the exact surface requested.\\
 
@@ -386,7 +385,7 @@ I'm not sure why you would want this, but the feature is implemented for complet
 \param{min\_Bmn\_to\_load}
 {real}
 {0.0}
-{Only when {\ttfamily geometryScheme} == 5, 11, or 12.}
+{Only when \parlink{geometryScheme} == 5, 11, or 12.}
 {Filters the magnetic field read from an input file.  Only Fourier modes $(m,n)$ for which $B_{m,n}$ is at least {\ttfamily min\_Bmn\_to\_load} will be included.}
 
 
@@ -397,17 +396,17 @@ I'm not sure why you would want this, but the feature is implemented for complet
 This namelist defines which species are included in the calculation, along with the density and temperature and gradients thereof.
 You will definitely want to set the parameters in this namelist.
 Note that only one of the four parameters 
-{\ttfamily dnHatdpsiHats}, 
-{\ttfamily dnHatdpsiNs}, 
-{\ttfamily dnHatdrHats}, or
-{\ttfamily dnHatdrNs}
-will be used, depending on the value of {\ttfamily inputRadialCoordinateForGradients}
-in the {\ttfamily geometryParameters} namelist.
+\parlink{dnHatdpsiHats}, 
+\parlink{dnHatdpsiNs}, 
+\parlink{dnHatdrHats}, or
+\parlink{dnHatdrNs}
+will be used, depending on the value of \parlink{inputRadialCoordinateForGradients}
+in the {\ttfamily \hyperref[sec:geometryParameters]{geometryParameters}} namelist.
 Similarly, only one of the four parameters
-{\ttfamily dTHatdpsiHats}, 
-{\ttfamily dTHatdpsiNs}, 
-{\ttfamily dTHatdrHats}, or
-{\ttfamily dTHatdrNs}
+\parlink{dTHatdpsiHats}, 
+\parlink{dTHatdpsiNs}, 
+\parlink{dTHatdrHats}, or
+\parlink{dTHatdrNs}
 will be used.
 
 \myhrule
@@ -431,7 +430,7 @@ will be used.
 \param{nHats}
 {1D array of reals}
 {1.0}
-{Whenever {\ttfamily RHSMode} == 1}
+{Whenever \parlink{RHSMode} == 1}
 {Densities of each species, in units of the reference density $\bar{n}$}
 
 \myhrule
@@ -439,7 +438,7 @@ will be used.
 \param{THats}
 {1D array of reals}
 {1.0}
-{Whenever {\ttfamily RHSMode} == 1}
+{Whenever \parlink{RHSMode} == 1}
 {Temperatures of each species, in units of the reference temperature $\bar{T}$}
 
 \myhrule
@@ -447,7 +446,7 @@ will be used.
 \param{dnHatdpsiHats}
 {1D array of reals}
 {0.0}
-{Whenever {\ttfamily RHSMode} == 1 and {\ttfamily inputRadialCoordinateForGradients} == 0}
+{Whenever \parlink{RHSMode} == 1 and \parlink{inputRadialCoordinateForGradients} == 0}
 {Radial density gradients of each species, with respect to the radial coordinate $\hat{\psi}$, normalized by the reference density $\bar{n}$.}
 
 \myhrule
@@ -455,7 +454,7 @@ will be used.
 \param{dTHatdpsiHats}
 {1D array of reals}
 {0.0}
-{Whenever {\ttfamily RHSMode} == 1 and {\ttfamily inputRadialCoordinateForGradients} == 0}
+{Whenever \parlink{RHSMode} == 1 and \parlink{inputRadialCoordinateForGradients} == 0}
 {Radial temperature gradients of each species, with respect to the radial coordinate $\hat{\psi}$, normalized by the reference temperature $\bar{T}$.}
 
 \myhrule
@@ -463,7 +462,7 @@ will be used.
 \param{dnHatdpsiNs}
 {1D array of reals}
 {0.0}
-{Whenever {\ttfamily RHSMode} == 1 and {\ttfamily inputRadialCoordinateForGradients} == 1}
+{Whenever \parlink{RHSMode} == 1 and \parlink{inputRadialCoordinateForGradients} == 1}
 {Radial density gradients of each species, with respect to the radial coordinate $\psi_N$, normalized by the reference density $\bar{n}$.}
 
 \myhrule
@@ -471,7 +470,7 @@ will be used.
 \param{dTHatdpsiNs}
 {1D array of reals}
 {0.0}
-{Whenever {\ttfamily RHSMode} == 1 and {\ttfamily inputRadialCoordinateForGradients} == 1}
+{Whenever \parlink{RHSMode} == 1 and \parlink{inputRadialCoordinateForGradients} == 1}
 {Radial temperature gradients of each species, with respect to the radial coordinate $\psi_N$, normalized by the reference temperature $\bar{T}$.}
 
 \myhrule
@@ -479,7 +478,7 @@ will be used.
 \param{dnHatdrHats}
 {1D array of reals}
 {0.0}
-{Whenever {\ttfamily RHSMode} == 1 and {\ttfamily inputRadialCoordinateForGradients} == 2}
+{Whenever \parlink{RHSMode} == 1 and \parlink{inputRadialCoordinateForGradients} == 2}
 {Radial density gradients of each species, with respect to the radial coordinate $\hat{r}$, normalized by the reference density $\bar{n}$.}
 
 \myhrule
@@ -487,7 +486,7 @@ will be used.
 \param{dTHatdrHats}
 {1D array of reals}
 {0.0}
-{Whenever {\ttfamily RHSMode} == 1 and {\ttfamily inputRadialCoordinateForGradients} == 2}
+{Whenever \parlink{RHSMode} == 1 and \parlink{inputRadialCoordinateForGradients} == 2}
 {Radial temperature gradients of each species, with respect to the radial coordinate $\hat{r}$, normalized by the reference temperature $\bar{T}$.}
 
 \myhrule
@@ -495,15 +494,15 @@ will be used.
 \param{dnHatdrNs}
 {1D array of reals}
 {0.0}
-{Whenever {\ttfamily RHSMode} == 1 and {\ttfamily inputRadialCoordinateForGradients} == 3}
+{Whenever \parlink{RHSMode} == 1 and \parlink{inputRadialCoordinateForGradients} == 3}
 {Radial density gradients of each species, with respect to the radial coordinate $r_N$, normalized by the reference density $\bar{n}$.}
 
 \myhrule
 
-\param{dTHatrNs}
+\param{dTHatdrNs}
 {1D array of reals}
 {0.0}
-{Whenever {\ttfamily RHSMode} == 1 and {\ttfamily inputRadialCoordinateForGradients} == 3}
+{Whenever \parlink{RHSMode} == 1 and \parlink{inputRadialCoordinateForGradients} == 3}
 {Radial temperature gradients of each species, with respect to the radial coordinate $r_N$, normalized by the reference temperature $\bar{T}$.}
 
 
@@ -516,6 +515,7 @@ will be used.
 
 
 \section{The {\ttfamily physicsParameters}~namelist}
+\label{sec:physicsParameters}
 
 The parameters in this namelist determine which terms are included or excluded in the kinetic equation.
 You will want to be aware of most of these parameters.
@@ -525,7 +525,7 @@ You will want to be aware of most of these parameters.
 \param{Delta}
 {real}
 {4.5694e-3}
-{Whenever {\ttfamily RHSMode} == 1.}
+{Whenever \parlink{RHSMode} == 1.}
 {Roughly speaking, {\ttfamily Delta} is $\rho_*$ at the reference parameters. The precise definition is
 \begin{eqnarray}
 \mbox{\ttfamily Delta} 
@@ -543,7 +543,7 @@ $\bar{m}$ = proton mass, and $\bar{T}$ = 1 keV.}
 \param{alpha}
 {real}
 {1.0}
-{Whenever {\ttfamily RHSMode} == 1 and $E_r$ is nonzero.}
+{Whenever \parlink{RHSMode} == 1 and $E_r$ is nonzero.}
 {{\ttfamily alpha} $= e \bar{\Phi}/ \bar{T}$ (both Gaussian and SI units) where $e$ is the proton mass,
 and $\bar{\Phi}$ and $\bar{T}$ are the normalization reference parameters discussed in section \ref{sec:normalizations}.
 The default value {\ttfamily alpha} = 1.0 corresponds to $\bar{T}$ = 1 keV and $\bar{\Phi}$ = 1 kV.
@@ -555,7 +555,7 @@ The default value {\ttfamily alpha} = 1.0 also corresponds to $\bar{T}$ = 1 eV a
 \param{nu\_n}
 {real}
 {8.330e-3}
-{Whenever {\ttfamily RHSMode} == 1}
+{Whenever \parlink{RHSMode} == 1}
 {Dimensionless collisionality at the reference parameters:
 \begin{equation}
 \mbox{\ttfamily nu\_n} = \bar{\nu} \frac{\bar{R}}{\bar{v}},
@@ -578,8 +578,8 @@ $\bar{m}$ = proton mass, $\bar{n}$ = $10^{20}$ m$^{-3}$, $\bar{T}$ = 1 keV, and 
 \param{nuPrime}
 {real}
 {1.0}
-{Only when {\ttfamily RHSMode} == 3.}
-{Dimensionless collisionality used in place of {\ttfamily nHats}, {\ttfamily THats}, {\ttfamily mHats}, {\ttfamily Zs}, and {\ttfamily nu\_n} for computing monoenergetic transport coefficients.
+{Only when \parlink{RHSMode} == 3.}
+{Dimensionless collisionality used in place of \parlink{nHats}, \parlink{THats}, \parlink{mHats}, \parlink{Zs}, and \parlink{nu\_n} for computing monoenergetic transport coefficients.
 See section \ref{sec:monoenergetic} for more details.}
 
 \myhrule
@@ -587,7 +587,7 @@ See section \ref{sec:monoenergetic} for more details.}
 \param{EStar}
 {real}
 {0.0}
-{Only when {\ttfamily RHSMode} == 3.}
+{Only when \parlink{RHSMode} == 3.}
 {Normalized radial electric field used in place of {\ttfamily dPhiHatdXXX} for computing monoenergetic transport coefficients.
 See section \ref{sec:monoenergetic} for more details.}
 
@@ -596,7 +596,7 @@ See section \ref{sec:monoenergetic} for more details.}
 \param{EParallelHat}
 {real}
 {0.0}
-{Whenever {\ttfamily RHSMode} == 1}
+{Whenever \parlink{RHSMode} == 1}
 {Inductive parallel electric field:
 \begin{equation}
 \mbox{\ttfamily EParallelHat} = \left< \vect{E}\cdot\vect{B}\right> \frac{\bar{R}}{\bar{\Phi}\bar{B}}
@@ -610,12 +610,12 @@ quantities with a bar are the normalization reference parameters discussed in se
 \param{dPhiHatdpsiHat}
 {real}
 {0.0}
-{Whenever {\ttfamily RHSMode} == 1 and {\ttfamily inputRadialCoordinateForGradients} == 0}
+{Whenever \parlink{RHSMode} == 1 and \parlink{inputRadialCoordinateForGradients} == 0}
 {The derivative of the electrostatic potential with respect to the radial coordinate $\hat{\psi}$,
 i.e. the radial electric field up to a constant.
-Notice that exactly 1 of the 4 variables {\ttfamily dPhiHatdpsiHat}, {\ttfamily dPhiHatdpsiN}, {\ttfamily dPhiHatdrHat}, and {\ttfamily dPhiHatdrN}
+Notice that exactly 1 of the 4 variables \parlink{dPhiHatdpsiHat}, \parlink{dPhiHatdpsiN}, \parlink{dPhiHatdrHat}, and \parlink{dPhiHatdrN}
 will be used, depending on\\
-{\ttfamily inputRadialCoordinateForGradients}.
+\parlink{inputRadialCoordinateForGradients}.
 }
 
 \myhrule
@@ -623,12 +623,12 @@ will be used, depending on\\
 \param{dPhiHatdpsiN}
 {real}
 {0.0}
-{Whenever {\ttfamily RHSMode} == 1 and {\ttfamily inputRadialCoordinateForGradients} == 1}
+{Whenever \parlink{RHSMode} == 1 and \parlink{inputRadialCoordinateForGradients} == 1}
 {The derivative of the electrostatic potential with respect to the radial coordinate $\psi_N$,
 i.e. the radial electric field up to a constant.
-Notice that exactly 1 of the 4 variables {\ttfamily dPhiHatdpsiHat}, {\ttfamily dPhiHatdpsiN}, {\ttfamily dPhiHatdrHat}, and {\ttfamily dPhiHatdrN}
+Notice that exactly 1 of the 4 variables \parlink{dPhiHatdpsiHat}, \parlink{dPhiHatdpsiN}, \parlink{dPhiHatdrHat}, and \parlink{dPhiHatdrN}
 will be used, depending on\\
-{\ttfamily inputRadialCoordinateForGradients}.
+\parlink{inputRadialCoordinateForGradients}.
 }
 
 \myhrule
@@ -636,12 +636,12 @@ will be used, depending on\\
 \param{dPhiHatdrHat}
 {real}
 {0.0}
-{Whenever {\ttfamily RHSMode} == 1 and {\ttfamily inputRadialCoordinateForGradients} == 2}
+{Whenever \parlink{RHSMode} == 1 and \parlink{inputRadialCoordinateForGradients} == 2}
 {The derivative of the electrostatic potential with respect to the radial coordinate $\hat{r}$,
 i.e. the radial electric field up to a constant.
-Notice that exactly 1 of the 4 variables {\ttfamily dPhiHatdpsiHat}, {\ttfamily dPhiHatdpsiN}, {\ttfamily dPhiHatdrHat}, and {\ttfamily dPhiHatdrN}
+Notice that exactly 1 of the 4 variables \parlink{dPhiHatdpsiHat}, \parlink{dPhiHatdpsiN}, \parlink{dPhiHatdrHat}, and \parlink{dPhiHatdrN}
 will be used, depending on\\
-{\ttfamily inputRadialCoordinateForGradients}.
+\parlink{inputRadialCoordinateForGradients}.
 }
 
 \myhrule
@@ -649,12 +649,12 @@ will be used, depending on\\
 \param{dPhiHatdrN}
 {real}
 {0.0}
-{Whenever {\ttfamily RHSMode} == 1 and {\ttfamily inputRadialCoordinateForGradients} == 3}
+{Whenever \parlink{RHSMode} == 1 and \parlink{inputRadialCoordinateForGradients} == 3}
 {The derivative of the electrostatic potential with respect to the radial coordinate $r_N$,
 i.e. the radial electric field up to a constant.
-Notice that exactly 1 of the 4 variables {\ttfamily dPhiHatdpsiHat}, {\ttfamily dPhiHatdpsiN}, {\ttfamily dPhiHatdrHat}, and {\ttfamily dPhiHatdrN}
+Notice that exactly 1 of the 4 variables \parlink{dPhiHatdpsiHat}, \parlink{dPhiHatdpsiN}, \parlink{dPhiHatdrHat}, and \parlink{dPhiHatdrN}
 will be used, depending on\\
-{\ttfamily inputRadialCoordinateForGradients}.
+\parlink{inputRadialCoordinateForGradients}.
 }
 
 
@@ -687,7 +687,7 @@ These issues are detailed in section III of Ref \cite{sfincsPaper}.
 
 {\setlength{\parindent}{0cm}
 
-{\ttfamily constraintScheme} = -1: Automatic. If {\ttfamily collisionOperator}==0 then {\ttfamily constraintScheme} will be set to 1, 
+{\ttfamily constraintScheme} = -1: Automatic. If \parlink{collisionOperator}==0 then {\ttfamily constraintScheme} will be set to 1, 
 otherwise {\ttfamily constraintScheme} will be set to 2.\\
 
 {\ttfamily constraintScheme} = 0: No constraints.\\
@@ -704,7 +704,7 @@ You should set {\ttfamily constraintScheme} to -1 unless you know what you are d
 \param{includeXDotTerm}
 {Boolean}
 {\true}
-{Whenever {\ttfamily RHSMode} $<3$ and the radial electric field is nonzero.}
+{Whenever \parlink{RHSMode} $<3$ and the radial electric field is nonzero.}
 {Whether or not to include the term in the kinetic equation corresponding to a change
 in speed proportional to the radial electric field.  This term is given by $\dot{x}$ in
 equation (17) of \cite{sfincsPaper}.}
@@ -714,7 +714,7 @@ equation (17) of \cite{sfincsPaper}.}
 \param{includeElectricFieldTermInXiDot}
 {Boolean}
 {\true}
-{Whenever {\ttfamily RHSMode} $<3$ and the radial electric field is nonzero.}
+{Whenever \parlink{RHSMode} $<3$ and the radial electric field is nonzero.}
 {Whether or not to include the term in the kinetic equation corresponding to a change
 in pitch angle $\xi$ proportional to the radial electric field.  This term is given by the last line of
 equation (17) of \cite{sfincsPaper}.}
@@ -724,7 +724,7 @@ equation (17) of \cite{sfincsPaper}.}
 \param{useDKESExBDrift}
 {Boolean}
 {\false}
-{Whenever {\ttfamily RHSMode} $<3$ and the radial electric field is nonzero.}
+{Whenever \parlink{RHSMode} $<3$ and the radial electric field is nonzero.}
 {If true, the $\vect{E}\times\vect{B}$ drift term 
 multiplying $\partial f/\partial \theta$ and  $\partial f/\partial \zeta$
 is taken to be $\vect{E}\times\vect{B}\cdot \nabla (\theta \;\mbox{or} \;\zeta) / \left< B^2 \right>$
@@ -745,7 +745,7 @@ instead of
 \param{includePhi1}
 {Boolean}
 {\false}
-{Whenever {\ttfamily RHSMode} == 1.}
+{Whenever \parlink{RHSMode} == 1.}
 {If false, no terms involving $\Phi_1 = \Phi-\left<\Phi\right>$ are included in the kinetic equation,
 and the quasineutrality equation is not solved.  If true, then terms involving $\Phi_1$ are included
 in the kinetic equation, and the quasineutrality equation is solved at each point on the flux surface.
@@ -757,11 +757,11 @@ associated with the radial $\vect{E}\times\vect{B}$ drift.}
 \param{nonlinear}
 {Boolean}
 {\false}
-{Whenever {\ttfamily RHSMode} == 1.}
+{Whenever \parlink{RHSMode} == 1.}
 {If true, certain terms that are nonlinear in the unknowns will be included in the kinetic equation.
 Newton's method will be used to solve the nonlinear system, meaning that the usual linear solve in \sfincs~must
 be iterated several times.
-Running with {\ttfamily nonlinear}=\true requires {\ttfamily includePhi1}=\true
+Running with {\ttfamily nonlinear}=\true requires \parlink{includePhi1}=\true
 }
 
 \myhrule
@@ -769,7 +769,7 @@ Running with {\ttfamily nonlinear}=\true requires {\ttfamily includePhi1}=\true
 \param{includeTemperatureEquilibrationTerm}
 {Boolean}
 {\false}
-{Whenever {\ttfamily RHSMode} == 1.}
+{Whenever \parlink{RHSMode} == 1.}
 {When true, the term $C_{ab}[ f_{Ma}, f_{Mb}]$ is included in the kinetic equation,
 i.e. collisions between the leading-order Maxwellians of different species.  This term is nonzero
 when the temperature is not the same for all species.  The resulting contribution to the non-Maxwellian
@@ -780,7 +780,7 @@ distribution function is isotropic and so does not directly give any parallel or
 \param{magneticDriftScheme}
 {integer}
 {0}
-{Whenever {\ttfamily RHSMode} == 1.}
+{Whenever \parlink{RHSMode} == 1.}
 {This variable controls the poloidal and magnetic drifts, and does not affect the radial magnetic drift.
 THIS FUNCTIONALITY IS WORK IN PROGRESS, AND RESULTS ARE BUGGY WHEN THIS VARIABLE IS NONZERO.\\
 
@@ -812,7 +812,7 @@ need to adjust {\ttfamily solverTolerance}.  The other parameters in this nameli
 {15}
 {Always}
 {Number of grid points in the poloidal angle. 
-This parameter should be odd; see {\ttfamily forceOddNthetaAndNzeta} in this namelist.
+This parameter should be odd; see \parlink{forceOddNthetaAndNzeta} in this namelist.
 Memory and time requirements DO depend strongly on this parameter.
 For stellarator calculations, this parameter can usually be in the range 15-25.
 For tokamak calculations at low collisionality, the value of this parameter may need to be higher.}
@@ -825,7 +825,7 @@ For tokamak calculations at low collisionality, the value of this parameter may 
 {15}
 {Always}
 {Number of grid points in the toroidal angle (per identical segment of the stellarator.)  
-This parameter should be odd; see {\ttfamily forceOddNthetaAndNzeta} in this namelist.
+This parameter should be odd; see \parlink{forceOddNthetaAndNzeta} in this namelist.
 Memory and time requirements DO depend strongly on this parameter.
 Set this parameter to 1 for a tokamak calculation.
 For stellarator calculations, the value of this parameter required for convergence depends strongly on
@@ -865,7 +865,7 @@ you may need to go up to 10-15.
 \param{solverTolerance}
 {real}
 {1e-6}
-{Whenever {\ttfamily useIterativeLinearSolver} == \true}
+{Whenever \parlink{useIterativeLinearSolver} == \true}
 {
 Tolerance used to define convergence of the Krylov solver.
 This parameter does not affect memory requirements but it does affect the
@@ -878,10 +878,10 @@ Occasionally you may want to ease this tolerance to 1e-5 so fewer iterations of 
 \param{NL}
 {integer}
 {4}
-{Whenever {\ttfamily collisionOperator} == 0.}
+{Whenever \parlink{collisionOperator} == 0.}
 {Number of Legendre polynomials used to represent the Rosenbluth
 potentials. This number can basically always be 4,
-since results barely change when {\ttfamily NL} is increased above this value.
+since results barely change when \parlink{NL} is increased above this value.
 Memory and time requirements do NOT depend strongly on this parameter.
 }
 
@@ -890,8 +890,8 @@ Memory and time requirements do NOT depend strongly on this parameter.
 \param{NxPotentialsPerVth}
 {real}
 {40.0}
-{Only when {\ttfamily collisionOperator} == 0 and {\ttfamily xGridScheme} $<$ 5.
-Since {\ttfamily xGridScheme} = 5 is recommended, this parameter is basically obsolete.}
+{Only when \parlink{collisionOperator} == 0 and \parlink{xGridScheme} $<$ 5.
+Since \parlink{xGridScheme} = 5 is recommended, this parameter is basically obsolete.}
 {
 Number of grid points in energy used to represent the Rosenbluth potentials
 for the original implementation of the Fokker-Planck operator described in \cite{speedGrids}.
@@ -902,8 +902,8 @@ Memory and time requirements do NOT depend strongly on this parameter.}
 \param{xMax}
 {real}
 {5.0}
-{Only when {\ttfamily collisionOperator} == 0 and {\ttfamily xGridScheme} $<$ 5.
-Since {\ttfamily xGridScheme} = 5 is recommended, this parameter is basically obsolete.}
+{Only when \parlink{collisionOperator} == 0 and \parlink{xGridScheme} $<$ 5.
+Since \parlink{xGridScheme} = 5 is recommended, this parameter is basically obsolete.}
 {
 Maximum normalized speed for the Rosenbluth potential grid
 for the original implementation of the Fokker-Planck operator described in \cite{speedGrids}.
@@ -977,16 +977,16 @@ The best value for this parameter is usually 2.}
 \param{xGridScheme}
 {integer}
 {5}
-{Whenever {\ttfamily RHSMode} is 1 or 2.}
+{Whenever \parlink{RHSMode} is 1 or 2.}
 {Discretization scheme for the speed coordinate $x$.\\
 
 {\ttfamily xGridScheme} = 1: New orthogonal polynomials with no point at $x=0$. Original treatment of Rosenbluth potentials.\\
 
 {\ttfamily xGridScheme} = 2: New orthogonal polynomials with a point at $x=0$. Original treatment of Rosenbluth potentials.\\
 
-{\ttfamily xGridScheme} = 3: Uniform finite differences on [0, {\ttfamily xMax}], forcing $f=0$ at {\ttfamily xMax}. 2-point stencil for interpolating to other grids.\\
+{\ttfamily xGridScheme} = 3: Uniform finite differences on [0, \parlink{xMax}], forcing $f=0$ at \parlink{xMax}. 2-point stencil for interpolating to other grids.\\
 
-{\ttfamily xGridScheme} = 4: Uniform finite differences on [0, {\ttfamily xMax}], forcing $f=0$ at {\ttfamily xMax}. 4-point stencil for interpolating to other grids.\\
+{\ttfamily xGridScheme} = 4: Uniform finite differences on [0, \parlink{xMax}], forcing $f=0$ at \parlink{xMax}. 4-point stencil for interpolating to other grids.\\
 
 {\ttfamily xGridScheme} = 5: New orthogonal polynomials with no point at $x=0$. New treatment of Rosenbluth potentials.\\
 
@@ -994,15 +994,15 @@ The best value for this parameter is usually 2.}
 
 The recommended value for this parameter is 5.  
 When {\ttfamily xGridScheme} = 5 or 6, then the following quantities do not matter: 
-{\ttfamily NxPotentialsPerVth}, {\ttfamily xMax}, and {\ttfamily xPotentialsGridScheme}.}
+\parlink{NxPotentialsPerVth}, \parlink{xMax}, and \parlink{xPotentialsGridScheme}.}
 
 \myhrule
 
 \param{xGrid\_k}
 {integer}
 {0}
-{Whenever {\ttfamily RHSMode} is 1 or 2 and {\ttfamily xGridScheme} = 1, 2, 5, or 6.}
-{For {\ttfamily xGridScheme} = 1, 2, 5, or 6, the distribution function will be represented in terms of polynomials $P_n(x)$
+{Whenever \parlink{RHSMode} is 1 or 2 and \parlink{xGridScheme} = 1, 2, 5, or 6.}
+{For \parlink{xGridScheme} = 1, 2, 5, or 6, the distribution function will be represented in terms of polynomials $P_n(x)$
 that are orthogonal under the weight $\int_0^\infty dx\; x^k \exp(-x^2) P_n(x) P_m(x)  \propto  \delta_{n,m}$
 where $k$ is an exponent set by the parameter {\ttfamily xGrid\_k} here.
 A good value to use is 0, 1, or 2.}
@@ -1012,8 +1012,8 @@ A good value to use is 0, 1, or 2.}
 \param{xPotentialsGridScheme}
 {integer}
 {2}
-{Whenever {\ttfamily RHSMode} is 1 or 2 and {\ttfamily xGridScheme} is $<$5.
-Since the recommended setting for {\ttfamily xGridScheme} is 5, this parameter is rarely relevant.}
+{Whenever \parlink{RHSMode} is 1 or 2 and \parlink{xGridScheme} is $<$5.
+Since the recommended setting for \parlink{xGridScheme} is 5, this parameter is rarely relevant.}
 {When an explicit grid is used for the Rosenbluth potentials, which grid and interpolation scheme to use.\\
 
 {\ttfamily xPotentialsGridScheme} = 1: Uniform grid. 5-point stencil for derivatives. 2-point stencil for interpolating to other grids.\\
@@ -1021,7 +1021,7 @@ Since the recommended setting for {\ttfamily xGridScheme} is 5, this parameter i
 {\ttfamily xPotentialsGridScheme} = 2: Uniform grid. 5-point stencil for derivatives. 4-point stencil for interpolating to other grids.\\
 
 {\ttfamily xPotentialsGridScheme} = 3: Use same grid as for distribution function, so no interpolation needed for the self-collision operator.
-  You must set {\ttfamily xGridScheme} = 3 or 4 to use this setting.  Use 2-point stencil for interpolating to other species' grids.\\
+  You must set \parlink{xGridScheme} = 3 or 4 to use this setting.  Use 2-point stencil for interpolating to other species' grids.\\
 
 {\ttfamily xPotentialsGridScheme} = 4: Same as option 3, except use a 4-point stencil for interpolating to other species' grids.\\
 
@@ -1089,7 +1089,7 @@ parameter below, since full inter-species coupling will be retained in the real 
 \param{preconditioner\_species}
 {integer}
 {1}
-{Whenever {\ttfamily useIterativeLinearSolver} = \true~and there are 2 or more species.}
+{Whenever \parlink{useIterativeLinearSolver} = \true~and there are 2 or more species.}
 {\\
 {\ttfamily preconditioner\_species} = 0: Keep all coupling between species.\\
 
@@ -1102,7 +1102,7 @@ The default value of 1 is recommended, except perhaps at high collisionality whe
 \param{preconditioner\_x}
 {integer}
 {1}
-{Whenever {\ttfamily useIterativeLinearSolver} = \true~and {\ttfamily RHSMode} = 1 or 2.}
+{Whenever \parlink{useIterativeLinearSolver} = \true~and \parlink{RHSMode} = 1 or 2.}
 {\\
 {\ttfamily preconditioner\_x} = 0: Keep full $x$ coupling.\\
 
@@ -1121,7 +1121,7 @@ The default value of 1 is strongly recommended, except perhaps at high collision
 \param{preconditioner\_x\_min\_L}
 {integer}
 {0}
-{Whenever {\ttfamily useIterativeLinearSolver} = \true~and {\ttfamily RHSMode} = 1 or 2 and {\ttfamily preconditioner\_x} $>$ 0.}
+{Whenever \parlink{useIterativeLinearSolver} = \true~and \parlink{RHSMode} = 1 or 2 and \parlink{preconditioner\_x} $>$ 0.}
 {The $x$ structure of the matrix will only be simplified for Legendre index $L$ is $\ge$ this value.
 Set {\ttfamily preconditioner\_x\_min\_L} = 0 to simplify the matrix for every $L$.
 Recommended values are 0, 1, or 2.}
@@ -1131,7 +1131,7 @@ Recommended values are 0, 1, or 2.}
 \param{preconditioner\_theta}
 {integer}
 {0}
-{Whenever {\ttfamily useIterativeLinearSolver} = \true}
+{Whenever \parlink{useIterativeLinearSolver} = \true}
 {\\
 {\ttfamily preconditioner\_theta} = 0: Keep full $\theta$ coupling.\\
 
@@ -1148,7 +1148,7 @@ The default value of 0 is strongly recommended.}
 \param{preconditioner\_theta\_min\_L}
 {integer}
 {0}
-{Whenever {\ttfamily useIterativeLinearSolver} = \true~and {\ttfamily preconditioner\_theta} $>$ 0.}
+{Whenever \parlink{useIterativeLinearSolver} = \true~and \parlink{preconditioner\_theta} $>$ 0.}
 {The $\theta$ structure of the matrix will only be simplified for Legendre index $L$ is $\ge$ this value.
 Set {\ttfamily preconditioner\_theta\_min\_L} = 0 to simplify the matrix for every $L$.
 }
@@ -1158,7 +1158,7 @@ Set {\ttfamily preconditioner\_theta\_min\_L} = 0 to simplify the matrix for eve
 \param{preconditioner\_zeta}
 {integer}
 {0}
-{Whenever {\ttfamily useIterativeLinearSolver} = \true}
+{Whenever \parlink{useIterativeLinearSolver} = \true}
 {\\
 {\ttfamily preconditioner\_zeta} = 0: Keep full $\zeta$ coupling.\\
 
@@ -1175,7 +1175,7 @@ The default value of 0 is strongly recommended.}
 \param{preconditioner\_zeta\_min\_L}
 {integer}
 {0}
-{Whenever {\ttfamily useIterativeLinearSolver} = \true~and {\ttfamily preconditioner\_zeta} $>$ 0.}
+{Whenever \parlink{useIterativeLinearSolver} = \true~and \parlink{preconditioner\_zeta} $>$ 0.}
 {The $\zeta$ structure of the matrix will only be simplified for Legendre index $L$ is $\ge$ this value.
 Set {\ttfamily preconditioner\_zeta\_min\_L} = 0 to simplify the matrix for every $L$.
 }
@@ -1185,7 +1185,7 @@ Set {\ttfamily preconditioner\_zeta\_min\_L} = 0 to simplify the matrix for ever
 \param{preconditioner\_xi}
 {integer}
 {1}
-{Whenever {\ttfamily useIterativeLinearSolver} = \true}
+{Whenever \parlink{useIterativeLinearSolver} = \true}
 {\\
 {\ttfamily preconditioner\_xi} = 0: Keep full $\xi$ coupling.\\
 
@@ -1200,7 +1200,7 @@ Either a setting of 0 or 1 can be good for this parameter.}
 \param{reusePreconditioner}
 {Boolean}
 {\true}
-{Only when {\ttfamily nonlinear} = \true}
+{Only when \parlink{nonlinear} = \true}
 {If true, the nonlinear term will not be included in the preconditioner matrix, meaning the preconditioner matrix is the same
 at every iteration, and so the preconditioner matrix only needs to be $LU$-factorized once.  If false, the preconditioner matrix
 for the Jacobian will be different at each iteration of the Newton solve, so the preconditioner needs to be $LU$-factorized at
@@ -1245,22 +1245,22 @@ in the output file.}
 \param{export\_f\_theta\_option}
 {integer}
 {2}
-{Whenever {\ttfamily export\_full\_f} or {\ttfamily export\_delta\_f} is \true}
+{Whenever \parlink{export\_full\_f} or \parlink{export\_delta\_f} is \true}
 {Controls which grid in $\theta$ is used for exporting the distribution function.\\
 
 {\ttfamily export\_f\_theta\_option} = 0: Report the distribution function on the original $\theta$ grid (with \Ntheta~points) used for solving the kinetic equation.\\
 
-{\ttfamily export\_f\_theta\_option} = 1: Interpolate to a different grid, specified by {\ttfamily export\_f\_theta}. Linear interpolation will be used.
+{\ttfamily export\_f\_theta\_option} = 1: Interpolate to a different grid, specified by \parlink{export\_f\_theta}. Linear interpolation will be used.
 No sorting of the requested values is performed.\\
 
 {\ttfamily export\_f\_theta\_option} = 2: Do not interpolate. Use the
 values of the $\theta$ grid that are closest to the values requested
-in {\ttfamily export\_f\_theta}.  Values of $\theta$ will be in
+in \parlink{export\_f\_theta}.  Values of $\theta$ will be in
 increasing order. If multiple requested values are close to the same
 grid point, the number of points returned will be less than the number
 of points requested. \\
 
-For all of these options, you can see {\ttfamily export\_f\_theta} in {\ttfamily sfincsOutput.h5} for the actual grid used in the end.
+For all of these options, you can see \parlink{export\_f\_theta} in {\ttfamily sfincsOutput.h5} for the actual grid used in the end.
 }
 
 \myhrule
@@ -1268,22 +1268,22 @@ For all of these options, you can see {\ttfamily export\_f\_theta} in {\ttfamily
 \param{export\_f\_zeta\_option}
 {integer}
 {2}
-{Whenever {\ttfamily export\_full\_f} or {\ttfamily export\_delta\_f} is \true}
+{Whenever \parlink{export\_full\_f} or \parlink{export\_delta\_f} is \true}
 {Controls which grid in $\zeta$ is used for exporting the distribution function.\\
 
 {\ttfamily export\_f\_zeta\_option} = 0: Report the distribution function on the original $\zeta$ grid (with \Nzeta~points) used for solving the kinetic equation.\\
 
-{\ttfamily export\_f\_zeta\_option} = 1: Interpolate to a different grid, specified by {\ttfamily export\_f\_zeta}. Linear interpolation will be used.
+{\ttfamily export\_f\_zeta\_option} = 1: Interpolate to a different grid, specified by \parlink{export\_f\_zeta}. Linear interpolation will be used.
 No sorting of the requested values is performed.\\
 
 {\ttfamily export\_f\_zeta\_option} = 2: Do not interpolate. Use the
 values of the $\zeta$ grid that are closest to the values requested
-in {\ttfamily export\_f\_zeta}.  Values of $\zeta$ will be in
+in \parlink{export\_f\_zeta}.  Values of $\zeta$ will be in
 increasing order. If multiple requested values are close to the same
 grid point, the number of points returned will be less than the number
 of points requested. \\
 
-For all of these options, you can see {\ttfamily export\_f\_zeta} in {\ttfamily sfincsOutput.h5} for the actual grid used in the end.
+For all of these options, you can see \parlink{export\_f\_zeta} in {\ttfamily sfincsOutput.h5} for the actual grid used in the end.
 }
 
 \myhrule
@@ -1291,8 +1291,8 @@ For all of these options, you can see {\ttfamily export\_f\_zeta} in {\ttfamily 
 \param{export\_f\_theta}
 {1D array of reals}
 {0.0}
-{Whenever {\ttfamily export\_full\_f} or {\ttfamily export\_delta\_f} is \true, and {\ttfamily export\_f\_theta\_option} $>0$.}
-{Values of $\theta$ on which you want to save the distribution function.  modulo$(\ldots, 2\pi)$ will be applied.  See {\ttfamily export\_f\_theta\_option} for details}
+{Whenever \parlink{export\_full\_f} or \parlink{export\_delta\_f} is \true, and \parlink{export\_f\_theta\_option} $>0$.}
+{Values of $\theta$ on which you want to save the distribution function.  modulo$(\ldots, 2\pi)$ will be applied.  See \parlink{export\_f\_theta\_option} for details}
 
 
 \myhrule
@@ -1300,20 +1300,20 @@ For all of these options, you can see {\ttfamily export\_f\_zeta} in {\ttfamily 
 \param{export\_f\_zeta}
 {1D array of reals}
 {0.0}
-{Whenever {\ttfamily export\_full\_f} or {\ttfamily export\_delta\_f} is \true, and {\ttfamily export\_f\_zeta\_option} $>0$.}
-{Values of $\zeta$ on which you want to save the distribution function.  modulo$(\ldots, 2\pi/\mbox{\ttfamily NPeriods})$ will be applied.  See {\ttfamily export\_f\_zeta\_option} for details}
+{Whenever \parlink{export\_full\_f} or \parlink{export\_delta\_f} is \true, and \parlink{export\_f\_zeta\_option} $>0$.}
+{Values of $\zeta$ on which you want to save the distribution function.  modulo$(\ldots, 2\pi/\mbox{\ttfamily NPeriods})$ will be applied.  See \parlink{export\_f\_zeta\_option} for details}
 
 \myhrule
 
 \param{export\_f\_xi\_option}
 {integer}
 {1}
-{Whenever {\ttfamily export\_full\_f} or {\ttfamily export\_delta\_f} is \true}
+{Whenever \parlink{export\_full\_f} or \parlink{export\_delta\_f} is \true}
 {Controls which discretization in $\xi$ is used for exporting the distribution function.\\
 
 {\ttfamily export\_f\_xi\_option} = 0: Report the distribution function as amplitudes of \Nxi~Legendre polynomials, as used internally by \sfincs~for solving the kinetic equation.\\
 
-{\ttfamily export\_f\_xi\_option} = 1: Report the distribution function on the values of $\xi$ specified by {\ttfamily export\_f\_xi}. No sorting of the requested values is performed.
+{\ttfamily export\_f\_xi\_option} = 1: Report the distribution function on the values of $\xi$ specified by \parlink{export\_f\_xi}. No sorting of the requested values is performed.
 }
 
 \myhrule
@@ -1321,7 +1321,7 @@ For all of these options, you can see {\ttfamily export\_f\_zeta} in {\ttfamily 
 \param{export\_f\_xi}
 {1D array of reals}
 {0.0}
-{Whenever {\ttfamily export\_full\_f} or {\ttfamily export\_delta\_f} is \true, and {\ttfamily export\_f\_xi\_option} = 1.}
+{Whenever \parlink{export\_full\_f} or \parlink{export\_delta\_f} is \true, and \parlink{export\_f\_xi\_option} = 1.}
 {Values of $\xi$ on which you want to save the distribution function.  Values must lie in the range $[-1,1]$.}
 
 \myhrule
@@ -1329,19 +1329,19 @@ For all of these options, you can see {\ttfamily export\_f\_zeta} in {\ttfamily 
 \param{export\_f\_x\_option}
 {integer}
 {0}
-{Whenever {\ttfamily export\_full\_f} or {\ttfamily export\_delta\_f} is \true}
+{Whenever \parlink{export\_full\_f} or \parlink{export\_delta\_f} is \true}
 {Controls which grid in $x = v/\sqrt{2T/m}$ is used for exporting the distribution function.\\
 
 {\ttfamily export\_f\_x\_option} = 0: Report the distribution function on the original $x$ grid (with \Nx~points) used for solving the kinetic equation.\\
 
-{\ttfamily export\_f\_x\_option} = 1: Interpolate to a different grid, specified by {\ttfamily export\_f\_x}.  Polynomial spectral interpolation will be used.
+{\ttfamily export\_f\_x\_option} = 1: Interpolate to a different grid, specified by \parlink{export\_f\_x}.  Polynomial spectral interpolation will be used.
   No sorting of the requested values is performed.\\
 
-{\ttfamily export\_f\_x\_option} = 2: Do not interpolate. Use the values of the internal $x$ grid that are closest to the values requested in {\ttfamily export\_f\_x}.
+{\ttfamily export\_f\_x\_option} = 2: Do not interpolate. Use the values of the internal $x$ grid that are closest to the values requested in \parlink{export\_f\_x}.
   Values of $x$ will be in increasing order. If multiple requested values are close to the same grid point, the number of
   points returned will be less than the number of points requested.\\
 
-For all of these options, you can see {\ttfamily export\_f\_x} in {\ttfamily sfincsOutput.h5} for the actual grid used in the end.
+For all of these options, you can see \parlink{export\_f\_x} in {\ttfamily sfincsOutput.h5} for the actual grid used in the end.
 }
 
 \myhrule
@@ -1349,7 +1349,7 @@ For all of these options, you can see {\ttfamily export\_f\_x} in {\ttfamily sfi
 \param{export\_f\_x}
 {1D array of reals}
 {1.0}
-{Whenever {\ttfamily export\_full\_f} or {\ttfamily export\_delta\_f} is \true, and {\ttfamily export\_f\_x\_option} $>0$.}
+{Whenever \parlink{export\_full\_f} or \parlink{export\_delta\_f} is \true, and \parlink{export\_f\_x\_option} $>0$.}
 {Values of $x$ on which you want to save the distribution function.  Values must be $\ge 0$.}
 
 
@@ -1409,10 +1409,11 @@ In this type of scan, \sfincsScan~creates a subdirectory for each value of minor
 
 
 \subsection{Parameters related only to {\ttfamily scanType} = 1 (resolution convergence scans).}
+\label{sec:scanType1Parameters}
 
 The resolution parameters discussed in section \ref{sec:resolutionParameters}
 each have 3 associated \sfincsScan~parameters
-which are used for convergence scans ({\ttfamily scanType} = 1): {\ttfamily ...MinFactor}, {\ttfamily ...MaxFactor}, and {\ttfamily ...NumRuns}.
+which are used for convergence scans (\parlink{scanType} = 1): {\ttfamily ...MinFactor}, {\ttfamily ...MaxFactor}, and {\ttfamily ...NumRuns}.
 The first two of these set the range by which the associated resolution parameter is scaled
 in a convergence scan. The {\ttfamily ...NumRuns} parameter sets the number of values tried in a
 convergence scan. The code attempts to space the values evenly in a logarithmic
@@ -1423,10 +1424,10 @@ sense, as in Matlab's 'logspace' function. For example, the following settings\\
 !ss NxiMaxFactor = 2.0\\
 !ss NxiNumRuns = 3\\
 }
-would mean the values {\ttfamily Nxi} = 10, 20, and 40 would be tried in a convergence scan.
+would mean the values \Nxi = 10, 20, and 40 would be tried in a convergence scan.
 If you don't want to scan a variable in a convergence scan, set the associated
 {\ttfamily ...NumRuns} parameter to 0, or do not include this parameter in the input file.
-For each resolution parameter ({\ttfamily Ntheta}, {\ttfamily Nzeta}, {\ttfamily Nxi}, etc.), the value itself is read by
+For each resolution parameter (\Ntheta, \Nzeta, \Nxi, etc.), the value itself is read by
 Fortran and so should not be preceded by {\ttfamily !ss}.  However the {\ttfamily ...MinFactor}, {\ttfamily ...MaxFactor}, and {\ttfamily ...NumRuns}
 quantities are read by \sfincsScan~and so must be preceded by {\ttfamily !ss}
 
@@ -1434,21 +1435,21 @@ quantities are read by \sfincsScan~and so must be preceded by {\ttfamily !ss}
 
 \ssparam{NthetaMaxFactor}
 {real}
-{Only when \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Only when \sfincsScan~is run with \parlink{scanType} = 1.}
 {Maximum factor by which \Ntheta~will be multiplied in a convergence scan.}
 
 \myhrule
 
 \ssparam{NthetaMinFactor}
 {real}
-{Only when \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Only when \sfincsScan~is run with \parlink{scanType} = 1.}
 {Minimum factor by which \Ntheta~will be multiplied in a convergence scan.}
 
 \myhrule
 
 \ssparam{NthetaNumRuns}
 {integer}
-{Only when \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Only when \sfincsScan~is run with \parlink{scanType} = 1.}
 {Maximum number of values of \Ntheta~which will be used in a convergence scan.  Only odd integers can be used
 for \Ntheta, so the actual number of \Ntheta~values used in the scan may be less than {\ttfamily NthetaNumRuns}.}
 
@@ -1456,21 +1457,21 @@ for \Ntheta, so the actual number of \Ntheta~values used in the scan may be less
 
 \ssparam{NzetaMaxFactor}
 {real}
-{Only when \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Only when \sfincsScan~is run with \parlink{scanType} = 1.}
 {Maximum factor by which \Nzeta~will be multiplied in a convergence scan.}
 
 \myhrule
 
 \ssparam{NzetaMinFactor}
 {real}
-{Only when \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Only when \sfincsScan~is run with \parlink{scanType} = 1.}
 {Minimum factor by which \Nzeta~will be multiplied in a convergence scan.}
 
 \myhrule
 
 \ssparam{NzetaNumRuns}
 {integer}
-{Only when \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Only when \sfincsScan~is run with \parlink{scanType} = 1.}
 {Maximum number of values of \Nzeta~which will be used in a convergence scan.  Only odd integers can be used
 for \Nzeta, so the actual number of \Nzeta~values used in the scan may be less than {\ttfamily NzetaNumRuns}.}
 
@@ -1478,21 +1479,21 @@ for \Nzeta, so the actual number of \Nzeta~values used in the scan may be less t
 
 \ssparam{NxiMaxFactor}
 {real}
-{Only when \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Only when \sfincsScan~is run with \parlink{scanType} = 1.}
 {Maximum factor by which \Nxi~will be multiplied in a convergence scan.}
 
 \myhrule
 
 \ssparam{NxiMinFactor}
 {real}
-{Only when \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Only when \sfincsScan~is run with \parlink{scanType} = 1.}
 {Minimum factor by which \Nxi~will be multiplied in a convergence scan.}
 
 \myhrule
 
 \ssparam{NxiNumRuns}
 {integer}
-{Only when \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Only when \sfincsScan~is run with \parlink{scanType} = 1.}
 {Maximum number of values of \Nxi~which will be used in a convergence scan.  Only integers can be used
 for \Nxi, so the actual number of \Nxi~values used in the scan may be less than {\ttfamily NxiNumRuns}.}
 
@@ -1500,21 +1501,21 @@ for \Nxi, so the actual number of \Nxi~values used in the scan may be less than 
 
 \ssparam{NxMaxFactor}
 {real}
-{Only when \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Only when \sfincsScan~is run with \parlink{scanType} = 1.}
 {Maximum factor by which \Nx~will be multiplied in a convergence scan.}
 
 \myhrule
 
 \ssparam{NxMinFactor}
 {real}
-{Only when \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Only when \sfincsScan~is run with \parlink{scanType} = 1.}
 {Minimum factor by which \Nx~will be multiplied in a convergence scan.}
 
 \myhrule
 
 \ssparam{NxNumRuns}
 {integer}
-{Only when \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Only when \sfincsScan~is run with \parlink{scanType} = 1.}
 {Maximum number of values of \Nx~which will be used in a convergence scan.  Only integers can be used
 for \Nx, so the actual number of \Nx~values used in the scan may be less than {\ttfamily NxNumRuns}.}
 
@@ -1522,42 +1523,42 @@ for \Nx, so the actual number of \Nx~values used in the scan may be less than {\
 
 \ssparam{solverToleranceMaxFactor}
 {real}
-{Only when \sfincsScan~is run with {\ttfamily scanType} = 1.}
-{Maximum factor by which {\ttfamily solverTolerance} will be multiplied in a convergence scan.}
+{Only when \sfincsScan~is run with \parlink{scanType} = 1.}
+{Maximum factor by which \parlink{solverTolerance} will be multiplied in a convergence scan.}
 
 \myhrule
 
 \ssparam{solverToleranceMinFactor}
 {real}
-{Only when \sfincsScan~is run with {\ttfamily scanType} = 1.}
-{Minimum factor by which {\ttfamily solverTolerance} will be multiplied in a convergence scan.}
+{Only when \sfincsScan~is run with \parlink{scanType} = 1.}
+{Minimum factor by which \parlink{solverTolerance} will be multiplied in a convergence scan.}
 
 \myhrule
 
 \ssparam{solverToleranceNumRuns}
 {integer}
-{Only when \sfincsScan~is run with {\ttfamily scanType} = 1.}
-{Number of values of {\ttfamily solverTolerance} which will be used in a convergence scan.}
+{Only when \sfincsScan~is run with \parlink{scanType} = 1.}
+{Number of values of \parlink{solverTolerance} which will be used in a convergence scan.}
 
 \myhrule
 
 \ssparam{NLMaxFactor}
 {real}
-{Only when {\ttfamily collisionOperator} = 0 and \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Only when \parlink{collisionOperator} = 0 and \sfincsScan~is run with \parlink{scanType} = 1.}
 {Maximum factor by which \NL~will be multiplied in a convergence scan.}
 
 \myhrule
 
 \ssparam{NLMinFactor}
 {real}
-{Only when {\ttfamily collisionOperator} = 0 and \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Only when \parlink{collisionOperator} = 0 and \sfincsScan~is run with \parlink{scanType} = 1.}
 {Minimum factor by which \NL~will be multiplied in a convergence scan.}
 
 \myhrule
 
 \ssparam{NLNumRuns}
 {integer}
-{Only when {\ttfamily collisionOperator} = 0 and \sfincsScan~is run with {\ttfamily scanType} = 1.}
+{Only when \parlink{collisionOperator} = 0 and \sfincsScan~is run with \parlink{scanType} = 1.}
 {Maximum number of values of \NL~which will be used in a convergence scan.  Only integers can be used
 for \NL, so the actual number of \NL~values used in the scan may be less than {\ttfamily NLNumRuns}.}
 
@@ -1565,49 +1566,49 @@ for \NL, so the actual number of \NL~values used in the scan may be less than {\
 
 \ssparam{NxPotentialsPerVthMaxFactor}
 {real}
-{Only when {\ttfamily collisionOperator} = 0, {\ttfamily xGridScheme} $<$ 5, and \sfincsScan~is run with {\ttfamily scanType} = 1.
-Since the recommended value of {\ttfamily xGridScheme} is 5, this parameter is basically obsolete.}
-{Maximum factor by which {\ttfamily NxPotentialsPerVth} will be multiplied in a convergence scan.}
+{Only when \parlink{collisionOperator} = 0, \parlink{xGridScheme} $<$ 5, and \sfincsScan~is run with \parlink{scanType} = 1.
+Since the recommended value of \parlink{xGridScheme} is 5, this parameter is basically obsolete.}
+{Maximum factor by which \parlink{NxPotentialsPerVth} will be multiplied in a convergence scan.}
 
 \myhrule
 
 \ssparam{NxPotentialsPerVthMinFactor}
 {real}
-{Only when {\ttfamily collisionOperator} = 0, {\ttfamily xGridScheme} $<$ 5, and \sfincsScan~is run with {\ttfamily scanType} = 1.
-Since the recommended value of {\ttfamily xGridScheme} is 5, this parameter is basically obsolete.}
-{Minimum factor by which {\ttfamily NxPotentialsPerVth} will be multiplied in a convergence scan.}
+{Only when \parlink{collisionOperator} = 0, \parlink{xGridScheme} $<$ 5, and \sfincsScan~is run with \parlink{scanType} = 1.
+Since the recommended value of \parlink{xGridScheme} is 5, this parameter is basically obsolete.}
+{Minimum factor by which \parlink{NxPotentialsPerVth} will be multiplied in a convergence scan.}
 
 \myhrule
 
 \ssparam{NxPotentialsPerVthNumRuns}
 {integer}
-{Only when {\ttfamily collisionOperator} = 0, {\ttfamily xGridScheme} $<$ 5, and \sfincsScan~is run with {\ttfamily scanType} = 1.
-Since the recommended value of {\ttfamily xGridScheme} is 5, this parameter is basically obsolete.}
-{Number of values of {\ttfamily NxPotentialsPerVth} which will be used in a convergence scan.}
+{Only when \parlink{collisionOperator} = 0, \parlink{xGridScheme} $<$ 5, and \sfincsScan~is run with \parlink{scanType} = 1.
+Since the recommended value of \parlink{xGridScheme} is 5, this parameter is basically obsolete.}
+{Number of values of \parlink{NxPotentialsPerVth} which will be used in a convergence scan.}
 
 \myhrule
 
 \ssparam{xMaxMaxFactor}
 {real}
-{Only when {\ttfamily collisionOperator} = 0, {\ttfamily xGridScheme} $<$ 5, and \sfincsScan~is run with {\ttfamily scanType} = 1.
-Since the recommended value of {\ttfamily xGridScheme} is 5, this parameter is basically obsolete.}
-{Maximum factor by which {\ttfamily xMax} will be multiplied in a convergence scan.}
+{Only when \parlink{collisionOperator} = 0, \parlink{xGridScheme} $<$ 5, and \sfincsScan~is run with \parlink{scanType} = 1.
+Since the recommended value of \parlink{xGridScheme} is 5, this parameter is basically obsolete.}
+{Maximum factor by which \parlink{xMax} will be multiplied in a convergence scan.}
 
 \myhrule
 
 \ssparam{xMaxMinFactor}
 {real}
-{Only when {\ttfamily collisionOperator} = 0, {\ttfamily xGridScheme} $<$ 5, and \sfincsScan~is run with {\ttfamily scanType} = 1.
-Since the recommended value of {\ttfamily xGridScheme} is 5, this parameter is basically obsolete.}
-{Minimum factor by which {\ttfamily xMax} will be multiplied in a convergence scan.}
+{Only when \parlink{collisionOperator} = 0, \parlink{xGridScheme} $<$ 5, and \sfincsScan~is run with \parlink{scanType} = 1.
+Since the recommended value of \parlink{xGridScheme} is 5, this parameter is basically obsolete.}
+{Minimum factor by which \parlink{xMax} will be multiplied in a convergence scan.}
 
 \myhrule
 
 \ssparam{xMaxNumRuns}
 {integer}
-{Only when {\ttfamily collisionOperator} = 0, {\ttfamily xGridScheme} $<$ 5, and \sfincsScan~is run with {\ttfamily scanType} = 1.
-Since the recommended value of {\ttfamily xGridScheme} is 5, this parameter is basically obsolete.}
-{Number of values of {\ttfamily xMax} which will be used in a convergence scan.}
+{Only when \parlink{collisionOperator} = 0, \parlink{xGridScheme} $<$ 5, and \sfincsScan~is run with \parlink{scanType} = 1.
+Since the recommended value of \parlink{xGridScheme} is 5, this parameter is basically obsolete.}
+{Number of values of \parlink{xMax} which will be used in a convergence scan.}
 
 
 
@@ -1616,110 +1617,110 @@ Since the recommended value of {\ttfamily xGridScheme} is 5, this parameter is b
 
 In this scan of the radial electric field, the values of electric field used
 will always be uniformly (linearly) spaced.  
-Notice that exactly 1 of the 4 variables {\ttfamily dPhiHatdpsiHatMax}, {\ttfamily dPhiHatdpsiNMax}, {\ttfamily dPhiHatdrHatMax}, and {\ttfamily dPhiHatdrNMax}
+Notice that exactly 1 of the 4 variables \parlink{dPhiHatdpsiHatMax}, \parlink{dPhiHatdpsiNMax}, \parlink{dPhiHatdrHatMax}, and \parlink{dPhiHatdrNMax}
 will be used, depending on\\
-{\ttfamily inputRadialCoordinateForGradients}.
+\parlink{inputRadialCoordinateForGradients}.
 Similarly, exactly 1 of the 4 variables
-{\ttfamily dPhiHatdpsiHatMin}, {\ttfamily dPhiHatdpsiNMin}, {\ttfamily dPhiHatdrHatMin}, and {\ttfamily dPhiHatdrNMin}
+\parlink{dPhiHatdpsiHatMin}, \parlink{dPhiHatdpsiNMin}, \parlink{dPhiHatdrHatMin}, and \parlink{dPhiHatdrNMin}
 will be used.
 
 \myhrule
 
 \ssparam{NErs}
 {integer}
-{Only when \sfincsScan~is run with {\ttfamily scanType} = 2.}
+{Only when \sfincsScan~is run with \parlink{scanType} = 2.}
 {Number of values of radial electric field to consider in a scan.}
 
 \myhrule
 
 \ssparam{dPhiHatdpsiHatMax}
 {real}
-{Only when {\ttfamily inputRadialCoordinateForGradients} = 0 and \sfincsScan~is run with {\ttfamily scanType} = 2.}
-{Maximum value of {\ttfamily dPhiHatdpsiHat} to use in the scan.}
+{Only when \parlink{inputRadialCoordinateForGradients} = 0 and \sfincsScan~is run with \parlink{scanType} = 2.}
+{Maximum value of \parlink{dPhiHatdpsiHat} to use in the scan.}
 
 \myhrule
 
 \ssparam{dPhiHatdpsiHatMin}
 {real}
-{Only when {\ttfamily inputRadialCoordinateForGradients} = 0 and \sfincsScan~is run with {\ttfamily scanType} = 2.}
-{Minimum value of {\ttfamily dPhiHatdpsiHat} to use in the scan.}
+{Only when \parlink{inputRadialCoordinateForGradients} = 0 and \sfincsScan~is run with \parlink{scanType} = 2.}
+{Minimum value of \parlink{dPhiHatdpsiHat} to use in the scan.}
 
 \myhrule
 
 \ssparam{dPhiHatdpsiNMax}
 {real}
-{Only when {\ttfamily inputRadialCoordinateForGradients} = 1 and \sfincsScan~is run with {\ttfamily scanType} = 2.}
-{Maximum value of {\ttfamily dPhiHatdpsiN} to use in the scan.}
+{Only when \parlink{inputRadialCoordinateForGradients} = 1 and \sfincsScan~is run with \parlink{scanType} = 2.}
+{Maximum value of \parlink{dPhiHatdpsiN} to use in the scan.}
 
 \myhrule
 
 \ssparam{dPhiHatdpsiNMin}
 {real}
-{Only when {\ttfamily inputRadialCoordinateForGradients} = 1 and \sfincsScan~is run with {\ttfamily scanType} = 2.}
-{Minimum value of {\ttfamily dPhiHatdpsiN} to use in the scan.}
+{Only when \parlink{inputRadialCoordinateForGradients} = 1 and \sfincsScan~is run with \parlink{scanType} = 2.}
+{Minimum value of \parlink{dPhiHatdpsiN} to use in the scan.}
 
 \myhrule
 
 \ssparam{dPhiHatdrHatMax}
 {real}
-{Only when {\ttfamily inputRadialCoordinateForGradients} = 2 and \sfincsScan~is run with {\ttfamily scanType} = 2.}
-{Maximum value of {\ttfamily dPhiHatdrHat} to use in the scan.}
+{Only when \parlink{inputRadialCoordinateForGradients} = 2 and \sfincsScan~is run with \parlink{scanType} = 2.}
+{Maximum value of \parlink{dPhiHatdrHat} to use in the scan.}
 
 \myhrule
 
 \ssparam{dPhiHatdrHatMin}
 {real}
-{Only when {\ttfamily inputRadialCoordinateForGradients} = 2 and \sfincsScan~is run with {\ttfamily scanType} = 2.}
-{Minimum value of {\ttfamily dPhiHatdrHat} to use in the scan.}
+{Only when \parlink{inputRadialCoordinateForGradients} = 2 and \sfincsScan~is run with \parlink{scanType} = 2.}
+{Minimum value of \parlink{dPhiHatdrHat} to use in the scan.}
 
 \myhrule
 
 \ssparam{dPhiHatdrNMax}
 {real}
-{Only when {\ttfamily inputRadialCoordinateForGradients} = 3 and \sfincsScan~is run with {\ttfamily scanType} = 2.}
-{Maximum value of {\ttfamily dPhiHatdrN} to use in the scan.}
+{Only when \parlink{inputRadialCoordinateForGradients} = 3 and \sfincsScan~is run with \parlink{scanType} = 2.}
+{Maximum value of \parlink{dPhiHatdrN} to use in the scan.}
 
 \myhrule
 
 \ssparam{dPhiHatdrNMin}
 {real}
-{Only when {\ttfamily inputRadialCoordinateForGradients} = 3 and \sfincsScan~is run with {\ttfamily scanType} = 2.}
-{Minimum value of {\ttfamily dPhiHatdrN} to use in the scan.}
+{Only when \parlink{inputRadialCoordinateForGradients} = 3 and \sfincsScan~is run with \parlink{scanType} = 2.}
+{Minimum value of \parlink{dPhiHatdrN} to use in the scan.}
 
 \subsection{Parameters related only to {\ttfamily scanType} = 3 (scans of an arbitrary input parameter).}
 
 \ssparam{scanVariable}
 {string. Must be of the fortran namelist parameters that takes an integer or real value. Case-insensitive.}
-{Only when \sfincsScan~is run with {\ttfamily scanType} = 3.}
-{Name of the variable to scan in a {\ttfamily scanType} = 3 scan.}
+{Only when \sfincsScan~is run with \parlink{scanType} = 3.}
+{Name of the variable to scan in a \parlink{scanType} = 3 scan.}
 
 \myhrule
 
 \ssparam{scanVariableMax}
 {real}
-{Only when \sfincsScan~is run with {\ttfamily scanType} = 3.}
-{Maximum value of {\ttfamily scanVariable} to use in a {\ttfamily scanType} = 3 scan.}
+{Only when \sfincsScan~is run with \parlink{scanType} = 3.}
+{Maximum value of \parlink{scanVariable} to use in a \parlink{scanType} = 3 scan.}
 
 \myhrule
 
 \ssparam{scanVariableMin}
 {real}
-{Only when \sfincsScan~is run with {\ttfamily scanType} = 3.}
-{Minimum value of {\ttfamily scanVariable} to use in a {\ttfamily scanType} = 3 scan.}
+{Only when \sfincsScan~is run with \parlink{scanType} = 3.}
+{Minimum value of \parlink{scanVariable} to use in a \parlink{scanType} = 3 scan.}
 
 \myhrule
 
 \ssparam{scanVariableN}
 {integer}
-{Only when \sfincsScan~is run with {\ttfamily scanType} = 3.}
-{Number of values of {\ttfamily scanVariable} to use in a {\ttfamily scanType} = 3 scan.}
+{Only when \sfincsScan~is run with \parlink{scanType} = 3.}
+{Number of values of \parlink{scanVariable} to use in a \parlink{scanType} = 3 scan.}
 
 \myhrule
 
 \ssparam{scanVariableScale}
 {string. Must be `linear', `lin', 'logarithmic', or 'log'}
-{Only when \sfincsScan~is run with {\ttfamily scanType} = 3.}
-{Whether to space the values of {\ttfamily scanVariable} in a linear or logarithmic manner.
+{Only when \sfincsScan~is run with \parlink{scanType} = 3.}
+{Whether to space the values of \parlink{scanVariable} in a linear or logarithmic manner.
 The settings `linear' and `lin' have identical behavior. 
 The settings `logarithmic' and `log' have identical behavior.}
 
@@ -1728,19 +1729,19 @@ The settings `logarithmic' and `log' have identical behavior.}
 
 \subsection{Parameters related only to {\ttfamily scanType} = 4 or 5 (radial scans).}
 
-Notice that exactly 1 of the 4 variables {\ttfamily psiHat\_max}, {\ttfamily psiN\_max}, {\ttfamily rHat\_max}, and {\ttfamily rN\_max}
+Notice that exactly 1 of the 4 variables \parlink{psiHat\_max}, \parlink{psiN\_max}, \parlink{rHat\_max}, and \parlink{rN\_max}
 will be used, depending on
-{\ttfamily inputRadialCoordinate}.
+\parlink{inputRadialCoordinate}.
 Similarly, exactly 1 of the 4 variables
-{\ttfamily psiHat\_min}, {\ttfamily psiN\_min}, {\ttfamily rHat\_min}, and {\ttfamily rN\_min}
+\parlink{psiHat\_min}, \parlink{psiN\_min}, \parlink{rHat\_min}, and \parlink{rN\_min}
 will be used.
 
 \myhrule
 
 \ssparam{profilesScheme}
 {integer}
-{Only when \sfincsScan~is run with {\ttfamily scanType} = 4 or 5.}
-{How to specify the profiles of density, temperature, and (when  {\ttfamily scanType} = 5)
+{Only when \sfincsScan~is run with \parlink{scanType} = 4 or 5.}
+{How to specify the profiles of density, temperature, and (when  \parlink{scanType} = 5)
 the range of radial electric field to consider.\\
 
 {\ttfamily profilesScheme} = 1: Read a `{\ttfamily profiles}' file which contains the input profiles on a grid in one of the 4 available radial coordinates.\\
@@ -1752,9 +1753,9 @@ the range of radial electric field to consider.\\
 
 \ssparam{Nradius}
 {integer}
-{Only when \sfincsScan~is run with {\ttfamily scanType} = 4 or 5.}
+{Only when \sfincsScan~is run with \parlink{scanType} = 4 or 5.}
 {Maximum number of values of minor radius to consider in the scan.
-Depending on {\ttfamily geometryScheme} and {\ttfamily VMECRadialOption},
+Depending on \parlink{geometryScheme} and \parlink{VMECRadialOption},
 it may be that only surfaces available in the magnetic equilibrium file will be
 used, in which case fewer than {\ttfamily Nradius} radii may be used.}
 
@@ -1762,57 +1763,57 @@ used, in which case fewer than {\ttfamily Nradius} radii may be used.}
 
 \ssparam{psiHat\_max}
 {real}
-{Only when {\ttfamily inputRadialCoordinate} = 0 and \sfincsScan~is run with {\ttfamily scanType} = 4 or 5.}
-{Maximum value of {\ttfamily psiHat} to use in the scan.}
+{Only when \parlink{inputRadialCoordinate} = 0 and \sfincsScan~is run with \parlink{scanType} = 4 or 5.}
+{Maximum value of \parlink{psiHat} to use in the scan.}
 
 \myhrule
 
 \ssparam{psiHat\_min}
 {real}
-{Only when {\ttfamily inputRadialCoordinate} = 0 and \sfincsScan~is run with {\ttfamily scanType} = 4 or 5.}
-{Minimum value of {\ttfamily psiHat} to use in the scan.}
+{Only when \parlink{inputRadialCoordinate} = 0 and \sfincsScan~is run with \parlink{scanType} = 4 or 5.}
+{Minimum value of \parlink{psiHat} to use in the scan.}
 
 \myhrule
 
 \ssparam{psiN\_max}
 {real}
-{Only when {\ttfamily inputRadialCoordinate} = 1 and \sfincsScan~is run with {\ttfamily scanType} = 4 or 5.}
-{Maximum value of {\ttfamily psiN} to use in the scan.}
+{Only when \parlink{inputRadialCoordinate} = 1 and \sfincsScan~is run with \parlink{scanType} = 4 or 5.}
+{Maximum value of \parlink{psiN} to use in the scan.}
 
 \myhrule
 
 \ssparam{psiN\_min}
 {real}
-{Only when {\ttfamily inputRadialCoordinate} = 1 and \sfincsScan~is run with {\ttfamily scanType} = 4 or 5.}
-{Minimum value of {\ttfamily psiN} to use in the scan.}
+{Only when \parlink{inputRadialCoordinate} = 1 and \sfincsScan~is run with \parlink{scanType} = 4 or 5.}
+{Minimum value of \parlink{psiN} to use in the scan.}
 
 \myhrule
 
 \ssparam{rHat\_max}
 {real}
-{Only when {\ttfamily inputRadialCoordinate} = 2 and \sfincsScan~is run with {\ttfamily scanType} = 4 or 5.}
-{Maximum value of {\ttfamily rHat} to use in the scan.}
+{Only when \parlink{inputRadialCoordinate} = 2 and \sfincsScan~is run with \parlink{scanType} = 4 or 5.}
+{Maximum value of \parlink{rHat} to use in the scan.}
 
 \myhrule
 
 \ssparam{rHat\_min}
 {real}
-{Only when {\ttfamily inputRadialCoordinate} = 2 and \sfincsScan~is run with {\ttfamily scanType} = 4 or 5.}
-{Minimum value of {\ttfamily rHat} to use in the scan.}
+{Only when \parlink{inputRadialCoordinate} = 2 and \sfincsScan~is run with \parlink{scanType} = 4 or 5.}
+{Minimum value of \parlink{rHat} to use in the scan.}
 
 \myhrule
 
 \ssparam{rN\_max}
 {real}
-{Only when {\ttfamily inputRadialCoordinate} = 3 and \sfincsScan~is run with {\ttfamily scanType} = 4 or 5.}
-{Maximum value of {\ttfamily rN} to use in the scan.}
+{Only when \parlink{inputRadialCoordinate} = 3 and \sfincsScan~is run with \parlink{scanType} = 4 or 5.}
+{Maximum value of \parlink{rN} to use in the scan.}
 
 \myhrule
 
 \ssparam{rN\_min}
 {real}
-{Only when {\ttfamily inputRadialCoordinate} = 3 and \sfincsScan~is run with {\ttfamily scanType} = 4 or 5.}
-{Minimum value of {\ttfamily rN} to use in the scan.}
+{Only when \parlink{inputRadialCoordinate} = 3 and \sfincsScan~is run with \parlink{scanType} = 4 or 5.}
+{Minimum value of \parlink{rN} to use in the scan.}
 
 
 \section{\PETSc~commands}

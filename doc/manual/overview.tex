@@ -58,6 +58,9 @@ The code takes advantage of modern algorithms (GMRES) and parallelized libraries
 Efficient representation of velocity space is achieved using a pseudospectral method based upon non-classical orthogonal polynomials. \cite{speedGrids}
 
 \item
+The electrostatic potential can either be taken to be constant or non-constant on a flux surface.
+
+\item
 Optional nonlinear terms in the kinetic equation (involving both the non-Maxwellian distribution function and poloidal/toroidal electric field) can be included using Newton's method. 
 
 \end{itemize}
@@ -93,8 +96,8 @@ from a {\ttfamily vmec wout}
 file, or from the {\ttfamily .bc} format Boozer-coordinate data files used at the Max Planck Institute for Plasma Physics (IPP).
 A general analytic model for the magnetic field is also available, given by equation (\ref{eq:Bmodel}),
 as are several analytic models for LHD and W7-X in which 3 or 4 Fourier components are retained.
-The primary switch for controlling the magnetic geometry in \sfincs~is the {\ttfamily geometryScheme} parameter
-in the {\ttfamily geometryParameters} input namelist.
+The primary switch for controlling the magnetic geometry in \sfincs~is the \parlink{geometryScheme} parameter
+in the {\ttfamily \hyperref[sec:geometryParameters]{geometryParameters}} input namelist.
 For more details about geometry options in \sfincs, see section \ref{sec:geometryParameters}.
 
 \section{GMRES/KSP and preconditioning}
@@ -159,15 +162,6 @@ We enthusiastically welcome any contributions to the code or documentation.
 For write permission to the repository, or to report any bugs, provide feedback, or ask questions, contact Matt Landreman at
 \href{mailto:matt.landreman@gmail.com}{\nolinkurl{matt.landreman@gmail.com} }
 
-%\begin{figure}[htbp]
-%\begin{center}
-%%\includegraphics[width=1.0\textwidth]{poloidal_cross-sections.pdf}
-%\mycaption{Trajectories of trapped particles.  (a) In tokamaks and omnigenous stellarators,
-%all collisionless trajectories are confined.  (b) In contrast, trapped particles in other stellarators
-%may have a radial drift that does not average to zero.
-%\label{fig:poloidal_cross_sections}}
-%\end{center}
-%\end{figure}
 
 
 
