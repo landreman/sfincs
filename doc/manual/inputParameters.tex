@@ -1403,7 +1403,15 @@ In this type of scan, \sfincsScan~creates a subdirectory for each value of minor
 {\ttfamily scanType} = 2 scan is run in each of these subdirectories.
 \\
 
-{\ttfamily scanType} = 21: Read in a list of requested runs from a file {\ttfamily runspec.dat}. See \path{sfincs/fortran/utils/sfincsScan_21} for an example file.
+{\ttfamily scanType} = 21: Read in a list of requested runs from a
+file {\ttfamily runspec.dat}. See
+\path{sfincs/fortran/utils/sfincsScan_21} for an example file. If the
+file has a different name than {\ttfamily runspec.dat}, for instance
+{\ttfamily thefilename.dat}, this name can be
+specified by adding the line\\
+{\ttfamily
+!ss runSpecFile = thefilename.dat\\
+}
 }
 
 
