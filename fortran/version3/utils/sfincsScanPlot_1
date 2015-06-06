@@ -7,13 +7,28 @@ outputFilename = "sfincsOutput.h5"
 hideRepeatedScales = True
 #hideRepeatedScales = False
 
+import matplotlib
 import matplotlib.pyplot as plt
 import h5py
 import numpy
 import inspect, math, os
 import pickle
+import sys
 
 print "This is "+ inspect.getfile(inspect.currentframe())
+
+makePDF = False
+for arg in sys.argv:
+   if arg.lower()=='pdf':
+      makePDF = True
+
+if makePDF:
+   matplotlib.use('PDF')
+   # Change default font size
+   font = {'size':6}
+   matplotlib.rc('font', **font)
+   matplotlib.rc('lines',markeredgewidth=0,markersize=3,linewidth=0.5)
+   matplotlib.rc('axes',linewidth=0.7)
 
 numRuns = 0
 Nthetas = []
@@ -543,3 +558,7 @@ outputFile.close()
 if len(sys.argv) == 1:
    plt.show()
 
+if makePDF:
+   print "Saving PDF"
+   plt.savefig('sfincsScanPlot_1.pdf', orientation = 'landscape', papertype='letter')
+   #plt.savefig('sfincsScanPlot_1.pdf', orientation = 'landscape', papertype='letter',bbox_inches='tight',pad_inches=0)
