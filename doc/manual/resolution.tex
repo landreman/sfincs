@@ -126,9 +126,17 @@ showing the results of \sfincsScan~and \sfincsScanPlot~for the example
 In this figure, a very large number of runs are included in the scan,
 more than you would likely include in routine use of the code.
 The red vertical lines emphasize the ``base case'' resolution parameters.
+In each figure the spread is printed, defined as the maximum value $-$ minimum value,
+divided by the value half-way between maximum and minimum.
+If some runs have resolution below the base resolution,
+the spread is also computed and printed
+excluding runs below the base case resolution. (This is the second percentage printed in each plot,
+and is usually more important than the first spread percentage.)
 For all parameters scanned, the physical output quantities (particle flux, heat flux, etc)
-do not visibly change (on the scale of the plots) when any of the resolution parameters
-are increased beyond the base case value.  Thus, the results in the base case are well converged,
+do not visibly change on the scale of the plots when any of the resolution parameters
+are increased beyond the base case value.  Indeed, the spread for each output quantity is $\le$ 3.5\%
+when any resolution parameter is increased.
+Thus, the results in the base case are well converged,
 and so we can believe the results.
 Observe in the figure that the output quantities tend to oscillate when \Nxi~is incremented by 1 and insufficient
 \Nxi~is used. Results for even and odd \Nxi~converge to the same value, as one would hope.
@@ -148,7 +156,8 @@ and so a more typical routine scan would look like figure \ref{fig:convergence2}
 This scan is for a pure hydrogen plasma in the W7-X standard configuration, using \parlink{rN} = 0.19,
 $n_e$ = $10^{20}$ m$^{-3}$, $T_i$ = 3.6 keV, and $T_e$ = 5.5 keV.
 Notice the vertical scales in figure \ref{fig:convergence2} have suppressed zeros.
-For all of the physical output quantities, the results change by no more than a few percent when each resolution
+For all of the physical output quantities, the spread beyond the base case is $\le$ 3.4\%,
+i.e. results change by no more than this percentage when each resolution
 parameter is increased by 50\%. Hence we can conclude that 
 the results are suitably converged at the base case resolution parameters.
 The \sfincs~resolution parameters and \sfincsScan~parameters used for this scan were as follows:\\

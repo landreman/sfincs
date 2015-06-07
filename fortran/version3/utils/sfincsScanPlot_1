@@ -14,6 +14,7 @@ import numpy
 import inspect, math, os
 import pickle
 import sys
+from mpl_toolkits.axes_grid.anchored_artists import AnchoredText
 
 print "This is "+ inspect.getfile(inspect.currentframe())
 
@@ -503,10 +504,26 @@ linespec = '.-'
 
 for iQuantity in range(numQuantities):
     for iParameter in range(numParameters):
-        plt.subplot(numRows,numCols,iParameter+1+(iQuantity)*numParameters)
+        ax = plt.subplot(numRows,numCols,iParameter+1+(iQuantity)*numParameters)
         xdata.append(abscissae[iParameter])
         ydata.append(quantities[iParameter][:,iQuantity])
         plt.plot(xdata[-1],ydata[-1],linespec)
+
+        # Add annotation showing the relative spread in the result:
+        avg = abs(max(ydata[-1])+min(ydata[-1]))/2
+        relVariation = (max(ydata[-1])-min(ydata[-1]))/avg
+        label = 'spread='+("%.1f" % (relVariation*100))+'%'
+        if min(xdata[-1])<convergeds[iParameter] and max(xdata[-1]) > convergeds[iParameter]:
+           ydata2 = []
+           for i in range(len(xdata[-1])):
+              if xdata[-1][i] >= convergeds[iParameter]:
+                 ydata2.append(ydata[-1][i])
+           avg = abs(max(ydata2)+min(ydata2))/2
+           relVariation = (max(ydata2)-min(ydata2))/avg
+           label = label+', '+("%.1f" % (relVariation*100))+'% above base'
+        at = AnchoredText(label,loc=1,frameon=False,prop=dict(size='x-small'))
+        ax.add_artist(at)
+
         if iQuantity==numQuantities-1:
             xlabels.append(parametersToVary[iParameter])
             plt.xlabel(xlabels[-1])
