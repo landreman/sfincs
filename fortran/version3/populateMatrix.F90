@@ -1652,22 +1652,18 @@
           ! Add a heat source and a particle source.
           
           L=0
-          do ix=ixMin,Nx
+          do ix = ixMin,Nx
              xPartOfSource1 = (x2(ix)-5/two)*exp(-x2(ix)) ! Provides particles but no heat
              xPartOfSource2 = (x2(ix)-3/two)*exp(-x2(ix)) ! Provides heat but no particles
-             do itheta=ithetaMin,ithetaMax
+             do itheta = ithetaMin,ithetaMax
                 do izeta = izetaMin,izetaMax
                    do ispecies = 1,Nspecies
                       rowIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
                       
                       colIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)
-                      !call MatSetValueSparse(matrix, rowIndex, colIndex, xPartOfSource1 / (BHat(itheta,izeta) ** 2), &
-                      !     ADD_VALUES, ierr)
                       call MatSetValueSparse(matrix, rowIndex, colIndex, xPartOfSource1, ADD_VALUES, ierr)
                       
                       colIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)
-                      !call MatSetValueSparse(matrix, rowIndex, colIndex, xPartOfSource2 / (BHat(itheta,izeta) ** 2), &
-                      !     ADD_VALUES, ierr)
                       call MatSetValueSparse(matrix, rowIndex, colIndex, xPartOfSource2, ADD_VALUES, ierr)
                    end do
                 end do
@@ -1677,14 +1673,12 @@
        case (2)
           ! Add a L=0 source (which is constant on the flux surface) at each x.
           L=0
-          do ix=ixMin,Nx
-             do itheta=ithetaMin,ithetaMax
+          do ix = ixMin,Nx
+             do itheta = ithetaMin,ithetaMax
                 do izeta = izetaMin,izetaMax
                    do ispecies = 1,Nspecies
                       rowIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
                       colIndex = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)
-                      !call MatSetValue(matrix, rowIndex, colIndex, one / (BHat(itheta,izeta) ** 2), &
-                      !     ADD_VALUES, ierr)
                       call MatSetValue(matrix, rowIndex, colIndex, one, ADD_VALUES, ierr)
                    end do
                 end do
@@ -1713,7 +1707,6 @@
           L=0
           do itheta=1,Ntheta
              do izeta=1,Nzeta
-                !factor = 1/(BHat(itheta,izeta) * BHat(itheta,izeta))
                 factor = thetaWeights(itheta)*zetaWeights(izeta)/DHat(itheta,izeta)
 
                 do ix=1,Nx
@@ -1739,10 +1732,12 @@
           L=0
           do itheta=1,Ntheta
              do izeta=1,Nzeta
-                !factor = 1/(BHat(itheta,izeta) * BHat(itheta,izeta))
                 factor = thetaWeights(itheta)*zetaWeights(izeta)/DHat(itheta,izeta)
 
-                do ix=ixMin,Nx
+                ! I think we impose the same constraint at x=0 if there is a grid point at x=0.
+                ! But I could be convinced otherwise.
+                !do ix=ixMin,Nx
+                do ix=1,Nx
                    do ispecies = 1,Nspecies
                       colIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
                       rowIndex = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)
@@ -1753,20 +1748,22 @@
              end do
           end do
 
-          if (pointAtX0) then
-             ! Do not impose a constraint at x=0. Just set the diagonal to 1 so this row of the matrix does nothing.
-             ix = 1
-             do itheta=1,Ntheta
-                do izeta=1,Nzeta
-                   do ispecies = 1,Nspecies
-                      colIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                      rowIndex = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)
-                      call MatSetValue(matrix, rowIndex, colIndex, &
-                           one, ADD_VALUES, ierr)
-                   end do
-                end do
-             end do
-          end if
+!!$          if (pointAtX0) then
+!!$             ! Do not impose a constraint at x=0. Just set the diagonal to 1 so this row of the matrix does nothing.
+!!$
+!!$             ! MJL 20150613 I'm not sure this next bit is correct. Why is it not only setting the diagonal?
+!!$             ix = 1
+!!$             do itheta=1,Ntheta
+!!$                do izeta=1,Nzeta
+!!$                   do ispecies = 1,Nspecies
+!!$                      colIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+!!$                      rowIndex = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)
+!!$                      call MatSetValue(matrix, rowIndex, colIndex, &
+!!$                           one, ADD_VALUES, ierr)
+!!$                   end do
+!!$                end do
+!!$             end do
+!!$          end if
 
        case default
           print *,"Error! Invalid constraintScheme."
@@ -1780,8 +1777,8 @@
 
     if (whichMatrix .ne. 2 .and. includePhi1) then
        L=0
-       do itheta=ithetaMin,ithetaMax
-          do izeta=izetaMin,izetaMax
+       do itheta = ithetaMin,ithetaMax
+          do izeta = izetaMin,izetaMax
              rowIndex = getIndex(1, 1, 1, itheta, izeta, BLOCK_QN)
 
              ! Add the charge density of each species:

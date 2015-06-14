@@ -549,6 +549,7 @@
          !Rosenbluth_H, Rosenbluth_dHdxb, Rosenbluth_d2Gdxb2,masterProc)
     end if
 
+!    if (.true.) then
     if (.false.) then
        print *,"xGridScheme:",xGridScheme
        print *,"xInterpolationScheme:",xInterpolationScheme
@@ -557,6 +558,8 @@
        print *,"NxPotentials:",NxPotentials
        print *,"x:"
        print *,x
+       print *,"xWeights:"
+       print *,xWeights
        print *,"ddx:"
        do i=1,Nx
           print *,ddx(i,:)

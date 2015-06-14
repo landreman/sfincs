@@ -99,7 +99,7 @@
           !     + (x2(ix) - three/two)*dTHatdpsiHats(ispecies)/THats(ispecies))
 
           do itheta = ithetaMin,ithetaMax
-             do izeta = 1,Nzeta
+             do izeta = izetaMin,izetaMax
                 
                 !factor = Delta*nHats(ispecies)*mHat*sqrtMHat &
                 !     /(2*pi*sqrtpi*Zs(ispecies)*psiAHat*(BHat(itheta,izeta)**3)*sqrtTHat) &
@@ -162,7 +162,7 @@
           factor = alpha*Zs(ispecies)*x(ix)*exp(-x2(ix))*EParallelHat &
                *nHats(ispecies)*mHats(ispecies)/(pi*sqrtpi*THats(ispecies)*THats(ispecies)*FSABHat2)
           do itheta=ithetaMin,ithetaMax
-             do izeta = 1,Nzeta
+             do izeta = izetaMin,izetaMax
                 index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
                 call VecSetValue(rhs, index, &
                      factor * BHat(itheta,izeta), INSERT_VALUES, ierr)
