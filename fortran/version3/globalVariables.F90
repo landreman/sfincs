@@ -314,7 +314,7 @@ module globalVariables
 
   PetscLogDouble :: elapsedTime
   integer :: didLinearCalculationConverge, didNonlinearCalculationConverge
-  integer :: iterationForMatrixOutput
+  integer :: iterationForMatrixOutput, iterationForResidualOutput = 0, iterationForStateVectorOutput = 0
   logical :: firstMatrixCreation
 
   integer :: transportMatrixSize = 3

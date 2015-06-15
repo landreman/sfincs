@@ -1,12 +1,16 @@
 function sfincs_RosenbluthPotentialResponse(polynomials_a, polynomials_b, polynomials_c)
 
-global Nx x xWeights xGrid_k NL Nspecies THats mHats xGridScheme
-global Rosenbluth_H Rosenbluth_dHdxb Rosenbluth_d2Gdxb2
+global Nx x xWeights xGrid_k NL Nspecies THats mHats xGridScheme Zs nHats
+%global Rosenbluth_H Rosenbluth_dHdxb Rosenbluth_d2Gdxb2
+global RosenbluthPotentialTerms
 
 a = polynomials_a;
 b = polynomials_b;
 c = polynomials_c;
 integrationPower = 0;
+
+x2 = x.*x;
+expx2 = exp(-x2);
 
 tic
 fprintf('Computing Rosenbluth potential response matrices...  ')
@@ -22,14 +26,17 @@ tempMatrix_H = zeros(Nx);
 tempMatrix_dHdxb = zeros(Nx);
 tempMatrix_d2Gdxb2 = zeros(Nx);
 
+%{
 Rosenbluth_H = zeros(Nspecies, Nspecies, NL, Nx, Nx);
 Rosenbluth_dHdxb = zeros(Nspecies, Nspecies, NL, Nx, Nx);
 Rosenbluth_d2Gdxb2 = zeros(Nspecies, Nspecies, NL, Nx, Nx);
+%}
+RosenbluthPotentialTerms = zeros(Nspecies, Nspecies, NL, Nx, Nx);
 
 if xGridScheme==6
     ixMin = 2;
 else
-    ixMin = 3;
+    ixMin = 1;
 end
 
 for L = 0:(NL-1)
@@ -38,8 +45,9 @@ for L = 0:(NL-1)
     for iSpeciesA = 1:Nspecies
         for iSpeciesB = 1:Nspecies
             speciesFactor = sqrt(THats(iSpeciesA)*mHats(iSpeciesB) / (THats(iSpeciesB) * mHats(iSpeciesA)));
+            xbs = x*speciesFactor;
             for ix = ixMin:Nx
-                xb = x(ix) * speciesFactor;
+                xb = xbs(ix);
                 for j = 1:Nx
                     integrationPower = L+2;
                     I_2pL = integral(@integrandWithPower, 0, xb);
@@ -70,25 +78,28 @@ for L = 0:(NL-1)
 
                 end
             end
+            
+            speciesFactor1 = 3/(2*pi)*nHats(iSpeciesA) ...
+                * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) ...
+                / (THats(iSpeciesA) * sqrt(THats(iSpeciesA)*mHats(iSpeciesA))) ...
+                * THats(iSpeciesB)*mHats(iSpeciesA)/(THats(iSpeciesA)*mHats(iSpeciesB));
+            
+            temp = 1 - mHats(iSpeciesA)/mHats(iSpeciesB);
+            
+            RosenbluthPotentialTerms(iSpeciesA, iSpeciesB, L+1, :, :) = ...
+                speciesFactor1 * diag(expx2) * (-tempMatrix_H - temp*diag(xbs)*tempMatrix_dHdxb + diag(x2)*tempMatrix_d2Gdxb2) ...
+                * collocation2modal;
+          %{
             Rosenbluth_H(iSpeciesA, iSpeciesB, L+1, :, :)       = tempMatrix_H * collocation2modal;
             Rosenbluth_dHdxb(iSpeciesA, iSpeciesB, L+1, :, :)   = tempMatrix_dHdxb * collocation2modal;
             Rosenbluth_d2Gdxb2(iSpeciesA, iSpeciesB, L+1, :, :) = tempMatrix_d2Gdxb2 * collocation2modal;
-            
-            %{
-            fprintf('For iSpeceisA=%d, iSpeciesB=%d, L=%d\n',iSpeciesA,iSpeciesB,L)
-            fprintf('Rosenbluth_H=\n')
-            squeeze(Rosenbluth_H(iSpeciesA,iSpeciesB,L+1,:,:))
-            fprintf('Rosenbluth_dHdxb=\n')
-            squeeze(Rosenbluth_dHdxb(iSpeciesA,iSpeciesB,L+1,:,:))
-            fprintf('Rosenbluth_d2Gdxb2=\n')
-            squeeze(Rosenbluth_d2Gdxb2(iSpeciesA,iSpeciesB,L+1,:,:))
             %}
-        end
+ 
+       end
     end
 end
 
 fprintf('Done. Took %g sec.\n',toc)
-%collocation2modal
 
     function y = evaluatePolynomial(xx)
         % Note: this function uses 1-based indices for j

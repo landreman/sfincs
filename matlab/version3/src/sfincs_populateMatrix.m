@@ -1,17 +1,23 @@
 function matrix = sfincs_populateMatrix(whichMatrix)
 
-global THats mHats Zs nHats
+global THats mHats Zs nHats RosenbluthPotentialTerms xGridScheme
 global matrixSize Ntheta Nzeta Nxi Nx NL Nspecies pointAtX0
 global ddtheta ddtheta_preconditioner ddzeta ddzeta_preconditioner
-global ddx d2dx2 ddx_preconditioner
-global xPotentials ddxPotentials d2dx2Potentials
-global preconditioner_theta_min_L
-global preconditioner_zeta_min_L
+global ddx d2dx2 ddx_preconditioner x xWeights xMaxPotentials
+global NxPotentials xPotentials ddxPotentials d2dx2Potentials interpolateXToXPotentials
+global preconditioner_theta_min_L thetaWeights
+global preconditioner_zeta_min_L zetaWeights
 global preconditioner_species preconditioner_x preconditioner_x_min_L
-global preconditioner_xi
+global preconditioner_xi collisionOperator constraintScheme
 global BLOCK_F BLOCK_QN BLOCK_PHI1_CONSTRAINT BLOCK_DENSITY_CONSTRAINT BLOCK_PRESSURE_CONSTRAINT BLOCK_F_CONSTRAINT
 global includePhi1 nonlinear useDKESExBDrift includeXDotTerm includeElectricFieldTermInXiDot magneticDriftScheme
 global Delta alpha nu_n dPhi1Hatdtheta dPhi1Hatdzeta
+global BDotCurlB FSABHat2 dPhiHatdpsiHat force0RadialCurrentInEquilibrium
+global BHat dBHatdtheta dBHatdzeta dBHatdpsiHat
+global DHat BHat_sub_psi BHat_sub_theta BHat_sub_zeta BHat_sup_theta BHat_sup_zeta
+global dBHat_sub_psi_dtheta dBHat_sub_psi_dzeta
+global dBHat_sub_theta_dpsiHat dBHat_sub_theta_dzeta
+global dBHat_sub_zeta_dpsiHat dBHat_sub_zeta_dtheta
 
 populateMatrixTic = tic;
 
@@ -23,6 +29,7 @@ end
 
 x2 = x.*x;
 expx2 = exp(-x2);
+sqrtpi = sqrt(pi);
 
 switch whichMatrix
     case 0
@@ -61,8 +68,8 @@ for ispecies = 1:Nspecies
     nHat = nHats(ispecies);
     mHat = mHats(ispecies);
     Z = Zs(ispecies);
-    sqrtTHat = sqrt(THat);
-    sqrtMass = sqrt(mHat);
+    sqrtT = sqrt(THat);
+    sqrtm = sqrt(mHat);
     
     % -----------------------------------------
     % Add d/dtheta terms:
@@ -81,7 +88,7 @@ for ispecies = 1:Nspecies
         magneticDriftFactor = Delta*THat*DHat./(2*Z*(BHat.^3));
         if magneticDriftScheme>0
             magneticDriftSpatialPart1 = magneticDriftFactor .* (BHat_sub_zeta.*dBHatdpsiHat - BHat_sub_psi.*dBHatdzeta);
-            magneticDriftSpatialPart2 = 2*BHat.*magneticDriftFactor .* (BHat_sub_psi_dzeta - BHat_sub_zeta_dpsiHat);
+            magneticDriftSpatialPart2 = 2*BHat.*magneticDriftFactor .* (dBHat_sub_psi_dzeta - dBHat_sub_zeta_dpsiHat);
         else
             magneticDriftSpatialPart1 = zeros(Ntheta,Nzeta);
             magneticDriftSpatialPart2 = zeros(Ntheta,Nzeta);
@@ -177,7 +184,7 @@ for ispecies = 1:Nspecies
         magneticDriftFactor = Delta*THat*DHat./(2*Z*(BHat.^3));
         if magneticDriftScheme>0
             magneticDriftSpatialPart1 = magneticDriftFactor .* (-BHat_sub_theta.*dBHatdpsiHat + BHat_sub_psi.*dBHatdtheta);
-            magneticDriftSpatialPart2 = 2*BHat.*magneticDriftFactor .* (-BHat_sub_psi_dtheta + BHat_sub_theta_dpsiHat);
+            magneticDriftSpatialPart2 = 2*BHat.*magneticDriftFactor .* (-dBHat_sub_psi_dtheta + dBHat_sub_theta_dpsiHat);
         else
             magneticDriftSpatialPart1 = zeros(Ntheta,Nzeta);
             magneticDriftSpatialPart2 = zeros(Ntheta,Nzeta);
@@ -256,51 +263,95 @@ for ispecies = 1:Nspecies
         end
     end
         
+    
     % -----------------------------------------
-    % Add d/dxi terms:
+    % Add df/dxi terms:
     % -----------------------------------------
     
-    for itheta=1:Ntheta
-        spatialPartOfOldMirrorTerm = -sqrtTHat*(iota*dBHatdtheta(itheta,:)+dBHatdzeta(itheta,:))./(2*sqrtMass*BHat(itheta,:).^2);
-        spatialPartOfNewMirrorTerm = alpha*Delta*dPhiHatdpsiN*(GHat*dBHatdtheta(itheta,:) - IHat*dBHatdzeta(itheta,:))./(4*psiAHat*BHat(itheta,:).^3);
-        for ix=1:Nx
-            for L=0:maxLForXiDot
-                rowIndices = getIndices(ispecies, ix, L+1, itheta, 1:Nzeta, 0);
-                
-                % Super-diagonal term
-                if (L<maxLForXiDot)
-                    colIndices = getIndices(ispecies, ix, L+1+1, itheta, 1:Nzeta, 0);
-                    addToSparse(rowIndices, colIndices, x(ix)*(L+1)*(L+2)/(2*L+3)*spatialPartOfOldMirrorTerm)
-                end
-                
-                % Sub-diagonal term
-                if (L>0)
-                    colIndices = getIndices(ispecies, ix, L-1+1, itheta, 1:Nzeta, 0);
-                    addToSparse(rowIndices, colIndices, x(ix)*(-L)*(L-1)/(2*L-1)*spatialPartOfOldMirrorTerm)
-                end
-                
-                if includeElectricFieldTermInXiDot
-                    % Diagonal term
-                    addToSparse(rowIndices, rowIndices, L*(L+1)/((2*L-1)*(2*L+3))*spatialPartOfNewMirrorTerm)
+    if whichMatrix ~= 2
+        mirrorTermSpatialPart = -sqrtT./(sqrtm*2*BHat.*BHat).*(BHat_sup_theta.*dBHatdtheta + BHat_sup_zeta.*dBHatdzeta);
+        
+        if includeElectricFieldTermInXiDot
+            factor = alpha*Delta*dPhiHatdpsiHat*DHat./(4*(BHat.^3));
+            ErTermSpatialPart = factor .* (BHat_sub_zeta.*dBHatdtheta - BHat_sub_theta.*dBHatdzeta);
+            if ~force0RadialCurrentInEquilibrium
+                ErTermSpatialPart = ErTermSpatialPart - factor.*(2*BHat).*(dBHat_sub_zeta_dtheta - dBHat_sub_theta_dzeta);
+            end
+        else
+            ErTermSpatialPart = zeros(Ntheta,Nzeta);
+        end
+        
+        if nonlinear
+            nonlinearTermSpatialPart = -alpha*Z./(2*sqrtm*sqrtT*BHat).*(BHat_sup_theta.*dPhi1Hatdtheta + BHat_sup_zeta.*dPhi1Hatdzeta);
+        else
+            nonlinearTermSpatialPart = zeros(Ntheta,Nzeta);
+        end
+        
+        if magneticDriftScheme>0
+            factor = -Delta*THat*DHat./(2*Z*(BHat.^3));
+            magneticDriftSpatialPart = factor.* ...
+                (dBHatdtheta.*(dBHat_sub_psi_dzeta - dBHat_sub_zeta_dpsiHat) ...
+                + dBHatdzeta.*(dBHat_sub_theta_dpsiHat - dBHat_sub_psi_dtheta));
+            if ~ force0RadialCurrentInEquilibrium
+                magneticDriftSpatialPart = magneticDriftSpatialPart ...
+                    + factor.*dBHatdpsiHat.*(dBHat_sub_zeta_dtheta - dBHat_sub_theta_dzeta);
+            end
+        else
+            magneticDriftSpatialPart = zeros(Ntheta,Nzeta);
+        end
+        
+        for L = 0:(Nxi-1)
+            for itheta = 1:Ntheta
+                for ix = ixMin:Nx
+                    rowIndices = sfincs_indices(ispecies, ix, L+1, itheta, 1:Nzeta, BLOCK_F);
                     
-                    if (whichMatrixToMake==1 || preconditioner_xi==0)
-                        % Super-super-diagonal term:
-                        if (L < maxLForXiDot-1)
-                            colIndices = getIndices(ispecies, ix, L+2+1, itheta, 1:Nzeta, 0);
-                            addToSparse(rowIndices, colIndices, (L+1)*(L+2)*(L+3)/((2*L+5)*(2*L+3))*spatialPartOfNewMirrorTerm)
+                    % Diagonal in L
+                    colIndices = rowIndices;
+                    addToSparse(rowIndices, colIndices, ErTermSpatialPart(itheta,:)*(L+1)*L/((2*L-1)*(2*L+3)) ...
+                        + magneticDriftSpatialPart(itheta,:)*x2(ix)*(L+1)*L/((2*L-1)*(2*L+3)))
+                    
+                    % Super-diagonal in L
+                    ell = L + 1;
+                    if (ell <= Nxi-1)
+                        colIndices = sfincs_indices(ispecies, ix, ell+1, itheta, 1:Nzeta, BLOCK_F);
+                        addToSparse(rowIndices, colIndices, ...
+                            x(ix)*mirrorTermSpatialPart(itheta,:)*(L+1)*(L+2)/(2*L+3) ...
+                            + (1/x(ix))*nonlinearTermSpatialPart(itheta,:)*(L+1)*(L+2)/(2*L+3))
+                    end
+                    
+                    % Sub-diagonal in L
+                    ell = L - 1;
+                    if (ell >= 0)
+                        colIndices = sfincs_indices(ispecies, ix, ell+1, itheta, 1:Nzeta, BLOCK_F);
+                        addToSparse(rowIndices, colIndices, ...
+                            - x(ix)*mirrorTermSpatialPart(itheta,:)*(L-1)*L/(2*L-1) ...
+                            - (1/x(ix))*nonlinearTermSpatialPart(itheta,:)*(L-1)*L/(2*L-1))
+                    end
+                    
+                    if whichMatrix>0 || (preconditioner_xi==0)
+                        % Super-super-diagonal in L
+                        ell = L + 2;
+                        if (ell <= Nxi-1)
+                            colIndices = sfincs_indices(ispecies, ix, ell+1, itheta, 1:Nzeta, BLOCK_F);
+                            addToSparse(rowIndices, colIndices, ...
+                                ErTermSpatialPart(itheta,:)*(L+3)*(L+2)*(L+1)/((2*L+5)*(2*L+3)) ...
+                                + magneticDriftSpatialPart(itheta,:)*x2(ix)*(L+3)*(L+2)*(L+1)/((2*L+5)*(2*L+3)))
                         end
                         
-                        % Sub-sub-diagonal term:
-                        if (L > 1)
-                            colIndices = getIndices(ispecies, ix, L-2+1, itheta, 1:Nzeta, 0);
-                            addToSparse(rowIndices, colIndices, -L*(L-1)*(L-2)/((2*L-3)*(2*L-1))*spatialPartOfNewMirrorTerm)
+                        % Sub-sub-diagonal in L
+                        ell = L - 2;
+                        if (ell >= 0)
+                            colIndices = sfincs_indices(ispecies, ix, ell+1, itheta, 1:Nzeta, BLOCK_F);
+                            addToSparse(rowIndices, colIndices, ...
+                                ErTermSpatialPart(itheta,:)*(-L)*(L-1)*(L-2)/((2*L-3)*(2*L-1)) ...
+                                + magneticDriftSpatialPart(itheta,:)*x2(ix)*(-L)*(L-1)*(L-2)/((2*L-3)*(2*L-1)))
                         end
                     end
                 end
             end
         end
+
     end
-    
     
     % -----------------------------------------
     % Add the collisionless df1/dx term:
@@ -308,7 +359,7 @@ for ispecies = 1:Nspecies
     
     if whichMatrix ~= 2
         if includeXDotTerm
-            factor = -alpha*Delta*DHat./(4*(BHat.^3));
+            factor = -alpha*Delta*dPhiHatdpsiHat*DHat./(4*(BHat.^3));
             ErTermSpatialPart1 = factor .* (BHat_sub_theta.*dBHatdzeta - BHat_sub_zeta.*dBHatdtheta);
             if ~force0RadialCurrentInEquilibrium
                 ErTermSpatialPart2 = factor.*(2*BHat).*(dBHat_sub_zeta_dtheta - dBHat_sub_theta_dzeta);
@@ -386,67 +437,40 @@ for ispecies = 1:Nspecies
         end
     end
     
+    % -----------------------------------------
+    % Add the Phi1 terms that act on f0 rather than f1.
+    % These terms are linear and give the adiabatic response.
+    % -----------------------------------------
     
-    
-    if includeXDotTerm
-        xPartOfXDot = diag(x)*ddx;
-        if (whichMatrixToMake==1)
-            xPartOfXDotForLargeL = xPartOfXDot;
-        else
-            % We're making the preconditioner, so simplify matrix
-            % if needed:
-            switch preconditioner_x
-                case 0
-                    xPartOfXDotForLargeL = xPartOfXDot;
-                case 1
-                    xPartOfXDotForLargeL = diag(diag(xPartOfXDot));
-                case 2
-                    xPartOfXDotForLargeL = triu(xPartOfXDot);
-                case 3
-                    mask = eye(Nx) + diag(ones(Nx-1,1),1) + diag(ones(Nx-1,1),-1);
-                    xPartOfXDotForLargeL = xPartOfXDot .* mask;
-                case 4
-                    mask = eye(Nx) + diag(ones(Nx-1,1),1);
-                    xPartOfXDotForLargeL = xPartOfXDot .* mask;
-                otherwise
-                    error('Invalid setting for preconditioner_x')
+    if includePhi1 && (whichMatrix ~= 2)
+        df0dx = -2*((mHat/(pi*THat))^(3/2))*nHat*x.*expx2;
+        % If there is a point at x=0, then dfxdx=0 there, so we do not need
+        % to take any special action in this case.
+        
+        L=1;
+        
+        % dPhi1/dtheta term
+        spatialPart = -alpha*Z*BHat_sup_theta./(2*sqrtT*sqrtm*BHat);
+        for izeta = 1:Nzeta
+            factor = diag(spatialPart(:,izeta))*ddtheta;
+            for ix = 1:Nx
+                rowIndices = sfincs_indices(ispecies,ix,L+1,1:Ntheta,izeta,BLOCK_F);
+                colIndices = sfincs_indices(1,1,1,1:Ntheta,izeta,BLOCK_QN);
+                addSparseBlock(rowIndices, colIndices, factor*df0dx(ix))
             end
         end
-        for L=0:(Nxi-1)
-            if L >= preconditioner_x_min_L
-                xPartOfXDotToUse = xPartOfXDotForLargeL;
-            else
-                xPartOfXDotToUse = xPartOfXDot;
-            end
-            for itheta=1:Ntheta
-                for izeta=1:Nzeta
-                    spatialPart = alpha*Delta*dPhiHatdpsiN*(GHat*dBHatdtheta(itheta,izeta) - IHat*dBHatdzeta(itheta,izeta))/(4*psiAHat*BHat(itheta,izeta)^3);
-                    
-                    rowIndices = getIndices(ispecies, 1:Nx, L+1, itheta, izeta, 0);
-                    
-                    % Diagonal term
-                    addSparseBlock(rowIndices, rowIndices, 2*(3*L*L+3*L-2)/((2*L+3)*(2*L-1))*spatialPart*xPartOfXDotToUse)
-                    
-                    if (whichMatrixToMake==1 || preconditioner_xi==0)
-                        % Super-super-diagonal in L
-                        if (L<Nxi-2)
-                            colIndices = getIndices(ispecies, 1:Nx, L+2+1, itheta, izeta, 0);
-                            addSparseBlock(rowIndices, colIndices, (L+1)*(L+2)/((2*L+5)*(2*L+3))*spatialPart*xPartOfXDotToUse)
-                        end
-                        
-                        % Sub-sub-diagonal in L
-                        if (L>1)
-                            colIndices = getIndices(ispecies, 1:Nx, L-2+1, itheta, izeta, 0);
-                            addSparseBlock(rowIndices, colIndices, L*(L-1)/((2*L-3)*(2*L-1))*spatialPart*xPartOfXDotToUse)
-                        end
-                        
-                    end
-                end
+        
+        % dPhi1/dzeta term
+        spatialPart = -alpha*Z*BHat_sup_zeta./(2*sqrtT*sqrtm*BHat);
+        for itheta = 1:Ntheta
+            factor = diag(spatialPart(itheta,:))*ddzeta;
+            for ix = 1:Nx
+                rowIndices = sfincs_indices(ispecies,ix,L+1,itheta,1:Nzeta,BLOCK_F);
+                colIndices = sfincs_indices(1,1,1,itheta,1:Nzeta,BLOCK_QN);
+                addSparseBlock(rowIndices, colIndices, factor*df0dx(ix))
             end
         end
     end
-    
-    
     
 end
 
@@ -455,7 +479,7 @@ switch (collisionOperator)
         % Linearized Fokker-Planck operator
         
         xWith0s = [0, xPotentials(2:(end-1))', 0];
-        M21 = 4*pi*diag(xWith0s.^2) * regridPolynomialToUniform;
+        M21 = 4*pi*diag(xWith0s.^2) * interpolateXToXPotentials;
         xWith0s = [0, xPotentials(2:(end-1))', 0];
         M32 = -2*diag(xWith0s.^2);
         LaplacianTimesX2WithoutL = diag(xPotentials.^2)*d2dx2Potentials + 2*diag(xPotentials)*ddxPotentials;
@@ -486,7 +510,7 @@ switch (collisionOperator)
                 if speciesA==speciesB
                     regridSpecies(:,:,speciesA,speciesB) = eye(Nx);
                 else
-                    regridSpecies(:,:,speciesA,speciesB) = m20120703_03_polynomialInterpolationMatrix(x,xb,weight(x),weight(xb));
+                    regridSpecies(:,:,speciesA,speciesB) = sfincs_polynomialInterpolationMatrix(x,xb,sfincs_xWeight(x),sfincs_xWeight(xb));
                 end
                 
                 speciesFactorField = nHats(speciesA) * Zs(speciesA)*Zs(speciesA)*Zs(speciesB)*Zs(speciesB)...
@@ -566,23 +590,26 @@ switch (collisionOperator)
                     if L <= (NL-1)
                         % Add terms of the collision operator involving
                         % the Rosenbluth potentials.
-                        
-                        M13 = M13IncludingX0(:,:,speciesA, speciesB, L+1);
-                        M12 = M12IncludingX0(:,:,speciesA, speciesB, L+1);
-                        
-                        % Add Dirichlet or Neumann boundary condition for
-                        % potentials at x=0:
-                        if L~=0
-                            M12(:,1) = 0;
-                            M13(:,1) = 0;
+                        if xGridScheme>=5
+                            CHat = M11 + squeeze(RosenbluthPotentialTerms(speciesA,speciesB,L+1,:,:));
+                        else
+                            M13 = M13IncludingX0(:,:,speciesA, speciesB, L+1);
+                            M12 = M12IncludingX0(:,:,speciesA, speciesB, L+1);
+                            
+                            % Add Dirichlet or Neumann boundary condition for
+                            % potentials at x=0:
+                            if L~=0
+                                M12(:,1) = 0;
+                                M13(:,1) = 0;
+                            end
+                            
+                            CHat = M11 -  (M12 - M13 * M33BackslashM32) * M22BackslashM21;
                         end
-                        
-                        CHat = M11 -  (M12 - M13 * M33BackslashM32) * M22BackslashM21;
                     else
                         CHat = M11;
                     end
                     
-                    % The lines below are invoked to make the local preconditioner.
+                    % The lines below are invoked to make the preconditioner.
                     if whichMatrix == 0 && L >= preconditioner_x_min_L
                         switch preconditioner_x
                             case 0
@@ -598,7 +625,7 @@ switch (collisionOperator)
                                 mask = eye(Nx) + diag(ones(Nx-1,1),1);
                                 CHat = CHat .* mask;
                             otherwise
-                                error('Invalid preconditionerMethod_x')
+                                error('Invalid preconditioner_x')
                         end
                         
                     end
@@ -608,8 +635,8 @@ switch (collisionOperator)
                     
                     for itheta = 1:Ntheta
                         for izeta = 1:Nzeta
-                            rowIndices = getIndices(speciesA, 1:Nx, L+1, itheta, izeta, 0);
-                            colIndices = getIndices(speciesB, 1:Nx, L+1, itheta, izeta, 0);
+                            rowIndices = sfincs_indices(speciesA, 1:Nx, L+1, itheta, izeta, BLOCK_F);
+                            colIndices = sfincs_indices(speciesB, 1:Nx, L+1, itheta, izeta, BLOCK_F);
                             addSparseBlock(rowIndices, colIndices, -nu_n*CHat)
                         end
                     end
@@ -650,7 +677,7 @@ switch (collisionOperator)
                 
                 for itheta = 1:Ntheta
                     for izeta = 1:Nzeta
-                        indices = getIndices(iSpecies, 1:Nx, L+1, itheta, izeta, 0);
+                        indices = sfincs_indices(iSpecies, 1:Nx, L+1, itheta, izeta, BLOCK_F);
                         addToSparse(indices, indices, -nu_n*CHat)
                     end
                 end
@@ -833,7 +860,7 @@ fprintf('Time to contruct %s: %g seconds.\n',whichMatrixName,toc(populateMatrixT
 tic
 matrix = createSparse();
 fprintf('Time to sparsify %s: %g seconds.\n',whichMatrixName,toc)
-fprintf('This matrix has %d nonzeros. Fill fraction = %g\n',nnz(matrix), nnz(matrix)/(matrixSize*matrixSize))
+fprintf('This matrix has %d nonzeros. Fill fraction = %g. Original estimated nnz = %d\n',nnz(matrix), nnz(matrix)/(matrixSize*matrixSize),estimated_nnz)
 
 
 % --------------------------------------------------------
@@ -883,7 +910,7 @@ fprintf('This matrix has %d nonzeros. Fill fraction = %g\n',nnz(matrix), nnz(mat
     end
 
     function sparseMatrix = createSparse()
-        fprintf('estimated nnz: %d   Actual value required: %d\n',estimated_nnz_original, sparseCreatorIndex)
+        %fprintf('estimated nnz: %d   Actual value required: %d\n',estimated_nnz_original, sparseCreatorIndex)
         sparseMatrix = sparse(sparseCreator_i(1:(sparseCreatorIndex-1)), sparseCreator_j(1:(sparseCreatorIndex-1)), sparseCreator_s(1:(sparseCreatorIndex-1)), matrixSize, matrixSize);
         resetSparseCreator()
     end

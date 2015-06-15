@@ -72,9 +72,15 @@ the size of the linear system is more then 1400 $\times$ 1400,
 {Boolean}
 {\false}
 {Always}
-{If this switch is set to true, the matrix, right-hand-side, and solution of the
-linear system will be saved in PETSc's binary format.  The preconditioner matrix will also
+{If this switch is set to true, the matrix, right-hand-side, and solution vector of the
+linear system will be saved in PETSc's binary format.  
+The preconditioner matrix will also
 be saved if \parlink{useIterativeLinearSolver} == \true.}
+These matrices and vectors are not very interesting for routine use of the code,
+only for code development and debugging.
+Regardless of how this parameter is set,
+the physically interesting input and output quantities will be saved in a
+separate \HDF~file.
 
 \myhrule
 
@@ -82,7 +88,14 @@ be saved if \parlink{useIterativeLinearSolver} == \true.}
 {string}
 {``sfincsBinary''}
 {Only when \parlink{saveMatricesAndVectorsInBinary} == \true.}
-{Start of the filenames which will be used for binary output.}
+{Start of the filenames which will be used for binary output of the system
+matrices, right-hand-side vectors, and solution vectors.
+These matrices and vectors are not very interesting for routine use of the code,
+only for code development and debugging.
+Regardless of how this parameter is set,
+the physically interesting input and output quantities will be saved in a
+separate \HDF~file.
+}
 
 \myhrule
 

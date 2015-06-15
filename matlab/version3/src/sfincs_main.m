@@ -1,5 +1,7 @@
 function sfincs_main()
 
+startTime = tic;
+
 fprintf('***************************************************************************\n')
 fprintf('SFINCS: Stellarator Fokker-Plank Iterative Neoclassical Conservative Solver\n')
 fprintf('Version 3 - Matlab serial edition\n')
@@ -40,5 +42,8 @@ sfincs_setInputRadialCoordinate()
 sfincs_solver()
 
 %sfincs_finalizeHDF5()
+
+fprintf('Total execution time: %g seconds.\n',toc(startTime))
+fprintf('Good bye!\n')
 
 end

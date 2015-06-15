@@ -28,8 +28,12 @@ Nzeta = 7;
 Nxi = 8;
 Nx = 5;
 
-%global xGridScheme xGrid_k
-%xGridScheme = 6;
+%global xGridScheme
+%xGridScheme = 5;
 %xGrid_k = 1;
 
 sfincs_main()
+
+directory = '../../../fortran/version3/examples/quick_2species_FPCollisions_noEr';
+sfincs_compareToFortran(fullfile(directory,'sfincsOutput.h5'))
+sfincs_compareMatricesAndVectorsToFortran(directory)

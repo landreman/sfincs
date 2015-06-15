@@ -2,6 +2,7 @@ function sfincs_initF0()
 
 global f0 matrixSize x nHats mHats THats
 global Nspecies Ntheta Nzeta Nx
+global BLOCK_F
 
 f0 = zeros(matrixSize,1);
 expx2 = exp(-x.*x);

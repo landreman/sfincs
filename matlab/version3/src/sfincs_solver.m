@@ -2,6 +2,9 @@ function sfincs_solver()
 
 global matrixSize reusePreconditioner nonlinearTolerance stateVector useIterativeLinearSolver nonlinear
 global dnHatdpsiHats dTHatdpsiHats EParallelHat nHats THats Phi1Hat dPhi1Hatdtheta dPhi1Hatdzeta
+global Ntheta Nzeta RHSMode
+global preconditioner_L preconditioner_U preconditioner_P preconditioner_Q
+global Jacobian preconditionerMatrix initialResidual
 
 sfincs_initF0()
 Phi1Hat = zeros(Ntheta,Nzeta);
@@ -27,17 +30,17 @@ switch RHSMode
         
         % Main loop for Newton's method:
         for whichNonlinearIteration = 1:numJacobianIterations
-            residual = sfincs_evaluateResidual(stateVector);
+            residual = sfincs_evaluateResidual();
             residualNorm = norm(residual);
-            fprintf('Residual norm: %g\n',residualNorm)
-            
             if whichNonlinearIteration == 1
                 initialResidualNorm = residualNorm;
-            else
-                if residualNorm / initialResidualNorm < nonlinearTolerance
-                    fprintf('Residual norm is below nonlinear tolerance, so exiting Newton iteration.\n')
-                    break
-                end
+                initialResidual = residual;
+            end
+            fprintf('Residual norm: absolute = %g, reduction from 1st iteration = \n',residualNorm,residualNorm/initialResidualNorm)
+            
+            if residualNorm / initialResidualNorm < nonlinearTolerance
+                fprintf('Residual norm is below nonlinear tolerance, so exiting Newton iteration.\n')
+                break
             end
             
             whichMatrix = 1;
@@ -52,7 +55,7 @@ switch RHSMode
                 fprintf('Done.  Took %g seconds.\n',toc)
             end
             
-            delta = sfincs_solveLinearSystem(Jacobian, -residual, preconditioner_L, preconditioner_U, preconditioner_P, preconditioner_Q);
+            delta = sfincs_solveLinearSystem(Jacobian, -residual);
             stateVector = stateVector + delta;
 
             if whichNonlinearIteration < numJacobianIterations
@@ -127,7 +130,7 @@ switch RHSMode
             
             stateVector = zeros(matrixSize,1);
             residual = sfincs_evaluateResidual();
-            stateVector = sfincs_solveLinearSystem(Jacobian, -residual, preconditioner_L, preconditioner_U, preconditioner_P, preconditioner_Q);
+            stateVector = sfincs_solveLinearSystem(Jacobian, -residual);
             sfincs_diagnostics()
 
         end

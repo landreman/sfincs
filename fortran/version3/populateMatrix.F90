@@ -53,8 +53,8 @@
     double precision :: myMatInfo(MAT_INFO_SIZE)
     integer :: NNZ, NNZAllocated, NMallocs
     PetscScalar :: CHat_element, dfMdx
-    character(len=100) :: whichMatrixName, filename
-    PetscViewer :: MatlabOutput
+    character(len=200) :: whichMatrixName, filename
+    PetscViewer :: viewer
     integer :: ithetaRow, ithetaCol, izetaRow, izetaCol, ixMin, ixMinCol
     VecScatter :: vecScatterContext
     Vec :: vecOnEveryProc
@@ -1363,8 +1363,8 @@
                          end do
                       end if
                       
+                      !   if (.false.) then
                       if (L < NL) then
-                         !   if (.false.) then
                          ! Add Rosenbluth potential terms.
 
                          if (xGridScheme==5 .or. xGridScheme==6) then
@@ -1861,13 +1861,24 @@
        if (masterProc) then
           print *,"Saving matrix in matlab format: ",trim(filename)
        end if
-       call PetscViewerASCIIOpen(MPIComm, trim(filename) , MatlabOutput, ierr)
-       call PetscViewerSetFormat(MatlabOutput, PETSC_VIEWER_ASCII_MATLAB, ierr)
+       call PetscViewerASCIIOpen(MPIComm, trim(filename), viewer, ierr)
+       call PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB, ierr)
 
        call PetscObjectSetName(matrix, "matrix", ierr)
-       call MatView(matrix, MatlabOutput, ierr)
+       call MatView(matrix, viewer, ierr)
 
-       call PetscViewerDestroy(MatlabOutput, ierr)
+       call PetscViewerDestroy(viewer, ierr)
+    end if
+
+    if (saveMatricesAndVectorsInBinary) then
+       write (filename,fmt="(a,i3.3,a,i1)") trim(binaryOutputFilename) // "_iteration_", iterationForMatrixOutput, &
+            "_whichMatrix_",whichMatrix
+       if (masterProc) then
+          print *,"Saving matrix in binary format: ",trim(filename)
+       end if
+       call PetscViewerBinaryOpen(MPIComm, trim(filename), FILE_MODE_WRITE, viewer, ierr)
+       call MatView(matrix, viewer, ierr)
+       call PetscViewerDestroy(viewer, ierr)
     end if
 
     if (useStateVec) then

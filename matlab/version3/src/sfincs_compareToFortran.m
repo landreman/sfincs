@@ -11,11 +11,45 @@ global dBHat_sup_theta_dpsiHat dBHat_sup_theta_dzeta
 global dBHat_sup_zeta_dpsiHat dBHat_sup_zeta_dtheta
 global psiHat psiN rHat rN
 
+global FSADensityPerturbation FSABFlow FSAPressurePerturbation
+global particleFlux_vm0_psiHat particleFlux_vm_psiHat particleFlux_vE0_psiHat particleFlux_vE_psiHat
+global momentumFlux_vm0_psiHat momentumFlux_vm_psiHat momentumFlux_vE0_psiHat momentumFlux_vE_psiHat
+global heatFlux_vm0_psiHat heatFlux_vm_psiHat heatFlux_vE0_psiHat heatFlux_vE_psiHat
+global jHat FSABjHat FSABjHatOverB0 FSABjHatOverRootFSAB2
+global totalDensity totalPressure velocityUsingFSADensity velocityUsingTotalDensity MachUsingFSAThermalSpeed
+
 %filename = 'sfincsOutput.h5';
+
+succeeded = false;
+try
+    h5read(filename,'/BHat');
+    succeeded = true;
+catch
+end
+
+if ~succeeded
+    % Try changing / to \ in filename, in case we are on a Windows
+    % filesystem.
+    originalFilename = filename;
+    filename = strrep(filename,'/','\')
+    try
+        h5read(filename,'/BHat');
+    catch
+        fprintf('Unable to compare to fortran result: unable to open %s\n',originalFilename)
+        return
+    end
+end
+
 
 fprintf('Comparing matlab results to fortran results in %s\n',filename)
 
-small = 1e-12;
+% First compare 'input' quantities that should agree to within roundoff
+% error.
+
+tolerance = 1e-12;
+comparisonType = 1;
+% 1 = max(abs(difference)) < tolerance
+% 2 = max(abs(difference) ./ mean) < tolerance
 
 compare('theta')
 compare('zeta')
@@ -58,17 +92,38 @@ compare('dBHat_sup_theta_dzeta')
 compare('dBHat_sup_zeta_dtheta')
 compare('dBHat_sup_zeta_dpsiHat')
 
+% Now compare 'output' quantities that will differ beyond the solver
+% tolerance.
+
+tolerance = 0.003;
+comparisonType = 2;
+
+compare('FSABFlow')
+compare('FSABjHat')
+compare('particleFlux_vm_psiHat')
+compare('heatFlux_vm_psiHat')
+
+tolerance = 1e-12;
+comparisonType = 1;
+
+
     function compare(varName)
         matlabVar = eval(varName);
         try
             fortranVar = h5read(filename,['/',varName]);
         catch
-            fprintf('** WARNING: Unable to test variable %s since it does not exist in %s\n',varName,fortranVar)
+            fprintf('** WARNING: Unable to test variable %s since it does not exist in %s\n',varName,filename)
             return
         end
         
+        if isvector(matlabVar)
+            % If we have a 1D vector, 
+            matlabVar = matlabVar(:);
+            fortranVar = fortranVar(:);
+        end
+        
         try
-            difference = max(max(abs(matlabVar-fortranVar)));
+            difference = abs(matlabVar-fortranVar);
         catch
             fprintf('** ERROR! Matlab and fortran variables %s are different sizes.\n',varName)
             fprintf('Size of matlab version:\n')
@@ -77,10 +132,21 @@ compare('dBHat_sup_zeta_dpsiHat')
             size(fortranVar)
             return
         end
-        if difference<small
+        
+        switch comparisonType
+            case 1
+                scalarDifference = max(max(max(difference)));
+            case 2
+                avg = abs(matlabVar+fortranVar)/2;
+                scalarDifference = max(max(max(difference./avg)));
+            otherwise
+                error('Invalid comparisonType')
+        end
+        
+        if scalarDifference < tolerance
             fprintf('  %s agrees.\n',varName)
         else
-            fprintf('** ERROR!  %s disagrees! max(abs(difference)) = %g\n',varName, difference)
+            fprintf('** ERROR!  %s disagrees! scalarDifference = %g\n',varName, scalarDifference)
             if numel(matlabVar)==1
                 fprintf('  Matlab version: %g,  Fortran version: %g\n',matlabVar, fortranVar)
             elseif numel(size(matlabVar)) <= 2 && numel(matlabVar)<100

@@ -1,12 +1,12 @@
 function sfincs_createGrids()
 
-global Ntheta Nzeta Nx NxPotentialsPerVth xMax xGrid_k
+global Ntheta Nzeta Nx Nxi NL NxPotentialsPerVth xMax solverTolerance xGrid_k
 global constraintScheme collisionOperator NPeriods pointAtX0
 global thetaDerivativeScheme zetaDerivativeScheme forceOddNthetaAndNzeta
 global theta ddtheta thetaWeights ddtheta_preconditioner preconditioner_theta
 global zeta ddzeta zetaWeights ddzeta_preconditioner preconditioner_zeta
 global x xWeights ddx d2dx2 ddx_preconditioner xGridScheme xPotentialsGridScheme
-global theta2D zeta2D RHSMode preconditioner_x
+global theta2D zeta2D RHSMode preconditioner_x xMaxPotentials
 global xInterpolationScheme xPotentialsInterpolationScheme NxPotentials
 global xPotentials ddxPotentials d2dx2Potentials interpolateXToXPotentials
 
@@ -30,6 +30,18 @@ if forceOddNthetaAndNzeta
         Ntheta=Ntheta+1;
     end
 end
+
+fprintf('---- Numerical parameters: ----\n')
+fprintf('            Ntheta = %d\n',Ntheta)
+fprintf('             Nzeta = %d\n',Nzeta)
+fprintf('               Nxi = %d\n',Nxi)
+fprintf('                NL = %d\n',NL)
+fprintf('                Nx = %d\n',Nx)
+if xGridScheme<5
+    fprintf('NxPotentialsPerVth = %d\n',NxPotentialsPerVth)
+    fprintf('              xMax = %d\n',xMax)
+end
+fprintf('   solverTolerance = %d\n',solverTolerance)
 
 sfincs_computeMatrixSize()
 
@@ -135,8 +147,6 @@ switch xPotentialsGridScheme
         error('Invalid xPotentialsInterpolationScheme')
 end
 
-weight = @(xx) (xx.^xGrid_k) .* exp(-xx.*xx);
-            
 % Set pointAtX0, x, xWeights, ddx, d2dx2
 if RHSMode==3
     % Monoenergetic calculation
@@ -160,10 +170,10 @@ else
                 end
                 pointAtX0 = true;
             end
-            [x, xWeights, polynomials_a, polynomials_b, polynomials_c] = sfincs_GaussWeightsAndAbscissae(Nx, weight, 0, Inf, pointAtX0);
-            xWeights = xWeights./weight(x);
+            [x, xWeights, polynomials_a, polynomials_b, polynomials_c] = sfincs_GaussWeightsAndAbscissae(Nx, @sfincs_xWeight, 0, Inf, pointAtX0);
+            xWeights = xWeights./sfincs_xWeight(x);
             weightFactors=[xGrid_k./x-2*x, xGrid_k*(xGrid_k-1)./(x.*x)-2*(2*xGrid_k+1)+4*x.*x]';
-            differentiationMatrices = sfincs_poldif(x,weight(x),weightFactors);
+            differentiationMatrices = sfincs_poldif(x,sfincs_xWeight(x),weightFactors);
             ddx=differentiationMatrices(:,:,1);
             d2dx2=differentiationMatrices(:,:,2);
 
@@ -188,11 +198,11 @@ else
     end
 end
 
-xMaxNotTooSmall = max([xMax, max(x)]);
+xMaxPotentials = max([xMax, max(x)]);
 if xPotentialsGridScheme == 3 || xPotentialsGridScheme == 4
     NxPotentials = Nx+1;
 else
-    NxPotentials = ceil(NxPotentialsPerVth * xMaxNotTooSmall);
+    NxPotentials = ceil(NxPotentialsPerVth * xMaxPotentials);
 end
 
 %{
@@ -213,11 +223,11 @@ if RHSMode == 3
 else
     % Normal (not monoenergetic)
     scheme = 12;
-    [xPotentials, ~, ddxPotentials, d2dx2Potentials] = sfincs_uniformDiffMatrices(NxPotentials, 0, xMaxNotTooSmall, scheme);
+    [xPotentials, ~, ddxPotentials, d2dx2Potentials] = sfincs_uniformDiffMatrices(NxPotentials, 0, xMaxPotentials, scheme);
     switch xGridScheme
         case {1,2,5,6}
             % Pseudospectral x grid
-            interpolateXToXPotentials = sfincs_polynomialInterpolationMatrix(x,xPotentials,weight(x),weight(xPotentials));
+            interpolateXToXPotentials = sfincs_polynomialInterpolationMatrix(x,xPotentials,sfincs_xWeight(x),sfincs_xWeight(xPotentials));
         case {3,4}
             error('Not implemented yet')
         otherwise

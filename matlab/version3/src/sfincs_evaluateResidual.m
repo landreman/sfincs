@@ -1,12 +1,14 @@
 function residual = sfincs_evaluateResidual()
 
 global stateVector matrixSize RHSMode pointAtX0 dPhiHatdpsiHat includeTemperatureEquilibrationTerm f0
-global x Nspecies Ntheta Nzeta Nx Delta alpha
-global Zs THats mHats nHats dnHatdpsiHats dTHatdpsiHats
+global x Nspecies Ntheta Nzeta Nx Delta alpha BLOCK_F
+global Zs THats mHats nHats dnHatdpsiHats dTHatdpsiHats EParallelHat
+global BHat DHat FSABHat2 BHat_sub_zeta BHat_sub_theta
+global dBHatdtheta dBHatdzeta
 
 fprintf('Evaluating residual.\n')
 
-if norm(stateVector)<1e-15
+if norm(stateVector)>1e-100
     % Part of the residual comes from multiplying the state vector by a big
     % matrix.
     whichMatrix = 3;
@@ -40,6 +42,8 @@ end
 
 x2 = x.*x;
 expx2 = exp(-x2);
+sqrtpi = sqrt(pi);
+
 allZeta = 1:Nzeta;
 rhs = zeros(matrixSize,1);
 for ispecies = 1:Nspecies
@@ -51,9 +55,9 @@ for ispecies = 1:Nspecies
     sqrtmHat = sqrt(mHat);
     
     spatialFactor = Delta*nHat*mHat*sqrtmHat ...
-        /(2*pi*sqrtpi*Z*(BHat.^3)*sqrtTHat) ...
-        *(BHat_sub_zeta*dBHatdtheta - BHat_sub_theta*dBHatdzeta) ...
-        * DHat;
+        ./(2*pi*sqrtpi*Z*(BHat.^3)*sqrtTHat) ...
+        .*(BHat_sub_zeta.*dBHatdtheta - BHat_sub_theta.*dBHatdzeta) ...
+        .* DHat;
     
     for ix = ixMin:Nx
         xPartOfRHS = x2(ix)*expx2(ix)*( dnHatdpsiHats(ispecies)/nHat ...

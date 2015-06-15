@@ -1,8 +1,8 @@
-function soln = sfincs_solveLinearSystem(matrix, rhs, preconditioner_L, preconditioner_U, preconditioner_P, preconditioner_Q)
+function soln = sfincs_solveLinearSystem(matrix, rhs)
 
 global GMRES_restart GMRES_maxIterations solverTolerance useIterativeLinearSolver
 
-if useIterativeLinearSolver
+if ~useIterativeLinearSolver
     tic
     fprintf('Beginning direct linear solve... ')
     soln = matrix \ rhs;
@@ -13,7 +13,7 @@ else
     fprintf('Applying GMRES... ')
     x0 = zeros(size(rhs));
     [soln,fl0,rr0,it0,rv0]=gmres(matrix,rhs,GMRES_restart,solverTolerance,GMRES_maxIterations/GMRES_restart,@preconditioner, [], x0);
-    fprintf('Done. Took %g seconds.\n',toc)
+    fprintf('Done. Took %g seconds, %d iterations.\n',toc, numel(rv0))
     switch fl0
         case 0
             fprintf('Converged!\n')
@@ -47,6 +47,7 @@ else
 end
 
     function solnVector = preconditioner(rhsVector)
+        global preconditioner_L preconditioner_U preconditioner_P preconditioner_Q
         solnVector = preconditioner_Q * (preconditioner_U \ (preconditioner_L \ (preconditioner_P * rhsVector)));
     end
 
