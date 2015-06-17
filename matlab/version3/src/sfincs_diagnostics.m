@@ -3,15 +3,16 @@ function sfincs_diagnostics()
 global stateVector f0 constraintScheme sources force0RadialCurrentInEquilibrium
 global Ntheta Nzeta Nspecies Nx thetaWeights zetaWeights RHSMode
 global Phi1Hat dPhi1Hatdtheta dPhi1Hatdzeta ddtheta ddzeta includePhi1
-global BLOCK_F BLOCK_QN BLOCK_PHI1_CONSTRAINT BLOCK_DENSITY_CONSTRAINT BLOCK_PRESSURE_CONSTRAINT BLOCK_F_CONSTRAINT
+global BLOCK_F BLOCK_QN BLOCK_PHI1_CONSTRAINT BLOCK_DENSITY_CONSTRAINT BLOCK_PRESSURE_CONSTRAINT BLOCK_F_CONSTRAINT indexVars
 global BHat DHat BHat_sub_theta BHat_sub_zeta dBHatdtheta dBHatdzeta dBHat_sub_zeta_dtheta dBHat_sub_theta_dzeta
 global THats Zs mHats nHats x xWeights Delta alpha
 global B0OverBBar FSABHat2 VPrimeHat
+global GHat iota IHat transportMatrix whichRHS
 
 global FSADensityPerturbation FSABFlow FSAPressurePerturbation
-global particleFlux_vm0_psiHat particleFlux_vm_psiHat particleFlux_vE0_psiHat particleFlux_vE_psiHat
-global momentumFlux_vm0_psiHat momentumFlux_vm_psiHat momentumFlux_vE0_psiHat momentumFlux_vE_psiHat
-global heatFlux_vm0_psiHat heatFlux_vm_psiHat heatFlux_vE0_psiHat heatFlux_vE_psiHat
+global particleFlux_vm0_psiHat particleFlux_vm_psiHat particleFlux_vE0_psiHat particleFlux_vE_psiHat particleFlux_vd_psiHat particleFlux_vd1_psiHat
+global momentumFlux_vm0_psiHat momentumFlux_vm_psiHat momentumFlux_vE0_psiHat momentumFlux_vE_psiHat momentumFlux_vd_psiHat momentumFlux_vd1_psiHat
+global heatFlux_vm0_psiHat heatFlux_vm_psiHat heatFlux_vE0_psiHat heatFlux_vE_psiHat heatFlux_vd_psiHat heatFlux_vd1_psiHat heatFlux_withoutPhi1_psiHat
 global jHat FSABjHat FSABjHatOverB0 FSABjHatOverRootFSAB2
 global totalDensity totalPressure velocityUsingFSADensity velocityUsingTotalDensity MachUsingFSAThermalSpeed
 
@@ -19,14 +20,14 @@ fprintf('Computing diagnostics.\n')
 
 if includePhi1
     for itheta = 1:Ntheta
-        indices = sfincs_indices(1,1,1,itheta,1:Nzeta,BLOCK_QN);
+        indices = sfincs_indices(1,1,1,itheta,1:Nzeta,BLOCK_QN, indexVars);
         Phi1Hat(itheta,:) = stateVector(indices);
     end
     
     dPhi1Hatdtheta = ddtheta * Phi1Hat;
     dPhi1Hatdzeta = (ddzeta * (Phi1Hat'))';
     
-    index = sfincs_indices(1,1,1,1,1,BLOCK_PHI1_CONSTRAINT);
+    index = sfincs_indices(1,1,1,1,1,BLOCK_PHI1_CONSTRAINT, indexVars);
     lambda = stateVector(index);
 else
     lambda = 0;
@@ -38,13 +39,13 @@ switch constraintScheme
     case 1
         sources = zeros(Nspecies,2);
         for ispecies = 1:Nspecies
-            sources(ispecies,1) = stateVector(sfincs_indices(ispecies,1,1,1,1,BLOCK_DENSITY_CONSTRAINT));
-            sources(ispecies,2) = stateVector(sfincs_indices(ispecies,1,1,1,1,BLOCK_PRESSURE_CONSTRAINT));
+            sources(ispecies,1) = stateVector(sfincs_indices(ispecies,1,1,1,1,BLOCK_DENSITY_CONSTRAINT, indexVars));
+            sources(ispecies,2) = stateVector(sfincs_indices(ispecies,1,1,1,1,BLOCK_PRESSURE_CONSTRAINT, indexVars));
         end
     case 2
         sources = zeros(Nspecies,Nx);
         for ispecies = 1:Nspecies
-            sources(ispecies,:) = stateVector(sfincs_indices(ispecies,1:Nx,1,1,1,BLOCK_F_CONSTRAINT));
+            sources(ispecies,:) = stateVector(sfincs_indices(ispecies,1:Nx,1,1,1,BLOCK_F_CONSTRAINT, indexVars));
         end
     otherwise
         error('Invalid constraintScheme')
@@ -121,7 +122,7 @@ for ispecies = 1:Nspecies
         for izeta = 1:Nzeta
             
             L = 0;
-            indices = sfincs_indices(ispecies, 1:Nx, L+1, itheta, izeta, BLOCK_F);
+            indices = sfincs_indices(ispecies, 1:Nx, L+1, itheta, izeta, BLOCK_F, indexVars);
             densityPerturbation(ispecies, itheta, izeta) = densityWeights * stateVector(indices);
             pressurePerturbation(ispecies, itheta, izeta) = pressureWeights * stateVector(indices);
             particleFluxBeforeSurfaceIntegral_vm0(ispecies, itheta, izeta) = (factor(itheta,izeta)*8/3+factor2(itheta,izeta)*2/3)*particleFluxWeights_vm * f0(indices);
@@ -134,7 +135,7 @@ for ispecies = 1:Nspecies
             heatFluxBeforeSurfaceIntegral_vE(ispecies, itheta, izeta) = factor_vE(itheta,izeta) * heatFluxWeights_vE * fullf(indices);
             
             L = 1;
-            indices = sfincs_indices(ispecies, 1:Nx, L+1, itheta, izeta, BLOCK_F);
+            indices = sfincs_indices(ispecies, 1:Nx, L+1, itheta, izeta, BLOCK_F, indexVars);
             flow(ispecies, itheta, izeta) = flowWeights * stateVector(indices);
             momentumFluxBeforeSurfaceIntegral_vm0(ispecies, itheta, izeta) = (factor(itheta,izeta)*16/15+factor2(itheta,izeta)*2/5)*BHat(itheta,izeta)*momentumFluxWeights_vm * f0(indices);
             momentumFluxBeforeSurfaceIntegral_vm(ispecies, itheta, izeta) = (factor(itheta,izeta)*16/15+factor2(itheta,izeta)*2/5)*BHat(itheta,izeta)*momentumFluxWeights_vm * fullf(indices);
@@ -142,14 +143,14 @@ for ispecies = 1:Nspecies
             momentumFluxBeforeSurfaceIntegral_vE(ispecies, itheta, izeta) = factor_vE(itheta,izeta)*2/3*BHat(itheta,izeta)*momentumFluxWeights_vE * fullf(indices);
             
             L = 2;
-            indices = sfincs_indices(ispecies, 1:Nx, L+1, itheta, izeta, BLOCK_F);
+            indices = sfincs_indices(ispecies, 1:Nx, L+1, itheta, izeta, BLOCK_F, indexVars);
             particleFluxBeforeSurfaceIntegral_vm0(ispecies, itheta, izeta) = particleFluxBeforeSurfaceIntegral_vm0(ispecies, itheta, izeta) + (factor(itheta,izeta)+factor2(itheta,izeta))*4/15*particleFluxWeights_vm * f0(indices);
             particleFluxBeforeSurfaceIntegral_vm(ispecies, itheta, izeta) = particleFluxBeforeSurfaceIntegral_vm(ispecies, itheta, izeta) + (factor(itheta,izeta)+factor2(itheta,izeta))*4/15*particleFluxWeights_vm * fullf(indices);
             heatFluxBeforeSurfaceIntegral_vm0(ispecies, itheta, izeta) = heatFluxBeforeSurfaceIntegral_vm0(ispecies, itheta, izeta) + (factor(itheta,izeta)+factor2(itheta,izeta))*4/15*heatFluxWeights_vm * f0(indices);
             heatFluxBeforeSurfaceIntegral_vm(ispecies, itheta, izeta) = heatFluxBeforeSurfaceIntegral_vm(ispecies, itheta, izeta) + (factor(itheta,izeta)+factor2(itheta,izeta))*4/15*heatFluxWeights_vm * fullf(indices);
             
             L = 3;
-            indices = sfincs_indices(ispecies, 1:Nx, L+1, itheta, izeta, BLOCK_F);
+            indices = sfincs_indices(ispecies, 1:Nx, L+1, itheta, izeta, BLOCK_F, indexVars);
             momentumFluxBeforeSurfaceIntegral_vm0(ispecies, itheta, izeta) = momentumFluxBeforeSurfaceIntegral_vm0(ispecies, itheta, izeta) + (factor(itheta,izeta)+factor2(itheta,izeta))*4/35*BHat(itheta,izeta)*momentumFluxWeights_vm * f0(indices);
             momentumFluxBeforeSurfaceIntegral_vm(ispecies, itheta, izeta) = momentumFluxBeforeSurfaceIntegral_vm(ispecies, itheta, izeta) + (factor(itheta,izeta)+factor2(itheta,izeta))*4/35*BHat(itheta,izeta)*momentumFluxWeights_vm * fullf(indices);
         end
@@ -157,30 +158,51 @@ for ispecies = 1:Nspecies
     
     % Done with the integrals over x and xi.
     % Now do the integrals over theta and zeta.
+   
+    % We need to do this next step because Matlab thinks
+    % squeeze(densityPerturbation(ispecies,:,:)) and DHat have different
+    % dimensions when Nzeta=1.
+    if Nzeta==1
+        DHat_x = DHat';
+        BHat_x = BHat';
+    else
+        DHat_x = DHat;
+        BHat_x = BHat;
+    end
     
-    FSADensityPerturbation(ispecies) = (thetaWeights') * (squeeze(densityPerturbation(ispecies,:,:)) ./ DHat) * zetaWeights;
-    FSABFlow(ispecies) = (thetaWeights') * (squeeze(flow(ispecies,:,:)) .* BHat./ DHat) * zetaWeights;
-    FSAPressurePerturbation(ispecies) = (thetaWeights') * (squeeze(pressurePerturbation(ispecies,:,:)) ./ DHat) * zetaWeights;
-    particleFlux_vm0_psiHat(ispecies) = (thetaWeights') * (squeeze(particleFluxBeforeSurfaceIntegral_vm0(ispecies,:,:))) * zetaWeights;
-    particleFlux_vm_psiHat(ispecies) = (thetaWeights') * (squeeze(particleFluxBeforeSurfaceIntegral_vm(ispecies,:,:))) * zetaWeights;
-    particleFlux_vE0_psiHat(ispecies) = (thetaWeights') * (squeeze(particleFluxBeforeSurfaceIntegral_vE0(ispecies,:,:))) * zetaWeights;
-    particleFlux_vE_psiHat(ispecies) = (thetaWeights') * (squeeze(particleFluxBeforeSurfaceIntegral_vE(ispecies,:,:))) * zetaWeights;
-    momentumFlux_vm0_psiHat(ispecies) = (thetaWeights') * (squeeze(momentumFluxBeforeSurfaceIntegral_vm0(ispecies,:,:))) * zetaWeights;
-    momentumFlux_vm_psiHat(ispecies) = (thetaWeights') * (squeeze(momentumFluxBeforeSurfaceIntegral_vm(ispecies,:,:))) * zetaWeights;
-    momentumFlux_vE0_psiHat(ispecies) = (thetaWeights') * (squeeze(momentumFluxBeforeSurfaceIntegral_vE0(ispecies,:,:))) * zetaWeights;
-    momentumFlux_vE_psiHat(ispecies) = (thetaWeights') * (squeeze(momentumFluxBeforeSurfaceIntegral_vE(ispecies,:,:))) * zetaWeights;
-    heatFlux_vm0_psiHat(ispecies) = (thetaWeights') * (squeeze(heatFluxBeforeSurfaceIntegral_vm0(ispecies,:,:))) * zetaWeights;
-    heatFlux_vm_psiHat(ispecies) = (thetaWeights') * (squeeze(heatFluxBeforeSurfaceIntegral_vm(ispecies,:,:))) * zetaWeights;
-    heatFlux_vE0_psiHat(ispecies) = (thetaWeights') * (squeeze(heatFluxBeforeSurfaceIntegral_vE0(ispecies,:,:))) * zetaWeights;
-    heatFlux_vE_psiHat(ispecies) = (thetaWeights') * (squeeze(heatFluxBeforeSurfaceIntegral_vE(ispecies,:,:))) * zetaWeights;
+    FSADensityPerturbation(ispecies) = dot(thetaWeights, (squeeze(densityPerturbation(ispecies,:,:)) ./ DHat_x) * zetaWeights);
+    FSABFlow(ispecies) = dot(thetaWeights, (squeeze(flow(ispecies,:,:)) .* BHat_x./ DHat_x) * zetaWeights);
+    FSAPressurePerturbation(ispecies) = dot(thetaWeights, (squeeze(pressurePerturbation(ispecies,:,:)) ./ DHat_x) * zetaWeights);
+    particleFlux_vm0_psiHat(ispecies) = dot(thetaWeights, (squeeze(particleFluxBeforeSurfaceIntegral_vm0(ispecies,:,:))) * zetaWeights);
+    particleFlux_vm_psiHat(ispecies) = dot(thetaWeights, (squeeze(particleFluxBeforeSurfaceIntegral_vm(ispecies,:,:))) * zetaWeights);
+    particleFlux_vE0_psiHat(ispecies) = dot(thetaWeights, (squeeze(particleFluxBeforeSurfaceIntegral_vE0(ispecies,:,:))) * zetaWeights);
+    particleFlux_vE_psiHat(ispecies) = dot(thetaWeights, (squeeze(particleFluxBeforeSurfaceIntegral_vE(ispecies,:,:))) * zetaWeights);
+    momentumFlux_vm0_psiHat(ispecies) = dot(thetaWeights, (squeeze(momentumFluxBeforeSurfaceIntegral_vm0(ispecies,:,:))) * zetaWeights);
+    momentumFlux_vm_psiHat(ispecies) = dot(thetaWeights, (squeeze(momentumFluxBeforeSurfaceIntegral_vm(ispecies,:,:))) * zetaWeights);
+    momentumFlux_vE0_psiHat(ispecies) = dot(thetaWeights, (squeeze(momentumFluxBeforeSurfaceIntegral_vE0(ispecies,:,:))) * zetaWeights);
+    momentumFlux_vE_psiHat(ispecies) = dot(thetaWeights, (squeeze(momentumFluxBeforeSurfaceIntegral_vE(ispecies,:,:))) * zetaWeights);
+    heatFlux_vm0_psiHat(ispecies) = dot(thetaWeights, (squeeze(heatFluxBeforeSurfaceIntegral_vm0(ispecies,:,:))) * zetaWeights);
+    heatFlux_vm_psiHat(ispecies) = dot(thetaWeights, (squeeze(heatFluxBeforeSurfaceIntegral_vm(ispecies,:,:))) * zetaWeights);
+    heatFlux_vE0_psiHat(ispecies) = dot(thetaWeights, (squeeze(heatFluxBeforeSurfaceIntegral_vE0(ispecies,:,:))) * zetaWeights);
+    heatFlux_vE_psiHat(ispecies) = dot(thetaWeights, (squeeze(heatFluxBeforeSurfaceIntegral_vE(ispecies,:,:))) * zetaWeights);
     
-    jHat = jHat + Z*squeeze(flow(ispecies,:,:));
+    jHat = jHat + reshape(Z*squeeze(flow(ispecies,:,:)),[Ntheta,Nzeta]);
     totalDensity(ispecies,:,:) = densityPerturbation(ispecies,:,:) + nHat;
     totalPressure(ispecies,:,:) = densityPerturbation(ispecies,:,:) + nHat*THat;
     velocityUsingFSADensity(ispecies,:,:) = flow(ispecies,:,:)/nHat;
     velocityUsingTotalDensity(ispecies,:,:) = flow(ispecies,:,:)./totalDensity(ispecies,:,:);
     MachUsingFSAThermalSpeed(ispecies,:,:) = velocityUsingFSADensity(ispecies,:,:)*sqrtm/sqrtT;
 end
+
+particleFlux_vd_psiHat = particleFlux_vm_psiHat + particleFlux_vE_psiHat;
+momentumFlux_vd_psiHat = momentumFlux_vm_psiHat + momentumFlux_vE_psiHat;
+heatFlux_vd_psiHat = heatFlux_vm_psiHat + heatFlux_vE_psiHat;
+
+particleFlux_vd1_psiHat = particleFlux_vm_psiHat + particleFlux_vE0_psiHat;
+momentumFlux_vd1_psiHat = momentumFlux_vm_psiHat + momentumFlux_vE0_psiHat;
+heatFlux_vd1_psiHat = heatFlux_vm_psiHat + heatFlux_vE0_psiHat;
+
+heatFlux_withoutPhi1_psiHat = heatFlux_vm_psiHat + (5/3)*heatFlux_vE0_psiHat;
 
 FSADensityPerturbation = FSADensityPerturbation / VPrimeHat;
 FSABFlow = FSABFlow / VPrimeHat;
@@ -189,6 +211,26 @@ FSABjHat = Zs(:)' * FSABFlow;
 FSABjHatOverB0 = FSABjHat / B0OverBBar;
 FSABjHatOverRootFSAB2 = FSABjHat / sqrt(FSABHat2);
 
+if RHSMode==3
+    % Monoenergetic transport matrix
+    ispecies = 1;
+    nHat = nHats(ispecies);
+    THat = THats(ispecies);
+    mHat = mHats(ispecies);
+    sqrtTHat = sqrt(THat);
+    sqrtmHat = sqrt(mHat);
+    
+    % The factors of THat, mHat, nHat, and Z are unnecessary below (since all are 1).
+    switch whichRHS
+        case 1
+            transportMatrix(1,1) = 4/(Delta*Delta)*sqrtTHat/sqrtmHat*Zs(1)*Zs(1)*(GHat+iota*IHat) ...
+                *particleFlux_vm_psiHat(1)*B0OverBBar/(THat*THat*GHat*GHat);
+            transportMatrix(2,1) = 2*Zs(1)*FSABFlow(1)/(Delta*GHat*THat);
+        case 2
+            transportMatrix(1,2) = particleFlux_vm_psiHat(1)*2*FSABHat2/(nHat*alpha*Delta*GHat);
+            transportMatrix(2,2) = FSABFlow(1)*sqrtTHat*sqrtmHat*FSABHat2/((GHat+iota*IHat)*alpha*Zs(1)*nHat*B0OverBBar);
+    end
+end
 
 for ispecies = 1:Nspecies
     fprintf('Results for species %d:\n',ispecies)

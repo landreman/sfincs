@@ -9,6 +9,8 @@ global x xWeights ddx d2dx2 ddx_preconditioner xGridScheme xPotentialsGridScheme
 global theta2D zeta2D RHSMode preconditioner_x xMaxPotentials
 global xInterpolationScheme xPotentialsInterpolationScheme NxPotentials
 global xPotentials ddxPotentials d2dx2Potentials interpolateXToXPotentials
+global indexVars Nspecies includePhi1 transportMatrix
+global BLOCK_F BLOCK_QN BLOCK_PHI1_CONSTRAINT BLOCK_DENSITY_CONSTRAINT BLOCK_PRESSURE_CONSTRAINT BLOCK_F_CONSTRAINT
 
 % *************************************************************************
 % Do a few sundry initialization tasks:
@@ -29,6 +31,26 @@ if forceOddNthetaAndNzeta
     if mod(Nzeta,2)==0
         Ntheta=Ntheta+1;
     end
+end
+
+indexVars = struct();
+indexVars.Ntheta = Ntheta;
+indexVars.Nzeta = Nzeta;
+indexVars.Nspecies = Nspecies;
+indexVars.Nx = Nx;
+indexVars.Nxi = Nxi;
+indexVars.includePhi1 = includePhi1;
+indexVars.BLOCK_F = BLOCK_F;
+indexVars.BLOCK_QN = BLOCK_QN;
+indexVars.BLOCK_PHI1_CONSTRAINT = BLOCK_PHI1_CONSTRAINT;
+indexVars.BLOCK_DENSITY_CONSTRAINT = BLOCK_DENSITY_CONSTRAINT;
+indexVars.BLOCK_PRESSURE_CONSTRAINT = BLOCK_PRESSURE_CONSTRAINT;
+indexVars.BLOCK_F_CONSTRAINT = BLOCK_F_CONSTRAINT;
+
+if RHSMode==2
+    transportMatrix = zeros(3);
+elseif RHSMode==3
+    transportMatrix = zeros(2);
 end
 
 fprintf('---- Numerical parameters: ----\n')

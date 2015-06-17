@@ -9,7 +9,7 @@ global preconditioner_theta_min_L thetaWeights
 global preconditioner_zeta_min_L zetaWeights
 global preconditioner_species preconditioner_x preconditioner_x_min_L
 global preconditioner_xi collisionOperator constraintScheme
-global BLOCK_F BLOCK_QN BLOCK_PHI1_CONSTRAINT BLOCK_DENSITY_CONSTRAINT BLOCK_PRESSURE_CONSTRAINT BLOCK_F_CONSTRAINT
+global BLOCK_F BLOCK_QN BLOCK_PHI1_CONSTRAINT BLOCK_DENSITY_CONSTRAINT BLOCK_PRESSURE_CONSTRAINT BLOCK_F_CONSTRAINT indexVars
 global includePhi1 nonlinear useDKESExBDrift includeXDotTerm includeElectricFieldTermInXiDot magneticDriftScheme
 global Delta alpha nu_n dPhi1Hatdtheta dPhi1Hatdzeta
 global BDotCurlB FSABHat2 dPhiHatdpsiHat force0RadialCurrentInEquilibrium
@@ -52,6 +52,22 @@ estimated_nnz = 1 * (Nx*Nx*Nspecies*Nspecies*Nxi*Ntheta*Nzeta ...
     + Nspecies*(nnz(ddtheta)*Nx*(3*Nxi)*Nzeta + nnz(ddzeta)*Nx*(3*Nxi)*Ntheta ...
     + Nx*(5*Nxi)*Ntheta*Nzeta + 3*Nx*Nx*Nxi*Ntheta*Nzeta ...
     + 2*2*Nx*1*Ntheta*Nzeta));
+
+estimated_nnz = Nspecies*(Ntheta*5)*Nzeta*(Nxi*5)*Nx ...  %ddtheta terms
+    + Nspecies*Ntheta*(Nzeta*5)*(Nxi*5)*Nx ...            %ddzeta terms
+    + Nspecies*Ntheta*Nzeta*(Nxi*5)*Nx ...                %ddxi terms
+    + Nspecies*Ntheta*Nzeta*(Nxi*5)*(Nx*Nx) ...           %ddx terms (collisionless)
+    + Nspecies*Ntheta*Nzeta*(Nxi*5)*(Nx*Nx);              %collision terms
+
+if constraintScheme==1
+elseif constraintScheme==2
+end
+
+if includePhi1
+    estimated_nnz = estimated_nnz + Ntheta*Nzeta*Nx ...  % quasineutrality equation
+        + (Ntheta*5)*Nzeta*Nxi*Nx ...                    % dPhi1/dtheta
+        + Ntheta*(Nzeta*5)*Nxi*Nx;                    % dPhi1/dzeta
+end
 
 sparseCreatorIndex=1;
 sparseCreator_i=0;
@@ -121,7 +137,7 @@ for ispecies = 1:Nspecies
                 nonlinearTerm = diag(nonlinearTermSpatialPart(:,izeta))*ddthetaToUse;
                 
                 for ix = ixMin:Nx
-                    rowIndices = sfincs_indices(ispecies, ix, L+1, 1:Ntheta, izeta, BLOCK_F);
+                    rowIndices = sfincs_indices(ispecies, ix, L+1, 1:Ntheta, izeta, BLOCK_F, indexVars);
 
                     % Diagonal in L
                     colIndices = rowIndices;
@@ -132,14 +148,14 @@ for ispecies = 1:Nspecies
                     % Super-diagonal in L
                     ell = L + 1;
                     if (ell <= Nxi-1)
-                        colIndices = sfincs_indices(ispecies, ix, ell+1, 1:Ntheta, izeta, BLOCK_F);
+                        colIndices = sfincs_indices(ispecies, ix, ell+1, 1:Ntheta, izeta, BLOCK_F, indexVars);
                         addSparseBlock(rowIndices, colIndices, streamingTerm*x(ix)*(L+1)/(2*L+3))
                     end
                     
                     % Sub-diagonal in L
                     ell = L - 1;
                     if (ell >= 0)
-                        colIndices = sfincs_indices(ispecies, ix, ell+1, 1:Ntheta, izeta, BLOCK_F);
+                        colIndices = sfincs_indices(ispecies, ix, ell+1, 1:Ntheta, izeta, BLOCK_F, indexVars);
                         addSparseBlock(rowIndices, colIndices, streamingTerm*x(ix)*L/(2*L-1))
                     end
                     
@@ -147,7 +163,7 @@ for ispecies = 1:Nspecies
                         % Super-super-diagonal in L
                         ell = L + 2;
                         if (ell <= Nxi-1)
-                            colIndices = sfincs_indices(ispecies, ix, ell+1, 1:Ntheta, izeta, BLOCK_F);
+                            colIndices = sfincs_indices(ispecies, ix, ell+1, 1:Ntheta, izeta, BLOCK_F, indexVars);
                             addSparseBlock(rowIndices, colIndices, ...
                                 x2(ix)*(magneticDriftTerm1+magneticDriftTerm2)*(L+2)*(L+1)/((2*L+5)*(2*L+3))...
                                 + x2(ix)*magneticDriftTerm3*(-3)*(L+2)*(L+1)/((2*L+5)*(2*L+3)))
@@ -156,7 +172,7 @@ for ispecies = 1:Nspecies
                         % Sub-sub-diagonal in L
                         ell = L - 2;
                         if (ell >= 0)
-                            colIndices = sfincs_indices(ispecies, ix, ell+1, 1:Ntheta, izeta, BLOCK_F);
+                            colIndices = sfincs_indices(ispecies, ix, ell+1, 1:Ntheta, izeta, BLOCK_F, indexVars);
                             addSparseBlock(rowIndices, colIndices, ...
                                 x2(ix)*(magneticDriftTerm1+magneticDriftTerm2)*(L-1)*L/((2*L-3)*(2*L-1))...
                                 + x2(ix)*magneticDriftTerm3*(-3)*(L-1)*L/((2*L-3)*(2*L-1)))
@@ -217,7 +233,7 @@ for ispecies = 1:Nspecies
                 nonlinearTerm = diag(nonlinearTermSpatialPart(itheta,:))*ddzetaToUse;
                 
                 for ix = ixMin:Nx
-                    rowIndices = sfincs_indices(ispecies, ix, L+1, itheta, 1:Nzeta, BLOCK_F);
+                    rowIndices = sfincs_indices(ispecies, ix, L+1, itheta, 1:Nzeta, BLOCK_F, indexVars);
 
                     % Diagonal in L
                     colIndices = rowIndices;
@@ -228,14 +244,14 @@ for ispecies = 1:Nspecies
                     % Super-diagonal in L
                     ell = L + 1;
                     if (ell <= Nxi-1)
-                        colIndices = sfincs_indices(ispecies, ix, ell+1, itheta, 1:Nzeta, BLOCK_F);
+                        colIndices = sfincs_indices(ispecies, ix, ell+1, itheta, 1:Nzeta, BLOCK_F, indexVars);
                         addSparseBlock(rowIndices, colIndices, streamingTerm*x(ix)*(L+1)/(2*L+3))
                     end
                     
                     % Sub-diagonal in L
                     ell = L - 1;
                     if (ell >= 0)
-                        colIndices = sfincs_indices(ispecies, ix, ell+1, itheta, 1:Nzeta, BLOCK_F);
+                        colIndices = sfincs_indices(ispecies, ix, ell+1, itheta, 1:Nzeta, BLOCK_F, indexVars);
                         addSparseBlock(rowIndices, colIndices, streamingTerm*x(ix)*L/(2*L-1))
                     end
                     
@@ -243,7 +259,7 @@ for ispecies = 1:Nspecies
                         % Super-super-diagonal in L
                         ell = L + 2;
                         if (ell <= Nxi-1)
-                            colIndices = sfincs_indices(ispecies, ix, ell+1, itheta, 1:Nzeta, BLOCK_F);
+                            colIndices = sfincs_indices(ispecies, ix, ell+1, itheta, 1:Nzeta, BLOCK_F, indexVars);
                             addSparseBlock(rowIndices, colIndices, ...
                                 x2(ix)*(magneticDriftTerm1+magneticDriftTerm2)*(L+2)*(L+1)/((2*L+5)*(2*L+3))...
                                 + x2(ix)*magneticDriftTerm3*(-3)*(L+2)*(L+1)/((2*L+5)*(2*L+3)))
@@ -252,7 +268,7 @@ for ispecies = 1:Nspecies
                         % Sub-sub-diagonal in L
                         ell = L - 2;
                         if (ell >= 0)
-                            colIndices = sfincs_indices(ispecies, ix, ell+1, itheta, 1:Nzeta, BLOCK_F);
+                            colIndices = sfincs_indices(ispecies, ix, ell+1, itheta, 1:Nzeta, BLOCK_F, indexVars);
                             addSparseBlock(rowIndices, colIndices, ...
                                 x2(ix)*(magneticDriftTerm1+magneticDriftTerm2)*(L-1)*L/((2*L-3)*(2*L-1))...
                                 + x2(ix)*magneticDriftTerm3*(-3)*(L-1)*L/((2*L-3)*(2*L-1)))
@@ -303,7 +319,7 @@ for ispecies = 1:Nspecies
         for L = 0:(Nxi-1)
             for itheta = 1:Ntheta
                 for ix = ixMin:Nx
-                    rowIndices = sfincs_indices(ispecies, ix, L+1, itheta, 1:Nzeta, BLOCK_F);
+                    rowIndices = sfincs_indices(ispecies, ix, L+1, itheta, 1:Nzeta, BLOCK_F, indexVars);
                     
                     % Diagonal in L
                     colIndices = rowIndices;
@@ -313,7 +329,7 @@ for ispecies = 1:Nspecies
                     % Super-diagonal in L
                     ell = L + 1;
                     if (ell <= Nxi-1)
-                        colIndices = sfincs_indices(ispecies, ix, ell+1, itheta, 1:Nzeta, BLOCK_F);
+                        colIndices = sfincs_indices(ispecies, ix, ell+1, itheta, 1:Nzeta, BLOCK_F, indexVars);
                         addToSparse(rowIndices, colIndices, ...
                             x(ix)*mirrorTermSpatialPart(itheta,:)*(L+1)*(L+2)/(2*L+3) ...
                             + (1/x(ix))*nonlinearTermSpatialPart(itheta,:)*(L+1)*(L+2)/(2*L+3))
@@ -322,7 +338,7 @@ for ispecies = 1:Nspecies
                     % Sub-diagonal in L
                     ell = L - 1;
                     if (ell >= 0)
-                        colIndices = sfincs_indices(ispecies, ix, ell+1, itheta, 1:Nzeta, BLOCK_F);
+                        colIndices = sfincs_indices(ispecies, ix, ell+1, itheta, 1:Nzeta, BLOCK_F, indexVars);
                         addToSparse(rowIndices, colIndices, ...
                             - x(ix)*mirrorTermSpatialPart(itheta,:)*(L-1)*L/(2*L-1) ...
                             - (1/x(ix))*nonlinearTermSpatialPart(itheta,:)*(L-1)*L/(2*L-1))
@@ -332,7 +348,7 @@ for ispecies = 1:Nspecies
                         % Super-super-diagonal in L
                         ell = L + 2;
                         if (ell <= Nxi-1)
-                            colIndices = sfincs_indices(ispecies, ix, ell+1, itheta, 1:Nzeta, BLOCK_F);
+                            colIndices = sfincs_indices(ispecies, ix, ell+1, itheta, 1:Nzeta, BLOCK_F, indexVars);
                             addToSparse(rowIndices, colIndices, ...
                                 ErTermSpatialPart(itheta,:)*(L+3)*(L+2)*(L+1)/((2*L+5)*(2*L+3)) ...
                                 + magneticDriftSpatialPart(itheta,:)*x2(ix)*(L+3)*(L+2)*(L+1)/((2*L+5)*(2*L+3)))
@@ -341,7 +357,7 @@ for ispecies = 1:Nspecies
                         % Sub-sub-diagonal in L
                         ell = L - 2;
                         if (ell >= 0)
-                            colIndices = sfincs_indices(ispecies, ix, ell+1, itheta, 1:Nzeta, BLOCK_F);
+                            colIndices = sfincs_indices(ispecies, ix, ell+1, itheta, 1:Nzeta, BLOCK_F, indexVars);
                             addToSparse(rowIndices, colIndices, ...
                                 ErTermSpatialPart(itheta,:)*(-L)*(L-1)*(L-2)/((2*L-3)*(2*L-1)) ...
                                 + magneticDriftSpatialPart(itheta,:)*x2(ix)*(-L)*(L-1)*(L-2)/((2*L-3)*(2*L-1)))
@@ -391,7 +407,7 @@ for ispecies = 1:Nspecies
             
             for itheta = 1:Ntheta
                 for izeta = 1:Nzeta
-                    rowIndices = sfincs_indices(ispecies, 1:Nx, L+1, itheta, izeta, BLOCK_F);
+                    rowIndices = sfincs_indices(ispecies, 1:Nx, L+1, itheta, izeta, BLOCK_F, indexVars);
 
                     % Diagonal in L
                     colIndices = rowIndices;
@@ -402,14 +418,14 @@ for ispecies = 1:Nspecies
                     % Super-diagonal in L
                     ell = L + 1;
                     if (ell <= Nxi-1)
-                        colIndices = sfincs_indices(ispecies, 1:Nx, ell+1, itheta, izeta, BLOCK_F);
+                        colIndices = sfincs_indices(ispecies, 1:Nx, ell+1, itheta, izeta, BLOCK_F, indexVars);
                         addSparseBlock(rowIndices, colIndices, ddxToUse*nonlinearTermSpatialPart(itheta,izeta)*(L+1)/(2*L+3))
                     end
                     
                     % Sub-diagonal in L
                     ell = L - 1;
                     if (ell >= 0)
-                        colIndices = sfincs_indices(ispecies, 1:Nx, ell+1, itheta, izeta, BLOCK_F);
+                        colIndices = sfincs_indices(ispecies, 1:Nx, ell+1, itheta, izeta, BLOCK_F, indexVars);
                         addSparseBlock(rowIndices, colIndices, ddxToUse*nonlinearTermSpatialPart(itheta,izeta)*L/(2*L-1))
                     end
 
@@ -417,7 +433,7 @@ for ispecies = 1:Nspecies
                         % Super-super-diagonal in L
                         ell = L + 2;
                         if (ell <= Nxi-1)
-                            colIndices = sfincs_indices(ispecies, 1:Nx, ell+1, itheta, izeta, BLOCK_F);
+                            colIndices = sfincs_indices(ispecies, 1:Nx, ell+1, itheta, izeta, BLOCK_F, indexVars);
                             addSparseBlock(rowIndices, colIndices, ...
                                 xddxToUse*(ErTermSpatialPart1(itheta,izeta)+ErTermSpatialPart2(itheta,izeta))...
                                 *(L+2)*(L+1)/((2*L+5)*(2*L+3)))
@@ -426,7 +442,7 @@ for ispecies = 1:Nspecies
                         % Sub-sub-diagonal in L
                         ell = L - 2;
                         if (ell >= 0)
-                            colIndices = sfincs_indices(ispecies, 1:Nx, ell+1, itheta, izeta, BLOCK_F);
+                            colIndices = sfincs_indices(ispecies, 1:Nx, ell+1, itheta, izeta, BLOCK_F, indexVars);
                             addSparseBlock(rowIndices, colIndices, ...
                                 xddxToUse*(ErTermSpatialPart1(itheta,izeta)+ErTermSpatialPart2(itheta,izeta))...
                                 *(L-1)*L/((2*L-3)*(2*L-1)))
@@ -454,8 +470,8 @@ for ispecies = 1:Nspecies
         for izeta = 1:Nzeta
             factor = diag(spatialPart(:,izeta))*ddtheta;
             for ix = 1:Nx
-                rowIndices = sfincs_indices(ispecies,ix,L+1,1:Ntheta,izeta,BLOCK_F);
-                colIndices = sfincs_indices(1,1,1,1:Ntheta,izeta,BLOCK_QN);
+                rowIndices = sfincs_indices(ispecies,ix,L+1,1:Ntheta,izeta,BLOCK_F, indexVars);
+                colIndices = sfincs_indices(1,1,1,1:Ntheta,izeta,BLOCK_QN, indexVars);
                 addSparseBlock(rowIndices, colIndices, factor*df0dx(ix))
             end
         end
@@ -465,8 +481,8 @@ for ispecies = 1:Nspecies
         for itheta = 1:Ntheta
             factor = diag(spatialPart(itheta,:))*ddzeta;
             for ix = 1:Nx
-                rowIndices = sfincs_indices(ispecies,ix,L+1,itheta,1:Nzeta,BLOCK_F);
-                colIndices = sfincs_indices(1,1,1,itheta,1:Nzeta,BLOCK_QN);
+                rowIndices = sfincs_indices(ispecies,ix,L+1,itheta,1:Nzeta,BLOCK_F, indexVars);
+                colIndices = sfincs_indices(1,1,1,itheta,1:Nzeta,BLOCK_QN, indexVars);
                 addSparseBlock(rowIndices, colIndices, factor*df0dx(ix))
             end
         end
@@ -635,8 +651,8 @@ switch (collisionOperator)
                     
                     for itheta = 1:Ntheta
                         for izeta = 1:Nzeta
-                            rowIndices = sfincs_indices(speciesA, 1:Nx, L+1, itheta, izeta, BLOCK_F);
-                            colIndices = sfincs_indices(speciesB, 1:Nx, L+1, itheta, izeta, BLOCK_F);
+                            rowIndices = sfincs_indices(speciesA, 1:Nx, L+1, itheta, izeta, BLOCK_F, indexVars);
+                            colIndices = sfincs_indices(speciesB, 1:Nx, L+1, itheta, izeta, BLOCK_F, indexVars);
                             addSparseBlock(rowIndices, colIndices, -nu_n*CHat)
                         end
                     end
@@ -668,16 +684,16 @@ switch (collisionOperator)
         end
         
         % Now that nuD has been assembled,
-        for L=0:(Nxi-1)
+        for L=1:(Nxi-1)  % We can skip L=0 since C \propto L*(L+1)
             for iSpecies = 1:Nspecies
-                CHat = -0.5*diag(nuD(:,iSpecies))*L*(L+1);
+                CHat = -0.5*nuD(:,iSpecies)*L*(L+1);
                 
                 % At this point, CHat holds the collision operator
                 % divided by \bar{nu}
                 
                 for itheta = 1:Ntheta
                     for izeta = 1:Nzeta
-                        indices = sfincs_indices(iSpecies, 1:Nx, L+1, itheta, izeta, BLOCK_F);
+                        indices = sfincs_indices(iSpecies, 1:Nx, L+1, itheta, izeta, BLOCK_F, indexVars);
                         addToSparse(indices, indices, -nu_n*CHat)
                     end
                 end
@@ -709,12 +725,12 @@ if whichMatrix ~= 2 && pointAtX0
             for izeta = 1:Nzeta
                 % For L=0, force df/dx=0 at x=0 (regularity)
                 L = 0;
-                rowIndex = sfincs_indices(ispecies, 1, L+1, itheta, izeta, BLOCK_F);
-                colIndices = sfincs_indices(ispecies, 1:Nx, L+1, itheta, izeta, BLOCK_F);
+                rowIndex = sfincs_indices(ispecies, 1, L+1, itheta, izeta, BLOCK_F, indexVars);
+                colIndices = sfincs_indices(ispecies, 1:Nx, L+1, itheta, izeta, BLOCK_F, indexVars);
                 addSparseBlock(rowIndex, colIndices, ddxToUse(1,:))
                 
                 % For L>0, set f=0 at x=0:
-                indices = sfincs_indices(ispecies, 1, 2:Nxi, itheta, izeta, BLOCK_F);
+                indices = sfincs_indices(ispecies, 1, 2:Nxi, itheta, izeta, BLOCK_F, indexVars);
                 addToSparse(indices, indices, ones(size(indices)))
             end
         end
@@ -735,12 +751,12 @@ if whichMatrix ~= 2
             for ispecies = 1:Nspecies
                 for itheta = 1:Ntheta
                     for izeta = 1:Nzeta
-                        colIndices = sfincs_indices(ispecies, 1:Nx, L+1, itheta, izeta, BLOCK_F);
+                        colIndices = sfincs_indices(ispecies, 1:Nx, L+1, itheta, izeta, BLOCK_F, indexVars);
                         
-                        rowIndex = sfincs_indices(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT);
+                        rowIndex = sfincs_indices(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT, indexVars);
                         addSparseBlock(rowIndex, colIndices, thetaWeights(itheta)*zetaWeights(izeta)*(x2.*xWeights)' / (DHat(itheta,izeta)))
                         
-                        rowIndex = sfincs_indices(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT);
+                        rowIndex = sfincs_indices(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT, indexVars);
                         addSparseBlock(rowIndex, colIndices, thetaWeights(itheta)*zetaWeights(izeta)*(x2.*x2.*xWeights)' / (DHat(itheta,izeta)))
                     end
                 end
@@ -752,10 +768,10 @@ if whichMatrix ~= 2
                 % I think this loop should go from 1 rather than from
                 % ixMin. But I could be convinced otherwise.
                 for ix = 1:Nx
-                    rowIndex = sfincs_indices(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT);
+                    rowIndex = sfincs_indices(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT, indexVars);
                     for itheta = 1:Ntheta
-                        colIndices = sfincs_indices(ispecies, ix, L+1, itheta, 1:Nzeta, BLOCK_F);
-                        addSparseBlock(rowIndex, colIndices, thetaWeights(itheta)*zetaWeights./DHat(itheta,:))
+                        colIndices = sfincs_indices(ispecies, ix, L+1, itheta, 1:Nzeta, BLOCK_F, indexVars);
+                        addSparseBlock(rowIndex, colIndices, thetaWeights(itheta)*(zetaWeights')./DHat(itheta,:))
                     end
                 end
             end
@@ -782,12 +798,12 @@ if whichMatrix ~= 2
             for ispecies = 1:Nspecies
                 for ix = ixMin:Nx
                     for itheta = 1:Ntheta
-                        rowIndices = sfincs_indices(ispecies, ix, L+1, itheta, 1:Nzeta, BLOCK_F);
+                        rowIndices = sfincs_indices(ispecies, ix, L+1, itheta, 1:Nzeta, BLOCK_F, indexVars);
                         
-                        colIndex = sfincs_indices(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT);
+                        colIndex = sfincs_indices(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT, indexVars);
                         addSparseBlock(rowIndices, colIndex, xPartOfSource1(ix)*ones(Nzeta,1))
                         
-                        colIndex = sfincs_indices(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT);
+                        colIndex = sfincs_indices(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT, indexVars);
                         addSparseBlock(rowIndices, colIndex, xPartOfSource2(ix)*ones(Nzeta,1))
                     end
                 end
@@ -797,9 +813,9 @@ if whichMatrix ~= 2
             L=0;
             for ispecies = 1:Nspecies
                 for ix = ixMin:Nx
-                    colIndex = sfincs_indices(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT);
+                    colIndex = sfincs_indices(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT, indexVars);
                     for itheta = 1:Ntheta
-                        rowIndices = sfincs_indices(ispecies, ix, L+1, itheta, 1:Nzeta, BLOCK_F);
+                        rowIndices = sfincs_indices(ispecies, ix, L+1, itheta, 1:Nzeta, BLOCK_F, indexVars);
                         addSparseBlock(rowIndices, colIndex, ones(Nzeta,1))
                     end
                 end
@@ -819,10 +835,10 @@ if whichMatrix ~= 2 && includePhi1
     speciesFactor = Zs .* ((THats./mHats).^(3/2));
     for itheta = 1:Ntheta
         for izeta = 1:Nzeta
-            rowIndex = sfincs_indices(1, 1, 1, itheta, izeta, BLOCK_QN);
+            rowIndex = sfincs_indices(1, 1, 1, itheta, izeta, BLOCK_QN, indexVars);
             for ispecies = 1:Nspecies
-                colIndices = sfincs_indices(ispecies, 1:Nx, L+1, itheta, izeta, BLOCK_F);
-                addSparseBlock(rowIndex, colIndices, xPart*speciesFactor(ispecies))
+                colIndices = sfincs_indices(ispecies, 1:Nx, L+1, itheta, izeta, BLOCK_F, indexVars);
+                addSparseBlock(rowIndex, colIndices, xPart' *speciesFactor(ispecies))
             end
         end
     end
@@ -833,9 +849,9 @@ end
 % --------------------------------------------------
 
 if whichMatrix ~= 2 && includePhi1
-    colIndex = sfincs_indices(1, 1, 1, 1, 1, BLOCK_PHI1_CONSTRAINT);
+    colIndex = sfincs_indices(1, 1, 1, 1, 1, BLOCK_PHI1_CONSTRAINT, indexVars);
     for itheta = 1:Ntheta
-        rowIndices = sfincs_indices(1, 1, 1, itheta, 1:Nzeta, BLOCK_QN);
+        rowIndices = sfincs_indices(1, 1, 1, itheta, 1:Nzeta, BLOCK_QN, indexVars);
         addSparseBlock(rowIndices, colIndex, ones(Nzeta,1))
     end
 end
@@ -846,9 +862,9 @@ end
 
 if whichMatrix ~= 2 && includePhi1
     for itheta = 1:Ntheta
-        colIndices = sfincs_indices(1, 1, 1, itheta, 1:Nzeta, BLOCK_QN);
-        rowIndex = sfincs_indices(1, 1, 1, 1, 1, BLOCK_PHI1_CONSTRAINT);
-        addSparseBlock(rowIndex, colIndices, thetaWeights(itheta)*zetaWeights ./ (DHat(itheta,:)))
+        colIndices = sfincs_indices(1, 1, 1, itheta, 1:Nzeta, BLOCK_QN, indexVars);
+        rowIndex = sfincs_indices(1, 1, 1, 1, 1, BLOCK_PHI1_CONSTRAINT, indexVars);
+        addSparseBlock(rowIndex, colIndices, thetaWeights(itheta)*(zetaWeights') ./ (DHat(itheta,:)))
     end
 end
 

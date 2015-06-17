@@ -19,6 +19,7 @@
 
 &general
   RHSMode = 1
+  saveMatricesAndVectorsInBinary=.t.
 /
 
 &geometryParameters

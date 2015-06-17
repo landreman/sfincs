@@ -2,7 +2,7 @@ function sfincs_solver()
 
 global matrixSize reusePreconditioner nonlinearTolerance stateVector useIterativeLinearSolver nonlinear
 global dnHatdpsiHats dTHatdpsiHats EParallelHat nHats THats Phi1Hat dPhi1Hatdtheta dPhi1Hatdzeta
-global Ntheta Nzeta RHSMode
+global Ntheta Nzeta RHSMode whichRHS
 global preconditioner_L preconditioner_U preconditioner_P preconditioner_Q
 global Jacobian preconditionerMatrix initialResidual
 
@@ -35,8 +35,10 @@ switch RHSMode
             if whichNonlinearIteration == 1
                 initialResidualNorm = residualNorm;
                 initialResidual = residual;
+                fprintf('Residual norm: absolute = %g\n',residualNorm)
+            else
+                fprintf('Residual norm: absolute = %g, compared to 1st iteration = %g\n',residualNorm,residualNorm/initialResidualNorm)
             end
-            fprintf('Residual norm: absolute = %g, reduction from 1st iteration = \n',residualNorm,residualNorm/initialResidualNorm)
             
             if residualNorm / initialResidualNorm < nonlinearTolerance
                 fprintf('Residual norm is below nonlinear tolerance, so exiting Newton iteration.\n')

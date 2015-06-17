@@ -16,15 +16,22 @@ equilibriumFile = 'C:\Users\landreman\Box Sync\MATLAB\20150601-01 Sfincs version
 rN_wish = 0.5;
 
 global nuPrime EStar collisionOperator
+global includeXDotTerm includeElectricFieldTermInXiDot useDKESExBDrift
 nuPrime = 1.0;
 EStar = 0.2;
 collisionOperator = 1;
+includeXDotTerm = false;
+includeElectricFieldTermInXiDot = false;
+useDKESExBDrift = true;
 
-global Ntheta Nzeta Nxi
+global Ntheta Nzeta Nxi Nx
 Ntheta = 17;
 Nzeta = 31;
 Nxi = 24;
+Nx = 1;
 
 sfincs_main()
 
-sfincs_compareToFortran('C:\Users\landreman\Documents\Ubuntu\sfincsOutput5.h5')
+directory = ['../../../fortran/version3/examples/',mfilename];
+sfincs_compareToFortran(fullfile(directory,'sfincsOutput.h5'))
+sfincs_compareMatricesAndVectorsToFortran(directory)

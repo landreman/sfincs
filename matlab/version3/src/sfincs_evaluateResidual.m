@@ -1,7 +1,7 @@
 function residual = sfincs_evaluateResidual()
 
 global stateVector matrixSize RHSMode pointAtX0 dPhiHatdpsiHat includeTemperatureEquilibrationTerm f0
-global x Nspecies Ntheta Nzeta Nx Delta alpha BLOCK_F
+global x Nspecies Ntheta Nzeta Nx Delta alpha BLOCK_F indexVars
 global Zs THats mHats nHats dnHatdpsiHats dTHatdpsiHats EParallelHat
 global BHat DHat FSABHat2 BHat_sub_zeta BHat_sub_theta
 global dBHatdtheta dBHatdzeta
@@ -71,16 +71,16 @@ for ispecies = 1:Nspecies
             % Gradient terms:
             
             L = 0;
-            indices = sfincs_indices(ispecies, ix, L+1, itheta, allZeta, BLOCK_F);
+            indices = sfincs_indices(ispecies, ix, L+1, itheta, allZeta, BLOCK_F, indexVars);
             rhs(indices) =  (4/3)*xPartOfRHS*spatialFactor(itheta,:);
             
             L = 2;
-            indices = sfincs_indices(ispecies, ix, L+1, itheta, allZeta, BLOCK_F);
+            indices = sfincs_indices(ispecies, ix, L+1, itheta, allZeta, BLOCK_F, indexVars);
             rhs(indices) = (2/3)*xPartOfRHS*spatialFactor(itheta,:);
             
             % Inductive term:
             L = 1;
-            indices = sfincs_indices(ispecies, ix, L+1, itheta, allZeta, BLOCK_F);
+            indices = sfincs_indices(ispecies, ix, L+1, itheta, allZeta, BLOCK_F, indexVars);
             rhs(indices) = inductiveFactor * BHat(itheta,:);
             
         end

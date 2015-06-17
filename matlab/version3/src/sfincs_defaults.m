@@ -159,7 +159,7 @@ preconditioner_theta = 0;
 preconditioner_theta_min_L = 0;
 preconditioner_zeta = 0;
 preconditioner_zeta_min_L = 0;
-preconditioner_xi = 0;
+preconditioner_xi = 1;
 reusePreconditioner = true;
 
 % *************************************************************************
