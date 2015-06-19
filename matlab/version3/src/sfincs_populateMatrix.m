@@ -142,7 +142,7 @@ for ispecies = 1:Nspecies
                     % Diagonal in L
                     colIndices = rowIndices;
                     addSparseBlock(rowIndices, colIndices, ExBTerm + nonlinearTerm ...
-                        + x2(ix)*(magneticDriftTerm1+magneticDriftTerm2)*(L-1)*L/((2*L-3)*(2*L-1))...
+                        + x2(ix)*(magneticDriftTerm1*2*(3*L*L+3*L-2)+magneticDriftTerm2*(2*L*L+2*L-1))/((2*L+3)*(2*L-1))...
                         + x2(ix)*magneticDriftTerm3*(-2)*L*(L+1)/((2*L+3)*(2*L-1)))
     
                     % Super-diagonal in L
@@ -197,6 +197,7 @@ for ispecies = 1:Nspecies
             ExBTermSpatialPart = ExBTermSpatialPart ./ (BHat.*BHat);
         end
         
+        
         magneticDriftFactor = Delta*THat*DHat./(2*Z*(BHat.^3));
         if magneticDriftScheme>0
             magneticDriftSpatialPart1 = magneticDriftFactor .* (-BHat_sub_theta.*dBHatdpsiHat + BHat_sub_psi.*dBHatdtheta);
@@ -210,7 +211,11 @@ for ispecies = 1:Nspecies
         else
             magneticDriftSpatialPart3 = zeros(Ntheta,Nzeta);
         end
-        
+        %{
+        magneticDriftSpatialPart1 = zeros(Ntheta,Nzeta);
+        magneticDriftSpatialPart2 = zeros(Ntheta,Nzeta);
+        magneticDriftSpatialPart3 = zeros(Ntheta,Nzeta);
+        %}
         if nonlinear
             nonlinearTermSpatialPart = alpha*Delta*DHat.*BHat_sub_psi.*dPhi1Hatdtheta./(2*BHat.*BHat);
         else
@@ -238,7 +243,7 @@ for ispecies = 1:Nspecies
                     % Diagonal in L
                     colIndices = rowIndices;
                     addSparseBlock(rowIndices, colIndices, ExBTerm + nonlinearTerm ...
-                        + x2(ix)*(magneticDriftTerm1+magneticDriftTerm2)*(L-1)*L/((2*L-3)*(2*L-1))...
+                        + x2(ix)*(magneticDriftTerm1*2*(3*L*L+3*L-2)+magneticDriftTerm2*(2*L*L+2*L-1))/((2*L+3)*(2*L-1))...
                         + x2(ix)*magneticDriftTerm3*(-2)*L*(L+1)/((2*L+3)*(2*L-1)))
     
                     % Super-diagonal in L
@@ -304,6 +309,7 @@ for ispecies = 1:Nspecies
         end
         
         if magneticDriftScheme>0
+        %if false
             factor = -Delta*THat*DHat./(2*Z*(BHat.^3));
             magneticDriftSpatialPart = factor.* ...
                 (dBHatdtheta.*(dBHat_sub_psi_dzeta - dBHat_sub_zeta_dpsiHat) ...

@@ -797,11 +797,11 @@ distribution function is isotropic and so does not directly give any parallel or
 {This variable controls the poloidal and magnetic drifts, and does not affect the radial magnetic drift.
 THIS FUNCTIONALITY IS WORK IN PROGRESS, AND RESULTS ARE BUGGY WHEN THIS VARIABLE IS NONZERO.\\
 
-{\ttfamily magneticDriftScheme} = 0:  No poloidal or toroidal magnetic drift.\\
+{\ttfamily magneticDriftScheme} = 0: No poloidal or toroidal magnetic drift.\\
 
-{\ttfamily magneticDriftScheme} = 1: Use the grad-B and curvature drift, plus the parallel velocity correction $v_{\perp}^2/(2 \Omega_c) \vect{b} \vect{b} \cdot \nabla \times \vect{b}$.\\
+{\ttfamily magneticDriftScheme} = 1: Use the magnetic drift $v_m = (v_{||} / \Omega_c) \nabla \times (v_{||} \vect{b})$.\\
 
-{\ttfamily magneticDriftScheme} = 2:   Use the magnetic drift $v_m = (v_{||} / \Omega_c) \nabla (v_{||} \vect{b})$.
+{\ttfamily magneticDriftScheme} = 2: Use the grad-B and curvature drift, plus the parallel velocity correction $v_{\perp}^2/(2 \Omega_c) \vect{b} \vect{b} \cdot \nabla \times \vect{b}$.
 }
 
 

@@ -94,11 +94,11 @@ compare('dBHat_sub_theta_dzeta')
 compare('dBHat_sub_zeta_dtheta')
 compare('dBHat_sub_zeta_dpsiHat')
 
-compare('dBHat_sup_theta_dpsiHat')
+%compare('dBHat_sup_theta_dpsiHat')
 compare('dBHat_sup_theta_dzeta')
 
 compare('dBHat_sup_zeta_dtheta')
-compare('dBHat_sup_zeta_dpsiHat')
+%compare('dBHat_sup_zeta_dpsiHat')
 
 % Now compare 'output' quantities that will differ beyond the solver
 % tolerance.

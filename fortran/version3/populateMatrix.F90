@@ -480,7 +480,7 @@
                    geometricFactor2 = 2 * BHat(ithetaRow,izeta) &
                         * (dBHat_sub_psi_dzeta(ithetaRow,izeta) - dBHat_sub_zeta_dpsiHat(ithetaRow,izeta))
 
-                   if (magneticDriftScheme==1) then
+                   if (magneticDriftScheme==2) then
                       geometricFactor3 = BDotCurlB(ithetaRow,izeta)*BHat_sup_theta(ithetaRow,izeta) &
                            /(BHat(ithetaRow,izeta)*DHat(ithetaRow,izeta))
                    else
@@ -568,7 +568,7 @@
                    geometricFactor2 = 2 * BHat(itheta,izetaRow) &
                         * (dBHat_sub_theta_dpsiHat(itheta,izetaRow) - dBHat_sub_psi_dtheta(itheta,izetaRow))
 
-                   if (magneticDriftScheme==1) then
+                   if (magneticDriftScheme==2) then
                       geometricFactor3 = BDotCurlB(itheta,izetaRow)*BHat_sup_zeta(itheta,izetaRow) &
                            /(BHat(itheta,izetaRow)*DHat(itheta,izetaRow))
                    else
