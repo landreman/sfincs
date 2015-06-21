@@ -297,14 +297,12 @@ subroutine validateInput()
      stop
   end if
 
-  if (magneticDriftScheme>0) then
+  if (magneticDriftScheme>0 .and. includePhi1) then
      if (masterProc) then
-     print *,line
-     print *,line
-     print *,"**   WARNING: magneticDriftScheme>0 is buggy. Do not believe these results."
-     print *,line
-     print *,line
+        print *,"**   ERROR! Some terms involving Phi1 and the magnetic drifts have not yet been implemented."
+        print *,"**          Hence magneticDriftScheme>0 is incompatible with includePhi1."
      end if
+     stop
   end if
 
   if ((magneticDriftScheme>0) .and. (geometryScheme .ne. 5)) then

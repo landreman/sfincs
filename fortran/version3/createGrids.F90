@@ -636,6 +636,12 @@
 
     call computeBHat()
 
+    ! *********************************************************
+    ! Compute a few quantities related to the magnetic field:
+    ! *********************************************************
+
+    call computeBIntegrals()
+
     if (masterProc) then
        print *,"---- Geometry parameters: ----"
        print *,"Geometry scheme = ", geometryScheme
@@ -650,12 +656,6 @@
        print *,"IHat (Boozer component multiplying grad theta) = ", IHat
        print *,"iota (Rotational transform) = ", iota
     end if
-
-    ! *********************************************************
-    ! Compute a few quantities related to the magnetic field:
-    ! *********************************************************
-
-    call computeBIntegrals()
 
     ! *********************************************************
     ! Allocate some arrays that will be used later for output quantities:

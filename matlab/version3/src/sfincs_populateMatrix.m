@@ -110,7 +110,7 @@ for ispecies = 1:Nspecies
             magneticDriftSpatialPart2 = zeros(Ntheta,Nzeta);
         end
         if magneticDriftScheme==2
-            magneticDriftSpatialPart1 = magneticDriftFactor .* BDotCurlB .* BHat_sup_theta ./ (BHat.*DHat);
+            magneticDriftSpatialPart3 = magneticDriftFactor .* BDotCurlB .* BHat_sup_theta ./ (BHat.*DHat);
         else
             magneticDriftSpatialPart3 = zeros(Ntheta,Nzeta);
         end
@@ -207,7 +207,7 @@ for ispecies = 1:Nspecies
             magneticDriftSpatialPart2 = zeros(Ntheta,Nzeta);
         end
         if magneticDriftScheme==2
-            magneticDriftSpatialPart1 = magneticDriftFactor .* BDotCurlB .* BHat_sup_zeta ./ (BHat.*DHat);
+            magneticDriftSpatialPart3 = magneticDriftFactor .* BDotCurlB .* BHat_sup_zeta ./ (BHat.*DHat);
         else
             magneticDriftSpatialPart3 = zeros(Ntheta,Nzeta);
         end
@@ -408,6 +408,9 @@ for ispecies = 1:Nspecies
             if pointAtX0
                 % Do not enforce the kinetic equation at x=0:
                 ddxToUse(1,:)=0;
+                if L ~= 0
+                    ddxToUse(:,1)=0;
+                end
             end
             xddxToUse = diag(x)*ddxToUse;
             
@@ -652,6 +655,13 @@ switch (collisionOperator)
                         
                     end
                     
+                    if pointAtX0
+                        CHat(1,:) = 0;
+                        if L ~= 0
+                            CHat(:,1) = 0;
+                        end
+                    end
+                    
                     % At this point, CHat holds the collision operator
                     % divided by \bar{nu}
                     
@@ -696,6 +706,13 @@ switch (collisionOperator)
                 
                 % At this point, CHat holds the collision operator
                 % divided by \bar{nu}
+
+                if pointAtX0
+                    CHat(1,:) = 0;
+                    % We skip L=0 in this loop, so we know L is nonzero.
+                    % Hence,
+                    CHat(:,1) = 0;
+                end
                 
                 for itheta = 1:Ntheta
                     for izeta = 1:Nzeta

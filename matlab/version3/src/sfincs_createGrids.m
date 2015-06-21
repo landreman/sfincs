@@ -195,6 +195,9 @@ else
             [x, xWeights, polynomials_a, polynomials_b, polynomials_c] = sfincs_GaussWeightsAndAbscissae(Nx, @sfincs_xWeight, 0, Inf, pointAtX0);
             xWeights = xWeights./sfincs_xWeight(x);
             weightFactors=[xGrid_k./x-2*x, xGrid_k*(xGrid_k-1)./(x.*x)-2*(2*xGrid_k+1)+4*x.*x]';
+            if pointAtX0
+                weightFactors(:,1) = [0, -2];
+            end
             differentiationMatrices = sfincs_poldif(x,sfincs_xWeight(x),weightFactors);
             ddx=differentiationMatrices(:,:,1);
             d2dx2=differentiationMatrices(:,:,2);
