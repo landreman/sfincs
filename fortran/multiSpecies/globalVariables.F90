@@ -190,6 +190,10 @@ module globalVariables
 
   !!Added by AM 2014-09!!
   PetscScalar :: ArrayFirstSpeciesParticleFluxCoefficients(3)
+  !!Added by AM 2015-05
+  PetscScalar :: ArrayFirstSpeciesHeatFluxCoefficients(3)
+  PetscScalar :: ArraySecondSpeciesParticleFluxCoefficients(3)
+  PetscScalar :: ArraySecondSpeciesHeatFluxCoefficients(3)
   !!!!!!!!!!!!!!!!!!!!!!!
 
   ! ********************************************************

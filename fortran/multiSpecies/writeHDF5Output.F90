@@ -23,6 +23,10 @@ module writeHDF5Output
 
   !!Added by AM 2014-09!!
   integer(HID_T), private :: dspaceIDForArrayFirstSpeciesParticleFluxCoefficients
+  !!Added by AM 2015-05!!
+  integer(HID_T), private :: dspaceIDForArrayFirstSpeciesHeatFluxCoefficients
+  integer(HID_T), private :: dspaceIDForArraySecondSpeciesParticleFluxCoefficients
+  integer(HID_T), private :: dspaceIDForArraySecondSpeciesHeatFluxCoefficients
   !!!!!!!!!!!!!!!!!!!!!!!
 
   integer(HID_T), dimension(:), allocatable, private :: groupIDs
@@ -110,6 +114,10 @@ module writeHDF5Output
 
   !!Added by AM 2014-09!!
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_ArrayFirstSpeciesParticleFluxCoefficients
+  !!Added by AM 2015-05!!
+  integer(HID_T), dimension(:), allocatable, private :: dsetIDs_ArrayFirstSpeciesHeatFluxCoefficients
+  integer(HID_T), dimension(:), allocatable, private :: dsetIDs_ArraySecondSpeciesParticleFluxCoefficients
+  integer(HID_T), dimension(:), allocatable, private :: dsetIDs_ArraySecondSpeciesHeatFluxCoefficients
   !!!!!!!!!!!!!!!!!!!!!!!
 
 
@@ -124,6 +132,10 @@ module writeHDF5Output
 
   !!Added by AM 2014-09!!
   integer(HSIZE_T), dimension(1), parameter, private :: dimForArrayFirstSpeciesParticleFluxCoefficients = 3
+  !!Added by AM 2015-05!!
+  integer(HSIZE_T), dimension(1), parameter, private :: dimForArrayFirstSpeciesHeatFluxCoefficients = 3
+  integer(HSIZE_T), dimension(1), parameter, private :: dimForArraySecondSpeciesParticleFluxCoefficients = 3
+  integer(HSIZE_T), dimension(1), parameter, private :: dimForArraySecondSpeciesHeatFluxCoefficients = 3
   !!!!!!!!!!!!!!!!!!!!!!!
 
 contains
@@ -260,6 +272,10 @@ contains
 
        !!Added by AM 2014-09!!
        allocate(dsetIDs_ArrayFirstSpeciesParticleFluxCoefficients(numRunsInScan))
+       !!Added by AM 2015-05!!
+       allocate(dsetIDs_ArrayFirstSpeciesHeatFluxCoefficients(numRunsInScan))
+       allocate(dsetIDs_ArraySecondSpeciesParticleFluxCoefficients(numRunsInScan))
+       allocate(dsetIDs_ArraySecondSpeciesHeatFluxCoefficients(numRunsInScan))
        !!!!!!!!!!!!!!!!!!!!!!!
 
        allocate(dspaceIDForZeta(numRunsInScan))
@@ -285,6 +301,13 @@ contains
        !!Added by AM 2014-09!!
        call h5screate_simple_f(rank, dimForArrayFirstSpeciesParticleFluxCoefficients, &
        dspaceIDForArrayFirstSpeciesParticleFluxCoefficients, HDF5Error)
+       !!Added by AM 2015-05!!
+       call h5screate_simple_f(rank, dimForArrayFirstSpeciesHeatFluxCoefficients, &
+       dspaceIDForArrayFirstSpeciesHeatFluxCoefficients, HDF5Error)
+       call h5screate_simple_f(rank, dimForArraySecondSpeciesParticleFluxCoefficients, &
+       dspaceIDForArraySecondSpeciesParticleFluxCoefficients, HDF5Error)
+       call h5screate_simple_f(rank, dimForArraySecondSpeciesHeatFluxCoefficients, &
+       dspaceIDForArraySecondSpeciesHeatFluxCoefficients, HDF5Error)
        !!!!!!!!!!!!!!!!!!!!!!!
 
        rank = 2
@@ -576,6 +599,16 @@ contains
           call h5dcreate_f(groupIDs(i), "ArrayFirstSpeciesParticleFluxCoefficients", H5T_NATIVE_DOUBLE, & 
           dspaceIDForArrayFirstSpeciesParticleFluxCoefficients, &
           dsetIDs_ArrayFirstSpeciesParticleFluxCoefficients(i), HDF5Error)
+          !!Added by AM 2015-05!!
+          call h5dcreate_f(groupIDs(i), "ArrayFirstSpeciesHeatFluxCoefficients", H5T_NATIVE_DOUBLE, & 
+          dspaceIDForArrayFirstSpeciesHeatFluxCoefficients, &
+          dsetIDs_ArrayFirstSpeciesHeatFluxCoefficients(i), HDF5Error)
+          call h5dcreate_f(groupIDs(i), "ArraySecondSpeciesParticleFluxCoefficients", H5T_NATIVE_DOUBLE, & 
+          dspaceIDForArraySecondSpeciesParticleFluxCoefficients, &
+          dsetIDs_ArraySecondSpeciesParticleFluxCoefficients(i), HDF5Error)
+          call h5dcreate_f(groupIDs(i), "ArraySecondSpeciesHeatFluxCoefficients", H5T_NATIVE_DOUBLE, & 
+          dspaceIDForArraySecondSpeciesHeatFluxCoefficients, &
+          dsetIDs_ArraySecondSpeciesHeatFluxCoefficients(i), HDF5Error)
           !!!!!!!!!!!!!!!!!!!!!!!
 
        end do
@@ -865,6 +898,13 @@ contains
        !!Added by AM 2014-09!!
        call h5dwrite_f(dsetIDs_ArrayFirstSpeciesParticleFluxCoefficients(runNum), H5T_NATIVE_DOUBLE, & 
             ArrayFirstSpeciesParticleFluxCoefficients, dimForArrayFirstSpeciesParticleFluxCoefficients, HDF5Error)
+       !!Added by AM 2015-05!!
+       call h5dwrite_f(dsetIDs_ArrayFirstSpeciesHeatFluxCoefficients(runNum), H5T_NATIVE_DOUBLE, & 
+            ArrayFirstSpeciesHeatFluxCoefficients, dimForArrayFirstSpeciesHeatFluxCoefficients, HDF5Error)
+       call h5dwrite_f(dsetIDs_ArraySecondSpeciesParticleFluxCoefficients(runNum), H5T_NATIVE_DOUBLE, & 
+            ArraySecondSpeciesParticleFluxCoefficients, dimForArraySecondSpeciesParticleFluxCoefficients, HDF5Error)
+       call h5dwrite_f(dsetIDs_ArraySecondSpeciesHeatFluxCoefficients(runNum), H5T_NATIVE_DOUBLE, & 
+            ArraySecondSpeciesHeatFluxCoefficients, dimForArraySecondSpeciesHeatFluxCoefficients, HDF5Error)
        !!!!!!!!!!!!!!!!!!!!!!!
 
     end if
@@ -968,6 +1008,10 @@ contains
 
           !!Added by AM 2014-09!!
           call h5dclose_f(dsetIDs_ArrayFirstSpeciesParticleFluxCoefficients(i), HDF5Error)
+          !!Added by AM 2015-05!!
+          call h5dclose_f(dsetIDs_ArrayFirstSpeciesHeatFluxCoefficients(i), HDF5Error)
+          call h5dclose_f(dsetIDs_ArraySecondSpeciesParticleFluxCoefficients(i), HDF5Error)
+          call h5dclose_f(dsetIDs_ArraySecondSpeciesHeatFluxCoefficients(i), HDF5Error)
           !!!!!!!!!!!!!!!!!!!!!!!
 
 
@@ -986,6 +1030,10 @@ contains
 
        !!Added by AM 2014-09!!
        call h5sclose_f(dspaceIDForArrayFirstSpeciesParticleFluxCoefficients, HDF5Error)
+       !!Added by AM 2015-05!!
+       call h5sclose_f(dspaceIDForArrayFirstSpeciesHeatFluxCoefficients, HDF5Error)
+       call h5sclose_f(dspaceIDForArraySecondSpeciesParticleFluxCoefficients, HDF5Error)
+       call h5sclose_f(dspaceIDForArraySecondSpeciesHeatFluxCoefficients, HDF5Error)
        !!!!!!!!!!!!!!!!!!!!!!!
 
        call h5pclose_f(parallelID, HDF5Error)
