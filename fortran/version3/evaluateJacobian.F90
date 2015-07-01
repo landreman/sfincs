@@ -2,7 +2,13 @@
 #include "PETScVersions.F90"
 
 
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
+       ! Syntax for PETSc versions up through 3.4
+  subroutine evaluateJacobian(mysnes, stateVec, jacobian, jacobianPC, userContext, flag, ierr)
+#else
+       ! Syntax for PETSc version 3.5 and later
   subroutine evaluateJacobian(mysnes, stateVec, jacobian, jacobianPC, userContext, ierr)
+#endif
 
     use petscsnes
     use globalVariables, only: masterProc, useIterativeLinearSolver, firstMatrixCreation, reusePreconditioner
@@ -14,10 +20,23 @@
     Mat :: jacobian, jacobianPC
     PetscErrorCode :: ierr
     integer :: userContext(*)
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
+    ! Syntax for PETSc versions up through 3.4
+    MatStructure :: flag
+#endif
 
     if (masterProc) then
        print *,"evaluateJacobian called."
     end if
+
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
+    ! Syntax for PETSc versions up through 3.4
+    if (reusePreconditioner) then
+       flag = SAME_PRECONDITIONER
+    else
+       flag = DIFFERENT_NONZERO_PATTERN
+    end if
+#endif
 
     ! When PETSc assembles a matrix, it reduces the structure of nonzeros to the actual number of nonzeros.
     ! If we try to re-assemble the matrix with additional nonzero entries without first re-allocating space for the nonzeros,

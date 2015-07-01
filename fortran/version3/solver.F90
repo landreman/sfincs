@@ -138,8 +138,14 @@ module solver
     call SNESMonitorSet(mysnes, diagnosticsMonitor, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
 
     if (reusePreconditioner) then
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
+       ! Syntax for PETSc versions up through 3.4
+       ! In this case the associated code appears in evaluateJacobian.F90
+#else
+       ! Syntax for PETSc version 3.5 and later
        call KSPSetReusePreconditioner(KSPInstance, PETSC_TRUE, ierr)
        call PCSetReusePreconditioner(preconditionerContext, PETSC_TRUE, ierr)
+#endif
     end if
 
     ! Set the algorithm to use for the nonlinear solver:
