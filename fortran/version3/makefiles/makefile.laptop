@@ -8,7 +8,7 @@ include ${PETSC_DIR}/conf/variables
 include ${PETSC_DIR}/conf/rules
 
 # Any other flags for compiling, such as -I include flags:
-EXTRA_COMPILE_FLAGS = -I/home/matt2/netcdf-fortran-4.4.1/20150127-01/architecture-independent/include
+EXTRA_COMPILE_FLAGS = -I/home/matt2/netcdf-fortran-4.4.1/20150127-01/architecture-independent/include -ffree-line-length-none
 #EXTRA_COMPILE_FLAGS =
 
 # Any other flags for linking, such as -l library flags:
