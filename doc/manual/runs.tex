@@ -114,10 +114,6 @@ file must be defined as the derivative of the electrostatic potential with respe
 For more details about the behavior of \parlink{inputRadialCoordinate}, \parlink{inputRadialCoordinateForGradients}, and \parlink{VMECRadialOption},
 see section \ref{sec:geometryParameters}.
 
-\section{Poloidal and toroidal angles}
-
-
-
 \section{Trajectory models}
 
 As discussed in \cite{sfincsPaper},
@@ -226,3 +222,16 @@ is the actual pitch-angle deflection frequency of the particle.
 \todo{These expressions are in SI units. Should there be some
   factors of $c$ to adhere to the Gaussian standard used here?
   Probably not.}
+
+\section{Poloidal and toroidal angles}
+
+If you are interested in any of the output quantities that vary on a flux surface,
+such as the density or electrostatic potential, then it is important to know
+how the poloidal and toroidal angles ($\theta$ and $\zeta$) in \sfincs~are defined.
+The definitions of the poloidal and toroidal angles in 
+\sfincs~depend on the input parameter \parlink{geometryScheme}. When a \vmec~equilibrium is imported by setting
+\parlink{geometryScheme} = 5, then \sfincs~will use the same poloidal and toroidal angles
+as \vmec.  The toroidal angle in this case is the normal cylindrical coordinate. Note that field lines
+are not straight in these \vmec~coordinates.
+For any other setting of \parlink{geometryScheme}, \sfincs~will use Boozer coordinates.
+

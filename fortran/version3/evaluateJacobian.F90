@@ -4,7 +4,7 @@
 
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
        ! Syntax for PETSc versions up through 3.4
-  subroutine evaluateJacobian(mysnes, stateVec, jacobian, jacobianPC, userContext, flag, ierr)
+  subroutine evaluateJacobian(mysnes, stateVec, jacobian, jacobianPC, flag, userContext, ierr)
 #else
        ! Syntax for PETSc version 3.5 and later
   subroutine evaluateJacobian(mysnes, stateVec, jacobian, jacobianPC, userContext, ierr)
@@ -30,7 +30,8 @@
     end if
 
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
-    ! Syntax for PETSc versions up through 3.4
+    ! Syntax for PETSc versions up through 3.4.
+    ! For PETSc versions 3.5 and later, the code related to 'reusePreconditioner' is implemented in solver.F90.
     if (reusePreconditioner) then
        flag = SAME_PRECONDITIONER
     else
