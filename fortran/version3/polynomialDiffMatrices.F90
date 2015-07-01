@@ -62,8 +62,13 @@ contains
     PetscScalar, intent(in) :: x
     PetscScalar :: dweightdxOverWeight
 
-    !dweightdxOverWeight = -2*x
-    dweightdxOverWeight = xGrid_k / x - 2*x
+    if (abs(x)<1e-12) then
+       ! Handle possible point at x=0, avoiding divide-by-0:
+       dweightdxOverWeight = 0.0d+0
+    else
+       !dweightdxOverWeight = -2*x
+       dweightdxOverWeight = xGrid_k / x - 2*x
+    end if
 
   end function dweightdxOverWeight
 
@@ -78,8 +83,13 @@ contains
     PetscScalar, intent(in) :: x
     PetscScalar :: d2weightdx2OverWeight
 
-    !d2weightdx2OverWeight = -2 + 4*x*x
-    d2weightdx2OverWeight = xGrid_k*(xGrid_k-1)/(x*x)-2*(2*xGrid_k+1)+4*x*x
+    if (abs(x)<1e-12) then
+       ! Handle possible point at x=0, avoiding divide-by-0:
+       d2weightdx2OverWeight = -2.0d+0
+    else
+       !d2weightdx2OverWeight = -2 + 4*x*x
+       d2weightdx2OverWeight = xGrid_k*(xGrid_k-1)/(x*x)-2*(2*xGrid_k+1)+4*x*x
+    end if
 
   end function d2weightdx2OverWeight
 

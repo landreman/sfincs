@@ -549,6 +549,7 @@
          !Rosenbluth_H, Rosenbluth_dHdxb, Rosenbluth_d2Gdxb2,masterProc)
     end if
 
+!    if (.true.) then
     if (.false.) then
        print *,"xGridScheme:",xGridScheme
        print *,"xInterpolationScheme:",xInterpolationScheme
@@ -557,6 +558,8 @@
        print *,"NxPotentials:",NxPotentials
        print *,"x:"
        print *,x
+       print *,"xWeights:"
+       print *,xWeights
        print *,"ddx:"
        do i=1,Nx
           print *,ddx(i,:)
@@ -633,6 +636,12 @@
 
     call computeBHat()
 
+    ! *********************************************************
+    ! Compute a few quantities related to the magnetic field:
+    ! *********************************************************
+
+    call computeBIntegrals()
+
     if (masterProc) then
        print *,"---- Geometry parameters: ----"
        print *,"Geometry scheme = ", geometryScheme
@@ -647,12 +656,6 @@
        print *,"IHat (Boozer component multiplying grad theta) = ", IHat
        print *,"iota (Rotational transform) = ", iota
     end if
-
-    ! *********************************************************
-    ! Compute a few quantities related to the magnetic field:
-    ! *********************************************************
-
-    call computeBIntegrals()
 
     ! *********************************************************
     ! Allocate some arrays that will be used later for output quantities:

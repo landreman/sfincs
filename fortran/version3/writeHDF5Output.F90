@@ -167,6 +167,7 @@ contains
             "Grid points in the toroidal angle, which runs from 0 to 2pi/Nperiods")
        call writeHDF5Field("x", x, dspaceIDForX, dimForX, &
             "Grid points in normalized speed, x_s = v / sqrt{2 T_s / m_s}, the same for each species s.")
+       call writeHDF5Field("geometryScheme", geometryScheme, "")
        call writeHDF5Field("thetaDerivativeScheme", thetaDerivativeScheme, "")
        call writeHDF5Field("zetaDerivativeScheme", zetaDerivativeScheme, "")
        call writeHDF5Field("xGridScheme", xGridScheme, "")

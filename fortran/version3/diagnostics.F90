@@ -138,6 +138,8 @@
     integer :: itheta1, izeta1, ixi1, ix1
     integer :: itheta2, izeta2, ixi2, ix2
     PetscLogDouble :: time1, time2
+    PetscViewer :: viewer
+    character(len=200) :: filename
 
     if (masterProc) then
        print *,"Computing diagnostics."
@@ -794,6 +796,32 @@
        call updateOutputFile(iterationNum, .true.)
     else
        call updateOutputFile(iterationNum, .false.)
+    end if
+
+    if (saveMatlabOutput) then
+       write (filename,fmt="(a,i3.3,a)") trim(MatlabOutputFilename) // "_iteration_", iterationForStateVectorOutput, &
+            "_stateVector.m"
+       if (masterProc) then
+          print *,"Saving state vector in matlab format: ",trim(filename)
+       end if
+       call PetscViewerASCIIOpen(MPIComm, trim(filename), viewer, ierr)
+       call PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB, ierr)
+
+       call PetscObjectSetName(solutionWithDeltaF, "stateVector", ierr)
+       call VecView(solutionWithDeltaF, viewer, ierr)
+
+       call PetscViewerDestroy(viewer, ierr)
+    end if
+
+    if (saveMatricesAndVectorsInBinary) then
+       write (filename,fmt="(a,i3.3,a)") trim(binaryOutputFilename) // "_iteration_", iterationForStateVectorOutput, &
+            "_stateVector"
+       if (masterProc) then
+          print *,"Saving state vector in binary format: ",trim(filename)
+       end if
+       call PetscViewerBinaryOpen(MPIComm, trim(filename), FILE_MODE_WRITE, viewer, ierr)
+       call VecView(solutionWithDeltaF, viewer, ierr)
+       call PetscViewerDestroy(viewer, ierr)
     end if
 
   end subroutine diagnostics

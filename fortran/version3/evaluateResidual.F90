@@ -22,6 +22,8 @@
     PetscScalar :: dPhiHatdpsiHatToUseInRHS
     PetscReal :: norm
     integer :: ixMin
+    PetscViewer :: viewer
+    character(len=200) :: filename
 
     if (masterProc) then
        print *,"evaluateResidual called."
@@ -99,7 +101,7 @@
           !     + (x2(ix) - three/two)*dTHatdpsiHats(ispecies)/THats(ispecies))
 
           do itheta = ithetaMin,ithetaMax
-             do izeta = 1,Nzeta
+             do izeta = izetaMin,izetaMax
                 
                 !factor = Delta*nHats(ispecies)*mHat*sqrtMHat &
                 !     /(2*pi*sqrtpi*Zs(ispecies)*psiAHat*(BHat(itheta,izeta)**3)*sqrtTHat) &
@@ -162,7 +164,7 @@
           factor = alpha*Zs(ispecies)*x(ix)*exp(-x2(ix))*EParallelHat &
                *nHats(ispecies)*mHats(ispecies)/(pi*sqrtpi*THats(ispecies)*THats(ispecies)*FSABHat2)
           do itheta=ithetaMin,ithetaMax
-             do izeta = 1,Nzeta
+             do izeta = izetaMin,izetaMax
                 index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
                 call VecSetValue(rhs, index, &
                      factor * BHat(itheta,izeta), INSERT_VALUES, ierr)
@@ -182,5 +184,33 @@
     scalar = -1
     call VecAXPY(residualVec, scalar, rhs, ierr)
     call VecDestroy(rhs, ierr)
+
+    if (saveMatlabOutput) then
+       write (filename,fmt="(a,i3.3,a)") trim(MatlabOutputFilename) // "_iteration_", iterationForResidualOutput, &
+            "_residual.m"
+       if (masterProc) then
+          print *,"Saving residual in matlab format: ",trim(filename)
+       end if
+       call PetscViewerASCIIOpen(MPIComm, trim(filename), viewer, ierr)
+       call PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB, ierr)
+
+       call PetscObjectSetName(residualVec, "residual", ierr)
+       call VecView(residualVec, viewer, ierr)
+
+       call PetscViewerDestroy(viewer, ierr)
+    end if
+
+    if (saveMatricesAndVectorsInBinary) then
+       write (filename,fmt="(a,i3.3,a)") trim(binaryOutputFilename) // "_iteration_", iterationForResidualOutput, &
+            "_residual"
+       if (masterProc) then
+          print *,"Saving residual in binary format: ",trim(filename)
+       end if
+       call PetscViewerBinaryOpen(MPIComm, trim(filename), FILE_MODE_WRITE, viewer, ierr)
+       call VecView(residualVec, viewer, ierr)
+       call PetscViewerDestroy(viewer, ierr)
+    end if
+
+    iterationForResidualOutput = iterationForResidualOutput + 1
 
   end subroutine evaluateResidual

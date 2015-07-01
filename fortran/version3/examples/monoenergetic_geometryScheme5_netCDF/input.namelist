@@ -13,6 +13,7 @@
 
 &general
   RHSMode = 3  ! Monoenergetic coefficients
+!  saveMatricesAndVectorsInBinary = .t.
 /
 
 &geometryParameters
