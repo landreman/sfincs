@@ -175,6 +175,9 @@ module solver
        ! I notice that if CNTL(1) is smaller, like 1e-15, the Fokker-Planck calculations work find but pitch-angle-scattering calculations
        ! fail. There might be value in using different values of CNTL(1) for FP vs PAS.
 
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 4))
+       ! Syntax for PETSc versions up through 3.3
+#else
        ! These commands must be AFTER SNESSetFromOptions or else there is a seg fault.
        call PCFactorSetUpMatSolverPackage(preconditionerContext,ierr)
        call PCFactorGetMatrix(preconditionerContext,factorMat,ierr)
@@ -185,6 +188,7 @@ module solver
        ! Turn on mumps diagnostic output
        mumps_which_cntl = 4
        call MatMumpsSetIcntl(factorMat,mumps_which_cntl,2,ierr)
+#endif
     end if
 
     ! ***********************************************************************
