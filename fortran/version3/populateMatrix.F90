@@ -1734,10 +1734,7 @@
              do izeta=1,Nzeta
                 factor = thetaWeights(itheta)*zetaWeights(izeta)/DHat(itheta,izeta)
 
-                ! I think we impose the same constraint at x=0 if there is a grid point at x=0.
-                ! But I could be convinced otherwise.
-                !do ix=ixMin,Nx
-                do ix=1,Nx
+                do ix=ixMin,Nx
                    do ispecies = 1,Nspecies
                       colIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
                       rowIndex = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)
@@ -1748,22 +1745,19 @@
              end do
           end do
 
-!!$          if (pointAtX0) then
-!!$             ! Do not impose a constraint at x=0. Just set the diagonal to 1 so this row of the matrix does nothing.
-!!$
-!!$             ! MJL 20150613 I'm not sure this next bit is correct. Why is it not only setting the diagonal?
-!!$             ix = 1
-!!$             do itheta=1,Ntheta
-!!$                do izeta=1,Nzeta
-!!$                   do ispecies = 1,Nspecies
-!!$                      colIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-!!$                      rowIndex = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)
-!!$                      call MatSetValue(matrix, rowIndex, colIndex, &
-!!$                           one, ADD_VALUES, ierr)
-!!$                   end do
-!!$                end do
-!!$             end do
-!!$          end if
+          if (pointAtX0) then
+             ! If the "normal" <f>=0 constraint is imposed at x=0, it gives a singular matrix.
+             ! I think this is because the x=0 constraint can be expressed as a linear combination of the constraints
+             ! imposed at other x values. So instead, just set the diagonal to 1 so this row of the matrix does nothing.
+
+             ix = 1
+             do ispecies = 1,Nspecies
+                rowIndex = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)
+                colIndex = rowIndex
+                call MatSetValue(matrix, rowIndex, colIndex, &
+                     one, ADD_VALUES, ierr)
+             end do
+          end if
 
        case default
           print *,"Error! Invalid constraintScheme."
