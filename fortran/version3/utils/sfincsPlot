@@ -43,6 +43,7 @@ Nspecies = int(f['Nspecies'][()])
 Nzeta = int(f['Nzeta'][()])
 integerToRepresentTrue = int(f['integerToRepresentTrue'][()])
 includePhi1 = int(f['includePhi1'][()])
+geometryScheme = int(f['geometryScheme'][()])
 
 print "Successfully read data from sfincsOutput.h5"
 
@@ -197,6 +198,54 @@ if Nzeta < 2:
     ax = fig.add_axes([0,0,1,1], frameon=False)
     ax.text(0.5,0.99,"Figure 2 - "+titleString,horizontalalignment='center',verticalalignment='top')
 
+    ###############################################
+    # Plot various outputs vs x for iteration 1
+    ###############################################
+
+    x = f['x'][()]
+    FSABFlow_vs_x = f['FSABFlow_vs_x'][()]
+    particleFlux_vm_psiHat_vs_x = f['particleFlux_vm_psiHat_vs_x'][()]
+    heatFlux_vm_psiHat_vs_x = f['heatFlux_vm_psiHat_vs_x'][()]
+    FSABFlow = f['FSABFlow'][()]
+    particleFlux_vm_psiHat = f['particleFlux_vm_psiHat'][()]
+    heatFlux_vm_psiHat = f['heatFlux_vm_psiHat'][()]
+
+    fig = plt.figure(3)
+    fig.patch.set_facecolor('white')
+
+    numRows = NspeciesToPlot
+    numCols = 3
+
+    iteration = 0
+    for ispecies in range(0,NspeciesToPlot):
+
+        plt.subplot(numRows, numCols, ispecies*numCols+1)
+        plt.plot(x,particleFlux_vm_psiHat_vs_x[:,ispecies,iteration],'.-')
+        plt.ylabel('particleFlux_vm_psiHat_vs_x for species {} (Z={})'.format(ispecies+1,Zs[ispecies]))
+        plt.xlabel('x')
+        print "Species ",ispecies+1,"particleFlux_vm_psiHat=",particleFlux_vm_psiHat[ispecies,iteration],", sum(particleFlux_vm_psiHAt_vs_x)=",sum(particleFlux_vm_psiHat_vs_x[:,ispecies,iteration])
+        if NIterations>1:
+            plt.plot(x,particleFlux_vm_psiHat_vs_x[:,ispecies,NIterations-1],'.-r')
+
+        plt.subplot(numRows, numCols, ispecies*numCols+2)
+        plt.plot(x,FSABFlow_vs_x[:,ispecies,iteration],'.-')
+        plt.ylabel('FSABFlow_vs_x for species {} (Z={})'.format(ispecies+1,Zs[ispecies]))
+        plt.xlabel('x')
+        print "Species ",ispecies+1,"FSABFlow=",FSABFlow[ispecies,iteration],", sum(FSABFlow_vs_x)=",sum(FSABFlow_vs_x[:,ispecies,iteration])
+        if NIterations>1:
+            plt.plot(x,FSABFlow_vs_x[:,ispecies,NIterations-1],'.-r')
+
+        plt.subplot(numRows, numCols, ispecies*numCols+3)
+        plt.plot(x,heatFlux_vm_psiHat_vs_x[:,ispecies,iteration],'.-')
+        plt.ylabel('heatFlux_vm_psiHat_vs_x for species {} (Z={})'.format(ispecies+1,Zs[ispecies]))
+        plt.xlabel('x')
+        print "Species ",ispecies+1,"heatFlux_vm_psiHat=",heatFlux_vm_psiHat[ispecies,iteration],", sum(heatFlux_vm_psiHAt_vs_x)=",sum(heatFlux_vm_psiHat_vs_x[:,ispecies,iteration])
+        if NIterations>1:
+            plt.plot(x,heatFlux_vm_psiHat_vs_x[:,ispecies,NIterations-1],'.-r')
+
+    ax = fig.add_axes([0,0,1,1], frameon=False)
+    ax.text(0.5,0.99,"Figure 3 - "+titleString,horizontalalignment='center',verticalalignment='top')
+
     ###############################################3
     plt.show()
 
@@ -220,7 +269,10 @@ else:
     plt.subplot(numRows, numCols, 1)
     #plt.contourf(zeta,theta,BHat.transpose(),20)
     plt.contourf(zeta2D,theta2D,BHat.transpose(),20)
-    plt.title('BHat with a field line')
+    if geometryScheme==5:
+        plt.title('BHat with an approximate field line\n(Not straight in VMEC coordinates)')
+    else:
+        plt.title('BHat with a field line')
     plt.xlabel('zeta')
     plt.ylabel('theta')
     plt.colorbar()
@@ -442,7 +494,7 @@ else:
     else:
         plotNums = [1,2]
 
-    numPlotsBeforeThis = 3
+    numPlotsBeforeThis = 4
     for plotNum in plotNums:
         fig = plt.figure(plotNum+numPlotsBeforeThis)
         fig.patch.set_facecolor('white')
@@ -508,6 +560,54 @@ else:
         ax = fig.add_axes([0,0,1,1], frameon=False)
         topString = "Figure "+str(plotNum+numPlotsBeforeThis)+", iteration "+str(iteration+1)+". "+titleString
         ax.text(0.5,0.99,topString,horizontalalignment='center',verticalalignment='top')
+
+    ###############################################
+    # Plot various outputs vs x for iteration 1
+    ###############################################
+
+    x = f['x'][()]
+    FSABFlow_vs_x = f['FSABFlow_vs_x'][()]
+    particleFlux_vm_psiHat_vs_x = f['particleFlux_vm_psiHat_vs_x'][()]
+    heatFlux_vm_psiHat_vs_x = f['heatFlux_vm_psiHat_vs_x'][()]
+    FSABFlow = f['FSABFlow'][()]
+    particleFlux_vm_psiHat = f['particleFlux_vm_psiHat'][()]
+    heatFlux_vm_psiHat = f['heatFlux_vm_psiHat'][()]
+
+    fig = plt.figure(4)
+    fig.patch.set_facecolor('white')
+
+    numRows = NspeciesToPlot
+    numCols = 3
+
+    iteration = 0
+    for ispecies in range(0,NspeciesToPlot):
+
+        plt.subplot(numRows, numCols, ispecies*numCols+1)
+        plt.plot(x,particleFlux_vm_psiHat_vs_x[:,ispecies,iteration],'.-')
+        plt.ylabel('particleFlux_vm_psiHat_vs_x for species {} (Z={})'.format(ispecies+1,Zs[ispecies]))
+        plt.xlabel('x')
+        print "Species ",ispecies+1,"particleFlux_vm_psiHat=",particleFlux_vm_psiHat[ispecies,iteration],", sum(particleFlux_vm_psiHAt_vs_x)=",sum(particleFlux_vm_psiHat_vs_x[:,ispecies,iteration])
+        if NIterations>1:
+            plt.plot(x,particleFlux_vm_psiHat_vs_x[:,ispecies,NIterations-1],'.-r')
+
+        plt.subplot(numRows, numCols, ispecies*numCols+2)
+        plt.plot(x,FSABFlow_vs_x[:,ispecies,iteration],'.-')
+        plt.ylabel('FSABFlow_vs_x for species {} (Z={})'.format(ispecies+1,Zs[ispecies]))
+        plt.xlabel('x')
+        print "Species ",ispecies+1,"FSABFlow=",FSABFlow[ispecies,iteration],", sum(FSABFlow_vs_x)=",sum(FSABFlow_vs_x[:,ispecies,iteration])
+        if NIterations>1:
+            plt.plot(x,FSABFlow_vs_x[:,ispecies,NIterations-1],'.-r')
+
+        plt.subplot(numRows, numCols, ispecies*numCols+3)
+        plt.plot(x,heatFlux_vm_psiHat_vs_x[:,ispecies,iteration],'.-')
+        plt.ylabel('heatFlux_vm_psiHat_vs_x for species {} (Z={})'.format(ispecies+1,Zs[ispecies]))
+        plt.xlabel('x')
+        print "Species ",ispecies+1,"heatFlux_vm_psiHat=",heatFlux_vm_psiHat[ispecies,iteration],", sum(heatFlux_vm_psiHAt_vs_x)=",sum(heatFlux_vm_psiHat_vs_x[:,ispecies,iteration])
+        if NIterations>1:
+            plt.plot(x,heatFlux_vm_psiHat_vs_x[:,ispecies,NIterations-1],'.-r')
+
+    ax = fig.add_axes([0,0,1,1], frameon=False)
+    ax.text(0.5,0.99,"Figure 4 - "+titleString,horizontalalignment='center',verticalalignment='top')
 
     ###############################################3
     plt.show()

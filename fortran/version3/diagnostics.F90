@@ -217,6 +217,10 @@
        NTV=0 
        jHat=0
 
+       particleFlux_vm_psiHat_vs_x=0
+       heatFlux_vm_psiHat_vs_x=0
+       FSABFlow_vs_x=0
+
        densityIntegralWeights = x*x
        flowIntegralWeights = x*x*x
        pressureIntegralWeights = x*x*x*x
@@ -359,12 +363,30 @@
                         + factor_vE * heatFluxFactor_vE &
                         * xWeights(ix)*heatFluxIntegralWeights_vE(ix)*solutionWithFullFArray(index)
 
+                   particleFlux_vm_psiHat_vs_x(ispecies,ix) &
+                        = particleFlux_vm_psiHat_vs_x(ispecies,ix) &
+                        + (factor * (8/three) + factor2 * (two/three)) * particleFluxFactor_vm &
+                        * xWeights(ix)*particleFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index) &
+                        * thetaWeights(itheta) * zetaWeights(izeta)
+
+                   heatFlux_vm_psiHat_vs_x(ispecies,ix) &
+                        = heatFlux_vm_psiHat_vs_x(ispecies,ix) &
+                        + (factor * (8/three) + factor2 * (two/three)) * heatFluxFactor_vm &
+                        * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index) &
+                        * thetaWeights(itheta) * zetaWeights(izeta)
+
+
+
                    L = 1
                    index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
                    ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
 
                    flow(ispecies,itheta,izeta) = flow(ispecies,itheta,izeta) &
                         + flowFactor*xWeights(ix)*flowIntegralWeights(ix)*solutionWithDeltaFArray(index)
+
+                   FSABFlow_vs_x(ispecies,ix) = FSABFlow_vs_x(ispecies,ix) &
+                        + flowFactor*xWeights(ix)*flowIntegralWeights(ix)*solutionWithDeltaFArray(index) &
+                        * thetaWeights(itheta) * zetaWeights(izeta) * BHat(itheta,izeta) / DHat(itheta,izeta)
 
                    momentumFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
                         = momentumFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
@@ -413,7 +435,21 @@
                    NTVBeforeSurfaceIntegral(ispecies,itheta,izeta) &
                         = NTVBeforeSurfaceIntegral(ispecies,itheta,izeta) &
                         + NTVFactor * NTVKernel(itheta,izeta)&
-                        * xWeights(ix)*NTVIntegralWeights(ix)*solutionWithDeltaFArray(index) 
+                        * xWeights(ix)*NTVIntegralWeights(ix)*solutionWithDeltaFArray(index) &
+                        * thetaWeights(itheta) * zetaWeights(izeta)
+
+                   particleFlux_vm_psiHat_vs_x(ispecies,ix) &
+                        = particleFlux_vm_psiHat_vs_x(ispecies,ix) &
+                        + (factor+factor2) * (four/15) * particleFluxFactor_vm &
+                        * xWeights(ix)*particleFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index) &
+                        * thetaWeights(itheta) * zetaWeights(izeta)
+                   
+                   heatFlux_vm_psiHat_vs_x(ispecies,ix) &
+                        = heatFlux_vm_psiHat_vs_x(ispecies,ix) &
+                        + (factor+factor2) * (four/15) * heatFluxFactor_vm &
+                        * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index) &
+                        * thetaWeights(itheta) * zetaWeights(izeta)
+
 
                    L = 3
                    index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
@@ -569,6 +605,7 @@
 
        FSADensityPerturbation = FSADensityPerturbation / VPrimeHat
        FSABFlow = FSABFlow / VPrimeHat
+       FSABFlow_vs_x = FSABFlow_vs_x / VPrimeHat
        FSAPressurePerturbation = FSAPressurePerturbation / VPrimeHat
        FSABjHat = dot_product(Zs(1:Nspecies), FSABFlow)
        FSABjHatOverB0 = FSABjHat / B0OverBBar

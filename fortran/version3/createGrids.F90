@@ -418,6 +418,11 @@
           stop
        end select
 
+!!$       ! 20150701 Delete this next if-block eventually!
+!!$       if (Nx==1) then
+!!$          x =  1.58886
+!!$       end if
+
     else
        ! Monoenergetic transport matrix calculation.
        x = one
@@ -772,6 +777,10 @@
     allocate(heatFluxBeforeSurfaceIntegral_vE0(Nspecies,Ntheta,Nzeta))
     allocate(heatFluxBeforeSurfaceIntegral_vE(Nspecies,Ntheta,Nzeta))
     allocate(NTVBeforeSurfaceIntegral(Nspecies,Ntheta,Nzeta)) 
+
+    allocate(particleFlux_vm_psiHat_vs_x(Nspecies,Nx))
+    allocate(heatFlux_vm_psiHat_vs_x(Nspecies,Nx))
+    allocate(FSABFlow_vs_x(Nspecies,Nx))
 
     allocate(jHat(Ntheta,Nzeta))
     allocate(Phi1Hat(Ntheta,Nzeta))
