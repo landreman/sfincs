@@ -207,6 +207,9 @@ contains
 
     implicit none
 
+    integer :: itheta,izeta
+    PetscScalar :: DHat11, BHat_sub_theta11, BHat_sub_zeta11
+
     ! Using the selected radial coordinate, set input quantities for the other radial coordinates:
     call setInputRadialCoordinateWish()
     ! Note that this call only sets the "wish" radial coordinates, not the final radial coordinates
@@ -236,6 +239,35 @@ contains
     if (.not. force0RadialCurrentInEquilibrium) then
        BDotCurlB = BDotCurlB + DHat * BHat_sub_psi * (dBHat_sub_zeta_dtheta - dBHat_sub_theta_dzeta)
     end if
+
+    ! Validate geometry arrays:
+    DHat11 = DHat(1,1)
+    BHat_sub_theta11 = BHat_sub_theta(1,1)
+    BHat_sub_zeta11 = BHat_sub_zeta(1,1)
+    do itheta=1,Ntheta
+       do izeta=1,Nzeta
+          if (BHat(itheta,izeta) <= 0) then
+             print *,"ERROR! BHat is not everywhere positive!"
+             stop
+          end if
+          if (DHat(itheta,izeta)*DHat11 <= 0) then
+             print *,"ERROR! DHat does not have the same sign everywhere!"
+             stop
+          end if
+          if (ExBDerivativeScheme>0) then
+             if (BHat_sub_theta(itheta,izeta)*BHat_sub_theta11 < -1d-15) then
+                print *,"ERROR! ExBDerivativeScheme>0 assumes BHat_sub_theta has the same sign everywhere,"
+                print *,"       but the sign of BHat_sub_theta is not the same everywhere."
+                stop
+             end if
+             if (BHat_sub_zeta(itheta,izeta)*BHat_sub_zeta11 < -1d-15) then
+                print *,"ERROR! ExBDerivativeScheme>0 assumes BHat_sub_zeta has the same sign everywhere,"
+                print *,"       but the sign of BHat_sub_zeta is not the same everywhere."
+                stop
+             end if
+          end if
+       end do
+    end do
     
   end subroutine computeBHat
 

@@ -72,6 +72,12 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
   ! 62 = Same as 52 but upwinding to the right.  The bottom row of both
   !      derivative matrices is all zero. The penultimate row of D uses a
   !      2-point stencil.
+  ! 80 = Periodic with a grid point at xMin but not xMax.  The first derivative is upwinded to the
+  !      left. A stencil is used with 1 point on 1 side and 2 points on the
+  !      other side. The second derivative is the same as in scheme 0.
+  ! 81 = Same as 80 but with a grid point at xMax and not xMin.
+  ! 90 = Same as 80 but upwinding to the right.
+  ! 91 = Same as 90 but with a grid point at xMax and not xMin.
   !
   ! Outputs:
   !   x = column vector with the grid points.
@@ -121,10 +127,10 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
   case (2, 3, 12, 13, 32, 42, 52, 62)
      ! Include points at both xMin and xMax:
      x = [( (xMax-xMin)*i/(N-1)+xMin, i=0,N-1 )]
-  case (0,10,20,30,40,50,60)
+  case (0,10,20,30,40,50,60,80,90)
      ! Include a point at xMin but not xMax:
      x = [( (xMax-xMin)*i/(N)+xMin, i=0,N-1 )]
-  case (1,11,21,31,41,51,61)
+  case (1,11,21,31,41,51,61,81,91)
      ! Include a point at xMax but not xMin:
      x = [( (xMax-xMin)*i/(N)+xMin, i=1,N )]
   case default
@@ -333,6 +339,42 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
      end if
 
      deallocate(topc)
+
+  case (80,81)
+     ! 4 point stencil (upwinding, with 1 point on 1 side, and 2 points on the other side.)
+
+     if (N<5) then
+        print *,"Error! N must be at least 5"
+        stop
+     end if
+     do i=1,N
+        ddx(i,modulo(i,N)+1)   =  1/(3*dx)
+        ddx(i,i)               =  1/(2*dx)
+        ddx(i,modulo(i-2,N)+1) = -1/(dx)
+        ddx(i,modulo(i-3,N)+1) =  1/(6*dx)
+
+        d2dx2(i,modulo(i,N)+1)   =  1/(dx2)
+        d2dx2(i,i)               = -2/(dx2)
+        d2dx2(i,modulo(i-2,N)+1) =  1/(dx2)
+     end do
+
+  case (90,91)
+     ! 4 point stencil (upwinding, with 1 point on 1 side, and 2 points on the other side.)
+
+     if (N<5) then
+        print *,"Error! N must be at least 5"
+        stop
+     end if
+     do i=1,N
+        ddx(i,modulo(i-2,N)+1) = -1/(3*dx)
+        ddx(i,i)               = -1/(2*dx)
+        ddx(i,modulo(i,N)+1)   =  1/(dx)
+        ddx(i,modulo(i+1,N)+1) = -1/(6*dx)
+
+        d2dx2(i,modulo(i,N)+1)   =  1/(dx2)
+        d2dx2(i,i)               = -2/(dx2)
+        d2dx2(i,modulo(i-2,N)+1) =  1/(dx2)
+     end do
 
   end select
 
@@ -617,6 +659,9 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
   case (62)
      ddx(N-1,N-1) = -1/dx
      ddx(N-1,N) = 1/dx
+
+  case (80,81,90,91)
+     ! Handled previously
 
   case default
      print *,"Error! Invalid value for scheme."

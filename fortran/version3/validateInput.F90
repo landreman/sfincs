@@ -608,6 +608,36 @@ subroutine validateInput()
      print *,line
   end if
 
+  if (ExBDerivativeScheme<0) then
+     if (masterProc) then
+        print *,"Error! ExBDerivativeScheme cannot be less than 0."
+     end if
+     stop
+  end if
+  
+  if (ExBDerivativeScheme>2) then
+     if (masterProc) then
+        print *,"Error! ExBDerivativeScheme cannot be more than 1."
+     end if
+     stop
+  end if
+  
+  if (ExBDerivativeScheme>0 .and. preconditioner_theta>0) then
+     if (masterProc) then
+        print *,"Error! The implementation of ExBDerivativeScheme>0 does not presently allow"
+        print *,"       preconditioning in theta (preconditioner_theta>0)."
+     end if
+     stop
+  end if
+  
+  if (ExBDerivativeScheme>0 .and. preconditioner_zeta>0) then
+     if (masterProc) then
+        print *,"Error! The implementation of ExBDerivativeScheme>0 does not presently allow"
+        print *,"       preconditioning in zeta (preconditioner_zeta>0)."
+     end if
+     stop
+  end if
+  
   if (xGridScheme<1) then
      if (masterProc) then
         print *,"Error! xGridScheme cannot be less than 1."

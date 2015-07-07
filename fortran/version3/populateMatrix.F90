@@ -360,10 +360,20 @@
           allocate(colIndices(Ntheta))
           do L=0,(Nxi-1)
 
-             if (whichMatrix>0 .or. L < preconditioner_theta_min_L) then
-                ddthetaToUse = ddtheta
+             if (ExBDerivativeScheme==0) then
+                if (whichMatrix>0 .or. L < preconditioner_theta_min_L) then
+                   ddthetaToUse = ddtheta
+                else
+                   ddthetaToUse = ddtheta_preconditioner
+                end if
              else
-                ddthetaToUse = ddtheta_preconditioner
+                ! Assume DHat has the same sign everywhere. (Should be true even for VMEC coordinates.)
+                ! Assume BHat_sub_zeta has the same sign everywhere. (True for Boozer but in principle could be violated for VMEC coordinates?)
+                if (factor*DHat(1,1)*BHat_sub_zeta(1,1) > 0) then
+                   ddthetaToUse = ddtheta_ExB_plus
+                else
+                   ddthetaToUse = ddtheta_ExB_minus
+                end if
              end if
 
              do izeta=izetaMin,izetaMax
@@ -414,10 +424,20 @@
           allocate(colIndices(Nzeta))
           do L=0,(Nxi-1)
 
-             if (whichMatrix>0 .or. L < preconditioner_zeta_min_L) then
-                ddzetaToUse = ddzeta
+             if (ExBDerivativeScheme==0) then
+                if (whichMatrix>0 .or. L < preconditioner_zeta_min_L) then
+                   ddzetaToUse = ddzeta
+                else
+                   ddzetaToUse = ddzeta_preconditioner
+                end if
              else
-                ddzetaToUse = ddzeta_preconditioner
+                ! Assume DHat has the same sign everywhere. (Should be true even for VMEC coordinates.)
+                ! Assume BHat_sub_theta has the same sign everywhere. (True for Boozer but could be violated for VMEC coordinates?)
+                if (factor*DHat(1,1)*BHat_sub_theta(1,1) > 0) then
+                   ddzetaToUse = ddzeta_ExB_plus
+                else
+                   ddzetaToUse = ddzeta_ExB_minus
+                end if
              end if
 
              do itheta=ithetaMin, ithetaMax

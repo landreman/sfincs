@@ -201,6 +201,8 @@
     allocate(theta(Ntheta))
     allocate(thetaWeights(Ntheta))
     allocate(ddtheta(Ntheta,Ntheta))
+    allocate(ddtheta_ExB_plus(Ntheta,Ntheta))
+    allocate(ddtheta_ExB_minus(Ntheta,Ntheta))
     allocate(d2dtheta2(Ntheta,Ntheta))
     allocate(theta_preconditioner(Ntheta))
     allocate(thetaWeights_preconditioner(Ntheta))
@@ -221,7 +223,27 @@
        stop
     end select
 
+!    scheme = 90 ! Delete this line!
     call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta, thetaWeights, ddtheta, d2dtheta2)
+!!$    print *,"Here comes ddtheta:"
+!!$    do i=1,Ntheta
+!!$       print *,ddtheta(i,:)
+!!$    end do
+!!$    print *,"Here comes d2dtheta2:"
+!!$    do i=1,Ntheta
+!!$       print *,d2dtheta2(i,:)
+!!$    end do
+!!$    stop
+
+
+    ! Create upwinded matrices for ExB terms:
+    scheme = 80
+    call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+         thetaWeights_preconditioner, ddtheta_ExB_plus, d2dtheta2_preconditioner)
+    scheme = 90
+    call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+         thetaWeights_preconditioner, ddtheta_ExB_minus, d2dtheta2_preconditioner)
+
 
     ! If needed, also make a sparser differentiation matrix for the preconditioner:
     select case(preconditioner_theta)
@@ -271,6 +293,8 @@
     allocate(zeta(Nzeta))
     allocate(zetaWeights(Nzeta))
     allocate(ddzeta(Nzeta,Nzeta))
+    allocate(ddzeta_ExB_plus(Nzeta,Nzeta))
+    allocate(ddzeta_ExB_minus(Nzeta,Nzeta))
     allocate(d2dzeta2(Nzeta,Nzeta))
     allocate(zeta_preconditioner(Nzeta))
     allocate(zetaWeights_preconditioner(Nzeta))
@@ -297,8 +321,18 @@
        zetaWeights = 2*pi
        ddzeta = 0
        d2dzeta2 = 0 ! d2dzeta2 is not actually used.
+       ddzeta_ExB_plus = 0
+       ddzeta_ExB_minus = 0
     else
        call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta, zetaWeights, ddzeta, d2dzeta2)
+
+       ! Make upwinded differentiation matrices for ExB drift terms:
+       scheme = 80
+       call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+            zetaWeights_preconditioner, ddzeta_ExB_plus, d2dzeta2_preconditioner)
+       scheme = 80
+       call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+            zetaWeights_preconditioner, ddzeta_ExB_minus, d2dzeta2_preconditioner)
     end if
 
     ! If needed, also make a sparser differentiation matrix for the preconditioner:

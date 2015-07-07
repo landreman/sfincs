@@ -986,6 +986,21 @@ The best value for this parameter is usually 2.}
 
 \myhrule
 
+\param{ExBDerivativeScheme}
+{integer}
+{0}
+{Whenever the radial electric field is nonzero}
+{Options for controlling upwinding of the $\vect{E}\times\vect{B}$ drift terms.  Note the options are different than for \parlink{thetaDerivativeScheme}
+and \parlink{zetaDerivativeScheme}.\\
+
+{\ttfamily ExBDerivativeScheme} = 0: Use same differentiation matrices as for the parallel streaming term.  This option is best except for very
+large radial electric fields, when the electric field is as large as the resonance or larger.\\
+
+{\ttfamily ExBDerivativeScheme} = 1: Treat the $\vect{E}\times\vect{B}$ drift terms using a 4 point upwinded stencil (1 point on 1 side, 2 points on the other.)
+}
+
+\myhrule
+
 \param{xGridScheme}
 {integer}
 {5}

@@ -116,6 +116,8 @@ module globalVariables
   ! 1 = 2nd order finite differences
   ! 2 = 4th order dinite differences
 
+  integer :: ExBDerivativeScheme = 0
+
   integer :: xPotentialsGridScheme = 2, xPotentialsInterpolationScheme
   integer :: xGridScheme = 5, xInterpolationScheme
   logical :: pointAtX0
@@ -161,6 +163,8 @@ module globalVariables
   PetscScalar, dimension(:), allocatable :: theta, zeta, x, x_plus1
   PetscScalar, dimension(:), allocatable :: thetaWeights, zetaWeights
   PetscScalar, dimension(:,:), allocatable :: ddtheta, ddzeta
+  PetscScalar, dimension(:,:), allocatable :: ddtheta_ExB_plus, ddtheta_ExB_minus
+  PetscScalar, dimension(:,:), allocatable :: ddzeta_ExB_plus, ddzeta_ExB_minus
   PetscScalar, dimension(:), allocatable :: xWeights, xPotentials
   PetscScalar :: maxxPotentials, zetaMax, xMaxNotTooSmall
   PetscScalar, dimension(:), allocatable :: x2, expx2
