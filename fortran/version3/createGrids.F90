@@ -418,6 +418,11 @@
           stop
        end select
 
+!!$       ! 20150701 Delete this next if-block eventually!
+!!$       if (Nx==1) then
+!!$          x =  1.58886
+!!$       end if
+
     else
        ! Monoenergetic transport matrix calculation.
        x = one
@@ -549,6 +554,7 @@
          !Rosenbluth_H, Rosenbluth_dHdxb, Rosenbluth_d2Gdxb2,masterProc)
     end if
 
+!    if (.true.) then
     if (.false.) then
        print *,"xGridScheme:",xGridScheme
        print *,"xInterpolationScheme:",xInterpolationScheme
@@ -557,6 +563,8 @@
        print *,"NxPotentials:",NxPotentials
        print *,"x:"
        print *,x
+       print *,"xWeights:"
+       print *,xWeights
        print *,"ddx:"
        do i=1,Nx
           print *,ddx(i,:)
@@ -633,6 +641,12 @@
 
     call computeBHat()
 
+    ! *********************************************************
+    ! Compute a few quantities related to the magnetic field:
+    ! *********************************************************
+
+    call computeBIntegrals()
+
     if (masterProc) then
        print *,"---- Geometry parameters: ----"
        print *,"Geometry scheme = ", geometryScheme
@@ -647,12 +661,6 @@
        print *,"IHat (Boozer component multiplying grad theta) = ", IHat
        print *,"iota (Rotational transform) = ", iota
     end if
-
-    ! *********************************************************
-    ! Compute a few quantities related to the magnetic field:
-    ! *********************************************************
-
-    call computeBIntegrals()
 
     ! *********************************************************
     ! Allocate some arrays that will be used later for output quantities:
@@ -769,6 +777,10 @@
     allocate(heatFluxBeforeSurfaceIntegral_vE0(Nspecies,Ntheta,Nzeta))
     allocate(heatFluxBeforeSurfaceIntegral_vE(Nspecies,Ntheta,Nzeta))
     allocate(NTVBeforeSurfaceIntegral(Nspecies,Ntheta,Nzeta)) 
+
+    allocate(particleFlux_vm_psiHat_vs_x(Nspecies,Nx))
+    allocate(heatFlux_vm_psiHat_vs_x(Nspecies,Nx))
+    allocate(FSABFlow_vs_x(Nspecies,Nx))
 
     allocate(jHat(Ntheta,Nzeta))
     allocate(Phi1Hat(Ntheta,Nzeta))

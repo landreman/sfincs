@@ -138,6 +138,8 @@
     integer :: itheta1, izeta1, ixi1, ix1
     integer :: itheta2, izeta2, ixi2, ix2
     PetscLogDouble :: time1, time2
+    PetscViewer :: viewer
+    character(len=200) :: filename
 
     if (masterProc) then
        print *,"Computing diagnostics."
@@ -214,6 +216,10 @@
        heatFlux_vE_psiHat=0
        NTV=0 
        jHat=0
+
+       particleFlux_vm_psiHat_vs_x=0
+       heatFlux_vm_psiHat_vs_x=0
+       FSABFlow_vs_x=0
 
        densityIntegralWeights = x*x
        flowIntegralWeights = x*x*x
@@ -357,12 +363,30 @@
                         + factor_vE * heatFluxFactor_vE &
                         * xWeights(ix)*heatFluxIntegralWeights_vE(ix)*solutionWithFullFArray(index)
 
+                   particleFlux_vm_psiHat_vs_x(ispecies,ix) &
+                        = particleFlux_vm_psiHat_vs_x(ispecies,ix) &
+                        + (factor * (8/three) + factor2 * (two/three)) * particleFluxFactor_vm &
+                        * xWeights(ix)*particleFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index) &
+                        * thetaWeights(itheta) * zetaWeights(izeta)
+
+                   heatFlux_vm_psiHat_vs_x(ispecies,ix) &
+                        = heatFlux_vm_psiHat_vs_x(ispecies,ix) &
+                        + (factor * (8/three) + factor2 * (two/three)) * heatFluxFactor_vm &
+                        * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index) &
+                        * thetaWeights(itheta) * zetaWeights(izeta)
+
+
+
                    L = 1
                    index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
                    ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
 
                    flow(ispecies,itheta,izeta) = flow(ispecies,itheta,izeta) &
                         + flowFactor*xWeights(ix)*flowIntegralWeights(ix)*solutionWithDeltaFArray(index)
+
+                   FSABFlow_vs_x(ispecies,ix) = FSABFlow_vs_x(ispecies,ix) &
+                        + flowFactor*xWeights(ix)*flowIntegralWeights(ix)*solutionWithDeltaFArray(index) &
+                        * thetaWeights(itheta) * zetaWeights(izeta) * BHat(itheta,izeta) / DHat(itheta,izeta)
 
                    momentumFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
                         = momentumFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
@@ -411,7 +435,21 @@
                    NTVBeforeSurfaceIntegral(ispecies,itheta,izeta) &
                         = NTVBeforeSurfaceIntegral(ispecies,itheta,izeta) &
                         + NTVFactor * NTVKernel(itheta,izeta)&
-                        * xWeights(ix)*NTVIntegralWeights(ix)*solutionWithDeltaFArray(index) 
+                        * xWeights(ix)*NTVIntegralWeights(ix)*solutionWithDeltaFArray(index) &
+                        * thetaWeights(itheta) * zetaWeights(izeta)
+
+                   particleFlux_vm_psiHat_vs_x(ispecies,ix) &
+                        = particleFlux_vm_psiHat_vs_x(ispecies,ix) &
+                        + (factor+factor2) * (four/15) * particleFluxFactor_vm &
+                        * xWeights(ix)*particleFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index) &
+                        * thetaWeights(itheta) * zetaWeights(izeta)
+                   
+                   heatFlux_vm_psiHat_vs_x(ispecies,ix) &
+                        = heatFlux_vm_psiHat_vs_x(ispecies,ix) &
+                        + (factor+factor2) * (four/15) * heatFluxFactor_vm &
+                        * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index) &
+                        * thetaWeights(itheta) * zetaWeights(izeta)
+
 
                    L = 3
                    index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
@@ -567,6 +605,7 @@
 
        FSADensityPerturbation = FSADensityPerturbation / VPrimeHat
        FSABFlow = FSABFlow / VPrimeHat
+       FSABFlow_vs_x = FSABFlow_vs_x / VPrimeHat
        FSAPressurePerturbation = FSAPressurePerturbation / VPrimeHat
        FSABjHat = dot_product(Zs(1:Nspecies), FSABFlow)
        FSABjHatOverB0 = FSABjHat / B0OverBBar
@@ -794,6 +833,32 @@
        call updateOutputFile(iterationNum, .true.)
     else
        call updateOutputFile(iterationNum, .false.)
+    end if
+
+    if (saveMatlabOutput) then
+       write (filename,fmt="(a,i3.3,a)") trim(MatlabOutputFilename) // "_iteration_", iterationForStateVectorOutput, &
+            "_stateVector.m"
+       if (masterProc) then
+          print *,"Saving state vector in matlab format: ",trim(filename)
+       end if
+       call PetscViewerASCIIOpen(MPIComm, trim(filename), viewer, ierr)
+       call PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB, ierr)
+
+       call PetscObjectSetName(solutionWithDeltaF, "stateVector", ierr)
+       call VecView(solutionWithDeltaF, viewer, ierr)
+
+       call PetscViewerDestroy(viewer, ierr)
+    end if
+
+    if (saveMatricesAndVectorsInBinary) then
+       write (filename,fmt="(a,i3.3,a)") trim(binaryOutputFilename) // "_iteration_", iterationForStateVectorOutput, &
+            "_stateVector"
+       if (masterProc) then
+          print *,"Saving state vector in binary format: ",trim(filename)
+       end if
+       call PetscViewerBinaryOpen(MPIComm, trim(filename), FILE_MODE_WRITE, viewer, ierr)
+       call VecView(solutionWithDeltaF, viewer, ierr)
+       call PetscViewerDestroy(viewer, ierr)
     end if
 
   end subroutine diagnostics

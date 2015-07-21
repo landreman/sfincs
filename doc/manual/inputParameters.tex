@@ -72,9 +72,15 @@ the size of the linear system is more then 1400 $\times$ 1400,
 {Boolean}
 {\false}
 {Always}
-{If this switch is set to true, the matrix, right-hand-side, and solution of the
-linear system will be saved in PETSc's binary format.  The preconditioner matrix will also
+{If this switch is set to true, the matrix, right-hand-side, and solution vector of the
+linear system will be saved in PETSc's binary format.  
+The preconditioner matrix will also
 be saved if \parlink{useIterativeLinearSolver} == \true.}
+These matrices and vectors are not very interesting for routine use of the code,
+only for code development and debugging.
+Regardless of how this parameter is set,
+the physically interesting input and output quantities will be saved in a
+separate \HDF~file.
 
 \myhrule
 
@@ -82,7 +88,14 @@ be saved if \parlink{useIterativeLinearSolver} == \true.}
 {string}
 {``sfincsBinary''}
 {Only when \parlink{saveMatricesAndVectorsInBinary} == \true.}
-{Start of the filenames which will be used for binary output.}
+{Start of the filenames which will be used for binary output of the system
+matrices, right-hand-side vectors, and solution vectors.
+These matrices and vectors are not very interesting for routine use of the code,
+only for code development and debugging.
+Regardless of how this parameter is set,
+the physically interesting input and output quantities will be saved in a
+separate \HDF~file.
+}
 
 \myhrule
 
@@ -781,14 +794,13 @@ distribution function is isotropic and so does not directly give any parallel or
 {integer}
 {0}
 {Whenever \parlink{RHSMode} == 1.}
-{This variable controls the poloidal and magnetic drifts, and does not affect the radial magnetic drift.
-THIS FUNCTIONALITY IS WORK IN PROGRESS, AND RESULTS ARE BUGGY WHEN THIS VARIABLE IS NONZERO.\\
+{This variable controls the poloidal and magnetic drifts, and does not affect the radial magnetic drift.\\
 
-{\ttfamily magneticDriftScheme} = 0:  No poloidal or toroidal magnetic drift.\\
+{\ttfamily magneticDriftScheme} = 0: No poloidal or toroidal magnetic drift.\\
 
-{\ttfamily magneticDriftScheme} = 1: Use the grad-B and curvature drift, plus the parallel velocity correction $v_{\perp}^2/(2 \Omega_c) \vect{b} \vect{b} \cdot \nabla \times \vect{b}$.\\
+{\ttfamily magneticDriftScheme} = 1: Use the magnetic drift $v_m = (v_{||} / \Omega_c) \nabla \times (v_{||} \vect{b})$.\\
 
-{\ttfamily magneticDriftScheme} = 2:   Use the magnetic drift $v_m = (v_{||} / \Omega_c) \nabla (v_{||} \vect{b})$.
+{\ttfamily magneticDriftScheme} = 2: Use the grad-B and curvature drift, plus the parallel velocity correction $v_{\perp}^2/(2 \Omega_c) \vect{b} \vect{b} \cdot \nabla \times \vect{b}$.
 }
 
 

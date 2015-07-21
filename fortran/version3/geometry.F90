@@ -331,10 +331,6 @@ contains
        !rN = -1 !dummy
        rN = rN_wish
 
-       BHat_sub_psi = 0
-       dBHat_sub_psi_dtheta = 0
-       dBHat_sub_psi_dzeta = 0
-
     case (2)
        ! A three-harmonic approximation of the LHD standard configuration.
        ! Values taken from Table 1 of
@@ -372,10 +368,6 @@ contains
        !rN = -1 !dummy
        rN = rN_wish
                     
-       BHat_sub_psi = 0
-       dBHat_sub_psi_dtheta = 0
-       dBHat_sub_psi_dzeta = 0
-
     case (3)
        ! A four-harmonic approximation of the LHD inward-shifted configuration.
        ! Values taken from Table 1 of
@@ -418,10 +410,6 @@ contains
        !normradius = -1 !dummy
        rN = rN_wish
 
-       BHat_sub_psi = 0
-       dBHat_sub_psi_dtheta = 0
-       dBHat_sub_psi_dzeta = 0
-
     case (4)
        ! A three-harmonic approximation of the W7-X standard configuration.
        ! Values taken from Table 1 of
@@ -458,10 +446,6 @@ contains
        dGdpHat = 0
        !normradius = -1 !dummy
        rN = rN_wish
-
-       BHat_sub_psi = 0
-       dBHat_sub_psi_dtheta = 0
-       dBHat_sub_psi_dzeta = 0
 
     case (11)
        ! Read Boozer coordinate file in .bc format used at IPP Greifswald
@@ -627,11 +611,6 @@ contains
        dGdpHat=(G_new-G_old)/(rN_new*rN_new-rN_old*rN_old)/pPrimeHat
 
        BHarmonics_amplitudes = BHarmonics_amplitudes / B0OverBBar
-
-       ! These next lines could be replaced with the actual values from the equilibrium:
-       BHat_sub_psi = 0
-       dBHat_sub_psi_dtheta = 0
-       dBHat_sub_psi_dzeta = 0
 
        if (GHat*psiAHat<0) then
           !print *,"This is a stellarator symmetric file from Joachim Geiger. It will now be turned 180 degrees around a horizontal axis <=> flip the sign of G and I, so that it matches the sign of its total toroidal flux."
@@ -817,11 +796,6 @@ contains
 
        BHarmonics_amplitudes = BHarmonics_amplitudes / B0OverBBar
 
-       ! These next 3 lines could be replaced with the actual data from the geometry input file.
-       BHat_sub_psi = 0
-       dBHat_sub_psi_dtheta = 0
-       dBHat_sub_psi_dzeta = 0
-
        !Switch from a left-handed to right-handed (radial,poloidal,toroidal) system
        !(The toroidal direction sign switch psiAHat=psiAHat*(-1) was already made in the initializeGeometry routine)
        GHat = GHat*(-1)               !toroidal direction sign switch
@@ -982,6 +956,11 @@ contains
     BHat_sub_zeta = GHat
 
     ! Eventually we could replace the next lines with a proper calculation:
+
+    dBHatdpsiHat = 0
+    BHat_sub_psi = 0
+    dBHat_sub_psi_dtheta = 0
+    dBHat_sub_psi_dzeta = 0
 
     dBHat_sub_theta_dpsiHat = 0
     dBHat_sub_theta_dzeta = 0

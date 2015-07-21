@@ -305,6 +305,10 @@ module globalVariables
   PetscScalar, dimension(:), allocatable :: heatFlux_withoutPhi1_rHat
   PetscScalar, dimension(:), allocatable :: heatFlux_withoutPhi1_rN
 
+  PetscScalar, dimension(:,:), allocatable :: particleFlux_vm_psiHat_vs_x
+  PetscScalar, dimension(:,:), allocatable :: heatFlux_vm_psiHat_vs_x
+  PetscScalar, dimension(:,:), allocatable :: FSABFlow_vs_x
+
   PetscScalar, dimension(:), allocatable :: NTV
   PetscScalar :: VPrimeHat, FSABHat2, FSABjHat, FSABjHatOverB0, FSABjHatOverRootFSAB2
   PetscScalar :: lambda
@@ -314,7 +318,7 @@ module globalVariables
 
   PetscLogDouble :: elapsedTime
   integer :: didLinearCalculationConverge, didNonlinearCalculationConverge
-  integer :: iterationForMatrixOutput
+  integer :: iterationForMatrixOutput, iterationForResidualOutput = 0, iterationForStateVectorOutput = 0
   logical :: firstMatrixCreation
 
   integer :: transportMatrixSize = 3

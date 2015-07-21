@@ -69,6 +69,12 @@ module writeHDF5Output
   integer(HID_T) :: pForIterationThetaZeta
   integer(HID_T) :: dspaceIDForIterationThetaZeta
 
+  integer(HSIZE_T), dimension(3) :: dimForIterationSpeciesX
+  integer(HSIZE_T), dimension(3) :: maxDimForIterationSpeciesX
+  integer(HSIZE_T), dimension(3) :: dimForIterationSpeciesXChunk
+  integer(HID_T) :: pForIterationSpeciesX
+  integer(HID_T) :: dspaceIDForIterationSpeciesX
+
   integer(HSIZE_T), dimension(4) :: dimForIterationSpeciesThetaZeta
   integer(HSIZE_T), dimension(4) :: maxDimForIterationSpeciesThetaZeta
   integer(HSIZE_T), dimension(4) :: dimForIterationSpeciesThetaZetaChunk
@@ -104,6 +110,7 @@ module writeHDF5Output
   integer, parameter :: ARRAY_ITERATION_SPECIES_THETA_ZETA = 103
   integer, parameter :: ARRAY_ITERATION_SPECIES_SOURCES = 104
   integer, parameter :: ARRAY_EXPORT_F = 105
+  integer, parameter :: ARRAY_ITERATION_SPECIES_X = 106
 
 contains
 
@@ -167,6 +174,7 @@ contains
             "Grid points in the toroidal angle, which runs from 0 to 2pi/Nperiods")
        call writeHDF5Field("x", x, dspaceIDForX, dimForX, &
             "Grid points in normalized speed, x_s = v / sqrt{2 T_s / m_s}, the same for each species s.")
+       call writeHDF5Field("geometryScheme", geometryScheme, "")
        call writeHDF5Field("thetaDerivativeScheme", thetaDerivativeScheme, "")
        call writeHDF5Field("zetaDerivativeScheme", zetaDerivativeScheme, "")
        call writeHDF5Field("xGridScheme", xGridScheme, "")
@@ -399,6 +407,7 @@ contains
        dimForIterationThetaZeta(1) = iterationNum
        dimForIterationSpeciesThetaZeta(1) = iterationNum
        dimForIterationSpeciesSources(1) = iterationNum
+       dimForIterationSpeciesX(1) = iterationNum
        dimForExport_f(1) = iterationNum
 
        call writeHDF5ExtensibleField(iterationNum, "densityPerturbation", densityPerturbation, &
@@ -471,6 +480,8 @@ contains
 
        call writeHDF5ExtensibleField(iterationNum, "FSABFlow", FSABFlow, ARRAY_ITERATION_SPECIES, "")
 
+       call writeHDF5ExtensibleField(iterationNum, "FSABFlow_vs_x", FSABFlow_vs_x, ARRAY_ITERATION_SPECIES_X, "")
+
        call writeHDF5ExtensibleField(iterationNum, "FSABVelocityUsingFSADensity", &
             FSABVelocityUsingFSADensity, ARRAY_ITERATION_SPECIES, "")
 
@@ -492,6 +503,8 @@ contains
        call writeHDF5ExtensibleField(iterationNum, "particleFlux_vm_psiN", particleFlux_vm_psiN, ARRAY_ITERATION_SPECIES, "")
        call writeHDF5ExtensibleField(iterationNum, "particleFlux_vm_rHat", particleFlux_vm_rHat, ARRAY_ITERATION_SPECIES, "")
        call writeHDF5ExtensibleField(iterationNum, "particleFlux_vm_rN", particleFlux_vm_rN, ARRAY_ITERATION_SPECIES, "")
+
+       call writeHDF5ExtensibleField(iterationNum, "particleFlux_vm_psiHat_vs_x", particleFlux_vm_psiHat_vs_x, ARRAY_ITERATION_SPECIES_X, "")
 
        if (includePhi1) then
           call writeHDF5ExtensibleField(iterationNum, "particleFlux_vE0_psiHat", particleFlux_vE0_psiHat, ARRAY_ITERATION_SPECIES, "")
@@ -556,6 +569,8 @@ contains
        call writeHDF5ExtensibleField(iterationNum, "heatFlux_vm_psiN", heatFlux_vm_psiN, ARRAY_ITERATION_SPECIES, "")
        call writeHDF5ExtensibleField(iterationNum, "heatFlux_vm_rHat", heatFlux_vm_rHat, ARRAY_ITERATION_SPECIES, "")
        call writeHDF5ExtensibleField(iterationNum, "heatFlux_vm_rN", heatFlux_vm_rN, ARRAY_ITERATION_SPECIES, "")
+
+       call writeHDF5ExtensibleField(iterationNum, "heatFlux_vm_psiHat_vs_x", heatFlux_vm_psiHat_vs_x, ARRAY_ITERATION_SPECIES_X, "")
 
        if (includePhi1) then
           call writeHDF5ExtensibleField(iterationNum, "heatFlux_vE0_psiHat", heatFlux_vE0_psiHat, ARRAY_ITERATION_SPECIES, "")
@@ -792,6 +807,26 @@ contains
 
     ! -------------------------------------
 
+    rank = 3
+    dimForIterationSpeciesX(1)      = 1
+    maxDimForIterationSpeciesX(1)   = H5S_UNLIMITED_F
+    dimForIterationSpeciesXChunk(1) = 1
+
+    dimForIterationSpeciesX(2)      = Nspecies
+    maxDimForIterationSpeciesX(2)   = Nspecies
+    dimForIterationSpeciesXChunk(2) = Nspecies
+
+    dimForIterationSpeciesX(3)      = Nx
+    maxDimForIterationSpeciesX(3)   = Nx
+    dimForIterationSpeciesXChunk(3) = Nx
+
+    call h5screate_simple_f(rank, dimForIterationSpeciesX, dspaceIDForIterationSpeciesX, &
+         HDF5Error, maxDimForIterationSpeciesX)
+    call h5pcreate_f(H5P_DATASET_CREATE_F, pForIterationSpeciesX, HDF5Error)
+    call h5pset_chunk_f(pForIterationSpeciesX, rank, dimForIterationSpeciesXChunk, HDF5Error)
+
+    ! -------------------------------------
+
     rank = 4
     dimForIterationSpeciesThetaZeta(1)      = 1
     maxDimForIterationSpeciesThetaZeta(1)   = H5S_UNLIMITED_F
@@ -882,6 +917,7 @@ contains
        call h5pclose_f(pForIterationSpeciesThetaZeta, HDF5Error)
        call h5pclose_f(pForIterationThetaZeta, HDF5Error)
        call h5pclose_f(pForIterationSpeciesSources, HDF5Error)
+       call h5pclose_f(pForIterationSpeciesX, HDF5Error)
        call h5pclose_f(pForExport_f, HDF5Error)
 
        call h5close_f(HDF5Error)
@@ -1359,6 +1395,14 @@ contains
        dimForChunk = dimForIterationSpeciesSourcesChunk
        chunkProperties = pForIterationSpeciesSources
        label1 = "sources"
+       label2 = "species"
+       label3 = "iteration"
+    case (ARRAY_ITERATION_SPECIES_X)
+       originalDspaceID = dspaceIDForIterationSpeciesX
+       dim = dimForIterationSpeciesX
+       dimForChunk = dimForIterationSpeciesXChunk
+       chunkProperties = pForIterationSpeciesX
+       label1 = "x"
        label2 = "species"
        label3 = "iteration"
     case default

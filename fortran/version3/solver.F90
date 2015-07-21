@@ -29,6 +29,8 @@ module solver
     Mat :: factorMat
     PetscInt :: mumps_which_cntl
     PetscReal :: mumps_value
+    PetscReal :: atol, rtol, stol
+    integer :: maxit, maxf
 
     external evaluateJacobian, evaluateResidual, diagnosticsMonitor
 
@@ -99,6 +101,11 @@ module solver
           if (masterProc) then
              print *,"We will use mumps to factorize the preconditioner."
           end if
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
+          ! The functions MatMumpsSetICNTL were introduced in PETSc 3.5.
+          ! For earlier versions, we can achieve a similar result with the following hack:
+          call PetscOptionsInsertString("-mat_mumps_cntl_1 1e-6 -mat_mumps_icntl_4 2", ierr)
+#endif
        case (2)
           call PCFactorSetMatSolverPackage(preconditionerContext, MATSOLVERSUPERLU_DIST, ierr)
           if (masterProc) then
@@ -138,25 +145,49 @@ module solver
     call SNESMonitorSet(mysnes, diagnosticsMonitor, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
 
     if (reusePreconditioner) then
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
+       ! Syntax for PETSc versions up through 3.4
+       ! In this case the associated code appears in evaluateJacobian.F90
+#else
+       ! Syntax for PETSc version 3.5 and later
        call KSPSetReusePreconditioner(KSPInstance, PETSC_TRUE, ierr)
        call PCSetReusePreconditioner(preconditionerContext, PETSC_TRUE, ierr)
+#endif
     end if
 
-    ! Set the algorithm to use for the nonlinear solver:
+    ! In older versions of PETSC (either <3.5 or <3.4, I'm not certain)
+    ! the monitor is never called when snes type = SNESKSPONLY.
+    ! Therefore, it is preferable to always have snes type = SNESNEWTONLS but set the 
+    ! number of iterations to 1 for a linear run.
+    call SNESSetType(mysnes, SNESNEWTONLS, ierr)
     if (nonlinear) then
-       ! SNESNEWTONLS = Newton's method with an optional line search.
-       ! As of PETSc version 3.5, this is the default algorithm, but I'll set it manually here anyway to be safe.
-       call SNESSetType(mysnes, SNESNEWTONLS, ierr)
        if (masterProc) then
           print *,"Since this is a nonlinear run, we will use Newton's method."
        end if
     else
-       ! SNESKSPONLY = Only do 1 linear step.
-       call SNESSetType(mysnes, SNESKSPONLY, ierr)
+       call SNESGetTolerances(mysnes, atol, rtol, stol, maxit, maxf, ierr)
+       maxit = 1
+       call SNESSetTolerances(mysnes, atol, rtol, stol, maxit, maxf, ierr)
        if (masterProc) then
           print *,"Since this is a linear run, we will only take a single step, and not iterate Newton's method."
        end if
     end if
+    ! Below is the old way of setting linear vs nonlinear, which does not work for linear runs in petsc 3.3:
+!!$    ! Set the algorithm to use for the nonlinear solver:
+!!$    if (nonlinear) then
+!!$       ! SNESNEWTONLS = Newton's method with an optional line search.
+!!$       ! As of PETSc version 3.5, this is the default algorithm, but I'll set it manually here anyway to be safe.
+!!$       call SNESSetType(mysnes, SNESNEWTONLS, ierr)
+!!$       if (masterProc) then
+!!$          print *,"Since this is a nonlinear run, we will use Newton's method."
+!!$       end if
+!!$    else
+!!$       ! SNESKSPONLY = Only do 1 linear step.
+!!$       call SNESSetType(mysnes, SNESKSPONLY, ierr)
+!!$       if (masterProc) then
+!!$          print *,"Since this is a linear run, we will only take a single step, and not iterate Newton's method."
+!!$       end if
+!!$    end if
 
     call SNESSetFromOptions(mysnes, ierr)
 
@@ -169,6 +200,9 @@ module solver
        ! I notice that if CNTL(1) is smaller, like 1e-15, the Fokker-Planck calculations work find but pitch-angle-scattering calculations
        ! fail. There might be value in using different values of CNTL(1) for FP vs PAS.
 
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
+       ! Syntax for PETSc versions up through 3.4
+#else
        ! These commands must be AFTER SNESSetFromOptions or else there is a seg fault.
        call PCFactorSetUpMatSolverPackage(preconditionerContext,ierr)
        call PCFactorGetMatrix(preconditionerContext,factorMat,ierr)
@@ -179,6 +213,7 @@ module solver
        ! Turn on mumps diagnostic output
        mumps_which_cntl = 4
        call MatMumpsSetIcntl(factorMat,mumps_which_cntl,2,ierr)
+#endif
     end if
 
     ! ***********************************************************************

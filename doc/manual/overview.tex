@@ -26,9 +26,16 @@ You may therefore find it useful to see the control parameters and error codes i
 
 This manual describes ``version 3'' of \sfincs.  
 To preserve previous versions of the code that have been used for publications, two older versions of the
-code called singleSpecies and multiSpecies are also present in the repository.  For both of these older versions,
-both MATLAB and fortran editions exist which are independent of each other.  At present, version 3 exists
-only in a fortran edition.
+code called singleSpecies and multiSpecies are also present in the repository.  
+For all versions, both MATLAB and fortran editions exist which are independent of each other.
+The MATLAB editions exist primarily for debugging the fortran editions.
+The same algorithms are implemented in the two different languages, and for identical input parameters, 
+the matrices and output quantities from the different editions should agree to several significant digits (roughly within the solver tolerance.)
+Any significant differences between the matrices and output of the MATLAB and fortran editions can be used to identify a bug.
+The MATLAB versions are serial whereas the fortran versions
+are parallelized, so the fortran versions are significantly faster and can access much more memory.
+For realistic experimental geometry and collisionality, the resolution (and hence memory) requirements will mean
+you will need to use the fortran edition.
 
 \section{Features}
 

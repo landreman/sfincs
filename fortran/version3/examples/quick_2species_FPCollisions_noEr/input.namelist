@@ -10,6 +10,7 @@
 !ss dPhiHatdpsiNMax =  1.0d+0
 
 &general
+  saveMatricesAndVectorsInBinary=.t.
 /
 
 &geometryParameters

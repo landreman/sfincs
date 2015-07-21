@@ -53,8 +53,8 @@
     double precision :: myMatInfo(MAT_INFO_SIZE)
     integer :: NNZ, NNZAllocated, NMallocs
     PetscScalar :: CHat_element, dfMdx
-    character(len=100) :: whichMatrixName, filename
-    PetscViewer :: MatlabOutput
+    character(len=200) :: whichMatrixName, filename
+    PetscViewer :: viewer
     integer :: ithetaRow, ithetaCol, izetaRow, izetaCol, ixMin, ixMinCol
     VecScatter :: vecScatterContext
     Vec :: vecOnEveryProc
@@ -480,7 +480,7 @@
                    geometricFactor2 = 2 * BHat(ithetaRow,izeta) &
                         * (dBHat_sub_psi_dzeta(ithetaRow,izeta) - dBHat_sub_zeta_dpsiHat(ithetaRow,izeta))
 
-                   if (magneticDriftScheme==1) then
+                   if (magneticDriftScheme==2) then
                       geometricFactor3 = BDotCurlB(ithetaRow,izeta)*BHat_sup_theta(ithetaRow,izeta) &
                            /(BHat(ithetaRow,izeta)*DHat(ithetaRow,izeta))
                    else
@@ -568,7 +568,7 @@
                    geometricFactor2 = 2 * BHat(itheta,izetaRow) &
                         * (dBHat_sub_theta_dpsiHat(itheta,izetaRow) - dBHat_sub_psi_dtheta(itheta,izetaRow))
 
-                   if (magneticDriftScheme==1) then
+                   if (magneticDriftScheme==2) then
                       geometricFactor3 = BDotCurlB(itheta,izetaRow)*BHat_sup_zeta(itheta,izetaRow) &
                            /(BHat(itheta,izetaRow)*DHat(itheta,izetaRow))
                    else
@@ -1363,8 +1363,8 @@
                          end do
                       end if
                       
+                      !   if (.false.) then
                       if (L < NL) then
-                         !   if (.false.) then
                          ! Add Rosenbluth potential terms.
 
                          if (xGridScheme==5 .or. xGridScheme==6) then
@@ -1652,22 +1652,18 @@
           ! Add a heat source and a particle source.
           
           L=0
-          do ix=ixMin,Nx
+          do ix = ixMin,Nx
              xPartOfSource1 = (x2(ix)-5/two)*exp(-x2(ix)) ! Provides particles but no heat
              xPartOfSource2 = (x2(ix)-3/two)*exp(-x2(ix)) ! Provides heat but no particles
-             do itheta=ithetaMin,ithetaMax
+             do itheta = ithetaMin,ithetaMax
                 do izeta = izetaMin,izetaMax
                    do ispecies = 1,Nspecies
                       rowIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
                       
                       colIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)
-                      !call MatSetValueSparse(matrix, rowIndex, colIndex, xPartOfSource1 / (BHat(itheta,izeta) ** 2), &
-                      !     ADD_VALUES, ierr)
                       call MatSetValueSparse(matrix, rowIndex, colIndex, xPartOfSource1, ADD_VALUES, ierr)
                       
                       colIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)
-                      !call MatSetValueSparse(matrix, rowIndex, colIndex, xPartOfSource2 / (BHat(itheta,izeta) ** 2), &
-                      !     ADD_VALUES, ierr)
                       call MatSetValueSparse(matrix, rowIndex, colIndex, xPartOfSource2, ADD_VALUES, ierr)
                    end do
                 end do
@@ -1677,14 +1673,12 @@
        case (2)
           ! Add a L=0 source (which is constant on the flux surface) at each x.
           L=0
-          do ix=ixMin,Nx
-             do itheta=ithetaMin,ithetaMax
+          do ix = ixMin,Nx
+             do itheta = ithetaMin,ithetaMax
                 do izeta = izetaMin,izetaMax
                    do ispecies = 1,Nspecies
                       rowIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
                       colIndex = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)
-                      !call MatSetValue(matrix, rowIndex, colIndex, one / (BHat(itheta,izeta) ** 2), &
-                      !     ADD_VALUES, ierr)
                       call MatSetValue(matrix, rowIndex, colIndex, one, ADD_VALUES, ierr)
                    end do
                 end do
@@ -1713,7 +1707,6 @@
           L=0
           do itheta=1,Ntheta
              do izeta=1,Nzeta
-                !factor = 1/(BHat(itheta,izeta) * BHat(itheta,izeta))
                 factor = thetaWeights(itheta)*zetaWeights(izeta)/DHat(itheta,izeta)
 
                 do ix=1,Nx
@@ -1739,7 +1732,6 @@
           L=0
           do itheta=1,Ntheta
              do izeta=1,Nzeta
-                !factor = 1/(BHat(itheta,izeta) * BHat(itheta,izeta))
                 factor = thetaWeights(itheta)*zetaWeights(izeta)/DHat(itheta,izeta)
 
                 do ix=ixMin,Nx
@@ -1754,17 +1746,16 @@
           end do
 
           if (pointAtX0) then
-             ! Do not impose a constraint at x=0. Just set the diagonal to 1 so this row of the matrix does nothing.
+             ! If the "normal" <f>=0 constraint is imposed at x=0, it gives a singular matrix.
+             ! I think this is because the x=0 constraint can be expressed as a linear combination of the constraints
+             ! imposed at other x values. So instead, just set the diagonal to 1 so this row of the matrix does nothing.
+
              ix = 1
-             do itheta=1,Ntheta
-                do izeta=1,Nzeta
-                   do ispecies = 1,Nspecies
-                      colIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                      rowIndex = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)
-                      call MatSetValue(matrix, rowIndex, colIndex, &
-                           one, ADD_VALUES, ierr)
-                   end do
-                end do
+             do ispecies = 1,Nspecies
+                rowIndex = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)
+                colIndex = rowIndex
+                call MatSetValue(matrix, rowIndex, colIndex, &
+                     one, ADD_VALUES, ierr)
              end do
           end if
 
@@ -1780,8 +1771,8 @@
 
     if (whichMatrix .ne. 2 .and. includePhi1) then
        L=0
-       do itheta=ithetaMin,ithetaMax
-          do izeta=izetaMin,izetaMax
+       do itheta = ithetaMin,ithetaMax
+          do izeta = izetaMin,izetaMax
              rowIndex = getIndex(1, 1, 1, itheta, izeta, BLOCK_QN)
 
              ! Add the charge density of each species:
@@ -1864,13 +1855,24 @@
        if (masterProc) then
           print *,"Saving matrix in matlab format: ",trim(filename)
        end if
-       call PetscViewerASCIIOpen(MPIComm, trim(filename) , MatlabOutput, ierr)
-       call PetscViewerSetFormat(MatlabOutput, PETSC_VIEWER_ASCII_MATLAB, ierr)
+       call PetscViewerASCIIOpen(MPIComm, trim(filename), viewer, ierr)
+       call PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB, ierr)
 
        call PetscObjectSetName(matrix, "matrix", ierr)
-       call MatView(matrix, MatlabOutput, ierr)
+       call MatView(matrix, viewer, ierr)
 
-       call PetscViewerDestroy(MatlabOutput, ierr)
+       call PetscViewerDestroy(viewer, ierr)
+    end if
+
+    if (saveMatricesAndVectorsInBinary) then
+       write (filename,fmt="(a,i3.3,a,i1)") trim(binaryOutputFilename) // "_iteration_", iterationForMatrixOutput, &
+            "_whichMatrix_",whichMatrix
+       if (masterProc) then
+          print *,"Saving matrix in binary format: ",trim(filename)
+       end if
+       call PetscViewerBinaryOpen(MPIComm, trim(filename), FILE_MODE_WRITE, viewer, ierr)
+       call MatView(matrix, viewer, ierr)
+       call PetscViewerDestroy(viewer, ierr)
     end if
 
     if (useStateVec) then
