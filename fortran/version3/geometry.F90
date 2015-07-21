@@ -641,7 +641,7 @@ contains
        end if
        
        !Switch from a left-handed to right-handed (radial,poloidal,toroidal) system
-       psiAHat=psiAHat*(-1)           !toroidal direction sign switch
+       !(The toroidal direction sign switch psiAHat=psiAHat*(-1) was already made in the initializeGeometry routine)
        GHat = GHat*(-1)               !toroidal direction sign switch
        iota = iota*(-1)               !toroidal direction sign switch
        BHarmonics_n=BHarmonics_n*(-1) !toroidal direction sign switch
@@ -823,10 +823,11 @@ contains
        dBHat_sub_psi_dzeta = 0
 
        !Switch from a left-handed to right-handed (radial,poloidal,toroidal) system
-       psiAHat=psiAHat*(-1)           !toroidal direction sign switch
+       !(The toroidal direction sign switch psiAHat=psiAHat*(-1) was already made in the initializeGeometry routine)
        GHat = GHat*(-1)               !toroidal direction sign switch
        iota = iota*(-1)               !toroidal direction sign switch
        BHarmonics_n=BHarmonics_n*(-1) !toroidal direction sign switch
+
 
     case default
        print *,"Error! Invalid geometryScheme"
