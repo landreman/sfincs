@@ -151,6 +151,10 @@ elif scanVariable == "xgrid_k":
     mustBeInteger = True
 elif scanVariable == "xpotentialsgridscheme":
     mustBeInteger = True
+elif scanVariable == "exbderivativescheme":
+    mustBeInteger = True
+elif scanVariable == "magneticdriftderivativescheme":
+    mustBeInteger = True
 elif scanVariable == "whichparallelsolvertofactorpreconditioner":
     mustBeInteger = True
 elif scanVariable == "petscpreallocationstrategy":

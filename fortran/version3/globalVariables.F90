@@ -117,6 +117,7 @@ module globalVariables
   ! 2 = 4th order dinite differences
 
   integer :: ExBDerivativeScheme = 0
+  integer :: magneticDriftDerivativeScheme = 0
   integer :: xDotDerivativeScheme = 0
 
   integer :: xPotentialsGridScheme = 2, xPotentialsInterpolationScheme
@@ -166,6 +167,8 @@ module globalVariables
   PetscScalar, dimension(:,:), allocatable :: ddtheta, ddzeta
   PetscScalar, dimension(:,:), allocatable :: ddtheta_ExB_plus, ddtheta_ExB_minus
   PetscScalar, dimension(:,:), allocatable :: ddzeta_ExB_plus, ddzeta_ExB_minus
+  PetscScalar, dimension(:,:), allocatable :: ddtheta_magneticDrift_plus, ddtheta_magneticDrift_minus
+  PetscScalar, dimension(:,:), allocatable :: ddzeta_magneticDrift_plus, ddzeta_magneticDrift_minus
   PetscScalar, dimension(:), allocatable :: xWeights, xPotentials
   PetscScalar :: maxxPotentials, zetaMax, xMaxNotTooSmall
   PetscScalar, dimension(:), allocatable :: x2, expx2

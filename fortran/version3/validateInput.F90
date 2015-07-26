@@ -638,6 +638,36 @@ subroutine validateInput()
      stop
   end if
   
+  if (magneticDriftDerivativeScheme<-3) then
+     if (masterProc) then
+        print *,"Error! magneticDriftDerivativeScheme cannot be less than -3."
+     end if
+     stop
+  end if
+  
+  if (magneticDriftDerivativeScheme>3) then
+     if (masterProc) then
+        print *,"Error! magneticDriftDerivativeScheme cannot be more than 3."
+     end if
+     stop
+  end if
+  
+  if (magneticDriftDerivativeScheme>0 .and. preconditioner_theta>0) then
+     if (masterProc) then
+        print *,"Error! The implementation of magneticDriftDerivativeScheme>0 does not presently allow"
+        print *,"       preconditioning in theta (preconditioner_theta>0)."
+     end if
+     stop
+  end if
+  
+  if (magneticDriftDerivativeScheme>0 .and. preconditioner_zeta>0) then
+     if (masterProc) then
+        print *,"Error! The implementation of magneticDriftDerivativeScheme>0 does not presently allow"
+        print *,"       preconditioning in zeta (preconditioner_zeta>0)."
+     end if
+     stop
+  end if
+  
   if (xDotDerivativeScheme<-2) then
      if (masterProc) then
         print *,"Error! xGridScheme cannot be less than -2."

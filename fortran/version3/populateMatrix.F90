@@ -490,11 +490,12 @@
        if ((whichMatrix .ne. 2) .and. (magneticDriftScheme>0)) then
           do L = 0, (Nxi-1)
 
-             if (whichMatrix>0 .or. L < preconditioner_theta_min_L) then
-                ddthetaToUse = ddtheta
-             else
-                ddthetaToUse = ddtheta_preconditioner
-             end if
+! These next lines were used before magneticDriftDerivativeScheme was introduced.
+!!$             if (whichMatrix>0 .or. L < preconditioner_theta_min_L) then
+!!$                ddthetaToUse = ddtheta
+!!$             else
+!!$                ddthetaToUse = ddtheta_preconditioner
+!!$             end if
 
              do izeta = izetaMin, izetaMax                
                 do ithetaRow = ithetaMin, ithetaMax
@@ -509,6 +510,23 @@
                            /(BHat(ithetaRow,izeta)*DHat(ithetaRow,izeta))
                    else
                       geometricFactor3 = 0
+                   end if
+
+                   if (magneticDriftDerivativeScheme==0) then
+                      if (whichMatrix>0 .or. L < preconditioner_theta_min_L) then
+                         ddthetaToUse = ddtheta
+                      else
+                         ddthetaToUse = ddtheta_preconditioner
+                      end if
+                   else
+                      ! Assume DHat has the same sign everywhere. (Should be true even for VMEC coordinates.)
+                      ! We assume here that geometricFactor1*factor sets the direction of upwinding to use. This should be correct at beta=0
+                      ! since then geometricFactor2=0, but may need modification when beta>0 (in which case geometricFactor2 is nonzero.)
+                      if (geometricFactor1*DHat(1,1)/Z > 0) then
+                         ddthetaToUse = ddtheta_magneticDrift_plus
+                      else
+                         ddthetaToUse = ddtheta_magneticDrift_minus
+                      end if
                    end if
 
                    do ix = ixMin, Nx
@@ -578,11 +596,12 @@
        if ((whichMatrix .ne. 2) .and. (magneticDriftScheme>0)) then
           do L = 0, (Nxi-1)
 
-             if (whichMatrix>0 .or. L < preconditioner_zeta_min_L) then
-                ddzetaToUse = ddzeta
-             else
-                ddzetaToUse = ddzeta_preconditioner
-             end if
+! These next lines were used before magneticDriftDerivativeScheme was introduced.
+!!$             if (whichMatrix>0 .or. L < preconditioner_zeta_min_L) then
+!!$                ddzetaToUse = ddzeta
+!!$             else
+!!$                ddzetaToUse = ddzeta_preconditioner
+!!$             end if
 
              do itheta = ithetaMin, ithetaMax                
                 do izetaRow = izetaMin, izetaMax
@@ -597,6 +616,23 @@
                            /(BHat(itheta,izetaRow)*DHat(itheta,izetaRow))
                    else
                       geometricFactor3 = 0
+                   end if
+
+                   if (magneticDriftDerivativeScheme==0) then
+                      if (whichMatrix>0 .or. L < preconditioner_zeta_min_L) then
+                         ddzetaToUse = ddzeta
+                      else
+                         ddzetaToUse = ddzeta_preconditioner
+                      end if
+                   else
+                      ! Assume DHat has the same sign everywhere. (Should be true even for VMEC coordinates.)
+                      ! We assume here that geometricFactor1*factor sets the direction of upwinding to use. This should be correct at beta=0
+                      ! since then geometricFactor2=0, but may need modification when beta>0 (in which case geometricFactor2 is nonzero.)
+                      if (geometricFactor1*DHat(1,1)/Z > 0) then
+                         ddzetaToUse = ddzeta_magneticDrift_plus
+                      else
+                         ddzetaToUse = ddzeta_magneticDrift_minus
+                      end if
                    end if
 
                    do ix = ixMin, Nx

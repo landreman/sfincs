@@ -205,6 +205,8 @@
     allocate(ddtheta(Ntheta,Ntheta))
     allocate(ddtheta_ExB_plus(Ntheta,Ntheta))
     allocate(ddtheta_ExB_minus(Ntheta,Ntheta))
+    allocate(ddtheta_magneticDrift_plus(Ntheta,Ntheta))
+    allocate(ddtheta_magneticDrift_minus(Ntheta,Ntheta))
     allocate(d2dtheta2(Ntheta,Ntheta))
     allocate(theta_preconditioner(Ntheta))
     allocate(thetaWeights_preconditioner(Ntheta))
@@ -225,24 +227,14 @@
        stop
     end select
 
-!    scheme = 90 ! Delete this line!
     call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta, thetaWeights, ddtheta, d2dtheta2)
-!!$    print *,"Here comes ddtheta:"
-!!$    do i=1,Ntheta
-!!$       print *,ddtheta(i,:)
-!!$    end do
-!!$    print *,"Here comes d2dtheta2:"
-!!$    do i=1,Ntheta
-!!$       print *,d2dtheta2(i,:)
-!!$    end do
-!!$    stop
 
     ! Create upwinded matrices for ExB terms:
     select case (ExBDerivativeScheme)
     case (0)
        ! It should not matter what ddtheta_ExB_plus and ddtheta_ExB_minus are in this case.
-       ddtheta_ExB_plus = 0
-       ddtheta_ExB_minus = 0
+       ddtheta_ExB_plus = ddtheta
+       ddtheta_ExB_minus = ddtheta
     case (1)
        scheme = 80
        call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
@@ -266,6 +258,59 @@
             thetaWeights_preconditioner, ddtheta_ExB_minus, d2dtheta2_preconditioner)
     case default
        print *,"Error! Invalid ExBDerivativeScheme:",ExBDerivativeScheme
+       stop
+    end select
+
+    ! Create upwinded matrices for magneticDrift terms:
+    select case (magneticDriftDerivativeScheme)
+    case (0)
+       ! It should not matter what ddtheta_magneticDrift_plus and ddtheta_magneticDrift_minus are in this case.
+       ddtheta_magneticDrift_plus = ddtheta
+       ddtheta_magneticDrift_minus = ddtheta
+    case (1)
+       scheme = 80
+       call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+            thetaWeights_preconditioner, ddtheta_magneticDrift_plus, d2dtheta2_preconditioner)
+       scheme = 90
+       call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+            thetaWeights_preconditioner, ddtheta_magneticDrift_minus, d2dtheta2_preconditioner)
+    case (2)
+       scheme = 100
+       call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+            thetaWeights_preconditioner, ddtheta_magneticDrift_plus, d2dtheta2_preconditioner)
+       scheme = 110
+       call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+            thetaWeights_preconditioner, ddtheta_magneticDrift_minus, d2dtheta2_preconditioner)
+    case (3)
+       scheme = 120
+       call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+            thetaWeights_preconditioner, ddtheta_magneticDrift_plus, d2dtheta2_preconditioner)
+       scheme = 130
+       call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+            thetaWeights_preconditioner, ddtheta_magneticDrift_minus, d2dtheta2_preconditioner)
+    case (-1)
+       scheme = 90
+       call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+            thetaWeights_preconditioner, ddtheta_magneticDrift_plus, d2dtheta2_preconditioner)
+       scheme = 80
+       call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+            thetaWeights_preconditioner, ddtheta_magneticDrift_minus, d2dtheta2_preconditioner)
+    case (-2)
+       scheme = 110
+       call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+            thetaWeights_preconditioner, ddtheta_magneticDrift_plus, d2dtheta2_preconditioner)
+       scheme = 100
+       call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+            thetaWeights_preconditioner, ddtheta_magneticDrift_minus, d2dtheta2_preconditioner)
+    case (-3)
+       scheme = 130
+       call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+            thetaWeights_preconditioner, ddtheta_magneticDrift_plus, d2dtheta2_preconditioner)
+       scheme = 120
+       call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+            thetaWeights_preconditioner, ddtheta_magneticDrift_minus, d2dtheta2_preconditioner)
+    case default
+       print *,"Error! Invalid magneticDriftDerivativeScheme:",magneticDriftDerivativeScheme
        stop
     end select
 
@@ -319,6 +364,8 @@
     allocate(ddzeta(Nzeta,Nzeta))
     allocate(ddzeta_ExB_plus(Nzeta,Nzeta))
     allocate(ddzeta_ExB_minus(Nzeta,Nzeta))
+    allocate(ddzeta_magneticDrift_plus(Nzeta,Nzeta))
+    allocate(ddzeta_magneticDrift_minus(Nzeta,Nzeta))
     allocate(d2dzeta2(Nzeta,Nzeta))
     allocate(zeta_preconditioner(Nzeta))
     allocate(zetaWeights_preconditioner(Nzeta))
@@ -347,6 +394,8 @@
        d2dzeta2 = 0 ! d2dzeta2 is not actually used.
        ddzeta_ExB_plus = 0
        ddzeta_ExB_minus = 0
+       ddzeta_magneticDrift_plus = 0
+       ddzeta_magneticDrift_minus = 0
     else
        call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta, zetaWeights, ddzeta, d2dzeta2)
 
@@ -354,8 +403,8 @@
        select case (ExBDerivativeScheme)
        case (0)
           ! It should not matter what ddzeta_ExB_plus and ddzeta_ExB_minus are in this case.
-          ddzeta_ExB_plus = 0
-          ddzeta_ExB_minus = 0
+          ddzeta_ExB_plus = ddzeta
+          ddzeta_ExB_minus = ddzeta
        case (1)
           scheme = 80
           call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
@@ -379,6 +428,59 @@
                zetaWeights_preconditioner, ddzeta_ExB_minus, d2dzeta2_preconditioner)
        case default
           print *,"Error! Invalid ExBDerivativeScheme:",ExBDerivativeScheme
+          stop
+       end select
+
+       ! Create upwinded matrices for magneticDrift terms:
+       select case (magneticDriftDerivativeScheme)
+       case (0)
+          ! It should not matter what ddzeta_magneticDrift_plus and ddzeta_magneticDrift_minus are in this case.
+          ddzeta_magneticDrift_plus = ddzeta
+          ddzeta_magneticDrift_minus = ddzeta
+       case (1)
+          scheme = 80
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+               zetaWeights_preconditioner, ddzeta_magneticDrift_plus, d2dzeta2_preconditioner)
+          scheme = 90
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+               zetaWeights_preconditioner, ddzeta_magneticDrift_minus, d2dzeta2_preconditioner)
+       case (2)
+          scheme = 100
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+               zetaWeights_preconditioner, ddzeta_magneticDrift_plus, d2dzeta2_preconditioner)
+          scheme = 110
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+               zetaWeights_preconditioner, ddzeta_magneticDrift_minus, d2dzeta2_preconditioner)
+       case (3)
+          scheme = 120
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+               zetaWeights_preconditioner, ddzeta_magneticDrift_plus, d2dzeta2_preconditioner)
+          scheme = 130
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+               zetaWeights_preconditioner, ddzeta_magneticDrift_minus, d2dzeta2_preconditioner)
+       case (-1)
+          scheme = 90
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+               zetaWeights_preconditioner, ddzeta_magneticDrift_plus, d2dzeta2_preconditioner)
+          scheme = 80
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+               zetaWeights_preconditioner, ddzeta_magneticDrift_minus, d2dzeta2_preconditioner)
+       case (-2)
+          scheme = 110
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+               zetaWeights_preconditioner, ddzeta_magneticDrift_plus, d2dzeta2_preconditioner)
+          scheme = 100
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+               zetaWeights_preconditioner, ddzeta_magneticDrift_minus, d2dzeta2_preconditioner)
+       case (-3)
+          scheme = 130
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+               zetaWeights_preconditioner, ddzeta_magneticDrift_plus, d2dzeta2_preconditioner)
+          scheme = 120
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+               zetaWeights_preconditioner, ddzeta_magneticDrift_minus, d2dzeta2_preconditioner)
+       case default
+          print *,"Error! Invalid magneticDriftDerivativeScheme:",magneticDriftDerivativeScheme
           stop
        end select
 
