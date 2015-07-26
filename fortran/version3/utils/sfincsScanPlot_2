@@ -9,7 +9,15 @@ import matplotlib.pyplot as plt
 import h5py
 import numpy
 import inspect, math, os
-from scipy.interpolate import PchipInterpolator
+
+try:
+    # Older versions of scipy do not have this interpolation routine
+    from scipy.interpolate import PchipInterpolator
+    whichInterpolator = 0
+except:
+    from scipy.interpolate import interp1d
+    whichInterpolator = 1
+
 from scipy.optimize import brentq
 import pickle
 from sys import argv
@@ -256,7 +264,10 @@ if doAmbipolaritySolve:
          print "Solving for E_r."
          # Note: For interpolation it does not work well to use scipy's "interp1d" function, since this tends to give
          # large overshoots for the typical data we get in an Er scan (with sharp structure near Er=0).
-         interpolator = PchipInterpolator(Ers_sorted, radialCurrents_sorted)
+         if whichInterpolator==0:
+             interpolator = PchipInterpolator(Ers_sorted, radialCurrents_sorted)
+         else:
+             interpolator = interp1d(Ers_sorted, radialCurrents_sorted)
          # In the next line, 500 is arbitrary, and could be replaced by another large integer.
          Er_fine = numpy.linspace(min(Ers), max(Ers), num=500)
          radialCurrent_fine = interpolator(Er_fine)
@@ -282,7 +293,10 @@ if doAmbipolaritySolve:
          print "**** Output quantities at these ambipolar E_r value(s) ****"
          outputs_ambipolar = []
          for iQuantity in range(numQuantities):
-            quantityInterpolator = PchipInterpolator(Ers_sorted, outputs_array[:,iQuantity])
+            if whichInterpolator==0:
+                quantityInterpolator = PchipInterpolator(Ers_sorted, outputs_array[:,iQuantity])
+            else:
+                quantityInterpolator = interp1d(Ers_sorted, outputs_array[:,iQuantity])
             thisOutput_ambipolar = quantityInterpolator(roots)
             outputs_ambipolar.append(thisOutput_ambipolar)
             print yAxisLabels[iQuantity],": ",thisOutput_ambipolar

@@ -991,12 +991,23 @@ The best value for this parameter is usually 2.}
 {0}
 {Whenever the radial electric field is nonzero}
 {Options for controlling upwinding of the $\vect{E}\times\vect{B}$ drift terms.  Note the options are different than for \parlink{thetaDerivativeScheme}
-and \parlink{zetaDerivativeScheme}.\\
+and \parlink{zetaDerivativeScheme}.  This option exists because when the radial electric field is large enough to be comparable to the resonance,
+such that the coefficient in front of the $\partial f/\partial \theta$ or $\partial f/\partial\zeta$ terms vanishes near the thermal speed of one of the species,
+the distribution function can develop unphysical grid-scale structure.  This option allows upwinding of these spatial derivatives, which eliminates the grid-scale oscillations.\\
 
-{\ttfamily ExBDerivativeScheme} = 0: Use same differentiation matrices as for the parallel streaming term.  This option is best except for very
-large radial electric fields, when the electric field is as large as the resonance or larger.\\
+{\ttfamily ExBDerivativeScheme} = 0: Use same differentiation matrices for the $\vect{E}\times\vect{B}$ drift terms as for the parallel streaming term.\\
 
-{\ttfamily ExBDerivativeScheme} = 1: Treat the $\vect{E}\times\vect{B}$ drift terms using a 4 point upwinded stencil (1 point on 1 side, 2 points on the other.)
+{\ttfamily ExBDerivativeScheme} = 1: Treat the $\vect{E}\times\vect{B}$ drift terms using a 4 point upwinded stencil (1 point on 1 side, 2 points on the other.)\\
+
+{\ttfamily ExBDerivativeScheme} = 2: Treat the $\vect{E}\times\vect{B}$ drift terms using a 5 point upwinded stencil (1 point on 1 side, 3 points on the other.)\\
+
+{\ttfamily ExBDerivativeScheme} = 3: Treat the $\vect{E}\times\vect{B}$ drift terms using a 6 point upwinded stencil (2 points on 1 side, 3 points on the other.)\\
+
+The different settings require slightly different amounts of memory for factorization due to the different numbers of nonzeros. Option 1 requires the least memory, then 0, then 2,
+and 3 requires the most.  The difference in memory required appears to be small, around 10\%.
+On the other hand, the denser the stencil, the more accurate the result. Hence, in order from least to most accurate, the options are 1, 0, 2, 3.
+You should use the default {\ttfamily ExBDerivativeScheme} = 0 except for very large radial electric fields, when the electric field is as large as the resonance or larger.
+In this case, {\ttfamily ExBDerivativeScheme} = 3 is recommended.
 }
 
 \myhrule
@@ -1019,7 +1030,11 @@ large radial electric fields, when the electric field is as large as the resonan
 
 {\ttfamily xGridScheme} = 6: New orthogonal polynomials with a point at $x=0$. New treatment of Rosenbluth potentials.\\
 
-The recommended value for this parameter is 5.  
+{\ttfamily xGridScheme} = 7: Chebyshev grid on [0, \parlink{xMax}], forcing $f=0$ at \parlink{xMax}. Original treatment of Rosenbluth potentials.\\
+
+{\ttfamily xGridScheme} = 8: Chebyshev grid on [0, \parlink{xMax}], with no boundary condition imposed at \parlink{xMax}. Original treatment of Rosenbluth potentials.\\
+
+The recommended value for this parameter is the default, 5.  
 When {\ttfamily xGridScheme} = 5 or 6, then the following quantities do not matter: 
 \parlink{NxPotentialsPerVth}, \parlink{xMax}, and \parlink{xPotentialsGridScheme}.}
 

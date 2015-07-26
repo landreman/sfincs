@@ -30,7 +30,9 @@
     PetscScalar :: Z, nHat, THat, mHat, sqrtTHat, sqrtMHat, speciesFactor, speciesFactor2
     PetscScalar :: T32m, factor, LFactor, temp, temp1, temp2, xDotFactor, xDotFactor2, stuffToAdd
     PetscScalar, dimension(:), allocatable :: xb, expxb2
-    PetscScalar, dimension(:,:), allocatable :: thetaPartOfTerm, localThetaPartOfTerm, xPartOfXDot
+    PetscScalar, dimension(:,:), allocatable :: thetaPartOfTerm, localThetaPartOfTerm
+    PetscScalar, dimension(:,:), allocatable :: xPartOfXDot_plus, xPartOfXDot_minus, xPartOfXDot
+    PetscScalar, dimension(:,:), allocatable :: ddxToUse_plus, ddxToUse_minus
     integer :: i, j, ix, ispecies, itheta, izeta, L, ixi, index, ix_row, ix_col
     integer :: rowIndex, colIndex
     integer :: ell, iSpeciesA, iSpeciesB
@@ -174,6 +176,8 @@
     ! *********************************************************
 
     allocate(ddxToUse(Nx,Nx))
+    allocate(ddxToUse_plus(Nx,Nx))
+    allocate(ddxToUse_minus(Nx,Nx))
     allocate(d2dx2ToUse(Nx,Nx))
     allocate(ddthetaToUse(Ntheta, Ntheta))
     allocate(ddzetaToUse(Nzeta, Nzeta))
@@ -805,6 +809,8 @@
        if (includeXDotTerm .and. (whichMatrix .ne. 2)) then
 
           allocate(xPartOfXDot(Nx,Nx))
+          allocate(xPartOfXDot_plus(Nx,Nx))
+          allocate(xPartOfXDot_minus(Nx,Nx))
           allocate(rowIndices(Nx))
           allocate(colIndices(Nx))
           !factor = alpha*Delta/(4*psiAHat)*dPhiHatdpsiN
@@ -817,14 +823,18 @@
                 ixMinCol = 1
              end if
 
+             ! Upwind in x
              if (whichMatrix==0 .and. L >= preconditioner_x_min_L) then
-                ddxToUse = ddx_preconditioner
+                ddxToUse_plus = ddx_xDot_preconditioner_plus
+                ddxToUse_minus = ddx_xDot_preconditioner_minus
              else
-                ddxToUse = ddx
+                ddxToUse_plus = ddx_xDot_plus
+                ddxToUse_minus = ddx_xDot_minus
              end if
 
              do ix=1,Nx
-                xPartOfXDot(ix,:) = x(ix) * ddxToUse(ix,:)
+                xPartOfXDot_plus(ix,:) = x(ix) * ddxToUse_plus(ix,:)
+                xPartOfXDot_minus(ix,:) = x(ix) * ddxToUse_minus(ix,:)
              end do
 
              ! Note: in previous versions I take the transpose of xPartOfXDot here,
@@ -847,6 +857,13 @@
                    else
                       xDotFactor2 = factor*DHat(itheta,izeta)/(BHat(itheta,izeta)**2) * 2 &
                            * (dBHat_sub_zeta_dtheta(itheta,izeta) - dBHat_sub_theta_dzeta(itheta,izeta))
+                   end if
+
+                   if (xDotFactor>0) then  ! This is the correct inequality
+                   !if (xDotFactor<0) then  ! Incorrect inequality!
+                      xPartOfXDot = xPartOfXDot_plus
+                   else
+                      xPartOfXDot = xPartOfXDot_minus
                    end if
 
                    do ix=1,Nx
@@ -901,6 +918,8 @@
           deallocate(rowIndices)
           deallocate(colIndices)
           deallocate(xPartOfXDot)
+          deallocate(xPartOfXDot_plus)
+          deallocate(xPartOfXDot_minus)
        end if
 
        ! *********************************************************
@@ -1298,6 +1317,13 @@
                       fToFInterpolationMatrix = fToFInterpolationMatrix_plus1(:,1:Nx)
                       deallocate(tempExtrapMatrix)
                       deallocate(fToFInterpolationMatrix_plus1)
+                   case (7)
+                      allocate(fToFInterpolationMatrix_plus1(Nx, Nx+1))
+                      call ChebyshevInterpolationMatrix(Nx+1, Nx, x_plus1, xb, fToFInterpolationMatrix_plus1)
+                      fToFInterpolationMatrix = fToFInterpolationMatrix_plus1(:,1:Nx)
+                      deallocate(fToFInterpolationMatrix_plus1)
+                   case (8)
+                      call ChebyshevInterpolationMatrix(Nx, Nx, x, xb, fToFInterpolationMatrix)
                    case default
                       print *,"Error! Invalid xGridScheme"
                       stop

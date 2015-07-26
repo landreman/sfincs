@@ -117,6 +117,7 @@ module globalVariables
   ! 2 = 4th order dinite differences
 
   integer :: ExBDerivativeScheme = 0
+  integer :: xDotDerivativeScheme = 0
 
   integer :: xPotentialsGridScheme = 2, xPotentialsInterpolationScheme
   integer :: xGridScheme = 5, xInterpolationScheme
@@ -169,6 +170,8 @@ module globalVariables
   PetscScalar :: maxxPotentials, zetaMax, xMaxNotTooSmall
   PetscScalar, dimension(:), allocatable :: x2, expx2
   PetscScalar, dimension(:,:), allocatable :: ddx, d2dx2, ddxPotentials, d2dx2Potentials
+  PetscScalar, dimension(:,:), allocatable :: ddx_xDot_plus, ddx_xDot_preconditioner_plus
+  PetscScalar, dimension(:,:), allocatable :: ddx_xDot_minus, ddx_xDot_preconditioner_minus
   PetscScalar, dimension(:,:), allocatable :: ddx_preconditioner
   PetscScalar, dimension(:,:), allocatable :: ddtheta_preconditioner
   PetscScalar, dimension(:,:), allocatable :: ddzeta_preconditioner

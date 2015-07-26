@@ -76,8 +76,33 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
   !      left. A stencil is used with 1 point on 1 side and 2 points on the
   !      other side. The second derivative is the same as in scheme 0.
   ! 81 = Same as 80 but with a grid point at xMax and not xMin.
+  ! 82 = Like 80 but not periodic, with a grid point at both xMin and xMax.
+  !      The top row of D is zero.
   ! 90 = Same as 80 but upwinding to the right.
   ! 91 = Same as 90 but with a grid point at xMax and not xMin.
+  ! 92 = Like 90 but not periodic, with a grid point at both xMin and xMax.
+  !      The bottom row of D is zero.
+  ! 100 = Periodic with a grid point at xMin but not xMax.
+  !       1st derivative only. Upwinded to the left.
+  !       Stencil has 1 point on 1 side, 3 points on the other side
+  ! 101 = Same as 100, but with no grid point at xMin and with a grid point at xMax.
+  ! 102 = Same as 100, but aperiodic, with grid points at both xMin and xMax.
+  ! 110 = Periodic with a grid point at xMin but not xMax.
+  !       1st derivative only. Upwinded to the right.
+  !       Stencil has 1 point on 1 side, 3 points on the other side
+  ! 111 = Same as 110, but with no grid point at xMin and with a grid point at xMax.
+  ! 112 = Same as 100, but aperiodic, with grid points at both xMin and xMax.
+  ! 120 = Periodic with a grid point at xMin but not xMax.
+  !       1st derivative only. Upwinded to the left.
+  !       Stencil has 2 points on 1 side, 3 points on the other side
+  ! 121 = Same as 120, but with no grid point at xMin and with a grid point at xMax.
+  ! 122 = Same as 120, but aperiodic, with grid points at both xMin and xMax.
+  ! 130 = Periodic with a grid point at xMin but not xMax.
+  !       1st derivative only. Upwinded to the right.
+  !       Stencil has 2 points on 1 side, 3 points on the other side
+  ! 131 = Same as 130, but with no grid point at xMin and with a grid point at xMax.
+  ! 132 = Same as 130, but aperiodic, with grid points at both xMin and xMax.
+  
   !
   ! Outputs:
   !   x = column vector with the grid points.
@@ -124,13 +149,13 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
   ! ***************************************************************
 
   select case (scheme)
-  case (2, 3, 12, 13, 32, 42, 52, 62)
+  case (2, 3, 12, 13, 32, 42, 52, 62, 82, 92, 102, 112, 122, 132)
      ! Include points at both xMin and xMax:
      x = [( (xMax-xMin)*i/(N-1)+xMin, i=0,N-1 )]
-  case (0,10,20,30,40,50,60,80,90)
+  case (0,10,20,30,40,50,60,80,90,100,110,120,130)
      ! Include a point at xMin but not xMax:
      x = [( (xMax-xMin)*i/(N)+xMin, i=0,N-1 )]
-  case (1,11,21,31,41,51,61,81,91)
+  case (1,11,21,31,41,51,61,81,91,101,111,121,131)
      ! Include a point at xMax but not xMin:
      x = [( (xMax-xMin)*i/(N)+xMin, i=1,N )]
   case default
@@ -147,7 +172,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
 
   weights=dx
   select case (scheme)
-  case (2, 3, 12, 13, 32, 42, 52, 62)
+  case (2, 3, 12, 13, 32, 42, 52, 62, 82, 92, 102, 112, 122, 132)
      ! Grid is aperiodic
      weights(1)=weights(1)/2
      weights(N)=weights(N)/2
@@ -358,6 +383,25 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
         d2dx2(i,modulo(i-2,N)+1) =  1/(dx2)
      end do
 
+  case (82)
+     ! 4 point stencil (upwinding, with 1 point on 1 side, and 2 points on the other side.)
+
+     if (N<5) then
+        print *,"Error! N must be at least 5"
+        stop
+     end if
+     do i=3,N-1
+        ddx(i,i+1) =  1/(3*dx)
+        ddx(i,i)   =  1/(2*dx)
+        ddx(i,i-1) = -1/(dx)
+        ddx(i,i-2) =  1/(6*dx)
+     end do
+     do i=2,N-1
+        d2dx2(i,i+1) =  1/(dx2)
+        d2dx2(i,i)   = -2/(dx2)
+        d2dx2(i,i-1) =  1/(dx2)
+     end do
+
   case (90,91)
      ! 4 point stencil (upwinding, with 1 point on 1 side, and 2 points on the other side.)
 
@@ -375,6 +419,125 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
         d2dx2(i,i)               = -2/(dx2)
         d2dx2(i,modulo(i-2,N)+1) =  1/(dx2)
      end do
+
+  case (92)
+     ! 4 point stencil (upwinding, with 1 point on 1 side, and 2 points on the other side.)
+
+     if (N<5) then
+        print *,"Error! N must be at least 5"
+        stop
+     end if
+     do i=2,N-2
+        ddx(i,i-1) = -1/(3*dx)
+        ddx(i,i)   = -1/(2*dx)
+        ddx(i,i+1) =  1/(dx)
+        ddx(i,i+2) = -1/(6*dx)
+     end do
+     do i=2,N-1
+        d2dx2(i,i+1) =  1/(dx2)
+        d2dx2(i,i)   = -2/(dx2)
+        d2dx2(i,i-1) =  1/(dx2)
+     end do
+
+  case (100,101)
+     ! upwinding, with 1 point on 1 side, and 3 points on the other side.
+
+     if (N<5) then
+        print *,"Error! N must be at least 5"
+        stop
+     end if
+     do i=1,N
+        ddx(i,modulo(i+0,N)+1) =  1/(4*dx)
+        ddx(i,i)               =  5/(6*dx)
+        ddx(i,modulo(i-2,N)+1) = -3/(2*dx)
+        ddx(i,modulo(i-3,N)+1) =  1/(2*dx)
+        ddx(i,modulo(i-4,N)+1) = -1/(12*dx)
+     end do
+
+  case (102)
+     ! upwinding, with 1 point on 1 side, and 3 points on the other side.
+
+     if (N<5) then
+        print *,"Error! N must be at least 5"
+        stop
+     end if
+     do i=4,N-1
+        ddx(i,i+1) =  1/(4*dx)
+        ddx(i,i)   =  5/(6*dx)
+        ddx(i,i-1) = -3/(2*dx)
+        ddx(i,i-2) =  1/(2*dx)
+        ddx(i,i-3) = -1/(12*dx)
+     end do
+
+  case (110,111)
+     ! upwinding, with 1 point on 1 side, and 2 points on the other side.
+
+     if (N<5) then
+        print *,"Error! N must be at least 5"
+        stop
+     end if
+     do i=1,N
+        ddx(i,modulo(i-2,N)+1) = -1/(4*dx)
+        ddx(i,i)               = -5/(6*dx)
+        ddx(i,modulo(i+0,N)+1) =  3/(2*dx)
+        ddx(i,modulo(i+1,N)+1) = -1/(2*dx)
+        ddx(i,modulo(i+2,N)+1) =  1/(12*dx)
+     end do
+
+  case (112)
+     ! upwinding, with 1 point on 1 side, and 2 points on the other side.
+
+     if (N<5) then
+        print *,"Error! N must be at least 5"
+        stop
+     end if
+     do i=2,N-3
+        ddx(i,i-1) = -1/(4*dx)
+        ddx(i,i)   = -5/(6*dx)
+        ddx(i,i+1) =  3/(2*dx)
+        ddx(i,i+2) = -1/(2*dx)
+        ddx(i,i+3) =  1/(12*dx)
+     end do
+
+  case (120,121)
+     ! upwinding, with 2 points on 1 side, and 3 points on the other side.
+
+     if (N<5) then
+        print *,"Error! N must be at least 5"
+        stop
+     end if
+     do i=1,N
+        ddx(i,modulo(i+1,N)+1) = -1/(20*dx)
+        ddx(i,modulo(i+0,N)+1) =  1/(2*dx)
+        ddx(i,i)               =  1/(3*dx)
+        ddx(i,modulo(i-2,N)+1) = -1/(dx)
+        ddx(i,modulo(i-3,N)+1) =  1/(4*dx)
+        ddx(i,modulo(i-4,N)+1) = -1/(30*dx)
+     end do
+
+!  case (122)
+     ! Not implemented yet!
+
+  case (130,131)
+     ! upwinding, with 2 points on 1 side, and 3 points on the other side.
+
+     if (N<5) then
+        print *,"Error! N must be at least 5"
+        stop
+     end if
+     do i=1,N
+        ddx(i,modulo(i-3,N)+1) =  1/(20*dx)
+        ddx(i,modulo(i-2,N)+1) = -1/(2*dx)
+        ddx(i,i)               = -1/(3*dx)
+        ddx(i,modulo(i+0,N)+1) =  1/(dx)
+        ddx(i,modulo(i+1,N)+1) = -1/(4*dx)
+        ddx(i,modulo(i+2,N)+1) =  1/(30*dx)
+
+     end do
+
+!  case (132)
+     ! Not implemented yet!
+
 
   end select
 
@@ -661,6 +824,58 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
      ddx(N-1,N) = 1/dx
 
   case (80,81,90,91)
+     ! Handled previously
+
+  case (82)
+     ddx(2,2) =  1/dx
+     ddx(2,1) = -1/dx
+
+     ddx(N,N) = (1.5d+0)/dx
+     ddx(N,N-1) = -2/dx
+     ddx(N,N-2) = 1/(2*dx)
+
+  case (92)
+     ddx(N-1,N-1) = -1/dx
+     ddx(N-1,N)   =  1/dx
+
+     ddx(1,1) = -(1.5d+0)/dx
+     ddx(1,2) = 2/dx
+     ddx(1,3) = -1/(2*dx)
+
+  case (100,101,110,111)
+     ! Handled previously
+
+  case (102)
+     ddx(2,2) =  1/dx
+     ddx(2,1) = -1/dx
+
+     ddx(3,4) =  1/(3*dx)
+     ddx(3,3)   =  1/(2*dx)
+     ddx(3,2) = -1/(dx)
+     ddx(3,1) =  1/(6*dx)
+
+!!$     ddx(N,N) = (1.5d+0)/dx
+!!$     ddx(N,N-1) = -2/dx
+!!$     ddx(N,N-2) = 1/(2*dx)
+
+     ddx(N,N)   =  5/(6*dx)
+     ddx(N,N-1) = -3/(2*dx)
+     ddx(N,N-2) =  1/(2*dx)
+     ddx(N,N-3) = -1/(12*dx)
+
+!!$     do i = 2,N
+!!$        ddx(N,i) =  ddx(N-1,i-1)
+!!$     end do
+
+  case (112)
+     ddx(N-1,N-1) = -1/dx
+     ddx(N-1,N)   =  1/dx
+
+     ddx(1,1) = -(1.5d+0)/dx
+     ddx(1,2) = 2/dx
+     ddx(1,3) = -1/(2*dx)
+
+  case (120,121,130,131)
      ! Handled previously
 
   case default

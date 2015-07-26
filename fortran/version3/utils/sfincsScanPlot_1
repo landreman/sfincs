@@ -511,7 +511,10 @@ for iQuantity in range(numQuantities):
 
         # Add annotation showing the relative spread in the result:
         avg = abs(max(ydata[-1])+min(ydata[-1]))/2
-        relVariation = (max(ydata[-1])-min(ydata[-1]))/avg
+        if avg>0:
+           relVariation = (max(ydata[-1])-min(ydata[-1]))/avg
+        else:
+           relVariation = 0
         label = 'spread='+("%.1f" % (relVariation*100))+'%'
         if min(xdata[-1])<convergeds[iParameter] and max(xdata[-1]) > convergeds[iParameter]:
            ydata2 = []
@@ -519,7 +522,10 @@ for iQuantity in range(numQuantities):
               if xdata[-1][i] >= convergeds[iParameter]:
                  ydata2.append(ydata[-1][i])
            avg = abs(max(ydata2)+min(ydata2))/2
-           relVariation = (max(ydata2)-min(ydata2))/avg
+           if avg>0:
+              relVariation = (max(ydata2)-min(ydata2))/avg
+           else:
+              relVariation = 0
            label = label+', '+("%.1f" % (relVariation*100))+'% above base'
         at = AnchoredText(label,loc=1,frameon=False,prop=dict(size='x-small'))
         ax.add_artist(at)
@@ -552,7 +558,8 @@ ax.text(0.5,0.99,titleString,horizontalalignment='center',verticalalignment='top
 
 outputFile = open('sfincsScan.dat','wb')
 scanType=1
-data = {'scanType':scanType, 'numQuantities':numQuantities, 'numRows':numRows,'numCols':numCols,
+numQuantitiesForPickle = numRows*numCols
+data = {'scanType':scanType, 'numQuantities':numQuantitiesForPickle, 'numRows':numRows,'numCols':numCols,
         'xdata':xdata, 'ydata':ydata, 'xlabels':xlabels, 'ylabels':ylabels,
         'xscales':xscales, 'yscales':yscales, 'ymins':ymins, 'ymaxs':ymaxs,
         'linespec':linespec}
