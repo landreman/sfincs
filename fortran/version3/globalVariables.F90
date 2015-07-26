@@ -116,6 +116,10 @@ module globalVariables
   ! 1 = 2nd order finite differences
   ! 2 = 4th order dinite differences
 
+  integer :: ExBDerivativeScheme = 0
+  integer :: magneticDriftDerivativeScheme = 0
+  integer :: xDotDerivativeScheme = 0
+
   integer :: xPotentialsGridScheme = 2, xPotentialsInterpolationScheme
   integer :: xGridScheme = 5, xInterpolationScheme
   logical :: pointAtX0
@@ -161,10 +165,16 @@ module globalVariables
   PetscScalar, dimension(:), allocatable :: theta, zeta, x, x_plus1
   PetscScalar, dimension(:), allocatable :: thetaWeights, zetaWeights
   PetscScalar, dimension(:,:), allocatable :: ddtheta, ddzeta
+  PetscScalar, dimension(:,:), allocatable :: ddtheta_ExB_plus, ddtheta_ExB_minus
+  PetscScalar, dimension(:,:), allocatable :: ddzeta_ExB_plus, ddzeta_ExB_minus
+  PetscScalar, dimension(:,:), allocatable :: ddtheta_magneticDrift_plus, ddtheta_magneticDrift_minus
+  PetscScalar, dimension(:,:), allocatable :: ddzeta_magneticDrift_plus, ddzeta_magneticDrift_minus
   PetscScalar, dimension(:), allocatable :: xWeights, xPotentials
   PetscScalar :: maxxPotentials, zetaMax, xMaxNotTooSmall
   PetscScalar, dimension(:), allocatable :: x2, expx2
   PetscScalar, dimension(:,:), allocatable :: ddx, d2dx2, ddxPotentials, d2dx2Potentials
+  PetscScalar, dimension(:,:), allocatable :: ddx_xDot_plus, ddx_xDot_preconditioner_plus
+  PetscScalar, dimension(:,:), allocatable :: ddx_xDot_minus, ddx_xDot_preconditioner_minus
   PetscScalar, dimension(:,:), allocatable :: ddx_preconditioner
   PetscScalar, dimension(:,:), allocatable :: ddtheta_preconditioner
   PetscScalar, dimension(:,:), allocatable :: ddzeta_preconditioner

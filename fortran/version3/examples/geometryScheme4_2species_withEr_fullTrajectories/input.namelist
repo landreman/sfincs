@@ -63,7 +63,6 @@
 /
 
 &otherNumericalParameters
-xGridScheme=6
 /
 
 &preconditionerOptions

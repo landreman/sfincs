@@ -608,6 +608,87 @@ subroutine validateInput()
      print *,line
   end if
 
+  if (ExBDerivativeScheme<0) then
+     if (masterProc) then
+        print *,"Error! ExBDerivativeScheme cannot be less than 0."
+     end if
+     stop
+  end if
+  
+  if (ExBDerivativeScheme>3) then
+     if (masterProc) then
+        print *,"Error! ExBDerivativeScheme cannot be more than 3."
+     end if
+     stop
+  end if
+  
+  if (ExBDerivativeScheme>0 .and. preconditioner_theta>0) then
+     if (masterProc) then
+        print *,"Error! The implementation of ExBDerivativeScheme>0 does not presently allow"
+        print *,"       preconditioning in theta (preconditioner_theta>0)."
+     end if
+     stop
+  end if
+  
+  if (ExBDerivativeScheme>0 .and. preconditioner_zeta>0) then
+     if (masterProc) then
+        print *,"Error! The implementation of ExBDerivativeScheme>0 does not presently allow"
+        print *,"       preconditioning in zeta (preconditioner_zeta>0)."
+     end if
+     stop
+  end if
+  
+  if (magneticDriftDerivativeScheme<-3) then
+     if (masterProc) then
+        print *,"Error! magneticDriftDerivativeScheme cannot be less than -3."
+     end if
+     stop
+  end if
+  
+  if (magneticDriftDerivativeScheme>3) then
+     if (masterProc) then
+        print *,"Error! magneticDriftDerivativeScheme cannot be more than 3."
+     end if
+     stop
+  end if
+  
+  if (magneticDriftDerivativeScheme>0 .and. preconditioner_theta>0) then
+     if (masterProc) then
+        print *,"Error! The implementation of magneticDriftDerivativeScheme>0 does not presently allow"
+        print *,"       preconditioning in theta (preconditioner_theta>0)."
+     end if
+     stop
+  end if
+  
+  if (magneticDriftDerivativeScheme>0 .and. preconditioner_zeta>0) then
+     if (masterProc) then
+        print *,"Error! The implementation of magneticDriftDerivativeScheme>0 does not presently allow"
+        print *,"       preconditioning in zeta (preconditioner_zeta>0)."
+     end if
+     stop
+  end if
+  
+  if (xDotDerivativeScheme<-2) then
+     if (masterProc) then
+        print *,"Error! xGridScheme cannot be less than -2."
+     end if
+     stop
+  end if
+  
+  if (xDotDerivativeScheme>10) then
+     if (masterProc) then
+        print *,"Error! xDotDerivativeScheme cannot be more than 10."
+     end if
+     stop
+  end if
+  
+  if (xDotDerivativeScheme>0 .and. (xGridScheme .ne. 3 .and. xGridScheme .ne. 4)) then
+     if (masterProc) then
+        print *,"Error! If xDotDerivativeScheme is >0, then xGridScheme must be either 3 or 4."
+     end if
+     stop
+  end if
+  
   if (xGridScheme<1) then
      if (masterProc) then
         print *,"Error! xGridScheme cannot be less than 1."
@@ -615,9 +696,9 @@ subroutine validateInput()
      stop
   end if
   
-  if (xGridScheme>6) then
+  if (xGridScheme>8) then
      if (masterProc) then
-        print *,"Error! xGridScheme cannot be more than 6."
+        print *,"Error! xGridScheme cannot be more than 8."
      end if
      stop
   end if

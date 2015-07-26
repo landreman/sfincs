@@ -56,9 +56,9 @@ contains
          NxPotentialsPerVth
 
     namelist / otherNumericalParameters /  &
-         useIterativeLinearSolver, thetaDerivativeScheme, zetaDerivativeScheme, xGridScheme, &
-         whichParallelSolverToFactorPreconditioner, &
-         PETSCPreallocationStrategy, xPotentialsGridScheme, xGrid_k
+         useIterativeLinearSolver, thetaDerivativeScheme, zetaDerivativeScheme, ExBDerivativeScheme, &
+         xDotDerivativeScheme, xGridScheme, whichParallelSolverToFactorPreconditioner, &
+         PETSCPreallocationStrategy, xPotentialsGridScheme, xGrid_k, magneticDriftDerivativeScheme
 
     namelist / preconditionerOptions / preconditioner_x, preconditioner_x_min_L, preconditioner_zeta, &
          preconditioner_theta, preconditioner_xi, preconditioner_species, reusePreconditioner, &

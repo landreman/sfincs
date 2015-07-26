@@ -18,6 +18,41 @@ program sfincs
   PetscErrorCode ierr
   PetscLogDouble :: startTime, time1
 
+!!$  ! Begin testing Chebyshev stuff
+!!$  integer :: i
+!!$  PetscScalar :: xMin
+!!$  PetscScalar, allocatable :: interp(:,:)
+!!$
+!!$  Nx=5
+!!$  xMin = -5.3d+0
+!!$  xMax = -2.1d+0
+!!$  NxPotentials = 5
+!!$  allocate(ddx(Nx,Nx))
+!!$  allocate(x(Nx))
+!!$  allocate(xWeights(Nx))
+!!$  allocate(xPotentials(NxPotentials))
+!!$  allocate(interp(NxPotentials,Nx))
+!!$  xPotentials = 0.0d+0
+!!$  xPotentials(1) = -2.3d+0
+!!$  xPotentials(2) = -3.0d+0
+!!$  xPotentials(3) = -4.4d+0
+!!$  xPotentials(4) = -2.1d+0
+!!$  xPotentials(5) = -3.1d+0
+!!$  call ChebyshevGrid(Nx,xMin,xMax,x,xWeights,ddx)
+!!$  call ChebyshevInterpolationMatrix(Nx,NxPotentials,x,xPotentials,interp)
+!!$  print *,"x:",x
+!!$  print *,"xWeights:",xWeights
+!!$  print *,"Here comes ddx:"
+!!$  do i=1,Nx
+!!$     print *,ddx(i,:)
+!!$  end do
+!!$  print *,"Here comes interp:"
+!!$  do i=1,NxPotentials
+!!$     print *,interp(i,:)
+!!$  end do
+!!$  stop
+!!$  ! End testing Chebyshev stuff
+
   call PetscInitialize(PETSC_NULL_CHARACTER, ierr)
 
   call MPI_COMM_SIZE(PETSC_COMM_WORLD, numProcs, ierr)

@@ -25,6 +25,8 @@
     PetscScalar, dimension(:), allocatable :: xWeights_plus1
     PetscScalar, dimension(:,:), allocatable :: ddx_plus1, d2dx2_plus1
     PetscScalar, dimension(:,:), allocatable :: interpolateXToXPotentials_plus1, extrapMatrix
+    PetscScalar, dimension(:), allocatable :: x_subset, xWeights_subset
+    PetscScalar, dimension(:,:), allocatable :: ddx_subset, d2dx2_subset
 
 
     DM :: myDM
@@ -201,6 +203,10 @@
     allocate(theta(Ntheta))
     allocate(thetaWeights(Ntheta))
     allocate(ddtheta(Ntheta,Ntheta))
+    allocate(ddtheta_ExB_plus(Ntheta,Ntheta))
+    allocate(ddtheta_ExB_minus(Ntheta,Ntheta))
+    allocate(ddtheta_magneticDrift_plus(Ntheta,Ntheta))
+    allocate(ddtheta_magneticDrift_minus(Ntheta,Ntheta))
     allocate(d2dtheta2(Ntheta,Ntheta))
     allocate(theta_preconditioner(Ntheta))
     allocate(thetaWeights_preconditioner(Ntheta))
@@ -222,6 +228,91 @@
     end select
 
     call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta, thetaWeights, ddtheta, d2dtheta2)
+
+    ! Create upwinded matrices for ExB terms:
+    select case (ExBDerivativeScheme)
+    case (0)
+       ! It should not matter what ddtheta_ExB_plus and ddtheta_ExB_minus are in this case.
+       ddtheta_ExB_plus = ddtheta
+       ddtheta_ExB_minus = ddtheta
+    case (1)
+       scheme = 80
+       call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+            thetaWeights_preconditioner, ddtheta_ExB_plus, d2dtheta2_preconditioner)
+       scheme = 90
+       call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+            thetaWeights_preconditioner, ddtheta_ExB_minus, d2dtheta2_preconditioner)
+    case (2)
+       scheme = 100
+       call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+            thetaWeights_preconditioner, ddtheta_ExB_plus, d2dtheta2_preconditioner)
+       scheme = 110
+       call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+            thetaWeights_preconditioner, ddtheta_ExB_minus, d2dtheta2_preconditioner)
+    case (3)
+       scheme = 120
+       call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+            thetaWeights_preconditioner, ddtheta_ExB_plus, d2dtheta2_preconditioner)
+       scheme = 130
+       call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+            thetaWeights_preconditioner, ddtheta_ExB_minus, d2dtheta2_preconditioner)
+    case default
+       print *,"Error! Invalid ExBDerivativeScheme:",ExBDerivativeScheme
+       stop
+    end select
+
+    ! Create upwinded matrices for magneticDrift terms:
+    select case (magneticDriftDerivativeScheme)
+    case (0)
+       ! It should not matter what ddtheta_magneticDrift_plus and ddtheta_magneticDrift_minus are in this case.
+       ddtheta_magneticDrift_plus = ddtheta
+       ddtheta_magneticDrift_minus = ddtheta
+    case (1)
+       scheme = 80
+       call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+            thetaWeights_preconditioner, ddtheta_magneticDrift_plus, d2dtheta2_preconditioner)
+       scheme = 90
+       call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+            thetaWeights_preconditioner, ddtheta_magneticDrift_minus, d2dtheta2_preconditioner)
+    case (2)
+       scheme = 100
+       call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+            thetaWeights_preconditioner, ddtheta_magneticDrift_plus, d2dtheta2_preconditioner)
+       scheme = 110
+       call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+            thetaWeights_preconditioner, ddtheta_magneticDrift_minus, d2dtheta2_preconditioner)
+    case (3)
+       scheme = 120
+       call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+            thetaWeights_preconditioner, ddtheta_magneticDrift_plus, d2dtheta2_preconditioner)
+       scheme = 130
+       call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+            thetaWeights_preconditioner, ddtheta_magneticDrift_minus, d2dtheta2_preconditioner)
+    case (-1)
+       scheme = 90
+       call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+            thetaWeights_preconditioner, ddtheta_magneticDrift_plus, d2dtheta2_preconditioner)
+       scheme = 80
+       call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+            thetaWeights_preconditioner, ddtheta_magneticDrift_minus, d2dtheta2_preconditioner)
+    case (-2)
+       scheme = 110
+       call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+            thetaWeights_preconditioner, ddtheta_magneticDrift_plus, d2dtheta2_preconditioner)
+       scheme = 100
+       call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+            thetaWeights_preconditioner, ddtheta_magneticDrift_minus, d2dtheta2_preconditioner)
+    case (-3)
+       scheme = 130
+       call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+            thetaWeights_preconditioner, ddtheta_magneticDrift_plus, d2dtheta2_preconditioner)
+       scheme = 120
+       call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
+            thetaWeights_preconditioner, ddtheta_magneticDrift_minus, d2dtheta2_preconditioner)
+    case default
+       print *,"Error! Invalid magneticDriftDerivativeScheme:",magneticDriftDerivativeScheme
+       stop
+    end select
 
     ! If needed, also make a sparser differentiation matrix for the preconditioner:
     select case(preconditioner_theta)
@@ -271,6 +362,10 @@
     allocate(zeta(Nzeta))
     allocate(zetaWeights(Nzeta))
     allocate(ddzeta(Nzeta,Nzeta))
+    allocate(ddzeta_ExB_plus(Nzeta,Nzeta))
+    allocate(ddzeta_ExB_minus(Nzeta,Nzeta))
+    allocate(ddzeta_magneticDrift_plus(Nzeta,Nzeta))
+    allocate(ddzeta_magneticDrift_minus(Nzeta,Nzeta))
     allocate(d2dzeta2(Nzeta,Nzeta))
     allocate(zeta_preconditioner(Nzeta))
     allocate(zetaWeights_preconditioner(Nzeta))
@@ -297,8 +392,98 @@
        zetaWeights = 2*pi
        ddzeta = 0
        d2dzeta2 = 0 ! d2dzeta2 is not actually used.
+       ddzeta_ExB_plus = 0
+       ddzeta_ExB_minus = 0
+       ddzeta_magneticDrift_plus = 0
+       ddzeta_magneticDrift_minus = 0
     else
        call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta, zetaWeights, ddzeta, d2dzeta2)
+
+       ! Create upwinded matrices for ExB terms:
+       select case (ExBDerivativeScheme)
+       case (0)
+          ! It should not matter what ddzeta_ExB_plus and ddzeta_ExB_minus are in this case.
+          ddzeta_ExB_plus = ddzeta
+          ddzeta_ExB_minus = ddzeta
+       case (1)
+          scheme = 80
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+               zetaWeights_preconditioner, ddzeta_ExB_plus, d2dzeta2_preconditioner)
+          scheme = 90
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+               zetaWeights_preconditioner, ddzeta_ExB_minus, d2dzeta2_preconditioner)
+       case (2)
+          scheme = 100
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+               zetaWeights_preconditioner, ddzeta_ExB_plus, d2dzeta2_preconditioner)
+          scheme = 110
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+               zetaWeights_preconditioner, ddzeta_ExB_minus, d2dzeta2_preconditioner)
+       case (3)
+          scheme = 120
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+               zetaWeights_preconditioner, ddzeta_ExB_plus, d2dzeta2_preconditioner)
+          scheme = 130
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+               zetaWeights_preconditioner, ddzeta_ExB_minus, d2dzeta2_preconditioner)
+       case default
+          print *,"Error! Invalid ExBDerivativeScheme:",ExBDerivativeScheme
+          stop
+       end select
+
+       ! Create upwinded matrices for magneticDrift terms:
+       select case (magneticDriftDerivativeScheme)
+       case (0)
+          ! It should not matter what ddzeta_magneticDrift_plus and ddzeta_magneticDrift_minus are in this case.
+          ddzeta_magneticDrift_plus = ddzeta
+          ddzeta_magneticDrift_minus = ddzeta
+       case (1)
+          scheme = 80
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+               zetaWeights_preconditioner, ddzeta_magneticDrift_plus, d2dzeta2_preconditioner)
+          scheme = 90
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+               zetaWeights_preconditioner, ddzeta_magneticDrift_minus, d2dzeta2_preconditioner)
+       case (2)
+          scheme = 100
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+               zetaWeights_preconditioner, ddzeta_magneticDrift_plus, d2dzeta2_preconditioner)
+          scheme = 110
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+               zetaWeights_preconditioner, ddzeta_magneticDrift_minus, d2dzeta2_preconditioner)
+       case (3)
+          scheme = 120
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+               zetaWeights_preconditioner, ddzeta_magneticDrift_plus, d2dzeta2_preconditioner)
+          scheme = 130
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+               zetaWeights_preconditioner, ddzeta_magneticDrift_minus, d2dzeta2_preconditioner)
+       case (-1)
+          scheme = 90
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+               zetaWeights_preconditioner, ddzeta_magneticDrift_plus, d2dzeta2_preconditioner)
+          scheme = 80
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+               zetaWeights_preconditioner, ddzeta_magneticDrift_minus, d2dzeta2_preconditioner)
+       case (-2)
+          scheme = 110
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+               zetaWeights_preconditioner, ddzeta_magneticDrift_plus, d2dzeta2_preconditioner)
+          scheme = 100
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+               zetaWeights_preconditioner, ddzeta_magneticDrift_minus, d2dzeta2_preconditioner)
+       case (-3)
+          scheme = 130
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+               zetaWeights_preconditioner, ddzeta_magneticDrift_plus, d2dzeta2_preconditioner)
+          scheme = 120
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
+               zetaWeights_preconditioner, ddzeta_magneticDrift_minus, d2dzeta2_preconditioner)
+       case default
+          print *,"Error! Invalid magneticDriftDerivativeScheme:",magneticDriftDerivativeScheme
+          stop
+       end select
+
     end if
 
     ! If needed, also make a sparser differentiation matrix for the preconditioner:
@@ -355,7 +540,7 @@
     ! *******************************************************************************
 
     select case (xGridScheme)
-    case (1,2,5,6)
+    case (1,2,5,6,7,8)
        ! For these values of xGridScheme, xInterpolationScheme does not matter.
        xInterpolationScheme = -1
     case (3)
@@ -413,6 +598,22 @@
           x = x_plus1(1:Nx)
           xWeights = xWeights_plus1(1:Nx)
 
+       case (7)
+          pointAtX0 = .true.
+          call ChebyshevGrid(Nx+1, zero, xMax, x_plus1, xWeights_plus1, ddx_plus1)
+          x_plus1(1)=0 ! Make sure this is exact.
+          x = x_plus1(1:Nx)
+          xWeights = xWeights_plus1(1:Nx)
+
+          d2dx2_plus1 = matmul(ddx_plus1,ddx_plus1)
+
+       case (8)
+          pointAtX0 = .true.
+          deallocate(ddx_plus1)
+          allocate(ddx_plus1(Nx,Nx))
+          call ChebyshevGrid(Nx, zero, xMax, x, xWeights, ddx_plus1)
+          x(1)=0 ! Make sure this is exact.
+
        case default
           print *,"Error! Invalid xGridScheme."
           stop
@@ -435,6 +636,9 @@
     xMaxNotTooSmall = max(x(Nx), xMax)
     allocate(x2(Nx))
     x2=x*x
+    allocate(expx2(Nx))
+    expx2 = exp(-x*x)
+
 
     allocate(ddx(Nx,Nx))
     allocate(d2dx2(Nx,Nx))
@@ -445,9 +649,18 @@
        case (1,2,5,6)
           call makeXPolynomialDiffMatrices(x,ddx,d2dx2)
 
-       case (3,4)
+       case (3,4,7)
           ddx = ddx_plus1(1:Nx, 1:Nx)
           d2dx2 = d2dx2_plus1(1:Nx, 1:Nx)
+
+!!$          ! Next 3 lines are a temporary addition 20150709
+!!$          do i = 2,Nx
+!!$             ddx(Nx,i) =  ddx(Nx-1,i-1)
+!!$          end do
+
+       case (8)
+          ddx = ddx_plus1
+          d2dx2 = matmul(ddx,ddx)
 
        end select
 
@@ -464,7 +677,191 @@
        NxPotentials = 1
     end if
 
+    ! To allow for upwinding in the xDot term associated with Er, set up some other differentiation matrices:
+    allocate(ddx_xDot_plus(Nx,Nx))
+    allocate(ddx_xDot_preconditioner_plus(Nx,Nx))
+    allocate(ddx_xDot_minus(Nx,Nx))
+    allocate(ddx_xDot_preconditioner_minus(Nx,Nx))
 
+    select case (xDotDerivativeScheme)
+    case (-2)
+       ddx_xDot_plus = zero
+       ddx_xDot_minus = zero
+       allocate(x_subset(Nx-1))
+       allocate(ddx_subset(Nx-1,Nx-1))
+       allocate(d2dx2_subset(Nx-1,Nx-1))
+
+       x_subset = x(1:Nx-1)
+       call makeXPolynomialDiffMatrices(x_subset,ddx_subset,d2dx2_subset)
+       ddx_xDot_plus(1:Nx-1,1:Nx-1) = ddx_subset
+
+       x_subset = x(2:Nx)
+       call makeXPolynomialDiffMatrices(x_subset,ddx_subset,d2dx2_subset)
+       ddx_xDot_minus(2:Nx,2:Nx) = ddx_subset
+
+       deallocate(x_subset,ddx_subset,d2dx2_subset)
+
+    case (-1)
+       ddx_xDot_plus = zero
+       ddx_xDot_minus = zero
+       do i=i,Nx
+          allocate(x_subset(i))
+          allocate(ddx_subset(i,i))
+          allocate(d2dx2_subset(i,i))
+
+          x_subset = x(1:i)
+          call makeXPolynomialDiffMatrices(x_subset,ddx_subset,d2dx2_subset)
+          ddx_xDot_plus(i,1:i) = ddx_subset(i,:)
+
+          x_subset = x(Nx-i+1:Nx)
+          call makeXPolynomialDiffMatrices(x_subset,ddx_subset,d2dx2_subset)
+          ddx_xDot_minus(Nx-i+1,Nx-i+1:Nx) = ddx_subset(1,:)
+
+          deallocate(x_subset,ddx_subset,d2dx2_subset)
+       end do
+
+    case (0)
+       ddx_xDot_plus = ddx
+       ddx_xDot_minus = ddx
+
+    case (1)
+       scheme = 32
+       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+       ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
+
+       scheme = 42
+       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+       ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
+
+    case (2)
+       scheme = 52
+       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+       ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
+
+       scheme = 62
+       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+       ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
+
+    case (3)
+       scheme = 52
+       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+       ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
+
+       scheme = 62
+       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+       ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
+       do i = 2,Nx
+          ddx_xDot_minus(Nx,i) =  ddx_xDot_minus(Nx-1,i-1)
+       end do
+
+    case (4)
+       scheme = 82
+       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+       ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
+
+       scheme = 92
+       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+       ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
+
+    case (5)
+       scheme = 82
+       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+       ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
+       ! I'm not sure whether these next lines are good or not
+       do i = 1,Nx
+          ddx_xDot_plus(2,i) =  ddx(2,i)
+       end do
+
+       scheme = 92
+       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+       ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
+       do i = 2,Nx
+          ddx_xDot_minus(Nx,i) =  ddx_xDot_minus(Nx-1,i-1)
+       end do
+
+    case (6)
+       do i=1,Nx
+          do j=1,Nx
+             ddx_xDot_plus(i,j) = expx2(i) * ddx(i,j) / expx2(j)
+             if (i==j) then
+                ddx_xDot_plus(i,j) = ddx_xDot_plus(i,j) - 2*x(i)
+             end if
+             ddx_xDot_minus(i,j) = ddx_xDot_plus(i,j)
+          end do
+       end do
+
+    case (7)
+
+       scheme = 82
+       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+       ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
+!!$       ! I'm not sure whether these next lines are good or not
+!!$       do i = 1,Nx
+!!$          ddx_xDot_plus(2,i) =  ddx(2,i)
+!!$       end do
+
+       scheme = 92
+       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+       ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
+       do i = 2,Nx
+          ddx_xDot_minus(Nx,i) =  ddx_xDot_minus(Nx-1,i-1)
+       end do
+
+       do i=1,Nx
+          do j=1,Nx
+             ddx_xDot_plus(i,j) = expx2(i) * ddx_xDot_plus(i,j) / expx2(j)
+             ddx_xDot_minus(i,j) = expx2(i) * ddx_xDot_minus(i,j) / expx2(j)
+             if (i==j) then
+                ddx_xDot_plus(i,j) = ddx_xDot_plus(i,j) - 2*x(i)
+                ddx_xDot_minus(i,j) = ddx_xDot_minus(i,j) - 2*x(i)
+             end if
+          end do
+       end do
+
+    case (8)
+       scheme = 102
+       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+       ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
+
+       scheme = 112
+       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+       ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
+       do i = 3,Nx
+          ddx_xDot_minus(Nx,i)     =  ddx_xDot_minus(Nx-2,i-2)
+          ddx_xDot_minus(Nx-1,i) =  ddx_xDot_minus(Nx-2,i-1)
+       end do
+
+    case (9)
+       ! Where trajectories are going into the domain (ddx_xDot_minus), use the standard ddx, in which the first ghost point is set to 0.
+       ! Where trajectories are leaving the domain (ddx_xDot_plus), use scheme=12 without setting any ghost points to 0.
+       ddx_xDot_minus = ddx
+       
+       allocate(x_subset(Nx))
+       allocate(xWeights_subset(Nx))
+       allocate(d2dx2_subset(Nx,Nx))
+
+       scheme = 12
+       call uniformDiffMatrices(Nx, zero, x(Nx), scheme, x_subset, x_subset, ddx_xDot_plus, d2dx2_subset)
+
+       deallocate(x_subset,xWeights_subset,d2dx2_subset)
+
+    case (10)
+       ! Same as case 9, but switching plus and minus. This should be backwards.
+       ddx_xDot_plus = ddx
+       
+       allocate(x_subset(Nx))
+       allocate(xWeights_subset(Nx))
+       allocate(d2dx2_subset(Nx,Nx))
+
+       scheme = 12
+       call uniformDiffMatrices(Nx, zero, x(Nx), scheme, x_subset, x_subset, ddx_xDot_minus, d2dx2_subset)
+
+       deallocate(x_subset,xWeights_subset,d2dx2_subset)
+
+    case default
+       print *,"Error!  Invalid xDotDerivativeScheme"
+       stop
+    end select
 
     allocate(xPotentials(NxPotentials))
     allocate(xWeightsPotentials(NxPotentials))
@@ -483,9 +880,6 @@
 
     deallocate(xWeightsPotentials)
 
-    allocate(expx2(Nx))
-    expx2 = exp(-x*x)
-
     ! Create matrix to interpolate from the distribution-function grid to the Rosenbluth-potential grid:
     allocate(interpolateXToXPotentials(NxPotentials, Nx))
     if (RHSMode .ne. 3) then
@@ -501,26 +895,41 @@
           interpolateXToXPotentials = interpolateXToXPotentials_plus1(:,1:Nx)
           deallocate(extrapMatrix)
           deallocate(interpolateXToXPotentials_plus1)
+       case (7)
+          allocate(interpolateXToXPotentials_plus1(NxPotentials, Nx+1))
+          call ChebyshevInterpolationMatrix(Nx+1, NxPotentials, x_plus1, xPotentials, interpolateXToXPotentials_plus1)
+          interpolateXToXPotentials = interpolateXToXPotentials_plus1(:,1:Nx)
+          deallocate(interpolateXToXPotentials_plus1)
+       case (8)
+          call ChebyshevInterpolationMatrix(Nx, NxPotentials, x, xPotentials, interpolateXToXPotentials)
        end select
     else
        interpolateXToXPotentials = zero
     end if
 
     ddx_preconditioner = 0
+    ddx_xDot_preconditioner_plus = 0
+    ddx_xDot_preconditioner_minus = 0
     select case (preconditioner_x)
     case (0)
        ! No simplification in x:
        ddx_preconditioner = ddx
+       ddx_xDot_preconditioner_plus = ddx_xDot_plus
+       ddx_xDot_preconditioner_minus = ddx_xDot_minus
     case (1)
        ! Keep only diagonal terms in x:
        do i=1,Nx
           ddx_preconditioner(i,i) = ddx(i,i)
+          ddx_xDot_preconditioner_plus(i,i) = ddx_xDot_plus(i,i)
+          ddx_xDot_preconditioner_minus(i,i) = ddx_xDot_minus(i,i)
        end do
     case (2)
        ! Keep only upper-triangular terms in x:
        do i=1,Nx
           do j=i,Nx
              ddx_preconditioner(i,j) = ddx(i,j)
+             ddx_xDot_preconditioner_plus(i,j) = ddx_xDot_plus(i,j)
+             ddx_xDot_preconditioner_minus(i,j) = ddx_xDot_minus(i,j)
           end do
        end do
     case (3)
@@ -529,6 +938,8 @@
           do j=1,Nx
              if (abs(i-j) <= 1) then
                 ddx_preconditioner(i,j) = ddx(i,j)
+                ddx_xDot_preconditioner_plus(i,j) = ddx_xDot_plus(i,j)
+                ddx_xDot_preconditioner_minus(i,j) = ddx_xDot_minus(i,j)
              end if
           end do
        end do
@@ -536,9 +947,13 @@
        ! Keep only diagonal and super-diagonal in x:
        do i=1,Nx
           ddx_preconditioner(i,i) = ddx(i,i)
+          ddx_xDot_preconditioner_plus(i,i) = ddx_xDot_plus(i,i)
+          ddx_xDot_preconditioner_minus(i,i) = ddx_xDot_minus(i,i)
        end do
        do i=1,(Nx-1)
           ddx_preconditioner(i,i+1) = ddx(i,i+1)
+          ddx_xDot_preconditioner_plus(i,i+1) = ddx_xDot_plus(i,i+1)
+          ddx_xDot_preconditioner_minus(i,i+1) = ddx_xDot_minus(i,i+1)
        end do
     case default
        print *,"Error! Invalid preconditioner_x"
@@ -554,7 +969,7 @@
          !Rosenbluth_H, Rosenbluth_dHdxb, Rosenbluth_d2Gdxb2,masterProc)
     end if
 
-!    if (.true.) then
+!    if (masterProc) then
     if (.false.) then
        print *,"xGridScheme:",xGridScheme
        print *,"xInterpolationScheme:",xInterpolationScheme
@@ -569,26 +984,46 @@
        do i=1,Nx
           print *,ddx(i,:)
        end do
-       print *,"d2dx2:"
+       print *,"ddx_xDot_plus:"
        do i=1,Nx
-          print *,d2dx2(i,:)
+          print *,ddx_xDot_plus(i,:)
        end do
-       print *,"xPotentials:"
-       print *,xPotentials
-       if (NxPotentials < 20) then
-          print *,"ddxPotentials:"
-          do i=1,NxPotentials
-             print *,ddxPotentials(i,:)
-          end do
-          print *,"d2dx2Potentials:"
-          do i=1,NxPotentials
-             print *,d2dx2Potentials(i,:)
-          end do
-       end if
-       print *,"interpolateXToXPotentials:"
-       do i=1,NxPotentials
-          print *,interpolateXToXPotentials(i,:)
+       print *,"ddx_xDot_minus:"
+       do i=1,Nx
+          print *,ddx_xDot_minus(i,:)
        end do
+       print *,"ddx_preconditioner:"
+       do i=1,Nx
+          print *,ddx_preconditioner(i,:)
+       end do
+       print *,"ddx_xDot_preconditioner_plus:"
+       do i=1,Nx
+          print *,ddx_xDot_preconditioner_plus(i,:)
+       end do
+       print *,"ddx_xDot_preconditioner_minus:"
+       do i=1,Nx
+          print *,ddx_xDot_preconditioner_minus(i,:)
+       end do
+!!$       print *,"d2dx2:"
+!!$       do i=1,Nx
+!!$          print *,d2dx2(i,:)
+!!$       end do
+!!$       print *,"xPotentials:"
+!!$       print *,xPotentials
+!!$       if (NxPotentials < 20) then
+!!$          print *,"ddxPotentials:"
+!!$          do i=1,NxPotentials
+!!$             print *,ddxPotentials(i,:)
+!!$          end do
+!!$          print *,"d2dx2Potentials:"
+!!$          do i=1,NxPotentials
+!!$             print *,d2dx2Potentials(i,:)
+!!$          end do
+!!$       end if
+!!$       print *,"interpolateXToXPotentials:"
+!!$       do i=1,NxPotentials
+!!$          print *,interpolateXToXPotentials(i,:)
+!!$       end do
     end if
 
     deallocate(xWeights_plus1)
