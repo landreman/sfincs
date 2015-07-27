@@ -117,7 +117,7 @@ module globalVariables
   ! 2 = 4th order dinite differences
 
   integer :: ExBDerivativeScheme = 0
-  integer :: magneticDriftDerivativeScheme = 0
+  integer :: magneticDriftDerivativeScheme = 3
   integer :: xDotDerivativeScheme = 0
 
   integer :: xPotentialsGridScheme = 2, xPotentialsInterpolationScheme

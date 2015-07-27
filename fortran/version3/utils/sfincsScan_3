@@ -117,6 +117,8 @@ elif scanVariable == "collisionoperator":
     mustBeInteger = True
 elif scanVariable == "constraintscheme":
     mustBeInteger = True
+elif scanVariable == "magneticdriftscheme":
+    mustBeInteger = True
 elif scanVariable == "ntheta":
     print resolutionWarning
     mustBeInteger = True
@@ -208,12 +210,20 @@ print "The variable that will be scanned is "+scanVariable
 
 if mustBeInteger:
     print "Only integer values of this variable are permitted."
-    scanVariableMin = readScanVariable("scanVariableMin","int")
-    scanVariableMax = readScanVariable("scanVariableMax","int")
+    scanVarTypeStr = "int"
 else:
     print "Non-integer values of this variable are permitted."
-    scanVariableMin = readScanVariable("scanVariableMin","float")
-    scanVariableMax = readScanVariable("scanVariableMax","float")
+    scanVarTypeStr = "float"
+
+scanVariableMin = readScanVariable("scanVariableMin",scanVarTypeStr)
+scanVariableMax = readScanVariable("scanVariableMax",scanVarTypeStr)
+
+try:
+    dummy = readVariable(scanVariable,scanVarTypeStr)
+except:
+    print "The variable you wish to scan must be explicitly assigned some value in the appropriate namelist,"
+    print "even though the value will be ignored in the scan."
+    exit(1)
 
 scanVariableN = readScanVariable("scanVariableN","int")
 scanVariableScale = readScanVariable("scanVariableScale","string")
@@ -301,6 +311,8 @@ for runNum in range(len(scanVariableValues)):
     # Now copy the input.namelist file:
     f = open(filename,"w")
     for line in inputFile:
+        # This next line works because previously we have ensured the scan variable explicitly appears
+        # in a namelist.  Otherwise we would have had to possibly add the variable to the appropriate namelist.
         if namelistLineContains(line,scanVariable):
             line = "  "+scanVariable+" = "+str(scanVariableValues[runNum])+" ! Set by sfincsScan_3.\n"
         f.write(line)

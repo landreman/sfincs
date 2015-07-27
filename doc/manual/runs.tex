@@ -173,8 +173,17 @@ with \parlink{includePhi1}.  You may wish to set \parlink{includePhi1} = \true~w
 using \sfincs~to model an experiment, and set \parlink{includePhi1} = \false~when
 comparing \sfincs~with analytic theory or with another code that does not include $\Phi_1$.
 
+\section{Poloidal and toroidal magnetic drifts}
+
+You can choose to either include or not include the poloidal and toroidal magnetic drifts.
+These drifts are turned off by default.  To turn them on, all you need to do is
+set \parlink{magneticDriftScheme} = 1 in the {\ttfamily \hyperref[sec:physicsParameters]{physicsParameters}} namelist.
+If on, you must use VMEC
+geometry (\parlink{geometryScheme} = 5).  The magnetic drift terms introduce nonzeros in the system matrix,
+and therefore increase the memory required for factorization; a typical increase is 30-40\%.
+
 \section{Parallelization}
-Choosing the number of nodes and procs.
+[Coming soon...] Choosing the number of nodes and procs.
 
 \section{Issues with running on 1 processor}
 
