@@ -178,6 +178,7 @@ contains
        call writeHDF5Field("thetaDerivativeScheme", thetaDerivativeScheme, "")
        call writeHDF5Field("zetaDerivativeScheme", zetaDerivativeScheme, "")
        call writeHDF5Field("ExBDerivativeScheme", ExBDerivativeScheme, "")
+       call writeHDF5Field("magneticDriftDerivativeScheme", magneticDriftDerivativeScheme, "")
        call writeHDF5Field("xGridScheme", xGridScheme, "")
        call writeHDF5Field("xGrid_k", xGrid_k, "Exponent of x in the orthogonality relation for the speed polynomials")
        call writeHDF5Field("xPotentialsGridScheme", xPotentialsGridScheme, "")
