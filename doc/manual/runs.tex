@@ -178,9 +178,23 @@ comparing \sfincs~with analytic theory or with another code that does not includ
 You can choose to either include or not include the poloidal and toroidal magnetic drifts.
 These drifts are turned off by default.  To turn them on, all you need to do is
 set \parlink{magneticDriftScheme} = 1 in the {\ttfamily \hyperref[sec:physicsParameters]{physicsParameters}} namelist.
-If on, you must use VMEC
-geometry (\parlink{geometryScheme} = 5).  The magnetic drift terms introduce nonzeros in the system matrix,
+(Setting \parlink{magneticDriftScheme} = 2 uses a slightly different parallel magnetic drift, which gives
+indistinguishable results to setting 1 for all cases examined so far, and which is in fact exactly identical to setting 1
+in the limit of vanishing plasma beta.)
+If the poloidal/toroidal magnetic drifts are turned on, you must use VMEC
+geometry (\parlink{geometryScheme} = 5), since the magnetic drifts
+depend on various derivatives of the components of the magnetic field which
+are not available in the simplified geometry models.
+
+The magnetic drift terms introduce nonzeros in the system matrix,
 and therefore increase the memory required for factorization; a typical increase is 30-40\%.
+These magnetic drift terms often have only a minor effect, except perhaps when the radial
+electric field is near 0.
+
+If the electrostatic potential is not constant on flux surfaces and poloidal/toroidal magnetic drifts
+are included, certain terms exist in the kinetic equation which have not yet been implemented in the code.
+Thus, at present it is not strictly correct to simultaneously set  \parlink{magneticDriftScheme} > 0 
+and  \parlink{includePhi1} = \true.
 
 \section{Parallelization}
 [Coming soon...] Choosing the number of nodes and procs.
