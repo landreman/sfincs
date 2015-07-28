@@ -187,13 +187,13 @@ depend on various derivatives of the components of the magnetic field which
 are not available in the simplified geometry models.
 
 The magnetic drift terms introduce nonzeros in the system matrix,
-and therefore increase the memory required for factorization; a typical increase is 30-40\%.
-These magnetic drift terms often have only a minor effect, except perhaps when the radial
+and therefore increase the memory required for factorization; a typical increase is 20-40\%.
+These magnetic drift terms typically have a minor effect except when the radial
 electric field is near 0.
 
 If the electrostatic potential is not constant on flux surfaces and poloidal/toroidal magnetic drifts
 are included, certain terms exist in the kinetic equation which have not yet been implemented in the code.
-Thus, at present it is not strictly correct to simultaneously set  \parlink{magneticDriftScheme} > 0 
+Thus, at present it is not strictly correct to simultaneously set  \parlink{magneticDriftScheme} $> 0$ 
 and  \parlink{includePhi1} = \true.
 
 \section{Parallelization}

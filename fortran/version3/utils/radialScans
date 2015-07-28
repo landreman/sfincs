@@ -208,7 +208,7 @@ if geometryScheme==11 or geometryScheme==12:
 if geometryScheme==5:
     # Read VMEC file to determine psiAHat, aHat, and the available psiN.
     try:
-        f = netcdf.netcdf_file(equilibriumFile,'r')
+        f = netcdf.netcdf_file(equilibriumFile,'r',mmap=False)
     except:
         print "ERROR! Unable to read VMEC wout equilibrium file."
         print "Presently this script assumes the VMEC file is netCDF format rather than ASCII format,"
@@ -223,7 +223,12 @@ if geometryScheme==5:
     print "vmec-derived aHat: ",aHat
     print "vmec-derived psiAHat: ",psiAHat
 
-    vmecRadialOption = readVariable('vmecRadialOption','int')
+    try:
+        vmecRadialOption = readVariable('vmecRadialOption','int',required=False)
+    except:
+        print "Unable to read vmecRadialOption from input.namelist, so using the default value 1"
+        vmecRadialOption = 1
+
     if vmecRadialOption==0:
         # Do not shift radial grid points.
         pass

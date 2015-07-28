@@ -2,18 +2,15 @@
 #
 # Edison is a Cray XC30 at NERSC (Lawrence Berkeley National Laboratory).
 #
-# To compile SFINCS on Edison, you need to run the following 2 module commands:
+# To compile SFINCS on Edison using the default Intel compiler, you need to run the following module command:
+#   module load cray-tpsl/1.5.0 cray-petsc/3.5.3.1 cray-netcdf cray-hdf5
+# These options worked as of 2015-07-18.
+# 
+# You can also compile with the cray compiler with the following modules:
 #   module swap PrgEnv-intel PrgEnv-cray
 #   module load cray-petsc cray-netcdf cray-hdf5
-# (For some reason, the default PrgEnv-intel environment causes mumps to
-# give a segmentation fault, hence we switch to the cray compiler.)
-# These options worked as of 2015-05-30.
-# 
-# If you use superlu_dist instead of mumps, you can use the default intel compiler
-# with the following modules:
-#   module load cray-petsc netcdf cray-hdf5
-# (These options worked on 2015-05-30. For some reason, loading cray-hdf5 before netcdf
-# yielded an error message.)
+# These options worked on 2015-07-27. For some reason, the sfincsScan python routines do not work
+# when these modules are loaded.
 #
 # Also, to use sfincsPlot and sfincsScanPlot, you need the following modules:
 #   module load python numpy matplotlib h5py
