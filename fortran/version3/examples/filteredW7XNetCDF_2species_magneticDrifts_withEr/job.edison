@@ -16,4 +16,4 @@
 cd $PBS_O_WORKDIR
 # Default ordering on edison is PORD, which gives mumps error -9.
 # We use -mat_mumps_icntl_7 3 to switch to the SCOTCH ordering, which seems more robust.
-aprun -n 24 ../../sfincs -ksp_view -mat_mumps_icntl_7 3 -mat_mumps_icntl_14 40
+aprun -n 24 ../../sfincs -ksp_view -mat_mumps_icntl_7 3

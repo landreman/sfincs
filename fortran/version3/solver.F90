@@ -213,6 +213,13 @@ module solver
        ! Turn on mumps diagnostic output
        mumps_which_cntl = 4
        call MatMumpsSetIcntl(factorMat,mumps_which_cntl,2,ierr)
+
+       ! Increase amount by which the work array can expand due to near-0 pivots.
+       ! (The default value of icntl(14) is 25.)
+       ! For many cases it is not necessary to increase icntl(14), but it sometimes helps
+       ! to prevent the mumps error with info(1)=-9.
+       mumps_which_cntl = 14
+       call MatMumpsSetIcntl(factorMat,mumps_which_cntl,40,ierr)
 #endif
     end if
 

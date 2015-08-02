@@ -27,7 +27,7 @@
   rN_wish = 0.5
 
   VMECRadialOption = 1
-  equilibriumFile = "/u/mlan/sfincs/equilibria/wout_w7x_standardConfig.nc"
+  equilibriumFile = "../../../../equilibria/wout_w7x_standardConfig.nc"
   min_Bmn_to_load = 1e-3
 
 /
