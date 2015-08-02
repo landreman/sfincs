@@ -2,7 +2,12 @@ module globalVariables
 
   implicit none
 
+#include "PETScVersions.F90"
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
 #include <finclude/petscvecdef.h>
+#else
+#include <petsc/finclude/petscvecdef.h>
+#endif
 
   character(len=50), parameter :: inputFilename = "input.namelist"
 

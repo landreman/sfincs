@@ -1,4 +1,9 @@
+#include "PETScVersions.F90"
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
 #include <finclude/petscsysdef.h>
+#else
+#include <petsc/finclude/petscsysdef.h>
+#endif
   
 subroutine polynomialInterpolationMatrix(N, M, xk, x, alpxk, alpx, matrix)
   ! This module returns the matrix for spectral interpolation from any grid to

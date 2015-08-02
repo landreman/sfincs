@@ -1,5 +1,9 @@
-#include <finclude/petscsnesdef.h>
 #include "PETScVersions.F90"
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
+#include <finclude/petscsnesdef.h>
+#else
+#include <petsc/finclude/petscsnesdef.h>
+#endif
 
 ! This next subroutine is called as a "Monitor" of SNES, set in solver.F90 using SNESSetMonitor.
   subroutine diagnosticsMonitor(mysnes, iterationNum, residual, userContext, ierr)

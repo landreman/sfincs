@@ -7,7 +7,12 @@ module export_f
 
   implicit none
 
+#include "PETScVersions.F90"
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
 #include <finclude/petscsysdef.h>
+#else
+#include <petsc/finclude/petscsysdef.h>
+#endif
 
   integer, parameter :: max_N_export_f = 500 ! Max grid size in each one of the 4 coordinates (theta, zeta, xi, x)
   ! Defaults for the next 4 array variables are given in readInput.F90.

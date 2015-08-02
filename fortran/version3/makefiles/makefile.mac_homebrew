@@ -5,6 +5,10 @@
 # and with no job management system.
 
 # These next 2 includes set FC, FLINKER, and PETSC_LIB:
+# For PETSc version 3.6.0 and later, use the following 2 lines:
+#include ${PETSC_DIR}/lib/petsc/conf/variables
+#include ${PETSC_DIR}/lib/petsc/conf/rules
+# The next 2 lines are used instead of the above 2 lines for PETSc versions prior to 3.6.0:
 include ${PETSC_DIR}/conf/variables
 include ${PETSC_DIR}/conf/rules
 

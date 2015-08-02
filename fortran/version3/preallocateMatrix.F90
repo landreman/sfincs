@@ -1,5 +1,9 @@
-#include <finclude/petscmatdef.h>
 #include "PETScVersions.F90"
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
+#include <finclude/petscmatdef.h>
+#else
+#include <petsc/finclude/petscmatdef.h>
+#endif
 
 subroutine preallocateMatrix(matrix, whichMatrix)
 
