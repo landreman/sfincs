@@ -202,4 +202,75 @@ collisionality is lowest near the axis.  Since the resolution requirements of \s
 demanding at low collisionality, then if the code is converged at the radius of lowest collisionality,
 it should be converged at all radii.
 
-\section{Typical resolution requirements}
+\section{Examples of resolution requirements}
+
+To estimate the appropriate resolution parameters for various circumstances, you can look at
+the examples in the \path{sfincs/fortran/version3/examples/} directory. 
+Some other examples of appropriate resolution parameters are given in the following sections.
+
+\subsection{W7-X with anticipated experimental density and temperature}
+\label{sec:w7xresolution}
+
+The following parameters have been extensively tested with W7-X geometry for densities near $10^{20}$ m$^{-3}$
+and temperatures up to 6 keV, and found to give convergence to $\sim 3$\% (as shown in figure \ref{fig:convergence2}):\\
+{\ttfamily
+\Ntheta = 19 \\
+\Nzeta = 125 \\
+\Nxi = 140 \\
+\Nx = 5 \\
+}
+Note that at lower temperature and/or higher density, the collisionality will be higher,
+so comparable convergence could be achieved at lower \parlink{Nzeta} and \parlink{Nxi}.
+Conversely, at higher temperatures and/or lower desntiy, the collisionality will be lower,
+so comparable convergence would likely require higher  \parlink{Nzeta} and \parlink{Nxi}.
+
+\subsection{Figure 3 of the original SFINCS paper}
+
+For figure 3 in Ref \cite{sfincsPaper}, corresponding to a pure plasma in W7-X with $n = 6.6\times 10^{19}$ m$^3$ and $T_i = T_e = 1$ keV,
+the calculations used\\
+{\ttfamily
+\Ntheta = 19 \\
+\Nzeta = 59 \\
+\Nxi = 60 \\
+\Nx = 5. \\
+}
+Note the lower values of  \parlink{Nzeta} and \parlink{Nxi} used compared to section \ref{sec:w7xresolution},
+which were sufficient since the temperatures were lower.
+
+\subsection{Figure 4 of the original SFINCS paper}
+
+For figure 4 in Ref \cite{sfincsPaper}, corresponding to a collisionality scan in LHD,
+the following resolution parameters were used:
+
+\centerline{
+\begin{tabular}{c|c|c|c|c}
+\parlink{nuPrime} & \Ntheta & \Nzeta & \Nxi & \Nx \\
+\hline
+0.001 & 85 & 41 & 103 & 5 \\
+0.01 & 21 & 25 & 70 & 5 \\
+0.1 & 15 & 13 & 37 & 5 \\
+0.3 & 15 & 13 & 34 & 6 \\
+1 & 13 & 13 & 13 & 8 \\
+10 & 15 & 13 & 13 & 8 \\
+100 & 15 & 13 & 13 & 8
+\end{tabular}
+}
+
+\subsection{Figure 5 of the original SFINCS paper}
+
+For figure 5 in Ref \cite{sfincsPaper}, corresponding to a collisionality scan in W7-X,
+the following resolution parameters were used:
+
+\centerline{
+\begin{tabular}{c|c|c|c|c}
+\parlink{nuPrime} & \Ntheta & \Nzeta & \Nxi & \Nx \\
+\hline
+0.001 & 29 & 83 & 180 & 5 \\
+0.01  & 11 & 64 & 100 & 5 \\
+0.1   & 11 & 37 & 37  & 5 \\
+0.3   & 11 & 29 & 30  & 5 \\
+1     & 13 & 31 & 24  & 6 \\
+10    & 13 & 35 & 12  & 7 \\
+100   & 11 & 37 & 13  & 8
+\end{tabular}
+}

@@ -948,6 +948,7 @@ This parameter should be true unless you know what you are doing.
 
 
 \section{The {\ttfamily otherNumericalParameters}~namelist}
+\label{sec:otherNumericalParameters}
 
 The parameters in this namelist are advanced, and the default values are best for routine use of the code.
 
@@ -1912,7 +1913,31 @@ There are hundreds of \PETSc~options, and a list can be obtained by running with
 \myhrule
 
 \PETScParam{-ksp\_gmres\_restart {\normalfont \ttfamily$<$integer$>$}}
-{After how many iterations will GMRES restart. Default is 2000. The convergence of GMRES slows every time a restart occurs, but restarts also free up memory.}
+{After how many iterations will GMRES restart. Default is 2000. The convergence of GMRES slows every time a restart occurs, but restarts also free up memory.
+The memory required by GMRES is typically quite small compared to the memory required for the $LU$ factorization.}
+
+\myhrule
+
+\PETScParam{-pc\_factor\_mat\_solver\_package {\normalfont \ttfamily$<$packagename$>$}}
+{Which sparse direct solver package is used to $LU$-factorize the preconditioner matrix.
+%Options are given by the items in quotation marks  
+%{\href{http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Mat/MatSolverPackage.html#MatSolverPackage}{here.}}
+This command-line flag overrides the related namelist parameter\\
+\parlink{whichParallelSolverToFactorPreconditioner}.
+See section \ref{sec:solvers} for further information about the available packages.
+}
+
+\section{\mumps~commands}
+\label{sec:mumpsControlParameters}
+
+The \mumps~solver package has many control parameters which are documented in the manual,
+available \href{http://mumps-solver.org/}{here}.
+In \sfincs, as in any \PETSc~application, these control parameters can be set
+using the command-line flags {\ttfamily -mat\_mumps\_cntl\_X YYYY} (for floating point parameters)
+and {\ttfamily -mat\_mumps\_icntl\_X YYYY} (for integer control parameters). 
+Here, {\ttfamily X} is the numeric index of the control parameter,
+and {\ttfamily YYYY} is the desired setting.
+Here we list some of the more useful options.\\
 
 \myhrule
 
@@ -1920,5 +1945,19 @@ There are hundreds of \PETSc~options, and a list can be obtained by running with
 {How much diagnostic information will be printed by \mumps. Default is 3, causing extensive diagnostic information to be printed 
 to standard output about the memory required for factorizing the preconditioner.
 Set this parameter to 0 to suppress this output from mumps.}
+
+\myhrule
+
+\PETScParam{-mat\_mumps\_icntl\_14 {\normalfont \ttfamily$<$integer$>$}}
+{Percentage margin allowed for increase of certain arrays during the $LU$ factorization.
+The default value set by \sfincs~is 50 (higher than the original default value in \mumps.)
+If \sfincs~exits with the \mumps~error {\ttfamily INFO(1)=-9}, then further increasing this parameter may help.}
+
+\myhrule
+
+\PETScParam{-mat\_mumps\_icntl\_22 1}
+{Turns on the out-of-core solve capability,
+which reduces the memory required at the cost of speed.
+See section \ref{sec:parallelization} for further details.}
 
 
