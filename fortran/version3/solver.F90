@@ -1,5 +1,9 @@
-#include <finclude/petscsnesdef.h>
 #include "PETScVersions.F90"
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
+#include <finclude/petscsnesdef.h>
+#else
+#include <petsc/finclude/petscsnesdef.h>
+#endif
 
 module solver
 
@@ -213,6 +217,14 @@ module solver
        ! Turn on mumps diagnostic output
        mumps_which_cntl = 4
        call MatMumpsSetIcntl(factorMat,mumps_which_cntl,2,ierr)
+
+       ! Increase amount by which the mumps work array can expand due to near-0 pivots.
+       ! (The default value of icntl(14) is 25.)
+       ! For many cases it is not necessary to increase icntl(14), but an increase sometimes helps
+       ! to prevent the mumps error with info(1)=-9.  There appears to be basically
+       ! no significant cost in memory or time to increase this parameter.
+       mumps_which_cntl = 14
+       call MatMumpsSetIcntl(factorMat,mumps_which_cntl,50,ierr)
 #endif
     end if
 

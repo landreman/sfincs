@@ -7,6 +7,7 @@
 import os
 import subprocess
 import time
+from sys import stdout
 
 def verifyVariableExists(str):
     try:
@@ -18,9 +19,9 @@ def verifyVariableExists(str):
     return temp
 
 isABatchSystemUsed = verifyVariableExists("SFINCS_IS_A_BATCH_SYSTEM_USED")
-runLargeExamplesStr = verifyVariableExists("SFINCS_RUN_LARGE_EXAMPLES")
 commandToSubmitJob = verifyVariableExists("SFINCS_COMMAND_TO_SUBMIT_JOB")
 retestStr = verifyVariableExists("SFINCS_RETEST")
+sfincsSystem = verifyVariableExists("SFINCS_SYSTEM")
 
 if retestStr=="yes":
     retest=True
@@ -28,14 +29,6 @@ elif retestStr=="no":
     retest=False
 else:
     print "Error! SFINCS_RETEST must be either 'yes' or 'no'. There is likely an error in the main makefile."
-    exit(1)
-
-if runLargeExamplesStr=="yes":
-    runLargeExamples = True
-elif runLargeExamplesStr=="no":
-    runLargeExamples = False
-else:
-    print "Error! SFINCS_RUN_LARGE_EXAMPLES must be either 'yes' or 'no'.  There is likely an error in the makefile for your system."
     exit(1)
 
 # Try executing h5dump with no arguments, just to see if h5dump is available:
@@ -52,28 +45,25 @@ examplesWithErrors = []
 # Get a list of the subdirectories:
 subdirectories = filter(os.path.isdir, os.listdir("."))
 
-# From this list, keep only subdirectories that have a "tests.py" file:
-# For convenience, run small examples before large ones. Hence, we loop twice.
+# From this list, keep only subdirectories that have both a "tests.py" file and a job.SFINCS_SYSTEM file:
 examplesToRun = []
+examplesToNotRun = []
+directoriesThatArentExamples = []
 for subdirectory in subdirectories:
-    hasSmall = os.path.isfile(subdirectory+"/tests_small.py")
-    hasLarge = os.path.isfile(subdirectory+"/tests_large.py")
-    if hasSmall and hasLarge:
-        print "Error! The subdirectory examples/"+subdirectory+" has both a tests_small.py and tests_large.py file. It must have one or the other or neither, but not both."
-        exit(1)
-    if hasSmall:
-        examplesToRun.append(subdirectory)
-if runLargeExamples:
-    for subdirectory in subdirectories:
-        hasLarge = os.path.isfile(subdirectory+"/tests_large.py")
-        if hasLarge:
+    if os.path.isfile(subdirectory+"/tests.py"):
+        if os.path.isfile(subdirectory+"/job."+sfincsSystem):
             examplesToRun.append(subdirectory)
+        else:
+            examplesToNotRun.append(subdirectory)
+    else:
+        directoriesThatArentExamples.append(subdirectory)
+
+if len(examplesToRun) + len(examplesToNotRun) == 0:
+    print "Error: No subdirectories of examples/ found containing a tests.py file."
+    exit(1)
 
 if len(examplesToRun)==0:
-    if runLargeExamples:
-        print "There are no examples in the examples/ directory with a tests_small.py file or a tests_large.py file.  Therefore it is not possible to run any tests."
-    else:
-        print "There are no examples in the examples/ directory with a tests_small.py file.  Therefore it is not possible to run any tests."
+    print "There are no examples in the examples/ directory with a job."+sfincsSystem+" file (where '"+sfincsSystem+"' is taken from the environment variable SFINCS_SYSTEM.)  Therefore it is not possible to run any tests."
     exit(1)
 
 if isABatchSystemUsed == "yes":
@@ -84,16 +74,24 @@ if isABatchSystemUsed == "yes":
     print "this testing program will not realize the jobs have crashed."
     print 
 
-if runLargeExamples:
-    print "Based on the subdirectories of examples/ that contain a tests_small.py or tests_large.py file, the following examples will be used as tests:"
-else:
-    print "Based on the subdirectories of examples/ that contain a tests_small.py file, the following examples will be used as tests:"
+print "The following subdirectories of /examples do not contain a tests.py file and so will be ignored:"
+for example in directoriesThatArentExamples:
+    print "   " + example
+print " "
 
+print "The following examples do not contain a job."+sfincsSystem+" file and so will be skipped:"
+for example in examplesToNotRun:
+    print "   " + example
+print " "
+
+print "The following examples will be used as tests:"
 for example in examplesToRun:
     print "   " + example
+print " "
 
 if isABatchSystemUsed == "no":
     for subdirectory in examplesToRun:
+        print " "
         print "Preparing to check example: "+subdirectory
         try:
             os.chdir(subdirectory)
@@ -110,30 +108,25 @@ if isABatchSystemUsed == "no":
                 pass
             # If sfincsOutput.h5 does not exist, there will be an exception, but we can safely ignore it.
 
-            print "Lanching SFINCS..."
+            print "Launching SFINCS..."
+            # Flush everything printed to stdout so far:
+            stdout.flush()
+
             try:
                 # Next we launch SFINCS.
-                # We need to include .split(" ") to separate the command-line arguments into an array of strings. 
-                # I'm not sure why python requires this.
-                subprocess.call(commandToSubmitJob.split(" "))
+                subprocess.call("./job."+sfincsSystem)
             except:
                 print "An error occurred when attempting to launch sfincs."
-                print "This is likely due to an error in the SFINCS_COMMAND_TO_SUBMIT_JOB parameter in the makefile for your system."
-                print "The present value of SFINCS_COMMAND_TO_SUBMIT_JOB is: " + os.environ["SFINCS_COMMAND_TO_SUBMIT_JOB"]
                 raise
 
-        print "About to run tests on output."
-
-        hasSmall = os.path.isfile("tests_small.py")
-        if hasSmall:
-            filename = "tests_small.py"
-        else:
-            filename = "tests_large.py"
+        print " "
+        print "SFINCS execution complete. About to run tests on output."
+        stdout.flush()
 
         try:
-            testResults = subprocess.call("./"+filename)
+            testResults = subprocess.call("./tests.py")
         except:
-            print "An error occurred when attempting to run "+filename+" in the following directory:"
+            print "An error occurred when attempting to run tests.py in the following directory:"
             print(os.getcwd)
             raise
 
@@ -198,7 +191,6 @@ elif isABatchSystemUsed == "yes":
         print "Unable to submit any of the examples."
         exit(1)
 
-    #status = {subdirectory:"unprocessed" for subdirectory in examplesSubmitted}
     status = {}
     for subdirectory in examplesSubmitted:
         status[subdirectory] = "unprocessed"
@@ -223,7 +215,6 @@ elif isABatchSystemUsed == "yes":
                 try:
                     # To see if a run is finished, see if the variable "finished" has been written.
                     result=subprocess.call(["h5dump","-y","-d","/finished",filename],stdout=devnull,stderr=devnull)
-                    #result=subprocess.call(["h5dump",filename],stdout=devnull,stderr=devnull)
                 except:
                     print "Error occurred attempting to run h5dump"
                     raise
@@ -235,16 +226,10 @@ elif isABatchSystemUsed == "yes":
                     print "   Example "+subdirectory+" has completed. Running tests..."
                     os.chdir(subdirectory)
 
-                    hasSmall = os.path.isfile("tests_small.py")
-                    if hasSmall:
-                        testFilename = "tests_small.py"
-                    else:
-                        testFilename = "tests_large.py"
-                        
                     try:
-                        testResults = subprocess.call("./"+testFilename)
+                        testResults = subprocess.call("./tests.py")
                     except:
-                        print "An error occurred when attempting to run "+testFilename+" in the following directory:"
+                        print "An error occurred when attempting to run tests.py in the following directory:"
                         print(os.getcwd)
                         raise
 

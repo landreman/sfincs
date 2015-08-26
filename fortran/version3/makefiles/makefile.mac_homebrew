@@ -5,6 +5,10 @@
 # and with no job management system.
 
 # These next 2 includes set FC, FLINKER, and PETSC_LIB:
+# For PETSc version 3.6.0 and later, use the following 2 lines:
+#include ${PETSC_DIR}/lib/petsc/conf/variables
+#include ${PETSC_DIR}/lib/petsc/conf/rules
+# The next 2 lines are used instead of the above 2 lines for PETSc versions prior to 3.6.0:
 include ${PETSC_DIR}/conf/variables
 include ${PETSC_DIR}/conf/rules
 
@@ -18,13 +22,9 @@ EXTRA_LINK_FLAGS = -L/usr/local/Cellar/netcdf/4.3.3.1/lib -lnetcdff  -lnetcdf -l
 
 # The next parameters are used only for running and testing selected examples using "make test".
 
-# For "make test", do you want to run the examples that require multiple nodes worth of memory?
-# The value of this variable must be "yes" or "no".
-SFINCS_RUN_LARGE_EXAMPLES=no
-
 # For "make test", are runs submitted using a batch system (such as PBS)?  
 # The value of this variable must be "yes" or "no".
 SFINCS_IS_A_BATCH_SYSTEM_USED=no
 
-#SFINCS_COMMAND_TO_SUBMIT_JOB=mpiexec -n 4 ../../$(TARGET) -mat_mumps_icntl_23 300
-SFINCS_COMMAND_TO_SUBMIT_JOB=mpiexec -n 1 ../../$(TARGET) 
+# This next line matters only if a batch system is used:
+SFINCS_COMMAND_TO_SUBMIT_JOB=

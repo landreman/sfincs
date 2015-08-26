@@ -187,8 +187,9 @@ depend on various derivatives of the components of the magnetic field which
 are not available in the simplified geometry models.
 
 The magnetic drift terms introduce nonzeros in the system matrix,
-and therefore increase the memory required for factorization; a typical increase is 20-40\%.
-These magnetic drift terms typically have a minor effect except when the radial
+and therefore increase the memory and time required for factorization.
+The change is small; a typical increase in both memory and time is 20-40\%.
+These magnetic drift terms typically have a minor effect on the physics outputs except when the radial
 electric field is near 0.
 
 If the electrostatic potential is not constant on flux surfaces and poloidal/toroidal magnetic drifts
@@ -196,10 +197,118 @@ are included, certain terms exist in the kinetic equation which have not yet bee
 Thus, at present it is not strictly correct to simultaneously set  \parlink{magneticDriftScheme} $> 0$ 
 and  \parlink{includePhi1} = \true.
 
-\section{Parallelization}
-[Coming soon...] Choosing the number of nodes and procs.
+\section{Sparse direct solver packages}
+\label{sec:solvers}
 
-\section{Issues with running on 1 processor}
+As discussed briefly in section \ref{sec:gmres}, the most computationally demanding step in 
+\sfincs~is the direct $LU$-factorization of a very large sparse nonsymmetric real matrix. The \PETSc~library
+which \sfincs~uses has interfaces to a large number of other packages for direct factorization of such matrices,
+making it possible to choose among the various solver packages with just a command-line flag ({\ttfamily -pc\_factor\_mat\_solver\_package}).  Some lists of the direct solvers
+available in \PETSc~can be found \href{http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Mat/MatSolverPackage.html#MatSolverPackage}{here}
+or in the ``direct solvers''-``LU'' section of \href{http://www.mcs.anl.gov/petsc/documentation/linearsolvertable.html}{this page}.
+It is important for the $LU$-solver package to be one that is efficiently parallelized, 
+in order to be able to solve problems at the high resolutions required for experimentally relevant collisionality and magnetic geometry.
+The recommended choice of $LU$ solver is \href{http://mumps-solver.org/}{\mumps} (which is the default), and another good option is \href{http://crd-legacy.lbl.gov/~xiaoye/SuperLU/}{\superludist}.
+(The {\ttfamily PARDISO} library available in the Intel Math Kernel Library is probably suitable as well, though we have not investigated it yet.)
+In side-to-side comparisons, we find \mumps~systematically uses substantially less memory and time than \superludist~for factorization.
+In principle, other solver packages for asymmetric matrices that are interfaced to \PETSc~could be used as well, such as {\ttfamily UMFPACK}, {\ttfamily PASTIX}, etc.
+
+There are two ways to choose between solver packages.
+One method is the \sfincs~parameter \parlink{whichParallelSolverToFactorPreconditioner} in the 
+{\ttfamily \hyperref[sec:otherNumericalParameters]{otherNumericalParameters}} namelist.
+This parameter only allows you to choose between \mumps~ and \superludist, not other solver packages interfaced to \PETSc.
+Another way to choose between solver packages is the command-line flag {\ttfamily -pc\_factor\_mat\_solver\_package},
+followed by one of the options in quotation marks \href{http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Mat/MatSolverPackage.html#MatSolverPackage}{here}.
+The command-line flag overrides the namelist parameter.
+
+The physics outputs of the code should be independent of the solver package used to several significant digits.
+In principle, different solver packages solving the same linear system should find the identical solution.
+However there will be small differences in the solutions associated with roundoff error.
+
+Note that {\ttfamily superlu} and \superludist~are distinct libraries. The former is serial while the latter is parallelized.
+Therefore there is no reason to use {\ttfamily superlu}; \superludist~is always preferable.
+
+The \mumps~package has a large number of control parameters, which are documented in the \mumps~manual which can be downloaded \href{http://mumps-solver.org/}{here}.
+You do not need to be aware of most of these control parameters.
+However, several parameters which may be useful are discussed in section \ref{sec:mumpsControlParameters}.
+It is also worth being aware of the section of the \mumps~manual on error messages. 
+This section is useful for interpreting the {\ttfamily INFO(1)} and {\ttfamily INFO(2)} error codes that
+are reported if \sfincs~exits with an error associated with \mumps. 
+
+The \superludist~package has many fewer options than \mumps. 
+You can find of list of the options by running \sfincs~with the {\ttfamily -help} command-line flag when
+using \superludist, and searching the output for lines containing {\ttfamily superlu\_dist}.
+The \superludist~options are also documented in the package's manual, available \href{http://crd-legacy.lbl.gov/~xiaoye/SuperLU/#superlu_dist}{here}.
+We have not found any advantage in adjusting
+any of the \superludist~options.
+
+The \PETSc~library includes a built-in sparse direct solver which works on only a single processor.
+You can select this solver using the command-line flag \\
+\centerline{\ttfamily -pc\_factor\_mat\_solver\_package petsc}\\
+This solver could potentially be useful if you are running on a system that does not have \mumps~or \superludist~installed,
+and you are only considering problems that require sufficiently little memory (e.g. tokamaks) that parallelization is not required.
+However, this solver is less robust than \mumps~or \superludist, sometimes exiting with an error message that there is a zero pivot
+even though  \mumps~and \superludist~can solve the same system with no problem. Therefore, even if you plan to use only a single processor,
+we still recommend that you install  \mumps~or \superludist.
+
+\section{Parallelization: Choosing the number of nodes \& processors}
+\label{sec:parallelization}
+
+Usually the limiting factor for \sfincs~is not time but memory.
+(The time required depends on the resolution used, but jobs for experimentally relevant W7-X parameters
+typically take under 10 minutes.)
+Therefore, when considering how many nodes to request for a \sfincs~job,
+the first issue to consider is ensuring you have requested sufficient total memory.
+A good way to determine the memory required (assuming you are using the default solver \mumps)
+is to first run \sfincs~on 1 node using the parameters of interest
+and look for the following line in standard output:\\
+\centerline{\ttfamily ** TOTAL     space in MBYTES for IC factorization         :       1072}\\
+The number at the end will generally be different; it depends not only on the
+resolution and number of species used, but also increases with the number of processors
+as discussed below.  Make sure the number of nodes requested times the number of megabytes per node exceeds this number.
+This line in standard output is generated by \mumps, so if you are using a different solver, this information is not printed,
+and you may need to determine the number of nodes by trial-and-error.
+Since some memory on each node is used by the operating system and by \sfincs~functions other than the solver,
+you may need to use a slightly higher number of nodes than this estimate suggests.
+For experimentally relevant W7-X and HSX parameters, we typically use 2-6 nodes with 64 GB each.
+Problems with lower resolution requirements, such as tokamaks, often can be run on a single node.
+
+The `IC' in the above line stands for `in core', meaning the $L$ and $U$ factors are stored
+in memory rather than on disk.  In \mumps, one can also choose to do an `out of core' (OOC) solve,
+in which case substantially less memory is typically required.  The price you pay for this memory savings is time, since
+disk access is slow compared to memory access.  Due to this slowdown, we have not used the OOC capability much, but
+you might find it useful in some circumstances.
+To see how much memory would be required for an OOC solve,
+look for the following line in standard output:\\
+\centerline{\ttfamily ** TOTAL     space in MBYTES for OOC factorization        :       128}\\
+(The number at the end will generally be different.)
+To invoke out-of-core mode, you must take two steps. First, use the following command-line flag when calling \sfincs:\\
+\centerline{\ttfamily -mat\_mumps\_icntl\_22 1}\\
+Second, you must set the environment variable {\ttfamily MUMPS\_OOC\_TMPDIR} to some reasonable directory
+before calling \sfincs. This environment variable could be set for example in the batch job file.
+Temporary files containing the $L$ and $U$ factors will be stored in the directory indicated.
+
+Another issue to consider is how many processors to use.  It is not always best to use the maximum number of processes
+available on the number of nodes you have chosen. The reason is that as the preconditioner matrix is divided among
+more and more processes, the $LU$ factorization becomes less efficient, requiring more memory and more communication.
+If you examine the \mumps~IC and OOC memory requirements indicated above, you will find they increase somewhat 
+as the number of processes increase.
+One needs to find a balance between speed (favoring many processes) and memory requirements (favoring few processes).
+While it is almost always better overall to use 2 processes compared to 1 process, it is not always better to use 128 processes
+compared to 64 processes.  The sweet spot is often in the range of 16-64 processes.
+To determine how to request fewer processes than the maximum available on a given number of nodes,
+see the documentation for your computing system.
+
+If more memory is required than is available, the system will usually terminate your job with an out-of-memory (OOM) error.
+When this occurs, you need to either increase the number of nodes requested or decrease the number of processors
+requested.
+
+Most of the time, \sfincs~is run via \sfincsScan~as some parameter is scanned, such as the radial electric field.
+In this case, the scan is ``embarassingly parallel'' in the sense that each job in the scan is completely independent
+of the other jobs.  Even if each individual job requires only 1 or a small number of nodes, it is still useful
+to run \sfincs~on a computing system with many nodes so the scan can be carried out in parallel.
+
+%\section{Issues with running on 1 processor}
 
 \section{Monoenergetic transport coefficients}
 \label{sec:monoenergetic}

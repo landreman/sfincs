@@ -1,6 +1,9 @@
-#include <finclude/petscsnesdef.h>
 #include "PETScVersions.F90"
-
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
+#include <finclude/petscsnesdef.h>
+#else
+#include <petsc/finclude/petscsnesdef.h>
+#endif
 
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
        ! Syntax for PETSc versions up through 3.4

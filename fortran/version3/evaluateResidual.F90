@@ -1,6 +1,9 @@
-#include <finclude/petscsnesdef.h>
 #include "PETScVersions.F90"
-
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
+#include <finclude/petscsnesdef.h>
+#else
+#include <petsc/finclude/petscsnesdef.h>
+#endif
 
   subroutine evaluateResidual(mysnes, stateVec, residualVec, userContext, ierr)
 

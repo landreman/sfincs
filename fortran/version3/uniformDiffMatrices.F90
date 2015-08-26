@@ -1,4 +1,10 @@
+#include "PETScVersions.F90"
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
 #include <finclude/petscsysdef.h>
+#else
+#include <petsc/finclude/petscsysdef.h>
+#endif
+
 subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
   ! Finite difference and spectral differentiation matrices and integration
   ! weights for a uniform grid.

@@ -103,7 +103,7 @@ appropriate makefile \\{\ttfamily sfincs/fortran/version3/makefiles/makefile.SFI
 Next, to compile, go to the directory {\ttfamily sfincs/fortran/version3/} and run {\ttfamily make -j}.
 (The {\ttfamily -j} flag means compiliation will be done in parallel, i.e. faster.)
 
-\section{Make test}
+\section{{\ttfamily make test}}
 \label{sec:maketest}
 
 To test that your \sfincs~executable is working, you can run {\ttfamily make test}
@@ -113,12 +113,13 @@ from the \path{sfincs/fortran/version3/} directory.  Doing so will run
 be submitted to the queueing system.)
 After each example completes, several of the output quantities (such as parallel flows and radial fluxes)
 will be checked, using the
-{\ttfamily tests\_small.py} or {\ttfamily tests\_large.py} script in the example's directory.
+{\ttfamily tests.py} script in the example's directory.
 
 If you run {\ttfamily make retest} from the \path{sfincs/fortran/version3/} directory,
-no new runs of \sfincs~will be performed, but the {\ttfamily tests\_small.py} or {\ttfamily tests\_large.py} script
+no new runs of \sfincs~will be performed, but the {\ttfamily tests.py} script
 will be run on any existing {\ttfamily sfincsOutput.h5} files in the \path{sfincs/fortran/version3/examples/} directories.
 
-The {\ttfamily make test} functionality relies on system-specific commands in the
-\path{sfincs/fortran/version3/makefiles/makefile.SFINCS_SYSTEM} file.  If you experience
-problems with  {\ttfamily make test}, it is likely that this file needs modification.
+The {\ttfamily make test} functionality relies on several environment variables set in the
+\path{sfincs/fortran/version3/makefiles/makefile.SFINCS_SYSTEM} file, as well as on the
+\path{job.SFINCS_SYSTEM} files in each example subdirectory.  If you experience
+problems with  {\ttfamily make test}, there is a good chance that one of these files needs modification.
