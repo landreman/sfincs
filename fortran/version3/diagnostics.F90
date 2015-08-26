@@ -436,7 +436,6 @@
                         = NTVBeforeSurfaceIntegral(ispecies,itheta,izeta) &
                         + NTVFactor * NTVKernel(itheta,izeta)&
                         * xWeights(ix)*NTVIntegralWeights(ix)*solutionWithDeltaFArray(index) &
-                        * thetaWeights(itheta) * zetaWeights(izeta)
 
                    particleFlux_vm_psiHat_vs_x(ispecies,ix) &
                         = particleFlux_vm_psiHat_vs_x(ispecies,ix) &

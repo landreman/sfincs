@@ -51,6 +51,8 @@ def readRunspec(therunspecFilename):
     runparamnames=runspecLines[lind-1][2:].split()
     noElems=len(runparamnames)
     datalines=runspecLines[lind:]
+    while len(datalines[-1]) <= 1 :
+        datalines=datalines[0:-1]     #remove trailing empty lines
     runparams=[[0 for j in range(noElems)] for i in range(len(datalines))]
     for datalineind in range(len(datalines)):
         thesplittedstring=datalines[datalineind].split()
