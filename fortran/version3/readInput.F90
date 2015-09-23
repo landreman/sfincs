@@ -43,7 +43,7 @@ contains
          includeElectricFieldTermInXiDot, useDKESExBDrift, include_fDivVE_term, nonlinear, &
          dPhiHatdpsiHat, dPhiHatdpsiN, dPhiHatdrHat, dPhiHatdrN, &
          includeTemperatureEquilibrationTerm, includePhi1, &
-         nuPrime, EStar, magneticDriftScheme
+         nuPrime, EStar, magneticDriftScheme, includeRadialExBDrive
 
     namelist / resolutionParameters / forceOddNthetaAndNzeta, &
          Ntheta, &
