@@ -554,6 +554,17 @@ else:
             plt.ylabel('theta')
             plt.colorbar()
 
+        if includePhi1 == integerToRepresentTrue and numRows >= 3:
+            plt.subplot(numRows, numCols, 12)
+            data = numpy.zeros(totalDensity[:,:,0,iteration].shape)
+            for ispecies in range(Nspecies):
+                data += totalDensity[:,:,ispecies,iteration] * Zs[ispecies]
+            plt.contourf(zeta,theta,data.transpose(),20)
+            plt.title('Total charge density (should be 0)')
+            plt.xlabel('zeta')
+            plt.ylabel('theta')
+            plt.colorbar()
+
         #plt.subplot(1,1,1)
         #plt.text(0.5,0.9,'Results for first iteration')
 
