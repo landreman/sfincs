@@ -767,11 +767,28 @@ associated with the radial $\vect{E}\times\vect{B}$ drift.}
 
 \myhrule
 
+\param{includeRadialExBDrive}
+{Boolean}
+{\false}
+{Whenever \parlink{RHSMode} == 1.}
+{If true, the radial $\vect{E}\times\vect{B}$ term $(\vect{v}_{E} \cdot\nabla\psi)f_{Ms} [(1/n_s)(dn_s/d\psi) + (x_s^2-3/2)(1/T_s)(dT_s/d\psi)]$
+will be included in the kinetic equation. This is one of the terms considered in Ref \cite{Regana2013} which
+should be unimportant for the main ions but which may be important for impurities.
+Use of this option requires \parlink{includePhi1}=\true, since the radial $\vect{E}\times\vect{B}$ drift
+arises due to $\Phi_1$.
+}
+
+\myhrule
+
 \param{nonlinear}
 {Boolean}
 {\false}
 {Whenever \parlink{RHSMode} == 1.}
-{If true, certain terms that are nonlinear in the unknowns will be included in the kinetic equation.
+{If true, the term
+$-(Z_s e/m) (\nabla_{||} \Phi_1) (\partial f_{s1}/\partial v_{||})_\mu$ will be included
+in the kinetic equation.  This is one of the terms considered in Ref \cite{Regana2013} which
+should be unimportant for the main ions but which may be important for impurities.
+This term is nonlinear in the unknowns $f_{s1}$ and $\Phi_1$.
 Newton's method will be used to solve the nonlinear system, meaning that the usual linear solve in \sfincs~must
 be iterated several times.
 Running with {\ttfamily nonlinear}=\true requires \parlink{includePhi1}=\true

@@ -289,6 +289,15 @@ subroutine validateInput()
      stop
   end if
 
+  if (includeRadialExBDrive .and. (.not. includePhi1)) then
+     if (masterProc) then
+        print *,"Error! You requested a calculation including the radial ExB drive term"
+        print *,"(includeRadialExBDrive=.true.) but you set includePhi1=.false."
+        print *,"These options are inconsistent since the radial ExB drive term involves Phi1."
+     end if
+     stop
+  end if
+
   if (magneticDriftScheme<0) then
      if (masterProc) then
         print *,"Error! magneticDriftScheme must be >= 0."

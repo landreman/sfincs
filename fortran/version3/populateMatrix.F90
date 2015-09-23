@@ -1035,6 +1035,59 @@
        end if
 
        ! *********************************************************
+       ! Add the radial ExB drive term:
+       ! (v_E dot grad psi) f_M [(1/n)(dn/dpsi) + (x^2 - 3/2)(1/T)(dT/dpsi)]
+       ! This is the new linear term considered by Garcia-Regana et al PPCF (2013).
+       ! *********************************************************
+
+       if ((whichMatrix .ne. 2) .and. includeRadialExBDrive) then
+          L=0
+          do ix = ixMin,Nx
+
+             ! d Phi_1 / d theta term:
+             itheta = -1 ! Just so a runtime error occurs if I use itheta by mistake
+             do ithetaRow = ithetaMin, ithetaMax
+                do izeta = izetaMin, izetaMax
+                   rowIndex = getIndex(ispecies, ix, L+1, ithetaRow, izeta, BLOCK_F)
+
+                   factor = -alpha*Delta*DHat(ithetaRow,izeta)*BHat_sub_zeta(ithetaRow,izeta) &
+                        /(two*BHat(ithetaRow,izeta)*BHat(ithetaRow,izeta)) &
+                        * nHat * (mHat*sqrtMHat)/(THat*sqrtTHat*pi*sqrtpi) * expx2(ix) & ! This line is f_M
+                        * (dNHatdpsiHats(ispecies)/nHat + (x2(ix)-3/two)*dTHatdpsiHats(ispecies)/THat)
+                   
+                   do ithetaCol = 1,Ntheta
+                      colIndex = getIndex(1,1,1,ithetaCol, izeta, BLOCK_QN)
+                      call MatSetValueSparse(matrix, rowIndex, colIndex,&
+                           factor*ddtheta(ithetaRow, ithetaCol), ADD_VALUES, ierr)
+                   end do
+                end do
+             end do
+
+             ! d Phi_1 / d zeta term:
+             izeta = -1 ! Just so a runtime error occurs if I use itheta by mistake
+             ithetaRow = -1 ! Just so a runtime error occurs if I use itheta by mistake
+             ithetaCol = -1 ! Just so a runtime error occurs if I use itheta by mistake
+             do itheta = ithetaMin, ithetaMax
+                do izetaRow = izetaMin, izetaMax
+                   rowIndex = getIndex(ispecies, ix, L+1, itheta, izetaRow, BLOCK_F)
+
+                   factor = alpha*Delta*DHat(ithetaRow,izeta)*BHat_sub_theta(ithetaRow,izeta) &
+                        /(two*BHat(ithetaRow,izeta)*BHat(ithetaRow,izeta)) &
+                        * nHat * (mHat*sqrtMHat)/(THat*sqrtTHat*pi*sqrtpi) * expx2(ix) & ! This line is f_M
+                        * (dNHatdpsiHats(ispecies)/nHat + (x2(ix)-3/two)*dTHatdpsiHats(ispecies)/THat)
+
+                   do izetaCol = 1,Nzeta
+                      colIndex = getIndex(1,1,1,itheta, izetaCol, BLOCK_QN)
+                      call MatSetValueSparse(matrix, rowIndex, colIndex,&
+                           factor*ddzeta(izetaRow, izetaCol), ADD_VALUES, ierr)
+                   end do
+                end do
+             end do
+
+          end do
+       end if
+
+       ! *********************************************************
        ! Add the nonlinear term in the residual, which also is
        ! the block in the Jacobian from d(kinetic eqn) / d f.
        ! *********************************************************
