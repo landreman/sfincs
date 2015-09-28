@@ -31,10 +31,12 @@ module solver
     integer :: userContext(1)
     Vec :: dummyVec
     Mat :: factorMat
-    PetscInt :: mumps_which_cntl
+    PetscInt :: mumps_which_cntl, mumps_icntl_14 = 50
     PetscReal :: mumps_value
     PetscReal :: atol, rtol, stol
     integer :: maxit, maxf
+    MatSolverPackage :: actualSolverPackage
+    PetscBool :: is_icntl_14_set
 
     external evaluateJacobian, evaluateResidual, diagnosticsMonitor
 
@@ -102,9 +104,6 @@ module solver
        select case (whichParallelSolverToFactorPreconditioner)
        case (1)
           call PCFactorSetMatSolverPackage(preconditionerContext, MATSOLVERMUMPS, ierr)
-          if (masterProc) then
-             print *,"We will use mumps to factorize the preconditioner."
-          end if
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
           ! The functions MatMumpsSetICNTL were introduced in PETSc 3.5.
           ! For earlier versions, we can achieve a similar result with the following hack:
@@ -112,9 +111,6 @@ module solver
 #endif
        case (2)
           call PCFactorSetMatSolverPackage(preconditionerContext, MATSOLVERSUPERLU_DIST, ierr)
-          if (masterProc) then
-             print *,"We will use superlu_dist to factorize the preconditioner."
-          end if
           ! Turn on superlu_dist diagnostic output:
           call PetscOptionsInsertString("-mat_superlu_dist_statprint", ierr)
        case default
@@ -193,9 +189,26 @@ module solver
 !!$       end if
 !!$    end if
 
+    ! If mumps ICNTL(14) was set via the command line, we need to clear it, or else
+    ! the auto-increase feature will not work.
+    call PetscOptionsGetInt(PETSC_NULL_CHARACTER,'-mat_mumps_icntl_14',mumps_icntl_14,is_icntl_14_set,ierr)
+    if (.not. is_icntl_14_set) then
+       ! Default:
+       mumps_icntl_14 = 50
+    else
+       call PetscOptionsClearValue('-mat_mumps_icntl_14',ierr)
+    end if
+
     call SNESSetFromOptions(mysnes, ierr)
 
-    if (isAParallelDirectSolverInstalled .and. (whichParallelSolverToFactorPreconditioner==1)) then
+    call PCFactorGetMatSolverPackage(preconditionerContext, actualSolverPackage, ierr)
+    if (masterProc) then
+       print *,"Solver package which will be used: ",actualSolverPackage
+    end if
+
+
+    !if (isAParallelDirectSolverInstalled .and. (whichParallelSolverToFactorPreconditioner==1)) then
+    if (actualSolverPackage == MATSOLVERMUMPS) then
        ! When mumps is the solver, it is very handy to set mumps's control parameter CNTL(1) to a number like 1e-6.
        ! CNTL(1) is a threshhold for pivoting. For the default value of 0.01, there is a lot of pivoting.
        ! This causes memory demands to increase beyond mumps's initial estimate, causing errors (INFO(1)=-9).
@@ -210,13 +223,24 @@ module solver
        ! These commands must be AFTER SNESSetFromOptions or else there is a seg fault.
        call PCFactorSetUpMatSolverPackage(preconditionerContext,ierr)
        call PCFactorGetMatrix(preconditionerContext,factorMat,ierr)
+
+       ! All options set below can be over-ridden by command-line arguments, even though
+       ! SNESSetFromOptions was called above rather than below.
+
        mumps_which_cntl = 1
        mumps_value = 1.e-6
        call MatMumpsSetCntl(factorMat,mumps_which_cntl,mumps_value,ierr)
 
-       ! Turn on mumps diagnostic output
+       ! Turn on mumps diagnostic output:
        mumps_which_cntl = 4
        call MatMumpsSetIcntl(factorMat,mumps_which_cntl,2,ierr)
+
+       if (numProcs>1) then
+          ! Turn on parallel ordering by default.
+          ! Only do this if >1 procs, to avoid confusing warning message otherwise.
+          mumps_which_cntl = 28
+          call MatMumpsSetIcntl(factorMat,mumps_which_cntl,2,ierr)
+       end if
 
        ! Increase amount by which the mumps work array can expand due to near-0 pivots.
        ! (The default value of icntl(14) is 25.)
@@ -224,7 +248,7 @@ module solver
        ! to prevent the mumps error with info(1)=-9.  There appears to be basically
        ! no significant cost in memory or time to increase this parameter.
        mumps_which_cntl = 14
-       call MatMumpsSetIcntl(factorMat,mumps_which_cntl,50,ierr)
+       call MatMumpsSetIcntl(factorMat,mumps_which_cntl,mumps_icntl_14,ierr)
 #endif
     end if
 
@@ -251,8 +275,33 @@ module solver
 
        call PetscTime(time1, ierr)
        if (solveSystem) then
-          ! All the magic happens in this next line!
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
+          ! No way to automatically control MUMPS for old versions of PETSC.
           call SNESSolve(mysnes,PETSC_NULL_OBJECT, solutionVec, ierr)
+#else
+          if (actualSolverPackage .ne. MATSOLVERMUMPS) then
+             ! Not using mumps
+             call SNESSolve(mysnes,PETSC_NULL_OBJECT, solutionVec, ierr)
+          else
+             ! Automatically increase MUMPS ICNTL(14) until the solver works.
+             do
+                call SNESSolve(mysnes,PETSC_NULL_OBJECT, solutionVec, ierr)
+                if (ierr==0) then
+                   ! Solve succeeded
+                   exit
+                end if
+                ! For now, assume all failures are due to MUMPS.  This might not always be true....
+                ! Try increasing the amount by which the mumps work array can expand due to near-0 pivots.
+                if (masterProc) then
+                   print *,"ierr=",ierr
+                   print *,"Solve failed, so doubling MUMPS icntl(14), which had been ",mumps_icntl_14
+                end if
+                mumps_icntl_14 = mumps_icntl_14 * 2
+                ierr = 0
+                call MatMumpsSetIcntl(factorMat,mumps_which_cntl,mumps_icntl_14,ierr)
+             end do
+          end if
+#endif
        end if
 
        call PetscTime(time2, ierr)
