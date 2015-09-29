@@ -115,6 +115,7 @@ For more details about the behavior of \parlink{inputRadialCoordinate}, \parlink
 see section \ref{sec:geometryParameters}.
 
 \section{Trajectory models}
+\label{sec:trajectoryModels}
 
 As discussed in \cite{sfincsPaper},
 one of the capabilities of \sfincs~is to compare various models for the terms in the kinetic equation involving $E_r$.
@@ -150,6 +151,7 @@ There is not a significant difference in computational cost between these models
 
 
 \section{Quasineutrality and variation of the electrostatic potential on the flux surface}
+\label{sec:qn}
 
 One choice you should consider in setting up a computation is whether or not
 to include variation on the flux surface of the electrostatic potential, $\Phi_1(\theta,\zeta)$.
@@ -174,6 +176,7 @@ using \sfincs~to model an experiment, and set \parlink{includePhi1} = \false~whe
 comparing \sfincs~with analytic theory or with another code that does not include $\Phi_1$.
 
 \section{Poloidal and toroidal magnetic drifts}
+\label{sec:magneticDrifts}
 
 You can choose to either include or not include the poloidal and toroidal magnetic drifts.
 These drifts are turned off by default.  To turn them on, all you need to do is

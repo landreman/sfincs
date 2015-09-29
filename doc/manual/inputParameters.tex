@@ -720,8 +720,10 @@ You should set {\ttfamily constraintScheme} to -1 unless you know what you are d
 {Whenever \parlink{RHSMode} $<3$ and the radial electric field is nonzero.}
 {Whether or not to include the term in the kinetic equation corresponding to a change
 in speed proportional to the radial electric field.  This term is given by $\dot{x}$ in
-equation (17) of \cite{sfincsPaper}.}
-
+equation (17) of \cite{sfincsPaper}:}
+\begin{equation}
+-(\vect{v}_{ma} \cdot\nabla r) \frac{Z_s e}{2 T_s x_s} \frac{d\Phi_0}{dr} \frac{\partial f_{a1}}{\partial x_s}
+\end{equation}
 \myhrule
 
 \param{includeElectricFieldTermInXiDot}
@@ -730,7 +732,11 @@ equation (17) of \cite{sfincsPaper}.}
 {Whenever \parlink{RHSMode} $<3$ and the radial electric field is nonzero.}
 {Whether or not to include the term in the kinetic equation corresponding to a change
 in pitch angle $\xi$ proportional to the radial electric field.  This term is given by the last line of
-equation (17) of \cite{sfincsPaper}.}
+equation (17) of \cite{sfincsPaper}:}
+\begin{equation}
+\frac{(1-\xi^2)\xi}{2B^3} \frac{d\Phi_0}{dr}(\vect{B}\times\nabla r\cdot\nabla B)
+ \frac{\partial f_{s1}}{\partial \xi}
+\end{equation}
 
 \myhrule
 
@@ -1144,15 +1150,15 @@ For large (high resolution) problems, the iterative solver will usually be faste
 
 \myhrule
 
-\param{PESCPreallocationStrategy}
+\param{PETSCPreallocationStrategy}
 {integer}
 {1}
 {Always}
 {This setting changes the estimated number of nonzeros (nnz) used for allocating memory for the system matrix and preconditioner.\\
 
-{\ttfamily PESCPreallocationStrategy} = 0: Old method with high estimated nnz. This method involves relatively simpler code but uses WAY more memory than necessary.\\
+{\ttfamily PETSCPreallocationStrategy} = 0: Old method with high estimated nnz. This method involves relatively simpler code but uses WAY more memory than necessary.\\
 
-{\ttfamily PESCPreallocationStrategy} = 1: New method with lower, more precise estimated nnz.  This method should use much less memory.\\
+{\ttfamily PETSCPreallocationStrategy} = 1: New method with lower, more precise estimated nnz.  This method should use much less memory.\\
 
 Use {\ttfamily PETSCPreallocationStrategy} = 1 unless you know what you are doing.}
 
