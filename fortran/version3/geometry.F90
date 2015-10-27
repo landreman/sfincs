@@ -898,19 +898,29 @@ contains
     end do
     
     if (any(.not. BHarmonics_parity)) then !sine components exist
-       do m = 0,int(Ntheta/2.0-1) !Nyquist max freq.
+       do m = 0,int(Ntheta/2.0) !Nyquist max freq.
           if (m == 0) then
              startn=1
+          else if (real(m)==Ntheta/2.0)) then
+             startn=0
+          else if real(int(Nzeta/2.0))==Nzeta/2.0 then
+             startn=-int(Nzeta/2.0)+1
           else
              startn=-int(Nzeta/2.0)
           end if
-          stopn=int(Nzeta/2.0-1)
+          stopn=int(Nzeta/2.0)
           do n = startn,stopn 
              !cos
              hHatHarmonics_amplitude = 0
              do itheta = 1,Ntheta
-                hHatHarmonics_amplitude = hHatHarmonics_amplitude + 2.0/(Ntheta*Nzeta) * &
-                     dot_product(cos(m * theta(itheta)  - n * NPeriods * zeta), hHat(itheta,:))
+                if ((m == 0 .and. real(n)==Nzeta/2.0) .or. (real(m)==Ntheta/2.0 .and. n==0) .or. &
+                     (real(m)==Ntheta/2.0 .and. real(n)==Nzeta/2.0)) then
+                   hHatHarmonics_amplitude = hHatHarmonics_amplitude + 2.0/(Ntheta*Nzeta) * &
+                        dot_product(cos(m * theta(itheta)  - n * NPeriods * zeta), hHat(itheta,:))
+                else
+                   hHatHarmonics_amplitude = hHatHarmonics_amplitude + 2.0/(Ntheta*Nzeta) * &
+                        dot_product(cos(m * theta(itheta)  - n * NPeriods * zeta), hHat(itheta,:))
+                end if
              end do
              uHatHarmonics_amplitude = &
                   iota*(GHat*m + IHat*n * NPeriods)/(n * NPeriods - iota*m) * hHatHarmonics_amplitude
@@ -942,7 +952,7 @@ contains
           end do
        end do
     else !only cosinus components
-       do m = 0,int(Ntheta/2.0-1) !Nyquist max freq.
+       do m = 0,int(Ntheta/2.0) !Nyquist max freq.
           if (m == 0) then
              startn=1
           else
