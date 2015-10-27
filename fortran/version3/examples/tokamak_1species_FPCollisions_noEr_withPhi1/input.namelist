@@ -65,6 +65,7 @@
   useDKESExBDrift = .false.
 
   includePhi1 = .true.
+  includeRadialExBDrive = .f.
   nonlinear = .false.
 /
 

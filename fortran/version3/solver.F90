@@ -261,11 +261,11 @@ module solver
        end if
        call PetscTime(time1, ierr)
 
-       if (useIterativeLinearSolver) then
+       if (nonlinear) then
           call SNESGetConvergedReason(mysnes, reason, ierr)
           if (reason>0) then
              if (masterProc) then
-                print *,"Converged!  SNESConvergedReason = ", reason
+                print *,"Nonlinear iteration (SNES) converged!  SNESConvergedReason = ", reason
                 select case (reason)
                 case (2)
                    print *,"  SNES_CONVERGED_FNORM_ABS: ||F|| < atol"
@@ -282,7 +282,7 @@ module solver
              didNonlinearCalculationConverge = integerToRepresentTrue
           else
              if (masterProc) then
-                print *,"Did not converge :(   SNESConvergedReason = ", reason
+                print *,"Nonlinear iteration (SNES) did not converge :(   SNESConvergedReason = ", reason
                 select case (reason)
                 case (-1)
                    print *,"  SNES_DIVERGED_FUNCTION_DOMAIN: The new x location passed the function is not in the domain of F"
@@ -427,22 +427,7 @@ module solver
           end if
           call PetscTime(time1, ierr)
 
-          if (useIterativeLinearSolver) then
-             call KSPGetConvergedReason(KSPInstance, KSPReason, ierr)
-             if (KSPReason>0) then
-                if (masterProc) then
-                   print *,"Converged!  KSPConvergedReason = ", KSPReason
-                end if
-                didNonlinearCalculationConverge = integerToRepresentTrue
-             else
-                if (masterProc) then
-                   print *,"Did not converge :(   KSPConvergedReason = ", KSPReason
-                end if
-                didNonlinearCalculationConverge = integerToRepresentFalse
-             end if
-          else
-             didNonlinearCalculationConverge = integerToRepresentTrue
-          end if
+          call checkIfKSPConverged(KSPInstance)
 
           ! Compute flows, fluxes, etc.:
           call diagnostics(solutionVec, whichRHS)

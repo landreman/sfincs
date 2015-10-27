@@ -649,7 +649,9 @@ contains
 
        BHarmonics_amplitudes = BHarmonics_amplitudes / B0OverBBar
 
-       if (GHat*psiAHat<0) then
+       if (GHat*psiAHat>0) then
+          !Note that GHat and psiAHat already have the opposite sign to the corresponding quantities in the .bc file
+          !Therefore, the flip is performed if they have the same sign here.
           !print *,"This is a stellarator symmetric file from Joachim Geiger. It will now be turned 180 degrees around a horizontal axis <=> flip the sign of G and I, so that it matches the sign of its total toroidal flux."
           GHat=-GHat
           IHat=-IHat

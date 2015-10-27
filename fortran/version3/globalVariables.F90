@@ -102,6 +102,7 @@ module globalVariables
   logical :: include_fDivVE_term = .false.
   logical :: includeTemperatureEquilibrationTerm = .false.
   logical :: includePhi1 = .false.
+  logical :: includeRadialExBDrive = .false.
 
   PetscScalar :: nuPrime = 1, EStar = 0
 
