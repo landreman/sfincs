@@ -288,7 +288,7 @@ contains
     integer, dimension(:), allocatable :: BHarmonics_l, BHarmonics_n
     PetscScalar, dimension(:), allocatable :: BHarmonics_amplitudes
     logical, dimension(:), allocatable :: BHarmonics_parity
-    PetscScalar, dimension(:,:), allocatable :: hHat, uHat, duHatdtheta, duHatdzeta
+    PetscScalar, dimension(:,:), allocatable :: hHat, duHatdtheta, duHatdzeta
     PetscScalar :: R0
     
     integer :: fileUnit, didFileAccessWork
@@ -884,7 +884,6 @@ contains
     ! \nabla_\parallel u = (2/B^4) \nabla B \times \vector{B} \cdot \iota \nabla \psi 
     ! ---------------------------------------------------------------------------------------
     allocate(hHat(Ntheta,Nzeta))
-    allocate(uHat(Ntheta,Nzeta))
     allocate(duHatdtheta(Ntheta,Nzeta))
     allocate(duHatdzeta(Ntheta,Nzeta))
     

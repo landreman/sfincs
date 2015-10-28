@@ -207,6 +207,8 @@ contains
        call writeHDF5Field("dBHatdzeta", dBHatdzeta, dspaceIDForThetaZeta, dimForThetaZeta, "")
        call writeHDF5Field("BDotCurlB", BDotCurlB, dspaceIDForThetaZeta, dimForThetaZeta, &
             "\vect{B}\cdot\nabla\times\vect{B}, in units of BBar^2 / RBar")
+       call writeHDF5Field("uHat", uHat, dspaceIDForThetaZeta, dimForThetaZeta, &
+            "\nabla_\parallel u = (2/B^4)\nabla B\times\vector{B}\cdot\iota\nabla\psi")
 
        call writeHDF5Field("BHat_sub_psi", BHat_sub_psi, dspaceIDForThetaZeta, dimForThetaZeta, &
             "Covariant component of B, the component that multiplies grad psi, in units of 1 / RBar")
@@ -440,6 +442,9 @@ contains
             ARRAY_ITERATION_SPECIES_THETA_ZETA, "")
 
        call writeHDF5ExtensibleField(iterationNum, "pressurePerturbation", pressurePerturbation, &
+            ARRAY_ITERATION_SPECIES_THETA_ZETA, "")
+
+       call writeHDF5ExtensibleField(iterationNum, "pressureAnisotropy", pressureAnisotropy, &
             ARRAY_ITERATION_SPECIES_THETA_ZETA, "")
 
        call writeHDF5ExtensibleField(iterationNum, "totalPressure", totalPressure, &
