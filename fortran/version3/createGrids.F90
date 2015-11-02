@@ -1051,6 +1051,7 @@
 
     allocate(BHat(Ntheta,Nzeta))
     allocate(BDotCurlB(Ntheta,Nzeta))
+    allocate(uHat(Ntheta,Nzeta))
     allocate(dBHatdtheta(Ntheta,Nzeta))
     allocate(dBHatdzeta(Ntheta,Nzeta))
     allocate(dBHatdpsiHat(Ntheta,Nzeta))
@@ -1201,6 +1202,7 @@
     allocate(velocityUsingTotalDensity(Nspecies,Ntheta,Nzeta))
     allocate(MachUsingFSAThermalSpeed(Nspecies,Ntheta,Nzeta))
     allocate(pressurePerturbation(Nspecies,Ntheta,Nzeta))
+    allocate(pressureAnisotropy(Nspecies,Ntheta,Nzeta))
     allocate(totalPressure(Nspecies,Ntheta,Nzeta))
 
     allocate(particleFluxBeforeSurfaceIntegral_vm0(Nspecies,Ntheta,Nzeta))
