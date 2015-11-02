@@ -302,7 +302,7 @@ contains
     integer :: no_of_modes_old, no_of_modes_new, modeind, numB0s, startn, stopn
     PetscScalar :: iota_old, iota_new, G_old, G_new, I_old, I_new
     PetscScalar :: pPrimeHat, pPrimeHat_old, pPrimeHat_new, invFSA_BHat2
-    logical :: end_of_file, proceed
+    logical :: end_of_file, proceed, include_mn
     integer, parameter :: max_no_of_modes = 10000
     integer, dimension(max_no_of_modes) :: modesm_old, modesm_new, modesn_old, modesn_new
     PetscScalar, dimension(max_no_of_modes) :: modesb_old, modesb_new
@@ -854,29 +854,41 @@ contains
 
     do i = 1, NHarmonics
        if (BHarmonics_parity(i)) then   ! The cosine components of BHat
-          do itheta = 1,Ntheta
-             BHat(itheta,:) = BHat(itheta,:) + B0OverBBar * BHarmonics_amplitudes(i) * &
-                  cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-
-             dBHatdtheta(itheta,:) = dBHatdtheta(itheta,:) - B0OverBBar * BHarmonics_amplitudes(i) * BHarmonics_l(i) * &
-                  sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-
-             dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) + B0OverBBar * BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
-                  sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-
-          end do
+          include_mn=.false.
+          if ((abs(BHarmonics_n(i))<int(Nzeta/2.0)).and.(BHarmonics_l(i)<int(Nzeta/2.0))) then
+             include_mn=.true.
+          end if
+          if (include_mn) then
+             do itheta = 1,Ntheta
+                BHat(itheta,:) = BHat(itheta,:) + B0OverBBar * BHarmonics_amplitudes(i) * &
+                     cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                
+                dBHatdtheta(itheta,:) = dBHatdtheta(itheta,:) - B0OverBBar * BHarmonics_amplitudes(i) * BHarmonics_l(i) * &
+                     sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                
+                dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) + B0OverBBar * BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
+                     sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                
+             end do
+          end if
        else  ! The sine components of BHat
-          do itheta = 1,Ntheta
-             BHat(itheta,:) = BHat(itheta,:) + B0OverBBar * BHarmonics_amplitudes(i) * &
-                  sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+          include_mn=.false.
+          if ((abs(BHarmonics_n(i))<int(Nzeta/2.0)).and.(BHarmonics_l(i)<int(Nzeta/2.0))) then
+             include_mn=.true.
+          end if
+          if (include_mn) then
+             do itheta = 1,Ntheta
+                BHat(itheta,:) = BHat(itheta,:) + B0OverBBar * BHarmonics_amplitudes(i) * &
+                     sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
 
-             dBHatdtheta(itheta,:) = dBHatdtheta(itheta,:) + B0OverBBar * BHarmonics_amplitudes(i) * BHarmonics_l(i) * &
-                  cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                dBHatdtheta(itheta,:) = dBHatdtheta(itheta,:) + B0OverBBar * BHarmonics_amplitudes(i) * BHarmonics_l(i) * &
+                     cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
 
-             dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) - B0OverBBar * BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
-                  cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) - B0OverBBar * BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
+                     cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
 
-          end do
+             end do
+          end if
        end if
     end do
     ! ---------------------------------------------------------------------------------------
