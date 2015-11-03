@@ -854,11 +854,7 @@ contains
 
     do i = 1, NHarmonics
        if (BHarmonics_parity(i)) then   ! The cosine components of BHat
-          include_mn=.false.
-          if ((abs(BHarmonics_n(i))<int(Nzeta/2.0)).and.(BHarmonics_l(i)<int(Nzeta/2.0))) then
-             include_mn=.true.
-          end if
-          if (include_mn) then
+          if ((abs(BHarmonics_n(i))<=int(Nzeta/2.0)).and.(BHarmonics_l(i)<=int(Nzeta/2.0))) then
              do itheta = 1,Ntheta
                 BHat(itheta,:) = BHat(itheta,:) + B0OverBBar * BHarmonics_amplitudes(i) * &
                      cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
@@ -873,8 +869,13 @@ contains
           end if
        else  ! The sine components of BHat
           include_mn=.false.
-          if ((abs(BHarmonics_n(i))<int(Nzeta/2.0)).and.(BHarmonics_l(i)<int(Nzeta/2.0))) then
+          if ((abs(BHarmonics_n(i))<=int(Nzeta/2.0)).and.(BHarmonics_l(i)<=int(Nzeta/2.0))) then
              include_mn=.true.
+          end if
+          if (BHarmonics_l(i)==0 .or. real(BHarmonics_l(i))==Ntheta/2.0) then
+             if (BHarmonics_n(i)==0 .or. abs(real(BHarmonics_n(i)))==Nzeta/2.0 ) then
+                include_mn=.false.
+             end if
           end if
           if (include_mn) then
              do itheta = 1,Ntheta
