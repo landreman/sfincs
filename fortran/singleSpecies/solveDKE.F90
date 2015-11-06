@@ -49,7 +49,7 @@
 
     implicit none
 
-    PetscErrorCode :: ierr
+    PetscErrorCode :: ierr, ierr2
     Vec :: rhs, soln, solnOnProc0
     integer :: whichRHS
     Mat :: matrix, preconditionerMatrix
@@ -158,6 +158,7 @@
     sqrtTHat = sqrt(THat)
 
     transportMatrix = 0
+    transportCoeffs = 0
     NTVMatrix = 0
 
     ! *******************************************************************************
@@ -288,8 +289,13 @@
 
     allocate(x(Nx))
     allocate(xWeights(Nx))
-    call makeXGrid(Nx, x, xWeights)
-    xWeights = xWeights / exp(-x*x)
+    if (Nx==1) then  !Mono-energetic calculation
+       xWeights = exp(1.0)
+       x=1.0
+    else
+       call makeXGrid(Nx, x, xWeights)
+       xWeights = xWeights / exp(-x*x)
+    end if
     xMaxNotTooSmall = max(x(Nx), xMax)
     allocate(x2(Nx))
     x2=x*x
@@ -298,9 +304,16 @@
     allocate(d2dx2(Nx,Nx))
     allocate(ddxPreconditioner(Nx,Nx))
     allocate(ddxToUse(Nx,Nx))
-    call makeXPolynomialDiffMatrices(x,ddx,d2dx2)
+    if (Nx==1) then  !Mono-energetic calculation
+       ddx = 0
+       d2dx2 = 0
+       NxPotentials = 1
+    else
+       call makeXPolynomialDiffMatrices(x,ddx,d2dx2)
+       NxPotentials = ceiling(xMaxNotTooSmall*NxPotentialsPerVth)
+    end if
 
-    NxPotentials = ceiling(xMaxNotTooSmall*NxPotentialsPerVth)
+ 
 
 
 
@@ -308,14 +321,25 @@
     allocate(xWeightsPotentials(NxPotentials))
     allocate(ddxPotentials(NxPotentials, NxPotentials))
     allocate(d2dx2Potentials(NxPotentials, NxPotentials))
-    call uniformDiffMatrices(NxPotentials, zero, xMaxNotTooSmall, 12, xPotentials, &
-         xWeightsPotentials, ddxPotentials, d2dx2Potentials)
-
+    if (Nx==1) then  !Mono-energetic calculation
+       xPotentials = 0
+       xWeightsPotentials = 0
+       ddxPotentials = 0
+       d2dx2Potentials = 0
+    else
+       call uniformDiffMatrices(NxPotentials, zero, xMaxNotTooSmall, 12, xPotentials, &
+            xWeightsPotentials, ddxPotentials, d2dx2Potentials)
+    end if
     allocate(regridPolynomialToUniform(NxPotentials, Nx))
-    call polynomialInterpolationMatrix(Nx, NxPotentials, x, xPotentials, &
-         exp(-x*x), exp(-xPotentials*xPotentials), regridPolynomialToUniform)
     allocate(regridUniformToPolynomial(Nx,NxPotentials))
-    call interpolationMatrix(NxPotentials, Nx, xPotentials, x, regridUniformToPolynomial, -1, 0)
+    if (Nx==1) then  !Mono-energetic calculation
+       regridPolynomialToUniform = 0
+       regridUniformToPolynomial = 0
+    else
+       call polynomialInterpolationMatrix(Nx, NxPotentials, x, xPotentials, &
+            exp(-x*x), exp(-xPotentials*xPotentials), regridPolynomialToUniform)
+       call interpolationMatrix(NxPotentials, Nx, xPotentials, x, regridUniformToPolynomial, -1, 0)
+    end if
 
     ! We need to evaluate the error function on the x grid.
     ! Some Fortran compilers have this function built in.
@@ -454,10 +478,10 @@
     case (0)
     case (1)
        ! The rows for the constraints have more nonzeros:
-       predictedNNZsForEachRow((Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta*Nx
+       predictedNNZsForEachRow((Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta*Nx + 1
     case (2)
        ! The rows for the constraints have more nonzeros:
-       predictedNNZsForEachRow((Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta
+       predictedNNZsForEachRow((Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta + 1
     case default
     end select
     predictedNNZsForEachRowDiagonal = predictedNNZsForEachRow
@@ -541,6 +565,16 @@
        !call MatSetOption(matrix, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE, ierr)
 
        CHKERRQ(ierr)
+
+       ! Sometimes PETSc's sparse direct solver, which is used only when running with 1 proc,
+       ! fails with a zero-pivot error (which mumps and superlu_dist do not do.)
+       ! To avoid this error, shift the diagonal for the constraint rows:
+       if (numProcsInSubComm .eq. 1 .and. whichMatrix==0) then
+          temp1 = 1d+0
+          do i = Ntheta*Nzeta*Nx*Nxi,matrixSize-1
+             call MatSetValue(matrix,i,i,temp1,ADD_VALUES,ierr)
+          end do
+       end if
 
        ! *********************************************************
        ! Select appropriate differentiation matrices depending on
@@ -1316,7 +1350,31 @@
        call PetscTime(time1, ierr)
 
        call MatAssemblyBegin(matrix, MAT_FINAL_ASSEMBLY, ierr)
+       if (ierr/=0) then
+         print *,"[",myCommunicatorIndex,"] after MatAssemblyBegin: ierr=",ierr
+       end if
+       if ((masterProcInSubComm).and.(ierr/=0)) then
+          call PetscTime(time2, ierr2)
+          if (whichMatrix==0) then
+             print *,"[",myCommunicatorIndex,"] Time to fail to MatAssemblyBegin preconditioner matrices: ", time2-time1, " seconds."
+          else
+             print *,"[",myCommunicatorIndex,"] Time to fail to MatAssemblyBegin matrices: ", time2-time1, " seconds."
+          end if
+       end if
+       CHKERRQ(ierr)
+
        call MatAssemblyEnd(matrix, MAT_FINAL_ASSEMBLY, ierr)
+       if (ierr/=0) then
+         print *,"[",myCommunicatorIndex,"] after MatAssemblyEnd: ierr=",ierr
+       end if
+       if ((masterProcInSubComm).and.(ierr/=0)) then
+          call PetscTime(time2, ierr2)
+          if (whichMatrix==0) then
+             print *,"[",myCommunicatorIndex,"] Time to fail to MatAssemblyEnd preconditioner matrices: ", time2-time1, " seconds."
+          else
+             print *,"[",myCommunicatorIndex,"] Time to fail to MatAssemblyEnd matrices: ", time2-time1, " seconds."
+          end if
+       end if
        CHKERRQ(ierr)
 
        if (whichMatrix==0) then
@@ -1494,6 +1552,8 @@
        numRHSs = 1
     case (2)
        numRHSs = 3
+    case (3)
+       numRHSs = 2
     case default
        print *,"Error! Invalid setting for RHSMode."
        stop
@@ -1535,6 +1595,22 @@
              dTHatdpsiToUse = 1
              EHatToUse = 0
           case (3)
+             dnHatdpsiToUse = 0
+             dTHatdpsiToUse = 0
+             EHatToUse = 1
+          case default
+             print *,"Program should not get here"
+             stop
+          end select
+       case (3)
+          ! Solve for 2 linearly independent right-hand sides to get the 2x2 mono-energetic transport coefficients:
+          dPhiHatdpsiToUse = 0
+          select case (whichRHS)
+          case (1)
+             dnHatdpsiToUse = 1
+             dTHatdpsiToUse = 0
+             EHatToUse = 0
+          case (2)
              dnHatdpsiToUse = 0
              dTHatdpsiToUse = 0
              EHatToUse = 1
@@ -1749,8 +1825,8 @@
                      + factor * (four/15) * heatFluxFactor &
                      * dot_product(xWeights, heatFluxIntegralWeights * solnArray(indices))
 
-                NTVBeforeSurfaceIntegral(itheta,izeta) =  &
-                      NTVFactor * NTVKernel(itheta,izeta) &
+                NTVBeforeSurfaceIntegral(itheta,izeta) =  NTVBeforeSurfaceIntegral(itheta,izeta) &
+                      + NTVFactor * NTVKernel(itheta,izeta) &
                       * dot_product(xWeights, NTVIntegralWeights * solnArray(indices))
              end do
           end do
@@ -1836,6 +1912,16 @@
                 transportMatrix(2,3) = 2*Delta*Delta*heatFlux*FSABHat2/(GHat*VPrimeHatWithG*psiAHat*THat*omega)
                 transportMatrix(3,3) = FSAFlow*Delta*Delta*sqrtTHat*FSABHat2/((GHat+iota*IHat)*2*psiAHat*omega*B0OverBBar)
                 NTVMatrix(3)         =     NTV     *Delta*Delta*FSABHat2/(VPrimeHatWithG*GHat*psiAHat*omega)
+             end select
+          elseif (RHSMode==3) then
+             VPrimeHatWithG = VPrimeHat*(GHat+iota*IHat)
+             select case (whichRHS)
+             case (1)
+                transportCoeffs(1,1) = 4*(GHat+iota*IHat)*particleFlux*nHat*B0OverBBar/(GHat*VPrimeHatWithG*(THat*sqrtTHat)*GHat)
+                transportCoeffs(2,1) = 2*nHat*FSAFlow/(GHat*THat)
+             case (2)
+                transportCoeffs(1,2) = particleFlux*Delta*Delta*FSABHat2/(VPrimeHatWithG*GHat*psiAHat*omega)
+                transportCoeffs(2,2) = FSAFlow*Delta*Delta*sqrtTHat*FSABHat2/((GHat+iota*IHat)*2*psiAHat*omega*B0OverBBar)
              end select
           end if
 

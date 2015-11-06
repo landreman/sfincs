@@ -1,0 +1,179 @@
+\chapter{Overview}
+
+
+The \sfincs~code is a freely available, open-source tool for solving neoclassical-type kinetic problems in nonaxisymmetric or axisymmetric plasmas
+with nested toroidal flux surfaces.
+As with other neoclassical codes, the input information used by \sfincs~is the equilibrium magnetic geometry together with the density, radial density gradient, temperature,
+and radial temperature gradient of each species.  The code then solves a drift-kinetic equation for each species,
+yielding the (gyro-angle averaged) distribution function.  Moments of the distribution function are computed such as the parallel
+flow, bootstrap current, radial particle flux, radial heat flux, and variation of the density over a flux surface.  
+These moments are all saved in the output file, and if you wish, you can also save the distribution function itself.
+Optionally, a quasi-neutrality
+equation can be solved at the same time as the drift-kinetic equations, yielding the self-consistent variation of the electrostatic potential on a flux surface.
+
+The kinetic equations solved in \sfincs~have four independent variables: poloidal angle $\theta$, toroidal angle $\zeta$,
+normalized speed $x = v / v_{thermal}$, and pitch angle $\xi = v_{||}/v$.  The third velocity coordinate (gyro-angle) does not appear
+since gyro-averaged equations are solved.  The flux surface label (radius) coordinate is only a parameter, rather than a full independent variable,
+since a radially local approximation is made.
+
+This document discusses the practical use and operation of the code.  For more details about the specific equations implemented,
+see the version 3 technical documentation available in the \path{sfincs/docs} directory.
+Ref \cite{sfincsPaper} gives many details and some early physics results.
+
+Often, the limiting factor for \sfincs~is the ability of the libraries \mumps~or \superludist~to factorize the preconditioner matrix, discussed in section \ref{sec:gmres}.
+You may therefore find it useful to see the control parameters and error codes in the \mumps~user manual:
+\url{http://mumps.enseeiht.fr/doc/userguide_5.0.0.pdf}.
+
+This manual describes ``version 3'' of \sfincs.  
+To preserve previous versions of the code that have been used for publications, two older versions of the
+code called singleSpecies and multiSpecies are also present in the repository.  
+For all versions, both MATLAB and fortran editions exist which are independent of each other.
+The MATLAB editions exist primarily for debugging the fortran editions.
+The same algorithms are implemented in the two different languages, and for identical input parameters, 
+the matrices and output quantities from the different editions should agree to several significant digits (roughly within the solver tolerance.)
+Any significant differences between the matrices and output of the MATLAB and fortran editions can be used to identify a bug.
+The MATLAB versions are serial whereas the fortran versions
+are parallelized, so the fortran versions are significantly faster and can access much more memory.
+For realistic experimental geometry and collisionality, the resolution (and hence memory) requirements will mean
+you will need to use the fortran edition.
+
+\section{Features}
+
+\begin{itemize}
+
+\item
+Both self-species and inter-species collisions are treated using the most accurate linear operator available, the full linearized Fokker-Planck collision operator,
+with no approximation of the field-particle term or expansion in mass ratio.  This collision operator conserves mass, momentum, and energy.
+
+\item
+Realistic experimental geometry can be simulated using an interface to \vmec.  Analytic model equilibria can also be used.
+
+\item
+Full coupling in the speed (or equivalently, kinetic energy) coordinate is retained, i.e. no monoenergetic approximation is made.  However,
+if desired, \sfincs~can also be run in monoenergetic mode to compare with older codes.
+
+\item
+The code is formulated to permit solution of a wide variety of kinetic equations, whether or not phase space volume and/or energy are conserved, so individual terms can be turned on or off to examine their effect. 
+
+\item
+A variety of models for terms involving the radial electric field are available to allow comparison between models. 
+
+\item
+You can choose to include or not include the poloidal and toroidal magnetic drifts in the kinetic equation.
+
+\item
+The code takes advantage of modern algorithms (GMRES) and parallelized libraries (\PETSc, \superludist, and \mumps).
+
+\item
+Efficient representation of velocity space is achieved using a pseudospectral method based upon non-classical orthogonal polynomials. \cite{speedGrids}
+
+\item
+The electrostatic potential can either be taken to be constant or non-constant on a flux surface.
+
+\item
+Optional nonlinear terms in the kinetic equation (involving both the non-Maxwellian distribution function and poloidal/toroidal electric field) can be included using Newton's method. 
+
+\end{itemize}
+
+\section{Limitations}
+
+\begin{itemize}
+
+\item
+The \sfincs~code is radially local, in the sense that it approximates 
+the radial derivative of the distribution function $\partial f/\partial \psi$ by
+the derivative of a Maxwellian flux function $\partial f_M(\psi,x)/\partial \psi$.
+This approximation is important for reducing the otherwise 5D space of independent variables $(\psi,\theta,\zeta,x,\xi)$
+to a 4D space $(\theta,\zeta,x,\xi)$.
+As a result, \sfincs~cannot compute certain finite-orbit-width effects that occur when the radial extent of the particle orbits
+between bounces or transits is not small compared to the scale of radial variation in the equilibrium.
+Such finite orbit width effects are significant near the magnetic axis, and in strong transport barriers, such as the pedestal of a tokamak H-mode.
+
+\item
+Turbulence is neglected.  There are good theoretical reasons to expect that the neoclassical effects computed by \sfincs~should
+decouple from turbulence, as detailed in \cite{AbelReview}.  However, this argument relies on an expansion in $\rho_* \ll 1$, and so may break down
+in some circumstances when $\rho_*$ is not sufficiently small.
+
+\item
+It is assumed that nested toroidal magnetic surfaces exist. Thus, the code cannot accurately model regions of stochastic field,
+magnetic islands, or open field lines.
+
+\end{itemize}
+
+\section{Geometry options}
+In \sfincs, a variety of options are available for the magnetic field geometry.  The geometry can be read directly
+from a {\ttfamily vmec wout}
+file, or from the {\ttfamily .bc} format Boozer-coordinate data files used at the Max Planck Institute for Plasma Physics (IPP).
+A general analytic model for the magnetic field is also available, given by equation (\ref{eq:Bmodel}),
+as are several analytic models for LHD and W7-X in which 3 or 4 Fourier components are retained.
+The primary switch for controlling the magnetic geometry in \sfincs~is the \parlink{geometryScheme} parameter
+in the {\ttfamily \hyperref[sec:geometryParameters]{geometryParameters}} input namelist.
+For more details about geometry options in \sfincs, see section \ref{sec:geometryParameters}.
+
+\section{GMRES/KSP and preconditioning}
+\label{sec:gmres}
+
+At its heart, \sfincs~solves one or more large sparse linear systems $Ax=b$.  Here $b$ is a known right-hand side vector,
+$A$ is a large (often millions $\times$ millions) known sparse matrix, and $x$ is the desired and unknown solution vector.
+The direct way to solve such systems is to $LU$-factorize
+the matrix $A$ into lower- and upper-triangular factors.
+Once the $L$ and $U$ factors are found, the solution of the linear system
+for any right-hand side vector can be rapidly obtained.  However, even if the original matrix is sparse, the $L$ and $U$ factors
+are generally not sparse, and so a very large amount of memory can be required for a direct $LU$-factorization.
+
+An alternative way to solve
+such large linear systems is with a so-called ``Krylov-space'' iterative method, which can dramatically reduce the memory required
+compared to a direct solution.  For the non-symmetric matrices that arise in \sfincs, the preferred Krylov-space
+algorithm is called GMRES (Generalized Minimal RESidual.)  In \sfincs, the \PETSc~library is used to solve the large systems
+of equations. \PETSc~calls its family of linear solvers KSP, so in the output of \sfincs~you will see a ``KSP residual'' reported
+as GMRES iterates towards the solution.
+
+An important element of Krylov methods is preconditioning.  The art of preconditioning is to find a linear operator which has similar eigenvalues
+to the ``true'' matrix you would like to invert (or more precisely, to $LU$-factorize), but which can be inverted faster.
+If a good preconditioner can be found, the number of GMRES iterations is greatly reduced.  Many schemes for preconditioning exist,
+but the version adopted in \sfincs~is to explicity form and $LU$-factorize a preconditioning matrix which is similar
+to the true matrix (but somewhat simpler).  There is a basic trade-off:
+the more similar the preconditioner matrix is to the true matrix, the fewer iterations will be required, but the more time will
+be required to $LU$-factorize the preconditioning operator.  The usual preconditioner matrix in \sfincs~is obtained by dropping all coupling
+between grid points in the speed coordinate and dropping coupling between species.  The preconditioner matrix need not be a physically
+accurate or meaningful operator; as long as GMRES converges, the solution obtained will be independent of the preconditioner to whatever tolerance is specified.
+
+\section{\sfincs~vs. \sfincsScan}
+The core fortran part of \sfincs~solves the kinetic equation for each species
+at a single flux surface, a single value of $E_r$, and a single set of other parameters.
+However, often the goal is to determine the ambipolar $E_r$ at one or more surfaces, or to scan some other parameter.
+For this task, the \sfincsScan~family of \python~scripts is available.
+Using these scripts, it is also possible to scan other variables in the input file,
+and in particular, to scan the resolution parameters to ensure
+the physical output quantities are numerically converged.
+For a full list of the types of scans available, see section \ref{sec:sfincsScanParams}
+
+\section{Input and Output}
+
+The input parameters for a \sfincs~computation are specified in a file named {\ttfamily input.namelist}.
+This file contains both information for the fortran part of \sfincs~(in standard fortran namelist format),
+as well as special lines beginning with {\ttfamily !ss} which are read by \sfincsScan.
+The variables which can be specified in {\ttfamily input.namelist} are detailed in chapter \ref{ch:input}.
+For scans over minor radius, an additional file named {\ttfamily profiles} is used to specify the profiles of density and temperature
+for each species, as well as the range of radial electric field to consider.
+
+The output from a single \sfincs~computation is saved in \HDF~format in the file {\ttfamily sfincsOutput.h5}.
+To browse this file you can enter {\ttfamily h5dump sfincsOutput.h5|less} from the command line.
+Every array saved in this file is annotated with strings that describe the array dimensions,
+for example \Ntheta$\times$ \Nzeta. One of the array dimensions may be {\ttfamily iteration},
+which can either indicate the iteration of the Newton solver for a nonlinear calculation,
+or which right-hand side vector was used when computing a transport matrix.
+Many of the variables in the output file are also annotated with
+text that describes their meaning and normalization.
+
+\section{Questions, Bugs, and Feedback}
+
+We enthusiastically welcome any contributions to the code or documentation.
+For write permission to the repository, or to report any bugs, provide feedback, or ask questions, contact Matt Landreman at
+\href{mailto:matt.landreman@gmail.com}{\nolinkurl{matt.landreman@gmail.com} }
+
+
+
+
+
+

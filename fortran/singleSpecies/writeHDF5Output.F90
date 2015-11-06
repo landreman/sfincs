@@ -13,16 +13,21 @@ module writeHDF5Output
 
   integer, private :: HDF5Error
   integer(HID_T), private :: HDF5FileID, parallelID, dspaceIDForScalar
+  integer(HID_T), private :: dspaceIDForInputNamelist
   integer(HID_T), dimension(:), allocatable, private :: dspaceIDForZeta
   integer(HID_T), dimension(:), allocatable, private :: dspaceIDForTheta
   integer(HID_T), dimension(:), allocatable, private :: dspaceIDForx
   integer(HID_T), dimension(:), allocatable, private :: dspaceIDForThetaZeta
+  integer(HID_T), dimension(:), allocatable, private :: dspaceIDForThetaZetax
   integer(HID_T), dimension(:), allocatable, private :: dspaceIDForSources
   integer(HID_T), private :: dspaceIDForTransportMatrix
+  integer(HID_T), private :: dspaceIDForTransportCoeffs
   integer(HID_T), private :: dspaceIDForNTVMatrix
   integer(HID_T), dimension(:), allocatable, private :: groupIDs
 
   integer(HID_T), private :: dsetID_programMode
+  integer(HID_T), private :: dsetID_inputNamelist
+  integer(HID_T), private :: dtypeID_inputNamelist
 
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_normradius
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_Ntheta
@@ -100,19 +105,22 @@ module writeHDF5Output
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_FSABHat2
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_useIterativeSolver
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_transportMatrix
+  integer(HID_T), dimension(:), allocatable, private :: dsetIDs_transportCoeffs
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_NTVMatrix
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_fNormIsotropic
+  integer(HID_T), dimension(:), allocatable, private :: dsetIDs_fNormIsotropicBeforeSurfaceIntegral
   integer(HID_T), dimension(:), allocatable, private :: dsetIDs_RHSMode
 
 
-  !  integer(HSIZE_T), parameter, private :: dimForScalar = 1
   integer(HSIZE_T), dimension(1), parameter, private :: dimForScalar = 1
   integer(HSIZE_T), dimension(:,:), allocatable, private :: dimForZeta
   integer(HSIZE_T), dimension(:,:), allocatable, private :: dimForTheta
   integer(HSIZE_T), dimension(:,:), allocatable, private :: dimForx
   integer(HSIZE_T), dimension(:,:), allocatable, private :: dimForThetaZeta
+  integer(HSIZE_T), dimension(:,:), allocatable, private :: dimForThetaZetax
   integer(HSIZE_T), dimension(:,:), allocatable, private :: dimForSources
   integer(HSIZE_T), dimension(2), parameter, private :: dimForTransportMatrix = 3
+  integer(HSIZE_T), dimension(2), parameter, private :: dimForTransportCoeffs = 2
   integer(HSIZE_T), dimension(1), parameter, private :: dimForNTVMatrix = 3
 
 contains
@@ -160,6 +168,10 @@ contains
 
     integer :: i, rank
     character(20) :: groupName
+
+    if (outputScheme > 0) then
+       call saveInputFileToHDF5()
+    end if
 
 #ifdef HAVE_PARALLEL_HDF5
     if (outputScheme > 0) then
@@ -244,20 +256,24 @@ contains
        allocate(dsetIDs_FSABHat2(numRunsInScan))
        allocate(dsetIDs_useIterativeSolver(numRunsInScan))
        allocate(dsetIDs_transportMatrix(numRunsInScan))
+       allocate(dsetIDs_transportCoeffs(numRunsInScan))
        allocate(dsetIDs_NTVMatrix(numRunsInScan))
        allocate(dsetIDs_fNormIsotropic(numRunsInScan))
+       allocate(dsetIDs_fNormIsotropicBeforeSurfaceIntegral(numRunsInScan))
        allocate(dsetIDs_RHSMode(numRunsInScan))
 
        allocate(dspaceIDForZeta(numRunsInScan))
        allocate(dspaceIDForTheta(numRunsInScan))
        allocate(dspaceIDForx(numRunsInScan))
        allocate(dspaceIDForThetaZeta(numRunsInScan))
+       allocate(dspaceIDForThetaZetax(numRunsInScan))
        allocate(dspaceIDForSources(numRunsInScan))
 
        allocate(dimForZeta(numRunsInScan,1))
        allocate(dimForTheta(numRunsInScan,1))
        allocate(dimForx(numRunsInScan,1))
        allocate(dimForThetaZeta(numRunsInScan,2))
+       allocate(dimForThetaZetax(numRunsInScan,3))
        allocate(dimForSources(numRunsInScan,1))
 
        ! Create a dataspace for storing single numbers:
@@ -269,6 +285,7 @@ contains
 
        rank = 2
        call h5screate_simple_f(rank, dimForTransportMatrix, dspaceIDForTransportMatrix, HDF5Error)
+       call h5screate_simple_f(rank, dimForTransportCoeffs, dspaceIDForTransportCoeffs, HDF5Error)
 
        ! Save programMode in the file:
        call h5dcreate_f(HDF5FileID, "programMode", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
@@ -301,6 +318,12 @@ contains
           dimForThetaZeta(i,2)=NzetasForScan(i)
           call h5screate_simple_f(rank, dimForThetaZeta(i,:), dspaceIDForThetaZeta(i), HDF5Error)
    
+          rank = 3
+          dimForThetaZetax(i,1)=NthetasForScan(i)
+          dimForThetaZetax(i,2)=NzetasForScan(i)
+          dimForThetaZetax(i,3)=NxsForScan(i)
+	  call h5screate_simple_f(rank, dimForThetaZetax(i,:), dspaceIDForThetaZetax(i), HDF5Error)
+
           select case (constraintSchemesForScan(i))
           case (0)
              dimForSources(i,1) = 1
@@ -543,11 +566,17 @@ contains
           call h5dcreate_f(groupIDs(i), "transportMatrix", H5T_NATIVE_DOUBLE, dspaceIDForTransportMatrix, &
                dsetIDs_transportMatrix(i), HDF5Error)
    
+          call h5dcreate_f(groupIDs(i), "transportCoeffs", H5T_NATIVE_DOUBLE, dspaceIDForTransportCoeffs, &
+               dsetIDs_transportCoeffs(i), HDF5Error)
+   
           call h5dcreate_f(groupIDs(i), "NTVMatrix", H5T_NATIVE_DOUBLE, dspaceIDForNTVMatrix, &
                dsetIDs_NTVMatrix(i), HDF5Error)
    
           call h5dcreate_f(groupIDs(i), "fNormIsotropic", H5T_NATIVE_DOUBLE, dspaceIDForx(i), &
                dsetIDs_fNormIsotropic(i), HDF5Error)
+
+          call h5dcreate_f(groupIDs(i), "fNormIsotropicBeforeSurfaceIntegral", H5T_NATIVE_DOUBLE, dspaceIDForThetaZetax(i), &
+               dsetIDs_fNormIsotropicBeforeSurfaceIntegral(i), HDF5Error)
 
           call h5dcreate_f(groupIDs(i), "RHSMode", H5T_NATIVE_DOUBLE, dspaceIDForScalar, &
                dsetIDs_RHSMode(i), HDF5Error)
@@ -830,11 +859,17 @@ contains
        call h5dwrite_f(dsetIDs_transportMatrix(runNum), H5T_NATIVE_DOUBLE, &
             transportMatrix, dimForTransportMatrix, HDF5Error)
 
+       call h5dwrite_f(dsetIDs_transportCoeffs(runNum), H5T_NATIVE_DOUBLE, &
+            transportCoeffs, dimForTransportCoeffs, HDF5Error)
+
        call h5dwrite_f(dsetIDs_NTVMatrix(runNum), H5T_NATIVE_DOUBLE, &
             NTVMatrix, dimForNTVMatrix, HDF5Error)
 
        call h5dwrite_f(dsetIDs_fNormIsotropic(runNum), H5T_NATIVE_DOUBLE, &
             fNormIsotropic, dimForx(runNum,:), HDF5Error)
+
+       call h5dwrite_f(dsetIDs_fNormIsotropicBeforeSurfaceIntegral(runNum), H5T_NATIVE_DOUBLE, &
+            fNormIsotropicBeforeSurfaceIntegral, dimForThetaZetax(runNum,:), HDF5Error)
 
        call h5dwrite_f(dsetIDs_RHSMode(runNum), H5T_NATIVE_INTEGER, &
             RHSMode, dimForScalar, HDF5Error)
@@ -935,8 +970,10 @@ contains
           call h5dclose_f(dsetIDs_FSABHat2(i), HDF5Error)
           call h5dclose_f(dsetIDs_useIterativeSolver(i), HDF5Error)
           call h5dclose_f(dsetIDs_transportMatrix(i), HDF5Error)
+          call h5dclose_f(dsetIDs_transportCoeffs(i), HDF5Error)
           call h5dclose_f(dsetIDs_NTVMatrix(i), HDF5Error)
           call h5dclose_f(dsetIDs_fNormIsotropic(i), HDF5Error)
+          call h5dclose_f(dsetIDs_fNormIsotropicBeforeSurfaceIntegral(i), HDF5Error)
           call h5dclose_f(dsetIDs_RHSMode(i), HDF5Error)
 
 
@@ -946,11 +983,13 @@ contains
           call h5sclose_f(dspaceIDForZeta(i), HDF5Error)
           call h5sclose_f(dspaceIDForx(i), HDF5Error)
           call h5sclose_f(dspaceIDForThetaZeta(i), HDF5Error)
+          call h5sclose_f(dspaceIDForThetaZetax(i), HDF5Error)
           call h5sclose_f(dspaceIDForSources(i), HDF5Error)
        end do
 
        call h5sclose_f(dspaceIDForScalar, HDF5Error)
        call h5sclose_f(dspaceIDForTransportMatrix, HDF5Error)
+       call h5sclose_f(dspaceIDForTransportCoeffs, HDF5Error)
        call h5sclose_f(dspaceIDForNTVMatrix, HDF5Error)
        call h5pclose_f(parallelID, HDF5Error)
        call h5fclose_f(HDF5FileID, HDF5Error)
@@ -959,6 +998,101 @@ contains
     end if
 
   end subroutine closeOutputFile
+
+
+
+  subroutine saveInputFileToHDF5
+
+    implicit none
+
+! If the file size is larger than this, it will be truncated in the HDF5 output file:
+#define maxInputFileSize 99999
+    character(maxInputFileSize) :: fileContents
+
+    character(100) :: filename
+    character(1) :: oneCharacter
+    integer :: fileunit, didFileAccessWork, fileSize, numRecords, ios
+    integer :: numBytesRead, filePosition, iFileLine, rank
+    PetscErrorCode :: ierr
+    integer(SIZE_T) :: fileSizeCopy
+
+    filename = inputFilename
+
+    if (masterProc) then
+       ! Read input file into a character array.
+       ! This requires several steps. 
+       fileUnit=11
+       open(unit=fileUnit, file=filename,    action="read", status="old", iostat=didFileAccessWork)
+       if (didFileAccessWork /= 0) then
+          print *, "Error opening input file ", trim(filename)
+          stop
+       end if
+
+       ! Determine how large the input.namelist file is:
+       fileSize = 0
+       numRecords = 0
+       ! A fortran "record" is one line of the file.
+       do
+          read (unit=fileUnit, fmt="(a)", advance="no", &
+               iostat=ios) oneCharacter
+          if (is_iostat_eor(ios)) then
+             numRecords = numRecords + 1
+             cycle
+          else if (is_iostat_end(ios)) then
+             exit
+          else
+             fileSize = fileSize + 1
+          end if
+       end do
+
+       ! For each record, we add a newline: 
+       fileSize = fileSize + numRecords
+
+       if (fileSize > maxInputFileSize) then
+          print *,"WARNING: Input file is very large, so only the beginning of it will be stored in the HDF5 output file."
+          fileSize = maxInputFileSize
+       end if
+
+       rewind(unit=fileUnit)
+       filePosition = 1
+       do iFileLine = 1,numRecords
+          read (unit=fileUnit,fmt="(a)",advance="no",iostat=ios, size=numBytesRead) fileContents(filePosition:fileSize)
+          filePosition = filePosition + numBytesRead + 1
+          ! Insert newline between records:
+          fileContents(filePosition-1:filePosition-1) = achar(10)
+          if (filePosition>fileSize) then
+             exit
+          end if
+       end do
+
+       close(unit = fileUnit)
+    end if
+
+    call MPI_BCAST(fileSize,1,MPI_INT,0,MPI_COMM_WORLD,ierr)
+    fileSizeCopy = fileSize
+
+    ! Done reading the file. Now begin the HDF5 commands.
+
+    ! Create a HDF5 type corresponding to a string of the appropriate length:
+    call h5tcopy_f(H5T_FORTRAN_S1, dtypeID_inputNamelist, HDF5Error)
+    call h5tset_size_f(dtypeID_inputNamelist, fileSizeCopy, HDF5Error)
+
+    rank = 1
+    call h5screate_simple_f(rank, dimForScalar, dspaceIDForInputNamelist, HDF5Error)
+
+    call h5dcreate_f(HDF5FileID, "input.namelist", dtypeID_inputNamelist, dspaceIDForInputnamelist, &
+         dsetID_inputnamelist, HDF5Error)
+
+    if (masterProc) then
+       call h5dwrite_f(dsetID_inputNamelist, dtypeID_inputNamelist, fileContents(1:fileSize), dimForScalar, HDF5Error)
+    end if
+
+    ! Destroy HDF5 objects
+    call h5dclose_f(dsetID_inputNamelist, HDF5Error)
+    call h5tclose_f(dtypeID_inputNamelist, HDF5Error)
+    call h5sclose_f(dspaceIDForInputNamelist, HDF5Error)
+  end subroutine saveInputFileToHDF5
+
 
 end module writeHDF5Output
 

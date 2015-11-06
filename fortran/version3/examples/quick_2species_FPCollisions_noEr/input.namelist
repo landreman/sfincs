@@ -1,0 +1,86 @@
+! Input file for SFINCS version 3.
+! See the user manual for documentation of the parameters in this file.
+!----------------------------------------------------------------------
+
+!ss scanType = 1
+
+! Parameters specific to scanType = 2:
+!ss NErs = 5
+!ss dPhiHatdpsiNMin = -1.0d+0
+!ss dPhiHatdpsiNMax =  1.0d+0
+
+&general
+  saveMatricesAndVectorsInBinary=.t.
+/
+
+&geometryParameters
+  geometryScheme = 4
+  inputRadialCoordinateForGradients = 1
+/
+
+&speciesParameters
+  Zs = 1 6
+  mHats = 1 6
+  nHats = 0.6d+0 0.009d+0
+  THats = 0.5d+0 0.8d+0
+  dNHatdpsiNs = -0.3d+0 -0.001d+0
+  dTHatdpsiNs = -0.3d+0 -0.2d+0
+/
+
+&physicsParameters
+  Delta = 4.5694d-3
+  alpha = 1.0d+0
+  nu_n = 8.4774d-3
+
+  collisionOperator = 0
+  includeXDotTerm = .true.
+  includeElectricFieldTermInXiDot = .true.
+  useDKESExBDrift = .false.
+  includePhi1 = .false.
+  nonlinear = .false.
+/
+
+&resolutionParameters
+  Ntheta = 5
+!ss NthetaMinFactor = 0.7
+!ss NthetaMaxFactor = 2
+!ss NthetaNumRuns = 5
+
+  Nzeta = 7
+!ss NzetaMinFactor = 0.8
+!ss NzetaMaxFactor = 2
+!ss NzetaNumRuns = 5
+
+  Nxi = 8
+!ss NxiMinFactor = 0.8
+!ss NxiMaxFactor = 2
+!ss NxiNumRuns = 6
+  
+  Nx = 5
+!ss NxMinFactor = 0.8
+!ss NxMaxFactor = 2
+!ss NxNumRuns = 3
+
+  solverTolerance = 1d-6
+!ss solverToleranceMinFactor = 0.1
+!ss solverToleranceMaxFactor = 10
+!ss solverToleranceNumRuns = 3
+/
+
+&otherNumericalParameters
+/
+
+&preconditionerOptions
+/
+
+&export_f
+  export_full_f = .true.
+  export_delta_f = .true.
+
+  export_f_theta_option = 0
+  export_f_zeta_option = 0
+  export_f_xi_option = 1
+  export_f_xi = 0
+  export_f_x_option = 1
+  export_f_x = 1
+/

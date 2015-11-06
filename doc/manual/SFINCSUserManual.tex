@@ -1,0 +1,104 @@
+% -*- Mode:TeX -*-
+
+
+\documentclass[11pt,twoside,singlespace]{report}
+%\pagestyle{plain}
+%\pagestyle{headings}
+%\lhead{\chaptermark}
+
+\usepackage{amssymb,amsmath} % better maths commands
+\usepackage{graphicx}
+\usepackage{verbatim}  % allows 'comment' environment, which is useful for commenting out multi-line sections
+%\usepackage{txfontsb}
+\usepackage{mymanual}
+\graphicspath{{graphics/}}
+\usepackage[usenames]{color}
+%\maxtocdepth{section}
+\usepackage[sort&compress,numbers]{natbib} % better citations
+\usepackage{fancyhdr}
+%\usepackage[nottoc,notlot,notlof]{tocbibind}
+\usepackage{url}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue}
+
+\newcommand{\vv}{\upsilon}
+\newcommand{\vect}[1]{{\mathbf #1}}
+\newcommand{\sfincs}{{\ttfamily sfincs}}
+\newcommand{\sfincsScan}{{\ttfamily sfincsScan}}
+\newcommand{\sfincsPlot}{{\ttfamily sfincsPlot}}
+\newcommand{\sfincsScanPlot}{{\ttfamily sfincsScanPlot}}
+\newcommand{\PETSc}{{\ttfamily PETSc}}
+\newcommand{\HDF}{{\ttfamily HDF5}}
+\newcommand{\netCDF}{{\ttfamily netCDF}}
+\newcommand{\superludist}{{\ttfamily superlu\_dist}}
+\newcommand{\mumps}{{\ttfamily mumps}}
+\newcommand{\python}{{\ttfamily python}}
+\newcommand{\parlink}[1]{{\ttfamily \hyperlink{#1}{#1}}}
+\newcommand{\Ntheta}{\parlink{Ntheta}}
+\newcommand{\Nzeta}{\parlink{Nzeta}}
+\newcommand{\Nxi}{\parlink{Nxi}}
+\newcommand{\Nx}{\parlink{Nx}}
+\newcommand{\NL}{\parlink{NL}}
+\newcommand{\vmec}{{\ttfamily vmec}}
+\newcommand{\dkes}{{\ttfamily dkes}}
+\newcommand{\todo}[1]{\textcolor{red}{To do: #1}}
+
+\graphicspath{{figures/}}
+
+% uncomment the following line to remove all graphics (for faster compiling)
+%\renewcommand{\includegraphics}[2][x]{}
+
+\newcommand{\boldkappa}{{\mathbf \kappa}}
+
+\setlength{\oddsidemargin}{0.25in}	% 1.25in left margin
+\setlength{\evensidemargin}{0.25in}	% 1.25in left margin (even pages)
+\setlength{\topmargin}{0.0in}		% 1in top margin
+\setlength{\textwidth}{6.0in}		% 6.0in text - 1.25in rt margin
+\setlength{\textheight}{8.6in}		% Body ht for 1in margins
+
+\setcounter{tocdepth}{1}
+\begin{document}
+
+
+\include{cover}
+
+
+%\pagestyle{plain}
+\fancyhf{}
+\cfoot{\thepage}
+\tableofcontents
+
+\clearpage
+
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead[\thepage]{\leftmark}
+\rhead[\leftmark]{\thepage}
+%\lhead{\chaptermark}
+\renewcommand{\chaptermark}[1]{\markboth{\sc{\chaptername\ \thechapter.\ #1}}{}}
+\setlength{\headsep}{6pt}
+
+\setlength{\parskip}{0pt plus 0pt minus 0pt}
+
+% Main chapters go here:
+\include{overview}
+\include{installation}
+\include{inputParameters}
+\include{equations}
+\include{runs}
+\include{resolution} 
+
+\renewcommand{\chaptermark}[1]{\markboth{\sc{Appendix\ \thechapter.\ #1}}{}}
+\appendix
+\setcounter{tocdepth}{0}
+
+% Appendices can go here:
+%\include{systems}
+ 
+\lhead[\thepage]{\sc Bibliography}
+\rhead[\sc Bibliography]{\thepage}
+\bibliography{SFINCSUserManual}
+\bibliographystyle{mymanual}
+\end{document}
+

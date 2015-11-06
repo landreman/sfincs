@@ -1,0 +1,1 @@
+mpiexec -n 2 ~/sfincs/fortran/version3/sfincs -mat_mumps_icntl_23 1000 &> output

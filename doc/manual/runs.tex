@@ -1,0 +1,372 @@
+\chapter{Specifying and running a computation}
+
+\section{Normalizations}
+\label{sec:normalizations}
+
+{\setlength{\parindent}{0cm}
+Dimensional quantities in \sfincs~are normalized to ``reference'' values that are denoted by a bar:\\
+$\bar{B}$ = reference magnetic field, typically 1 Tesla.\\
+$\bar{R}$ = reference length, typically 1 meter.\\
+$\bar{n}$ = reference density, typically $10^{20}$ m$^{-3}$, $10^{19}$ m$^{-3}$, or something similar.\\
+$\bar{m}$ = reference mass, typically either the mass of hydrogen or deuterium.\\
+$\bar{T}$ = reference temperature in energy units, typically 1 eV or 1 keV.\\
+$\bar{v} = \sqrt{2 \bar{T} / \bar{m}}$ = thermal speed at the reference temperature and mass\\
+$\bar{\Phi}$ = reference electrostatic potential, typically 1 V or 1 kV.\\
+}
+
+You can choose any reference parameters you like, not just the values
+suggested here. However, if you use a {\ttfamily vmec} or {\ttfamily .bc} magnetic equilibrium
+by choosing \parlink{geometryScheme} = 5, 11, or 12, then you MUST use $\bar{B}$ = 1 Tesla and $\bar{R}$ = 1 meter.
+The code ``knows'' about the reference values only through
+the 3 combinations \parlink{Delta}, \parlink{alpha}, and \parlink{nu\_n}
+in the {\ttfamily \hyperref[sec:physicsParameters]{physicsParameters}} namelist.
+
+Normalized quantities are denoted by a ``hat''.  Taking the magnetic field as an example,
+$\hat{B}=B/\bar{B}$, where $\hat{B}$ is called {\ttfamily BHat} in the fortran code and \HDF~output file.
+
+\section{Radial coordinates}
+\label{sec:radialCoordinates}
+
+A variety of flux-surface label coordinates are used in other codes and in the literature.
+One common choice (used in \vmec) is $\psi_N$, the toroidal flux normalized to its
+value at the last closed flux surface.  Another common choice is an ``effective normalized minor radius''
+$r_N$, defined by $r_N=\sqrt{\psi_N}$.  For gradients of density, temperature, and electrostatic potential (i.e. the radial
+electric field), it is useful to use a dimensional local minor radius $r = r_N a$, where $a$ is some
+measure of the plasma effective outer minor radius.  Finally, one could also use $\psi$ directly.
+For maximum flexibility, \sfincs~permits any of these four radial coordinates to be used, and different radial
+coordinates can be used in different aspects of a given computation.  Output quantities which depend
+on the radial coordinate, such as radial fluxes, are often given with respect to all radial coordinates.
+In \sfincs, the four radial coordinates are named as follows:\\
+
+{\setlength{\parindent}{0cm}
+
+{\ttfamily \hypertarget{psiHat}{psiHat}} = $\hat\psi$ is the toroidal flux (divided by $2\pi$), normalized by $\bar{B}\bar{R}^2$.\\
+
+{\ttfamily \hypertarget{psiN}{psiN}} = $\psi_N$ is the toroidal flux normalized by its value at the last closed flux surface.\\
+
+{\ttfamily \hypertarget{rHat}{rHat}} = $\hat{r}$ is defined as {\ttfamily aHat}$\sqrt{\mbox{\ttfamily psiN}}$, where {\ttfamily aHat} is an effective minor radius of the last closed flux surface normalized by $\bar{R}$.\\
+
+{\ttfamily \hypertarget{rN}{rN}} = $r_N$ is defined as $\sqrt{\mbox{\ttfamily psiN}}$.\\
+
+}
+
+These four radial coordinates are identified by the numbers 0, 1, 2, and 3 respectively.
+
+When setting up a run, you can make several independent choices for radial coordinates.  One parameter
+you select is \parlink{inputRadialCoordinateForGradients} in the 
+{\ttfamily \hyperref[sec:geometryParameters]{geometryParameters}} namelist.
+This parameter controls which coordinate is used to specify the gradients. The possible values of \parlink{inputRadialCoordinateForGradients} are:\\
+
+{\setlength{\parindent}{0cm}
+
+0: Use derivatives with respect to {\ttfamily psiHat}: Density gradients are specified using \parlink{dnHatdpsiHats}, 
+temperature gradients are specified using \parlink{dTHatdpsiHats},  a single $E_r$ is specified using
+\parlink{dPhiHatdpsiHat}, and a range of $E_r$ for a scan is specified using \parlink{dPhiHatdpsiHatMin}-\parlink{dPhiHatdpsiHatMax}.
+\\
+
+1: Use derivatives with respect to {\ttfamily psiN}: Density gradients are specified using \parlink{dnHatdpsiNs}, 
+temperature gradients are specified using \parlink{dTHatdpsiNs},  a single $E_r$ is specified using
+\parlink{dPhiHatdpsiN}, and a range of $E_r$ for a scan is specified using \parlink{dPhiHatdpsiNMin}-\parlink{dPhiHatdpsiNMax}.
+\\
+
+2: Use derivatives with respect to {\ttfamily rHat}: Density gradients are specified using \parlink{dnHatdrHats}, 
+temperature gradients are specified using \parlink{dTHatdrHats},  a single $E_r$ is specified using
+\parlink{dPhiHatdrHat}, and a range of $E_r$ for a scan is specified using \parlink{dPhiHatdrHatMin}-\parlink{dPhiHatdrHatMax}.
+\\
+
+3: Use derivatives with respect to {\ttfamily rN}: Density gradients are specified using \parlink{dnHatdrNs}, 
+temperature gradients are specified using \parlink{dTHatdrNs},  a single $E_r$ is specified using
+\parlink{dPhiHatdrN}, and a range of $E_r$ for a scan is specified using \parlink{dPhiHatdrNMin}-\parlink{dPhiHatdrNMax}.
+\\
+
+}
+
+Another choice involving radial coordinates is how to specify the flux surface for the computation.
+This choice is made using the parameter \parlink{inputRadialCoordinate} in the {\ttfamily \hyperref[sec:geometryParameters]{geometryParameters}}
+namelist, which is again an integer from 0 to 3, and this parameter need not be the same as \parlink{inputRadialCoordinateForGradients}.
+An extra complication with specifying the flux surface is that the magnetic equilibrium file will contain data on a finite number of surfaces,
+and you may wish to use one of these surfaces.  For this reason, the parameters for specifying the flux surface have {\ttfamily \_wish}
+appended to the name. In other words, the allowed values for \parlink{inputRadialCoordinate} are:\\
+
+{\setlength{\parindent}{0cm}
+
+0: Specify the flux surface using \parlink{psiHat\_wish}.\\
+
+1: Specify the flux surface using \parlink{psiN\_wish}.\\
+
+2: Specify the flux surface using \parlink{rHat\_wish}.\\
+
+3: Specify the flux surface using \parlink{rN\_wish}.\\
+
+}
+
+When using \parlink{geometryScheme} == 11 or 12, \sfincs~will always shift the ``wish'' value so it matches an available surface in the magnetic equilibrium file.
+For \parlink{geometryScheme} == 5, the \parlink{VMECRadialOption} parameter lets you can choose whether to shift to the nearest surface in the magnetic equilibrium file,
+or to interpolate the \vmec~data onto the exact value of radius you specify.
+
+If you perform a radial scan, then there is a third choice you can make: which radial coordinate to use in the {\ttfamily profiles} file.
+This choice is made with an integer 0, 1, 2, or 3 in the first non-comment line of the {\ttfamily profiles} file.
+The radial coordinate used in the {\ttfamily profiles} file need not be the same as either
+\parlink{inputRadialCoordinate} or \parlink{inputRadialCoordinateForGradients}.
+Note however that the maximum and minimum radial electric field specified in the {\ttfamily profiles}
+file must be defined as the derivative of the electrostatic potential with respect to the radial coordinate \parlink{inputRadialCoordinateForGradients}.
+
+For more details about the behavior of \parlink{inputRadialCoordinate}, \parlink{inputRadialCoordinateForGradients}, and \parlink{VMECRadialOption},
+see section \ref{sec:geometryParameters}.
+
+\section{Trajectory models}
+\label{sec:trajectoryModels}
+
+As discussed in \cite{sfincsPaper},
+one of the capabilities of \sfincs~is to compare various models for the terms in the kinetic equation involving $E_r$.
+These variations of the kinetic equation are called ``trajectory models'' in \cite{sfincsPaper}.
+The relevant terms in the kinetic equation can be turned off and on by certain Boolean parameters in the {\ttfamily \hyperref[sec:physicsParameters]{physicsParameters}} namelist.
+The models described in \cite{sfincsPaper} are selected as follows:\\
+
+{\setlength{\parindent}{0cm}
+
+\underline{Full trajectories:}\\
+{\ttfamily 
+\parlink{includeXDotTerm} = .true.\\
+\parlink{includeElectricFieldTermInXiDot} = .true.\\
+\parlink{useDKESExBDrift} = .false.\\
+}
+
+\underline{Partial trajectories:}\\
+{\ttfamily
+\parlink{includeXDotTerm} = .false.\\
+\parlink{includeElectricFieldTermInXiDot} = .false.\\
+\parlink{useDKESExBDrift} = .false.\\
+}
+
+\underline{DKES trajectories:}\\
+{\ttfamily
+\parlink{includeXDotTerm} = .false.\\
+\parlink{includeElectricFieldTermInXiDot} = .false.\\
+\parlink{useDKESExBDrift} = .true.\\
+}
+}
+
+There is not a significant difference in computational cost between these models.
+
+
+\section{Quasineutrality and variation of the electrostatic potential on the flux surface}
+\label{sec:qn}
+
+One choice you should consider in setting up a computation is whether or not
+to include variation on the flux surface of the electrostatic potential, $\Phi_1(\theta,\zeta)$.
+Such variation does occur to some degree in a real plasma, but it is 
+neglected in analytical theory and in many codes such as \dkes.  It can be proved
+that including $\Phi_1$ has no effect on the particle or heat fluxes, parallel flows, or bootstrap current
+when $E_r=0$, but generally there can be some difference when $E_r \ne 0$.
+(There is a subtlety in showing that the heat flux is the same with and without $\Phi_1$,
+discussed in the notes 20150325-01 in \path{sfincs/doc/}.)
+
+In \sfincs, you can choose whether or not to
+include $\Phi_1$ using the paramter {\ttfamily \hyperlink{includePhi1}{includePhi1}} in the 
+{\ttfamily \hyperref[sec:physicsParameters]{physicsParameters}}
+namelist.  If and only if $\Phi_1$ is included, a quasineutrality equation is solved
+at each point on the flux surface.  Due to these extra unknowns ($\Phi_1$) and extra equations
+(quasineutrality), the system matrix is slightly larger when \parlink{includePhi1} is \true.
+Specifically, the number of rows and columns are each increased by \Ntheta$\times$\Nzeta$+1$.  This increase is miniscule compared
+to the number of rows and columns associated with the kinetic equation, which depends not only on real space
+but also on velocity space and species.  Thus, there is very little extra computational cost associated
+with \parlink{includePhi1}.  You may wish to set \parlink{includePhi1} = \true~when
+using \sfincs~to model an experiment, and set \parlink{includePhi1} = \false~when
+comparing \sfincs~with analytic theory or with another code that does not include $\Phi_1$.
+
+\section{Poloidal and toroidal magnetic drifts}
+\label{sec:magneticDrifts}
+
+You can choose to either include or not include the poloidal and toroidal magnetic drifts.
+These drifts are turned off by default.  To turn them on, all you need to do is
+set \parlink{magneticDriftScheme} = 1 in the {\ttfamily \hyperref[sec:physicsParameters]{physicsParameters}} namelist.
+(Setting \parlink{magneticDriftScheme} = 2 uses a slightly different parallel magnetic drift, which gives
+indistinguishable results to setting 1 for all cases examined so far, and which is in fact exactly identical to setting 1
+in the limit of vanishing plasma beta.)
+If the poloidal/toroidal magnetic drifts are turned on, you must use VMEC
+geometry (\parlink{geometryScheme} = 5), since the magnetic drifts
+depend on various derivatives of the components of the magnetic field which
+are not available in the simplified geometry models.
+
+The magnetic drift terms introduce nonzeros in the system matrix,
+and therefore increase the memory and time required for factorization.
+The change is small; a typical increase in both memory and time is 20-40\%.
+These magnetic drift terms typically have a minor effect on the physics outputs except when the radial
+electric field is near 0.
+
+If the electrostatic potential is not constant on flux surfaces and poloidal/toroidal magnetic drifts
+are included, certain terms exist in the kinetic equation which have not yet been implemented in the code.
+Thus, at present it is not strictly correct to simultaneously set  \parlink{magneticDriftScheme} $> 0$ 
+and  \parlink{includePhi1} = \true.
+
+\section{Sparse direct solver packages}
+\label{sec:solvers}
+
+As discussed briefly in section \ref{sec:gmres}, the most computationally demanding step in 
+\sfincs~is the direct $LU$-factorization of a very large sparse nonsymmetric real matrix. The \PETSc~library
+which \sfincs~uses has interfaces to a large number of other packages for direct factorization of such matrices,
+making it possible to choose among the various solver packages with just a command-line flag ({\ttfamily -pc\_factor\_mat\_solver\_package}).  Some lists of the direct solvers
+available in \PETSc~can be found \href{http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Mat/MatSolverPackage.html#MatSolverPackage}{here}
+or in the ``direct solvers''-``LU'' section of \href{http://www.mcs.anl.gov/petsc/documentation/linearsolvertable.html}{this page}.
+It is important for the $LU$-solver package to be one that is efficiently parallelized, 
+in order to be able to solve problems at the high resolutions required for experimentally relevant collisionality and magnetic geometry.
+The recommended choice of $LU$ solver is \href{http://mumps-solver.org/}{\mumps} (which is the default), and another good option is \href{http://crd-legacy.lbl.gov/~xiaoye/SuperLU/}{\superludist}.
+(The {\ttfamily PARDISO} library available in the Intel Math Kernel Library is probably suitable as well, though we have not investigated it yet.)
+In side-to-side comparisons, we find \mumps~systematically uses substantially less memory and time than \superludist~for factorization.
+In principle, other solver packages for asymmetric matrices that are interfaced to \PETSc~could be used as well, such as {\ttfamily UMFPACK}, {\ttfamily PASTIX}, etc.
+
+There are two ways to choose between solver packages.
+One method is the \sfincs~parameter \parlink{whichParallelSolverToFactorPreconditioner} in the 
+{\ttfamily \hyperref[sec:otherNumericalParameters]{otherNumericalParameters}} namelist.
+This parameter only allows you to choose between \mumps~ and \superludist, not other solver packages interfaced to \PETSc.
+Another way to choose between solver packages is the command-line flag {\ttfamily -pc\_factor\_mat\_solver\_package},
+followed by one of the options in quotation marks \href{http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Mat/MatSolverPackage.html#MatSolverPackage}{here}.
+The command-line flag overrides the namelist parameter.
+
+The physics outputs of the code should be independent of the solver package used to several significant digits.
+In principle, different solver packages solving the same linear system should find the identical solution.
+However there will be small differences in the solutions associated with roundoff error.
+
+Note that {\ttfamily superlu} and \superludist~are distinct libraries. The former is serial while the latter is parallelized.
+Therefore there is no reason to use {\ttfamily superlu}; \superludist~is always preferable.
+
+The \mumps~package has a large number of control parameters, which are documented in the \mumps~manual which can be downloaded \href{http://mumps-solver.org/}{here}.
+You do not need to be aware of most of these control parameters.
+However, several parameters which may be useful are discussed in section \ref{sec:mumpsControlParameters}.
+It is also worth being aware of the section of the \mumps~manual on error messages. 
+This section is useful for interpreting the {\ttfamily INFO(1)} and {\ttfamily INFO(2)} error codes that
+are reported if \sfincs~exits with an error associated with \mumps. 
+
+The \superludist~package has many fewer options than \mumps. 
+You can find of list of the options by running \sfincs~with the {\ttfamily -help} command-line flag when
+using \superludist, and searching the output for lines containing {\ttfamily superlu\_dist}.
+The \superludist~options are also documented in the package's manual, available \href{http://crd-legacy.lbl.gov/~xiaoye/SuperLU/#superlu_dist}{here}.
+We have not found any advantage in adjusting
+any of the \superludist~options.
+
+The \PETSc~library includes a built-in sparse direct solver which works on only a single processor.
+You can select this solver using the command-line flag \\
+\centerline{\ttfamily -pc\_factor\_mat\_solver\_package petsc}\\
+This solver could potentially be useful if you are running on a system that does not have \mumps~or \superludist~installed,
+and you are only considering problems that require sufficiently little memory (e.g. tokamaks) that parallelization is not required.
+However, this solver is less robust than \mumps~or \superludist, sometimes exiting with an error message that there is a zero pivot
+even though  \mumps~and \superludist~can solve the same system with no problem. Therefore, even if you plan to use only a single processor,
+we still recommend that you install  \mumps~or \superludist.
+
+\section{Parallelization: Choosing the number of nodes \& processors}
+\label{sec:parallelization}
+
+Usually the limiting factor for \sfincs~is not time but memory.
+(The time required depends on the resolution used, but jobs for experimentally relevant W7-X parameters
+typically take under 10 minutes.)
+Therefore, when considering how many nodes to request for a \sfincs~job,
+the first issue to consider is ensuring you have requested sufficient total memory.
+A good way to determine the memory required (assuming you are using the default solver \mumps)
+is to first run \sfincs~on 1 node using the parameters of interest
+and look for the following line in standard output:\\
+\centerline{\ttfamily ** TOTAL     space in MBYTES for IC factorization         :       1072}\\
+The number at the end will generally be different; it depends not only on the
+resolution and number of species used, but also increases with the number of processors
+as discussed below.  Make sure the number of nodes requested times the number of megabytes per node exceeds this number.
+This line in standard output is generated by \mumps, so if you are using a different solver, this information is not printed,
+and you may need to determine the number of nodes by trial-and-error.
+Since some memory on each node is used by the operating system and by \sfincs~functions other than the solver,
+you may need to use a slightly higher number of nodes than this estimate suggests.
+For experimentally relevant W7-X and HSX parameters, we typically use 2-6 nodes with 64 GB each.
+Problems with lower resolution requirements, such as tokamaks, often can be run on a single node.
+
+The `IC' in the above line stands for `in core', meaning the $L$ and $U$ factors are stored
+in memory rather than on disk.  In \mumps, one can also choose to do an `out of core' (OOC) solve,
+in which case substantially less memory is typically required.  The price you pay for this memory savings is time, since
+disk access is slow compared to memory access.  Due to this slowdown, we have not used the OOC capability much, but
+you might find it useful in some circumstances.
+To see how much memory would be required for an OOC solve,
+look for the following line in standard output:\\
+\centerline{\ttfamily ** TOTAL     space in MBYTES for OOC factorization        :       128}\\
+(The number at the end will generally be different.)
+To invoke out-of-core mode, you must take two steps. First, use the following command-line flag when calling \sfincs:\\
+\centerline{\ttfamily -mat\_mumps\_icntl\_22 1}\\
+Second, you must set the environment variable {\ttfamily MUMPS\_OOC\_TMPDIR} to some reasonable directory
+before calling \sfincs. This environment variable could be set for example in the batch job file.
+Temporary files containing the $L$ and $U$ factors will be stored in the directory indicated.
+
+Another issue to consider is how many processors to use.  It is not always best to use the maximum number of processes
+available on the number of nodes you have chosen. The reason is that as the preconditioner matrix is divided among
+more and more processes, the $LU$ factorization becomes less efficient, requiring more memory and more communication.
+If you examine the \mumps~IC and OOC memory requirements indicated above, you will find they increase somewhat 
+as the number of processes increase.
+One needs to find a balance between speed (favoring many processes) and memory requirements (favoring few processes).
+While it is almost always better overall to use 2 processes compared to 1 process, it is not always better to use 128 processes
+compared to 64 processes.  The sweet spot is often in the range of 16-64 processes.
+To determine how to request fewer processes than the maximum available on a given number of nodes,
+see the documentation for your computing system.
+
+If more memory is required than is available, the system will usually terminate your job with an out-of-memory (OOM) error.
+When this occurs, you need to either increase the number of nodes requested or decrease the number of processors
+requested.
+
+Most of the time, \sfincs~is run via \sfincsScan~as some parameter is scanned, such as the radial electric field.
+In this case, the scan is ``embarassingly parallel'' in the sense that each job in the scan is completely independent
+of the other jobs.  Even if each individual job requires only 1 or a small number of nodes, it is still useful
+to run \sfincs~on a computing system with many nodes so the scan can be carried out in parallel.
+
+%\section{Issues with running on 1 processor}
+
+\section{Monoenergetic transport coefficients}
+\label{sec:monoenergetic}
+
+By setting \parlink{RHSMode} = 3, \sfincs~can be run in a mode
+where it solves the same kinetic equation (prior to discretization) as 
+\dkes~and other monoenergetic codes.
+When \parlink{RHSMode} = 3, the values of \parlink{Zs}, \parlink{THats}, \parlink{nHats},
+\parlink{mHats}, \parlink{nu\_n}, and {\ttfamily dPhiHatdXXX} are all ignored.
+Instead, the collisionality is set by \parlink{nuPrime}, and the radial electric field is set
+by \parlink{EStar}.  The first of these quantities is the dimensionless collisionality
+\begin{equation}
+\mbox{\parlink{nuPrime}} = \frac{(G+\iota I) \nu}{v B_0}
+\end{equation}
+where $G$ and $I$ are defined in (\ref{eq:covariant}), $\iota=1/q$ is the rotational transform,
+$v$ is the speed at which the monoenergetic calculation is being performed, and $B_0$ is the (0,0) Fourier harmonic of $B$
+with respect to the Boozer poloidal and toroidal angles. The collision
+frequency $\nu$ is here the value of $\nu_\mathrm{ii}$ one would have if
+$v$ were the thermal speed. That is, in SI units,
+\begin{equation}
+  \nu=\frac{4}{3\sqrt{\pi}}\frac{n Z^4e^4\ln \Lambda}{4\pi\epsilon_0^2m^2v^3}.
+\end{equation}
+%
+The normalized radial electric field is
+\begin{equation}
+\mbox{\parlink{EStar}} = \frac{cG}{\iota v B_0} \frac{d\Phi}{d\psi}
+\end{equation}
+(Gaussian units).
+When {\ttfamily RHSMode} == 1, {\ttfamily nuPrime} and {\ttfamily EStar} are ignored.
+\todo{Should be change the behavior of RHSMode=2 so it uses nuPrime and EStar instead of nu\_n?}
+
+The two parameters \parlink{nuPrime} and \parlink{EStar} are
+related to the corresponding DKES parameters {\ttfamily CMUL} and
+{\ttfamily EFIELD} by
+\begin{eqnarray}
+  \mbox{\ttfamily
+    CMUL}&\equiv&\frac{\nu_\mathrm{D}}{v}=\frac{3\sqrt{\pi}}{4}\left(\mathrm{erf}(1)-\mathrm{Ch}(1)\right)
+  \frac{B_0}{G+\iota I}\mbox{\ttfamily nuPrime},\\
+  \mbox{\ttfamily EFIELD}&\equiv&-\left[\frac{d\Phi}{dr}\right]_\mathrm{DKES}\frac{1}{vB_0}=-\frac{\iota}{G}\left[\frac{d\Psi}{dr}\right]_\mathrm{DKES}\mbox{\ttfamily EStar},
+\end{eqnarray}
+where $\mathrm{Ch}$ is the Chandrasekhar function and $\nu_\mathrm{D}$
+is the actual pitch-angle deflection frequency of the particle.
+\todo{These expressions are in SI units. Should there be some
+  factors of $c$ to adhere to the Gaussian standard used here?
+  Probably not.}
+
+\section{Poloidal and toroidal angles}
+
+If you are interested in any of the output quantities that vary on a flux surface,
+such as the density or electrostatic potential, then it is important to know
+how the poloidal and toroidal angles ($\theta$ and $\zeta$) in \sfincs~are defined.
+The definitions of the poloidal and toroidal angles in 
+\sfincs~depend on the input parameter \parlink{geometryScheme}. When a \vmec~equilibrium is imported by setting
+\parlink{geometryScheme} = 5, then \sfincs~will use the same poloidal and toroidal angles
+as \vmec.  The toroidal angle in this case is the normal cylindrical coordinate. Note that field lines
+are not straight in these \vmec~coordinates.
+For any other setting of \parlink{geometryScheme}, \sfincs~will use Boozer coordinates.
+

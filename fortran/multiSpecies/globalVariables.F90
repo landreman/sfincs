@@ -4,6 +4,8 @@ module globalVariables
 
 #include <finclude/petscsysdef.h>
 
+  character(len=50), parameter :: inputFilename = "input.namelist"
+
   integer, parameter :: integerToRepresentTrue  =  1
   integer, parameter :: integerToRepresentFalse = -1
 

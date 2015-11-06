@@ -1,0 +1,115 @@
+#!/usr/bin/env python
+
+# This script will not work if called directly.
+# From the command line, you should call sfincsScan instead.
+
+import os, inspect
+
+print "This is "+ inspect.getfile(inspect.currentframe())
+print "Beginning a scan of E_r."
+
+inputRadialCoordinateForGradients = readVariable("inputRadialCoordinateForGradients","int")
+NErs = readScanVariable("NErs","int")
+if inputRadialCoordinateForGradients==0:
+    varName = "dPhiHatdpsiHat"
+elif inputRadialCoordinateForGradients==1:
+    varName = "dPhiHatdpsiN"
+elif inputRadialCoordinateForGradients==2:
+    varName = "dPhiHatdrHat"
+elif inputRadialCoordinateForGradients==3:
+    varName = "dPhiHatdrN"
+else:
+    print "Error! Invalid inputRadialCoordinateForGradients."
+    exit(1)
+
+Er_min = readScanVariable(varName+"Min","float")
+Er_max = readScanVariable(varName+"Max","float")
+
+Ers = linspace(Er_max, Er_min, NErs)
+
+print "Radial electric field is specified using "+varName
+print "Here are the "+str(len(Ers))+" values we will use for this quantity:"
+print Ers
+
+directories = [varName+str(Er) for Er in Ers]
+
+Ers_copy = list(Ers)
+directories_copy = list(directories)
+
+# See if any runs with the same description already exist.
+# This happens if you re-run sfincsScan more than once in the same directory.
+for i in range(len(Ers_copy)):
+    directory = directories_copy[i]
+    if os.path.exists(directory):
+        print "Warning: directory "+directory+" already exists, so skipping this run."
+        Ers.remove(Ers_copy[i])
+        directories.remove(directory)
+
+print
+print "Here are the directories that will be created:"
+print directories
+
+if waitBeforeSubmitting:
+    while True:
+        proceed=raw_input("Should I go ahead and launch these "+str(len(Ers))+" jobs? [y/n] ")
+        if proceed=="y" or proceed=="n":
+            break
+        print "You must enter either y or n."
+
+    if proceed=="n":
+        exit(0)
+
+print "launching jobs..."
+
+# Read in the job.sfincsScan file:
+with open(jobFilename, 'r') as f:
+    jobFile = f.readlines()
+
+for runNum in range(len(Ers)):
+    directory = directories[runNum]
+    print "Beginning to handle job "+str(runNum+1)+" of "+str(len(Ers))+": "+directory
+
+    # To be extra safe, check again to see if the directory exists.
+    if os.path.exists(directory):
+        print "Warning: directory "+directory+" already exists."
+        i = -1
+        while True:
+            i += 1
+            directory2 = directory+"_"+str(i)
+            if not os.path.exists(directory2):
+                break
+        directory = directory2
+    os.makedirs(directory)
+    os.chdir(directory)
+
+    # Copy the job.sfincsScan file:
+    thisJobFile = list(jobFile)
+    # This next function is defined separately for each system in sfincsScan
+    nameJobFile(thisJobFile,directory)
+    f = open(jobFilename,"w")
+    f.writelines(thisJobFile)
+    f.close()
+
+    # Now copy the input.namelist file:
+    f = open(filename,"w")
+    for line in inputFile:
+        if namelistLineContains(line,varName):
+            line = "  "+varName+" = "+str(Ers[runNum])+" ! Set by sfincsScan_2.\n"
+        f.write(line)
+    f.close()
+
+    # Submit the sfincs job:
+    try:
+        # We need to include .split(" ") to separate the command-line arguments into an array of strings.   
+        # I'm not sure why python requires this. 
+        submissionResult = subprocess.call(submitCommand.split(" "))
+    except:
+        print "ERROR! Unable to submit run "+directory+" for some reason."
+        raise
+    else:
+        if submissionResult==0:
+            print "No errors submitting job "+directory
+        else:
+            print "Nonzero exit code returned when trying to submit job "+directory
+
+    os.chdir("..")

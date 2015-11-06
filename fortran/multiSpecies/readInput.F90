@@ -7,11 +7,11 @@ module readInput
 
 contains
 
-  subroutine readNamelistInput(filename)
+  subroutine readNamelistInput()
 
     implicit none
 
-    character(len=*), intent(in) :: filename
+    character(len=100) :: filename
     integer :: fileUnit, didFileAccessWork
     integer :: NMHats, NZs, NNHats, NTHats, NDNHatdpsiNs, NDTHatdpsiNs, i
 
@@ -56,81 +56,83 @@ contains
     THats = speciesNotInitialized
     dTHatdpsiNs = speciesNotInitialized
 
+    filename = trim(inputFilename)
+
     fileUnit=11
     open(unit=fileUnit, file=filename,    action="read", status="old", iostat=didFileAccessWork)
     if (didFileAccessWork /= 0) then
-       print *,"Proc ",myRank,": Error opening ", filename
+       print *,"Proc ",myRank,": Error opening ", trim(filename)
        stop
     else
        read(fileUnit, nml=flowControl, iostat=didFileAccessWork)
        if (didFileAccessWork /= 0) then
-          print *,"Proc ",myRank,": Error!  I was able to open the file ", filename, &
+          print *,"Proc ",myRank,": Error!  I was able to open the file ", trim(filename), &
                " but not read data from the flowControl namelist in it."
           stop
        end if
        if (masterProc) then
-          print *,"Successfully read parameters from flowControl namelist in ", filename, "."
+          print *,"Successfully read parameters from flowControl namelist in ", trim(filename), "."
        end if
 
        read(fileUnit, nml=geometryParameters, iostat=didFileAccessWork)
        if (didFileAccessWork /= 0) then
-          print *,"Proc ",myRank,": Error!  I was able to open the file ", filename, &
+          print *,"Proc ",myRank,": Error!  I was able to open the file ", trim(filename), &
                " but not read data from the geometryParameters namelist in it."
           stop
        end if
        if (masterProc) then
-          print *,"Successfully read parameters from geometryParameters namelist in ", filename, "."
+          print *,"Successfully read parameters from geometryParameters namelist in ", trim(filename), "."
        end if
 
        read(fileUnit, nml=speciesParameters, iostat=didFileAccessWork)
        if (didFileAccessWork /= 0) then
-          print *,"Proc ",myRank,": Error!  I was able to open the file ", filename, &
+          print *,"Proc ",myRank,": Error!  I was able to open the file ", trim(filename), &
                " but not read data from the speciesParameters namelist in it."
           stop
        end if
        if (masterProc) then
-          print *,"Successfully read parameters from speciesParameters namelist in ", filename, "."
+          print *,"Successfully read parameters from speciesParameters namelist in ", trim(filename), "."
        end if
 
        read(fileUnit, nml=physicsParameters, iostat=didFileAccessWork)
        if (didFileAccessWork /= 0) then
-          print *,"Proc ",myRank,": Error!  I was able to open the file ", filename, &
+          print *,"Proc ",myRank,": Error!  I was able to open the file ", trim(filename), &
                " but not read data from the physicsParameters namelist in it."
           stop
        end if
        if (masterProc) then
-          print *,"Successfully read parameters from physicsParameters namelist in ", filename, "."
+          print *,"Successfully read parameters from physicsParameters namelist in ", trim(filename), "."
        end if
 
        read(fileUnit, nml=resolutionParameters, iostat=didFileAccessWork)
        if (didFileAccessWork /= 0) then
-          print *,"Proc ",myRank,": Error!  I was able to open the file ", filename, &
+          print *,"Proc ",myRank,": Error!  I was able to open the file ", trim(filename), &
                " but not read data from the resolutionParameters namelist in it."
           stop
        end if
        if (masterProc) then
-          print *,"Successfully read parameters from resolutionParameters namelist in ", filename, "."
+          print *,"Successfully read parameters from resolutionParameters namelist in ", trim(filename), "."
        end if
 
        read(fileUnit, nml=otherNumericalParameters, iostat=didFileAccessWork)
        if (didFileAccessWork /= 0) then
-          print *,"Proc ",myRank,": Error!  I was able to open the file ", filename, &
+          print *,"Proc ",myRank,": Error!  I was able to open the file ", trim(filename), &
                " but not read data from the otherNumericalParameters namelist in it."
           stop
        end if
        if (masterProc) then
-          print *,"Successfully read parameters from otherNumericalParameters namelist in ", filename, "."
+          print *,"Successfully read parameters from otherNumericalParameters namelist in ", trim(filename), "."
        end if
 
        read(fileUnit, nml=preconditionerOptions, iostat=didFileAccessWork)
        if (didFileAccessWork /= 0) then
-          print *,"Proc ",myRank,": Error!  I was able to open the file ", filename, &
+          print *,"Proc ",myRank,": Error!  I was able to open the file ", trim(filename), &
                " but not read data from the preconditionerOptions namelist in it."
           print *,"Make sure there is a carriage return at the end of the file."
           stop
        end if
        if (masterProc) then
-          print *,"Successfully read parameters from preconditionerOptions namelist in ", filename, "."
+          print *,"Successfully read parameters from preconditionerOptions namelist in ", trim(filename), "."
        end if
     end if
     close(unit = fileUnit)

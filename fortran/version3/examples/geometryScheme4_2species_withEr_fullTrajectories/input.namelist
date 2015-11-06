@@ -1,0 +1,72 @@
+! Input file for SFINCS version 3.
+! See the user manual for documentation of the parameters in this file.
+!----------------------------------------------------------------------
+
+&general
+!  saveMatricesAndVectorsInBinary = .t.
+/
+
+&geometryParameters
+  geometryScheme = 4  ! Simplified W7-X model
+  inputRadialCoordinateForGradients = 2  ! d/drHat
+/
+
+&speciesParameters
+  Zs = 1 -1
+  mHats = 1 0.000545509d+0
+  nHats = 1.0d+0 1.0d+0
+  THats = 1.0d+0 1.0d+0
+  dNHatdrHats = -0.5d+0 -0.5d+0
+  dTHatdrHats = -2.0d+0 -2.0d+0
+/
+
+&physicsParameters
+  Delta = 4.5694d-3
+  alpha = 1d+0
+  nu_n = 0.00831565d+0
+
+  dPhiHatdrHat = 2.0d+0
+
+  collisionOperator = 0
+  includeXDotTerm = .true.
+  includeElectricFieldTermInXiDot = .true.
+  useDKESExBDrift = .false.
+  includePhi1 = .false.
+  nonlinear = .false.
+/
+
+&resolutionParameters
+  Ntheta = 13
+!ss NthetaMinFactor = 0.6
+!ss NthetaMaxFactor = 2.5
+!ss NthetaNumRuns = 15
+
+  Nzeta = 19
+!ss NzetaMinFactor = 0.6
+!ss NzetaMaxFactor = 2.5
+!ss NzetaNumRuns = 15
+
+  Nxi = 48
+!ss NxiMinFactor = 0.7
+!ss NxiMaxFactor = 1.5
+!ss NxiNumRuns = 250
+  
+  Nx = 5
+!ss NxMinFactor = 0.8
+!ss NxMaxFactor = 4
+!ss NxNumRuns = 200
+
+  solverTolerance = 1d-6
+!ss solverToleranceMinFactor = 0.1
+!ss solverToleranceMaxFactor = 10
+!ss solverToleranceNumRuns = 3
+/
+
+&otherNumericalParameters
+/
+
+&preconditionerOptions
+/
+
+&export_f
+/

@@ -221,7 +221,7 @@
   ! (i.e., for programMode = 8)
   dPhiHatdpsiN_min = -10d+0
   dPhiHatdpsiN_max = 10d+0
-  NErs = 3
+  NErs = 2
 
   ! nu_n is the collisionality at the reference parameters.
   ! More precisely, nu_n = \bar{nu} * \bar{R} / \bar{v} (in both Gaussian and SI units)

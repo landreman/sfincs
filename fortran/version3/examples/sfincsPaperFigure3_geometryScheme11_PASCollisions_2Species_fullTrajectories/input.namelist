@@ -1,0 +1,106 @@
+! Input file for SFINCS version 3.
+! See the user manual for documentation of the parameters in this file.
+!----------------------------------------------------------------------
+
+!ss scanType = 1
+
+! Parameters specific to scanType = 2:
+!ss NErs = 5
+!ss dPhiHatdpsiNMin = -4.0d+0
+!ss dPhiHatdpsiNMax =  4.0d+0
+
+! Parameters specific to scanType = 3:
+!ss scanVariable = preconditioner_x_min_L
+!ss scanVariableMin = 0
+!ss scanVariableMax = 2
+!ss scanVariableN = 3
+!ss scanVariableScale = linear
+
+&general
+/
+
+&geometryParameters
+  geometryScheme = 11
+
+  inputRadialCoordinate = 3  ! rN
+  inputRadialCoordinateForGradients = 1  ! d/dpsiN
+  rN_wish = 0.88
+
+  equilibriumFile = "../../../../equilibria/w7x-sc1.bc"
+/
+
+&speciesParameters
+  Zs = 1 -1
+  mHats = 1 0.000545509d+0
+  nHats = 0.66d+0 0.66d+0
+  THats = 1d+0 1d+0
+  dNHatdpsiNs = -4.49d+0 -4.49d+0
+  dTHatdpsiNs = -3.32d+0 -3.32d+0
+/
+
+&physicsParameters
+  Delta = 4.5694d-3
+  alpha = 1d+0
+  nu_n = 0.00831565d+0
+
+  dPhiHatdpsiN   = 2.5d+0
+
+  collisionOperator = 1
+  includeXDotTerm = .true.
+  includeElectricFieldTermInXiDot = .true.
+  useDKESExBDrift = .false.
+
+  includePhi1 = .false.
+  nonlinear = .false.
+/
+
+&resolutionParameters
+  Ntheta = 19
+!ss NthetaMinFactor = 0.7
+!ss NthetaMaxFactor = 2
+!ss NthetaNumRuns = 5
+
+  Nzeta = 59
+!ss NzetaMinFactor = 0.8
+!ss NzetaMaxFactor = 2
+!ss NzetaNumRuns = 5
+
+  Nxi = 60
+!ss NxiMinFactor = 0.8
+!ss NxiMaxFactor = 2
+!ss NxiNumRuns = 6
+  
+  Nx = 5
+!ss NxMinFactor = 0.8
+!ss NxMaxFactor = 2
+!ss NxNumRuns = 3
+
+  solverTolerance = 1d-7
+!ss solverToleranceMinFactor = 0.1
+!ss solverToleranceMaxFactor = 10
+!ss solverToleranceNumRuns = 3
+/
+
+&otherNumericalParameters
+/
+
+&preconditionerOptions
+  preconditioner_species = 1
+  preconditioner_x = 1
+  preconditioner_x_min_L = 0
+  preconditioner_xi = 0
+/
+
+&export_f
+  export_full_f = .true.
+  export_delta_f = .true.
+
+  export_f_theta_option = 0
+  export_f_zeta_option = 0
+
+  export_f_xi_option = 1
+  export_f_xi = 0.5
+
+  export_f_x_option = 2
+  export_f_x = 1
+/

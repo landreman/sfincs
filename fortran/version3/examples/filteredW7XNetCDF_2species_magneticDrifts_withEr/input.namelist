@@ -1,0 +1,107 @@
+! Input file for SFINCS version 3.
+! See the user manual for documentation of the parameters in this file.
+!----------------------------------------------------------------------
+
+!ss scanType = 2
+
+! Settings specific to scanType = 2:
+!ss NErs = 41
+!ss dPhiHatdrHatMin = -1.0d+0
+!ss dPhiHatdrHatMax =  3.0d+0
+
+! Settings specific to scanType = 3:
+!ss scanVariable = min_Bmn_to_load
+!ss scanVariableMin = 1e-6
+!ss scanVariableMax = 1e-3
+!ss scanVariableN = 5
+!ss scanVariableScale = log
+
+&general
+/
+
+&geometryParameters
+  geometryScheme = 5
+
+  inputRadialCoordinate = 3
+  inputRadialCoordinateForGradients = 2
+  rN_wish = 0.5
+
+  VMECRadialOption = 1
+  equilibriumFile = "../../../../equilibria/wout_w7x_standardConfig.nc"
+  min_Bmn_to_load = 1e-3
+
+/
+
+&speciesParameters
+!  Zs = 1
+!  mHats = 1
+!  nHats = 0.5d+0
+!  THats = 2.0d+0
+!  dNHatdrHats = -0.5d+0
+!  dTHatdrHats = -2.0d+0 
+
+  Zs = 1 -1
+  mHats = 1 0.000545509d+0
+  nHats = 0.5d+0 0.5d+0
+  THats = 2.0d+0 2.0d+0
+  dNHatdrHats = -0.5d+0 -0.5d+0
+  dTHatdrHats = -2.0d+0 -2.0d+0
+/
+
+&physicsParameters
+  Delta = 4.5694d-3
+  alpha = 1d+0
+  nu_n = 0.00831565d+0
+
+  dPhiHatdrHat = -1.0
+
+  collisionOperator = 0
+
+  includeXDotTerm = .true.
+  includeElectricFieldTermInXiDot = .true.
+  useDKESExBDrift = .false.
+
+  includePhi1 = .false.
+  nonlinear = .false.
+
+  magneticDriftScheme = 1
+/
+
+&resolutionParameters
+  Ntheta = 23
+!ss NthetaMinFactor = 0.6
+!ss NthetaMaxFactor = 2
+!ss NthetaNumRuns = 25
+
+  Nzeta = 55
+!ss NzetaMinFactor = 0.8
+!ss NzetaMaxFactor = 2.5
+!ss NzetaNumRuns = 25
+
+  Nxi = 100
+!ss NxiMinFactor = 0.7
+!ss NxiMaxFactor = 2.5
+!ss NxiNumRuns = 25
+  
+  Nx = 6
+!ss NxMinFactor = 0.8
+!ss NxMaxFactor = 2
+!ss NxNumRuns = 25
+
+  solverTolerance = 1d-6
+!ss solverToleranceMinFactor = 0.1
+!ss solverToleranceMaxFactor = 10
+!ss solverToleranceNumRuns = 3
+
+/
+
+&otherNumericalParameters
+/
+
+&preconditionerOptions
+/
+
+&export_f
+  export_full_f = .false.
+  export_delta_f = .false.
+/

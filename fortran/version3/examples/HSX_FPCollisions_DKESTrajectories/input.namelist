@@ -1,0 +1,95 @@
+! Input file for SFINCS version 3.
+! See the user manual for documentation of the parameters in this file.
+!----------------------------------------------------------------------
+
+!ss scanType = 1
+
+! Parameters specific to scanType = 2:
+!ss NErs = 5
+!ss dPhiHatdpsiNMin = -1.0d+0
+!ss dPhiHatdpsiNMax =  1.0d+0
+
+! Parameters specific to scanType = 3:
+!ss scanVariable = collisionOperator
+!ss scanVariableMin = 0
+!ss scanVariableMax = 1
+!ss scanVariableN = 2
+!ss scanVariableScale = lin
+
+&general
+/
+
+&geometryParameters
+  geometryScheme = 11
+
+  inputRadialCoordinate = 3 ! rN
+  inputRadialCoordinateForGradients = 1  ! d/dpsiN
+  rN_wish = 0.22
+  equilibriumFile = "../../../../equilibria/hsx3free.bc"
+/
+
+&speciesParameters
+  Zs = 1 -1
+  mHats = 1 0.000545509d+0
+  nHats =  4.05256d+0 4.05256d+0
+  THats = 59.0303d+0  734.958d+0
+  dNHatdpsiNs = -5.05932d+0 -5.05932d+0
+  dTHatdpsiNs = -22.0032d+0 -11045.7d+0
+/
+
+&physicsParameters
+  Delta = 0.000144482d+0
+  alpha = 1000
+  nu_n = 83.1565d+0
+
+  dPhiHatdpsiN   = -0.5d+0
+
+  collisionOperator = 0
+
+  includeXDotTerm = .f.
+  includeElectricFieldTermInXiDot = .f.
+  useDKESExBDrift = .t.
+
+  includePhi1 = .false.
+  nonlinear = .false.
+/
+
+&resolutionParameters
+Ntheta = 11
+!ss NthetaMinFactor = 0.7
+!ss NthetaMaxFactor = 2
+!ss NthetaNumRuns = 5
+
+Nzeta = 115
+!ss NzetaMinFactor = 0.8
+!ss NzetaMaxFactor = 2
+!ss NzetaNumRuns = 5
+
+Nxi = 149
+!ss NxiMinFactor = 0.8
+!ss NxiMaxFactor = 2
+!ss NxiNumRuns = 6
+
+Nx = 5
+!ss NxMinFactor = 0.8
+!ss NxMaxFactor = 2
+!ss NxNumRuns = 3
+
+solverTolerance = 1d-6
+!ss solverToleranceMinFactor = 0.1
+!ss solverToleranceMaxFactor = 10
+!ss solverToleranceNumRuns = 3
+/
+
+&otherNumericalParameters
+/
+
+&preconditionerOptions
+  preconditioner_species = 1
+  preconditioner_x = 1
+  preconditioner_x_min_L = 2
+  preconditioner_xi = 0
+/
+
+&export_f
+/

@@ -1,0 +1,188 @@
+#!/usr/bin/env python
+
+# This python script launches various types of scan in which the sfincs executable is run
+# multiple times.  This file contains definitions that are shared among the various
+# types of scan.
+
+import os, inspect, math, subprocess
+from sys import argv
+
+print "This is "+ inspect.getfile(inspect.currentframe())
+
+filename = "input.namelist"
+jobFilename = "job.sfincsScan"
+commentCode = "!ss"
+
+try:
+    sfincsSystem = os.environ["SFINCS_SYSTEM"]
+except:
+    print "Error! Unable to read the SFINCS_SYSTEM environment variable. Make sure you have set it."
+    raise
+print "I detect SFINCS_SYSTEM = "+sfincsSystem
+
+# If there are any command-line arguments, sfincsScan interprets this to mean it should not ask for permission before submitting jobs.
+if len(argv)>1:
+    waitBeforeSubmitting = False
+else:
+    waitBeforeSubmitting = True
+
+if not os.path.isfile(filename):
+    print "Error! The file "+filename+" must be present in the directory from which you call sfincsScan."
+    exit(1)
+
+# For each system, 
+if sfincsSystem=="edison":
+    submitCommand = "qsub "+jobFilename
+    def nameJobFile(original,name):
+        # Modify the job.sfincsScan file to change the name that appears in the queue.
+        # Insert the new line after the original first line, since the first line is a shebang.
+        original.insert(1,"#PBS -N "+name+"\n")
+        return original
+
+elif sfincsSystem=="hydra":
+    submitCommand = "llsubmit "+jobFilename
+    def nameJobFile(original,name):
+        # Modify the job.sfincsScan file to change the name that appears in the queue.
+        # Insert the new line after the original first line, since the first line is a shebang.
+        if "# @ job_name =" in original[1]:
+            original[1]="# @ job_name = "+name+"\n"
+        else:
+            original.insert(1,"# @ job_name = "+name+"\n")
+        return original
+
+elif sfincsSystem=="laptop":
+    submitCommand = "bash "+jobFilename
+    def nameJobFile(original,name):
+        # No changes needed to the job.sfincsScan file.
+        return original
+
+else:
+    print "Error! SFINCS_SYSTEM="+sfincsSystem+" is not yet recognized by sfincsScan"
+    print "You will need to edit sfincsScan to specify a few things for this system."
+    exit(1)
+
+#if sfincsSystem=='edison':
+#    # Any checks that should be done for SFINCS_SYSTEM=edison can go here.
+#    jobfileRequired = True
+#elif sfincsSystem=='laptop':
+#    # Any checks that should be done for SFINCS_SYSTEM=laptop can go here.
+#    jobfileRequired = False
+#else:
+#    print "Error! This system is not known by sfincsScan"
+#    print "You will need to edit sfincsScan"
+
+# Any checks that should be done for other systems can go here.
+
+#if jobfileRequired:
+if not os.path.isfile(jobFilename):
+    print "Error! A "+jobFilename+" file must be present in the directory from which you call sfincsScan (even for systems with no queue)."
+    print "Examples are available in /fortran/version3/utils/job.sfincsScan.xxx"
+    exit(1)
+
+# Load the input file:
+with open(filename, 'r') as f:
+    inputFile = f.readlines()
+
+# Next come some functions used in convergence scans which might be useful for other types of scans:
+
+def uniq(seq): 
+   checked = []
+   for e in seq:
+       if e not in checked:
+           checked.append(e)
+   return checked
+
+def logspace(min,max,nn):
+    if nn < 1:
+        return []
+    elif nn==1:
+        return [min]
+
+    if min <= 0:
+        print "Error in logspace! min must be positive."
+        exit(1)
+    if max <= 0:
+        print "Error in logspace! max must be positive."
+        exit(1)
+    return [math.exp(x/(nn-1.0)*(math.log(max)-math.log(min))+math.log(min)) for x in range(nn)]
+
+def linspace(min,max,nn):
+    if nn < 1:
+        return []
+    elif nn==1:
+        return [min]
+    return [x/(nn-1.0)*(max-min)+min for x in range(nn)]
+
+def logspace_int(min,max,nn):
+    return uniq(map(int,map(round,logspace(min,max,nn))))
+
+def logspace_odd(min,max,nn):
+    temp = map(int,logspace(min,max,nn))
+    temp2 = []
+    for x in temp:
+        if (x % 2 == 0):
+            temp2.append(x+1)
+        else:
+            temp2.append(x)
+    return uniq(temp2)
+
+def namelistLineContains(line,varName):
+    line2 = line.strip().lower()
+    varName = varName.lower()
+    # We need enough characters for the varName, =, and value: 
+    if len(line2)<len(varName)+2:
+        return False
+
+    if line2[0]=="!":
+        return False
+
+    nextChar = line2[len(varName)]
+    if line2[:len(varName)]==varName and (nextChar==" " or nextChar=="="):
+        return True
+    else:
+        return False
+
+def namelistLineContainsSS(line,varName):
+    # Same as namelistLineContains, but looking for !ss directives.
+    line2 = line.strip().lower()
+    varName = varName.lower()
+    if len(line2)<len(commentCode):
+        return False
+
+    if line2[:len(commentCode)] != commentCode:
+        return False
+
+    # If we got this far, the line must begin with !ss, so strip this part out.
+    line2 = line2[len(commentCode):].strip()
+
+    # We need enough characters for the varName, =, and value: 
+    if len(line2)<len(varName)+2:
+        return False
+
+    if line2[0]=="!":
+        return False
+
+    nextChar = line2[len(varName)]
+    if line2[:len(varName)]==varName and (nextChar==" " or nextChar=="="):
+        return True
+    else:
+        return False
+
+# Load some other required subroutines:
+execfile(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_common")
+
+scanType = readScanVariable("scanType","int")
+
+scriptName =  os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_"+str(scanType) 
+
+if not os.path.isfile(scriptName):
+    print "Error! The file "+scriptName+" does not exist, meaning that plots for scanType = "+str(scanType)+ " are not yet supported."
+    exit(1)
+
+try:
+    execfile(scriptName)
+except IOError:
+    print "Unable to run "+scriptName+" even though the file exists."
+    raise
+
+print "Good bye!"

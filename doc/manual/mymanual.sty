@@ -1,0 +1,100 @@
+%% mymanual.sty
+%%
+%% originally written by Matt Landreman '03, march 2003
+%% revised june 2004
+%%
+%% sets the Palatino font for section headings, and sets the
+%% Times font for body text.  It also defines the \mycaption
+%% command to give figure captions a smaller typeface and
+%% bigger margins.
+%%
+%%
+%%
+\ProvidesPackage{mymanual}
+
+%% Change the tt typeface, since the default does not allow bold:
+\renewcommand{\ttdefault}{pcr}
+
+%% Next we define the font to be used for the body text.  Look in
+%% /opt/local/share/texmf/tex/latex/psnfss and look at the .sty file for the
+%% font you want to use.  The code to put in the last option below
+%% is the one that follows "\rmdefault" in the .sty file.
+%% EX: to use Times font, we look in times.sty and see that the code is "ptm".
+\renewcommand{\rmdefault}{ptm}
+
+%% Next we define the font to be used for the chapter and section headings.  Look in
+%% /opt/local/share/texmf/tex/latex/psnfss and look at the .sty file for the
+%% font you want to use.  The code to put in the last option below
+%% is the one that follows "\rmdefault" in the .sty file.
+%% EX: to use Palatino font, we look in palatino.sty and see that the code is "ppm".
+\renewcommand{\sfdefault}{ppl}
+
+%% below we define \mycaption
+\newcommand{\mycaption}[1]{\centering{\parbox{5.5in}{\caption{{ \small{\mdseries #1}}}}}}
+
+%% the command below makes the word "Figure" bold and in the correct size and typeface
+\renewcommand*{\figurename}{ \small Figure}
+\renewcommand*{\tablename}{ \small Table}
+\renewcommand*{\abstractname}{ \large\bfseries \sffamily Abstract}
+
+%% next we set the font for the TOC and Bibliography
+\renewcommand*{\contentsname}{\sffamily \flushright Contents}
+%\renewcommand*{\refname}{\sffamily References}
+
+%% Next, we add a \sffamily to the section headings.
+%% the stuff below is copied from \opt\local\share\texmf\tex\latex\base\report.cls
+\renewcommand\section{\@startsection {section}{1}{\z@}%
+                                   {-3.5ex \@plus -1ex \@minus -.2ex}%
+                                   {2.3ex \@plus.2ex}%
+                                   {\Large\sffamily\bfseries}}
+\renewcommand\subsection{\@startsection{subsection}{2}{\z@}%
+                                     {-3.25ex\@plus -1ex \@minus -.2ex}%
+                                     {1.5ex \@plus .2ex}%
+                                     {\large\sffamily\bfseries}}
+\renewcommand\subsubsection{\@startsection{subsubsection}{3}{\z@}%
+                                     {-3.25ex\@plus -1ex \@minus -.2ex}%
+                                     {1.5ex \@plus .2ex}%
+                                     {\large\sffamily\bfseries}}
+\renewcommand\paragraph{\@startsection{paragraph}{4}{\z@}%
+                                     {-3.25ex\@plus -1ex \@minus -.2ex}%
+                                     {1.5ex \@plus .2ex}%
+                                     {\large\sffamily\bfseries}}
+
+\renewcommand\chapter{\if@openright\cleardoublepage\else\clearpage\fi
+                    \thispagestyle{plain}%
+                    \global\@topnum\z@
+                    \@afterindentfalse
+                    \secdef\@chapterMJL\@schapter}
+\def\@chapterMJL[#1]#2{\ifnum \c@secnumdepth >\m@ne
+                         \refstepcounter{chapter}%
+                         \typeout{\@chapapp\space\thechapter.}%
+                         \addcontentsline{toc}{chapter}%
+                                   {\protect\numberline{\thechapter}#1}%
+                    \else
+                      \addcontentsline{toc}{chapter}{#1}%
+                    \fi
+                    \chaptermark{#1}%
+                    \addtocontents{lof}{\protect\addvspace{10\p@}}%
+                    \addtocontents{lot}{\protect\addvspace{10\p@}}%
+                    \if@twocolumn
+                      \@topnewpage[\@makechapterheadMJL{#2}]%
+                    \else
+                      \@makechapterheadMJL{#2}%
+                      \@afterheading
+                    \fi}
+\def\@makechapterheadMJL#1{%
+  \vspace*{40\p@}%
+  {\parindent \z@ \flushright \normalfont
+    \ifnum \c@secnumdepth >\m@ne
+        \LARGE \MakeUppercase{\@chapapp}\hspace{4mm}\resizebox{!}{25mm}{\thechapter}
+        \par\nobreak
+        \vskip 20\p@
+    \fi
+    \interlinepenalty\@M
+    \Huge \bfseries \sffamily #1\par\nobreak
+    \vskip 40\p@
+  }}
+%\renewcommand\bibname{\sffamily Bibliography}
+\renewcommand\bibname{\sffamily References}
+\endinput
+%%

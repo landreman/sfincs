@@ -1,0 +1,125 @@
+\chapter{Installation}
+
+
+\section{Requirements}
+\label{sec:requirements}
+
+To compile \sfincs~you need the \href{http://www.mcs.anl.gov/petsc/}{\PETSc} library (real version, as opposed to complex version) 
+and the \href{https://www.hdfgroup.org/HDF5/}{\HDF} library.  Even if you will be running \sfincs~in parallel, you
+only need the serial version of \HDF, not the parallel version.
+\PETSc~is used for iterative solution of large linear and nonlinear systems of equations, and \HDF~is used for saving output.
+We have developed and tested \sfincs~ with \PETSc~
+versions 3.2 through 3.5.  The commands in \PETSc~often change from version to version, so future versions of \PETSc~may require modifications
+to the \sfincs~source code.
+
+Although \sfincs~can be run on a single processor, usually you want to run it in parallel.  
+In this case, you need {\ttfamily MPI}, and you need at least one
+of the two libraries \href{http://mumps-solver.org/}{\mumps}
+or \href{http://crd-legacy.lbl.gov/~xiaoye/SuperLU/}{\superludist}.  (Note that \superludist is a parallel library which is different from the serial library {\ttfamily superlu}).
+Both \mumps~and \superludist~are parallelized libraries for direct solution of large sparse linear systems,
+which \sfincs~uses to factorize the preconditioning matrix (discussed in secton \ref{sec:gmres}).
+\PETSc~has a built-in serial sparse direct linear solver,
+but it sometimes gives an error that there is a ``zero pivot'' when \mumps~and \superludist~have no problem solving the system;
+therefore you may want to use \mumps~or \superludist~even for serial runs.  In our experience,
+\mumps~requires less memory and time than \superludist~for solving a given linear system.
+
+If you want to load {\ttfamily VMEC wout} files in \netCDF~format, then you need the \netCDF~library.
+This library is not required for loading ASCII-format {\ttfamily VMEC wout} files.  If you want to compile \sfincs~without
+\netCDF, then edit \path{sfincs/fortran/version3/makefile} so that no value is assigned to {\ttfamily USE\_NETCDF}.
+
+The plotting routines \sfincsPlot~and \sfincsScanPlot~require \python~2.X, {\ttfamily numpy}, {\ttfamily scipy}, and {\ttfamily matplotlib}.
+These \python~libraries are not required by the core fortran part of \sfincs.
+
+Although older {\ttfamily MATLAB} versions of \sfincs~are included in the \sfincs~repository,
+{\ttfamily MATLAB} is not required for running the fortran version of \sfincs.
+
+\section{Cloning the repository}
+
+The source code for \sfincs~is hosted in a {\ttfamily git} repository at
+\url{https://github.com/landreman/sfincs}.
+You obtain the \sfincs~source code by cloning the repository. This requires several steps.
+
+\begin{enumerate}
+\item Create an account on \url{github.com}, and sign in to {\ttfamily github}.
+\item Go to your account settings page, by clicking the wrench icon on the top right.
+\item Click on ``SSH keys'' on the left, and add an SSH key for the computer you wish to use. To do this, you may wish to read see the ``generating SSH keys'' guide which is linked to from that page.
+\item From a terminal command line in the computer you wish to use, enter\\
+{\ttfamily git clone git@github.com:landreman/sfincs.git}\\
+ to download the repository.
+\end{enumerate}
+
+Any time after you have cloned the repository in this way, you can download future updates to the code by entering {\ttfamily git pull} from any subdirectory within your local copy.
+
+\section{Makefiles and environment variables}
+
+To use \sfincs~ you must set the environment variable {\ttfamily SFINCS\_SYSTEM}.
+(For example, using the {\ttfamily bash} shell on the {\ttfamily edison}
+computer, you would type\\
+{\ttfamily export SFINCS\_SYSTEM=edison}\\
+ at the command line
+or in your {\ttfamily .bashrc} startup script.)
+This variable is used in two ways. 
+First, {\ttfamily make} uses this variable to look for the 
+appropriate makefile in the
+\path{sfincs/fortran/version3/makefiles} directory.  Second, the {\ttfamily SFINCS\_SYSTEM} environment
+variable is used by
+\sfincsScan~to determine the command for submitting jobs to the system's queue.
+
+You will probably want to add the directory \path{sfincs/fortran/version3/utils/} to your
+path.  This directory contains the scripts for plotting output and running parameter scans.
+
+To eliminate the need to set the environment variable and path 
+as described above
+at each login session, you may find it convenient to set both
+in your startup script, such as  {\ttfamily .bashrc}.  In this startup script
+you may also want to load any modules needed by \sfincsScan~such as \python, {\ttfamily numpy},
+{\ttfamily scipy}, and {\ttfamily matplotlib} (if your computing system uses modules).
+
+\section{Setting up \sfincs~on a new system}
+If you are setting up \sfincs~on a new system, one for which there is no file
+\path{sfincs/fortran/version3/makefiles/makefile.XXX},
+there are several things you need to do.
+
+First, copy one of the existing makefiles, and edit it as appropriate.
+
+Second, you will need to edit {\ttfamily utils/sfincsScan}. Look for the {\ttfamily if} block near the top
+with sections for {\ttfamily sfincsSystem = edison}, {\ttfamily hydra}, and {\ttfamily laptop}. Add an analogous block
+for your system to set the command used to submit jobs, and a {\ttfamily nameJobFile} function.
+
+Third, if you want {\ttfamily make test} to work (see section \ref{sec:maketest}),
+you will need to create files {\ttfamily job.SFINCS\_SYSTEM}
+for each example in the \path{sfincs/fortran/version3/examples/} directory that you want to include
+in the tests.  You may be able to use the same {\ttfamily job.SFINCS\_SYSTEM} file for each example, but for the largest examples,
+you may want to use different numbers of processes or different queues for different examples.
+
+\section{Compiling}
+
+If your system uses ``modules'', make sure you have loaded any required modules.
+(Requirements are discussed in section \ref{sec:requirements}).  
+There may be
+instructions for the specific modules required on your system in the comments in the
+appropriate makefile \\{\ttfamily sfincs/fortran/version3/makefiles/makefile.SFINCS\_SYSTEM} for your system.
+
+Next, to compile, go to the directory {\ttfamily sfincs/fortran/version3/} and run {\ttfamily make -j}.
+(The {\ttfamily -j} flag means compiliation will be done in parallel, i.e. faster.)
+
+\section{{\ttfamily make test}}
+\label{sec:maketest}
+
+To test that your \sfincs~executable is working, you can run {\ttfamily make test}
+from the \path{sfincs/fortran/version3/} directory.  Doing so will run
+\sfincs~for some or all of the examples in the {\ttfamily sfincs/fortran/version3/examples/} directories.
+(The runs will be performed in series if no queueing system is available, otherwise the runs will all
+be submitted to the queueing system.)
+After each example completes, several of the output quantities (such as parallel flows and radial fluxes)
+will be checked, using the
+{\ttfamily tests.py} script in the example's directory.
+
+If you run {\ttfamily make retest} from the \path{sfincs/fortran/version3/} directory,
+no new runs of \sfincs~will be performed, but the {\ttfamily tests.py} script
+will be run on any existing {\ttfamily sfincsOutput.h5} files in the \path{sfincs/fortran/version3/examples/} directories.
+
+The {\ttfamily make test} functionality relies on several environment variables set in the
+\path{sfincs/fortran/version3/makefiles/makefile.SFINCS_SYSTEM} file, as well as on the
+\path{job.SFINCS_SYSTEM} files in each example subdirectory.  If you experience
+problems with  {\ttfamily make test}, there is a good chance that one of these files needs modification.

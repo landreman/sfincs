@@ -1,0 +1,19 @@
+#!/bin/bash
+
+### Set the job name
+#PBS -N sfincs
+
+### Set the number of nodes that will be used.
+#PBS -l mppwidth=24
+#PBS -l walltime=00:10:00
+
+### Set the queue to submit this job.
+#PBS -q regular
+
+#PBS -V
+#PBS -j oe
+
+cd $PBS_O_WORKDIR
+# Default ordering on edison is PORD, which gives mumps error -9.
+# We use -mat_mumps_icntl_7 3 to switch to the SCOTCH ordering, which seems more robust.
+aprun -n 12 -N 12 -S 6 ../../sfincs -ksp_view -mat_mumps_icntl_7 3 
