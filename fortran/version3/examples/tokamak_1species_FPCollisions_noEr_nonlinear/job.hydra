@@ -9,7 +9,7 @@
 # @ node_usage= not_shared
 # @ node = 1
 # @ tasks_per_node = 16
-# @ resources = ConsumableCpus(4) 
+# @ resources = ConsumableCpus(1) 
 # @ network.MPI = sn_all,not_shared,us
 # @ wall_clock_limit = 00:10:00
 # @ notification = never
