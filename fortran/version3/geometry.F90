@@ -854,7 +854,14 @@ contains
 
     do i = 1, NHarmonics
        if (BHarmonics_parity(i)) then   ! The cosine components of BHat
+          include_mn = .false.
           if ((abs(BHarmonics_n(i))<=int(Nzeta/2.0)).and.(BHarmonics_l(i)<=int(Nzeta/2.0))) then
+             include_mn = .true.
+          end if
+          if (Nzeta==1) then
+             include_mn = .true.
+          end if
+          if (include_mn) then
              do itheta = 1,Ntheta
                 BHat(itheta,:) = BHat(itheta,:) + B0OverBBar * BHarmonics_amplitudes(i) * &
                      cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
@@ -876,6 +883,9 @@ contains
              if (BHarmonics_n(i)==0 .or. abs(real(BHarmonics_n(i)))==Nzeta/2.0 ) then
                 include_mn=.false.
              end if
+          end if
+          if (Nzeta==1) then
+             include_mn = .true.
           end if
           if (include_mn) then
              do itheta = 1,Ntheta
@@ -949,13 +959,13 @@ contains
 
              !sin
              hHatHarmonics_amplitude = 0
-	     if (.not.((m == 0 .and. real(n)==Nzeta/2.0) .or. (real(m)==Ntheta/2.0 .and. n==0) .or. &
+             if (.not.((m == 0 .and. real(n)==Nzeta/2.0) .or. (real(m)==Ntheta/2.0 .and. n==0) .or. &
                      (real(m)==Ntheta/2.0 .and. real(n)==Nzeta/2.0))) then
                 do itheta = 1,Ntheta
                    hHatHarmonics_amplitude = hHatHarmonics_amplitude + 2.0/(Ntheta*Nzeta) * &
                         dot_product(sin(m * theta(itheta)  - n * NPeriods * zeta), hHat(itheta,:))
                 end do
-	     end if
+             end if
              uHatHarmonics_amplitude = &
                   iota*(GHat*m + IHat*n * NPeriods)/(n * NPeriods - iota*m) * hHatHarmonics_amplitude
              do itheta = 1,Ntheta
