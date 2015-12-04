@@ -88,6 +88,9 @@ if len(str(xVariableName).split("_")) != 1 :
    try:
       xArrayPosition = int(str(xVariableName).split("_")[-1])
       xVariableName = '_'.join(str(xVariableName).split("_")[:-1])
+      if xArrayPosition < 1 :
+         print "WARNING: Index has to be larger than 0, using 1 instead."
+         xArrayPosition = 1
    except ValueError:
       xArrayPosition = -1
 
@@ -105,6 +108,9 @@ if len(str(yVariableName).split("_")) != 1 :
    try:
       yArrayPosition = int(str(yVariableName).split("_")[-1])
       yVariableName = '_'.join(str(yVariableName).split("_")[:-1])
+      if yArrayPosition < 1:
+         print "WARNING: Index has to be larger than 0, using 1 instead."
+         yArrayPosition = 1
    except ValueError:
       yArrayPosition = -1
 
@@ -220,7 +226,7 @@ for directory in directories:
     print "Successfully read run in directory "+directory
 
 if not atLeastOneDirectorySucceeded:
-   print "Error! There do not seem to be any completed sfincs jobs in subdirectories of this directory or none of the output files contain both " + xVariableName +  " and " + yVariableName + "."
+   print "Error! There do not seem to be any completed sfincs jobs in subdirectories of this directory or none of the output files contain both " + xVariableName + xArrayPositionString +  " and " + yVariableName + yArrayPositionString + "."
    exit(1)
 
 
