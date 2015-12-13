@@ -62,7 +62,7 @@ contains
 
     namelist / preconditionerOptions / preconditioner_x, preconditioner_x_min_L, preconditioner_zeta, &
          preconditioner_theta, preconditioner_xi, preconditioner_species, reusePreconditioner, &
-         preconditioner_theta_min_L, preconditioner_zeta_min_L
+         preconditioner_theta_min_L, preconditioner_zeta_min_L, preconditioner_magnetic_drifts_max_L
 
     namelist / export_f / export_full_f, export_delta_f, export_f_theta, export_f_zeta, export_f_x, export_f_xi, &
          export_f_theta_option, export_f_zeta_option, export_f_xi_option, export_f_x_option

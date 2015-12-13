@@ -194,6 +194,7 @@ contains
        call writeHDF5Field("preconditioner_xi", preconditioner_xi, "")
        call writeHDF5Field("preconditioner_theta", preconditioner_theta, "")
        call writeHDF5Field("preconditioner_zeta", preconditioner_zeta, "")
+       call writeHDF5Field("preconditioner_magnetic_drifts_max_L", preconditioner_magnetic_drifts_max_L, "")
        call writeHDF5Field("reusePreconditioner", reusePreconditioner, "Use the same preconditioner matrix at each iteration of the Newton solver? " &
             // boolDescription)
        call writeHDF5Field("constraintScheme", constraintScheme, "")
