@@ -375,7 +375,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
      ! 4 point stencil (upwinding, with 1 point on 1 side, and 2 points on the other side.)
 
      if (N<5) then
-        print *,"Error! N must be at least 5"
+        print *,"Error! N must be at least 5 for 4 point stencil"
         stop
      end if
      do i=1,N
@@ -393,7 +393,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
      ! 4 point stencil (upwinding, with 1 point on 1 side, and 2 points on the other side.)
 
      if (N<5) then
-        print *,"Error! N must be at least 5"
+        print *,"Error! N must be at least 5 for 4 point stencil"
         stop
      end if
      do i=3,N-1
@@ -412,7 +412,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
      ! 4 point stencil (upwinding, with 1 point on 1 side, and 2 points on the other side.)
 
      if (N<5) then
-        print *,"Error! N must be at least 5"
+        print *,"Error! N must be at least 5 for 4 point stencil"
         stop
      end if
      do i=1,N
@@ -430,7 +430,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
      ! 4 point stencil (upwinding, with 1 point on 1 side, and 2 points on the other side.)
 
      if (N<5) then
-        print *,"Error! N must be at least 5"
+        print *,"Error! N must be at least 5 for 4 point stencil"
         stop
      end if
      do i=2,N-2
@@ -449,7 +449,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
      ! upwinding, with 1 point on 1 side, and 3 points on the other side.
 
      if (N<5) then
-        print *,"Error! N must be at least 5"
+        print *,"Error! N must be at least 5 for scheme 100,101"
         stop
      end if
      do i=1,N
@@ -464,7 +464,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
      ! upwinding, with 1 point on 1 side, and 3 points on the other side.
 
      if (N<5) then
-        print *,"Error! N must be at least 5"
+        print *,"Error! N must be at least 5 for scheme 102"
         stop
      end if
      do i=4,N-1
@@ -479,7 +479,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
      ! upwinding, with 1 point on 1 side, and 2 points on the other side.
 
      if (N<5) then
-        print *,"Error! N must be at least 5"
+        print *,"Error! N must be at least 5 for scheme 110,111"
         stop
      end if
      do i=1,N
@@ -494,7 +494,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
      ! upwinding, with 1 point on 1 side, and 2 points on the other side.
 
      if (N<5) then
-        print *,"Error! N must be at least 5"
+        print *,"Error! N must be at least 5 for scheme 112"
         stop
      end if
      do i=2,N-3
@@ -509,7 +509,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
      ! upwinding, with 2 points on 1 side, and 3 points on the other side.
 
      if (N<5) then
-        print *,"Error! N must be at least 5"
+        print *,"Error! N must be at least 5 for scheme 120,121"
         stop
      end if
      do i=1,N
@@ -528,7 +528,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
      ! upwinding, with 2 points on 1 side, and 3 points on the other side.
 
      if (N<5) then
-        print *,"Error! N must be at least 5"
+        print *,"Error! N must be at least 5 for scheme 130,131"
         stop
      end if
      do i=1,N

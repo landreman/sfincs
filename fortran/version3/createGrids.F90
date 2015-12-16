@@ -234,6 +234,7 @@
     call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta, thetaWeights, ddtheta, d2dtheta2)
 
     ! Create upwinded matrices for ExB terms:
+    !print *,"Creating upwinded matrices for ExB terms, theta"
     select case (ExBDerivativeScheme)
     case (0)
        ! It should not matter what ddtheta_ExB_plus and ddtheta_ExB_minus are in this case.
@@ -266,6 +267,7 @@
     end select
 
     ! Create upwinded matrices for magneticDrift terms:
+    !print *,"Creating upwinded matrices for magneticDrift terms, theta"
     select case (magneticDriftDerivativeScheme)
     case (0)
        ! It should not matter what ddtheta_magneticDrift_plus and ddtheta_magneticDrift_minus are in this case.
@@ -404,6 +406,7 @@
        call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta, zetaWeights, ddzeta, d2dzeta2)
 
        ! Create upwinded matrices for ExB terms:
+       !print *,"Creating upwinded matrices for ExB terms, zeta"
        select case (ExBDerivativeScheme)
        case (0)
           ! It should not matter what ddzeta_ExB_plus and ddzeta_ExB_minus are in this case.
@@ -436,6 +439,7 @@
        end select
 
        ! Create upwinded matrices for magneticDrift terms:
+       !print *,"Creating upwinded matrices for magneticDrift terms, zeta"
        select case (magneticDriftDerivativeScheme)
        case (0)
           ! It should not matter what ddzeta_magneticDrift_plus and ddzeta_magneticDrift_minus are in this case.
