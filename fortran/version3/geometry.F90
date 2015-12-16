@@ -1171,6 +1171,10 @@ contains
                      - uHatHarmonics_amplitude * m * sin(m * theta(itheta) - n * NPeriods * zeta)
                 duHatdzeta(itheta,:) = duHatdzeta(itheta,:) &
                      + uHatHarmonics_amplitude * n * NPeriods * sin(m * theta(itheta) - n * NPeriods * zeta)
+                dBHat_sub_psi_dtheta(itheta,:) = dBHat_sub_psi_dtheta(itheta,:) &
+		     + dBHat_sub_psi_dthetaHarmonics_amplitude * cos(m * theta(itheta) - n * NPeriods * zeta)
+                dBHat_sub_psi_dzeta(itheta,:) = dBHat_sub_psi_dzeta(itheta,:) &
+		     + dBHat_sub_psi_dzetaHarmonics_amplitude * cos(m * theta(itheta) - n * NPeriods * zeta)
              end do
              if (n==0) then
                 do itheta = 1,Ntheta
@@ -1208,6 +1212,10 @@ contains
                      + uHatHarmonics_amplitude * m * cos(m * theta(itheta) - n * NPeriods * zeta)
                 duHatdzeta(itheta,:) = duHatdzeta(itheta,:) &
                      - uHatHarmonics_amplitude * n * NPeriods * cos(m * theta(itheta) - n * NPeriods * zeta)
+                dBHat_sub_psi_dtheta(itheta,:) = dBHat_sub_psi_dtheta(itheta,:) &
+		     + dBHat_sub_psi_dthetaHarmonics_amplitude * sin(m * theta(itheta) - n * NPeriods * zeta)
+                dBHat_sub_psi_dzeta(itheta,:) = dBHat_sub_psi_dzeta(itheta,:) &
+		     + dBHat_sub_psi_dzetaHarmonics_amplitude * sin(m * theta(itheta) - n * NPeriods * zeta)
              end do
              if (n==0) then
                 do itheta = 1,Ntheta
@@ -1262,6 +1270,10 @@ contains
                      - uHatHarmonics_amplitude * m * sin(m * theta(itheta) - n * NPeriods * zeta)
                 duHatdzeta(itheta,:) = duHatdzeta(itheta,:) &
                      + uHatHarmonics_amplitude * n * NPeriods * sin(m * theta(itheta) - n * NPeriods * zeta)
+                dBHat_sub_psi_dtheta(itheta,:) = dBHat_sub_psi_dtheta(itheta,:) &
+		     + dBHat_sub_psi_dthetaHarmonics_amplitude * cos(m * theta(itheta) - n * NPeriods * zeta)
+                dBHat_sub_psi_dzeta(itheta,:) = dBHat_sub_psi_dzeta(itheta,:) &
+		     + dBHat_sub_psi_dzetaHarmonics_amplitude * cos(m * theta(itheta) - n * NPeriods * zeta)
              end do
              if (n==0) then
                 do itheta = 1,Ntheta
@@ -1279,10 +1291,12 @@ contains
           end do
        end do
     end if
-    do itheta = 1,Ntheta
-       dBHat_sub_psi_dtheta(itheta,:) = -pPrimeHat/iota*(uHat(itheta,:)-iota*IHat*hHat(itheta,:))
-       dBHat_sub_psi_dzeta(itheta,:)  =  pPrimeHat*(uHat(itheta,:)+GHat*hHat(itheta,:))
-    end do
+   
+    ! This method is also right, but I prefer the above one to make sure that the 00 comp. is 0
+    !do itheta = 1,Ntheta
+    !   dBHat_sub_psi_dtheta(itheta,:) = -pPrimeHat/iota*(uHat(itheta,:)-iota*IHat*(hHat(itheta,:)-1/FSABHat2))
+    !   dBHat_sub_psi_dzeta(itheta,:)  =  pPrimeHat*(uHat(itheta,:)+GHat*(hHat(itheta,:)-1/FSABHat2))
+    !end do
 
     do itheta = 1,Ntheta
        do izeta = 1,Nzeta
