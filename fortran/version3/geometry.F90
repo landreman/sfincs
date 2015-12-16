@@ -88,22 +88,26 @@ contains
           print *,"Since geometryScheme=4, we will ignore the *_wish parameters and use the flux surface rN = 0.5."
        end if
 
-    case (5)
+    case (5,7)
        ! Read VMEC file, defining the effective minor radius aHat to be VMEC's Aminor_p
-       call read_VMEC(equilibriumfile)
+       ! geometryScheme=7 is a hack for testing NEMEC_compute_missing_fields.f90
+       call read_VMEC(equilibriumfile,geometryScheme==7)
        NPeriods = vmec%nfp
        psiAHat = vmec%phi(vmec%ns)/(2*pi)
        aHat = vmec%Aminor_p
 
     case (6)
-       ! Read VMEC file, using an effective minor radius aHat which is NOT VMEC's Aminor_p,
-       ! but instead a definition used at IPP
-       call read_VMEC(equilibriumFile)
+       ! Read Erika Strumberger's NEMEC format used at IPP.
+       call read_NEMEC(equilibriumFile)
        NPeriods = vmec%nfp
        psiAHat = vmec%phi(vmec%ns)/(2*pi)
-
-       ! This next line is not correct and should be fixed!!!
-       aHat = vmec%Aminor_p
+       ! Aminor_p is not set in this format, so we must specify a value in the input namelist.
+       if (aHat-0.5585d+0 < 1e-4 .and. masterProc) then
+          print *,"###############################################################################################"
+          print *,"WARNING: It appears you have not explicitly set aHat to a value other than the default."
+          print *,"This is probably wrong. For geometryScheme=6, aHat is not set using the NEMEC equilibrium file."
+          print *,"###############################################################################################"
+       end if
 
     case (10)
        print *,"Error! This geometryScheme has not been implemented yet."
@@ -228,7 +232,7 @@ contains
     case (1,2,3,4,11,12)
        coordinateSystem = COORDINATE_SYSTEM_BOOZER
        call computeBHat_Boozer()
-    case (5,6)
+    case (5,6,7)
        coordinateSystem = COORDINATE_SYSTEM_VMEC
        call computeBHat_VMEC()
     case default
@@ -1386,7 +1390,7 @@ contains
 
     dphi = vmec%phi(2) - vmec%phi(1)
     do j=3,vmec%ns
-       if (abs(vmec%phi(j)-vmec%phi(j-1)-dphi) > 1d-14) then
+       if (abs(vmec%phi(j)-vmec%phi(j-1)-dphi) > 1d-11) then
           if (masterProc) then
              print *,"Error! VMEC phi array is not uniformly spaced."
           end if

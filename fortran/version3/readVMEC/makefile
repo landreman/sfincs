@@ -7,8 +7,10 @@
 OBJ_FILES = \
 	constants.o \
 	kind_defs.o \
+	NEMEC_compute_missing_fields.o \
 	pisa_io.o \
 	pisa_vmec_module.o \
+	read_NEMEC_file.o \
 	readVMEC.o
 
 DEPENDENCIES = kind_defs.o pisa_io.o
@@ -53,6 +55,8 @@ ezcdf_opncls.o:
 handle_err.o:
 constants.o: kind_defs.o
 kind_defs.o:
+NEMEC_compute_missing_fields.o: constants.o kind_defs.o pisa_vmec_module.o
 pisa_io.o: kind_defs.o
 pisa_vmec_module.o: $(DEPENDENCIES)
+read_NEMEC_file.o: constants.o kind_defs.o pisa_vmec_module.o
 readVMEC.o: pisa_vmec_module.o
