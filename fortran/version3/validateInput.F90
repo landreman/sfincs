@@ -320,13 +320,18 @@ subroutine validateInput()
      stop
   end if
 
-  if ((magneticDriftScheme>0) .and. (geometryScheme .ne. 5) .and. (geometryScheme .ne. 11) .and. (geometryScheme .ne. 12)) then
-     if (masterProc) then
-        print *,"Error! You requested that poloidal/toroidal magnetic drifts be included (magneticDriftScheme>0)"
-        print *,"       but you selected a geometryScheme other than 5 (VMEC).  To load the magnetic field"
-        print *,"       components required to compute magnetic drifts, you must presently supply a VMEC file."
-     end if
-     stop
+  if (magneticDriftScheme>0) then
+     select case (geometryScheme)
+        case (5,6,7,11,12)
+           ! No problem, magnetic drifts have been implemented for these geometries.
+        case default
+           if (masterProc) then
+              print *,"Error! You requested that poloidal/toroidal magnetic drifts be included (magneticDriftScheme>0)"
+              print *,"       but you selected a geometryScheme for which the required components of the magnetic field"
+              print *,"       are not available."
+           end if
+           stop
+        end select
   end if
 
 
