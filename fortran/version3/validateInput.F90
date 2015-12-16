@@ -320,7 +320,7 @@ subroutine validateInput()
      stop
   end if
 
-  if ((magneticDriftScheme>0) .and. (geometryScheme .ne. 5)) then
+  if ((magneticDriftScheme>0) .and. (geometryScheme .ne. 5) .and. (geometryScheme .ne. 11) .and. (geometryScheme .ne. 12)) then
      if (masterProc) then
         print *,"Error! You requested that poloidal/toroidal magnetic drifts be included (magneticDriftScheme>0)"
         print *,"       but you selected a geometryScheme other than 5 (VMEC).  To load the magnetic field"
