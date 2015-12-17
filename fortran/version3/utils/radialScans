@@ -141,8 +141,19 @@ else:
     exit(1)
 
 Nradius = readScanVariable("Nradius","int")
-inputRadialCoordinate = readVariable("inputRadialCoordinate","int")
-inputRadialCoordinateForGradients = readVariable("inputRadialCoordinateForGradients","int")
+##inputRadialCoordinate = readVariable("inputRadialCoordinate","int") ##Commented by AM 2015-12
+##Added by AM 2015-12##
+inputRadialCoordinate = readVariable("inputRadialCoordinate","int", False)
+if inputRadialCoordinate == None :
+    inputRadialCoordinate = readDefault("inputRadialCoordinate","int")
+#######################
+
+##inputRadialCoordinateForGradients = readVariable("inputRadialCoordinateForGradients","int") ##Commented by AM 2015-12
+##Added by AM 2015-12## 
+inputRadialCoordinateForGradients = readVariable("inputRadialCoordinateForGradients","int", False)
+if inputRadialCoordinateForGradients == None :
+    inputRadialCoordinateForGradients = readDefault("inputRadialCoordinateForGradients","int")
+#######################
 
 radiusName             = getRadialCoordinateName(inputRadialCoordinate)
 radiusNameForGradients = getRadialCoordinateName(inputRadialCoordinateForGradients)
@@ -225,6 +236,11 @@ if geometryScheme==5:
 
     try:
         vmecRadialOption = readVariable('vmecRadialOption','int',required=False)
+        ##Added by AM 2015-12##
+        if vmecRadialOption == None :
+            print "Unable to read vmecRadialOption from input.namelist, so using the default value 1"
+            vmecRadialOption = 1
+        #######################
     except:
         print "Unable to read vmecRadialOption from input.namelist, so using the default value 1"
         vmecRadialOption = 1

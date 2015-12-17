@@ -49,54 +49,99 @@ for runNum in range(len(radii)):
     f.close()
 
     # Now copy the input.namelist file:
+
+
+    ##The following section rewritten by AM 2015-12##
+    #################################################
+
     f = open(filename,"w")
     for line in inputFile:
         # Set sfincsScan directives:
         if namelistLineContainsSS(line,"scanType"):
-            line = "!ss scanType = 2  ! set by sfincsScan_5.\n"
-
+##            line = "!ss scanType = 2  ! set by sfincsScan_5.\n" ##Commented by AM
+            continue ##Added by AM
         if namelistLineContainsSS(line,"NErs"):
-            line = "!ss NErs = "+str(int(NErs[runNum]))+"  ! set by sfincsScan_5.\n"
-
+##            line = "!ss NErs = "+str(int(NErs[runNum]))+"  ! set by sfincsScan_5.\n" ##Commented by AM
+            continue ##Added by AM
         if namelistLineContainsSS(line,"dPhiHatd"+radiusNameForGradients+"Max"):
-            line = "!ss dPhiHatd"+radiusNameForGradients+"Max = "+str(dPhiHatdradius_max[runNum])+"  ! set by sfincsScan_5.\n"
-
+##            line = "!ss dPhiHatd"+radiusNameForGradients+"Max = "+str(dPhiHatdradius_max[runNum])+"  ! set by sfincsScan_5.\n" ##Commented by AM
+            continue ##Added by AM
         if namelistLineContainsSS(line,"dPhiHatd"+radiusNameForGradients+"Min"):
-            line = "!ss dPhiHatd"+radiusNameForGradients+"Min = "+str(dPhiHatdradius_min[runNum])+"  ! set by sfincsScan_5.\n"
-
+##            line = "!ss dPhiHatd"+radiusNameForGradients+"Min = "+str(dPhiHatdradius_min[runNum])+"  ! set by sfincsScan_5.\n" ##Commented by AM
+            continue ##Added by AM
         # Now set fortran variables:
         if namelistLineContains(line,radiusName+"_wish"):
-            line = "  "+radiusName+"_wish = "+str(radii[runNum])+" ! Set by sfincsScan_5.\n"
-
+##            line = "  "+radiusName+"_wish = "+str(radii[runNum])+" ! Set by sfincsScan_5.\n" ##Commented by AM
+            continue ##Added by AM
         if namelistLineContains(line,"nHats"):
-            line = "  nHats ="
+##            line = "  nHats =" ##Commented by AM
+##            for ispecies in range(Nspecies): ##Commented by AM
+##                line += " "+str(nHats[ispecies][runNum]) ##Commented by AM
+##            line += " ! Set by sfincsScan_5.\n" ##Commented by AM
+            continue ##Added by AM
+        if namelistLineContains(line,"dnHatd"+radiusNameForGradients+"s"):
+##            line = "  dnHatd"+radiusNameForGradients+"s =" ##Commented by AM
+##            for ispecies in range(Nspecies): ##Commented by AM
+##                line += " "+str(dnHatdradii[ispecies][runNum]) ##Commented by AM
+##            line += " ! Set by sfincsScan_5.\n" ##Commented by AM
+            continue ##Added by AM
+        if namelistLineContains(line,"THats"):
+##            line = "  THats =" ##Commented by AM 
+##            for ispecies in range(Nspecies): ##Commented by AM
+##                line += " "+str(THats[ispecies][runNum]) ##Commented by AM 
+##            line += " ! Set by sfincsScan_5.\n" ##Commented by AM
+            continue ##Added by AM
+        if namelistLineContains(line,"dTHatd"+radiusNameForGradients+"s"):
+##            line = "  dTHatd"+radiusNameForGradients+"s =" ##Commented by AM
+##            for ispecies in range(Nspecies): ##Commented by AM
+##                line += " "+str(dTHatdradii[ispecies][runNum]) ##Commented by AM
+##            line += " ! Set by sfincsScan_5.\n" ##Commented by AM
+            continue ##Added by AM
+
+        ##Added by AM 2015-12##
+        if line.strip().find("&geometryParameters") == 0 :
+            line += "  "+radiusName+"_wish = "+str(radii[runNum])+" ! Set by sfincsScan_5.\n"
+
+        if line.strip().find("&speciesParameters") == 0 :
+            line += "  nHats =" 
             for ispecies in range(Nspecies):
                 line += " "+str(nHats[ispecies][runNum])
-            line += " ! Set by sfincsScan_5.\n"
+            line += " ! Set by sfincsScan_5.\n"    
 
-        if namelistLineContains(line,"dnHatd"+radiusNameForGradients+"s"):
-            line = "  dnHatd"+radiusNameForGradients+"s ="
+            line += "  dnHatd"+radiusNameForGradients+"s ="
             for ispecies in range(Nspecies):
                 line += " "+str(dnHatdradii[ispecies][runNum])
             line += " ! Set by sfincsScan_5.\n"
 
-        if namelistLineContains(line,"THats"):
-            line = "  THats ="
+            line += "  THats ="
             for ispecies in range(Nspecies):
                 line += " "+str(THats[ispecies][runNum])
             line += " ! Set by sfincsScan_5.\n"
 
-        if namelistLineContains(line,"dTHatd"+radiusNameForGradients+"s"):
-            line = "  dTHatd"+radiusNameForGradients+"s ="
+            line += "  dTHatd"+radiusNameForGradients+"s ="
             for ispecies in range(Nspecies):
                 line += " "+str(dTHatdradii[ispecies][runNum])
-            line += " ! Set by sfincsScan_5.\n"
+            line += " ! Set by sfincsScan_5.\n"    
 
+        #######################    
         f.write(line)
+
+    ##Added by AM 2015-12, Write sfincsScan options##
+    line = "!ss scanType = 2  ! set by sfincsScan_5.\n"
+    line += "!ss NErs = "+str(int(NErs[runNum]))+"  ! set by sfincsScan_5.\n"
+    line += "!ss dPhiHatd"+radiusNameForGradients+"Max = "+str(dPhiHatdradius_max[runNum])+"  ! set by sfincsScan_5.\n"
+    line += "!ss dPhiHatd"+radiusNameForGradients+"Min = "+str(dPhiHatdradius_min[runNum])+"  ! set by sfincsScan_5.\n"
+    f.write(line)
+
     f.close()
 
+    #################################################
+
     # Submit the Er scan:
-    submitCommand = "sfincsScan -f"
+    ##Modified by AM 2015-12-09##
+##    submitCommand = "sfincsScan -f" ##Commented by AM 2015-12
+    submitCommand = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan -f" ##Added by AM 2015-12
+    #############################
     try:
         # We need to include .split(" ") to separate the command-line arguments into an array of strings.   
         # I'm not sure why python requires this. 

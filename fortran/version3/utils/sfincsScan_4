@@ -54,37 +54,94 @@ for runNum in range(len(radii)):
     f.close()
 
     # Now copy the input.namelist file:
+
+    ##The following section rewritten by AM 2015-12##
+    #################################################
+
     f = open(filename,"w")
-    for line in inputFile:
+    for line in inputFile: ##This loop now just removes the lines which are going to be set later (if they exist in the input file)
         if namelistLineContains(line,radiusName+"_wish"):
-            line = "  "+radiusName+"_wish = "+str(radii[runNum])+" ! Set by sfincsScan_4.\n"
+##            line = "  "+radiusName+"_wish = "+str(radii[runNum])+" ! Set by sfincsScan_4.\n" ##Commented by AM
+            continue ##Added by AM
 
         if namelistLineContains(line,"nHats"):
-            line = "  nHats ="
-            for ispecies in range(Nspecies):
-                line += " "+str(nHats[ispecies][runNum])
-            line += " ! Set by sfincsScan_4.\n"
+##            line = "  nHats =" ##Commented by AM 
+##            for ispecies in range(Nspecies): ##Commented by AM 
+##                line += " "+str(nHats[ispecies][runNum]) ##Commented by AM 
+##            line += " ! Set by sfincsScan_4.\n" ##Commented by AM 
+            continue ##Added by AM
 
         if namelistLineContains(line,"dnHatd"+radiusNameForGradients+"s"):
-            line = "  dnHatd"+radiusNameForGradients+"s ="
-            for ispecies in range(Nspecies):
-                line += " "+str(dnHatdradii[ispecies][runNum])
-            line += " ! Set by sfincsScan_4.\n"
+##            line = "  dnHatd"+radiusNameForGradients+"s =" ##Commented by AM 
+##            for ispecies in range(Nspecies): ##Commented by AM 
+##                line += " "+str(dnHatdradii[ispecies][runNum]) ##Commented by AM 
+##            line += " ! Set by sfincsScan_4.\n" ##Commented by AM 
+            continue ##Added by AM
 
         if namelistLineContains(line,"THats"):
-            line = "  THats ="
-            for ispecies in range(Nspecies):
-                line += " "+str(THats[ispecies][runNum])
-            line += " ! Set by sfincsScan_4.\n"
+##            line = "  THats =" ##Commented by AM 
+##            for ispecies in range(Nspecies): ##Commented by AM 
+##                line += " "+str(THats[ispecies][runNum]) ##Commented by AM 
+##            line += " ! Set by sfincsScan_4.\n" ##Commented by AM 
+            continue ##Added by AM
 
         if namelistLineContains(line,"dTHatd"+radiusNameForGradients+"s"):
-            line = "  dTHatd"+radiusNameForGradients+"s ="
-            for ispecies in range(Nspecies):
-                line += " "+str(dTHatdradii[ispecies][runNum])
-            line += " ! Set by sfincsScan_4.\n"
+##            line = "  dTHatd"+radiusNameForGradients+"s =" ##Commented by AM 
+##            for ispecies in range(Nspecies): ##Commented by AM 
+##                line += " "+str(dTHatdradii[ispecies][runNum]) ##Commented by AM 
+##            line += " ! Set by sfincsScan_4.\n" ##Commented by AM 
+            continue ##Added by AM
 
-        f.write(line)
+#        f.write(line)
+
+        ##Added by AM 2015-12##
+#        if namelistLineContains(line,"&geometryParameters") :
+        if line.strip().find("&geometryParameters") == 0 :
+#            f.write("  "+radiusName+"_wish = "+str(radii[runNum])+" ! Set by sfincsScan_4.\n")
+            line += "  "+radiusName+"_wish = "+str(radii[runNum])+" ! Set by sfincsScan_4.\n"
+
+#        if namelistLineContains(line,"&speciesParameters") :
+        if line.strip().find("&speciesParameters") == 0 :
+            #f.write("  nHats =")
+            line += "  nHats ="
+            for ispecies in range(Nspecies):
+                #f.write(" "+str(nHats[ispecies][runNum]))
+                line += " "+str(nHats[ispecies][runNum])
+            #f.write(" ! Set by sfincsScan_4.\n")
+            line += " ! Set by sfincsScan_4.\n"    
+
+            #f.write("dnHatd"+radiusNameForGradients+"s")
+            line += "  dnHatd"+radiusNameForGradients+"s ="
+            for ispecies in range(Nspecies):
+                #f.write(" "+str(dnHatdradii[ispecies][runNum]))
+                line += " "+str(dnHatdradii[ispecies][runNum])
+            #f.write(" ! Set by sfincsScan_4.\n")
+            line += " ! Set by sfincsScan_4.\n"    
+
+            #f.write("  THats =")
+            line += "  THats ="
+            for ispecies in range(Nspecies):
+                #f.write(" "+str(THats[ispecies][runNum]))
+                line += " "+str(THats[ispecies][runNum])
+            #f.write(" ! Set by sfincsScan_4.\n")
+            line += " ! Set by sfincsScan_4.\n"    
+
+            #f.write("dTHatd"+radiusNameForGradients+"s")
+            line += "  dTHatd"+radiusNameForGradients+"s ="
+            for ispecies in range(Nspecies):
+                #f.write(" "+str(dTHatdradii[ispecies][runNum]))
+                line += " "+str(dTHatdradii[ispecies][runNum])
+            #f.write(" ! Set by sfincsScan_4.\n")
+            line += " ! Set by sfincsScan_4.\n"    
+
+        f.write(line)    
+        #######################
+
     f.close()
+
+    
+
+    #################################################
 
     # Submit the sfincs job:
     try:

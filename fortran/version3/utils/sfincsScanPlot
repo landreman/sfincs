@@ -5,12 +5,16 @@
 # call the appropriate script sfincsScanPlot_X.  You are also welcome to run
 # sfincsScanPlot_X directly.
 
+##FILE MODIFIED BY AM 2015-12 TO CALL SCRIPTS WITH "PDF" ARGUMENT##
+
 import os, inspect, sys, subprocess
 
 print "This is "+ inspect.getfile(inspect.currentframe())
 
-# If called with any command-line arguments other than 'noplot', then redirect to sfincsScanPlot_combine.
-if len(sys.argv)>1 and (sys.argv[1] != "noplot"):
+##By AM 2015-12##
+# If called with any command-line arguments other than 'noplot' or 'pdf', then redirect to sfincsScanPlot_combine.
+#if len(sys.argv)>1 and (sys.argv[1] != "noplot"): ##By AM
+if len(sys.argv)>1 and (sys.argv[1] != "noplot") and (sys.argv[1].lower() != "pdf"): ##By AM
     scriptName =  os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScanPlot_combine"
     command = sys.argv
     command[0] = scriptName
@@ -99,6 +103,18 @@ scriptName =  os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfra
 if not os.path.isfile(scriptName):
     print "Error! The file "+scriptName+" does not exist, meaning that plots for scanType = "+str(scanType)+ " are not yet supported."
     exit(1)
+
+##By AM 2015-12##
+if len(sys.argv)>1 and (sys.argv[1].lower() == "pdf"): ##By AM 
+    try:
+        command = sys.argv
+        command[0] = scriptName
+        subprocess.call(command)
+        exit(0)
+    except IOError:
+        print "Unable to run "+scriptName+" even though the file exists."
+        raise
+##
 
 try:
     execfile(scriptName)

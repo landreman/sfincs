@@ -6,7 +6,7 @@
 outputFilename = "sfincsOutput.h5"
 
 import matplotlib
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import h5py
 import numpy
 import inspect, math, os
@@ -28,6 +28,8 @@ if makePDF:
    matplotlib.rc('font', **font)
    matplotlib.rc('lines',markeredgewidth=0,markersize=3,linewidth=0.5)
    matplotlib.rc('axes',linewidth=0.7)
+
+import matplotlib.pyplot as plt
 
 numRuns = 0
 scanVariableValues = []
@@ -334,4 +336,12 @@ ax.text(0.5,0.99,titleString,horizontalalignment='center',verticalalignment='top
 # If this script was called with any command-line arguments, then do not actually display the plot:
 if len(sys.argv) == 1:
     plt.show()
+
+if makePDF:
+   if len(sys.argv)>2 : #Use the substituted name as file name
+      print "Writing plot to " + os.getcwd() + "/" + sys.argv[2] + ".pdf."
+      plt.savefig(sys.argv[2] + ".pdf")
+   else: #Use script name as file name
+      print "Writing plot to " + os.getcwd() + "/" + os.path.basename(__file__) + ".pdf."
+      plt.savefig(os.path.basename(__file__) + ".pdf")
 
