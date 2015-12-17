@@ -255,7 +255,8 @@ else:
          #yAxisLabels=["FSABFlow","particleFlux\nvm_rHat","particleFlux\nvd_rHat","heatFlux\nvm_rHat","heatFlux\nvd_rHat"]
          yAxisLabels=["FSABFlow","particleFlux\nvm_rHat","particleFlux\nvd_rHat","heatFlux\nvm_rHat","heatFlux\nwithoutPhi1_rHat"]
       else:
-         yAxisLabels=["FSABFlow","particleFlux\nvm_rHat","heatFlux\nvm_rHat","elapsed time (s)"]
+         #yAxisLabels=["FSABFlow","particleFlux\nvm_rHat","heatFlux\nvm_rHat","elapsed time (s)"]
+         yAxisLabels=["FSABFlow","particleFlux\nvm_rHat","heatFlux\nvm_rHat"]
    else:
       if includePhi1:
          yAxisLabels=[]

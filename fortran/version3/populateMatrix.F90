@@ -38,7 +38,7 @@
     PetscScalar, dimension(:,:), allocatable :: ddxToUse_plus, ddxToUse_minus
     integer :: i, j, ix, ispecies, itheta, izeta, L, ixi, index, ix_row, ix_col
     integer :: rowIndex, colIndex
-    integer :: ell, iSpeciesA, iSpeciesB
+    integer :: ell, iSpeciesA, iSpeciesB, maxL
     integer, dimension(:), allocatable :: rowIndices, colIndices
     PetscScalar, dimension(:,:), allocatable :: ddxToUse, d2dx2ToUse, zetaPartOfTerm, localZetaPartOfTerm
     PetscScalar, dimension(:,:), allocatable :: fToFInterpolationMatrix
@@ -491,14 +491,12 @@
        izetaRow = -1 ! So izetaRow is not used in place of izeta by mistake.
        izetaCol = -1 ! So izetaCol is not used in place of izeta by mistake.
        if ((whichMatrix .ne. 2) .and. (magneticDriftScheme>0)) then
-          do L = 0, (Nxi-1)
-
-! These next lines were used before magneticDriftDerivativeScheme was introduced.
-!!$             if (whichMatrix>0 .or. L < preconditioner_theta_min_L) then
-!!$                ddthetaToUse = ddtheta
-!!$             else
-!!$                ddthetaToUse = ddtheta_preconditioner
-!!$             end if
+          if (whichMatrix==0) then
+             maxL = min(preconditioner_magnetic_drifts_max_L,Nxi-1)
+          else
+             maxL = Nxi-1
+          end if
+          do L = 0, maxL
 
              do izeta = izetaMin, izetaMax                
                 do ithetaRow = ithetaMin, ithetaMax
@@ -597,14 +595,12 @@
        ithetaRow = -1 ! So ithetaRow is not used in place of itheta by mistake.
        ithetaCol = -1 ! So ithetaCol is not used in place of itheta by mistake.
        if ((whichMatrix .ne. 2) .and. (magneticDriftScheme>0)) then
-          do L = 0, (Nxi-1)
-
-! These next lines were used before magneticDriftDerivativeScheme was introduced.
-!!$             if (whichMatrix>0 .or. L < preconditioner_zeta_min_L) then
-!!$                ddzetaToUse = ddzeta
-!!$             else
-!!$                ddzetaToUse = ddzeta_preconditioner
-!!$             end if
+          if (whichMatrix==0) then
+             maxL = min(preconditioner_magnetic_drifts_max_L,Nxi-1)
+          else
+             maxL = Nxi-1
+          end if
+          do L = 0, maxL
 
              do itheta = ithetaMin, ithetaMax                
                 do izetaRow = izetaMin, izetaMax

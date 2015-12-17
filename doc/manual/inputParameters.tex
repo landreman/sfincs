@@ -1292,6 +1292,18 @@ Either a setting of 0 or 1 can be good for this parameter.}
 
 \myhrule
 
+\param{preconditioner\_magnetic\_drifts\_max\_L}
+{integer}
+{2}
+{Whenever \parlink{useIterativeLinearSolver} = \true and \parlink{magneticDriftScheme}$>0$}
+{Maximum Legendre mode number for which the poloidal and toroidal magnetic drift terms are included in the preconditioner.
+As this parameter is increased, more memory is required for factorization, but fewer KSP iterations are required.
+Setting this parameter to $\ge$ \parlink{Nxi} means that the magnetic drifts are always included in the preconditioner.
+Setting this parameter to $<0$ means the magnetic drifts are never included in the preconditioner.
+The default value should be good.}
+
+\myhrule
+
 \param{reusePreconditioner}
 {Boolean}
 {\true}

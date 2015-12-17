@@ -13,7 +13,7 @@ try:
     f = h5py.File('sfincsOutput.h5','r')
 except:
     print "Unable to open sfincsOutput.h5"
-    exit(1)
+    raise
 
 # The expression [()] converts from an h5py dataset to a numpy ndarray:
 theta = f['theta'][()]
@@ -594,28 +594,27 @@ else:
     for ispecies in range(0,NspeciesToPlot):
 
         plt.subplot(numRows, numCols, ispecies*numCols+1)
-        plt.plot(x,particleFlux_vm_psiHat_vs_x[:,ispecies,iteration],'.-')
+        for iteration in range(NIterations):
+            plt.plot(x,particleFlux_vm_psiHat_vs_x[:,ispecies,iteration],'.-',label="Iteration "+str(iteration+1))
         plt.ylabel('particleFlux_vm_psiHat_vs_x for species {} (Z={})'.format(ispecies+1,Zs[ispecies]))
         plt.xlabel('x')
+        if ispecies==0:
+            plt.legend(prop={'size':7})
         print "Species ",ispecies+1,"particleFlux_vm_psiHat=",particleFlux_vm_psiHat[ispecies,iteration],", sum(particleFlux_vm_psiHAt_vs_x)=",sum(particleFlux_vm_psiHat_vs_x[:,ispecies,iteration])
-        if NIterations>1:
-            plt.plot(x,particleFlux_vm_psiHat_vs_x[:,ispecies,NIterations-1],'.-r')
 
         plt.subplot(numRows, numCols, ispecies*numCols+2)
-        plt.plot(x,FSABFlow_vs_x[:,ispecies,iteration],'.-')
+        for iteration in range(NIterations):
+            plt.plot(x,FSABFlow_vs_x[:,ispecies,iteration],'.-')
         plt.ylabel('FSABFlow_vs_x for species {} (Z={})'.format(ispecies+1,Zs[ispecies]))
         plt.xlabel('x')
         print "Species ",ispecies+1,"FSABFlow=",FSABFlow[ispecies,iteration],", sum(FSABFlow_vs_x)=",sum(FSABFlow_vs_x[:,ispecies,iteration])
-        if NIterations>1:
-            plt.plot(x,FSABFlow_vs_x[:,ispecies,NIterations-1],'.-r')
 
         plt.subplot(numRows, numCols, ispecies*numCols+3)
-        plt.plot(x,heatFlux_vm_psiHat_vs_x[:,ispecies,iteration],'.-')
+        for iteration in range(NIterations):
+            plt.plot(x,heatFlux_vm_psiHat_vs_x[:,ispecies,iteration],'.-')
         plt.ylabel('heatFlux_vm_psiHat_vs_x for species {} (Z={})'.format(ispecies+1,Zs[ispecies]))
         plt.xlabel('x')
         print "Species ",ispecies+1,"heatFlux_vm_psiHat=",heatFlux_vm_psiHat[ispecies,iteration],", sum(heatFlux_vm_psiHAt_vs_x)=",sum(heatFlux_vm_psiHat_vs_x[:,ispecies,iteration])
-        if NIterations>1:
-            plt.plot(x,heatFlux_vm_psiHat_vs_x[:,ispecies,NIterations-1],'.-r')
 
     ax = fig.add_axes([0,0,1,1], frameon=False)
     ax.text(0.5,0.99,"Figure 4 - "+titleString,horizontalalignment='center',verticalalignment='top')
