@@ -91,7 +91,7 @@
       logical           :: ex 
 
 
-      integer :: mpol1, mpnt, nsin
+      integer :: mpol1, mpnt, nsin, nn
       real(DP), allocatable :: hpres(:),hbuco(:),hbvco(:)      
       real(DP), allocatable :: hmass(:),hphip(:),hphi(:),hvp(:)
       real(DP), allocatable :: hoverr(:),fjcuru(:),fjcurv(:),hspecw(:)
@@ -206,19 +206,21 @@
             nmin0=-vmec%ntor
             if(m.eq.0) nmin0=0
             do n=nmin0,vmec%ntor
+               ! Sign flips for consistency with Hakan's conventions:
+               nn=-n
 ! --- full mesh
-              read(inre3) vmec%rmnc(n,m,j),vmec%zmns(n,m,j),         &  
-                          vmec%rmns(n,m,j),vmec%zmnc(n,m,j),         &  
+              read(inre3) vmec%rmnc(nn,m,j),vmec%zmns(nn,m,j),         &  
+                          vmec%rmns(nn,m,j),vmec%zmnc(nn,m,j),         &  
 ! --- half mesh
-                          vmec%bsupumnc(n,m,j),vmec%bsupvmnc(n,m,j), &  
-                          vmec%bsupumns(n,m,j),vmec%bsupvmns(n,m,j), &  
+                          vmec%bsupumnc(nn,m,j),vmec%bsupvmnc(nn,m,j), &  
+                          vmec%bsupumns(nn,m,j),vmec%bsupvmns(nn,m,j), &  
 ! --- full mesh
-                          vmec%lmns(n,m,j),vmec%lmnc(n,m,j),         &  
+                          vmec%lmns(nn,m,j),vmec%lmnc(nn,m,j),         &  
 ! --- half mesh
-                          vmec%bsubumnc(n,m,j),vmec%bsubvmnc(n,m,j), &  
-                          hbsubsmns(n,m,j),                  &  
-                          vmec%bsubumns(n,m,j),vmec%bsubvmns(n,m,j), &  
-                          hbsubsmnc(n,m,j)                  
+                          vmec%bsubumnc(nn,m,j),vmec%bsubvmnc(nn,m,j), &  
+                          hbsubsmns(nn,m,j),                  &  
+                          vmec%bsubumns(nn,m,j),vmec%bsubvmns(nn,m,j), &  
+                          hbsubsmnc(nn,m,j)                  
             enddo
           enddo
         enddo
@@ -236,19 +238,21 @@
             nmin0=-vmec%ntor
             if(m.eq.0) nmin0=0
             do n=nmin0,vmec%ntor
+               ! Sign flips for consistency with Hakan's conventions:
+               nn=-n
 ! --- full mesh
-              read(inre3,*) vmec%rmnc(n,m,j),vmec%zmns(n,m,j),       &  
-                          vmec%rmns(n,m,j),vmec%zmnc(n,m,j),         &  
+              read(inre3,*) vmec%rmnc(nn,m,j),vmec%zmns(nn,m,j),       &  
+                          vmec%rmns(nn,m,j),vmec%zmnc(nn,m,j),         &  
 ! --- half mesh
-                          vmec%bsupumnc(n,m,j),vmec%bsupvmnc(n,m,j), &  
-                          vmec%bsupumns(n,m,j),vmec%bsupvmns(n,m,j), &  
+                          vmec%bsupumnc(nn,m,j),vmec%bsupvmnc(nn,m,j), &  
+                          vmec%bsupumns(nn,m,j),vmec%bsupvmns(nn,m,j), &  
 ! --- full mesh
-                          vmec%lmns(n,m,j),vmec%lmnc(n,m,j),         &  
+                          vmec%lmns(nn,m,j),vmec%lmnc(nn,m,j),         &  
 ! --- half mesh
-                          vmec%bsubumnc(n,m,j),vmec%bsubvmnc(n,m,j), &  
-                          hbsubsmns(n,m,j),                  &  
-                          vmec%bsubumns(n,m,j),vmec%bsubvmns(n,m,j), &  
-                          hbsubsmnc(n,m,j)                  
+                          vmec%bsubumnc(nn,m,j),vmec%bsubvmnc(nn,m,j), &  
+                          hbsubsmns(nn,m,j),                  &  
+                          vmec%bsubumns(nn,m,j),vmec%bsubvmns(nn,m,j), &  
+                          hbsubsmnc(nn,m,j)                  
             enddo
           enddo
         enddo
@@ -273,6 +277,17 @@
       print *,"  ntor:",vmec%ntor
       print *,"  mpol:",vmec%mpol
       print *,"  nfp:",vmec%nfp
+
+
+      ! Sign flips for consistency with Hakan's conventions:
+      vmec%phips = -vmec%phips
+      vmec%phi = -vmec%phi
+      vmec%iotas = -vmec%iotas
+      vmec%bsupvmnc = -vmec%bsupvmnc
+      vmec%bsupvmns = -vmec%bsupvmns
+      vmec%bsubvmnc = -vmec%bsubvmnc
+      vmec%bsubvmns = -vmec%bsubvmns
+      
 
 !!$      print *,"rmnc at outermost radius: ",vmec%rmnc(:,:,vmec%ns)
 !!$      print *,"rmns at outermost radius: ",vmec%rmns(:,:,vmec%ns)
