@@ -5,10 +5,12 @@
 inputFilename = "input.namelist"
 outputFilename = "sfincsOutput.h5"
 
-import matplotlib.pyplot as plt
+import matplotlib
+#import matplotlib.pyplot as plt
 import h5py
 import numpy
 import inspect, math, os
+import sys
 
 try:
     # Older versions of scipy do not have this interpolation routine
@@ -24,6 +26,23 @@ from sys import argv
 
 print "This is "+ inspect.getfile(inspect.currentframe())
 
+##Added by AM 2015-12##
+makePDF = False
+for arg in sys.argv:
+   if arg.lower()=='pdf':
+      makePDF = True
+
+if makePDF:
+   matplotlib.use('PDF')
+   # Change default font size
+   font = {'size':6}
+   matplotlib.rc('font', **font)
+   matplotlib.rc('lines',markeredgewidth=0,markersize=3,linewidth=0.5)
+   matplotlib.rc('axes',linewidth=0.7)
+
+import matplotlib.pyplot as plt
+#######################
+
 # Load some other required subroutines:
 execfile(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_common")
 
@@ -36,7 +55,15 @@ radialCurrents = []
 # first determine which radial variable was used by looking at input.namelist in the main directory:
 with open(inputFilename, 'r') as f:
     inputFile = f.readlines()
-inputRadialCoordinate = readVariable("inputRadialCoordinate","int")
+
+#inputRadialCoordinate = readVariable("inputRadialCoordinate","int") ##Commented by AM 2015-12
+inputRadialCoordinate = readVariable("inputRadialCoordinate","int", False) ##Added by AM 2015-12
+
+##Added by AM 2015-12##
+if inputRadialCoordinate == None:
+  inputRadialCoordinate = readDefault("inputRadialCoordinate","int")
+#######################
+
 if inputRadialCoordinate==0:
     radiusName = "psiHat"
 elif inputRadialCoordinate==1:
@@ -49,7 +76,13 @@ else:
     print "Error! Invalid inputRadialCoordinate."
     exit(1)
 # Finally get the radius requested:
-radius_wish = readVariable(radiusName+"_wish","float")
+##radius_wish = readVariable(radiusName+"_wish","float") ##Commented by AM 2015-12
+radius_wish = readVariable(radiusName+"_wish","float", False) ##Added by AM 2015-12
+
+##Added by AM 2015-12##                                                                                                                             
+if radius_wish == None:
+    radius_wish = readDefault(radiusName+"_wish","float")
+#######################
 
 # Get a list of the subdirectories:                                                                        
 directories = filter(os.path.isdir, os.listdir("."))
@@ -222,7 +255,8 @@ else:
          #yAxisLabels=["FSABFlow","particleFlux\nvm_rHat","particleFlux\nvd_rHat","heatFlux\nvm_rHat","heatFlux\nvd_rHat"]
          yAxisLabels=["FSABFlow","particleFlux\nvm_rHat","particleFlux\nvd_rHat","heatFlux\nvm_rHat","heatFlux\nwithoutPhi1_rHat"]
       else:
-         yAxisLabels=["FSABFlow","particleFlux\nvm_rHat","heatFlux\nvm_rHat","elapsed time (s)"]
+         #yAxisLabels=["FSABFlow","particleFlux\nvm_rHat","heatFlux\nvm_rHat","elapsed time (s)"]
+         yAxisLabels=["FSABFlow","particleFlux\nvm_rHat","heatFlux\nvm_rHat"]
    else:
       if includePhi1:
          yAxisLabels=[]
@@ -398,4 +432,16 @@ if ambipolaritySolveSucceeded:
 # If this script was called with any command-line arguments, then do not actually display the plot:
 if len(argv) == 1:
    plt.show()
+
+##Added by AM 2015-12##
+if makePDF:
+   if len(sys.argv)>2 : #Use the substituted name as file name                                                                                      
+      print "Writing plot to " + os.getcwd() + "/" + sys.argv[2] + ".pdf."
+      plt.savefig(sys.argv[2] + ".pdf")
+   else: #Use script name as file name                                                                                                              
+      print "Writing plot to " + os.getcwd() + "/" + os.path.basename(__file__) + ".pdf."
+      plt.savefig(os.path.basename(__file__) + ".pdf")
+#######################
+
+
 

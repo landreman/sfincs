@@ -8,7 +8,14 @@ import os, inspect
 print "This is "+ inspect.getfile(inspect.currentframe())
 print "Beginning a scan of E_r."
 
-inputRadialCoordinateForGradients = readVariable("inputRadialCoordinateForGradients","int")
+## inputRadialCoordinateForGradients = readVariable("inputRadialCoordinateForGradients","int") ##Commented by AM 2015-12
+
+##Added by AM 2015-12##
+inputRadialCoordinateForGradients = readVariable("inputRadialCoordinateForGradients","int", False)
+if inputRadialCoordinateForGradients == None :
+    inputRadialCoordinateForGradients = readDefault("inputRadialCoordinateForGradients","int")
+#######################
+
 NErs = readScanVariable("NErs","int")
 if inputRadialCoordinateForGradients==0:
     varName = "dPhiHatdpsiHat"
@@ -91,12 +98,25 @@ for runNum in range(len(Ers)):
     f.close()
 
     # Now copy the input.namelist file:
+
+    ##The following section rewritten by AM 2015-12##
+    #################################################
+
     f = open(filename,"w")
     for line in inputFile:
         if namelistLineContains(line,varName):
-            line = "  "+varName+" = "+str(Ers[runNum])+" ! Set by sfincsScan_2.\n"
+##            line = "  "+varName+" = "+str(Ers[runNum])+" ! Set by sfincsScan_2.\n" ##Commented by AM
+            continue ##Added by AM
+
+        ##Added by AM 2015-12##
+        if line.strip().find("&physicsParameters") == 0 :
+            line += "  "+varName+" = "+str(Ers[runNum])+" ! Set by sfincsScan_2.\n"
+        #######################
+
         f.write(line)
     f.close()
+
+    #################################################
 
     # Submit the sfincs job:
     try:

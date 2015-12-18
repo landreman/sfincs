@@ -183,7 +183,8 @@ subroutine NEMEC_compute_missing_fields(vmec)
      hdzds = (fz(:,:,js+1) - fz(:,:,js)) / ds
 
      ! Compute Jacobian:
-     hg = hdxds*hdydu*hdzdv + hdyds*hdzdu*hdxdv + hdzds*hdxdu*hdydv - hdzds*hdydu*hdxdv - hdxds*hdzdu*hdydv - hdyds*hdxdu*hdzdv
+     ! I don't understand why I need this minus sign, but without it I don't match Hakan's sign:
+     hg = -(hdxds*hdydu*hdzdv + hdyds*hdzdu*hdxdv + hdzds*hdxdu*hdydv - hdzds*hdydu*hdxdv - hdxds*hdzdu*hdydv - hdyds*hdxdu*hdzdv)
 
      ! Compute |B|:
      hBx = hbsupu(:,:,js+1)*hdxdu + hbsupv(:,:,js+1)*hdxdv

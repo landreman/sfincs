@@ -10,20 +10,31 @@ print "Beginning a convergence scan."
 
 #####################################################################################################################3
 
-try:
-    Ntheta = readVariable("Ntheta","int",required=False)
+###############################################################
+##In section below try/except structure removed by AM 2015-12##
+###############################################################
+#try:
+Ntheta = readVariable("Ntheta","int",required=False)
+
+if Ntheta != None:
     baseValuePresent = True
-except:
-    # Default
+else:
     Ntheta = 15
     baseValuePresent = False
+##except:
+##    # Default
+##  Ntheta = 15
+##  baseValuePresent = False
 
-try:
-    NthetaMaxFactor = readScanVariable("NthetaMaxFactor","float",required=False)
-    NthetaMinFactor = readScanVariable("NthetaMinFactor","float",required=False)
-    NthetaNumRuns = readScanVariable("NthetaNumRuns","int",required=False)
+#try:
+NthetaMaxFactor = readScanVariable("NthetaMaxFactor","float",required=False)
+NthetaMinFactor = readScanVariable("NthetaMinFactor","float",required=False)
+NthetaNumRuns = readScanVariable("NthetaNumRuns","int",required=False)
+
+if NthetaMaxFactor != None and NthetaMinFactor != None and NthetaNumRuns != None:
     scanPresent = True
-except:
+#except:
+else:
     NthetaMaxFactor = 1
     NthetaMinFactor = 1
     NthetaNumRuns = 0
@@ -51,20 +62,24 @@ print "Nthetas:",Nthetas
 
 #####################################################################################################################3
 
-try:
-    Nzeta = readVariable("Nzeta","int",required=False)
+#try:
+Nzeta = readVariable("Nzeta","int",required=False)
+if Nzeta != None:
     baseValuePresent = True
-except:
+#except:
+else:
     # Default
     Nzeta = 15
     baseValuePresent = False
 
-try:
-    NzetaMaxFactor = readScanVariable("NzetaMaxFactor","float",required=False)
-    NzetaMinFactor = readScanVariable("NzetaMinFactor","float",required=False)
-    NzetaNumRuns = readScanVariable("NzetaNumRuns","int",required=False)
+#try:
+NzetaMaxFactor = readScanVariable("NzetaMaxFactor","float",required=False)
+NzetaMinFactor = readScanVariable("NzetaMinFactor","float",required=False)
+NzetaNumRuns = readScanVariable("NzetaNumRuns","int",required=False)
+if NzetaMaxFactor != None and NzetaMinFactor != None and NzetaNumRuns != None:
     scanPresent = True
-except:
+#except:
+else:
     NzetaMaxFactor = 1
     NzetaMinFactor = 1
     NzetaNumRuns = 0
@@ -92,20 +107,24 @@ print "Nzetas:",Nzetas
 
 #####################################################################################################################3
 
-try:
-    Nxi = readVariable("Nxi","int",required=False)
+#try:
+Nxi = readVariable("Nxi","int",required=False)
+if Nxi != None:
     baseValuePresent = True
-except:
+#except:
+else:
     # Default
     Nxi = 16
     baseValuePresent = False
 
-try:
-    NxiMaxFactor = readScanVariable("NxiMaxFactor","float",required=False)
-    NxiMinFactor = readScanVariable("NxiMinFactor","float",required=False)
-    NxiNumRuns = readScanVariable("NxiNumRuns","int",required=False)
+#try:
+NxiMaxFactor = readScanVariable("NxiMaxFactor","float",required=False)
+NxiMinFactor = readScanVariable("NxiMinFactor","float",required=False)
+NxiNumRuns = readScanVariable("NxiNumRuns","int",required=False)
+if NxiMaxFactor != None and NxiMinFactor != None and NxiNumRuns != None:
     scanPresent = True
-except:
+#except:
+else:
     NxiMaxFactor = 1
     NxiMinFactor = 1
     NxiNumRuns = 0
@@ -133,20 +152,24 @@ print "Nxis:",Nxis
 
 #####################################################################################################################3
 
-try:
-    NL = readVariable("NL","int",required=False)
+#try:
+NL = readVariable("NL","int",required=False)
+if NL != None:
     baseValuePresent = True
-except:
+#except:
+else:
     # Default
     NL = 4
     baseValuePresent = False
 
-try:
-    NLMaxFactor = readScanVariable("NLMaxFactor","float",required=False)
-    NLMinFactor = readScanVariable("NLMinFactor","float",required=False)
-    NLNumRuns = readScanVariable("NLNumRuns","int",required=False)
+#try:
+NLMaxFactor = readScanVariable("NLMaxFactor","float",required=False)
+NLMinFactor = readScanVariable("NLMinFactor","float",required=False)
+NLNumRuns = readScanVariable("NLNumRuns","int",required=False)
+if NLMaxFactor != None and NLMinFactor != None and NLNumRuns != None:
     scanPresent = True
-except:
+#except:
+else:
     NLMaxFactor = 1
     NLMinFactor = 1
     NLNumRuns = 0
@@ -174,20 +197,24 @@ print "NLs:",NLs
 
 #####################################################################################################################3
 
-try:
-    Nx = readVariable("Nx","int",required=False)
+#try:
+Nx = readVariable("Nx","int",required=False)
+if Nx != None:
     baseValuePresent = True
-except:
+#except:
+else:
     # Default
     Nx = 5
     baseValuePresent = False
 
-try:
-    NxMaxFactor = readScanVariable("NxMaxFactor","float",required=False)
-    NxMinFactor = readScanVariable("NxMinFactor","float",required=False)
-    NxNumRuns = readScanVariable("NxNumRuns","int",required=False)
+#try:
+NxMaxFactor = readScanVariable("NxMaxFactor","float",required=False)
+NxMinFactor = readScanVariable("NxMinFactor","float",required=False)
+NxNumRuns = readScanVariable("NxNumRuns","int",required=False)
+if NxMaxFactor != None and NxMinFactor != None and NxNumRuns != None:
     scanPresent = True
-except:
+#except:
+else:
     NxMaxFactor = 1
     NxMinFactor = 1
     NxNumRuns = 0
@@ -215,20 +242,24 @@ print "Nxs:",Nxs
 
 #####################################################################################################################3
 
-try:
-    NxPotentialsPerVth = readVariable("NxPotentialsPerVth","float",required=False)
+#try:
+NxPotentialsPerVth = readVariable("NxPotentialsPerVth","float",required=False)
+if NxPotentialsPerVth != None:
     baseValuePresent = True
-except:
+#except:
+else:
     # Default
     NxPotentialsPerVth = 40.0
     baseValuePresent = False
 
-try:
-    NxPotentialsPerVthMaxFactor = readScanVariable("NxPotentialsPerVthMaxFactor","float",required=False)
-    NxPotentialsPerVthMinFactor = readScanVariable("NxPotentialsPerVthMinFactor","float",required=False)
-    NxPotentialsPerVthNumRuns = readScanVariable("NxPotentialsPerVthNumRuns","int",required=False)
+#try:
+NxPotentialsPerVthMaxFactor = readScanVariable("NxPotentialsPerVthMaxFactor","float",required=False)
+NxPotentialsPerVthMinFactor = readScanVariable("NxPotentialsPerVthMinFactor","float",required=False)
+NxPotentialsPerVthNumRuns = readScanVariable("NxPotentialsPerVthNumRuns","int",required=False)
+if NxPotentialsPerVthMaxFactor != None and NxPotentialsPerVthMinFactor != None and NxPotentialsPerVthNumRuns != None:
     scanPresent = True
-except:
+#except:
+else:
     NxPotentialsPerVthMaxFactor = 1
     NxPotentialsPerVthMinFactor = 1
     NxPotentialsPerVthNumRuns = 0
@@ -255,20 +286,24 @@ print "NxPotentialsPerVths:",NxPotentialsPerVths
 
 #####################################################################################################################3
 
-try:
-    xMax = readVariable("xMax","float",required=False)
+#try:
+xMax = readVariable("xMax","float",required=False)
+if xMax != None:
     baseValuePresent = True
-except:
+#except:
+else:
     # Default
     xMax = 5.0
     baseValuePresent = False
 
-try:
-    xMaxMaxFactor = readScanVariable("xMaxMaxFactor","float",required=False)
-    xMaxMinFactor = readScanVariable("xMaxMinFactor","float",required=False)
-    xMaxNumRuns = readScanVariable("xMaxNumRuns","int",required=False)
+#try:
+xMaxMaxFactor = readScanVariable("xMaxMaxFactor","float",required=False)
+xMaxMinFactor = readScanVariable("xMaxMinFactor","float",required=False)
+xMaxNumRuns = readScanVariable("xMaxNumRuns","int",required=False)
+if xMaxMaxFactor != None and xMaxMinFactor != None and xMaxNumRuns != None:
     scanPresent = True
-except:
+#except:
+else:
     xMaxMaxFactor = 1
     xMaxMinFactor = 1
     xMaxNumRuns = 0
@@ -295,20 +330,24 @@ print "xMaxs:",xMaxs
 
 #####################################################################################################################3
 
-try:
-    solverTolerance = readVariable("solverTolerance","float",required=False)
+#try:
+solverTolerance = readVariable("solverTolerance","float",required=False)
+if solverTolerance != None:
     baseValuePresent = True
-except:
+#except:
+else:
     # Default
     solverTolerance = 1e-6
     baseValuePresent = False
 
-try:
-    solverToleranceMaxFactor = readScanVariable("solverToleranceMaxFactor","float",required=False)
-    solverToleranceMinFactor = readScanVariable("solverToleranceMinFactor","float",required=False)
-    solverToleranceNumRuns = readScanVariable("solverToleranceNumRuns","int",required=False)
+#try:
+solverToleranceMaxFactor = readScanVariable("solverToleranceMaxFactor","float",required=False)
+solverToleranceMinFactor = readScanVariable("solverToleranceMinFactor","float",required=False)
+solverToleranceNumRuns = readScanVariable("solverToleranceNumRuns","int",required=False)
+if solverToleranceMaxFactor != None and solverToleranceMinFactor != None and solverToleranceNumRuns != None:
     scanPresent = True
-except:
+#except:
+else:
     solverToleranceMaxFactor = 1
     solverToleranceMinFactor = 1
     solverToleranceNumRuns = 0
