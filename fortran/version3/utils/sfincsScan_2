@@ -38,7 +38,8 @@ print "Radial electric field is specified using "+varName
 print "Here are the "+str(len(Ers))+" values we will use for this quantity:"
 print Ers
 
-directories = [varName+str(Er) for Er in Ers]
+#directories = [varName+str(Er) for Er in Ers]
+directories = [varName+"{:.4g}".format(Er) for Er in Ers]
 
 Ers_copy = list(Ers)
 directories_copy = list(directories)

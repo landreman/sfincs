@@ -412,17 +412,17 @@ for i in range(len(Nxs)):
 
 for i in range(len(NxPotentialsPerVths)):
     parametersForScan[currentIndex][5] = NxPotentialsPerVths[i]
-    descriptions.append("NxPotentialsPerVth" + str(NxPotentialsPerVths[i]))
+    descriptions.append("NxPotentialsPerVth" + "{:.4g}".format(NxPotentialsPerVths[i]))
     currentIndex += 1
 
 for i in range(len(xMaxs)):
     parametersForScan[currentIndex][6] = xMaxs[i]
-    descriptions.append("xMax" + str(xMaxs[i]))
+    descriptions.append("xMax" + "{:.4g}".format(xMaxs[i]))
     currentIndex += 1
 
 for i in range(len(solverTolerances)):
     parametersForScan[currentIndex][7] = solverTolerances[i]
-    descriptions.append("solverTolerance" + str(solverTolerances[i]))
+    descriptions.append("solverTolerance" + "{:.4g}".format(solverTolerances[i]))
     currentIndex += 1
 
 if currentIndex != numRunsInScan:
