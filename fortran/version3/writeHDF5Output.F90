@@ -802,18 +802,21 @@ contains
     maxDimForIterationSpeciesSources(2)   = Nspecies
     dimForIterationSpeciesSourcesChunk(2) = Nspecies
 
-    if (constraintScheme==1) then
+    select case (constraintScheme)
+    case (0)
+       ! No action needed since we will not write sources to the file
+       ! when constraintScheme==0
+    case (1,3,4)
        dimForIterationSpeciesSources(3)      = 2
        maxDimForIterationSpeciesSources(3)   = 2
        dimForIterationSpeciesSourcesChunk(3) = 2
-    else
-       ! This block of code will also be run when constraintScheme==0,
-       ! but it does not matter since we will not write sources to the file
-       ! when constraintScheme==0
+    case (2)
        dimForIterationSpeciesSources(3)      = Nx
        maxDimForIterationSpeciesSources(3)   = Nx
        dimForIterationSpeciesSourcesChunk(3) = Nx
-    end if
+    case default
+       stop "Invalid constraintScheme!"
+    end select
 
     call h5screate_simple_f(rank, dimForIterationSpeciesSources, dspaceIDForIterationSpeciesSources, &
          HDF5Error, maxDimForIterationSpeciesSources)

@@ -1237,7 +1237,8 @@
 
     select case (constraintScheme)
     case (0)
-    case (1)
+       ! No allocation needed in this case.
+    case (1,3,4)
        allocate(sources(Nspecies,2))
     case (2)
        allocate(sources(Nspecies,Nx))

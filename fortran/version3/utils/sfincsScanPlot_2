@@ -167,6 +167,7 @@ for directory in directories:
     particleFlux_vm = f["particleFlux_vm_rHat"][()]
     heatFlux_vm = f["heatFlux_vm_rHat"][()]
     elapsedTime = f["elapsed time (s)"][()]
+    sources = f["sources"][()]
     atLeastOneDirectorySucceeded = True
     if RHSMode>1:
        transportMatrix = f["transportMatrix"][()]
@@ -191,7 +192,7 @@ for directory in directories:
              outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],particleFlux_vd[0,0],heatFlux_vm[0,0],heatFlux_withoutPhi1[0,0]])
           else:
              radialCurrents.append(Zs[0]*particleFlux_vm[0,-1])
-             outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],heatFlux_vm[0,0]])
+             outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],heatFlux_vm[0,0],sources[0,0,0],sources[1,0,0]])
              #outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],heatFlux_vm[0,0],elapsedTime])
        else:
           results = []
@@ -256,7 +257,7 @@ else:
          yAxisLabels=["FSABFlow","particleFlux\nvm_rHat","particleFlux\nvd_rHat","heatFlux\nvm_rHat","heatFlux\nwithoutPhi1_rHat"]
       else:
          #yAxisLabels=["FSABFlow","particleFlux\nvm_rHat","heatFlux\nvm_rHat","elapsed time (s)"]
-         yAxisLabels=["FSABFlow","particleFlux\nvm_rHat","heatFlux\nvm_rHat"]
+         yAxisLabels=["FSABFlow","particleFlux\nvm_rHat","heatFlux\nvm_rHat","source 1","source 2"]
    else:
       if includePhi1:
          yAxisLabels=[]

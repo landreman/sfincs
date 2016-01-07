@@ -82,7 +82,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   
   select case (constraintScheme)
   case (0)
-  case (1)
+  case (1, 3, 4)
      ! The rows for the constraints have more nonzeros:
      !predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta*Nx + 1
      !predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta*Nx
