@@ -1386,7 +1386,7 @@ contains
 
     ! phips is on the half-mesh, so skip first point.
     do j=2,vmec%ns
-       if (abs(vmec%phips(j)+vmec%phi(vmec%ns)/(2*pi)) > 1d-14) then
+       if (abs(vmec%phips(j)+vmec%phi(vmec%ns)/(2*pi)) > 1d-11) then
           if (masterProc) then
              print *,"Error! VMEC phips array is not constant and equal to -phi(ns)/(2*pi)."
           end if
