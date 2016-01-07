@@ -328,7 +328,7 @@
 !!$    if (whichRHS == numRHSs) then
        select case (constraintScheme)
        case (0)
-       case (1)
+       case (1,3,4)
           do ispecies = 1,Nspecies
              sources(ispecies,1) = solutionWithDeltaFArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)+1)
              sources(ispecies,2) = solutionWithDeltaFArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)+1)
@@ -877,13 +877,15 @@
              print *,"   heatFlux_vd_psiHat       ", heatFlux_vd_psiHat(ispecies)
              print *,"   heatFlux_withoutPhi1_psiHat ", heatFlux_withoutPhi1_psiHat(ispecies)
           end if
-          if (constraintScheme==1) then
+          select case (constraintScheme)
+          case (0)
+             ! Nothing to print.
+          case (1,3,4)
              print *,"   particle source          ", sources(ispecies,1)
              print *,"   heat source              ", sources(ispecies,2)
-          end if
-          if (constraintScheme==2) then
+          case (2)
              print *,"   sources: ", sources(ispecies,:)
-          end if
+          end select
        end do
        print *,"FSABjHat (bootstrap current): ", FSABjHat
        if (includePhi1) then

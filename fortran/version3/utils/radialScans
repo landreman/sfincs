@@ -273,7 +273,7 @@ if inputRadialCoordinate==2 and radius_max > aHat:
 print "Here are the values of "+radiusName+" we will use for this scan:"
 print radii
 
-directories = [radiusName+"_"+str(radius) for radius in radii]
+directories = [radiusName+"_"+"{:.4g}".format(radius) for radius in radii]
 
 # For a scan over only radius, we do not want to repeat radii that were already run.
 # But for a scan over Er at each radius, we do want to revisit every radius.

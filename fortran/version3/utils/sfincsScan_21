@@ -95,7 +95,11 @@ numRunsInScan=len(runparams)
 ##Check that variables are defined in SFINCS input file
 for paramname in runparamnames:
     if len(str(paramname).split("_")) != 1 :
-        paramname = '_'.join(str(paramname).split("_")[:-1])
+        try: ##Check if the last part of the variable name can be transformed into an integer
+            dummy = int(str(paramname).split("_")[-1]) #If this fails an exception is raised, then do nothing to paramname 
+            paramname = '_'.join(str(paramname).split("_")[:-1])
+        except :
+            pass
     testReadName = readVariable(paramname, "string", False)
     if testReadName == None :
         print "The variable " + paramname + " you wish to scan must be explicitly assigned some value in the appropriate namelist,"
