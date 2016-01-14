@@ -705,9 +705,18 @@ otherwise {\ttfamily constraintScheme} will be set to 2.\\
 
 {\ttfamily constraintScheme} = 0: No constraints.\\
 
-{\ttfamily constraintScheme} = 1: 2 constraints per species: $\left<n_1\right>=0$ and $\left<p_1\right>=0$.\\
+{\ttfamily constraintScheme} = 1: 2 constraints per species: $\left<n_1\right>=0$ and $\left<p_1\right>=0$.
+The particle and heat sources have the form $S = (a_2 x^2 + a_0) e^{-x^2}$.
+The $a_2$ and $a_0$ coefficients are determined so that one source term provides particles but not energy,
+whereas the other source term provides energy but not particles. \\
 
 {\ttfamily constraintScheme} = 2: \Nx~constraints per species: $\left< f(L=0)\right>=0$ at each $x$.\\
+
+{\ttfamily constraintScheme} = 3: Same as {\ttfamily constraintScheme} = 1,
+except the particle and heat sources have the form $S = (a_4 x^4 + a_0) e^{-x^2}$.\\
+
+{\ttfamily constraintScheme} = 4: Same as {\ttfamily constraintScheme} = 1,
+except the particle and heat sources have the form $S = (a_4 x^4 + a_2 x^2) e^{-x^2}$.\\
 
 You should set {\ttfamily constraintScheme} to -1 unless you know what you are doing.
 }}
@@ -1289,6 +1298,18 @@ Set {\ttfamily preconditioner\_zeta\_min\_L} = 0 to simplify the matrix for ever
 (Normally the preconditioner matrix is pentadiagonal in $\xi$.)\\
 
 Either a setting of 0 or 1 can be good for this parameter.}
+
+\myhrule
+
+\param{preconditioner\_magnetic\_drifts\_max\_L}
+{integer}
+{2}
+{Whenever \parlink{useIterativeLinearSolver} = \true and \parlink{magneticDriftScheme}$>0$}
+{Maximum Legendre mode number for which the poloidal and toroidal magnetic drift terms are included in the preconditioner.
+As this parameter is increased, more memory is required for factorization, but fewer KSP iterations are required.
+Setting this parameter to $\ge$ \parlink{Nxi} means that the magnetic drifts are always included in the preconditioner.
+Setting this parameter to $<0$ means the magnetic drifts are never included in the preconditioner.
+The default value should be good.}
 
 \myhrule
 

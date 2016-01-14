@@ -251,7 +251,7 @@ if mustBeInteger:
 print "Here are the values of "+scanVariable+" we will use for this scan:"
 print scanVariableValues
 
-directories = [scanVariable+"_"+str(scanVariableValue) for scanVariableValue in scanVariableValues]
+directories = [scanVariable+"_"+"{:.4g}".format(scanVariableValue) for scanVariableValue in scanVariableValues]
 
 scanVariableValues_copy = list(scanVariableValues)
 directories_copy = list(directories)

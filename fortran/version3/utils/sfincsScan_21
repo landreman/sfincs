@@ -78,9 +78,11 @@ def readRunspec(therunspecFilename):
 
 ##############################################################################
 
-try:
-    runspecFilename = readScanVariable("runSpecFile","string",required=False,stringValueCaseSensitive=True)
-except:
+##try: ##Commented by AM 2015-12
+##    runspecFilename = readScanVariable("runSpecFile","string",required=False,stringValueCaseSensitive=True) ##Commented by AM 2015-12
+runspecFilename = readScanVariable("runSpecFile","string",required=False,stringValueCaseSensitive=True) ##Added by AM 2015-12
+#except: ##Commented by AM 2015-12
+if runspecFilename == None : ##Added by AM 2015-12
     # Default
     runspecFilename = "runspec.dat"
 
@@ -88,6 +90,22 @@ except:
 runparamnames, runparams, runnumbersatend, runvectorlength=readRunspec(runspecFilename)
 
 numRunsInScan=len(runparams)
+
+##Added by AM 2015-12##
+##Check that variables are defined in SFINCS input file
+for paramname in runparamnames:
+    if len(str(paramname).split("_")) != 1 :
+        try: ##Check if the last part of the variable name can be transformed into an integer
+            dummy = int(str(paramname).split("_")[-1]) #If this fails an exception is raised, then do nothing to paramname 
+            paramname = '_'.join(str(paramname).split("_")[:-1])
+        except :
+            pass
+    testReadName = readVariable(paramname, "string", False)
+    if testReadName == None :
+        print "The variable " + paramname + " you wish to scan must be explicitly assigned some value in the appropriate namelist,"
+        print "even though the value will be ignored in the scan."
+        exit(1)
+#######################
 
 # First, print the data from runspec.dat to the screen
 print ' '+' '.join('%9s' % v for v in runparamnames)

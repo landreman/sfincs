@@ -3,14 +3,33 @@
 # This python script plots the output of a SFINCS scan for scanType = 5.
 # This is a scan of radius, with a scan of Er at each radius.
 
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
+import matplotlib
 import h5py
 import numpy
 import inspect, math, os
+import subprocess
 import pickle
 import sys
 
 print "This is "+ inspect.getfile(inspect.currentframe())
+
+##Added by AM 2015-12##
+makePDF = False
+for arg in sys.argv:
+   if arg.lower()=='pdf':
+      makePDF = True
+
+if makePDF:
+   matplotlib.use('PDF')
+   # Change default font size
+   font = {'size':6}
+   matplotlib.rc('font', **font)
+   matplotlib.rc('lines',markeredgewidth=0,markersize=3,linewidth=0.5)
+   matplotlib.rc('axes',linewidth=0.7)
+
+import matplotlib.pyplot as plt
+#######################
 
 Nradii = 0
 radii_wish = []
@@ -24,7 +43,14 @@ execfile(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())
 # Determine which variable was scanned by looking at input.namelist in the main directory:
 with open(inputFilename, 'r') as f:
     inputFile = f.readlines()
-inputRadialCoordinate = readVariable("inputRadialCoordinate","int")
+
+## inputRadialCoordinate = readVariable("inputRadialCoordinate","int") ##Commented by AM 2015-12
+##Added by AM 2015-12##
+inputRadialCoordinate = readVariable("inputRadialCoordinate","int", False) 
+if inputRadialCoordinate == None :
+   inputRadialCoordinate = readDefault("inputRadialCoordinate","int")
+#######################
+
 if inputRadialCoordinate==0:
     radiusName = "psiHat"
 elif inputRadialCoordinate==1:
@@ -56,7 +82,8 @@ for directory in directories:
         # Call sfincsScan in the subdirectory.
         # The "noplot" below is just an arbitrary command-line argument, which suppresses plotting:
         #submitCommand = "sfincsScanPlot noplot"
-        submitCommand = "sfincsScanPlot_2 noplot"
+##        submitCommand = "sfincsScanPlot_2 noplot" ##Commented by AM 2015-12
+        submitCommand = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScanPlot_2 noplot" ##Added by AM 2015-12
         subprocess.call(submitCommand.split(" "))
         os.chdir(originalDirectory)
 
@@ -194,3 +221,12 @@ ax.text(0.5,0.99,titleString,horizontalalignment='center',verticalalignment='top
 if len(sys.argv) == 1:
     plt.show()
 
+##Added by AM 2015-12##
+if makePDF:
+   if len(sys.argv)>2 : #Use the substituted name as file name
+      print "Writing plot to " + os.getcwd() + "/" + sys.argv[2] + ".pdf."
+      plt.savefig(sys.argv[2] + ".pdf")
+   else: #Use script name as file name
+      print "Writing plot to " + os.getcwd() + "/" + os.path.basename(__file__) + ".pdf."
+      plt.savefig(os.path.basename(__file__) + ".pdf")
+#######################

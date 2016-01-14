@@ -5,6 +5,8 @@
 inputFilename = "input.namelist"
 outputFilename = "sfincsOutput.h5"
 
+defaultVariablesFilename = "globalVariables.F90" ##Added by AM 2015-12 
+
 # Code preceding instructions for sfincsScan in the input.namelist file:
 commentCode = "!ss"
 
@@ -15,7 +17,7 @@ def readScanVariable(varName, intOrFloatOrString, required=True, stringValueCase
     # It is assumed that the input.namelist file has been loaded into the variable "inputFile".
 
     if (intOrFloatOrString != "int") and (intOrFloatOrString != "float") and (intOrFloatOrString != "string"):
-        print "intOrFloatOrString but be int, float, or string."
+        print "intOrFloatOrString must be int, float, or string."
         exit(1)
 
     originalVarName = varName
@@ -64,7 +66,8 @@ def readScanVariable(varName, intOrFloatOrString, required=True, stringValueCase
                 returnValue = int(line5)
                 numValidLines += 1
             except:
-                print "Warning! I found a definition for the variable "+originalVarName+" in "+filename+" but I was unable to parse the line to get an integer."
+##                print "Warning! I found a definition for the variable "+originalVarName+" in "+filename+" but I was unable to parse the line to get an integer." ##Commented by AM 2015-12
+                print "Warning! I found a definition for the variable "+originalVarName+" in "+inputFilename+" but I was unable to parse the line to get an integer." ##Added by AM 2015-12
                 print "Here is the line in question:"
                 print line
         elif intOrFloatOrString=="float":
@@ -72,27 +75,30 @@ def readScanVariable(varName, intOrFloatOrString, required=True, stringValueCase
                 returnValue = float(line5)
                 numValidLines += 1
             except:
-                print "Warning! I found a definition for the variable "+originalVarName+" in "+filename+" but I was unable to parse the line to get a float."
+##                print "Warning! I found a definition for the variable "+originalVarName+" in "+filename+" but I was unable to parse the line to get a float." ##Commented by AM 2015-12
+                print "Warning! I found a definition for the variable "+originalVarName+" in "+inputFilename+" but I was unable to parse the line to get a float." ##Added by AM 2015-12
                 print "Here is the line in question:"
                 print line
         elif intOrFloatOrString=="string":
             returnValue = line5
             numValidLines += 1
 
-    if returnValue==None:
-        if required:
-            print "Error! Unable to find a valid setting for the scan variable "+originalVarName+" in "+filename+"."
-            print "A definition should have the following form:"
-            if intOrFloatOrString == "int":
-                print commentCode+" "+originalVarName+" = 1"
-            elif intOrFloatOrString == "float":
-                print commentCode+" "+originalVarName+" = 1.5"
-            elif intOrFloatOrString == "string":
-                print commentCode+" "+originalVarName+" = nuPrime"
-            exit(1)
-        else:
-            # Exit without printing an error message.
-            raise
+    ##if returnValue==None: ##Commented by AM 2015-12
+    ##    if required: ##Commented by AM 2015-12
+    if required and returnValue==None:
+##        print "Error! Unable to find a valid setting for the scan variable "+originalVarName+" in "+filename+"." ##Commented by AM 2015-12
+        print "Error! Unable to find a valid setting for the scan variable "+originalVarName+" in "+inputFilename+"." ##Added by AM 2015-12
+        print "A definition should have the following form:"
+        if intOrFloatOrString == "int":
+            print commentCode+" "+originalVarName+" = 1"
+        elif intOrFloatOrString == "float":
+            print commentCode+" "+originalVarName+" = 1.5"
+        elif intOrFloatOrString == "string":
+            print commentCode+" "+originalVarName+" = nuPrime"
+        exit(1)
+        #else: ##Commented by AM 2015-12
+        #    # Exit without printing an error message.
+        #    raise ##Commented by AM 2015-12
 
     if numValidLines > 1:
         print "Warning! More than 1 valid definition was found for the variable "+originalVarName+". The last one will be used."
@@ -106,7 +112,7 @@ def readVariable(varName, intOrFloatOrString, required=True):
     # It is assumed that the input.namelist file has been loaded into the variable "inputFile".
 
     if (intOrFloatOrString != "int") and (intOrFloatOrString != "float") and (intOrFloatOrString != "string"):
-        print "intOrFloatOrString but be int, float, or string."
+        print "intOrFloatOrString must be int, float, or string."
         exit(1)
 
     originalVarName = varName
@@ -147,7 +153,8 @@ def readVariable(varName, intOrFloatOrString, required=True):
                 returnValue = int(line5)
                 numValidLines += 1
             except:
-                print "Warning! I found a definition for the variable "+originalVarName+" in "+filename+" but I was unable to parse the line to get an integer."
+##                print "Warning! I found a definition for the variable "+originalVarName+" in "+filename+" but I was unable to parse the line to get an integer." #Commented by AM 2015-12
+                print "Warning! I found a definition for the variable "+originalVarName+" in "+inputFilename+" but I was unable to parse the line to get an integer." #Added by AM 2015-12
                 print "Here is the line in question:"
                 print line
         elif intOrFloatOrString=="float":
@@ -155,17 +162,131 @@ def readVariable(varName, intOrFloatOrString, required=True):
                 returnValue = float(line5)
                 numValidLines += 1
             except:
-                print "Warning! I found a definition for the variable "+originalVarName+" in "+filename+" but I was unable to parse the line to get a float."
+##                print "Warning! I found a definition for the variable "+originalVarName+" in "+filename+" but I was unable to parse the line to get a float." #Commented by AM 2015-12
+                print "Warning! I found a definition for the variable "+originalVarName+" in "+inputFilename+" but I was unable to parse the line to get a float." #Added by AM 2015-12
                 print "Here is the line in question:"
                 print line
         elif intOrFloatOrString=="string":
             returnValue = line5
             numValidLines += 1
 
-    if returnValue==None:
+    ##if returnValue==None: #Commented by AM 2015-12
+        ##if required: #Commented by AM 2015-12
+    if required and returnValue==None:
+        print "Error! Unable to find a valid setting for the variable "+originalVarName+" in "+inputFilename+"."
+##        raise #Commented by AM 2015-12
+        exit(1) #Added by AM 2015-12
+
+    if numValidLines > 1:
+        print "Warning! More than 1 valid definition was found for the variable "+originalVarName+". The last one will be used."
+
+    print "Read "+originalVarName+" = "+str(returnValue)
+    return returnValue
+
+
+
+
+##Function written by AM 2015-12##
+def readDefault(varName, intOrFloatOrString, required=True):
+    # This function reads the default value of fortran variables defined in globalVariables.F90.
+    # If found it returns the last occurence of the variable, otherwise None.
+
+    if (intOrFloatOrString != "int") and (intOrFloatOrString != "float") and (intOrFloatOrString != "string"):
+        print "intOrFloatOrString must be int, float, or string."
+        exit(1)
+
+    originalVarName = varName
+    #varName = varName.lower()                                                                                                                      
+    returnValue = None
+    numValidLines = 0
+
+    try: 
+        working_dir = os.getcwd() ##Store current working directory
+        os.chdir(os.path.dirname(os.path.abspath(__file__))) ##Go to directory of this file
+        defaultVariablesFile = open('../' + defaultVariablesFilename, 'r') ##Open file
+        os.chdir(working_dir) ##Go back to working directory
+    except:
+        print "Error! Unable to open "+defaultVariablesFilename+"."
         if required:
-            print "Error! Unable to find a valid setting for the variable "+originalVarName+" in "+filename+"."
-        raise
+            raise
+        else:
+            return returnValue
+
+    for line in defaultVariablesFile:
+
+        #line3 = line.strip().lower()                                                                                                               
+        line3 = line.strip()
+        if len(line3)<1:
+            continue
+
+        if line3[0]=="!":
+            continue
+
+        if len(line3) < len(varName)+2:
+            continue
+
+        #if not line3[:len(varName)].lower()==varName.lower():
+        #    continue
+
+        begin_index = line3.lower().find(varName.lower())
+        
+        if begin_index == -1: #Cannot find varName on this line
+            continue
+
+        if begin_index != 0 and line3[begin_index-1] != ' ': #If character before varName is not a blank space, this is the wrong variable  
+            continue
+
+        line3 = line3.replace(" ", "")
+
+        start_index = line3.lower().find(varName.lower())
+                
+        line4 = line3[start_index:].strip()
+
+        
+        if len(line4) < len(varName)+2:
+            continue 
+
+        if not line4[len(varName)] =="=":
+            continue
+
+        line5 = line4[len(varName)+1:].strip();
+        line5 = line5.split(',')[0] ##Needed if several variables are defined on the same line  
+
+        if intOrFloatOrString != "string":
+            # python does not recognize fortran's 1d+0 scientific notation                                                                          
+            line5 = line5.replace('d','e').replace('D','e')
+ 
+        # Remove any comments:                                                                                                                      
+        if "!" in line5:
+            line5 = line5[:string.find(line5,"!")]
+
+           
+
+        if intOrFloatOrString=="int":
+            try:
+                returnValue = int(line5)
+                numValidLines += 1
+            except:
+                print "Warning! I found a definition for the variable "+originalVarName+" in "+defaultVariablesFilename+" but I was unable to parse the line to get\
+ an integer."
+                print "Here is the line in question:"
+                print line
+        elif intOrFloatOrString=="float":
+            try:
+                returnValue = float(line5)
+                numValidLines += 1
+            except:
+                print "Warning! I found a definition for the variable "+originalVarName+" in "+defaultVariablesFilename+" but I was unable to parse the line to get\
+ a float."
+                print "Here is the line in question:"
+                print line
+        elif intOrFloatOrString=="string":
+            returnValue = line5
+            numValidLines += 1
+
+    if required and returnValue==None:
+        print "Error! Unable to find a valid setting for the variable "+originalVarName+" in "+defaultVariablesFilename+"."
+        exit(1)
 
     if numValidLines > 1:
         print "Warning! More than 1 valid definition was found for the variable "+originalVarName+". The last one will be used."

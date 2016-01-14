@@ -156,6 +156,7 @@ module globalVariables
   integer :: preconditioner_theta=0, preconditioner_xi=1, preconditioner_species=1
   integer :: preconditioner_theta_min_L=0, preconditioner_zeta_min_L=0
   logical :: reusePreconditioner=.true.
+  integer :: preconditioner_magnetic_drifts_max_L = 2
 
   integer :: constraintScheme=-1
 
