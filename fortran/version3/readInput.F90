@@ -36,7 +36,15 @@ contains
          dNHatdpsiHats, dTHatdpsiHats, &
          dNHatdpsiNs,   dTHatdpsiNs, &
          dNHatdrHats,   dTHatdrHats, &
-         dNHatdrNs,     dTHatdrNs
+	 !!Commented by AM 2015-11!!
+!!         dNHatdrNs,     dTHatdrNs
+	 !!!!!!!!!!!!!!!!!!!!!!!!!!!
+	 !!Added by AM 2015-11!!
+	 dNHatdrNs,     dTHatdrNs, &
+	 adiabaticZ, adiabaticMHat, &
+	 adiabaticNHat, adiabaticTHat, &
+	 withAdiabatic
+	 !!!!!!!!!!!!!!!!!!!!!!!  
 
     namelist / physicsParameters / Delta, alpha, nu_n, EParallelHat, &
          collisionOperator, constraintScheme, includeXDotTerm, &
@@ -80,6 +88,14 @@ contains
     dNHatdrNs = speciesNotInitialized
     dTHatdrNs = speciesNotInitialized
 
+    !!!!!!!!!!!!!!!!!!!!!!!
+    !!Added by AM 2015-11!!
+    !!adiabaticZ = speciesNotInitialized
+    !!adiabaticMHat = speciesNotInitialized
+    !!adiabaticNHat = speciesNotInitialized
+    !!adiabaticTHat = speciesNotInitialized
+    !!!!!!!!!!!!!!!!!!!!!!!	
+
     export_f_theta = speciesNotInitialized
     export_f_zeta = speciesNotInitialized
     export_f_x = speciesNotInitialized
@@ -102,6 +118,15 @@ contains
     export_f_zeta(1) = zero
     export_f_x(1) = one
     export_f_xi(1) = zero
+
+    !!!!!!!!!!!!!!!!!!!!!!!
+    !!Added by AM 2015-11!!
+    !!adiabaticZ(1) = one
+    !!adiabaticMHat(1) = one 
+    !!adiabaticNHat(1) = one
+    !!adiabaticTHat(1) = one
+    !!!!!!!!!!!!!!!!!!!!!!!
+
 
     filename = trim(inputFilename)
 

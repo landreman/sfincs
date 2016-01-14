@@ -342,6 +342,12 @@ module globalVariables
 
   Vec :: f0
 
+  !!Added by AM 2015-11!!
+  PetscScalar :: adiabaticZ = speciesNotInitialized, adiabaticMHat = speciesNotInitialized, adiabaticNHat = speciesNotInitialized, adiabaticTHat = speciesNotInitialized
+  logical :: withAdiabatic = .false.
+  !!!!!!!!!!!!!!!!!!!!!!!
+
+
   ! ********************************************************
   !
   !  Variables related to parallelization:

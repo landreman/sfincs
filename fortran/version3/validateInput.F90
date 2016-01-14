@@ -252,6 +252,28 @@ subroutine validateInput()
      end if
   end do
 
+
+  !!!!!!!!!!!!!!!!!!!!!!!
+  !!Added by AM 2015-11!!
+  if (withAdiabatic .and. masterProc) then
+     if (adiabaticMHat .le. 0) then
+     	print *,"Error! Mass adiabaticMHat must be positive."
+        stop
+     end if
+
+     if (adiabaticNHat .le. 0) then
+     	print *,"Error! Density adiabaticNHat must be positive."
+	stop
+     end if
+
+     if (adiabaticTHat .le. 0) then
+        print *,"Error! Temperature adiabaticTHat must be positive."
+        stop
+     end if
+ 
+  end if
+  !!!!!!!!!!!!!!!!!!!!!!!
+
   chargeDensity = zero
   do ispecies = 1,Nspecies
      chargeDensity = chargeDensity + nHats(ispecies)*Zs(ispecies)
