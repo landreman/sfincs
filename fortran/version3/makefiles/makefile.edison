@@ -3,17 +3,14 @@
 # Edison is a Cray XC30 at NERSC (Lawrence Berkeley National Laboratory).
 #
 # To compile SFINCS on Edison using the default Intel compiler, you need to run the following module command:
-#   module load cray-tpsl/1.5.0 cray-petsc/3.5.3.1 cray-netcdf cray-hdf5
-# These options worked as of 2015-07-18.
-# 
-# You can also compile with the cray compiler with the following modules:
-#   module swap PrgEnv-intel PrgEnv-cray
-#   module load cray-petsc cray-netcdf cray-hdf5
-# These options worked on 2015-07-27. For some reason, the sfincsScan python routines do not work
-# when these modules are loaded.
 #
+#   module load cray-tpsl/1.5.0 cray-petsc/3.5.3.1 cray-netcdf cray-hdf5
+#
+# These options worked as of 2016-01-27.
 # Also, to use sfincsPlot and sfincsScanPlot, you need the following modules:
+#
 #   module load python numpy matplotlib h5py
+#
 # You might want to add the above line to your ~/.bashrc.ext file
 
 # Set command for fortran compiler:
@@ -36,4 +33,4 @@ EXTRA_LINK_FLAGS =
 SFINCS_IS_A_BATCH_SYSTEM_USED=yes
 
 # This next line matters only if a batch system is used:
-SFINCS_COMMAND_TO_SUBMIT_JOB=qsub job.edison
+SFINCS_COMMAND_TO_SUBMIT_JOB=sbatch job.edison
