@@ -1,0 +1,335 @@
+
+\documentclass[12pt]{article}
+\usepackage{url} 
+%\usepackage[dvips]{graphicx}
+\usepackage[pdftex]{graphicx}
+\usepackage[latin1]{inputenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{fancyhdr}
+\usepackage{bm}
+\usepackage{float}
+\usepackage{color}
+\usepackage{wrapfig}
+\usepackage{multicol}
+\usepackage[colorlinks=true,
+		linkcolor=red,
+		citecolor=blue,
+		urlcolor=blue]{hyperref}
+
+\setlength {\parindent} { 10mm} 
+\setlength{\textheight}{230mm} 
+\setlength{\textwidth}{160mm} 
+\setlength{\oddsidemargin}{0mm}
+\setlength{\topmargin}{-10mm} 
+% newcommands
+\newcommand{\p}{\partial}
+\newcommand{\g}[1]{\mbox{\boldmath $#1$}}
+\newcommand{\vi}{\g V_{\! \! i}}
+\newcommand{\ps}{Pfirsch-Schl\"{u}ter} 
+\newcommand{\lp}{\left(}
+\newcommand{\rp}{\right)}
+\newcommand{\ca}[1]{\mbox{\cal $#1$}}
+\newcommand{\be}{\begin{displaymath}}
+\newcommand{\ee}{\end{displaymath}}
+\newcommand{\bn}{\begin{equation}}
+\newcommand{\en}{\end{equation}}
+\newcommand{\mygtrsim}{\mathrel{\mbox{\raisebox{-1mm}{$\stackrel{>}{\sim}$}}}}
+\newcommand{\mylsim}{\mathrel{\mbox{\raisebox{-1mm}{$\stackrel{<}{\sim}$}}}}
+\newcommand{\vek}{\bf}
+\newcommand{\ten}{\sf}
+\newcommand{\bfm}[1]{\mbox{\boldmath$#1$}}
+\newcommand{\lang}{\left\langle}
+\newcommand{\rang}{\right\rangle}
+\newcommand{\vo}[1]{\left|\begin {array}{l} \mbox{} \\ \mbox{} \\$#1$ \end
+{array}\right .}  
+\newcommand{\von}[2]{\left |\begin {array}{l}
+\mbox{}\\$#1$\\$#2$ \end {array}\right .}
+\newcommand{\simgt}{\:{\raisebox{-1.5mm}{$\stackrel
+{\textstyle{>}}{\sim}$}}\:}
+\newcommand{\simlt}{\:{\raisebox{-1.5mm}{$\stackrel
+{\textstyle{<}}{\sim}$}}\:}
+%\renewcommand {\baselinestretch} {1.67}
+%\pagestyle{empty}
+\newcommand{\todo}[1]{\textbf{\textcolor{red}{TODO: #1}}}
+\newcommand{\remark}[1]{\textbf{\textcolor{red}{REMARK: #1}}}
+
+\title{Implementation of $\Phi_1$ in SFINCS}
+
+\pagestyle{fancy}
+\fancyhead{}
+\chead{Albert Mollén %850227-2019
+\\ Implementation of $\Phi_1$ in SFINCS}
+\cfoot{\thepage}
+\renewcommand{\headrulewidth}{1pt}
+\renewcommand{\footrulewidth}{1pt}
+\setlength{\headheight}{28pt}
+\setlength{\footskip}{25pt}
+
+\newcommand{\red}[1]{\textcolor{red}{#1}}
+\newcommand{\mE}{\mathcal{E}}
+\newcommand{\energy}{\mathcal{E}}
+\newcommand{\mK}{\mathcal{K}}
+\newcommand{\mN}{\mathcal{N}}
+\newcommand{\mD}{\mathcal{D}}
+\newcommand{\ord}{\mathcal{O}}
+\newcommand{\Tpe}{T_\perp}
+\newcommand{\Tpa}{T_\|}
+\newcommand{\vpe}{v_\perp}
+\newcommand{\vpa}{v_\|}
+\newcommand{\kpe}{k_\perp}
+\newcommand{\kpa}{k_\|}
+\newcommand{\Bv}{\mathbf{B}}
+\newcommand{\Ev}{\mathbf{E}}
+\newcommand{\bv}{\mathbf{b}}
+\newcommand{\vv}{\mathbf{v}}
+\newcommand{\cd}{\cdot}
+\newcommand{\na}{\nabla}
+\newcommand{\btheta}{\bar{\theta}}
+\newcommand{\phit}{\tilde{\phi}}
+\newcommand{\oert}{\tilde{\omega}_{Er}}
+
+\begin{document}
+\titlepage
+
+\maketitle
+
+\section*{EUTERPE old equations vs new equations}
+We want to modify the implementation of the old EUTERPE equations \cite{regana} in SFINCS 
+to the new equations \cite{reganaArxiv}.
+
+The old equations for the particle trajectories and the drift-kinetic equation are
+\begin{align}
+\dot{\bm{R}} & =  v_\| \bm{b} - \frac{\na \Phi_0 \times \bm{b}}{B}  \\
+\dot{v}_\| & =  - \frac{q}{m} \bm{b} \cdot \na \Phi_1 - \mu \bm{b} \cdot \na B - \frac{v_\|}{B^2} \left(\bm{b} \times \na B\right) \cdot \na \Phi_0 \\
+\dot{\mu} & =  0
+\label{eq:ParticleTrajEuterpeOld}
+\end{align}
+and
+\begin{multline}
+\frac{\p f_1}{\p t} + \dot{\bm{R}} \cdot \na f_1 + \dot{v}_\| \frac{\p f_1}{\p v_\|} - C = \\ =
+- f_M \left[\frac{1}{n} \frac{\p n}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2}\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] 
+\left(\bm{v}_d + \bm{v}_{E1}\right) \cdot \na \psi - 
+\frac{q}{m} \frac{f_M}{v_{\mathrm{th}}^2} \left(v_\| \bm{b} + \bm{v}_d\right) \cdot \left(\na \Phi_0 + \na \Phi_1\right).
+\label{eq:DriftKineticEuterpeOld}
+\end{multline}
+
+The new equations are
+\begin{align}
+\dot{\bm{R}} & =  v_\| \bm{b} - \frac{\na \Phi_0 \times \bm{b}}{B}  \\
+\dot{v}_\| & =  - \frac{q}{m} \bm{b} \cdot \na \Phi_1 - \mu \bm{b} \cdot \na B - \frac{v_\|}{B^2} \left(\bm{b} \times \na B\right) \cdot \na \Phi_0 \\
+\dot{\mu} & =  0
+\label{eq:ParticleTrajEuterpeNew}
+\end{align}
+and
+\begin{multline}
+\frac{\p f_1}{\p t} + \dot{\bm{R}} \cdot \na f_1 + \dot{v}_\| \frac{\p f_1}{\p v_\|} - C = \\ =
+- f_0 \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2} + \frac{q}{T} \Phi_1\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] 
+\left(\bm{v}_d + \bm{v}_{E1}\right) \cdot \na \psi.
+\label{eq:DriftKineticEuterpeNew}
+\end{multline}
+Here we have the definitions
+\begin{equation}
+\Phi\left(\psi, \theta, \varphi\right) \equiv \Phi_0\left(\psi\right) + \Phi_1\left(\theta, \varphi\right),
+\label{eq:Phi}
+\end{equation}
+\begin{equation}
+\bm{v}_d = \frac{m}{q} \frac{\mu B + v_\|^2}{B^2} \bm{b} \times \na B,
+\label{eq:MagneticDrift}
+\end{equation}
+\begin{equation}
+\bm{v}_{E1} = - \frac{\na \Phi_1 \times \bm{b}}{B},
+\label{eq:ElectricDrift1}
+\end{equation}
+\begin{equation}
+f_0 = f_M \exp \left(- q \Phi_1 / T \right) = \frac{n_0\left(\psi\right)}{\left(2 \pi\right)^{3/2} v_{\mathrm{th}}^3} \exp \left[- \frac{\left(v_\|^2  + v_\perp^2\right)}{2 v_{\mathrm{th}}^2}\right] \exp \left(- q \Phi_1 / T \right),
+\label{eq:f0}
+\end{equation}
+$q = Z e$ and $v_{\mathrm{th}}^2 = T/m$.\\
+
+\noindent The only differences appear in the RHS:s of Eqs.~\ref{eq:DriftKineticEuterpeOld} and \ref{eq:DriftKineticEuterpeNew}:\\ 
+Firstly, $f_M$ has been replaced by $f_0$ containing the $\exp \left(- q \Phi_1 / T \right)$ factor.\\ 
+Secondly, some of the terms have been modified. 
+We rewrite the RHS of \ref{eq:DriftKineticEuterpeNew}:
+\begin{multline}
+{\mathrm{RHS}}_{\mathrm{NEW}} =
+- f_0 \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2} + \frac{q}{T} \Phi_1\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] 
+\left(\bm{v}_d + \bm{v}_{E1}\right) \cdot \na \psi = \\ =
+%%
+- f_0 \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2}\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] 
+\left(\bm{v}_d + \bm{v}_{E1}\right) \cdot \na \psi + \\ - 
+f_0  \frac{q}{T} \Phi_1 \frac{1}{T} \frac{\p T}{\p \psi}
+\left(\bm{v}_d + \bm{v}_{E1}\right) \cdot \na \psi = \\ =
+%%
+- f_0 \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2}\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] 
+\bm{v}_d \cdot \na \psi + \\ - 
+f_0 \left[\frac{1}{n} \frac{\p n}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2}\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] 
+\bm{v}_{E1} \cdot \na \psi - f_0 \frac{q}{T} \frac{\p \Phi_0}{\p \psi} \bm{v}_{E1} \cdot \na \psi + \\ -
+f_0 \frac{q}{T} \Phi_1 \frac{\na T}{T} \cdot
+\left(\bm{v}_d + \bm{v}_{E1}\right) = \\ =
+%%
+- f_0 \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2}\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] 
+\bm{v}_d \cdot \na \psi + \\  
+\textcolor{blue}{- f_0 \left[\frac{1}{n} \frac{\p n}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2}\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] 
+\bm{v}_{E1} \cdot \na \psi}  + \\  
+\textcolor{red}{- f_0 \frac{q}{T} \left[\na \Phi_0 \cdot \bm{v}_{E1} + \Phi_1 \frac{\na T}{T} \cdot \bm{v}_d + \Phi_1 \frac{\na T}{T} \cdot \bm{v}_{E1} \right]}.
+\label{eq:DriftKineticEuterpeNewRHS}
+\end{multline}
+Similarly, the RHS of \ref{eq:DriftKineticEuterpeOld} is rewritten as:
+\begin{multline}
+{\mathrm{RHS}}_{\mathrm{OLD}} =
+- f_M \left[\frac{1}{n} \frac{\p n}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2}\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] 
+\left(\bm{v}_d + \bm{v}_{E1}\right) \cdot \na \psi - 
+\frac{q}{m} \frac{f_M}{v_{\mathrm{th}}^2} \left(v_\| \bm{b} + \bm{v}_d\right) \cdot \left(\na \Phi_0 + \na \Phi_1\right) = \\ =
+%%
+- f_M \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2}\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] 
+\bm{v}_d \cdot \na \psi + \\  
+\textcolor{blue}{- f_M \left[\frac{1}{n} \frac{\p n}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2}\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] 
+\bm{v}_{E1} \cdot \na \psi}  + \\  
+\textcolor{red}{- f_M \frac{q}{T} \left[v_\| \bm{b} \cdot  \na \Phi_1 + \bm{v}_d \cdot  \na \Phi_1\right]}.
+\label{eq:DriftKineticEuterpeOldRHS}
+\end{multline}
+Comparing ${\mathrm{RHS}}_{\mathrm{NEW}}$ to ${\mathrm{RHS}}_{\mathrm{OLD}}$ we see that, apart from $f_M \rightarrow f_0$, only the terms in red have changed. 
+
+\subsection*{Implementation in SFINCS}
+The only part of the drift-kinetic equation block we need to modify is the RHS, where we need to update the red terms and substitute $f_M \rightarrow f_0$. SFINCS had earlier neglected the $\bm{v}_d \cdot  \na \Phi_1$-term which is small in the standard $\rho_\ast$-expansion. 
+The RHS that was implemented is (see Matt's ISHW poster, also note that $\bm{v}_{E} \cdot \na \psi = \bm{v}_{E1} \cdot \na \psi$)
+\begin{multline}
+{\mathrm{RHS}}_{\mathrm{SFINCS, OLD}} =
+- f_M \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2}\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] 
+\bm{v}_d \cdot \na \psi + \\  
+\textcolor{blue}{- f_M \left[\frac{1}{n} \frac{\p n}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2}\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] 
+\bm{v}_{E} \cdot \na \psi}  %+ \\  
+\textcolor{red}{- f_M \frac{q}{T} v_\| \bm{b} \cdot  \na \Phi_1 }.
+\label{eq:DriftKineticSFINCSOldRHS}
+\end{multline}
+We thus replace 
+\begin{equation}
+\textcolor{red}{
+v_\| \bm{b} \cdot  \na \Phi_1
+}
+\label{eq:ReplaceOLD}
+\end{equation}
+with 
+\begin{equation}
+\textcolor{red}{
+\na \Phi_0 \cdot \bm{v}_{E} + \Phi_1 \frac{\na T}{T} \cdot \bm{v}_d + \Phi_1 \frac{\na T}{T} \cdot \bm{v}_{E}},
+\label{eq:ReplaceNEW}
+\end{equation}
+and make the substitution
+\begin{equation}
+\textcolor{red}{
+f_M \rightarrow f_0 = f_M \exp \left(- q \Phi_1 / T \right)}.
+\label{eq:substitution}
+\end{equation}
+\remark{In EUTERPE $\Phi_1$ is only an unknown in the quasi-neutrality equation, in the kinetic equation it is an input which means that there are no nonlinearities. It also means that the exponential in $f_0$ is not expanded in the kinetic equation. 
+Are all terms in Eq.~\ref{eq:ReplaceNEW} feasible to implement in SFINCS? E.g. is it a problem that the $\Phi_1 \frac{\na T}{T} \cdot \bm{v}_{E}$-term contains 3 factors with $\Phi_1$?}\\
+
+\noindent \remark{Because of $f_0$ it seems as all terms which contain $\Phi_1$ are now nonlinear. Does it make sense to have both switches \textbf{includePhi1} and \textbf{nonlinear} available in SFINCS?}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\section*{Quasi-neutrality equation}
+In EUTERPE $\Phi_1$ is calculated from quasi-neutrality by expanding the exponential, assuming adiabatic electrons and neglecting the impurities: 
+\begin{equation}
+n_s = n_{s 0} \left(\psi\right) \, \exp \left(- q_s \Phi_1 / T_s \right) + n_{s 1},
+\label{eq:}
+\end{equation}
+\begin{equation}
+\sum_s Z_s n_s = 0,
+\label{eq:Quasineutrality}
+\end{equation}
+\[
+\Rightarrow \;\;\; 0 \simeq \sum_s Z_s \left[n_{s 0} \left(1 - q_s \Phi_1 / T_s \right) + n_{s 1}\right] \;\;\; \Leftrightarrow \;\;\;
+\]
+\[
+\sum_s Z_s \left[n_{s 0} + n_{s 1}\right] = \sum_s \frac{Z_s^2 e}{T_s} \Phi_1 n_{s 0} .
+\]
+Since $n_{s 0} \left(\psi\right)$ is obtained by integrating the Maxwellian $f_{M s}$ over velocity space we must have 
+\[
+\sum_s Z_s n_{s 0} = 0,
+\]
+which yields 
+\begin{equation}
+\sum_s Z_s n_{s 1} - \Phi_1 \sum_s \frac{Z_s^2 e}{T_s} n_{s 0}  = 0.
+\label{eq:Quasineutrality2}
+\end{equation}
+With kinetic ions, adiabatic electrons ($n_{e 1} = 0$) and neglecting impurities we obtain 
+\begin{equation}
+\Phi_1 = \frac{T_e}{e} \left[\frac{T_e}{T_i} n_{i 0} + n_{e 0}\right]^{-1} n_{i 1}.
+\label{eq:Phi1}
+\end{equation}
+
+\subsection*{Implementation in SFINCS}
+For a first benchmark, we want to implement the same equations as EUTERPE in SFINCS. \\
+\remark{This is not a very generic quasi-neutrality equation so it is possible that we might want to change it in SFINCS later.} \\
+In the code we add an adiabatic species which only enters into the quasi-neutrality equation, and neglect its collisional impact on the kinetic species (the effect of ion-electron collisions is small compared to ion-ion collisions). 
+Moreover, we will only consider the first of the kinetic species in quasi-neutrality and neglect the rest. 
+This is implemented by modifying the LHS of the row corresponding to quasi-neutrality in the block-matrix structure of Matt's ISHW poster, adding the adiabatic term to the $\Phi_1$-column and removing all kinetic species except the first. \\
+\remark{It feels a bit weird to remove species from quasi-neutrality, even if the impurity density is small. Does this mean that we should removed the check that the input densities are quasi-neutral and instead check that $n_{i 0} \left(\psi\right) = n_{e 0} \left(\psi\right)$ in the input?}\\
+The equation we will implement in SFINCS is thus 
+\begin{equation}
+Z_i n_{i 1} - \Phi_1 \left[ \frac{Z_i^2 e}{T_i} n_{i 0} + \frac{Z_e^2 e}{T_e} n_{e 0}\right] = 0.
+\label{eq:QuasineutralityIonElectrons}
+\end{equation}
+We note that
+\begin{multline}
+n_s = n_{s 0} \left(\psi\right) \, \exp \left(- q_s \Phi_1 / T_s \right) + n_{s 1} = \int d^3 v f_{Ms} \exp \left(- q_s \Phi_1 / T_s \right) + \int d^3 v f_{1 s} = \\ = 
+d^3 v f_{0 s} + d^3 v f_{1 s}.
+\label{eq:distributionToDensity}
+\end{multline}
+The velocity integration is SFINCS is done in $\left(x, \xi\right) = \left(v / v_s, v_\| / v\right)$, and 
+\begin{equation}
+\int d^3 v = 2 \pi v_{s}^3 \int_{0}^{\infty} dx\, x^2 \int_{-1}^{1} d\xi
+\label{eq:VelocityIntegration}
+\end{equation}
+(note that $v_{s}^2 = 2 T_s/m_s$ differs from Jose's notation $v_{\mathrm{th}}^2 = T/m$). 
+Using SFINCS normalizations $n_s = \bar{n}  \hat{n}_s$, $T_s = \bar{T}  \hat{T}_s$, $v_s / \bar{v} = \sqrt{\hat{T}_s / \hat{m}_s}$, 
+$f_s = \bar{n} \hat{f}_s / \bar{v}^3$, 
+we find 
+\begin{equation}
+\hat{n}_s = 2 \pi \left(\hat{T}_s / \hat{m}_s\right)^{3/2} \int_{0}^{\infty} dx\, x^2 \int_{-1}^{1} d\xi \hat{f}_s.
+\label{eq:VelocityIntegrationSFINCS}
+\end{equation}
+Also using $\Phi_1 = \bar{\Phi} \hat{\Phi}_1$ and $\alpha = e \bar{\Phi} / \bar{T}$ we can write Eq.~\ref{eq:QuasineutralityIonElectrons} 
+\begin{equation}
+Z_i \hat{n}_{i 1} - \alpha \hat{\Phi}_1 \left[ \frac{Z_i^2}{\hat{T}_i} \hat{n}_{i 0} + \frac{Z_e^2}{\hat{T}_e} \hat{n}_{e 0}\right] = 0
+\label{eq:QuasineutralityIonElectronsSFINCS}
+\end{equation}
+and finally obtain 
+\begin{equation}
+\left[2 \pi Z_i \left(\hat{T}_i / \hat{m}_i\right)^{3/2} \int_{0}^{\infty} dx\, x^2 \int_{-1}^{1} d\xi \hat{f}_{i 1}\right]
+- \alpha \hat{\Phi}_1 \left[ \frac{Z_i^2}{\hat{T}_i} \hat{n}_{i 0} + \frac{Z_e^2}{\hat{T}_e} \hat{n}_{e 0}\right] = 0.
+\label{eq:QuasineutralityIonElectronsSFINCS2}
+\end{equation}
+This is the equation we will implement in the code, but adding a $\lambda$ to make the system square.\\ 
+\remark{Is the $2\pi$ factor correct in Eq.~\ref{eq:QuasineutralityIonElectronsSFINCS2}? It is not in the former implementation of quasi-neutrality, but in that situation it could be divided away.}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{thebibliography}{99}
+
+\bibitem{regana} J.~M.~Garc\'{\i}a-Rega\~{n}a, R.~Kleiber, C.~D.~Beidler, Y.~Turkin, H.~Maa{\ss}berg  
+and P.~Helander, 
+\href{http://dx.doi.org/10.1088/0741-3335/55/7/074008}{\em Plasma Phys.~Control.~Fusion} {\bf 55} (2013) 074008.
+
+\bibitem{reganaArxiv} J.~M.~Garc\'{\i}a-Rega\~{n}a, C.~D.~Beidler, Y.~Turkin, R.~Kleiber, P.~Helander, H.~Maa{\ss}berg, J. A. Alonso and J. L. Velasco,  
+\href{http://arxiv.org/abs/1501.03967}{\em arXiv:1501.03967} (2015).
+
+\bibitem{landremanSFINCS} Landreman~M, Smith~H~M, Moll\'en~A and Helander~P 2014
+ \href{http://dx.doi.org/10.1063/1.4870077}{\em Phys. Plasmas} {\bf 21} 042503
+
+%\bibitem{simakov} A.~N.~Simakov, P.~Helander,
+%  {\em Phys. Plasmas} {\bf 16}, 042503 (2009).
+  
+%\bibitem{nonAxis} P.~Helander, Theory of plasma confinement in non-axisymmetric magnetic fields (2013).
+
+%\bibitem{MH} L.~Råde and B.~Westergren, Mathematics Handbook for Science and Engineering, $5^{\mathrm{th}}$ edition, 2004. %\vspace{-5mm}
+
+%\bibitem{Abra} M.~Abramowitz and I.~A.~Stegun, Handbook of Mathematical Functions, $10^{\mathrm{th}}$ printing, 1972.
+
+\end{thebibliography}
+
+\end{document}
