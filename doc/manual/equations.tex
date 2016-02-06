@@ -1,0 +1,197 @@
+\chapter{Kinetic equations}
+
+The \sfincs~code is capable of solving many different variants of the drift-kinetic equation.
+In this section we summarize the most common drift-kinetic equations
+which can be solved with the code, giving the associated input parameters
+(which are all in the  {\ttfamily \hyperref[sec:physicsParameters]{physicsParameters}} namelist.)
+For other choices of these input parameters, 
+other combinations of terms in the drift-kinetic equation can be used than those
+given here.
+For more information, see section \ref{sec:trajectoryModels}, section \ref{sec:qn}, section \ref{sec:magneticDrifts},
+and the version 3 technical documentation.
+The following terms are always included in \sfincs:
+parallel streaming, the magnetic mirror force, the collision operator,
+and the inhomogeneous drive term from radial gradients.
+Other terms generally can be turned on and off as desired using parameters in the
+{\ttfamily \hyperref[sec:physicsParameters]{physicsParameters}} namelist.
+
+Throughout this section, gradients and other partial derivatives are taken
+at constant $x_a = v/\sqrt{2T_a/m_a}$ and at constant $\xi = v_{||} / v$, unless denoted otherwise with subscripts.
+We use $s$ to denote the species, $r$ to denote any radial coordinate, (expressions are independent
+of the specific radial coordinate used,)
+$C_a$ to denote the collision operator, and $S_a$ to denote the source-sink term.
+A more detailed discussion of the equations implemented in the code can be found
+in the technical documentation for \sfincs~version 3, available in the {\ttfamily /doc} directory
+of the repository.
+
+\section{Default: Full $\vect{E}\times\vect{B}$ trajectories; no poloidal or toroidal magnetic drifts; flux function potential}
+
+\begin{eqnarray}
+&&\left(v_{||}\vect{b} + \frac{d\Phi_0}{dr} \frac{1}{B^2} \vect{B}\times\nabla r \right) \cdot \nabla f_{s1} \\
+&&+ \left[ - \frac{(1-\xi^2)v}{2B} \nabla_{||} B
++\frac{(1-\xi^2)\xi}{2B^3} \frac{d\Phi_0}{dr}\vect{B}\times\nabla r\cdot\nabla B \right]
+ \frac{\partial f_{s1}}{\partial \xi} \nonumber \\
+&&-(\vect{v}_{ma} \cdot\nabla r) \frac{Z_s e}{2 T_s x_s} \frac{d\Phi_0}{dr} \frac{\partial f_{a1}}{\partial x_s} \nonumber \\
+&&+ (\vect{v}_{ma} \cdot \nabla r) \left[ \frac{1}{n_a} \frac{dn_a}{dr} + \frac{Z_s e}{T_s} \frac{d\Phi_0}{dr} + \left(x_s^2-\frac{3}{2}\right) \frac{1}{T_s} \frac{dT_s}{dr}\right] f_{aM}
+ = C_a + S_a \nonumber
+\end{eqnarray}
+Note that this equation is equivalent to the following one, in which the independent variables
+are $(\mu,v_{||})$ instead of $(\xi,x_s)$:
+\begin{eqnarray}
+&&\left(v_{||}\vect{b} + \frac{d\Phi_0}{dr} \frac{1}{B^2} \vect{B}\times\nabla r \right) \cdot (\nabla f_{s1})_{\mu, v_{||}} \\
+&&+ \left[ - \mu \nabla_{||} B
+-\frac{v_{||}}{B^2} \frac{d\Phi_0}{dr} \vect{b}\times\nabla B \times \nabla r \right]
+\left( \frac{\partial f_{a1}}{\partial v_{||}} \right)_{\mu} \nonumber \\
+&& + (\vect{v}_{ma} \cdot \nabla r) \left[ \frac{1}{n_a} \frac{dn_a}{dr} + \frac{Z_s e}{T_s} \frac{d\Phi_0}{dr} + \left(x_s^2-\frac{3}{2}\right) \frac{1}{T_s} \frac{dT_s}{dr}\right] f_{aM}
+=C_a + S_a \nonumber
+\end{eqnarray}
+These equivalent forms of the kinetic equation are selected using \\
+\parlink{includeXDotTerm} = \true  \;\;\; (Default) \\
+\parlink{includeElectricFieldTermInXiDot} = \true \;\;\; (Default) \\
+\parlink{useDKESExBDrift} = \false \;\;\; (Default) \\
+\parlink{magneticDriftScheme} = 0 \;\;\; (Default) \\
+\parlink{includePhi1} = \false \;\;\; (Default) \\
+\parlink{includeRadialExBDrive} = \false \;\;\; (Default) \\
+\parlink{nonlinear} = \false \;\;\; (Default)
+
+
+
+
+\section{DKES $\vect{E}\times\vect{B}$ trajectories; no poloidal or toroidal magnetic drifts; flux function potential}
+
+This form of the kinetic equation is useful for benchmarking with DKES and other codes
+that use the same equation.
+
+\begin{eqnarray}
+&&\left(v_{||}\vect{b} + \frac{d\Phi_0}{dr} \frac{1}{\left< B^2\right>} \vect{B}\times\nabla r \right) \cdot \nabla f_{s1} \\
+&& - \frac{(1-\xi^2)v}{2B} (\nabla_{||} B)
+ \frac{\partial f_{s1}}{\partial \xi} \nonumber \\
+&&+ (\vect{v}_{ma} \cdot \nabla r) \left[ \frac{1}{n_a} \frac{dn_a}{dr} + \frac{Z_s e}{T_s} \frac{d\Phi_0}{dr} + \left(x_s^2-\frac{3}{2}\right) \frac{1}{T_s} \frac{dT_s}{dr}\right] f_{aM}
+ = C_a + S_a \nonumber
+\end{eqnarray}
+This form of the kinetic equation is selected using \\
+\parlink{includeXDotTerm} = \false  \;\;\; (Not default) \\
+\parlink{includeElectricFieldTermInXiDot} = \false \;\;\; (Not default) \\
+\parlink{useDKESExBDrift} = \true \;\;\; (Not default) \\
+\parlink{magneticDriftScheme} = 0 \;\;\; (Default) \\
+\parlink{includePhi1} = \false \;\;\; (Default) \\
+\parlink{includeRadialExBDrive} = \false \;\;\; (Default) \\
+\parlink{nonlinear} = \false \;\;\; (Default)
+
+
+
+\section{Full $\vect{E}\times\vect{B}$ trajectories; including poloidal and toroidal magnetic drifts; flux function potential}
+
+\begin{eqnarray}
+&&\left(v_{||}\vect{b} + \frac{d\Phi_0}{dr} \frac{1}{B^2} \vect{B}\times\nabla r  + \vect{v}_{ms}\right) \cdot \nabla \theta \frac{\partial f_{s1}}{\partial \theta} \\
+&&\left(v_{||}\vect{b} + \frac{d\Phi_0}{dr} \frac{1}{B^2} \vect{B}\times\nabla r  + \vect{v}_{ms}\right) \cdot \nabla \zeta \frac{\partial f_{s1}}{\partial \zeta} \nonumber \\
+&&+ \left\{ - \frac{(1-\xi^2)v}{2B} \nabla_{||} B
++\frac{(1-\xi^2)\xi}{2B^3} \frac{d\Phi_0}{dr}\vect{B}\times\nabla r\cdot\nabla B \right. \nonumber \\
+&& \left. \hspace{0.25in} -\frac{T_s x_s^2 (\nabla r\cdot\nabla\theta\times\nabla\zeta)}{Z_s e B^3} (1-\xi^2)\xi
+\left[ \left( \frac{\partial B_r}{\partial \zeta} - \frac{\partial B_\zeta}{\partial r}\right)\frac{\partial B}{\partial\theta}
++ \left(\frac{\partial B_\theta}{\partial r} - \frac{\partial B_r}{\partial\theta}\right) \frac{\partial B}{\partial\zeta}\right]
+\right\}
+ \frac{\partial f_{s1}}{\partial \xi} \nonumber \\
+&&-(\vect{v}_{ma} \cdot\nabla r) \frac{Z_s e}{2 T_s x_s} \frac{d\Phi_0}{dr} \frac{\partial f_{a1}}{\partial x_s} \nonumber \\
+&&+ (\vect{v}_{ma} \cdot \nabla r) \left[ \frac{1}{n_a} \frac{dn_a}{dr} + \frac{Z_s e}{T_s} \frac{d\Phi_0}{dr} + \left(x_s^2-\frac{3}{2}\right) \frac{1}{T_s} \frac{dT_s}{dr}\right] f_{aM}
+ = C_a + S_a \nonumber
+\end{eqnarray}
+Notice the magnetic drifts affect the coefficients of $\partial f_{s1}/\partial \theta$, $\partial f_{s1}/\partial \zeta$, 
+and $\partial f_{s1}/\partial \xi$,
+but there is no change to the coefficient of $\partial f_{s1}/\partial x_s$.
+This form of the kinetic equation is selected using \\
+\parlink{includeXDotTerm} = \true  \;\;\; (Default) \\
+\parlink{includeElectricFieldTermInXiDot} = \true \;\;\; (Default) \\
+\parlink{useDKESExBDrift} = \false \;\;\; (Default) \\
+\parlink{magneticDriftScheme} = 1 \;\;\; (Not default) \\
+\parlink{includePhi1} = \false \;\;\; (Default) \\
+\parlink{includeRadialExBDrive} = \false \;\;\; (Default) \\
+\parlink{nonlinear} = \false \;\;\; (Default)
+
+
+
+
+\section{Full $\vect{E}\times\vect{B}$ trajectories; no poloidal or toroidal magnetic drifts; leading $\Phi_1$ term}
+
+In this form of the drift-kinetic equation, we include the largest term involving $\Phi_1$,
+associated with the adiabatic response.
+However, other terms considered in Ref \cite{Regana2013} are not included.
+
+\begin{eqnarray}
+&&\left(v_{||}\vect{b} + \frac{d\Phi_0}{dr} \frac{1}{B^2} \vect{B}\times\nabla r \right) \cdot \nabla f_{s1} \\
+&&+ \left[ - \frac{(1-\xi^2)v}{2B} \nabla_{||} B
++\frac{(1-\xi^2)\xi}{2B^3} \frac{d\Phi_0}{dr}\vect{B}\times\nabla r\cdot\nabla B \right]
+ \frac{\partial f_{s1}}{\partial \xi} \nonumber \\
+&&-(\vect{v}_{ma} \cdot\nabla r) \frac{Z_s e}{2 T_s x_s} \frac{d\Phi_0}{dr} \frac{\partial f_{a1}}{\partial x_s} \nonumber \\
+&&+\frac{Z_s e}{T_s} f_{sM} v_{||} \nabla_{||} \Phi_1 \nonumber \\
+&&+ (\vect{v}_{ma} \cdot \nabla r) \left[ \frac{1}{n_a} \frac{dn_a}{dr} + \frac{Z_s e}{T_s} \frac{d\Phi_0}{dr} + \left(x_s^2-\frac{3}{2}\right) \frac{1}{T_s} \frac{dT_s}{dr}\right] f_{aM}
+ = C_a + S_a \nonumber
+\end{eqnarray}
+Note that this equation is equivalent to the following one, in which the independent variables
+are $(\mu,v_{||})$ instead of $(\xi,x_s)$:
+\begin{eqnarray}
+&&\left(v_{||}\vect{b} + \frac{d\Phi_0}{dr} \frac{1}{B^2} \vect{B}\times\nabla r \right) \cdot (\nabla f_{s1})_{\mu, v_{||}} \\
+&&+ \left[ - \mu \nabla_{||} B
+-\frac{v_{||}}{B^2} \frac{d\Phi_0}{dr} \vect{b}\times\nabla B \times \nabla r \right]
+\left( \frac{\partial f_{a1}}{\partial v_{||}} \right)_{\mu} \nonumber \\
+&&+\frac{Z_s e}{T_s} f_{sM} v_{||} \nabla_{||} \Phi_1 \nonumber \\
+&& + (\vect{v}_{ma} \cdot \nabla r) \left[ \frac{1}{n_a} \frac{dn_a}{dr} + \frac{Z_s e}{T_s} \frac{d\Phi_0}{dr} + \left(x_s^2-\frac{3}{2}\right) \frac{1}{T_s} \frac{dT_s}{dr}\right] f_{aM}
+=C_a + S_a \nonumber
+\end{eqnarray}
+These equivalent forms of the kinetic equation are selected using \\
+\parlink{includeXDotTerm} = \true  \;\;\; (Default) \\
+\parlink{includeElectricFieldTermInXiDot} = \true \;\;\; (Default) \\
+\parlink{useDKESExBDrift} = \false \;\;\; (Default) \\
+\parlink{magneticDriftScheme} = 0 \;\;\; (Default) \\
+\parlink{includePhi1} = \true \;\;\; (Not default) \\
+\parlink{includeRadialExBDrive} = \false \;\;\; (Default) \\
+\parlink{nonlinear} = \false \;\;\; (Default)
+
+
+
+\section{Full $\vect{E}\times\vect{B}$ trajectories; no poloidal or toroidal magnetic drifts; Garc\'{i}a-Rega\~{n}a $\Phi_1$ terms}
+
+This form of the drift-kinetic equation is nearly identical to equation (11) in Ref \cite{Regana2013}.
+The one difference (which should be small) is that at the end of (11), Garc\'{i}a-Rega\~{n}a
+has a term $\propto \vect{v}_m \cdot \nabla \Phi_1$, which is not (yet) in \sfincs.
+
+\begin{eqnarray}
+&&\left(v_{||}\vect{b} + \frac{d\Phi_0}{dr} \frac{1}{B^2} \vect{B}\times\nabla r \right) \cdot \nabla f_{s1} \\
+&&+ \left[ - \frac{(1-\xi^2)v}{2B} \nabla_{||} B
++\frac{(1-\xi^2)\xi}{2B^3} \frac{d\Phi_0}{dr}\vect{B}\times\nabla r\cdot\nabla B 
+-\frac{Z_s e}{v m_s}(1-\xi^2)(\nabla_{||}\Phi_1)
+\right]
+ \frac{\partial f_{s1}}{\partial \xi} \nonumber \\
+&&+ \left[
+-(\vect{v}_{ma} \cdot\nabla r) \frac{Z_s e}{2 T_s x_s} \frac{d\Phi_0}{dr} 
+-\frac{Z_s e \xi}{v_s m_s}
+\right] \frac{\partial f_{a1}}{\partial x_s} \nonumber \\
+&&+\frac{Z_s e}{T_s} f_{sM} v_{||} \nabla_{||} \Phi_1 \nonumber \\
+&& + (\vect{v}_E \cdot \nabla r) \left[ \frac{1}{n_a} \frac{dn_a}{dr}  + \left(x_s^2-\frac{3}{2}\right) \frac{1}{T_s} \frac{dT_s}{dr}\right] f_{aM} \nonumber \\
+&&+ (\vect{v}_{ma} \cdot \nabla r) \left[ \frac{1}{n_a} \frac{dn_a}{dr} + \frac{Z_s e}{T_s} \frac{d\Phi_0}{dr} + \left(x_s^2-\frac{3}{2}\right) \frac{1}{T_s} \frac{dT_s}{dr}\right] f_{aM}
+ = C_a + S_a \nonumber
+\end{eqnarray}
+Note that this equation is equivalent to the following one, in which the independent variables
+are $(\mu,v_{||})$ instead of $(\xi,x_s)$:
+\begin{eqnarray}
+&&\left(v_{||}\vect{b} + \frac{d\Phi_0}{dr} \frac{1}{B^2} \vect{B}\times\nabla r \right) \cdot (\nabla f_{s1})_{\mu, v_{||}} \\
+&&+ \left[ -\frac{Z_s e}{m_s} \nabla_{||} \Phi_1
+- \mu \nabla_{||} B
+-\frac{v_{||}}{B^2} \frac{d\Phi_0}{dr} \vect{b}\times\nabla B \times \nabla r \right]
+\left( \frac{\partial f_{a1}}{\partial v_{||}} \right)_{\mu} \nonumber \\
+&&+\frac{Z_s e}{T_s} f_{sM} v_{||} \nabla_{||} \Phi_1 \nonumber \\
+&& + (\vect{v}_E \cdot \nabla r) \left[ \frac{1}{n_a} \frac{dn_a}{dr}  + \left(x_s^2-\frac{3}{2}\right) \frac{1}{T_s} \frac{dT_s}{dr}\right] f_{aM} \nonumber \\
+&& + (\vect{v}_{ma} \cdot \nabla r) \left[ \frac{1}{n_a} \frac{dn_a}{dr} + \frac{Z_s e}{T_s} \frac{d\Phi_0}{dr} + \left(x_s^2-\frac{3}{2}\right) \frac{1}{T_s} \frac{dT_s}{dr}\right] f_{aM}
+=C_a + S_a \nonumber
+\end{eqnarray}
+These equivalent forms of the kinetic equation are selected using \\
+\parlink{includeXDotTerm} = \true  \;\;\; (Default) \\
+\parlink{includeElectricFieldTermInXiDot} = \true \;\;\; (Default) \\
+\parlink{useDKESExBDrift} = \false \;\;\; (Default) \\
+\parlink{magneticDriftScheme} = 0 \;\;\; (Default) \\
+\parlink{includePhi1} = \true \;\;\; (Not default) \\
+\parlink{includeRadialExBDrive} = \true \;\;\; (Not default) \\
+\parlink{nonlinear} = \true \;\;\; (Not default)
+
+
+
