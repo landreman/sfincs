@@ -4,7 +4,7 @@
 #
 # @ error = job.err.$(jobid)
 # @ output = job.out.$(jobid)
-# @ job_type = parallel
+# @ job_type = mpich
 # @ node_usage= not_shared
 # @ node = 1
 # @ tasks_per_node = 16
@@ -14,10 +14,17 @@
 # @ notification = never
 # @ queue
 
+module switch intel/14.0
+module unload mpi.ibm
+module load mpi.intel/4.1.3
+module switch mkl/11.1
+
+module load petsc-real/3.5.2
+
 # We must load the hdf5-serial module to set some environment variables:
 module load hdf5-serial netcdf-serial
 
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HDF5_HOME}/lib:${NETCDF_HOME}/lib
 
 # run the program
-time poe /u/mlan/sfincs/fortran/version3/sfincs -ksp_view
+time mpiexec -n 16 ~/sfincs/fortran/version3/sfincs -ksp_view
