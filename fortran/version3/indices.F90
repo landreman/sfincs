@@ -31,7 +31,7 @@
 
   
   ! *********************************************************
-  ! For constraintScheme==1,
+  ! For constraintScheme==1, 3, or 4:
   ! *********************************************************
   
   ! Order of the rows of the matrix and of the RHS:
@@ -233,8 +233,8 @@
               +Ntheta*Nzeta
 
       case (BLOCK_DENSITY_CONSTRAINT)
-         if (constraintScheme .ne. 1) then
-            print *,"Error! whichBlock=BLOCK_DENSITY_CONSTRAINT requires constraintScheme=1"
+         if ((constraintScheme .ne. 1) .and. (constraintScheme .ne. 3) .and. (constraintScheme .ne. 4)) then
+            print *,"Error! whichBlock=BLOCK_DENSITY_CONSTRAINT requires constraintScheme = 1, 3, or 4."
             print *,"Now, constraintScheme = ",constraintScheme
             stop
          end if
@@ -248,8 +248,8 @@
          end if
 
       case (BLOCK_PRESSURE_CONSTRAINT)
-         if (constraintScheme .ne. 1) then
-            print *,"Error! whichBlock=BLOCK_PRESSURE_CONSTRAINT requires constraintScheme=1"
+         if ((constraintScheme .ne. 1) .and. (constraintScheme .ne. 3) .and. (constraintScheme .ne. 4)) then
+            print *,"Error! whichBlock=BLOCK_PRESSURE_CONSTRAINT requires constraintScheme = 1, 3, or 4."
             print *,"Now, constraintScheme = ",constraintScheme
             stop
          end if
@@ -315,7 +315,7 @@
 
       select case (constraintScheme)
       case (0)
-      case (1)
+      case (1,3,4)
          matrixSize = matrixSize + 2 * Nspecies
       case (2)
          matrixSize = matrixSize + Nx * Nspecies

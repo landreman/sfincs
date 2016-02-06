@@ -127,21 +127,26 @@
        ! Amount of shift:
        temp = 1d+0
 
-       if (constraintScheme==1) then
+       select case (constraintScheme)
+       case (0)
+          ! Nothing to do here.
+       case (1,3,4)
           do ispecies = 1,Nspecies
              index = getIndex(ispecies,1,1,1,1,BLOCK_DENSITY_CONSTRAINT)
              call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
              index = getIndex(ispecies,1,1,1,1,BLOCK_PRESSURE_CONSTRAINT)
              call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
           end do
-       elseif (constraintScheme==2) then
+       case (2)
           do ispecies = 1,Nspecies
              do ix = 1,Nx
                 index = getIndex(ispecies,ix,1,1,1,BLOCK_F_CONSTRAINT)
                 call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
              end do
           end do
-       end if
+       case default
+          stop "Invalid constraintScheme!"
+       end select
        if (includePhi1) then
           index = getIndex(1,1,1,1,1,BLOCK_PHI1_CONSTRAINT)
           call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
@@ -1782,13 +1787,36 @@
        case (0)
           ! Do nothing here.
           
-       case (1)
+       case (1,3,4)
           ! Add a heat source and a particle source.
           
           L=0
           do ix = ixMin,Nx
-             xPartOfSource1 = (x2(ix)-5/two)*exp(-x2(ix)) ! Provides particles but no heat
-             xPartOfSource2 = (x2(ix)-3/two)*exp(-x2(ix)) ! Provides heat but no particles
+             ! The particle and energy sources S_p and S_e are normalized so that
+             ! \int dx_0^inf (4 pi x^2) S_p = 1
+             ! \int dx_0^inf (4 pi x^2) S_e = 0
+             ! \int dx_0^inf (4 pi x^2) S_p x^2 = 0
+             ! \int dx_0^inf (4 pi x^2) S_e x^2 = 1
+             ! See Mathematica notebook 20160107-01 for calculation of the coefficients used here.
+             select case (constraintScheme)
+             case (1)
+                ! Constant and quadratic terms:
+                xPartOfSource1 = (         -x2(ix) + 5/two) * exp(-x2(ix)) / (pi*sqrtpi) ! Provides particles but no heat
+                xPartOfSource2 = (two/three*x2(ix) -     1) * exp(-x2(ix)) / (pi*sqrtpi) ! Provides heat but no particles
+                ! Definition prior to 2016-01-07, which differs just in the overall constant:
+                !xPartOfSource1 = (x2(ix)-5/two)*exp(-x2(ix)) ! Provides particles but no heat
+                !xPartOfSource2 = (x2(ix)-3/two)*exp(-x2(ix)) ! Provides heat but no particles
+             case (3)
+                ! Constant and quartic terms:
+                xPartOfSource1 = (       -one/5*x2(ix)*x2(ix) + 7/(4.0d-0)) * exp(-x2(ix)) / (pi*sqrtpi) ! Provides particles but no heat
+                xPartOfSource2 = (two/(15.0d-0)*x2(ix)*x2(ix) -   (0.5d-0)) * exp(-x2(ix)) / (pi*sqrtpi) ! Provides heat but no particles
+             case (4)
+                ! Quadratic and quartic terms:
+                xPartOfSource1 = ( -two/three*x2(ix)*x2(ix) +   7/(3.0d-0)*x2(ix)) * exp(-x2(ix)) / (pi*sqrtpi) ! Provides particles but no heat
+                xPartOfSource2 = (4/(15.0d-0)*x2(ix)*x2(ix) - two/(3.0d-0)*x2(ix)) * exp(-x2(ix)) / (pi*sqrtpi) ! Provides heat but no particles
+             case default
+                stop "Invalid constraintScheme!"
+             end select
              do itheta = ithetaMin,ithetaMax
                 do izeta = izetaMin,izetaMax
                    do ispecies = 1,Nspecies
@@ -1834,7 +1862,7 @@
        case (0)
           ! Do nothing here.
 
-       case (1)
+       case (1,3,4)
           ! Force the flux-surface-averaged perturbed density and 
           ! flux-surface-averaged perturbed pressure to be zero.
 

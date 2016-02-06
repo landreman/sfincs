@@ -1,19 +1,10 @@
-#!/bin/bash
+#!/bin/bash -l
 
-### Set the job name
-#PBS -N sfincs
+#SBATCH -p debug
+#SBATCH -N 1
+#SBATCH -t 00:30:00
+#SBATCH -J sfincs
 
-### Set the number of nodes that will be used.
-#PBS -l mppwidth=24
-#PBS -l walltime=00:30:00
+# -mat_mumps_icntl_28 2 invokes PSCOTCH parallel ordering
+srun -n 24 ../../sfincs -ksp_view -mat_mumps_icntl_28 2
 
-### Set the queue to submit this job.
-#PBS -q debug
-
-#PBS -V
-#PBS -j oe
-
-cd $PBS_O_WORKDIR
-# Default ordering on edison is PORD, which gives mumps error -9.
-# We use -mat_mumps_icntl_7 3 to switch to the SCOTCH ordering, which seems more robust.
-aprun -n 24 ../../sfincs -ksp_view -mat_mumps_icntl_7 3
