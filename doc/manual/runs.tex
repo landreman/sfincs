@@ -79,7 +79,14 @@ temperature gradients are specified using \parlink{dTHatdrNs},  a single $E_r$ i
 \parlink{dPhiHatdrN}, and a range of $E_r$ for a scan is specified using \parlink{dPhiHatdrNMin}-\parlink{dPhiHatdrNMax}.
 \\
 
+4: Same as option 2, except the radial electric field is specified using \parlink{Er}. Thus, derivatives with respect to {\ttfamily rHat} will be used:
+Density gradients are specified using \parlink{dnHatdrHats}, 
+temperature gradients are specified using \parlink{dTHatdrHats},  a single $E_r$ is specified using
+\parlink{Er}, and a range of $E_r$ for a scan is specified using \parlink{ErMin}-\parlink{ErMax}.
+\\
 }
+
+The most common choice is the default, 4.
 
 Another choice involving radial coordinates is how to specify the flux surface for the computation.
 This choice is made using the parameter \parlink{inputRadialCoordinate} in the {\ttfamily \hyperref[sec:geometryParameters]{geometryParameters}}
@@ -109,7 +116,7 @@ This choice is made with an integer 0, 1, 2, or 3 in the first non-comment line 
 The radial coordinate used in the {\ttfamily profiles} file need not be the same as either
 \parlink{inputRadialCoordinate} or \parlink{inputRadialCoordinateForGradients}.
 Note however that the maximum and minimum radial electric field specified in the {\ttfamily profiles}
-file must be defined as the derivative of the electrostatic potential with respect to the radial coordinate \parlink{inputRadialCoordinateForGradients}.
+file must be given in terms of the electric field variable selected by \parlink{inputRadialCoordinateForGradients}.
 
 For more details about the behavior of \parlink{inputRadialCoordinate}, \parlink{inputRadialCoordinateForGradients}, and \parlink{VMECRadialOption},
 see section \ref{sec:geometryParameters}.

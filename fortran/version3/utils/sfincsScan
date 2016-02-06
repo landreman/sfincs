@@ -39,7 +39,7 @@ if sfincsSystem=="edison":
         original.insert(1,"#SBATCH -J "+name+"\n")
         return original
 
-if sfincsSystem=="cori":
+elif sfincsSystem=="cori":
     submitCommand = "sbatch "+jobFilename
     def nameJobFile(original,name):
         # Modify the job.sfincsScan file to change the name that appears in the queue.

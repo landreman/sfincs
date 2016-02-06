@@ -186,7 +186,7 @@ No matter which option you pick, the value of all 4 radial coordinates used will
 
 \param{inputRadialCoordinateForGradients}
 {integer}
-{2}
+{4}
 {Whenever \parlink{RHSMode}==1.}
 {Which radial coordinate is used to use to specify the input gradients of density, temperature, and electrostatic potential,
 i.e. which radial coordinate is used in the denominator of these derivatives.
@@ -209,7 +209,13 @@ and the range of an $E_r$ scan is specified by \parlink{dPhiHatdrHatMin}-\parlin
 temperature gradients are specified by \parlink{dTHatdrNs}, a single $E_r$ is specified by \parlink{dPhiHatdrN},
 and the range of an $E_r$ scan is specified by \parlink{dPhiHatdrNMin}-\parlink{dPhiHatdrNMax}.\\
 
-No matter which option you pick, the gradients with respect to all 4 radial coordinates will be saved in the output \HDF~file.
+{\ttfamily inputRadialCoordinateForGradients}==4: 
+Same as {\ttfamily inputRadialCoordinateForGradients}==2, except \parlink{Er} is used instead of \parlink{dPhiHatdrHat}.
+Thus, density gradients are specified by \parlink{dnHatdrHats},
+temperature gradients are specified by \parlink{dTHatdrHats}, a single $E_r$ is specified by \parlink{Er},
+and the range of an $E_r$ scan is specified by \parlink{ErMin}-\parlink{ErMax}.\\
+
+No matter which option you pick, the gradients with respect to all radial coordinates will be saved in the output \HDF~file.
 }
 
 \myhrule
@@ -626,7 +632,7 @@ quantities with a bar are the normalization reference parameters discussed in se
 {Whenever \parlink{RHSMode} == 1 and \parlink{inputRadialCoordinateForGradients} == 0}
 {The derivative of the electrostatic potential with respect to the radial coordinate $\hat{\psi}$,
 i.e. the radial electric field up to a constant.
-Notice that exactly 1 of the 4 variables \parlink{dPhiHatdpsiHat}, \parlink{dPhiHatdpsiN}, \parlink{dPhiHatdrHat}, and \parlink{dPhiHatdrN}
+Notice that exactly 1 of the 5 variables \parlink{dPhiHatdpsiHat}, \parlink{dPhiHatdpsiN}, \parlink{dPhiHatdrHat}, \parlink{dPhiHatdrN}, or \parlink{Er}
 will be used, depending on\\
 \parlink{inputRadialCoordinateForGradients}.
 }
@@ -639,7 +645,7 @@ will be used, depending on\\
 {Whenever \parlink{RHSMode} == 1 and \parlink{inputRadialCoordinateForGradients} == 1}
 {The derivative of the electrostatic potential with respect to the radial coordinate $\psi_N$,
 i.e. the radial electric field up to a constant.
-Notice that exactly 1 of the 4 variables \parlink{dPhiHatdpsiHat}, \parlink{dPhiHatdpsiN}, \parlink{dPhiHatdrHat}, and \parlink{dPhiHatdrN}
+Notice that exactly 1 of the 5 variables \parlink{dPhiHatdpsiHat}, \parlink{dPhiHatdpsiN}, \parlink{dPhiHatdrHat}, \parlink{dPhiHatdrN}, or \parlink{Er}
 will be used, depending on\\
 \parlink{inputRadialCoordinateForGradients}.
 }
@@ -652,7 +658,7 @@ will be used, depending on\\
 {Whenever \parlink{RHSMode} == 1 and \parlink{inputRadialCoordinateForGradients} == 2}
 {The derivative of the electrostatic potential with respect to the radial coordinate $\hat{r}$,
 i.e. the radial electric field up to a constant.
-Notice that exactly 1 of the 4 variables \parlink{dPhiHatdpsiHat}, \parlink{dPhiHatdpsiN}, \parlink{dPhiHatdrHat}, and \parlink{dPhiHatdrN}
+Notice that exactly 1 of the 5 variables \parlink{dPhiHatdpsiHat}, \parlink{dPhiHatdpsiN}, \parlink{dPhiHatdrHat}, \parlink{dPhiHatdrN}, or \parlink{Er}
 will be used, depending on\\
 \parlink{inputRadialCoordinateForGradients}.
 }
@@ -665,11 +671,24 @@ will be used, depending on\\
 {Whenever \parlink{RHSMode} == 1 and \parlink{inputRadialCoordinateForGradients} == 3}
 {The derivative of the electrostatic potential with respect to the radial coordinate $r_N$,
 i.e. the radial electric field up to a constant.
-Notice that exactly 1 of the 4 variables \parlink{dPhiHatdpsiHat}, \parlink{dPhiHatdpsiN}, \parlink{dPhiHatdrHat}, and \parlink{dPhiHatdrN}
+Notice that exactly 1 of the 5 variables \parlink{dPhiHatdpsiHat}, \parlink{dPhiHatdpsiN}, \parlink{dPhiHatdrHat}, \parlink{dPhiHatdrN}, or \parlink{Er}
 will be used, depending on\\
 \parlink{inputRadialCoordinateForGradients}.
 }
 
+
+\myhrule
+
+\param{Er}
+{real}
+{0.0}
+{Whenever \parlink{RHSMode} == 1 and \parlink{inputRadialCoordinateForGradients} == 4}
+{The derivative of the electrostatic potential with respect to the radial coordinate $\hat{r}$, multiplied by $-1$,
+i.e. the radial electric field.
+Notice that exactly 1 of the 5 variables \parlink{dPhiHatdpsiHat}, \parlink{dPhiHatdpsiN}, \parlink{dPhiHatdrHat}, \parlink{dPhiHatdrN}, or \parlink{Er}
+will be used, depending on\\
+\parlink{inputRadialCoordinateForGradients}.
+}
 
 \myhrule
 
@@ -1741,11 +1760,11 @@ Since the recommended value of \parlink{xGridScheme} is 5, this parameter is bas
 
 In this scan of the radial electric field, the values of electric field used
 will always be uniformly (linearly) spaced.  
-Notice that exactly 1 of the 4 variables \parlink{dPhiHatdpsiHatMax}, \parlink{dPhiHatdpsiNMax}, \parlink{dPhiHatdrHatMax}, and \parlink{dPhiHatdrNMax}
+Notice that exactly 1 of the 5 variables \parlink{dPhiHatdpsiHatMax}, \parlink{dPhiHatdpsiNMax}, \parlink{dPhiHatdrHatMax}, \parlink{dPhiHatdrNMax}, or \parlink{ErMax}
 will be used, depending on\\
 \parlink{inputRadialCoordinateForGradients}.
-Similarly, exactly 1 of the 4 variables
-\parlink{dPhiHatdpsiHatMin}, \parlink{dPhiHatdpsiNMin}, \parlink{dPhiHatdrHatMin}, and \parlink{dPhiHatdrNMin}
+Similarly, exactly 1 of the 5 variables
+\parlink{dPhiHatdpsiHatMin}, \parlink{dPhiHatdpsiNMin}, \parlink{dPhiHatdrHatMin}, \parlink{dPhiHatdrNMin}, or \parlink{ErMin}
 will be used.
 
 \myhrule
@@ -1810,6 +1829,20 @@ will be used.
 {real}
 {Only when \parlink{inputRadialCoordinateForGradients} = 3 and \sfincsScan~is run with \parlink{scanType} = 2.}
 {Minimum value of \parlink{dPhiHatdrN} to use in the scan.}
+
+\myhrule
+
+\ssparam{ErMax}
+{real}
+{Only when \parlink{inputRadialCoordinateForGradients} = 4 and \sfincsScan~is run with \parlink{scanType} = 2.}
+{Maximum value of \parlink{Er} to use in the scan.}
+
+\myhrule
+
+\ssparam{ErMin}
+{real}
+{Only when \parlink{inputRadialCoordinateForGradients} = 4 and \sfincsScan~is run with \parlink{scanType} = 2.}
+{Minimum value of \parlink{Er} to use in the scan.}
 
 \subsection{Parameters related only to {\ttfamily scanType} = 3 (scans of an arbitrary input parameter).}
 
@@ -2003,5 +2036,11 @@ If \sfincs~exits with the \mumps~error {\ttfamily INFO(1)=-9}, then further incr
 {Turns on the out-of-core solve capability,
 which reduces the memory required at the cost of speed.
 See section \ref{sec:parallelization} for further details.}
+
+\myhrule
+
+\PETScParam{-mat\_mumps\_icntl\_28 2}
+{Uses one of the parallelized libraries ParMETIS or PT-SCOTCH for analyzing the matrix,
+instead of the default serial algorithm.}
 
 

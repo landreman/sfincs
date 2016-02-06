@@ -41,7 +41,7 @@ contains
     namelist / physicsParameters / Delta, alpha, nu_n, EParallelHat, &
          collisionOperator, constraintScheme, includeXDotTerm, &
          includeElectricFieldTermInXiDot, useDKESExBDrift, include_fDivVE_term, nonlinear, &
-         dPhiHatdpsiHat, dPhiHatdpsiN, dPhiHatdrHat, dPhiHatdrN, &
+         dPhiHatdpsiHat, dPhiHatdpsiN, dPhiHatdrHat, dPhiHatdrN, Er, &
          includeTemperatureEquilibrationTerm, includePhi1, &
          nuPrime, EStar, magneticDriftScheme, includeRadialExBDrive
 
@@ -328,7 +328,7 @@ contains
 
     select case (inputRadialCoordinateForGradients)
     case (0)
-       ! Input radial coordinate is psiHat:
+       ! Input radial coordinate for gradients is psiHat:
 
        if (NZs /= NDNHatdpsiHats) then
           print *,"Error: number of species charges (Zs) differs from the number of species density gradients for radial coordinate psiHat."
@@ -345,7 +345,7 @@ contains
        end if
 
     case (1)
-       ! Input radial coordinate is psiN:
+       ! Input radial coordinate for gradients is psiN:
 
        if (NZs /= NDNHatdpsiNs) then
           print *,"Error: number of species charges (Zs) differs from the number of species density gradients for radial coordinate psiN."
@@ -361,8 +361,8 @@ contains
           stop
        end if
 
-    case (2)
-       ! Input radial coordinate is rHat:
+    case (2,4)
+       ! Input radial coordinate for gradients is rHat:
 
        if (NZs /= NDNHatdrHats) then
           print *,"Error: number of species charges (Zs) differs from the number of species density gradients for radial coordinate rHat."
@@ -379,7 +379,7 @@ contains
        end if
 
     case (3)
-       ! Input radial coordinate is rN:
+       ! Input radial coordinate for gradients is rN:
 
        if (NZs /= NDNHatdrNs) then
           print *,"Error: number of species charges (Zs) differs from the number of species density gradients for radial coordinate rN."

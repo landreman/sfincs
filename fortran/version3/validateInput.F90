@@ -166,7 +166,7 @@ subroutine validateInput()
      dTHatdpsiHats = 0
      Zs = 1
      if (masterProc) then
-        print *,"Since RHSMode=3, ignoring the requested values of Zs, nHats, THats, nu_n, and dPhiHatd*."
+        print *,"Since RHSMode=3, ignoring the requested values of Zs, nHats, THats, nu_n, Er, and dPhiHatd*."
      end if
 
      if (abs(nuPrime) < 1e-14) then

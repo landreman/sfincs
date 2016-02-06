@@ -53,7 +53,7 @@ module globalVariables
   PetscScalar :: psiHat_wish = -1, psiN_wish = 0.25, rHat_wish = -1, rN_wish = 0.5
   PetscScalar :: psiHat, psiN, rHat, rN
   integer :: inputRadialCoordinate = 3
-  integer :: inputRadialCoordinateForGradients = 2
+  integer :: inputRadialCoordinateForGradients = 4
   logical :: force0RadialCurrentInEquilibrium = .true.
   integer :: VMECRadialOption = 1
 
@@ -90,7 +90,7 @@ module globalVariables
   PetscScalar :: nu_n = 8.330d-3
 
   PetscScalar :: EParallelHat = 0
-  PetscScalar :: dPhiHatdpsiHat = 0, dPhiHatdpsiN = 0, dPhiHatdrHat = 0, dPhiHatdrN = 0
+  PetscScalar :: dPhiHatdpsiHat = 0, dPhiHatdpsiN = 0, dPhiHatdrHat = 0, dPhiHatdrN = 0, Er = 0
 
   integer :: collisionOperator = 0
   ! 0 = Full linearized Fokker-Planck operator

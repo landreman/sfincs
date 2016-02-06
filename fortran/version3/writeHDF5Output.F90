@@ -288,6 +288,8 @@ contains
        call writeHDF5Field("dPhiHatdpsiN", dPhiHatdpsiN, "")
        call writeHDF5Field("dPhiHatdrHat", dPhiHatdrHat, "")
        call writeHDF5Field("dPhiHatdrN", dPhiHatdrN, "")
+       call writeHDF5Field("Er", Er, "Radial electric field, defined by -dPhiHatdrHat. Here, PhiHat is the electrostatic potential in units of PhiBar, and rHat is the square root"//&
+            " of the toroidal magnetic flux, scaled by a constant so rHat=0 on the magnetic axis and rHat=aHat at the last closed flux surface.")
 
        call writeHDF5Field("dTHatdpsiHat", dTHatdpsiHats, dspaceIDForSpecies, dimForSpecies, "")
        call writeHDF5Field("dTHatdpsiN", dTHatdpsiNs, dspaceIDForSpecies, dimForSpecies, "")

@@ -1,0 +1,9 @@
+#!/bin/bash -l
+
+#SBATCH -p debug
+#SBATCH -N 1
+#SBATCH -t 00:30:00
+#SBATCH -J sfincs
+
+srun -n 32 ~/sfincs/fortran/version3/sfincs -ksp_view -mat_mumps_icntl_28 2
+
