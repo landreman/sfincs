@@ -372,7 +372,7 @@
           allocate(colIndices(Ntheta))
           do L=0,(Nxi-1)
 
-             if (ExBDerivativeScheme==0) then
+             if (ExBDerivativeSchemeTheta==0) then
                 if (whichMatrix>0 .or. L < preconditioner_theta_min_L) then
                    ddthetaToUse = ddtheta
                 else
@@ -436,7 +436,7 @@
           allocate(colIndices(Nzeta))
           do L=0,(Nxi-1)
 
-             if (ExBDerivativeScheme==0) then
+             if (ExBDerivativeSchemeZeta==0) then
                 if (whichMatrix>0 .or. L < preconditioner_zeta_min_L) then
                    ddzetaToUse = ddzeta
                 else
