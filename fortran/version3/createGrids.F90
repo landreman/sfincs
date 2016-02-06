@@ -235,7 +235,7 @@
 
     ! Create upwinded matrices for ExB terms:
     !print *,"Creating upwinded matrices for ExB terms, theta"
-    select case (ExBDerivativeScheme)
+    select case (ExBDerivativeSchemeTheta)
     case (0)
        ! It should not matter what ddtheta_ExB_plus and ddtheta_ExB_minus are in this case.
        ddtheta_ExB_plus = ddtheta
@@ -262,7 +262,7 @@
        call uniformDiffMatrices(Ntheta, zero, two*pi, scheme, theta_preconditioner, &
             thetaWeights_preconditioner, ddtheta_ExB_minus, d2dtheta2_preconditioner)
     case default
-       print *,"Error! Invalid ExBDerivativeScheme:",ExBDerivativeScheme
+       print *,"Error! Invalid ExBDerivativeSchemeTheta:",ExBDerivativeSchemeTheta
        stop
     end select
 
@@ -407,7 +407,7 @@
 
        ! Create upwinded matrices for ExB terms:
        !print *,"Creating upwinded matrices for ExB terms, zeta"
-       select case (ExBDerivativeScheme)
+       select case (ExBDerivativeSchemeZeta)
        case (0)
           ! It should not matter what ddzeta_ExB_plus and ddzeta_ExB_minus are in this case.
           ddzeta_ExB_plus = ddzeta
@@ -434,7 +434,7 @@
           call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
                zetaWeights_preconditioner, ddzeta_ExB_minus, d2dzeta2_preconditioner)
        case default
-          print *,"Error! Invalid ExBDerivativeScheme:",ExBDerivativeScheme
+          print *,"Error! Invalid ExBDerivativeSchemeZeta:",ExBDerivativeSchemeZeta
           stop
        end select
 

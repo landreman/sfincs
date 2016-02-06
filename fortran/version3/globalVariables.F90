@@ -122,7 +122,8 @@ module globalVariables
   ! 1 = 2nd order finite differences
   ! 2 = 4th order dinite differences
 
-  integer :: ExBDerivativeScheme = 0
+  integer :: ExBDerivativeSchemeTheta = 0
+  integer :: ExBDerivativeSchemeZeta = 0
   integer :: magneticDriftDerivativeScheme = 3
   integer :: xDotDerivativeScheme = 0
 
