@@ -17,9 +17,6 @@
 
 &geometryParameters
   geometryScheme = 2  ! Simplified LHD model
-
-  inputRadialCoordinate = 3  ! rN
-  inputRadialCoordinateForGradients = 1  ! d / d psiN
 /
 
 &speciesParameters
@@ -27,8 +24,6 @@
   mHats = 1
   nHats = 1.0d+0
   THats = 1.0d+0
-  dNHatdpsiNs = 0
-  dTHatdpsiNs = 0
 /
 
 &physicsParameters
@@ -40,7 +35,7 @@
   ! For LHD, then, nu_n = nuPrime * 0.2668018
   nu_n = 0.2668018d+0
 
-  dPhiHatdpsiN   = 0.0d+0
+  Er = 0.0d+0
 
   collisionOperator = 0
   includeXDotTerm = .true.

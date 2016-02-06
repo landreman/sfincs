@@ -6,16 +6,15 @@
 
 ! Parameters specific to scanType = 2:
 !ss NErs = 5
-!ss dPhiHatdpsiNMin = -1.0d+0
-!ss dPhiHatdpsiNMax =  1.0d+0
+!ss ErMin = -1.0d+0
+!ss ErMax =  1.0d+0
 
 &general
   saveMatricesAndVectorsInBinary=.t.
 /
 
 &geometryParameters
-  geometryScheme = 4
-  inputRadialCoordinateForGradients = 1
+  geometryScheme = 4  ! Simplified W7-X model
 /
 
 &speciesParameters
@@ -23,15 +22,17 @@
   mHats = 1 6
   nHats = 0.6d+0 0.009d+0
   THats = 0.5d+0 0.8d+0
-  dNHatdpsiNs = -0.3d+0 -0.001d+0
-  dTHatdpsiNs = -0.3d+0 -0.2d+0
+  dNHatdrHats = -0.587199 -0.00195733
+  dTHatdrHats = -0.587199 -0.391466
+!  dNHatdpsiNs = -0.3d+0 -0.001d+0
+!  dTHatdpsiNs = -0.3d+0 -0.2d+0
 /
 
 &physicsParameters
   Delta = 4.5694d-3
   alpha = 1.0d+0
   nu_n = 8.4774d-3
-
+  Er = 0
   collisionOperator = 0
   includeXDotTerm = .true.
   includeElectricFieldTermInXiDot = .true.

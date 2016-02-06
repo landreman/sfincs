@@ -28,7 +28,7 @@
 /
 
 &physicsParameters
-  ! No need to specify Delta, alpha, nu_n, or dPhiHatdXXX, since we are computing monoenergetic transport coefficients.
+  ! No need to specify Delta, alpha, nu_n, or Er, since we are computing monoenergetic transport coefficients.
 
   nuPrime = 1.0d+0
   EStar = 0.2d+0

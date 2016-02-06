@@ -5,5 +5,5 @@
 #SBATCH -t 00:30:00
 #SBATCH -J sfincs
 
-srun -n 24 ../../sfincs -ksp_view -mat_mumps_icntl_28 2
+srun -n 24 ../../sfincs -ksp_view -mat_mumps_cntl_1 0.01
 
