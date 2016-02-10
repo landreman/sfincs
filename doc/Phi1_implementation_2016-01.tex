@@ -191,7 +191,7 @@ Similarly, the RHS of \ref{eq:DriftKineticEuterpeOld} is rewritten as:
 \end{multline}
 Comparing ${\mathrm{RHS}}_{\mathrm{NEW}}$ to ${\mathrm{RHS}}_{\mathrm{OLD}}$ we see that, apart from $f_M \rightarrow f_0$, only the terms in red have changed. 
 
-\subsection*{Implementation in SFINCS}
+\subsection*{What has to be changed in SFINCS}
 The only part of the drift-kinetic equation block we need to modify is the RHS, where we need to update the red terms and substitute $f_M \rightarrow f_0$. SFINCS had earlier neglected the $\bm{v}_d \cdot  \na \Phi_1$-term which is small in the standard $\rho_\ast$-expansion. 
 The RHS that was implemented is (see Matt's ISHW poster, also note that $\bm{v}_{E} \cdot \na \psi = \bm{v}_{E1} \cdot \na \psi$)
 \begin{multline}
@@ -222,10 +222,228 @@ and make the substitution
 f_M \rightarrow f_0 = f_M \exp \left(- q \Phi_1 / T \right)}.
 \label{eq:substitution}
 \end{equation}
-\remark{In EUTERPE $\Phi_1$ is only an unknown in the quasi-neutrality equation, in the kinetic equation it is an input which means that there are no nonlinearities. It also means that the exponential in $f_0$ is not expanded in the kinetic equation. 
-Are all terms in Eq.~\ref{eq:ReplaceNEW} feasible to implement in SFINCS? E.g. is it a problem that the $\Phi_1 \frac{\na T}{T} \cdot \bm{v}_{E}$-term contains 3 factors with $\Phi_1$?}\\
+%\remark{In EUTERPE $\Phi_1$ is only an unknown in the quasi-neutrality equation, in the kinetic equation it is an input which means that there are no nonlinearities. It also means that the exponential in $f_0$ is not expanded in the kinetic equation. 
+%Are all terms in Eq.~\ref{eq:ReplaceNEW} feasible to implement in SFINCS? E.g. is it a problem that the $\Phi_1 \frac{\na T}{T} \cdot \bm{v}_{E}$-term contains 3 factors with $\Phi_1$?}\\
+\\
 
-\noindent \remark{Because of $f_0$ it seems as all terms which contain $\Phi_1$ are now nonlinear. Does it make sense to have both switches \textbf{includePhi1} and \textbf{nonlinear} available in SFINCS?}
+\noindent All terms which contain $\Phi_1$ are now nonlinear. 
+It does not make sense to have both switches \textbf{includePhi1} and \textbf{nonlinear} still available in SFINCS, 
+and consequently we will remove the \textbf{nonlinear} switch.
+\\
+
+\noindent We will also introduce to possibility to run SFINCS with an adiabatic species. 
+
+\newpage
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Implementation in SFINCS}
+Of the equations implemented in SFINCS \cite{SFINCStechnicalDoc}, the only two we need to modify are the kinetic equation
+\begin{multline} 
+R\left(f_{1}, \Phi_1\right) = 
+K \left\{\theta\right\} \frac{\p f}{\p \theta} + K \left\{\zeta\right\} \frac{\p f}{\p \zeta} + 
+K \left\{x\right\} \frac{\p f}{\p x} + K \left\{\xi\right\} \frac{\p f}{\p \xi} + 
+\textcolor{red}{K \left\{\psi\right\} \frac{\p f_{M}}{\p \psi}} + \\ 
+- C \left\{f\right\} - S_{1} f_{M} - S_{2} f_{M} x^2 - \frac{Z e v}{T} x \xi \frac{\left\langle \bm{E} \cdot \bm{B} \right\rangle B}{\left\langle B^2 \right\rangle} f_M = 0
+\label{eq:KineticEqSFINCS}
+\end{multline}
+and the quasineutrality equation
+\begin{equation}
+\sum_s Z_s \int d^3v \, f_s + \lambda = 0.
+\label{eq:QuasineutralityEqSFINCS}
+\end{equation}
+
+\subsection*{Drift-kinetic equation}
+For the residual $R\left(f_{1}, \Phi_1\right)$ the only term in the kinetic equation we need to modify is the one in red in Eq.~\ref{eq:KineticEqSFINCS}. 
+We replace $f_M \rightarrow f_0 = f_M \exp \left(- q \Phi_1 / T \right)$, 
+and use that $K \left\{\psi\right\} = \bm{v}_E \cdot \na \psi + \bm{v}_d \cdot \na \psi = \bm{v}_{E1} \cdot \na \psi + \bm{v}_d \cdot \na \psi$
+to write 
+\begin{multline}
+K \left\{\psi\right\} \frac{\p f_{M}}{\p \psi} =  \exp \left(- q \Phi_1 / T \right) \frac{\p f_{M}}{\p \psi} \left(\bm{v}_{E1} \cdot \na \psi + \bm{v}_d \cdot \na \psi\right) = \\ = 
+\exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2} + \frac{q}{T} \Phi_1\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] 
+ \left(- \frac{\na \Phi_1 \times \bm{b}}{B} \cdot \na \psi + \bm{v}_d \cdot \na \psi\right) = \\ =
+ \left\| - \frac{\na \Phi_1 \times \bm{b}}{B} \cdot \na \psi = - \frac{ \bm{B} \times \na \psi}{B^2} \cdot  \na \Phi_1 = 
+ \frac{1}{B^2} D \left[B_\theta \frac{\p \Phi_1}{\p \zeta} - B_\zeta \frac{\p \Phi_1}{\p \theta}\right] \right\| = \\ =
+ \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2} + \frac{q}{T} \Phi_1\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] \cdot \\
+ \left(\frac{1}{B^2} D \left[B_\theta \frac{\p \Phi_1}{\p \zeta} - B_\zeta \frac{\p \Phi_1}{\p \theta}\right] + \bm{v}_d \cdot \na \psi\right)
+\label{eq:DKresidualNewTerm1}
+\end{multline}
+(Here $D = \na \psi \cdot \na \theta \times \na \zeta$.)
+Written like this we explicitly see the places where $\Phi_1$ appears in $\displaystyle K \left\{\psi\right\} \frac{\p f_{M}}{\p \psi}$. 
+From Eq.~\ref{eq:DKresidualNewTerm1} we obtain the corresponing terms in the Jacobian matrix
+\begin{multline}
+\frac{\delta}{\delta \Phi_1} \left(K \left\{\psi\right\} \frac{\p f_{M}}{\p \psi}\right) = - \frac{q}{T}
+ \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2} + \frac{q}{T} \Phi_1\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] \cdot \\
+ \left(\frac{1}{B^2} D \left[B_\theta \frac{\p \Phi_1}{\p \zeta} - B_\zeta \frac{\p \Phi_1}{\p \theta}\right] + \bm{v}_d \cdot \na \psi\right) \, + \\ + \,
+ \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \frac{q}{T} \frac{1}{T} \frac{\p T}{\p \psi} \left(\frac{1}{B^2} D \left[B_\theta \frac{\p \Phi_1}{\p \zeta} - B_\zeta \frac{\p \Phi_1}{\p \theta}\right] + \bm{v}_d \cdot \na \psi\right) \, + \\ + \,
+ \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2} + \frac{q}{T} \Phi_1\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] \cdot \\
+ \left(\frac{1}{B^2} D \left[B_\theta \frac{\p }{\p \zeta} - B_\zeta \frac{\p }{\p \theta}\right]\right)
+\label{eq:DKJacobianNewTerm1}
+\end{multline}
+
+\subsubsection*{Residual}
+Many of the terms involving $\bm{v}_d \cdot \na \psi$ are almost implemented in SFINCS already except that they now contain the $\exp \left(- \frac{q \Phi_1}{T}  \right)$-factor. 
+We therefore rewrite Eq.~\ref{eq:DKresidualNewTerm1} as 
+\begin{equation}
+K \left\{\psi\right\} \frac{\p f_{M}}{\p \psi} = R_m + R_E
+\label{eq:DKresidualNewTermSplit}
+\end{equation}
+where
+\begin{equation}
+R_m = \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2} + \frac{q}{T} \Phi_1\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] \bm{v}_d \cdot \na \psi
+\label{eq:eq:DKresidualNewTermRm}
+\end{equation}
+and 
+\begin{equation}
+R_E = \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2} + \frac{q}{T} \Phi_1\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] \frac{1}{B^2} D \left[B_\theta \frac{\p \Phi_1}{\p \zeta} - B_\zeta \frac{\p \Phi_1}{\p \theta}\right].
+\label{eq:eq:DKresidualNewTermRE}
+\end{equation}
+
+\begin{multline}
+K \left\{\psi\right\} \frac{\p f_{M}}{\p \psi}  =
+%%
+ \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2} + \frac{q}{T} \Phi_1\right) \frac{1}{T} \frac{\p T}{\p \psi}\right]  \bm{v}_d \cdot \na \psi \, + \\ + \,
+ \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2} + \frac{q}{T} \Phi_1\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] \frac{1}{B^2} D \left[B_\theta \frac{\p \Phi_1}{\p \zeta} - B_\zeta \frac{\p \Phi_1}{\p \theta}\right] = \\ = 
+ %%
+ \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2} \right) \frac{1}{T} \frac{\p T}{\p \psi}\right]  \bm{v}_d \cdot \na \psi \, + \\ + \,
+ \textcolor{blue}{
+ \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \left[\frac{1}{n} \frac{\p n}{\p \psi}  + \left(\frac{m v^2}{2 T} - \frac{3}{2} \right) \frac{1}{T} \frac{\p T}{\p \psi}\right] \frac{1}{B^2} D \left[B_\theta \frac{\p \Phi_1}{\p \zeta} - B_\zeta \frac{\p \Phi_1}{\p \theta}\right]} \, + \\ + \, 
+ \textcolor{red}{
+  \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \frac{q}{T} \Phi_1 \frac{1}{T} \frac{\p T}{\p \psi} \bm{v}_d \cdot \na \psi } \, + \\ + \,
+  \textcolor{magenta}{
+  \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \frac{q}{T} \frac{\p \Phi_0}{\p \psi} \frac{1}{B^2} D \left[B_\theta \frac{\p \Phi_1}{\p \zeta} - B_\zeta \frac{\p \Phi_1}{\p \theta}\right] } \, + \\ + \,
+  \textcolor{cyan}{
+  \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \frac{q}{T} \Phi_1 \frac{1}{T} \frac{\p T}{\p \psi} \frac{1}{B^2} D \left[B_\theta \frac{\p \Phi_1}{\p \zeta} - B_\zeta \frac{\p \Phi_1}{\p \theta}\right] }
+\label{eq:DKresidualNewTerm2}
+\end{multline}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\newpage
+\subsection*{Check of Matt's former implementation of $\displaystyle \frac{Z e}{T} f_M v_\| \na_\| \Phi_1$}
+Looking at Matt's ISHW poster, since $\Phi_1$ is an unknown this term is in the LHS of the square block matrix system. 
+The term is accessed by ``rowIndex = BLOCK\_F'' and ``colIndex = BLOCK\_QN''. 
+We use
+\[
+\na_\| \Phi_1 = \bm{b} \cdot \na \Phi_1 = \frac{1}{B} \left[ B^{\theta} \frac{\p \Phi_1}{\p \theta} + B^{\zeta} \frac{\p \Phi_1}{\p \zeta} \right] = 
+\frac{\bar{\Phi}}{\hat{B} \bar{R}} \left[ \hat{B}^{\theta} \frac{\p \hat{\Phi}_1}{\p \theta} + \hat{B}^{\zeta} \frac{\p \hat{\Phi}_1}{\p \zeta} \right], 
+\]
+\[
+f_M = n_0\left(\psi\right) \frac{m^{3/2}}{\left(2 \pi T\right)^{3/2}} \exp \left[- \frac{v^2}{v_{s}^2}\right] = 
+\hat{n} \bar{n} \frac{\hat{m}^{3/2}}{\left(2 \pi \hat{T}\right)^{3/2}} \left(\frac{\bar{m}}{\bar{T}}\right)^{3/2} \exp \left[- x^2\right],
+\]
+$v_\| = v_s x \xi = v_s x P_1 = x P_1 \sqrt{2 \hat{T} / \hat{m}} \sqrt{\bar{T} / \bar{m}} $ and $x = v / v_s$. 
+With $\alpha = e \bar{\Phi} / \bar{T}$ we obtain 
+\begin{multline}
+\frac{Z e}{T} f_M v_\| \na_\| \Phi_1 = \frac{Z e}{\hat{T} \bar{T}} \, \hat{n} \bar{n} \frac{\hat{m}^{3/2}}{\left(2 \pi \hat{T}\right)^{3/2}} \left(\frac{\bar{m}}{\bar{T}}\right)^{3/2} \exp \left[- x^2\right] \, x P_1 \sqrt{2 \hat{T} / \hat{m}} \sqrt{\bar{T} / \bar{m}} \, \frac{\bar{\Phi}}{\hat{B} \bar{R}} \left[ \hat{B}^{\theta} \frac{\p \hat{\Phi}_1}{\p \theta} + \hat{B}^{\zeta} \frac{\p \hat{\Phi}_1}{\p \zeta} \right] = \\ =
+ \frac{Z \alpha}{2\pi^{3/2} } x P_1  \exp \left[- x^2\right] \, \frac{\hat{n} \hat{m}}{\hat{B} \hat{T}^2 }  \, \frac{\bar{n} \bar{m}}{\bar{R} \bar{T}} \left[ \hat{B}^{\theta} \frac{\p }{\p \theta} + \hat{B}^{\zeta} \frac{\p }{\p \zeta} \right] \hat{\Phi}_1.
+\label{eq:TermNaParallelPhi1}
+\end{multline}
+
+%\noindent\textcolor{red}{
+%Questions:\\
+%\begin{itemize}
+%	\item In the code you name a quantity ``dfMdx''. I don't see the reason for doing this since the expression doesn't contain the derivative of the Maxwellian. However, because of the $x$ it will turn out to be the same.
+%	\item Looking in the code and comparing to what I get there seems to be a factor $1/2$ discrepancy. Can you see where it is? It seems to be because a factor $2 x$ pops out when taking the derivative of the Maxwellian.
+%	\item In the code I can simply neglect the bar-quantities, right?
+%	\item Since this is a linear term in the unknowns, I suppose it gives the same contribution to the residual matrix as to the Jacobian matrix. Is it correct understood that when I calculate the residual matrix I will substitute the term as it is, whereas when I calculate the Jacobian matrix I will have to take the derivative with respect to $\Phi_1$ (in this case when there is no $f_1$ in the term)? E.g. would a $\Phi_1^2$-term be $\Phi_1^2$ in the residual but $2 \Phi_1$ in the Jacobian?
+%\end{itemize}
+%}
+
+\noindent In SFINCS the kinetic equation is made dimensionless by multiplying with
+\[
+\frac{\bar{v}^3 \bar{R}}{\bar{n} \bar{v}} = \frac{2 \bar{T} \bar{R}}{\bar{m} \bar{n}},
+\]
+which implies that the RHS of Eq.~\ref{eq:TermNaParallelPhi1} becomes
+\begin{equation}
+ \frac{Z \alpha}{\pi^{3/2} } x P_1  \exp \left[- x^2\right] \, \frac{\hat{n} \hat{m}}{\hat{B} \hat{T}^2 }  \,  \left[ \hat{B}^{\theta} \frac{\p }{\p \theta} + \hat{B}^{\zeta} \frac{\p }{\p \zeta} \right] \hat{\Phi}_1
+\label{eq:TermNaParallelPhi1SFINCS}
+\end{equation}
+in the implementation.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\subsection*{Implementation of $\displaystyle f_0 \frac{q}{T} \na \Phi_0 \cdot \bm{v}_{E1}$}
+\begin{multline}
+\left(f_0 \frac{q}{T} \na \Phi_0 \cdot \bm{v}_{E1}\right)_{\mathrm{SFINCS}} = \\ =
+\frac{Z \alpha^2 \Delta}{2 \pi^{3/2}} \frac{\hat{n} \hat{m}^{3/2} \hat{D}}{\hat{T}^{5/2} \hat{B}^2 \hat{\psi}_a} \frac{\p \hat{\Phi}_0}{\p \psi_N} 
+\exp\left(-x^2\right) \exp \left(- \frac{Z \alpha \hat{\Phi}_1}{\hat{T}}\right) \left[\hat{B}_{\theta} \frac{\p}{\p \zeta} - \hat{B}_{\zeta} \frac{\p}{\p \theta}\right] \hat{\Phi}_1
+\label{eq:RHSphi1term1}
+\end{multline}
+
+\subsection*{Implementation of $\displaystyle f_0 \frac{q}{T} \Phi_1 \frac{\na T}{T} \cdot \bm{v}_d$}
+\begin{multline}
+\left(f_0 \frac{q}{T} \Phi_1 \frac{\na T}{T} \cdot \bm{v}_d\right)_{\mathrm{SFINCS}} = \\ =
+\frac{\alpha \Delta}{3 \pi^{3/2}} \frac{\hat{n} \hat{m}^{3/2} \hat{D}}{\hat{T}^{5/2} \hat{B}^3 \hat{\psi}_a} \hat{\Phi}_1 \frac{\p \hat{T}}{\p \psi_N}
+x^2 \left(P_2\left(\xi\right) + 2\right)
+\exp\left(-x^2\right) \exp \left(- \frac{Z \alpha \hat{\Phi}_1}{\hat{T}}\right) \left[\hat{B}_{\theta} \frac{\p \hat{B}}{\p \zeta} - \hat{B}_{\zeta} \frac{\p \hat{B}}{\p \theta}\right] 
+\label{eq:RHSphi1term2}
+\end{multline}
+
+\subsection*{Implementation of $\displaystyle f_0 \frac{q}{T} \Phi_1 \frac{\na T}{T} \cdot \bm{v}_{E1}$}
+\begin{multline}
+\left(f_0 \frac{q}{T} \Phi_1 \frac{\na T}{T} \cdot \bm{v}_{E1}\right)_{\mathrm{SFINCS}} = \\ =
+\frac{Z \alpha^2 \Delta}{2 \pi^{3/2}} \frac{\hat{n} \hat{m}^{3/2} \hat{D}}{\hat{T}^{7/2} \hat{B}^2 \hat{\psi}_a} \frac{\p \hat{T}}{\p \psi_N} \hat{\Phi}_1
+\exp\left(-x^2\right) \exp \left(- \frac{Z \alpha \hat{\Phi}_1}{\hat{T}}\right) \left[\hat{B}_{\theta} \frac{\p}{\p \zeta} - \hat{B}_{\zeta} \frac{\p}{\p \theta}\right] \hat{\Phi}_1
+\label{eq:RHSphi1term3}
+\end{multline}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \section*{Quasi-neutrality equation}
@@ -320,6 +538,8 @@ and P.~Helander,
 
 \bibitem{landremanSFINCS} Landreman~M, Smith~H~M, Moll\'en~A and Helander~P 2014
  \href{http://dx.doi.org/10.1063/1.4870077}{\em Phys. Plasmas} {\bf 21} 042503
+ 
+\bibitem{SFINCStechnicalDoc} M.~Landreman, {\em Technical Documentation for version 3 of SFINCS} (2014).
 
 %\bibitem{simakov} A.~N.~Simakov, P.~Helander,
 %  {\em Phys. Plasmas} {\bf 16}, 042503 (2009).
