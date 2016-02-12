@@ -10,12 +10,21 @@
 \usepackage{bm}
 \usepackage{float}
 \usepackage{color}
+\usepackage[dvipsnames]{xcolor}
 \usepackage{wrapfig}
 \usepackage{multicol}
 \usepackage[colorlinks=true,
 		linkcolor=red,
 		citecolor=blue,
 		urlcolor=blue]{hyperref}
+
+\usepackage{titlesec}
+\setcounter{secnumdepth}{4}
+
+\titleformat{\paragraph}
+{\normalfont\normalsize\bfseries}{\theparagraph}{1em}{}
+\titlespacing*{\paragraph}
+{0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
 
 \setlength {\parindent} { 10mm} 
 \setlength{\textheight}{230mm} 
@@ -256,7 +265,7 @@ Of the equations implemented in SFINCS \cite{SFINCStechnicalDoc}, the only two w
 R\left(f_{1}, \Phi_1\right) = 
 K \left\{\theta\right\} \frac{\p f}{\p \theta} + K \left\{\zeta\right\} \frac{\p f}{\p \zeta} + 
 K \left\{x\right\} \frac{\p f}{\p x} + K \left\{\xi\right\} \frac{\p f}{\p \xi} + 
-\textcolor{red}{K \left\{\psi\right\} \frac{\p f_{M}}{\p \psi}} + \\ 
+\textcolor{Goldenrod}{K \left\{\psi\right\} \frac{\p f_{M}}{\p \psi}} + \\ 
 - C \left\{f\right\} - S_{1} f_{M} - S_{2} f_{M} x^2 - \frac{Z e v}{T} x \xi \frac{\left\langle \bm{E} \cdot \bm{B} \right\rangle B}{\left\langle B^2 \right\rangle} f_M = 0
 \label{eq:KineticEqSFINCS}
 \end{multline}
@@ -265,9 +274,32 @@ and the quasineutrality equation
 \sum_s Z_s \int d^3v \, f_s + \lambda = 0.
 \label{eq:QuasineutralityEqSFINCS}
 \end{equation}
+Here $x = v/v_s = v / \sqrt{2T/m}$ and $\xi = v_\| / v$.\\
 
+\noindent In the implementation we need to rewrite all our equations into SFINCS units, using the following identities:\\
+$m = \hat{m} \bar{m}$, $n = \hat{n} \bar{n}$, $T = \hat{T} \bar{T}$, $\Phi = \hat{\Phi} \bar{\Phi}$, 
+$B = \hat{B} \bar{B}$, $B_\zeta = \bar{R} \bar{B} \hat{B}_\zeta$, $B_\theta = \bar{R} \bar{B} \hat{B}_\theta$, $D = \bar{B} \hat{D} / \bar{R}$, 
+$\bar{v} = \sqrt{2 \bar{T} / \bar{m}}$, $\alpha = e \bar{\Phi} / \bar{T}$,  $\Delta = \bar{m} \bar{v} / \left(e \bar{B} \bar{R} \right)$, $\displaystyle \frac{d X}{d \psi} = \frac{1}{\hat{\psi}_a \bar{R}^2 \bar{B}} \frac{d X}{d \psi_N}$
+and 
+$\displaystyle \alpha \cdot \Delta = \frac{e \bar{\Phi}}{\bar{T}} \cdot \frac{\bar{m} \bar{v}}{e \bar{B} \bar{R}} = \frac{2^{1/2} \bar{m}^{1/2} \bar{\Phi}}{\bar{B} \bar{R} \bar{T}^{1/2}}$. 
+Furthermore, we note that the kinetic equation is made dimensionless by multiplying with the factor 
+\begin{equation}
+  \label{eq:DimensionlessFactor}
+  \frac{\bar{v}^3}{\bar{n}} \frac{\bar{R}}{\bar{v}} = \frac{2 \bar{T} \bar{R}}{\bar{m} \bar{n}}.
+\end{equation}
+
+\subsubsection*{Newton's method}
+In each iteration step we want to calculate the residual and Jacobian of $R\left(\bm{X}\right) = 0$ with $\bm{X} = \left(f_{1}, \Phi_1\right)$. 
+The residual is $R$ itself, and the Jacobian is $\displaystyle R' = \frac{\delta R\left(\bm{X}\right)}{\delta \bm{X}}$. 
+The state-vector is updated as
+\begin{equation}
+  \label{eq:StateVectorUpdate}
+  \bm{X}_{n+1} = \bm{X}_{n} - \frac{R\left(\bm{X}_{n}\right)}{R'\left(\bm{X}_{n}\right)}.
+\end{equation}
+
+\newpage
 \subsection*{Drift-kinetic equation}
-For the residual $R\left(f_{1}, \Phi_1\right)$ the only term in the kinetic equation we need to modify is the one in red in Eq.~\ref{eq:KineticEqSFINCS}. 
+For the residual $R\left(f_{1}, \Phi_1\right)$ the only term in the kinetic equation we need to modify is the one in yellow in Eq.~\ref{eq:KineticEqSFINCS}. 
 We replace $f_M \rightarrow f_0 = f_M \exp \left(- q \Phi_1 / T \right)$, 
 and use that $K \left\{\psi\right\} = \bm{v}_E \cdot \na \psi + \bm{v}_d \cdot \na \psi = \bm{v}_{E1} \cdot \na \psi + \bm{v}_d \cdot \na \psi$
 to write 
@@ -285,12 +317,14 @@ K \left\{\psi\right\} \frac{\p f_{M}}{\p \psi} =  \exp \left(- q \Phi_1 / T \rig
 Written like this we explicitly see the places where $\Phi_1$ appears in $\displaystyle K \left\{\psi\right\} \frac{\p f_{M}}{\p \psi}$. 
 From Eq.~\ref{eq:DKresidualNewTerm1} we obtain the corresponing terms in the Jacobian matrix
 \begin{multline}
-\frac{\delta}{\delta \Phi_1} \left(K \left\{\psi\right\} \frac{\p f_{M}}{\p \psi}\right) = - \frac{q}{T}
- \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2} + \frac{q}{T} \Phi_1\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] \cdot \\
- \left(\frac{1}{B^2} D \left[B_\theta \frac{\p \Phi_1}{\p \zeta} - B_\zeta \frac{\p \Phi_1}{\p \theta}\right] + \bm{v}_d \cdot \na \psi\right) \, + \\ + \,
- \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \frac{q}{T} \frac{1}{T} \frac{\p T}{\p \psi} \left(\frac{1}{B^2} D \left[B_\theta \frac{\p \Phi_1}{\p \zeta} - B_\zeta \frac{\p \Phi_1}{\p \theta}\right] + \bm{v}_d \cdot \na \psi\right) \, + \\ + \,
- \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2} + \frac{q}{T} \Phi_1\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] \cdot \\
- \left(\frac{1}{B^2} D \left[B_\theta \frac{\p }{\p \zeta} - B_\zeta \frac{\p }{\p \theta}\right]\right)
+\frac{\delta}{\delta \Phi_1} \left(K \left\{\psi\right\} \frac{\p f_{M}}{\p \psi}\right) = \textcolor{orange}{
+- \frac{q}{T}
+ \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2} + \frac{q}{T} \Phi_1\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] \cdot} \\ \textcolor{orange}{
+ \left(\frac{1}{B^2} D \left[B_\theta \frac{\p \Phi_1}{\p \zeta} - B_\zeta \frac{\p \Phi_1}{\p \theta}\right] + \bm{v}_d \cdot \na \psi\right)} \, + \\ + \,\textcolor{green}{
+ \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \frac{q}{T} \frac{1}{T} \frac{\p T}{\p \psi} \left(\frac{1}{B^2} D \left[B_\theta \frac{\p \Phi_1}{\p \zeta} - B_\zeta \frac{\p \Phi_1}{\p \theta}\right] + \bm{v}_d \cdot \na \psi\right)} \, + \\ + \,
+\textcolor{brown}{
+ \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2} + \frac{q}{T} \Phi_1\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] \cdot} \\ \textcolor{brown}{
+ \left(\frac{1}{B^2} D \left[B_\theta \frac{\p }{\p \zeta} - B_\zeta \frac{\p }{\p \theta}\right]\right)}
 \label{eq:DKJacobianNewTerm1}
 \end{multline}
 
@@ -304,31 +338,133 @@ K \left\{\psi\right\} \frac{\p f_{M}}{\p \psi} = R_m + R_E
 where
 \begin{equation}
 R_m = \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2} + \frac{q}{T} \Phi_1\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] \bm{v}_d \cdot \na \psi
-\label{eq:eq:DKresidualNewTermRm}
+\label{eq:DKresidualNewTermRm}
 \end{equation}
 and 
 \begin{equation}
 R_E = \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2} + \frac{q}{T} \Phi_1\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] \frac{1}{B^2} D \left[B_\theta \frac{\p \Phi_1}{\p \zeta} - B_\zeta \frac{\p \Phi_1}{\p \theta}\right].
-\label{eq:eq:DKresidualNewTermRE}
+\label{eq:DKresidualNewTermRE}
 \end{equation}
 
+\paragraph*{$\bm{R_m}$}
+$R_m$ will be implemented in evaluateResidual.F90. We write the term as 
 \begin{multline}
-K \left\{\psi\right\} \frac{\p f_{M}}{\p \psi}  =
-%%
- \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2} + \frac{q}{T} \Phi_1\right) \frac{1}{T} \frac{\p T}{\p \psi}\right]  \bm{v}_d \cdot \na \psi \, + \\ + \,
- \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2} + \frac{q}{T} \Phi_1\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] \frac{1}{B^2} D \left[B_\theta \frac{\p \Phi_1}{\p \zeta} - B_\zeta \frac{\p \Phi_1}{\p \theta}\right] = \\ = 
- %%
- \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2} \right) \frac{1}{T} \frac{\p T}{\p \psi}\right]  \bm{v}_d \cdot \na \psi \, + \\ + \,
- \textcolor{blue}{
- \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \left[\frac{1}{n} \frac{\p n}{\p \psi}  + \left(\frac{m v^2}{2 T} - \frac{3}{2} \right) \frac{1}{T} \frac{\p T}{\p \psi}\right] \frac{1}{B^2} D \left[B_\theta \frac{\p \Phi_1}{\p \zeta} - B_\zeta \frac{\p \Phi_1}{\p \theta}\right]} \, + \\ + \, 
- \textcolor{red}{
-  \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \frac{q}{T} \Phi_1 \frac{1}{T} \frac{\p T}{\p \psi} \bm{v}_d \cdot \na \psi } \, + \\ + \,
-  \textcolor{magenta}{
-  \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \frac{q}{T} \frac{\p \Phi_0}{\p \psi} \frac{1}{B^2} D \left[B_\theta \frac{\p \Phi_1}{\p \zeta} - B_\zeta \frac{\p \Phi_1}{\p \theta}\right] } \, + \\ + \,
-  \textcolor{cyan}{
-  \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \frac{q}{T} \Phi_1 \frac{1}{T} \frac{\p T}{\p \psi} \frac{1}{B^2} D \left[B_\theta \frac{\p \Phi_1}{\p \zeta} - B_\zeta \frac{\p \Phi_1}{\p \theta}\right] }
-\label{eq:DKresidualNewTerm2}
+R_m = \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(x^2 - \frac{3}{2}\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] \bm{v}_d \cdot \na \psi + \\ +  \textcolor{red}{
+  \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \frac{q}{T} \Phi_1 \frac{1}{T} \frac{\p T}{\p \psi} \bm{v}_d \cdot \na \psi }.
+\label{eq:DKresidualNewTermRm2}
 \end{multline}
+Note that the first term in Eq.~\ref{eq:DKresidualNewTermRm2} can only be implemented in evaluateResidual.F90, since it is not of the form $L\left[\Phi_1\right]$ where $L\left[\right]$ is a linear operator.\\
+The first term in Eq.~\ref{eq:DKresidualNewTermRm2} is already implemented in evaluateResidual.F90 except for the factor 
+\[
+\exp \left(- \frac{q \Phi_1}{T}  \right) = \exp \left(- \frac{Z \alpha \hat{\Phi}_1}{\hat{T}}  \right)
+\]
+which has to be added.\\
+The second term in Eq.~\ref{eq:DKresidualNewTermRm2} we rewrite in SFINCS units (also considering the factor Eq.~\ref{eq:DimensionlessFactor}) as
+\begin{multline}
+\textcolor{red}{
+\left(\exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \frac{q}{T} \Phi_1 \frac{1}{T} \frac{\p T}{\p \psi} \bm{v}_d \cdot \na \psi\right)_{\mathrm{SFINCS}} = } \\ \textcolor{red}{ =
+\frac{\alpha \Delta}{3 \pi^{3/2}} \frac{\hat{n} \hat{m}^{3/2} \hat{D}}{\hat{T}^{5/2} \hat{B}^3 \hat{\psi}_a} \hat{\Phi}_1 \frac{\p \hat{T}}{\p \psi_N}
+x^2 \left(P_2\left(\xi\right) + 2\right)
+\exp\left(-x^2\right) \exp \left(- \frac{Z \alpha \hat{\Phi}_1}{\hat{T}}\right) \left[\hat{B}_{\theta} \frac{\p \hat{B}}{\p \zeta} - \hat{B}_{\zeta} \frac{\p \hat{B}}{\p \theta}\right]. 
+}
+\label{eq:Rmterm2}
+\end{multline}
+
+
+
+\paragraph*{$\bm{R_E}$}
+$R_E$ we will instead implement in populateMatrix.F90. We write the term as 
+\begin{multline}
+R_E = \textcolor{blue}{
+\exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \left[\frac{1}{n} \frac{\p n}{\p \psi}  + \left(x^2 - \frac{3}{2} \right) \frac{1}{T} \frac{\p T}{\p \psi}\right] \frac{1}{B^2} D \left[B_\theta \frac{\p }{\p \zeta} - B_\zeta \frac{\p }{\p \theta}\right] \Phi_1} + \\ +
+\textcolor{magenta}{
+\exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \frac{q}{T} \frac{\p \Phi_0}{\p \psi} \frac{1}{B^2} D \left[B_\theta \frac{\p }{\p \zeta} - B_\zeta \frac{\p }{\p \theta}\right]\Phi_1 } + \\ +
+ \textcolor{cyan}{
+ \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \frac{q}{T} \Phi_1 \frac{1}{T} \frac{\p T}{\p \psi} \frac{1}{B^2} D \left[B_\theta \frac{\p }{\p \zeta} - B_\zeta \frac{\p }{\p \theta}\right] \Phi_1}.
+\label{eq:DKresidualNewTermRE2}
+\end{multline}
+Note that in the code when evaluating the residual, the matrix added in populateMatrix.F90 is multiplied by the state-vector in evaluateResidual.F90 and therefore the rightmost $\Phi_1$ should not be added inside populateMatrix.F90.\\
+The first term in Eq.~\ref{eq:DKresidualNewTermRE2} is already implemented in populateMatrix.F90 except for the factor 
+\[
+\exp \left(- \frac{q \Phi_1}{T}  \right) = \exp \left(- \frac{Z \alpha \hat{\Phi}_1}{\hat{T}}  \right)
+\]
+which has to be added.\\
+The second term in Eq.~\ref{eq:DKresidualNewTermRE2} we rewrite in SFINCS units (also considering the factor Eq.~\ref{eq:DimensionlessFactor}) as
+\begin{multline}
+\textcolor{magenta}{
+\left(\exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \frac{q}{T} \frac{\p \Phi_0}{\p \psi} \frac{1}{B^2} D \left[B_\theta \frac{\p \Phi_1}{\p \zeta} - B_\zeta \frac{\p \Phi_1}{\p \theta}\right] \right)_{\mathrm{SFINCS}} } = \\ = \textcolor{magenta}{
+\frac{Z \alpha^2 \Delta}{2 \pi^{3/2}} \frac{\hat{n} \hat{m}^{3/2} \hat{D}}{\hat{T}^{5/2} \hat{B}^2 \hat{\psi}_a} \frac{\p \hat{\Phi}_0}{\p \psi_N} 
+\exp\left(-x^2\right) \exp \left(- \frac{Z \alpha \hat{\Phi}_1}{\hat{T}}\right) \left[\hat{B}_{\theta} \frac{\p}{\p \zeta} - \hat{B}_{\zeta} \frac{\p}{\p \theta}\right] \hat{\Phi}_1.
+}
+\label{eq:REterm2}
+\end{multline}
+The third term in Eq.~\ref{eq:DKresidualNewTermRE2} we rewrite in SFINCS units (also considering the factor Eq.~\ref{eq:DimensionlessFactor}) as
+\begin{multline}
+\textcolor{cyan}{
+\left(\exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \frac{q}{T} \Phi_1 \frac{1}{T} \frac{\p T}{\p \psi} \frac{1}{B^2} D \left[B_\theta \frac{\p \Phi_1}{\p \zeta} - B_\zeta \frac{\p \Phi_1}{\p \theta}\right]\right)_{\mathrm{SFINCS}}} = \\ = \textcolor{cyan}{
+\frac{Z \alpha^2 \Delta}{2 \pi^{3/2}} \frac{\hat{n} \hat{m}^{3/2} \hat{D}}{\hat{T}^{7/2} \hat{B}^2 \hat{\psi}_a} \frac{\p \hat{T}}{\p \psi_N} \hat{\Phi}_1
+\exp\left(-x^2\right) \exp \left(- \frac{Z \alpha \hat{\Phi}_1}{\hat{T}}\right) \left[\hat{B}_{\theta} \frac{\p}{\p \zeta} - \hat{B}_{\zeta} \frac{\p}{\p \theta}\right] \hat{\Phi}_1.
+}
+\label{eq:REterm3}
+\end{multline}
+
+
+\subsubsection*{Jacobian}
+The Jacobian terms will be implemented in populateMatrix.F90. 
+In the code we use SFINCS units, and the Jacobian is calculated from taking the derivative of the residual in SFINCS units with respect to the state-vector in SFINCS units (also considering the factor Eq.~\ref{eq:DimensionlessFactor}). This implies that what we are calculating here is 
+\[
+\frac{\delta}{\delta \hat{\Phi}_1} \left(\hat{R}_m + \hat{R}_E\right),
+\]
+where $\hat{R}_m$ and $\hat{R}_E$ are how the components of the residual are written in SFINCS. \\
+We see that the \textcolor{brown}{last term} in the Jacobian in Eq.~\ref{eq:DKJacobianNewTerm1} corresponds to $R_E$ in Eq.~ \ref{eq:DKresidualNewTermRE} (since the rightmost $\Phi_1$ in the residual is not implemented in populateMatrix.F90), 
+so this term is already implemented by the residual.\\
+%%\remark{Is there no difference implementationwise, when $\Phi_1$ disappears in the space derivative?}
+
+\noindent The other two terms should only be added when 'whichMatrix==0' or 'whichMatrix==1'. 
+The \textcolor{orange}{first term} in the Jacobian is the residual multiplied by $- q / T$. However, since the exponential is 
+$ \displaystyle
+\exp \left(- \frac{q \Phi_1}{T}  \right) = \exp \left(- \frac{Z \alpha \hat{\Phi}_1}{\hat{T}}  \right), 
+$
+in SFINCS the term will be implemented as 
+\begin{equation}
+  \label{eq:JacobianFirstTerm1}
+  \textcolor{orange}{- \frac{Z \alpha}{\hat{T}}  \left(\hat{R}_m + \hat{R}_E\right)}.
+\end{equation}
+
+\noindent The \textcolor{green}{second term} in the Jacobian can be written as 
+\begin{multline}
+  \label{eq:JacobianSecondTerm1}
+  \textcolor{green}{
+ \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \frac{q}{T} \frac{1}{T} \frac{\p T}{\p \psi} \left(\frac{1}{B^2} D \left[B_\theta \frac{\p \Phi_1}{\p \zeta} - B_\zeta \frac{\p \Phi_1}{\p \theta}\right] + \bm{v}_d \cdot \na \psi\right)} = \\ = \textcolor{green}{
+\frac{1}{\Phi_1}} \left(
+\textcolor{cyan}{
+ \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \frac{q}{T} \Phi_1 \frac{1}{T} \frac{\p T}{\p \psi} \frac{1}{B^2} D \left[B_\theta \frac{\p }{\p \zeta} - B_\zeta \frac{\p }{\p \theta}\right] \Phi_1}
++
+\textcolor{red}{
+  \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \frac{q}{T} \Phi_1 \frac{1}{T} \frac{\p T}{\p \psi} \bm{v}_d \cdot \na \psi }
+\right),
+\end{multline}
+where the two terms inside the brackets have already been implemented in $R_E$ and $R_m$ respectively. Consequently, to obtain this term we sum these two terms written in code units, and multiply by $1 / \hat{\Phi}_1$.\\
+Although the \textcolor{orange}{first term} and the \textcolor{green}{second term} of the Jacobian consist of terms available in other terms, we need to rewrite them since we cannot access terms in evaluateResidual.F90 from populateMatrix.F90, and also the residual terms in populateMatrix.F90 contain a factor $\Phi_1$ less which is in the state-vector.
+
+
+% \begin{multline}
+% K \left\{\psi\right\} \frac{\p f_{M}}{\p \psi}  =
+% %%
+%  \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2} + \frac{q}{T} \Phi_1\right) \frac{1}{T} \frac{\p T}{\p \psi}\right]  \bm{v}_d \cdot \na \psi \, + \\ + \,
+%  \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2} + \frac{q}{T} \Phi_1\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] \frac{1}{B^2} D \left[B_\theta \frac{\p \Phi_1}{\p \zeta} - B_\zeta \frac{\p \Phi_1}{\p \theta}\right] = \\ = 
+%  %%
+%  \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2} \right) \frac{1}{T} \frac{\p T}{\p \psi}\right]  \bm{v}_d \cdot \na \psi \, + \\ + \,
+%  \textcolor{blue}{
+%  \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \left[\frac{1}{n} \frac{\p n}{\p \psi}  + \left(\frac{m v^2}{2 T} - \frac{3}{2} \right) \frac{1}{T} \frac{\p T}{\p \psi}\right] \frac{1}{B^2} D \left[B_\theta \frac{\p \Phi_1}{\p \zeta} - B_\zeta \frac{\p \Phi_1}{\p \theta}\right]} \, + \\ + \, 
+%  \textcolor{red}{
+%   \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \frac{q}{T} \Phi_1 \frac{1}{T} \frac{\p T}{\p \psi} \bm{v}_d \cdot \na \psi } \, + \\ + \,
+%   \textcolor{magenta}{
+%   \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \frac{q}{T} \frac{\p \Phi_0}{\p \psi} \frac{1}{B^2} D \left[B_\theta \frac{\p \Phi_1}{\p \zeta} - B_\zeta \frac{\p \Phi_1}{\p \theta}\right] } \, + \\ + \,
+%   \textcolor{cyan}{
+%   \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \frac{q}{T} \Phi_1 \frac{1}{T} \frac{\p T}{\p \psi} \frac{1}{B^2} D \left[B_\theta \frac{\p \Phi_1}{\p \zeta} - B_\zeta \frac{\p \Phi_1}{\p \theta}\right] }
+% \label{eq:DKresidualNewTerm2}
+% \end{multline}
 
 
 
