@@ -19,6 +19,8 @@
 		urlcolor=blue]{hyperref}
 
 \usepackage{titlesec}
+\usepackage[titletoc]{appendix}
+%\usepackage{appendix}
 \setcounter{secnumdepth}{4}
 
 \titleformat{\paragraph}
@@ -67,7 +69,7 @@
 
 \pagestyle{fancy}
 \fancyhead{}
-\chead{Albert Mollén %850227-2019
+\chead{Albert MollÃ©n %850227-2019
 \\ Implementation of $\Phi_1$ in SFINCS}
 \cfoot{\thepage}
 \renewcommand{\headrulewidth}{1pt}
@@ -408,6 +410,8 @@ The third term in Eq.~\ref{eq:DKresidualNewTermRE2} we rewrite in SFINCS units (
 \label{eq:REterm3}
 \end{multline}
 
+\paragraph*{\textbf{Files to change:}}
+
 
 \subsubsection*{Jacobian}
 The Jacobian terms will be implemented in populateMatrix.F90. 
@@ -445,7 +449,7 @@ in SFINCS the term will be implemented as
 \right),
 \end{multline}
 where the two terms inside the brackets have already been implemented in $R_E$ and $R_m$ respectively. Consequently, to obtain this term we sum these two terms written in code units, and multiply by $1 / \hat{\Phi}_1$.\\
-Although the \textcolor{orange}{first term} and the \textcolor{green}{second term} of the Jacobian consist of terms available in other terms, we need to rewrite them since we cannot access terms in evaluateResidual.F90 from populateMatrix.F90, and also the residual terms in populateMatrix.F90 contain a factor $\Phi_1$ less which is in the state-vector.
+Although the \textcolor{orange}{first term} and the \textcolor{green}{second term} of the Jacobian consist of terms available in other terms, we need to rewrite them since we cannot access code in evaluateResidual.F90 from populateMatrix.F90, and also the residual terms in populateMatrix.F90 contain a factor $\Phi_1$ less which instead is in the state-vector.
 
 
 % \begin{multline}
@@ -466,23 +470,267 @@ Although the \textcolor{orange}{first term} and the \textcolor{green}{second ter
 % \label{eq:DKresidualNewTerm2}
 % \end{multline}
 
+\paragraph*{\textbf{Files to change:}}
 
 
 
+\subsubsection*{Additional implementation related to the kinetic equation}
+Besides implementing the above terms, we need to remove the former term in SFINCS corresponding to $\displaystyle \frac{Z e}{T} f_M v_\| \na_\| \Phi_1$. \\
+\\
+We will remove the \textbf{nonlinear} switch from the code, since all terms related to $\Phi_1$ are now nonlinear.
 
-
-
-
-
-
-
-
+\paragraph*{\textbf{Files to change:}}
 
 
 
 
 \newpage
-\subsection*{Check of Matt's former implementation of $\displaystyle \frac{Z e}{T} f_M v_\| \na_\| \Phi_1$}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\subsection*{Quasi-neutrality equation}
+In EUTERPE $\Phi_1$ is calculated from quasi-neutrality by expanding the exponential, assuming adiabatic electrons and neglecting the impurities.
+However, this is not a generic quasi-neutrality equation and in SFINCS we can easily implement the full equation. 
+To be able to compare to results from EUTERPE we will allow for both possibilities in the code, and implement an adiabatic species. 
+The option \textbf{quasineutralityOption = 1} corresponds to the full quasi-neutrality equation and is the default, 
+whereas \textbf{quasineutralityOption = 2} corresponds to the EUTERPE equations.
+
+\subsubsection*{Adiabatic species}
+We will allow for the possibility to run SFINCS with an adiabatic species. 
+The following input parameters will be introduced (with their default value in brackets) in the \textbf{speciesParameters} namelist:
+\begin{verbatim}
+logical :: withAdiabatic  (.false.)
+PetscScalar :: adiabaticZ  (-1)
+PetscScalar :: adiabaticMHat  (5.446170214E-4)
+PetscScalar :: adiabaticNHat  (1.0)
+PetscScalar :: adiabaticTHat  (1.0)
+\end{verbatim}
+
+\paragraph*{\textbf{Files to change:}}
+\begin{verbatim}
+globalVariables.F90
+populateMatrix.F90
+readInput.F90
+sfincs.F90
+validateInput.F90
+writeHDF5Output.F90
+\end{verbatim}
+
+\subsubsection*{Full quasi-neutrality equation, quasineutralityOption = 1}
+
+Firstly, we need to make sure that the input densities fulfill quasi-neutrality (also considering the adiabatic species if it is used):
+\begin{equation}
+  \label{eq:QuasiNeutralityInputFull}
+  \sum_s Z_s \hat{n}_s = 0.
+\end{equation}
+%
+The densities can be written
+\begin{equation}
+n_s = n_{s 0} \left(\psi\right) \, \exp \left(- q_s \Phi_1 / T_s \right) + n_{s 1},
+\label{eq:DensityParts}
+\end{equation}
+and the quasi-neutrality equation is 
+\begin{equation}
+\sum_s Z_s n_s = 0.
+\label{eq:Quasineutrality}
+\end{equation}
+For an adiabatic species $a$
+\[
+n_{a 1} = 0.
+\]
+The velocity integration in SFINCS is done in $\left(x, \xi\right) = \left(v / v_s, v_\| / v\right)$, and 
+\begin{equation}
+\int d^3 v = 2 \pi v_{s}^3 \int_{0}^{\infty} dx\, x^2 \int_{-1}^{1} d\xi
+\label{eq:VelocityIntegration}
+\end{equation}
+where $v_{s} = \sqrt{2 T_s / m_S}$. 
+Since 
+\begin{equation}
+  \label{eq:ns1Int}
+  n_{s 1} = \int d^3 v \, f_{s 1},
+\end{equation}
+we can rewrite quasi-neutrality in form of its contribution to the residual as 
+\begin{equation}
+R_{QN}\left(f_{s 1}, \Phi_1\right) = \sum_s Z_s n_{s0} \exp\left(- \frac{Z_s e \Phi_1}{T_s}\right) + 2\pi \sum_{s \setminus a} v_s^3 Z_s \int_0^{\infty} dx \, x^2 \int_{-1}^1 d\xi \, f_{s 1} = 0
+\label{eq:Quasineutrality}
+\end{equation}
+(note that the adiabatic species is excluded in the second summation).\\
+
+\noindent In SFINCS we add a Lagrange multiplier $\lambda$, divide Eq.~\ref{eq:Quasineutrality} by $\bar{n}$, and use $n = \hat{n} \bar{n}$, $\bar{v} = \sqrt{2 \bar{T} / \bar{m}}$, $v_s / \bar{v} = \sqrt{\hat{T}_s / \hat{m}_s}$, $f_s = \bar{n} \hat{f}_s / \bar{v}^3$, $ \displaystyle
+\exp \left(- \frac{q_s \Phi_1}{T_s}  \right) = \exp \left(- \frac{Z_s \alpha \hat{\Phi}_1}{\hat{T}_s}  \right) 
+$, to write 
+\begin{multline}
+\hat{R}_{QN}\left(\hat{f}_{s 1}, \hat{\Phi}_1, \lambda\right) = \textcolor{JungleGreen}{
+\sum_s Z_s \hat{n}_{s0} \exp \left(- \frac{Z_s \alpha \hat{\Phi}_1}{\hat{T}_s}  \right)} + \\ + 
+\textcolor{MidnightBlue}{
+2\pi \sum_{s \setminus a} Z_s \left(\frac{\hat{T}_s}{\hat{m}_s}\right)^{3/2} \int_0^{\infty} dx \, x^2 \int_{-1}^1 d\xi \, \hat{f}_{s 1} \, + \, \lambda } = 0.
+\label{eq:QuasineutralitySFINCS}
+\end{multline}
+The first term in Eq.~\ref{eq:QuasineutralitySFINCS} must be implemented in evaluateResidual.F90 because it does not include a linear operation on $\hat{\Phi}_1$. 
+The other terms will be implemented in populateMatrix.F90.\\
+
+\noindent When implementing the Jacobian terms, we note that 
+\begin{equation}
+  \label{eq:QNJacobianf1}
+\textcolor{MidnightBlue}{
+  \frac{\delta \hat{R}_{QN}}{\delta \hat{f}_{s 1}} = 2\pi Z_s \left(\frac{\hat{T}_s}{\hat{m}_s}\right)^{3/2} \int_0^{\infty} dx \, x^2 \int_{-1}^1 d\xi},
+\end{equation}
+\begin{equation}
+  \label{eq:QNJacobianLambda}
+\textcolor{MidnightBlue}{
+  \frac{\delta \hat{R}_{QN}}{\delta \lambda} = 1},
+\end{equation}
+which means that these two terms are the same as the corresponding terms in the residual and are thus implemented in populateMatrix.F90.
+Moreover,
+\begin{equation}
+  \label{eq:QNJacobianPhi1}
+\textcolor{JungleGreen}{
+  \frac{\delta \hat{R}_{QN}}{\delta \hat{\Phi}_1} = 
+\sum_s - \frac{Z_s^2 \alpha}{\hat{T}_s} \hat{n}_{s0} \exp \left(- \frac{Z_s \alpha \hat{\Phi}_1}{\hat{T}_s}  \right)}
+\end{equation}
+will also be implemented in populateMatrix.F90 when 'whichMatrix==0' or 'whichMatrix==1'. 
+
+
+\paragraph*{\textbf{Files to change:}}
+
+\subsubsection*{EUTERPE quasi-neutrality equation, quasineutralityOption = 2}
+EUTERPE equations: 
+\begin{equation}
+n_s = n_{s 0} \left(\psi\right) \, \exp \left(- q_s \Phi_1 / T_s \right) + n_{s 1},
+\label{eq:DensityParts2}
+\end{equation}
+\begin{equation}
+\sum_s Z_s n_s = 0,
+\label{eq:Quasineutrality2}
+\end{equation}
+\[
+\Rightarrow \;\;\; 0 \simeq \sum_s Z_s \left[n_{s 0} \left(1 - q_s \Phi_1 / T_s \right) + n_{s 1}\right] \;\;\; \Leftrightarrow \;\;\;
+\]
+\[
+\sum_s Z_s \left[n_{s 0} + n_{s 1}\right] = \sum_s \frac{Z_s^2 e}{T_s} \Phi_1 n_{s 0} .
+\]
+Since $n_{s 0} \left(\psi\right)$ is obtained by integrating the Maxwellian $f_{M s}$ over velocity space we must have 
+\[
+\sum_s Z_s n_{s 0} = 0,
+\]
+which yields 
+\begin{equation}
+\sum_s Z_s n_{s 1} - \Phi_1 \sum_s \frac{Z_s^2 e}{T_s} n_{s 0}  = 0.
+\label{eq:Quasineutrality2}
+\end{equation}
+With kinetic ions, adiabatic electrons ($n_{e 1} = 0$) and neglecting impurities we obtain 
+\begin{equation}
+\Phi_1 = \frac{T_e}{e} \left[\frac{T_e}{T_i} n_{i 0} + n_{e 0}\right]^{-1} n_{i 1}.
+\label{eq:Phi1}
+\end{equation}
+
+We need to make sure that the adiabatic species and only one kinetic species are used, and that the input densities fulfill quasi-neutrality:
+\begin{equation}
+  \label{eq:QuasiNeutralityInputFull}
+   Z_i \hat{n}_{i} + Z_e \hat{n}_{e} = 0
+\end{equation}
+(Here species $i$ would be the kinetic species and $e$ the adiabatic).
+
+\subsection*{Implementation in SFINCS}
+For a first benchmark, we want to implement the same equations as EUTERPE in SFINCS. \\
+%\remark{This is not a very generic quasi-neutrality equation so it is possible that we might want to change it in SFINCS later.} \\
+In the code we add an adiabatic species which only enters into the quasi-neutrality equation, and neglect its collisional impact on the kinetic species (the effect of ion-electron collisions is small compared to ion-ion collisions). 
+Moreover, we will only consider the first of the kinetic species in quasi-neutrality and neglect the rest. 
+This is implemented by modifying the LHS of the row corresponding to quasi-neutrality in the block-matrix structure of Matt's ISHW poster, adding the adiabatic term to the $\Phi_1$-column and removing all kinetic species except the first. \\
+% \remark{It feels a bit weird to remove species from quasi-neutrality, even if the impurity density is small. Does this mean that we should removed the check that the input densities are quasi-neutral and instead check that $n_{i 0} \left(\psi\right) = n_{e 0} \left(\psi\right)$ in the input?}\\
+The equation we will implement in SFINCS is thus 
+\begin{equation}
+Z_i n_{i 1} - \Phi_1 \left[ \frac{Z_i^2 e}{T_i} n_{i 0} + \frac{Z_e^2 e}{T_e} n_{e 0}\right] = 0.
+\label{eq:QuasineutralityIonElectrons}
+\end{equation}
+We note that
+\begin{multline}
+n_s = n_{s 0} \left(\psi\right) \, \exp \left(- q_s \Phi_1 / T_s \right) + n_{s 1} = \int d^3 v f_{Ms} \exp \left(- q_s \Phi_1 / T_s \right) + \int d^3 v f_{1 s} = \\ = 
+d^3 v f_{0 s} + d^3 v f_{1 s}.
+\label{eq:distributionToDensity}
+\end{multline}
+The velocity integration is SFINCS is done in $\left(x, \xi\right) = \left(v / v_s, v_\| / v\right)$, and 
+\begin{equation}
+\int d^3 v = 2 \pi v_{s}^3 \int_{0}^{\infty} dx\, x^2 \int_{-1}^{1} d\xi
+\label{eq:VelocityIntegration2}
+\end{equation}
+(note that $v_{s}^2 = 2 T_s/m_s$ differs from Jose's notation $v_{\mathrm{th}}^2 = T/m$). 
+Using SFINCS normalizations $n_s = \bar{n}  \hat{n}_s$, $T_s = \bar{T}  \hat{T}_s$, $v_s / \bar{v} = \sqrt{\hat{T}_s / \hat{m}_s}$, 
+$f_s = \bar{n} \hat{f}_s / \bar{v}^3$, 
+we find 
+\begin{equation}
+\hat{n}_s = 2 \pi \left(\hat{T}_s / \hat{m}_s\right)^{3/2} \int_{0}^{\infty} dx\, x^2 \int_{-1}^{1} d\xi \hat{f}_s.
+\label{eq:VelocityIntegrationSFINCS}
+\end{equation}
+Also using $\Phi_1 = \bar{\Phi} \hat{\Phi}_1$ and $\alpha = e \bar{\Phi} / \bar{T}$ we can write Eq.~\ref{eq:QuasineutralityIonElectrons} 
+\begin{equation}
+Z_i \hat{n}_{i 1} - \alpha \hat{\Phi}_1 \left[ \frac{Z_i^2}{\hat{T}_i} \hat{n}_{i 0} + \frac{Z_e^2}{\hat{T}_e} \hat{n}_{e 0}\right] = 0
+\label{eq:QuasineutralityIonElectronsSFINCS}
+\end{equation}
+and finally obtain 
+\begin{equation}
+\left[2 \pi Z_i \left(\hat{T}_i / \hat{m}_i\right)^{3/2} \int_{0}^{\infty} dx\, x^2 \int_{-1}^{1} d\xi \hat{f}_{i 1}\right]
+- \alpha \hat{\Phi}_1 \left[ \frac{Z_i^2}{\hat{T}_i} \hat{n}_{i 0} + \frac{Z_e^2}{\hat{T}_e} \hat{n}_{e 0}\right] = 0.
+\label{eq:QuasineutralityIonElectronsSFINCS2}
+\end{equation}
+This is the equation we will implement in the code, but adding a $\lambda$ to make the system square.\\ 
+% \remark{Is the $2\pi$ factor correct in Eq.~\ref{eq:QuasineutralityIonElectronsSFINCS2}? It is not in the former implementation of quasi-neutrality, but in that situation it could be divided away.}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+
+\subsection*{Additional changes}
+Decide which output fluxes should be possible to obtain, i.e. which combinations of 
+\begin{equation}
+  \label{eq:OutputFluxes}
+  \langle \int d^3 v \, f \bm{v} \cdot \na X \rangle,
+\end{equation}
+should be possible? 
+Here $f$ can be $f_0$, $f_1$ or $f_0 + f_1$. 
+$\bm{v}$ can be $\bm{v}_E$, $\bm{v}_m$ or $\bm{v}_E + \bm{v}_m$. 
+$X$ can be any of the radial coordinates, $r$, $r_N$, $\psi$ or $\psi_N$. \\
+
+\noindent Allow for the output fluxes in SI units.
+
+\paragraph*{\textbf{Files to change:}}
+\begin{verbatim}
+diagnostics.F90
+\end{verbatim}
+
+
+\newpage
+%\appendix
+\titleformat{\section}{\large\bfseries}{\appendixname~\thesection .}{0.5em}{}
+
+\begin{appendices}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Check of Matt's former implementation of $\displaystyle \frac{Z e}{T} f_M v_\| \na_\| \Phi_1$}
+\textbf{This section is only to compare to what has already been implemented in SFINCS, to see that we understand the normalizations.}\\
+\\
 Looking at Matt's ISHW poster, since $\Phi_1$ is an unknown this term is in the LHS of the square block matrix system. 
 The term is accessed by ``rowIndex = BLOCK\_F'' and ``colIndex = BLOCK\_QN''. 
 We use
@@ -525,6 +773,7 @@ in the implementation.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
+\section{Temporary page}
 \subsection*{Implementation of $\displaystyle f_0 \frac{q}{T} \na \Phi_0 \cdot \bm{v}_{E1}$}
 \begin{multline}
 \left(f_0 \frac{q}{T} \na \Phi_0 \cdot \bm{v}_{E1}\right)_{\mathrm{SFINCS}} = \\ =
@@ -549,115 +798,7 @@ x^2 \left(P_2\left(\xi\right) + 2\right)
 \exp\left(-x^2\right) \exp \left(- \frac{Z \alpha \hat{\Phi}_1}{\hat{T}}\right) \left[\hat{B}_{\theta} \frac{\p}{\p \zeta} - \hat{B}_{\zeta} \frac{\p}{\p \theta}\right] \hat{\Phi}_1
 \label{eq:RHSphi1term3}
 \end{multline}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\newpage
-\section*{Quasi-neutrality equation}
-In EUTERPE $\Phi_1$ is calculated from quasi-neutrality by expanding the exponential, assuming adiabatic electrons and neglecting the impurities: 
-\begin{equation}
-n_s = n_{s 0} \left(\psi\right) \, \exp \left(- q_s \Phi_1 / T_s \right) + n_{s 1},
-\label{eq:}
-\end{equation}
-\begin{equation}
-\sum_s Z_s n_s = 0,
-\label{eq:Quasineutrality}
-\end{equation}
-\[
-\Rightarrow \;\;\; 0 \simeq \sum_s Z_s \left[n_{s 0} \left(1 - q_s \Phi_1 / T_s \right) + n_{s 1}\right] \;\;\; \Leftrightarrow \;\;\;
-\]
-\[
-\sum_s Z_s \left[n_{s 0} + n_{s 1}\right] = \sum_s \frac{Z_s^2 e}{T_s} \Phi_1 n_{s 0} .
-\]
-Since $n_{s 0} \left(\psi\right)$ is obtained by integrating the Maxwellian $f_{M s}$ over velocity space we must have 
-\[
-\sum_s Z_s n_{s 0} = 0,
-\]
-which yields 
-\begin{equation}
-\sum_s Z_s n_{s 1} - \Phi_1 \sum_s \frac{Z_s^2 e}{T_s} n_{s 0}  = 0.
-\label{eq:Quasineutrality2}
-\end{equation}
-With kinetic ions, adiabatic electrons ($n_{e 1} = 0$) and neglecting impurities we obtain 
-\begin{equation}
-\Phi_1 = \frac{T_e}{e} \left[\frac{T_e}{T_i} n_{i 0} + n_{e 0}\right]^{-1} n_{i 1}.
-\label{eq:Phi1}
-\end{equation}
-
-\subsection*{Implementation in SFINCS}
-For a first benchmark, we want to implement the same equations as EUTERPE in SFINCS. \\
-\remark{This is not a very generic quasi-neutrality equation so it is possible that we might want to change it in SFINCS later.} \\
-In the code we add an adiabatic species which only enters into the quasi-neutrality equation, and neglect its collisional impact on the kinetic species (the effect of ion-electron collisions is small compared to ion-ion collisions). 
-Moreover, we will only consider the first of the kinetic species in quasi-neutrality and neglect the rest. 
-This is implemented by modifying the LHS of the row corresponding to quasi-neutrality in the block-matrix structure of Matt's ISHW poster, adding the adiabatic term to the $\Phi_1$-column and removing all kinetic species except the first. \\
-\remark{It feels a bit weird to remove species from quasi-neutrality, even if the impurity density is small. Does this mean that we should removed the check that the input densities are quasi-neutral and instead check that $n_{i 0} \left(\psi\right) = n_{e 0} \left(\psi\right)$ in the input?}\\
-The equation we will implement in SFINCS is thus 
-\begin{equation}
-Z_i n_{i 1} - \Phi_1 \left[ \frac{Z_i^2 e}{T_i} n_{i 0} + \frac{Z_e^2 e}{T_e} n_{e 0}\right] = 0.
-\label{eq:QuasineutralityIonElectrons}
-\end{equation}
-We note that
-\begin{multline}
-n_s = n_{s 0} \left(\psi\right) \, \exp \left(- q_s \Phi_1 / T_s \right) + n_{s 1} = \int d^3 v f_{Ms} \exp \left(- q_s \Phi_1 / T_s \right) + \int d^3 v f_{1 s} = \\ = 
-d^3 v f_{0 s} + d^3 v f_{1 s}.
-\label{eq:distributionToDensity}
-\end{multline}
-The velocity integration is SFINCS is done in $\left(x, \xi\right) = \left(v / v_s, v_\| / v\right)$, and 
-\begin{equation}
-\int d^3 v = 2 \pi v_{s}^3 \int_{0}^{\infty} dx\, x^2 \int_{-1}^{1} d\xi
-\label{eq:VelocityIntegration}
-\end{equation}
-(note that $v_{s}^2 = 2 T_s/m_s$ differs from Jose's notation $v_{\mathrm{th}}^2 = T/m$). 
-Using SFINCS normalizations $n_s = \bar{n}  \hat{n}_s$, $T_s = \bar{T}  \hat{T}_s$, $v_s / \bar{v} = \sqrt{\hat{T}_s / \hat{m}_s}$, 
-$f_s = \bar{n} \hat{f}_s / \bar{v}^3$, 
-we find 
-\begin{equation}
-\hat{n}_s = 2 \pi \left(\hat{T}_s / \hat{m}_s\right)^{3/2} \int_{0}^{\infty} dx\, x^2 \int_{-1}^{1} d\xi \hat{f}_s.
-\label{eq:VelocityIntegrationSFINCS}
-\end{equation}
-Also using $\Phi_1 = \bar{\Phi} \hat{\Phi}_1$ and $\alpha = e \bar{\Phi} / \bar{T}$ we can write Eq.~\ref{eq:QuasineutralityIonElectrons} 
-\begin{equation}
-Z_i \hat{n}_{i 1} - \alpha \hat{\Phi}_1 \left[ \frac{Z_i^2}{\hat{T}_i} \hat{n}_{i 0} + \frac{Z_e^2}{\hat{T}_e} \hat{n}_{e 0}\right] = 0
-\label{eq:QuasineutralityIonElectronsSFINCS}
-\end{equation}
-and finally obtain 
-\begin{equation}
-\left[2 \pi Z_i \left(\hat{T}_i / \hat{m}_i\right)^{3/2} \int_{0}^{\infty} dx\, x^2 \int_{-1}^{1} d\xi \hat{f}_{i 1}\right]
-- \alpha \hat{\Phi}_1 \left[ \frac{Z_i^2}{\hat{T}_i} \hat{n}_{i 0} + \frac{Z_e^2}{\hat{T}_e} \hat{n}_{e 0}\right] = 0.
-\label{eq:QuasineutralityIonElectronsSFINCS2}
-\end{equation}
-This is the equation we will implement in the code, but adding a $\lambda$ to make the system square.\\ 
-\remark{Is the $2\pi$ factor correct in Eq.~\ref{eq:QuasineutralityIonElectronsSFINCS2}? It is not in the former implementation of quasi-neutrality, but in that situation it could be divided away.}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\end{appendices}
 \newpage
 
 
@@ -682,7 +823,7 @@ and P.~Helander,
   
 %\bibitem{nonAxis} P.~Helander, Theory of plasma confinement in non-axisymmetric magnetic fields (2013).
 
-%\bibitem{MH} L.~Råde and B.~Westergren, Mathematics Handbook for Science and Engineering, $5^{\mathrm{th}}$ edition, 2004. %\vspace{-5mm}
+%\bibitem{MH} L.~RÃ¥de and B.~Westergren, Mathematics Handbook for Science and Engineering, $5^{\mathrm{th}}$ edition, 2004. %\vspace{-5mm}
 
 %\bibitem{Abra} M.~Abramowitz and I.~A.~Stegun, Handbook of Mathematical Functions, $10^{\mathrm{th}}$ printing, 1972.
 
