@@ -6,15 +6,14 @@
 
 ! Parameters specific to scanType = 2:
 !ss NErs = 5
-!ss dPhiHatdpsiHatMin = -1.0d+0
-!ss dPhiHatdpsiHatMax =  1.0d+0
+!ss ErMin = -1.0d+0
+!ss ErMax =  1.0d+0
 
 &general
 /
 
 &geometryParameters
   geometryScheme = 4 ! Simplified W7-X model
-  inputRadialCoordinateForGradients = 0  ! d/dpsiHat
 /
 
 &speciesParameters
@@ -22,8 +21,8 @@
   mHats = 1 6
   nHats = 0.6d+0 0.009d+0
   THats = 0.5d+0 0.8d+0
-  dNHatdpsiHats = 0 0
-  dTHatdpsiHats = 0 0
+  dNHatdrHats = 0 0
+  dTHatdrHats = 0 0
 /
 
 &physicsParameters
@@ -33,7 +32,7 @@
 
   EParallelHat = 1d+0
 
-  dPhiHatdpsiHat = 0.0d+0
+  Er = 0.0d+0
 
   collisionOperator = 0
 

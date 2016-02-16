@@ -150,6 +150,8 @@ for directory in directories:
        varName = "dPhiHatdrHat"
     elif inputRadialCoordinateForGradients==3:
        varName = "dPhiHatdrN"
+    elif inputRadialCoordinateForGradients==4:
+       varName = "Er"
     else:
        print "Error! Invalid inputRadialCoordinateForGradients."
        exit(1)
@@ -229,6 +231,7 @@ conversionFactorToddpsiHat = f['dPhiHatdpsiHat'][()] / f[varName][()]
 conversionFactorToddpsiN   = f['dPhiHatdpsiN'][()]   / f[varName][()]
 conversionFactorToddrHat   = f['dPhiHatdrHat'][()]   / f[varName][()]
 conversionFactorToddrN     = f['dPhiHatdrN'][()]     / f[varName][()]
+conversionFactorToEr       = f['Er'][()]             / f[varName][()]
 
 
 # Sort by Er:
@@ -323,6 +326,7 @@ if doAmbipolaritySolve:
          print "d PhiHat / d psiN   = ",roots * conversionFactorToddpsiN
          print "d PhiHat / d rHat   = ",roots * conversionFactorToddrHat
          print "d PhiHat / d rN     = ",roots * conversionFactorToddrN
+         print "Er                  = ",roots * conversionFactorToEr
 
          # Interpolate the other results onto the ambipolar Er(s):
          print "**** Output quantities at these ambipolar E_r value(s) ****"

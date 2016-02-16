@@ -36,13 +36,13 @@ def getRadialCoordinateName(coordinate):
         return "psiHat"
     elif coordinate == 1:
         return "psiN"
-    elif coordinate == 2:
-        return"rHat"
+    elif coordinate == 2 or coordinate == 4:
+        return "rHat"
     elif coordinate == 3:
         return "rN"
     else:
         print "Error! Invalid radial coordinate"
-        raise
+        exit(1)
 
 def convertRadiiToPsiN(coordinate, oldRadii):
     # For this function, 'coordinate' describes the OLD coordinate,
@@ -62,7 +62,7 @@ def convertRadiiToPsiN(coordinate, oldRadii):
         return [x*x for x in oldRadii]
     else:
         print "ERROR! Should not get here."
-        raise
+        exit(1)
 
 def convertRadiiFromPsiN(coordinate, oldRadii):
     # For this function, 'coordinate' describes the NEW coordinate,
@@ -82,7 +82,7 @@ def convertRadiiFromPsiN(coordinate, oldRadii):
         return [sqrt(x) for x in oldRadii]
     else:
         print "ERROR! Should not get here."
-        raise
+        exit(1)
 
 def convertGradientFromddpsiN(coordinate, radii_psiN):
     # This function returns the factor which, when multiplied by dnHat/dpsiN, gives dnHat/d(coordinate).
@@ -92,7 +92,7 @@ def convertGradientFromddpsiN(coordinate, radii_psiN):
     elif coordinate == 1:
         # psiN
         return [1.0 for psiN in radii_psiN]
-    elif coordinate == 2:
+    elif coordinate == 2 or coordinate == 4:
         # rHat
         return [2*sqrt(psiN)/aHat for psiN in radii_psiN]
     elif coordinate == 3:
@@ -100,7 +100,7 @@ def convertGradientFromddpsiN(coordinate, radii_psiN):
         return [2*sqrt(psiN) for psiN in radii_psiN]
     else:
         print "ERROR! Should not get here."
-        raise
+        exit(1)
 
 def convertGradientToddpsiN(coordinate, radii_psiN):
     # This function returns the factor which, when multiplied by dnHat/d(coordinate), gives dnHat/dpsiN.
@@ -157,6 +157,10 @@ if inputRadialCoordinateForGradients == None :
 
 radiusName             = getRadialCoordinateName(inputRadialCoordinate)
 radiusNameForGradients = getRadialCoordinateName(inputRadialCoordinateForGradients)
+if inputRadialCoordinateForGradients==4:
+    generalErName = "Er"
+else:
+    generalErName = "dPhiHatd"+radiusNameForGradients
 
 radius_min = readScanVariable(radiusName+"_min","float")
 radius_max = readScanVariable(radiusName+"_max","float")
@@ -368,18 +372,18 @@ def plotProposedProfiles():
     plt.legend(loc=0, borderaxespad=0., prop={'size':9})
     plotNum += 1
 
-    # Plot dPhiHatdXXX_min and dPhiHatdXXX_max:
+    # Plot generalEr_min and generalEr_max:
     plt.subplot(numRows,numCols,plotNum)
-    plt.plot(radii_fine,dPhiHatdradius_min_fine,'-b',label=fineLabel)
-    plt.plot(radii,dPhiHatdradius_min,'xr',label="requested")
+    plt.plot(radii_fine,generalEr_min_fine,'-b',label=fineLabel)
+    plt.plot(radii,generalEr_min,'xr',label="requested")
     if profilesScheme==1:
-        plt.plot(data_radius,data_dPhiHatdradius_min,'.c',label="data")
-    plt.plot(radii_fine,dPhiHatdradius_max_fine,'-b',label=fineLabel)
-    plt.plot(radii,dPhiHatdradius_max,'xr',label="requested")
+        plt.plot(data_radius,data_generalEr_min,'.c',label="data")
+    plt.plot(radii_fine,generalEr_max_fine,'-b',label=fineLabel)
+    plt.plot(radii,generalEr_max,'xr',label="requested")
     if profilesScheme==1:
-        plt.plot(data_radius,data_dPhiHatdradius_max,'.c',label="data")
+        plt.plot(data_radius,data_generalEr_max,'.c',label="data")
     plt.xlabel(radiusName)
-    plt.title("Max and min dPhiHatd"+radiusNameForGradients)
+    plt.title("Max and min "+generalErName)
     plt.legend(loc=0, borderaxespad=0., prop={'size':9})
     plotNum += 1
 
@@ -489,10 +493,10 @@ dTHatdpsiN = []
 dTHatdpsiN_fine = []
 NErs = []
 NErs_fine = []
-dPhiHatdradius_max = []
-dPhiHatdradius_max_fine = []
-dPhiHatdradius_min = []
-dPhiHatdradius_min_fine = []
+generalEr_max = []
+generalEr_max_fine = []
+generalEr_min = []
+generalEr_min_fine = []
 
 profilesScheme = readScanVariable("profilesScheme","int")
 if profilesScheme == 1:
@@ -503,8 +507,8 @@ if profilesScheme == 1:
     data_nHats = []
     data_THats = []
     data_NErs = []
-    data_dPhiHatdradius_min = []
-    data_dPhiHatdradius_max = []
+    data_generalEr_min = []
+    data_generalEr_max = []
     for i in range(Nspecies):
         data_nHats.append([])
         data_THats.append([])
@@ -530,8 +534,8 @@ if profilesScheme == 1:
         try:
             data_oldRadius.append(float(lineSplit[0]))
             data_NErs.append(float(lineSplit[1]))
-            data_dPhiHatdradius_min.append(float(lineSplit[2]))
-            data_dPhiHatdradius_max.append(float(lineSplit[3]))
+            data_generalEr_min.append(float(lineSplit[2]))
+            data_generalEr_max.append(float(lineSplit[3]))
             for i in range(Nspecies):
                 data_nHats[i].append(float(lineSplit[2*i+4]))
                 data_THats[i].append(float(lineSplit[2*i+5]))
@@ -601,21 +605,21 @@ if profilesScheme == 1:
         NErs = []
     NErs_fine = interpolate.splev(psiN_fine,interpolator, der=0)
 
-    interpolator = interpolate.splrep(data_psiN, data_dPhiHatdradius_min)
+    interpolator = interpolate.splrep(data_psiN, data_generalEr_min)
     if len(radii)>0:
         # The if/else block is here because interpolate.splev fails if new grid is empty.
-        dPhiHatdradius_min = interpolate.splev(radii_psiN,interpolator, der=0)
+        generalEr_min = interpolate.splev(radii_psiN,interpolator, der=0)
     else:
-        dPhiHatdradius_min = []
-    dPhiHatdradius_min_fine = interpolate.splev(psiN_fine,interpolator, der=0)
+        generalEr_min = []
+    generalEr_min_fine = interpolate.splev(psiN_fine,interpolator, der=0)
 
-    interpolator = interpolate.splrep(data_psiN, data_dPhiHatdradius_max)
+    interpolator = interpolate.splrep(data_psiN, data_generalEr_max)
     if len(radii)>0:
         # The if/else block is here because interpolate.splev fails if new grid is empty.
-        dPhiHatdradius_max = interpolate.splev(radii_psiN,interpolator, der=0)
+        generalEr_max = interpolate.splev(radii_psiN,interpolator, der=0)
     else:
-        dPhiHatdradius_max = []
-    dPhiHatdradius_max_fine = interpolate.splev(psiN_fine,interpolator, der=0)
+        generalEr_max = []
+    generalEr_max_fine = interpolate.splev(psiN_fine,interpolator, der=0)
 
     convertGradients()
     plotProposedProfiles()
@@ -627,8 +631,8 @@ elif profilesScheme == 2:
     data_nHats = []
     data_THats = []
     data_NErs = []
-    data_dPhiHatdradius_min = []
-    data_dPhiHatdradius_max = []
+    data_generalEr_min = []
+    data_generalEr_max = []
     for i in range(Nspecies):
         data_nHats.append([])
         data_THats.append([])
@@ -653,8 +657,8 @@ elif profilesScheme == 2:
         lineSplit = line.split()
         try:
             data_NErs.append(float(lineSplit[0]))
-            data_dPhiHatdradius_min.append(float(lineSplit[1]))
-            data_dPhiHatdradius_max.append(float(lineSplit[2]))
+            data_generalEr_min.append(float(lineSplit[1]))
+            data_generalEr_max.append(float(lineSplit[2]))
             for i in range(Nspecies):
                 data_nHats[i].append(float(lineSplit[2*i+3]))
                 data_THats[i].append(float(lineSplit[2*i+4]))
@@ -680,10 +684,10 @@ elif profilesScheme == 2:
     Nradii_fine = len(psiN_fine)
     NErs = [0] * Nradii
     NErs_fine = [0] * Nradii_fine
-    dPhiHatdradius_min = [0] * Nradii
-    dPhiHatdradius_min_fine = [0] * Nradii_fine
-    dPhiHatdradius_max = [0] * Nradii
-    dPhiHatdradius_max_fine = [0] * Nradii_fine
+    generalEr_min = [0] * Nradii
+    generalEr_min_fine = [0] * Nradii_fine
+    generalEr_max = [0] * Nradii
+    generalEr_max_fine = [0] * Nradii_fine
     for ispecies in range(Nspecies):
         nHats.append([0] * Nradii)
         nHats_fine.append([0] * Nradii_fine)
@@ -697,8 +701,8 @@ elif profilesScheme == 2:
     for exponent in range(len(data_NErs)):
         for ir in range(Nradii):
             NErs[ir] += data_NErs[exponent] * (profilesRadii[ir] ** exponent)
-            dPhiHatdradius_min[ir] += data_dPhiHatdradius_min[exponent] * (profilesRadii[ir] ** exponent)
-            dPhiHatdradius_max[ir] += data_dPhiHatdradius_max[exponent] * (profilesRadii[ir] ** exponent)
+            generalEr_min[ir] += data_generalEr_min[exponent] * (profilesRadii[ir] ** exponent)
+            generalEr_max[ir] += data_generalEr_max[exponent] * (profilesRadii[ir] ** exponent)
             for ispecies in range(Nspecies):
                 nHats[ispecies][ir] += data_nHats[ispecies][exponent] * (profilesRadii[ir] ** exponent)
                 THats[ispecies][ir] += data_THats[ispecies][exponent] * (profilesRadii[ir] ** exponent)
@@ -707,8 +711,8 @@ elif profilesScheme == 2:
                     dTHatdpsiN[ispecies][ir] += gradientFactor[ir] * data_THats[ispecies][exponent] * exponent * (profilesRadii[ir] ** (exponent-1))
         for ir in range(len(psiN_fine)):
             NErs_fine[ir] += data_NErs[exponent] * (profilesRadii_fine[ir] ** exponent)
-            dPhiHatdradius_min_fine[ir] += data_dPhiHatdradius_min[exponent] * (profilesRadii_fine[ir] ** exponent)
-            dPhiHatdradius_max_fine[ir] += data_dPhiHatdradius_max[exponent] * (profilesRadii_fine[ir] ** exponent)
+            generalEr_min_fine[ir] += data_generalEr_min[exponent] * (profilesRadii_fine[ir] ** exponent)
+            generalEr_max_fine[ir] += data_generalEr_max[exponent] * (profilesRadii_fine[ir] ** exponent)
             for ispecies in range(Nspecies):
                 nHats_fine[ispecies][ir] += data_nHats[ispecies][exponent] * (profilesRadii_fine[ir] ** exponent)
                 THats_fine[ispecies][ir] += data_THats[ispecies][exponent] * (profilesRadii_fine[ir] ** exponent)

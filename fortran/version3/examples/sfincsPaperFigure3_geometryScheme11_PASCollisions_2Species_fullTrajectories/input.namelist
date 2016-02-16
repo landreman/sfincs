@@ -6,8 +6,8 @@
 
 ! Parameters specific to scanType = 2:
 !ss NErs = 5
-!ss dPhiHatdpsiNMin = -4.0d+0
-!ss dPhiHatdpsiNMax =  4.0d+0
+!ss ErMin = -4.0d+0
+!ss ErMax =  4.0d+0
 
 ! Parameters specific to scanType = 3:
 !ss scanVariable = preconditioner_x_min_L
@@ -23,7 +23,6 @@
   geometryScheme = 11
 
   inputRadialCoordinate = 3  ! rN
-  inputRadialCoordinateForGradients = 1  ! d/dpsiN
   rN_wish = 0.88
 
   equilibriumFile = "../../../../equilibria/w7x-sc1.bc"
@@ -34,8 +33,8 @@
   mHats = 1 0.000545509d+0
   nHats = 0.66d+0 0.66d+0
   THats = 1d+0 1d+0
-  dNHatdpsiNs = -4.49d+0 -4.49d+0
-  dTHatdpsiNs = -3.32d+0 -3.32d+0
+  dNHatdrHats = -15.4271 -15.4271
+  dTHatdrHats = -11.4071 -11.4071
 /
 
 &physicsParameters
@@ -43,7 +42,7 @@
   alpha = 1d+0
   nu_n = 0.00831565d+0
 
-  dPhiHatdpsiN   = 2.5d+0
+  Er = -8.5897
 
   collisionOperator = 1
   includeXDotTerm = .true.

@@ -594,6 +594,7 @@ integer :: j, m, n, nmin
 real(DP) :: eps_w = 1.0e-4
 character(80),parameter :: format730="(5e20.13)"
 
+signgs=1 ! Added 20160206 by MJL
 iunit = get_next_io_unit()
 open(unit=iunit, file=filename, action="read")
 read(iunit,'(a15,(a))',iostat=ios)c_vmec_version_string,c_version_number
@@ -894,6 +895,14 @@ real(DP), dimension(:,:), pointer :: bsupvmns =>NULL()
 integer :: nbfld_dummy, i, md,nd
 integer :: j, m, n, nmin
 
+! Begin additions by MJL 20160206
+c_version_number = ''
+itse = 0
+imse2_minus_1 = 0
+nobd = 0
+nbsets = 0
+nstore_seq = 0
+! End MJL additions from 20160206
 call cdf_open(iunit,filename,'r')
 
 call cdf_read(iunit,'version_',r_version_number)

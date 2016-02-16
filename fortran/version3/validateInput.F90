@@ -166,7 +166,7 @@ subroutine validateInput()
      dTHatdpsiHats = 0
      Zs = 1
      if (masterProc) then
-        print *,"Since RHSMode=3, ignoring the requested values of Zs, nHats, THats, nu_n, and dPhiHatd*."
+        print *,"Since RHSMode=3, ignoring the requested values of Zs, nHats, THats, nu_n, Er, and dPhiHatd*."
      end if
 
      if (abs(nuPrime) < 1e-14) then
@@ -708,31 +708,45 @@ subroutine validateInput()
      print *,line
   end if
 
-  if (ExBDerivativeScheme<0) then
+  if (ExBDerivativeSchemeTheta<0) then
      if (masterProc) then
-        print *,"Error! ExBDerivativeScheme cannot be less than 0."
+        print *,"Error! ExBDerivativeSchemeTheta cannot be less than 0."
      end if
      stop
   end if
   
-  if (ExBDerivativeScheme>3) then
+  if (ExBDerivativeSchemeTheta>3) then
      if (masterProc) then
-        print *,"Error! ExBDerivativeScheme cannot be more than 3."
+        print *,"Error! ExBDerivativeSchemeTheta cannot be more than 3."
      end if
      stop
   end if
   
-  if (ExBDerivativeScheme>0 .and. preconditioner_theta>0) then
+  if (ExBDerivativeSchemeZeta<0) then
      if (masterProc) then
-        print *,"Error! The implementation of ExBDerivativeScheme>0 does not presently allow"
+        print *,"Error! ExBDerivativeSchemeZeta cannot be less than 0."
+     end if
+     stop
+  end if
+  
+  if (ExBDerivativeSchemeZeta>3) then
+     if (masterProc) then
+        print *,"Error! ExBDerivativeSchemeZeta cannot be more than 3."
+     end if
+     stop
+  end if
+  
+  if (ExBDerivativeSchemeTheta>0 .and. preconditioner_theta>0) then
+     if (masterProc) then
+        print *,"Error! The implementation of ExBDerivativeSchemeTheta>0 does not presently allow"
         print *,"       preconditioning in theta (preconditioner_theta>0)."
      end if
      stop
   end if
   
-  if (ExBDerivativeScheme>0 .and. preconditioner_zeta>0) then
+  if (ExBDerivativeSchemeZeta>0 .and. preconditioner_zeta>0) then
      if (masterProc) then
-        print *,"Error! The implementation of ExBDerivativeScheme>0 does not presently allow"
+        print *,"Error! The implementation of ExBDerivativeSchemeZeta>0 does not presently allow"
         print *,"       preconditioning in zeta (preconditioner_zeta>0)."
      end if
      stop

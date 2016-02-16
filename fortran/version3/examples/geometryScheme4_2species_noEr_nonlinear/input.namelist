@@ -7,7 +7,6 @@
 
 &geometryParameters
   geometryScheme = 4  ! Simplified W7-X model
-  inputRadialCoordinateForGradients = 2  ! d/drHat
 /
 
 &speciesParameters
@@ -24,7 +23,7 @@
   alpha = 1d+0
   nu_n = 0.00831565d+0
 
-  dPhiHatdrHat = 0.0d+0
+  Er = 0.0d+0
 
   collisionOperator = 0
   includeXDotTerm = .true.

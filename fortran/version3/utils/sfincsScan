@@ -32,14 +32,14 @@ if not os.path.isfile(filename):
 
 # For each system, 
 if sfincsSystem=="edison":
-    submitCommand = "qsub "+jobFilename
+    submitCommand = "sbatch "+jobFilename
     def nameJobFile(original,name):
         # Modify the job.sfincsScan file to change the name that appears in the queue.
         # Insert the new line after the original first line, since the first line is a shebang.
-        original.insert(1,"#PBS -N "+name+"\n")
+        original.insert(1,"#SBATCH -J "+name+"\n")
         return original
 
-if sfincsSystem=="cori":
+elif sfincsSystem=="cori":
     submitCommand = "sbatch "+jobFilename
     def nameJobFile(original,name):
         # Modify the job.sfincsScan file to change the name that appears in the queue.

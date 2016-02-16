@@ -215,6 +215,17 @@ contains
              print *,"Selecting the input gradients (of n, T, & Phi) from the specified ddrN values."
           end if
           
+       case (4)
+          ! Selected input radial coordinate is rHat, and use Er instead of dPhiHatdrHat:
+          dPhiHatdpsiHat = ddrHat2ddpsiHat * (-Er)
+          dnHatdpsiHats  = ddrHat2ddpsiHat * dnHatdrHats
+          dTHatdpsiHats  = ddrHat2ddpsiHat * dTHatdrHats
+          
+          if (masterProc) then
+             print *,"Selecting the input gradients of n & T from the specified ddrHat values."
+             print *,"Selecting the input gradient of Phi from the specified Er."
+          end if
+          
        case default
           print *,"Error! Invalid inputRadialCoordinateForGradients."
           stop
@@ -226,6 +237,7 @@ contains
     dPhiHatdpsiN = ddpsiHat2ddpsiN * dPhiHatdpsiHat
     dPhiHatdrHat = ddpsiHat2ddrHat * dPhiHatdpsiHat
     dPhiHatdrN   = ddpsiHat2ddrN   * dPhiHatdpsiHat
+    Er = - dPhiHatdrHat
     
     dnHatdpsiNs  = ddpsiHat2ddpsiN * dnHatdpsiHats
     dnHatdrHats  = ddpsiHat2ddrHat * dnHatdpsiHats

@@ -182,7 +182,8 @@ contains
        call writeHDF5Field("geometryScheme", geometryScheme, "")
        call writeHDF5Field("thetaDerivativeScheme", thetaDerivativeScheme, "")
        call writeHDF5Field("zetaDerivativeScheme", zetaDerivativeScheme, "")
-       call writeHDF5Field("ExBDerivativeScheme", ExBDerivativeScheme, "")
+       call writeHDF5Field("ExBDerivativeSchemeTheta", ExBDerivativeSchemeTheta, "")
+       call writeHDF5Field("ExBDerivativeSchemeZeta", ExBDerivativeSchemeZeta, "")
        call writeHDF5Field("magneticDriftDerivativeScheme", magneticDriftDerivativeScheme, "")
        call writeHDF5Field("xGridScheme", xGridScheme, "")
        call writeHDF5Field("xGrid_k", xGrid_k, "Exponent of x in the orthogonality relation for the speed polynomials")
@@ -299,6 +300,8 @@ contains
        call writeHDF5Field("dPhiHatdpsiN", dPhiHatdpsiN, "")
        call writeHDF5Field("dPhiHatdrHat", dPhiHatdrHat, "")
        call writeHDF5Field("dPhiHatdrN", dPhiHatdrN, "")
+       call writeHDF5Field("Er", Er, "Radial electric field, defined by -dPhiHatdrHat. Here, PhiHat is the electrostatic potential in units of PhiBar, and rHat is the square root"//&
+            " of the toroidal magnetic flux, scaled by a constant so rHat=0 on the magnetic axis and rHat=aHat at the last closed flux surface.")
 
        call writeHDF5Field("dTHatdpsiHat", dTHatdpsiHats, dspaceIDForSpecies, dimForSpecies, "")
        call writeHDF5Field("dTHatdpsiN", dTHatdpsiNs, dspaceIDForSpecies, dimForSpecies, "")

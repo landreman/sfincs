@@ -186,7 +186,7 @@ No matter which option you pick, the value of all 4 radial coordinates used will
 
 \param{inputRadialCoordinateForGradients}
 {integer}
-{2}
+{4}
 {Whenever \parlink{RHSMode}==1.}
 {Which radial coordinate is used to use to specify the input gradients of density, temperature, and electrostatic potential,
 i.e. which radial coordinate is used in the denominator of these derivatives.
@@ -209,7 +209,13 @@ and the range of an $E_r$ scan is specified by \parlink{dPhiHatdrHatMin}-\parlin
 temperature gradients are specified by \parlink{dTHatdrNs}, a single $E_r$ is specified by \parlink{dPhiHatdrN},
 and the range of an $E_r$ scan is specified by \parlink{dPhiHatdrNMin}-\parlink{dPhiHatdrNMax}.\\
 
-No matter which option you pick, the gradients with respect to all 4 radial coordinates will be saved in the output \HDF~file.
+{\ttfamily inputRadialCoordinateForGradients}==4: 
+Same as {\ttfamily inputRadialCoordinateForGradients}==2, except \parlink{Er} is used instead of \parlink{dPhiHatdrHat}.
+Thus, density gradients are specified by \parlink{dnHatdrHats},
+temperature gradients are specified by \parlink{dTHatdrHats}, a single $E_r$ is specified by \parlink{Er},
+and the range of an $E_r$ scan is specified by \parlink{ErMin}-\parlink{ErMax}.\\
+
+No matter which option you pick, the gradients with respect to all radial coordinates will be saved in the output \HDF~file.
 }
 
 \myhrule
@@ -626,7 +632,7 @@ quantities with a bar are the normalization reference parameters discussed in se
 {Whenever \parlink{RHSMode} == 1 and \parlink{inputRadialCoordinateForGradients} == 0}
 {The derivative of the electrostatic potential with respect to the radial coordinate $\hat{\psi}$,
 i.e. the radial electric field up to a constant.
-Notice that exactly 1 of the 4 variables \parlink{dPhiHatdpsiHat}, \parlink{dPhiHatdpsiN}, \parlink{dPhiHatdrHat}, and \parlink{dPhiHatdrN}
+Notice that exactly 1 of the 5 variables \parlink{dPhiHatdpsiHat}, \parlink{dPhiHatdpsiN}, \parlink{dPhiHatdrHat}, \parlink{dPhiHatdrN}, or \parlink{Er}
 will be used, depending on\\
 \parlink{inputRadialCoordinateForGradients}.
 }
@@ -639,7 +645,7 @@ will be used, depending on\\
 {Whenever \parlink{RHSMode} == 1 and \parlink{inputRadialCoordinateForGradients} == 1}
 {The derivative of the electrostatic potential with respect to the radial coordinate $\psi_N$,
 i.e. the radial electric field up to a constant.
-Notice that exactly 1 of the 4 variables \parlink{dPhiHatdpsiHat}, \parlink{dPhiHatdpsiN}, \parlink{dPhiHatdrHat}, and \parlink{dPhiHatdrN}
+Notice that exactly 1 of the 5 variables \parlink{dPhiHatdpsiHat}, \parlink{dPhiHatdpsiN}, \parlink{dPhiHatdrHat}, \parlink{dPhiHatdrN}, or \parlink{Er}
 will be used, depending on\\
 \parlink{inputRadialCoordinateForGradients}.
 }
@@ -652,7 +658,7 @@ will be used, depending on\\
 {Whenever \parlink{RHSMode} == 1 and \parlink{inputRadialCoordinateForGradients} == 2}
 {The derivative of the electrostatic potential with respect to the radial coordinate $\hat{r}$,
 i.e. the radial electric field up to a constant.
-Notice that exactly 1 of the 4 variables \parlink{dPhiHatdpsiHat}, \parlink{dPhiHatdpsiN}, \parlink{dPhiHatdrHat}, and \parlink{dPhiHatdrN}
+Notice that exactly 1 of the 5 variables \parlink{dPhiHatdpsiHat}, \parlink{dPhiHatdpsiN}, \parlink{dPhiHatdrHat}, \parlink{dPhiHatdrN}, or \parlink{Er}
 will be used, depending on\\
 \parlink{inputRadialCoordinateForGradients}.
 }
@@ -665,11 +671,24 @@ will be used, depending on\\
 {Whenever \parlink{RHSMode} == 1 and \parlink{inputRadialCoordinateForGradients} == 3}
 {The derivative of the electrostatic potential with respect to the radial coordinate $r_N$,
 i.e. the radial electric field up to a constant.
-Notice that exactly 1 of the 4 variables \parlink{dPhiHatdpsiHat}, \parlink{dPhiHatdpsiN}, \parlink{dPhiHatdrHat}, and \parlink{dPhiHatdrN}
+Notice that exactly 1 of the 5 variables \parlink{dPhiHatdpsiHat}, \parlink{dPhiHatdpsiN}, \parlink{dPhiHatdrHat}, \parlink{dPhiHatdrN}, or \parlink{Er}
 will be used, depending on\\
 \parlink{inputRadialCoordinateForGradients}.
 }
 
+
+\myhrule
+
+\param{Er}
+{real}
+{0.0}
+{Whenever \parlink{RHSMode} == 1 and \parlink{inputRadialCoordinateForGradients} == 4}
+{The derivative of the normalized electrostatic potential $\hat{\Phi}$ with respect to the radial coordinate $\hat{r}$, multiplied by $-1$,
+i.e. {\ttfamily Er}$=-$\parlink{dPhiHatdrHat}.
+Notice that exactly 1 of the 5 variables \parlink{dPhiHatdpsiHat}, \parlink{dPhiHatdpsiN}, \parlink{dPhiHatdrHat}, \parlink{dPhiHatdrN}, or \parlink{Er}
+will be used, depending on\\
+\parlink{inputRadialCoordinateForGradients}.
+}
 
 \myhrule
 
@@ -1019,7 +1038,7 @@ The best value for this parameter is usually 2.}
 
 \myhrule
 
-\param{ExBDerivativeScheme}
+\param{ExBDerivativeSchemeTheta}
 {integer}
 {0}
 {Whenever the radial electric field is nonzero}
@@ -1027,23 +1046,34 @@ The best value for this parameter is usually 2.}
 and \parlink{zetaDerivativeScheme}, and are analogous to the options for \parlink{magneticDriftDerivativeScheme}.
 This option exists because when the radial electric field is large enough to be comparable to the resonance,
 such that the coefficient in front of the $\partial f/\partial \theta$ or $\partial f/\partial\zeta$ terms vanishes near the thermal speed of one of the species,
-the distribution function can develop unphysical grid-scale structure.  This option allows upwinding of these spatial derivatives, which eliminates the grid-scale oscillations.\\
+the distribution function can develop unphysical grid-scale structure.  This option allows upwinding of the $\partial f/\partial\theta$
+spatial derivative, which eliminates the grid-scale oscillations.
+The parameter \parlink{ExBDerivativeSchemeZeta} serves the same function for the $\partial f/\partial\zeta$ derivative.
+\\
 
-{\ttfamily ExBDerivativeScheme} = 0: Use same differentiation matrices for the $\vect{E}\times\vect{B}$ drift terms as for the parallel streaming term.\\
+{\ttfamily ExBDerivativeSchemeTheta} = 0: Use same differentiation matrices for the $\vect{E}\times\vect{B}$ drift terms as for the parallel streaming term.\\
 
-{\ttfamily ExBDerivativeScheme} = 1: Treat the $\vect{E}\times\vect{B}$ drift terms using a 4 point upwinded stencil (1 point on 1 side, 2 points on the other.)\\
+{\ttfamily ExBDerivativeSchemeTheta} = 1: Treat the $\vect{E}\times\vect{B}$ drift terms using a 4 point upwinded stencil (1 point on 1 side, 2 points on the other.)\\
 
-{\ttfamily ExBDerivativeScheme} = 2: Treat the $\vect{E}\times\vect{B}$ drift terms using a 5 point upwinded stencil (1 point on 1 side, 3 points on the other.)\\
+{\ttfamily ExBDerivativeSchemeTheta} = 2: Treat the $\vect{E}\times\vect{B}$ drift terms using a 5 point upwinded stencil (1 point on 1 side, 3 points on the other.)\\
 
-{\ttfamily ExBDerivativeScheme} = 3: Treat the $\vect{E}\times\vect{B}$ drift terms using a 6 point upwinded stencil (2 points on 1 side, 3 points on the other.)\\
+{\ttfamily ExBDerivativeSchemeTheta} = 3: Treat the $\vect{E}\times\vect{B}$ drift terms using a 6 point upwinded stencil (2 points on 1 side, 3 points on the other.)\\
 
 The different settings require slightly different amounts of memory for factorization due to the different numbers of nonzeros. Option 1 requires the least memory, then 0, then 2,
 and 3 requires the most.  The difference in memory required appears to be small, around 10-20\% between settings 1 and 3.
 On the other hand, the denser the stencil, the more accurate the result. Hence, in order from least to most accurate, the options are 1, 0, 2, 3.
 Option 1 is substantially less accurate than the other options.
-You should use the default {\ttfamily ExBDerivativeScheme} = 0 except for very large radial electric fields, when the electric field is as large as the resonance or larger.
-In this case, {\ttfamily ExBDerivativeScheme} = 3 is recommended.
+You should use the default {\ttfamily ExBDerivativeSchemeTheta} = 0 except for very large radial electric fields, when the electric field is as large as the resonance or larger.
+In this case, {\ttfamily ExBDerivativeSchemeTheta} = 3 is recommended.
 }
+
+\myhrule
+
+\param{ExBDerivativeSchemeZeta}
+{integer}
+{0}
+{Whenever the radial electric field is nonzero}
+{This parameter behaves exactly like \parlink{ExBDerivativeSchemeTheta}, except it applies to the $\zeta$ coordinate instead of $\theta$.}
 
 \myhrule
 
@@ -1052,7 +1082,7 @@ In this case, {\ttfamily ExBDerivativeScheme} = 3 is recommended.
 {3}
 {Whenever \parlink{magneticDriftScheme} is nonzero}
 {Options for controlling upwinding of the magnetic drift terms.  Note the options are different than for \parlink{thetaDerivativeScheme}
-and \parlink{zetaDerivativeScheme}, and are analogous to the options for \parlink{ExBDerivativeScheme}.
+and \parlink{zetaDerivativeScheme}, and are analogous to the options for \parlink{ExBDerivativeSchemeTheta}.
 This option exists because when magnetic drift terms involving $\partial f/\partial \theta$ and $\partial f/\partial\zeta$
 are implemented using the same centered difference stencil as the parallel streaming term,
 the distribution function can develop unphysical grid-scale structure.  This option allows upwinding of these spatial derivatives, which eliminates the grid-scale oscillations.\\
@@ -1741,11 +1771,11 @@ Since the recommended value of \parlink{xGridScheme} is 5, this parameter is bas
 
 In this scan of the radial electric field, the values of electric field used
 will always be uniformly (linearly) spaced.  
-Notice that exactly 1 of the 4 variables \parlink{dPhiHatdpsiHatMax}, \parlink{dPhiHatdpsiNMax}, \parlink{dPhiHatdrHatMax}, and \parlink{dPhiHatdrNMax}
+Notice that exactly 1 of the 5 variables \parlink{dPhiHatdpsiHatMax}, \parlink{dPhiHatdpsiNMax}, \parlink{dPhiHatdrHatMax}, \parlink{dPhiHatdrNMax}, or \parlink{ErMax}
 will be used, depending on\\
 \parlink{inputRadialCoordinateForGradients}.
-Similarly, exactly 1 of the 4 variables
-\parlink{dPhiHatdpsiHatMin}, \parlink{dPhiHatdpsiNMin}, \parlink{dPhiHatdrHatMin}, and \parlink{dPhiHatdrNMin}
+Similarly, exactly 1 of the 5 variables
+\parlink{dPhiHatdpsiHatMin}, \parlink{dPhiHatdpsiNMin}, \parlink{dPhiHatdrHatMin}, \parlink{dPhiHatdrNMin}, or \parlink{ErMin}
 will be used.
 
 \myhrule
@@ -1810,6 +1840,20 @@ will be used.
 {real}
 {Only when \parlink{inputRadialCoordinateForGradients} = 3 and \sfincsScan~is run with \parlink{scanType} = 2.}
 {Minimum value of \parlink{dPhiHatdrN} to use in the scan.}
+
+\myhrule
+
+\ssparam{ErMax}
+{real}
+{Only when \parlink{inputRadialCoordinateForGradients} = 4 and \sfincsScan~is run with \parlink{scanType} = 2.}
+{Maximum value of \parlink{Er} to use in the scan.}
+
+\myhrule
+
+\ssparam{ErMin}
+{real}
+{Only when \parlink{inputRadialCoordinateForGradients} = 4 and \sfincsScan~is run with \parlink{scanType} = 2.}
+{Minimum value of \parlink{Er} to use in the scan.}
 
 \subsection{Parameters related only to {\ttfamily scanType} = 3 (scans of an arbitrary input parameter).}
 
@@ -2003,5 +2047,11 @@ If \sfincs~exits with the \mumps~error {\ttfamily INFO(1)=-9}, then further incr
 {Turns on the out-of-core solve capability,
 which reduces the memory required at the cost of speed.
 See section \ref{sec:parallelization} for further details.}
+
+\myhrule
+
+\PETScParam{-mat\_mumps\_icntl\_28 2}
+{Uses one of the parallelized libraries ParMETIS or PT-SCOTCH for analyzing the matrix,
+instead of the default serial algorithm.}
 
 

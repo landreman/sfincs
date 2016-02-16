@@ -6,8 +6,8 @@
 
 ! Settings specific to scanType = 2:
 !ss NErs = 41
-!ss dPhiHatdrHatMin = -1.0d+0
-!ss dPhiHatdrHatMax =  3.0d+0
+!ss ErMin = -3.0d+0
+!ss ErMax =  1.0d+0
 
 ! Settings specific to scanType = 3:
 !ss scanVariable = min_Bmn_to_load
@@ -22,8 +22,7 @@
 &geometryParameters
   geometryScheme = 5
 
-  inputRadialCoordinate = 3
-  inputRadialCoordinateForGradients = 2
+  inputRadialCoordinate = 3 ! rN
   rN_wish = 0.5
 
   VMECRadialOption = 1
@@ -53,7 +52,7 @@
   alpha = 1d+0
   nu_n = 0.00831565d+0
 
-  dPhiHatdrHat = 0.0
+  Er = 0.0
 
   collisionOperator = 0
 
