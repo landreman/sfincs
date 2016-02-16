@@ -284,6 +284,17 @@ contains
        call writeHDF5Field("THats", THats, dspaceIDForSpecies, dimForSpecies, "Average temperature of each species, in units of TBar.")
        call writeHDF5Field("nHats", nHats, dspaceIDForSpecies, dimForSpecies, "Flux surface averaged density of each species, in units of nBar.")
 
+
+       !!Added by AM 2016-01!!
+       call writeHDF5Field("withAdiabatic", withAdiabatic, "")
+       if (withAdiabatic) then
+       	  call writeHDF5Field("adiabaticZ", adiabaticZ, "Charge of adiabatic species, in units of the unit charge e (which is usually the proton charge.)")
+	  call writeHDF5Field("adiabaticMHat", adiabaticMHat, "Mass of adiabatic species, in units of mBar.")
+	  call writeHDF5Field("adiabaticNHat", adiabaticNHat, "Flux surface averaged density of adiabatic species, in units of nBar.")
+	  call writeHDF5Field("adiabaticTHat", adiabaticTHat, "Average temperature of adiabatic species, in units of TBar.")
+       end if
+       !!!!!!!!!!!!!!!!!!!!!!!
+
        call writeHDF5Field("dPhiHatdpsiHat", dPhiHatdpsiHat, "")
        call writeHDF5Field("dPhiHatdpsiN", dPhiHatdpsiN, "")
        call writeHDF5Field("dPhiHatdrHat", dPhiHatdrHat, "")

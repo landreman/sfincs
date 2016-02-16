@@ -1948,6 +1948,17 @@
                 end do
              end do
 
+
+	     !!!!!!!!!!!!!!!!!!!!!!!
+  	     !!Added by AM 2015-11!!
+	     !!CONTINUE IMPLEMENTATION!!
+  	     if (withAdiabatic) then
+	     	colIndex = getIndex(1, 1, 1, itheta, izeta, BLOCK_QN)
+		speciesFactor = adiabaticZ*adiabaticTHat/adiabaticMHat &
+                     * sqrt(adiabaticTHat/adiabaticMHat)
+	     end if
+	     !!!!!!!!!!!!!!!!!!!!!!!
+
              ! Add the Lagrange multiplier lambda:
              colIndex = getIndex(1, 1, 1, 1, 1, BLOCK_PHI1_CONSTRAINT)
              call MatSetValueSparse(matrix, rowIndex, colIndex, &

@@ -69,6 +69,13 @@ program sfincs
      else
         print *,"Linear run"
      end if
+
+     !!Added by AM 2016-01!!
+     if (withAdiabatic) then
+     	print *,"Run with adiabatic species"
+     end if
+     !!!!!!!!!!!!!!!!!!!!!!!
+
   end if
 
   ! Initialize NPeriods, psiAHat, and aHat.  We need to know NPeriods before
