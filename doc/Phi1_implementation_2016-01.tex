@@ -69,7 +69,7 @@
 
 \pagestyle{fancy}
 \fancyhead{}
-\chead{Albert Mollén %850227-2019
+\chead{Albert Moll\'en %850227-2019
 \\ Implementation of $\Phi_1$ in SFINCS}
 \cfoot{\thepage}
 \renewcommand{\headrulewidth}{1pt}
@@ -306,7 +306,7 @@ We replace $f_M \rightarrow f_0 = f_M \exp \left(- q \Phi_1 / T \right)$,
 and use that $K \left\{\psi\right\} = \bm{v}_E \cdot \na \psi + \bm{v}_d \cdot \na \psi = \bm{v}_{E1} \cdot \na \psi + \bm{v}_d \cdot \na \psi$
 to write 
 \begin{multline}
-K \left\{\psi\right\} \frac{\p f_{M}}{\p \psi} =  \exp \left(- q \Phi_1 / T \right) \frac{\p f_{M}}{\p \psi} \left(\bm{v}_{E1} \cdot \na \psi + \bm{v}_d \cdot \na \psi\right) = \\ = 
+K \left\{\psi\right\} \frac{\p f_{0}}{\p \psi} =  \exp \left(- q \Phi_1 / T \right) \frac{\p f_{M}}{\p \psi} \left(\bm{v}_{E1} \cdot \na \psi + \bm{v}_d \cdot \na \psi\right) = \\ = 
 \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2} + \frac{q}{T} \Phi_1\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] 
  \left(- \frac{\na \Phi_1 \times \bm{b}}{B} \cdot \na \psi + \bm{v}_d \cdot \na \psi\right) = \\ =
  \left\| - \frac{\na \Phi_1 \times \bm{b}}{B} \cdot \na \psi = - \frac{ \bm{B} \times \na \psi}{B^2} \cdot  \na \Phi_1 = 
@@ -316,10 +316,10 @@ K \left\{\psi\right\} \frac{\p f_{M}}{\p \psi} =  \exp \left(- q \Phi_1 / T \rig
 \label{eq:DKresidualNewTerm1}
 \end{multline}
 (Here $D = \na \psi \cdot \na \theta \times \na \zeta$.)
-Written like this we explicitly see the places where $\Phi_1$ appears in $\displaystyle K \left\{\psi\right\} \frac{\p f_{M}}{\p \psi}$. 
-From Eq.~\ref{eq:DKresidualNewTerm1} we obtain the corresponing terms in the Jacobian matrix
+Written like this we explicitly see the places where $\Phi_1$ appears in $\displaystyle K \left\{\psi\right\} \frac{\p f_{0}}{\p \psi}$. 
+From Eq.~\ref{eq:DKresidualNewTerm1} we obtain the corresponding terms in the Jacobian matrix
 \begin{multline}
-\frac{\delta}{\delta \Phi_1} \left(K \left\{\psi\right\} \frac{\p f_{M}}{\p \psi}\right) = \textcolor{orange}{
+\frac{\delta}{\delta \Phi_1} \left(K \left\{\psi\right\} \frac{\p f_{0}}{\p \psi}\right) = \textcolor{orange}{
 - \frac{q}{T}
  \exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(\frac{m v^2}{2 T} - \frac{3}{2} + \frac{q}{T} \Phi_1\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] \cdot} \\ \textcolor{orange}{
  \left(\frac{1}{B^2} D \left[B_\theta \frac{\p \Phi_1}{\p \zeta} - B_\zeta \frac{\p \Phi_1}{\p \theta}\right] + \bm{v}_d \cdot \na \psi\right)} \, + \\ + \,\textcolor{green}{
@@ -334,7 +334,7 @@ From Eq.~\ref{eq:DKresidualNewTerm1} we obtain the corresponing terms in the Jac
 Many of the terms involving $\bm{v}_d \cdot \na \psi$ are almost implemented in SFINCS already except that they now contain the $\exp \left(- \frac{q \Phi_1}{T}  \right)$-factor. 
 We therefore rewrite Eq.~\ref{eq:DKresidualNewTerm1} as 
 \begin{equation}
-K \left\{\psi\right\} \frac{\p f_{M}}{\p \psi} = R_m + R_E
+K \left\{\psi\right\} \frac{\p f_{0}}{\p \psi} = R_m + R_E
 \label{eq:DKresidualNewTermSplit}
 \end{equation}
 where
@@ -411,6 +411,10 @@ The third term in Eq.~\ref{eq:DKresidualNewTermRE2} we rewrite in SFINCS units (
 \end{multline}
 
 \paragraph*{\textbf{Files to change:}}
+\begin{verbatim}
+evaluateResidual.F90
+populateMatrix.F90
+\end{verbatim}
 
 
 \subsubsection*{Jacobian}
@@ -471,15 +475,28 @@ Although the \textcolor{orange}{first term} and the \textcolor{green}{second ter
 % \end{multline}
 
 \paragraph*{\textbf{Files to change:}}
+\begin{verbatim}
+populateMatrix.F90
+\end{verbatim}
 
 
 
 \subsubsection*{Additional implementation related to the kinetic equation}
 Besides implementing the above terms, we need to remove the former term in SFINCS corresponding to $\displaystyle \frac{Z e}{T} f_M v_\| \na_\| \Phi_1$. \\
 \\
-We will remove the \textbf{nonlinear} switch from the code, since all terms related to $\Phi_1$ are now nonlinear.
+We will remove the \textbf{nonlinear} switch from the code, since all terms related to $\Phi_1$ are now nonlinear. 
+The \textbf{nonlinear} switch will be incorporated into the \textbf{includePhi1} switch.
 
 \paragraph*{\textbf{Files to change:}}
+\begin{verbatim}
+globalVariables.F90
+populateMatrix.F90
+preallocateMatrix.F90
+readInput.F90
+sfincs.F90
+solver.F90
+validateInput.F90
+\end{verbatim}
 
 
 
@@ -522,14 +539,17 @@ whereas \textbf{quasineutralityOption = 2} corresponds to the EUTERPE equations.
 
 \subsubsection*{Adiabatic species}
 We will allow for the possibility to run SFINCS with an adiabatic species. 
-The following input parameters will be introduced (with their default value in brackets) in the \textbf{speciesParameters} namelist:
+The following input parameters will be introduced (with their default values in brackets) in the \textbf{speciesParameters} namelist:
 \begin{verbatim}
 logical :: withAdiabatic  (.false.)
 PetscScalar :: adiabaticZ  (-1)
-PetscScalar :: adiabaticMHat  (5.446170214E-4)
+PetscScalar :: adiabaticMHat  (5.446170214d-4)
 PetscScalar :: adiabaticNHat  (1.0)
 PetscScalar :: adiabaticTHat  (1.0)
 \end{verbatim}
+Note that the 
+adiabatic species will only enter into the quasi-neutrality equation, 
+we neglect its collisional impact on the kinetic species (the adiabatic species will typically be electrons, and the effect of ion-electron collisions is small compared to ion-ion collisions). 
 
 \paragraph*{\textbf{Files to change:}}
 \begin{verbatim}
@@ -574,9 +594,9 @@ Since
   \label{eq:ns1Int}
   n_{s 1} = \int d^3 v \, f_{s 1},
 \end{equation}
-we can rewrite quasi-neutrality in form of its contribution to the residual as 
+we can rewrite quasi-neutrality in form of its contribution to the residual of the full linear system as 
 \begin{equation}
-R_{QN}\left(f_{s 1}, \Phi_1\right) = \sum_s Z_s n_{s0} \exp\left(- \frac{Z_s e \Phi_1}{T_s}\right) + 2\pi \sum_{s \setminus a} v_s^3 Z_s \int_0^{\infty} dx \, x^2 \int_{-1}^1 d\xi \, f_{s 1} = 0
+R_{QN}\left(f_{1}, \Phi_1\right) = \sum_s Z_s n_{s0} \exp\left(- \frac{Z_s e \Phi_1}{T_s}\right) + 2\pi \sum_{s \setminus a} v_s^3 Z_s \int_0^{\infty} dx \, x^2 \int_{-1}^1 d\xi \, f_{s 1} = 0
 \label{eq:Quasineutrality}
 \end{equation}
 (note that the adiabatic species is excluded in the second summation).\\
@@ -585,7 +605,7 @@ R_{QN}\left(f_{s 1}, \Phi_1\right) = \sum_s Z_s n_{s0} \exp\left(- \frac{Z_s e \
 \exp \left(- \frac{q_s \Phi_1}{T_s}  \right) = \exp \left(- \frac{Z_s \alpha \hat{\Phi}_1}{\hat{T}_s}  \right) 
 $, to write 
 \begin{multline}
-\hat{R}_{QN}\left(\hat{f}_{s 1}, \hat{\Phi}_1, \lambda\right) = \textcolor{JungleGreen}{
+\hat{R}_{QN}\left(\hat{f}_{1}, \hat{\Phi}_1, \lambda\right) = \textcolor{JungleGreen}{
 \sum_s Z_s \hat{n}_{s0} \exp \left(- \frac{Z_s \alpha \hat{\Phi}_1}{\hat{T}_s}  \right)} + \\ + 
 \textcolor{MidnightBlue}{
 2\pi \sum_{s \setminus a} Z_s \left(\frac{\hat{T}_s}{\hat{m}_s}\right)^{3/2} \int_0^{\infty} dx \, x^2 \int_{-1}^1 d\xi \, \hat{f}_{s 1} \, + \, \lambda } = 0.
@@ -610,16 +630,29 @@ Moreover,
 \begin{equation}
   \label{eq:QNJacobianPhi1}
 \textcolor{JungleGreen}{
-  \frac{\delta \hat{R}_{QN}}{\delta \hat{\Phi}_1} = 
-\sum_s - \frac{Z_s^2 \alpha}{\hat{T}_s} \hat{n}_{s0} \exp \left(- \frac{Z_s \alpha \hat{\Phi}_1}{\hat{T}_s}  \right)}
+  \frac{\delta \hat{R}_{QN}}{\delta \hat{\Phi}_1} = -
+\sum_s  \frac{Z_s^2 \alpha}{\hat{T}_s} \hat{n}_{s0} \exp \left(- \frac{Z_s \alpha \hat{\Phi}_1}{\hat{T}_s}  \right)}
 \end{equation}
 will also be implemented in populateMatrix.F90 when 'whichMatrix==0' or 'whichMatrix==1'. 
 
 
 \paragraph*{\textbf{Files to change:}}
+\begin{verbatim}
+evaluateResidual.F90
+populateMatrix.F90
+validateInput.F90
+\end{verbatim}
 
 \subsubsection*{EUTERPE quasi-neutrality equation, quasineutralityOption = 2}
-EUTERPE equations: 
+For the EUTERPE equations, the code must be run with 
+an adiabatic species and one kinetic species only. 
+We need to make sure that the input densities fulfill quasi-neutrality:
+\begin{equation}
+  \label{eq:QuasiNeutralityInputFull}
+   Z_i \hat{n}_{i} + Z_a \hat{n}_{a} = 0
+\end{equation}
+(here species $i$ would be the kinetic species and $a$ the adiabatic).\\
+Again we use 
 \begin{equation}
 n_s = n_{s 0} \left(\psi\right) \, \exp \left(- q_s \Phi_1 / T_s \right) + n_{s 1},
 \label{eq:DensityParts2}
@@ -628,13 +661,15 @@ n_s = n_{s 0} \left(\psi\right) \, \exp \left(- q_s \Phi_1 / T_s \right) + n_{s 
 \sum_s Z_s n_s = 0,
 \label{eq:Quasineutrality2}
 \end{equation}
-\[
-\Rightarrow \;\;\; 0 \simeq \sum_s Z_s \left[n_{s 0} \left(1 - q_s \Phi_1 / T_s \right) + n_{s 1}\right] \;\;\; \Leftrightarrow \;\;\;
-\]
-\[
+but here we Taylor expand the exponential to $1^{\mathrm{st}}$ order and write
+\begin{multline}
+\label{eq:QuasineutralityExpanded}
+%\Rightarrow \;\;\; 
+0 \simeq \sum_s Z_s \left[n_{s 0} \left(1 - q_s \Phi_1 / T_s \right) + n_{s 1}\right] \;\;\; \Leftrightarrow \\
 \sum_s Z_s \left[n_{s 0} + n_{s 1}\right] = \sum_s \frac{Z_s^2 e}{T_s} \Phi_1 n_{s 0} .
-\]
-Since $n_{s 0} \left(\psi\right)$ is obtained by integrating the Maxwellian $f_{M s}$ over velocity space we must have 
+\end{multline}
+%Since $n_{s 0} \left(\psi\right)$ is obtained by integrating the Maxwellian $f_{M s}$ over velocity space we must have 
+From the condition of quasi-neutral input we know that
 \[
 \sum_s Z_s n_{s 0} = 0,
 \]
@@ -643,29 +678,22 @@ which yields
 \sum_s Z_s n_{s 1} - \Phi_1 \sum_s \frac{Z_s^2 e}{T_s} n_{s 0}  = 0.
 \label{eq:Quasineutrality2}
 \end{equation}
-With kinetic ions, adiabatic electrons ($n_{e 1} = 0$) and neglecting impurities we obtain 
+With kinetic ions, adiabatic electrons ($n_{a 1} = 0$) and neglecting other ion species we obtain 
 \begin{equation}
-\Phi_1 = \frac{T_e}{e} \left[\frac{T_e}{T_i} n_{i 0} + n_{e 0}\right]^{-1} n_{i 1}.
+\Phi_1 = \frac{T_a}{Z_a^2 e} \left[\frac{Z_i^2 T_a}{Z_a^2 T_i} n_{i 0} + n_{a 0}\right]^{-1} Z_i n_{i 1}.
 \label{eq:Phi1}
 \end{equation}
-
-We need to make sure that the adiabatic species and only one kinetic species are used, and that the input densities fulfill quasi-neutrality:
-\begin{equation}
-  \label{eq:QuasiNeutralityInputFull}
-   Z_i \hat{n}_{i} + Z_e \hat{n}_{e} = 0
-\end{equation}
-(Here species $i$ would be the kinetic species and $e$ the adiabatic).
-
-\subsection*{Implementation in SFINCS}
-For a first benchmark, we want to implement the same equations as EUTERPE in SFINCS. \\
+%
+%\subsection*{Implementation in SFINCS}
+%For a first benchmark, we want to implement the same equations as EUTERPE in SFINCS. \\
 %\remark{This is not a very generic quasi-neutrality equation so it is possible that we might want to change it in SFINCS later.} \\
-In the code we add an adiabatic species which only enters into the quasi-neutrality equation, and neglect its collisional impact on the kinetic species (the effect of ion-electron collisions is small compared to ion-ion collisions). 
-Moreover, we will only consider the first of the kinetic species in quasi-neutrality and neglect the rest. 
-This is implemented by modifying the LHS of the row corresponding to quasi-neutrality in the block-matrix structure of Matt's ISHW poster, adding the adiabatic term to the $\Phi_1$-column and removing all kinetic species except the first. \\
+%In the code we add an adiabatic species which only enters into the quasi-neutrality equation, and neglect its collisional impact on the kinetic species (the effect of ion-electron collisions is small compared to ion-ion collisions). 
+%Moreover, we will only consider the first of the kinetic species in quasi-neutrality and neglect the rest. 
+%This is implemented by modifying the LHS of the row corresponding to quasi-neutrality in the block-matrix structure of Matt's ISHW poster, adding the adiabatic term to the $\Phi_1$-column and removing all kinetic species except the first. \\
 % \remark{It feels a bit weird to remove species from quasi-neutrality, even if the impurity density is small. Does this mean that we should removed the check that the input densities are quasi-neutral and instead check that $n_{i 0} \left(\psi\right) = n_{e 0} \left(\psi\right)$ in the input?}\\
 The equation we will implement in SFINCS is thus 
 \begin{equation}
-Z_i n_{i 1} - \Phi_1 \left[ \frac{Z_i^2 e}{T_i} n_{i 0} + \frac{Z_e^2 e}{T_e} n_{e 0}\right] = 0.
+Z_i n_{i 1} - \Phi_1 \left[ \frac{Z_i^2 e}{T_i} n_{i 0} + \frac{Z_a^2 e}{T_a} n_{a 0}\right] = 0.
 \label{eq:QuasineutralityIonElectrons}
 \end{equation}
 We note that
@@ -689,17 +717,26 @@ we find
 \end{equation}
 Also using $\Phi_1 = \bar{\Phi} \hat{\Phi}_1$ and $\alpha = e \bar{\Phi} / \bar{T}$ we can write Eq.~\ref{eq:QuasineutralityIonElectrons} 
 \begin{equation}
-Z_i \hat{n}_{i 1} - \alpha \hat{\Phi}_1 \left[ \frac{Z_i^2}{\hat{T}_i} \hat{n}_{i 0} + \frac{Z_e^2}{\hat{T}_e} \hat{n}_{e 0}\right] = 0
+Z_i \hat{n}_{i 1} - \alpha \hat{\Phi}_1 \left[ \frac{Z_i^2}{\hat{T}_i} \hat{n}_{i 0} + \frac{Z_a^2}{\hat{T}_a} \hat{n}_{a 0}\right] = 0
 \label{eq:QuasineutralityIonElectronsSFINCS}
 \end{equation}
-and finally obtain 
+and finally obtain the residual 
 \begin{equation}
+\hat{R}_{QN}^{\mathrm{EUTERPE}}\left(\hat{f}_{i 1}, \hat{\Phi}_1, \lambda\right) =
 \left[2 \pi Z_i \left(\hat{T}_i / \hat{m}_i\right)^{3/2} \int_{0}^{\infty} dx\, x^2 \int_{-1}^{1} d\xi \hat{f}_{i 1}\right]
-- \alpha \hat{\Phi}_1 \left[ \frac{Z_i^2}{\hat{T}_i} \hat{n}_{i 0} + \frac{Z_e^2}{\hat{T}_e} \hat{n}_{e 0}\right] = 0.
+- \alpha \hat{\Phi}_1 \left[ \frac{Z_i^2}{\hat{T}_i} \hat{n}_{i 0} + \frac{Z_a^2}{\hat{T}_a} \hat{n}_{a 0}\right] \, + \, \lambda = 0.
 \label{eq:QuasineutralityIonElectronsSFINCS2}
 \end{equation}
-This is the equation we will implement in the code, but adding a $\lambda$ to make the system square.\\ 
+%This is the equation we will implement in the code, but adding a $\lambda$ to make the system square.\\ 
 % \remark{Is the $2\pi$ factor correct in Eq.~\ref{eq:QuasineutralityIonElectronsSFINCS2}? It is not in the former implementation of quasi-neutrality, but in that situation it could be divided away.}
+Since the residual has a linear operator dependence on all unknown variables, both the Jacobian and the residual can be implemented in populateMatrix.F90 with the same equations.
+
+\paragraph*{\textbf{Files to change:}}
+\begin{verbatim}
+populateMatrix.F90
+validateInput.F90
+\end{verbatim}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 
@@ -772,34 +809,34 @@ which implies that the RHS of Eq.~\ref{eq:TermNaParallelPhi1} becomes
 in the implementation.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\newpage
-\section{Temporary page}
-\subsection*{Implementation of $\displaystyle f_0 \frac{q}{T} \na \Phi_0 \cdot \bm{v}_{E1}$}
-\begin{multline}
-\left(f_0 \frac{q}{T} \na \Phi_0 \cdot \bm{v}_{E1}\right)_{\mathrm{SFINCS}} = \\ =
-\frac{Z \alpha^2 \Delta}{2 \pi^{3/2}} \frac{\hat{n} \hat{m}^{3/2} \hat{D}}{\hat{T}^{5/2} \hat{B}^2 \hat{\psi}_a} \frac{\p \hat{\Phi}_0}{\p \psi_N} 
-\exp\left(-x^2\right) \exp \left(- \frac{Z \alpha \hat{\Phi}_1}{\hat{T}}\right) \left[\hat{B}_{\theta} \frac{\p}{\p \zeta} - \hat{B}_{\zeta} \frac{\p}{\p \theta}\right] \hat{\Phi}_1
-\label{eq:RHSphi1term1}
-\end{multline}
+%\newpage
+% \section{Temporary page}
+% \subsection*{Implementation of $\displaystyle f_0 \frac{q}{T} \na \Phi_0 \cdot \bm{v}_{E1}$}
+% \begin{multline}
+% \left(f_0 \frac{q}{T} \na \Phi_0 \cdot \bm{v}_{E1}\right)_{\mathrm{SFINCS}} = \\ =
+% \frac{Z \alpha^2 \Delta}{2 \pi^{3/2}} \frac{\hat{n} \hat{m}^{3/2} \hat{D}}{\hat{T}^{5/2} \hat{B}^2 \hat{\psi}_a} \frac{\p \hat{\Phi}_0}{\p \psi_N} 
+% \exp\left(-x^2\right) \exp \left(- \frac{Z \alpha \hat{\Phi}_1}{\hat{T}}\right) \left[\hat{B}_{\theta} \frac{\p}{\p \zeta} - \hat{B}_{\zeta} \frac{\p}{\p \theta}\right] \hat{\Phi}_1
+% \label{eq:RHSphi1term1}
+% \end{multline}
 
-\subsection*{Implementation of $\displaystyle f_0 \frac{q}{T} \Phi_1 \frac{\na T}{T} \cdot \bm{v}_d$}
-\begin{multline}
-\left(f_0 \frac{q}{T} \Phi_1 \frac{\na T}{T} \cdot \bm{v}_d\right)_{\mathrm{SFINCS}} = \\ =
-\frac{\alpha \Delta}{3 \pi^{3/2}} \frac{\hat{n} \hat{m}^{3/2} \hat{D}}{\hat{T}^{5/2} \hat{B}^3 \hat{\psi}_a} \hat{\Phi}_1 \frac{\p \hat{T}}{\p \psi_N}
-x^2 \left(P_2\left(\xi\right) + 2\right)
-\exp\left(-x^2\right) \exp \left(- \frac{Z \alpha \hat{\Phi}_1}{\hat{T}}\right) \left[\hat{B}_{\theta} \frac{\p \hat{B}}{\p \zeta} - \hat{B}_{\zeta} \frac{\p \hat{B}}{\p \theta}\right] 
-\label{eq:RHSphi1term2}
-\end{multline}
+% \subsection*{Implementation of $\displaystyle f_0 \frac{q}{T} \Phi_1 \frac{\na T}{T} \cdot \bm{v}_d$}
+% \begin{multline}
+% \left(f_0 \frac{q}{T} \Phi_1 \frac{\na T}{T} \cdot \bm{v}_d\right)_{\mathrm{SFINCS}} = \\ =
+% \frac{\alpha \Delta}{3 \pi^{3/2}} \frac{\hat{n} \hat{m}^{3/2} \hat{D}}{\hat{T}^{5/2} \hat{B}^3 \hat{\psi}_a} \hat{\Phi}_1 \frac{\p \hat{T}}{\p \psi_N}
+% x^2 \left(P_2\left(\xi\right) + 2\right)
+% \exp\left(-x^2\right) \exp \left(- \frac{Z \alpha \hat{\Phi}_1}{\hat{T}}\right) \left[\hat{B}_{\theta} \frac{\p \hat{B}}{\p \zeta} - \hat{B}_{\zeta} \frac{\p \hat{B}}{\p \theta}\right] 
+% \label{eq:RHSphi1term2}
+% \end{multline}
 
-\subsection*{Implementation of $\displaystyle f_0 \frac{q}{T} \Phi_1 \frac{\na T}{T} \cdot \bm{v}_{E1}$}
-\begin{multline}
-\left(f_0 \frac{q}{T} \Phi_1 \frac{\na T}{T} \cdot \bm{v}_{E1}\right)_{\mathrm{SFINCS}} = \\ =
-\frac{Z \alpha^2 \Delta}{2 \pi^{3/2}} \frac{\hat{n} \hat{m}^{3/2} \hat{D}}{\hat{T}^{7/2} \hat{B}^2 \hat{\psi}_a} \frac{\p \hat{T}}{\p \psi_N} \hat{\Phi}_1
-\exp\left(-x^2\right) \exp \left(- \frac{Z \alpha \hat{\Phi}_1}{\hat{T}}\right) \left[\hat{B}_{\theta} \frac{\p}{\p \zeta} - \hat{B}_{\zeta} \frac{\p}{\p \theta}\right] \hat{\Phi}_1
-\label{eq:RHSphi1term3}
-\end{multline}
-\end{appendices}
-\newpage
+% \subsection*{Implementation of $\displaystyle f_0 \frac{q}{T} \Phi_1 \frac{\na T}{T} \cdot \bm{v}_{E1}$}
+% \begin{multline}
+% \left(f_0 \frac{q}{T} \Phi_1 \frac{\na T}{T} \cdot \bm{v}_{E1}\right)_{\mathrm{SFINCS}} = \\ =
+% \frac{Z \alpha^2 \Delta}{2 \pi^{3/2}} \frac{\hat{n} \hat{m}^{3/2} \hat{D}}{\hat{T}^{7/2} \hat{B}^2 \hat{\psi}_a} \frac{\p \hat{T}}{\p \psi_N} \hat{\Phi}_1
+% \exp\left(-x^2\right) \exp \left(- \frac{Z \alpha \hat{\Phi}_1}{\hat{T}}\right) \left[\hat{B}_{\theta} \frac{\p}{\p \zeta} - \hat{B}_{\zeta} \frac{\p}{\p \theta}\right] \hat{\Phi}_1
+% \label{eq:RHSphi1term3}
+% \end{multline}
+ \end{appendices}
+ \newpage
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
