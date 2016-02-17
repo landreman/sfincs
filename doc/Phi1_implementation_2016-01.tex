@@ -281,7 +281,8 @@ Here $x = v/v_s = v / \sqrt{2T/m}$ and $\xi = v_\| / v$.\\
 \noindent In the implementation we need to rewrite all our equations into SFINCS units, using the following identities:\\
 $m = \hat{m} \bar{m}$, $n = \hat{n} \bar{n}$, $T = \hat{T} \bar{T}$, $\Phi = \hat{\Phi} \bar{\Phi}$, 
 $B = \hat{B} \bar{B}$, $B_\zeta = \bar{R} \bar{B} \hat{B}_\zeta$, $B_\theta = \bar{R} \bar{B} \hat{B}_\theta$, $D = \bar{B} \hat{D} / \bar{R}$, 
-$\bar{v} = \sqrt{2 \bar{T} / \bar{m}}$, $\alpha = e \bar{\Phi} / \bar{T}$,  $\Delta = \bar{m} \bar{v} / \left(e \bar{B} \bar{R} \right)$, $\displaystyle \frac{d X}{d \psi} = \frac{1}{\hat{\psi}_a \bar{R}^2 \bar{B}} \frac{d X}{d \psi_N}$
+$\bar{v} = \sqrt{2 \bar{T} / \bar{m}}$, $\alpha = e \bar{\Phi} / \bar{T}$,  $\Delta = \bar{m} \bar{v} / \left(e \bar{B} \bar{R} \right)$, $\displaystyle \frac{d X}{d \psi} = \frac{1}{\hat{\psi}_a \bar{R}^2 \bar{B}} \frac{d X}{d \psi_N}$, 
+$\hat{\psi} = \psi_N \hat{\psi}_a$, $\displaystyle \frac{1}{\hat{\psi}_a} \frac{d X}{d \psi_N} = \frac{d X}{d \hat{\psi}}$ 
 and 
 $\displaystyle \alpha \cdot \Delta = \frac{e \bar{\Phi}}{\bar{T}} \cdot \frac{\bar{m} \bar{v}}{e \bar{B} \bar{R}} = \frac{2^{1/2} \bar{m}^{1/2} \bar{\Phi}}{\bar{B} \bar{R} \bar{T}^{1/2}}$. 
 Furthermore, we note that the kinetic equation is made dimensionless by multiplying with the factor 
@@ -365,7 +366,7 @@ The second term in Eq.~\ref{eq:DKresidualNewTermRm2} we rewrite in SFINCS units 
 \begin{multline}
 \textcolor{red}{
 \left(\exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \frac{q}{T} \Phi_1 \frac{1}{T} \frac{\p T}{\p \psi} \bm{v}_d \cdot \na \psi\right)_{\mathrm{SFINCS}} = } \\ \textcolor{red}{ =
-\frac{\alpha \Delta}{3 \pi^{3/2}} \frac{\hat{n} \hat{m}^{3/2} \hat{D}}{\hat{T}^{5/2} \hat{B}^3 \hat{\psi}_a} \hat{\Phi}_1 \frac{\p \hat{T}}{\p \psi_N}
+\frac{\alpha \Delta}{3 \pi^{3/2}} \frac{\hat{n} \hat{m}^{3/2} \hat{D}}{\hat{T}^{5/2} \hat{B}^3 } \hat{\Phi}_1 \frac{\p \hat{T}}{\p \hat{\psi}}
 x^2 \left(P_2\left(\xi\right) + 2\right)
 \exp\left(-x^2\right) \exp \left(- \frac{Z \alpha \hat{\Phi}_1}{\hat{T}}\right) \left[\hat{B}_{\theta} \frac{\p \hat{B}}{\p \zeta} - \hat{B}_{\zeta} \frac{\p \hat{B}}{\p \theta}\right]. 
 }
@@ -395,7 +396,7 @@ The second term in Eq.~\ref{eq:DKresidualNewTermRE2} we rewrite in SFINCS units 
 \begin{multline}
 \textcolor{magenta}{
 \left(\exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \frac{q}{T} \frac{\p \Phi_0}{\p \psi} \frac{1}{B^2} D \left[B_\theta \frac{\p \Phi_1}{\p \zeta} - B_\zeta \frac{\p \Phi_1}{\p \theta}\right] \right)_{\mathrm{SFINCS}} } = \\ = \textcolor{magenta}{
-\frac{Z \alpha^2 \Delta}{2 \pi^{3/2}} \frac{\hat{n} \hat{m}^{3/2} \hat{D}}{\hat{T}^{5/2} \hat{B}^2 \hat{\psi}_a} \frac{\p \hat{\Phi}_0}{\p \psi_N} 
+\frac{Z \alpha^2 \Delta}{2 \pi^{3/2}} \frac{\hat{n} \hat{m}^{3/2} \hat{D}}{\hat{T}^{5/2} \hat{B}^2 } \frac{\p \hat{\Phi}_0}{\p \hat{\psi}} 
 \exp\left(-x^2\right) \exp \left(- \frac{Z \alpha \hat{\Phi}_1}{\hat{T}}\right) \left[\hat{B}_{\theta} \frac{\p}{\p \zeta} - \hat{B}_{\zeta} \frac{\p}{\p \theta}\right] \hat{\Phi}_1.
 }
 \label{eq:REterm2}
@@ -404,7 +405,7 @@ The third term in Eq.~\ref{eq:DKresidualNewTermRE2} we rewrite in SFINCS units (
 \begin{multline}
 \textcolor{cyan}{
 \left(\exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \frac{q}{T} \Phi_1 \frac{1}{T} \frac{\p T}{\p \psi} \frac{1}{B^2} D \left[B_\theta \frac{\p \Phi_1}{\p \zeta} - B_\zeta \frac{\p \Phi_1}{\p \theta}\right]\right)_{\mathrm{SFINCS}}} = \\ = \textcolor{cyan}{
-\frac{Z \alpha^2 \Delta}{2 \pi^{3/2}} \frac{\hat{n} \hat{m}^{3/2} \hat{D}}{\hat{T}^{7/2} \hat{B}^2 \hat{\psi}_a} \frac{\p \hat{T}}{\p \psi_N} \hat{\Phi}_1
+\frac{Z \alpha^2 \Delta}{2 \pi^{3/2}} \frac{\hat{n} \hat{m}^{3/2} \hat{D}}{\hat{T}^{7/2} \hat{B}^2 } \frac{\p \hat{T}}{\p \hat{\psi}} \hat{\Phi}_1
 \exp\left(-x^2\right) \exp \left(- \frac{Z \alpha \hat{\Phi}_1}{\hat{T}}\right) \left[\hat{B}_{\theta} \frac{\p}{\p \zeta} - \hat{B}_{\zeta} \frac{\p}{\p \theta}\right] \hat{\Phi}_1.
 }
 \label{eq:REterm3}
