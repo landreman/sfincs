@@ -77,6 +77,7 @@ integer :: readstat !< status of read operation
 integer :: m,n      !< counter
 integer :: inunit   !< unit from which is read
 
+maxcol=0  ! Added by MJL 20160206
 m=0; n=0
 inunit = get_next_io_unit()
 if(l_show) write(6,*)"open unit ",inunit

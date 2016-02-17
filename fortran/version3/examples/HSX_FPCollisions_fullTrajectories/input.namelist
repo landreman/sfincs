@@ -6,8 +6,8 @@
 
 ! Parameters specific to scanType = 2:
 !ss NErs = 5
-!ss dPhiHatdpsiNMin = -1.0d+0
-!ss dPhiHatdpsiNMax =  1.0d+0
+!ss ErMin = -1.0d+0
+!ss ErMax =  1.0d+0
 
 ! Parameters specific to scanType = 3:
 !ss scanVariable = collisionOperator
@@ -23,7 +23,6 @@
   geometryScheme = 11
 
   inputRadialCoordinate = 3 ! rN
-  inputRadialCoordinateForGradients = 1  ! d/dpsiN
   rN_wish = 0.22
   equilibriumFile = "../../../../equilibria/hsx3free.bc"
 /
@@ -33,8 +32,8 @@
   mHats = 1 0.000545509d+0
   nHats =  4.05256d+0 4.05256d+0
   THats = 59.0303d+0  734.958d+0
-  dNHatdpsiNs = -5.05932d+0 -5.05932d+0
-  dTHatdpsiNs = -22.0032d+0 -11045.7d+0
+  dNHatdrHats = -18.908 -18.908
+  dTHatdrHats = -82.2316 -41280.6
 /
 
 &physicsParameters
@@ -42,7 +41,7 @@
   alpha = 1000
   nu_n = 83.1565d+0
 
-  dPhiHatdpsiN   = -0.5d+0
+  Er = 1.86863
 
   collisionOperator = 0
 

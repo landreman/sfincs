@@ -372,7 +372,7 @@
           allocate(colIndices(Ntheta))
           do L=0,(Nxi-1)
 
-             if (ExBDerivativeScheme==0) then
+             if (ExBDerivativeSchemeTheta==0) then
                 if (whichMatrix>0 .or. L < preconditioner_theta_min_L) then
                    ddthetaToUse = ddtheta
                 else
@@ -436,7 +436,7 @@
           allocate(colIndices(Nzeta))
           do L=0,(Nxi-1)
 
-             if (ExBDerivativeScheme==0) then
+             if (ExBDerivativeSchemeZeta==0) then
                 if (whichMatrix>0 .or. L < preconditioner_zeta_min_L) then
                    ddzetaToUse = ddzeta
                 else
@@ -1947,6 +1947,17 @@
                         speciesFactor*x2(ix)*xWeights(ix), ADD_VALUES, ierr)
                 end do
              end do
+
+
+	     !!!!!!!!!!!!!!!!!!!!!!!
+  	     !!Added by AM 2015-11!!
+	     !!CONTINUE IMPLEMENTATION!!
+  	     if (withAdiabatic) then
+	     	colIndex = getIndex(1, 1, 1, itheta, izeta, BLOCK_QN)
+		speciesFactor = adiabaticZ*adiabaticTHat/adiabaticMHat &
+                     * sqrt(adiabaticTHat/adiabaticMHat)
+	     end if
+	     !!!!!!!!!!!!!!!!!!!!!!!
 
              ! Add the Lagrange multiplier lambda:
              colIndex = getIndex(1, 1, 1, 1, 1, BLOCK_PHI1_CONSTRAINT)

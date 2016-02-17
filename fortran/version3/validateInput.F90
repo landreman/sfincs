@@ -166,7 +166,7 @@ subroutine validateInput()
      dTHatdpsiHats = 0
      Zs = 1
      if (masterProc) then
-        print *,"Since RHSMode=3, ignoring the requested values of Zs, nHats, THats, nu_n, and dPhiHatd*."
+        print *,"Since RHSMode=3, ignoring the requested values of Zs, nHats, THats, nu_n, Er, and dPhiHatd*."
      end if
 
      if (abs(nuPrime) < 1e-14) then
@@ -255,21 +255,54 @@ subroutine validateInput()
 
   !!!!!!!!!!!!!!!!!!!!!!!
   !!Added by AM 2015-11!!
-  if (withAdiabatic .and. masterProc) then
+  if (withAdiabatic) then
+     if (adiabaticZ == 0) then
+     	if (masterProc) then
+           print *,"Error! Charge adiabaticZ cannot be zero."
+        end if
+        stop
+     end if
+
      if (adiabaticMHat .le. 0) then
-     	print *,"Error! Mass adiabaticMHat must be positive."
+     	if (masterProc) then
+   	   print *,"Error! Mass adiabaticMHat must be positive."
+	end if
         stop
      end if
 
      if (adiabaticNHat .le. 0) then
-     	print *,"Error! Density adiabaticNHat must be positive."
+     	if (masterProc) then
+     	   print *,"Error! Density adiabaticNHat must be positive."
+	end if
 	stop
      end if
 
      if (adiabaticTHat .le. 0) then
-        print *,"Error! Temperature adiabaticTHat must be positive."
+     	if (masterProc) then
+           print *,"Error! Temperature adiabaticTHat must be positive."
+	end if
         stop
      end if
+
+     if (adiabaticZ < 0) then
+        if (flag .and. masterProc) then
+           print *,line
+           print *,line
+           print *,"**   WARNING: More than 1 species has negative charge, which is unusual."
+           print *,line
+           print *,line
+        end if
+        flag = .true.
+     end if
+
+     if (abs(adiabaticZ - floor(adiabaticZ)) > 0 .and. masterProc) then
+        print *,line
+        print *,line
+        print *,"**   WARNING: adiabaticZ is not an integer, which is unusual."
+        print *,line
+        print *,line
+     end if
+
  
   end if
   !!!!!!!!!!!!!!!!!!!!!!!
@@ -279,6 +312,31 @@ subroutine validateInput()
      chargeDensity = chargeDensity + nHats(ispecies)*Zs(ispecies)
   end do
   ! More needed here...  Ensure charge neutrality.
+
+  !!!!!!!!!!!!!!!!!!!!!!!
+  !!Added by AM 2015-11!!
+  if (withAdiabatic) then
+     chargeDensity = chargeDensity + adiabaticNHat*adiabaticZ
+  end if
+
+  if (includePhi1 .and. (abs(chargeDensity) >1d-15)) then
+     if (masterProc) then
+        print *,"Error! When running with includePhi1=.true. you must ensure that"
+        print *,"quasineutrality is fulfilled for the input species."
+     end if
+     stop
+  end if 
+
+  if (abs(chargeDensity) > 1d-15 .and. (Nspecies > 1 .or. withAdiabatic) .and. masterProc) then
+     print *,line
+     print *,line
+     print *,"**   WARNING: Your input does not fulfill quasineutrality,"
+     print *,"**            which it typically should when using several species."
+     print *,line
+     print *,line
+  end if
+  !!!!!!!!!!!!!!!!!!!!!!!
+
 
   ! physicsParameters namelist:
 
@@ -650,31 +708,45 @@ subroutine validateInput()
      print *,line
   end if
 
-  if (ExBDerivativeScheme<0) then
+  if (ExBDerivativeSchemeTheta<0) then
      if (masterProc) then
-        print *,"Error! ExBDerivativeScheme cannot be less than 0."
+        print *,"Error! ExBDerivativeSchemeTheta cannot be less than 0."
      end if
      stop
   end if
   
-  if (ExBDerivativeScheme>3) then
+  if (ExBDerivativeSchemeTheta>3) then
      if (masterProc) then
-        print *,"Error! ExBDerivativeScheme cannot be more than 3."
+        print *,"Error! ExBDerivativeSchemeTheta cannot be more than 3."
      end if
      stop
   end if
   
-  if (ExBDerivativeScheme>0 .and. preconditioner_theta>0) then
+  if (ExBDerivativeSchemeZeta<0) then
      if (masterProc) then
-        print *,"Error! The implementation of ExBDerivativeScheme>0 does not presently allow"
+        print *,"Error! ExBDerivativeSchemeZeta cannot be less than 0."
+     end if
+     stop
+  end if
+  
+  if (ExBDerivativeSchemeZeta>3) then
+     if (masterProc) then
+        print *,"Error! ExBDerivativeSchemeZeta cannot be more than 3."
+     end if
+     stop
+  end if
+  
+  if (ExBDerivativeSchemeTheta>0 .and. preconditioner_theta>0) then
+     if (masterProc) then
+        print *,"Error! The implementation of ExBDerivativeSchemeTheta>0 does not presently allow"
         print *,"       preconditioning in theta (preconditioner_theta>0)."
      end if
      stop
   end if
   
-  if (ExBDerivativeScheme>0 .and. preconditioner_zeta>0) then
+  if (ExBDerivativeSchemeZeta>0 .and. preconditioner_zeta>0) then
      if (masterProc) then
-        print *,"Error! The implementation of ExBDerivativeScheme>0 does not presently allow"
+        print *,"Error! The implementation of ExBDerivativeSchemeZeta>0 does not presently allow"
         print *,"       preconditioning in zeta (preconditioner_zeta>0)."
      end if
      stop

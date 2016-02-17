@@ -63,10 +63,10 @@ for runNum in range(len(radii)):
         if namelistLineContainsSS(line,"NErs"):
 ##            line = "!ss NErs = "+str(int(NErs[runNum]))+"  ! set by sfincsScan_5.\n" ##Commented by AM
             continue ##Added by AM
-        if namelistLineContainsSS(line,"dPhiHatd"+radiusNameForGradients+"Max"):
+        if namelistLineContainsSS(line,generalErName+"Max"):
 ##            line = "!ss dPhiHatd"+radiusNameForGradients+"Max = "+str(dPhiHatdradius_max[runNum])+"  ! set by sfincsScan_5.\n" ##Commented by AM
             continue ##Added by AM
-        if namelistLineContainsSS(line,"dPhiHatd"+radiusNameForGradients+"Min"):
+        if namelistLineContainsSS(line,generalErName+"Min"):
 ##            line = "!ss dPhiHatd"+radiusNameForGradients+"Min = "+str(dPhiHatdradius_min[runNum])+"  ! set by sfincsScan_5.\n" ##Commented by AM
             continue ##Added by AM
         # Now set fortran variables:
@@ -129,8 +129,8 @@ for runNum in range(len(radii)):
     ##Added by AM 2015-12, Write sfincsScan options##
     line = "!ss scanType = 2  ! set by sfincsScan_5.\n"
     line += "!ss NErs = "+str(int(NErs[runNum]))+"  ! set by sfincsScan_5.\n"
-    line += "!ss dPhiHatd"+radiusNameForGradients+"Max = "+str(dPhiHatdradius_max[runNum])+"  ! set by sfincsScan_5.\n"
-    line += "!ss dPhiHatd"+radiusNameForGradients+"Min = "+str(dPhiHatdradius_min[runNum])+"  ! set by sfincsScan_5.\n"
+    line += "!ss "+generalErName+"Max = "+str(generalEr_max[runNum])+"  ! set by sfincsScan_5.\n"
+    line += "!ss "+generalErName+"Min = "+str(generalEr_min[runNum])+"  ! set by sfincsScan_5.\n"
     f.write(line)
 
     f.close()

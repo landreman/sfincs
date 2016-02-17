@@ -6,8 +6,8 @@
 
 ! Parameters relevant to scanType = 2:
 !ss NErs = 5
-!ss dPhiHatdpsiNMin = -1.0d+0
-!ss dPhiHatdpsiNMax =  1.0d+0
+!ss ErMin = -1.0d+0
+!ss ErMax =  1.0d+0
 
 ! Parameters relevant to scanType = 3:
 !ss scanVariable = collisionOperator
@@ -24,7 +24,6 @@
   geometryScheme = 11
 
   inputRadialCoordinate = 3  ! rN
-  inputRadialCoordinateForGradients = 1  ! d / d psiN
   rN_wish = 0.5
 
   equilibriumFile = "../../../../equilibria/w7x-sc1.bc"
@@ -35,8 +34,6 @@
   mHats = 1
   nHats = 1.0d+0
   THats = 1.0d+0
-  dNHatdpsiNs = 1d+0
-  dTHatdpsiNs = 0
 /
 
 &physicsParameters
@@ -48,7 +45,7 @@
   ! For LHD, then, nu_n = nuPrime * 0.172714565
   nu_n = 0.172714565d+0
 
-  dPhiHatdpsiN   = 0.0d+0
+  Er = 0.0d+0
 
   collisionOperator = 0
   includeXDotTerm = .true.

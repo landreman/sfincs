@@ -25,32 +25,33 @@ elif inputRadialCoordinateForGradients==2:
     varName = "dPhiHatdrHat"
 elif inputRadialCoordinateForGradients==3:
     varName = "dPhiHatdrN"
+elif inputRadialCoordinateForGradients==4:
+    varName = "Er"
 else:
     print "Error! Invalid inputRadialCoordinateForGradients."
     exit(1)
 
-Er_min = readScanVariable(varName+"Min","float")
-Er_max = readScanVariable(varName+"Max","float")
+generalEr_min = readScanVariable(varName+"Min","float")
+generalEr_max = readScanVariable(varName+"Max","float")
 
-Ers = linspace(Er_max, Er_min, NErs)
+generalErs = linspace(generalEr_max, generalEr_min, NErs)
 
 print "Radial electric field is specified using "+varName
-print "Here are the "+str(len(Ers))+" values we will use for this quantity:"
-print Ers
+print "Here are the "+str(len(generalErs))+" values we will use for this quantity:"
+print generalErs
 
-#directories = [varName+str(Er) for Er in Ers]
-directories = [varName+"{:.4g}".format(Er) for Er in Ers]
+directories = [varName+"{:.4g}".format(generalEr) for generalEr in generalErs]
 
-Ers_copy = list(Ers)
+generalErs_copy = list(generalErs)
 directories_copy = list(directories)
 
 # See if any runs with the same description already exist.
 # This happens if you re-run sfincsScan more than once in the same directory.
-for i in range(len(Ers_copy)):
+for i in range(len(generalErs_copy)):
     directory = directories_copy[i]
     if os.path.exists(directory):
         print "Warning: directory "+directory+" already exists, so skipping this run."
-        Ers.remove(Ers_copy[i])
+        generalErs.remove(generalErs_copy[i])
         directories.remove(directory)
 
 print
@@ -59,7 +60,7 @@ print directories
 
 if waitBeforeSubmitting:
     while True:
-        proceed=raw_input("Should I go ahead and launch these "+str(len(Ers))+" jobs? [y/n] ")
+        proceed=raw_input("Should I go ahead and launch these "+str(len(generalErs))+" jobs? [y/n] ")
         if proceed=="y" or proceed=="n":
             break
         print "You must enter either y or n."
@@ -73,9 +74,9 @@ print "launching jobs..."
 with open(jobFilename, 'r') as f:
     jobFile = f.readlines()
 
-for runNum in range(len(Ers)):
+for runNum in range(len(generalErs)):
     directory = directories[runNum]
-    print "Beginning to handle job "+str(runNum+1)+" of "+str(len(Ers))+": "+directory
+    print "Beginning to handle job "+str(runNum+1)+" of "+str(len(generalErs))+": "+directory
 
     # To be extra safe, check again to see if the directory exists.
     if os.path.exists(directory):
@@ -111,7 +112,7 @@ for runNum in range(len(Ers)):
 
         ##Added by AM 2015-12##
         if line.strip().find("&physicsParameters") == 0 :
-            line += "  "+varName+" = "+str(Ers[runNum])+" ! Set by sfincsScan_2.\n"
+            line += "  "+varName+" = "+str(generalErs[runNum])+" ! Set by sfincsScan_2.\n"
         #######################
 
         f.write(line)

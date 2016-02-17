@@ -6,8 +6,8 @@
 
 !   Settings specific to scanType = 2:
 !ss NErs = 5
-!ss dPhiHatdpsiNMin = -1.0d+0
-!ss dPhiHatdpsiNMax =  1.0d+0
+!ss ErMin = -1.0d+0
+!ss ErMax =  1.0d+0
 
 !   Settings specific to scanType = 3:
 !ss scanVariable = min_Bmn_to_load
@@ -17,7 +17,6 @@
 !ss scanVariableScale = log
 
 &general
-  RHSMode = 1
   saveMatricesAndVectorsInBinary = .t.
 /
 
@@ -25,7 +24,6 @@
   geometryScheme = 1   ! General analytic 3-helicity model
 
   inputRadialCoordinate = 3    ! rN
-  inputRadialCoordinateForGradients = 1   ! d / d psiN
   rN_wish = 0.3
 
   B0OverBBar = 1.0d+0
@@ -48,8 +46,8 @@
   mHats = 1
   nHats = 1.0d+0
   THats = 0.5d+0
-  dNHatdpsiNs = -1.0d+0
-  dTHatdpsiNs = -0.5d+0
+  dNHatdrHats = -6.0d+0
+  dTHatdrHats = -3.0d+0
 /
 
 &physicsParameters
@@ -57,7 +55,7 @@
   alpha = 1.0d+0
   nu_n = 8.4774d-3
 
-  dPhiHatdpsiN   = 5.0d+0
+  Er = -30.0
 
   collisionOperator = 0
 

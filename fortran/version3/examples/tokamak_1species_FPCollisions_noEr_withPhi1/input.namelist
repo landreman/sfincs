@@ -6,8 +6,8 @@
 
 ! Settings specific to scanType = 2:
 !ss NErs = 5
-!ss dPhiHatdpsiNMin = -1.0d+0
-!ss dPhiHatdpsiNMax =  1.0d+0
+!ss ErMin = -1.0d+0
+!ss ErMax =  1.0d+0
 
 ! Settings specific to scanType = 3:
 !ss scanVariable = iota
@@ -18,14 +18,12 @@
 
 
 &general
-  RHSMode = 1
   saveMatricesAndVectorsInBinary = .t.
 /
 
 &geometryParameters
 
-  inputRadialCoordinate = 3
-  inputRadialCoordinateForGradients = 1
+  inputRadialCoordinate = 3  ! rN
   rN_wish = 0.3
 
   geometryScheme = 1
@@ -47,8 +45,8 @@
   mHats = 1
   nHats = 1.0d+0
   THats = 0.5d+0
-  dNHatdpsiNs = -1.0d+0
-  dTHatdpsiNs = -0.5d+0
+  dNHatdrHats = -6.0d+0
+  dTHatdrHats = -3.0d+0
 /
 
 &physicsParameters
@@ -56,7 +54,7 @@
   alpha = 1.0d+0
   nu_n = 8.4774d-3
 
-  dPhiHatdpsiN   = 0.0d+0
+  Er   = 0.0d+0
 
   collisionOperator = 0
 

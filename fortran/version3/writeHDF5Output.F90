@@ -182,7 +182,8 @@ contains
        call writeHDF5Field("geometryScheme", geometryScheme, "")
        call writeHDF5Field("thetaDerivativeScheme", thetaDerivativeScheme, "")
        call writeHDF5Field("zetaDerivativeScheme", zetaDerivativeScheme, "")
-       call writeHDF5Field("ExBDerivativeScheme", ExBDerivativeScheme, "")
+       call writeHDF5Field("ExBDerivativeSchemeTheta", ExBDerivativeSchemeTheta, "")
+       call writeHDF5Field("ExBDerivativeSchemeZeta", ExBDerivativeSchemeZeta, "")
        call writeHDF5Field("magneticDriftDerivativeScheme", magneticDriftDerivativeScheme, "")
        call writeHDF5Field("xGridScheme", xGridScheme, "")
        call writeHDF5Field("xGrid_k", xGrid_k, "Exponent of x in the orthogonality relation for the speed polynomials")
@@ -284,10 +285,23 @@ contains
        call writeHDF5Field("THats", THats, dspaceIDForSpecies, dimForSpecies, "Average temperature of each species, in units of TBar.")
        call writeHDF5Field("nHats", nHats, dspaceIDForSpecies, dimForSpecies, "Flux surface averaged density of each species, in units of nBar.")
 
+
+       !!Added by AM 2016-01!!
+       call writeHDF5Field("withAdiabatic", withAdiabatic, "")
+       if (withAdiabatic) then
+       	  call writeHDF5Field("adiabaticZ", adiabaticZ, "Charge of adiabatic species, in units of the unit charge e (which is usually the proton charge.)")
+	  call writeHDF5Field("adiabaticMHat", adiabaticMHat, "Mass of adiabatic species, in units of mBar.")
+	  call writeHDF5Field("adiabaticNHat", adiabaticNHat, "Flux surface averaged density of adiabatic species, in units of nBar.")
+	  call writeHDF5Field("adiabaticTHat", adiabaticTHat, "Average temperature of adiabatic species, in units of TBar.")
+       end if
+       !!!!!!!!!!!!!!!!!!!!!!!
+
        call writeHDF5Field("dPhiHatdpsiHat", dPhiHatdpsiHat, "")
        call writeHDF5Field("dPhiHatdpsiN", dPhiHatdpsiN, "")
        call writeHDF5Field("dPhiHatdrHat", dPhiHatdrHat, "")
        call writeHDF5Field("dPhiHatdrN", dPhiHatdrN, "")
+       call writeHDF5Field("Er", Er, "Radial electric field, defined by -dPhiHatdrHat. Here, PhiHat is the electrostatic potential in units of PhiBar, and rHat is the square root"//&
+            " of the toroidal magnetic flux, scaled by a constant so rHat=0 on the magnetic axis and rHat=aHat at the last closed flux surface.")
 
        call writeHDF5Field("dTHatdpsiHat", dTHatdpsiHats, dspaceIDForSpecies, dimForSpecies, "")
        call writeHDF5Field("dTHatdpsiN", dTHatdpsiNs, dspaceIDForSpecies, dimForSpecies, "")

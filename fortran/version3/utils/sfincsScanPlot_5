@@ -63,6 +63,25 @@ else:
     print "Error! Invalid inputRadialCoordinate."
     exit(1)
 
+#######################
+inputRadialCoordinateForGradients = readVariable("inputRadialCoordinateForGradients","int", False) 
+if inputRadialCoordinateForGradients == None :
+   inputRadialCoordinateForGradients = readDefault("inputRadialCoordinateForGradients","int")
+
+if inputRadialCoordinateForGradients==0:
+    generalErName = "dPhiHatdpsiHat"
+elif inputRadialCoordinateForGradients==1:
+    generalErName = "dPhiHatdpsiN"
+elif inputRadialCoordinateForGradients==2:
+    generalErName = "dPhiHatdrHat"
+elif inputRadialCoordinateForGradients==3:
+    generalErName = "dPhiHatdrN"
+elif inputRadialCoordinateForGradients==4:
+    generalErName = "Er"
+else:
+    print "Error! Invalid inputRadialCoordinateForGradients."
+    exit(1)
+
 originalDirectory = os.getcwd()
 
 # Get a list of the subdirectories:                                                                        
@@ -133,7 +152,7 @@ if Nradii<2:
     print "Since fewer than 2 radii are available, a plot to summarize results vs radius will not be generated."
     exit(0)
 
-ylabels = ["Ambipolar dPhiHatd"+radiusName] + data["ylabels"]
+ylabels = ["Ambipolar "+generalErName] + data["ylabels"]
 
 # ***************************************************
 # Plot actual vs "wish" radii
