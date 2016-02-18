@@ -635,7 +635,21 @@ Moreover,
 \sum_s  \frac{Z_s^2 \alpha}{\hat{T}_s} \hat{n}_{s0} \exp \left(- \frac{Z_s \alpha \hat{\Phi}_1}{\hat{T}_s}  \right)}
 \end{equation}
 will also be implemented in populateMatrix.F90 when 'whichMatrix==0' or 'whichMatrix==1'. 
+\\
 
+\noindent Note that, since the distribution function in SFINCS is stored as an expansion in Legendre polynomials in $\xi$
+\[
+\hat{f}_{s 1}\left(\theta, \zeta, x, \xi\right) = \sum_{l=0}^{N_l} \hat{f}_{s 1}^{\left(l\right)}\left(\theta, \zeta, x\right) P_l \left(\xi\right),
+\]
+and using that
+\[
+\int_{-1}^1 P_m\left(\xi\right) P_n\left(\xi\right) = \frac{2}{2n + 1} \delta_{m,n}
+\]
+the integration over $\xi$ in Eq.~\ref{eq:QuasineutralitySFINCS} becomes
+\begin{equation}
+  \label{eq:xiIntegration}
+  \int_{-1}^1 d\xi \, f_{s 1} = \int_{-1}^1 d\xi \, \left(\sum_{l=0}^{N_l} \hat{f}_{s 1}^{\left(l\right)}\left(\theta, \zeta, x\right) P_l \left(\xi\right)\right) \cdot P_0 \left(\xi\right) = 2 \cdot  \hat{f}_{s 1}^{\left(0\right)}\left(\theta, \zeta, x\right).
+\end{equation}
 
 \paragraph*{\textbf{Files to change:}}
 \begin{verbatim}
