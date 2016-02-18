@@ -660,13 +660,13 @@ validateInput.F90
 
 \subsubsection*{EUTERPE quasi-neutrality equation, quasineutralityOption = 2}
 For the EUTERPE equations, the code must be run with 
-an adiabatic species and one kinetic species only. 
+an adiabatic species and only one kinetic species (the first) is considered in the quasi-neutrality equation. 
 We need to make sure that the input densities fulfill quasi-neutrality:
 \begin{equation}
   \label{eq:QuasiNeutralityInputFull}
    Z_i \hat{n}_{i} + Z_a \hat{n}_{a} = 0
 \end{equation}
-(here species $i$ would be the kinetic species and $a$ the adiabatic).\\
+(here species $i$ would be the first kinetic species and $a$ the adiabatic).\\
 Again we use 
 \begin{equation}
 n_s = n_{s 0} \left(\psi\right) \, \exp \left(- q_s \Phi_1 / T_s \right) + n_{s 1},
