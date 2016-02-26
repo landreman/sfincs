@@ -76,6 +76,12 @@ module globalVariables
   PetscScalar, dimension(maxNumSpecies) :: dNHatdrHats,   dTHatdrHats
   PetscScalar, dimension(maxNumSpecies) :: dNHatdrNs,     dTHatdrNs
 
+  !!Added by AM 2016-02!!
+  PetscScalar :: adiabaticZ = -1.0, adiabaticMHat = 5.446170214d-4, adiabaticNHat = 1.0, adiabaticTHat = 1.0
+  logical :: withAdiabatic = .false.
+  !!!!!!!!!!!!!!!!!!!!!!!
+
+
   ! ********************************************************
   ! ********************************************************
   !
@@ -84,7 +90,7 @@ module globalVariables
   ! ********************************************************
   ! ********************************************************
 
-  logical :: nonlinear = .false.
+!!  logical :: nonlinear = .false. !!Commented by AM 2016-02
   PetscScalar :: Delta = 4.5694d-3
   PetscScalar :: alpha = 1.0
   PetscScalar :: nu_n = 8.330d-3
@@ -107,6 +113,10 @@ module globalVariables
   PetscScalar :: nuPrime = 1, EStar = 0
 
   integer :: magneticDriftScheme = 0
+
+  !!Added by AM 2016-02!!
+  integer :: quasineutralityOption = 1
+  !!!!!!!!!!!!!!!!!!!!!!!
 
   ! ********************************************************
   ! ********************************************************
@@ -343,11 +353,6 @@ module globalVariables
   PetscScalar, dimension(:,:), allocatable :: transportMatrix
 
   Vec :: f0
-
-  !!Added by AM 2015-11!!
-  PetscScalar :: adiabaticZ = speciesNotInitialized, adiabaticMHat = speciesNotInitialized, adiabaticNHat = speciesNotInitialized, adiabaticTHat = speciesNotInitialized
-  logical :: withAdiabatic = .false.
-  !!!!!!!!!!!!!!!!!!!!!!!
 
 
   ! ********************************************************

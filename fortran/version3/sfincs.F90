@@ -64,8 +64,20 @@ program sfincs
      print *,"Delta (rho* at reference parameters)          = ", Delta
      print *,"alpha (e Phi / T at reference parameters)     = ", alpha
      print *,"nu_n (collisionality at reference parameters) = ", nu_n
-     if (nonlinear) then
+     !!Commented by AM 2016-02!!
+     !!if (nonlinear) then
+     !!!!!!!!!!!!!!!!!!!!!!!!!!!
+     !!Added by AM 2016-02!!
+     if (includePhi1) then
+     !!!!!!!!!!!!!!!!!!!!!!
         print *,"Nonlinear run"
+        !!Added by AM 2016-02!!
+        if (quasineutralityOption == 1) then
+           print *,"Using full quasi-neutrality equation"
+        else
+           print *,"Using EUTERPE quasi-neutrality equation"
+        end if
+        !!!!!!!!!!!!!!!!!!!!!!
      else
         print *,"Linear run"
      end if

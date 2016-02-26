@@ -48,10 +48,17 @@ contains
 
     namelist / physicsParameters / Delta, alpha, nu_n, EParallelHat, &
          collisionOperator, constraintScheme, includeXDotTerm, &
-         includeElectricFieldTermInXiDot, useDKESExBDrift, include_fDivVE_term, nonlinear, &
+!!         includeElectricFieldTermInXiDot, useDKESExBDrift, include_fDivVE_term, nonlinear, & !!Commented by AM 2016-02
+         includeElectricFieldTermInXiDot, useDKESExBDrift, include_fDivVE_term, & !!Added by AM 2016-02
          dPhiHatdpsiHat, dPhiHatdpsiN, dPhiHatdrHat, dPhiHatdrN, Er, &
          includeTemperatureEquilibrationTerm, includePhi1, &
-         nuPrime, EStar, magneticDriftScheme, includeRadialExBDrive
+         !!Commented by AM 2016-02!!
+         !!nuPrime, EStar, magneticDriftScheme, includeRadialExBDrive
+	 !!!!!!!!!!!!!!!!!!!!!!!!!!!
+	 !!Added by AM 2016-02!!         
+         nuPrime, EStar, magneticDriftScheme, includeRadialExBDrive, &
+         quasineutralityOption
+         !!!!!!!!!!!!!!!!!!!!!!
 
     namelist / resolutionParameters / forceOddNthetaAndNzeta, &
          Ntheta, &
@@ -88,14 +95,7 @@ contains
     dTHatdrHats = speciesNotInitialized
     dNHatdrNs = speciesNotInitialized
     dTHatdrNs = speciesNotInitialized
-
-    !!!!!!!!!!!!!!!!!!!!!!!
-    !!Added by AM 2015-11!!
-    !!adiabaticZ = speciesNotInitialized
-    !!adiabaticMHat = speciesNotInitialized
-    !!adiabaticNHat = speciesNotInitialized
-    !!adiabaticTHat = speciesNotInitialized
-    !!!!!!!!!!!!!!!!!!!!!!!	
+	
 
     export_f_theta = speciesNotInitialized
     export_f_zeta = speciesNotInitialized
@@ -119,14 +119,6 @@ contains
     export_f_zeta(1) = zero
     export_f_x(1) = one
     export_f_xi(1) = zero
-
-    !!!!!!!!!!!!!!!!!!!!!!!
-    !!Added by AM 2015-11!!
-    !!adiabaticZ(1) = one
-    !!adiabaticMHat(1) = one 
-    !!adiabaticNHat(1) = one
-    !!adiabaticTHat(1) = one
-    !!!!!!!!!!!!!!!!!!!!!!!
 
 
     filename = trim(inputFilename)

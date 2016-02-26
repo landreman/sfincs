@@ -9,7 +9,8 @@ subroutine preallocateMatrix(matrix, whichMatrix)
 
   use petscmat
   use globalVariables, only: Nx, Nxi, Ntheta, Nzeta, Nspecies, matrixSize, includePhi1, &
-       constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, nonlinear, &
+       !!constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, nonlinear, & !!Commented by AM 2016-02
+       constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, & !!Added by AM 2016-02
        thetaDerivativeScheme, zetaDerivativeScheme, includeRadialExBDrive
   use indices
 
@@ -71,7 +72,8 @@ subroutine preallocateMatrix(matrix, whichMatrix)
        + 4 &               ! d Phi_1 / d theta term at L=0
        + 4                 ! d Phi_1 / d zeta term at L=0
   end if
-  if (nonlinear) then
+  !!if (nonlinear) then !!Commented by AM 2016-02
+  if (includePhi1) then !!Added by AM 2016-02
      tempInt1 = tempInt1 + 2*Nx -2 ! Nonlinear term is dense in x with ell = L +/- 1, which we have not yet counted. Subtract 2 for the diagonal we already counted.
   end if
   ! Note: we do not need extra nonzeros for the d/dxi terms or for the diagonal, since these have already been accounted for in the ddx and ddtheta parts.

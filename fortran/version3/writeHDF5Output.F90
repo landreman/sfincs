@@ -296,6 +296,12 @@ contains
        end if
        !!!!!!!!!!!!!!!!!!!!!!!
 
+       !!Added by AM 2016-02!!
+       if (includePhi1) then
+          call writeHDF5Field("quasineutralityOption", quasineutralityOption, "")
+       end if
+       !!!!!!!!!!!!!!!!!!!!!!!
+
        call writeHDF5Field("dPhiHatdpsiHat", dPhiHatdpsiHat, "")
        call writeHDF5Field("dPhiHatdpsiN", dPhiHatdpsiN, "")
        call writeHDF5Field("dPhiHatdrHat", dPhiHatdrHat, "")

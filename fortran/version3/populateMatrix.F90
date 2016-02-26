@@ -21,7 +21,7 @@
 
     Mat :: matrix
     integer, intent(in) :: whichMatrix
-    Vec :: stateVec ! stateVec is ignored when nonlinear=false or when evaluating the residual.
+    Vec :: stateVec ! stateVec is ignored when includePhi1=false or when evaluating the residual.
 
     ! Allowed values for whichMatrix:
     ! 0 = preconditioner for Jacobian
@@ -96,7 +96,7 @@
     case (3)
        ! The matrix which is multiplied by f1 when evaluating the residual.
        ! This matrix is quite similar to the Jacobian matrix (whichMatrix=1), since most terms in the system of equations are linear.
-       ! However there are a few differences related to the nonlinear term.
+       ! However there are a few differences related to the nonlinear terms.
        whichMatrixName = "residual f1"
     case default
        if (masterProc) then
@@ -159,7 +159,8 @@
        end if
     end if
 
-    useStateVec = (nonlinear .and. (whichMatrix==0 .or. whichMatrix==1))
+!!    useStateVec = (nonlinear .and. (whichMatrix==0 .or. whichMatrix==1)) !!Commented by AM 2016-02
+    useStateVec = (includePhi1 .and. (whichMatrix==0 .or. whichMatrix==1)) !!Added by AM 2016-02
     if (useStateVec) then
        ! We need delta f to evaluate the Jacobian, so send a copy to every proc:
        call VecScatterCreateToAll(stateVec, vecScatterContext, vecOnEveryProc, ierr)
@@ -169,7 +170,8 @@
     end if
 
     ! In nonlinear runs, the Jacobian and residual require Phi1:
-    if (nonlinear .and. (whichMatrix .ne. 2)) then
+    !!if (nonlinear .and. (whichMatrix .ne. 2)) then !!Commented by AM 2016-02
+    if (includePhi1 .and. (whichMatrix .ne. 2)) then !!Added by AM 2016-02
        call extractPhi1(stateVec)
     end if
 
@@ -1035,10 +1037,87 @@
           end do
        end if
 
+
+
        ! *********************************************************
+       ! SECTION ADDED BY AM 2016-02
+       ! Add terms in drift-kinetic equation that contain linear operator
+       ! acting on Phi1 (but not f1), except the radial ExB drive term which
+       ! is added below. These terms are the same in the residual and Jacobian.
+       !**********************************************************
+       
+       if ((whichMatrix .ne. 2) .and. includePhi1 .and. includePhi1inKineticEquation) then
+          L=0
+          do ix = ixMin,Nx
+
+             ! d Phi_1 / d theta term:
+             itheta = -1 ! Just so a runtime error occurs if I use itheta by mistake
+             do ithetaRow = ithetaMin, ithetaMax
+                do izeta = izetaMin, izetaMax
+                   rowIndex = getIndex(ispecies, ix, L+1, ithetaRow, izeta, BLOCK_F)
+
+!                   factor = -alpha*Delta*DHat(ithetaRow,izeta)*BHat_sub_zeta(ithetaRow,izeta) &
+!                        /(two*BHat(ithetaRow,izeta)*BHat(ithetaRow,izeta)) &
+!                        * nHat * (mHat*sqrtMHat)/(THat*sqrtTHat*pi*sqrtpi) * expx2(ix) & ! This line is f_M
+!                        * (dNHatdpsiHats(ispecies)/nHat + (x2(ix)-3/two)*dTHatdpsiHats(ispecies)/THat)
+
+                   !nHat = nHats(ispecies)
+                   !THat = THats(ispecies)
+                   !mHat = mHats(ispecies)
+                   !Z = Zs(ispecies)
+                   !sqrtTHat = sqrt(THat)
+                   !sqrtMHat = sqrt(mHat)
+                   factor = - alpha*alpha*Delta*DHat(ithetaRow,izeta)/(two*pi*sqrtpi*BHat(ithetaRow,izeta)*BHat(ithetaRow,izeta)) &
+                        * Z * nHat*mHat*sqrtMHat/(THat*THat*sqrtTHat) &
+                        * exp(-Z*alpha*Phi1Hat(ithetaRow,izeta)/THat)*expx2(ix)*BHat_sub_zeta(ithetaRow,izeta) &
+                        * (dPhiHatdpsiHat + Phi1Hat(ithetaRow,izeta)*dTHatdpsiHats(ispecies)/THat)
+                   
+                   
+                   do ithetaCol = 1,Ntheta
+                      colIndex = getIndex(1,1,1,ithetaCol, izeta, BLOCK_QN)
+                      call MatSetValueSparse(matrix, rowIndex, colIndex,&
+                           factor*ddtheta(ithetaRow, ithetaCol), ADD_VALUES, ierr)
+                   end do
+                end do
+             end do
+
+             ! d Phi_1 / d zeta term:
+             izeta = -1 ! Just so a runtime error occurs if I use itheta by mistake
+             ithetaRow = -1 ! Just so a runtime error occurs if I use itheta by mistake
+             ithetaCol = -1 ! Just so a runtime error occurs if I use itheta by mistake
+             do itheta = ithetaMin, ithetaMax
+                do izetaRow = izetaMin, izetaMax
+                   rowIndex = getIndex(ispecies, ix, L+1, itheta, izetaRow, BLOCK_F)
+
+                   factor = alpha*Delta*DHat(ithetaRow,izeta)*BHat_sub_theta(ithetaRow,izeta) &
+                        /(two*BHat(ithetaRow,izeta)*BHat(ithetaRow,izeta)) &
+                        * nHat * (mHat*sqrtMHat)/(THat*sqrtTHat*pi*sqrtpi) * expx2(ix) & ! This line is f_M
+                        * (dNHatdpsiHats(ispecies)/nHat + (x2(ix)-3/two)*dTHatdpsiHats(ispecies)/THat)
+
+!!WORKING HERE                   
+!!                   factor =
+                   
+
+                   do izetaCol = 1,Nzeta
+                      colIndex = getIndex(1,1,1,itheta, izetaCol, BLOCK_QN)
+                      call MatSetValueSparse(matrix, rowIndex, colIndex,&
+                           factor*ddzeta(izetaRow, izetaCol), ADD_VALUES, ierr)
+                   end do
+                end do
+             end do
+
+          end do
+       end if
+
+
+
+
+       ! *********************************************************
+       ! SECTION MODIFIED BY AM 2016-02/03
        ! Add the radial ExB drive term:
        ! (v_E dot grad psi) f_M [(1/n)(dn/dpsi) + (x^2 - 3/2)(1/T)(dT/dpsi)]
-       ! This is the new linear term considered by Garcia-Regana et al PPCF (2013).
+       ! This is the new linear term considered by Garcia-Regana et al PPCF (2013),
+       ! but it is now multiplied by exp(-Ze Phi1 / T) according to Garcia-Regana et al arxiv:1501.03967 (2015)
        ! *********************************************************
 
        if ((whichMatrix .ne. 2) .and. includeRadialExBDrive) then
@@ -1100,7 +1179,8 @@
        ! However, we need not add elements which are 0 due to ddtheta=0 as opposed to because Phi1=0, since such elements will remain 0 at every iteration of SNES.
 
        !if (nonlinear .and. (whichMatrix .ne. 2)) then
-       if (nonlinear .and. (whichMatrix == 1 .or. whichMatrix == 3 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then
+       !!if (nonlinear .and. (whichMatrix == 1 .or. whichMatrix == 3 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Commented by AM 2016-02
+       if (includePhi1 .and. (whichMatrix == 1 .or. whichMatrix == 3 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Added by AM 2016-02
 
           !print *,"@@@@@@ ",myRank," max(abs(dPhi1Hatdtheta)): ",maxval(abs(dPhi1Hatdtheta)),maxval(abs(dPhi1Hatdzeta))
 
@@ -1181,7 +1261,8 @@
        ! in the first iteration (due to delta f = 0). The reason is that PETSc will re-use the pattern of nonzeros from the first iteration in subsequent iterations.
        ! However, we need not add elements which are 0 due to ddtheta=0 as opposed to because delta f = 0, since such elements will remain 0 at every iteration of SNES.
 
-       if (nonlinear .and. (whichMatrix==1 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then
+       !!if (nonlinear .and. (whichMatrix==1 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Commented by AM 2016-02
+       if (includePhi1 .and. (whichMatrix==1 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Added by AM 2016-02
        !if (nonlinear .and. (whichMatrix==1)) then
        !if (nonlinear .and. (whichMatrix==0 .or. whichMatrix==1)) then
           allocate(tempVector1(Nx))
@@ -1937,26 +2018,40 @@
           do izeta = izetaMin,izetaMax
              rowIndex = getIndex(1, 1, 1, itheta, izeta, BLOCK_QN)
 
-             ! Add the charge density of each species:
+             ! Add the charge density of the kinetic species (the part of the residual/Jacobian related to f1):
              do ispecies = 1,Nspecies
-                speciesFactor = Zs(ispecies)*THats(ispecies)/mHats(ispecies) &
-                     * sqrt(THats(ispecies)/mHats(ispecies))
+                !!speciesFactor = Zs(ispecies)*THats(ispecies)/mHats(ispecies) & !!Commented by AM 2016-02
+                !!     * sqrt(THats(ispecies)/mHats(ispecies)) !!Commented by AM 2016-02
+                speciesFactor = four*pi*Zs(ispecies)*THats(ispecies)/mHats(ispecies) & !!Added by AM 2016-02 !!The factor 4pi comes from velocity integration over xi.
+                     * sqrt(THats(ispecies)/mHats(ispecies)) !!Added by AM 2016-02
+
                 do ix = 1,Nx
                    colIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
                    call MatSetValueSparse(matrix, rowIndex, colIndex, &
                         speciesFactor*x2(ix)*xWeights(ix), ADD_VALUES, ierr)
                 end do
+
+                !!Added by AM 2016-02!!
+                if (quasineutralityOption == 2) then
+                   exit !!If running with EUTERPE equations we only use the first kinetic species in quasi-neutrality.
+                end if
+                !!!!!!!!!!!!!!!!!!!!!!!
+
              end do
+             !!!!!!!!!!!!!!!!!!!!!!!
+             !!Added by AM 2016-02!!
 
-
-	     !!!!!!!!!!!!!!!!!!!!!!!
-  	     !!Added by AM 2015-11!!
-	     !!CONTINUE IMPLEMENTATION!!
-  	     if (withAdiabatic) then
-	     	colIndex = getIndex(1, 1, 1, itheta, izeta, BLOCK_QN)
-		speciesFactor = adiabaticZ*adiabaticTHat/adiabaticMHat &
-                     * sqrt(adiabaticTHat/adiabaticMHat)
-	     end if
+             !Add the part of the residual/Jacobian related to Phi1
+             colIndex = getIndex(1, 1, 1, itheta, izeta, BLOCK_QN)
+             if (quasineutralityOption == 1 .and. (whichMatrix == 0 .or. whichMatrix == 1)) then !!Only add in Jacobian matrix
+                do ispecies = 1,Nspecies
+                   call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                        - alpha * Zs(ispecies) * Zs(ispecies) * NHats(ispecies) * exp (- Zs(ispecies)* alpha * Phi1Hat(itheta,izeta) / THats(ispecies)) / THats(ispecies), ADD_VALUES, ierr)
+                end do
+             else if (quasineutralityOption == 2 .and. withAdiabatic .and. Nspecies > 0) then
+                call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                     - alpha * (Zs(1)*Zs(1)*NHats(1)/THats(1) + adiabaticZ*adiabaticZ*adiabaticNHat/adiabaticTHat), ADD_VALUES, ierr)                
+             end if
 	     !!!!!!!!!!!!!!!!!!!!!!!
 
              ! Add the Lagrange multiplier lambda:
