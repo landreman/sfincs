@@ -367,12 +367,20 @@ The second term in Eq.~\ref{eq:DKresidualNewTermRm2} we rewrite in SFINCS units 
 \textcolor{red}{
 \left(\exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \frac{q}{T} \Phi_1 \frac{1}{T} \frac{\p T}{\p \psi} \bm{v}_d \cdot \na \psi\right)_{\mathrm{SFINCS}} = } \\ \textcolor{red}{ =
 \frac{\alpha \Delta}{3 \pi^{3/2}} \frac{\hat{n} \hat{m}^{3/2} \hat{D}}{\hat{T}^{5/2} \hat{B}^3 } \hat{\Phi}_1 \frac{\p \hat{T}}{\p \hat{\psi}}
-x^2 \left(P_2\left(\xi\right) + 2\right)
+x^2 \left(P_2\left(\xi\right) + 2 P_0\right)
 \exp\left(-x^2\right) \exp \left(- \frac{Z \alpha \hat{\Phi}_1}{\hat{T}}\right) \left[\hat{B}_{\theta} \frac{\p \hat{B}}{\p \zeta} - \hat{B}_{\zeta} \frac{\p \hat{B}}{\p \theta}\right]. 
 }
 \label{eq:Rmterm2}
 \end{multline}
-
+The first term in Eq.~\ref{eq:DKresidualNewTermRm2} becomes
+\begin{multline}
+\left(\exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \left[\frac{1}{n} \frac{\p n}{\p \psi} + \frac{q}{T} \frac{\p \Phi_0}{\p \psi} + \left(x^2 - \frac{3}{2}\right) \frac{1}{T} \frac{\p T}{\p \psi}\right] \bm{v}_d \cdot \na \psi \right)_{\mathrm{SFINCS}} = \\ = \frac{1}{Z}
+\frac{\Delta}{3 \pi^{3/2}} \frac{\hat{n} \hat{m}^{3/2} \hat{D}}{\hat{T}^{1/2} \hat{B}^3 }
+x^2 \left(P_2\left(\xi\right) + 2 P_0\right)
+\exp\left(-x^2\right) \exp \left(- \frac{Z \alpha \hat{\Phi}_1}{\hat{T}}\right) \left[\hat{B}_{\theta} \frac{\p \hat{B}}{\p \zeta} - \hat{B}_{\zeta} \frac{\p \hat{B}}{\p \theta}\right] \cdot \\ \cdot
+\left[\frac{1}{\hat{n}} \frac{\p \hat{n}}{\p \hat{\psi}} + \frac{Z \alpha}{\hat{T}} \frac{\p \hat{\Phi}_0}{\p \hat{\psi}} + \left(x^2 - \frac{3}{2}\right) \frac{1}{\hat{T}} \frac{\p \hat{T}}{\p \hat{\psi}}\right].
+\label{eq:Rmterm1}
+\end{multline}
 
 
 \paragraph*{$\bm{R_E}$}
@@ -409,6 +417,16 @@ The third term in Eq.~\ref{eq:DKresidualNewTermRE2} we rewrite in SFINCS units (
 \exp\left(-x^2\right) \exp \left(- \frac{Z \alpha \hat{\Phi}_1}{\hat{T}}\right) \left[\hat{B}_{\theta} \frac{\p}{\p \zeta} - \hat{B}_{\zeta} \frac{\p}{\p \theta}\right] \hat{\Phi}_1.
 }
 \label{eq:REterm3}
+\end{multline}
+The first term in Eq.~\ref{eq:DKresidualNewTermRE2} in SFINCS units (also considering the factor Eq.~\ref{eq:DimensionlessFactor}) is 
+\begin{multline}
+\textcolor{blue}{ \left(
+\exp \left(- \frac{q \Phi_1}{T}  \right) f_{M} \left[\frac{1}{n} \frac{\p n}{\p \psi}  + \left(x^2 - \frac{3}{2} \right) \frac{1}{T} \frac{\p T}{\p \psi}\right] \frac{1}{B^2} D \left[B_\theta \frac{\p }{\p \zeta} - B_\zeta \frac{\p }{\p \theta}\right] \Phi_1\right)_{\mathrm{SFINCS}} } = \\ = 
+\textcolor{blue}{
+\frac{\alpha \Delta}{2 \pi^{3/2}} \frac{\hat{n} \hat{m}^{3/2} \hat{D}}{\hat{T}^{3/2} \hat{B}^2 }  \left[\frac{1}{\hat{n}} \frac{\p \hat{n}}{\p \hat{\psi}}  + \left(x^2 - \frac{3}{2} \right) \frac{1}{\hat{T}} \frac{\p \hat{T}}{\p \hat{\psi}}\right]
+\exp\left(-x^2\right) \exp \left(- \frac{Z \alpha \hat{\Phi}_1}{\hat{T}}\right) \left[\hat{B}_{\theta} \frac{\p}{\p \zeta} - \hat{B}_{\zeta} \frac{\p}{\p \theta}\right] \hat{\Phi}_1.
+}
+\label{eq:REterm1}
 \end{multline}
 
 \paragraph*{\textbf{Files to change:}}
