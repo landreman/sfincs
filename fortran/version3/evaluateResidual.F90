@@ -18,7 +18,8 @@
     PetscErrorCode :: ierr
     integer :: userContext(*)
     Vec :: rhs
-    PetscScalar :: scalar, xPartOfRHS, factor
+!!    PetscScalar :: scalar, xPartOfRHS, factor !!Commented by AM 2016-03
+    PetscScalar :: scalar, xPartOfRHS, factor, xPartOfRHS2 !!Added by AM 2016-03
     integer :: ix, L, itheta, izeta, ispecies, index
     PetscScalar :: THat, mHat, sqrtTHat, sqrtmHat, dfMdx
     Mat :: residualMatrix
@@ -62,7 +63,9 @@
 
     ! --------------------------------------------------------------------------------
     ! --------------------------------------------------------------------------------
+    ! MODIFIED BY AM 2016-02/03
     ! Next, evaluate the terms (other than C[f_M]) that are independent of both f_1 and Phi_1:
+    ! THESE TERMS USED TO BE INDEPENDENT OF PHI1, BUT NOT ANYMORE
     ! --------------------------------------------------------------------------------
     ! --------------------------------------------------------------------------------
 
@@ -80,6 +83,12 @@
     else
        ixMin = 1
     end if
+
+    !!Added by AM 2016-03!!
+    if (includePhi1) then
+       call extractPhi1(stateVec)
+    end if
+    !!!!!!!!!!!!!!!!!!!!!!!
 
     ! First add the terms arising from \dot{\psi} df_M/d\psi
     x2 = x*x
@@ -100,6 +109,14 @@
                + alpha*Zs(ispecies)/THats(ispecies)*dPhiHatdpsiHatToUseInRHS &
                + (x2(ix) - three/two)*dTHatdpsiHats(ispecies)/THats(ispecies))
 
+          !!Added by AM 2016-02!!
+          if (includePhi1) then
+             xPartOfRHS2 = x2(ix)*exp(-x2(ix))*dTHatdpsiHats(ispecies)/(THats(ispecies)*THats(ispecies))
+          else
+             xPartOfRHS2 = 0
+          end if
+          !!!!!!!!!!!!!!!!!!!!!!!
+
           !xPartOfRHS = x2(ix)*exp(-x2(ix))*( dnHatdpsiHats(ispecies)/nHats(ispecies) &
           !     + (x2(ix) - three/two)*dTHatdpsiHats(ispecies)/THats(ispecies))
 
@@ -110,11 +127,22 @@
                 !     /(2*pi*sqrtpi*Zs(ispecies)*psiAHat*(BHat(itheta,izeta)**3)*sqrtTHat) &
                 !     *(GHat*dBHatdtheta(itheta,izeta) - IHat*dBHatdzeta(itheta,izeta))&
                 !     *xPartOfRHS
-                factor = Delta*nHats(ispecies)*mHat*sqrtMHat &
-                     /(2*pi*sqrtpi*Zs(ispecies)*(BHat(itheta,izeta)**3)*sqrtTHat) &
-                     *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
-                     - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
-                     * DHat(itheta,izeta) * xPartOfRHS
+                if (includePhi1) then !!Added by AM 2016-03
+                   factor = Delta*nHats(ispecies)*mHat*sqrtMHat &
+                        /(2*pi*sqrtpi*Zs(ispecies)*(BHat(itheta,izeta)**3)*sqrtTHat) &
+                        *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
+                        - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
+                        !!                     * DHat(itheta,izeta) * xPartOfRHS !!Commented by AM 2016-02
+                        * DHat(itheta,izeta) * (xPartOfRHS + xPartOfRHS2*Zs(ispecies)*alpha*Phi1Hat(itheta,izeta))  & !!Added by AM 2016-02
+                        * exp(-Zs(ispecies)*alpha*Phi1Hat(itheta,izeta)/THats(ispecies)) !!Added by AM 2016-02
+                else !!Added by AM 2016-03
+                   factor = Delta*nHats(ispecies)*mHat*sqrtMHat &
+                        /(2*pi*sqrtpi*Zs(ispecies)*(BHat(itheta,izeta)**3)*sqrtTHat) &
+                        *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
+                        - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
+                        * DHat(itheta,izeta) * xPartOfRHS
+                end if !!Added by AM 2016-03
+                
                 
                 L = 0
                 index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
