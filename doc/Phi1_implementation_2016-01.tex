@@ -504,7 +504,10 @@ populateMatrix.F90
 Besides implementing the above terms, we need to remove the former term in SFINCS corresponding to $\displaystyle \frac{Z e}{T} f_M v_\| \na_\| \Phi_1$. \\
 \\
 We will remove the \textbf{nonlinear} switch from the code, since all terms related to $\Phi_1$ are now nonlinear. 
-The \textbf{nonlinear} switch will be incorporated into the \textbf{includePhi1} switch.
+The \textbf{nonlinear} switch will be incorporated into the \textbf{includePhi1} switch.\\
+\\
+We will replace the \textbf{includeRadialExBDrive} switch with the \textbf{includePhi1inKineticEquation} switch which is \textbf{true} by default. 
+This new switched can be set to \textbf{false} if one only wants to include $\Phi_1$ in the quasi-neutrality equation.
 
 \paragraph*{\textbf{Files to change:}}
 \begin{verbatim}
