@@ -11,7 +11,8 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   use globalVariables, only: Nx, Nxi, Ntheta, Nzeta, Nspecies, matrixSize, includePhi1, &
        !!constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, nonlinear, & !!Commented by AM 2016-02
        constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, & !!Added by AM 2016-02
-       thetaDerivativeScheme, zetaDerivativeScheme, includeRadialExBDrive
+       !!thetaDerivativeScheme, zetaDerivativeScheme, includeRadialExBDrive !!Commented by AM 2016-03
+       thetaDerivativeScheme, zetaDerivativeScheme, includePhi1inKineticEquation !!Added by AM 2016-03
   use indices
 
   implicit none
@@ -67,7 +68,8 @@ subroutine preallocateMatrix(matrix, whichMatrix)
        + 4 &               ! d Phi_1 / d theta term at L=1
        + 4                 ! d Phi_1 / d zeta term at L=1, -1 because diagonal was accounted for in the previous line.
   end if
-  if (includeRadialExBDrive) then
+!!  if (includeRadialExBDrive) then !!Commented by AM 2016-03
+  if (includePhi1inKineticEquation) then !!Added by AM 2016-03
      tempInt1 = tempInt1 &
        + 4 &               ! d Phi_1 / d theta term at L=0
        + 4                 ! d Phi_1 / d zeta term at L=0

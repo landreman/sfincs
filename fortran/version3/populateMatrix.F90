@@ -32,13 +32,14 @@
     PetscErrorCode :: ierr
     PetscScalar :: Z, nHat, THat, mHat, sqrtTHat, sqrtMHat, speciesFactor, speciesFactor2
     PetscScalar :: T32m, factor, LFactor, temp, temp1, temp2, xDotFactor, xDotFactor2, stuffToAdd
-    PetscScalar :: factor2 !!Added by AM 2016-03
+    PetscScalar :: factor1, factor2, factorJ1, factorJ2, factorJ3, factorJ4, factorJ5  !!Added by AM 2016-03
     PetscScalar, dimension(:), allocatable :: xb, expxb2
     PetscScalar, dimension(:,:), allocatable :: thetaPartOfTerm, localThetaPartOfTerm
     PetscScalar, dimension(:,:), allocatable :: xPartOfXDot_plus, xPartOfXDot_minus, xPartOfXDot
     PetscScalar, dimension(:,:), allocatable :: ddxToUse_plus, ddxToUse_minus
     integer :: i, j, ix, ispecies, itheta, izeta, L, ixi, index, ix_row, ix_col
     integer :: rowIndex, colIndex
+    integer :: rowIndex2, L2 !!Added by AM 2016-03
     integer :: ell, iSpeciesA, iSpeciesB, maxL
     integer, dimension(:), allocatable :: rowIndices, colIndices
     PetscScalar, dimension(:,:), allocatable :: ddxToUse, d2dx2ToUse, zetaPartOfTerm, localZetaPartOfTerm
@@ -1077,8 +1078,7 @@
 !!$
 !!$                      !!Add additional terms in the Jacobian
 !!$                      if (whichMatrix == 0 .or. whichMatrix == 1) then
-!!$                         call MatSetValueSparse(matrix, rowIndex, colIndex,&
-!!$                              -Z*alpha*factor*dPhi1Hatdtheta(ithetaRow, ithetaCol)/THat, ADD_VALUES, ierr)                         
+!!$                      !!NEEDS IMPLEMENTATION
 !!$                      end if
 !!$                   end do
 !!$                end do
@@ -1105,8 +1105,7 @@
 !!$                      
 !!$                      !!Add additional terms in the Jacobian
 !!$                      if (whichMatrix == 0 .or. whichMatrix == 1) then
-!!$                         call MatSetValueSparse(matrix, rowIndex, colIndex,&
-!!$                              -Z*alpha*factor*dPhi1Hatdzeta(izetaRow, izetaCol)/THat, ADD_VALUES, ierr)
+!!$                      !!NEEDS IMPLEMENTATION
 !!$                      end if
 !!$                   end do
 !!$                end do
@@ -1131,10 +1130,31 @@
        ! We also add additional terms for the Jacobian.
        ! *********************************************************
 
+       !!THE includeRadialExBDrive FLAG IS NOT USED ANYMORE
        !!if ((whichMatrix .ne. 2) .and. includeRadialExBDrive) then !!Commented by AM 2016-02
-       if ((whichMatrix .ne. 2) .and. includePhi1 .and. includeRadialExBDrive .and. includePhi1inKineticEquation) then !!Added by AM 2016-02
+       if ((whichMatrix .ne. 2) .and. includePhi1 .and. includePhi1inKineticEquation) then !!Added by AM 2016-02
           L=0
+          L2=2 !!Added by AM 2016-03 to add extra P_2 terms
+          
+          !!Added by AM 2016-03!!
+          !!The naming "RHS" here is a remnant from that term was first introduced in evaluateResidual.F90 in an earlier version of SFINCS
+          if (RHSMode==1) then
+             dPhiHatdpsiHatToUseInRHS = dPhiHatdpsiHat
+          else
+             dPhiHatdpsiHatToUseInRHS = 0
+          end if
+          !!!!!!!!!!!!!!!!!!!!!!!
+
           do ix = ixMin,Nx
+
+             !!Added by AM 2016-03!!
+             !!The naming "RHS" here is a remnant from that term was first introduced in evaluateResidual.F90 in an earlier version of SFINCS
+             xPartOfRHS = x2(ix)*expx2(ix)*( dnHatdpsiHats(ispecies)/nHat &
+                  + alpha*Z/THat*dPhiHatdpsiHatToUseInRHS &
+                  + (x2(ix) - three/two)*dTHatdpsiHats(ispecies)/THat)
+
+             xPartOfRHS2 = x2(ix)*expx2(ix)*dTHatdpsiHats(ispecies)/(THat*THat)
+             !!!!!!!!!!!!!!!!!!!!!!!
 
              ! d Phi_1 / d theta term:
              itheta = -1 ! Just so a runtime error occurs if I use itheta by mistake
@@ -1142,22 +1162,66 @@
                 do izeta = izetaMin, izetaMax
                    rowIndex = getIndex(ispecies, ix, L+1, ithetaRow, izeta, BLOCK_F)
 
+                   rowIndex2 = getIndex(ispecies, ix, L2+1, ithetaRow, izeta, BLOCK_F) !!Added by AM 2016-03 to add extra P_2 terms
+
 !!$ COMMENTED BY AM 2016-02
 !!$                   factor = -alpha*Delta*DHat(ithetaRow,izeta)*BHat_sub_zeta(ithetaRow,izeta) &
 !!$                        /(two*BHat(ithetaRow,izeta)*BHat(ithetaRow,izeta)) &
 !!$                        * nHat * (mHat*sqrtMHat)/(THat*sqrtTHat*pi*sqrtpi) * expx2(ix) & ! This line is f_M
 !!$                        * (dNHatdpsiHats(ispecies)/nHat + (x2(ix)-3/two)*dTHatdpsiHats(ispecies)/THat)
 
-                   factor = -exp(-Z*alpha*Phi1Hat(ithetaRow,izeta)/THat)*alpha*Delta*DHat(ithetaRow,izeta)*BHat_sub_zeta(ithetaRow,izeta) &
+                   !!Added by AM 2016-03!!
+                   factor1 = -exp(-Z*alpha*Phi1Hat(ithetaRow,izeta)/THat)*alpha*Delta*DHat(ithetaRow,izeta)*BHat_sub_zeta(ithetaRow,izeta) &
                         /(two*BHat(ithetaRow,izeta)*BHat(ithetaRow,izeta)) &
                         * nHat * (mHat*sqrtMHat)/(THat*sqrtTHat*pi*sqrtpi) * expx2(ix) & ! This line is f_M
                         * (dNHatdpsiHats(ispecies)/nHat + (x2(ix)-3/two)*dTHatdpsiHats(ispecies)/THat)
 
-                   !!Added by AM 2016-03!!
                    factor2 = - alpha*alpha*Delta*DHat(ithetaRow,izeta)/(two*pi*sqrtpi*BHat(ithetaRow,izeta)*BHat(ithetaRow,izeta)) &
                         * Z * nHat*mHat*sqrtMHat/(THat*THat*sqrtTHat) &
                         * exp(-Z*alpha*Phi1Hat(ithetaRow,izeta)/THat)*expx2(ix)*BHat_sub_zeta(ithetaRow,izeta) &
                         * (dPhiHatdpsiHat + Phi1Hat(ithetaRow,izeta)*dTHatdpsiHats(ispecies)/THat)
+
+                   !!The following factors are only used in the Jacobian. These terms do not contain d/dtheta or d/dzeta
+                   !!but d(Phi1)/dtheta, d(Phi1)/dzeta, dB/dtheta, dB/dzeta.
+                   !!Therefore they are the same when adding the d/dtheta terms as when adding the d/dzeta terms.
+
+                   !!factorJ1 stems from factor1 but contains both dPhi1Hatdtheta and dPhi1Hatdzeta parts
+                   factorJ1 = exp(-Z*alpha*Phi1Hat(ithetaRow,izeta)/THat)*alpha*Delta*DHat(ithetaRow,izeta) &
+                        *(- BHat_sub_zeta(ithetaRow,izeta)* dPhi1Hatdtheta(ithetaRow, izeta) + BHat_sub_theta(ithetaRow, izeta)*dPhi1Hatdzeta(ithetaRow, izeta))&
+                        /(two*BHat(ithetaRow,izeta)*BHat(ithetaRow,izeta)) &
+                        * nHat * (mHat*sqrtMHat)/(THat*sqrtTHat*pi*sqrtpi) * expx2(ix) & ! This line is f_M
+                        * (dNHatdpsiHats(ispecies)/nHat + (x2(ix)-3/two)*dTHatdpsiHats(ispecies)/THat)  
+                        
+                   !!factorJ2 stems from factor2 but contains both dPhi1Hatdtheta and dPhi1Hatdzeta parts
+                   factorJ2 = alpha*alpha*Delta*DHat(ithetaRow,izeta)/(two*pi*sqrtpi*BHat(ithetaRow,izeta)*BHat(ithetaRow,izeta)) &
+                        * Z * nHat*mHat*sqrtMHat/(THat*THat*sqrtTHat) &
+                        * exp(-Z*alpha*Phi1Hat(ithetaRow,izeta)/THat)*expx2(ix) &
+                        * (- BHat_sub_zeta(ithetaRow,izeta)*dPhi1Hatdtheta(ithetaRow, izeta) + BHat_sub_theta(ithetaRow, izeta)*dPhi1Hatdzeta(ithetaRow, izeta)) &
+                        * (dPhiHatdpsiHat + Phi1Hat(ithetaRow,izeta)*dTHatdpsiHats(ispecies)/THat)
+                        
+
+                   !!factorJ3 is only used in the Jacobian, it corresponds to a part \propto exp(-Ze Phi1/T) which is
+                   !!implemented in evaluateResidual.F90 for the residual
+                   factorJ3 = Delta*nHat*mHat*sqrtMHat &
+                        /(2*pi*sqrtpi*Z*(BHat(ithetaRow,izeta)**3)*sqrtTHat) &
+                        *(- BHat_sub_zeta(ithetaRow,izeta)*dBHatdtheta(ithetaRow,izeta) + BHat_sub_theta(ithetaRow,izeta)*dBHatdzeta(ithetaRow,izeta))&
+                        * DHat(ithetaRow,izeta) * (xPartOfRHS + xPartOfRHS2*Z*alpha*Phi1Hat(ithetaRow,izeta))  & 
+                        * exp(-Z*alpha*Phi1Hat(ithetaRow,izeta)/THat)
+
+                   !!factorJ4 is only used in the Jacobian, it corresponds to the second term in factorJ2 divided by Phi1
+                   factorJ4 =  alpha*alpha*Delta*DHat(ithetaRow,izeta)/(two*pi*sqrtpi*BHat(ithetaRow,izeta)*BHat(ithetaRow,izeta)) &
+                        * Z * nHat*mHat*sqrtMHat/(THat*THat*sqrtTHat) &
+                        * exp(-Z*alpha*Phi1Hat(ithetaRow,izeta)/THat)*expx2(ix) &
+                        *(- BHat_sub_zeta(ithetaRow,izeta)*dPhi1Hatdtheta(ithetaRow,izeta) + BHat_sub_theta(ithetaRow,izeta)*dPhi1Hatdzeta(ithetaRow,izeta))&
+                        * dTHatdpsiHats(ispecies)/THat
+
+                   !!factorJ5 is only used in the Jacobian, it corresponds to the second term in factorJ3 divided by Phi1
+                   factorJ5 = Delta*nHat*mHat*sqrtMHat &
+                        /(2*pi*sqrtpi*(BHat(ithetaRow,izeta)**3)*sqrtTHat) &
+                        *(- BHat_sub_zeta(ithetaRow,izeta)*dBHatdtheta(ithetaRow,izeta) + BHat_sub_theta(ithetaRow,izeta)*dBHatdzeta(ithetaRow,izeta))&
+                        * DHat(ithetaRow,izeta) * xPartOfRHS2*alpha  & 
+                        * exp(-Z*alpha*Phi1Hat(ithetaRow,izeta)/THat)
+
                    !!!!!!!!!!!!!!!!!!!!!!!
 
                    do ithetaCol = 1,Ntheta
@@ -1166,13 +1230,22 @@
 !!                           factor*ddtheta(ithetaRow, ithetaCol), ADD_VALUES, ierr) !!Commented by AM 2016-03
 
                       call MatSetValueSparse(matrix, rowIndex, colIndex,& !!Added by AM 2016-03
-                           (factor + factor2)*ddtheta(ithetaRow, ithetaCol), ADD_VALUES, ierr) !!Added by AM 2016-03
+                           (factor1 + factor2)*ddtheta(ithetaRow, ithetaCol), ADD_VALUES, ierr) !!Added by AM 2016-03
 
                       !!Added by AM 2016-03!!
                       !!Add additional terms in the Jacobian
                       if (whichMatrix == 0 .or. whichMatrix == 1) then
+                         !!Add L=0 component
                          call MatSetValueSparse(matrix, rowIndex, colIndex,&
-                              -Z*alpha*(factor + factor2)*dPhi1Hatdtheta(ithetaRow, ithetaCol)/THat, ADD_VALUES, ierr)                         
+                              -Z*alpha*(factorJ1 + factorJ2)/THat &
+                              -Z*alpha* (4/three)*factorJ3/THat &
+                              + factorJ4 &
+                              + (4/three)*factorJ5, ADD_VALUES, ierr)   
+
+                         !!Add L=2 component
+                         call MatSetValueSparse(matrix, rowIndex2, colIndex,&
+                              -Z*alpha* (two/three)*factorJ3/THat &
+                              + (two/three)*factorJ5, ADD_VALUES, ierr)
                       end if
                       !!!!!!!!!!!!!!!!!!!!!!!
                    end do
@@ -1187,6 +1260,8 @@
                 do izetaRow = izetaMin, izetaMax
                    rowIndex = getIndex(ispecies, ix, L+1, itheta, izetaRow, BLOCK_F)
 
+                   rowIndex2 = getIndex(ispecies, ix, L2+1, itheta, izetaRow, BLOCK_F) !!Added by AM 2016-03 to add extra P_2 terms
+
 !!$ COMMENTED BY AM 2016-02
 !!$                   factor = alpha*Delta*DHat(ithetaRow,izeta)*BHat_sub_theta(ithetaRow,izeta) &
 !!$                        /(two*BHat(ithetaRow,izeta)*BHat(ithetaRow,izeta)) &
@@ -1194,7 +1269,7 @@
 !!$                        * (dNHatdpsiHats(ispecies)/nHat + (x2(ix)-3/two)*dTHatdpsiHats(ispecies)/THat)
 
                    !! ADDED BY AM 2016-02!!
-                   factor = exp(-Z*alpha*Phi1Hat(itheta,izetaRow)/THat)*alpha*Delta*DHat(itheta,izetaRow)*BHat_sub_theta(itheta,izetaRow) &
+                   factor1 = exp(-Z*alpha*Phi1Hat(itheta,izetaRow)/THat)*alpha*Delta*DHat(itheta,izetaRow)*BHat_sub_theta(itheta,izetaRow) &
                         /(two*BHat(itheta,izetaRow)*BHat(itheta,izetaRow)) &
                         * nHat * (mHat*sqrtMHat)/(THat*sqrtTHat*pi*sqrtpi) * expx2(ix) & ! This line is f_M
                         * (dNHatdpsiHats(ispecies)/nHat + (x2(ix)-3/two)*dTHatdpsiHats(ispecies)/THat)
@@ -1204,6 +1279,48 @@
                         * exp(-Z*alpha*Phi1Hat(itheta,izetaRow)/THat)*expx2(ix)*BHat_sub_theta(itheta,izetaRow) &
                         * (dPhiHatdpsiHat + Phi1Hat(itheta,izetaRow)*dTHatdpsiHats(ispecies)/THat)
 
+
+
+                   !!The following factors are only used in the Jacobian. These terms do not contain d/dtheta or d/dzeta
+                   !!but d(Phi1)/dtheta, d(Phi1)/dzeta, dB/dtheta, dB/dzeta.
+                   !!Therefore they are the same when adding the d/dtheta terms as when adding the d/dzeta terms.
+
+                   !!factorJ1 stems from factor1 but contains both dPhi1Hatdtheta and dPhi1Hatdzeta parts
+                   factorJ1 = exp(-Z*alpha*Phi1Hat(itheta,izetaRow)/THat)*alpha*Delta*DHat(itheta,izetaRow) &
+                        *(- BHat_sub_zeta(itheta,izetaRow)* dPhi1Hatdtheta(itheta, izetaRow) + BHat_sub_theta(itheta, izetaRow)*dPhi1Hatdzeta(itheta, izetaRow))&
+                        /(two*BHat(itheta,izetaRow)*BHat(itheta,izetaRow)) &
+                        * nHat * (mHat*sqrtMHat)/(THat*sqrtTHat*pi*sqrtpi) * expx2(ix) & ! This line is f_M
+                        * (dNHatdpsiHats(ispecies)/nHat + (x2(ix)-3/two)*dTHatdpsiHats(ispecies)/THat)  
+                        
+                   !!factorJ2 stems from factor2 but contains both dPhi1Hatdtheta and dPhi1Hatdzeta parts
+                   factorJ2 = alpha*alpha*Delta*DHat(itheta,izetaRow)/(two*pi*sqrtpi*BHat(itheta,izetaRow)*BHat(itheta,izetaRow)) &
+                        * Z * nHat*mHat*sqrtMHat/(THat*THat*sqrtTHat) &
+                        * exp(-Z*alpha*Phi1Hat(itheta,izetaRow)/THat)*expx2(ix) &
+                        * (- BHat_sub_zeta(itheta,izetaRow)*dPhi1Hatdtheta(itheta, izetaRow) + BHat_sub_theta(itheta, izetaRow)*dPhi1Hatdzeta(itheta, izetaRow)) &
+                        * (dPhiHatdpsiHat + Phi1Hat(itheta,izetaRow)*dTHatdpsiHats(ispecies)/THat)
+
+                   !!factorJ3 is only used in the Jacobian, it corresponds to a part \propto exp(-Ze Phi1/T) which is
+                   !!implemented in evaluateResidual.F90 for the residual
+                   factorJ3 = Delta*nHat*mHat*sqrtMHat &
+                        /(2*pi*sqrtpi*Z*(BHat(itheta,izetaRow)**3)*sqrtTHat) &
+                        *(- BHat_sub_zeta(itheta,izetaRow)*dBHatdtheta(itheta,izetaRow) + BHat_sub_theta(itheta,izetaRow)*dBHatdzeta(itheta,izetaRow))&
+                        * DHat(itheta,izetaRow) * (xPartOfRHS + xPartOfRHS2*Z*alpha*Phi1Hat(itheta,izetaRow))  & 
+                        * exp(-Z*alpha*Phi1Hat(itheta,izetaRow)/THat)
+
+                   !!factorJ4 is only used in the Jacobian, it corresponds to the second term in factorJ2 divided by Phi1
+                   factorJ4 =  alpha*alpha*Delta*DHat(itheta,izetaRow)/(two*pi*sqrtpi*BHat(itheta,izetaRow)*BHat(itheta,izetaRow)) &
+                        * Z * nHat*mHat*sqrtMHat/(THat*THat*sqrtTHat) &
+                        * exp(-Z*alpha*Phi1Hat(itheta,izetaRow)/THat)*expx2(ix) &
+                        *(- BHat_sub_zeta(itheta,izetaRow)*dPhi1Hatdtheta(itheta,izetaRow) + BHat_sub_theta(itheta,izetaRow)*dPhi1Hatdzeta(itheta,izetaRow))&
+                        * dTHatdpsiHats(ispecies)/THat
+
+                   !!factorJ5 is only used in the Jacobian, it corresponds to the second term in factorJ3 divided by Phi1
+                   factorJ5 = Delta*nHat*mHat*sqrtMHat &
+                        /(2*pi*sqrtpi*(BHat(itheta,izetaRow)**3)*sqrtTHat) &
+                        *(- BHat_sub_zeta(itheta,izetaRow)*dBHatdtheta(itheta,izetaRow) + BHat_sub_theta(itheta,izetaRow)*dBHatdzeta(itheta,izetaRow))&
+                        * DHat(itheta,izetaRow) * xPartOfRHS2*alpha  & 
+                        * exp(-Z*alpha*Phi1Hat(itheta,izetaRow)/THat)
+
                    !!!!!!!!!!!!!!!!!!!!!!!!
 
                    do izetaCol = 1,Nzeta
@@ -1212,13 +1329,22 @@
 !!                           factor*ddzeta(izetaRow, izetaCol), ADD_VALUES, ierr) !!Commented by AM 2016-03
                       
                       call MatSetValueSparse(matrix, rowIndex, colIndex,& !!Added by AM 2016-03
-                           (factor + factor2)*ddzeta(izetaRow, izetaCol), ADD_VALUES, ierr) !!Added by AM 2016-03
+                           (factor1 + factor2)*ddzeta(izetaRow, izetaCol), ADD_VALUES, ierr) !!Added by AM 2016-03
 
                       !!Added by AM 2016-02!!
                       !!Add additional terms in the Jacobian
                       if (whichMatrix == 0 .or. whichMatrix == 1) then
+                         !!Add L=0 component
                          call MatSetValueSparse(matrix, rowIndex, colIndex,&
-                              -Z*alpha*(factor + factor2)*dPhi1Hatdzeta(izetaRow, izetaCol)/THat, ADD_VALUES, ierr)
+                              -Z*alpha*(factorJ1 + factorJ2)/THat &
+                              -Z*alpha* (4/three)*factorJ3/THat &
+                              + factorJ4 &
+                              + (4/three)*factorJ5, ADD_VALUES, ierr) 
+
+                         !!Add L=2 component
+                         call MatSetValueSparse(matrix, rowIndex2, colIndex,&
+                              -Z*alpha* (two/three)*factorJ3/THat &
+                              + (two/three)*factorJ5, ADD_VALUES, ierr)
                       end if
                       !!!!!!!!!!!!!!!!!!!!!!!
                    end do
@@ -1226,63 +1352,7 @@
              end do
 
           end do
-       end if
-
-       ! *********************************************************
-       ! SECTION ADDED BY AM 2016-02
-       ! Add terms in drift-kinetic equation that are ONLY included 
-       ! in the Jacobian. These terms correspond to the part of 
-       ! the residual implemented in evaluateResidual.F90, 
-       !multiplied by -Ze/T
-       !**********************************************************
-       if (includePhi1 .and. includePhi1inKineticEquation .and. (whichMatrix == 0 .or. whichMatrix == 1)) then
-          if (RHSMode==1) then
-             dPhiHatdpsiHatToUseInRHS = dPhiHatdpsiHat
-          else
-             dPhiHatdpsiHatToUseInRHS = 0
-          end if
-          
-          if (pointAtX0) then
-             ixMin = 2
-          else
-             ixMin = 1
-          end if
-          
-          ! First add the terms arising from \dot{\psi} df_M/d\psi
-          !x2 = x*x
-          
-          do ix=ixMin,Nx
-             
-             ! Old nonlinear version:
-             xPartOfRHS = x2(ix)*expx2(ix)*( dnHatdpsiHats(ispecies)/nHats(ispecies) &
-                  + alpha*Zs(ispecies)/THats(ispecies)*dPhiHatdpsiHatToUseInRHS &
-                  + (x2(ix) - three/two)*dTHatdpsiHats(ispecies)/THats(ispecies))
-             
-             
-             xPartOfRHS2 = x2(ix)*expx2(ix)*dTHatdpsiHats(ispecies)/(THats(ispecies)*THats(ispecies))
-             
-             do itheta = ithetaMin,ithetaMax
-                do izeta = izetaMin,izetaMax
-
-                   factor = Delta*nHats(ispecies)*mHat*sqrtMHat &
-                        /(2*pi*sqrtpi*Zs(ispecies)*(BHat(itheta,izeta)**3)*sqrtTHat) &
-                        *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
-                        - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
-                        * DHat(itheta,izeta) * (xPartOfRHS + xPartOfRHS2*Zs(ispecies)*alpha*Phi1Hat(itheta,izeta))  & 
-                        * exp(-Zs(ispecies)*alpha*Phi1Hat(itheta,izeta)/THats(ispecies)) 
-                   
-                   L = 0
-                   index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                   call VecSetValue(rhs, index, (4/three)*factor, INSERT_VALUES, ierr)
-                   
-                   L = 2
-                   index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                   call VecSetValue(rhs, index, (two/three)*factor, INSERT_VALUES, ierr)
-                end do
-             end do
-          end do
-       end if
-       
+       end if       
 
        ! *********************************************************
        ! Add the nonlinear term in the residual, which also is

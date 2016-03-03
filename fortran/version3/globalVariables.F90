@@ -108,7 +108,8 @@ module globalVariables
   logical :: include_fDivVE_term = .false.
   logical :: includeTemperatureEquilibrationTerm = .false.
   logical :: includePhi1 = .false.
-  logical :: includeRadialExBDrive = .false.
+!!  logical :: includeRadialExBDrive = .false. !!Commented by AM 2016-02
+  logical :: includePhi1inKineticEquation = .true. !!Added by AM 2016-03
 
   PetscScalar :: nuPrime = 1, EStar = 0
 

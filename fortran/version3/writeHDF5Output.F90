@@ -328,8 +328,10 @@ contains
        call writeHDF5Field("useDKESExBDrift", useDKESExBDrift, "")
        call writeHDF5Field("includePhi1", includePhi1, &
             "Include a quasineutrality equation, and include variation of the electrostatic potential on a flux surface? " // boolDescription)
-       call writeHDF5Field("includeRadialExBDrive", includeRadialExBDrive, &
-            "Include term $(\vect{v}_{E} \cdot\nabla\psi)f_{Ms} [(1/n_s)(dn_s/d\psi) + (x_s^2-3/2)(1/T_s)(dT_s/d\psi)]$ term? " // boolDescription)
+!!       call writeHDF5Field("includeRadialExBDrive", includeRadialExBDrive, & !!Commented by AM 2016-03
+!!            "Include term $(\vect{v}_{E} \cdot\nabla\psi)f_{Ms} [(1/n_s)(dn_s/d\psi) + (x_s^2-3/2)(1/T_s)(dT_s/d\psi)]$ term? " // boolDescription) !!Commented by AM 2016-03
+       call writeHDF5Field("includePhi1inKineticEquation", includePhi1inKineticEquation, & !!Added by AM 2016-03
+            "Include terms containing Phi1 in kinetic equation? " // boolDescription) !!Added by AM 2016-03
        call writeHDF5Field("integerToRepresentTrue", integerToRepresentTrue, &
             "Since HDF5 does not have a Boolean datatype, this integer value is used in this file for Boolean quantities.")
        call writeHDF5Field("integerToRepresentFalse", integerToRepresentFalse, &
