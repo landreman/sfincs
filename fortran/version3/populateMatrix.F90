@@ -2196,6 +2196,7 @@
     end if
 
     ! *******************************************************************************
+    ! SECTION MODIFIED BY AM 2016-02/03
     ! Add the quasineutrality equation
     ! *******************************************************************************
 
@@ -2235,6 +2236,10 @@
                    call MatSetValueSparse(matrix, rowIndex, colIndex, &
                         - alpha * Zs(ispecies) * Zs(ispecies) * NHats(ispecies) * exp (- Zs(ispecies)* alpha * Phi1Hat(itheta,izeta) / THats(ispecies)) / THats(ispecies), ADD_VALUES, ierr)
                 end do
+                if (withAdiabatic) then
+                   call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                        - alpha * adiabaticZ * adiabaticZ *adiabaticNHat * exp (- adiabaticZ* alpha * Phi1Hat(itheta,izeta) / adiabaticTHat) / adiabaticTHat, ADD_VALUES, ierr)
+                end if
              else if (quasineutralityOption == 2 .and. withAdiabatic .and. Nspecies > 0) then
                 call MatSetValueSparse(matrix, rowIndex, colIndex, &
                      - alpha * (Zs(1)*Zs(1)*NHats(1)/THats(1) + adiabaticZ*adiabaticZ*adiabaticNHat/adiabaticTHat), ADD_VALUES, ierr)                

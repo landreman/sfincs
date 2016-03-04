@@ -155,6 +155,42 @@
           end do
        end do
     end do
+    
+    ! *******************************************************************************
+    ! SECTION ADDED BY AM 2016-02/03
+    ! Add part of the residual related to Phi1 in the quasineutrality equation
+    ! *******************************************************************************
+
+    if (includePhi1 .and. quasineutralityOption == 1) then
+       !!CHECK THIS TERM
+       L=0
+       do itheta = ithetaMin,ithetaMax
+          do izeta = izetaMin,izetaMax
+             !!rowIndex = getIndex(1, 1, 1, itheta, izeta, BLOCK_QN)
+             !!colIndex = getIndex(1, 1, 1, itheta, izeta, BLOCK_QN)
+             index = getIndex(1, 1, 1, itheta, izeta, BLOCK_QN)
+             do ispecies = 1,Nspecies
+                !!call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                !!     Zs(ispecies) * NHats(ispecies) &
+                !!     * exp (- Zs(ispecies)* alpha * Phi1Hat(itheta,izeta) / THats(ispecies)), ADD_VALUES, ierr)
+
+                call VecSetValue(rhs, index, Zs(ispecies) * NHats(ispecies) &
+                     * exp (- Zs(ispecies)* alpha * Phi1Hat(itheta,izeta) / THats(ispecies)), ADD_VALUES, ierr)
+             end do
+             
+             if (withAdiabatic) then
+                !!call MatSetValueSparse(matrix, rowIndex, colIndex, adiabaticZ * adiabaticNHat &
+                !!     * exp (- adiabaticZ* alpha * Phi1Hat(itheta,izeta) / adiabaticTHat), ADD_VALUES, ierr)
+
+                call VecSetValue(rhs, index, adiabaticZ * adiabaticNHat &
+                     * exp (- adiabaticZ* alpha * Phi1Hat(itheta,izeta) / adiabaticTHat), ADD_VALUES, ierr)
+             end if
+
+          end do
+       end do
+    end if
+    ! *******************************************************************************
+
 
 !!$    ! Next add the terms arising from \dot{x} df_M/dx
 !!$    do ispecies = 1,Nspecies
