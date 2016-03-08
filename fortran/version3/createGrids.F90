@@ -7,6 +7,7 @@
 
   subroutine createGrids()
 
+    use kinds
     use globalVariables
     use polynomialDiffMatrices
     use xGrid
@@ -19,18 +20,18 @@
 
     PetscErrorCode :: ierr
     integer :: i, j, itheta, izeta, scheme
-    PetscScalar, dimension(:,:), allocatable :: d2dtheta2, d2dzeta2
-    PetscScalar, dimension(:), allocatable :: theta_preconditioner, thetaWeights_preconditioner
-    PetscScalar, dimension(:,:), allocatable :: d2dtheta2_preconditioner
-    PetscScalar, dimension(:), allocatable :: zeta_preconditioner, zetaWeights_preconditioner
-    PetscScalar, dimension(:,:), allocatable :: d2dzeta2_preconditioner
-    PetscScalar, dimension(:), allocatable :: xWeightsPotentials
+    real(prec), dimension(:,:), allocatable :: d2dtheta2, d2dzeta2
+    real(prec), dimension(:), allocatable :: theta_preconditioner, thetaWeights_preconditioner
+    real(prec), dimension(:,:), allocatable :: d2dtheta2_preconditioner
+    real(prec), dimension(:), allocatable :: zeta_preconditioner, zetaWeights_preconditioner
+    real(prec), dimension(:,:), allocatable :: d2dzeta2_preconditioner
+    real(prec), dimension(:), allocatable :: xWeightsPotentials
 
-    PetscScalar, dimension(:), allocatable :: xWeights_plus1
-    PetscScalar, dimension(:,:), allocatable :: ddx_plus1, d2dx2_plus1
-    PetscScalar, dimension(:,:), allocatable :: interpolateXToXPotentials_plus1, extrapMatrix
-    PetscScalar, dimension(:), allocatable :: x_subset, xWeights_subset
-    PetscScalar, dimension(:,:), allocatable :: ddx_subset, d2dx2_subset
+    real(prec), dimension(:), allocatable :: xWeights_plus1
+    real(prec), dimension(:,:), allocatable :: ddx_plus1, d2dx2_plus1
+    real(prec), dimension(:,:), allocatable :: interpolateXToXPotentials_plus1, extrapMatrix
+    real(prec), dimension(:), allocatable :: x_subset, xWeights_subset
+    real(prec), dimension(:,:), allocatable :: ddx_subset, d2dx2_subset
 
 
     DM :: myDM

@@ -11,19 +11,12 @@
 
 module geometry
 
+  use kinds
   use globalVariables
   use radialCoordinates
-  use petscsysdef
   use readVMEC
 
   implicit none
-
-#include "PETScVersions.F90"
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscsysdef.h>
-#else
-#include <petsc/finclude/petscsysdef.h>
-#endif
 
 contains
 
@@ -46,7 +39,7 @@ contains
     integer :: fileUnit, didFileAccessWork
     character(len=200) :: lineOfFile
     integer, dimension(4) :: headerIntegers
-    PetscScalar, dimension(3) :: headerReals
+    real(prec), dimension(3) :: headerReals
 
     select case (geometryScheme)
     case (1)
@@ -217,7 +210,7 @@ contains
     implicit none
 
     integer :: itheta,izeta
-    PetscScalar :: DHat11, BHat_sub_theta11, BHat_sub_zeta11
+    real(prec) :: DHat11, BHat_sub_theta11, BHat_sub_zeta11
 
     ! Using the selected radial coordinate, set input quantities for the other radial coordinates:
     call setInputRadialCoordinateWish()
@@ -289,35 +282,35 @@ contains
     integer :: itheta, izeta, NHarmonics, NHarmonicsL, NHarmonicsH, i, m, n
     integer, dimension(:), allocatable :: BHarmonics_l, BHarmonics_n
     integer, dimension(:), allocatable :: BHarmonics_lL, BHarmonics_nL, BHarmonics_lH, BHarmonics_nH
-    PetscScalar, dimension(:), allocatable :: BHarmonics_amplitudes
-    PetscScalar, dimension(:), allocatable :: BHarmonics_amplitudesL, BHarmonics_amplitudesH
+    real(prec), dimension(:), allocatable :: BHarmonics_amplitudes
+    real(prec), dimension(:), allocatable :: BHarmonics_amplitudesL, BHarmonics_amplitudesH
     logical, dimension(:), allocatable :: BHarmonics_parity
     logical, dimension(:), allocatable :: BHarmonics_parityL, BHarmonics_parityH
-    PetscScalar, dimension(:,:), allocatable :: hHat, duHatdtheta, duHatdzeta
-    PetscScalar :: R0
-    PetscScalar, dimension(:,:), allocatable :: BHatL, dBHatdthetaL, dBHatdzetaL
-    PetscScalar, dimension(:,:), allocatable :: BHatH, dBHatdthetaH, dBHatdzetaH
+    real(prec), dimension(:,:), allocatable :: hHat, duHatdtheta, duHatdzeta
+    real(prec) :: R0
+    real(prec), dimension(:,:), allocatable :: BHatL, dBHatdthetaL, dBHatdzetaL
+    real(prec), dimension(:,:), allocatable :: BHatH, dBHatdthetaH, dBHatdzetaH
     
     integer :: fileUnit, didFileAccessWork
     character(len=200) :: lineOfFile
     integer, dimension(4) :: headerIntegers
-    PetscScalar, dimension(3) :: headerReals
-    PetscScalar, dimension(6) :: surfHeader
-    PetscScalar, dimension(4) :: dataNumbers
-    PetscScalar, dimension(8) :: data8Numbers
+    real(prec), dimension(3) :: headerReals
+    real(prec), dimension(6) :: surfHeader
+    real(prec), dimension(4) :: dataNumbers
+    real(prec), dimension(8) :: data8Numbers
     integer, dimension(2) :: dataIntegers
     integer :: no_of_modes_old, no_of_modes_new, modeind, numB0s, startn, stopn
-    PetscScalar :: iota_old, iota_new, GHat_old, GHat_new, IHat_old, IHat_new
-    PetscScalar :: pPrimeHat, pPrimeHat_old, pPrimeHat_new, invFSA_BHat2
+    real(prec) :: iota_old, iota_new, GHat_old, GHat_new, IHat_old, IHat_new
+    real(prec) :: pPrimeHat, pPrimeHat_old, pPrimeHat_new, invFSA_BHat2
     logical :: end_of_file, proceed, include_mn, nearbyRadiiGiven, nonStelSym
     integer, parameter :: max_no_of_modes = 10000
     integer, dimension(max_no_of_modes) :: modesm_old, modesm_new, modesn_old, modesn_new
-    PetscScalar, dimension(max_no_of_modes) :: modesb_old, modesb_new
-    PetscScalar :: rN_old,  rN_new, B0_old, B0_new, B0OverBBarL, B0OverBBarH
-    PetscScalar :: hHatHarmonics_amplitude, uHatHarmonics_amplitude
-    PetscScalar :: dBHat_sub_psi_dthetaHarmonics_amplitude, dBHat_sub_psi_dzetaHarmonics_amplitude
-    PetscScalar :: DeltapsiHat, diotadpsiHat
-    PetscScalar :: RadialWeight = 1.0 ! weight of closest surface with rN<=rN_wish
+    real(prec), dimension(max_no_of_modes) :: modesb_old, modesb_new
+    real(prec) :: rN_old,  rN_new, B0_old, B0_new, B0OverBBarL, B0OverBBarH
+    real(prec) :: hHatHarmonics_amplitude, uHatHarmonics_amplitude
+    real(prec) :: dBHat_sub_psi_dthetaHarmonics_amplitude, dBHat_sub_psi_dzetaHarmonics_amplitude
+    real(prec) :: DeltapsiHat, diotadpsiHat
+    real(prec) :: RadialWeight = 1.0 ! weight of closest surface with rN<=rN_wish
 
     ! For the BHarmonics_parity array, 
     ! true indicates the contribution to B(theta,zeta) has the form
@@ -1357,12 +1350,12 @@ contains
 
     integer :: vmecRadialIndex_full(2)
     integer :: vmecRadialIndex_half(2)
-    PetscScalar :: vmecRadialWeight_full(2)
-    PetscScalar :: vmecRadialWeight_half(2)
-    PetscScalar, dimension(:), allocatable :: dr2, psiN_full, psiN_half
-    PetscScalar, dimension(:), allocatable :: vmec_dBHatdpsiHat, vmec_dBHat_sub_theta_dpsiHat, vmec_dBHat_sub_zeta_dpsiHat
+    real(prec) :: vmecRadialWeight_full(2)
+    real(prec) :: vmecRadialWeight_half(2)
+    real(prec), dimension(:), allocatable :: dr2, psiN_full, psiN_half
+    real(prec), dimension(:), allocatable :: vmec_dBHatdpsiHat, vmec_dBHat_sub_theta_dpsiHat, vmec_dBHat_sub_zeta_dpsiHat
     integer :: i, j, index, isurf, itheta, izeta, m, n
-    PetscScalar :: min_dr2, angle, sin_angle, cos_angle, b, b00, temp, dphi, dpsi
+    real(prec) :: min_dr2, angle, sin_angle, cos_angle, b, b00, temp, dphi, dpsi
     integer :: numSymmetricModesIncluded, numAntisymmetricModesIncluded
 
     ! This subroutine is written so that only psiN_wish is used, not the other *_wish quantities.

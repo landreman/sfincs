@@ -15,11 +15,6 @@
 ! or here
 ! http://dip.sun.ac.za/~weideman/research/differ.html
 !
-! The type PetscScalar is used, so this module can be used in a PETSc
-! application. However, no other PETSc functionality is used, so you can
-! replace the type with e.g. real if you want to build a non-PETSc
-! application.
-!
 ! Matt Landreman
 ! Massachusetts Institute of Technology
 ! Plasma Science & Fusion Center
@@ -27,14 +22,9 @@
 !
 module polynomialDiffMatrices
 
-  implicit none
+  use kinds
 
-#include "PETScVersions.F90"
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscsysdef.h>
-#else
-#include <petsc/finclude/petscsysdef.h>
-#endif
+  implicit none
 
   public :: makeXPolynomialDiffMatrices
   private :: weight, dweightdxOverWeight, d2weightdx2OverWeight
@@ -49,8 +39,8 @@ contains
 
     implicit none
 
-    PetscScalar, intent(in) :: x
-    PetscScalar :: weight
+    real(prec), intent(in) :: x
+    real(prec) :: weight
 
     weight = exp(-x*x)*(x ** xGrid_k)
 
@@ -64,8 +54,8 @@ contains
 
     implicit none
 
-    PetscScalar, intent(in) :: x
-    PetscScalar :: dweightdxOverWeight
+    real(prec), intent(in) :: x
+    real(prec) :: dweightdxOverWeight
 
     if (abs(x)<1e-12) then
        ! Handle possible point at x=0, avoiding divide-by-0:
@@ -85,8 +75,8 @@ contains
 
     implicit none
 
-    PetscScalar, intent(in) :: x
-    PetscScalar :: d2weightdx2OverWeight
+    real(prec), intent(in) :: x
+    real(prec) :: d2weightdx2OverWeight
 
     if (abs(x)<1e-12) then
        ! Handle possible point at x=0, avoiding divide-by-0:
@@ -115,11 +105,11 @@ contains
 
     implicit none
 
-    PetscScalar, intent(in), dimension(:) :: x
-    PetscScalar, intent(out) :: ddx(:,:), d2dx2(:,:)
+    real(prec), intent(in), dimension(:) :: x
+    real(prec), intent(out) :: ddx(:,:), d2dx2(:,:)
     integer :: i, N
-    PetscScalar, dimension(:,:), allocatable :: XX, DX, CC, CCC, Z, XXX, Y, D, oldY, repmatDiagD
-    PetscScalar, dimension(:), allocatable :: c
+    real(prec), dimension(:,:), allocatable :: XX, DX, CC, CCC, Z, XXX, Y, D, oldY, repmatDiagD
+    real(prec), dimension(:), allocatable :: c
     ! XXX in this subroutine corresponds to X in the DMSuite version of poldif
 
     N = size(x)

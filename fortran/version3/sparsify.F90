@@ -4,7 +4,12 @@ module sparsify
   ! The wrappers act exactly the same as the original Petsc subroutines, except that
   ! values are only added when they exceed a small positive threshhold. This threshholding
   ! prevents zero entries from being added to the nonzero structure of the matrix, increasing
-  ! sparsity.
+  ! sparsity.  These subroutines also ensure values are cast from double precision to
+  ! whichever precision PETSc uses internally.  A subroutine MatSetValueDense is also
+  ! provided here which is identical to MatSetValue (i.e. it sets a nonzero even if the value
+  ! is 0) which handles the type casting.
+
+  use kinds
 
   implicit none
 
@@ -15,9 +20,26 @@ module sparsify
 #include <petsc/finclude/petscmatdef.h>
 #endif
 
-  PetscScalar :: threshholdForInclusion = 1d-12
+  real(prec) :: threshholdForInclusion = 1d-12
 
 contains
+
+  subroutine MatSetValueDense(myMat, row, col, valueToSet, mode, err)
+    ! This function is a wrapper for MatSetValue that casts the type from double to single if PETSc is compiled with single precision.
+    implicit none
+
+    Mat :: myMat
+    integer :: row, col
+    InsertMode :: mode
+    real(prec)    :: valueToSet
+    PetscScalar :: valueToSet_PetscScalar
+    PetscErrorCode :: err
+
+    valueToSet_PetscScalar = valueToSet ! Cast type from double to single if needed.
+    call MatSetValue(myMat, row, col, valueToSet_PetscScalar, mode, err)
+
+  end subroutine MatSetValueDense
+
 
   subroutine MatSetValueSparse(myMat, row, col, valueToSet, mode, err)
 
@@ -26,11 +48,13 @@ contains
     Mat :: myMat
     integer :: row, col
     InsertMode :: mode
-    PetscScalar :: valueToSet
+    real(prec)    :: valueToSet
+    PetscScalar :: valueToSet_PetscScalar
     PetscErrorCode :: err
 
     if (abs(valueToSet) > threshholdForInclusion) then
-       call MatSetValue(myMat, row, col, valueToSet, mode, err)
+       valueToSet_PetscScalar = valueToSet ! Cast type from double to single if needed.
+       call MatSetValue(myMat, row, col, valueToSet_PetscScalar, mode, err)
     end if
 
   end subroutine MatSetValueSparse
@@ -43,7 +67,8 @@ contains
     Mat :: myMat
     integer :: m, n, row, col
     integer :: idxm(m), idxn(n)
-    PetscScalar :: v(n,m), valueToSet
+    real(prec) :: v(n,m), valueToSet
+    PetscScalar :: valueToSet_PetscScalar
     InsertMode :: mode
     PetscErrorCode :: err
 
@@ -52,7 +77,8 @@ contains
           valueToSet = v(col,row) ! I'll use PETSc's ordering instead of Fortran's.
 
           if (abs(valueToSet) > threshholdForInclusion) then
-             call MatSetValue(myMat, idxm(row), idxn(col), valueToSet, mode, err)
+             valueToSet_PetscScalar = valueToSet ! Cast type from double to single if needed.
+             call MatSetValue(myMat, idxm(row), idxn(col), valueToSet_PetscScalar, mode, err)
           end if
        end do
     end do

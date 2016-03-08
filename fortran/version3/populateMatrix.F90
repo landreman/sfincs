@@ -11,6 +11,7 @@
 
   subroutine populateMatrix(matrix, whichMatrix, stateVec)
 
+    use kinds
     use petscmat
     use globalVariables
     use sparsify
@@ -30,44 +31,44 @@
     ! 3 = matrix which multiplies f1 when evaluating the residual
 
     PetscErrorCode :: ierr
-    PetscScalar :: Z, nHat, THat, mHat, sqrtTHat, sqrtMHat, speciesFactor, speciesFactor2
-    PetscScalar :: T32m, factor, LFactor, temp, temp1, temp2, xDotFactor, xDotFactor2, stuffToAdd
-    PetscScalar, dimension(:), allocatable :: xb, expxb2
-    PetscScalar, dimension(:,:), allocatable :: thetaPartOfTerm, localThetaPartOfTerm
-    PetscScalar, dimension(:,:), allocatable :: xPartOfXDot_plus, xPartOfXDot_minus, xPartOfXDot
-    PetscScalar, dimension(:,:), allocatable :: ddxToUse_plus, ddxToUse_minus
+    real(prec) :: Z, nHat, THat, mHat, sqrtTHat, sqrtMHat, speciesFactor, speciesFactor2
+    real(prec) :: T32m, factor, LFactor, temp, temp1, temp2, xDotFactor, xDotFactor2, stuffToAdd
+    real(prec), dimension(:), allocatable :: xb, expxb2
+    real(prec), dimension(:,:), allocatable :: thetaPartOfTerm, localThetaPartOfTerm
+    real(prec), dimension(:,:), allocatable :: xPartOfXDot_plus, xPartOfXDot_minus, xPartOfXDot
+    real(prec), dimension(:,:), allocatable :: ddxToUse_plus, ddxToUse_minus
     integer :: i, j, ix, ispecies, itheta, izeta, L, ixi, index, ix_row, ix_col
     integer :: rowIndex, colIndex
     integer :: ell, iSpeciesA, iSpeciesB, maxL
     integer, dimension(:), allocatable :: rowIndices, colIndices
-    PetscScalar, dimension(:,:), allocatable :: ddxToUse, d2dx2ToUse, zetaPartOfTerm, localZetaPartOfTerm
-    PetscScalar, dimension(:,:), allocatable :: fToFInterpolationMatrix
-    PetscScalar, dimension(:,:), allocatable :: potentialsToFInterpolationMatrix
-    PetscScalar, dimension(:,:,:,:), allocatable :: CECD
-    PetscScalar :: xPartOfSource1, xPartOfSource2, geometricFactor1, geometricFactor2, geometricFactor3
-    PetscScalar, dimension(:,:), allocatable :: M11, M21, M32, LaplacianTimesX2WithoutL, nuDHat
-    PetscScalar, dimension(:), allocatable :: erfs, Psi_Chandra
-    PetscScalar, dimension(:,:), allocatable :: CHat, M22, M33, M12, M13
-    PetscScalar, dimension(:,:), allocatable :: M22BackslashM21, M33BackslashM32
-    PetscScalar, dimension(:,:,:), allocatable :: M22BackslashM21s, M33BackslashM32s
+    real(prec), dimension(:,:), allocatable :: ddxToUse, d2dx2ToUse, zetaPartOfTerm, localZetaPartOfTerm
+    real(prec), dimension(:,:), allocatable :: fToFInterpolationMatrix
+    real(prec), dimension(:,:), allocatable :: potentialsToFInterpolationMatrix
+    real(prec), dimension(:,:,:,:), allocatable :: CECD
+    real(prec) :: xPartOfSource1, xPartOfSource2, geometricFactor1, geometricFactor2, geometricFactor3
+    real(prec), dimension(:,:), allocatable :: M11, M21, M32, LaplacianTimesX2WithoutL, nuDHat
+    real(prec), dimension(:), allocatable :: erfs, Psi_Chandra
+    real(prec), dimension(:,:), allocatable :: CHat, M22, M33, M12, M13
+    real(prec), dimension(:,:), allocatable :: M22BackslashM21, M33BackslashM32
+    real(prec), dimension(:,:,:), allocatable :: M22BackslashM21s, M33BackslashM32s
     integer, dimension(:), allocatable :: IPIV  ! Needed by LAPACK
     integer :: LAPACKInfo
     PetscLogDouble :: time1, time2
-    PetscScalar, dimension(:,:), allocatable :: ddthetaToUse, ddzetaToUse
-    PetscScalar, dimension(:,:), allocatable :: tempMatrix, tempMatrix2, extrapMatrix
+    real(prec), dimension(:,:), allocatable :: ddthetaToUse, ddzetaToUse
+    real(prec), dimension(:,:), allocatable :: tempMatrix, tempMatrix2, extrapMatrix
     double precision :: myMatInfo(MAT_INFO_SIZE)
     integer :: NNZ, NNZAllocated, NMallocs
-    PetscScalar :: CHat_element, dfMdx
+    real(prec) :: CHat_element, dfMdx
     character(len=200) :: whichMatrixName, filename
     PetscViewer :: viewer
     integer :: ithetaRow, ithetaCol, izetaRow, izetaCol, ixMin, ixMinCol
     VecScatter :: vecScatterContext
     Vec :: vecOnEveryProc
-    PetscScalar, pointer :: stateArray(:)
+    real(prec), pointer :: stateArray(:)
     logical :: useStateVec
-    PetscScalar, dimension(:,:), allocatable :: nonlinearTerm_Lp1, nonlinearTerm_Lm1
-    PetscScalar, dimension(:), allocatable :: tempVector1, tempVector2
-    PetscScalar, dimension(:,:), allocatable :: tempExtrapMatrix, fToFInterpolationMatrix_plus1
+    real(prec), dimension(:,:), allocatable :: nonlinearTerm_Lp1, nonlinearTerm_Lm1
+    real(prec), dimension(:), allocatable :: tempVector1, tempVector2
+    real(prec), dimension(:,:), allocatable :: tempExtrapMatrix, fToFInterpolationMatrix_plus1
 
     ! *******************************************************************************
     ! Do a few sundry initialization tasks:
@@ -111,7 +112,7 @@
     ! Therefore, set the entire diagonal to 0 to be safe.
     if (masterProc) then
        do i=1,matrixSize
-          call MatSetValue(matrix, i-1, i-1, zero, ADD_VALUES, ierr)
+          call MatSetValueDense(matrix, i-1, i-1, zero, ADD_VALUES, ierr)
        end do
     end if
 
@@ -133,15 +134,15 @@
        case (1,3,4)
           do ispecies = 1,Nspecies
              index = getIndex(ispecies,1,1,1,1,BLOCK_DENSITY_CONSTRAINT)
-             call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
+             call MatSetValueDense(matrix, index, index, temp, ADD_VALUES, ierr)
              index = getIndex(ispecies,1,1,1,1,BLOCK_PRESSURE_CONSTRAINT)
-             call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
+             call MatSetValueDense(matrix, index, index, temp, ADD_VALUES, ierr)
           end do
        case (2)
           do ispecies = 1,Nspecies
              do ix = 1,Nx
                 index = getIndex(ispecies,ix,1,1,1,BLOCK_F_CONSTRAINT)
-                call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
+                call MatSetValueDense(matrix, index, index, temp, ADD_VALUES, ierr)
              end do
           end do
        case default
@@ -149,11 +150,11 @@
        end select
        if (includePhi1) then
           index = getIndex(1,1,1,1,1,BLOCK_PHI1_CONSTRAINT)
-          call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
+          call MatSetValueDense(matrix, index, index, temp, ADD_VALUES, ierr)
           do itheta = 1,Ntheta
              do izeta = 1,Nzeta
                 index = getIndex(1,1,1,itheta,izeta,BLOCK_QN)
-                call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
+                call MatSetValueDense(matrix, index, index, temp, ADD_VALUES, ierr)
              end do
           end do
        end if
@@ -1095,7 +1096,7 @@
        ! Note that this term is absent in the first iteration of a nonlinear calculation, because the term is proportional to Phi1.
        ! Therefore, if reusePreconditioner=true, we do not include this term in the preconditioner (which is great because this term introduces a lot of nonzeros.)
        ! If reusePreconditioner=false, then we DO include this term in the preconditioner.
-       ! We must use MatSetValue instead of MatSetValueSparse in this term so that we can add some "nonzero" elements whose value is actually 0
+       ! We must use MatSetValueDense instead of MatSetValueSparse in this term so that we can add some "nonzero" elements whose value is actually 0
        ! in the first iteration (due to Phi1=0). The reason is that PETSc will re-use the pattern of nonzeros from the first iteration in subsequent iterations.
        ! However, we need not add elements which are 0 due to ddtheta=0 as opposed to because Phi1=0, since such elements will remain 0 at every iteration of SNES.
 
@@ -1142,8 +1143,8 @@
                          do ix_col=ixMinCol,Nx
                             if (abs(nonlinearTerm_Lp1(ix_row,ix_col))>threshholdForInclusion) then
                                colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F)
-                               ! We must use MatSetValue instead of MatSetValueSparse here!!
-                               call MatSetValue(matrix, rowIndex, colIndex, &
+                               ! We must use MatSetValueDense instead of MatSetValueSparse here!!
+                               call MatSetValueDense(matrix, rowIndex, colIndex, &
                                     factor*nonlinearTerm_Lp1(ix_row,ix_col), ADD_VALUES, ierr)
                             end if
                          end do
@@ -1155,8 +1156,8 @@
                          do ix_col=ixMinCol,Nx
                             if (abs(nonlinearTerm_Lm1(ix_row,ix_col))>threshholdForInclusion) then
                                colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F)
-                               ! We must use MatSetValue instead of MatSetValueSparse here!!
-                               call MatSetValue(matrix, rowIndex, colIndex, &
+                               ! We must use MatSetValueDense instead of MatSetValueSparse here!!
+                               call MatSetValueDense(matrix, rowIndex, colIndex, &
                                     factor*nonlinearTerm_Lm1(ix_row,ix_col), ADD_VALUES, ierr)
                             end if
                          end do
@@ -1177,7 +1178,7 @@
        ! Note that this term is absent in the first iteration of a nonlinear calculation, because the term is proportional to delta f.
        ! Therefore, if reusePreconditioner=true, we do not include this term in the preconditioner (which is great because this term introduces a lot of nonzeros.)
        ! If reusePreconditioner=false, then we DO include this term in the preconditioner.
-       ! We must use MatSetValue instead of MatSetValueSparse in this term so that we can add some "nonzero" elements whose value is actually 0
+       ! We must use MatSetValueDense instead of MatSetValueSparse in this term so that we can add some "nonzero" elements whose value is actually 0
        ! in the first iteration (due to delta f = 0). The reason is that PETSc will re-use the pattern of nonzeros from the first iteration in subsequent iterations.
        ! However, we need not add elements which are 0 due to ddtheta=0 as opposed to because delta f = 0, since such elements will remain 0 at every iteration of SNES.
 
@@ -1223,8 +1224,8 @@
                       do j=1,Ntheta
                          if (abs(ddtheta(itheta,j))>threshholdForInclusion) then
                             colIndex = getIndex(1,1,1,j,izeta,BLOCK_QN)
-                            ! We must use MatSetValue instead of MatSetValueSparse here!!
-                            call MatSetValue(matrix, rowIndex, colIndex, &
+                            ! We must use MatSetValueDense instead of MatSetValueSparse here!!
+                            call MatSetValueDense(matrix, rowIndex, colIndex, &
                                  factor*BHat_sup_theta(itheta,izeta)*ddtheta(itheta,j)*tempVector2(ix), &
                                  ADD_VALUES, ierr)
                          end if
@@ -1234,8 +1235,8 @@
                       do j=1,Nzeta
                          if (abs(ddzeta(izeta,j))>threshholdForInclusion) then
                             colIndex = getIndex(1,1,1,itheta,j,BLOCK_QN)
-                            ! We must use MatSetValue instead of MatSetValueSparse here!!
-                            call MatSetValue(matrix, rowIndex, colIndex, &
+                            ! We must use MatSetValueDense instead of MatSetValueSparse here!!
+                            call MatSetValueDense(matrix, rowIndex, colIndex, &
                                  factor*BHat_sup_zeta(itheta,izeta)*ddzeta(izeta,j)*tempVector2(ix), &
                                  ADD_VALUES, ierr)
                          end if
@@ -1339,21 +1340,14 @@
              ! Call LAPACK subroutine DGESV to solve a linear system
              ! Note: this subroutine changes M22 and M33!
              M22BackslashM21 = M21  ! This will be overwritten by LAPACK.
-#if defined(PETSC_USE_REAL_SINGLE)
-             call SGESV(NxPotentials, Nx, M22, NxPotentials, IPIV, M22BackslashM21, NxPotentials, LAPACKInfo)
-#else
              call DGESV(NxPotentials, Nx, M22, NxPotentials, IPIV, M22BackslashM21, NxPotentials, LAPACKInfo)
-#endif
              if (LAPACKInfo /= 0) then
                 print *, "Error in LAPACK call: info = ", LAPACKInfo
                 stop
              end if
+
              M33BackslashM32 = M32  ! This will be overwritten by LAPACK.
-#if defined(PETSC_USE_REAL_SINGLE)
-             call SGESV(NxPotentials, NxPotentials, M33, NxPotentials, IPIV, M33BackslashM32, NxPotentials, LAPACKInfo)
-#else
              call DGESV(NxPotentials, NxPotentials, M33, NxPotentials, IPIV, M33BackslashM32, NxPotentials, LAPACKInfo)
-#endif
              if (LAPACKInfo /= 0) then
                 print *, "Error in LAPACK call: info = ", LAPACKInfo
                 stop
@@ -1751,7 +1745,7 @@
              do izeta = izetaMin,izetaMax
                 do ispecies = 1,Nspecies
                    index = getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
-                   call MatSetValue(matrix, index, index, one, ADD_VALUES, ierr)
+                   call MatSetValueDense(matrix, index, index, one, ADD_VALUES, ierr)
                 end do
              end do
           end do
@@ -1841,7 +1835,7 @@
                    do ispecies = 1,Nspecies
                       rowIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
                       colIndex = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)
-                      call MatSetValue(matrix, rowIndex, colIndex, one, ADD_VALUES, ierr)
+                      call MatSetValueDense(matrix, rowIndex, colIndex, one, ADD_VALUES, ierr)
                    end do
                 end do
              end do
@@ -1916,7 +1910,7 @@
              do ispecies = 1,Nspecies
                 rowIndex = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)
                 colIndex = rowIndex
-                call MatSetValue(matrix, rowIndex, colIndex, &
+                call MatSetValueDense(matrix, rowIndex, colIndex, &
                      one, ADD_VALUES, ierr)
              end do
           end if

@@ -3,32 +3,26 @@ module export_f
   ! This module contains subroutines and variables related to exporting the distribution function f.
   ! The exported f is available on various grids that can differ from the grid used for solving the kinetic equation.
 
+  use kinds
   use globalVariables
 
   implicit none
 
-#include "PETScVersions.F90"
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscsysdef.h>
-#else
-#include <petsc/finclude/petscsysdef.h>
-#endif
-
   integer, parameter :: max_N_export_f = 500 ! Max grid size in each one of the 4 coordinates (theta, zeta, xi, x)
   ! Defaults for the next 4 array variables are given in readInput.F90.
-  PetscScalar, dimension(max_N_export_f) :: export_f_theta
-  PetscScalar, dimension(max_N_export_f) :: export_f_zeta
-  PetscScalar, dimension(max_N_export_f) :: export_f_xi
-  PetscScalar, dimension(max_N_export_f) :: export_f_x
+  real(prec), dimension(max_N_export_f) :: export_f_theta
+  real(prec), dimension(max_N_export_f) :: export_f_zeta
+  real(prec), dimension(max_N_export_f) :: export_f_xi
+  real(prec), dimension(max_N_export_f) :: export_f_x
   integer :: N_export_f_theta, N_export_f_zeta, N_export_f_xi, N_export_f_x
-  PetscScalar, dimension(:,:), allocatable :: map_theta_to_export_f_theta
-  PetscScalar, dimension(:,:), allocatable :: map_zeta_to_export_f_zeta
-  PetscScalar, dimension(:,:), allocatable :: map_x_to_export_f_x
-  PetscScalar, dimension(:,:), allocatable :: map_xi_to_export_f_xi
+  real(prec), dimension(:,:), allocatable :: map_theta_to_export_f_theta
+  real(prec), dimension(:,:), allocatable :: map_zeta_to_export_f_zeta
+  real(prec), dimension(:,:), allocatable :: map_x_to_export_f_x
+  real(prec), dimension(:,:), allocatable :: map_xi_to_export_f_xi
   integer :: export_f_theta_option=2, export_f_zeta_option=2, export_f_xi_option=1, export_f_x_option=0
   logical :: export_full_f = .false., export_delta_f = .false.
 
-  PetscScalar, dimension(:,:,:,:,:), allocatable :: delta_f, full_f
+  real(prec), dimension(:,:,:,:,:), allocatable :: delta_f, full_f
 
   contains
 
@@ -45,9 +39,9 @@ module export_f
       logical, dimension(:), allocatable :: includeThisTheta
       logical, dimension(:), allocatable :: includeThisZeta
       logical, dimension(:), allocatable :: includeThisX
-      PetscScalar :: error, leastError, weight1, weight2
-      PetscScalar, dimension(:,:), allocatable :: extrapMatrix, map_x_to_export_f_x_plus1
-      PetscScalar, dimension(:), allocatable :: x_plus1
+      real(prec) :: error, leastError, weight1, weight2
+      real(prec), dimension(:,:), allocatable :: extrapMatrix, map_x_to_export_f_x_plus1
+      real(prec), dimension(:), allocatable :: x_plus1
 
       ! --------------------------------------------------------
       ! Handle theta coordinate

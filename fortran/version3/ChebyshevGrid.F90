@@ -1,10 +1,3 @@
-#include "PETScVersions.F90"
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscsysdef.h>
-#else
-#include <petsc/finclude/petscsysdef.h>
-#endif
-
 subroutine ChebyshevGrid(N, xMin, xMax, x, weights, D)
   ! Creates a Chebyshev grid, together with the associated weights
   ! for Clenshaw-Curtis integration, and the spectral
@@ -25,15 +18,17 @@ subroutine ChebyshevGrid(N, xMin, xMax, x, weights, D)
   ! weights(N) = Clenshaw-Curtis integration weights
   ! D(N,N) = differentiation matrix
 
+  use kinds
+
   implicit none
 
   integer, intent(in) :: N
-  PetscScalar, intent(in) :: xMin, xMax
-  PetscScalar, intent(out) :: x(N), weights(N), D(N,N)
+  real(prec), intent(in) :: xMin, xMax
+  real(prec), intent(out) :: x(N), weights(N), D(N,N)
 
   integer :: i, j, N1, M
-  PetscScalar, parameter :: pi = 3.1415926535897932384626433d+0
-  PetscScalar, allocatable :: c(:), bigX(:,:), dX(:,:), sumD(:), cw(:), cc(:), f(:)
+  real(prec), parameter :: pi = 3.1415926535897932384626433d+0
+  real(prec), allocatable :: c(:), bigX(:,:), dX(:,:), sumD(:), cw(:), cc(:), f(:)
 
   if (xMax <= xMin) then
      print *,"Error! xMax should be larger than xMin."

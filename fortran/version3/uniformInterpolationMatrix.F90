@@ -1,10 +1,3 @@
-#include "PETScVersions.F90"
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscsysdef.h>
-#else
-#include <petsc/finclude/petscsysdef.h>
-#endif
-
 subroutine interpolationMatrix(N, M, x, y, scheme, matrix, extrapMatrix)
   ! Builds a matrix for interpolating from a uniform grid to any
   ! other grid.
@@ -33,15 +26,17 @@ subroutine interpolationMatrix(N, M, x, y, scheme, matrix, extrapMatrix)
   ! to the left of the x grid is not allowed, since the former
   ! can occur in the collision operator but the latter should not.
 
+  use kinds
+
   implicit none
 
   integer, intent(in) :: N, M, scheme
-  PetscScalar, intent(in) :: x(N), y(M)
-  PetscScalar, intent(out) :: matrix(M,N), extrapMatrix(M,N)
+  real(prec), intent(in) :: x(N), y(M)
+  real(prec), intent(out) :: matrix(M,N), extrapMatrix(M,N)
   integer :: i, j, index=1
   logical flag
   integer :: indicesToUse(4), k
-  PetscScalar :: x0, x1, x2, x3, xx, xi, xj, denomP, denomQ, interval
+  real(prec) :: x0, x1, x2, x3, xx, xi, xj, denomP, denomQ, interval
 
   ! Initialize matrix to 0:
   matrix=0d+0

@@ -26,7 +26,7 @@
        if (iterationNum > 0) then
           print "(a,i4,a)",    "--------- Completed iteration ",iterationNum," of SNES -----------------------------------"
        end if
-       print "(a,es14.7,a)","--------- Residual function norm: ",residual," -----------------------------"
+       print "(a,es14.7,a)","--------- Residual function norm: ",dble(residual)," -----------------------------"
     end if
 
     if (iterationNum==0) then
@@ -160,7 +160,7 @@
              do izeta = 1,Nzeta
                 index = getIndex(1,1,1,itheta,izeta,BLOCK_QN)+1
                 ! Add 1 because getIndex returns 0-based PETSc indices, not 1-based fortran indices.
-                Phi1Hat(itheta,izeta) = solnarray(index)
+                Phi1Hat(itheta,izeta) = solnarray(index) ! Note cast from PetscScalar -> real(prec) may happen here.
              end do
           end do
           
@@ -187,6 +187,7 @@
 
   subroutine diagnostics(solutionWithDeltaF, iterationNum)
 
+    use kinds
     use globalVariables
     use indices
     use writeHDF5Output
@@ -203,25 +204,25 @@
     Vec :: solutionWithDeltaFOnProc0, solutionWithFullFOnProc0, f0OnProc0
     PetscScalar, pointer :: solutionWithFullFArray(:), solutionWithDeltaFArray(:), f0Array(:)
 
-    PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, nHat
-    PetscScalar, dimension(:), allocatable :: B2
+    real(prec) :: THat, mHat, sqrtTHat, sqrtMHat, nHat
+    real(prec), dimension(:), allocatable :: B2
     integer :: i, j, ix, ispecies, itheta, izeta, L, index
-    PetscScalar :: densityFactor, flowFactor, pressureFactor
-    PetscScalar :: particleFluxFactor_vm, particleFluxFactor_vE
-    PetscScalar :: momentumFluxFactor_vm, momentumFluxFactor_vE
-    PetscScalar :: heatFluxFactor_vm, heatFluxFactor_vE
-    PetscScalar :: NTVFactor
-    PetscScalar, dimension(:), allocatable :: densityIntegralWeights
-    PetscScalar, dimension(:), allocatable :: flowIntegralWeights
-    PetscScalar, dimension(:), allocatable :: pressureIntegralWeights
-    PetscScalar, dimension(:), allocatable :: particleFluxIntegralWeights_vm
-    PetscScalar, dimension(:), allocatable :: particleFluxIntegralWeights_vE
-    PetscScalar, dimension(:), allocatable :: momentumFluxIntegralWeights_vm
-    PetscScalar, dimension(:), allocatable :: momentumFluxIntegralWeights_vE
-    PetscScalar, dimension(:), allocatable :: heatFluxIntegralWeights_vm
-    PetscScalar, dimension(:), allocatable :: heatFluxIntegralWeights_vE
-    PetscScalar, dimension(:), allocatable :: NTVIntegralWeights
-    PetscScalar :: factor, factor2, factor_vE, temp1, temp2, temp3
+    real(prec) :: densityFactor, flowFactor, pressureFactor
+    real(prec) :: particleFluxFactor_vm, particleFluxFactor_vE
+    real(prec) :: momentumFluxFactor_vm, momentumFluxFactor_vE
+    real(prec) :: heatFluxFactor_vm, heatFluxFactor_vE
+    real(prec) :: NTVFactor
+    real(prec), dimension(:), allocatable :: densityIntegralWeights
+    real(prec), dimension(:), allocatable :: flowIntegralWeights
+    real(prec), dimension(:), allocatable :: pressureIntegralWeights
+    real(prec), dimension(:), allocatable :: particleFluxIntegralWeights_vm
+    real(prec), dimension(:), allocatable :: particleFluxIntegralWeights_vE
+    real(prec), dimension(:), allocatable :: momentumFluxIntegralWeights_vm
+    real(prec), dimension(:), allocatable :: momentumFluxIntegralWeights_vE
+    real(prec), dimension(:), allocatable :: heatFluxIntegralWeights_vm
+    real(prec), dimension(:), allocatable :: heatFluxIntegralWeights_vE
+    real(prec), dimension(:), allocatable :: NTVIntegralWeights
+    real(prec) :: factor, factor2, factor_vE, temp1, temp2, temp3
     integer :: itheta1, izeta1, ixi1, ix1
     integer :: itheta2, izeta2, ixi2, ix2
     PetscLogDouble :: time1, time2

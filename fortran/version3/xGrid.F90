@@ -11,11 +11,6 @@
   ! You can change the "weight" function in the module and the integration
   ! domain in the makeXGrid subroutine if you wish.
   !
-  ! The type PetscScalar is used, so this module can be used in a PETSc
-  ! application. However, no other PETSc functionality is used, so you can
-  ! replace the type with e.g. real if you want to build a non-PETSc
-  ! application.
-  !
   ! The makeXGrid subroutine calls LAPACK, which is
   ! automatically included in any program that is linked to the PETSc 
   ! libraries.
@@ -38,15 +33,9 @@
   ! qagie = single-precision quadrature on (semi-)infinite domain
   ! dqagie = double-precision quadrature on (semi-)infinite domain
 
-#if defined(PETSC_USE_REAL_SINGLE)
-#define integrate qage
-#define integrate_semiinf qagie
-#define zero 0.
-#else
 #define integrate dqage
 #define integrate_semiinf dqagie
 #define zero 0.0d+0
-#endif
 
 ! QUADPACK gives ier.ne.0 when it cannot achieve the requested tolerance.
 ! When this occurs, it probably just means it is not feasbible to get as many digits
@@ -59,20 +48,15 @@
 
   module xGrid
 
-    implicit none
+    use kinds
 
-#include "PETScVersions.F90"
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscsysdef.h>
-#else
-#include <petsc/finclude/petscsysdef.h>
-#endif
+    implicit none
 
     private
 
-    PetscScalar, allocatable :: a(:), b(:), c(:)
+    real(prec), allocatable :: a(:), b(:), c(:)
     integer :: j, integrationPower
-    PetscScalar, public :: xGrid_k = 0
+    real(prec), public :: xGrid_k = 0
     public :: makeXGrid, computeRosenbluthPotentialResponse
 
   contains
@@ -94,20 +78,20 @@
       implicit none
 
       integer, intent(in) :: N
-      PetscScalar, intent(out) :: abscissae(:), weights(:)
+      real(prec), intent(out) :: abscissae(:), weights(:)
       logical, intent(in) :: includePointAtX0
 
       integer :: key = 6
       integer :: i, info, N_copy
-      PetscScalar :: oldc = 1d+0, amountToAdd
-      PetscScalar :: absTol = 1d-5, relTol = 1d-13
-      PetscScalar, allocatable :: a_copy(:), sqrtb(:), d(:), eigenvectors(:,:), LAPACKWorkspace(:)
+      real(prec) :: oldc = 1d+0, amountToAdd
+      real(prec) :: absTol = 1d-5, relTol = 1d-13
+      real(prec), allocatable :: a_copy(:), sqrtb(:), d(:), eigenvectors(:,:), LAPACKWorkspace(:)
 
-      PetscScalar :: abserr,finiteBound,EPSABS,EPSREL,WORK,LAPACK_abstol
+      real(prec) :: abserr,finiteBound,EPSABS,EPSREL,WORK,LAPACK_abstol
       integer :: ier, inf, last, limit, neval
-      PetscScalar, dimension(workspaceSize) :: alist, blist, rlist, elist
+      real(prec), dimension(workspaceSize) :: alist, blist, rlist, elist
       integer, dimension(workspaceSize) :: iord
-      PetscScalar :: X0, lastPolynomialAtX0, penultimatePolynomialAtX0
+      real(prec) :: X0, lastPolynomialAtX0, penultimatePolynomialAtX0
       integer, allocatable, dimension(:) :: LAPACK_ISUPPZ, LAPACK_iwork
       integer :: workspace_size, iwork_size
 
@@ -214,13 +198,8 @@
       if (includePointAtX0) then
          !LAPACK_abstol = DLAMCH('S')
          LAPACK_abstol = 1.0d-15
-#if defined(PETSC_USE_REAL_SINGLE)
-         call SSTEGR('V','A',N,a_copy,sqrtb(2:N+1),zero,zero,0,0,LAPACK_abstol,N_copy,abscissae,eigenvectors,&
-              N,LAPACK_ISUPPZ, LAPACKWorkspace, workspace_size, LAPACK_iwork, iwork_size, info)
-#else
          call DSTEGR('V','A',N,a_copy,sqrtb(2:N+1),zero,zero,0,0,LAPACK_abstol,N_copy,abscissae,eigenvectors,&
               N,LAPACK_ISUPPZ, LAPACKWorkspace, workspace_size, LAPACK_iwork, iwork_size, info)
-#endif
          if (info /= 0) then
             print *,"Error in LAPACK's DSTEGR routine for finding eigenvalues. info = ",info
             stop
@@ -235,11 +214,7 @@
          weights = c(1) * eigenvectors(1, :) * eigenvectors(1, :)
       else
          ! In this case, the Jacobi matrix is also positive-definite, so use a LAPACK subroutine which exploits this property for extra accuracy.
-#if defined(PETSC_USE_REAL_SINGLE)
-         call SPTEQR('I', N, a_copy, sqrtb(2:N), eigenvectors, N, LAPACKWorkspace, info)
-#else
          call DPTEQR('I', N, a_copy, sqrtb(2:N), eigenvectors, N, LAPACKWorkspace, info)
-#endif
          if (info /= 0) then
             print *,"Error in LAPACK's DPTEQR routine for finding eigenvalues. info = ",info
             stop
@@ -265,29 +240,29 @@
       
       logical, intent(in) :: verbose
       integer, intent(in) :: Nx, Nspecies, NL
-      PetscScalar, dimension(:), intent(in) :: x, xWeights, mHats, THats
-      PetscScalar, dimension(:,:,:,:,:), intent(out) :: Rosenbluth_H
-      PetscScalar, dimension(:,:,:,:,:), intent(out) :: Rosenbluth_dHdxb
-      PetscScalar, dimension(:,:,:,:,:), intent(out) :: Rosenbluth_d2Gdxb2
+      real(prec), dimension(:), intent(in) :: x, xWeights, mHats, THats
+      real(prec), dimension(:,:,:,:,:), intent(out) :: Rosenbluth_H
+      real(prec), dimension(:,:,:,:,:), intent(out) :: Rosenbluth_dHdxb
+      real(prec), dimension(:,:,:,:,:), intent(out) :: Rosenbluth_d2Gdxb2
       ! Order of indicies in the Rosenbluth response matrices:
       ! (species_row, species_col, L, x_row, x_col)
 
-      PetscScalar, dimension(:,:), allocatable :: collocation2modal
-      PetscScalar, dimension(:,:), allocatable :: tempMatrix_H
-      PetscScalar, dimension(:,:), allocatable :: tempMatrix_dHdxb
-      PetscScalar, dimension(:,:), allocatable :: tempMatrix_d2Gdxb2
+      real(prec), dimension(:,:), allocatable :: collocation2modal
+      real(prec), dimension(:,:), allocatable :: tempMatrix_H
+      real(prec), dimension(:,:), allocatable :: tempMatrix_dHdxb
+      real(prec), dimension(:,:), allocatable :: tempMatrix_d2Gdxb2
       integer :: i, L, iSpeciesA, iSpeciesB, ix, imode
-      PetscScalar :: alpha, speciesFactor, xb
-      PetscScalar :: I_2pL, I_4pL, I_1mL, I_3mL
-      PetscScalar, parameter :: pi = 3.14159265358979d+0
-      PetscScalar, parameter :: one = 1., two = 2.
+      real(prec) :: alpha, speciesFactor, xb
+      real(prec) :: I_2pL, I_4pL, I_1mL, I_3mL
+      real(prec), parameter :: pi = 3.14159265358979d+0
+      real(prec), parameter :: one = 1., two = 2.
 
       ! Variables needed by quadpack:
       integer :: key = 6
-      PetscScalar, dimension(workspaceSize) :: alist, blist, rlist, elist
+      real(prec), dimension(workspaceSize) :: alist, blist, rlist, elist
       integer :: ier, inf, last, limit, neval
       integer, dimension(workspaceSize) :: iord
-      PetscScalar :: abserr,EPSABS,EPSREL, amountToAdd, partition
+      real(prec) :: abserr,EPSABS,EPSREL, amountToAdd, partition
 
 
 
@@ -489,17 +464,17 @@
     ! ---------------------------------------------------------------
 
     function weight(x)
-      PetscScalar, intent(in) :: x
-      PetscScalar :: weight
+      real(prec), intent(in) :: x
+      real(prec) :: weight
       weight = exp(-x*x)*(x ** xGrid_k)
     end function weight
 
     ! ---------------------------------------------------------------
 
     function evaluatePolynomial(x)
-      PetscScalar, intent(in) :: x
-      PetscScalar :: evaluatePolynomial
-      PetscScalar :: pjMinus1, pj, y
+      real(prec), intent(in) :: x
+      real(prec) :: evaluatePolynomial
+      real(prec) :: pjMinus1, pj, y
       integer :: ii
 
       y = 0d+0
@@ -521,8 +496,8 @@
     ! ---------------------------------------------------------------
 
     function integrandWithoutX(x)
-      PetscScalar, intent(in) :: x
-      PetscScalar :: integrandWithoutX, p
+      real(prec), intent(in) :: x
+      real(prec) :: integrandWithoutX, p
 
       p = evaluatePolynomial(x)
       integrandWithoutX = p*weight(x)*p
@@ -531,8 +506,8 @@
     ! ---------------------------------------------------------------
 
     function integrandWithX(x)
-      PetscScalar, intent(in) :: x
-      PetscScalar :: integrandWithX, p
+      real(prec), intent(in) :: x
+      real(prec) :: integrandWithX, p
 
       p = evaluatePolynomial(x)
       integrandWithX = x*p*weight(x)*p
@@ -541,8 +516,8 @@
     ! ---------------------------------------------------------------
 
     function integrandWithPower(x)
-      PetscScalar, intent(in) :: x
-      PetscScalar :: integrandWithPower, p
+      real(prec), intent(in) :: x
+      real(prec) :: integrandWithPower, p
 
       p = evaluatePolynomial(x)
       ! Note that x**xGrid_k should not be included in the next line!

@@ -33,7 +33,7 @@ module solver
     Mat :: factorMat
     PetscInt :: mumps_which_cntl
     PetscReal :: mumps_value
-    PetscReal :: atol, rtol, stol
+    PetscReal :: atol, rtol, stol, PetscRealValue
     integer :: maxit, maxf
 
     external evaluateJacobian, evaluateResidual, diagnosticsMonitor
@@ -139,9 +139,11 @@ module solver
        ! 1wd seems to use more memory.
        call PCFactorSetMatOrderingType(preconditionerContext, MATORDERINGRCM, ierr)
 
-       call PCFactorReorderForNonzeroDiagonal(preconditionerContext, 1d-12, ierr) 
+       PetscRealValue = 1d-12
+       call PCFactorReorderForNonzeroDiagonal(preconditionerContext, PetscRealValue, ierr) 
 
-       call PCFactorSetZeroPivot(preconditionerContext, 1d-200, ierr) 
+       PetscRealValue = 1d-200
+       call PCFactorSetZeroPivot(preconditionerContext, PetscRealValue, ierr) 
     end if
 
     
@@ -241,7 +243,8 @@ module solver
        ! Single solve, either linear or nonlinear.
 
        !  Set initial guess for the solution:
-       call VecSet(solutionVec, zero, ierr)
+       PetscRealValue = 0
+       call VecSet(solutionVec, PetscRealValue, ierr)
 
        if (masterProc) then
           print *,"------------------------------------------------------"
@@ -316,7 +319,8 @@ module solver
        ! Do a linear solve for multiple right-hand sides to get the transport matrix.
 
        !  Set f=0:
-       call VecSet(solutionVec, zero, ierr)
+       PetscRealValue = 0
+       call VecSet(solutionVec, PetscRealValue, ierr)
 
        ! Build the main linear system matrix:
        call populateMatrix(matrix,1,dummyVec)
@@ -405,11 +409,13 @@ module solver
           ! (-1) * the residual when f=0.
 
           !  Set f=0:
-          call VecSet(solutionVec, zero, ierr)
+          PetscRealValue = 0
+          call VecSet(solutionVec, PetscRealValue, ierr)
 
           call evaluateResidual(mysnes, solutionVec, residualVec, userContext, ierr)
           ! Multiply the residual by (-1):
-          call VecScale(residualVec, -1d+0, ierr)
+          PetscRealValue = -1
+          call VecScale(residualVec, PetscRealValue, ierr)
 
           if (masterProc) then
              print *,"Beginning the main solve.  This could take a while ..."

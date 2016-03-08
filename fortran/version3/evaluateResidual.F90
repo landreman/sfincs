@@ -7,6 +7,7 @@
 
   subroutine evaluateResidual(mysnes, stateVec, residualVec, userContext, ierr)
 
+    use kinds
     use petscsnes
     use globalVariables
     use indices
@@ -18,15 +19,19 @@
     PetscErrorCode :: ierr
     integer :: userContext(*)
     Vec :: rhs
-    PetscScalar :: scalar, xPartOfRHS, factor
+    real(prec) :: xPartOfRHS, factor
     integer :: ix, L, itheta, izeta, ispecies, index
-    PetscScalar :: THat, mHat, sqrtTHat, sqrtmHat, dfMdx
+    real(prec) :: THat, mHat, sqrtTHat, sqrtmHat, dfMdx
     Mat :: residualMatrix
-    PetscScalar :: dPhiHatdpsiHatToUseInRHS
+    real(prec) :: dPhiHatdpsiHatToUseInRHS
     PetscReal :: norm
+    PetscScalar :: PetscScalarZero, PetscScalarValue
     integer :: ixMin
     PetscViewer :: viewer
     character(len=200) :: filename
+
+    ! This next line is used to cast 0 into either double or single precision, whichever is used in PETSc:
+    PetscScalarZero = 0
 
     if (masterProc) then
        print *,"evaluateResidual called."
@@ -48,7 +53,7 @@
        if (masterProc) then
           print *,"State vector is 0 so I will skip building the first matrix when evaluating the residual."
        end if
-       call VecSet(residualVec, zero, ierr)
+       call VecSet(residualVec, PetscScalarZero, ierr)
     end if
 
     ! The collision term (temperature equilibration) in the residual is computed by calling populateMatrix(...,2)
@@ -67,7 +72,7 @@
     ! --------------------------------------------------------------------------------
 
     call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, rhs, ierr)
-    call VecSet(rhs, zero, ierr)
+    call VecSet(rhs, PetscScalarZero, ierr)
 
     if (RHSMode==1) then
        dPhiHatdpsiHatToUseInRHS = dPhiHatdpsiHat
@@ -118,11 +123,13 @@
                 
                 L = 0
                 index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                call VecSetValue(rhs, index, (4/three)*factor, INSERT_VALUES, ierr)
+                PetscScalarValue = (4/three)*factor
+                call VecSetValue(rhs, index, PetscScalarValue, INSERT_VALUES, ierr)
                 
                 L = 2
                 index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                call VecSetValue(rhs, index, (two/three)*factor, INSERT_VALUES, ierr)
+                PetscScalarValue = (two/three)*factor
+                call VecSetValue(rhs, index, PetscScalarValue, INSERT_VALUES, ierr)
              end do
           end do
        end do
@@ -169,9 +176,8 @@
           do itheta=ithetaMin,ithetaMax
              do izeta = izetaMin,izetaMax
                 index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                call VecSetValue(rhs, index, &
-                     factor * BHat(itheta,izeta), INSERT_VALUES, ierr)
-                     !factor/BHat(itheta,izeta), INSERT_VALUES, ierr)
+                PetscScalarValue = factor * BHat(itheta,izeta)
+                call VecSetValue(rhs, index, PetscScalarValue, INSERT_VALUES, ierr)
              end do
           end do
        end do
@@ -184,8 +190,8 @@
 
 
     ! Subtract the RHS from the residual:
-    scalar = -1
-    call VecAXPY(residualVec, scalar, rhs, ierr)
+    PetscScalarValue = -1 ! Cast -1 into type PetscScalar before passing it as a parameter.
+    call VecAXPY(residualVec, PetscScalarValue, rhs, ierr)
     call VecDestroy(rhs, ierr)
 
     if (saveMatlabOutput) then

@@ -4,6 +4,7 @@
 
 module writeHDF5Output
 
+  use kinds
   use globalVariables
   use petscsysdef
   use HDF5
@@ -116,6 +117,8 @@ module writeHDF5Output
   integer, parameter :: ARRAY_ITERATION_SPECIES_SOURCES = 104
   integer, parameter :: ARRAY_EXPORT_F = 105
   integer, parameter :: ARRAY_ITERATION_SPECIES_X = 106
+
+  real(prec) :: elapsedTime_double
 
 contains
 
@@ -638,7 +641,8 @@ contains
                "Lagrange multiplier associated with the constraint that <Phi_1>=0. Should be within machine precision of 0.")
        end if
 
-       call writeHDF5ExtensibleField(iterationNum, "elapsed time (s)", elapsedTime, ARRAY_ITERATION, "")
+       elapsedTime_double = elapsedTime
+       call writeHDF5ExtensibleField(iterationNum, "elapsed time (s)", elapsedTime_double, ARRAY_ITERATION, "")
 
        if (export_full_f) then
           call writeHDF5ExtensibleField(iterationNum,"full_f", full_f, ARRAY_EXPORT_F, &
@@ -1094,7 +1098,7 @@ contains
 
     character(len=*) :: arrayName
     integer(HID_T) :: dsetID
-    PetscScalar :: data
+    real(prec) :: data
     character(len=*) :: description
 
     call h5dcreate_f(HDF5FileID, arrayName, H5T_NATIVE_DOUBLE, dspaceIDForScalar, dsetID, HDF5Error)
@@ -1118,7 +1122,7 @@ contains
     integer(HID_T) :: dspaceID
     integer(HSIZE_T), dimension(*) :: dims
     character(len=*) :: description
-    PetscScalar, dimension(*) :: data
+    real(prec), dimension(*) :: data
 
     call h5dcreate_f(HDF5FileID, arrayName, H5T_NATIVE_DOUBLE, dspaceID, dsetID, HDF5Error)
     
@@ -1160,7 +1164,7 @@ contains
     integer(HID_T) :: dsetID
     integer(HID_T) :: dspaceID
     integer(HSIZE_T), dimension(*) :: dims
-    PetscScalar, dimension(:,:) :: data
+    real(prec), dimension(:,:) :: data
     character(len=*) :: description
     character(len=100) :: label
 
@@ -1195,7 +1199,7 @@ contains
 !!$    integer(HID_T) :: dsetID
 !!$    integer(HID_T) :: dspaceID
 !!$    integer(HSIZE_T), dimension(*) :: dims
-!!$    PetscScalar, dimension(:,:,:,:,:) :: data
+!!$    real(prec), dimension(:,:,:,:,:) :: data
 !!$    character(len=*) :: description
 !!$    character(len=100) :: label
 !!$    integer :: iteration
@@ -1268,7 +1272,7 @@ contains
     integer(HID_T) :: dspaceID, memspaceID, originalDspaceID
     integer :: temp, arrayType
     character(len=*) :: description
-    PetscScalar :: data
+    real(prec) :: data
     integer(HSIZE_T) :: offset(rank)
     integer(HSIZE_T), dimension(rank) :: dim, dimForChunk
     integer(HID_T) :: chunkProperties
@@ -1329,7 +1333,7 @@ contains
     integer(HID_T) :: dspaceID, memspaceID, originalDspaceID
     integer :: temp, arrayType
     character(len=*) :: description
-    PetscScalar, dimension(:) :: data
+    real(prec), dimension(:) :: data
     integer(HSIZE_T) :: offset(rank)
     integer(HSIZE_T), dimension(rank) :: dim, dimForChunk
     integer(HID_T) :: chunkProperties
@@ -1393,7 +1397,7 @@ contains
     integer(HID_T) :: dspaceID, memspaceID, originalDspaceID
     integer :: temp, arrayType
     character(len=*) :: description
-    PetscScalar, dimension(:,:) :: data
+    real(prec), dimension(:,:) :: data
     integer(HSIZE_T) :: offset(rank)
     integer(HSIZE_T), dimension(rank) :: dim, dimForChunk
     integer(HID_T) :: chunkProperties
@@ -1475,7 +1479,7 @@ contains
     integer(HID_T) :: dspaceID, memspaceID, originalDspaceID
     integer :: temp, arrayType
     character(len=*) :: description
-    PetscScalar, dimension(:,:,:) :: data
+    real(prec), dimension(:,:,:) :: data
     integer(HSIZE_T) :: offset(rank)
     integer(HSIZE_T), dimension(rank) :: dim, dimForChunk
     integer(HID_T) :: chunkProperties
@@ -1547,7 +1551,7 @@ contains
     integer(HID_T) :: dspaceID, memspaceID, originalDspaceID
     integer :: temp, arrayType
     character(len=*) :: description
-    PetscScalar, dimension(:,:,:,:,:) :: data
+    real(prec), dimension(:,:,:,:,:) :: data
     integer(HSIZE_T) :: offset(rank)
     integer(HSIZE_T), dimension(rank) :: dim, dimForChunk
     integer(HID_T) :: chunkProperties
