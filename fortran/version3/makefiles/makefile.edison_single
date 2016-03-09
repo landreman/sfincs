@@ -21,7 +21,6 @@
 
 PETSC_DIR=/global/homes/l/landrema/petsc-3.6.3
 PETSC_ARCH=arch-20160307-01-edison-single
-export
 
 # These next 2 includes set FC, FLINKER, and PETSC_LIB:
 # For PETSc version 3.6.0 and later, use the following 2 lines:
