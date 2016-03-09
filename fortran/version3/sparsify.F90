@@ -54,6 +54,7 @@ contains
 
     if (abs(valueToSet) > threshholdForInclusion) then
        valueToSet_PetscScalar = valueToSet ! Cast type from double to single if needed.
+       print *,valueToSet, valueToSet_PetscScalar
        call MatSetValue(myMat, row, col, valueToSet_PetscScalar, mode, err)
     end if
 

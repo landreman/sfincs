@@ -64,7 +64,7 @@
     integer :: ithetaRow, ithetaCol, izetaRow, izetaCol, ixMin, ixMinCol
     VecScatter :: vecScatterContext
     Vec :: vecOnEveryProc
-    real(prec), pointer :: stateArray(:)
+    PetscScalar, pointer :: stateArray(:)
     logical :: useStateVec
     real(prec), dimension(:,:), allocatable :: nonlinearTerm_Lp1, nonlinearTerm_Lm1
     real(prec), dimension(:), allocatable :: tempVector1, tempVector2
@@ -2059,7 +2059,8 @@
        print *,"Initializing f0"
     end if
 
-    call VecSet(f0, zero, ierr)
+    factor = zero
+    call VecSet(f0, factor, ierr)
     
     L = 0
     do ispecies = 1,Nspecies

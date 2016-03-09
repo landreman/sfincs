@@ -75,7 +75,8 @@ module solver
        call PCSetType(preconditionerContext, PCLU, ierr)
        call KSPSetType(KSPInstance, KSPGMRES, ierr)   ! Set the Krylov solver algorithm to GMRES
        call KSPGMRESSetRestart(KSPInstance, 2000, ierr)
-       call KSPSetTolerances(KSPInstance, solverTolerance, PETSC_DEFAULT_REAL, &
+       PetscRealValue = solverTolerance
+       call KSPSetTolerances(KSPInstance, PetscRealValue, PETSC_DEFAULT_REAL, &
             PETSC_DEFAULT_REAL, PETSC_DEFAULT_INTEGER, ierr)
 
        ! Allow options to be controlled using command-line flags:
@@ -142,7 +143,7 @@ module solver
        PetscRealValue = 1d-12
        call PCFactorReorderForNonzeroDiagonal(preconditionerContext, PetscRealValue, ierr) 
 
-       PetscRealValue = 1d-200
+       PetscRealValue = 1d-37 ! Roughly the smallest single-precision float allowed.
        call PCFactorSetZeroPivot(preconditionerContext, PetscRealValue, ierr) 
     end if
 
