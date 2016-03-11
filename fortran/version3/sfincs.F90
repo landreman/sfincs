@@ -72,6 +72,12 @@ program sfincs
      !!!!!!!!!!!!!!!!!!!!!!
         print *,"Nonlinear run"
         !!Added by AM 2016-02!!
+        if (includePhi1inKineticEquation) then
+           print *,"with Phi1 included in the kinetic equation"
+        else
+           print *,"but with Phi1 excluded from the kinetic equation"
+        end if
+
         if (quasineutralityOption == 1) then
            print *,"Using full quasi-neutrality equation"
         else

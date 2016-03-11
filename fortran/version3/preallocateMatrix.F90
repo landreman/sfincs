@@ -12,7 +12,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
        !!constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, nonlinear, & !!Commented by AM 2016-02
        constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, & !!Added by AM 2016-02
        !!thetaDerivativeScheme, zetaDerivativeScheme, includeRadialExBDrive !!Commented by AM 2016-03
-       thetaDerivativeScheme, zetaDerivativeScheme, includePhi1inKineticEquation !!Added by AM 2016-03
+       thetaDerivativeScheme, zetaDerivativeScheme, includePhi1inKineticEquation, quasineutralityOption !!Added by AM 2016-03
   use indices
 
   implicit none
@@ -63,11 +63,14 @@ subroutine preallocateMatrix(matrix, whichMatrix)
 
   ! We don't need to separately count the d/dxi terms, since they just add to the diagonals of the d/dtheta and d/dzeta terms we already counted.
 
-  if (includePhi1) then
-     tempInt1 = tempInt1 &
-       + 4 &               ! d Phi_1 / d theta term at L=1
-       + 4                 ! d Phi_1 / d zeta term at L=1, -1 because diagonal was accounted for in the previous line.
-  end if
+! THIS TERM HAS BEEN REMOVED BY AM 2016-03 !
+!!$  if (includePhi1) then
+!!$     tempInt1 = tempInt1 &
+!!$       + 4 &               ! d Phi_1 / d theta term at L=1
+!!$       + 4                 ! d Phi_1 / d zeta term at L=1, -1 because diagonal was accounted for in the previous line.
+!!$  end if
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 !!  if (includeRadialExBDrive) then !!Commented by AM 2016-03
   if (includePhi1inKineticEquation) then !!Added by AM 2016-03
      tempInt1 = tempInt1 &
@@ -114,10 +117,23 @@ subroutine preallocateMatrix(matrix, whichMatrix)
      do itheta=1,Ntheta
         do izeta=1,Nzeta
            index = getIndex(1,1,1,itheta,izeta,BLOCK_QN)
-           ! Add 1 because we are indexing a Fortran array instead of a PETSc matrix:
-           predictedNNZsForEachRow(index+1) = Nx*Nspecies &  ! Integrals over f to get the density
-                                              + 1 &          ! lambda
-                                              + 1            ! Diagonal entry
+
+           !!Added by AM 2016-03!!
+           if (quasineutralityOption == 1) then
+           !!!!!!!!!!!!!!!!!!!!!!!
+              ! Add 1 because we are indexing a Fortran array instead of a PETSc matrix:
+              predictedNNZsForEachRow(index+1) = Nx*Nspecies &  ! Integrals over f to get the density
+                   + 1 &          ! lambda
+                   + 1            ! Diagonal entry
+              
+           !!Added by AM 2016-03!!
+           else
+              ! Add 1 because we are indexing a Fortran array instead of a PETSc matrix:
+              predictedNNZsForEachRow(index+1) = Nx*1 &  ! Integrals over f to get the density (only 1 kinetic species for EUTERPE equations)
+                   + 1 &          ! lambda
+                   + 1            ! Diagonal entry
+           end if
+           !!!!!!!!!!!!!!!!!!!!!!!
         end do
      end do
      ! Set row for lambda constraint:

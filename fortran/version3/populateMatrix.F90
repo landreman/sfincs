@@ -1242,6 +1242,7 @@
                       rowIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
                       rowIndex2 = getIndex(ispecies, ix, L2+1, itheta, izeta, BLOCK_F) !!Added by AM 2016-03 to add extra P_2 terms
                       
+                      !!These terms are diagonal in theta and zeta
                       colIndex = getIndex(1,1,1,itheta, izeta, BLOCK_QN)
                       
                       !!The following factors are only used in the Jacobian. These terms do not contain d/dtheta or d/dzeta
@@ -1399,7 +1400,7 @@
        ! However, we need not add elements which are 0 due to ddtheta=0 as opposed to because delta f = 0, since such elements will remain 0 at every iteration of SNES.
 
        !!if (nonlinear .and. (whichMatrix==1 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Commented by AM 2016-02
-       if (includePhi1 .and. (whichMatrix==1 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Added by AM 2016-02
+       if (includePhi1 .and. includePhi1inKineticEquation .and. (whichMatrix==1 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Added by AM 2016-02
        !if (nonlinear .and. (whichMatrix==1)) then
        !if (nonlinear .and. (whichMatrix==0 .or. whichMatrix==1)) then
           allocate(tempVector1(Nx))
