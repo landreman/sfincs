@@ -168,13 +168,13 @@
              index = getIndex(1, 1, 1, itheta, izeta, BLOCK_QN)
              do ispecies = 1,Nspecies
 
-                call VecSetValue(rhs, index, Zs(ispecies) * NHats(ispecies) &
+                call VecSetValue(rhs, index, - Zs(ispecies) * NHats(ispecies) &
                      * exp (- Zs(ispecies)* alpha * Phi1Hat(itheta,izeta) / THats(ispecies)), ADD_VALUES, ierr)
              end do
              
              if (withAdiabatic) then
 
-                call VecSetValue(rhs, index, adiabaticZ * adiabaticNHat &
+                call VecSetValue(rhs, index, - adiabaticZ * adiabaticNHat &
                      * exp (- adiabaticZ* alpha * Phi1Hat(itheta,izeta) / adiabaticTHat), ADD_VALUES, ierr)
              end if
 
