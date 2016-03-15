@@ -166,18 +166,24 @@
        do itheta = ithetaMin,ithetaMax
           do izeta = izetaMin,izetaMax
              index = getIndex(1, 1, 1, itheta, izeta, BLOCK_QN)
+
+             factor = 0
              do ispecies = 1,Nspecies
 
-                call VecSetValue(rhs, index, - Zs(ispecies) * NHats(ispecies) &
-                     * exp (- Zs(ispecies)* alpha * Phi1Hat(itheta,izeta) / THats(ispecies)), ADD_VALUES, ierr)
+!!$                call VecSetValue(rhs, index, - Zs(ispecies) * NHats(ispecies) &
+!!$                     * exp (- Zs(ispecies)* alpha * Phi1Hat(itheta,izeta) / THats(ispecies)), ADD_VALUES, ierr)
+
+                factor = factor - Zs(ispecies) * NHats(ispecies)* exp (- Zs(ispecies) * alpha * Phi1Hat(itheta,izeta) / THats(ispecies))
              end do
              
              if (withAdiabatic) then
 
-                call VecSetValue(rhs, index, - adiabaticZ * adiabaticNHat &
-                     * exp (- adiabaticZ* alpha * Phi1Hat(itheta,izeta) / adiabaticTHat), ADD_VALUES, ierr)
-             end if
+!!$                call VecSetValue(rhs, index, - adiabaticZ * adiabaticNHat &
+!!$                     * exp (- adiabaticZ* alpha * Phi1Hat(itheta,izeta) / adiabaticTHat), ADD_VALUES, ierr)
 
+                factor = factor - adiabaticZ * adiabaticNHat * exp (- adiabaticZ* alpha * Phi1Hat(itheta,izeta) / adiabaticTHat)
+             end if
+             call VecSetValue(rhs, index, factor, INSERT_VALUES, ierr)
           end do
        end do
     end if
