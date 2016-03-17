@@ -14,6 +14,7 @@ subroutine validateInput()
 
   character(len=*), parameter :: line="******************************************************************"
   PetscScalar :: chargeDensity
+  PetscScalar :: maxSingleChargeDensity !!Added by AM 2016-03
   integer :: ispecies
   logical :: flag
 
@@ -314,8 +315,10 @@ subroutine validateInput()
 
   ! Ensure charge neutrality.
   chargeDensity = zero
+  maxSingleChargeDensity = 1d-11 !!Added by AM 2016-03
   do ispecies = 1,Nspecies
      chargeDensity = chargeDensity + nHats(ispecies)*Zs(ispecies)
+     maxSingleChargeDensity = max(abs(maxSingleChargeDensity), abs(nHats(ispecies)*Zs(ispecies))) !!Added by AM 2016-03
      !!Added by AM 2016-02!!
      if (quasineutralityOption == 2 .and. includePhi1) then
         exit !!If running with EUTERPE equations we only use the first kinetic species in quasi-neutrality.
@@ -328,9 +331,11 @@ subroutine validateInput()
   !!Added by AM 2015-11!!
   if (withAdiabatic) then
      chargeDensity = chargeDensity + adiabaticNHat*adiabaticZ
+     maxSingleChargeDensity = max(abs(maxSingleChargeDensity), abs(adiabaticNHat*adiabaticZ))
   end if
 
-  if (includePhi1 .and. (abs(chargeDensity) >1d-15)) then
+!!  if (includePhi1 .and. (abs(chargeDensity) >1d-15)) then
+  if (includePhi1 .and. (abs(chargeDensity)/maxSingleChargeDensity >1d-4)) then
      if (masterProc) then
         print *,"Error! When running with includePhi1=.true. you must ensure that"
         print *,"quasi-neutrality is fulfilled for the input species."
@@ -344,7 +349,8 @@ subroutine validateInput()
      stop
   end if 
 
-  if (abs(chargeDensity) > 1d-15 .and. (Nspecies > 1 .or. withAdiabatic) .and. masterProc) then
+!!  if (abs(chargeDensity) > 1d-15 .and. (Nspecies > 1 .or. withAdiabatic) .and. masterProc) then
+  if (abs(chargeDensity)/maxSingleChargeDensity > 1d-4 .and. (Nspecies > 1 .or. withAdiabatic) .and. masterProc) then
      print *,line
      print *,line
      print *,"**   WARNING: Your input does not fulfill quasi-neutrality,"
