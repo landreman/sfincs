@@ -42,6 +42,7 @@ Nxs = []
 NxPotentialsPerVths = []
 xMaxs = []
 solverTolerances = []
+Zs = []
 
 outputs = []
 
@@ -98,8 +99,8 @@ for directory in directories:
     NxPotentialsPerVths.append(f["NxPotentialsPerVth"][()])
     xMaxs.append(f["xMax"][()])
     solverTolerances.append(f["solverTolerance"][()])
-
-
+    Zs.append(f["Zs"][()])
+    
     RHSMode_new = f["RHSMode"][()]
     Nspecies_new = f["Nspecies"][()]
     includePhi1_new = (f["includePhi1"][()] == integerToRepresentTrue)
@@ -128,6 +129,9 @@ for directory in directories:
     heatFlux_vm = f["heatFlux_vm_psiHat"][()]
     elapsedTime = f["elapsed time (s)"][()]
     sources = f["sources"][()]
+    radCurr_vm = 0
+    radCurr_vd = 0
+
     if RHSMode>1:
        transportMatrix = f["transportMatrix"][()]
     if includePhi1:
@@ -156,11 +160,19 @@ for directory in directories:
                 results.append(particleFlux_vd[ispecies,iteration])
                 results.append(heatFlux_vm[ispecies,iteration])
                 results.append(heatFlux_vd[ispecies,iteration])
+		radCurr_vm += particleFlux_vm[ispecies,iteration]*Zs[ispecies,iteration]
+		radCurr_vd += particleFlux_vd[ispecies,iteration]*Zs[ispecies,iteration]
              else:
                 results.append(FSABFlow[ispecies,iteration])
                 results.append(particleFlux_vm[ispecies,iteration])
                 results.append(heatFlux_vm[ispecies,iteration])
+		radCurr_vm += particleFlux_vm[ispecies,iteration]*Zs[ispecies,iteration]
           results.append(FSABjHat[iteration])
+	  if includePhi1:
+		results.append(radCurr_vm)
+		results.append(radCurr_vd) 
+	  else:
+		results.append(radCurr_vm)
           outputs.append(results)
 
     if directory=="baseCase":
@@ -195,6 +207,8 @@ else:
             yAxisLabels.append("heatFlux\nvm_psiHat\n(species "+str(i)+")")
             yAxisLabels.append("heatFlux\nvd_psiHat\n(species "+str(i)+")")
          yAxisLabels.append("FSABjHat")
+	 yAxisLabels.append("J_net\nvm_psiHat")
+	 yAxisLabels.append("J_net\nvd_psiHat")
         
       else:
          yAxisLabels=[]
@@ -203,6 +217,7 @@ else:
             yAxisLabels.append("particleFlux\nvm_psiHat\n(species "+str(i)+")")
             yAxisLabels.append("heatFlux\nvm_psiHat\n(species "+str(i)+")")
          yAxisLabels.append("FSABjHat")
+	 yAxisLabels.append("Radial Current")
             
 numRows = len(yAxisLabels)
 parametersToVary = []
