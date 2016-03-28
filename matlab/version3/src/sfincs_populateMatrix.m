@@ -18,6 +18,8 @@ global DHat BHat_sub_psi BHat_sub_theta BHat_sub_zeta BHat_sup_theta BHat_sup_ze
 global dBHat_sub_psi_dtheta dBHat_sub_psi_dzeta
 global dBHat_sub_theta_dpsiHat dBHat_sub_theta_dzeta
 global dBHat_sub_zeta_dpsiHat dBHat_sub_zeta_dtheta
+global adiabaticZ adiabaticNHat adiabaticTHat withAdiabatic quasineutralityOption
+global dnHatdpsiHats dTHatdpsiHats
 
 populateMatrixTic = tic;
 
@@ -309,7 +311,7 @@ for ispecies = 1:Nspecies
             ErTermSpatialPart = zeros(Ntheta,Nzeta);
         end
         
-        if includePhi1
+        if includePhi1 && includePhi1inKineticEquation
             nonlinearTermSpatialPart = -alpha*Z./(2*sqrtm*sqrtT*BHat).*(BHat_sup_theta.*dPhi1Hatdtheta + BHat_sup_zeta.*dPhi1Hatdzeta);
         else
             nonlinearTermSpatialPart = zeros(Ntheta,Nzeta);
@@ -400,7 +402,7 @@ for ispecies = 1:Nspecies
             ErTermSpatialPart2 = zeros(Ntheta,Nzeta);
         end
         
-        if includePhi1
+        if includePhi1 && includePhi1inKineticEquation
             nonlinearTermSpatialPart = -alpha*Z./(2*sqrtT*sqrtm*BHat).*(BHat_sup_theta.*dPhi1Hatdtheta + BHat_sub_zeta.*dPhi1Hatdzeta);
         else
             nonlinearTermSpatialPart = zeros(Ntheta,Nzeta);
@@ -516,7 +518,7 @@ for ispecies = 1:Nspecies
         L=0;
         
         % dPhi1/dtheta term
-        spatialPart = -(Delta*nHat*mHat*sqrtmHat*alpha/(2*pi*sqrtpi*THat*sqrtTHat)) ...
+        spatialPart = -(Delta*nHat*mHat*sqrtm*alpha/(2*pi*sqrtpi*THat*sqrtT)) ...
             * (DHat.*exp(-(alpha*Z/THat)*Phi1Hat).*BHat_sub_zeta)./(BHat.*BHat);
         for ix = ixMin:Nx
             spatialAndXPart = expx2(ix)*(spatialPart .* (dnHatdpsiHats(ispecies)/nHat ...
@@ -530,7 +532,7 @@ for ispecies = 1:Nspecies
         end
         
         % dPhi1/dzeta term
-        spatialPart = (Delta*nHat*mHat*sqrtmHat*alpha/(2*pi*sqrtpi*THat*sqrtTHat)) ...
+        spatialPart = (Delta*nHat*mHat*sqrtm*alpha/(2*pi*sqrtpi*THat*sqrtT)) ...
             * (DHat.*exp(-(alpha*Z/THat)*Phi1Hat).*BHat_sub_theta)./(BHat.*BHat);
         for ix = ixMin:Nx
             spatialAndXPart = expx2(ix)*(spatialPart .* (dnHatdpsiHats(ispecies)/nHat ...
@@ -551,7 +553,7 @@ for ispecies = 1:Nspecies
     % -----------------------------------------
     
     if includePhi1 && includePhi1inKineticEquation && (whichMatrix == 0 || whichMatrix==1)
-        factors = -alpha*Z*Delta*nHat*mHat*sqrtMHat/(THat*2*pi*sqrtpi*THat*sqrtTHat);
+        factors = -alpha*Z*Delta*nHat*mHat*sqrtm/(THat*2*pi*sqrtpi*THat*sqrtT);
         spatialPartOfMagneticDriftTerm = (THat/Z)*(DHat./(BHat.*BHat.*BHat)).*(BHat_sub_theta .* dBHatdzeta - BHat_sub_zeta.*dBHatdtheta);
         spatialPartOfExBDriftTerm = alpha*DHat./(BHat.*BHat).*(BHat_sub_theta .* dPhi1Hatdzeta - BHat_sub_zeta.*dPhi1Hatdtheta);
         for ix = ixMin:Nx
@@ -935,18 +937,57 @@ end
 % Add quasineutrality equation.
 % --------------------------------------------------
 
+% Part with column indices in BLOCK_F, which is also used for the residual:
+
 if whichMatrix ~= 2 && includePhi1
+    switch quasineutralityOption
+        case 1
+            ispecies_max = Nspecies;
+        case 2
+            ispecies_max = 1;
+        otherwise
+            error('Invalid quasineutralityOption')
+    end
     L = 0;
     xPart = x2.*xWeights;
-    speciesFactor = Zs .* ((THats./mHats).^(3/2));
+    speciesFactor = 4*pi*Zs .* ((THats./mHats).^(3/2));
     for itheta = 1:Ntheta
         for izeta = 1:Nzeta
             rowIndex = sfincs_indices(1, 1, 1, itheta, izeta, BLOCK_QN, indexVars);
-            for ispecies = 1:Nspecies
+            for ispecies = 1:ispecies_max
                 colIndices = sfincs_indices(ispecies, 1:Nx, L+1, itheta, izeta, BLOCK_F, indexVars);
                 addSparseBlock(rowIndex, colIndices, xPart' *speciesFactor(ispecies))
             end
         end
+    end
+end
+
+% For quasineutralityOption=1: Part of the Jacobian with column indices in BLOCK_QN, which is NOT used for the residual:
+if includePhi1 && (quasineutralityOption==1) && (whichMatrix==0 || whichMatrix==1)
+    stuffToAdd = zeros(Ntheta,Nzeta);
+    for ispecies = 1:Nspecies
+        stuffToAdd = stuffToAdd - alpha*Zs(ispecies)*Zs(ispecies)*nHats(ispecies)/THats(ispecies) ...
+            *exp(-alpha*Zs(ispecies)/THats(ispecies)*Phi1Hat);
+    end
+    if withAdiabatic
+        stuffToAdd = stuffToAdd - alpha*adiabaticZ*adiabaticZ*adiabaticNHat/adiabaticTHat ...
+            *exp(-alpha*adiabaticZ/adiabaticTHat*Phi1Hat);
+    end
+    
+    for itheta = 1:Ntheta
+        indices = sfincs_indices(1, 1, 1, itheta, 1:Nzeta, BLOCK_QN, indexVars);
+        addToSparse(indices, indices, stuffToAdd(itheta,:))
+    end
+end
+
+% For quasineutralityOption=2: Part of the Jacobian with column indices in BLOCK_QN, which IS used for the residual:
+if includePhi1 && (quasineutralityOption==2) && (whichMatrix~=2)
+    factor = -alpha*(Zs(1)*Zs(1)*nHats(1)/THats(1) ...
+        +adiabaticZ*adiabaticZ*adiabaticNHat/adiabaticTHat);
+    stuffToAdd = factor * ones(Nzeta,1);
+    for itheta = 1:Ntheta
+        indices = sfincs_indices(1, 1, 1, itheta, 1:Nzeta, BLOCK_QN, indexVars);
+        addToSparse(indices, indices, stuffToAdd)
     end
 end
 

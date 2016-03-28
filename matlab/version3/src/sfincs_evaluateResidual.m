@@ -1,10 +1,11 @@
 function residual = sfincs_evaluateResidual()
 
 global stateVector matrixSize RHSMode pointAtX0 dPhiHatdpsiHat includeTemperatureEquilibrationTerm f0
-global x Nspecies Ntheta Nzeta Nx Delta alpha BLOCK_F indexVars
+global x Nspecies Ntheta Nzeta Nx Delta alpha BLOCK_F BLOCK_QN indexVars
 global Zs THats mHats nHats dnHatdpsiHats dTHatdpsiHats EParallelHat
 global BHat DHat FSABHat2 BHat_sub_zeta BHat_sub_theta
-global dBHatdtheta dBHatdzeta Phi1Hat includePhi1
+global dBHatdtheta dBHatdzeta Phi1Hat includePhi1 includePhi1InKineticEquation
+global quasineutralityOption withAdiabatic adiabaticZ adiabaticNHat adiabaticTHat
 
 fprintf('Evaluating residual.\n')
 
@@ -61,12 +62,12 @@ for ispecies = 1:Nspecies
         .*(BHat_sub_zeta.*dBHatdtheta - BHat_sub_theta.*dBHatdzeta) ...
         .* DHat;
     
-    if includePhi1
+    if includePhi1 && includePhi1InKineticEquation
         spatialFactor = spatialFactor .* exp(-(alpha*Z/THat)*Phi1Hat);
     end
     
     for ix = ixMin:Nx
-        if includePhi1
+        if includePhi1 && includePhi1InKineticEquation
             xAndSpatialPartOfRHS = x2(ix)*expx2(ix)*( dnHatdpsiHats(ispecies)/nHat ...
                 + alpha*Z/THat*dPhiHatdpsiHatToUseInRHS ...
                 + (x2(ix) - 3/2 + (alpha*Z/THat)*Phi1Hat)*dTHatdpsiHats(ispecies)/THat) ...
@@ -97,6 +98,24 @@ for ispecies = 1:Nspecies
             rhs(indices) = inductiveFactor * BHat(itheta,:);
             
         end
+    end
+end
+
+% Add Z n_0 exp(-Z e Phi1/T) term in quasineutrality:
+if includePhi1 && (quasineutralityOption==1)
+    stuffToAdd = zeros(Ntheta,Nzeta);
+    for ispecies = 1:Nspecies
+        stuffToAdd = stuffToAdd + Zs(ispecies)*nHats(ispecies) ...
+            *exp(-alpha*Zs(ispecies)/THats(ispecies)*Phi1Hat);
+    end
+    if withAdiabatic
+        stuffToAdd = stuffToAdd + adiabaticZ*adiabaticNHat ...
+            *exp(-alpha*adiabaticZ/adiabaticTHat*Phi1Hat);
+    end
+    
+    for itheta = 1:Ntheta
+        indices = sfincs_indices(1, 1, 1, itheta, 1:Nzeta, BLOCK_QN, indexVars);
+        rhs(indices) = -stuffToAdd(itheta,:);
     end
 end
 
