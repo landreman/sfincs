@@ -276,6 +276,7 @@ end
 
 if RHSMode>1
     fprintf('Transport matrix:\n')
+    format longg
     transportMatrix
 end
 

@@ -4,7 +4,7 @@ global stateVector matrixSize RHSMode pointAtX0 dPhiHatdpsiHat includeTemperatur
 global x Nspecies Ntheta Nzeta Nx Delta alpha BLOCK_F indexVars
 global Zs THats mHats nHats dnHatdpsiHats dTHatdpsiHats EParallelHat
 global BHat DHat FSABHat2 BHat_sub_zeta BHat_sub_theta
-global dBHatdtheta dBHatdzeta
+global dBHatdtheta dBHatdzeta Phi1Hat includePhi1
 
 fprintf('Evaluating residual.\n')
 
@@ -44,6 +44,8 @@ x2 = x.*x;
 expx2 = exp(-x2);
 sqrtpi = sqrt(pi);
 
+% Add R_m, the part of the residual involving the radial magnetic drift.
+% Also add the inductive parallel electric field term. 
 allZeta = 1:Nzeta;
 rhs = zeros(matrixSize,1);
 for ispecies = 1:Nspecies
@@ -59,10 +61,22 @@ for ispecies = 1:Nspecies
         .*(BHat_sub_zeta.*dBHatdtheta - BHat_sub_theta.*dBHatdzeta) ...
         .* DHat;
     
+    if includePhi1
+        spatialFactor = spatialFactor .* exp(-(alpha*Z/THat)*Phi1Hat);
+    end
+    
     for ix = ixMin:Nx
-        xPartOfRHS = x2(ix)*expx2(ix)*( dnHatdpsiHats(ispecies)/nHat ...
-            + alpha*Z/THat*dPhiHatdpsiHatToUseInRHS ...
-            + (x2(ix) - 3/2)*dTHatdpsiHats(ispecies)/THat);
+        if includePhi1
+            xAndSpatialPartOfRHS = x2(ix)*expx2(ix)*( dnHatdpsiHats(ispecies)/nHat ...
+                + alpha*Z/THat*dPhiHatdpsiHatToUseInRHS ...
+                + (x2(ix) - 3/2 + (alpha*Z/THat)*Phi1Hat)*dTHatdpsiHats(ispecies)/THat) ...
+                .* spatialFactor;
+        else
+            xAndSpatialPartOfRHS = x2(ix)*expx2(ix)*( dnHatdpsiHats(ispecies)/nHat ...
+                + alpha*Z/THat*dPhiHatdpsiHatToUseInRHS ...
+                + (x2(ix) - 3/2)*dTHatdpsiHats(ispecies)/THat) ...
+                * spatialFactor;
+        end
         
         inductiveFactor = alpha*Z*x(ix)*expx2(ix)*EParallelHat ...
             *nHat*mHat/(pi*sqrtpi*THat*THat*FSABHat2);
@@ -72,12 +86,11 @@ for ispecies = 1:Nspecies
             
             L = 0;
             indices = sfincs_indices(ispecies, ix, L+1, itheta, allZeta, BLOCK_F, indexVars);
-            rhs(indices) =  (4/3)*xPartOfRHS*spatialFactor(itheta,:);
+            rhs(indices) =  (4/3)*xAndSpatialPartOfRHS(itheta,:);
             
             L = 2;
             indices = sfincs_indices(ispecies, ix, L+1, itheta, allZeta, BLOCK_F, indexVars);
-            rhs(indices) = (2/3)*xPartOfRHS*spatialFactor(itheta,:);
-            
+            rhs(indices) = (2/3)*xAndSpatialPartOfRHS(itheta,:);
             % Inductive term:
             L = 1;
             indices = sfincs_indices(ispecies, ix, L+1, itheta, allZeta, BLOCK_F, indexVars);

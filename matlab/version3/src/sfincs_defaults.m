@@ -73,6 +73,13 @@ dTHatdrHats = 0;
 dnHatdrNs = 0;
 dTHatdrNs = 0;
 
+global adiabaticZ adiabaticMHat adiabaticNHat adiabaticTHat withAdiabatic
+adiabaticZ = -1;
+adiabaticMHat = 5.446170214e-4;
+adiabaticNHat = 1;
+adiabaticTHat = 1;
+withAdiabatic = false;
+
 % *************************************************************************
 % physicsParameters namelist
 % *************************************************************************
@@ -81,7 +88,7 @@ global Delta alpha nu_n nuPrime EStar EParallelHat
 global dPhiHatdpsiHat dPhiHatdpsiN dPhiHatdrHat dPhiHatdrN
 global collisionOperator constraintScheme
 global includeXDotTerm includeElectricFieldTermInXiDot useDKESExBDrift include_fDivVE_term
-global includePhi1 nonlinear includeTemperatureEquilibrationTerm magneticDriftScheme
+global includePhi1 includePhi1inKineticEquation includeTemperatureEquilibrationTerm magneticDriftScheme quasineutralityOption
 
 Delta = 4.5694e-3;
 alpha = 1;
@@ -103,9 +110,10 @@ includeElectricFieldTermInXiDot = true;
 useDKESExBDrift = false;
 include_fDivVE_term = false;
 includePhi1 = false;
-nonlinear = false;
+includePhi1inKineticEquation = true;
 includeTemperatureEquilibrationTerm = false;
 magneticDriftScheme = 0;
+quasineutralityOption = 1;
 
 % *************************************************************************
 % resolutionParameters namelist
