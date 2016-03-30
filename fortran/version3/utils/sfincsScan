@@ -58,7 +58,7 @@ elif sfincsSystem=="hydra":
             original.insert(1,"# @ job_name = "+name+"\n")
         return original
 
-elif sfincsSystem=="laptop":
+elif sfincsSystem=="laptop" or sfincsSystem=="macports":
     submitCommand = "bash "+jobFilename
     def nameJobFile(original,name):
         # No changes needed to the job.sfincsScan file.
