@@ -395,16 +395,16 @@ subroutine validateInput()
 !!$  end if
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-! By AM 2016-03: I decided to remove this check below because includePhi1inKineticEquation does not matter if includePhi1=.false.
+! By AM 2016-03: I decided to remove this check below because includePhi1InKineticEquation does not matter if includePhi1=.false.
 
 !!$!!  if (includeRadialExBDrive .and. (.not. includePhi1)) then !!Commented by AM 2016-03
-!!$  if (includePhi1inKineticEquation .and. (.not. includePhi1)) then !!Added by AM 2016-03
+!!$  if (includePhi1InKineticEquation .and. (.not. includePhi1)) then !!Added by AM 2016-03
 !!$     if (masterProc) then
 !!$!!        print *,"Error! You requested a calculation including the radial ExB drive term" !!Commented by AM 2016-03
 !!$!!        print *,"(includeRadialExBDrive=.true.) but you set includePhi1=.false." !!Commented by AM 2016-03
 !!$!!        print *,"These options are inconsistent since the radial ExB drive term involves Phi1." !!Commented by AM 2016-03
 !!$        print *,"Error! You requested a calculation including Phi1 in the kinetic equation" !!Added by AM 2016-03
-!!$        print *,"(includePhi1inKineticEquation=.true.) but you set includePhi1=.false." !!Added by AM 2016-03
+!!$        print *,"(includePhi1InKineticEquation=.true.) but you set includePhi1=.false." !!Added by AM 2016-03
 !!$        print *,"These options are inconsistent." !!Added by AM 2016-03
 !!$     end if
 !!$     stop

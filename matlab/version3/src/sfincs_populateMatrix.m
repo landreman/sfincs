@@ -10,7 +10,7 @@ global preconditioner_zeta_min_L zetaWeights
 global preconditioner_species preconditioner_x preconditioner_x_min_L
 global preconditioner_xi collisionOperator constraintScheme
 global BLOCK_F BLOCK_QN BLOCK_PHI1_CONSTRAINT BLOCK_DENSITY_CONSTRAINT BLOCK_PRESSURE_CONSTRAINT BLOCK_F_CONSTRAINT indexVars
-global includePhi1 includePhi1inKineticEquation useDKESExBDrift includeXDotTerm includeElectricFieldTermInXiDot magneticDriftScheme
+global includePhi1 includePhi1InKineticEquation useDKESExBDrift includeXDotTerm includeElectricFieldTermInXiDot magneticDriftScheme
 global Delta alpha nu_n Phi1Hat dPhi1Hatdtheta dPhi1Hatdzeta
 global BDotCurlB FSABHat2 dPhiHatdpsiHat force0RadialCurrentInEquilibrium
 global BHat dBHatdtheta dBHatdzeta dBHatdpsiHat
@@ -311,7 +311,7 @@ for ispecies = 1:Nspecies
             ErTermSpatialPart = zeros(Ntheta,Nzeta);
         end
         
-        if includePhi1 && includePhi1inKineticEquation
+        if includePhi1 && includePhi1InKineticEquation
             nonlinearTermSpatialPart = -alpha*Z./(2*sqrtm*sqrtT*BHat).*(BHat_sup_theta.*dPhi1Hatdtheta + BHat_sup_zeta.*dPhi1Hatdzeta);
         else
             nonlinearTermSpatialPart = zeros(Ntheta,Nzeta);
@@ -402,7 +402,7 @@ for ispecies = 1:Nspecies
             ErTermSpatialPart2 = zeros(Ntheta,Nzeta);
         end
         
-        if includePhi1 && includePhi1inKineticEquation
+        if includePhi1 && includePhi1InKineticEquation
             nonlinearTermSpatialPart = -alpha*Z./(2*sqrtT*sqrtm*BHat).*(BHat_sup_theta.*dPhi1Hatdtheta + BHat_sub_zeta.*dPhi1Hatdzeta);
         else
             nonlinearTermSpatialPart = zeros(Ntheta,Nzeta);
@@ -514,7 +514,7 @@ for ispecies = 1:Nspecies
     % for some terms in the Jacobian.
     % -----------------------------------------
     
-    if includePhi1 && includePhi1inKineticEquation && (whichMatrix ~= 2)
+    if includePhi1 && includePhi1InKineticEquation && (whichMatrix ~= 2)
         L=0;
         
         % dPhi1/dtheta term
@@ -552,7 +552,7 @@ for ispecies = 1:Nspecies
     % drift term but which do not appear in the residual.
     % -----------------------------------------
     
-    if includePhi1 && includePhi1inKineticEquation && (whichMatrix == 0 || whichMatrix==1)
+    if includePhi1 && includePhi1InKineticEquation && (whichMatrix == 0 || whichMatrix==1)
         factors = -alpha*Z*Delta*nHat*mHat*sqrtm/(THat*2*pi*sqrtpi*THat*sqrtT);
         spatialPartOfMagneticDriftTerm = (THat/Z)*(DHat./(BHat.*BHat.*BHat)).*(BHat_sub_theta .* dBHatdzeta - BHat_sub_zeta.*dBHatdtheta);
         spatialPartOfExBDriftTerm = alpha*DHat./(BHat.*BHat).*(BHat_sub_theta .* dPhi1Hatdzeta - BHat_sub_zeta.*dPhi1Hatdtheta);
@@ -899,8 +899,10 @@ if whichMatrix ~= 2
             % Do nothing
             
         case 1
-            xPartOfSource1 = (x2-5/2).*expx2;
-            xPartOfSource2 = (x2-3/2).*expx2;
+            xPartOfSource1 = (1/(pi*sqrtpi))*(   -x2 + 5/2).*expx2;
+            xPartOfSource2 = (1/(pi*sqrtpi))*(2/3*x2 -   1).*expx2;
+            %xPartOfSource1 = (x2-5/2).*expx2;
+            %xPartOfSource2 = (x2-3/2).*expx2;
             
             L=0;
             for ispecies = 1:Nspecies

@@ -61,7 +61,6 @@
   useDKESExBDrift = .false.
 
   includePhi1 = .false.
-  nonlinear = .false.
 
   magneticDriftScheme = 1
 /

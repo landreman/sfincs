@@ -88,7 +88,7 @@ global Delta alpha nu_n nuPrime EStar EParallelHat
 global dPhiHatdpsiHat dPhiHatdpsiN dPhiHatdrHat dPhiHatdrN
 global collisionOperator constraintScheme
 global includeXDotTerm includeElectricFieldTermInXiDot useDKESExBDrift include_fDivVE_term
-global includePhi1 includePhi1inKineticEquation includeTemperatureEquilibrationTerm magneticDriftScheme quasineutralityOption
+global includePhi1 includePhi1InKineticEquation includeTemperatureEquilibrationTerm magneticDriftScheme quasineutralityOption
 
 Delta = 4.5694e-3;
 alpha = 1;
@@ -110,7 +110,7 @@ includeElectricFieldTermInXiDot = true;
 useDKESExBDrift = false;
 include_fDivVE_term = false;
 includePhi1 = false;
-includePhi1inKineticEquation = true;
+includePhi1InKineticEquation = true;
 includeTemperatureEquilibrationTerm = false;
 magneticDriftScheme = 0;
 quasineutralityOption = 1;

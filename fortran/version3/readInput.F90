@@ -56,7 +56,7 @@ contains
          !!nuPrime, EStar, magneticDriftScheme, includeRadialExBDrive
 	 !!!!!!!!!!!!!!!!!!!!!!!!!!!
 	 !!Added by AM 2016-02!!         
-         nuPrime, EStar, magneticDriftScheme, includePhi1inKineticEquation, &
+         nuPrime, EStar, magneticDriftScheme, includePhi1InKineticEquation, &
          quasineutralityOption
          !!!!!!!!!!!!!!!!!!!!!!
 

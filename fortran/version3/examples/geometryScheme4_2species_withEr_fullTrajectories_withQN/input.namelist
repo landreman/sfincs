@@ -31,8 +31,7 @@
   includeElectricFieldTermInXiDot = .true.
   useDKESExBDrift = .false.
   includePhi1 = .true.
-  includeRadialExBDrive = .false.
-  nonlinear = .false.
+  includePhi1InKineticEquation = .false.
 /
 
 &resolutionParameters

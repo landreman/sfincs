@@ -12,7 +12,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
        !!constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, nonlinear, & !!Commented by AM 2016-02
        constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, & !!Added by AM 2016-02
        !!thetaDerivativeScheme, zetaDerivativeScheme, includeRadialExBDrive !!Commented by AM 2016-03
-       thetaDerivativeScheme, zetaDerivativeScheme, includePhi1inKineticEquation, quasineutralityOption !!Added by AM 2016-03
+       thetaDerivativeScheme, zetaDerivativeScheme, includePhi1InKineticEquation, quasineutralityOption !!Added by AM 2016-03
   use indices
 
   implicit none
@@ -72,7 +72,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!  if (includeRadialExBDrive) then !!Commented by AM 2016-03
-  if (includePhi1inKineticEquation) then !!Added by AM 2016-03
+  if (includePhi1InKineticEquation) then !!Added by AM 2016-03
      tempInt1 = tempInt1 &
        + 4 &               ! d Phi_1 / d theta term at L=0
        + 4                 ! d Phi_1 / d zeta term at L=0

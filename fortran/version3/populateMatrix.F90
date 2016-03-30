@@ -1055,7 +1055,7 @@
        
 !!MOVED SECTION BELOW TO THE NEXT SECTION INSTEAD TO AVOID LOOPING OVER THE SAME STUFF TWICE
 
-!!$       if ((whichMatrix .ne. 2) .and. includePhi1 .and. includePhi1inKineticEquation) then
+!!$       if ((whichMatrix .ne. 2) .and. includePhi1 .and. includePhi1InKineticEquation) then
 !!$          L=0
 !!$          do ix = ixMin,Nx
 !!$
@@ -1132,7 +1132,7 @@
 
        !!THE includeRadialExBDrive FLAG IS NOT USED ANYMORE
        !!if ((whichMatrix .ne. 2) .and. includeRadialExBDrive) then !!Commented by AM 2016-02
-       if ((whichMatrix .ne. 2) .and. includePhi1 .and. includePhi1inKineticEquation) then !!Added by AM 2016-02
+       if ((whichMatrix .ne. 2) .and. includePhi1 .and. includePhi1InKineticEquation) then !!Added by AM 2016-02
           L=0
           L2=2 !!Added by AM 2016-03 to add extra P_2 terms
           
@@ -1318,7 +1318,7 @@
 
        !if (nonlinear .and. (whichMatrix .ne. 2)) then
        !!if (nonlinear .and. (whichMatrix == 1 .or. whichMatrix == 3 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Commented by AM 2016-02
-       if (includePhi1 .and. includePhi1inKineticEquation .and. (whichMatrix == 1 .or. whichMatrix == 3 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Added by AM 2016-02
+       if (includePhi1 .and. includePhi1InKineticEquation .and. (whichMatrix == 1 .or. whichMatrix == 3 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Added by AM 2016-02
 
           !print *,"@@@@@@ ",myRank," max(abs(dPhi1Hatdtheta)): ",maxval(abs(dPhi1Hatdtheta)),maxval(abs(dPhi1Hatdzeta))
 
@@ -1400,7 +1400,7 @@
        ! However, we need not add elements which are 0 due to ddtheta=0 as opposed to because delta f = 0, since such elements will remain 0 at every iteration of SNES.
 
        !!if (nonlinear .and. (whichMatrix==1 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Commented by AM 2016-02
-       if (includePhi1 .and. includePhi1inKineticEquation .and. (whichMatrix==1 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Added by AM 2016-02
+       if (includePhi1 .and. includePhi1InKineticEquation .and. (whichMatrix==1 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Added by AM 2016-02
        !if (nonlinear .and. (whichMatrix==1)) then
        !if (nonlinear .and. (whichMatrix==0 .or. whichMatrix==1)) then
           allocate(tempVector1(Nx))

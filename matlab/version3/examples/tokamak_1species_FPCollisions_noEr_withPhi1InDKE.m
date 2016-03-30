@@ -44,13 +44,21 @@ Delta = 4.5694e-3;
 alpha = 1;
 nu_n = 8.4774e-3;
 includePhi1 = true;
-includePhi1InKineticEquation = false;
+includePhi1InKineticEquation = true;
 
 global Ntheta Nzeta Nxi Nx
 Ntheta = 21;
 Nzeta = 1;
 Nxi = 31;
 Nx = 8;
+
+global useIterativeLinearSolver
+%useIterativeLinearSolver = false;
+
+global preconditioner_species preconditioner_x preconditioner_xi
+preconditioner_species=0
+preconditioner_x=0
+preconditioner_xi=0
 
 sfincs_main()
 

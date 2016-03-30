@@ -23,7 +23,8 @@ switch RHSMode
         stateVector = zeros(matrixSize,1);
 
         if includePhi1
-            numJacobianIterations = 10;
+            numJacobianIterations = 1; %Replace 1 with a larger number eventually!
+            %numJacobianIterations = 10;
         else
             numJacobianIterations = 1;
         end

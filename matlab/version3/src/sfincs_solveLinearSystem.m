@@ -36,7 +36,8 @@ else
     L_inf_normalization = max(abs(rhs));
     fprintf('Absolute GMRES residual in L1 norm: %g,   L2 norm: %g,   L_inf norm: %g\n',sum(abs(residualVector)), sum(residualVector.*residualVector), max(abs(residualVector)))
     fprintf('Relative GMRES residual in L1 norm: %g,   L2 norm: %g,   L_inf norm: %g\n',sum(abs(residualVector))/L1_normalization, sum(residualVector.*residualVector)/L2_normalization, max(abs(residualVector))/L_inf_normalization)
-    
+
+    %{
     figure(10)
     clf
     semilogy(rv0/rv0(1),'-o');
@@ -44,6 +45,7 @@ else
     ylabel('Relative residual');
     title('Convergence of GMRES');
     drawnow
+    %}
 end
 
     function solnVector = preconditioner(rhsVector)

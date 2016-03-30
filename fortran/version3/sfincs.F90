@@ -72,7 +72,7 @@ program sfincs
      !!!!!!!!!!!!!!!!!!!!!!
         print *,"Nonlinear run"
         !!Added by AM 2016-02!!
-        if (includePhi1inKineticEquation) then
+        if (includePhi1InKineticEquation) then
            print *,"with Phi1 included in the kinetic equation"
         else
            print *,"but with Phi1 excluded from the kinetic equation"

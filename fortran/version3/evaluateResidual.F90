@@ -110,7 +110,7 @@
                + (x2(ix) - three/two)*dTHatdpsiHats(ispecies)/THats(ispecies))
 
           !!Added by AM 2016-02!!
-          if (includePhi1 .and. includePhi1inKineticEquation) then
+          if (includePhi1 .and. includePhi1InKineticEquation) then
              xPartOfRHS2 = x2(ix)*exp(-x2(ix))*dTHatdpsiHats(ispecies)/(THats(ispecies)*THats(ispecies))
           !!else
           !!   xPartOfRHS2 = 0.0
@@ -127,7 +127,7 @@
                 !     /(2*pi*sqrtpi*Zs(ispecies)*psiAHat*(BHat(itheta,izeta)**3)*sqrtTHat) &
                 !     *(GHat*dBHatdtheta(itheta,izeta) - IHat*dBHatdzeta(itheta,izeta))&
                 !     *xPartOfRHS
-                if (includePhi1 .and. includePhi1inKineticEquation) then !!Added by AM 2016-03
+                if (includePhi1 .and. includePhi1InKineticEquation) then !!Added by AM 2016-03
                    factor = Delta*nHats(ispecies)*mHat*sqrtMHat &
                         /(2*pi*sqrtpi*Zs(ispecies)*(BHat(itheta,izeta)**3)*sqrtTHat) &
                         *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &

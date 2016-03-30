@@ -47,6 +47,11 @@
   THats = 0.5d+0
   dNHatdrHats = -6.0d+0
   dTHatdrHats = -3.0d+0
+
+  withAdiabatic = .t.
+  adiabaticZ = -1
+  adiabaticNHat = 1.0d+0
+  adiabaticTHat = 0.5d+0
 /
 
 &physicsParameters
@@ -63,7 +68,7 @@
   useDKESExBDrift = .false.
 
   includePhi1 = .true.
-  nonlinear = .false.
+  includePhi1InKineticEquation = .false.
 /
 
 &resolutionParameters

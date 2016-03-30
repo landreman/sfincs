@@ -2,6 +2,8 @@ function sfincs_compareMatricesAndVectorsToFortran(directory)
 
 global Jacobian preconditionerMatrix initialResidual stateVector
 
+addpath('~/petsc-3.6.3/share/petsc/matlab')
+
 filename = fullfile(directory,'sfincsBinary_iteration_000_residual');
 fprintf('Attempting to read %s\n',filename)
 residual_fortran = PetscBinaryRead(filename);
@@ -70,6 +72,11 @@ subplot(numRows,numCols,4)
 spy(abs(Jacobian_fortran-Jacobian)>th2)
 title(['Differences > ',num2str(th2)])
 
+differences = Jacobian_fortran-Jacobian;
+differencesMatter = abs(differences)>th2;
+fprintf('Here come the differences:\n')
+differences(differencesMatter)
+
 subplot(numRows,numCols,5)
 spy(abs(preconditionerMatrix)>th1)
 title('Matlab preconditioner')
@@ -79,6 +86,9 @@ spy(abs(preconditionerMatrix_fortran)>th1)
 title('Fortran preconditioner')
 
 subplot(numRows,numCols,7)
+
+size(preconditionerMatrix_fortran)
+size(preconditionerMatrix)
 spy(abs(preconditionerMatrix_fortran-preconditionerMatrix)>th1)
 title(['Differences > ',num2str(th1)])
 
