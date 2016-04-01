@@ -1183,7 +1183,7 @@
                       colIndex = getIndex(1,1,1,ithetaCol, izeta, BLOCK_QN)
 !!                      call MatSetValueSparse(matrix, rowIndex, colIndex,& !!Commented by AM 2016-03
 !!                           factor*ddtheta(ithetaRow, ithetaCol), ADD_VALUES, ierr) !!Commented by AM 2016-03
-
+                      !!! SHOULD THE NEXT LINE BE MatSetValueSparse???
                       call MatSetValue(matrix, rowIndex, colIndex,& !!Added by AM 2016-03
                            (factor1 + factor2)*ddtheta(ithetaRow, ithetaCol), ADD_VALUES, ierr) !!Added by AM 2016-03
 
@@ -1220,7 +1220,7 @@
                       colIndex = getIndex(1,1,1,itheta, izetaCol, BLOCK_QN)
                       !!                      call MatSetValueSparse(matrix, rowIndex, colIndex,& !!Commented by AM 2016-03
                       !!                           factor*ddzeta(izetaRow, izetaCol), ADD_VALUES, ierr) !!Commented by AM 2016-03
-                      
+                      !!! SHOULD THE NEXT LINE BE MatSetValueSparse ????
                       call MatSetValue(matrix, rowIndex, colIndex,& !!Added by AM 2016-03
                            (factor1 + factor2)*ddzeta(izetaRow, izetaCol), ADD_VALUES, ierr) !!Added by AM 2016-03
                       
@@ -1318,6 +1318,7 @@
 
        !if (nonlinear .and. (whichMatrix .ne. 2)) then
        !!if (nonlinear .and. (whichMatrix == 1 .or. whichMatrix == 3 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Commented by AM 2016-02
+       !if (.false.) then
        if (includePhi1 .and. includePhi1InKineticEquation .and. (whichMatrix == 1 .or. whichMatrix == 3 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Added by AM 2016-02
 
           !print *,"@@@@@@ ",myRank," max(abs(dPhi1Hatdtheta)): ",maxval(abs(dPhi1Hatdtheta)),maxval(abs(dPhi1Hatdzeta))
@@ -1400,6 +1401,9 @@
        ! However, we need not add elements which are 0 due to ddtheta=0 as opposed to because delta f = 0, since such elements will remain 0 at every iteration of SNES.
 
        !!if (nonlinear .and. (whichMatrix==1 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Commented by AM 2016-02
+       
+       ! This next line should be replaced with the line after!!!
+       !if (.false.) then
        if (includePhi1 .and. includePhi1InKineticEquation .and. (whichMatrix==1 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Added by AM 2016-02
        !if (nonlinear .and. (whichMatrix==1)) then
        !if (nonlinear .and. (whichMatrix==0 .or. whichMatrix==1)) then

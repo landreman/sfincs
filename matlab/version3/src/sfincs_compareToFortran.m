@@ -1,6 +1,7 @@
 function sfincs_compareToFortran(filename)
 
-global Nspecies Ntheta Nzeta Nxi Nx NL collisionOperator RHSMode
+global Zs mHats nHats THats withAdiabatic
+global Nspecies Ntheta Nzeta Nxi Nx NL dPhiHatdpsiHat collisionOperator RHSMode
 global theta zeta x transportMatrix
 global geometryScheme GHat IHat VPrimeHat FSABHat2 B0OverBBar iota BDotCurlB
 global BHat dBHatdtheta dBHatdzeta dBHatdpsiHat
@@ -47,12 +48,18 @@ fprintf('Comparing matlab results to fortran results in %s\n',filename)
 
 % First compare 'input' quantities that should agree to within roundoff
 % error.
+quantityDependsOnIteration = false;
 
 tolerance = 1e-12;
 comparisonType = 1;
 % 1 = max(abs(difference)) < tolerance
 % 2 = max(abs(difference) ./ mean) < tolerance
 
+compare('Zs')
+compare('mHats')
+compare('nHats')
+compare('THats')
+compare('withAdiabatic')
 compare('Nspecies')
 compare('Ntheta')
 compare('Nzeta')
@@ -66,6 +73,7 @@ compare('psiHat')
 compare('psiN')
 compare('rHat')
 compare('rN')
+compare('dPhiHatdpsiHat')
 compare('collisionOperator')
 compare('includePhi1')
 compare('includePhi1InKineticEquation')
@@ -103,8 +111,10 @@ compare('dBHat_sup_theta_dzeta')
 compare('dBHat_sup_zeta_dtheta')
 %compare('dBHat_sup_zeta_dpsiHat')
 
+% *************************************************************
 % Now compare 'output' quantities that will differ beyond the solver
 % tolerance.
+quantityDependsOnIteration = true;
 
 tolerance = 0.003;
 comparisonType = 2;
@@ -144,6 +154,23 @@ end
         catch
             fprintf('** WARNING: Unable to test variable %s since it does not exist in %s\n',varName,filename)
             return
+        end
+        % If needed, pick out the value from the last iteration:
+        if quantityDependsOnIteration
+            switch numel(size(fortranVar))
+                case 1
+                    fortranVar = fortranVar(end);
+                case 2
+                    fortranVar = fortranVar(end,:);
+                case 3
+                    fortranVar = fortranVar(end,:,:);
+                case 4
+                    fortranVar = fortranVar(end,:,:,:);
+                case 5
+                    fortranVar = fortranVar(end,:,:,:,:);
+                otherwise
+                    error('Ooops, I did not plan for this case.')
+            end
         end
         
         if isvector(matlabVar)

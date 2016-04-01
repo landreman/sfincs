@@ -3,6 +3,7 @@
 !----------------------------------------------------------------------
 
 &general
+!  saveMatricesAndVectorsInBinary=.t.
 /
 
 &geometryParameters

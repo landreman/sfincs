@@ -15,3 +15,5 @@ fortran/multiSpecies/host.list
 fortran/multiSpecies/job.hydra
 fortran/singleSpecies/host.list
 fortran/version3/testDevDir/
+sfincsBinary*
+.DS_Store

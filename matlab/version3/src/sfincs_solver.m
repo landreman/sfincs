@@ -1,6 +1,6 @@
 function sfincs_solver()
 
-global matrixSize reusePreconditioner nonlinearTolerance stateVector useIterativeLinearSolver includePhi1
+global matrixSize reusePreconditioner nonlinearTolerance maxNumNonlinearIterations stateVector useIterativeLinearSolver includePhi1
 global dnHatdpsiHats dTHatdpsiHats EParallelHat nHats THats Phi1Hat dPhi1Hatdtheta dPhi1Hatdzeta
 global Ntheta Nzeta RHSMode whichRHS
 global preconditioner_L preconditioner_U preconditioner_P preconditioner_Q
@@ -23,8 +23,7 @@ switch RHSMode
         stateVector = zeros(matrixSize,1);
 
         if includePhi1
-            numJacobianIterations = 1; %Replace 1 with a larger number eventually!
-            %numJacobianIterations = 10;
+            numJacobianIterations = maxNumNonlinearIterations;
         else
             numJacobianIterations = 1;
         end

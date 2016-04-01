@@ -268,7 +268,7 @@ contains
           call writeHDF5Field("helicity_antisymm_n", helicity_antisymm_n, "")
           call writeHDF5Field("helicity_antisymm_l", helicity_antisymm_l, "")
        end if
-       call writeHDF5Field("NPeriods", NPeriods, "Number of identical toroidal periods (e.g. 5 for W7-X, 10 for LHD, 4 for HSX)")
+       call writeHDF5Field("NPeriods", NPeriods, "Number of identical toroidal periods (e.g. 5 for W7-X, 10 for LHD, 4 for HSX), equivalent to the vmec variable nfp.")
        call writeHDF5Field("Delta", Delta, &
             "Dimensionless combination of the normalization constants, resembling rho_*: Delta = mBar * vBar / (e * BBar * RBar) (SI units) " // &
             "or c * mBar * vBar / (e * BBar * RBar) (Gaussian units)")
@@ -287,7 +287,7 @@ contains
 
 
        !!Added by AM 2016-01!!
-       call writeHDF5Field("withAdiabatic", withAdiabatic, "")
+       call writeHDF5Field("withAdiabatic", withAdiabatic, "Is an adiabatic species included in the quasineutrality equation? " // boolDescription)
        if (withAdiabatic) then
        	  call writeHDF5Field("adiabaticZ", adiabaticZ, "Charge of adiabatic species, in units of the unit charge e (which is usually the proton charge.)")
 	  call writeHDF5Field("adiabaticMHat", adiabaticMHat, "Mass of adiabatic species, in units of mBar.")

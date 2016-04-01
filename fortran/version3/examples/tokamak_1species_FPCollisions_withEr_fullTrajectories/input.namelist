@@ -17,7 +17,7 @@
 !ss scanVariableScale = log
 
 &general
-  saveMatricesAndVectorsInBinary = .t.
+!  saveMatricesAndVectorsInBinary = .t.
 /
 
 &geometryParameters

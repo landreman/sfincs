@@ -17,12 +17,13 @@ THats = [1,1];
 dnHatdrHats = [-0.5,-0.5];
 dTHatdrHats = [-2,-2];
 
-global Delta alpha nu_n dPhiHatdrHat includePhi1
+global Delta alpha nu_n includePhi1 includePhi1InKineticEquation
 Delta = 4.5694e-3;
 alpha = 1;
 nu_n = 8.31565e-3;
-dPhiHatdrHat = 2.0;
+
 includePhi1 = true;
+includePhi1InKineticEquation = false;
 
 global Ntheta Nzeta Nxi Nx
 Ntheta = 13;

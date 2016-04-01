@@ -32,10 +32,21 @@ THats = 0.5;
 dnHatdpsiNs = -1;
 dTHatdpsiNs = -0.5;
 
-global Delta alpha nu_n
+global withAdiabatic adiabaticZ adiabaticNHat adiabaticTHat
+withAdiabatic=true;
+adiabaticZ=-1;
+adiabaticNHat=1.0;
+adiabaticTHat=0.75;
+
+global Delta alpha nu_n dPhiHatdpsiN
 Delta = 4.5694e-3;
 alpha = 1;
 nu_n = 8.4774e-3;
+dPhiHatdpsiN = 5.0;
+
+global includePhi1 includePhi1InKineticEquation
+includePhi1=true;
+includePhi1InKineticEquation=true;
 
 global Ntheta Nzeta Nxi Nx
 Ntheta = 21;
@@ -43,12 +54,8 @@ Nzeta = 1;
 Nxi = 31;
 Nx = 8;
 
-global preconditioner_species preconditioner_x preconditioner_xi
-preconditioner_species=0;
-preconditioner_x=0;
-preconditioner_xi=0;
-
 sfincs_main()
+
 
 directory = ['../../../fortran/version3/examples/',mfilename];
 sfincs_compareToFortran(fullfile(directory,'sfincsOutput.h5'))

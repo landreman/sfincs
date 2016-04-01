@@ -11,7 +11,7 @@ global preconditioner_species preconditioner_x preconditioner_x_min_L
 global preconditioner_xi collisionOperator constraintScheme
 global BLOCK_F BLOCK_QN BLOCK_PHI1_CONSTRAINT BLOCK_DENSITY_CONSTRAINT BLOCK_PRESSURE_CONSTRAINT BLOCK_F_CONSTRAINT indexVars
 global includePhi1 includePhi1InKineticEquation useDKESExBDrift includeXDotTerm includeElectricFieldTermInXiDot magneticDriftScheme
-global Delta alpha nu_n Phi1Hat dPhi1Hatdtheta dPhi1Hatdzeta
+global Delta alpha nu_n Phi1Hat dPhi1Hatdtheta dPhi1Hatdzeta stateVector
 global BDotCurlB FSABHat2 dPhiHatdpsiHat force0RadialCurrentInEquilibrium
 global BHat dBHatdtheta dBHatdzeta dBHatdpsiHat
 global DHat BHat_sub_psi BHat_sub_theta BHat_sub_zeta BHat_sup_theta BHat_sup_zeta
@@ -19,7 +19,7 @@ global dBHat_sub_psi_dtheta dBHat_sub_psi_dzeta
 global dBHat_sub_theta_dpsiHat dBHat_sub_theta_dzeta
 global dBHat_sub_zeta_dpsiHat dBHat_sub_zeta_dtheta
 global adiabaticZ adiabaticNHat adiabaticTHat withAdiabatic quasineutralityOption
-global dnHatdpsiHats dTHatdpsiHats
+global dnHatdpsiHats dTHatdpsiHats reusePreconditioner
 
 populateMatrixTic = tic;
 
@@ -311,6 +311,7 @@ for ispecies = 1:Nspecies
             ErTermSpatialPart = zeros(Ntheta,Nzeta);
         end
         
+        %if false
         if includePhi1 && includePhi1InKineticEquation
             nonlinearTermSpatialPart = -alpha*Z./(2*sqrtm*sqrtT*BHat).*(BHat_sup_theta.*dPhi1Hatdtheta + BHat_sup_zeta.*dPhi1Hatdzeta);
         else
@@ -402,8 +403,9 @@ for ispecies = 1:Nspecies
             ErTermSpatialPart2 = zeros(Ntheta,Nzeta);
         end
         
+        %if false
         if includePhi1 && includePhi1InKineticEquation
-            nonlinearTermSpatialPart = -alpha*Z./(2*sqrtT*sqrtm*BHat).*(BHat_sup_theta.*dPhi1Hatdtheta + BHat_sub_zeta.*dPhi1Hatdzeta);
+            nonlinearTermSpatialPart = -alpha*Z./(2*sqrtT*sqrtm*BHat).*(BHat_sup_theta.*dPhi1Hatdtheta + BHat_sup_zeta.*dPhi1Hatdzeta);
         else
             nonlinearTermSpatialPart = zeros(Ntheta,Nzeta);
         end
@@ -582,6 +584,53 @@ for ispecies = 1:Nspecies
         end
     end
     
+    % -----------------------------------------
+    % Add the terms in the Jacobian associated with dN/dPhi1 for the nonlinear 
+    % term N = E|| df/dv||.
+    % This term appears in the Jacobian but is not used for the residual.
+    % -----------------------------------------
+    
+    if includePhi1 && includePhi1InKineticEquation && ((whichMatrix == 0 && (~ reusePreconditioner))  || whichMatrix==1)
+        spatialPart = -alpha*Z./(2*sqrtT*sqrtm*BHat);
+        for ithetaRow=1:Ntheta
+            colIndices_zeta = sfincs_indices(1,1,1,itheta,1:Nzeta,BLOCK_QN, indexVars);
+            for izetaRow = 1:Nzeta
+                colIndices_theta = sfincs_indices(1,1,1,1:Ntheta,izetaRow,BLOCK_QN, indexVars);
+                for ell=0:(Nxi-1)
+                    indices = sfincs_indices(ispecies,1:Nx,ell+1,ithetaRow,izetaRow,BLOCK_F, indexVars);
+                    df1dx = ddx*stateVector(indices);
+                    L=ell-1; % So L+1 = ell
+                    nonlinearTerm_Lp1 = spatialPart(ithetaRow,izetaRow)*( (L+1)*(L+2)/(2*L+3)*stateVector(indices)./x + (L+1)/(2*L+3)*df1dx);
+                    L=ell+1; % So L-1 = ell
+                    nonlinearTerm_Lm1 = spatialPart(ithetaRow,izetaRow)*(-L*(L-1)/(2*L-1)*stateVector(indices)./x + L/(2*L-1)*df1dx);
+                    
+                    for ix=ixMin:Nx
+                        % L+1=ell terms
+                        if ell>0
+                            L = ell-1;
+                            rowIndices = sfincs_indices(ispecies,ix,L+1,ithetaRow,izetaRow,BLOCK_F, indexVars);
+                            
+                            % Add d/dtheta (on Phi1) term:
+                            addSparseBlock(rowIndices, colIndices_theta, BHat_sup_theta(ithetaRow,izetaRow)*nonlinearTerm_Lp1(ix)*ddtheta(ithetaRow,:))
+                            % Add d/dzeta (on Phi1) term:
+                            addSparseBlock(rowIndices, colIndices_zeta, BHat_sup_zeta(ithetaRow,izetaRow)*nonlinearTerm_Lp1(ix)*ddzeta(izetaRow,:))
+                        end
+                        
+                        % L-1=ell terms
+                        if ell<Nxi-1
+                            L = ell+1;
+                            rowIndices = sfincs_indices(ispecies,ix,L+1,ithetaRow,izetaRow,BLOCK_F, indexVars);
+                            
+                            % Add d/dtheta (on Phi1) term:
+                            addSparseBlock(rowIndices, colIndices_theta, BHat_sup_theta(ithetaRow,izetaRow)*nonlinearTerm_Lm1(ix)*ddtheta(ithetaRow,:))
+                            % Add d/dzeta (on Phi1) term:
+                            addSparseBlock(rowIndices, colIndices_zeta, BHat_sup_zeta(ithetaRow,izetaRow)*nonlinearTerm_Lm1(ix)*ddzeta(izetaRow,:))
+                        end
+                    end
+                end
+            end
+        end
+    end
 end
 
 switch (collisionOperator)

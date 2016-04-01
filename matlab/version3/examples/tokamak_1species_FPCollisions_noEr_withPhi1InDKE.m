@@ -46,19 +46,21 @@ nu_n = 8.4774e-3;
 includePhi1 = true;
 includePhi1InKineticEquation = true;
 
-global Ntheta Nzeta Nxi Nx
+global Ntheta Nzeta Nxi Nx solverTolerance
 Ntheta = 21;
 Nzeta = 1;
 Nxi = 31;
 Nx = 8;
+solverTolerance = 1e-12;
 
-global useIterativeLinearSolver
+global useIterativeLinearSolver maxNumNonlinearIterations
 %useIterativeLinearSolver = false;
+maxNumNonlinearIterations=10;
 
 global preconditioner_species preconditioner_x preconditioner_xi
-preconditioner_species=0
-preconditioner_x=0
-preconditioner_xi=0
+preconditioner_species=0;
+preconditioner_x=0;
+preconditioner_xi=0;
 
 sfincs_main()
 

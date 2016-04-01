@@ -140,7 +140,7 @@ forceOddNthetaAndNzeta = true;
 global thetaDerivativeScheme zetaDerivativeScheme xGridScheme xGrid_k
 global xPotentialsGridScheme useIterativeLinearSolver
 global GMRES_restart GMRES_maxIterations
-global nonlinearTolerance
+global nonlinearTolerance maxNumNonlinearIterations
 
 thetaDerivativeScheme = 2;
 zetaDerivativeScheme = 2;
@@ -152,6 +152,8 @@ useIterativeLinearSolver = true;
 GMRES_restart = 200;
 GMRES_maxIterations = 200;
 nonlinearTolerance = 1e-6;
+maxNumNonlinearIterations = 10;
+
 % *************************************************************************
 % preconditionerOptions namelist
 % *************************************************************************
