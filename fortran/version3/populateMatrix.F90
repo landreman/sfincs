@@ -1184,8 +1184,14 @@
 !!                      call MatSetValueSparse(matrix, rowIndex, colIndex,& !!Commented by AM 2016-03
 !!                           factor*ddtheta(ithetaRow, ithetaCol), ADD_VALUES, ierr) !!Commented by AM 2016-03
                       !!! SHOULD THE NEXT LINE BE MatSetValueSparse???
-                      call MatSetValue(matrix, rowIndex, colIndex,& !!Added by AM 2016-03
+                      !!NEXT CALL TEMPORARILY COMMENTED BY AM!!
+!!$                      call MatSetValue(matrix, rowIndex, colIndex,& !!Added by AM 2016-03
+!!$                           (factor1 + factor2)*ddtheta(ithetaRow, ithetaCol), ADD_VALUES, ierr) !!Added by AM 2016-03
+
+                      !!TEST BY AM 2016-04-11!!
+                      call MatSetValueSparse(matrix, rowIndex, colIndex,& !!Added by AM 2016-03
                            (factor1 + factor2)*ddtheta(ithetaRow, ithetaCol), ADD_VALUES, ierr) !!Added by AM 2016-03
+                      !!!!!!!!!!!!!!!!!!!!!!!!!
 
                    end do
                 end do
@@ -1221,8 +1227,14 @@
                       !!                      call MatSetValueSparse(matrix, rowIndex, colIndex,& !!Commented by AM 2016-03
                       !!                           factor*ddzeta(izetaRow, izetaCol), ADD_VALUES, ierr) !!Commented by AM 2016-03
                       !!! SHOULD THE NEXT LINE BE MatSetValueSparse ????
-                      call MatSetValue(matrix, rowIndex, colIndex,& !!Added by AM 2016-03
+                      !!NEXT CALL TEMPORARILY COMMENTED BY AM!!
+!!$                      call MatSetValue(matrix, rowIndex, colIndex,& !!Added by AM 2016-03
+!!$                           (factor1 + factor2)*ddzeta(izetaRow, izetaCol), ADD_VALUES, ierr) !!Added by AM 2016-03
+
+                      !!TEST BY AM 2016-04-11!!
+                      call MatSetValueSparse(matrix, rowIndex, colIndex,& !!Added by AM 2016-03
                            (factor1 + factor2)*ddzeta(izetaRow, izetaCol), ADD_VALUES, ierr) !!Added by AM 2016-03
+                      !!!!!!!!!!!!!!!!!!!!!!!!!
                       
                    end do
                 end do
@@ -1286,6 +1298,7 @@
                            * exp(-Z*alpha*Phi1Hat(itheta,izeta)/THat)
                       
                       
+                      !!SECTION TEMPORARILY COMMENTED BY AM!!
                       !!Add L=0 component
                       call MatSetValue(matrix, rowIndex, colIndex,&
                            -Z*alpha*(factorJ1 + factorJ2)/THat &
@@ -1297,6 +1310,20 @@
                       call MatSetValue(matrix, rowIndex2, colIndex,&
                            -Z*alpha* (two/three)*factorJ3/THat &
                            + (two/three)*factorJ5, ADD_VALUES, ierr)
+                      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+                      !!TEST BY AM 2016-04-11!!
+!!$                      call MatSetValueSparse(matrix, rowIndex, colIndex,&
+!!$                           -Z*alpha*(factorJ1 + factorJ2)/THat &
+!!$                           -Z*alpha* (4/three)*factorJ3/THat &
+!!$                           + factorJ4 &
+!!$                           + (4/three)*factorJ5, ADD_VALUES, ierr) 
+!!$                      
+!!$                      !!Add L=2 component
+!!$                      call MatSetValueSparse(matrix, rowIndex2, colIndex,&
+!!$                           -Z*alpha* (two/three)*factorJ3/THat &
+!!$                           + (two/three)*factorJ5, ADD_VALUES, ierr)
+                      !!!!!!!!!!!!!!!!!!!!!!!!!
                       
                    end do
                 end do

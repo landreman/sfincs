@@ -66,19 +66,20 @@ subroutine preallocateMatrix(matrix, whichMatrix)
 ! THIS TERM HAS BEEN REMOVED BY AM 2016-03 !
 !!$  if (includePhi1) then
 !!$     tempInt1 = tempInt1 &
-!!$       + 4 &               ! d Phi_1 / d theta term at L=1
-!!$       + 4                 ! d Phi_1 / d zeta term at L=1, -1 because diagonal was accounted for in the previous line.
+!!$!!       + 4 &               ! d Phi_1 / d theta term at L=1
+!!$!!       + 4                 ! d Phi_1 / d zeta term at L=1, -1 because diagonal was accounted for in the previous line.
 !!$  end if
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!  if (includeRadialExBDrive) then !!Commented by AM 2016-03
-  if (includePhi1InKineticEquation) then !!Added by AM 2016-03
+  if (includePhi1InKineticEquation .and. includePhi1) then !!Added by AM 2016-03
      tempInt1 = tempInt1 &
        + 4 &               ! d Phi_1 / d theta term at L=0
        + 4                 ! d Phi_1 / d zeta term at L=0
-  end if
+  !!end if !!Commented by AM 2016-04
+     tempInt1 = tempInt1 + 1 !!Added by AM 2016-04, for row = BLOCK_F, col = BLOCK_QN)
   !!if (nonlinear) then !!Commented by AM 2016-02
-  if (includePhi1) then !!Added by AM 2016-02
+  !!if (includePhi1) then !!Added by AM 2016-02
      tempInt1 = tempInt1 + 2*Nx -2 ! Nonlinear term is dense in x with ell = L +/- 1, which we have not yet counted. Subtract 2 for the diagonal we already counted.
   end if
   ! Note: we do not need extra nonzeros for the d/dxi terms or for the diagonal, since these have already been accounted for in the ddx and ddtheta parts.
@@ -216,7 +217,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
 !!$  end if
 
   ! If any mallocs are required during matrix assembly, do not generate an error:
-  !call MatSetOption(matrix, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE, ierr)
+!!$  call MatSetOption(matrix, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE, ierr)
   
   !if (masterProc) then
   !   print *,"Done with preallocation for whichMatrix = ",whichMatrix
