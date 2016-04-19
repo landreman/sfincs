@@ -218,7 +218,22 @@ if geometryScheme==11 or geometryScheme==12:
             available_psiN.append(float(equilibriumFileLines[whichLine+2].split()[0]))
     print "available_psiN:"
     print available_psiN
-    radii = roundRadii(radii,available_psiN)
+    try:
+        vmecRadialOption = readVariable('vmecRadialOption','int',required=False)
+        ##Added by AM 2015-12##
+        if vmecRadialOption == None :
+            print "Unable to read vmecRadialOption from input.namelist, so using the default value 1"
+            vmecRadialOption = 1
+        #######################
+    except:
+        print "Unable to read vmecRadialOption from input.namelist, so using the default value 1"
+        vmecRadialOption = 1
+
+    if vmecRadialOption==0:
+        # Do not shift radial grid points.
+        pass
+    else:
+        radii = roundRadii(radii,available_psiN)
 
 if geometryScheme==5:
     # Read VMEC file to determine psiAHat, aHat, and the available psiN.
@@ -343,6 +358,9 @@ def convertGradients():
 def plotProposedProfiles():
     # Plot the input profiles and their derivatives.
     # All the arrays dnHatdradii, dnHatdradii_fine, etc should be populated before this function is called.
+    if not waitBeforeSubmitting:
+        return
+
     fig = plt.figure()
     fig.patch.set_facecolor('white')
     # Set the default color cycle:

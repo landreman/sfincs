@@ -23,6 +23,8 @@ for arg in sys.argv:
    if arg.lower()=='pdf':
       makePDF = True
 
+matplotlib.rcParams.update({'font.size': 8})
+
 if makePDF:
    matplotlib.use('PDF')
    # Change default font size
@@ -160,13 +162,13 @@ for directory in directories:
                 results.append(particleFlux_vd[ispecies,iteration])
                 results.append(heatFlux_vm[ispecies,iteration])
                 results.append(heatFlux_vd[ispecies,iteration])
-		radCurr_vm += particleFlux_vm[ispecies,iteration]*Zs[ispecies,iteration]
-		radCurr_vd += particleFlux_vd[ispecies,iteration]*Zs[ispecies,iteration]
+		radCurr_vm += particleFlux_vm[ispecies,iteration]*Zs[-1][ispecies]
+		radCurr_vd += particleFlux_vd[ispecies,iteration]*Zs[-1][ispecies]
              else:
                 results.append(FSABFlow[ispecies,iteration])
                 results.append(particleFlux_vm[ispecies,iteration])
                 results.append(heatFlux_vm[ispecies,iteration])
-		radCurr_vm += particleFlux_vm[ispecies,iteration]*Zs[ispecies,iteration]
+		radCurr_vm += particleFlux_vm[ispecies,iteration]*Zs[-1][ispecies]
           results.append(FSABjHat[iteration])
 	  if includePhi1:
 		results.append(radCurr_vm)
@@ -541,7 +543,8 @@ for iQuantity in range(numQuantities):
            else:
               relVariation = 0
            label = label+', '+("%.1f" % (relVariation*100))+'% above base'
-        at = AnchoredText(label,loc=1,frameon=False,prop=dict(size='x-small'))
+        at = AnchoredText(label,loc=1,frameon=False)
+        #at = AnchoredText(label,loc=1,frameon=False,prop=dict(size='x-small'))
         ax.add_artist(at)
 
         if iQuantity==numQuantities-1:

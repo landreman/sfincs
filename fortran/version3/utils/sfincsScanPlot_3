@@ -21,6 +21,8 @@ for arg in sys.argv:
    if arg.lower()=='pdf':
       makePDF = True
 
+matplotlib.rcParams.update({'font.size': 8})
+
 if makePDF:
    matplotlib.use('PDF')
    # Change default font size

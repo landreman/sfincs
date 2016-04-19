@@ -263,13 +263,13 @@ contains
              print *,"ERROR! DHat does not have the same sign everywhere!"
              stop
           end if
-          if (ExBDerivativeSchemeTheta > 0 .and. BHat_sub_theta(itheta,izeta)*BHat_sub_theta11 < -1d-15) then
-             print *,"ERROR! ExBDerivativeSchemeTheta>0 assumes BHat_sub_theta has the same sign everywhere,"
+          if (ExBDerivativeSchemeZeta > 0 .and. BHat_sub_theta(itheta,izeta)*BHat_sub_theta11 < -1d-15) then
+             print *,"ERROR! ExBDerivativeSchemeZeta>0 assumes BHat_sub_theta has the same sign everywhere,"
              print *,"       but the sign of BHat_sub_theta is not the same everywhere."
              stop
           end if
-          if (ExBDerivativeSchemeZeta > 0 .and. BHat_sub_zeta(itheta,izeta)*BHat_sub_zeta11 < -1d-15) then
-             print *,"ERROR! ExBDerivativeSchemeZeta>0 assumes BHat_sub_zeta has the same sign everywhere,"
+          if (ExBDerivativeSchemeTheta > 0 .and. BHat_sub_zeta(itheta,izeta)*BHat_sub_zeta11 < -1d-15) then
+             print *,"ERROR! ExBDerivativeSchemeTheta>0 assumes BHat_sub_zeta has the same sign everywhere,"
              print *,"       but the sign of BHat_sub_zeta is not the same everywhere."
              stop
           end if

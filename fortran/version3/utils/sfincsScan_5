@@ -14,14 +14,16 @@ print "Beginning a scan of Er inside a scan over radius."
 skipExistingDirectories = False
 execfile(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/radialScans")
 
-while True:
-    proceed=raw_input("Should I go ahead and launch Er scans at these "+str(len(radii))+" radii? [y/n] ")
-    if proceed=="y" or proceed=="n":
-        break
-    print "You must enter either y or n."
+if waitBeforeSubmitting:
+    while True:
+        proceed=raw_input("Should I go ahead and launch Er scans at these "+str(len(radii))+" radii? [y/n] ")
+        if proceed=="y" or proceed=="n":
+            break
+        print "You must enter either y or n."
 
-if proceed=="n":
-    exit(0)
+    if proceed=="n":
+        exit(0)
+
 print "launching jobs..."
 
 # Read in the job.sfincsScan file:

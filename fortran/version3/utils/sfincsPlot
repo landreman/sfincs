@@ -2,6 +2,7 @@
 
 # This python script plots the output of a single SFINCS run.
 
+import matplotlib
 import matplotlib.pyplot as plt
 import h5py
 import numpy
@@ -14,6 +15,8 @@ try:
 except:
     print "Unable to open sfincsOutput.h5"
     raise
+
+matplotlib.rcParams.update({'font.size': 8})
 
 # The expression [()] converts from an h5py dataset to a numpy ndarray:
 theta = f['theta'][()]

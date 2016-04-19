@@ -32,6 +32,8 @@ for arg in sys.argv:
    if arg.lower()=='pdf':
       makePDF = True
 
+matplotlib.rcParams.update({'font.size': 8})
+
 if makePDF:
    matplotlib.use('PDF')
    # Change default font size
@@ -166,6 +168,7 @@ for directory in directories:
     Ers.append(f[varName][()])
     FSABFlow = f["FSABFlow"][()]
     FSABjHatOverRootFSAB2 = f["FSABjHatOverRootFSAB2"][()]
+    FSABjHat = f["FSABjHat"][()]
     particleFlux_vm = f["particleFlux_vm_rHat"][()]
     heatFlux_vm = f["heatFlux_vm_rHat"][()]
     elapsedTime = f["elapsed time (s)"][()]
@@ -211,7 +214,8 @@ for directory in directories:
                 results.append(FSABFlow[ispecies,iteration])
                 results.append(particleFlux_vm[ispecies,iteration])
                 results.append(heatFlux_vm[ispecies,iteration])
-          results.append(FSABjHatOverRootFSAB2[iteration])
+          #results.append(FSABjHatOverRootFSAB2[iteration])
+          results.append(FSABjHat[iteration])
           if includePhi1:
              radialCurrents.append(sum(Zs*particleFlux_vd[:,-1]))
           else:
@@ -284,7 +288,8 @@ else:
             #yAxisLabels.append("heatFlux_vm_rHat (species "+str(i)+")")
             yAxisLabels.append("particleFlux rHat (species "+str(i)+")")
             yAxisLabels.append("heatFlux rHat (species "+str(i)+")")
-         yAxisLabels.append("FSABjHatOverRootFSAB2")
+         #yAxisLabels.append("FSABjHatOverRootFSAB2")
+         yAxisLabels.append("FSABjHat")
          yAxisLabels.append(radialCurrentLabel)
             
 

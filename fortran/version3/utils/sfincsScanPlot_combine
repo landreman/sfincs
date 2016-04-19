@@ -19,6 +19,8 @@ if len(sys.argv)<2:
     print "Error! You must call this script with command-line arguments to indicate the directories to plot."
     exit(1)
 
+matplotlib.rcParams.update({'font.size': 8})
+
 scanTypes = []
 numQuantities = []
 numRows = []
