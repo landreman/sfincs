@@ -787,8 +787,14 @@ Here $f$ can be $f_0$, $f_1$ or $f_0 + f_1$.
 $\bm{v}$ can be $\bm{v}_E$, $\bm{v}_m$ or $\bm{v}_E + \bm{v}_m$. 
 $X$ can be any of the radial coordinates, $r$, $r_N$, $\psi$ or $\psi_N$. \\
 
-\noindent Allow for the output fluxes in SI units.
+\noindent Allow for the output fluxes in SI units.\\
 
+\noindent In all output flux quantities the substitution
+\[
+\textcolor{red}{
+f_M \rightarrow f_0 = f_M \exp \left(- q \Phi_1 / T \right)}
+\]
+must be made. 
 \paragraph*{\textbf{Files to change:}}
 \begin{verbatim}
 diagnostics.F90
