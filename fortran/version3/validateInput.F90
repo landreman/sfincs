@@ -16,6 +16,7 @@ subroutine validateInput()
   PetscScalar :: chargeDensity
   integer :: ispecies
   logical :: flag
+  PetscScalar :: lnLambda, eC, epsilon0, mproton
 
   ! General namelist
 
@@ -259,6 +260,41 @@ subroutine validateInput()
   ! More needed here...  Ensure charge neutrality.
 
   ! physicsParameters namelist:
+
+  if (nu_n<0) then
+     ! Compute nu_n assuming the normalizations are RBar = 1m, mBar = proton mass, nBar = 1e20/m^3, TBar = 1keV.
+     if (abs(Delta-(4.5694e-3)) / (4.5694e-3) > 0.1) then
+        print *,line
+        print *,line
+        print *,"**   WARNING: nu_n will be computed assuming RBar = 1m, mBar = proton mass, nBar = 1e20/m^3, TBar = 1keV."
+        print *,"**            However it appears you have set Delta using different normalizations."
+        print *,line
+        print *,line
+     end if
+     if (abs(Zs(1)+1) > 1e-6) then
+        print *,line
+        print *,line
+        print *,"**   WARNING: lnLambda will be computed using the density and temperature of the first species."
+        print *,"**            However, based on Zs, it appears the first species is not electrons."
+        print *,line
+        print *,line
+     end if
+
+     ! Use the same definition of lnLambda as Yuriy Turkin et al,
+     ! assuming species(1) is the electrons:
+     lnLambda = (25.3d+0) - (1.15d+0)*log10(nHats(1)*(1e14)) + (2.30d+0)*log10(THats(1)*1000)
+     !lnLambda = 17
+
+     eC = 1.6022d-19
+     epsilon0 = 8.8542d-12
+     mproton = 1.6726d-27
+     nu_n = sqrt(mproton/(2*1000*eC)) * 4*sqrt(2*pi)*(1e20)*(eC**4)*lnLambda / (3*((4*pi*epsilon0)**2)*sqrt(mproton)*((1000*eC)**(1.5d+0)))
+
+     if (masterProc) then
+        print *,"Computing nu_n using ln(Lambda)=",lnLambda
+        print *,"New nu_n:",nu_n
+     end if
+  end if
 
   if (constraintScheme .ne. -1 .and. masterProc) then
      print *,line

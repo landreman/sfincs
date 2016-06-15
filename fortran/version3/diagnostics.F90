@@ -954,5 +954,7 @@
        call PetscViewerDestroy(viewer, ierr)
     end if
 
+    iterationForStateVectorOutput = iterationForStateVectorOutput + 1
+
   end subroutine diagnostics
 
