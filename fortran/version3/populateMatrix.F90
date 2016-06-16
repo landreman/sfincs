@@ -2356,7 +2356,8 @@
              do izeta = izetaMin,izetaMax
                 index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
                 call VecSetValue(f0, index, &
-                     factor, INSERT_VALUES, ierr)
+                !!     factor, INSERT_VALUES, ierr) !!Commented by AM 2016-06
+                     exp(-Zs(ispecies)*alpha*Phi1Hat(itheta,izeta)/THats(ispecies))*factor, INSERT_VALUES, ierr) !!Added by AM 2016-06
              end do
           end do
        end do
