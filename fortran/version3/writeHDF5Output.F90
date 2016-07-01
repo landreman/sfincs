@@ -268,6 +268,7 @@ contains
           call writeHDF5Field("helicity_antisymm_n", helicity_antisymm_n, "")
           call writeHDF5Field("helicity_antisymm_l", helicity_antisymm_l, "")
        end if
+       call writeHDF5Field("rippleScale", rippleScale, "Factor to scale non-axisymmetric or non-quasisymmetric modes of field.")
        call writeHDF5Field("NPeriods", NPeriods, "Number of identical toroidal periods (e.g. 5 for W7-X, 10 for LHD, 4 for HSX)")
        call writeHDF5Field("Delta", Delta, &
             "Dimensionless combination of the normalization constants, resembling rho_*: Delta = mBar * vBar / (e * BBar * RBar) (SI units) " // &

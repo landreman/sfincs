@@ -56,6 +56,7 @@ module globalVariables
   integer :: inputRadialCoordinateForGradients = 4
   logical :: force0RadialCurrentInEquilibrium = .true.
   integer :: VMECRadialOption = 1
+  PetscScalar :: rippleScale = 1
 
   ! ********************************************************
   ! ********************************************************
