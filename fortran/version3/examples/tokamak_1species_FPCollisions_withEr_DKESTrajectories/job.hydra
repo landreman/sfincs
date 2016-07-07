@@ -10,6 +10,7 @@
 # @ node = 1
 # @ tasks_per_node = 4
 # @ resources = ConsumableCpus(4) 
+# @ node_resources = ConsumableMemory(120gb)  
 # @ network.MPI = sn_all,not_shared,us
 # @ wall_clock_limit = 00:10:00
 # @ notification = never
@@ -27,6 +28,13 @@ module load petsc-real/3.5.2
 
 # We must load the hdf5-serial module to set some environment variables:
 module load hdf5-serial netcdf-serial
+
+export PETSC_HOME=/hydra/u/system/SLES11/soft/petsc/3.5.2/intel14.0-mpi.intel413-double-real    
+export PETSC_DIR=/hydra/u/system/SLES11/soft/petsc/3.5.2/intel14.0-mpi.intel413-double-real     
+export PETSC_ARCH=intel14.0-mpi.intel413-double-real                                            
+                                                                                                
+export HDF5_HOME=/hydra/u/system/SLES11/soft/hdf5/1.8.12/intel14.0/serial/
+export NETCDF_HOME=/hydra/u/system/SLES11/soft/netcdf/4.3.3.1/intel14.0/serial 
 
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HDF5_HOME}/lib:${NETCDF_HOME}/lib
 
