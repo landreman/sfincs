@@ -36,6 +36,11 @@ module solver
     PetscReal :: atol, rtol, stol
     integer :: maxit, maxf
 
+!!Following three lines added by AM 2016-07-06
+#if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR > 6))
+    PetscViewerAndFormat vf !!Added by AM 2016-07-06
+#endif
+
     external evaluateJacobian, evaluateResidual, diagnosticsMonitor
 
     if (masterProc) then
@@ -80,7 +85,13 @@ module solver
 
        ! Allow options to be controlled using command-line flags:
        call KSPSetFromOptions(KSPInstance, ierr)
+!! #if #else #endif added by AM 2016-07-06 
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 7))
        call KSPMonitorSet(KSPInstance, KSPMonitorDefault, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
+#else
+       call PetscViewerAndFormatCreate(PETSC_VIEWER_STDOUT_WORLD, PETSC_VIEWER_DEFAULT, vf, ierr) !!Added by AM 2016-07-06
+       call KSPMonitorSet(KSPInstance, KSPMonitorDefault, vf, PetscViewerAndFormatDestroy, ierr) !!Added by AM 2016-07-06 
+#endif
 
     else
        ! Direct solver:
