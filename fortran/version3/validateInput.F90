@@ -14,6 +14,7 @@ subroutine validateInput()
 
   character(len=*), parameter :: line="******************************************************************"
   PetscScalar :: chargeDensity
+  PetscScalar :: maxSingleChargeDensity !!Added by AM 2016-03
   integer :: ispecies
   logical :: flag
   PetscScalar :: lnLambda, eC, epsilon0, mproton
@@ -34,7 +35,8 @@ subroutine validateInput()
      stop
   end if
   
-  if (RHSMode == 2 .and. nonlinear) then
+  !!if (RHSMode == 2 .and. nonlinear) then !!Commented by AM 2016-02
+  if (RHSMode == 2 .and. includePhi1) then !!Added by AM 2016-02
      if (masterProc) then
         print *,"Error! RHSMode cannot be 2 for a nonlinear calculation."
      end if
@@ -52,16 +54,20 @@ subroutine validateInput()
      ! Computing monoenergetic transport coefficients.
      ! Make sure the code is configured to use the DKES form of the kinetic equation.
 
-     if (nonlinear) then
+     !!if (nonlinear) then !!Commented by AM 2016-02
+     if (includePhi1) then !!Added by AM 2016-02
         if (masterProc) then
            print *,line
            print *,line
-           print *,"**   WARNING: You asked for RHSMode=3 (monoenergetic transport matrix) with nonlinear = .true., which is incompatble."
-           print *,"**            Setting nonlinear = .false."
+!!           print *,"**   WARNING: You asked for RHSMode=3 (monoenergetic transport matrix) with nonlinear = .true., which is incompatble." !!Commented by AM 2016-02
+!!           print *,"**            Setting nonlinear = .false." !!Commented by AM 2016-02
+           print *,"**   WARNING: You asked for RHSMode=3 (monoenergetic transport matrix) with includePhi1 = .true., which is incompatble." !!Added by AM 2016-02
+           print *,"**            Setting includePhi1 = .false." !!Added by AM 2016-02
            print *,line
            print *,line
         end if
-        nonlinear = .false.
+!!        nonlinear = .false. !!Commented by AM 2016-02
+        includePhi1 = .false. !!Added by AM 2016-02
      end if
 
      if (Nx > 1) then
@@ -253,11 +259,108 @@ subroutine validateInput()
      end if
   end do
 
+
+  !!!!!!!!!!!!!!!!!!!!!!!
+  !!Added by AM 2015-11!!
+  if (withAdiabatic) then
+     if (adiabaticZ == 0) then
+     	if (masterProc) then
+           print *,"Error! Charge adiabaticZ cannot be zero."
+        end if
+        stop
+     end if
+
+     if (adiabaticMHat .le. 0) then
+     	if (masterProc) then
+   	   print *,"Error! Mass adiabaticMHat must be positive."
+	end if
+        stop
+     end if
+
+     if (adiabaticNHat .le. 0) then
+     	if (masterProc) then
+     	   print *,"Error! Density adiabaticNHat must be positive."
+	end if
+	stop
+     end if
+
+     if (adiabaticTHat .le. 0) then
+     	if (masterProc) then
+           print *,"Error! Temperature adiabaticTHat must be positive."
+	end if
+        stop
+     end if
+
+     if (adiabaticZ < 0) then
+        if (flag .and. masterProc) then
+           print *,line
+           print *,line
+           print *,"**   WARNING: More than 1 species has negative charge, which is unusual."
+           print *,line
+           print *,line
+        end if
+        flag = .true.
+     end if
+
+     if (abs(adiabaticZ - floor(adiabaticZ)) > 0 .and. masterProc) then
+        print *,line
+        print *,line
+        print *,"**   WARNING: adiabaticZ is not an integer, which is unusual."
+        print *,line
+        print *,line
+     end if
+
+ 
+  end if
+  !!!!!!!!!!!!!!!!!!!!!!!
+
+  ! Ensure charge neutrality.
   chargeDensity = zero
+  maxSingleChargeDensity = 1d-11 !!Added by AM 2016-03
   do ispecies = 1,Nspecies
      chargeDensity = chargeDensity + nHats(ispecies)*Zs(ispecies)
+     maxSingleChargeDensity = max(abs(maxSingleChargeDensity), abs(nHats(ispecies)*Zs(ispecies))) !!Added by AM 2016-03
+     !!Added by AM 2016-02!!
+     if (quasineutralityOption == 2 .and. includePhi1) then
+        exit !!If running with EUTERPE equations we only use the first kinetic species in quasi-neutrality.
+     end if
+     !!!!!!!!!!!!!!!!!!!!!!!
   end do
-  ! More needed here...  Ensure charge neutrality.
+ 
+
+  !!!!!!!!!!!!!!!!!!!!!!!
+  !!Added by AM 2015-11!!
+  if (withAdiabatic) then
+     chargeDensity = chargeDensity + adiabaticNHat*adiabaticZ
+     maxSingleChargeDensity = max(abs(maxSingleChargeDensity), abs(adiabaticNHat*adiabaticZ))
+  end if
+
+!!  if (includePhi1 .and. (abs(chargeDensity) >1d-15)) then
+  if (includePhi1 .and. (abs(chargeDensity)/maxSingleChargeDensity >1d-4)) then
+     if (masterProc) then
+        print *,"Error! When running with includePhi1=.true. you must ensure that"
+        print *,"quasi-neutrality is fulfilled for the input species."
+        if (withAdiabatic) then
+           print *,"Be aware that also the adiabatic species is included in quasi-neutrality."
+           if (quasineutralityOption == 2) then
+              print *,"If running with EUTERPE quasi-neutrality equations (quasineutralityOption = 2) only the first kinetic species is used in quasi-neutrality."
+           end if
+        end if
+     end if
+     stop
+  end if 
+
+!!  if (abs(chargeDensity) > 1d-15 .and. (Nspecies > 1 .or. withAdiabatic) .and. masterProc) then
+  if (abs(chargeDensity)/maxSingleChargeDensity > 1d-4 .and. (Nspecies > 1 .or. withAdiabatic) .and. masterProc) then
+     print *,line
+     print *,line
+     print *,"**   WARNING: Your input does not fulfill quasi-neutrality,"
+     print *,"**            which it typically should when using several species."
+     print *,line
+     print *,line
+  end if
+  !!!!!!!!!!!!!!!!!!!!!!!
+
 
   ! physicsParameters namelist:
 
@@ -317,22 +420,31 @@ subroutine validateInput()
      print *,line
   end if
 
-  if (nonlinear .and. (.not. includePhi1)) then
-     if (masterProc) then
-        print *,"Error! You requested a nonlinear calculation with includePhi1=.false."
-        print *,"These options are inconsistent since the nonlinear terms involve Phi1."
-     end if
-     stop
-  end if
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!Region commented by AM 2016-02!!
+!!$  if (nonlinear .and. (.not. includePhi1)) then
+!!$     if (masterProc) then
+!!$        print *,"Error! You requested a nonlinear calculation with includePhi1=.false."
+!!$        print *,"These options are inconsistent since the nonlinear terms involve Phi1."
+!!$     end if
+!!$     stop
+!!$  end if
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  if (includeRadialExBDrive .and. (.not. includePhi1)) then
-     if (masterProc) then
-        print *,"Error! You requested a calculation including the radial ExB drive term"
-        print *,"(includeRadialExBDrive=.true.) but you set includePhi1=.false."
-        print *,"These options are inconsistent since the radial ExB drive term involves Phi1."
-     end if
-     stop
-  end if
+! By AM 2016-03: I decided to remove this check below because includePhi1InKineticEquation does not matter if includePhi1=.false.
+
+!!$!!  if (includeRadialExBDrive .and. (.not. includePhi1)) then !!Commented by AM 2016-03
+!!$  if (includePhi1InKineticEquation .and. (.not. includePhi1)) then !!Added by AM 2016-03
+!!$     if (masterProc) then
+!!$!!        print *,"Error! You requested a calculation including the radial ExB drive term" !!Commented by AM 2016-03
+!!$!!        print *,"(includeRadialExBDrive=.true.) but you set includePhi1=.false." !!Commented by AM 2016-03
+!!$!!        print *,"These options are inconsistent since the radial ExB drive term involves Phi1." !!Commented by AM 2016-03
+!!$        print *,"Error! You requested a calculation including Phi1 in the kinetic equation" !!Added by AM 2016-03
+!!$        print *,"(includePhi1InKineticEquation=.true.) but you set includePhi1=.false." !!Added by AM 2016-03
+!!$        print *,"These options are inconsistent." !!Added by AM 2016-03
+!!$     end if
+!!$     stop
+!!$  end if
 
   if (magneticDriftScheme<0) then
      if (masterProc) then
@@ -369,6 +481,48 @@ subroutine validateInput()
            stop
         end select
   end if
+
+  !!!!!!!!!!!!!!!!!!!!!!!
+  !!Added by AM 2016-02!!
+  if ((quasineutralityOption < 1 .or. quasineutralityOption > 2) .and. includePhi1) then
+      if (masterProc) then
+        print *,"Error! quasineutralityOption must be 1 or 2."
+      end if
+      stop
+  end if
+
+  if (withAdiabatic .and. (.not. includePhi1) .and. masterProc) then
+     print *,line
+     print *,line
+     print *,"**   WARNING: You are running with an adiabatic species,"
+     print *,"**            but with includePhi1 = .false. which implies "
+     print *,"**            that the adiabatic species has no impact."
+     print *,line
+     print *,line
+  end if
+
+  if ((.not. withAdiabatic) .and. includePhi1 .and. quasineutralityOption == 1 .and. (Nspecies < 2)) then 
+      if (masterProc) then
+        print *,"Error! In a nonlinear run (includePhi1 = .true.) you must use at least two species, to be able to fulfill quasi-neutrality."
+      end if
+      stop
+  end if 
+
+  if ((.not. withAdiabatic) .and. includePhi1 .and. quasineutralityOption == 2) then 
+      if (masterProc) then
+        print *,"Error! If running with EUTERPE quasi-neutrality equations (quasineutralityOption = 2) in a nonlinear run (includePhi1 = .true.) you must use an adiabatic species (withAdiabatic = .true.)."
+      end if
+      stop
+  end if 
+
+!!$  if ((Nspecies .ne. 1) .and. includePhi1 .and. quasineutralityOption == 2) then 
+!!$      if (masterProc) then
+!!$        print *,"Error! If running with EUTERPE quasi-neutrality equations (quasineutralityOption = 2) in a nonlinear run (includePhi1 = .true.) you must use ONE kinetic species only."
+!!$      end if
+!!$      stop
+!!$  end if 
+
+  !!!!!!!!!!!!!!!!!!!!!!!
 
 
   ! resolutionParameters namelist:

@@ -35,7 +35,6 @@ export PETSC_ARCH=intel14.0-mpi.intel413-double-real
                                                                                                 
 export HDF5_HOME=/hydra/u/system/SLES11/soft/hdf5/1.8.12/intel14.0/serial/
 export NETCDF_HOME=/hydra/u/system/SLES11/soft/netcdf/4.3.3.1/intel14.0/serial 
-
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HDF5_HOME}/lib:${NETCDF_HOME}/lib
 
 # run the program

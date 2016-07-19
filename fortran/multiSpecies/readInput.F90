@@ -1,6 +1,7 @@
 module readInput
 
   use globalVariables
+  use xGrid, only: xGrid_k
 
   implicit none
 
@@ -42,10 +43,11 @@ contains
 
     namelist / otherNumericalParameters /  &
          useIterativeSolver, thetaDerivativeScheme, whichParallelSolverToFactorPreconditioner, &
-         PETSCPreallocationStrategy
+         PETSCPreallocationStrategy, xGridScheme, xPotentialsGridScheme, xGrid_k
 
     namelist / preconditionerOptions / preconditioner_x, preconditioner_x_min_L, preconditioner_zeta, &
-         preconditioner_theta, preconditioner_xi, preconditioner_species
+         preconditioner_theta, preconditioner_xi, preconditioner_species, &
+         preconditioner_theta_min_L, preconditioner_zeta_min_L
 
     Zs = speciesNotInitialized
     mHats = speciesNotInitialized

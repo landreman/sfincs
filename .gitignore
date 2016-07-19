@@ -8,3 +8,12 @@ job.out.*
 job.err.*
 *~
 \#*
+fortran/multiSpecies/BACKUP_2015-11-06_solveDKE.F90
+fortran/multiSpecies/BACKUP_solveDKE.F90
+fortran/multiSpecies/examples/quick_2species_FPCollisions_noEr/job.hydra
+fortran/multiSpecies/host.list
+fortran/multiSpecies/job.hydra
+fortran/singleSpecies/host.list
+fortran/version3/testDevDir/
+sfincsBinary*
+.DS_Store

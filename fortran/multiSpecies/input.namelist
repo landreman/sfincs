@@ -404,6 +404,30 @@
   ! 2 = 4th order finite differences (5-point stencil)
   ! You should set this parameter to 2 except in rare circumstances.
 
+  xGridScheme = 1
+  ! 1 = New orthogonal polynomials with no point at x=0, original treatment of Rosenbluth potentials.
+  ! 2 = New orthogonal polynomials with a point at x=0, original treatment of Rosenbluth potentials.
+  ! 3 = Uniform finite differences on [0, xMax], forcing f=0 at xMax. 2-point stencil for interpolating to other grids.
+  ! 4 = Uniform finite differences on [0, xMax], forcing f=0 at xMax. 4-point stencil for interpolating to other grids.
+  ! 5 = New orthogonal polynomials with no point at x=0, new treatment of Rosenbluth potentials.
+  ! 6 = New orthogonal polynomials with a point at x=0, new treatment of Rosenbluth potentials.
+
+  ! When xGridScheme = 5 or 6, then the following quantities do not matter: 
+  ! NxPotentialsPerVth, xMax, xPotentialsGridScheme.
+
+  ! For xGridScheme = 1, 2, 5, or 6, the distribution function will be represented in terms of polynomials P_n(x)
+  ! that are orthogonal under the weight \int_0^\infty dx x^k exp(-x^2) P_n(x) P_m(x)  \propro  \delta_{n,m}
+  ! where 'k' is an exponent set by the parameter xGrid_k here.
+  ! A good value to use is 0.
+  xGrid_k = 0
+
+  xPotentialsGridScheme = 2
+  ! 1 = Uniform grid. 5-point stencil for derivatives. 2-point stencil for interpolating to other grids.
+  ! 2 = Uniform grid. 5-point stencil for derivatives. 4-point stencil for interpolating to other grids.
+  ! 3 = Use same grid as for distribution function, so no interpolation needed for the self-collision operator.
+  !     You must set xGridScheme=3 or 4 to use this setting.  Use 2-point stencil for interpolating to other species' grids.
+  ! 4 = Same as option 3, except use a 4-point stencil for interpolating to other species' grids.
+
   ! If 'useIterativeSolver' is set to false, a sparse direct solver
   ! will be used. The direct solver is faster for small problems and always yields a solution.
   ! For large problems, the iterative solver will usually be faster and will use much

@@ -19,7 +19,7 @@
 
 &general
   RHSMode = 1
-  saveMatricesAndVectorsInBinary = .t.
+!  saveMatricesAndVectorsInBinary = .t.
 /
 
 &geometryParameters
@@ -64,7 +64,6 @@
   useDKESExBDrift = .false.
 
   includePhi1 = .false.
-  nonlinear = .false.
 /
 
 &resolutionParameters

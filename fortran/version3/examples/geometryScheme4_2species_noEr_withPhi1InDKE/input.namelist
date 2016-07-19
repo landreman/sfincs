@@ -3,6 +3,7 @@
 !----------------------------------------------------------------------
 
 &general
+!  saveMatricesAndVectorsInBinary=.t.
 /
 
 &geometryParameters
@@ -30,8 +31,7 @@
   includeElectricFieldTermInXiDot = .true.
   useDKESExBDrift = .false.
   includePhi1 = .true.
-  includeRadialExBDrive = .f.
-  nonlinear = .true.
+  includePhi1InKineticEquation = .t.
 /
 
 &resolutionParameters

@@ -113,6 +113,36 @@ contains
           do i=1,3
              print *,"[",myCommunicatorIndex,"]   ", transportMatrix(i,:)
           end do
+
+	  !!Added by AM 2014-09!!
+          print *,"[",myCommunicatorIndex,"] ArrayFirstSpeciesParticleFluxCoefficients:"
+          do i=1,3
+             print *,"[",myCommunicatorIndex,"]   ", ArrayFirstSpeciesParticleFluxCoefficients(i)
+          end do	  
+	  !!!!!!!!!!!!!!!!!!!!!!!
+
+          !!Added by AM 2015-05!!
+          print *,"[",myCommunicatorIndex,"] ArrayFirstSpeciesHeatFluxCoefficients:"
+          do i=1,3
+             print *,"[",myCommunicatorIndex,"]   ", ArrayFirstSpeciesHeatFluxCoefficients(i)
+          end do
+          !!!!!!!!!!!!!!!!!!!!!!!
+
+          !!Added by AM 2015-05!!
+          print *,"[",myCommunicatorIndex,"] ArraySecondSpeciesParticleFluxCoefficients:"
+          do i=1,3
+             print *,"[",myCommunicatorIndex,"]   ", ArraySecondSpeciesParticleFluxCoefficients(i)
+          end do
+          !!!!!!!!!!!!!!!!!!!!!!!
+
+          !!Added by AM 2015-05!!
+          print *,"[",myCommunicatorIndex,"] ArraySecondSpeciesHeatFluxCoefficients:"
+          do i=1,3
+             print *,"[",myCommunicatorIndex,"]   ", ArraySecondSpeciesHeatFluxCoefficients(i)
+          end do
+          !!!!!!!!!!!!!!!!!!!!!!!
+
+
        end if
 
     end if

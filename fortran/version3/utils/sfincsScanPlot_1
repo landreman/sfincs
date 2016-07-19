@@ -16,6 +16,8 @@ import pickle
 import sys
 from mpl_toolkits.axes_grid.anchored_artists import AnchoredText
 
+import matplotlib.ticker as ticker
+
 print "This is "+ inspect.getfile(inspect.currentframe())
 
 makePDF = False
@@ -139,6 +141,8 @@ for directory in directories:
     if includePhi1:
         particleFlux_vd = f["particleFlux_vd_psiHat"][()]
         heatFlux_vd = f["heatFlux_vd_psiHat"][()]
+##        NumberOfIterations = f["NIterations"][()] ##Added by AM 2016-04
+        Phi1atOrigin = (f["Phi1Hat"][()])[0,0,:] ##Added by AM 2016-04
 
     if RHSMode > 1:
        results = []
@@ -149,7 +153,8 @@ for directory in directories:
     else:
        if Nspecies==1:
           if includePhi1:
-             outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],particleFlux_vd[0,0],heatFlux_vm[0,0],heatFlux_vd[0,0]])
+             ##outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],particleFlux_vd[0,0],heatFlux_vm[0,0],heatFlux_vd[0,0]]) ##Commented by AM 2016-04
+             outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],particleFlux_vd[0,0],heatFlux_vm[0,0],heatFlux_vd[0,0], Phi1atOrigin[0]]) ##Added by AM 2016-04
           else:
              outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],heatFlux_vm[0,0],sources[0,0,0],sources[1,0,0]])
        else:
@@ -170,11 +175,12 @@ for directory in directories:
                 results.append(heatFlux_vm[ispecies,iteration])
 		radCurr_vm += particleFlux_vm[ispecies,iteration]*Zs[-1][ispecies]
           results.append(FSABjHat[iteration])
+          results.append(radCurr_vm)
+
 	  if includePhi1:
-		results.append(radCurr_vm)
-		results.append(radCurr_vd) 
-	  else:
-		results.append(radCurr_vm)
+             results.append(radCurr_vd) 
+             results.append(Phi1atOrigin[iteration]) ##Added by AM 2016-04
+
           outputs.append(results)
 
     if directory=="baseCase":
@@ -196,7 +202,8 @@ if RHSMode>1:
 else:
    if Nspecies==1:
       if includePhi1:
-         yAxisLabels=["FSABFlow","particleFlux\nvm_psiHat","particleFlux\nvd_psiHat","heatFlux\nvm_psiHat","heatFlux\nvd_psiHat"]
+         ##yAxisLabels=["FSABFlow","particleFlux\nvm_psiHat","particleFlux\nvd_psiHat","heatFlux\nvm_psiHat","heatFlux\nvd_psiHat"] ##Commented by AM 2016-04
+         yAxisLabels=["FSABFlow","particleFlux\nvm_psiHat","particleFlux\nvd_psiHat","heatFlux\nvm_psiHat","heatFlux\nvd_psiHat", "Phi1Hat\n[0,0]"] ##Added by AM 2016-04
       else:
          yAxisLabels=["FSABFlow","particleFlux\nvm_psiHat","heatFlux\nvm_psiHat","particle source",'heat source']
    else:
@@ -211,6 +218,7 @@ else:
          yAxisLabels.append("FSABjHat")
 	 yAxisLabels.append("J_net\nvm_psiHat")
 	 yAxisLabels.append("J_net\nvd_psiHat")
+         yAxisLabels.append("Phi1Hat\n[0,0]") ##Added by AM 2016-04
         
       else:
          yAxisLabels=[]
@@ -220,6 +228,40 @@ else:
             yAxisLabels.append("heatFlux\nvm_psiHat\n(species "+str(i)+")")
          yAxisLabels.append("FSABjHat")
 	 yAxisLabels.append("Radial Current")
+
+
+
+##ADDED BY AM 2016-04 ##
+
+##SINCE Phi1Hat CAN BE LARGE WE ONLY PLOT IT FOR THE MIN, MAX AND BASE CASE OF EACH SCAN
+PlotPhi1Bool = False
+if includePhi1: 
+   YesOrNo = raw_input("Do you want to make a plot of Phi1? [n (default) / y]: ")
+   if YesOrNo == "y" or YesOrNo == "Y" or YesOrNo.lower() == "yes":
+      PlotPhi1Bool = True
+
+if PlotPhi1Bool and includePhi1:
+    if not os.path.isfile("baseCase/" + outputFilename):
+        print "Directory " + "baseCase" + " does not have a " + outputFilename + " file (yet). Will not plot Phi1!"
+        PlotPhi1Bool = False
+    try:
+        f = h5py.File("baseCase/" + outputFilename, 'r')
+    except IOError:
+        print "Unable to open " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!"
+        PlotPhi1Bool = False
+
+    try:
+        Phi1BaseCase = (f["Phi1Hat"][()])[:,:,-1]
+        thetaBaseCase = f["theta"][()]
+        zetaBaseCase = f["zeta"][()]
+    except:
+        print "Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!"
+        PlotPhi1Bool = False
+    Phi1_Array = []
+    Phi1_Theta_Array = []
+    Phi1_Zeta_Array = []
+    Phi1_Labels_Array = []
+#########################
             
 numRows = len(yAxisLabels)
 parametersToVary = []
@@ -258,6 +300,39 @@ if len(values)>1:
     convergeds.append(convergedValue)
     quantities.append(numpy.array(thisScanResults))
 
+    ##ADDED BY AM 2016-04 ##
+    if PlotPhi1Bool and includePhi1:
+       if (abscissae[-1])[0] == convergedValue:
+          minScanValue = "baseCase"
+       else :
+          minScanValue = "Ntheta" + str((abscissae[-1])[0])
+
+       if (abscissae[-1])[-1] == convergedValue:
+          maxScanValue = "baseCase"
+       else :
+          maxScanValue = "Ntheta" + str((abscissae[-1])[-1])
+
+       Phi1_Labels_Array.append(minScanValue)
+       Phi1_Labels_Array.append(maxScanValue)
+       try:
+          fmin = h5py.File(minScanValue + "/" + outputFilename, 'r')
+          fmax = h5py.File(maxScanValue + "/" + outputFilename, 'r')
+       except IOError:
+          print "Unable to open " + minScanValue + "/" + outputFilename + " or " + maxScanValue + "/" + outputFilename + ". Will not plot Phi1!"
+          PlotPhi1Bool = False
+          
+       try:
+          Phi1_Array.append( (fmin["Phi1Hat"][()])[:,:,-1] )
+          Phi1_Array.append( (fmax["Phi1Hat"][()])[:,:,-1] )
+          Phi1_Theta_Array.append( fmin["theta"][()] )
+          Phi1_Theta_Array.append( fmax["theta"][()] )
+          Phi1_Zeta_Array.append( fmin["zeta"][()] )
+          Phi1_Zeta_Array.append( fmax["zeta"][()] )
+       except:
+          print "Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!"
+          PlotPhi1Bool = False
+    ########################
+
 # Check whether Nzeta was scanned:
 data = Nzetas
 values = uniq(data)
@@ -288,6 +363,39 @@ if len(values)>1:
     print "Values of the scanned parameter: ",abscissae[-1]
     convergeds.append(convergedValue)
     quantities.append(numpy.array(thisScanResults))
+
+    ##ADDED BY AM 2016-04 ##
+    if PlotPhi1Bool and includePhi1:
+       if (abscissae[-1])[0] == convergedValue:
+          minScanValue = "baseCase"
+       else :
+          minScanValue = "Nzeta" + str((abscissae[-1])[0])
+
+       if (abscissae[-1])[-1] == convergedValue:
+          maxScanValue = "baseCase"
+       else :
+          maxScanValue = "Nzeta" + str((abscissae[-1])[-1])
+
+       Phi1_Labels_Array.append(minScanValue)
+       Phi1_Labels_Array.append(maxScanValue)
+       try:
+          fmin = h5py.File(minScanValue + "/" + outputFilename, 'r')
+          fmax = h5py.File(maxScanValue + "/" + outputFilename, 'r')
+       except IOError:
+          print "Unable to open " + minScanValue + "/" + outputFilename + " or " + maxScanValue + "/" + outputFilename + ". Will not plot Phi1!"
+          PlotPhi1Bool = False
+          
+       try:
+          Phi1_Array.append( (fmin["Phi1Hat"][()])[:,:,-1] )
+          Phi1_Array.append( (fmax["Phi1Hat"][()])[:,:,-1] )
+          Phi1_Theta_Array.append( fmin["theta"][()] )
+          Phi1_Theta_Array.append( fmax["theta"][()] )
+          Phi1_Zeta_Array.append( fmin["zeta"][()] )
+          Phi1_Zeta_Array.append( fmax["zeta"][()] )
+       except:
+          print "Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!"
+          PlotPhi1Bool = False
+    ########################
 
 # Check whether Nxi was scanned:
 data = Nxis
@@ -320,6 +428,39 @@ if len(values)>1:
     convergeds.append(convergedValue)
     quantities.append(numpy.array(thisScanResults))
 
+    ##ADDED BY AM 2016-04 ##
+    if PlotPhi1Bool and includePhi1:
+       if (abscissae[-1])[0] == convergedValue:
+          minScanValue = "baseCase"
+       else :
+          minScanValue = "Nxi" + str((abscissae[-1])[0])
+
+       if (abscissae[-1])[-1] == convergedValue:
+          maxScanValue = "baseCase"
+       else :
+          maxScanValue = "Nxi" + str((abscissae[-1])[-1])
+
+       Phi1_Labels_Array.append(minScanValue)
+       Phi1_Labels_Array.append(maxScanValue)
+       try:
+          fmin = h5py.File(minScanValue + "/" + outputFilename, 'r')
+          fmax = h5py.File(maxScanValue + "/" + outputFilename, 'r')
+       except IOError:
+          print "Unable to open " + minScanValue + "/" + outputFilename + " or " + maxScanValue + "/" + outputFilename + ". Will not plot Phi1!"
+          PlotPhi1Bool = False
+          
+       try:
+          Phi1_Array.append( (fmin["Phi1Hat"][()])[:,:,-1] )
+          Phi1_Array.append( (fmax["Phi1Hat"][()])[:,:,-1] )
+          Phi1_Theta_Array.append( fmin["theta"][()] )
+          Phi1_Theta_Array.append( fmax["theta"][()] )
+          Phi1_Zeta_Array.append( fmin["zeta"][()] )
+          Phi1_Zeta_Array.append( fmax["zeta"][()] )
+       except:
+          print "Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!"
+          PlotPhi1Bool = False
+    ########################
+
 # Check whether NL was scanned:
 data = NLs
 values = uniq(data)
@@ -350,6 +491,39 @@ if len(values)>1:
     print "Values of the scanned parameter: ",abscissae[-1]
     convergeds.append(convergedValue)
     quantities.append(numpy.array(thisScanResults))
+
+    ##ADDED BY AM 2016-04 ##
+    if PlotPhi1Bool and includePhi1:
+       if (abscissae[-1])[0] == convergedValue:
+          minScanValue = "baseCase"
+       else :
+          minScanValue = "NL" + str((abscissae[-1])[0])
+
+       if (abscissae[-1])[-1] == convergedValue:
+          maxScanValue = "baseCase"
+       else :
+          maxScanValue = "NL" + str((abscissae[-1])[-1])
+
+       Phi1_Labels_Array.append(minScanValue)
+       Phi1_Labels_Array.append(maxScanValue)
+       try:
+          fmin = h5py.File(minScanValue + "/" + outputFilename, 'r')
+          fmax = h5py.File(maxScanValue + "/" + outputFilename, 'r')
+       except IOError:
+          print "Unable to open " + minScanValue + "/" + outputFilename + " or " + maxScanValue + "/" + outputFilename + ". Will not plot Phi1!"
+          PlotPhi1Bool = False
+          
+       try:
+          Phi1_Array.append( (fmin["Phi1Hat"][()])[:,:,-1] )
+          Phi1_Array.append( (fmax["Phi1Hat"][()])[:,:,-1] )
+          Phi1_Theta_Array.append( fmin["theta"][()] )
+          Phi1_Theta_Array.append( fmax["theta"][()] )
+          Phi1_Zeta_Array.append( fmin["zeta"][()] )
+          Phi1_Zeta_Array.append( fmax["zeta"][()] )
+       except:
+          print "Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!"
+          PlotPhi1Bool = False
+    ########################
 
 # Check whether Nx was scanned:
 data = Nxs
@@ -382,6 +556,39 @@ if len(values)>1:
     convergeds.append(convergedValue)
     quantities.append(numpy.array(thisScanResults))
 
+    ##ADDED BY AM 2016-04 ##
+    if PlotPhi1Bool and includePhi1:
+       if (abscissae[-1])[0] == convergedValue:
+          minScanValue = "baseCase"
+       else :
+          minScanValue = "Nx" + str((abscissae[-1])[0])
+
+       if (abscissae[-1])[-1] == convergedValue:
+          maxScanValue = "baseCase"
+       else :
+          maxScanValue = "Nx" + str((abscissae[-1])[-1])
+
+       Phi1_Labels_Array.append(minScanValue)
+       Phi1_Labels_Array.append(maxScanValue)
+       try:
+          fmin = h5py.File(minScanValue + "/" + outputFilename, 'r')
+          fmax = h5py.File(maxScanValue + "/" + outputFilename, 'r')
+       except IOError:
+          print "Unable to open " + minScanValue + "/" + outputFilename + " or " + maxScanValue + "/" + outputFilename + ". Will not plot Phi1!"
+          PlotPhi1Bool = False
+          
+       try:
+          Phi1_Array.append( (fmin["Phi1Hat"][()])[:,:,-1] )
+          Phi1_Array.append( (fmax["Phi1Hat"][()])[:,:,-1] )
+          Phi1_Theta_Array.append( fmin["theta"][()] )
+          Phi1_Theta_Array.append( fmax["theta"][()] )
+          Phi1_Zeta_Array.append( fmin["zeta"][()] )
+          Phi1_Zeta_Array.append( fmax["zeta"][()] )
+       except:
+          print "Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!"
+          PlotPhi1Bool = False
+    ########################
+
 # Check whether NxPotentialsPerVth was scanned:
 data = NxPotentialsPerVths
 values = uniq(data)
@@ -412,6 +619,39 @@ if len(values)>1:
     print "Values of the scanned parameter: ",abscissae[-1]
     convergeds.append(convergedValue)
     quantities.append(numpy.array(thisScanResults))
+
+    ##ADDED BY AM 2016-04 ##
+    if PlotPhi1Bool and includePhi1:
+       if (abscissae[-1])[0] == convergedValue:
+          minScanValue = "baseCase"
+       else :
+          minScanValue = "NxPotentialsPerVth" + "{:.4g}".format((abscissae[-1])[0])
+
+       if (abscissae[-1])[-1] == convergedValue:
+          maxScanValue = "baseCase"
+       else :
+          maxScanValue = "NxPotentialsPerVth" + "{:.4g}".format((abscissae[-1])[-1])
+
+       Phi1_Labels_Array.append(minScanValue)
+       Phi1_Labels_Array.append(maxScanValue)
+       try:
+          fmin = h5py.File(minScanValue + "/" + outputFilename, 'r')
+          fmax = h5py.File(maxScanValue + "/" + outputFilename, 'r')
+       except IOError:
+          print "Unable to open " + minScanValue + "/" + outputFilename + " or " + maxScanValue + "/" + outputFilename + ". Will not plot Phi1!"
+          PlotPhi1Bool = False
+          
+       try:
+          Phi1_Array.append( (fmin["Phi1Hat"][()])[:,:,-1] )
+          Phi1_Array.append( (fmax["Phi1Hat"][()])[:,:,-1] )
+          Phi1_Theta_Array.append( fmin["theta"][()] )
+          Phi1_Theta_Array.append( fmax["theta"][()] )
+          Phi1_Zeta_Array.append( fmin["zeta"][()] )
+          Phi1_Zeta_Array.append( fmax["zeta"][()] )
+       except:
+          print "Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!"
+          PlotPhi1Bool = False
+    ########################
 
 # Check whether xMax was scanned:
 data = xMaxs
@@ -444,6 +684,39 @@ if len(values)>1:
     convergeds.append(convergedValue)
     quantities.append(numpy.array(thisScanResults))
 
+    ##ADDED BY AM 2016-04 ##
+    if PlotPhi1Bool and includePhi1:
+       if (abscissae[-1])[0] == convergedValue:
+          minScanValue = "baseCase"
+       else :
+          minScanValue = "xMax" + "{:.4g}".format((abscissae[-1])[0])
+
+       if (abscissae[-1])[-1] == convergedValue:
+          maxScanValue = "baseCase"
+       else :
+          maxScanValue = "xMax" + "{:.4g}".format((abscissae[-1])[-1])
+
+       Phi1_Labels_Array.append(minScanValue)
+       Phi1_Labels_Array.append(maxScanValue)
+       try:
+          fmin = h5py.File(minScanValue + "/" + outputFilename, 'r')
+          fmax = h5py.File(maxScanValue + "/" + outputFilename, 'r')
+       except IOError:
+          print "Unable to open " + minScanValue + "/" + outputFilename + " or " + maxScanValue + "/" + outputFilename + ". Will not plot Phi1!"
+          PlotPhi1Bool = False
+          
+       try:
+          Phi1_Array.append( (fmin["Phi1Hat"][()])[:,:,-1] )
+          Phi1_Array.append( (fmax["Phi1Hat"][()])[:,:,-1] )
+          Phi1_Theta_Array.append( fmin["theta"][()] )
+          Phi1_Theta_Array.append( fmax["theta"][()] )
+          Phi1_Zeta_Array.append( fmin["zeta"][()] )
+          Phi1_Zeta_Array.append( fmax["zeta"][()] )
+       except:
+          print "Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!"
+          PlotPhi1Bool = False
+    ########################
+
 # Check whether solverTolerances was scanned:
 data = [-math.log10(x) for x in solverTolerances]
 values = uniq(data)
@@ -475,12 +748,45 @@ if len(values)>1:
     convergeds.append(convergedValue)
     quantities.append(numpy.array(thisScanResults))
 
+    ##ADDED BY AM 2016-04 ##
+    if PlotPhi1Bool and includePhi1:
+       if (abscissae[-1])[0] == convergedValue:
+          minScanValue = "baseCase"
+       else :
+          minScanValue = "solverTolerance" + "{:.4g}".format(math.pow(10, -(abscissae[-1])[0]))
+
+       if (abscissae[-1])[-1] == convergedValue:
+          maxScanValue = "baseCase"
+       else :
+          maxScanValue = "solverTolerance" + "{:.4g}".format(math.pow(10, -(abscissae[-1])[-1]))
+
+       Phi1_Labels_Array.append(minScanValue)
+       Phi1_Labels_Array.append(maxScanValue)
+       try:
+          fmin = h5py.File(minScanValue + "/" + outputFilename, 'r')
+          fmax = h5py.File(maxScanValue + "/" + outputFilename, 'r')
+       except IOError:
+          print "Unable to open " + minScanValue + "/" + outputFilename + " or " + maxScanValue + "/" + outputFilename + ". Will not plot Phi1!"
+          PlotPhi1Bool = False
+          
+       try:
+          Phi1_Array.append( (fmin["Phi1Hat"][()])[:,:,-1] )
+          Phi1_Array.append( (fmax["Phi1Hat"][()])[:,:,-1] )
+          Phi1_Theta_Array.append( fmin["theta"][()] )
+          Phi1_Theta_Array.append( fmax["theta"][()] )
+          Phi1_Zeta_Array.append( fmin["zeta"][()] )
+          Phi1_Zeta_Array.append( fmax["zeta"][()] )
+       except:
+          print "Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!"
+          PlotPhi1Bool = False
+    ########################
+
 
 # ***************************************************
 # Now make the plot
 # ***************************************************
 
-fig = plt.figure()
+fig = plt.figure(1)
 fig.patch.set_facecolor('white')
 #ax = plt.axes([0,0,1,1],axisbg='w')
 
@@ -595,11 +901,140 @@ data = {'scanType':scanType, 'numQuantities':numQuantitiesForPickle, 'numRows':n
 pickle.dump(data,outputFile)
 outputFile.close()
 
+
+
+##ADDED BY AM 2016-04 ##
+# *******************************
+# MAKE PLOT OF Phi1 IF APPLICABLE
+# *******************************
+
+if PlotPhi1Bool and includePhi1:
+
+   def fmt_cbar(x, pos):
+      if x == 0.0:
+         return r'${}$'.format(x)
+      a, b = '{:.1e}'.format(x).split('e')
+      b = int(b)
+      return r'${} \cdot 10^{{{}}}$'.format(a, b)
+
+   def fmt_xy_axis(x, pos):
+      return r'${}$'.format(x)
+
+   numRowsPlot2 = 3
+   numColsPlot2 = numParameters
+   numContours = 100
+   numLevels = 5
+
+   fig2 = plt.figure(2)
+   fig2.patch.set_facecolor('white')
+
+
+#   print numpy.amax(Phi1BaseCase)
+#   print numpy.amin(Phi1BaseCase)
+#   print numParameters
+#   print len(Phi1_Array)
+#   print len(Phi1_Theta_Array)
+#   print len(Phi1_Zeta_Array)
+#   print len(Phi1_Labels_Array)
+
+   for i in range(0, len(Phi1_Array), 2):
+
+      ##Add min Plot##
+      ################
+
+      delta = (numpy.amax(Phi1_Array[i]) - numpy.amin(Phi1_Array[i])) / numLevels
+      ContourLevels = numpy.arange(numpy.amin(Phi1_Array[i]), numpy.amax(Phi1_Array[i]) + delta/2.0, delta)
+      
+      ax = plt.subplot(numRowsPlot2, numColsPlot2, i/2 + 1)
+      Phi1Plot = plt.contourf(Phi1_Zeta_Array[i], Phi1_Theta_Array[i], Phi1_Array[i].transpose(), numContours)
+      Phi1Plot2 = plt.contour(Phi1Plot,levels=ContourLevels, colors='k', hold='on')
+      plt.xlabel(r'$\zeta$' + " " + r'$\mathrm{[rad]}$')
+      plt.ylabel(r'$\theta$'+ " " + r'$\mathrm{[rad]}$')
+      plt.gca().axes.xaxis.set_label_coords(0.5,-0.08)
+      plt.gca().axes.yaxis.set_label_coords(-0.12,0.5)
+      ax.xaxis.set_major_formatter( ticker.FuncFormatter(fmt_xy_axis))
+      ax.xaxis.set_minor_formatter( ticker.FuncFormatter(fmt_xy_axis))
+      ax.yaxis.set_major_formatter( ticker.FuncFormatter(fmt_xy_axis))
+      ax.yaxis.set_minor_formatter( ticker.FuncFormatter(fmt_xy_axis))
+      
+      cbar = plt.colorbar(Phi1Plot, format=ticker.FuncFormatter(fmt_cbar))#, ticks=ContourLevels)
+      cbar.ax.set_ylabel(r'$\hat{\Phi}_1$', rotation=0, labelpad=10)
+      
+      plt.clabel(Phi1Plot2, fmt=ticker.FuncFormatter(fmt_cbar), colors='k', fontsize=10, inline=False)
+      ax.text(.5,.9,Phi1_Labels_Array[i],
+               horizontalalignment='center',
+               transform=ax.transAxes, fontsize=12)
+
+      ##Add base case plot##
+      ######################
+      if (i  == 2*int(math.floor(numColsPlot2/2))):
+         delta = (numpy.amax(Phi1BaseCase) - numpy.amin(Phi1BaseCase)) / numLevels
+         ContourLevels = numpy.arange(numpy.amin(Phi1BaseCase), numpy.amax(Phi1BaseCase) + delta/2.0, delta)
+         
+         ax = plt.subplot(numRowsPlot2,numColsPlot2, i/2 + 1 + numColsPlot2)
+         Phi1Plot = plt.contourf(zetaBaseCase, thetaBaseCase, Phi1BaseCase.transpose(), numContours)
+         Phi1Plot2 = plt.contour(Phi1Plot,levels=ContourLevels, colors='k', hold='on')
+         plt.xlabel(r'$\zeta$' + " " + r'$\mathrm{[rad]}$')
+         plt.ylabel(r'$\theta$'+ " " + r'$\mathrm{[rad]}$')
+         plt.gca().axes.xaxis.set_label_coords(0.5,-0.08)
+         plt.gca().axes.yaxis.set_label_coords(-0.12,0.5)
+         #ax.ticklabel_format(axis='x', style='sci', scilimits=(-2,2))
+         #ax.ticklabel_format(axis='y', style='sci', scilimits=(-2,2))         
+         #ax.ticklabel_format(fmt = ticker.FuncFormatter(fmt_xy_axis))
+         ax.xaxis.set_major_formatter( ticker.FuncFormatter(fmt_xy_axis))
+         ax.xaxis.set_minor_formatter( ticker.FuncFormatter(fmt_xy_axis))
+         ax.yaxis.set_major_formatter( ticker.FuncFormatter(fmt_xy_axis))
+         ax.yaxis.set_minor_formatter( ticker.FuncFormatter(fmt_xy_axis))
+
+#         plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
+         
+         cbar = plt.colorbar(Phi1Plot, format=ticker.FuncFormatter(fmt_cbar))#, ticks=ContourLevels)
+         cbar.ax.set_ylabel(r'$\hat{\Phi}_1$', rotation=0, labelpad=10)
+         
+#         fmtPlot = ticker.LogFormatterMathtext()
+#         fmtPlot.create_dummy_axis()
+      #      fmtPlot = "%.4g"
+         
+         plt.clabel(Phi1Plot2, fmt=ticker.FuncFormatter(fmt_cbar), colors='k', fontsize=10, inline=False)
+         ax.text(.5,.9,'baseCase',
+                  horizontalalignment='center',
+                  transform=ax.transAxes, fontsize=12)
+         
+      ##Add max Plot##
+      ################
+
+      delta = (numpy.amax(Phi1_Array[i+1]) - numpy.amin(Phi1_Array[i+1])) / numLevels
+      ContourLevels = numpy.arange(numpy.amin(Phi1_Array[i+1]), numpy.amax(Phi1_Array[i+1]) + delta/2.0, delta)
+      
+      ax = plt.subplot(numRowsPlot2, numColsPlot2, i/2 + 1 + 2*numColsPlot2)
+      Phi1Plot = plt.contourf(Phi1_Zeta_Array[i+1], Phi1_Theta_Array[i+1], Phi1_Array[i+1].transpose(), numContours)
+      Phi1Plot2 = plt.contour(Phi1Plot,levels=ContourLevels, colors='k', hold='on')
+      plt.xlabel(r'$\zeta$' + " " + r'$\mathrm{[rad]}$')
+      plt.ylabel(r'$\theta$'+ " " + r'$\mathrm{[rad]}$')
+      plt.gca().axes.xaxis.set_label_coords(0.5,-0.08)
+      plt.gca().axes.yaxis.set_label_coords(-0.12,0.5)
+      ax.xaxis.set_major_formatter( ticker.FuncFormatter(fmt_xy_axis))
+      ax.xaxis.set_minor_formatter( ticker.FuncFormatter(fmt_xy_axis))
+      ax.yaxis.set_major_formatter( ticker.FuncFormatter(fmt_xy_axis))
+      ax.yaxis.set_minor_formatter( ticker.FuncFormatter(fmt_xy_axis))
+      
+      cbar = plt.colorbar(Phi1Plot, format=ticker.FuncFormatter(fmt_cbar))#, ticks=ContourLevels)
+      cbar.ax.set_ylabel(r'$\hat{\Phi}_1$', rotation=0, labelpad=10)
+      
+      plt.clabel(Phi1Plot2, fmt=ticker.FuncFormatter(fmt_cbar), colors='k', fontsize=10, inline=False)
+      ax.text(.5,.9,Phi1_Labels_Array[i+1],
+               horizontalalignment='center',
+               transform=ax.transAxes, fontsize=12)
+      
+########################   
+
+
 # If this script was called with any command-line arguments, then do not actually display the plot:
 if len(sys.argv) == 1:
    plt.show()
 
 if makePDF:
+   fig = plt.figure(1)
    ##print "Saving PDF" ##Commented by AM 2015-12
    ##plt.savefig('sfincsScanPlot_1.pdf', orientation = 'landscape', papertype='letter') ##Commented by AM 2015-12
    ##Added by AM 2015-12##
@@ -612,3 +1047,13 @@ if makePDF:
    #######################
  
    #plt.savefig('sfincsScanPlot_1.pdf', orientation = 'landscape', papertype='letter',bbox_inches='tight',pad_inches=0)
+
+   if PlotPhi1Bool and includePhi1:
+      fig2 = plt.figure(2)
+      fig2.set_size_inches(numColsPlot2*3, numRowsPlot2*2.5)
+      if len(sys.argv)>2 : #Use the substituted name as file name                                                                                      
+         print "Writing plot to " + os.getcwd() + "/" + sys.argv[2] + "_Phi1" + ".pdf."
+         plt.savefig(sys.argv[2] + "_Phi1" + ".pdf", orientation = 'landscape', papertype='letter')
+      else: #Use script name as file name                                                                                                              
+         print "Writing plot to " + os.getcwd() + "/" + os.path.basename(__file__) + "_Phi1" + ".pdf."
+         plt.savefig(os.path.basename(__file__) + "_Phi1" + ".pdf", orientation = 'landscape', papertype='letter')

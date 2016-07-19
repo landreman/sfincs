@@ -1,6 +1,7 @@
 function sfincs_compareToFortran(filename)
 
-global Nspecies Ntheta Nzeta Nxi Nx NL collisionOperator includePhi1 RHSMode
+global Zs mHats nHats THats withAdiabatic
+global Nspecies Ntheta Nzeta Nxi Nx NL dPhiHatdpsiHat collisionOperator RHSMode
 global theta zeta x transportMatrix
 global geometryScheme GHat IHat VPrimeHat FSABHat2 B0OverBBar iota BDotCurlB
 global BHat dBHatdtheta dBHatdzeta dBHatdpsiHat
@@ -11,6 +12,7 @@ global dBHat_sub_zeta_dpsiHat dBHat_sub_zeta_dtheta
 global dBHat_sup_theta_dpsiHat dBHat_sup_theta_dzeta
 global dBHat_sup_zeta_dpsiHat dBHat_sup_zeta_dtheta
 global psiHat psiN rHat rN
+global includePhi1 includePhi1InKineticEquation
 
 global FSADensityPerturbation FSABFlow FSAPressurePerturbation
 global particleFlux_vm0_psiHat particleFlux_vm_psiHat particleFlux_vE0_psiHat particleFlux_vE_psiHat particleFlux_vd_psiHat particleFlux_vd1_psiHat
@@ -46,12 +48,18 @@ fprintf('Comparing matlab results to fortran results in %s\n',filename)
 
 % First compare 'input' quantities that should agree to within roundoff
 % error.
+quantityDependsOnIteration = false;
 
 tolerance = 1e-12;
 comparisonType = 1;
 % 1 = max(abs(difference)) < tolerance
 % 2 = max(abs(difference) ./ mean) < tolerance
 
+compare('Zs')
+compare('mHats')
+compare('nHats')
+compare('THats')
+compare('withAdiabatic')
 compare('Nspecies')
 compare('Ntheta')
 compare('Nzeta')
@@ -65,7 +73,10 @@ compare('psiHat')
 compare('psiN')
 compare('rHat')
 compare('rN')
+compare('dPhiHatdpsiHat')
 compare('collisionOperator')
+compare('includePhi1')
+compare('includePhi1InKineticEquation')
 compare('geometryScheme')
 compare('GHat')
 compare('IHat')
@@ -100,8 +111,10 @@ compare('dBHat_sup_theta_dzeta')
 compare('dBHat_sup_zeta_dtheta')
 %compare('dBHat_sup_zeta_dpsiHat')
 
+% *************************************************************
 % Now compare 'output' quantities that will differ beyond the solver
 % tolerance.
+quantityDependsOnIteration = true;
 
 tolerance = 0.003;
 comparisonType = 2;
@@ -109,7 +122,7 @@ comparisonType = 2;
 if RHSMode==1
     compare('FSABFlow')
     compare('FSABjHat')
-    if Nspecies>1 || collisionOperator==1 || includePhi1
+    if Nspecies>1 || collisionOperator==1
         % If using Fokker-Planck operator with 1 species, particle flux comes
         % out to be ~0, so don't try to compare it then.
         compare('particleFlux_vm_psiHat')
@@ -142,21 +155,48 @@ end
             fprintf('** WARNING: Unable to test variable %s since it does not exist in %s\n',varName,filename)
             return
         end
+        % If needed, pick out the value from the last iteration:
+        if quantityDependsOnIteration
+            switch numel(size(fortranVar))
+                case 1
+                    fortranVar = fortranVar(end);
+                case 2
+                    fortranVar = fortranVar(end,:);
+                case 3
+                    fortranVar = fortranVar(end,:,:);
+                case 4
+                    fortranVar = fortranVar(end,:,:,:);
+                case 5
+                    fortranVar = fortranVar(end,:,:,:,:);
+                otherwise
+                    error('Ooops, I did not plan for this case.')
+            end
+        end
         
         if isvector(matlabVar)
             % If we have a 1D vector, 
             matlabVar = matlabVar(:);
             fortranVar = fortranVar(:);
         end
-        
+
+        %class(fortranVar)
+        %islogical(matlabVar)
+        if islogical(matlabVar)
+            % SFINCS uses -1 for false, matlab uses 0 for false.
+            fortranVar = (double(fortranVar)+1)/2;
+        end
+
         try
-            difference = abs(matlabVar-fortranVar);
+            %difference = abs(matlabVar-fortranVar);
+            difference = abs(double(matlabVar)-double(fortranVar));
         catch
             fprintf('** ERROR! Matlab and fortran variables %s are different sizes.\n',varName)
             fprintf('Size of matlab version:\n')
             size(matlabVar)            
             fprintf('Size of fortran version:\n')
             size(fortranVar)
+            class(matlabVar)
+            class(fortranVar)
             return
         end
         

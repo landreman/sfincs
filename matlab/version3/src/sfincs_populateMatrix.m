@@ -10,14 +10,16 @@ global preconditioner_zeta_min_L zetaWeights
 global preconditioner_species preconditioner_x preconditioner_x_min_L
 global preconditioner_xi collisionOperator constraintScheme
 global BLOCK_F BLOCK_QN BLOCK_PHI1_CONSTRAINT BLOCK_DENSITY_CONSTRAINT BLOCK_PRESSURE_CONSTRAINT BLOCK_F_CONSTRAINT indexVars
-global includePhi1 nonlinear useDKESExBDrift includeXDotTerm includeElectricFieldTermInXiDot magneticDriftScheme
-global Delta alpha nu_n dPhi1Hatdtheta dPhi1Hatdzeta
+global includePhi1 includePhi1InKineticEquation useDKESExBDrift includeXDotTerm includeElectricFieldTermInXiDot magneticDriftScheme
+global Delta alpha nu_n Phi1Hat dPhi1Hatdtheta dPhi1Hatdzeta stateVector
 global BDotCurlB FSABHat2 dPhiHatdpsiHat force0RadialCurrentInEquilibrium
 global BHat dBHatdtheta dBHatdzeta dBHatdpsiHat
 global DHat BHat_sub_psi BHat_sub_theta BHat_sub_zeta BHat_sup_theta BHat_sup_zeta
 global dBHat_sub_psi_dtheta dBHat_sub_psi_dzeta
 global dBHat_sub_theta_dpsiHat dBHat_sub_theta_dzeta
 global dBHat_sub_zeta_dpsiHat dBHat_sub_zeta_dtheta
+global adiabaticZ adiabaticNHat adiabaticTHat withAdiabatic quasineutralityOption
+global dnHatdpsiHats dTHatdpsiHats reusePreconditioner
 
 populateMatrixTic = tic;
 
@@ -115,7 +117,10 @@ for ispecies = 1:Nspecies
             magneticDriftSpatialPart3 = zeros(Ntheta,Nzeta);
         end
         
-        if nonlinear
+        % 20160328:
+        % This nonlinear df1/dtheta term appears in the SFINCS technical
+        % documentation (eq 61) but not in our latest DKE with Phi1.
+        if false
             nonlinearTermSpatialPart = -alpha*Delta*DHat.*BHat_sub_psi.*dPhi1Hatdzeta./(2*BHat.*BHat);
         else
             nonlinearTermSpatialPart = zeros(Ntheta,Nzeta);
@@ -216,7 +221,11 @@ for ispecies = 1:Nspecies
         magneticDriftSpatialPart2 = zeros(Ntheta,Nzeta);
         magneticDriftSpatialPart3 = zeros(Ntheta,Nzeta);
         %}
-        if nonlinear
+        
+        % 20160328:
+        % This nonlinear df1/dtheta term appears in the SFINCS technical
+        % documentation (eq 61) but not in our latest DKE with Phi1.
+        if false
             nonlinearTermSpatialPart = alpha*Delta*DHat.*BHat_sub_psi.*dPhi1Hatdtheta./(2*BHat.*BHat);
         else
             nonlinearTermSpatialPart = zeros(Ntheta,Nzeta);
@@ -302,7 +311,8 @@ for ispecies = 1:Nspecies
             ErTermSpatialPart = zeros(Ntheta,Nzeta);
         end
         
-        if nonlinear
+        %if false
+        if includePhi1 && includePhi1InKineticEquation
             nonlinearTermSpatialPart = -alpha*Z./(2*sqrtm*sqrtT*BHat).*(BHat_sup_theta.*dPhi1Hatdtheta + BHat_sup_zeta.*dPhi1Hatdzeta);
         else
             nonlinearTermSpatialPart = zeros(Ntheta,Nzeta);
@@ -393,8 +403,9 @@ for ispecies = 1:Nspecies
             ErTermSpatialPart2 = zeros(Ntheta,Nzeta);
         end
         
-        if nonlinear
-            nonlinearTermSpatialPart = -alpha*Z./(2*sqrtT*sqrtm*BHat).*(BHat_sup_theta.*dPhi1Hatdtheta + BHat_sub_zeta.*dPhi1Hatdzeta);
+        %if false
+        if includePhi1 && includePhi1InKineticEquation
+            nonlinearTermSpatialPart = -alpha*Z./(2*sqrtT*sqrtm*BHat).*(BHat_sup_theta.*dPhi1Hatdtheta + BHat_sup_zeta.*dPhi1Hatdzeta);
         else
             nonlinearTermSpatialPart = zeros(Ntheta,Nzeta);
         end
@@ -462,6 +473,8 @@ for ispecies = 1:Nspecies
         end
     end
     
+    %{
+    % Next section was removed 20160328 for the new Phi1 implementation.
     % -----------------------------------------
     % Add the Phi1 terms that act on f0 rather than f1.
     % These terms are linear and give the adiabatic response.
@@ -496,7 +509,128 @@ for ispecies = 1:Nspecies
             end
         end
     end
+    %}
     
+    % -----------------------------------------
+    % Add the radial ExB-drift terms in the residual (R_E), which are also used
+    % for some terms in the Jacobian.
+    % -----------------------------------------
+    
+    if includePhi1 && includePhi1InKineticEquation && (whichMatrix ~= 2)
+        L=0;
+        
+        % dPhi1/dtheta term
+        spatialPart = -(Delta*nHat*mHat*sqrtm*alpha/(2*pi*sqrtpi*THat*sqrtT)) ...
+            * (DHat.*exp(-(alpha*Z/THat)*Phi1Hat).*BHat_sub_zeta)./(BHat.*BHat);
+        for ix = ixMin:Nx
+            spatialAndXPart = expx2(ix)*(spatialPart .* (dnHatdpsiHats(ispecies)/nHat ...
+                + alpha*Z/THat*dPhiHatdpsiHat ...
+                + (x2(ix) - 3/2 + (alpha*Z/THat)*Phi1Hat)*dTHatdpsiHats(ispecies)/THat));
+            for izeta = 1:Nzeta
+                rowIndices = sfincs_indices(ispecies,ix,L+1,1:Ntheta,izeta,BLOCK_F, indexVars);
+                colIndices = sfincs_indices(1,1,1,1:Ntheta,izeta,BLOCK_QN, indexVars);
+                addSparseBlock(rowIndices, colIndices, diag(spatialAndXPart(:,izeta))*ddtheta)
+            end
+        end
+        
+        % dPhi1/dzeta term
+        spatialPart = (Delta*nHat*mHat*sqrtm*alpha/(2*pi*sqrtpi*THat*sqrtT)) ...
+            * (DHat.*exp(-(alpha*Z/THat)*Phi1Hat).*BHat_sub_theta)./(BHat.*BHat);
+        for ix = ixMin:Nx
+            spatialAndXPart = expx2(ix)*(spatialPart .* (dnHatdpsiHats(ispecies)/nHat ...
+                + alpha*Z/THat*dPhiHatdpsiHat ...
+                + (x2(ix) - 3/2 + (alpha*Z/THat)*Phi1Hat)*dTHatdpsiHats(ispecies)/THat));            
+            for itheta = 1:Ntheta
+                rowIndices = sfincs_indices(ispecies,ix,L+1,itheta,1:Nzeta,BLOCK_F, indexVars);
+                colIndices = sfincs_indices(1,1,1,itheta,1:Nzeta,BLOCK_QN, indexVars);
+                addSparseBlock(rowIndices, colIndices, diag(spatialAndXPart(itheta,:))*ddzeta)
+            end
+        end
+    end
+    
+    
+    % -----------------------------------------
+    % Add the terms in the Jacobian associated with Phi1 in the radial
+    % drift term but which do not appear in the residual.
+    % -----------------------------------------
+    
+    if includePhi1 && includePhi1InKineticEquation && (whichMatrix == 0 || whichMatrix==1)
+        factors = -alpha*Z*Delta*nHat*mHat*sqrtm/(THat*2*pi*sqrtpi*THat*sqrtT);
+        spatialPartOfMagneticDriftTerm = (THat/Z)*(DHat./(BHat.*BHat.*BHat)).*(BHat_sub_theta .* dBHatdzeta - BHat_sub_zeta.*dBHatdtheta);
+        spatialPartOfExBDriftTerm = alpha*DHat./(BHat.*BHat).*(BHat_sub_theta .* dPhi1Hatdzeta - BHat_sub_zeta.*dPhi1Hatdtheta);
+        for ix = ixMin:Nx
+            xPart = factors*expx2(ix)*exp(-(alpha*Z/THat)*Phi1Hat) ...
+                .* (dnHatdpsiHats(ispecies)/nHat + alpha*Z/THat*dPhiHatdpsiHat ...
+                + (x2(ix) - 5/2 + (alpha*Z/THat)*Phi1Hat)*dTHatdpsiHats(ispecies)/THat);
+            % In the above line, note that we have replaced 3/2 -> 5/2
+            % because 2 terms were combined.
+            
+            L=0;
+            stuffToAdd = xPart .* ((4/3)*x2(ix)*spatialPartOfMagneticDriftTerm + spatialPartOfExBDriftTerm);
+            for itheta = 1:Ntheta
+                rowIndices = sfincs_indices(ispecies,ix,L+1,itheta,1:Nzeta,BLOCK_F, indexVars);
+                colIndices = sfincs_indices(1,1,1,itheta,1:Nzeta,BLOCK_QN, indexVars);
+                addToSparse(rowIndices, colIndices, stuffToAdd(itheta,:))
+            end
+
+            L=2;
+            stuffToAdd = xPart .* ((2/3)*x2(ix)*spatialPartOfMagneticDriftTerm);
+            for itheta = 1:Ntheta
+                rowIndices = sfincs_indices(ispecies,ix,L+1,itheta,1:Nzeta,BLOCK_F, indexVars);
+                colIndices = sfincs_indices(1,1,1,itheta,1:Nzeta,BLOCK_QN, indexVars);
+                addToSparse(rowIndices, colIndices, stuffToAdd(itheta,:))
+            end
+            
+        end
+    end
+    
+    % -----------------------------------------
+    % Add the terms in the Jacobian associated with dN/dPhi1 for the nonlinear 
+    % term N = E|| df/dv||.
+    % This term appears in the Jacobian but is not used for the residual.
+    % -----------------------------------------
+    
+    if includePhi1 && includePhi1InKineticEquation && ((whichMatrix == 0 && (~ reusePreconditioner))  || whichMatrix==1)
+        spatialPart = -alpha*Z./(2*sqrtT*sqrtm*BHat);
+        for ithetaRow=1:Ntheta
+            colIndices_zeta = sfincs_indices(1,1,1,itheta,1:Nzeta,BLOCK_QN, indexVars);
+            for izetaRow = 1:Nzeta
+                colIndices_theta = sfincs_indices(1,1,1,1:Ntheta,izetaRow,BLOCK_QN, indexVars);
+                for ell=0:(Nxi-1)
+                    indices = sfincs_indices(ispecies,1:Nx,ell+1,ithetaRow,izetaRow,BLOCK_F, indexVars);
+                    df1dx = ddx*stateVector(indices);
+                    L=ell-1; % So L+1 = ell
+                    nonlinearTerm_Lp1 = spatialPart(ithetaRow,izetaRow)*( (L+1)*(L+2)/(2*L+3)*stateVector(indices)./x + (L+1)/(2*L+3)*df1dx);
+                    L=ell+1; % So L-1 = ell
+                    nonlinearTerm_Lm1 = spatialPart(ithetaRow,izetaRow)*(-L*(L-1)/(2*L-1)*stateVector(indices)./x + L/(2*L-1)*df1dx);
+                    
+                    for ix=ixMin:Nx
+                        % L+1=ell terms
+                        if ell>0
+                            L = ell-1;
+                            rowIndices = sfincs_indices(ispecies,ix,L+1,ithetaRow,izetaRow,BLOCK_F, indexVars);
+                            
+                            % Add d/dtheta (on Phi1) term:
+                            addSparseBlock(rowIndices, colIndices_theta, BHat_sup_theta(ithetaRow,izetaRow)*nonlinearTerm_Lp1(ix)*ddtheta(ithetaRow,:))
+                            % Add d/dzeta (on Phi1) term:
+                            addSparseBlock(rowIndices, colIndices_zeta, BHat_sup_zeta(ithetaRow,izetaRow)*nonlinearTerm_Lp1(ix)*ddzeta(izetaRow,:))
+                        end
+                        
+                        % L-1=ell terms
+                        if ell<Nxi-1
+                            L = ell+1;
+                            rowIndices = sfincs_indices(ispecies,ix,L+1,ithetaRow,izetaRow,BLOCK_F, indexVars);
+                            
+                            % Add d/dtheta (on Phi1) term:
+                            addSparseBlock(rowIndices, colIndices_theta, BHat_sup_theta(ithetaRow,izetaRow)*nonlinearTerm_Lm1(ix)*ddtheta(ithetaRow,:))
+                            % Add d/dzeta (on Phi1) term:
+                            addSparseBlock(rowIndices, colIndices_zeta, BHat_sup_zeta(ithetaRow,izetaRow)*nonlinearTerm_Lm1(ix)*ddzeta(izetaRow,:))
+                        end
+                    end
+                end
+            end
+        end
+    end
 end
 
 switch (collisionOperator)
@@ -814,8 +948,10 @@ if whichMatrix ~= 2
             % Do nothing
             
         case 1
-            xPartOfSource1 = (x2-5/2).*expx2;
-            xPartOfSource2 = (x2-3/2).*expx2;
+            xPartOfSource1 = (1/(pi*sqrtpi))*(   -x2 + 5/2).*expx2;
+            xPartOfSource2 = (1/(pi*sqrtpi))*(2/3*x2 -   1).*expx2;
+            %xPartOfSource1 = (x2-5/2).*expx2;
+            %xPartOfSource2 = (x2-3/2).*expx2;
             
             L=0;
             for ispecies = 1:Nspecies
@@ -852,18 +988,57 @@ end
 % Add quasineutrality equation.
 % --------------------------------------------------
 
+% Part with column indices in BLOCK_F, which is also used for the residual:
+
 if whichMatrix ~= 2 && includePhi1
+    switch quasineutralityOption
+        case 1
+            ispecies_max = Nspecies;
+        case 2
+            ispecies_max = 1;
+        otherwise
+            error('Invalid quasineutralityOption')
+    end
     L = 0;
     xPart = x2.*xWeights;
-    speciesFactor = Zs .* ((THats./mHats).^(3/2));
+    speciesFactor = 4*pi*Zs .* ((THats./mHats).^(3/2));
     for itheta = 1:Ntheta
         for izeta = 1:Nzeta
             rowIndex = sfincs_indices(1, 1, 1, itheta, izeta, BLOCK_QN, indexVars);
-            for ispecies = 1:Nspecies
+            for ispecies = 1:ispecies_max
                 colIndices = sfincs_indices(ispecies, 1:Nx, L+1, itheta, izeta, BLOCK_F, indexVars);
                 addSparseBlock(rowIndex, colIndices, xPart' *speciesFactor(ispecies))
             end
         end
+    end
+end
+
+% For quasineutralityOption=1: Part of the Jacobian with column indices in BLOCK_QN, which is NOT used for the residual:
+if includePhi1 && (quasineutralityOption==1) && (whichMatrix==0 || whichMatrix==1)
+    stuffToAdd = zeros(Ntheta,Nzeta);
+    for ispecies = 1:Nspecies
+        stuffToAdd = stuffToAdd - alpha*Zs(ispecies)*Zs(ispecies)*nHats(ispecies)/THats(ispecies) ...
+            *exp(-alpha*Zs(ispecies)/THats(ispecies)*Phi1Hat);
+    end
+    if withAdiabatic
+        stuffToAdd = stuffToAdd - alpha*adiabaticZ*adiabaticZ*adiabaticNHat/adiabaticTHat ...
+            *exp(-alpha*adiabaticZ/adiabaticTHat*Phi1Hat);
+    end
+    
+    for itheta = 1:Ntheta
+        indices = sfincs_indices(1, 1, 1, itheta, 1:Nzeta, BLOCK_QN, indexVars);
+        addToSparse(indices, indices, stuffToAdd(itheta,:))
+    end
+end
+
+% For quasineutralityOption=2: Part of the Jacobian with column indices in BLOCK_QN, which IS used for the residual:
+if includePhi1 && (quasineutralityOption==2) && (whichMatrix~=2)
+    factor = -alpha*(Zs(1)*Zs(1)*nHats(1)/THats(1) ...
+        +adiabaticZ*adiabaticZ*adiabaticNHat/adiabaticTHat);
+    stuffToAdd = factor * ones(Nzeta,1);
+    for itheta = 1:Ntheta
+        indices = sfincs_indices(1, 1, 1, itheta, 1:Nzeta, BLOCK_QN, indexVars);
+        addToSparse(indices, indices, stuffToAdd)
     end
 end
 

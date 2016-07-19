@@ -175,7 +175,8 @@ module solver
     ! Therefore, it is preferable to always have snes type = SNESNEWTONLS but set the 
     ! number of iterations to 1 for a linear run.
     call SNESSetType(mysnes, SNESNEWTONLS, ierr)
-    if (nonlinear) then
+    !!if (nonlinear) then !!Commented by AM 2016-02
+    if (includePhi1) then !!Added by AM 2016-02
        if (masterProc) then
           print *,"Since this is a nonlinear run, we will use Newton's method."
        end if
@@ -272,7 +273,8 @@ module solver
        end if
        call PetscTime(time1, ierr)
 
-       if (nonlinear) then
+       !!if (nonlinear) then !!Commented by AM 2016-02
+       if (includePhi1) then !!Added by AM 2016-02
           call SNESGetConvergedReason(mysnes, reason, ierr)
           if (reason>0) then
              if (masterProc) then

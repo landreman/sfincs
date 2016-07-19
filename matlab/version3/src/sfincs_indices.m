@@ -12,7 +12,8 @@ function indices = sfincs_indices(ispecies, ix, ixi, itheta, izeta, whichBlock, 
 
 %{
 % Validation:
-global matrixSize constraintScheme
+global matrixSize 
+%global constraintScheme
 assert(all(ispecies>0))
 assert(all(itheta>0))
 assert(all(izeta>0))
