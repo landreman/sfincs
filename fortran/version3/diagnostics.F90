@@ -201,7 +201,9 @@
     VecScatter :: VecScatterContext
     Vec :: solutionWithFullF, solutionWithDeltaF
     Vec :: solutionWithDeltaFOnProc0, solutionWithFullFOnProc0, f0OnProc0
+    !!!Vec :: expPhi1 !!Added by AM 2016-06
     PetscScalar, pointer :: solutionWithFullFArray(:), solutionWithDeltaFArray(:), f0Array(:)
+    !!PetscScalar, pointer :: expPhi1Array(:) !!Added by AM 2016-06
 
     PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, nHat
     PetscScalar, dimension(:), allocatable :: B2
@@ -239,6 +241,34 @@
     ! Form the full f:
     call VecDuplicate(solutionWithDeltaF, solutionWithFullF, ierr)
     call VecCopy(solutionWithDeltaF, solutionWithFullF, ierr)
+
+    !!!!!!!!!!!!!!!!!!!!!!!
+    !!Added by AM 2016-06!!
+    !!!!!!!!!!!!!!!!!!!!!!!
+    !!!call VecDuplicate(f0, expPhi1, ierr)
+    !!!call VecSet(expPhi1, zero, ierr)
+    !!!L = 0
+    !!!do ispecies = 1,Nspecies
+    !!!   do ix = 1,Nx
+    !!!      do itheta = ithetaMin,ithetaMax
+    !!!         do izeta = izetaMin,izetaMax
+    !!!            index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+    !!!            call VecSetValue(expPhi1, index, &
+    !!!                 exp(-Zs(ispecies)*alpha*Phi1Hat(itheta,izeta)/THats(ispecies)), INSERT_VALUES, ierr)
+    !!!         end do
+    !!!      end do
+    !!!   end do
+    !!!end do
+
+    !!!call VecAssemblyBegin(expPhi1, ierr)
+    !!!call VecAssemblyEnd(expPhi1, ierr)
+
+    !!!call VecPointwiseMult(f0, f0, expPhi1, ierr)
+    
+
+    call init_f0()
+    !!!!!!!!!!!!!!!!!!!!!!!
+
     call VecAXPY(solutionWithFullF, one, f0, ierr)
 
     ! Create a "scattering context" for sending vectors to the masterProc, and set up Vecs on the masterProc:
@@ -324,6 +354,7 @@
        call VecGetArrayF90(solutionWithFullFOnProc0, solutionWithFullFArray, ierr)
        call VecGetArrayF90(solutionWithDeltaFOnProc0, solutionWithDeltaFArray, ierr)
        call VecGetArrayF90(f0OnProc0, f0Array, ierr)
+       !!call VecGetArrayF90(expPhi1, expPhi1Array, ierr) !!Added by AM 2016-06
 
 !!$    if (whichRHS == numRHSs) then
        select case (constraintScheme)
@@ -615,8 +646,10 @@
 
           jHat = jHat + Zs(ispecies)*flow(ispecies,:,:)
 
-          totalDensity(ispecies,:,:) = nHats(ispecies) + densityPerturbation(ispecies,:,:)
-          totalPressure(ispecies,:,:) = nHats(ispecies)*THats(ispecies) + pressurePerturbation(ispecies,:,:)
+          !!totalDensity(ispecies,:,:) = nHats(ispecies) + densityPerturbation(ispecies,:,:) !!Commented by AM 2016-06
+          !!totalPressure(ispecies,:,:) = nHats(ispecies)*THats(ispecies) + pressurePerturbation(ispecies,:,:) !!Commented by AM 2016-06
+          totalDensity(ispecies,:,:) = nHats(ispecies)*exp(-Zs(ispecies)*alpha*Phi1Hat(:,:)/THats(ispecies)) + densityPerturbation(ispecies,:,:) !!Added by AM 2016-06
+          totalPressure(ispecies,:,:) = nHats(ispecies)*exp(-Zs(ispecies)*alpha*Phi1Hat(:,:)/THats(ispecies))*THats(ispecies) + pressurePerturbation(ispecies,:,:) !!Added by AM 2016-06
           velocityUsingFSADensity(ispecies,:,:) = flow(ispecies,:,:) / nHats(ispecies)
           velocityUsingTotalDensity(ispecies,:,:) = flow(ispecies,:,:) / totalDensity(ispecies,:,:)
           MachUsingFSAThermalSpeed(ispecies,:,:) = velocityUsingFSADensity(ispecies,:,:) * sqrtMHat/sqrtTHat
@@ -841,6 +874,7 @@
        call VecRestoreArrayF90(solutionWithFullFOnProc0, solutionWithFullFArray, ierr)
        call VecRestoreArrayF90(solutionWithDeltaFOnProc0, solutionWithDeltaFArray, ierr)
        call VecRestoreArrayF90(f0OnProc0, f0Array, ierr)
+       !!call VecRestoreArrayF90(expPhi1, expPhi1Array, ierr) !!Added by AM 2016-06
 
        do ispecies=1,Nspecies
           if (Nspecies>1) then
@@ -919,6 +953,7 @@
     call VecDestroy(solutionWithFullFOnProc0, ierr)
     call VecDestroy(solutionWithDeltaFOnProc0, ierr)
     call VecDestroy(f0OnProc0, ierr)
+    !!!call VecDestroy(expPhi1, ierr) !!Added by AM 2016-06
 
     ! updateOutputFile should be called by all procs since it contains MPI_Barrier
     ! (in order to be sure the HDF5 file is safely closed before moving on to the next computation.)

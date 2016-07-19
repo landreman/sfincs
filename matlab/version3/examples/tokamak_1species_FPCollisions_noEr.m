@@ -43,6 +43,11 @@ Nzeta = 1;
 Nxi = 31;
 Nx = 8;
 
+global preconditioner_species preconditioner_x preconditioner_xi
+preconditioner_species=0;
+preconditioner_x=0;
+preconditioner_xi=0;
+
 sfincs_main()
 
 directory = ['../../../fortran/version3/examples/',mfilename];

@@ -268,8 +268,9 @@ contains
           call writeHDF5Field("helicity_antisymm_n", helicity_antisymm_n, "")
           call writeHDF5Field("helicity_antisymm_l", helicity_antisymm_l, "")
        end if
+
        call writeHDF5Field("rippleScale", rippleScale, "Factor to scale non-axisymmetric or non-quasisymmetric modes of field.")
-       call writeHDF5Field("NPeriods", NPeriods, "Number of identical toroidal periods (e.g. 5 for W7-X, 10 for LHD, 4 for HSX)")
+       call writeHDF5Field("NPeriods", NPeriods, "Number of identical toroidal periods (e.g. 5 for W7-X, 10 for LHD, 4 for HSX), equivalent to the vmec variable nfp.")
        call writeHDF5Field("Delta", Delta, &
             "Dimensionless combination of the normalization constants, resembling rho_*: Delta = mBar * vBar / (e * BBar * RBar) (SI units) " // &
             "or c * mBar * vBar / (e * BBar * RBar) (Gaussian units)")
@@ -285,6 +286,23 @@ contains
        call writeHDF5Field("mHats", mHats, dspaceIDForSpecies, dimForSpecies, "Mass of each species, in units of mBar.")
        call writeHDF5Field("THats", THats, dspaceIDForSpecies, dimForSpecies, "Average temperature of each species, in units of TBar.")
        call writeHDF5Field("nHats", nHats, dspaceIDForSpecies, dimForSpecies, "Flux surface averaged density of each species, in units of nBar.")
+
+
+       !!Added by AM 2016-01!!
+       call writeHDF5Field("withAdiabatic", withAdiabatic, "Is an adiabatic species included in the quasineutrality equation? " // boolDescription)
+       if (withAdiabatic) then
+       	  call writeHDF5Field("adiabaticZ", adiabaticZ, "Charge of adiabatic species, in units of the unit charge e (which is usually the proton charge.)")
+	  call writeHDF5Field("adiabaticMHat", adiabaticMHat, "Mass of adiabatic species, in units of mBar.")
+	  call writeHDF5Field("adiabaticNHat", adiabaticNHat, "Flux surface averaged density of adiabatic species, in units of nBar.")
+	  call writeHDF5Field("adiabaticTHat", adiabaticTHat, "Average temperature of adiabatic species, in units of TBar.")
+       end if
+       !!!!!!!!!!!!!!!!!!!!!!!
+
+       !!Added by AM 2016-02!!
+       if (includePhi1) then
+          call writeHDF5Field("quasineutralityOption", quasineutralityOption, "")
+       end if
+       !!!!!!!!!!!!!!!!!!!!!!!
 
        call writeHDF5Field("dPhiHatdpsiHat", dPhiHatdpsiHat, "")
        call writeHDF5Field("dPhiHatdpsiN", dPhiHatdpsiN, "")
@@ -312,8 +330,10 @@ contains
        call writeHDF5Field("useDKESExBDrift", useDKESExBDrift, "")
        call writeHDF5Field("includePhi1", includePhi1, &
             "Include a quasineutrality equation, and include variation of the electrostatic potential on a flux surface? " // boolDescription)
-       call writeHDF5Field("includeRadialExBDrive", includeRadialExBDrive, &
-            "Include term $(\vect{v}_{E} \cdot\nabla\psi)f_{Ms} [(1/n_s)(dn_s/d\psi) + (x_s^2-3/2)(1/T_s)(dT_s/d\psi)]$ term? " // boolDescription)
+!!       call writeHDF5Field("includeRadialExBDrive", includeRadialExBDrive, & !!Commented by AM 2016-03
+!!            "Include term $(\vect{v}_{E} \cdot\nabla\psi)f_{Ms} [(1/n_s)(dn_s/d\psi) + (x_s^2-3/2)(1/T_s)(dT_s/d\psi)]$ term? " // boolDescription) !!Commented by AM 2016-03
+       call writeHDF5Field("includePhi1InKineticEquation", includePhi1InKineticEquation, & !!Added by AM 2016-03
+            "Include terms containing Phi1 in kinetic equation? (Only matters if includePhi1=.true.)" // boolDescription) !!Added by AM 2016-03
        call writeHDF5Field("integerToRepresentTrue", integerToRepresentTrue, &
             "Since HDF5 does not have a Boolean datatype, this integer value is used in this file for Boolean quantities.")
        call writeHDF5Field("integerToRepresentFalse", integerToRepresentFalse, &

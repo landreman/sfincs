@@ -9,8 +9,10 @@ subroutine preallocateMatrix(matrix, whichMatrix)
 
   use petscmat
   use globalVariables, only: Nx, Nxi, Ntheta, Nzeta, Nspecies, matrixSize, includePhi1, &
-       constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, nonlinear, &
-       thetaDerivativeScheme, zetaDerivativeScheme, includeRadialExBDrive
+       !!constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, nonlinear, & !!Commented by AM 2016-02
+       constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, & !!Added by AM 2016-02
+       !!thetaDerivativeScheme, zetaDerivativeScheme, includeRadialExBDrive !!Commented by AM 2016-03
+       thetaDerivativeScheme, zetaDerivativeScheme, includePhi1InKineticEquation, quasineutralityOption !!Added by AM 2016-03
   use indices
 
   implicit none
@@ -61,17 +63,23 @@ subroutine preallocateMatrix(matrix, whichMatrix)
 
   ! We don't need to separately count the d/dxi terms, since they just add to the diagonals of the d/dtheta and d/dzeta terms we already counted.
 
-  if (includePhi1) then
-     tempInt1 = tempInt1 &
-       + 4 &               ! d Phi_1 / d theta term at L=1
-       + 4                 ! d Phi_1 / d zeta term at L=1, -1 because diagonal was accounted for in the previous line.
-  end if
-  if (includeRadialExBDrive) then
+! THIS TERM HAS BEEN REMOVED BY AM 2016-03 !
+!!$  if (includePhi1) then
+!!$     tempInt1 = tempInt1 &
+!!$!!       + 4 &               ! d Phi_1 / d theta term at L=1
+!!$!!       + 4                 ! d Phi_1 / d zeta term at L=1, -1 because diagonal was accounted for in the previous line.
+!!$  end if
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!!  if (includeRadialExBDrive) then !!Commented by AM 2016-03
+  if (includePhi1InKineticEquation .and. includePhi1) then !!Added by AM 2016-03
      tempInt1 = tempInt1 &
        + 4 &               ! d Phi_1 / d theta term at L=0
        + 4                 ! d Phi_1 / d zeta term at L=0
-  end if
-  if (nonlinear) then
+  !!end if !!Commented by AM 2016-04
+     tempInt1 = tempInt1 + 1 !!Added by AM 2016-04, for row = BLOCK_F, col = BLOCK_QN)
+  !!if (nonlinear) then !!Commented by AM 2016-02
+  !!if (includePhi1) then !!Added by AM 2016-02
      tempInt1 = tempInt1 + 2*Nx -2 ! Nonlinear term is dense in x with ell = L +/- 1, which we have not yet counted. Subtract 2 for the diagonal we already counted.
   end if
   ! Note: we do not need extra nonzeros for the d/dxi terms or for the diagonal, since these have already been accounted for in the ddx and ddtheta parts.
@@ -110,10 +118,23 @@ subroutine preallocateMatrix(matrix, whichMatrix)
      do itheta=1,Ntheta
         do izeta=1,Nzeta
            index = getIndex(1,1,1,itheta,izeta,BLOCK_QN)
-           ! Add 1 because we are indexing a Fortran array instead of a PETSc matrix:
-           predictedNNZsForEachRow(index+1) = Nx*Nspecies &  ! Integrals over f to get the density
-                                              + 1 &          ! lambda
-                                              + 1            ! Diagonal entry
+
+           !!Added by AM 2016-03!!
+           if (quasineutralityOption == 1) then
+           !!!!!!!!!!!!!!!!!!!!!!!
+              ! Add 1 because we are indexing a Fortran array instead of a PETSc matrix:
+              predictedNNZsForEachRow(index+1) = Nx*Nspecies &  ! Integrals over f to get the density
+                   + 1 &          ! lambda
+                   + 1            ! Diagonal entry
+              
+           !!Added by AM 2016-03!!
+           else
+              ! Add 1 because we are indexing a Fortran array instead of a PETSc matrix:
+              predictedNNZsForEachRow(index+1) = Nx*1 &  ! Integrals over f to get the density (only 1 kinetic species for EUTERPE equations)
+                   + 1 &          ! lambda
+                   + 1            ! Diagonal entry
+           end if
+           !!!!!!!!!!!!!!!!!!!!!!!
         end do
      end do
      ! Set row for lambda constraint:
@@ -196,7 +217,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
 !!$  end if
 
   ! If any mallocs are required during matrix assembly, do not generate an error:
-  !call MatSetOption(matrix, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE, ierr)
+!!$  call MatSetOption(matrix, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE, ierr)
   
   !if (masterProc) then
   !   print *,"Done with preallocation for whichMatrix = ",whichMatrix

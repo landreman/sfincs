@@ -64,11 +64,36 @@ program sfincs
      print *,"Delta (rho* at reference parameters)          = ", Delta
      print *,"alpha (e Phi / T at reference parameters)     = ", alpha
      print *,"nu_n (collisionality at reference parameters) = ", nu_n
-     if (nonlinear) then
+     !!Commented by AM 2016-02!!
+     !!if (nonlinear) then
+     !!!!!!!!!!!!!!!!!!!!!!!!!!!
+     !!Added by AM 2016-02!!
+     if (includePhi1) then
+     !!!!!!!!!!!!!!!!!!!!!!
         print *,"Nonlinear run"
+        !!Added by AM 2016-02!!
+        if (includePhi1InKineticEquation) then
+           print *,"with Phi1 included in the kinetic equation"
+        else
+           print *,"but with Phi1 excluded from the kinetic equation"
+        end if
+
+        if (quasineutralityOption == 1) then
+           print *,"Using full quasi-neutrality equation"
+        else
+           print *,"Using EUTERPE quasi-neutrality equation"
+        end if
+        !!!!!!!!!!!!!!!!!!!!!!
      else
         print *,"Linear run"
      end if
+
+     !!Added by AM 2016-01!!
+     if (withAdiabatic) then
+     	print *,"Run with adiabatic species"
+     end if
+     !!!!!!!!!!!!!!!!!!!!!!!
+
   end if
 
   ! Initialize NPeriods, psiAHat, and aHat.  We need to know NPeriods before

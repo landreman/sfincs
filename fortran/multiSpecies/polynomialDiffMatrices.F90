@@ -40,12 +40,14 @@ contains
 
   function weight(x)
 
+    use xGrid, only: xGrid_k
+
     implicit none
 
     PetscScalar, intent(in) :: x
     PetscScalar :: weight
 
-    weight = exp(-x*x)
+    weight = exp(-x*x)*(x ** xGrid_k)
 
   end function weight
 
@@ -53,12 +55,15 @@ contains
 
   function dweightdxOverWeight(x)
 
+    use xGrid, only: xGrid_k
+
     implicit none
 
     PetscScalar, intent(in) :: x
     PetscScalar :: dweightdxOverWeight
 
-    dweightdxOverWeight = -2*x
+    !dweightdxOverWeight = -2*x
+    dweightdxOverWeight = xGrid_k / x - 2*x
 
   end function dweightdxOverWeight
 
@@ -66,12 +71,15 @@ contains
 
   function d2weightdx2OverWeight(x)
 
+    use xGrid, only: xGrid_k
+
     implicit none
 
     PetscScalar, intent(in) :: x
     PetscScalar :: d2weightdx2OverWeight
 
-    d2weightdx2OverWeight = -2 + 4*x*x
+    !d2weightdx2OverWeight = -2 + 4*x*x
+    d2weightdx2OverWeight = xGrid_k*(xGrid_k-1)/(x*x)-2*(2*xGrid_k+1)+4*x*x
 
   end function d2weightdx2OverWeight
 

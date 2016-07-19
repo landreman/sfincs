@@ -53,7 +53,10 @@
     Mat :: matrix, preconditionerMatrix
     PetscViewer :: MatlabOutput, binaryOutputViewer
     PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, xPartOfRHS, speciesFactor, speciesFactor2
-    PetscScalar :: dnHatdpsiToUse, dTHatdpsiToUse, EParallelHatToUse, dPhiHatdpsiNToUse, T32m
+    !!Modified by AM 2014-09!!
+    !PetscScalar :: dnHatdpsiToUse, dTHatdpsiToUse, EParallelHatToUse, dPhiHatdpsiNToUse, T32m
+    PetscScalar :: EParallelHatToUse, dPhiHatdpsiNToUse, T32m
+    !!!!!!!!!!!!!!!!!!!!!!!!!!
     PetscScalar, dimension(:), allocatable :: thetaWeights, zetaWeights, B2, xb, expxb2
     PetscScalar, dimension(:,:), allocatable :: ddtheta, d2dtheta2
     PetscScalar, dimension(:,:), allocatable :: ddzeta, d2dzeta2
@@ -117,6 +120,20 @@
     integer :: firstRowThisProcOwns, lastRowThisProcOwns, numLocalRows
     PetscScalar :: maxxPotentials, CHat_element
 
+    integer :: xPotentialsInterpolationScheme, xInterpolationScheme, ixMin, ixMinCol, ix_row, ix_col
+    PetscScalar, dimension(:), allocatable :: x_plus1, xWeights_plus1
+    PetscScalar, dimension(:,:), allocatable :: ddx_plus1, d2dx2_plus1
+    PetscScalar, dimension(:,:), allocatable :: regridPolynomialToUniform_plus1
+    PetscScalar, dimension(:,:), allocatable :: fToFInterpolationMatrix_plus1, tempExtrapMatrix
+
+    PetscScalar, dimension(:,:,:,:,:), allocatable :: Rosenbluth_H
+    PetscScalar, dimension(:,:,:,:,:), allocatable :: Rosenbluth_dHdxb
+    PetscScalar, dimension(:,:,:,:,:), allocatable :: Rosenbluth_d2Gdxb2
+
+    !!Lines added by AM 2014-09-17
+    PetscScalar, dimension(:), allocatable :: dnHatdpsiNsToUse, dTHatdpsiNsToUse
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
     ! *******************************************************************************
     ! Do a few sundry initialization tasks:
     ! *******************************************************************************
@@ -162,12 +179,22 @@
 
     call validateInput()
 
-    if (RHSMode==2) then
-       print *,"Error! RHSMode 2 is not yet implemented in this version."
-       stop
-    end if
+!!Commented by AM 2014-09!!
+ !   if (RHSMode==2) then
+ !      print *,"Error! RHSMode 2 is not yet implemented in this version."
+ !      stop
+ !   end if
+!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     transportMatrix = 0
+
+    !!Added by AM 2014-09!!
+    ArrayFirstSpeciesParticleFluxCoefficients = 0
+    !!Added by AM 2015-05!!
+    ArrayFirstSpeciesHeatFluxCoefficients = 0
+    ArraySecondSpeciesParticleFluxCoefficients = 0
+    ArraySecondSpeciesHeatFluxCoefficients = 0
+    !!!!!!!!!!!!!!!!!!!!!!!
 
     ! *******************************************************************************
     ! *******************************************************************************
@@ -225,12 +252,42 @@
     call uniformDiffMatrices(Ntheta, 0, two*pi, scheme, theta, thetaWeights, ddtheta, d2dtheta2)
 
     ! If needed, also make a sparser differentiation matrix for the preconditioner:
-    if (preconditioner_theta==1) then
+!!$    if (preconditioner_theta==1) then
+!!$       scheme = 0
+!!$       call uniformDiffMatrices(Ntheta, 0, two*pi, scheme, theta_preconditioner, &
+!!$            thetaWeights_preconditioner, ddtheta_preconditioner, d2dtheta2_preconditioner)
+!!$
+!!$    end if
+    select case(preconditioner_theta)
+    case (0)
+
+       ! Theta coupling in preconditioner is identical to the full matrix:
+       ddtheta_preconditioner = ddtheta
+
+    case (1)
+       ! Preconditioner has a 3-point stencil instead of a 5-point stencil:
        scheme = 0
        call uniformDiffMatrices(Ntheta, 0, two*pi, scheme, theta_preconditioner, &
             thetaWeights_preconditioner, ddtheta_preconditioner, d2dtheta2_preconditioner)
 
-    end if
+    case (2)
+       ! All theta coupling is dropped in the preconditioner:
+       ddtheta_preconditioner = zero
+
+    case (3)
+       ! Replace d/dtheta with the identity matrix:
+       ddtheta_preconditioner = zero
+       do itheta=1,Ntheta
+          ddtheta_preconditioner(itheta,itheta)=one
+       end do
+
+    case default
+       if (masterProc) then
+          print *,"Error! Invalid setting for preconditioner_theta."
+       end if
+       stop
+
+    end select
 
     ! *******************************************************************************
     ! Build zeta grid, integration weights, and differentiation matrices:
@@ -275,17 +332,54 @@
     end if
 
     ! If needed, also make a sparser differentiation matrix for the preconditioner:
-    if (preconditioner_zeta==1) then
-       if (Nzeta==1) then
-          zeta_preconditioner = 0
-          zetaWeights_preconditioner = 2*pi
-          ddzeta_preconditioner = 0
-          d2dzeta2_preconditioner = 0
-       else
+!!$    if (preconditioner_zeta==1) then
+!!$       if (Nzeta==1) then
+!!$          zeta_preconditioner = 0
+!!$          zetaWeights_preconditioner = 2*pi
+!!$          ddzeta_preconditioner = 0
+!!$          d2dzeta2_preconditioner = 0
+!!$       else
+!!$          scheme = 0
+!!$          call uniformDiffMatrices(Nzeta, 0, zetaMax, scheme, zeta_preconditioner, &
+!!$               zetaWeights_preconditioner, ddzeta_preconditioner, d2dzeta2_preconditioner)
+!!$       end if
+!!$    end if
+    if (Nzeta==1) then
+       zeta_preconditioner = 0
+       zetaWeights_preconditioner = 2*pi
+       ddzeta_preconditioner = 0
+       d2dzeta2_preconditioner = 0
+    else
+       select case (preconditioner_zeta)
+       case (0)
+          ! Zeta coupling in preconditioner is identical to the full matrix:
+          ddzeta_preconditioner = ddzeta
+
+       case (1)
+          ! Preconditioner has a 3-point stencil instead of a 5-point stencil:
+
           scheme = 0
           call uniformDiffMatrices(Nzeta, 0, zetaMax, scheme, zeta_preconditioner, &
                zetaWeights_preconditioner, ddzeta_preconditioner, d2dzeta2_preconditioner)
-       end if
+
+       case (2)
+          ! All zeta coupling is dropped in the preconditioner:
+          ddzeta_preconditioner = zero
+          
+       case (3)
+          ! Replace d/dzeta by the identity matrix:
+          ddzeta_preconditioner = zero
+          do izeta=1,Nzeta
+             ddzeta_preconditioner(izeta,izeta)=one
+          end do
+          
+       case default
+          if (masterProc) then
+             print *,"Error! Invalid setting for preconditioner_zeta."
+          end if
+          stop
+
+       end select
     end if
 
     zetaWeights = zetaWeights * NPeriods
@@ -295,10 +389,71 @@
     ! Also build interpolation matrices to map functions from one x grid to the other.
     ! *******************************************************************************
 
+    if ((xPotentialsGridScheme==3 .or. xPotentialsGridScheme==4) .and. (xGridScheme .ne. 3 .and. xGridScheme .ne. 4)) then
+       print *,"Error! When xPotentialsGridScheme==3 or 4, you must set xGridScheme=3 or 4"
+       stop
+    end if
+
+    select case (xGridScheme)
+    case (1,2,5,6)
+       ! For these values of xGridScheme, xInterpolationScheme does not matter.
+       xInterpolationScheme = -1
+    case (3)
+       xInterpolationScheme = 1
+    case (4)
+       xInterpolationScheme = 2
+    case default
+       print *,"Error! Invalid setting for xGridScheme."
+       stop
+    end select
+
+    select case (xPotentialsGridScheme)
+    case (1)
+       xPotentialsInterpolationScheme = 1
+    case (2)
+       xPotentialsInterpolationScheme = 2
+    case (3)
+       xPotentialsInterpolationScheme = 1
+    case (4)
+       xPotentialsInterpolationScheme = 2
+    case default
+       print *,"Error! Invalid setting for xPotentialsGridScheme."
+       stop
+    end select
+
     allocate(x(Nx))
     allocate(xWeights(Nx))
-    call makeXGrid(Nx, x, xWeights)
-    xWeights = xWeights / exp(-x*x)
+
+    ! The next few arrays/matrices are used only when there is a point at x=0.
+    allocate(x_plus1(Nx+1))
+    allocate(xWeights_plus1(Nx+1))
+    allocate(ddx_plus1(Nx+1,Nx+1))
+    allocate(d2dx2_plus1(Nx+1,Nx+1))
+    x_plus1 = -1 ! so we know its value if it is not set otherwise.
+
+    select case (xGridScheme)
+    case (1,5)
+       pointAtX0 = .false.
+       call makeXGrid(Nx, x, xWeights, pointAtX0)
+       xWeights = xWeights / (exp(-x*x)*(x**xGrid_k))
+    case (2,6)
+       pointAtX0 = .true.
+       call makeXGrid(Nx, x, xWeights, pointAtX0)
+       xWeights = xWeights / (exp(-x*x)*(x**xGrid_k))
+    case (3,4)
+       pointAtX0 = .true.
+
+       scheme = 12
+       call uniformDiffMatrices(Nx+1, 0, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+       x_plus1(1)=0 ! For some reason it usually comes out to be 2d-314
+       x = x_plus1(1:Nx)
+       xWeights = xWeights_plus1(1:Nx)
+
+    case default
+       print *,"Error! Invalid xGridScheme"
+       stop
+    end select
+
     xMaxNotTooSmall = max(x(Nx), xMax)
     allocate(x2(Nx))
     x2=x*x
@@ -308,11 +463,23 @@
     allocate(ddxPreconditioner(Nx,Nx))
     allocate(ddxToUse(Nx,Nx))
     allocate(d2dx2ToUse(Nx,Nx))
-    call makeXPolynomialDiffMatrices(x,ddx,d2dx2)
+    select case (xGridScheme)
+    case (1,2,5,6)
+       call makeXPolynomialDiffMatrices(x,ddx,d2dx2)
+    case (3,4)
+       ddx = ddx_plus1(1:Nx, 1:Nx)
+       d2dx2 = d2dx2_plus1(1:Nx, 1:Nx)
+    case default
+       print *,"Error! Invalid xGridScheme."
+       stop
+    end select
 
-
-    NxPotentials = ceiling(xMaxNotTooSmall*NxPotentialsPerVth)
-
+    if (xPotentialsGridScheme==3 .or. xPotentialsGridScheme==4) then
+       ! The potentials have an explicit grid point at xMax, whereas the distribution function does not (since f=0 there.)
+       NxPotentials = Nx+1
+    else
+       NxPotentials = ceiling(xMaxNotTooSmall*NxPotentialsPerVth)
+    end if
 
     allocate(xPotentials(NxPotentials))
     allocate(xWeightsPotentials(NxPotentials))
@@ -323,8 +490,20 @@
     maxxPotentials = xPotentials(NxPotentials)
 
     allocate(regridPolynomialToUniform(NxPotentials, Nx))
-    call polynomialInterpolationMatrix(Nx, NxPotentials, x, xPotentials, &
-         exp(-x*x), exp(-xPotentials*xPotentials), regridPolynomialToUniform)
+    select case (xGridScheme)
+    case (1,2,5,6)
+       call polynomialInterpolationMatrix(Nx, NxPotentials, x, xPotentials, &
+            exp(-x*x)*(x**xGrid_k), exp(-xPotentials*xPotentials)*(xPotentials**xGrid_k), regridPolynomialToUniform)
+    case (3,4)
+       allocate(extrapMatrix(NxPotentials, Nx+1))
+       allocate(regridPolynomialToUniform_plus1(NxPotentials, Nx+1))
+       call interpolationMatrix(Nx+1, NxPotentials, x_plus1, xPotentials, &
+            xInterpolationScheme, regridPolynomialToUniform_plus1, extrapMatrix)
+       regridPolynomialToUniform = regridPolynomialToUniform_plus1(:,1:Nx)
+       deallocate(extrapMatrix)
+       deallocate(regridPolynomialToUniform_plus1)
+    end select
+
     !    allocate(regridUniformToPolynomial(Nx,NxPotentials))
     !    call interpolationMatrix(NxPotentials, Nx, xPotentials, x, regridUniformToPolynomial, -1, 0)
 
@@ -382,6 +561,59 @@
        print *,"Error! Invalid preconditioner_x"
        stop
     end select
+
+    if (pointAtX0) then
+       ixMin = 2
+    else
+       ixMin = 1
+    end if
+
+    if (xGridScheme==5 .or. xGridScheme==6) then
+       allocate(Rosenbluth_H(Nspecies,Nspecies,NL,Nx,Nx))
+       allocate(Rosenbluth_dHdxb(Nspecies,Nspecies,NL,Nx,Nx))
+       allocate(Rosenbluth_d2Gdxb2(Nspecies,Nspecies,NL,Nx,Nx))
+       call computeRosenbluthPotentialResponse(Nx, x, xWeights, Nspecies, mHats, THats, NL, &
+            Rosenbluth_H, Rosenbluth_dHdxb, Rosenbluth_d2Gdxb2,.false.)
+    end if
+
+    !if (masterProcInSubComm) then
+    if (.false.) then
+       print *,"xGridScheme:",xGridScheme
+       print *,"xInterpolationScheme:",xInterpolationScheme
+       print *,"xPotentialsGridScheme:",xPotentialsGridScheme
+       print *,"xPotentialsInterpolationScheme:",xPotentialsInterpolationScheme
+       print *,"NxPotentials:",NxPotentials
+       print *,"x:"
+       print *,x
+       print *,"ddx:"
+       do i=1,Nx
+          print *,ddx(i,:)
+       end do
+       print *,"d2dx2:"
+       do i=1,Nx
+          print *,d2dx2(i,:)
+       end do
+       print *,"xPotentials:"
+       print *,xPotentials
+       if (NxPotentials<20) then
+          print *,"ddxPotentials:"
+          do i=1,NxPotentials
+             print *,ddxPotentials(i,:)
+          end do
+          print *,"d2dx2Potentials:"
+          do i=1,NxPotentials
+             print *,d2dx2Potentials(i,:)
+          end do
+       end if
+       print *,"regridPolynomialToUniform:"
+       do i=1,NxPotentials
+          print *,regridPolynomialToUniform(i,:)
+       end do
+    end if
+
+    deallocate(xWeights_plus1)
+    deallocate(ddx_plus1)
+    deallocate(d2dx2_plus1)
 
     ! *******************************************************************************
     ! *******************************************************************************
@@ -472,10 +704,10 @@
     case (0)
     case (1)
        ! The rows for the constraints have more nonzeros:
-       predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta*Nx + 1
+       predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta*Nx
     case (2)
        ! The rows for the constraints have more nonzeros:
-       predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta + 1
+       predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta
     case default
     end select
     predictedNNZsForEachRowDiagonal = predictedNNZsForEachRow
@@ -557,39 +789,6 @@
        ! If any mallocs are required during matrix assembly, do not generate an error:
        !call MatSetOption(matrix, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE, ierr)
 
-       CHKERRQ(ierr)
-
-       ! Sometimes PETSc's built-in sparse direct solver, which is used only when running with 1 proc,
-       ! fails with a zero-pivot error (which mumps and superlu_dist do not do.)
-       ! To avoid this error, shift the diagonal for the constraint rows in the preconditioner.
-       ! (No shift is made in the "real" matrix.)
-       if (numProcsInSubComm .eq. 1 .and. whichMatrix==0) then
-          temp1 = 1d+0
-          do i = Nspecies*Ntheta*Nzeta*Nx*Nxi,matrixSize-1
-             call MatSetValue(matrix,i,i,temp1,ADD_VALUES,ierr)
-          end do
-          print *,"Warning: To avoid the 0-pivot error that comes with PETSc's serial solver, we will shift the"
-          print *,"         diagonal of the preconditioner where it would otherwise be 0.  This may mean more KSP"
-          print *,"         iterations could be required than when running with >1 proc. Running in parallel is preferred."
-       end if
-
-       ! *********************************************************
-       ! Select appropriate differentiation matrices depending on
-       ! whether this is the preconditioner or the final matrix:
-       ! *********************************************************
-
-       if (whichMatrix==1 .or. preconditioner_theta==0) then
-          ddthetaToUse = ddtheta
-       else
-          ddthetaToUse = ddtheta_preconditioner
-       end if
-
-       if (whichMatrix==1 .or. preconditioner_zeta==0) then
-          ddzetaToUse = ddzeta
-       else
-          ddzetaToUse = ddzeta_preconditioner
-       end if
-
        do ispecies = 1,Nspecies
           THat = THats(ispecies)
           mHat = mHats(ispecies)
@@ -604,18 +803,24 @@
           allocate(localThetaPartOfTerm(Ntheta,localNtheta))
           allocate(rowIndices(localNtheta))
           allocate(colIndices(Ntheta))
-          do izeta=1,Nzeta
-             do itheta=1,Ntheta
-                thetaPartOfTerm(itheta,:) = iota*sqrtTHat/sqrtMHat * ddthetaToUse(itheta,:) &
-                     / BHat(itheta,izeta)
-             end do
+          do L=0,(Nxi-1)
+             if (whichMatrix==1 .or. L < preconditioner_theta_min_L) then
+                ddthetaToUse = ddtheta
+             else
+                ddthetaToUse = ddtheta_preconditioner
+             end if
 
-             ! PETSc uses the opposite convention to Fortran:
-             thetaPartOfTerm = transpose(thetaPartOfTerm)
-             localThetaPartOfTerm = thetaPartOfTerm(:,ithetaMin:ithetaMax)
+             do izeta=1,Nzeta
+                do itheta=1,Ntheta
+                   thetaPartOfTerm(itheta,:) = iota*sqrtTHat/sqrtMHat * ddthetaToUse(itheta,:) &
+                        / BHat(itheta,izeta)
+                end do
 
-             do ix=1,Nx
-                do L=0,(Nxi-1)
+                ! PETSc uses the opposite convention to Fortran:
+                thetaPartOfTerm = transpose(thetaPartOfTerm)
+                localThetaPartOfTerm = thetaPartOfTerm(:,ithetaMin:ithetaMax)
+
+                do ix=ixMin,Nx
                    do itheta=1,localNtheta
                       rowIndices(itheta) = getIndex(ispecies, ix, L+1, ithetaMin+itheta-1, izeta, 0)
                    end do
@@ -658,16 +863,22 @@
           allocate(zetaPartOfTerm(Nzeta,Nzeta))
           allocate(rowIndices(Nzeta))
           allocate(colIndices(Nzeta))
-          do itheta=ithetaMin, ithetaMax
-             do izeta=1,Nzeta
-                zetaPartOfTerm(izeta,:) = sqrtTHat/sqrtMHat * ddzetaToUse(izeta,:) / BHat(itheta,izeta)
-             end do
+          do L=0,(Nxi-1)
+             if (whichMatrix==1 .or. L < preconditioner_zeta_min_L) then
+                ddzetaToUse = ddzeta
+             else
+                ddzetaToUse = ddzeta_preconditioner
+             end if
 
-             ! PETSc uses the opposite convention to Fortran:
-             zetaPartOfTerm = transpose(zetaPartOfTerm)
+             do itheta=ithetaMin, ithetaMax
+                do izeta=1,Nzeta
+                   zetaPartOfTerm(izeta,:) = sqrtTHat/sqrtMHat * ddzetaToUse(izeta,:) / BHat(itheta,izeta)
+                end do
 
-             do ix=1,Nx
-                do L=0,(Nxi-1)
+                ! PETSc uses the opposite convention to Fortran:
+                zetaPartOfTerm = transpose(zetaPartOfTerm)
+
+                do ix=ixMin,Nx
                    do izeta = 1,Nzeta
                       rowIndices(izeta)=getIndex(ispecies, ix, L+1, itheta, izeta, 0)
                    end do
@@ -711,21 +922,27 @@
           allocate(localThetaPartOfTerm(Ntheta,localNtheta))
           allocate(rowIndices(localNtheta))
           allocate(colIndices(Ntheta))
-          do izeta=1,Nzeta
-             if (useDKESExBDrift) then
-                thetaPartOfTerm = ddthetaToUse / FSABHat2
+          do L=0,(Nxi-1)
+             if (whichMatrix==1 .or. L < preconditioner_theta_min_L) then
+                ddthetaToUse = ddtheta
              else
-                do itheta=1,Ntheta
-                   thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2)
-                end do
+                ddthetaToUse = ddtheta_preconditioner
              end if
 
-             ! PETSc uses the opposite convention to Fortran:
-             thetaPartOfTerm = transpose(thetaPartOfTerm*factor)
-             localThetaPartOfTerm = thetaPartOfTerm(:,ithetaMin:ithetaMax)
+             do izeta=1,Nzeta
+                if (useDKESExBDrift) then
+                   thetaPartOfTerm = ddthetaToUse / FSABHat2
+                else
+                   do itheta=1,Ntheta
+                      thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2)
+                   end do
+                end if
 
-             do ix=1,Nx
-                do L=0,(Nxi-1)
+                ! PETSc uses the opposite convention to Fortran:
+                thetaPartOfTerm = transpose(thetaPartOfTerm*factor)
+                localThetaPartOfTerm = thetaPartOfTerm(:,ithetaMin:ithetaMax)
+
+                do ix=ixMin,Nx
                    do itheta=1,localNtheta
                       rowIndices(itheta)=getIndex(ispecies,ix,L+1,itheta+ithetaMin-1,izeta,0)
                    end do
@@ -750,20 +967,26 @@
           factor = -alpha*Delta*IHat/(2*psiAHat)*dPhiHatdpsiN
           allocate(zetaPartOfTerm(Nzeta,Nzeta))
           allocate(rowIndices(Nzeta))
-          do itheta=ithetaMin, ithetaMax
-             if (useDKESExBDrift) then
-                zetaPartOfTerm = ddzetaToUse / FSABHat2
+          do L=0,(Nxi-1)
+             if (whichMatrix==1 .or. L < preconditioner_zeta_min_L) then
+                ddzetaToUse = ddzeta
              else
-                do izeta=1,Nzeta
-                   zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2)
-                end do
+                ddzetaToUse = ddzeta_preconditioner
              end if
 
-             ! PETSc uses the opposite convention to Fortran:
-             zetaPartOfTerm = transpose(zetaPartOfTerm*factor)
+             do itheta=ithetaMin, ithetaMax
+                if (useDKESExBDrift) then
+                   zetaPartOfTerm = ddzetaToUse / FSABHat2
+                else
+                   do izeta=1,Nzeta
+                      zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2)
+                   end do
+                end if
 
-             do ix=1,Nx
-                do L=0,(Nxi-1)
+                ! PETSc uses the opposite convention to Fortran:
+                zetaPartOfTerm = transpose(zetaPartOfTerm*factor)
+
+                do ix=ixMin,Nx
                    do izeta=1,Nzeta
                       rowIndices(izeta)=getIndex(ispecies,ix,L+1,itheta,izeta,0)
                    end do
@@ -785,7 +1008,7 @@
                 factor = -sqrtTHat/(2*sqrtMHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
                      * (iota*dBHatdtheta(itheta,izeta) + dBHatdzeta(itheta,izeta))
 
-                do ix=1,Nx
+                do ix=ixMin,Nx
                    do L=0,(Nxi-1)
                       rowIndex=getIndex(ispecies,ix,L+1,itheta,izeta,0)
 
@@ -819,7 +1042,7 @@
                    factor = alpha*Delta*dPhiHatdpsiN/(4*psiAHat*(BHat(itheta,izeta)**3)) &
                         * (GHat*dBHatdtheta(itheta,izeta) - IHat* dBHatdzeta(itheta,izeta))
 
-                   do ix=1,Nx
+                   do ix=ixMin,Nx
                       do L=0,(Nxi-1)
                          rowIndex=getIndex(ispecies,ix,L+1,itheta,izeta,0)
 
@@ -863,15 +1086,27 @@
              factor = alpha*Delta/(4*psiAHat)*dPhiHatdpsiN
 
              do L=0,(Nxi-1)
+
+                if (L>0 .and. pointAtX0) then
+                   ixMinCol = 2
+                else
+                   ixMinCol = 1
+                end if
+
                 if (whichMatrix==0 .and. L >= preconditioner_x_min_L) then
                    ddxToUse = ddxPreconditioner
                 else
                    ddxToUse = ddx
                 end if
+
                 do ix=1,Nx
                    xPartOfXDot(ix,:) = x(ix) * ddxToUse(ix,:)
                 end do
-                xPartOfXDot = transpose(xPartOfXDot)  ! PETSc uses the opposite convention of Fortran
+                
+                ! Note: in previous versions I take the transpose of xPartOfXDot here,
+                ! but since I have switched to using MatSetValueSparse instead of MatSetValuesSparse,
+                ! the transpose should no longer be applied here.
+                !xPartOfXDot = transpose(xPartOfXDot)  ! PETSc uses the opposite convention of Fortran
 
                 do itheta=ithetaMin,ithetaMax
 
@@ -886,30 +1121,50 @@
                       ! Term that is diagonal in L:
                       colIndices = rowIndices
                       LFactor = two*(3*L*L+3*L-2)/((two*L+3)*(2*L-1))*xDotFactor
-                      call MatSetValuesSparse(matrix, Nx, rowIndices, Nx, colIndices, &
-                           LFactor*xPartOfXDot, ADD_VALUES, ierr)
+                      !call MatSetValuesSparse(matrix, Nx, rowIndices, Nx, colIndices, &
+                      !     LFactor*xPartOfXDot, ADD_VALUES, ierr)
+                      do ix_col=ixMinCol,Nx
+                         do ix_row=ixMin,Nx
+                            call MatSetValueSparse(matrix, rowIndices(ix_row), colIndices(ix_col), &
+                                 LFactor*xPartOfXDot(ix_row,ix_col), ADD_VALUES, ierr)
+                         end do
+                      end do
 
                       if (whichMatrix==1 .or. preconditioner_xi==0) then
                          ! Term that is super-super-diagonal in L:
                          if (L<(Nxi-2)) then
                             ell = L + 2
-                            do ix=1,Nx
-                               colIndices(ix)=getIndex(ispecies,ix,ell+1,itheta,izeta,0)
-                            end do
+                            !do ix=1,Nx
+                            !   colIndices(ix)=getIndex(ispecies,ix,ell+1,itheta,izeta,0)
+                            !end do
                             LFactor = (L+1)*(L+2)/((two*L+5)*(2*L+3))*xDotFactor
-                            call MatSetValuesSparse(matrix, Nx, rowIndices, Nx, colIndices, &
-                                 LFactor*xPartOfXDot, ADD_VALUES, ierr)
+                            !call MatSetValuesSparse(matrix, Nx, rowIndices, Nx, colIndices, &
+                            !     LFactor*xPartOfXDot, ADD_VALUES, ierr)
+                            do ix_col=ixMinCol,Nx
+                               colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,0)
+                               do ix_row=ixMin,Nx
+                                  call MatSetValueSparse(matrix, rowIndices(ix_row), colIndex, &
+                                       LFactor*xPartOfXDot(ix_row,ix_col), ADD_VALUES, ierr)
+                               end do
+                            end do
                          end if
 
                          ! Term that is sub-sub-diagonal in L:
                          if (L>1) then
                             ell = L - 2
-                            do ix=1,Nx
-                               colIndices(ix)=getIndex(ispecies,ix,ell+1,itheta,izeta,0)
-                            end do
+                            !do ix=1,Nx
+                            !   colIndices(ix)=getIndex(ispecies,ix,ell+1,itheta,izeta,0)
+                            !end do
                             LFactor = L*(L-1)/((two*L-3)*(2*L-1))*xDotFactor
-                            call MatSetValuesSparse(matrix, Nx, rowIndices, Nx, colIndices, &
-                                 LFactor*xPartOfXDot, ADD_VALUES, ierr)
+                            !call MatSetValuesSparse(matrix, Nx, rowIndices, Nx, colIndices, &
+                            !     LFactor*xPartOfXDot, ADD_VALUES, ierr)
+                            do ix_col=ixMinCol,Nx
+                               colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,0)
+                               do ix_row=ixMin,Nx
+                                  call MatSetValueSparse(matrix, rowIndices(ix_row), colIndex, &
+                                       LFactor*xPartOfXDot(ix_row,ix_col), ADD_VALUES, ierr)
+                               end do
+                            end do
                          end if
                       end if
 
@@ -929,7 +1184,7 @@
           if (include_fDivVE_term) then
              do itheta = ithetaMin,ithetaMax
                 do izeta = 1,Nzeta
-                   do ix = 1,Nx
+                   do ix = ixMin,Nx
                       do ixi = 1,Nxi
                          index=getIndex(ispecies,ix,ixi,itheta,izeta,0)
                          call MatSetValueSparse(matrix,index,index, &
@@ -1088,14 +1343,35 @@
                 ! Given a vector of function values on the species-B grid, multiply the vector
                 ! by this regridding matrix to obtain its values on the species-A grid:
                 if (iSpeciesA /= iSpeciesB) then
-                   call polynomialInterpolationMatrix(Nx, Nx, x, xb, expx2, &
-                        expxb2, fToFInterpolationMatrix)
+                   select case (xGridScheme)
+                   case (1,2,5,6)
+                      call polynomialInterpolationMatrix(Nx, Nx, x, xb, expx2*(x**xGrid_k), &
+                           expxb2*(xb**xGrid_k), fToFInterpolationMatrix)
+                   case (3,4)
+                      allocate(tempExtrapMatrix(Nx, Nx+1))
+                      allocate(fToFInterpolationMatrix_plus1(Nx, Nx+1))
+                      call interpolationMatrix(Nx+1, Nx, x_plus1, xb, &
+                           xInterpolationScheme, fToFInterpolationMatrix_plus1, tempExtrapMatrix)
+                      fToFInterpolationMatrix = fToFInterpolationMatrix_plus1(:,1:Nx)
+                      deallocate(tempExtrapMatrix)
+                      deallocate(fToFInterpolationMatrix_plus1)
+                   case default
+                      print *,"Error! Invalid xGridScheme"
+                      stop
+                   end select
                 else
                    fToFInterpolationMatrix = zero
                    do i=1,Nx
                       fToFInterpolationMatrix(i, i) = one
                    end do
                 end if
+
+!!$                if (masterProcInSubComm) then
+!!$                   print *,"Here comes fToFInterpolationMatrix for ispeciesA=",iSpeciesA,", iSpeciesB=",iSpeciesB
+!!$                   do ix=1,Nx
+!!$                      print *,fToFInterpolationMatrix(ix,:)
+!!$                   end do
+!!$                end if
 
                 ! Using the resulting interpolation matrix,
                 ! add CD (the part of the field term independent of Rosenbluth potentials.
@@ -1142,6 +1418,12 @@
           ! *****************************************************************
 
           do L=0, Nxi-1
+             if (L>0 .and. pointAtX0) then
+                ixMinCol = 2
+             else
+                ixMinCol = 1
+             end if
+
              do iSpeciesB = 1,Nspecies
                 do iSpeciesA = 1,Nspecies
                    if (iSpeciesA==iSpeciesB .or. whichMatrix==1 .or. preconditioner_species==0) then
@@ -1162,53 +1444,79 @@
                          !   if (.false.) then
                          ! Add Rosenbluth potential terms.
 
-                         speciesFactor2 = sqrt(THats(iSpeciesA)*mHats(iSpeciesB) &
-                              / (THats(iSpeciesB) * mHats(iSpeciesA)))
+                         if (xGridScheme==5 .or. xGridScheme==6) then
+                            ! New scheme for the Rosenbluth potential terms.
+                            
+                            speciesFactor = 3/(2*pi)*nHats(iSpeciesA) &
+                                 * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
+                                 / (THats(iSpeciesA) * sqrt(THats(iSpeciesA)*mHats(ispeciesA))) &
+                                 * THats(iSpeciesB)*mHats(iSpeciesA)/(THats(iSpeciesA)*mHats(iSpeciesB))
+                            
+                            ! Add terms involving H and d H / d x_b:
+                            temp = 1 - mHats(iSpeciesA)/mHats(iSpeciesB)
+                            do i=1,Nx
+                               M11(i,:) = M11(i,:) - speciesFactor*expx2(i)*( &
+                                    Rosenbluth_H(iSpeciesA,iSpeciesB,L+1,i,:) &
+                                    + temp * xb(i) * Rosenbluth_dHdxb(iSpeciesA,iSpeciesB,L+1,i,:))
+                            end do
+                            
+                            ! Add term involving d^2 G / d x_b^2:
+                            do i=1,Nx
+                               M11(i,:) = M11(i,:) + speciesFactor*expx2(i)*x2(i)&
+                                    * Rosenbluth_d2Gdxb2(iSpeciesA,iSpeciesB,L+1,i,:)
+                            end do
+                            
+                            CHat = M11
+                            
+                         else
 
-                         ! Build M13:
-                         call interpolationMatrix(NxPotentials, Nx, xPotentials, x*speciesFactor2, &
-                              potentialsToFInterpolationMatrix, extrapMatrix)
-
-                         speciesFactor = 3/(2*pi)*nHats(iSpeciesA) &
-                              * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
-                              / (THats(iSpeciesA) * sqrt(THats(iSpeciesA)*mHats(ispeciesA))) &
-                              * THats(iSpeciesB)*mHats(iSpeciesA)/(THats(iSpeciesA)*mHats(iSpeciesB))
-
-                         tempMatrix = matmul(potentialsToFInterpolationMatrix, d2dx2Potentials)
-                         do i=1,Nx
-                            !M13(i, :) = speciesFactor*expx2(i)*x2(i)*tempMatrix(i,:)
-                            M13(i, :) = speciesFactor*expx2(i) * (x2(i)*tempMatrix(i,:) &
-                                 + THats(ispeciesB)*mHats(ispeciesA)/(THats(ispeciesA)*mHats(ispeciesB)) &
-                                 *(L+1)*(L+2)*(maxxPotentials ** (L+1)) * (xb(i) ** (-L-1))*extrapMatrix(i,:))
-                         end do
-
-                         temp = 1-mHats(iSpeciesA)/mHats(iSpeciesB)
-                         do i=1,NxPotentials
-                            tempMatrix2(i,:) = temp*xPotentials(i)*ddxPotentials(i,:)
-                            tempMatrix2(i,i) = tempMatrix2(i,i) + one
-                         end do
-                         tempMatrix = matmul(potentialsToFInterpolationMatrix, tempMatrix2)
-                         do i=1,Nx
-                            !M12(i,:) = -speciesFactor*expx2(i)*tempMatrix(i,:)
-                            M12(i,:) = -speciesFactor*expx2(i) * ( tempMatrix(i,:) &
-                                 +( -((maxxPotentials/xb(i)) ** (L+1)) &
-                                 * ((L+1)*(1-mHats(ispeciesA)/mHats(ispeciesB)) - 1) &
-                                 -THats(ispeciesB)*mHats(ispeciesA)/(THats(ispeciesA)*mHats(ispeciesB))&
-                                 *((L+1)*(L+2)/(2*L-1) * (maxxPotentials**(L+3))*(xb(i) ** (-L-1)) &
-                                 -L*(L-1)/(2*L-1) * (maxxPotentials ** (L+1))*(xb(i)**(-L+1)))) &
-                                 *extrapMatrix(i,:))
-                         end do
-
-                         ! Possibly add Dirichlet boundary condition for potentials at x=0:
-                         if (L /= 0) then
-                            M12(:,1) = 0
-                            M13(:,1) = 0
+                            speciesFactor2 = sqrt(THats(iSpeciesA)*mHats(iSpeciesB) &
+                                 / (THats(iSpeciesB) * mHats(iSpeciesA)))
+                            
+                            ! Build M13:
+                            call interpolationMatrix(NxPotentials, Nx, xPotentials, x*speciesFactor2, &
+                                 xPotentialsInterpolationScheme, potentialsToFInterpolationMatrix, extrapMatrix)
+                            
+                            speciesFactor = 3/(2*pi)*nHats(iSpeciesA) &
+                                 * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
+                                 / (THats(iSpeciesA) * sqrt(THats(iSpeciesA)*mHats(ispeciesA))) &
+                                 * THats(iSpeciesB)*mHats(iSpeciesA)/(THats(iSpeciesA)*mHats(iSpeciesB))
+                            
+                            tempMatrix = matmul(potentialsToFInterpolationMatrix, d2dx2Potentials)
+                            do i=1,Nx
+                               !M13(i, :) = speciesFactor*expx2(i)*x2(i)*tempMatrix(i,:)
+                               M13(i, :) = speciesFactor*expx2(i) * (x2(i)*tempMatrix(i,:) &
+                                    + THats(ispeciesB)*mHats(ispeciesA)/(THats(ispeciesA)*mHats(ispeciesB)) &
+                                    *(L+1)*(L+2)*(maxxPotentials ** (L+1)) * (xb(i) ** (-L-1))*extrapMatrix(i,:))
+                            end do
+                            
+                            temp = 1-mHats(iSpeciesA)/mHats(iSpeciesB)
+                            do i=1,NxPotentials
+                               tempMatrix2(i,:) = temp*xPotentials(i)*ddxPotentials(i,:)
+                               tempMatrix2(i,i) = tempMatrix2(i,i) + one
+                            end do
+                            tempMatrix = matmul(potentialsToFInterpolationMatrix, tempMatrix2)
+                            do i=1,Nx
+                               !M12(i,:) = -speciesFactor*expx2(i)*tempMatrix(i,:)
+                               M12(i,:) = -speciesFactor*expx2(i) * ( tempMatrix(i,:) &
+                                    +( -((maxxPotentials/xb(i)) ** (L+1)) &
+                                    * ((L+1)*(1-mHats(ispeciesA)/mHats(ispeciesB)) - 1) &
+                                    -THats(ispeciesB)*mHats(ispeciesA)/(THats(ispeciesA)*mHats(ispeciesB))&
+                                    *((L+1)*(L+2)/(2*L-1) * (maxxPotentials**(L+3))*(xb(i) ** (-L-1)) &
+                                    -L*(L-1)/(2*L-1) * (maxxPotentials ** (L+1))*(xb(i)**(-L+1)))) &
+                                    *extrapMatrix(i,:))
+                            end do
+                            
+                            ! Possibly add Dirichlet boundary condition for potentials at x=0:
+                            if (L /= 0) then
+                               M12(:,1) = 0
+                               M13(:,1) = 0
+                            end if
+                            
+                            !CHat = M11 -  (M12 - M13 * (M33 \ M32)) * (M22 \ M21);
+                            CHat = M11 - matmul(M12 - matmul(M13, M33BackslashM32s(L+1,:,:)),&
+                                 M22BackslashM21s(L+1,:,:))
                          end if
-
-                         !CHat = M11 -  (M12 - M13 * (M33 \ M32)) * (M22 \ M21);
-                         CHat = M11 - matmul(M12 - matmul(M13, M33BackslashM32s(L+1,:,:)),&
-                              M22BackslashM21s(L+1,:,:))
-
                       else
                          CHat = M11;
                       end if
@@ -1259,21 +1567,25 @@
 
                       end if
 
-                      ! PETSc and Fortran use row-major vs column-major:
-                      CHat = transpose(CHat)
+                      ! Note: in previous versions I take the transpose of CHat here,
+                      ! but since I have switched to using MatSetValueSparse instead of MatSetValuesSparse,
+                      ! the transpose should no longer be applied here.                     
+                      !CHat = transpose(CHat)
 
                       ! At this point, CHat contains the collision operator normalized by
                       ! \bar{nu}, (the collision frequency at the reference mass, density, and temperature.)
 
                       do itheta=ithetaMin,ithetaMax
                          do izeta=1,Nzeta
-                            do ix=1,Nx
-                               rowIndices(ix)=getIndex(iSpeciesA,ix,L+1,itheta,izeta,0)
-                               colIndices(ix)=getIndex(iSpeciesB,ix,L+1,itheta,izeta,0)
+                            do ix_row=ixMin,Nx
+                               rowIndex=getIndex(iSpeciesA,ix_row,L+1,itheta,izeta,0)
+                               do ix_col = ixMinCol,Nx
+                                  colIndex=getIndex(iSpeciesB,ix_col,L+1,itheta,izeta,0)
+                                  call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                                       -nu_n*(GHat+iota*IHat)/(BHat(itheta,izeta)*BHat(itheta,izeta)) &
+                                       *CHat(ix_row,ix_col), ADD_VALUES, ierr)
+                               end do
                             end do
-                            call MatSetValuesSparse(matrix, Nx, rowIndices, Nx, colIndices, &
-                                 -nu_n*(GHat+iota*IHat)/(BHat(itheta,izeta)*BHat(itheta,izeta))*CHat, &
-                                 ADD_VALUES, ierr)
                          end do
                       end do
 
@@ -1332,7 +1644,7 @@
              end do
 
              do L=1, Nxi-1
-                do ix=1,Nx
+                do ix=ixMin,Nx
                    CHat_element = -oneHalf*nuDHat(iSpeciesA,ix)*L*(L+1)
 
                    ! At this point, CHat contains the collision operator normalized by
@@ -1366,6 +1678,45 @@
        ! *******************************************************************************
 
        ! *******************************************************************************
+       ! If there is a grid point at x=0, add the boundary conditions for f at x=0.
+       ! *******************************************************************************
+       
+       if (pointAtX0) then
+          ! For L > 0 modes, impose f=0 at x=0:
+          ix = 1
+          do L = 1,(Nxi-1)
+             do itheta = ithetaMin,ithetaMax
+                do izeta = 1,Nzeta
+                   do ispecies = 1,Nspecies
+                      index = getIndex(ispecies,ix,L+1,itheta,izeta,0)
+                      call MatSetValue(matrix, index, index, one, ADD_VALUES, ierr)
+                   end do
+                end do
+             end do
+          end do
+          
+          ! For L=0 mode, impose regularity (df/dx=0) at x=0:
+          L=0
+          if (whichMatrix==0 .and. L >= preconditioner_x_min_L) then
+             ddxToUse = ddxPreconditioner
+          else
+             ddxToUse = ddx
+          end if
+          ix_row = 1
+          do itheta = ithetaMin,ithetaMax
+             do izeta = 1,Nzeta
+                do ispecies = 1,Nspecies
+                   rowIndex = getIndex(ispecies,ix_row,L+1,itheta,izeta,0)
+                   do ix_col = 1,Nx
+                      colIndex = getIndex(ispecies,ix_col,L+1,itheta,izeta,0)
+                      call MatSetValueSparse(matrix, rowIndex, colIndex, ddxToUse(ix_row,ix_col), ADD_VALUES, ierr)
+                   end do
+                end do
+             end do
+          end do
+       end if
+
+       ! *******************************************************************************
        ! Add sources:
        ! *******************************************************************************
 
@@ -1377,7 +1728,7 @@
           ! Add a heat source and a particle source.
 
           L=0
-          do ix=1,Nx
+          do ix=ixMin,Nx
              xPartOfSource1 = (x2(ix)-5/two)*exp(-x2(ix)) ! Provides particles but no heat
              xPartOfSource2 = (x2(ix)-3/two)*exp(-x2(ix)) ! Provides heat but no particles
              do itheta=ithetaMin,ithetaMax
@@ -1400,7 +1751,7 @@
        case (2)
           ! Add a L=0 source (which is constant on the flux surface) at each x.
           L=0
-          do ix=1,Nx
+          do ix=ixMin,Nx
              do itheta=ithetaMin,ithetaMax
                 do izeta = 1,Nzeta
                    do ispecies = 1,Nspecies
@@ -1541,7 +1892,7 @@
        CHKERRQ(ierr)
        !call KSPSetType(KSPInstance, KSPBCGSL, ierr)  ! Set the Krylov solver algorithm to BiCGStab(l)
        call KSPSetType(KSPInstance, KSPGMRES, ierr)   ! Set the Krylov solver algorithm to GMRES
-       call KSPGMRESSetRestart(KSPInstance, 500, ierr)
+       call KSPGMRESSetRestart(KSPInstance, 2000, ierr)
        CHKERRQ(ierr)
        call KSPSetTolerances(KSPInstance, solverTolerance, PETSC_DEFAULT_REAL, &
             PETSC_DEFAULT_REAL, PETSC_DEFAULT_INTEGER, ierr)
@@ -1672,6 +2023,10 @@
     !
     ! ***********************************************************************
     ! ***********************************************************************
+    !MODIFIED BY AM FROM HERE
+    !Nspecies contains number of species
+    allocate(dnHatdpsiNsToUse(Nspecies))
+    allocate(dTHatdpsiNsToUse(Nspecies))
 
     select case (RHSMode)
     case (1)
@@ -1696,35 +2051,79 @@
        ! *******************************************************************************
        ! *******************************************************************************
 
-       dnHatdpsiToUse = dnHatdpsiNs(1)
-       dTHatdpsiToUse = dTHatdpsiNs(1)
+       !dnHatdpsiToUse = dnHatdpsiNs(1)
+       !dTHatdpsiToUse = dTHatdpsiNs(1)
        EParallelHatToUse = EParallelHat
        dPhiHatdpsiNToUse = dPhiHatdpsiN
+
+       dnHatdpsiNsToUse(:) = 0
+       dTHatdpsiNsToUse(:) = 0
 
        select case (RHSMode)
        case (1)
           ! Single solve: nothing more to do here.
 
        case (2)
-          print *,"RHSMode=2 is not yet implemented"
-          stop
+          !print *,"RHSMode=2 is not yet implemented"
+          if (masterProcInSubComm) then
+	     print *,"Solve  for 3 linearly independent right-hand sides to get L_{11}^{11}, L_{11}^{12} and L_{12}^{11} + L_{12}^{12}."
+          end if
+
+	  !stop
 
           ! Solve for 3 linearly independent right-hand sides to get the full 3x3 transport matrix:
-          dPhiHatdpsiNToUse = 0
+          !!dPhiHatdpsiNToUse = 0 !!Removed by AM 2015-05-14
+          dPhiHatdpsiNToUse = dPhiHatdpsiN !!Added by AM 2015-05-14
+          EParallelHatToUse = 0
           select case (whichRHS)
           case (1)
-             dnHatdpsiToUse = 1
-             dTHatdpsiToUse = 0
-             EParallelHatToUse = 0
+             !dnHatdpsiToUse = 1
+             !dTHatdpsiToUse = 0
+             !EParallelHatToUse = 0
+             !!dnHatdpsiNsToUse(1) = 1 !!Removed by AM 2015-05-14
+             dnHatdpsiNsToUse(1) = 1 - nHats(1)*Zs(1)*alpha*dPhiHatdpsiNToUse/THats(1) !!Added by AM 2015-05-14
+             if (Nspecies > 1) then
+                dnHatdpsiNsToUse(2) = - nHats(2)*Zs(2)*alpha*dPhiHatdpsiNToUse/THats(2) !!Added by AM 2015-05-14
+             end if
           case (2)
              ! The next 2 lines ensure (1/n)*dn/dpsi + (3/2)*dT/dpsi = 0 while dT/dpsi is nonzero.
-             dnHatdpsiToUse = (3/two)*nHats(1)/THats(1)
-             dTHatdpsiToUse = 1
-             EParallelHatToUse = 0
+             !dnHatdpsiToUse = (3/two)*nHats(1)/THats(1)
+             !dTHatdpsiToUse = 1
+             !EParallelHatToUse = 0
+
+             !!Added by AM 2014-09!!
+             if (Nspecies < 2) then !!Can not do solve because there is only 1 species
+                if (masterProcInSubComm) then
+	     	   print *,"WARNING! Trying to calculate transport coefficients with only 1 species."
+          	end if
+
+		ArrayFirstSpeciesParticleFluxCoefficients(2) = 0
+                ArrayFirstSpeciesHeatFluxCoefficients(2) = 0
+                ArraySecondSpeciesParticleFluxCoefficients(2) = 0
+                ArraySecondSpeciesHeatFluxCoefficients(2) = 0
+                cycle
+             end if
+             !!!!!!!!!!!!!!!!!!!!!!!
+
+             !!dnHatdpsiNsToUse(2) = 1 !!Removed by AM 2015-05-14
+             dnHatdpsiNsToUse(1) = - nHats(1)*Zs(1)*alpha*dPhiHatdpsiNToUse/THats(1) !!Added by AM 2015-05-14
+             dnHatdpsiNsToUse(2) = 1 - nHats(2)*Zs(2)*alpha*dPhiHatdpsiNToUse/THats(2) !!Added by AM 2015-05-14
           case (3)
-             dnHatdpsiToUse = 0
-             dTHatdpsiToUse = 0
-             EParallelHatToUse = 1
+             !dnHatdpsiToUse = 0
+             !dTHatdpsiToUse = 0
+             !EParallelHatToUse = 1
+             !!dnHatdpsiNsToUse(1) = (3/two)*nHats(1)/THats(1) !!Removed by AM 2015-05-14
+             dnHatdpsiNsToUse(1) = (3/two)*nHats(1)/THats(1) - nHats(1)*Zs(1)*alpha*dPhiHatdpsiNToUse/THats(1) !!Added by AM 2015-05-14
+             dTHatdpsiNsToUse(1) = 1
+
+             !!Added by AM 2014-09!!
+             if (Nspecies > 1) then
+                !!dnHatdpsiNsToUse(2) = (3/two)*nHats(2)/THats(2) !!Removed by AM 2015-05-14
+                dnHatdpsiNsToUse(2) = (3/two)*nHats(2)/THats(2) - nHats(2)*Zs(2)*alpha*dPhiHatdpsiNToUse/THats(2) !!Added by AM 2015-05-14
+                dTHatdpsiNsToUse(2) = 1
+             end if
+             !!!!!!!!!!!!!!!!!!!!!!!
+
           case default
              print *,"Program should not get here"
              stop
@@ -1742,10 +2141,10 @@
           sqrtTHat = sqrt(THat)
           sqrtMHat = sqrt(mHat)
 
-          do ix=1,Nx
-             xPartOfRHS = x2(ix)*exp(-x2(ix))*( dnHatdpsiNs(ispecies)/nHats(ispecies) &
+          do ix=ixMin,Nx
+             xPartOfRHS = x2(ix)*exp(-x2(ix))*( dnHatdpsiNsToUse(ispecies)/nHats(ispecies) &
                   + alpha*Zs(ispecies)/THats(ispecies)*dPhiHatdpsiNToUse &
-                  + (x2(ix) - three/two)*dTHatdpsiNs(ispecies)/THats(ispecies))
+                  + (x2(ix) - three/two)*dTHatdpsiNsToUse(ispecies)/THats(ispecies))
              do itheta = ithetaMin,ithetaMax
                 do izeta = 1,Nzeta
 
@@ -1770,7 +2169,7 @@
        ! Add the inductive electric field term:
        L=1
        do ispecies = 1,Nspecies
-          do ix=1,Nx
+          do ix=ixMin,Nx
              factor = alpha*Zs(ispecies)*x(ix)*exp(-x2(ix))*EParallelHatToUse*(GHat+iota*IHat)&
                   *nHats(ispecies)*mHats(ispecies)/(pi*sqrtpi*THats(ispecies)*THats(ispecies)*FSABHat2)
              do itheta=ithetaMin,ithetaMax
@@ -1969,8 +2368,7 @@
                            * xWeights(ix)*heatFluxIntegralWeights(ix)*solnArray(index)
 
                       NTVBeforeSurfaceIntegral(ispecies,itheta,izeta) &
-                           = NTVBeforeSurfaceIntegral(ispecies,itheta,izeta) &
-                           + NTVFactor * NTVKernel(itheta,izeta)&
+                           = NTVFactor * NTVKernel(itheta,izeta)&
                            * xWeights(ix)*NTVIntegralWeights(ix)*solnArray(index) 
 
                       L = 3
@@ -2025,23 +2423,78 @@
           FSAPressurePerturbation = FSAPressurePerturbation / VPrimeHat
           FSABjHat = dot_product(Zs(1:Nspecies), FSABFlow)
 
-!!$          if (RHSMode==2) then
-!!$             VPrimeHatWithG = VPrimeHat*(GHat+iota*IHat)
-!!$             select case (whichRHS)
-!!$             case (1)
+          !!Section modified by AM 2014-09!!
+          if (RHSMode==2) then
+             !!VPrimeHatWithG = VPrimeHat*(GHat+iota*IHat)
+             select case (whichRHS)
+             case (1)
 !!$                transportMatrix(1,1) = 4*(GHat+iota*IHat)*particleFlux*nHat*B0OverBBar/(GHat*VPrimeHatWithG*(THat*sqrtTHat)*GHat)
 !!$                transportMatrix(2,1) = 8*(GHat+iota*IHat)*heatFlux*nHat*B0OverBBar/(GHat*VPrimeHatWithG*(THat*THat*sqrtTHat)*GHat)
 !!$                transportMatrix(3,1) = 2*nHat*FSABFlow/(GHat*THat)
-!!$             case (2)
+                ArrayFirstSpeciesParticleFluxCoefficients(1) = particleFlux(1)*4*(Zs(1)**2)*psiAHat*(GHat+iota*IHat) &
+		     * B0OverBBar*sqrt(THats(1)/mHats(1)) / ( (GHat**2)*(THats(1)**2)*(Delta**2) )
+
+                ArrayFirstSpeciesHeatFluxCoefficients(1) = heatFlux(1)*2/THats(1)*4*(Zs(1)**2)*psiAHat*(GHat+iota*IHat) &
+                     * B0OverBBar*sqrt(THats(1)/mHats(1)) / ( (GHat**2)*(THats(1)**2)*(Delta**2) )
+
+
+!!                !!ArraySecondSpeciesParticleFluxCoefficients(1) = particleFlux(2)*4*(Zs(2)**2)*psiAHat*(GHat+iota*IHat) &
+!!                !!     * B0OverBBar*sqrt(THats(2)/mHats(2)) / ( (GHat**2)*(THats(2)**2)*(Delta**2) )
+!!
+!!                !!ArraySecondSpeciesHeatFluxCoefficients(1) = heatFlux(2)*2/THats(2)*4*(Zs(2)**2)*psiAHat*(GHat+iota*IHat) &
+!!                !!     * B0OverBBar*sqrt(THats(2)/mHats(2)) / ( (GHat**2)*(THats(2)**2)*(Delta**2) )
+
+                ArraySecondSpeciesParticleFluxCoefficients(2) =  particleFlux(2)*(NHats(1)/NHats(2))*4*(Zs(2)**2)*psiAHat &
+                     * (GHat+iota*IHat)*B0OverBBar*sqrt(THats(2)/mHats(2)) / ( (GHat**2)*(THats(2)**2)*(Delta**2) )
+
+                ArraySecondSpeciesHeatFluxCoefficients(2) = heatFlux(2)*2/THats(2)*(NHats(1)/NHats(2))*4*(Zs(2)**2)*psiAHat &
+                     * (GHat+iota*IHat)*B0OverBBar*sqrt(THats(2)/mHats(2)) / ( (GHat**2)*(THats(2)**2)*(Delta**2) )
+
+
+             case (2)
 !!$                transportMatrix(1,2) = 4*(GHat+iota*IHat)*particleFlux*B0OverBBar/(GHat*VPrimeHatWithG*sqrtTHat*GHat)
 !!$                transportMatrix(2,2) = 8*(GHat+iota*IHat)*heatFlux*B0OverBBar/(GHat*VPrimeHatWithG*sqrtTHat*THat*GHat)
 !!$                transportMatrix(3,2) = 2*FSABFlow/(GHat)
-!!$             case (3)
+                ArrayFirstSpeciesParticleFluxCoefficients(2) = particleFlux(1)*(NHats(2)/NHats(1))*4*(Zs(1)**2)*psiAHat & 
+		     * (GHat+iota*IHat)*B0OverBBar*sqrt(THats(1)/mHats(1)) / ( (GHat**2)*(THats(1)**2)*(Delta**2) )
+
+                ArrayFirstSpeciesHeatFluxCoefficients(2) = heatFlux(1)*2/THats(1)*(NHats(2)/NHats(1))*4*(Zs(1)**2)*psiAHat &
+                     * (GHat+iota*IHat)*B0OverBBar*sqrt(THats(1)/mHats(1)) / ( (GHat**2)*(THats(1)**2)*(Delta**2) )
+
+!!                !!ArraySecondSpeciesParticleFluxCoefficients(2) = particleFlux(2)*(NHats(1)/NHats(2))*4*(Zs(2)**2)*psiAHat &
+!!                !!     * (GHat+iota*IHat)*B0OverBBar*sqrt(THats(2)/mHats(2)) / ( (GHat**2)*(THats(2)**2)*(Delta**2) )
+!!
+!!                !!ArraySecondSpeciesHeatFluxCoefficients(2) = heatFlux(2)*2/THats(2)*(NHats(1)/NHats(2))*4*(Zs(2)**2)*psiAHat &
+!!                !!     * (GHat+iota*IHat)*B0OverBBar*sqrt(THats(2)/mHats(2)) / ( (GHat**2)*(THats(2)**2)*(Delta**2) )
+
+                ArraySecondSpeciesParticleFluxCoefficients(1) = particleFlux(2)*4*(Zs(2)**2)*psiAHat*(GHat+iota*IHat) &
+                     * B0OverBBar*sqrt(THats(2)/mHats(2)) / ( (GHat**2)*(THats(2)**2)*(Delta**2) )
+
+                ArraySecondSpeciesHeatFluxCoefficients(1) = heatFlux(2)*2/THats(2)*4*(Zs(2)**2)*psiAHat*(GHat+iota*IHat) &
+                     * B0OverBBar*sqrt(THats(2)/mHats(2)) / ( (GHat**2)*(THats(2)**2)*(Delta**2) )
+
+
+
+             case (3)
 !!$                transportMatrix(1,3) = particleFlux*Delta*Delta*FSABHat2/(VPrimeHatWithG*GHat*psiAHat*omega)
 !!$                transportMatrix(2,3) = 2*Delta*Delta*heatFlux*FSABHat2/(GHat*VPrimeHatWithG*psiAHat*THat*omega)
 !!$                transportMatrix(3,3) = FSABFlow*Delta*Delta*sqrtTHat*FSABHat2/((GHat+iota*IHat)*2*psiAHat*omega*B0OverBBar)
-!!$             end select
-!!$          end if
+                ArrayFirstSpeciesParticleFluxCoefficients(3) = particleFlux(1)*4*(Zs(1)**2)*psiAHat*(GHat+iota*IHat)*B0OverBBar & 
+		     * sqrt(THats(1)/mHats(1)) / ( (GHat**2)*(THats(1)*NHats(1))*(Delta**2) )
+
+                ArrayFirstSpeciesHeatFluxCoefficients(3) = heatFlux(1)*2/THats(1)*4*(Zs(1)**2)*psiAHat*(GHat+iota*IHat)*B0OverBBar &
+                     * sqrt(THats(1)/mHats(1)) / ( (GHat**2)*(THats(1)*NHats(1))*(Delta**2) )
+
+                ArraySecondSpeciesParticleFluxCoefficients(3) = particleFlux(2)*4*(Zs(2)**2)*psiAHat*(GHat+iota*IHat)*B0OverBBar &
+                     * sqrt(THats(2)/mHats(2)) / ((GHat**2)*(THats(2)*NHats(2))*(Delta**2) )
+
+                ArraySecondSpeciesHeatFluxCoefficients(3) = heatFlux(2)*2/THats(2)*4*(Zs(2)**2)*psiAHat*(GHat+iota*IHat)*B0OverBBar &
+                     * sqrt(THats(2)/mHats(2)) / ( (GHat**2)*(THats(2)*NHats(2))*(Delta**2) )
+
+
+             end select
+          end if
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
           call VecRestoreArrayF90(solnOnProc0, solnArray, ierr)
           CHKERRQ(ierr)
@@ -2049,6 +2502,11 @@
        end if
 
     end do
+
+    !!Added by AM 2014-09
+    deallocate(dnHatdpsiNsToUse)
+    deallocate(dTHatdpsiNsToUse)
+    !!!!!!!!!!!!!!!!!!!!!
 
     ! ***********************************************************************
     ! ***********************************************************************

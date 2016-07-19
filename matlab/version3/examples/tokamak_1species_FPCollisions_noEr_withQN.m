@@ -32,17 +32,28 @@ THats = 0.5;
 dnHatdpsiNs = -1;
 dTHatdpsiNs = -0.5;
 
-global Delta alpha nu_n includePhi1
+global adiabaticZ adiabaticMHat adiabaticNHat adiabaticTHat withAdiabatic
+withAdiabatic = true;
+adiabaticZ = -1;
+adiabaticMHat = 5.446170214e-4;
+adiabaticNHat = 1;
+adiabaticTHat = 0.5;
+
+global Delta alpha nu_n includePhi1 includePhi1InKineticEquation
 Delta = 4.5694e-3;
 alpha = 1;
 nu_n = 8.4774e-3;
 includePhi1 = true;
+includePhi1InKineticEquation = false;
 
 global Ntheta Nzeta Nxi Nx
 Ntheta = 21;
 Nzeta = 1;
 Nxi = 31;
 Nx = 8;
+
+global useIterativeLinearSolver
+%useIterativeLinearSolver = false;
 
 sfincs_main()
 

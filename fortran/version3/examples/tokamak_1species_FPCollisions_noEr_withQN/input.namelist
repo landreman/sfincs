@@ -18,12 +18,13 @@
 
 
 &general
+!  saveMatricesAndVectorsInBinary = .t.
 /
 
 &geometryParameters
 
   inputRadialCoordinate = 3  ! rN
-  rN_wish = 0.3
+  rN_wish = 0.3d+0
 
   geometryScheme = 1
   B0OverBBar = 1.0d+0
@@ -36,7 +37,7 @@
   helicity_n = 1
 
   psiAHat = 0.045d+0
-  aHat = 0.1
+  aHat = 0.1d+0
 /
 
 &speciesParameters
@@ -46,6 +47,11 @@
   THats = 0.5d+0
   dNHatdrHats = -6.0d+0
   dTHatdrHats = -3.0d+0
+
+  withAdiabatic = .t.
+  adiabaticZ = -1
+  adiabaticNHat = 1.0d+0
+  adiabaticTHat = 0.5d+0
 /
 
 &physicsParameters
@@ -53,7 +59,7 @@
   alpha = 1.0d+0
   nu_n = 8.4774d-3
 
-  Er  = 0.0d+0
+  Er   = 0.0d+0
 
   collisionOperator = 0
 
@@ -62,8 +68,7 @@
   useDKESExBDrift = .false.
 
   includePhi1 = .true.
-  includeRadialExBDrive = .false.
-  nonlinear = .true.
+  includePhi1InKineticEquation = .f.
 /
 
 &resolutionParameters
@@ -100,9 +105,9 @@
 &preconditionerOptions
   ! Since the matrix size is so small for this example, we can afford to make the preconditioner matrix
   ! the same as the real system matrix.
-  preconditioner_species = 0
-  preconditioner_x = 0
-  preconditioner_xi = 0
+  !preconditioner_species = 0
+  !preconditioner_x = 0
+  !preconditioner_xi = 0
 /
 
 &export_f

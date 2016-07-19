@@ -18,12 +18,12 @@
 
 
 &general
-  saveMatricesAndVectorsInBinary=.t.
+!  saveMatricesAndVectorsInBinary=.t.
 /
 
 &geometryParameters
 
-  inputRadialCoordinate = 3   ! rN
+  inputRadialCoordinate = 3  ! rN
   rN_wish = 0.3
 
   geometryScheme = 1
@@ -47,6 +47,11 @@
   THats = 0.5d+0
   dNHatdrHats = -6.0d+0
   dTHatdrHats = -3.0d+0
+
+  withAdiabatic = .t.
+  adiabaticZ = -1
+  adiabaticNHat = 1.0d+0
+  adiabaticTHat = 0.5d+0
 /
 
 &physicsParameters
@@ -54,16 +59,16 @@
   alpha = 1.0d+0
   nu_n = 8.4774d-3
 
-  Er = 0.0d+0
+  Er  = 0.0d+0
 
-  collisionOperator = 1
+  collisionOperator = 0
 
   includeXDotTerm = .true.
   includeElectricFieldTermInXiDot = .true.
   useDKESExBDrift = .false.
 
   includePhi1 = .true.
-  nonlinear = .false.
+  includePhi1InKineticEquation = .true.
 /
 
 &resolutionParameters
@@ -87,7 +92,7 @@
 !ss NxMaxFactor = 2
 !ss NxNumRuns = 3
 
-  solverTolerance = 1d-6
+  solverTolerance = 1d-12
 !ss solverToleranceMinFactor = 0.1
 !ss solverToleranceMaxFactor = 10
 !ss solverToleranceNumRuns = 3

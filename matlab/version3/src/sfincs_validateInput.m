@@ -58,4 +58,9 @@ if RHSMode==3
     end
 end
 
+global quasineutralityOption withAdiabatic
+if includePhi1 && (quasineutralityOption==2) && (~withAdiabatic)
+    error('If includePhi1=true and quasineutralityOption==2, you must include an adiabatic species')
+end
+
 end

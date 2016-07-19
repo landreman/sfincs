@@ -104,6 +104,9 @@ module globalVariables
   ! 1 = 2nd order finite differences
   ! 2 = 4th order dinite differences
 
+  integer :: xGridScheme = 1, xPotentialsGridScheme = 2
+  logical :: pointAtX0
+
   integer :: Ntheta = 10
   PetscScalar :: NthetaMinFactor = 0.8d+0, NthetaMaxFactor=2d+0
   integer :: NthetaNumRuns = 2
@@ -156,6 +159,8 @@ module globalVariables
 
   integer :: preconditioner_x, preconditioner_x_min_L, preconditioner_zeta
   integer :: preconditioner_theta, preconditioner_xi, preconditioner_species
+  integer :: preconditioner_theta_min_L = 2
+  integer :: preconditioner_zeta_min_L = 2
 
   integer :: constraintScheme
 
@@ -184,6 +189,14 @@ module globalVariables
   PetscLogDouble :: elapsedTime
   integer :: didItConverge
   PetscScalar :: transportMatrix(3,3)
+
+  !!Added by AM 2014-09!!
+  PetscScalar :: ArrayFirstSpeciesParticleFluxCoefficients(3)
+  !!Added by AM 2015-05
+  PetscScalar :: ArrayFirstSpeciesHeatFluxCoefficients(3)
+  PetscScalar :: ArraySecondSpeciesParticleFluxCoefficients(3)
+  PetscScalar :: ArraySecondSpeciesHeatFluxCoefficients(3)
+  !!!!!!!!!!!!!!!!!!!!!!!
 
   ! ********************************************************
   !
@@ -233,12 +246,12 @@ contains
 
     ! Validate some input quantities:
 
-    if (preconditioner_theta < 0 .or. preconditioner_theta > 1) then
-       print *,"Error! preconditioner_theta must be 0 or 1."
+    if (preconditioner_theta < 0 .or. preconditioner_theta > 3) then
+       print *,"Error! preconditioner_theta must be 0, 1, 2, or 3."
        stop
     end if
-    if (preconditioner_zeta < 0 .or. preconditioner_zeta > 1) then
-       print *,"Error! preconditioner_zeta must be 0 or 1."
+    if (preconditioner_zeta < 0 .or. preconditioner_zeta > 3) then
+       print *,"Error! preconditioner_zeta must be 0, 1, 2, or 3."
        stop
     end if
     if (preconditioner_xi < 0 .or. preconditioner_xi > 1) then

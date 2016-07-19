@@ -54,7 +54,6 @@
   useDKESExBDrift = .false.
 
   includePhi1 = .false.
-  nonlinear = .false.
 /
 
 &resolutionParameters

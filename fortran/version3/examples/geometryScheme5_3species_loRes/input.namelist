@@ -1,0 +1,106 @@
+! Input file for SFINCS version 3.
+! See the user manual for documentation of the parameters in this file.
+!----------------------------------------------------------------------
+
+!ss scanType = 1
+
+! Parameters specific to scanType = 2:
+!ss NErs = 5
+!ss ErMin = -4.0d+0
+!ss ErMax =  4.0d+0
+
+! Parameters specific to scanType = 3:
+!ss scanVariable = preconditioner_x_min_L
+!ss scanVariableMin = 0
+!ss scanVariableMax = 2
+!ss scanVariableN = 3
+!ss scanVariableScale = linear
+
+&general
+!  saveMatricesAndVectorsInBinary = .t.
+/
+
+&geometryParameters
+  geometryScheme = 5
+
+  inputRadialCoordinate = 3  ! rN
+  rN_wish = 0.88
+
+  equilibriumFile = "../../../../equilibria/wout_w7x_standardConfig.nc"
+/
+
+&speciesParameters
+  ! sfincsPaperFigure3 values, for comparison:
+  !Zs = 1 -1
+  !mHats = 1 0.000545509d+0
+  !nHats = 0.66d+0 0.66d+0
+  !THats = 1d+0 1d+0
+  !dNHatdrHats = -15.4271 -15.4271
+  !dTHatdrHats = -11.4071 -11.4071
+
+  ! The numbers below correspond to Zeff=2.15.
+  ! Both nHats and dNHatdrHats are quasineutral.
+  Zs = 1.0d+0 -1.0d+0 20.0d+0
+  mHats = 1.0d+0 0.000545509d+0 40.0d+0
+  nHats = 0.62d+0 0.66d+0 0.002d+0
+  THats = 1.1d+0 1.3d+0 1.6d+0
+  dNHatdrHats = -15.0d+0 -15.5d+0 -0.025d+0
+  dTHatdrHats = -12.0d+0 -14.0d+0 -16.0d+0
+/
+
+&physicsParameters
+  Delta = 4.5694d-3
+  alpha = 1d+0
+  nu_n = 0.00831565d+0
+
+  Er = -8.5897d+0
+
+  collisionOperator = 0
+  includeXDotTerm = .true.
+  includeElectricFieldTermInXiDot = .true.
+  useDKESExBDrift = .false.
+
+  includePhi1 = .f.
+  includePhi1InKineticEquation = .f.
+/
+
+&resolutionParameters
+  Ntheta = 9
+!ss NthetaMinFactor = 0.7
+!ss NthetaMaxFactor = 2
+!ss NthetaNumRuns = 5
+
+  Nzeta = 17
+!ss NzetaMinFactor = 0.8
+!ss NzetaMaxFactor = 2
+!ss NzetaNumRuns = 5
+
+  Nxi = 18
+!ss NxiMinFactor = 0.8
+!ss NxiMaxFactor = 2
+!ss NxiNumRuns = 6
+  
+  Nx = 4
+!ss NxMinFactor = 0.8
+!ss NxMaxFactor = 2
+!ss NxNumRuns = 3
+
+  solverTolerance = 1d-7
+!ss solverToleranceMinFactor = 0.1
+!ss solverToleranceMaxFactor = 10
+!ss solverToleranceNumRuns = 3
+/
+
+&otherNumericalParameters
+/
+
+&preconditionerOptions
+!preconditioner_species=0
+preconditioner_x=0
+preconditioner_xi=0
+/
+
+&export_f
+  export_full_f = .f.
+  export_delta_f = .f.
+/

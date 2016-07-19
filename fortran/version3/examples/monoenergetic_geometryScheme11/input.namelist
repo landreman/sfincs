@@ -38,7 +38,6 @@
   includeElectricFieldTermInXiDot = .false.
   useDKESExBDrift = .true.
   includePhi1 = .false.
-  nonlinear = .false.
 /
 
 &resolutionParameters
