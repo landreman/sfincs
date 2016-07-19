@@ -28,6 +28,6 @@ solver.o: globalVariables.o
 sparsify.o:
 uniformDiffMatrices.o: 
 uniformInterpolationMatrix.o: 
-validateInput.o: globalVariables.o
+validateInput.o: globalVariables.o xGrid.o
 writeHDF5Output.o: globalVariables.o export_f.o xGrid.o
 xGrid.o:
