@@ -1,0 +1,12 @@
+Aspects of the code that have changed in version 4 compared to version 3:
+
+* The finite-difference grid in theta and zeta has been replaced with Fourier modal expansions.
+  Associated with this change, the variables Ntheta and Nzeta are replaced by NFourier, mmax, and nmax.
+  Associated preconditioner options and differentiation matrix options have been removed.
+
+* Upwinding of the xDot term has been removed. This feature was never used.
+
+* The main datatype has changed from PetscScalar to real(prec), which corresponds to double precision
+  regardless of whether a single- or double-precision PETSc library is used. This change facilitates
+  working with single-precision PETSc libraries.
+

@@ -38,8 +38,7 @@ if makePDF:
 import matplotlib.pyplot as plt
 
 numRuns = 0
-Nthetas = []
-Nzetas = []
+NFouriers = []
 Nxis = []
 NLs = []
 Nxs = []
@@ -95,8 +94,7 @@ for directory in directories:
 
     # The expression [()] converts from an h5py dataset to a numpy ndarray:
     integerToRepresentTrue = (f["integerToRepresentTrue"][()])
-    Nthetas.append(f["Ntheta"][()])
-    Nzetas.append(f["Nzeta"][()])
+    NFouriers.append(f["NFourier"][()])
     Nxis.append(f["Nxi"][()])
     NLs.append(f["NL"][()])
     Nxs.append(f["Nx"][()])
@@ -269,13 +267,13 @@ abscissae = []
 convergeds = []
 quantities = []
 
-# Check whether Ntheta was scanned:
-data = Nthetas
+# Check whether NFourier was scanned:
+data = NFouriers
 values = uniq(data)
 values.sort()
 if len(values)>1:
     # Yes, a scan was performed in this variable.
-    parametersToVary.append("Ntheta")
+    parametersToVary.append("NFourier")
     abscissae.append(values)
     # Ensure only 1 value is repeated:
     numRepeatedValues = 0
@@ -305,12 +303,12 @@ if len(values)>1:
        if (abscissae[-1])[0] == convergedValue:
           minScanValue = "baseCase"
        else :
-          minScanValue = "Ntheta" + str((abscissae[-1])[0])
+          minScanValue = "NFourier" + str((abscissae[-1])[0])
 
        if (abscissae[-1])[-1] == convergedValue:
           maxScanValue = "baseCase"
        else :
-          maxScanValue = "Ntheta" + str((abscissae[-1])[-1])
+          maxScanValue = "NFourier" + str((abscissae[-1])[-1])
 
        Phi1_Labels_Array.append(minScanValue)
        Phi1_Labels_Array.append(maxScanValue)
@@ -324,8 +322,8 @@ if len(values)>1:
        try:
           Phi1_Array.append( (fmin["Phi1Hat"][()])[:,:,-1] )
           Phi1_Array.append( (fmax["Phi1Hat"][()])[:,:,-1] )
-          Phi1_Theta_Array.append( fmin["theta"][()] )
-          Phi1_Theta_Array.append( fmax["theta"][()] )
+          Phi1_Fourier_Array.append( fmin["Fourier"][()] )
+          Phi1_Fourier_Array.append( fmax["Fourier"][()] )
           Phi1_Zeta_Array.append( fmin["zeta"][()] )
           Phi1_Zeta_Array.append( fmax["zeta"][()] )
        except:
@@ -333,69 +331,6 @@ if len(values)>1:
           PlotPhi1Bool = False
     ########################
 
-# Check whether Nzeta was scanned:
-data = Nzetas
-values = uniq(data)
-values.sort()
-if len(values)>1:
-    # Yes, a scan was performed in this variable.
-    parametersToVary.append("Nzeta")
-    abscissae.append(values)
-    # Ensure only 1 value is repeated:
-    numRepeatedValues = 0
-    for value in values:
-        if data.count(value)>1:
-            numRepeatedValues += 1
-            convergedValue = value
-    if numRepeatedValues>1:
-        print "Error! Multiple values of "+parametersToVary[-1]+" were repeated."
-        exit(1)
-    if numRepeatedValues==0:
-       convergedValue = data[baseCaseIndex]
-    thisScanResults = []
-    for value in values:
-        if value==convergedValue:
-            index = baseCaseIndex
-        else:
-            index = data.index(value)
-        thisScanResults.append(outputs[index])
-    print "A scan was performed in "+parametersToVary[-1]+", and the repeated value was "+str(convergedValue)
-    print "Values of the scanned parameter: ",abscissae[-1]
-    convergeds.append(convergedValue)
-    quantities.append(numpy.array(thisScanResults))
-
-    ##ADDED BY AM 2016-04 ##
-    if PlotPhi1Bool and includePhi1:
-       if (abscissae[-1])[0] == convergedValue:
-          minScanValue = "baseCase"
-       else :
-          minScanValue = "Nzeta" + str((abscissae[-1])[0])
-
-       if (abscissae[-1])[-1] == convergedValue:
-          maxScanValue = "baseCase"
-       else :
-          maxScanValue = "Nzeta" + str((abscissae[-1])[-1])
-
-       Phi1_Labels_Array.append(minScanValue)
-       Phi1_Labels_Array.append(maxScanValue)
-       try:
-          fmin = h5py.File(minScanValue + "/" + outputFilename, 'r')
-          fmax = h5py.File(maxScanValue + "/" + outputFilename, 'r')
-       except IOError:
-          print "Unable to open " + minScanValue + "/" + outputFilename + " or " + maxScanValue + "/" + outputFilename + ". Will not plot Phi1!"
-          PlotPhi1Bool = False
-          
-       try:
-          Phi1_Array.append( (fmin["Phi1Hat"][()])[:,:,-1] )
-          Phi1_Array.append( (fmax["Phi1Hat"][()])[:,:,-1] )
-          Phi1_Theta_Array.append( fmin["theta"][()] )
-          Phi1_Theta_Array.append( fmax["theta"][()] )
-          Phi1_Zeta_Array.append( fmin["zeta"][()] )
-          Phi1_Zeta_Array.append( fmax["zeta"][()] )
-       except:
-          print "Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!"
-          PlotPhi1Bool = False
-    ########################
 
 # Check whether Nxi was scanned:
 data = Nxis
@@ -452,8 +387,8 @@ if len(values)>1:
        try:
           Phi1_Array.append( (fmin["Phi1Hat"][()])[:,:,-1] )
           Phi1_Array.append( (fmax["Phi1Hat"][()])[:,:,-1] )
-          Phi1_Theta_Array.append( fmin["theta"][()] )
-          Phi1_Theta_Array.append( fmax["theta"][()] )
+          Phi1_Fourier_Array.append( fmin["Fourier"][()] )
+          Phi1_Fourier_Array.append( fmax["Fourier"][()] )
           Phi1_Zeta_Array.append( fmin["zeta"][()] )
           Phi1_Zeta_Array.append( fmax["zeta"][()] )
        except:
@@ -516,8 +451,8 @@ if len(values)>1:
        try:
           Phi1_Array.append( (fmin["Phi1Hat"][()])[:,:,-1] )
           Phi1_Array.append( (fmax["Phi1Hat"][()])[:,:,-1] )
-          Phi1_Theta_Array.append( fmin["theta"][()] )
-          Phi1_Theta_Array.append( fmax["theta"][()] )
+          Phi1_Fourier_Array.append( fmin["Fourier"][()] )
+          Phi1_Fourier_Array.append( fmax["Fourier"][()] )
           Phi1_Zeta_Array.append( fmin["zeta"][()] )
           Phi1_Zeta_Array.append( fmax["zeta"][()] )
        except:
@@ -580,8 +515,8 @@ if len(values)>1:
        try:
           Phi1_Array.append( (fmin["Phi1Hat"][()])[:,:,-1] )
           Phi1_Array.append( (fmax["Phi1Hat"][()])[:,:,-1] )
-          Phi1_Theta_Array.append( fmin["theta"][()] )
-          Phi1_Theta_Array.append( fmax["theta"][()] )
+          Phi1_Fourier_Array.append( fmin["Fourier"][()] )
+          Phi1_Fourier_Array.append( fmax["Fourier"][()] )
           Phi1_Zeta_Array.append( fmin["zeta"][()] )
           Phi1_Zeta_Array.append( fmax["zeta"][()] )
        except:
@@ -644,8 +579,8 @@ if len(values)>1:
        try:
           Phi1_Array.append( (fmin["Phi1Hat"][()])[:,:,-1] )
           Phi1_Array.append( (fmax["Phi1Hat"][()])[:,:,-1] )
-          Phi1_Theta_Array.append( fmin["theta"][()] )
-          Phi1_Theta_Array.append( fmax["theta"][()] )
+          Phi1_Fourier_Array.append( fmin["Fourier"][()] )
+          Phi1_Fourier_Array.append( fmax["Fourier"][()] )
           Phi1_Zeta_Array.append( fmin["zeta"][()] )
           Phi1_Zeta_Array.append( fmax["zeta"][()] )
        except:
@@ -708,8 +643,8 @@ if len(values)>1:
        try:
           Phi1_Array.append( (fmin["Phi1Hat"][()])[:,:,-1] )
           Phi1_Array.append( (fmax["Phi1Hat"][()])[:,:,-1] )
-          Phi1_Theta_Array.append( fmin["theta"][()] )
-          Phi1_Theta_Array.append( fmax["theta"][()] )
+          Phi1_Fourier_Array.append( fmin["Fourier"][()] )
+          Phi1_Fourier_Array.append( fmax["Fourier"][()] )
           Phi1_Zeta_Array.append( fmin["zeta"][()] )
           Phi1_Zeta_Array.append( fmax["zeta"][()] )
        except:
@@ -772,8 +707,8 @@ if len(values)>1:
        try:
           Phi1_Array.append( (fmin["Phi1Hat"][()])[:,:,-1] )
           Phi1_Array.append( (fmax["Phi1Hat"][()])[:,:,-1] )
-          Phi1_Theta_Array.append( fmin["theta"][()] )
-          Phi1_Theta_Array.append( fmax["theta"][()] )
+          Phi1_Fourier_Array.append( fmin["Fourier"][()] )
+          Phi1_Fourier_Array.append( fmax["Fourier"][()] )
           Phi1_Zeta_Array.append( fmin["zeta"][()] )
           Phi1_Zeta_Array.append( fmax["zeta"][()] )
        except:
@@ -933,7 +868,7 @@ if PlotPhi1Bool and includePhi1:
 #   print numpy.amin(Phi1BaseCase)
 #   print numParameters
 #   print len(Phi1_Array)
-#   print len(Phi1_Theta_Array)
+#   print len(Phi1_Fourier_Array)
 #   print len(Phi1_Zeta_Array)
 #   print len(Phi1_Labels_Array)
 
@@ -946,10 +881,10 @@ if PlotPhi1Bool and includePhi1:
       ContourLevels = numpy.arange(numpy.amin(Phi1_Array[i]), numpy.amax(Phi1_Array[i]) + delta/2.0, delta)
       
       ax = plt.subplot(numRowsPlot2, numColsPlot2, i/2 + 1)
-      Phi1Plot = plt.contourf(Phi1_Zeta_Array[i], Phi1_Theta_Array[i], Phi1_Array[i].transpose(), numContours)
+      Phi1Plot = plt.contourf(Phi1_Zeta_Array[i], Phi1_Fourier_Array[i], Phi1_Array[i].transpose(), numContours)
       Phi1Plot2 = plt.contour(Phi1Plot,levels=ContourLevels, colors='k', hold='on')
       plt.xlabel(r'$\zeta$' + " " + r'$\mathrm{[rad]}$')
-      plt.ylabel(r'$\theta$'+ " " + r'$\mathrm{[rad]}$')
+      plt.ylabel(r'$\Fourier$'+ " " + r'$\mathrm{[rad]}$')
       plt.gca().axes.xaxis.set_label_coords(0.5,-0.08)
       plt.gca().axes.yaxis.set_label_coords(-0.12,0.5)
       ax.xaxis.set_major_formatter( ticker.FuncFormatter(fmt_xy_axis))
@@ -972,10 +907,10 @@ if PlotPhi1Bool and includePhi1:
          ContourLevels = numpy.arange(numpy.amin(Phi1BaseCase), numpy.amax(Phi1BaseCase) + delta/2.0, delta)
          
          ax = plt.subplot(numRowsPlot2,numColsPlot2, i/2 + 1 + numColsPlot2)
-         Phi1Plot = plt.contourf(zetaBaseCase, thetaBaseCase, Phi1BaseCase.transpose(), numContours)
+         Phi1Plot = plt.contourf(zetaBaseCase, FourierBaseCase, Phi1BaseCase.transpose(), numContours)
          Phi1Plot2 = plt.contour(Phi1Plot,levels=ContourLevels, colors='k', hold='on')
          plt.xlabel(r'$\zeta$' + " " + r'$\mathrm{[rad]}$')
-         plt.ylabel(r'$\theta$'+ " " + r'$\mathrm{[rad]}$')
+         plt.ylabel(r'$\Fourier$'+ " " + r'$\mathrm{[rad]}$')
          plt.gca().axes.xaxis.set_label_coords(0.5,-0.08)
          plt.gca().axes.yaxis.set_label_coords(-0.12,0.5)
          #ax.ticklabel_format(axis='x', style='sci', scilimits=(-2,2))

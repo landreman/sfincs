@@ -14,96 +14,51 @@ print "Beginning a convergence scan."
 ##In section below try/except structure removed by AM 2015-12##
 ###############################################################
 #try:
-Ntheta = readVariable("Ntheta","int",required=False)
+NFourier = readVariable("NFourier","int",required=False)
 
-if Ntheta != None:
+if NFourier != None:
     baseValuePresent = True
 else:
-    Ntheta = 15
+    NFourier = 10
     baseValuePresent = False
 ##except:
 ##    # Default
-##  Ntheta = 15
+##  NFourier = 15
 ##  baseValuePresent = False
 
 #try:
-NthetaMaxFactor = readScanVariable("NthetaMaxFactor","float",required=False)
-NthetaMinFactor = readScanVariable("NthetaMinFactor","float",required=False)
-NthetaNumRuns = readScanVariable("NthetaNumRuns","int",required=False)
+NFourierMaxFactor = readScanVariable("NFourierMaxFactor","float",required=False)
+NFourierMinFactor = readScanVariable("NFourierMinFactor","float",required=False)
+NFourierNumRuns = readScanVariable("NFourierNumRuns","int",required=False)
 
-if NthetaMaxFactor != None and NthetaMinFactor != None and NthetaNumRuns != None:
+if NFourierMaxFactor != None and NFourierMinFactor != None and NFourierNumRuns != None:
     scanPresent = True
 #except:
 else:
-    NthetaMaxFactor = 1
-    NthetaMinFactor = 1
-    NthetaNumRuns = 0
+    NFourierMaxFactor = 1
+    NFourierMinFactor = 1
+    NFourierNumRuns = 0
     scanPresent = False
 
 if scanPresent and (not baseValuePresent):
-    print "Error! If scanning Ntheta, you must set the base value for Ntheta."
+    print "Error! If scanning NFourier, you must set the base value for NFourier."
     exit(1)
 
-if Ntheta<0:
-    print "Error! Ntheta must be positive"
+if NFourier<0:
+    print "Error! NFourier must be positive"
     exit(1)
-if NthetaMaxFactor<0:
-    print "Error! NthetaMaxFactor must be positive"
+if NFourierMaxFactor<0:
+    print "Error! NFourierMaxFactor must be positive"
     exit(1)
-if NthetaMinFactor<0:
-    print "Error! NthetaMinFactor must be positive"
+if NFourierMinFactor<0:
+    print "Error! NFourierMinFactor must be positive"
     exit(1)
-Nthetas = logspace_odd(NthetaMinFactor*Ntheta,NthetaMaxFactor*Ntheta,NthetaNumRuns)
+NFouriers = logspace_odd(NFourierMinFactor*NFourier,NFourierMaxFactor*NFourier,NFourierNumRuns)
 try:
-    Nthetas.remove(Ntheta)
+    NFouriers.remove(NFourier)
 except ValueError:
     pass
-print "Nthetas:",Nthetas
-
-#####################################################################################################################3
-
-#try:
-Nzeta = readVariable("Nzeta","int",required=False)
-if Nzeta != None:
-    baseValuePresent = True
-#except:
-else:
-    # Default
-    Nzeta = 15
-    baseValuePresent = False
-
-#try:
-NzetaMaxFactor = readScanVariable("NzetaMaxFactor","float",required=False)
-NzetaMinFactor = readScanVariable("NzetaMinFactor","float",required=False)
-NzetaNumRuns = readScanVariable("NzetaNumRuns","int",required=False)
-if NzetaMaxFactor != None and NzetaMinFactor != None and NzetaNumRuns != None:
-    scanPresent = True
-#except:
-else:
-    NzetaMaxFactor = 1
-    NzetaMinFactor = 1
-    NzetaNumRuns = 0
-    scanPresent = False
-
-if scanPresent and (not baseValuePresent):
-    print "Error! If scanning Nzeta, you must set the base value for Nzeta."
-    exit(1)
-
-if Nzeta<0:
-    print "Error! Nzeta must be positive"
-    exit(1)
-if NzetaMaxFactor<0:
-    print "Error! NzetaMaxFactor must be positive"
-    exit(1)
-if NzetaMinFactor<0:
-    print "Error! NzetaMinFactor must be positive"
-    exit(1)
-Nzetas = logspace_odd(NzetaMinFactor*Nzeta,NzetaMaxFactor*Nzeta,NzetaNumRuns)
-try:
-    Nzetas.remove(Nzeta)
-except ValueError:
-    pass
-print "Nzetas:",Nzetas
+print "NFouriers:",NFouriers
 
 #####################################################################################################################3
 
@@ -374,9 +329,9 @@ print "solverTolerances:",solverTolerances
 
 #####################################################################################################################3
 
-numRunsInScan = 1+len(Nthetas)+len(Nzetas)+len(Nxis)+len(NLs)+len(Nxs)+len(NxPotentialsPerVths)+len(xMaxs)+len(solverTolerances)
+numRunsInScan = 1+len(NFouriers)+len(Nxis)+len(NLs)+len(Nxs)+len(NxPotentialsPerVths)+len(xMaxs)+len(solverTolerances)
 
-baseCase = [Ntheta,Nzeta,Nxi,NL,Nx,NxPotentialsPerVth,xMax,solverTolerance]
+baseCase = [NFourier,Nxi,NL,Nx,NxPotentialsPerVth,xMax,solverTolerance]
 
 parametersForScan = []
 for i in range(numRunsInScan):
@@ -385,14 +340,9 @@ for i in range(numRunsInScan):
 currentIndex = 1
 descriptions = ["baseCase"]
 
-for i in range(len(Nthetas)):
-    parametersForScan[currentIndex][0] = Nthetas[i]
-    descriptions.append("Ntheta" + str(Nthetas[i]))
-    currentIndex += 1
-
-for i in range(len(Nzetas)):
-    parametersForScan[currentIndex][1] = Nzetas[i]
-    descriptions.append("Nzeta" + str(Nzetas[i]))
+for i in range(len(NFouriers)):
+    parametersForScan[currentIndex][0] = NFouriers[i]
+    descriptions.append("NFourier" + str(NFouriers[i]))
     currentIndex += 1
 
 for i in range(len(Nxis)):
@@ -449,7 +399,7 @@ while runNum < numRunsInScan:
 
 print
 print "Here are the parameters for the "+str(numRunsInScan)+" runs we will launch:"
-print "[Ntheta, Nzeta, Nxi, NL, Nx, NxPotentialsPerVth, xMax, solverTolerance]"
+print "[NFourier, Nxi, NL, Nx, NxPotentialsPerVth, xMax, solverTolerance]"
 print "-----------------------------------------------------------------------"
 for line in parametersForScan:
     print line
@@ -502,22 +452,20 @@ for runNum in range(numRunsInScan):
     # Now copy the input.namelist file:
     f = open(filename,"w")
     for line in inputFile:
-        if namelistLineContains(line,"Ntheta"):
-            line = "  Ntheta = "+str(parametersForScan[runNum][0])+" ! Set by sfincsScan_1.\n"
-        if namelistLineContains(line,"Nzeta"):
-            line = "  Nzeta = "+str(parametersForScan[runNum][1])+" ! Set by sfincsScan_1.\n"
+        if namelistLineContains(line,"NFourier"):
+            line = "  NFourier = "+str(parametersForScan[runNum][0])+" ! Set by sfincsScan_1.\n"
         if namelistLineContains(line,"Nxi"):
-            line = "  Nxi = "+str(parametersForScan[runNum][2])+" ! Set by sfincsScan_1.\n"
+            line = "  Nxi = "+str(parametersForScan[runNum][1])+" ! Set by sfincsScan_1.\n"
         if namelistLineContains(line,"NL"):
-            line = "  NL = "+str(parametersForScan[runNum][3])+" ! Set by sfincsScan_1.\n"
+            line = "  NL = "+str(parametersForScan[runNum][2])+" ! Set by sfincsScan_1.\n"
         if namelistLineContains(line,"Nx"):
-            line = "  Nx = "+str(parametersForScan[runNum][4])+" ! Set by sfincsScan_1.\n"
+            line = "  Nx = "+str(parametersForScan[runNum][3])+" ! Set by sfincsScan_1.\n"
         if namelistLineContains(line,"NxPotentialsPerVth"):
-            line = "  NxPotentialsPerVth = "+str(parametersForScan[runNum][5])+" ! Set by sfincsScan_1.\n"
+            line = "  NxPotentialsPerVth = "+str(parametersForScan[runNum][4])+" ! Set by sfincsScan_1.\n"
         if namelistLineContains(line,"xMax"):
-            line = "  xMax = "+str(parametersForScan[runNum][6])+" ! Set by sfincsScan_1.\n"
+            line = "  xMax = "+str(parametersForScan[runNum][5])+" ! Set by sfincsScan_1.\n"
         if namelistLineContains(line,"solverTolerance"):
-            line = "  solverTolerance = "+str(parametersForScan[runNum][7])+" ! Set by sfincsScan_1.\n"
+            line = "  solverTolerance = "+str(parametersForScan[runNum][6])+" ! Set by sfincsScan_1.\n"
         f.write(line)
     f.close()
 

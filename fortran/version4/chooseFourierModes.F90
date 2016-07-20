@@ -99,6 +99,19 @@ subroutine chooseFourierModes()
      print *,"xn:",xn
   end if
 
+  if (masterProc .and. maxval(xm)==mmax) then
+     print *,"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+     print *,"WARNING: A Fourier mode with m=mmax is expected to have significant amplitude."
+     print *,"You should increase mmax to ensure the spectrum is not being cut off."
+     print *,"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+  end if
+  if (masterProc .and. maxval(abs(xn))==nmax) then
+     print *,"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+     print *,"WARNING: A Fourier mode with n=nmax is expected to have significant amplitude."
+     print *,"You should increase nmax to ensure the spectrum is not being cut off."
+     print *,"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+  end if
+
   deallocate(FourierVector)
   deallocate(amplitudes)
   deallocate(xm_sorted,xn_sorted)

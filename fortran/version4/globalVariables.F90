@@ -106,10 +106,8 @@ module globalVariables
   logical :: includeXDotTerm = .true.
   logical :: includeElectricFieldTermInXiDot = .true.
   logical :: useDKESExBDrift = .false.
-  logical :: include_fDivVE_term = .false.
   logical :: includeTemperatureEquilibrationTerm = .false.
   logical :: includePhi1 = .false.
-!!  logical :: includeRadialExBDrive = .false. !!Commented by AM 2016-02
   logical :: includePhi1InKineticEquation = .true. !!Added by AM 2016-03
 
   real(prec) :: nuPrime = 1, EStar = 0
@@ -127,8 +125,6 @@ module globalVariables
   !
   ! ********************************************************
   ! ********************************************************
-
-  integer :: xDotDerivativeScheme = 0
 
   integer :: xPotentialsGridScheme = 2, xPotentialsInterpolationScheme
   integer :: xGridScheme = 5, xInterpolationScheme
@@ -178,8 +174,6 @@ module globalVariables
   real(prec) :: maxxPotentials, zetaMax, xMaxNotTooSmall
   real(prec), dimension(:), allocatable :: x2, expx2
   real(prec), dimension(:,:), allocatable :: ddx, d2dx2, ddxPotentials, d2dx2Potentials
-  real(prec), dimension(:,:), allocatable :: ddx_xDot_plus, ddx_xDot_preconditioner_plus
-  real(prec), dimension(:,:), allocatable :: ddx_xDot_minus, ddx_xDot_preconditioner_minus
   real(prec), dimension(:,:), allocatable :: ddx_preconditioner
   real(prec), dimension(:,:), allocatable :: interpolateXToXPotentials
 
@@ -350,7 +344,8 @@ module globalVariables
   integer :: numProcs, myRank 
   logical :: masterProc
 
-  integer :: iFourierMin, iFourierMax, localNFourier
+  !integer :: iFourierMin, iFourierMax, localNFourier
+  integer :: LMin, LMax, localNxi
   logical :: procThatHandlesConstraints
 
 end module globalVariables

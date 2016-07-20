@@ -545,6 +545,14 @@ subroutine validateInput()
      print *,line
   end if
 
+  if (NFourier > mmax*(2*nmax+1) + nmax + 1) then
+     if (masterProc) then
+        print *,line
+        print *,"Error! NFourier cannot exceed mmax*(2*nmax+1) + nmax + 1."
+     end if
+     stop
+  end if
+
   if (mmax<1) then
      if (masterProc) then
         print *,"Error! mmax must be at least 1."
@@ -750,176 +758,8 @@ subroutine validateInput()
      end if
   end if
 
-  if ((.not.forceOddNthetaAndNzeta ) .and. masterProc) then
-     print *,line
-     print *,line
-     print *,"**   WARNING: forceOddNthetaAndNzeta = .true. is strongly recommended."
-     print *,line
-     print *,line
-  end if
-
   ! otherNumericalParameters namelist:
 
-  if (thetaDerivativeScheme<0) then
-     if (masterProc) then
-        print *,"Error! thetaDerivativeScheme cannot be less than 0."
-     end if
-     stop
-  end if
-  
-  if (thetaDerivativeScheme>2) then
-     if (masterProc) then
-        print *,"Error! thetaDerivativeScheme cannot be more than 2."
-     end if
-     stop
-  end if
-  
-  if (thetaDerivativeScheme == 0 .and. masterProc) then
-     print *,line
-     print *,line
-     print *,"**   WARNING: thetaDerivativeScheme=0 leads to very dense matrices,"
-     print *,"**            meaning a lot of time and memory is required to solve the system."
-     print *,"**            thetaDerivativeScheme = 2 is strongly recommended."
-     print *,line
-     print *,line
-  end if
-
-  if (thetaDerivativeScheme == 1 .and. masterProc) then
-     print *,line
-     print *,line
-     print *,"**   WARNING: thetaDerivativeScheme=2 is typically preferred to thetaDerivativeScheme=1"
-     print *,"**            since accuracy is higher for relatively little additional computational cost."
-     print *,line
-     print *,line
-  end if
-
-  if (zetaDerivativeScheme<0) then
-     if (masterProc) then
-        print *,"Error! zetaDerivativeScheme cannot be less than 0."
-     end if
-     stop
-  end if
-  
-  if (zetaDerivativeScheme>2) then
-     if (masterProc) then
-        print *,"Error! zetaDerivativeScheme cannot be more than 2."
-     end if
-     stop
-  end if
-  
-  if (zetaDerivativeScheme == 0 .and. masterProc) then
-     print *,line
-     print *,line
-     print *,"**   WARNING: zetaDerivativeScheme=0 leads to very dense matrices,"
-     print *,"**            meaning a lot of time and memory is required to solve the system."
-     print *,"**            zetaDerivativeScheme = 2 is strongly recommended."
-     print *,line
-     print *,line
-  end if
-
-  if (zetaDerivativeScheme == 1 .and. masterProc) then
-     print *,line
-     print *,line
-     print *,"**   WARNING: zetaDerivativeScheme=2 is typically preferred to zetaDerivativeScheme=1"
-     print *,"**            since accuracy is higher for relatively little additional computational cost."
-     print *,line
-     print *,line
-  end if
-
-  if (ExBDerivativeSchemeTheta<0) then
-     if (masterProc) then
-        print *,"Error! ExBDerivativeSchemeTheta cannot be less than 0."
-     end if
-     stop
-  end if
-  
-  if (ExBDerivativeSchemeTheta>3) then
-     if (masterProc) then
-        print *,"Error! ExBDerivativeSchemeTheta cannot be more than 3."
-     end if
-     stop
-  end if
-  
-  if (ExBDerivativeSchemeZeta<0) then
-     if (masterProc) then
-        print *,"Error! ExBDerivativeSchemeZeta cannot be less than 0."
-     end if
-     stop
-  end if
-  
-  if (ExBDerivativeSchemeZeta>3) then
-     if (masterProc) then
-        print *,"Error! ExBDerivativeSchemeZeta cannot be more than 3."
-     end if
-     stop
-  end if
-  
-  if (ExBDerivativeSchemeTheta>0 .and. preconditioner_theta>0) then
-     if (masterProc) then
-        print *,"Error! The implementation of ExBDerivativeSchemeTheta>0 does not presently allow"
-        print *,"       preconditioning in theta (preconditioner_theta>0)."
-     end if
-     stop
-  end if
-  
-  if (ExBDerivativeSchemeZeta>0 .and. preconditioner_zeta>0) then
-     if (masterProc) then
-        print *,"Error! The implementation of ExBDerivativeSchemeZeta>0 does not presently allow"
-        print *,"       preconditioning in zeta (preconditioner_zeta>0)."
-     end if
-     stop
-  end if
-  
-  if (magneticDriftDerivativeScheme<-3) then
-     if (masterProc) then
-        print *,"Error! magneticDriftDerivativeScheme cannot be less than -3."
-     end if
-     stop
-  end if
-  
-  if (magneticDriftDerivativeScheme>3) then
-     if (masterProc) then
-        print *,"Error! magneticDriftDerivativeScheme cannot be more than 3."
-     end if
-     stop
-  end if
-  
-  if (magneticDriftDerivativeScheme>0 .and. preconditioner_theta>0) then
-     if (masterProc) then
-        print *,"Error! The implementation of magneticDriftDerivativeScheme>0 does not presently allow"
-        print *,"       preconditioning in theta (preconditioner_theta>0)."
-     end if
-     stop
-  end if
-  
-  if (magneticDriftDerivativeScheme>0 .and. preconditioner_zeta>0) then
-     if (masterProc) then
-        print *,"Error! The implementation of magneticDriftDerivativeScheme>0 does not presently allow"
-        print *,"       preconditioning in zeta (preconditioner_zeta>0)."
-     end if
-     stop
-  end if
-  
-  if (xDotDerivativeScheme<-2) then
-     if (masterProc) then
-        print *,"Error! xGridScheme cannot be less than -2."
-     end if
-     stop
-  end if
-  
-  if (xDotDerivativeScheme>10) then
-     if (masterProc) then
-        print *,"Error! xDotDerivativeScheme cannot be more than 10."
-     end if
-     stop
-  end if
-  
-  if (xDotDerivativeScheme>0 .and. (xGridScheme .ne. 3 .and. xGridScheme .ne. 4)) then
-     if (masterProc) then
-        print *,"Error! If xDotDerivativeScheme is >0, then xGridScheme must be either 3 or 4."
-     end if
-     stop
-  end if
   
   if (xGridScheme<1) then
      if (masterProc) then
@@ -1021,64 +861,23 @@ subroutine validateInput()
      print *,line
   end if
 
-  if (preconditioner_theta<0) then
+  if (preconditioner_Fourier<0) then
      if (masterProc) then
-        print *,"Error! preconditioner_theta cannot be less than 0."
+        print *,"Error! preconditioner_Fourier cannot be less than 0."
      end if
      stop
   end if
   
-  if (preconditioner_theta>3) then
+  if (preconditioner_Fourier>0) then
      if (masterProc) then
-        print *,"Error! preconditioner_theta cannot be more than 3."
+        print *,"Error! preconditioner_Fourier cannot be more than 0."
      end if
      stop
   end if
   
-  if (RHSMode .ne. 3 .and. (preconditioner_theta==1 .or. preconditioner_theta==2) .and. masterProc) then
-     print *,line
-     print *,line
-     print *,"**   WARNING: preconditioner_theta = 1 or 2 often does not work well when RHSMode != 3"
-     print *,"**            (i.e. GMRES/KSP does not converge rapidly.)"
-     print *,"**            preconditioner_theta = 0 or 3 is strongly recommended."
-     print *,line
-     print *,line
-  end if
-
-  if (preconditioner_zeta<0) then
+  if (preconditioner_Fourier_min_L<0) then
      if (masterProc) then
-        print *,"Error! preconditioner_zeta cannot be less than 0."
-     end if
-     stop
-  end if
-  
-  if (preconditioner_zeta>3) then
-     if (masterProc) then
-        print *,"Error! preconditioner_zeta cannot be more than 3."
-     end if
-     stop
-  end if
-  
-  if (RHSMode .ne. 3 .and. preconditioner_zeta>0 .and. masterProc) then
-     print *,line
-     print *,line
-     print *,"**   WARNING: preconditioner_zeta > 0 often does not work well when RHSMode != 3"
-     print *,"**            (i.e. GMRES/KSP does not converge rapidly.)"
-     print *,"**            preconditioner_zeta = 0 is strongly recommended."
-     print *,line
-     print *,line
-  end if
-
-  if (preconditioner_theta_min_L<0) then
-     if (masterProc) then
-        print *,"Error! preconditioner_theta_min_L should not be less than 0."
-     end if
-     stop
-  end if
-  
-  if (preconditioner_zeta_min_L<0) then
-     if (masterProc) then
-        print *,"Error! preconditioner_zeta_min_L should not be less than 0."
+        print *,"Error! preconditioner_Fourier_min_L should not be less than 0."
      end if
      stop
   end if

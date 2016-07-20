@@ -31,18 +31,17 @@
 
     PetscErrorCode :: ierr
     real(prec) :: Z, nHat, THat, mHat, sqrtTHat, sqrtMHat, speciesFactor, speciesFactor2
-    real(prec) :: T32m, factor, LFactor, temp, temp1, temp2, xDotFactor, xDotFactor2, stuffToAdd
+    real(prec) :: T32m, factor, LFactor, temp, temp1, temp2, stuffToAdd
     real(prec) :: factor1, factor2, factorJ1, factorJ2, factorJ3, factorJ4, factorJ5  !!Added by AM 2016-03
     real(prec), dimension(:), allocatable :: xb, expxb2
-    real(prec), dimension(:,:), allocatable :: thetaPartOfTerm, localThetaPartOfTerm
-    real(prec), dimension(:,:), allocatable :: xPartOfXDot_plus, xPartOfXDot_minus, xPartOfXDot
+    real(prec), dimension(:,:), allocatable :: xPartOfXDot
     real(prec), dimension(:,:), allocatable :: ddxToUse_plus, ddxToUse_minus
     integer :: i, j, ix, ispecies, itheta, izeta, L, ixi, index, ix_row, ix_col
     integer :: rowIndex, colIndex
     integer :: rowIndex2, L2 !!Added by AM 2016-03
     integer :: ell, iSpeciesA, iSpeciesB, maxL
-    integer, dimension(:), allocatable :: rowIndices, colIndices
-    real(prec), dimension(:,:), allocatable :: ddxToUse, d2dx2ToUse, zetaPartOfTerm, localZetaPartOfTerm
+    !integer, dimension(:), allocatable :: rowIndices, colIndices
+    real(prec), dimension(:,:), allocatable :: ddxToUse, d2dx2ToUse
     real(prec), dimension(:,:), allocatable :: fToFInterpolationMatrix
     real(prec), dimension(:,:), allocatable :: potentialsToFInterpolationMatrix
     real(prec), dimension(:,:,:,:), allocatable :: CECD
@@ -55,7 +54,6 @@
     integer, dimension(:), allocatable :: IPIV  ! Needed by LAPACK
     integer :: LAPACKInfo
     PetscLogDouble :: time1, time2
-    real(prec), dimension(:,:), allocatable :: ddthetaToUse, ddzetaToUse
     real(prec), dimension(:,:), allocatable :: tempMatrix, tempMatrix2, extrapMatrix
     double precision :: myMatInfo(MAT_INFO_SIZE)
     integer :: NNZ, NNZAllocated, NMallocs
@@ -70,7 +68,9 @@
     real(prec), dimension(:,:), allocatable :: nonlinearTerm_Lp1, nonlinearTerm_Lm1
     real(prec), dimension(:), allocatable :: tempVector1, tempVector2
     real(prec), dimension(:,:), allocatable :: tempExtrapMatrix, fToFInterpolationMatrix_plus1
-
+    real(prec), dimension(:), allocatable :: FourierVector
+    real(prec), dimension(:,:), allocatable :: FourierMatrix, FourierMatrix2
+    integer :: imn, imn_row, imn_col
 
     real(prec) :: dPhiHatdpsiHatToUseInRHS, xPartOfRHS, xPartOfRHS2 !!Added by AM 2016-03
 
@@ -164,8 +164,7 @@
        end if
     end if
 
-!!    useStateVec = (nonlinear .and. (whichMatrix==0 .or. whichMatrix==1)) !!Commented by AM 2016-02
-    useStateVec = (includePhi1 .and. (whichMatrix==0 .or. whichMatrix==1)) !!Added by AM 2016-02
+    useStateVec = (includePhi1 .and. (whichMatrix==0 .or. whichMatrix==1)) 
     if (useStateVec) then
        ! We need delta f to evaluate the Jacobian, so send a copy to every proc:
        call VecScatterCreateToAll(stateVec, vecScatterContext, vecOnEveryProc, ierr)
@@ -175,8 +174,7 @@
     end if
 
     ! In nonlinear runs, the Jacobian and residual require Phi1:
-    !!if (nonlinear .and. (whichMatrix .ne. 2)) then !!Commented by AM 2016-02
-    if (includePhi1 .and. (whichMatrix .ne. 2)) then !!Added by AM 2016-02
+    if (includePhi1 .and. (whichMatrix .ne. 2)) then
        call extractPhi1(stateVec)
     end if
 
@@ -190,12 +188,14 @@
     ! Allocate small matrices:
     ! *********************************************************
 
+    allocate(FourierVector(NFourier2))
+    allocate(FourierMatrix(NFourier2,NFourier2))
+    allocate(FourierMatrix2(NFourier2,NFourier2))
+
     allocate(ddxToUse(Nx,Nx))
     allocate(ddxToUse_plus(Nx,Nx))
     allocate(ddxToUse_minus(Nx,Nx))
     allocate(d2dx2ToUse(Nx,Nx))
-    allocate(ddthetaToUse(Ntheta, Ntheta))
-    allocate(ddzetaToUse(Nzeta, Nzeta))
 
     allocate(xb(Nx))
     allocate(expxb2(Nx))
@@ -239,499 +239,315 @@
        sqrtMHat = sqrt(mHat)
 
        ! *********************************************************
-       ! Add the streaming d/dtheta term:
+       ! Add the streaming d/dtheta and d/dzeta terms:
        ! *********************************************************
        
        if (whichMatrix .ne. 2) then
-          allocate(thetaPartOfTerm(Ntheta,Ntheta))
-          allocate(localThetaPartOfTerm(Ntheta,localNtheta))
-          allocate(rowIndices(localNtheta))
-          allocate(colIndices(Ntheta))
-          do L=0,(Nxi-1)
+          call FourierTransform(sqrt(THat/mHat)*BHat_sup_theta/BHat, FourierVector)
+          call FourierConvolutionMatrix(FourierVector,FourierMatrix)
+          call FourierTransform(sqrt(THat/mHat)*BHat_sup_zeta/BHat, FourierVector)
+          call FourierConvolutionMatrix(FourierVector,FourierMatrix2)
+          FourierMatrix = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
+          do L=LMin,LMax
+             ! The L loop is outermost since we may eventually want to use a sparser Fourier matrix for the preconditioner at large L.
+             do ix=ixMin,Nx
+                do imn_row = 1,NFourier2
+                   rowIndex = getIndex(ispecies, ix, L+1, imn_row, BLOCK_F)
+                   do imn_col = 1,NFourier2
 
-             if (whichMatrix>0 .or. L < preconditioner_theta_min_L) then
-                ddthetaToUse = ddtheta
-             else
-                ddthetaToUse = ddtheta_preconditioner
-             end if
+                      ! Super-diagonal-in-L term
+                      if (L < Nxi-1) then
+                         ell = L+1
+                         colIndex = getIndex(ispecies, ix, ell+1, imn_col, BLOCK_F)
+                         call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                              (L+1)/(2*L+three)*x(ix)*FourierMatrix(imn_row,imn_col), ADD_VALUES, ierr)
+                      end if
 
-             do izeta=izetaMin,izetaMax
-                do itheta=1,Ntheta
-                   thetaPartOfTerm(itheta,:) = BHat_sup_theta(itheta,izeta) &
-                        * sqrtTHat/sqrtMHat * ddthetaToUse(itheta,:) &
-                        / BHat(itheta,izeta)
-                end do
-                
-                ! PETSc uses the opposite convention to Fortran:
-                thetaPartOfTerm = transpose(thetaPartOfTerm)
-                localThetaPartOfTerm = thetaPartOfTerm(:,ithetaMin:ithetaMax)
-                
-                do ix=ixMin,Nx
-                   do itheta=1,localNtheta
-                      rowIndices(itheta) = getIndex(ispecies, ix, L+1, ithetaMin+itheta-1, izeta, BLOCK_F)
+                      ! Sub-diagonal-in-L term
+                      if (L > 0) then
+                         ell = L-1
+                         colIndex = getIndex(ispecies, ix, ell+1, imn_col, BLOCK_F)
+                         call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                              L/(2*L-one)*x(ix)*FourierMatrix(imn_row,imn_col), ADD_VALUES, ierr)
+                      end if
                    end do
-                   
-                   ! Super-diagonal-in-L term
-                   if (L < Nxi-1) then
-                      ell = L+1
-                      do itheta=1,Ntheta
-                         colIndices(itheta) = getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F)
-                      end do
-                      
-                      call MatSetValuesSparse(matrix, localNtheta, rowIndices, Ntheta, colIndices, &
-                           (L+1)/(2*L+three)*x(ix)*localThetaPartOfTerm, ADD_VALUES, ierr)
-                   end if
-                   
-                   ! Sub-diagonal-in-L term
-                   if (L > 0) then
-                      ell = L-1
-                      do itheta=1,Ntheta
-                         colIndices(itheta) = getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F)
-                      end do
-                      
-                      call MatSetValuesSparse(matrix, localNtheta, rowIndices, Ntheta, colIndices, &
-                           L/(2*L-one)*x(ix)*localThetaPartOfTerm, ADD_VALUES, ierr)
-                   end if
-                   
-                   
                 end do
              end do
           end do
-          deallocate(rowIndices)
-          deallocate(colIndices)
-          deallocate(thetaPartOfTerm)
-          deallocate(localThetaPartOfTerm)
        end if
 
        ! *********************************************************
-       ! Add the streaming d/dzeta term:
-       ! *********************************************************
-
-       if (whichMatrix .ne. 2) then
-          allocate(zetaPartOfTerm(Nzeta,Nzeta))
-          allocate(localZetaPartOfTerm(Nzeta,localNzeta))
-          allocate(rowIndices(localNzeta))
-          allocate(colIndices(Nzeta))
-          do L=0,(Nxi-1)
-
-             if (whichMatrix>0 .or. L < preconditioner_zeta_min_L) then
-                ddzetaToUse = ddzeta
-             else
-                ddzetaToUse = ddzeta_preconditioner
-             end if
-
-             do itheta=ithetaMin, ithetaMax
-                do izeta=1,Nzeta
-                   zetaPartOfTerm(izeta,:) = sqrtTHat/sqrtMHat * BHat_sup_zeta(itheta,izeta) &
-                        * ddzetaToUse(izeta,:) / BHat(itheta,izeta)
-                end do
-                
-                ! PETSc uses the opposite convention to Fortran:
-                zetaPartOfTerm = transpose(zetaPartOfTerm)
-                localZetaPartOfTerm = zetaPartOfTerm(:,izetaMin:izetaMax)
-                
-                do ix=ixMin,Nx
-                   do izeta = 1,localNzeta
-                      rowIndices(izeta)=getIndex(ispecies, ix, L+1, itheta, izetaMin+izeta-1, BLOCK_F)
-                   end do
-                   
-                   ! Super-diagonal-in-L term
-                   if (L < Nxi-1) then
-                      ell = L + 1
-                      do izeta = 1,Nzeta
-                         colIndices(izeta)=getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F)
-                      end do
-                      
-                      call MatSetValuesSparse(matrix, localNzeta, rowIndices, Nzeta, colIndices, &
-                           (L+1)/(2*L+three)*x(ix)*localZetaPartOfTerm, ADD_VALUES, ierr)
-                   end if
-                   
-                   ! Sub-diagonal-in-L term
-                   if (L > 0) then
-                      ell = L - 1
-                      do izeta = 1,Nzeta
-                         colIndices(izeta)=getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F)
-                      end do
-                      
-                      call MatSetValuesSparse(matrix, localNzeta, rowIndices, Nzeta, colIndices, &
-                           L/(2*L-one)*x(ix)*localZetaPartOfTerm, ADD_VALUES, ierr)
-                   end if
-                   
-                   
-                end do
-             end do
-          end do
-          deallocate(rowIndices)
-          deallocate(colIndices)
-          deallocate(zetaPartOfTerm)
-          deallocate(localZetaPartOfTerm)
-       end if
-
-       ! *********************************************************
-       ! Add the ExB d/dtheta term:
+       ! Add the ExB d/dtheta and d/dzeta terms:
        ! *********************************************************
 
        if (whichMatrix .ne. 2) then
           factor = alpha*Delta/two*dPhiHatdpsiHat
-          allocate(thetaPartOfTerm(Ntheta,Ntheta))
-          allocate(localThetaPartOfTerm(Ntheta,localNtheta))
-          allocate(rowIndices(localNtheta))
-          allocate(colIndices(Ntheta))
-          do L=0,(Nxi-1)
-
-             if (ExBDerivativeSchemeTheta==0) then
-                if (whichMatrix>0 .or. L < preconditioner_theta_min_L) then
-                   ddthetaToUse = ddtheta
-                else
-                   ddthetaToUse = ddtheta_preconditioner
-                end if
-             else
-                ! Assume DHat has the same sign everywhere. (Should be true even for VMEC coordinates.)
-                ! Assume BHat_sub_zeta has the same sign everywhere. (True for Boozer but in principle could be violated for VMEC coordinates?)
-                if (factor*DHat(1,1)*BHat_sub_zeta(1,1) > 0) then
-                   ddthetaToUse = ddtheta_ExB_plus
-                else
-                   ddthetaToUse = ddtheta_ExB_minus
-                end if
-             end if
-
-             do izeta=izetaMin,izetaMax
-                if (useDKESExBDrift) then
-                   do itheta=1,Ntheta
-                      thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / FSABHat2 &
-                           * DHat(itheta,izeta) * BHat_sub_zeta(itheta,izeta)
-                   end do
-                else
-                   do itheta=1,Ntheta
-                      thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2) &
-                           * DHat(itheta,izeta) * BHat_sub_zeta(itheta,izeta)
-                   end do
-                end if
-                
-                ! PETSc uses the opposite convention to Fortran:
-                thetaPartOfTerm = transpose(thetaPartOfTerm*factor)
-                localThetaPartOfTerm = thetaPartOfTerm(:,ithetaMin:ithetaMax)
-                
-                do ix=ixMin,Nx
-                   do itheta=1,localNtheta
-                      rowIndices(itheta)=getIndex(ispecies,ix,L+1,itheta+ithetaMin-1,izeta,BLOCK_F)
-                   end do
-                   do itheta=1,Ntheta
-                      colIndices(itheta)=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
-                   end do
-                   
-                   call MatSetValuesSparse(matrix, localNtheta, rowIndices, Ntheta, colIndices, &
-                        localThetaPartOfTerm, ADD_VALUES, ierr)
-                end do
-             end do
-          end do
-          deallocate(rowIndices)
-          deallocate(colIndices)
-          deallocate(thetaPartOfTerm)
-          deallocate(localThetaPartOfTerm)
-       end if
-
-       ! *********************************************************
-       ! Add the ExB d/dzeta term:
-       ! *********************************************************
-
-       if (whichMatrix .ne. 2) then
-          factor = -alpha*Delta/two*dPhiHatdpsiHat
-          allocate(zetaPartOfTerm(Nzeta,Nzeta))
-          allocate(localZetaPartOfTerm(Nzeta,localNzeta))
-          allocate(rowIndices(localNzeta))
-          allocate(colIndices(Nzeta))
-          do L=0,(Nxi-1)
-
-             if (ExBDerivativeSchemeZeta==0) then
-                if (whichMatrix>0 .or. L < preconditioner_zeta_min_L) then
-                   ddzetaToUse = ddzeta
-                else
-                   ddzetaToUse = ddzeta_preconditioner
-                end if
-             else
-                ! Assume DHat has the same sign everywhere. (Should be true even for VMEC coordinates.)
-                ! Assume BHat_sub_theta has the same sign everywhere. (True for Boozer but could be violated for VMEC coordinates?)
-                if (factor*DHat(1,1)*BHat_sub_theta(1,1) > 0) then
-                   ddzetaToUse = ddzeta_ExB_plus
-                else
-                   ddzetaToUse = ddzeta_ExB_minus
-                end if
-             end if
-
-             do itheta=ithetaMin, ithetaMax
-                if (useDKESExBDrift) then
-                   do izeta=1,Nzeta
-                      zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / FSABHat2 &
-                           * DHat(itheta,izeta) * BHat_sub_theta(itheta,izeta)
-                   end do
-                else
-                   do izeta=1,Nzeta
-                      zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2) &
-                           * DHat(itheta,izeta) * BHat_sub_theta(itheta,izeta)
-                   end do
-                end if
-                
-                ! PETSc uses the opposite convention to Fortran:
-                zetaPartOfTerm = transpose(zetaPartOfTerm*factor)
-                localzetaPartOfTerm = zetaPartOfTerm(:,izetaMin:izetaMax)
-                
-                do ix=ixMin,Nx
-                   do izeta=1,localNzeta
-                      rowIndices(izeta)=getIndex(ispecies,ix,L+1,itheta,izeta+izetaMin-1,BLOCK_F)
-                   end do
-                   do izeta=1,Nzeta
-                      colIndices(izeta)=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
-                   end do
-                   
-                   call MatSetValuesSparse(matrix, localNzeta, rowIndices, Nzeta, colIndices, &
-                        localZetaPartOfTerm, ADD_VALUES, ierr)
-                end do
-             end do
-          end do
-          deallocate(rowIndices)
-          deallocate(colIndices)
-          deallocate(zetaPartOfTerm)
-          deallocate(localZetaPartOfTerm)
-       end if
-
-       ! *********************************************************
-       ! Add the magnetic drift d/dtheta term:
-       ! *********************************************************
-
-       itheta = -1  ! So itheta is not used in place of ithetaRow or ithetaCol by mistake.
-       izetaRow = -1 ! So izetaRow is not used in place of izeta by mistake.
-       izetaCol = -1 ! So izetaCol is not used in place of izeta by mistake.
-       if ((whichMatrix .ne. 2) .and. (magneticDriftScheme>0)) then
-          if (whichMatrix==0) then
-             maxL = min(preconditioner_magnetic_drifts_max_L,Nxi-1)
+          if (useDKESExBDrift) then
+             call FourierTransform( factor*DHat*BHat_sub_zeta /FSABHat2, FourierVector)
+             call FourierConvolutionMatrix(FourierVector,FourierMatrix)
+             call FourierTransform(-factor*DHat*BHat_sub_theta/FSABHat2, FourierVector)
+             call FourierConvolutionMatrix(FourierVector,FourierMatrix2)
           else
-             maxL = Nxi-1
+             call FourierTransform( factor*DHat*BHat_sub_zeta /(BHat*BHat), FourierVector)
+             call FourierConvolutionMatrix(FourierVector,FourierMatrix)
+             call FourierTransform(-factor*DHat*BHat_sub_theta/(BHat*BHat), FourierVector)
+             call FourierConvolutionMatrix(FourierVector,FourierMatrix2)
           end if
-          do L = 0, maxL
-
-             do izeta = izetaMin, izetaMax                
-                do ithetaRow = ithetaMin, ithetaMax
-                   geometricFactor1 = (BHat_sub_zeta(ithetaRow,izeta)*dBHatdpsiHat(ithetaRow,izeta) &
-                        - BHat_sub_psi(ithetaRow,izeta)*dBHatdzeta(ithetaRow,izeta))
-                   
-                   geometricFactor2 = 2 * BHat(ithetaRow,izeta) &
-                        * (dBHat_sub_psi_dzeta(ithetaRow,izeta) - dBHat_sub_zeta_dpsiHat(ithetaRow,izeta))
-
-                   if (magneticDriftScheme==2) then
-                      geometricFactor3 = BDotCurlB(ithetaRow,izeta)*BHat_sup_theta(ithetaRow,izeta) &
-                           /(BHat(ithetaRow,izeta)*DHat(ithetaRow,izeta))
-                   else
-                      geometricFactor3 = 0
-                   end if
-
-                   if (magneticDriftDerivativeScheme==0) then
-                      if (whichMatrix>0 .or. L < preconditioner_theta_min_L) then
-                         ddthetaToUse = ddtheta
-                      else
-                         ddthetaToUse = ddtheta_preconditioner
-                      end if
-                   else
-                      ! Assume DHat has the same sign everywhere. (Should be true even for VMEC coordinates.)
-                      ! We assume here that geometricFactor1*factor sets the direction of upwinding to use. This should be correct at beta=0
-                      ! since then geometricFactor2=0, but may need modification when beta>0 (in which case geometricFactor2 is nonzero.)
-                      if (geometricFactor1*DHat(1,1)/Z > 0) then
-                         ddthetaToUse = ddtheta_magneticDrift_plus
-                      else
-                         ddthetaToUse = ddtheta_magneticDrift_minus
-                      end if
-                   end if
-
-                   do ix = ixMin, Nx
-                      rowIndex = getIndex(ispecies, ix, L+1, ithetaRow, izeta, BLOCK_F)
-                      
-                      factor = Delta*THat*DHat(ithetaRow,izeta)*x(ix)*x(ix) &
-                           / (2*Z*BHat(ithetaRow,izeta)*BHat(ithetaRow,izeta)*BHat(ithetaRow,izeta))
-                   
-                      do ithetaCol = 1, Ntheta
-
-                         ! Diagonal-in-L term
-                         ell = L
-                         colIndex = getIndex(ispecies, ix, ell+1, ithetaCol, izeta, BLOCK_F)
-
-                         stuffToAdd = factor * (2*(3*L*L+3*L-2)/((two*L+3)*(2*L-1)) * geometricFactor1 &
-                              + (2*L*L+2*L-1)/((two*L+3)*(2*L-1)) * geometricFactor2 &
-                              + (-2)*L*(L+1)/((two*L+3)*(2*L-1)) * geometricFactor3)
-
-                         call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                              stuffToAdd * ddthetaToUse(ithetaRow,ithetaCol), &
-                              ADD_VALUES, ierr)
-
-                         ! Drop the off-by-2 diagonal terms in L if this is the preconditioner
-                         ! and preconditioner_xi = 1:
-                         if (whichMatrix .ne. 0 .or. preconditioner_xi==0) then
-
-                            ! Super-super-diagonal-in-L term
-                            if (L < Nxi-2) then
-                               ell = L+2
-                               colIndex = getIndex(ispecies, ix, ell+1, ithetaCol, izeta, BLOCK_F)
-
-                               stuffToAdd = factor*(L+2)*(L+1)/((two*L+5)*(2*L+3)) &
-                                    * (geometricFactor1 + geometricFactor2 - 3*geometricFactor3)
-
-                               call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                                    stuffToAdd * ddthetaToUse(ithetaRow,ithetaCol), &
-                                    ADD_VALUES, ierr)
-                            end if
-
-                            ! Sub-sub-diagonal-in-L term
-                            if (L > 1) then
-                               ell = L-2
-                               colIndex = getIndex(ispecies, ix, ell+1, ithetaCol, izeta, BLOCK_F)
-
-                               stuffToAdd = factor*(L-1)*L/((two*L-3)*(2*L-1)) &
-                                    * (geometricFactor1 + geometricFactor2 - 3*geometricFactor3)
-
-                               call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                                    stuffToAdd * ddthetaToUse(ithetaRow,ithetaCol), &
-                                    ADD_VALUES, ierr)
-                            end if
-                         end if
-                      end do
+          FourierMatrix = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
+          do L=LMin,LMax
+             ! The L loop is outermost since we may eventually want to use a sparser Fourier matrix for the preconditioner at large L.
+             do ix=ixMin,Nx
+                do imn_row = 1,NFourier2
+                   rowIndex = getIndex(ispecies, ix, L+1, imn_row, BLOCK_F)
+                   do imn_col = 1,NFourier2
+                      colIndex = getIndex(ispecies, ix, L+1, imn_col, BLOCK_F)
+                      call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                           FourierMatrix(imn_row,imn_col), ADD_VALUES, ierr)
                    end do
                 end do
              end do
           end do
        end if
 
-       ! *********************************************************
-       ! Add the magnetic drift d/dzeta term:
-       ! *********************************************************
+! The magnetic drift terms have not yet been updated for the Fourier spatial discreitzation.
 
-       izeta = -1  ! So izeta is not used in place of izetaRow or izetaCol by mistake.
-       ithetaRow = -1 ! So ithetaRow is not used in place of itheta by mistake.
-       ithetaCol = -1 ! So ithetaCol is not used in place of itheta by mistake.
-       if ((whichMatrix .ne. 2) .and. (magneticDriftScheme>0)) then
-          if (whichMatrix==0) then
-             maxL = min(preconditioner_magnetic_drifts_max_L,Nxi-1)
-          else
-             maxL = Nxi-1
-          end if
-          do L = 0, maxL
-
-             do itheta = ithetaMin, ithetaMax                
-                do izetaRow = izetaMin, izetaMax
-                   geometricFactor1 = (BHat_sub_psi(itheta,izetaRow)*dBHatdtheta(itheta,izetaRow) &
-                        - BHat_sub_theta(itheta,izetaRow)*dBHatdpsiHat(itheta,izetaRow))
-                   
-                   geometricFactor2 = 2 * BHat(itheta,izetaRow) &
-                        * (dBHat_sub_theta_dpsiHat(itheta,izetaRow) - dBHat_sub_psi_dtheta(itheta,izetaRow))
-
-                   if (magneticDriftScheme==2) then
-                      geometricFactor3 = BDotCurlB(itheta,izetaRow)*BHat_sup_zeta(itheta,izetaRow) &
-                           /(BHat(itheta,izetaRow)*DHat(itheta,izetaRow))
-                   else
-                      geometricFactor3 = 0
-                   end if
-
-                   if (magneticDriftDerivativeScheme==0) then
-                      if (whichMatrix>0 .or. L < preconditioner_zeta_min_L) then
-                         ddzetaToUse = ddzeta
-                      else
-                         ddzetaToUse = ddzeta_preconditioner
-                      end if
-                   else
-                      ! Assume DHat has the same sign everywhere. (Should be true even for VMEC coordinates.)
-                      ! We assume here that geometricFactor1*factor sets the direction of upwinding to use. This should be correct at beta=0
-                      ! since then geometricFactor2=0, but may need modification when beta>0 (in which case geometricFactor2 is nonzero.)
-                      if (geometricFactor1*DHat(1,1)/Z > 0) then
-                         ddzetaToUse = ddzeta_magneticDrift_plus
-                      else
-                         ddzetaToUse = ddzeta_magneticDrift_minus
-                      end if
-                   end if
-
-                   do ix = ixMin, Nx
-                      rowIndex = getIndex(ispecies, ix, L+1, itheta, izetaRow, BLOCK_F)
-                      
-                      factor = Delta*THat*DHat(itheta,izetaRow)*x(ix)*x(ix) &
-                           / (2*Z*BHat(itheta,izetaRow)*BHat(itheta,izetaRow)*BHat(itheta,izetaRow))
-                   
-                      do izetaCol = 1, Nzeta
-
-                         ! Diagonal-in-L term
-                         ell = L
-                         colIndex = getIndex(ispecies, ix, ell+1, itheta, izetaCol, BLOCK_F)
-
-                         stuffToAdd = factor * (2*(3*L*L+3*L-2)/((two*L+3)*(2*L-1)) * geometricFactor1 &
-                              + (2*L*L+2*L-1)/((two*L+3)*(2*L-1)) * geometricFactor2 &
-                              + (-2)*L*(L+1)/((two*L+3)*(2*L-1)) * geometricFactor3)
-
-                         call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                              stuffToAdd * ddzetaToUse(izetaRow,izetaCol), &
-                              ADD_VALUES, ierr)
-
-                         ! Drop the off-by-2 diagonal terms in L if this is the preconditioner
-                         ! and preconditioner_xi = 1:
-                         if (whichMatrix .ne. 0 .or. preconditioner_xi==0) then
-
-                            ! Super-super-diagonal-in-L term
-                            if (L < Nxi-2) then
-                               ell = L+2
-                               colIndex = getIndex(ispecies, ix, ell+1, itheta, izetaCol, BLOCK_F)
-
-                               stuffToAdd = factor*(L+2)*(L+1)/((two*L+5)*(2*L+3)) &
-                                    * (geometricFactor1 + geometricFactor2 - 3*geometricFactor3)
-
-                               call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                                    stuffToAdd * ddzetaToUse(izetaRow,izetaCol), &
-                                    ADD_VALUES, ierr)
-                            end if
-
-                            ! Sub-sub-diagonal-in-L term
-                            if (L > 1) then
-                               ell = L-2
-                               colIndex = getIndex(ispecies, ix, ell+1, itheta, izetaCol, BLOCK_F)
-
-                               stuffToAdd = factor*(L-1)*L/((two*L-3)*(2*L-1)) &
-                                    * (geometricFactor1 + geometricFactor2 - 3*geometricFactor3)
-
-                               call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                                    stuffToAdd * ddzetaToUse(izetaRow,izetaCol), &
-                                    ADD_VALUES, ierr)
-                            end if
-                         end if
-                      end do
-                   end do
-                end do
-             end do
-          end do
-       end if
+!!$       ! *********************************************************
+!!$       ! Add the magnetic drift d/dtheta term:
+!!$       ! *********************************************************
+!!$
+!!$       itheta = -1  ! So itheta is not used in place of ithetaRow or ithetaCol by mistake.
+!!$       izetaRow = -1 ! So izetaRow is not used in place of izeta by mistake.
+!!$       izetaCol = -1 ! So izetaCol is not used in place of izeta by mistake.
+!!$       if ((whichMatrix .ne. 2) .and. (magneticDriftScheme>0)) then
+!!$          if (whichMatrix==0) then
+!!$             maxL = min(preconditioner_magnetic_drifts_max_L,Nxi-1)
+!!$          else
+!!$             maxL = Nxi-1
+!!$          end if
+!!$          do L = 0, maxL
+!!$
+!!$             do izeta = izetaMin, izetaMax                
+!!$                do ithetaRow = ithetaMin, ithetaMax
+!!$                   geometricFactor1 = (BHat_sub_zeta(ithetaRow,izeta)*dBHatdpsiHat(ithetaRow,izeta) &
+!!$                        - BHat_sub_psi(ithetaRow,izeta)*dBHatdzeta(ithetaRow,izeta))
+!!$                   
+!!$                   geometricFactor2 = 2 * BHat(ithetaRow,izeta) &
+!!$                        * (dBHat_sub_psi_dzeta(ithetaRow,izeta) - dBHat_sub_zeta_dpsiHat(ithetaRow,izeta))
+!!$
+!!$                   if (magneticDriftScheme==2) then
+!!$                      geometricFactor3 = BDotCurlB(ithetaRow,izeta)*BHat_sup_theta(ithetaRow,izeta) &
+!!$                           /(BHat(ithetaRow,izeta)*DHat(ithetaRow,izeta))
+!!$                   else
+!!$                      geometricFactor3 = 0
+!!$                   end if
+!!$
+!!$                   if (magneticDriftDerivativeScheme==0) then
+!!$                      if (whichMatrix>0 .or. L < preconditioner_theta_min_L) then
+!!$                         ddthetaToUse = ddtheta
+!!$                      else
+!!$                         ddthetaToUse = ddtheta_preconditioner
+!!$                      end if
+!!$                   else
+!!$                      ! Assume DHat has the same sign everywhere. (Should be true even for VMEC coordinates.)
+!!$                      ! We assume here that geometricFactor1*factor sets the direction of upwinding to use. This should be correct at beta=0
+!!$                      ! since then geometricFactor2=0, but may need modification when beta>0 (in which case geometricFactor2 is nonzero.)
+!!$                      if (geometricFactor1*DHat(1,1)/Z > 0) then
+!!$                         ddthetaToUse = ddtheta_magneticDrift_plus
+!!$                      else
+!!$                         ddthetaToUse = ddtheta_magneticDrift_minus
+!!$                      end if
+!!$                   end if
+!!$
+!!$                   do ix = ixMin, Nx
+!!$                      rowIndex = getIndex(ispecies, ix, L+1, ithetaRow, izeta, BLOCK_F)
+!!$                      
+!!$                      factor = Delta*THat*DHat(ithetaRow,izeta)*x(ix)*x(ix) &
+!!$                           / (2*Z*BHat(ithetaRow,izeta)*BHat(ithetaRow,izeta)*BHat(ithetaRow,izeta))
+!!$                   
+!!$                      do ithetaCol = 1, Ntheta
+!!$
+!!$                         ! Diagonal-in-L term
+!!$                         ell = L
+!!$                         colIndex = getIndex(ispecies, ix, ell+1, ithetaCol, izeta, BLOCK_F)
+!!$
+!!$                         stuffToAdd = factor * (2*(3*L*L+3*L-2)/((two*L+3)*(2*L-1)) * geometricFactor1 &
+!!$                              + (2*L*L+2*L-1)/((two*L+3)*(2*L-1)) * geometricFactor2 &
+!!$                              + (-2)*L*(L+1)/((two*L+3)*(2*L-1)) * geometricFactor3)
+!!$
+!!$                         call MatSetValueSparse(matrix, rowIndex, colIndex, &
+!!$                              stuffToAdd * ddthetaToUse(ithetaRow,ithetaCol), &
+!!$                              ADD_VALUES, ierr)
+!!$
+!!$                         ! Drop the off-by-2 diagonal terms in L if this is the preconditioner
+!!$                         ! and preconditioner_xi = 1:
+!!$                         if (whichMatrix .ne. 0 .or. preconditioner_xi==0) then
+!!$
+!!$                            ! Super-super-diagonal-in-L term
+!!$                            if (L < Nxi-2) then
+!!$                               ell = L+2
+!!$                               colIndex = getIndex(ispecies, ix, ell+1, ithetaCol, izeta, BLOCK_F)
+!!$
+!!$                               stuffToAdd = factor*(L+2)*(L+1)/((two*L+5)*(2*L+3)) &
+!!$                                    * (geometricFactor1 + geometricFactor2 - 3*geometricFactor3)
+!!$
+!!$                               call MatSetValueSparse(matrix, rowIndex, colIndex, &
+!!$                                    stuffToAdd * ddthetaToUse(ithetaRow,ithetaCol), &
+!!$                                    ADD_VALUES, ierr)
+!!$                            end if
+!!$
+!!$                            ! Sub-sub-diagonal-in-L term
+!!$                            if (L > 1) then
+!!$                               ell = L-2
+!!$                               colIndex = getIndex(ispecies, ix, ell+1, ithetaCol, izeta, BLOCK_F)
+!!$
+!!$                               stuffToAdd = factor*(L-1)*L/((two*L-3)*(2*L-1)) &
+!!$                                    * (geometricFactor1 + geometricFactor2 - 3*geometricFactor3)
+!!$
+!!$                               call MatSetValueSparse(matrix, rowIndex, colIndex, &
+!!$                                    stuffToAdd * ddthetaToUse(ithetaRow,ithetaCol), &
+!!$                                    ADD_VALUES, ierr)
+!!$                            end if
+!!$                         end if
+!!$                      end do
+!!$                   end do
+!!$                end do
+!!$             end do
+!!$          end do
+!!$       end if
+!!$
+!!$       ! *********************************************************
+!!$       ! Add the magnetic drift d/dzeta term:
+!!$       ! *********************************************************
+!!$
+!!$       izeta = -1  ! So izeta is not used in place of izetaRow or izetaCol by mistake.
+!!$       ithetaRow = -1 ! So ithetaRow is not used in place of itheta by mistake.
+!!$       ithetaCol = -1 ! So ithetaCol is not used in place of itheta by mistake.
+!!$       if ((whichMatrix .ne. 2) .and. (magneticDriftScheme>0)) then
+!!$          if (whichMatrix==0) then
+!!$             maxL = min(preconditioner_magnetic_drifts_max_L,Nxi-1)
+!!$          else
+!!$             maxL = Nxi-1
+!!$          end if
+!!$          do L = 0, maxL
+!!$
+!!$             do itheta = ithetaMin, ithetaMax                
+!!$                do izetaRow = izetaMin, izetaMax
+!!$                   geometricFactor1 = (BHat_sub_psi(itheta,izetaRow)*dBHatdtheta(itheta,izetaRow) &
+!!$                        - BHat_sub_theta(itheta,izetaRow)*dBHatdpsiHat(itheta,izetaRow))
+!!$                   
+!!$                   geometricFactor2 = 2 * BHat(itheta,izetaRow) &
+!!$                        * (dBHat_sub_theta_dpsiHat(itheta,izetaRow) - dBHat_sub_psi_dtheta(itheta,izetaRow))
+!!$
+!!$                   if (magneticDriftScheme==2) then
+!!$                      geometricFactor3 = BDotCurlB(itheta,izetaRow)*BHat_sup_zeta(itheta,izetaRow) &
+!!$                           /(BHat(itheta,izetaRow)*DHat(itheta,izetaRow))
+!!$                   else
+!!$                      geometricFactor3 = 0
+!!$                   end if
+!!$
+!!$                   if (magneticDriftDerivativeScheme==0) then
+!!$                      if (whichMatrix>0 .or. L < preconditioner_zeta_min_L) then
+!!$                         ddzetaToUse = ddzeta
+!!$                      else
+!!$                         ddzetaToUse = ddzeta_preconditioner
+!!$                      end if
+!!$                   else
+!!$                      ! Assume DHat has the same sign everywhere. (Should be true even for VMEC coordinates.)
+!!$                      ! We assume here that geometricFactor1*factor sets the direction of upwinding to use. This should be correct at beta=0
+!!$                      ! since then geometricFactor2=0, but may need modification when beta>0 (in which case geometricFactor2 is nonzero.)
+!!$                      if (geometricFactor1*DHat(1,1)/Z > 0) then
+!!$                         ddzetaToUse = ddzeta_magneticDrift_plus
+!!$                      else
+!!$                         ddzetaToUse = ddzeta_magneticDrift_minus
+!!$                      end if
+!!$                   end if
+!!$
+!!$                   do ix = ixMin, Nx
+!!$                      rowIndex = getIndex(ispecies, ix, L+1, itheta, izetaRow, BLOCK_F)
+!!$                      
+!!$                      factor = Delta*THat*DHat(itheta,izetaRow)*x(ix)*x(ix) &
+!!$                           / (2*Z*BHat(itheta,izetaRow)*BHat(itheta,izetaRow)*BHat(itheta,izetaRow))
+!!$                   
+!!$                      do izetaCol = 1, Nzeta
+!!$
+!!$                         ! Diagonal-in-L term
+!!$                         ell = L
+!!$                         colIndex = getIndex(ispecies, ix, ell+1, itheta, izetaCol, BLOCK_F)
+!!$
+!!$                         stuffToAdd = factor * (2*(3*L*L+3*L-2)/((two*L+3)*(2*L-1)) * geometricFactor1 &
+!!$                              + (2*L*L+2*L-1)/((two*L+3)*(2*L-1)) * geometricFactor2 &
+!!$                              + (-2)*L*(L+1)/((two*L+3)*(2*L-1)) * geometricFactor3)
+!!$
+!!$                         call MatSetValueSparse(matrix, rowIndex, colIndex, &
+!!$                              stuffToAdd * ddzetaToUse(izetaRow,izetaCol), &
+!!$                              ADD_VALUES, ierr)
+!!$
+!!$                         ! Drop the off-by-2 diagonal terms in L if this is the preconditioner
+!!$                         ! and preconditioner_xi = 1:
+!!$                         if (whichMatrix .ne. 0 .or. preconditioner_xi==0) then
+!!$
+!!$                            ! Super-super-diagonal-in-L term
+!!$                            if (L < Nxi-2) then
+!!$                               ell = L+2
+!!$                               colIndex = getIndex(ispecies, ix, ell+1, itheta, izetaCol, BLOCK_F)
+!!$
+!!$                               stuffToAdd = factor*(L+2)*(L+1)/((two*L+5)*(2*L+3)) &
+!!$                                    * (geometricFactor1 + geometricFactor2 - 3*geometricFactor3)
+!!$
+!!$                               call MatSetValueSparse(matrix, rowIndex, colIndex, &
+!!$                                    stuffToAdd * ddzetaToUse(izetaRow,izetaCol), &
+!!$                                    ADD_VALUES, ierr)
+!!$                            end if
+!!$
+!!$                            ! Sub-sub-diagonal-in-L term
+!!$                            if (L > 1) then
+!!$                               ell = L-2
+!!$                               colIndex = getIndex(ispecies, ix, ell+1, itheta, izetaCol, BLOCK_F)
+!!$
+!!$                               stuffToAdd = factor*(L-1)*L/((two*L-3)*(2*L-1)) &
+!!$                                    * (geometricFactor1 + geometricFactor2 - 3*geometricFactor3)
+!!$
+!!$                               call MatSetValueSparse(matrix, rowIndex, colIndex, &
+!!$                                    stuffToAdd * ddzetaToUse(izetaRow,izetaCol), &
+!!$                                    ADD_VALUES, ierr)
+!!$                            end if
+!!$                         end if
+!!$                      end do
+!!$                   end do
+!!$                end do
+!!$             end do
+!!$          end do
+!!$       end if
 
        ! *********************************************************
        ! Add the standard mirror term:
        ! *********************************************************
 
        if (whichMatrix .ne. 2) then
-          do itheta=ithetaMin,ithetaMax
-             do izeta=izetaMin,izetaMax
-                factor = -sqrtTHat/(2*sqrtMHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
-                     * (BHat_sup_theta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
-                     + BHat_sup_zeta(itheta,izeta) * dBHatdzeta(itheta,izeta))
-                
-                do ix=ixMin,Nx
-                   do L=0,(Nxi-1)
-                      rowIndex=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
-                      
+          call FourierTransform(-sqrt(THat/mHat)*(BHat_sup_theta*dBHatdtheta+BHat_sup_zeta*dBHatdzeta) &
+               / (2*BHat*BHat), FourierVector)
+          call FourierConvolutionMatrix(FourierVector,FourierMatrix)
+          do L=LMin,LMax
+             ! The L loop is outermost since we may eventually want to use a sparser Fourier matrix for the preconditioner at large L.
+             do ix=ixMin,Nx
+                do imn_row = 1,NFourier2
+                   rowIndex = getIndex(ispecies,ix,L+1,imn_row,BLOCK_F)
+                   do imn_col = 1,NFourier2
+
                       if (L<Nxi-1) then
-                         ! Super-diagonal-in-L term:
+                         ! Super-diagonal-in-L term:    
                          ell = L+1
-                         colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
-                         call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                              (L+1)*(L+2)/(2*L+three)*x(ix)*factor, ADD_VALUES, ierr)
+                         colIndex = getIndex(ispecies,ix,ell+1,imn_col,BLOCK_F)
+                         call MatSetValueSparse(matrix,rowIndex,colIndex,&
+                              (L+1)*(L+2)/(2*L+three)*x(ix)*FourierMatrix(imn_row,imn_col), ADD_VALUES, ierr)
                       end if
-                      
+
                       if (L>0) then
                          ! Sub-diagonal-in-L term:
                          ell = L-1
-                         colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
-                         call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                              -L*(L-1)/(2*L-one)*x(ix)*factor, ADD_VALUES, ierr)
+                         colIndex = getIndex(ispecies,ix,ell+1,imn_col,BLOCK_F)
+                         call MatSetValueSparse(matrix,rowIndex,colIndex,&
+                              -L*(L-1)/(2*L-one)*x(ix)*FourierMatrix(imn_row,imn_col), ADD_VALUES, ierr)
                       end if
                    end do
                 end do
@@ -744,616 +560,128 @@
        ! *********************************************************
 
        if (includeElectricFieldTermInXiDot .and. (whichMatrix .ne. 2)) then
-          do itheta=ithetaMin,ithetaMax
-             do izeta=izetaMin,izetaMax
+          factor = alpha*Delta*dPhiHatdpsiHat/4
+          if (force0RadialCurrentInEquilibrium) then
+             call FourierTransform(factor*DHat*(BHat_sub_zeta*dBHatdtheta - BHat_sub_theta*dBHatdzeta) &
+                  /(BHat*BHat*BHat), FourierVector)
+          else
+             call FourierTransform(factor*DHat*(BHat_sub_zeta*dBHatdtheta - BHat_sub_theta*dBHatdzeta &
+                  -2*BHat*(dBHat_sub_zeta_dtheta-dBHat_sub_theta_dzeta)) &
+                  /(BHat*BHat*BHat), FourierVector)
+          end if
+          call FourierConvolutionMatrix(FourierVector,FourierMatrix)
 
-                temp = BHat_sub_zeta(itheta,izeta) * dBHatdtheta(itheta,izeta) &
-                     - BHat_sub_theta(itheta,izeta) * dBHatdzeta(itheta,izeta)
-
-                if (.not. force0RadialCurrentInEquilibrium) then
-                   temp = temp - 2 * BHat(itheta,izeta) &
-                        * (dBHat_sub_zeta_dtheta(itheta,izeta) - dBHat_sub_theta_dzeta(itheta,izeta))
-                end if
-
-                factor = alpha*Delta*dPhiHatdpsiHat/(4*(BHat(itheta,izeta)**3)) &
-                     * DHat(itheta,izeta) * temp
-                     
-                do ix=ixMin,Nx
-                   do L=0,(Nxi-1)
-                      rowIndex=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
+          do L=LMin,LMax
+             ! The L loop is outermost since we may eventually want to use a sparser Fourier matrix for the preconditioner at large L.
+             do ix=ixMin,Nx
+                do imn_row=1,NFourier2
+                   rowIndex = getIndex(ispecies,ix,L+1,imn_row,BLOCK_F)
+                   do imn_col=1,NFourier2
 
                       ! Diagonal-in-L term
-                      call MatSetValueSparse(matrix, rowIndex, rowIndex, &
-                           (L+1)*L/((2*L-one)*(2*L+three))*factor, ADD_VALUES, ierr)
+                      colIndex = getIndex(ispecies,ix,L+1,imn_col,BLOCK_F)
+                      call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                           (L+1)*L/((2*L-one)*(2*L+three))*FourierMatrix(imn_row,imn_col), ADD_VALUES, ierr)
 
                       ! Drop the off-by-2 diagonal terms in L if this is the preconditioner
                       ! and preconditioner_xi = 1:
                       if (whichMatrix .ne. 0 .or. preconditioner_xi==0) then
-
                          if (L<Nxi-2) then
                             ! Super-super-diagonal-in-L term:
                             ell = L+2
-                            colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
+                            colIndex=getIndex(ispecies,ix,ell+1,imn_col,BLOCK_F)
                             call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                                 (L+3)*(L+2)*(L+1)/((two*L+5)*(2*L+three))*factor, ADD_VALUES, ierr)
+                                 (L+3)*(L+2)*(L+1)/((two*L+5)*(2*L+three))*FourierMatrix(imn_row,imn_col), ADD_VALUES, ierr)
                          end if
 
                          if (L>1) then
                             ! Sub-sub-diagonal-in-L term:
                             ell = L-2
-                            colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
+                            colIndex=getIndex(ispecies,ix,ell+1,imn_col,BLOCK_F)
                             call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                                 -L*(L-1)*(L-2)/((2*L-3)*(2*L-one))*factor, ADD_VALUES, ierr)
+                                 -L*(L-1)*(L-2)/((2*L-3)*(2*L-one))*FourierMatrix(imn_row,imn_col), ADD_VALUES, ierr)
                          end if
+
                       end if
                    end do
                 end do
              end do
           end do
-
        end if
 
-       ! ****************************************************************
-       ! Add the non-standard d/dxi term associated with magnetic drifts:
-       ! ****************************************************************
-
-       if ((magneticDriftScheme>0) .and. (whichMatrix .ne. 2)) then
-          do itheta=ithetaMin,ithetaMax
-             do izeta=izetaMin,izetaMax
-
-                temp = (dBHat_sub_psi_dzeta(itheta,izeta) - dBHat_sub_zeta_dpsiHat(itheta,izeta)) * dBHatdtheta(itheta,izeta) &
-                     + (dBHat_sub_theta_dpsiHat(itheta,izeta) - dBHat_sub_psi_dtheta(itheta,izeta)) * dBHatdzeta(itheta,izeta)
-
-                if (.not. force0RadialCurrentInEquilibrium) then
-                   temp = temp + (dBHat_sub_zeta_dtheta(itheta,izeta) - dBHat_sub_theta_dzeta(itheta,izeta)) * dBHatdpsiHat(itheta,izeta)
-                end if
-
-                do ix=ixMin,Nx
-                   factor = -Delta*DHat(itheta,izeta)*THat*x(ix)*x(ix)/(2*Z*(BHat(itheta,izeta)**3)) * temp
-                     
-                   do L=0,(Nxi-1)
-                      rowIndex=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
-
-                      ! Diagonal-in-L term
-                      call MatSetValueSparse(matrix, rowIndex, rowIndex, &
-                           (L+1)*L/((2*L-one)*(2*L+three))*factor, ADD_VALUES, ierr)
-
-                      ! Drop the off-by-2 diagonal terms in L if this is the preconditioner
-                      ! and preconditioner_xi = 1:
-                      if (whichMatrix .ne. 0 .or. preconditioner_xi==0) then
-
-                         if (L<Nxi-2) then
-                            ! Super-super-diagonal-in-L term:
-                            ell = L+2
-                            colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
-                            call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                                 (L+3)*(L+2)*(L+1)/((two*L+5)*(2*L+three))*factor, ADD_VALUES, ierr)
-                         end if
-
-                         if (L>1) then
-                            ! Sub-sub-diagonal-in-L term:
-                            ell = L-2
-                            colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
-                            call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                                 -L*(L-1)*(L-2)/((2*L-3)*(2*L-one))*factor, ADD_VALUES, ierr)
-                         end if
-                      end if
-                   end do
-                end do
-             end do
-          end do
-
-       end if
+!!$       ! ****************************************************************
+!!$       ! Add the non-standard d/dxi term associated with magnetic drifts:
+!!$       ! ****************************************************************
+!!$
+!!$       if ((magneticDriftScheme>0) .and. (whichMatrix .ne. 2)) then
+!!$          do itheta=ithetaMin,ithetaMax
+!!$             do izeta=izetaMin,izetaMax
+!!$
+!!$                temp = (dBHat_sub_psi_dzeta(itheta,izeta) - dBHat_sub_zeta_dpsiHat(itheta,izeta)) * dBHatdtheta(itheta,izeta) &
+!!$                     + (dBHat_sub_theta_dpsiHat(itheta,izeta) - dBHat_sub_psi_dtheta(itheta,izeta)) * dBHatdzeta(itheta,izeta)
+!!$
+!!$                if (.not. force0RadialCurrentInEquilibrium) then
+!!$                   temp = temp + (dBHat_sub_zeta_dtheta(itheta,izeta) - dBHat_sub_theta_dzeta(itheta,izeta)) * dBHatdpsiHat(itheta,izeta)
+!!$                end if
+!!$
+!!$                do ix=ixMin,Nx
+!!$                   factor = -Delta*DHat(itheta,izeta)*THat*x(ix)*x(ix)/(2*Z*(BHat(itheta,izeta)**3)) * temp
+!!$                     
+!!$                   do L=0,(Nxi-1)
+!!$                      rowIndex=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
+!!$
+!!$                      ! Diagonal-in-L term
+!!$                      call MatSetValueSparse(matrix, rowIndex, rowIndex, &
+!!$                           (L+1)*L/((2*L-one)*(2*L+three))*factor, ADD_VALUES, ierr)
+!!$
+!!$                      ! Drop the off-by-2 diagonal terms in L if this is the preconditioner
+!!$                      ! and preconditioner_xi = 1:
+!!$                      if (whichMatrix .ne. 0 .or. preconditioner_xi==0) then
+!!$
+!!$                         if (L<Nxi-2) then
+!!$                            ! Super-super-diagonal-in-L term:
+!!$                            ell = L+2
+!!$                            colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
+!!$                            call MatSetValueSparse(matrix, rowIndex, colIndex, &
+!!$                                 (L+3)*(L+2)*(L+1)/((two*L+5)*(2*L+three))*factor, ADD_VALUES, ierr)
+!!$                         end if
+!!$
+!!$                         if (L>1) then
+!!$                            ! Sub-sub-diagonal-in-L term:
+!!$                            ell = L-2
+!!$                            colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
+!!$                            call MatSetValueSparse(matrix, rowIndex, colIndex, &
+!!$                                 -L*(L-1)*(L-2)/((2*L-3)*(2*L-one))*factor, ADD_VALUES, ierr)
+!!$                         end if
+!!$                      end if
+!!$                   end do
+!!$                end do
+!!$             end do
+!!$          end do
+!!$
+!!$       end if
 
        ! *********************************************************
        ! Add the collisionless d/dx term associated with E_r
        ! *********************************************************
 
-       ! This term always operates on f0, so it should always be included when whichMatrix=2 even if includeXDotTerm=.false.!
-       ! This term also operates on f1 if includeXDotTerm=.t.
-       !if (includeXDotTerm .or. whichMatrix==2) then
-
        if (includeXDotTerm .and. (whichMatrix .ne. 2)) then
+          factor = -alpha*Delta*dPhiHatdpsiHat/4
+          call FourierTransform(factor*DHat*(BHat_sub_theta*dBHatdzeta - BHat_sub_zeta*dBHatdtheta)/(BHat*BHat*BHat), &
+               FourierVector)
+          call FourierConvolutionMatrix(FourierVector,FourierMatrix)
+
+          if (force0RadialCurrentInEquilibrium) then
+             FourierMatrix2=0
+          else
+             call FourierTransform(2*factor*DHat*(dBHat_sub_zeta_dtheta - dBHat_sub_theta_dzeta)/(BHat*BHat), &
+                  FourierVector)
+             call FourierConvolutionMatrix(FourierVector,FourierMatrix2)
+          end if
 
           allocate(xPartOfXDot(Nx,Nx))
-          allocate(xPartOfXDot_plus(Nx,Nx))
-          allocate(xPartOfXDot_minus(Nx,Nx))
-          allocate(rowIndices(Nx))
-          allocate(colIndices(Nx))
-          !factor = alpha*Delta/(4*psiAHat)*dPhiHatdpsiN
-          factor = -alpha*Delta*dPhiHatdpsiHat/4
 
-          do L=0,(Nxi-1)
-             if (L>0 .and. pointAtX0) then
-                ixMinCol = 2
-             else
-                ixMinCol = 1
-             end if
-
-             ! Upwind in x
-             if (whichMatrix==0 .and. L >= preconditioner_x_min_L) then
-                ddxToUse_plus = ddx_xDot_preconditioner_plus
-                ddxToUse_minus = ddx_xDot_preconditioner_minus
-             else
-                ddxToUse_plus = ddx_xDot_plus
-                ddxToUse_minus = ddx_xDot_minus
-             end if
-
-             do ix=1,Nx
-                xPartOfXDot_plus(ix,:) = x(ix) * ddxToUse_plus(ix,:)
-                xPartOfXDot_minus(ix,:) = x(ix) * ddxToUse_minus(ix,:)
-             end do
-
-             ! Note: in previous versions I take the transpose of xPartOfXDot here,
-             ! but since I have switched to using MatSetValueSparse instead of MatSetValuesSparse,
-             ! the transpose should no longer be applied here.
-             !xPartOfXDot = transpose(xPartOfXDot)  ! PETSc uses the opposite convention of Fortran
-
-             do itheta=ithetaMin,ithetaMax
-
-                do izeta=izetaMin,izetaMax
-                   !xDotFactor = factor/(BHat(itheta,izeta)**3) &
-                   !     * (GHat*dBHatdtheta(itheta,izeta) - IHat*dBHatdzeta(itheta,izeta))
-
-                   xDotFactor = factor*DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
-                        * (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) &
-                        - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))
-
-                   if (force0RadialCurrentInEquilibrium) then
-                      xDotFactor2 = zero
-                   else
-                      xDotFactor2 = factor*DHat(itheta,izeta)/(BHat(itheta,izeta)**2) * 2 &
-                           * (dBHat_sub_zeta_dtheta(itheta,izeta) - dBHat_sub_theta_dzeta(itheta,izeta))
-                   end if
-
-                   if (xDotFactor>0) then  ! This is the correct inequality
-                   !if (xDotFactor<0) then  ! Incorrect inequality!
-                      xPartOfXDot = xPartOfXDot_plus
-                   else
-                      xPartOfXDot = xPartOfXDot_minus
-                   end if
-
-                   do ix=1,Nx
-                      rowIndices(ix)=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
-                   end do
-
-                   ! Term that is diagonal in L:
-                   colIndices = rowIndices
-                   stuffToAdd = two*(3*L*L+3*L-2)/((two*L+3)*(2*L-1))*xDotFactor &
-                        + (2*L*L+2*L-one)/((two*L+3)*(2*L-1))*xDotFactor2
-                   do ix_col=ixMinCol,Nx
-                      do ix_row=ixMin,Nx
-                         call MatSetValueSparse(matrix, rowIndices(ix_row), colIndices(ix_col), &
-                              stuffToAdd*xPartOfXDot(ix_row,ix_col), ADD_VALUES, ierr)
-                      end do
-                   end do
-
-                   ! Drop the off-by-2 diagonal terms in L if this is the preconditioner
-                   ! and preconditioner_xi = 1:
-                   if (whichMatrix>0 .or. preconditioner_xi==0) then
-
-                      ! Term that is super-super-diagonal in L:
-                      if (L<(Nxi-2)) then
-                         ell = L + 2
-                         stuffToAdd = (L+1)*(L+2)/((two*L+5)*(2*L+3))*(xDotFactor+xDotFactor2)
-                         do ix_col=ixMinCol,Nx
-                            colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F)
-                            do ix_row=ixMin,Nx
-                               call MatSetValueSparse(matrix, rowIndices(ix_row), colIndex, &
-                                    stuffToAdd*xPartOfXDot(ix_row,ix_col), ADD_VALUES, ierr)
-                            end do
-                         end do
-                      end if
-
-                      ! Term that is sub-sub-diagonal in L:
-                      if (L>1) then
-                         ell = L - 2
-                         stuffToAdd = L*(L-1)/((two*L-3)*(2*L-1))*(xDotFactor+xDotFactor2)
-                         do ix_col=ixMinCol,Nx
-                            colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F)
-                            do ix_row=ixMin,Nx
-                               call MatSetValueSparse(matrix, rowIndices(ix_row), colIndex, &
-                                    stuffToAdd*xPartOfXDot(ix_row,ix_col), ADD_VALUES, ierr)
-                            end do
-                         end do
-                      end if
-                   end if
-
-                end do
-             end do
-          end do
-          deallocate(rowIndices)
-          deallocate(colIndices)
-          deallocate(xPartOfXDot)
-          deallocate(xPartOfXDot_plus)
-          deallocate(xPartOfXDot_minus)
-       end if
-
-       ! *********************************************************
-       ! Add the optional term which does not involve derivatives of f,
-       ! Sometimes useful for restoring Liouville's theorem:
-       ! *********************************************************
-
-!!$       if (include_fDivVE_term) then
-!!$          do itheta = ithetaMin,ithetaMax
-!!$             do izeta = izetaMin,izetaMax
-!!$                do ix = 1,Nx
-!!$                   do ixi = 1,Nxi
-!!$                      index=getIndex(ispecies,ix,ixi,itheta,izeta,BLOCK_F)
-!!$                      call MatSetValueSparse(matrix,index,index, &
-!!$                           -dPhiHatdpsiN*Delta*alpha/(psiAHat*(BHat(itheta,izeta)**3)) &
-!!$                           *(GHat*dBHatdtheta(itheta,izeta)- IHat*dBHatdzeta(itheta,izeta)), &
-!!$                           ADD_VALUES, ierr)
-!!$                   end do
-!!$                end do
-!!$             end do
-!!$          end do
-!!$       end if
-
-
-       ! *********************************************************
-       ! THIS TERM HAS BEEN REMOVED BY AM 2016-03
-       ! Add the large Phi_1 terms acting on d f_0 / d x
-       ! (These are the terms that give the adiabatic response.)
-       ! *********************************************************
-!!$
-!!$       if ((whichMatrix .ne. 2) .and. includePhi1) then
-!!$          L=1
-!!$          do ix = ixMin,Nx
-!!$
-!!$             dfMdx = -2*x(ix)*expx2(ix)*nHat*mHat*sqrtmHat &
-!!$                  /(pi*sqrtpi*THat*sqrtTHat)
-!!$
-!!$             ! d Phi_1 / d theta term:
-!!$             itheta = -1 ! Just so a runtime error occurs if I use itheta by mistake
-!!$             do ithetaRow = ithetaMin, ithetaMax
-!!$                do izeta = izetaMin, izetaMax
-!!$                   rowIndex = getIndex(ispecies, ix, L+1, ithetaRow, izeta, BLOCK_F)
-!!$
-!!$                   factor = -alpha*Zs(ispecies)*BHat_sup_theta(ithetaRow,izeta) &
-!!$                        /(two*sqrtTHat*sqrtMHat*BHat(ithetaRow,izeta))
-!!$
-!!$                   do ithetaCol = 1,Ntheta
-!!$                      colIndex = getIndex(1,1,1,ithetaCol, izeta, BLOCK_QN)
-!!$                      call MatSetValueSparse(matrix, rowIndex, colIndex,&
-!!$                           dfMdx*factor*ddtheta(ithetaRow, ithetaCol), ADD_VALUES, ierr)
-!!$                   end do
-!!$                end do
-!!$             end do
-!!$
-!!$             ! d Phi_1 / d zeta term:
-!!$             izeta = -1 ! Just so a runtime error occurs if I use itheta by mistake
-!!$             ithetaRow = -1 ! Just so a runtime error occurs if I use itheta by mistake
-!!$             ithetaCol = -1 ! Just so a runtime error occurs if I use itheta by mistake
-!!$             do itheta = ithetaMin, ithetaMax
-!!$                do izetaRow = izetaMin, izetaMax
-!!$                   rowIndex = getIndex(ispecies, ix, L+1, itheta, izetaRow, BLOCK_F)
-!!$
-!!$                   factor = -alpha*Zs(ispecies)*BHat_sup_zeta(itheta,izetaRow) &
-!!$                        /(two*sqrtTHat*sqrtMHat*BHat(itheta,izetaRow))
-!!$
-!!$                   do izetaCol = 1,Nzeta
-!!$                      colIndex = getIndex(1,1,1,itheta, izetaCol, BLOCK_QN)
-!!$                      call MatSetValueSparse(matrix, rowIndex, colIndex,&
-!!$                           dfMdx*factor*ddzeta(izetaRow, izetaCol), ADD_VALUES, ierr)
-!!$                   end do
-!!$                end do
-!!$             end do
-!!$
-!!$          end do
-!!$       end if
-!!$
-
-
-       ! *********************************************************
-       ! SECTION ADDED BY AM 2016-02
-       ! Add terms in drift-kinetic equation that contain linear operator
-       ! acting on Phi1 (but not f1), except the radial ExB drive term which
-       ! is added below. These terms are the same in the residual and Jacobian.
-       ! We also add additional terms for the Jacobian,
-       !**********************************************************
-       
-!!MOVED SECTION BELOW TO THE NEXT SECTION INSTEAD TO AVOID LOOPING OVER THE SAME STUFF TWICE
-
-!!$       if ((whichMatrix .ne. 2) .and. includePhi1 .and. includePhi1InKineticEquation) then
-!!$          L=0
-!!$          do ix = ixMin,Nx
-!!$
-!!$             ! d Phi_1 / d theta term:
-!!$             itheta = -1 ! Just so a runtime error occurs if I use itheta by mistake
-!!$             do ithetaRow = ithetaMin, ithetaMax
-!!$                do izeta = izetaMin, izetaMax
-!!$                   rowIndex = getIndex(ispecies, ix, L+1, ithetaRow, izeta, BLOCK_F)
-!!$
-!!$                   factor = - alpha*alpha*Delta*DHat(ithetaRow,izeta)/(two*pi*sqrtpi*BHat(ithetaRow,izeta)*BHat(ithetaRow,izeta)) &
-!!$                        * Z * nHat*mHat*sqrtMHat/(THat*THat*sqrtTHat) &
-!!$                        * exp(-Z*alpha*Phi1Hat(ithetaRow,izeta)/THat)*expx2(ix)*BHat_sub_zeta(ithetaRow,izeta) &
-!!$                        * (dPhiHatdpsiHat + Phi1Hat(ithetaRow,izeta)*dTHatdpsiHats(ispecies)/THat)
-!!$                   
-!!$                   
-!!$                   do ithetaCol = 1,Ntheta
-!!$                      colIndex = getIndex(1,1,1,ithetaCol, izeta, BLOCK_QN)
-!!$                      call MatSetValueSparse(matrix, rowIndex, colIndex,&
-!!$                           factor*ddtheta(ithetaRow, ithetaCol), ADD_VALUES, ierr)
-!!$
-!!$                      !!Add additional terms in the Jacobian
-!!$                      if (whichMatrix == 0 .or. whichMatrix == 1) then
-!!$                      !!NEEDS IMPLEMENTATION
-!!$                      end if
-!!$                   end do
-!!$                end do
-!!$             end do
-!!$
-!!$             ! d Phi_1 / d zeta term:
-!!$             izeta = -1 ! Just so a runtime error occurs if I use itheta by mistake
-!!$             ithetaRow = -1 ! Just so a runtime error occurs if I use itheta by mistake
-!!$             ithetaCol = -1 ! Just so a runtime error occurs if I use itheta by mistake
-!!$             do itheta = ithetaMin, ithetaMax
-!!$                do izetaRow = izetaMin, izetaMax
-!!$                   rowIndex = getIndex(ispecies, ix, L+1, itheta, izetaRow, BLOCK_F)
-!!$
-!!$                   factor = alpha*alpha*Delta*DHat(itheta,izetaRow)/(two*pi*sqrtpi*BHat(itheta,izetaRow)*BHat(itheta,izetaRow)) &
-!!$                        * Z * nHat*mHat*sqrtMHat/(THat*THat*sqrtTHat) &
-!!$                        * exp(-Z*alpha*Phi1Hat(itheta,izetaRow)/THat)*expx2(ix)*BHat_sub_theta(itheta,izetaRow) &
-!!$                        * (dPhiHatdpsiHat + Phi1Hat(itheta,izetaRow)*dTHatdpsiHats(ispecies)/THat)
-!!$                   
-!!$
-!!$                   do izetaCol = 1,Nzeta
-!!$                      colIndex = getIndex(1,1,1,itheta, izetaCol, BLOCK_QN)
-!!$                      call MatSetValueSparse(matrix, rowIndex, colIndex,&
-!!$                           factor*ddzeta(izetaRow, izetaCol), ADD_VALUES, ierr)
-!!$                      
-!!$                      !!Add additional terms in the Jacobian
-!!$                      if (whichMatrix == 0 .or. whichMatrix == 1) then
-!!$                      !!NEEDS IMPLEMENTATION
-!!$                      end if
-!!$                   end do
-!!$                end do
-!!$             end do
-!!$
-!!$          end do
-!!$       end if
-
-
-
-
-       ! *********************************************************
-       ! SECTION MODIFIED BY AM 2016-02/03
-       ! Before this section added the radial ExB drive term:
-       ! (v_E dot grad psi) f_M [(1/n)(dn/dpsi) + (x^2 - 3/2)(1/T)(dT/dpsi)],
-       ! considered by Garcia-Regana et al PPCF (2013),
-       ! but now it is multiplied by exp(-Ze Phi1 / T) according to 
-       ! Garcia-Regana et al arxiv:1501.03967 (2015).
-       ! We also add the rest of the terms in the drift-kinetic equation 
-       ! that contain a linear operator acting on Phi1 (but not f1).
-       ! These terms are the same in the residual and Jacobian.
-       ! We also add additional terms for the Jacobian.
-       ! *********************************************************
-
-       !!THE includeRadialExBDrive FLAG IS NOT USED ANYMORE
-       !!if ((whichMatrix .ne. 2) .and. includeRadialExBDrive) then !!Commented by AM 2016-02
-       if ((whichMatrix .ne. 2) .and. includePhi1 .and. includePhi1InKineticEquation) then !!Added by AM 2016-02
-          L=0
-          L2=2 !!Added by AM 2016-03 to add extra P_2 terms
-          
-          !!Added by AM 2016-03!!
-          !!The naming "RHS" here is a remnant from that term was first introduced in evaluateResidual.F90 in an earlier version of SFINCS
-          if (RHSMode==1) then
-             dPhiHatdpsiHatToUseInRHS = dPhiHatdpsiHat
-          else
-             dPhiHatdpsiHatToUseInRHS = 0
-          end if
-          !!!!!!!!!!!!!!!!!!!!!!!
-
-          do ix = ixMin,Nx
-
-             !!Added by AM 2016-03!!
-             !!The naming "RHS" here is a remnant from that term was first introduced in evaluateResidual.F90 in an earlier version of SFINCS
-             xPartOfRHS = x2(ix)*expx2(ix)*( dnHatdpsiHats(ispecies)/nHat &
-                  + alpha*Z/THat*dPhiHatdpsiHatToUseInRHS &
-                  + (x2(ix) - three/two)*dTHatdpsiHats(ispecies)/THat)
-
-             xPartOfRHS2 = x2(ix)*expx2(ix)*dTHatdpsiHats(ispecies)/(THat*THat)
-             !!!!!!!!!!!!!!!!!!!!!!!
-
-             ! d Phi_1 / d theta term:
-             itheta = -1 ! Just so a runtime error occurs if I use itheta by mistake
-             do ithetaRow = ithetaMin, ithetaMax
-                do izeta = izetaMin, izetaMax
-                   rowIndex = getIndex(ispecies, ix, L+1, ithetaRow, izeta, BLOCK_F)
-
-!!$ COMMENTED BY AM 2016-02
-!!$                   factor = -alpha*Delta*DHat(ithetaRow,izeta)*BHat_sub_zeta(ithetaRow,izeta) &
-!!$                        /(two*BHat(ithetaRow,izeta)*BHat(ithetaRow,izeta)) &
-!!$                        * nHat * (mHat*sqrtMHat)/(THat*sqrtTHat*pi*sqrtpi) * expx2(ix) & ! This line is f_M
-!!$                        * (dNHatdpsiHats(ispecies)/nHat + (x2(ix)-3/two)*dTHatdpsiHats(ispecies)/THat)
-
-                   !!Added by AM 2016-03!!
-                   factor1 = -exp(-Z*alpha*Phi1Hat(ithetaRow,izeta)/THat)*alpha*Delta*DHat(ithetaRow,izeta)*BHat_sub_zeta(ithetaRow,izeta) &
-                        /(two*BHat(ithetaRow,izeta)*BHat(ithetaRow,izeta)) &
-                        * nHat * (mHat*sqrtMHat)/(THat*sqrtTHat*pi*sqrtpi) * expx2(ix) & ! This line is f_M
-                        * (dNHatdpsiHats(ispecies)/nHat + (x2(ix)-3/two)*dTHatdpsiHats(ispecies)/THat)
-
-                   factor2 = - alpha*alpha*Delta*DHat(ithetaRow,izeta)/(two*pi*sqrtpi*BHat(ithetaRow,izeta)*BHat(ithetaRow,izeta)) &
-                        * Z * nHat*mHat*sqrtMHat/(THat*THat*sqrtTHat) &
-                        * exp(-Z*alpha*Phi1Hat(ithetaRow,izeta)/THat)*expx2(ix)*BHat_sub_zeta(ithetaRow,izeta) &
-                        * (dPhiHatdpsiHat + Phi1Hat(ithetaRow,izeta)*dTHatdpsiHats(ispecies)/THat)
-
-                   do ithetaCol = 1,Ntheta
-                      colIndex = getIndex(1,1,1,ithetaCol, izeta, BLOCK_QN)
-!!                      call MatSetValueSparse(matrix, rowIndex, colIndex,& !!Commented by AM 2016-03
-!!                           factor*ddtheta(ithetaRow, ithetaCol), ADD_VALUES, ierr) !!Commented by AM 2016-03
-                      !!! SHOULD THE NEXT LINE BE MatSetValueSparse???
-                      !!NEXT CALL TEMPORARILY COMMENTED BY AM!!
-!!$                      call MatSetValueDense(matrix, rowIndex, colIndex,& !!Added by AM 2016-03
-!!$                           (factor1 + factor2)*ddtheta(ithetaRow, ithetaCol), ADD_VALUES, ierr) !!Added by AM 2016-03
-
-                      !!TEST BY AM 2016-04-11!!
-                      call MatSetValueSparse(matrix, rowIndex, colIndex,& !!Added by AM 2016-03
-                           (factor1 + factor2)*ddtheta(ithetaRow, ithetaCol), ADD_VALUES, ierr) !!Added by AM 2016-03
-                      !!!!!!!!!!!!!!!!!!!!!!!!!
-
-                   end do
-                end do
-             end do
-
-             ! d Phi_1 / d zeta term:
-             izeta = -1 ! Just so a runtime error occurs if I use itheta by mistake
-             ithetaRow = -1 ! Just so a runtime error occurs if I use itheta by mistake
-             ithetaCol = -1 ! Just so a runtime error occurs if I use itheta by mistake
-             do itheta = ithetaMin, ithetaMax
-                do izetaRow = izetaMin, izetaMax
-                   rowIndex = getIndex(ispecies, ix, L+1, itheta, izetaRow, BLOCK_F)
-
-!!$ COMMENTED BY AM 2016-02
-!!$                   factor = alpha*Delta*DHat(ithetaRow,izeta)*BHat_sub_theta(ithetaRow,izeta) &
-!!$                        /(two*BHat(ithetaRow,izeta)*BHat(ithetaRow,izeta)) &
-!!$                        * nHat * (mHat*sqrtMHat)/(THat*sqrtTHat*pi*sqrtpi) * expx2(ix) & ! This line is f_M
-!!$                        * (dNHatdpsiHats(ispecies)/nHat + (x2(ix)-3/two)*dTHatdpsiHats(ispecies)/THat)
-                   
-                   !! ADDED BY AM 2016-02!!
-                   factor1 = exp(-Z*alpha*Phi1Hat(itheta,izetaRow)/THat)*alpha*Delta*DHat(itheta,izetaRow)*BHat_sub_theta(itheta,izetaRow) &
-                        /(two*BHat(itheta,izetaRow)*BHat(itheta,izetaRow)) &
-                        * nHat * (mHat*sqrtMHat)/(THat*sqrtTHat*pi*sqrtpi) * expx2(ix) & ! This line is f_M
-                        * (dNHatdpsiHats(ispecies)/nHat + (x2(ix)-3/two)*dTHatdpsiHats(ispecies)/THat)
-                   
-                   factor2 = alpha*alpha*Delta*DHat(itheta,izetaRow)/(two*pi*sqrtpi*BHat(itheta,izetaRow)*BHat(itheta,izetaRow)) &
-                        * Z * nHat*mHat*sqrtMHat/(THat*THat*sqrtTHat) &
-                        * exp(-Z*alpha*Phi1Hat(itheta,izetaRow)/THat)*expx2(ix)*BHat_sub_theta(itheta,izetaRow) &
-                        * (dPhiHatdpsiHat + Phi1Hat(itheta,izetaRow)*dTHatdpsiHats(ispecies)/THat)
-                   
-                   do izetaCol = 1,Nzeta
-                      colIndex = getIndex(1,1,1,itheta, izetaCol, BLOCK_QN)
-                      !!                      call MatSetValueSparse(matrix, rowIndex, colIndex,& !!Commented by AM 2016-03
-                      !!                           factor*ddzeta(izetaRow, izetaCol), ADD_VALUES, ierr) !!Commented by AM 2016-03
-                      !!! SHOULD THE NEXT LINE BE MatSetValueSparse ????
-                      !!NEXT CALL TEMPORARILY COMMENTED BY AM!!
-!!$                      call MatSetValueDense(matrix, rowIndex, colIndex,& !!Added by AM 2016-03
-!!$                           (factor1 + factor2)*ddzeta(izetaRow, izetaCol), ADD_VALUES, ierr) !!Added by AM 2016-03
-
-                      !!TEST BY AM 2016-04-11!!
-                      call MatSetValueSparse(matrix, rowIndex, colIndex,& !!Added by AM 2016-03
-                           (factor1 + factor2)*ddzeta(izetaRow, izetaCol), ADD_VALUES, ierr) !!Added by AM 2016-03
-                      !!!!!!!!!!!!!!!!!!!!!!!!!
-                      
-                   end do
-                end do
-             end do
-             !!!!!!!!!!!!!!!!!!!!!!!!
-             !!Added by AM 2016-02!!
-             !!Add additional terms in the Jacobian
-             if (whichMatrix == 0 .or. whichMatrix == 1) then
-                itheta = -1 ! Just so a runtime error occurs if I use itheta by mistake
-                izeta = -1 ! Just so a runtime error occurs if I use itheta by mistake
-                ithetaRow = -1 ! Just so a runtime error occurs if I use itheta by mistake
-                ithetaCol = -1 ! Just so a runtime error occurs if I use itheta by mistake
-                izetaRow = -1 ! Just so a runtime error occurs if I use itheta by mistake
-                izetaCol = -1 ! Just so a runtime error occurs if I use itheta by mistake
-                do itheta = ithetaMin, ithetaMax
-                   do izeta = izetaMin, izetaMax
-                      rowIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                      rowIndex2 = getIndex(ispecies, ix, L2+1, itheta, izeta, BLOCK_F) !!Added by AM 2016-03 to add extra P_2 terms
-                      
-                      !!These terms are diagonal in theta and zeta
-                      colIndex = getIndex(1,1,1,itheta, izeta, BLOCK_QN)
-                      
-                      !!The following factors are only used in the Jacobian. These terms do not contain d/dtheta or d/dzeta
-                      !!but d(Phi1)/dtheta, d(Phi1)/dzeta, dB/dtheta, dB/dzeta.
-                      !!Therefore they are the same when adding the d/dtheta terms as when adding the d/dzeta terms.
-                      
-                      !!factorJ1 stems from factor1 but contains both dPhi1Hatdtheta and dPhi1Hatdzeta parts
-                      factorJ1 = exp(-Z*alpha*Phi1Hat(itheta,izeta)/THat)*alpha*Delta*DHat(itheta,izeta) &
-                           *(- BHat_sub_zeta(itheta,izeta)* dPhi1Hatdtheta(itheta, izeta) + BHat_sub_theta(itheta, izeta)*dPhi1Hatdzeta(itheta, izeta))&
-                           /(two*BHat(itheta,izeta)*BHat(itheta,izeta)) &
-                           * nHat * (mHat*sqrtMHat)/(THat*sqrtTHat*pi*sqrtpi) * expx2(ix) & ! This line is f_M
-                           * (dNHatdpsiHats(ispecies)/nHat + (x2(ix)-3/two)*dTHatdpsiHats(ispecies)/THat)  
-                      
-                      !!factorJ2 stems from factor2 but contains both dPhi1Hatdtheta and dPhi1Hatdzeta parts
-                      factorJ2 = alpha*alpha*Delta*DHat(itheta,izeta)/(two*pi*sqrtpi*BHat(itheta,izeta)*BHat(itheta,izeta)) &
-                           * Z * nHat*mHat*sqrtMHat/(THat*THat*sqrtTHat) &
-                           * exp(-Z*alpha*Phi1Hat(itheta,izeta)/THat)*expx2(ix) &
-                           * (- BHat_sub_zeta(itheta,izeta)*dPhi1Hatdtheta(itheta, izeta) + BHat_sub_theta(itheta, izeta)*dPhi1Hatdzeta(itheta, izeta)) &
-                           * (dPhiHatdpsiHat + Phi1Hat(itheta,izeta)*dTHatdpsiHats(ispecies)/THat)
-                      
-                      !!factorJ3 is only used in the Jacobian, it corresponds to a part \propto exp(-Ze Phi1/T) which is
-                      !!implemented in evaluateResidual.F90 for the residual
-                      factorJ3 = Delta*nHat*mHat*sqrtMHat &
-                           /(2*pi*sqrtpi*Z*(BHat(itheta,izeta)**3)*sqrtTHat) &
-                           *(- BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) + BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
-                           * DHat(itheta,izeta) * (xPartOfRHS + xPartOfRHS2*Z*alpha*Phi1Hat(itheta,izeta))  & 
-                           * exp(-Z*alpha*Phi1Hat(itheta,izeta)/THat)
-                      
-                      !!factorJ4 is only used in the Jacobian, it corresponds to the second term in factorJ2 divided by Phi1
-                      factorJ4 =  alpha*alpha*Delta*DHat(itheta,izeta)/(two*pi*sqrtpi*BHat(itheta,izeta)*BHat(itheta,izeta)) &
-                           * Z * nHat*mHat*sqrtMHat/(THat*THat*sqrtTHat) &
-                           * exp(-Z*alpha*Phi1Hat(itheta,izeta)/THat)*expx2(ix) &
-                           *(- BHat_sub_zeta(itheta,izeta)*dPhi1Hatdtheta(itheta,izeta) + BHat_sub_theta(itheta,izeta)*dPhi1Hatdzeta(itheta,izeta))&
-                           * dTHatdpsiHats(ispecies)/THat
-                      
-                      !!factorJ5 is only used in the Jacobian, it corresponds to the second term in factorJ3 divided by Phi1
-                      factorJ5 = Delta*nHat*mHat*sqrtMHat &
-                           /(2*pi*sqrtpi*(BHat(itheta,izeta)**3)*sqrtTHat) &
-                           *(- BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) + BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
-                           * DHat(itheta,izeta) * xPartOfRHS2*alpha  & 
-                           * exp(-Z*alpha*Phi1Hat(itheta,izeta)/THat)
-                      
-                      
-                      !!SECTION TEMPORARILY COMMENTED BY AM!!
-                      !!Add L=0 component
-                      call MatSetValueDense(matrix, rowIndex, colIndex,&
-                           -Z*alpha*(factorJ1 + factorJ2)/THat &
-                           -Z*alpha* (4/three)*factorJ3/THat &
-                           + factorJ4 &
-                           + (4/three)*factorJ5, ADD_VALUES, ierr) 
-                      
-                      !!Add L=2 component
-                      call MatSetValueDense(matrix, rowIndex2, colIndex,&
-                           -Z*alpha* (two/three)*factorJ3/THat &
-                           + (two/three)*factorJ5, ADD_VALUES, ierr)
-                      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-                      !!TEST BY AM 2016-04-11!!
-!!$                      call MatSetValueSparse(matrix, rowIndex, colIndex,&
-!!$                           -Z*alpha*(factorJ1 + factorJ2)/THat &
-!!$                           -Z*alpha* (4/three)*factorJ3/THat &
-!!$                           + factorJ4 &
-!!$                           + (4/three)*factorJ5, ADD_VALUES, ierr) 
-!!$                      
-!!$                      !!Add L=2 component
-!!$                      call MatSetValueSparse(matrix, rowIndex2, colIndex,&
-!!$                           -Z*alpha* (two/three)*factorJ3/THat &
-!!$                           + (two/three)*factorJ5, ADD_VALUES, ierr)
-                      !!!!!!!!!!!!!!!!!!!!!!!!!
-                      
-                   end do
-                end do
-             end if
-             !!!!!!!!!!!!!!!!!!!!!!!
-          end do
-       end if       
-
-       ! *********************************************************
-       ! Add the nonlinear term in the residual, which also is
-       ! the block in the Jacobian from d(kinetic eqn) / d f.
-       ! *********************************************************
-       ! Note that this term is absent in the first iteration of a nonlinear calculation, because the term is proportional to Phi1.
-       ! Therefore, if reusePreconditioner=true, we do not include this term in the preconditioner (which is great because this term introduces a lot of nonzeros.)
-       ! If reusePreconditioner=false, then we DO include this term in the preconditioner.
-       ! We must use MatSetValueDense instead of MatSetValueSparse in this term so that we can add some "nonzero" elements whose value is actually 0
-       ! in the first iteration (due to Phi1=0). The reason is that PETSc will re-use the pattern of nonzeros from the first iteration in subsequent iterations.
-       ! However, we need not add elements which are 0 due to ddtheta=0 as opposed to because Phi1=0, since such elements will remain 0 at every iteration of SNES.
-
-       !if (nonlinear .and. (whichMatrix .ne. 2)) then
-       !!if (nonlinear .and. (whichMatrix == 1 .or. whichMatrix == 3 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Commented by AM 2016-02
-       !if (.false.) then
-       if (includePhi1 .and. includePhi1InKineticEquation .and. (whichMatrix == 1 .or. whichMatrix == 3 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Added by AM 2016-02
-
-          !print *,"@@@@@@ ",myRank," max(abs(dPhi1Hatdtheta)): ",maxval(abs(dPhi1Hatdtheta)),maxval(abs(dPhi1Hatdzeta))
-
-          allocate(nonlinearTerm_Lp1(Nx,Nx))
-          allocate(nonlinearTerm_Lm1(Nx,Nx))
-
-          do L=0,(Nxi-1)
+          do L=LMin,LMax
              if (L>0 .and. pointAtX0) then
                 ixMinCol = 2
              else
@@ -1366,137 +694,446 @@
                 ddxToUse = ddx
              end if
 
-             nonlinearTerm_Lp1 = (L+1)/(two*L+3) * ddxToUse
-             nonlinearTerm_Lm1 = L/(two*L-1)     * ddxToUse
              do ix=1,Nx
-                nonlinearTerm_Lp1(ix,ix) = nonlinearTerm_Lp1(ix,ix) + (L+1)*(L+2)/(two*L+3)/x(ix)
-                nonlinearTerm_Lm1(ix,ix) = nonlinearTerm_Lm1(ix,ix) - (L-1)*L/(two*L-1)/x(ix)
+                xPartOfXDot(ix,:) = x(ix) * ddxToUse(ix,:)
              end do
-             do itheta=ithetaMin,ithetaMax
 
-                do izeta=izetaMin,izetaMax
-                   factor = -alpha*Zs(ispecies)/(2*BHat(itheta,izeta)*sqrtTHat*sqrtMHat) &
-                        * (BHat_sup_theta(itheta,izeta)*dPhi1Hatdtheta(itheta,izeta) &
-                        + BHat_sup_zeta(itheta,izeta)*dPhi1Hatdzeta(itheta,izeta))
+             do ix_row = ixMin,Nx
+                do imn_row = 1,NFourier2
+                   rowIndex = getIndex(ispecies,ix_row,L+1,imn_row,BLOCK_F)
+                   do ix_col=ixMinCol,Nx
+                      do imn_col = 1,NFourier2
 
-                   do ix_row=ixMin,Nx
-                      rowIndex = getIndex(ispecies,ix_row,L+1,itheta,izeta,BLOCK_F)
+                         ! Term that is diagonal in L:
+                         colIndex=getIndex(ispecies,ix_col,L+1,imn_col,BLOCK_F)
+                         stuffToAdd = two*(3*L*L+3*L-2)/((two*L+3)*(2*L-1))*FourierMatrix(imn_row,imn_col) &
+                              + (2*L*L+2*L-one)/((two*L+3)*(2*L-1))*FourierMatrix2(imn_row,imn_col)
+                         call MatSetValueSparse(matrix,rowIndex,colIndex, &
+                              stuffToAdd*xPartOfXDot(ix_row,ix_col), ADD_VALUES, ierr)
 
-                      ! Term that is super-diagonal in L:
-                      if (L<(Nxi-1)) then
-                         ell = L + 1
-                         do ix_col=ixMinCol,Nx
-                            if (abs(nonlinearTerm_Lp1(ix_row,ix_col))>threshholdForInclusion) then
-                               colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F)
-                               ! We must use MatSetValueDense instead of MatSetValueSparse here!!
-                               call MatSetValueDense(matrix, rowIndex, colIndex, &
-                                    factor*nonlinearTerm_Lp1(ix_row,ix_col), ADD_VALUES, ierr)
+                         ! Drop the off-by-2 diagonal terms in L if this is the preconditioner
+                         ! and preconditioner_xi = 1:
+                         if (whichMatrix>0 .or. preconditioner_xi==0) then
+
+                            ! Term that is super-super-diagonal in L:
+                            if (L<(Nxi-2)) then
+                               ell = L + 2
+                               colIndex=getIndex(ispecies,ix_col,ell+1,imn_col,BLOCK_F)
+                               stuffToAdd = (L+1)*(L+2)/((two*L+5)*(2*L+3)) * &
+                                    (FourierMatrix(imn_row,imn_col)+FourierMatrix2(imn_row,imn_col))
+                               call MatSetValueSparse(matrix,rowIndex,colIndex, &
+                                    stuffToAdd*xPartOfXDot(ix_row,ix_col), ADD_VALUES, ierr)
                             end if
-                         end do
-                      end if
-                   
-                      ! Term that is sub-diagonal in L:
-                      if (L>0) then
-                         ell = L - 1
-                         do ix_col=ixMinCol,Nx
-                            if (abs(nonlinearTerm_Lm1(ix_row,ix_col))>threshholdForInclusion) then
-                               colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F)
-                               ! We must use MatSetValueDense instead of MatSetValueSparse here!!
-                               call MatSetValueDense(matrix, rowIndex, colIndex, &
-                                    factor*nonlinearTerm_Lm1(ix_row,ix_col), ADD_VALUES, ierr)
+
+                            ! Term that is sub-sub-diagonal in L:
+                            if (L>1) then
+                               ell = L - 2
+                               colIndex=getIndex(ispecies,ix_col,ell+1,imn_col,BLOCK_F)
+                               stuffToAdd = L*(L-1)/((two*L-3)*(2*L-1)) * &
+                                    (FourierMatrix(imn_row,imn_col)+FourierMatrix2(imn_row,imn_col))
+                               call MatSetValueSparse(matrix,rowIndex,colIndex, &
+                                    stuffToAdd*xPartOfXDot(ix_row,ix_col), ADD_VALUES, ierr)
                             end if
-                         end do
-                      end if
-                   end do
-                end do
-             end do
-          end do
-          deallocate(nonlinearTerm_Lp1)
-          deallocate(nonlinearTerm_Lm1)
-          
-       end if
 
-       ! *********************************************************
-       ! Add the block in the Jacobian from d(kinetic eqn) / d Phi1
-       ! associated with the nonlinear term.
-       ! *********************************************************
-       ! Note that this term is absent in the first iteration of a nonlinear calculation, because the term is proportional to delta f.
-       ! Therefore, if reusePreconditioner=true, we do not include this term in the preconditioner (which is great because this term introduces a lot of nonzeros.)
-       ! If reusePreconditioner=false, then we DO include this term in the preconditioner.
-       ! We must use MatSetValueDense instead of MatSetValueSparse in this term so that we can add some "nonzero" elements whose value is actually 0
-       ! in the first iteration (due to delta f = 0). The reason is that PETSc will re-use the pattern of nonzeros from the first iteration in subsequent iterations.
-       ! However, we need not add elements which are 0 due to ddtheta=0 as opposed to because delta f = 0, since such elements will remain 0 at every iteration of SNES.
-
-       !!if (nonlinear .and. (whichMatrix==1 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Commented by AM 2016-02
-       
-       ! This next line should be replaced with the line after!!!
-       !if (.false.) then
-       if (includePhi1 .and. includePhi1InKineticEquation .and. (whichMatrix==1 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Added by AM 2016-02
-       !if (nonlinear .and. (whichMatrix==1)) then
-       !if (nonlinear .and. (whichMatrix==0 .or. whichMatrix==1)) then
-          allocate(tempVector1(Nx))
-          allocate(tempVector2(Nx))
-          do itheta = ithetaMin,ithetaMax
-             do izeta = izetaMin,izetaMax
-                factor = -alpha*Zs(ispecies)/(2*BHat(itheta,izeta)*sqrtTHat*sqrtMHat)
-                do L=0,(Nxi-1)
-                   tempVector2=0
-
-                   if (L>0) then
-                      ! Add the delta_{L-1, ell} terms:
-                      ell = L-1
-                      do ix=1,Nx
-                         index = getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
-                         ! Add 1 because we are indexing a Fortran array instead of a PETSc object
-                         tempVector1(ix) = stateArray(index+1)
-                         tempVector2(ix) = tempVector2(ix) - (L-1)*L/(two*L-1)*stateArray(index+1)/x(ix)
-                      end do
-                      tempVector2 = tempVector2 + L/(two*L-1) * matmul(ddx,tempVector1)
-                   end if
-
-                   if (L<Nxi-1) then
-                      ! Add the delta_{L+1, ell} terms:
-                      ell = L+1
-                      do ix=1,Nx
-                         index = getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
-                         ! Add 1 because we are indexing a Fortran array instead of a PETSc object
-                         tempVector1(ix) = stateArray(index+1)
-                         tempVector2(ix) = tempVector2(ix) + (L+1)*(L+2)/(two*L+3)*stateArray(index+1)/x(ix)
-                      end do
-                      tempVector2 = tempVector2 + (L+1)/(two*L+3) * matmul(ddx,tempVector1)
-                   end if
-
-                   do ix=ixMin,Nx
-                      rowIndex = getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
-
-                      ! Add the d Phi_1 / d theta term:
-                      do j=1,Ntheta
-                         if (abs(ddtheta(itheta,j))>threshholdForInclusion) then
-                            colIndex = getIndex(1,1,1,j,izeta,BLOCK_QN)
-                            ! We must use MatSetValueDense instead of MatSetValueSparse here!!
-                            call MatSetValueDense(matrix, rowIndex, colIndex, &
-                                 factor*BHat_sup_theta(itheta,izeta)*ddtheta(itheta,j)*tempVector2(ix), &
-                                 ADD_VALUES, ierr)
-                         end if
-                      end do
-
-                      ! Add the d Phi_1 / d zeta term:
-                      do j=1,Nzeta
-                         if (abs(ddzeta(izeta,j))>threshholdForInclusion) then
-                            colIndex = getIndex(1,1,1,itheta,j,BLOCK_QN)
-                            ! We must use MatSetValueDense instead of MatSetValueSparse here!!
-                            call MatSetValueDense(matrix, rowIndex, colIndex, &
-                                 factor*BHat_sup_zeta(itheta,izeta)*ddzeta(izeta,j)*tempVector2(ix), &
-                                 ADD_VALUES, ierr)
                          end if
                       end do
                    end do
                 end do
              end do
           end do
-          deallocate(tempVector1)
-          deallocate(tempVector2)
        end if
+
+! The Phi1-related code below has not yet been updated for the new Fourier spatial discretization.
+!!$
+!!$       ! *********************************************************
+!!$       ! SECTION ADDED BY AM 2016-02
+!!$       ! Add terms in drift-kinetic equation that contain linear operator
+!!$       ! acting on Phi1 (but not f1), except the radial ExB drive term which
+!!$       ! is added below. These terms are the same in the residual and Jacobian.
+!!$       ! We also add additional terms for the Jacobian,
+!!$       !**********************************************************
+!!$       
+!!$
+!!$       ! *********************************************************
+!!$       ! SECTION MODIFIED BY AM 2016-02/03
+!!$       ! Before this section added the radial ExB drive term:
+!!$       ! (v_E dot grad psi) f_M [(1/n)(dn/dpsi) + (x^2 - 3/2)(1/T)(dT/dpsi)],
+!!$       ! considered by Garcia-Regana et al PPCF (2013),
+!!$       ! but now it is multiplied by exp(-Ze Phi1 / T) according to 
+!!$       ! Garcia-Regana et al arxiv:1501.03967 (2015).
+!!$       ! We also add the rest of the terms in the drift-kinetic equation 
+!!$       ! that contain a linear operator acting on Phi1 (but not f1).
+!!$       ! These terms are the same in the residual and Jacobian.
+!!$       ! We also add additional terms for the Jacobian.
+!!$       ! *********************************************************
+!!$
+!!$       !!THE includeRadialExBDrive FLAG IS NOT USED ANYMORE
+!!$       !!if ((whichMatrix .ne. 2) .and. includeRadialExBDrive) then !!Commented by AM 2016-02
+!!$       if ((whichMatrix .ne. 2) .and. includePhi1 .and. includePhi1InKineticEquation) then !!Added by AM 2016-02
+!!$          L=0
+!!$          L2=2 !!Added by AM 2016-03 to add extra P_2 terms
+!!$          
+!!$          !!Added by AM 2016-03!!
+!!$          !!The naming "RHS" here is a remnant from that term was first introduced in evaluateResidual.F90 in an earlier version of SFINCS
+!!$          if (RHSMode==1) then
+!!$             dPhiHatdpsiHatToUseInRHS = dPhiHatdpsiHat
+!!$          else
+!!$             dPhiHatdpsiHatToUseInRHS = 0
+!!$          end if
+!!$          !!!!!!!!!!!!!!!!!!!!!!!
+!!$
+!!$          do ix = ixMin,Nx
+!!$
+!!$             !!Added by AM 2016-03!!
+!!$             !!The naming "RHS" here is a remnant from that term was first introduced in evaluateResidual.F90 in an earlier version of SFINCS
+!!$             xPartOfRHS = x2(ix)*expx2(ix)*( dnHatdpsiHats(ispecies)/nHat &
+!!$                  + alpha*Z/THat*dPhiHatdpsiHatToUseInRHS &
+!!$                  + (x2(ix) - three/two)*dTHatdpsiHats(ispecies)/THat)
+!!$
+!!$             xPartOfRHS2 = x2(ix)*expx2(ix)*dTHatdpsiHats(ispecies)/(THat*THat)
+!!$             !!!!!!!!!!!!!!!!!!!!!!!
+!!$
+!!$             ! d Phi_1 / d theta term:
+!!$             itheta = -1 ! Just so a runtime error occurs if I use itheta by mistake
+!!$             do ithetaRow = ithetaMin, ithetaMax
+!!$                do izeta = izetaMin, izetaMax
+!!$                   rowIndex = getIndex(ispecies, ix, L+1, ithetaRow, izeta, BLOCK_F)
+!!$
+!!$! COMMENTED BY AM 2016-02
+!!$!                   factor = -alpha*Delta*DHat(ithetaRow,izeta)*BHat_sub_zeta(ithetaRow,izeta) &
+!!$!                        /(two*BHat(ithetaRow,izeta)*BHat(ithetaRow,izeta)) &
+!!$!                        * nHat * (mHat*sqrtMHat)/(THat*sqrtTHat*pi*sqrtpi) * expx2(ix) & ! This line is f_M
+!!$!                        * (dNHatdpsiHats(ispecies)/nHat + (x2(ix)-3/two)*dTHatdpsiHats(ispecies)/THat)
+!!$
+!!$                   !!Added by AM 2016-03!!
+!!$                   factor1 = -exp(-Z*alpha*Phi1Hat(ithetaRow,izeta)/THat)*alpha*Delta*DHat(ithetaRow,izeta)*BHat_sub_zeta(ithetaRow,izeta) &
+!!$                        /(two*BHat(ithetaRow,izeta)*BHat(ithetaRow,izeta)) &
+!!$                        * nHat * (mHat*sqrtMHat)/(THat*sqrtTHat*pi*sqrtpi) * expx2(ix) & ! This line is f_M
+!!$                        * (dNHatdpsiHats(ispecies)/nHat + (x2(ix)-3/two)*dTHatdpsiHats(ispecies)/THat)
+!!$
+!!$                   factor2 = - alpha*alpha*Delta*DHat(ithetaRow,izeta)/(two*pi*sqrtpi*BHat(ithetaRow,izeta)*BHat(ithetaRow,izeta)) &
+!!$                        * Z * nHat*mHat*sqrtMHat/(THat*THat*sqrtTHat) &
+!!$                        * exp(-Z*alpha*Phi1Hat(ithetaRow,izeta)/THat)*expx2(ix)*BHat_sub_zeta(ithetaRow,izeta) &
+!!$                        * (dPhiHatdpsiHat + Phi1Hat(ithetaRow,izeta)*dTHatdpsiHats(ispecies)/THat)
+!!$
+!!$                   do ithetaCol = 1,Ntheta
+!!$                      colIndex = getIndex(1,1,1,ithetaCol, izeta, BLOCK_QN)
+!!$!                      call MatSetValueSparse(matrix, rowIndex, colIndex,& !!Commented by AM 2016-03
+!!$!                           factor*ddtheta(ithetaRow, ithetaCol), ADD_VALUES, ierr) !!Commented by AM 2016-03
+!!$                      !!! SHOULD THE NEXT LINE BE MatSetValueSparse???
+!!$                      !!NEXT CALL TEMPORARILY COMMENTED BY AM!!
+!!$!                      call MatSetValueDense(matrix, rowIndex, colIndex,& !!Added by AM 2016-03
+!!$!                           (factor1 + factor2)*ddtheta(ithetaRow, ithetaCol), ADD_VALUES, ierr) !!Added by AM 2016-03
+!!$
+!!$                      !!TEST BY AM 2016-04-11!!
+!!$                      call MatSetValueSparse(matrix, rowIndex, colIndex,& !!Added by AM 2016-03
+!!$                           (factor1 + factor2)*ddtheta(ithetaRow, ithetaCol), ADD_VALUES, ierr) !!Added by AM 2016-03
+!!$                      !!!!!!!!!!!!!!!!!!!!!!!!!
+!!$
+!!$                   end do
+!!$                end do
+!!$             end do
+!!$
+!!$             ! d Phi_1 / d zeta term:
+!!$             izeta = -1 ! Just so a runtime error occurs if I use itheta by mistake
+!!$             ithetaRow = -1 ! Just so a runtime error occurs if I use itheta by mistake
+!!$             ithetaCol = -1 ! Just so a runtime error occurs if I use itheta by mistake
+!!$             do itheta = ithetaMin, ithetaMax
+!!$                do izetaRow = izetaMin, izetaMax
+!!$                   rowIndex = getIndex(ispecies, ix, L+1, itheta, izetaRow, BLOCK_F)
+!!$
+!!$! COMMENTED BY AM 2016-02
+!!$!                   factor = alpha*Delta*DHat(ithetaRow,izeta)*BHat_sub_theta(ithetaRow,izeta) &
+!!$!                        /(two*BHat(ithetaRow,izeta)*BHat(ithetaRow,izeta)) &
+!!$!                        * nHat * (mHat*sqrtMHat)/(THat*sqrtTHat*pi*sqrtpi) * expx2(ix) & ! This line is f_M
+!!$!                        * (dNHatdpsiHats(ispecies)/nHat + (x2(ix)-3/two)*dTHatdpsiHats(ispecies)/THat)
+!!$                   
+!!$                   !! ADDED BY AM 2016-02!!
+!!$                   factor1 = exp(-Z*alpha*Phi1Hat(itheta,izetaRow)/THat)*alpha*Delta*DHat(itheta,izetaRow)*BHat_sub_theta(itheta,izetaRow) &
+!!$                        /(two*BHat(itheta,izetaRow)*BHat(itheta,izetaRow)) &
+!!$                        * nHat * (mHat*sqrtMHat)/(THat*sqrtTHat*pi*sqrtpi) * expx2(ix) & ! This line is f_M
+!!$                        * (dNHatdpsiHats(ispecies)/nHat + (x2(ix)-3/two)*dTHatdpsiHats(ispecies)/THat)
+!!$                   
+!!$                   factor2 = alpha*alpha*Delta*DHat(itheta,izetaRow)/(two*pi*sqrtpi*BHat(itheta,izetaRow)*BHat(itheta,izetaRow)) &
+!!$                        * Z * nHat*mHat*sqrtMHat/(THat*THat*sqrtTHat) &
+!!$                        * exp(-Z*alpha*Phi1Hat(itheta,izetaRow)/THat)*expx2(ix)*BHat_sub_theta(itheta,izetaRow) &
+!!$                        * (dPhiHatdpsiHat + Phi1Hat(itheta,izetaRow)*dTHatdpsiHats(ispecies)/THat)
+!!$                   
+!!$                   do izetaCol = 1,Nzeta
+!!$                      colIndex = getIndex(1,1,1,itheta, izetaCol, BLOCK_QN)
+!!$                      !!                      call MatSetValueSparse(matrix, rowIndex, colIndex,& !!Commented by AM 2016-03
+!!$                      !!                           factor*ddzeta(izetaRow, izetaCol), ADD_VALUES, ierr) !!Commented by AM 2016-03
+!!$                      !!! SHOULD THE NEXT LINE BE MatSetValueSparse ????
+!!$                      !!NEXT CALL TEMPORARILY COMMENTED BY AM!!
+!!$!                      call MatSetValueDense(matrix, rowIndex, colIndex,& !!Added by AM 2016-03
+!!$!                           (factor1 + factor2)*ddzeta(izetaRow, izetaCol), ADD_VALUES, ierr) !!Added by AM 2016-03
+!!$
+!!$                      !!TEST BY AM 2016-04-11!!
+!!$                      call MatSetValueSparse(matrix, rowIndex, colIndex,& !!Added by AM 2016-03
+!!$                           (factor1 + factor2)*ddzeta(izetaRow, izetaCol), ADD_VALUES, ierr) !!Added by AM 2016-03
+!!$                      !!!!!!!!!!!!!!!!!!!!!!!!!
+!!$                      
+!!$                   end do
+!!$                end do
+!!$             end do
+!!$             !!!!!!!!!!!!!!!!!!!!!!!!
+!!$             !!Added by AM 2016-02!!
+!!$             !!Add additional terms in the Jacobian
+!!$             if (whichMatrix == 0 .or. whichMatrix == 1) then
+!!$                itheta = -1 ! Just so a runtime error occurs if I use itheta by mistake
+!!$                izeta = -1 ! Just so a runtime error occurs if I use itheta by mistake
+!!$                ithetaRow = -1 ! Just so a runtime error occurs if I use itheta by mistake
+!!$                ithetaCol = -1 ! Just so a runtime error occurs if I use itheta by mistake
+!!$                izetaRow = -1 ! Just so a runtime error occurs if I use itheta by mistake
+!!$                izetaCol = -1 ! Just so a runtime error occurs if I use itheta by mistake
+!!$                do itheta = ithetaMin, ithetaMax
+!!$                   do izeta = izetaMin, izetaMax
+!!$                      rowIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+!!$                      rowIndex2 = getIndex(ispecies, ix, L2+1, itheta, izeta, BLOCK_F) !!Added by AM 2016-03 to add extra P_2 terms
+!!$                      
+!!$                      !!These terms are diagonal in theta and zeta
+!!$                      colIndex = getIndex(1,1,1,itheta, izeta, BLOCK_QN)
+!!$                      
+!!$                      !!The following factors are only used in the Jacobian. These terms do not contain d/dtheta or d/dzeta
+!!$                      !!but d(Phi1)/dtheta, d(Phi1)/dzeta, dB/dtheta, dB/dzeta.
+!!$                      !!Therefore they are the same when adding the d/dtheta terms as when adding the d/dzeta terms.
+!!$                      
+!!$                      !!factorJ1 stems from factor1 but contains both dPhi1Hatdtheta and dPhi1Hatdzeta parts
+!!$                      factorJ1 = exp(-Z*alpha*Phi1Hat(itheta,izeta)/THat)*alpha*Delta*DHat(itheta,izeta) &
+!!$                           *(- BHat_sub_zeta(itheta,izeta)* dPhi1Hatdtheta(itheta, izeta) + BHat_sub_theta(itheta, izeta)*dPhi1Hatdzeta(itheta, izeta))&
+!!$                           /(two*BHat(itheta,izeta)*BHat(itheta,izeta)) &
+!!$                           * nHat * (mHat*sqrtMHat)/(THat*sqrtTHat*pi*sqrtpi) * expx2(ix) & ! This line is f_M
+!!$                           * (dNHatdpsiHats(ispecies)/nHat + (x2(ix)-3/two)*dTHatdpsiHats(ispecies)/THat)  
+!!$                      
+!!$                      !!factorJ2 stems from factor2 but contains both dPhi1Hatdtheta and dPhi1Hatdzeta parts
+!!$                      factorJ2 = alpha*alpha*Delta*DHat(itheta,izeta)/(two*pi*sqrtpi*BHat(itheta,izeta)*BHat(itheta,izeta)) &
+!!$                           * Z * nHat*mHat*sqrtMHat/(THat*THat*sqrtTHat) &
+!!$                           * exp(-Z*alpha*Phi1Hat(itheta,izeta)/THat)*expx2(ix) &
+!!$                           * (- BHat_sub_zeta(itheta,izeta)*dPhi1Hatdtheta(itheta, izeta) + BHat_sub_theta(itheta, izeta)*dPhi1Hatdzeta(itheta, izeta)) &
+!!$                           * (dPhiHatdpsiHat + Phi1Hat(itheta,izeta)*dTHatdpsiHats(ispecies)/THat)
+!!$                      
+!!$                      !!factorJ3 is only used in the Jacobian, it corresponds to a part \propto exp(-Ze Phi1/T) which is
+!!$                      !!implemented in evaluateResidual.F90 for the residual
+!!$                      factorJ3 = Delta*nHat*mHat*sqrtMHat &
+!!$                           /(2*pi*sqrtpi*Z*(BHat(itheta,izeta)**3)*sqrtTHat) &
+!!$                           *(- BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) + BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
+!!$                           * DHat(itheta,izeta) * (xPartOfRHS + xPartOfRHS2*Z*alpha*Phi1Hat(itheta,izeta))  & 
+!!$                           * exp(-Z*alpha*Phi1Hat(itheta,izeta)/THat)
+!!$                      
+!!$                      !!factorJ4 is only used in the Jacobian, it corresponds to the second term in factorJ2 divided by Phi1
+!!$                      factorJ4 =  alpha*alpha*Delta*DHat(itheta,izeta)/(two*pi*sqrtpi*BHat(itheta,izeta)*BHat(itheta,izeta)) &
+!!$                           * Z * nHat*mHat*sqrtMHat/(THat*THat*sqrtTHat) &
+!!$                           * exp(-Z*alpha*Phi1Hat(itheta,izeta)/THat)*expx2(ix) &
+!!$                           *(- BHat_sub_zeta(itheta,izeta)*dPhi1Hatdtheta(itheta,izeta) + BHat_sub_theta(itheta,izeta)*dPhi1Hatdzeta(itheta,izeta))&
+!!$                           * dTHatdpsiHats(ispecies)/THat
+!!$                      
+!!$                      !!factorJ5 is only used in the Jacobian, it corresponds to the second term in factorJ3 divided by Phi1
+!!$                      factorJ5 = Delta*nHat*mHat*sqrtMHat &
+!!$                           /(2*pi*sqrtpi*(BHat(itheta,izeta)**3)*sqrtTHat) &
+!!$                           *(- BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) + BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
+!!$                           * DHat(itheta,izeta) * xPartOfRHS2*alpha  & 
+!!$                           * exp(-Z*alpha*Phi1Hat(itheta,izeta)/THat)
+!!$                      
+!!$                      
+!!$                      !!SECTION TEMPORARILY COMMENTED BY AM!!
+!!$                      !!Add L=0 component
+!!$                      call MatSetValueDense(matrix, rowIndex, colIndex,&
+!!$                           -Z*alpha*(factorJ1 + factorJ2)/THat &
+!!$                           -Z*alpha* (4/three)*factorJ3/THat &
+!!$                           + factorJ4 &
+!!$                           + (4/three)*factorJ5, ADD_VALUES, ierr) 
+!!$                      
+!!$                      !!Add L=2 component
+!!$                      call MatSetValueDense(matrix, rowIndex2, colIndex,&
+!!$                           -Z*alpha* (two/three)*factorJ3/THat &
+!!$                           + (two/three)*factorJ5, ADD_VALUES, ierr)
+!!$                      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!$
+!!$                      !!TEST BY AM 2016-04-11!!
+!!$!                      call MatSetValueSparse(matrix, rowIndex, colIndex,&
+!!$!                           -Z*alpha*(factorJ1 + factorJ2)/THat &
+!!$!                           -Z*alpha* (4/three)*factorJ3/THat &
+!!$!                           + factorJ4 &
+!!$!                           + (4/three)*factorJ5, ADD_VALUES, ierr) 
+!!$!                      
+!!$!                      !!Add L=2 component
+!!$!                      call MatSetValueSparse(matrix, rowIndex2, colIndex,&
+!!$!                           -Z*alpha* (two/three)*factorJ3/THat &
+!!$!                           + (two/three)*factorJ5, ADD_VALUES, ierr)
+!!$                      !!!!!!!!!!!!!!!!!!!!!!!!!
+!!$                      
+!!$                   end do
+!!$                end do
+!!$             end if
+!!$             !!!!!!!!!!!!!!!!!!!!!!!
+!!$          end do
+!!$       end if       
+!!$
+!!$       ! *********************************************************
+!!$       ! Add the nonlinear term in the residual, which also is
+!!$       ! the block in the Jacobian from d(kinetic eqn) / d f.
+!!$       ! *********************************************************
+!!$       ! Note that this term is absent in the first iteration of a nonlinear calculation, because the term is proportional to Phi1.
+!!$       ! Therefore, if reusePreconditioner=true, we do not include this term in the preconditioner (which is great because this term introduces a lot of nonzeros.)
+!!$       ! If reusePreconditioner=false, then we DO include this term in the preconditioner.
+!!$       ! We must use MatSetValueDense instead of MatSetValueSparse in this term so that we can add some "nonzero" elements whose value is actually 0
+!!$       ! in the first iteration (due to Phi1=0). The reason is that PETSc will re-use the pattern of nonzeros from the first iteration in subsequent iterations.
+!!$       ! However, we need not add elements which are 0 due to ddtheta=0 as opposed to because Phi1=0, since such elements will remain 0 at every iteration of SNES.
+!!$
+!!$       !if (nonlinear .and. (whichMatrix .ne. 2)) then
+!!$       !!if (nonlinear .and. (whichMatrix == 1 .or. whichMatrix == 3 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Commented by AM 2016-02
+!!$       !if (.false.) then
+!!$       if (includePhi1 .and. includePhi1InKineticEquation .and. (whichMatrix == 1 .or. whichMatrix == 3 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Added by AM 2016-02
+!!$
+!!$          !print *,"@@@@@@ ",myRank," max(abs(dPhi1Hatdtheta)): ",maxval(abs(dPhi1Hatdtheta)),maxval(abs(dPhi1Hatdzeta))
+!!$
+!!$          allocate(nonlinearTerm_Lp1(Nx,Nx))
+!!$          allocate(nonlinearTerm_Lm1(Nx,Nx))
+!!$
+!!$          do L=0,(Nxi-1)
+!!$             if (L>0 .and. pointAtX0) then
+!!$                ixMinCol = 2
+!!$             else
+!!$                ixMinCol = 1
+!!$             end if
+!!$
+!!$             if (whichMatrix==0 .and. L >= preconditioner_x_min_L) then
+!!$                ddxToUse = ddx_preconditioner
+!!$             else
+!!$                ddxToUse = ddx
+!!$             end if
+!!$
+!!$             nonlinearTerm_Lp1 = (L+1)/(two*L+3) * ddxToUse
+!!$             nonlinearTerm_Lm1 = L/(two*L-1)     * ddxToUse
+!!$             do ix=1,Nx
+!!$                nonlinearTerm_Lp1(ix,ix) = nonlinearTerm_Lp1(ix,ix) + (L+1)*(L+2)/(two*L+3)/x(ix)
+!!$                nonlinearTerm_Lm1(ix,ix) = nonlinearTerm_Lm1(ix,ix) - (L-1)*L/(two*L-1)/x(ix)
+!!$             end do
+!!$             do itheta=ithetaMin,ithetaMax
+!!$
+!!$                do izeta=izetaMin,izetaMax
+!!$                   factor = -alpha*Zs(ispecies)/(2*BHat(itheta,izeta)*sqrtTHat*sqrtMHat) &
+!!$                        * (BHat_sup_theta(itheta,izeta)*dPhi1Hatdtheta(itheta,izeta) &
+!!$                        + BHat_sup_zeta(itheta,izeta)*dPhi1Hatdzeta(itheta,izeta))
+!!$
+!!$                   do ix_row=ixMin,Nx
+!!$                      rowIndex = getIndex(ispecies,ix_row,L+1,itheta,izeta,BLOCK_F)
+!!$
+!!$                      ! Term that is super-diagonal in L:
+!!$                      if (L<(Nxi-1)) then
+!!$                         ell = L + 1
+!!$                         do ix_col=ixMinCol,Nx
+!!$                            if (abs(nonlinearTerm_Lp1(ix_row,ix_col))>threshholdForInclusion) then
+!!$                               colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F)
+!!$                               ! We must use MatSetValueDense instead of MatSetValueSparse here!!
+!!$                               call MatSetValueDense(matrix, rowIndex, colIndex, &
+!!$                                    factor*nonlinearTerm_Lp1(ix_row,ix_col), ADD_VALUES, ierr)
+!!$                            end if
+!!$                         end do
+!!$                      end if
+!!$                   
+!!$                      ! Term that is sub-diagonal in L:
+!!$                      if (L>0) then
+!!$                         ell = L - 1
+!!$                         do ix_col=ixMinCol,Nx
+!!$                            if (abs(nonlinearTerm_Lm1(ix_row,ix_col))>threshholdForInclusion) then
+!!$                               colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F)
+!!$                               ! We must use MatSetValueDense instead of MatSetValueSparse here!!
+!!$                               call MatSetValueDense(matrix, rowIndex, colIndex, &
+!!$                                    factor*nonlinearTerm_Lm1(ix_row,ix_col), ADD_VALUES, ierr)
+!!$                            end if
+!!$                         end do
+!!$                      end if
+!!$                   end do
+!!$                end do
+!!$             end do
+!!$          end do
+!!$          deallocate(nonlinearTerm_Lp1)
+!!$          deallocate(nonlinearTerm_Lm1)
+!!$          
+!!$       end if
+!!$
+!!$       ! *********************************************************
+!!$       ! Add the block in the Jacobian from d(kinetic eqn) / d Phi1
+!!$       ! associated with the nonlinear term.
+!!$       ! *********************************************************
+!!$       ! Note that this term is absent in the first iteration of a nonlinear calculation, because the term is proportional to delta f.
+!!$       ! Therefore, if reusePreconditioner=true, we do not include this term in the preconditioner (which is great because this term introduces a lot of nonzeros.)
+!!$       ! If reusePreconditioner=false, then we DO include this term in the preconditioner.
+!!$       ! We must use MatSetValueDense instead of MatSetValueSparse in this term so that we can add some "nonzero" elements whose value is actually 0
+!!$       ! in the first iteration (due to delta f = 0). The reason is that PETSc will re-use the pattern of nonzeros from the first iteration in subsequent iterations.
+!!$       ! However, we need not add elements which are 0 due to ddtheta=0 as opposed to because delta f = 0, since such elements will remain 0 at every iteration of SNES.
+!!$
+!!$       !!if (nonlinear .and. (whichMatrix==1 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Commented by AM 2016-02
+!!$       
+!!$       ! This next line should be replaced with the line after!!!
+!!$       !if (.false.) then
+!!$       if (includePhi1 .and. includePhi1InKineticEquation .and. (whichMatrix==1 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Added by AM 2016-02
+!!$       !if (nonlinear .and. (whichMatrix==1)) then
+!!$       !if (nonlinear .and. (whichMatrix==0 .or. whichMatrix==1)) then
+!!$          allocate(tempVector1(Nx))
+!!$          allocate(tempVector2(Nx))
+!!$          do itheta = ithetaMin,ithetaMax
+!!$             do izeta = izetaMin,izetaMax
+!!$                factor = -alpha*Zs(ispecies)/(2*BHat(itheta,izeta)*sqrtTHat*sqrtMHat)
+!!$                do L=0,(Nxi-1)
+!!$                   tempVector2=0
+!!$
+!!$                   if (L>0) then
+!!$                      ! Add the delta_{L-1, ell} terms:
+!!$                      ell = L-1
+!!$                      do ix=1,Nx
+!!$                         index = getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
+!!$                         ! Add 1 because we are indexing a Fortran array instead of a PETSc object
+!!$                         tempVector1(ix) = stateArray(index+1)
+!!$                         tempVector2(ix) = tempVector2(ix) - (L-1)*L/(two*L-1)*stateArray(index+1)/x(ix)
+!!$                      end do
+!!$                      tempVector2 = tempVector2 + L/(two*L-1) * matmul(ddx,tempVector1)
+!!$                   end if
+!!$
+!!$                   if (L<Nxi-1) then
+!!$                      ! Add the delta_{L+1, ell} terms:
+!!$                      ell = L+1
+!!$                      do ix=1,Nx
+!!$                         index = getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
+!!$                         ! Add 1 because we are indexing a Fortran array instead of a PETSc object
+!!$                         tempVector1(ix) = stateArray(index+1)
+!!$                         tempVector2(ix) = tempVector2(ix) + (L+1)*(L+2)/(two*L+3)*stateArray(index+1)/x(ix)
+!!$                      end do
+!!$                      tempVector2 = tempVector2 + (L+1)/(two*L+3) * matmul(ddx,tempVector1)
+!!$                   end if
+!!$
+!!$                   do ix=ixMin,Nx
+!!$                      rowIndex = getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
+!!$
+!!$                      ! Add the d Phi_1 / d theta term:
+!!$                      do j=1,Ntheta
+!!$                         if (abs(ddtheta(itheta,j))>threshholdForInclusion) then
+!!$                            colIndex = getIndex(1,1,1,j,izeta,BLOCK_QN)
+!!$                            ! We must use MatSetValueDense instead of MatSetValueSparse here!!
+!!$                            call MatSetValueDense(matrix, rowIndex, colIndex, &
+!!$                                 factor*BHat_sup_theta(itheta,izeta)*ddtheta(itheta,j)*tempVector2(ix), &
+!!$                                 ADD_VALUES, ierr)
+!!$                         end if
+!!$                      end do
+!!$
+!!$                      ! Add the d Phi_1 / d zeta term:
+!!$                      do j=1,Nzeta
+!!$                         if (abs(ddzeta(izeta,j))>threshholdForInclusion) then
+!!$                            colIndex = getIndex(1,1,1,itheta,j,BLOCK_QN)
+!!$                            ! We must use MatSetValueDense instead of MatSetValueSparse here!!
+!!$                            call MatSetValueDense(matrix, rowIndex, colIndex, &
+!!$                                 factor*BHat_sup_zeta(itheta,izeta)*ddzeta(izeta,j)*tempVector2(ix), &
+!!$                                 ADD_VALUES, ierr)
+!!$                         end if
+!!$                      end do
+!!$                   end do
+!!$                end do
+!!$             end do
+!!$          end do
+!!$          deallocate(tempVector1)
+!!$          deallocate(tempVector2)
+!!$       end if
 
     end do ! End of loop over species for the collisionless terms.
 
@@ -1721,7 +1358,7 @@
           ! Now we are ready to add the collision operator to the main matrix.
           ! *****************************************************************
           
-          do L=0, Nxi-1
+          do L=LMin,LMax
              if (L>0 .and. pointAtX0) then
                 ixMinCol = 2
              else
@@ -1880,15 +1517,13 @@
                       ! At this point, CHat contains the collision operator normalized by
                       ! \bar{nu}, (the collision frequency at the reference mass, density, and temperature.)
                       
-                      do itheta=ithetaMin,ithetaMax
-                         do izeta=izetaMin,izetaMax
-                            do ix_row=ixMin,Nx
-                               rowIndex=getIndex(iSpeciesA,ix_row,L+1,itheta,izeta,BLOCK_F)
-                               do ix_col = ixMinCol,Nx
-                                  colIndex=getIndex(iSpeciesB,ix_col,L+1,itheta,izeta,BLOCK_F)
-                                  call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                                       -nu_n*CHat(ix_row,ix_col), ADD_VALUES, ierr)
-                               end do
+                      do imn=1,NFourier2
+                         do ix_row=ixMin,Nx
+                            rowIndex=getIndex(iSpeciesA,ix_row,L+1,imn,BLOCK_F)
+                            do ix_col = ixMinCol,Nx
+                               colIndex=getIndex(iSpeciesB,ix_col,L+1,imn,BLOCK_F)
+                               call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                                    -nu_n*CHat(ix_row,ix_col), ADD_VALUES, ierr)
                             end do
                          end do
                       end do
@@ -1945,21 +1580,17 @@
                 
              end do
              
-             do L=1, Nxi-1
+             do L=LMin,LMax
                 do ix=ixMin,Nx
                    CHat_element = -oneHalf*nuDHat(iSpeciesA,ix)*L*(L+1)
                    
                    ! At this point, CHat contains the collision operator normalized by
                    ! \bar{nu}, (the collision frequency at the reference mass, density, and temperature.)
                    
-                   do itheta=ithetaMin,ithetaMax
-                      do izeta=izetaMin,izetaMax
-                         index=getIndex(iSpeciesA,ix,L+1,itheta,izeta,BLOCK_F)
-                         call MatSetValueSparse(matrix, index, index, &
-                              -nu_n*CHat_element, ADD_VALUES, ierr)
-                         !-nu_n*(GHat+iota*IHat)/(BHat(itheta,izeta)*BHat(itheta,izeta))*CHat_element, &
-                         !ADD_VALUES, ierr)
-                      end do
+                   do imn=1,NFourier2
+                      index=getIndex(iSpeciesA,ix,L+1,imn,BLOCK_F)
+                      call MatSetValueSparse(matrix, index, index, &
+                           -nu_n*CHat_element, ADD_VALUES, ierr)
                    end do
                 end do
                 
@@ -1985,16 +1616,14 @@
     ! If there is a grid point at x=0, add the boundary conditions for f at x=0.
     ! *******************************************************************************
 
-    if (pointAtX0 .and. whichMatrix .ne. 2) then
+    if (pointAtX0 .and. whichMatrix .ne. 2 .and. masterProc) then  ! Only the master proc executes this block of code
        ! For L > 0 modes, impose f=0 at x=0:
        ix = 1
        do L = 1,(Nxi-1)
-          do itheta = ithetaMin,ithetaMax
-             do izeta = izetaMin,izetaMax
-                do ispecies = 1,Nspecies
-                   index = getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
-                   call MatSetValueDense(matrix, index, index, one, ADD_VALUES, ierr)
-                end do
+          do imn = 1,NFourier2
+             do ispecies = 1,Nspecies
+                index = getIndex(ispecies,ix,L+1,imn,BLOCK_F)
+                call MatSetValueDense(matrix, index, index, one, ADD_VALUES, ierr)
              end do
           end do
        end do
@@ -2007,14 +1636,12 @@
           ddxToUse = ddx
        end if
        ix_row = 1
-       do itheta = ithetaMin,ithetaMax
-          do izeta = izetaMin,izetaMax
-             do ispecies = 1,Nspecies
-                rowIndex = getIndex(ispecies,ix_row,L+1,itheta,izeta,BLOCK_F)
-                do ix_col = 1,Nx
-                   colIndex = getIndex(ispecies,ix_col,L+1,itheta,izeta,BLOCK_F)
-                   call MatSetValueSparse(matrix, rowIndex, colIndex, ddxToUse(ix_row,ix_col), ADD_VALUES, ierr)
-                end do
+       do imn = 1,NFourier2
+          do ispecies = 1,Nspecies
+             rowIndex = getIndex(ispecies,ix_row,L+1,imn,BLOCK_F)
+             do ix_col = 1,Nx
+                colIndex = getIndex(ispecies,ix_col,L+1,imn,BLOCK_F)
+                call MatSetValueSparse(matrix, rowIndex, colIndex, ddxToUse(ix_row,ix_col), ADD_VALUES, ierr)
              end do
           end do
        end do
@@ -2024,7 +1651,7 @@
     ! Add sources:
     ! *******************************************************************************
 
-    if (whichMatrix .ne. 2) then
+    if (whichMatrix .ne. 2 .and. procThatHandlesConstraints) then
        select case (constraintScheme)
        case (0)
           ! Do nothing here.
@@ -2059,18 +1686,15 @@
              case default
                 stop "Invalid constraintScheme!"
              end select
-             do itheta = ithetaMin,ithetaMax
-                do izeta = izetaMin,izetaMax
-                   do ispecies = 1,Nspecies
-                      rowIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                      
-                      colIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)
-                      call MatSetValueSparse(matrix, rowIndex, colIndex, xPartOfSource1, ADD_VALUES, ierr)
-                      
-                      colIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)
-                      call MatSetValueSparse(matrix, rowIndex, colIndex, xPartOfSource2, ADD_VALUES, ierr)
-                   end do
-                end do
+             imn=0
+             do ispecies = 1,Nspecies
+                rowIndex = getIndex(ispecies, ix, L+1, imn, BLOCK_F)
+                
+                colIndex = getIndex(ispecies, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)
+                call MatSetValueSparse(matrix, rowIndex, colIndex, xPartOfSource1, ADD_VALUES, ierr)
+                
+                colIndex = getIndex(ispecies, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)
+                call MatSetValueSparse(matrix, rowIndex, colIndex, xPartOfSource2, ADD_VALUES, ierr)
              end do
           end do
           
@@ -2078,14 +1702,11 @@
           ! Add a L=0 source (which is constant on the flux surface) at each x.
           L=0
           do ix = ixMin,Nx
-             do itheta = ithetaMin,ithetaMax
-                do izeta = izetaMin,izetaMax
-                   do ispecies = 1,Nspecies
-                      rowIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                      colIndex = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)
-                      call MatSetValueDense(matrix, rowIndex, colIndex, one, ADD_VALUES, ierr)
-                   end do
-                end do
+             imn=0
+             do ispecies = 1,Nspecies
+                rowIndex = getIndex(ispecies, ix, L+1, imn, BLOCK_F)
+                colIndex = getIndex(ispecies, ix, 1, 1, BLOCK_F_CONSTRAINT)
+                call MatSetValueDense(matrix, rowIndex, colIndex, one, ADD_VALUES, ierr)
              end do
           end do
           
@@ -2100,6 +1721,9 @@
     ! *******************************************************************************
 
     if (whichMatrix .ne. 2 .and. procThatHandlesConstraints) then
+       call FourierTransform(1/DHat,FourierVector)
+       call FourierConvolutionMatrix(FourierVector,FourierMatrix)
+
        select case (constraintScheme)
        case (0)
           ! Do nothing here.
@@ -2109,22 +1733,18 @@
           ! flux-surface-averaged perturbed pressure to be zero.
 
           L=0
-          do itheta=1,Ntheta
-             do izeta=1,Nzeta
-                factor = thetaWeights(itheta)*zetaWeights(izeta)/DHat(itheta,izeta)
+          do imn = 1,NFourier2
+             do ix=1,Nx
+                do ispecies=1,Nspecies
+                   colIndex = getIndex(ispecies, ix, L+1, imn, BLOCK_F)
 
-                do ix=1,Nx
-                   do ispecies=1,Nspecies
-                      colIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+                   rowIndex = getIndex(ispecies, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)
+                   call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                        x2(ix)*xWeights(ix)*FourierMatrix(1,imn), ADD_VALUES, ierr)
 
-                      rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)
-                      call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                           x2(ix)*xWeights(ix)*factor, ADD_VALUES, ierr)
-
-                      rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)
-                      call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                           x2(ix)*x2(ix)*xWeights(ix)*factor, ADD_VALUES, ierr)
-                   end do
+                   rowIndex = getIndex(ispecies, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)
+                   call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                        x2(ix)*x2(ix)*xWeights(ix)*FourierMatrix(1,imn), ADD_VALUES, ierr)
                 end do
              end do
           end do
@@ -2134,17 +1754,13 @@
           ! at each value of x:
 
           L=0
-          do itheta=1,Ntheta
-             do izeta=1,Nzeta
-                factor = thetaWeights(itheta)*zetaWeights(izeta)/DHat(itheta,izeta)
-
-                do ix=ixMin,Nx
-                   do ispecies = 1,Nspecies
-                      colIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                      rowIndex = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)
-                      call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                           factor, ADD_VALUES, ierr)
-                   end do
+          do imn = 1,NFourier2
+             do ix=ixMin,Nx
+                do ispecies = 1,Nspecies
+                   colIndex = getIndex(ispecies, ix, L+1, imn, BLOCK_F)
+                   rowIndex = getIndex(ispecies, ix, 1, 1, BLOCK_F_CONSTRAINT)
+                   call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                        FourierMatrix(1,imn), ADD_VALUES, ierr)
                 end do
              end do
           end do
@@ -2156,7 +1772,7 @@
 
              ix = 1
              do ispecies = 1,Nspecies
-                rowIndex = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)
+                rowIndex = getIndex(ispecies, ix, 1, 1, BLOCK_F_CONSTRAINT)
                 colIndex = rowIndex
                 call MatSetValueDense(matrix, rowIndex, colIndex, &
                      one, ADD_VALUES, ierr)
@@ -2169,89 +1785,90 @@
        end select
     end if
 
-    ! *******************************************************************************
-    ! SECTION MODIFIED BY AM 2016-02/03
-    ! Add the quasineutrality equation
-    ! *******************************************************************************
-
-    if (whichMatrix .ne. 2 .and. includePhi1) then
-       L=0
-       do itheta = ithetaMin,ithetaMax
-          do izeta = izetaMin,izetaMax
-             rowIndex = getIndex(1, 1, 1, itheta, izeta, BLOCK_QN)
-
-             ! Add the charge density of the kinetic species (the part of the residual/Jacobian related to f1):
-             do ispecies = 1,Nspecies
-                !!speciesFactor = Zs(ispecies)*THats(ispecies)/mHats(ispecies) & !!Commented by AM 2016-02
-                !!     * sqrt(THats(ispecies)/mHats(ispecies)) !!Commented by AM 2016-02
-                speciesFactor = four*pi*Zs(ispecies)*THats(ispecies)/mHats(ispecies) & !!Added by AM 2016-02 !!The factor 4pi comes from velocity integration over xi.
-                     * sqrt(THats(ispecies)/mHats(ispecies)) !!Added by AM 2016-02
-
-                do ix = 1,Nx
-                   colIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                   call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                        speciesFactor*x2(ix)*xWeights(ix), ADD_VALUES, ierr)
-                end do
-
-                !!Added by AM 2016-02!!
-                if (quasineutralityOption == 2) then
-                   exit !!If running with EUTERPE equations we only use the first kinetic species in quasi-neutrality.
-                end if
-                !!!!!!!!!!!!!!!!!!!!!!!
-
-             end do
-             !!!!!!!!!!!!!!!!!!!!!!!
-             !!Added by AM 2016-02!!
-
-             !Add the part of the residual/Jacobian related to Phi1
-             colIndex = getIndex(1, 1, 1, itheta, izeta, BLOCK_QN)
-             if (quasineutralityOption == 1 .and. (whichMatrix == 0 .or. whichMatrix == 1)) then !!Only add in Jacobian matrix
-                do ispecies = 1,Nspecies
-                   call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                        - alpha * Zs(ispecies) * Zs(ispecies) * NHats(ispecies) * exp (- Zs(ispecies)* alpha * Phi1Hat(itheta,izeta) / THats(ispecies)) / THats(ispecies), ADD_VALUES, ierr)
-                end do
-                if (withAdiabatic) then
-                   call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                        - alpha * adiabaticZ * adiabaticZ *adiabaticNHat * exp (- adiabaticZ* alpha * Phi1Hat(itheta,izeta) / adiabaticTHat) / adiabaticTHat, ADD_VALUES, ierr)
-                end if
-             else if (quasineutralityOption == 2 .and. withAdiabatic .and. Nspecies > 0) then
-                call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                     - alpha * (Zs(1)*Zs(1)*NHats(1)/THats(1) + adiabaticZ*adiabaticZ*adiabaticNHat/adiabaticTHat), ADD_VALUES, ierr)                
-             end if
-	     !!!!!!!!!!!!!!!!!!!!!!!
-
-             ! Add the Lagrange multiplier lambda:
-             colIndex = getIndex(1, 1, 1, 1, 1, BLOCK_PHI1_CONSTRAINT)
-             call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                  one, ADD_VALUES, ierr)
-
-          end do
-       end do
-    end if
-
-
-    ! *******************************************************************************
-    ! Add the constraint < Phi_1 > = 0
-    ! *******************************************************************************
-
-    if (whichMatrix .ne. 2 .and. procThatHandlesConstraints .and. includePhi1) then
-       allocate(rowIndices(1))
-       allocate(colIndices(Nzeta))
-
-       rowIndices(1) = getIndex(1, 1, 1, 1, 1, BLOCK_PHI1_CONSTRAINT)
-       do itheta=1,Ntheta
-          do izeta=1,Nzeta
-             colIndices(izeta) = getIndex(1, 1, 1, itheta, izeta, BLOCK_QN)
-          end do
-
-          call MatSetValuesSparse(matrix, 1, rowIndices(1), Nzeta, colIndices, &
-               thetaWeights(itheta)*zetaWeights/DHat(itheta,:), ADD_VALUES, ierr)
-       end do
-
-       deallocate(rowIndices)
-       deallocate(colIndices)
-    end if
-
+! The quasineutrality equation code below has not yet been updated for the new Fourier spatial discretization.
+!!$    ! *******************************************************************************
+!!$    ! SECTION MODIFIED BY AM 2016-02/03
+!!$    ! Add the quasineutrality equation
+!!$    ! *******************************************************************************
+!!$
+!!$    if (whichMatrix .ne. 2 .and. includePhi1) then
+!!$       L=0
+!!$       do itheta = ithetaMin,ithetaMax
+!!$          do izeta = izetaMin,izetaMax
+!!$             rowIndex = getIndex(1, 1, 1, itheta, izeta, BLOCK_QN)
+!!$
+!!$             ! Add the charge density of the kinetic species (the part of the residual/Jacobian related to f1):
+!!$             do ispecies = 1,Nspecies
+!!$                !!speciesFactor = Zs(ispecies)*THats(ispecies)/mHats(ispecies) & !!Commented by AM 2016-02
+!!$                !!     * sqrt(THats(ispecies)/mHats(ispecies)) !!Commented by AM 2016-02
+!!$                speciesFactor = four*pi*Zs(ispecies)*THats(ispecies)/mHats(ispecies) & !!Added by AM 2016-02 !!The factor 4pi comes from velocity integration over xi.
+!!$                     * sqrt(THats(ispecies)/mHats(ispecies)) !!Added by AM 2016-02
+!!$
+!!$                do ix = 1,Nx
+!!$                   colIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+!!$                   call MatSetValueSparse(matrix, rowIndex, colIndex, &
+!!$                        speciesFactor*x2(ix)*xWeights(ix), ADD_VALUES, ierr)
+!!$                end do
+!!$
+!!$                !!Added by AM 2016-02!!
+!!$                if (quasineutralityOption == 2) then
+!!$                   exit !!If running with EUTERPE equations we only use the first kinetic species in quasi-neutrality.
+!!$                end if
+!!$                !!!!!!!!!!!!!!!!!!!!!!!
+!!$
+!!$             end do
+!!$             !!!!!!!!!!!!!!!!!!!!!!!
+!!$             !!Added by AM 2016-02!!
+!!$
+!!$             !Add the part of the residual/Jacobian related to Phi1
+!!$             colIndex = getIndex(1, 1, 1, itheta, izeta, BLOCK_QN)
+!!$             if (quasineutralityOption == 1 .and. (whichMatrix == 0 .or. whichMatrix == 1)) then !!Only add in Jacobian matrix
+!!$                do ispecies = 1,Nspecies
+!!$                   call MatSetValueSparse(matrix, rowIndex, colIndex, &
+!!$                        - alpha * Zs(ispecies) * Zs(ispecies) * NHats(ispecies) * exp (- Zs(ispecies)* alpha * Phi1Hat(itheta,izeta) / THats(ispecies)) / THats(ispecies), ADD_VALUES, ierr)
+!!$                end do
+!!$                if (withAdiabatic) then
+!!$                   call MatSetValueSparse(matrix, rowIndex, colIndex, &
+!!$                        - alpha * adiabaticZ * adiabaticZ *adiabaticNHat * exp (- adiabaticZ* alpha * Phi1Hat(itheta,izeta) / adiabaticTHat) / adiabaticTHat, ADD_VALUES, ierr)
+!!$                end if
+!!$             else if (quasineutralityOption == 2 .and. withAdiabatic .and. Nspecies > 0) then
+!!$                call MatSetValueSparse(matrix, rowIndex, colIndex, &
+!!$                     - alpha * (Zs(1)*Zs(1)*NHats(1)/THats(1) + adiabaticZ*adiabaticZ*adiabaticNHat/adiabaticTHat), ADD_VALUES, ierr)                
+!!$             end if
+!!$	     !!!!!!!!!!!!!!!!!!!!!!!
+!!$
+!!$             ! Add the Lagrange multiplier lambda:
+!!$             colIndex = getIndex(1, 1, 1, 1, 1, BLOCK_PHI1_CONSTRAINT)
+!!$             call MatSetValueSparse(matrix, rowIndex, colIndex, &
+!!$                  one, ADD_VALUES, ierr)
+!!$
+!!$          end do
+!!$       end do
+!!$    end if
+!!$
+!!$
+!!$    ! *******************************************************************************
+!!$    ! Add the constraint < Phi_1 > = 0
+!!$    ! *******************************************************************************
+!!$
+!!$    if (whichMatrix .ne. 2 .and. procThatHandlesConstraints .and. includePhi1) then
+!!$       allocate(rowIndices(1))
+!!$       allocate(colIndices(Nzeta))
+!!$
+!!$       rowIndices(1) = getIndex(1, 1, 1, 1, 1, BLOCK_PHI1_CONSTRAINT)
+!!$       do itheta=1,Ntheta
+!!$          do izeta=1,Nzeta
+!!$             colIndices(izeta) = getIndex(1, 1, 1, itheta, izeta, BLOCK_QN)
+!!$          end do
+!!$
+!!$          call MatSetValuesSparse(matrix, 1, rowIndices(1), Nzeta, colIndices, &
+!!$               thetaWeights(itheta)*zetaWeights/DHat(itheta,:), ADD_VALUES, ierr)
+!!$       end do
+!!$
+!!$       deallocate(rowIndices)
+!!$       deallocate(colIndices)
+!!$    end if
+!!$
 
     ! *******************************************************************************
     ! Done inserting values into the matrices.
@@ -2315,6 +1932,8 @@
        call VecDestroy(vecOnEveryProc, ierr)
     end if
 
+  deallocate(FourierVector,FourierMatrix,FourierMatrix2)
+
   end subroutine populateMatrix
 
 ! -----------------------------------------------------------------------
@@ -2322,6 +1941,8 @@
 
 
   subroutine init_f0()
+    ! This subroutine will need to be updated eventually to allow Phi1.
+    ! Presently it is only written for includePhi1=false.
 
     use globalVariables
     use petscmat
@@ -2332,26 +1953,25 @@
     integer :: L, ix, itheta, izeta, ispecies, index
     real(prec) :: factor
     PetscErrorCode :: ierr
+    PetscScalar :: PetscScalarValue
 
     if (masterProc) then
        print *,"Initializing f0"
     end if
 
-    call VecSet(f0, zero, ierr)
+    PetscScalarValue = 0
+    call VecSet(f0, PetscScalarValue, ierr)
     
     L = 0
     do ispecies = 1,Nspecies
        do ix = 1,Nx
           factor = nHats(ispecies)*mHats(ispecies)/(pi*THats(ispecies)) &
                * sqrt(mHats(ispecies)/(pi*THats(ispecies))) * expx2(ix)
-          do itheta = ithetaMin,ithetaMax
-             do izeta = izetaMin,izetaMax
-                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                call VecSetValue(f0, index, &
-                !!     factor, INSERT_VALUES, ierr) !!Commented by AM 2016-06
-                     exp(-Zs(ispecies)*alpha*Phi1Hat(itheta,izeta)/THats(ispecies))*factor, INSERT_VALUES, ierr) !!Added by AM 2016-06
-             end do
-          end do
+          imn = 1
+          index = getIndex(ispecies, ix, L+1, imn, BLOCK_F)
+          PetscScalarValue = factor ! Cast from real(prec) to PetscScalar
+          call VecSetValue(f0, index, PetscScalarValue, INSERT_VALUES, ierr)
+             !exp(-Zs(ispecies)*alpha*Phi1Hat(itheta,izeta)/THats(ispecies))*factor, INSERT_VALUES, ierr) !!Added by AM 2016-06
        end do
     end do
 

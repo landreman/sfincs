@@ -43,7 +43,7 @@ contains
 
     namelist / physicsParameters / Delta, alpha, nu_n, EParallelHat, &
          collisionOperator, constraintScheme, includeXDotTerm, &
-         includeElectricFieldTermInXiDot, useDKESExBDrift, include_fDivVE_term, & !!Added by AM 2016-02
+         includeElectricFieldTermInXiDot, useDKESExBDrift, & 
          dPhiHatdpsiHat, dPhiHatdpsiN, dPhiHatdrHat, dPhiHatdrN, Er, &
          includeTemperatureEquilibrationTerm, includePhi1, &
          nuPrime, EStar, magneticDriftScheme, includePhi1InKineticEquation, &
@@ -60,7 +60,7 @@ contains
          NxPotentialsPerVth
 
     namelist / otherNumericalParameters /  &
-         useIterativeLinearSolver, xDotDerivativeScheme, xGridScheme, whichParallelSolverToFactorPreconditioner, &
+         useIterativeLinearSolver, xGridScheme, whichParallelSolverToFactorPreconditioner, &
          PETSCPreallocationStrategy, xPotentialsGridScheme, xGrid_k
 
     namelist / preconditionerOptions / preconditioner_x, preconditioner_x_min_L, &
