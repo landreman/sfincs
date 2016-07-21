@@ -193,28 +193,52 @@ module globalVariables
   real(prec), dimension(:,:), allocatable :: BHat_sup_theta, dBHat_sup_theta_dzeta, dBHat_sup_theta_dpsiHat
   real(prec), dimension(:,:), allocatable :: BHat_sup_zeta, dBHat_sup_zeta_dtheta, dBHat_sup_zeta_dpsiHat
   real(prec), dimension(:,:), allocatable :: BDotCurlB, uHat
-  real(prec), dimension(:,:), allocatable :: sources, jHat
+
+  real(prec), dimension(:,:), allocatable :: sources, jHat_realSpace
+  real(prec), dimension(:), allocatable :: jHat_Fourier
   real(prec), dimension(:), allocatable :: Phi1Hat_Fourier, dPhi1Hatdtheta_Fourier, dPhi1Hatdzeta_Fourier
   real(prec), dimension(:), allocatable :: Phi1Hat_realSpace, dPhi1Hatdtheta_realSpace, dPhi1Hatdzeta_realSpace
-  real(prec), dimension(:,:,:), allocatable :: densityPerturbation, totalDensity
-  real(prec), dimension(:,:,:), allocatable :: pressurePerturbation, totalPressure, pressureAnisotropy
-  real(prec), dimension(:,:,:), allocatable :: flow, velocityUsingFSADensity, velocityUsingTotalDensity
-  real(prec), dimension(:,:,:), allocatable :: MachUsingFSAThermalSpeed
-  real(prec), dimension(:,:,:), allocatable :: particleFluxBeforeSurfaceIntegral_vm0
-  real(prec), dimension(:,:,:), allocatable :: particleFluxBeforeSurfaceIntegral_vm
-  real(prec), dimension(:,:,:), allocatable :: particleFluxBeforeSurfaceIntegral_vE0
-  real(prec), dimension(:,:,:), allocatable :: particleFluxBeforeSurfaceIntegral_vE
-  real(prec), dimension(:,:,:), allocatable :: momentumFluxBeforeSurfaceIntegral_vm0
-  real(prec), dimension(:,:,:), allocatable :: momentumFluxBeforeSurfaceIntegral_vm
-  real(prec), dimension(:,:,:), allocatable :: momentumFluxBeforeSurfaceIntegral_vE0
-  real(prec), dimension(:,:,:), allocatable :: momentumFluxBeforeSurfaceIntegral_vE
-  real(prec), dimension(:,:,:), allocatable :: heatFluxBeforeSurfaceIntegral_vm0
-  real(prec), dimension(:,:,:), allocatable :: heatFluxBeforeSurfaceIntegral_vm
-  real(prec), dimension(:,:,:), allocatable :: heatFluxBeforeSurfaceIntegral_vE0
-  real(prec), dimension(:,:,:), allocatable :: heatFluxBeforeSurfaceIntegral_vE
+
+  real(prec), dimension(:,:,:), allocatable :: densityNonadiabaticPerturbation_realSpace, totalDensity_realSpace
+  real(prec), dimension(:,:,:), allocatable :: pressureNonadiabaticPerturbation_realSpace, totalPressure_realSpace
+  real(prec), dimension(:,:,:), allocatable :: pressureAnisotropy_realSpace
+  real(prec), dimension(:,:,:), allocatable :: flow_realSpace, velocityUsingFSADensity_realSpace
+  real(prec), dimension(:,:,:), allocatable :: MachUsingFSAThermalSpeed_realSpace
+  real(prec), dimension(:,:,:), allocatable :: particleFluxBeforeSurfaceIntegral_vm0_realSpace
+  real(prec), dimension(:,:,:), allocatable :: particleFluxBeforeSurfaceIntegral_vm_realSpace
+  real(prec), dimension(:,:,:), allocatable :: particleFluxBeforeSurfaceIntegral_vE0_realSpace
+  real(prec), dimension(:,:,:), allocatable :: particleFluxBeforeSurfaceIntegral_vE_realSpace
+  real(prec), dimension(:,:,:), allocatable :: momentumFluxBeforeSurfaceIntegral_vm0_realSpace
+  real(prec), dimension(:,:,:), allocatable :: momentumFluxBeforeSurfaceIntegral_vm_realSpace
+  real(prec), dimension(:,:,:), allocatable :: momentumFluxBeforeSurfaceIntegral_vE0_realSpace
+  real(prec), dimension(:,:,:), allocatable :: momentumFluxBeforeSurfaceIntegral_vE_realSpace
+  real(prec), dimension(:,:,:), allocatable :: heatFluxBeforeSurfaceIntegral_vm0_realSpace
+  real(prec), dimension(:,:,:), allocatable :: heatFluxBeforeSurfaceIntegral_vm_realSpace
+  real(prec), dimension(:,:,:), allocatable :: heatFluxBeforeSurfaceIntegral_vE0_realSpace
+  real(prec), dimension(:,:,:), allocatable :: heatFluxBeforeSurfaceIntegral_vE_realSpace
+
+  real(prec), dimension(:,:), allocatable :: densityNonadiabaticPerturbation_Fourier, totalDensity_Fourier
+  real(prec), dimension(:,:), allocatable :: pressureNonadiabaticPerturbation_Fourier, totalPressure_Fourier
+  real(prec), dimension(:,:), allocatable :: pressureAnisotropy_Fourier
+  real(prec), dimension(:,:), allocatable :: flow_Fourier, velocityUsingFSADensity_Fourier
+  real(prec), dimension(:,:), allocatable :: MachUsingFSAThermalSpeed_Fourier
+  real(prec), dimension(:,:), allocatable :: particleFluxBeforeSurfaceIntegral_vm0_Fourier
+  real(prec), dimension(:,:), allocatable :: particleFluxBeforeSurfaceIntegral_vm_Fourier
+  real(prec), dimension(:,:), allocatable :: particleFluxBeforeSurfaceIntegral_vE0_Fourier
+  real(prec), dimension(:,:), allocatable :: particleFluxBeforeSurfaceIntegral_vE_Fourier
+  real(prec), dimension(:,:), allocatable :: momentumFluxBeforeSurfaceIntegral_vm0_Fourier
+  real(prec), dimension(:,:), allocatable :: momentumFluxBeforeSurfaceIntegral_vm_Fourier
+  real(prec), dimension(:,:), allocatable :: momentumFluxBeforeSurfaceIntegral_vE0_Fourier
+  real(prec), dimension(:,:), allocatable :: momentumFluxBeforeSurfaceIntegral_vE_Fourier
+  real(prec), dimension(:,:), allocatable :: heatFluxBeforeSurfaceIntegral_vm0_Fourier
+  real(prec), dimension(:,:), allocatable :: heatFluxBeforeSurfaceIntegral_vm_Fourier
+  real(prec), dimension(:,:), allocatable :: heatFluxBeforeSurfaceIntegral_vE0_Fourier
+  real(prec), dimension(:,:), allocatable :: heatFluxBeforeSurfaceIntegral_vE_Fourier
+
   real(prec), dimension(:,:,:), allocatable :: NTVBeforeSurfaceIntegral
   real(prec), dimension(:,:), allocatable :: NTVKernel
-  real(prec), dimension(:), allocatable :: FSADensityPerturbation, FSAPressurePerturbation
+
+  real(prec), dimension(:), allocatable :: FSADensityNonadiabaticPerturbation, FSAPressureNonadiabaticPerturbation
   real(prec), dimension(:), allocatable :: FSABFlow, FSABVelocityUsingFSADensity
   real(prec), dimension(:), allocatable :: FSABVelocityUsingFSADensityOverB0
   real(prec), dimension(:), allocatable :: FSABVelocityUsingFSADensityOverRootFSAB2

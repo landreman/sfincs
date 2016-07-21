@@ -204,7 +204,6 @@
     !!PetscScalar, pointer :: expPhi1Array(:) !!Added by AM 2016-06
 
     real(prec) :: THat, mHat, sqrtTHat, sqrtMHat, nHat
-    real(prec), dimension(:), allocatable :: B2
     integer :: i, j, ix, ispecies, itheta, izeta, L, index
     real(prec) :: densityFactor, flowFactor, pressureFactor
     real(prec) :: particleFluxFactor_vm, particleFluxFactor_vE
@@ -221,6 +220,15 @@
     real(prec), dimension(:), allocatable :: heatFluxIntegralWeights_vm
     real(prec), dimension(:), allocatable :: heatFluxIntegralWeights_vE
     real(prec), dimension(:), allocatable :: NTVIntegralWeights
+
+    real(prec), dimension(:), allocatable :: FourierVector
+    real(prec), dimension(:,:), allocatable :: FourierMatrix_DInverse
+    real(prec), dimension(:,:), allocatable :: FourierMatrix_BOverD
+    real(prec), dimension(:,:), allocatable :: FourierMatrix_particleHeat_vm
+    real(prec), dimension(:,:), allocatable :: FourierMatrix_momentum_vm
+    real(prec), dimension(:,:), allocatable :: FourierMatrix_particleHeat_vE
+    real(prec), dimension(:,:), allocatable :: FourierMatrix_momentum_vE
+
     real(prec) :: factor, factor2, factor_vE, temp1, temp2, temp3
     integer :: itheta1, izeta1, ixi1, ix1
     integer :: itheta2, izeta2, ixi2, ix2
@@ -295,25 +303,24 @@
        allocate(heatFluxIntegralWeights_vE(Nx))
        allocate(NTVIntegralWeights(Nx))
 
-       allocate(B2(Ntheta))
-
-       densityPerturbation=0
-       flow=0
-       pressurePerturbation=0
-       pressureAnisotropy=0
-       particleFluxBeforeSurfaceIntegral_vm0=0
-       particleFluxBeforeSurfaceIntegral_vm=0
-       particleFluxBeforeSurfaceIntegral_vE0=0
-       particleFluxBeforeSurfaceIntegral_vE=0
-       momentumFluxBeforeSurfaceIntegral_vm0=0
-       momentumFluxBeforeSurfaceIntegral_vm=0
-       momentumFluxBeforeSurfaceIntegral_vE0=0
-       momentumFluxBeforeSurfaceIntegral_vE=0
-       heatFluxBeforeSurfaceIntegral_vm0=0
-       heatFluxBeforeSurfaceIntegral_vm=0
-       heatFluxBeforeSurfaceIntegral_vE0=0
-       heatFluxBeforeSurfaceIntegral_vE=0
-       NTVBeforeSurfaceIntegral=0
+       densityNonadiabaticPerturbation_Fourier=0
+       flow_Fourier=0
+       BFlow_Fourier=0
+       pressureNonadiabaticPerturbation_Fourier=0
+       pressureAnisotropy_Fourier=0
+       particleFluxBeforeSurfaceIntegral_vm0_Fourier=0
+       particleFluxBeforeSurfaceIntegral_vm_Fourier=0
+       particleFluxBeforeSurfaceIntegral_vE0_Fourier=0
+       particleFluxBeforeSurfaceIntegral_vE_Fourier=0
+       momentumFluxBeforeSurfaceIntegral_vm0_Fourier=0
+       momentumFluxBeforeSurfaceIntegral_vm_Fourier=0
+       momentumFluxBeforeSurfaceIntegral_vE0_Fourier=0
+       momentumFluxBeforeSurfaceIntegral_vE_Fourier=0
+       heatFluxBeforeSurfaceIntegral_vm0_Fourier=0
+       heatFluxBeforeSurfaceIntegral_vm_Fourier=0
+       heatFluxBeforeSurfaceIntegral_vE0_Fourier=0
+       heatFluxBeforeSurfaceIntegral_vE_Fourier=0
+       NTVBeforeSurfaceIntegral_Fourier=0
 
        FSADensityPerturbation=0
        FSABFlow=0
@@ -331,7 +338,8 @@
        heatFlux_vE0_psiHat=0
        heatFlux_vE_psiHat=0
        NTV=0 
-       jHat=0
+       jHat_realSpace=0
+       jHat_Fourier=0
 
        particleFlux_vm_psiHat_vs_x=0
        heatFlux_vm_psiHat_vs_x=0
@@ -359,14 +367,14 @@
        case (0)
        case (1,3,4)
           do ispecies = 1,Nspecies
-             sources(ispecies,1) = solutionWithDeltaFArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)+1)
-             sources(ispecies,2) = solutionWithDeltaFArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)+1)
+             sources(ispecies,1) = solutionWithDeltaFArray(getIndex(ispecies, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)+1)
+             sources(ispecies,2) = solutionWithDeltaFArray(getIndex(ispecies, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)+1)
              ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
           end do
        case (2)
           do ispecies = 1,Nspecies
              do ix=1,Nx
-                sources(ispecies,ix) = solutionWithDeltaFArray(getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)+1)
+                sources(ispecies,ix) = solutionWithDeltaFArray(getIndex(ispecies, ix, 1, 1, BLOCK_F_CONSTRAINT)+1)
                 ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
              end do
           end do
@@ -376,10 +384,41 @@
        end select
 
        if (includePhi1) then
-          lambda = solutionWithDeltaFArray(getIndex(1, 1, 1, 1, 1, BLOCK_PHI1_CONSTRAINT)+1)
+          lambda = solutionWithDeltaFArray(getIndex(1, 1, 1, 1, BLOCK_PHI1_CONSTRAINT)+1)
        else
           lambda = zero
        end if
+
+
+       allocate(FourierVector(NFourier2))
+       allocate(FourierMatrix_DInverse(NFourier2,NFourier2))
+       allocate(FourierMatrix_BOverD(NFourier2,NFourier2))
+       allocate(FourierMatrix_particleHeat_vm(NFourier2,NFourier2))
+       allocate(FourierMatrix_momentum_vm(NFourier2,NFourier2))
+       allocate(FourierMatrix_particleHeat_vE(NFourier2,NFourier2))
+       allocate(FourierMatrix_momentum_vE(NFourier2,NFourier2))
+
+
+       ! Spatial weight for flux-surface-average perturbation to density and pressure, and for flow:
+       call FourierTransform(1/DHat,FourierVector)
+       call FourierConvolutionMatrix(FourierVector,FourierMatrix_DInverse)
+       ! Spatial weight for FSABFlow:
+       call FourierTransform(BHat/DHat,FourierVector)
+       call FourierConvolutionMatrix(FourierVector,FourierMatrix_BOverD)
+       ! Spatial weight for particle and heat fluxes from magnetic drifts:
+       call FourierTransform((BHat_sub_theta*dBHatdzeta - BHat_sub_zeta*dBHatdtheta)/(BHat*BHat*BHat),FourierVector)
+       call FourierConvolutionMatrix(FourierVector,FourierMatrix_particleHeat_vm)
+       ! Spatial weight for momentum flux from magnetic drifts:
+       call FourierTransform((BHat_sub_theta*dBHatdzeta - BHat_sub_zeta*dBHatdtheta)/(BHat*BHat),FourierVector)
+       call FourierConvolutionMatrix(FourierVector,FourierMatrix_momentum_vE)
+       ! Spatial weight for particle and heat fluxes from ExB drift:
+       call FourierTransform((BHat_sub_theta*dPhi1Hatdzeta_realSpace - BHat_sub_zeta*dPhi1Hatdtheta_realSpace) &
+            /(BHat*BHat),FourierVector)
+       call FourierConvolutionMatrix(FourierVector,FourierMatrix_particleHeat_vE)
+       ! Spatial weight for momentum flux from ExB drift:
+       call FourierTransform((BHat_sub_theta*dPhi1Hatdzeta_realSpace - BHat_sub_zeta*dPhi1Hatdtheta_realSpace) &
+            /(BHat),FourierVector)
+       call FourierConvolutionMatrix(FourierVector,FourierMatrix_momentum_vE)
 
        do ispecies = 1,Nspecies
           THat = THats(ispecies)
@@ -390,9 +429,6 @@
           densityFactor = 4*pi*THat*sqrtTHat/(mHat*sqrtMHat)
           flowFactor = 4*pi*THat*THat/(three*mHat*mHat)
           pressureFactor = 8*pi*THat*THat*sqrtTHat/(three*mHat*sqrtMHat)
-          !particleFluxFactor = - pi*Delta*THat*THat*sqrtTHat/(Zs(ispecies)*VPrimeHat*mHat*sqrtMHat*(GHat+iota*IHat))
-          !momentumFluxFactor = - pi*Delta*THat*THat*THat/(Zs(ispecies)*VPrimeHat*mHat*(GHat+iota*IHat))
-          !heatFluxFactor = - pi*Delta*THat*THat*THat*sqrtTHat/(2*Zs(ispecies)*VPrimeHat*mHat*sqrtMHat*(GHat+iota*IHat))
 
           particleFluxFactor_vm = pi*Delta*THat*THat*sqrtTHat/(Zs(ispecies)*VPrimeHat*mHat*sqrtMHat)
           particleFluxFactor_vE = 2*alpha*pi*Delta*THat*sqrtTHat/(VPrimeHat*mHat*sqrtMHat)
@@ -407,250 +443,249 @@
           ! Here is my guess at how it should be done in this version:
           NTVFactor = 4*pi*THat*THat*sqrtTHat/(mHat*sqrtMHat*VPrimeHat)
 
-          do itheta=1,Ntheta
-             do izeta=1,Nzeta
 
-                !factor = (GHat*dBHatdtheta(itheta,izeta) - IHat*dBHatdzeta(itheta,izeta))/(BHat(itheta,izeta) ** 3)
-
-                factor = (BHat_sub_theta(itheta,izeta) * dBHatdzeta(itheta,izeta) &
-                     - BHat_sub_zeta(itheta,izeta) * dBHatdtheta(itheta,izeta)) / (BHat(itheta,izeta) ** 3)
-
-                if (force0RadialCurrentInEquilibrium) then
-                   factor2 = 0
-                else
-                   ! Note: this next line has not been tested, since I haven't used eqilibria with a radial current.
-                   factor2 = 2 * (dBHat_sub_zeta_dtheta(itheta,izeta) - dBHat_sub_theta_dzeta(itheta,izeta)) &
-                        / (BHat(itheta,izeta) ** 2)
-                end if
-
-                factor_vE = (BHat_sub_theta(itheta,izeta) * dPhi1Hatdzeta(itheta,izeta) &
-                     -BHat_sub_zeta(itheta,izeta) * dPhi1Hatdtheta(itheta,izeta)) &
-                     / (BHat(itheta,izeta) ** 2)
-
-                do ix=1,Nx
-                   L = 0
-                   index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
-                   ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
-
-                   densityPerturbation(ispecies,itheta,izeta) = densityPerturbation(ispecies,itheta,izeta) &
-                        + densityFactor*xWeights(ix)*densityIntegralWeights(ix)*solutionWithDeltaFArray(index)
-
-                   pressurePerturbation(ispecies,itheta,izeta) = pressurePerturbation(ispecies,itheta,izeta) &
-                        + pressureFactor*xWeights(ix)*pressureIntegralWeights(ix)*solutionWithDeltaFArray(index)
-
-                   particleFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
-                        = particleFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
-                        + (factor * (8/three) + factor2 * (two/three)) * particleFluxFactor_vm &
-                        * xWeights(ix)*particleFluxIntegralWeights_vm(ix)*f0Array(index)
-
-                   particleFluxBeforeSurfaceIntegral_vm(ispecies,itheta,izeta) &
-                        = particleFluxBeforeSurfaceIntegral_vm(ispecies,itheta,izeta) &
-                        + (factor * (8/three) + factor2 * (two/three)) * particleFluxFactor_vm &
-                        * xWeights(ix)*particleFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index)
-
-                   particleFluxBeforeSurfaceIntegral_vE0(ispecies,itheta,izeta) &
-                        = particleFluxBeforeSurfaceIntegral_vE0(ispecies,itheta,izeta) &
-                        + factor_vE * particleFluxFactor_vE &
-                        * xWeights(ix)*particleFluxIntegralWeights_vE(ix)*f0Array(index)
-
-                   particleFluxBeforeSurfaceIntegral_vE(ispecies,itheta,izeta) &
-                        = particleFluxBeforeSurfaceIntegral_vE(ispecies,itheta,izeta) &
-                        + factor_vE * particleFluxFactor_vE &
-                        * xWeights(ix)*particleFluxIntegralWeights_vE(ix)*solutionWithFullFArray(index)
-
-                   !print *,particleFluxBeforeSurfaceIntegral_vE0(ispecies,itheta,izeta),particleFluxBeforeSurfaceIntegral_vE(ispecies,itheta,izeta)
-
-                   heatFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
-                        = heatFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
-                        + (factor * (8/three) + factor2 * (two/three)) * heatFluxFactor_vm &
-                        * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*f0Array(index)
-
-                   heatFluxBeforeSurfaceIntegral_vm(ispecies,itheta,izeta) &
-                        = heatFluxBeforeSurfaceIntegral_vm(ispecies,itheta,izeta) &
-                        + (factor * (8/three) + factor2 * (two/three)) * heatFluxFactor_vm &
-                        * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index)
-
-                   heatFluxBeforeSurfaceIntegral_vE0(ispecies,itheta,izeta) &
-                        = heatFluxBeforeSurfaceIntegral_vE0(ispecies,itheta,izeta) &
-                        + factor_vE * heatFluxFactor_vE &
-                        * xWeights(ix)*heatFluxIntegralWeights_vE(ix)*f0Array(index)
-
-                   heatFluxBeforeSurfaceIntegral_vE(ispecies,itheta,izeta) &
-                        = heatFluxBeforeSurfaceIntegral_vE(ispecies,itheta,izeta) &
-                        + factor_vE * heatFluxFactor_vE &
-                        * xWeights(ix)*heatFluxIntegralWeights_vE(ix)*solutionWithFullFArray(index)
-
-                   particleFlux_vm_psiHat_vs_x(ispecies,ix) &
-                        = particleFlux_vm_psiHat_vs_x(ispecies,ix) &
-                        + (factor * (8/three) + factor2 * (two/three)) * particleFluxFactor_vm &
-                        * xWeights(ix)*particleFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index) &
-                        * thetaWeights(itheta) * zetaWeights(izeta)
-
-                   heatFlux_vm_psiHat_vs_x(ispecies,ix) &
-                        = heatFlux_vm_psiHat_vs_x(ispecies,ix) &
-                        + (factor * (8/three) + factor2 * (two/three)) * heatFluxFactor_vm &
-                        * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index) &
-                        * thetaWeights(itheta) * zetaWeights(izeta)
-
-
-
-                   L = 1
-                   index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
-                   ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
-
-                   flow(ispecies,itheta,izeta) = flow(ispecies,itheta,izeta) &
-                        + flowFactor*xWeights(ix)*flowIntegralWeights(ix)*solutionWithDeltaFArray(index)
-
-                   FSABFlow_vs_x(ispecies,ix) = FSABFlow_vs_x(ispecies,ix) &
-                        + flowFactor*xWeights(ix)*flowIntegralWeights(ix)*solutionWithDeltaFArray(index) &
-                        * thetaWeights(itheta) * zetaWeights(izeta) * BHat(itheta,izeta) / DHat(itheta,izeta)
-
-                   momentumFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
-                        = momentumFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
-                        + (factor * (16d+0/15) + factor2 * (two/5)) * momentumFluxFactor_vm * BHat(itheta,izeta) &
-                        * xWeights(ix)*momentumFluxIntegralWeights_vm(ix)*f0Array(index)
-
-                   momentumFluxBeforeSurfaceIntegral_vm(ispecies,itheta,izeta) &
-                        = momentumFluxBeforeSurfaceIntegral_vm(ispecies,itheta,izeta) &
-                        + (factor * (16d+0/15) + factor2 * (two/5)) * momentumFluxFactor_vm * BHat(itheta,izeta) &
-                        * xWeights(ix)*momentumFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index)
-
-                   momentumFluxBeforeSurfaceIntegral_vE0(ispecies,itheta,izeta) &
-                        = momentumFluxBeforeSurfaceIntegral_vE0(ispecies,itheta,izeta) &
-                        + factor_vE * (two/3) * momentumFluxFactor_vE * BHat(itheta,izeta) &
-                        * xWeights(ix)*momentumFluxIntegralWeights_vE(ix)*f0Array(index)
-
-                   momentumFluxBeforeSurfaceIntegral_vE(ispecies,itheta,izeta) &
-                        = momentumFluxBeforeSurfaceIntegral_vE(ispecies,itheta,izeta) &
-                        + factor_vE * (two/3) * momentumFluxFactor_vE * BHat(itheta,izeta) &
-                        * xWeights(ix)*momentumFluxIntegralWeights_vE(ix)*solutionWithFullFArray(index)
-
-                   L = 2
-                   index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
-                   ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
-
-                   particleFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
-                        = particleFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
-                        + (factor+factor2) * (four/15) * particleFluxFactor_vm &
-                        * xWeights(ix)*particleFluxIntegralWeights_vm(ix)*f0Array(index)
-
-                   particleFluxBeforeSurfaceIntegral_vm(ispecies,itheta,izeta) &
-                        = particleFluxBeforeSurfaceIntegral_vm(ispecies,itheta,izeta) &
-                        + (factor+factor2) * (four/15) * particleFluxFactor_vm &
-                        * xWeights(ix)*particleFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index)
-
-                   heatFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
-                        = heatFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
-                        + (factor+factor2) * (four/15) * heatFluxFactor_vm &
-                        * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*f0Array(index)
-
-                   heatFluxBeforeSurfaceIntegral_vm(ispecies,itheta,izeta) &
-                        = heatFluxBeforeSurfaceIntegral_vm(ispecies,itheta,izeta) &
-                        + (factor+factor2) * (four/15) * heatFluxFactor_vm &
-                        * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index)
-
-                   NTVBeforeSurfaceIntegral(ispecies,itheta,izeta) &
-                        = NTVBeforeSurfaceIntegral(ispecies,itheta,izeta) &
-                        + NTVFactor * NTVKernel(itheta,izeta)&
-                        * xWeights(ix)*NTVIntegralWeights(ix)*solutionWithDeltaFArray(index)
-
-                   pressureAnisotropy(ispecies,itheta,izeta) = pressureAnisotropy(ispecies,itheta,izeta) &
-                        + pressureFactor*(-three/5)* &
-			xWeights(ix)*pressureIntegralWeights(ix)*solutionWithDeltaFArray(index)
-
-                   particleFlux_vm_psiHat_vs_x(ispecies,ix) &
-                        = particleFlux_vm_psiHat_vs_x(ispecies,ix) &
-                        + (factor+factor2) * (four/15) * particleFluxFactor_vm &
-                        * xWeights(ix)*particleFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index) &
-                        * thetaWeights(itheta) * zetaWeights(izeta)
-                   
-                   heatFlux_vm_psiHat_vs_x(ispecies,ix) &
-                        = heatFlux_vm_psiHat_vs_x(ispecies,ix) &
-                        + (factor+factor2) * (four/15) * heatFluxFactor_vm &
-                        * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index) &
-                        * thetaWeights(itheta) * zetaWeights(izeta)
-
-
-                   L = 3
-                   index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
-                   ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
-
-                   momentumFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
-                        = momentumFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
-                        + (factor+factor2) * (four/35) * momentumFluxFactor_vm * BHat(itheta,izeta) &
-                        * xWeights(ix)*momentumFluxIntegralWeights_vm(ix)*f0Array(index)
-
-                   momentumFluxBeforeSurfaceIntegral_vm(ispecies,itheta,izeta) &
-                        = momentumFluxBeforeSurfaceIntegral_vm(ispecies,itheta,izeta) &
-                        + (factor+factor2) * (four/35) * momentumFluxFactor_vm * BHat(itheta,izeta) &
-                        * xWeights(ix)*momentumFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index)
-
-                end do
+          ! First do the density, pressure, and flow, since these do not require any spatial convolution:
+          do imn = 1,NFourier2
+             do ix = 1,Nx
+                L = 0
+                index = getIndex(ispecies, ix, L+1, imn, BLOCK_F)+1
+                ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
+                
+                densityNonadiabaticPerturbation_Fourier(ispecies,imn) = densityNonadiabaticPerturbation_Fourier(ispecies,imn) &
+                     + densityFactor*xWeights(ix)*densityIntegralWeights(ix)*solutionWithDeltaFArray(index)
+                
+                pressureNonadiabaticPerturbation_Fourier(ispecies,imn) = pressureNonadiabaticPerturbation_Fourier(ispecies,imn) &
+                     + pressureFactor*xWeights(ix)*pressureIntegralWeights(ix)*solutionWithDeltaFArray(index)
+                
+                
+                L = 1
+                index = getIndex(ispecies, ix, L+1, imn, BLOCK_F)+1
+                ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
+                
+                flow_Fourier(ispecies,imn) = flow_Fourier(ispecies,imn) &
+                     + flowFactor*xWeights(ix)*flowIntegralWeights(ix)*solutionWithDeltaFArray(index)
+                
+                
+                L = 2
+                index = getIndex(ispecies, ix, L+1, imn, BLOCK_F)+1
+                ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
+                
+                pressureAnisotropy_Fourier(ispecies,imn) = pressureAnisotropy_Fourier(ispecies,imn) &
+                     + pressureFactor*(-three/5)* &
+                     xWeights(ix)*pressureIntegralWeights(ix)*solutionWithDeltaFArray(index)
              end do
           end do
 
-          do izeta=1,Nzeta
-             B2 = BHat(:,izeta)*BHat(:,izeta)
+          ! Next do BFlow and the fluxes, which require spatial convolutions:
 
-             FSADensityPerturbation(ispecies) = FSADensityPerturbation(ispecies) + zetaWeights(izeta) &
-                  * dot_product(thetaWeights, densityPerturbation(ispecies,:,izeta)/DHat(:,izeta))
+          factor2 = 0 ! Could eventually replace factor2 with a FourierMatrix associated with radial current in the equilibrium.
 
-             FSABFlow(ispecies) = FSABFlow(ispecies) + zetaWeights(izeta) &
-                  * dot_product(thetaWeights, flow(ispecies,:,izeta)*BHat(:,izeta)/DHat(:,izeta))
-
-             FSAPressurePerturbation(ispecies) = FSAPressurePerturbation(ispecies) + zetaWeights(izeta) &
-                  * dot_product(thetaWeights, pressurePerturbation(ispecies,:,izeta)/DHat(:,izeta))
-
-             particleFlux_vm0_psiHat(ispecies) = particleFlux_vm0_psiHat(ispecies) + zetaWeights(izeta) &
-                  * dot_product(thetaWeights, particleFluxBeforeSurfaceIntegral_vm0(ispecies,:,izeta))
-
-             particleFlux_vm_psiHat(ispecies) = particleFlux_vm_psiHat(ispecies) + zetaWeights(izeta) &
-                  * dot_product(thetaWeights, particleFluxBeforeSurfaceIntegral_vm(ispecies,:,izeta))
-
-             particleFlux_vE0_psiHat(ispecies) = particleFlux_vE0_psiHat(ispecies) + zetaWeights(izeta) &
-                  * dot_product(thetaWeights, particleFluxBeforeSurfaceIntegral_vE0(ispecies,:,izeta))
-
-             particleFlux_vE_psiHat(ispecies) = particleFlux_vE_psiHat(ispecies) + zetaWeights(izeta) &
-                  * dot_product(thetaWeights, particleFluxBeforeSurfaceIntegral_vE(ispecies,:,izeta))
-
-             momentumFlux_vm0_psiHat(ispecies) = momentumFlux_vm0_psiHat(ispecies) + zetaWeights(izeta) &
-                  * dot_product(thetaWeights, momentumFluxBeforeSurfaceIntegral_vm0(ispecies,:,izeta))
-
-             momentumFlux_vm_psiHat(ispecies) = momentumFlux_vm_psiHat(ispecies) + zetaWeights(izeta) &
-                  * dot_product(thetaWeights, momentumFluxBeforeSurfaceIntegral_vm(ispecies,:,izeta))
-
-             momentumFlux_vE0_psiHat(ispecies) = momentumFlux_vE0_psiHat(ispecies) + zetaWeights(izeta) &
-                  * dot_product(thetaWeights, momentumFluxBeforeSurfaceIntegral_vE0(ispecies,:,izeta))
-
-             momentumFlux_vE_psiHat(ispecies) = momentumFlux_vE_psiHat(ispecies) + zetaWeights(izeta) &
-                  * dot_product(thetaWeights, momentumFluxBeforeSurfaceIntegral_vE(ispecies,:,izeta))
-
-             heatFlux_vm0_psiHat(ispecies) = heatFlux_vm0_psiHat(ispecies) + zetaWeights(izeta) &
-                  * dot_product(thetaWeights, heatFluxBeforeSurfaceIntegral_vm0(ispecies,:,izeta))
-
-             heatFlux_vm_psiHat(ispecies) = heatFlux_vm_psiHat(ispecies) + zetaWeights(izeta) &
-                  * dot_product(thetaWeights, heatFluxBeforeSurfaceIntegral_vm(ispecies,:,izeta))
-
-             heatFlux_vE0_psiHat(ispecies) = heatFlux_vE0_psiHat(ispecies) + zetaWeights(izeta) &
-                  * dot_product(thetaWeights, heatFluxBeforeSurfaceIntegral_vE0(ispecies,:,izeta))
-
-             heatFlux_vE_psiHat(ispecies) = heatFlux_vE_psiHat(ispecies) + zetaWeights(izeta) &
-                  * dot_product(thetaWeights, heatFluxBeforeSurfaceIntegral_vE(ispecies,:,izeta))
-
-             NTV(ispecies) = NTV(ispecies) + zetaWeights(izeta) &
-                  * dot_product(thetaWeights, NTVBeforeSurfaceIntegral(ispecies,:,izeta)) 
-
+          do imn = 1,NFourier2     ! imn indexes the diagnostic output
+             do imn2 = 1,NFourier2 ! imn2 is the index that is contracted when the top row of the convolution matrix is multiplied by the solution vector.
+                do ix = 1,Nx
+                   L = 0
+                   index = getIndex(ispecies, ix, L+1, imn2, BLOCK_F)+1
+                   ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
+                   
+                   particleFluxBeforeSurfaceIntegral_vm0_Fourier(ispecies,imn) &
+                        = particleFluxBeforeSurfaceIntegral_vm0_Fourier(ispecies,imn) &
+                        + (FourierMatrix_particleHeat_vm(1,imn2) * (8/three) + factor2 * (two/three)) * particleFluxFactor_vm &
+                        * xWeights(ix)*particleFluxIntegralWeights_vm(ix)*f0Array(index)
+                   
+                   particleFluxBeforeSurfaceIntegral_vm_Fourier(ispecies,imn) &
+                        = particleFluxBeforeSurfaceIntegral_vm_Fourier(ispecies,imn) &
+                        + (FourierMatrix_particleHeat_vm(1,imn2) * (8/three) + factor2 * (two/three)) * particleFluxFactor_vm &
+                        * xWeights(ix)*particleFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index)
+                   
+                   particleFluxBeforeSurfaceIntegral_vE0_Fourier(ispecies,imn) &
+                        = particleFluxBeforeSurfaceIntegral_vE0_Fourier(ispecies,imn) &
+                        + FourierMatrix_particleHeat_vE(1,imn2) * particleFluxFactor_vE &
+                        * xWeights(ix)*particleFluxIntegralWeights_vE(ix)*f0Array(index)
+                   
+                   particleFluxBeforeSurfaceIntegral_vE_Fourier(ispecies,imn) &
+                        = particleFluxBeforeSurfaceIntegral_vE_Fourier(ispecies,imn) &
+                        + FourierMatrix_particleHeat_vE(1,imn2) * particleFluxFactor_vE &
+                        * xWeights(ix)*particleFluxIntegralWeights_vE(ix)*solutionWithFullFArray(index)
+                   
+                   heatFluxBeforeSurfaceIntegral_vm0_Fourier(ispecies,imn) &
+                        = heatFluxBeforeSurfaceIntegral_vm0_Fourier(ispecies,imn) &
+                        + (FourierMatrix_particleHeat_vm(1,imn2) * (8/three) + factor2 * (two/three)) * heatFluxFactor_vm &
+                        * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*f0Array(index)
+                   
+                   heatFluxBeforeSurfaceIntegral_vm_Fourier(ispecies,imn) &
+                        = heatFluxBeforeSurfaceIntegral_vm_Fourier(ispecies,imn) &
+                        + (FourierMatrix_particleHeat_vm(1,imn2) * (8/three) + factor2 * (two/three)) * heatFluxFactor_vm &
+                        * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index)
+                   
+                   heatFluxBeforeSurfaceIntegral_vE0_Fourier(ispecies,imn) &
+                        = heatFluxBeforeSurfaceIntegral_vE0_Fourier(ispecies,imn) &
+                        + FourierMatrix_particleHeat_vE(1,imn2) * heatFluxFactor_vE &
+                        * xWeights(ix)*heatFluxIntegralWeights_vE(ix)*f0Array(index)
+                   
+                   heatFluxBeforeSurfaceIntegral_vE_Fourier(ispecies,imn) &
+                        = heatFluxBeforeSurfaceIntegral_vE_Fourier(ispecies,imn) &
+                        + FourierMatrix_particleHeat_vE(1,imn2) * heatFluxFactor_vE &
+                        * xWeights(ix)*heatFluxIntegralWeights_vE(ix)*solutionWithFullFArray(index)
+                   
+!!$                   particleFlux_vm_psiHat_vs_x_Fourier(ispecies,ix) &
+!!$                        = particleFlux_vm_psiHat_vs_x_Fourier(ispecies,ix) &
+!!$                        + (FourierMatrix_particleHeat_vm(1,imn2) * (8/three) + factor2 * (two/three)) * particleFluxFactor_vm &
+!!$                        * xWeights(ix)*particleFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index) &
+!!$                        * thetaWeights(itheta) * zetaWeights(izeta)
+!!$                   
+!!$                   heatFlux_vm_psiHat_vs_x_Fourier(ispecies,ix) &
+!!$                        = heatFlux_vm_psiHat_vs_x_Fourier(ispecies,ix) &
+!!$                        + (FourierMatrix_particleHeat_vm(1,imn2) * (8/three) + factor2 * (two/three)) * heatFluxFactor_vm &
+!!$                        * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index) &
+!!$                        * thetaWeights(itheta) * zetaWeights(izeta)
+                
+                
+                   L = 1
+                   index = getIndex(ispecies, ix, L+1, imn2, BLOCK_F)+1
+                   ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
+                   
+!!$                   FSABFlow_vs_x_Fourier(ispecies,ix) = FSABFlow_vs_x_Fourier(ispecies,ix) &
+!!$                        + flowFactor*xWeights(ix)*flowIntegralWeights(ix)*solutionWithDeltaFArray(index) &
+!!$                        * thetaWeights(itheta) * zetaWeights(izeta) * BHat(itheta,izeta) / DHat(itheta,izeta)
+                   
+                   momentumFluxBeforeSurfaceIntegral_vm0_Fourier(ispecies,imn) &
+                        = momentumFluxBeforeSurfaceIntegral_vm0_Fourier(ispecies,imn) &
+                        + (FourierMatrix_momentum_vm(1,imn2) * (16d+0/15) + factor2 * (two/5)) * momentumFluxFactor_vm &
+                        * xWeights(ix)*momentumFluxIntegralWeights_vm(ix)*f0Array(index)
+                   
+                   momentumFluxBeforeSurfaceIntegral_vm_Fourier(ispecies,imn) &
+                        = momentumFluxBeforeSurfaceIntegral_vm_Fourier(ispecies,imn) &
+                        + (FourierMatrix_momentum_vm(1,imn2) * (16d+0/15) + factor2 * (two/5)) * momentumFluxFactor_vm &
+                        * xWeights(ix)*momentumFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index)
+                   
+                   momentumFluxBeforeSurfaceIntegral_vE0_Fourier(ispecies,imn) &
+                        = momentumFluxBeforeSurfaceIntegral_vE0_Fourier(ispecies,imn) &
+                        + FourierMatrix_momentum_vE(1,imn2) * (two/3) * momentumFluxFactor_vE &
+                        * xWeights(ix)*momentumFluxIntegralWeights_vE(ix)*f0Array(index)
+                   
+                   momentumFluxBeforeSurfaceIntegral_vE_Fourier(ispecies,imn) &
+                        = momentumFluxBeforeSurfaceIntegral_vE_Fourier(ispecies,imn) &
+                        + FourierMatrix_momentum_vE(1,imn2) * (two/3) * momentumFluxFactor_vE &
+                        * xWeights(ix)*momentumFluxIntegralWeights_vE(ix)*solutionWithFullFArray(index)
+                   
+                   L = 2
+                   index = getIndex(ispecies, ix, L+1, imn2, BLOCK_F)+1
+                   ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
+                   
+                   particleFluxBeforeSurfaceIntegral_vm0_Fourier(ispecies,imn) &
+                        = particleFluxBeforeSurfaceIntegral_vm0_Fourier(ispecies,imn) &
+                        + (FourierMatrix_particleHeat_vm(1,imn2)+factor2) * (four/15) * particleFluxFactor_vm &
+                        * xWeights(ix)*particleFluxIntegralWeights_vm(ix)*f0Array(index)
+                   
+                   particleFluxBeforeSurfaceIntegral_vm_Fourier(ispecies,imn) &
+                        = particleFluxBeforeSurfaceIntegral_vm_Fourier(ispecies,imn) &
+                        + (FourierMatrix_particleHeat_vm(1,imn2)+factor2) * (four/15) * particleFluxFactor_vm &
+                        * xWeights(ix)*particleFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index)
+                   
+                   heatFluxBeforeSurfaceIntegral_vm0_Fourier(ispecies,imn) &
+                        = heatFluxBeforeSurfaceIntegral_vm0_Fourier(ispecies,imn) &
+                        + (FourierMatrix_particleHeat_vm(1,imn2)+factor2) * (four/15) * heatFluxFactor_vm &
+                        * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*f0Array(index)
+                   
+                   heatFluxBeforeSurfaceIntegral_vm_Fourier(ispecies,imn) &
+                        = heatFluxBeforeSurfaceIntegral_vm_Fourier(ispecies,imn) &
+                        + (FourierMatrix_particleHeat_vm(1,imn2)+factor2) * (four/15) * heatFluxFactor_vm &
+                        * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index)
+                   
+!!$                NTVBeforeSurfaceIntegral_Fourier(ispecies,imn) &
+!!$                     = NTVBeforeSurfaceIntegral_Fourier(ispecies,imn) &
+!!$                     + NTVFactor * NTVKernel(itheta,izeta)&
+!!$                     * xWeights(ix)*NTVIntegralWeights(ix)*solutionWithDeltaFArray(index)
+                   
+                   particleFlux_vm_psiHat_vs_x_Fourier(ispecies,ix) &
+                        = particleFlux_vm_psiHat_vs_x_Fourier(ispecies,ix) &
+                        + (FourierMatrix_particleHeat_vm(1,imn2)+factor2) * (four/15) * particleFluxFactor_vm &
+                        * xWeights(ix)*particleFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index) &
+                        * thetaWeights(itheta) * zetaWeights(izeta)
+                   
+                   heatFlux_vm_psiHat_vs_x_Fourier(ispecies,ix) &
+                        = heatFlux_vm_psiHat_vs_x_Fourier(ispecies,ix) &
+                        + (FourierMatrix_particleHeat_vm(1,imn2)+factor2) * (four/15) * heatFluxFactor_vm &
+                        * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index) &
+                        * thetaWeights(itheta) * zetaWeights(izeta)
+                   
+                   
+                   L = 3
+                   index = getIndex(ispecies, ix, L+1, imn2, BLOCK_F)+1
+                   ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
+                   
+                   momentumFluxBeforeSurfaceIntegral_vm0_Fourier(ispecies,imn) &
+                        = momentumFluxBeforeSurfaceIntegral_vm0_Fourier(ispecies,imn) &
+                        + (FourierMatrix_momentum_vm(1,imn2)+factor2) * (four/35) * momentumFluxFactor_vm &
+                        * xWeights(ix)*momentumFluxIntegralWeights_vm(ix)*f0Array(index)
+                   
+                   momentumFluxBeforeSurfaceIntegral_vm_Fourier(ispecies,imn) &
+                        = momentumFluxBeforeSurfaceIntegral_vm_Fourier(ispecies,imn) &
+                        + (FourierMatrix_momentum_vm(1,imn2)+factor2) * (four/35) * momentumFluxFactor_vm &
+                        * xWeights(ix)*momentumFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index)
+             end do
           end do
 
-          jHat = jHat + Zs(ispecies)*flow(ispecies,:,:)
+          ! For quantities that vary on a flux surface, convert from Fourier to real space:
+          call inverseFourierTransform(densityNonadiabaticPerturbation_Fourier(ispecies,:), densityNonadiabaticPerturbation_realSpace(ispecies,:,:))
+          call inverseFourierTransform(flow_Fourier(ispecies,:), flow_realSpace(ispecies,:,:))
+          call inverseFourierTransform(pressureNonadiabaticPerturbation_Fourier(ispecies,:), pressureNonadiabaticPerturbation_realSpace(ispecies,:,:))
+          call inverseFourierTransform(pressureAnisotropy_Fourier(ispecies,:), pressureAnisotropy_realSpace(ispecies,:,:))
+          call inverseFourierTransform(particleFluxBeforeSurfaceIntegral_vm0_Fourier(ispecies,:), particleFluxBeforeSurfaceIntegral_vm0_realSpace(ispecies,:,:))
+          call inverseFourierTransform(particleFluxBeforeSurfaceIntegral_vm_Fourier(ispecies,:), particleFluxBeforeSurfaceIntegral_vm_realSpace(ispecies,:,:))
+          call inverseFourierTransform(particleFluxBeforeSurfaceIntegral_vE0_Fourier(ispecies,:), particleFluxBeforeSurfaceIntegral_vE0_realSpace(ispecies,:,:))
+          call inverseFourierTransform(particleFluxBeforeSurfaceIntegral_vE_Fourier(ispecies,:), particleFluxBeforeSurfaceIntegral_vE_realSpace(ispecies,:,:))
+          call inverseFourierTransform(momentumFluxBeforeSurfaceIntegral_vm0_Fourier(ispecies,:), momentumFluxBeforeSurfaceIntegral_vm0_realSpace(ispecies,:,:))
+          call inverseFourierTransform(momentumFluxBeforeSurfaceIntegral_vm_Fourier(ispecies,:), momentumFluxBeforeSurfaceIntegral_vm_realSpace(ispecies,:,:))
+          call inverseFourierTransform(momentumFluxBeforeSurfaceIntegral_vE0_Fourier(ispecies,:), momentumFluxBeforeSurfaceIntegral_vE0_realSpace(ispecies,:,:))
+          call inverseFourierTransform(momentumFluxBeforeSurfaceIntegral_vE_Fourier(ispecies,:), momentumFluxBeforeSurfaceIntegral_vE_realSpace(ispecies,:,:))
+          call inverseFourierTransform(heatFluxBeforeSurfaceIntegral_vm0_Fourier(ispecies,:), heatFluxBeforeSurfaceIntegral_vm0_realSpace(ispecies,:,:))
+          call inverseFourierTransform(heatFluxBeforeSurfaceIntegral_vm_Fourier(ispecies,:), heatFluxBeforeSurfaceIntegral_vm_realSpace(ispecies,:,:))
+          call inverseFourierTransform(heatFluxBeforeSurfaceIntegral_vE0_Fourier(ispecies,:), heatFluxBeforeSurfaceIntegral_vE0_realSpace(ispecies,:,:))
+          call inverseFourierTransform(heatFluxBeforeSurfaceIntegral_vE_Fourier(ispecies,:), heatFluxBeforeSurfaceIntegral_vE_realSpace(ispecies,:,:))
+
+          ! Compute surface-averaged quantities:
+          ! (The dot_product between the top row of the Fourier matrix and the Fourier vector gives the constant term of the Fourier expansion, which integrates to 4*pi*pi
+          ! when you integrate over theta and zeta.)
+          FSADensityNonadiabaticPerturbation(ispecies) = dot_product(FourierMatrix_DInverse(1,:),densityNonadiabaticPerturbation_Fourier(ispecies,:))*4*pi*pi/VPrimeHat
+          FSABFlow(ispecies) = dot_product(FourierMatrix_BOverD(1,:),flow_Fourier(ispecies,:))*4*pi*pi/VPrimeHat
+          FSAPressureNonadiabaticPerturbation(ispecies) = dot_product(FourierMatrix_DInverse(1,:),pressureNonadiabaticPerturbation_Fourier(ispecies,:))*4*pi*pi/VPrimeHat
+
+          particleFlux_vm0_psiHat(ispecies) = 4*pi*pi*particleFluxBeforeSurfaceIntegral_vm0_Fourier(ispecies,1)
+          particleFlux_vm_psiHat( ispecies) = 4*pi*pi*particleFluxBeforeSurfaceIntegral_vm_Fourier( ispecies,1)
+          particleFlux_vE0_psiHat(ispecies) = 4*pi*pi*particleFluxBeforeSurfaceIntegral_vE0_Fourier(ispecies,1)
+          particleFlux_vE_psiHat( ispecies) = 4*pi*pi*particleFluxBeforeSurfaceIntegral_vE_Fourier( ispecies,1)
+
+          momentumFlux_vm0_psiHat(ispecies) = 4*pi*pi*momentumFluxBeforeSurfaceIntegral_vm0_Fourier(ispecies,1)
+          momentumFlux_vm_psiHat( ispecies) = 4*pi*pi*momentumFluxBeforeSurfaceIntegral_vm_Fourier( ispecies,1)
+          momentumFlux_vE0_psiHat(ispecies) = 4*pi*pi*momentumFluxBeforeSurfaceIntegral_vE0_Fourier(ispecies,1)
+          momentumFlux_vE_psiHat( ispecies) = 4*pi*pi*momentumFluxBeforeSurfaceIntegral_vE_Fourier( ispecies,1)
+
+          heatFlux_vm0_psiHat(ispecies) = 4*pi*pi*heatFluxBeforeSurfaceIntegral_vm0_Fourier(ispecies,1)
+          heatFlux_vm_psiHat( ispecies) = 4*pi*pi*heatFluxBeforeSurfaceIntegral_vm_Fourier( ispecies,1)
+          heatFlux_vE0_psiHat(ispecies) = 4*pi*pi*heatFluxBeforeSurfaceIntegral_vE0_Fourier(ispecies,1)
+          heatFlux_vE_psiHat( ispecies) = 4*pi*pi*heatFluxBeforeSurfaceIntegral_vE_Fourier( ispecies,1)
+
+          jHat_realSpace = jHat_realSpace + Zs(ispecies)*flow_realSpace(ispecies,:,:)
+          jHat_Fourier   = jHat_Fourier   + Zs(ispecies)*flow_Fourier(  ispecies,:)
 
           !!totalDensity(ispecies,:,:) = nHats(ispecies) + densityPerturbation(ispecies,:,:) !!Commented by AM 2016-06
           !!totalPressure(ispecies,:,:) = nHats(ispecies)*THats(ispecies) + pressurePerturbation(ispecies,:,:) !!Commented by AM 2016-06
-          totalDensity(ispecies,:,:) = nHats(ispecies)*exp(-Zs(ispecies)*alpha*Phi1Hat(:,:)/THats(ispecies)) + densityPerturbation(ispecies,:,:) !!Added by AM 2016-06
-          totalPressure(ispecies,:,:) = nHats(ispecies)*exp(-Zs(ispecies)*alpha*Phi1Hat(:,:)/THats(ispecies))*THats(ispecies) + pressurePerturbation(ispecies,:,:) !!Added by AM 2016-06
-          velocityUsingFSADensity(ispecies,:,:) = flow(ispecies,:,:) / nHats(ispecies)
-          velocityUsingTotalDensity(ispecies,:,:) = flow(ispecies,:,:) / totalDensity(ispecies,:,:)
-          MachUsingFSAThermalSpeed(ispecies,:,:) = velocityUsingFSADensity(ispecies,:,:) * sqrtMHat/sqrtTHat
+
+          totalDensity_realSpace(ispecies,:,:) = nHats(ispecies)*exp(-Zs(ispecies)*alpha*Phi1Hat_realSpace/THats(ispecies)) &
+               + densityNonadiabaticPerturbation_realSpace(ispecies,:,:)
+          
+          totalPressure_realSpace(ispecies,:,:) = nHats(ispecies)*exp(-Zs(ispecies)*alpha*Phi1Hat_realSpace/THats(ispecies))*THats(ispecies) &
+               + pressureNonadiabticPerturbation_realSpace(ispecies,:,:)
+
+          call FourierTransform( totalDensity_realSpace(ispecies,:,:),  totalDensity_Fourier(ispecies,:))
+          call FourierTransform(totalPressure_realSpace(ispecies,:,:), totalPressure_Fourier(ispecies,:))
+
+          velocityUsingFSADensity_realSpace(ispecies,:,:) = flow_realSpace(ispecies,:,:) / nHats(ispecies)
+          velocityUsingFSADensity_Fourier(ispecies,:) = flow_Fourier(ispecies,:) / nHats(ispecies)
+
+          MachUsingFSAThermalSpeed_realSpace(ispecies,:,:) = velocityUsingFSADensity_realSpace(ispecies,:,:) * sqrtMHat/sqrtTHat
+          MachUsingFSAThermalSpeed_Fourier(ispecies,:) = velocityUsingFSADensity_Fourier(ispecies,:) * sqrtMHat/sqrtTHat
 
        end do
 
@@ -725,10 +760,6 @@
        heatFlux_vd_rN = ddrN2ddpsiHat * heatFlux_vd_psiHat
        heatFlux_withoutPhi1_rN = ddrN2ddpsiHat * heatFlux_withoutPhi1_psiHat
 
-       FSADensityPerturbation = FSADensityPerturbation / VPrimeHat
-       FSABFlow = FSABFlow / VPrimeHat
-       FSABFlow_vs_x = FSABFlow_vs_x / VPrimeHat
-       FSAPressurePerturbation = FSAPressurePerturbation / VPrimeHat
        FSABjHat = dot_product(Zs(1:Nspecies), FSABFlow)
        FSABjHatOverB0 = FSABjHat / B0OverBBar
        FSABjHatOverRootFSAB2 = FSABjHat / sqrt(FSABHat2)
@@ -878,11 +909,11 @@
           if (Nspecies>1) then
              print *,"Results for species ",ispecies,":"
           end if
-          print *,"   FSADensityPerturbation:  ", FSADensityPerturbation(ispecies)
+          print *,"   FSADensityNonadiabaticPerturbation:  ", FSADensityNonadiabaticPerturbation(ispecies)
           print *,"   FSABFlow:                ", FSABFlow(ispecies)
-          print *,"   max and min Mach #:      ", maxval(MachUsingFSAThermalSpeed(ispecies,:,:)),&
-               minval(MachUsingFSAThermalSpeed(ispecies,:,:))
-          print *,"   FSAPressurePerturbation: ", FSAPressurePerturbation(ispecies)
+          print *,"   max and min Mach #:      ", maxval(MachUsingFSAThermalSpeed_realSpace(ispecies,:,:)),&
+               minval(MachUsingFSAThermalSpeed_realSpace(ispecies,:,:))
+          print *,"   FSAPressureNonadiabaticPerturbation: ", FSAPressureNonadiabaticPerturbation(ispecies)
           print *,"   NTV:                     ", NTV(ispecies)
           print *,"   particleFlux_vm0_psiHat  ", particleFlux_vm0_psiHat(ispecies)
           print *,"   particleFlux_vm_psiHat   ", particleFlux_vm_psiHat(ispecies)
@@ -943,7 +974,14 @@
        deallocate(heatFluxIntegralWeights_vE)
        deallocate(NTVIntegralWeights)
 
-       deallocate(B2)
+       deallocate(FourierVector)
+       deallocate(FourierMatrix_DInverse)
+       deallocate(FourierMatrix_BOverD)
+       deallocate(FourierMatrix_particleHeat_vm)
+       deallocate(FourierMatrix_momentum_vm)
+       deallocate(FourierMatrix_particleHeat_vE)
+       deallocate(FourierMatrix_momentum_vE)
+
 
     end if
 
