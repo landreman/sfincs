@@ -109,7 +109,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
   !   ddx = matrix for differentiation.
   !   d2dx2 = matrix for the 2nd derivative.
 
-  use globalVariables, only :: prec
+  use globalVariables, only: prec
 
   implicit none
 

@@ -139,15 +139,15 @@
           ! Nothing to do here.
        case (1,3,4)
           do ispecies = 1,Nspecies
-             index = getIndex(ispecies,1,1,1,1,BLOCK_DENSITY_CONSTRAINT)
+             index = getIndex(ispecies,1,1,1,BLOCK_DENSITY_CONSTRAINT)
              call MatSetValueDense(matrix, index, index, temp, ADD_VALUES, ierr)
-             index = getIndex(ispecies,1,1,1,1,BLOCK_PRESSURE_CONSTRAINT)
+             index = getIndex(ispecies,1,1,1,BLOCK_PRESSURE_CONSTRAINT)
              call MatSetValueDense(matrix, index, index, temp, ADD_VALUES, ierr)
           end do
        case (2)
           do ispecies = 1,Nspecies
              do ix = 1,Nx
-                index = getIndex(ispecies,ix,1,1,1,BLOCK_F_CONSTRAINT)
+                index = getIndex(ispecies,ix,1,1,BLOCK_F_CONSTRAINT)
                 call MatSetValueDense(matrix, index, index, temp, ADD_VALUES, ierr)
              end do
           end do
@@ -155,13 +155,11 @@
           stop "Invalid constraintScheme!"
        end select
        if (includePhi1) then
-          index = getIndex(1,1,1,1,1,BLOCK_PHI1_CONSTRAINT)
+          index = getIndex(1,1,1,1,BLOCK_PHI1_CONSTRAINT)
           call MatSetValueDense(matrix, index, index, temp, ADD_VALUES, ierr)
-          do itheta = 1,Ntheta
-             do izeta = 1,Nzeta
-                index = getIndex(1,1,1,itheta,izeta,BLOCK_QN)
-                call MatSetValueDense(matrix, index, index, temp, ADD_VALUES, ierr)
-             end do
+          do imn = 1,NFourier2
+             index = getIndex(1,1,1,imn,BLOCK_QN)
+             call MatSetValueDense(matrix, index, index, temp, ADD_VALUES, ierr)
           end do
        end if
     end if
@@ -1952,7 +1950,7 @@
 
     implicit none
 
-    integer :: L, ix, itheta, izeta, ispecies, index
+    integer :: L, ix, imn, ispecies, index
     real(prec) :: factor
     PetscErrorCode :: ierr
     PetscScalar :: PetscScalarValue

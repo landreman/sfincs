@@ -25,15 +25,15 @@ contains
     ! vector should have been allocated with size  2*NFourier-1.
     ! matrix should have been allocated with size (2*NFourier-1, 2*NFourier-1).
 
-    use globalVariables, only: NFourier, NFourier2, xm, xn, dp
+    use globalVariables, only: NFourier, NFourier2, xm, xn, prec
 
     implicit none
 
-    real(dp), intent(in), dimension(:) :: vector
-    real(dp), intent(out), dimension(:,:) :: matrix
+    real(prec), intent(in), dimension(:) :: vector
+    real(prec), intent(out), dimension(:,:) :: matrix
 
     integer :: j, m, n, imn1, imn2, sign, numMatches, imn_new
-    real(dp), dimension(:), allocatable :: halfVector
+    real(prec), dimension(:), allocatable :: halfVector
     integer :: tic, toc, countrate
 
     ! ***************************************************************

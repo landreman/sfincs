@@ -1,12 +1,12 @@
 ! We put this subroutine in a module because otherwise there is a segmentation fault when passing allocatable arrays as parameters.
 module FourierTransformMod
 
-  use globalVariables, only: dp
+  use globalVariables, only: prec
 
   implicit none
 
   private
-  real(dp), dimension(:,:), allocatable :: sinmtheta, cosmtheta, sinnzeta, cosnzeta
+  real(prec), dimension(:,:), allocatable :: sinmtheta, cosmtheta, sinnzeta, cosnzeta
 
   public :: FourierTransform, initFourierTrig, inverseFourierTransform
 
@@ -18,10 +18,10 @@ contains
     
     implicit none
     
-    real(dp), dimension(:,:), intent(in) :: realSpaceMatrix
-    real(dp), dimension(:), intent(out) :: FourierVector
+    real(prec), dimension(:,:), intent(in) :: realSpaceMatrix
+    real(prec), dimension(:), intent(out) :: FourierVector
     
-    real(dp) :: angle
+    real(prec) :: angle
     integer :: itheta, izeta, factor
     integer :: imn, m, n
     integer :: tic, toc, countrate
@@ -81,8 +81,8 @@ contains
     
     implicit none
     
-    real(dp), dimension(:), intent(in) :: FourierVector
-    real(dp), dimension(:,:), intent(out) :: realSpaceMatrix
+    real(prec), dimension(:), intent(in) :: FourierVector
+    real(prec), dimension(:,:), intent(out) :: realSpaceMatrix
     
     integer :: itheta, izeta
     integer :: imn, m, n

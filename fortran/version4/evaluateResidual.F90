@@ -43,7 +43,7 @@
 
     allocate(FourierVector(NFourier2))
     allocate(FourierVector2(NFourier2))
-    allocate(spatialFactor(Ntheta,Nzeta)
+    allocate(spatialFactor(Ntheta,Nzeta))
     allocate(xPart(Nx))
 
     ! Often, evaluateResidual is called when the state vector is 0.
@@ -122,7 +122,7 @@
                * DHat*(BHat_sub_theta*dBHatdzeta-BHat_sub_zeta*dBHatdtheta)/(BHat*BHat*BHat)
           call FourierTransform(spatialFactor,FourierVector)
           if (includePhi1 .and. includePhi1InKineticEquation) then
-             call FourierTransform((Z*alpha*dTHatdpsiHat(ispecies)/(THat*THat))*Phi1Hat_realSpace * spatialFactor, FourierVector2)
+             call FourierTransform((Z*alpha*dTHatdpsiHats(ispecies)/(THat*THat))*Phi1Hat_realSpace * spatialFactor, FourierVector2)
           end if
 
           factor = Delta*nHat*mHat*sqrtMHat/(2*pi*sqrtpi*Z*sqrtTHat)
@@ -131,7 +131,7 @@
              do imn = 1,NFourier2
                 ! stuffToAdd includes the dependence on species, space, and x, but not the Legendre dependence.
                 stuffToAdd = factor*xPart(ix)*FourierVector(imn)*(dNHatdpsiHats(ispecies)/nHat &
-                     + Z*alpha*dPhiHatdpsiHatToUseInDriveTerm/THat+(x2(ix)-three/two)*dTHatdpsiHat(ispecies)/THat)
+                     + Z*alpha*dPhiHatdpsiHatToUseInDriveTerm/THat+(x2(ix)-three/two)*dTHatdpsiHats(ispecies)/THat)
                 if (includePhi1 .and. includePhi1InKineticEquation) then
                    stuffToAdd = stuffToAdd + factor*xPart(ix)*FourierVector2(imn)
                 end if

@@ -22,6 +22,8 @@
 !
 module polynomialDiffMatrices
 
+  use globalVariables, only: prec
+
   implicit none
 
   public :: makeXPolynomialDiffMatrices

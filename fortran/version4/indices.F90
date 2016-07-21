@@ -133,7 +133,7 @@
 
       implicit none
 
-      integer, intent(in) :: i_species, i_x, i_xi, i_Fourier2, whichBlock
+      integer, intent(in) :: i_species, i_x, i_xi, i_Fourier, whichBlock
 
       ! Validate inputs:
 

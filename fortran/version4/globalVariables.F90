@@ -132,7 +132,7 @@ module globalVariables
 
   integer :: NFourier = 10
   integer :: NFourier2=0
-  integer :: maxm=32, maxn=32
+  integer :: mmax=32, nmax=32
   integer :: Ntheta, Nzeta
   integer :: Nxi = 16
   integer :: NL = 4
@@ -165,7 +165,7 @@ module globalVariables
   !
   ! ********************************************************
 
-  real(dp), dimension(:), allocatable :: xm, xn
+  real(prec), dimension(:), allocatable :: xm, xn
   integer :: matrixSize, NxPotentials
   real(prec), dimension(:), allocatable :: theta, zeta, x, x_plus1
   real(prec) :: thetaWeight, zetaWeight
@@ -197,7 +197,7 @@ module globalVariables
   real(prec), dimension(:,:), allocatable :: sources, jHat_realSpace
   real(prec), dimension(:), allocatable :: jHat_Fourier
   real(prec), dimension(:), allocatable :: Phi1Hat_Fourier, dPhi1Hatdtheta_Fourier, dPhi1Hatdzeta_Fourier
-  real(prec), dimension(:), allocatable :: Phi1Hat_realSpace, dPhi1Hatdtheta_realSpace, dPhi1Hatdzeta_realSpace
+  real(prec), dimension(:,:), allocatable :: Phi1Hat_realSpace, dPhi1Hatdtheta_realSpace, dPhi1Hatdzeta_realSpace
 
   real(prec), dimension(:,:,:), allocatable :: densityNonadiabaticPerturbation_realSpace, totalDensity_realSpace
   real(prec), dimension(:,:,:), allocatable :: pressureNonadiabaticPerturbation_realSpace, totalPressure_realSpace

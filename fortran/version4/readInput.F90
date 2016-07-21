@@ -1,7 +1,7 @@
 module readInput
 
   use globalVariables
-  use export_f
+  !use export_f
   use xGrid, only: xGrid_k
 
   implicit none
@@ -49,7 +49,7 @@ contains
          nuPrime, EStar, magneticDriftScheme, includePhi1InKineticEquation, &
          quasineutralityOption
 
-    namelist / resolutionParameters / forceOddNthetaAndNzeta, &
+    namelist / resolutionParameters / &
          NFourier, &
          mmax, nmax, &
          Nxi, &
@@ -67,8 +67,8 @@ contains
          preconditioner_Fourier, preconditioner_xi, preconditioner_species, reusePreconditioner, &
          preconditioner_Fourier_min_L
 
-    namelist / export_f / export_full_f, export_delta_f, export_f_theta, export_f_zeta, export_f_x, export_f_xi, &
-         export_f_theta_option, export_f_zeta_option, export_f_xi_option, export_f_x_option
+!!$    namelist / export_f / export_full_f, export_delta_f, export_f_theta, export_f_zeta, export_f_x, export_f_xi, &
+!!$         export_f_theta_option, export_f_zeta_option, export_f_xi_option, export_f_x_option
 
     Zs = speciesNotInitialized
     mHats = speciesNotInitialized
@@ -84,10 +84,10 @@ contains
     dTHatdrNs = speciesNotInitialized
 	
 
-    export_f_theta = speciesNotInitialized
-    export_f_zeta = speciesNotInitialized
-    export_f_x = speciesNotInitialized
-    export_f_xi = speciesNotInitialized
+!!$    export_f_theta = speciesNotInitialized
+!!$    export_f_zeta = speciesNotInitialized
+!!$    export_f_x = speciesNotInitialized
+!!$    export_f_xi = speciesNotInitialized
 
     ! Set defaults for array parameters:
     Zs(1) = one
@@ -102,10 +102,10 @@ contains
     dTHatdrHats(1) = zero
     dNHatdrNs(1) = zero
     dTHatdrNs(1) = zero
-    export_f_theta(1) = zero
-    export_f_zeta(1) = zero
-    export_f_x(1) = one
-    export_f_xi(1) = zero
+!!$    export_f_theta(1) = zero
+!!$    export_f_zeta(1) = zero
+!!$    export_f_x(1) = one
+!!$    export_f_xi(1) = zero
 
 
     filename = trim(inputFilename)
@@ -187,16 +187,16 @@ contains
           print *,"Successfully read parameters from preconditionerOptions namelist in ", trim(filename), "."
        end if
 
-       read(fileUnit, nml=export_f, iostat=didFileAccessWork)
-       if (didFileAccessWork /= 0) then
-          print *,"Proc ",myRank,": Error!  I was able to open the file ", trim(filename), &
-               " but not read data from the export_f namelist in it."
-          print *,"Make sure there is a carriage return at the end of the file."
-          stop
-       end if
-       if (masterProc) then
-          print *,"Successfully read parameters from export_f namelist in ", trim(filename), "."
-       end if
+!!$       read(fileUnit, nml=export_f, iostat=didFileAccessWork)
+!!$       if (didFileAccessWork /= 0) then
+!!$          print *,"Proc ",myRank,": Error!  I was able to open the file ", trim(filename), &
+!!$               " but not read data from the export_f namelist in it."
+!!$          print *,"Make sure there is a carriage return at the end of the file."
+!!$          stop
+!!$       end if
+!!$       if (masterProc) then
+!!$          print *,"Successfully read parameters from export_f namelist in ", trim(filename), "."
+!!$       end if
     end if
 
     close(unit = fileUnit)
@@ -413,38 +413,38 @@ contains
 
     ! Determine the number of points requested for each coordinate related to export_f:
 
-    N_export_f_theta = max_N_export_f
-    N_export_f_zeta  = max_N_export_f
-    N_export_f_x     = max_N_export_f
-    N_export_f_xi    = max_N_export_f
-
-    do i=1,max_N_export_f
-       if (export_f_theta(i) == speciesNotInitialized) then
-          N_export_f_theta = i-1
-          exit
-       end if
-    end do
-
-    do i=1,max_N_export_f
-       if (export_f_zeta(i) == speciesNotInitialized) then
-          N_export_f_zeta = i-1
-          exit
-       end if
-    end do
-
-    do i=1,max_N_export_f
-       if (export_f_xi(i) == speciesNotInitialized) then
-          N_export_f_xi = i-1
-          exit
-       end if
-    end do
-
-    do i=1,max_N_export_f
-       if (export_f_x(i) == speciesNotInitialized) then
-          N_export_f_x = i-1
-          exit
-       end if
-    end do
+!!$    N_export_f_theta = max_N_export_f
+!!$    N_export_f_zeta  = max_N_export_f
+!!$    N_export_f_x     = max_N_export_f
+!!$    N_export_f_xi    = max_N_export_f
+!!$
+!!$    do i=1,max_N_export_f
+!!$       if (export_f_theta(i) == speciesNotInitialized) then
+!!$          N_export_f_theta = i-1
+!!$          exit
+!!$       end if
+!!$    end do
+!!$
+!!$    do i=1,max_N_export_f
+!!$       if (export_f_zeta(i) == speciesNotInitialized) then
+!!$          N_export_f_zeta = i-1
+!!$          exit
+!!$       end if
+!!$    end do
+!!$
+!!$    do i=1,max_N_export_f
+!!$       if (export_f_xi(i) == speciesNotInitialized) then
+!!$          N_export_f_xi = i-1
+!!$          exit
+!!$       end if
+!!$    end do
+!!$
+!!$    do i=1,max_N_export_f
+!!$       if (export_f_x(i) == speciesNotInitialized) then
+!!$          N_export_f_x = i-1
+!!$          exit
+!!$       end if
+!!$    end do
 
   end subroutine readNamelistInput
 

@@ -3,7 +3,8 @@ subroutine chooseFourierModes()
   use rankMod
   use petscsys
   use FourierTransformMod
-  use globalVariables, only: NFourier, NFourier2, xm, xn, mmax, nmax, NPeriods, prec
+  use globalVariables, only: NFourier, NFourier2, xm, xn, mmax, nmax, NPeriods, prec, BHat, masterProc, &
+       Ntheta, Nzeta
 
   implicit none
 
@@ -50,7 +51,7 @@ subroutine chooseFourierModes()
 
   ! Guess a function that we expect will have a similar Fourier spectrum to the distribution function:
   allocate(patternWithExpectedSpectrum(Ntheta,Nzeta))
-  patternWithExpectedSpectrum = (B ** 6) + 1/(B*B)
+  patternWithExpectedSpectrum = (BHat ** 6) + 1/(BHat*BHat)
 
   allocate(FourierVector(NFourier2))
   call initFourierTrig()

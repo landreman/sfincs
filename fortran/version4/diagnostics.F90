@@ -185,6 +185,8 @@
 
   subroutine diagnostics(solutionWithDeltaF, iterationNum)
 
+    use FourierConvolutionMatrixMod
+    use FourierTransformMod
     use globalVariables
     use indices
     use writeHDF5Output
@@ -204,7 +206,7 @@
     !!PetscScalar, pointer :: expPhi1Array(:) !!Added by AM 2016-06
 
     real(prec) :: THat, mHat, sqrtTHat, sqrtMHat, nHat
-    integer :: i, j, ix, ispecies, itheta, izeta, L, index
+    integer :: i, j, ix, ispecies, imn, imn2, L, index
     real(prec) :: densityFactor, flowFactor, pressureFactor
     real(prec) :: particleFluxFactor_vm, particleFluxFactor_vE
     real(prec) :: momentumFluxFactor_vm, momentumFluxFactor_vE
@@ -305,7 +307,6 @@
 
        densityNonadiabaticPerturbation_Fourier=0
        flow_Fourier=0
-       BFlow_Fourier=0
        pressureNonadiabaticPerturbation_Fourier=0
        pressureAnisotropy_Fourier=0
        particleFluxBeforeSurfaceIntegral_vm0_Fourier=0
@@ -320,11 +321,10 @@
        heatFluxBeforeSurfaceIntegral_vm_Fourier=0
        heatFluxBeforeSurfaceIntegral_vE0_Fourier=0
        heatFluxBeforeSurfaceIntegral_vE_Fourier=0
-       NTVBeforeSurfaceIntegral_Fourier=0
 
-       FSADensityPerturbation=0
+       FSADensityNonadiabaticPerturbation=0
        FSABFlow=0
-       FSAPressurePerturbation=0
+       FSAPressureNonadiabaticPerturbation=0
        particleFlux_vm0_psiHat=0
        particleFlux_vm_psiHat=0
        particleFlux_vE0_psiHat=0
@@ -597,17 +597,17 @@
 !!$                     + NTVFactor * NTVKernel(itheta,izeta)&
 !!$                     * xWeights(ix)*NTVIntegralWeights(ix)*solutionWithDeltaFArray(index)
                    
-                   particleFlux_vm_psiHat_vs_x_Fourier(ispecies,ix) &
-                        = particleFlux_vm_psiHat_vs_x_Fourier(ispecies,ix) &
-                        + (FourierMatrix_particleHeat_vm(1,imn2)+factor2) * (four/15) * particleFluxFactor_vm &
-                        * xWeights(ix)*particleFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index) &
-                        * thetaWeights(itheta) * zetaWeights(izeta)
-                   
-                   heatFlux_vm_psiHat_vs_x_Fourier(ispecies,ix) &
-                        = heatFlux_vm_psiHat_vs_x_Fourier(ispecies,ix) &
-                        + (FourierMatrix_particleHeat_vm(1,imn2)+factor2) * (four/15) * heatFluxFactor_vm &
-                        * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index) &
-                        * thetaWeights(itheta) * zetaWeights(izeta)
+!!$                   particleFlux_vm_psiHat_vs_x_Fourier(ispecies,ix) &
+!!$                        = particleFlux_vm_psiHat_vs_x_Fourier(ispecies,ix) &
+!!$                        + (FourierMatrix_particleHeat_vm(1,imn2)+factor2) * (four/15) * particleFluxFactor_vm &
+!!$                        * xWeights(ix)*particleFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index) &
+!!$                        * thetaWeights(itheta) * zetaWeights(izeta)
+!!$                   
+!!$                   heatFlux_vm_psiHat_vs_x_Fourier(ispecies,ix) &
+!!$                        = heatFlux_vm_psiHat_vs_x_Fourier(ispecies,ix) &
+!!$                        + (FourierMatrix_particleHeat_vm(1,imn2)+factor2) * (four/15) * heatFluxFactor_vm &
+!!$                        * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index) &
+!!$                        * thetaWeights(itheta) * zetaWeights(izeta)
                    
                    
                    L = 3
@@ -623,6 +623,7 @@
                         = momentumFluxBeforeSurfaceIntegral_vm_Fourier(ispecies,imn) &
                         + (FourierMatrix_momentum_vm(1,imn2)+factor2) * (four/35) * momentumFluxFactor_vm &
                         * xWeights(ix)*momentumFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index)
+                end do
              end do
           end do
 
@@ -676,7 +677,7 @@
                + densityNonadiabaticPerturbation_realSpace(ispecies,:,:)
           
           totalPressure_realSpace(ispecies,:,:) = nHats(ispecies)*exp(-Zs(ispecies)*alpha*Phi1Hat_realSpace/THats(ispecies))*THats(ispecies) &
-               + pressureNonadiabticPerturbation_realSpace(ispecies,:,:)
+               + pressureNonadiabaticPerturbation_realSpace(ispecies,:,:)
 
           call FourierTransform( totalDensity_realSpace(ispecies,:,:),  totalDensity_Fourier(ispecies,:))
           call FourierTransform(totalPressure_realSpace(ispecies,:,:), totalPressure_Fourier(ispecies,:))

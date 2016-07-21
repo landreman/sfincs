@@ -340,7 +340,6 @@ contains
        call writeHDF5Field("includeTemperatureEquilibrationTerm", includeTemperatureEquilibrationTerm, &
             "Include the inhomogeneous term associated with the collision operator acting on the Maxwellians C[f_M, f_M]? " //&
             "This term is nonzero only when the Fokker-Planck operator is used with unequal temperatures. "// boolDescription)
-       call writeHDF5Field("include_fDivVE_Term", include_fDivVE_Term, "")
        call writeHDF5Field("includeXDotTerm", includeXDotTerm, "")
        call writeHDF5Field("includeElectricFieldTermInXiDot", includeElectricFieldTermInXiDot, "")
        call writeHDF5Field("useDKESExBDrift", useDKESExBDrift, "")

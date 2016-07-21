@@ -1,6 +1,6 @@
 subroutine FourierDifferentiationMatrices(NFourier, xm, xn, ddtheta, ddzeta)
 
-  use globalVariables, only: dp
+  use globalVariables, only: prec
 
   ! ddtheta and ddzeta should have been allocated with size (2*NFourier-1, 2*NFourier-1)
 
@@ -8,7 +8,7 @@ subroutine FourierDifferentiationMatrices(NFourier, xm, xn, ddtheta, ddzeta)
 
   integer, intent(in) :: NFourier
   integer, intent(in), dimension(NFourier) :: xm, xn
-  real(dp), intent(out), dimension(NFourier*2-1,NFourier*2-1) :: ddtheta, ddzeta
+  real(prec), intent(out), dimension(NFourier*2-1,NFourier*2-1) :: ddtheta, ddzeta
 
   integer :: j, NFourier2
 
