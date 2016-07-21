@@ -55,7 +55,9 @@
 
     if (masterProc) then
        print *,"---- Numerical parameters: ----"
+       print *,"Nspecies           = ", Nspecies
        print *,"NFourier           = ", NFourier
+       print *,"NFourier2          = ", NFourier2
        print *,"mmax               = ", mmax
        print *,"nmax               = ", nmax
        print *,"Nxi                = ", Nxi

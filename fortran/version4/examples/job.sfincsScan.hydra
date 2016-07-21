@@ -27,4 +27,4 @@ module load hdf5-serial netcdf-serial
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HDF5_HOME}/lib:${NETCDF_HOME}/lib
 
 # run the program
-time mpiexec -n 16 ~/sfincs/fortran/version3/sfincs -ksp_view
+time mpiexec -n 16 ~/sfincs/fortran/version4/sfincs -ksp_view

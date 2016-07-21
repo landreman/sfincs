@@ -741,6 +741,7 @@
                 end do
              end do
           end do
+          deallocate(xPartOfXDot)
        end if
 
 ! The Phi1-related code below has not yet been updated for the new Fourier spatial discretization.
@@ -1686,7 +1687,7 @@
              case default
                 stop "Invalid constraintScheme!"
              end select
-             imn=0
+             imn=1
              do ispecies = 1,Nspecies
                 rowIndex = getIndex(ispecies, ix, L+1, imn, BLOCK_F)
                 
@@ -1702,7 +1703,7 @@
           ! Add a L=0 source (which is constant on the flux surface) at each x.
           L=0
           do ix = ixMin,Nx
-             imn=0
+             imn=1
              do ispecies = 1,Nspecies
                 rowIndex = getIndex(ispecies, ix, L+1, imn, BLOCK_F)
                 colIndex = getIndex(ispecies, ix, 1, 1, BLOCK_F_CONSTRAINT)

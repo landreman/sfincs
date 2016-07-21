@@ -320,42 +320,32 @@ for i in range(len(NFouriers)):
     currentIndex += 1
 
 for i in range(len(mmaxs)):
-    parametersForScan[currentIndex][0] = mmaxs[i]
+    parametersForScan[currentIndex][1] = mmaxs[i]
     descriptions.append("mmax" + str(mmaxs[i]))
     currentIndex += 1
 
 for i in range(len(nmaxs)):
-    parametersForScan[currentIndex][0] = nmaxs[i]
+    parametersForScan[currentIndex][2] = nmaxs[i]
     descriptions.append("nmax" + str(nmaxs[i]))
     currentIndex += 1
 
 for i in range(len(Nxis)):
-    parametersForScan[currentIndex][2] = Nxis[i]
+    parametersForScan[currentIndex][3] = Nxis[i]
     descriptions.append("Nxi" + str(Nxis[i]))
     currentIndex += 1
 
 for i in range(len(NLs)):
-    parametersForScan[currentIndex][3] = NLs[i]
+    parametersForScan[currentIndex][4] = NLs[i]
     descriptions.append("NL" + str(NLs[i]))
     currentIndex += 1
 
 for i in range(len(Nxs)):
-    parametersForScan[currentIndex][4] = Nxs[i]
+    parametersForScan[currentIndex][5] = Nxs[i]
     descriptions.append("Nx" + str(Nxs[i]))
     currentIndex += 1
 
-for i in range(len(NxPotentialsPerVths)):
-    parametersForScan[currentIndex][5] = NxPotentialsPerVths[i]
-    descriptions.append("NxPotentialsPerVth" + "{0:.4g}".format(NxPotentialsPerVths[i]))
-    currentIndex += 1
-
-for i in range(len(xMaxs)):
-    parametersForScan[currentIndex][6] = xMaxs[i]
-    descriptions.append("xMax" + "{0:.4g}".format(xMaxs[i]))
-    currentIndex += 1
-
 for i in range(len(solverTolerances)):
-    parametersForScan[currentIndex][7] = solverTolerances[i]
+    parametersForScan[currentIndex][6] = solverTolerances[i]
     descriptions.append("solverTolerance" + "{0:.4g}".format(solverTolerances[i]))
     currentIndex += 1
 

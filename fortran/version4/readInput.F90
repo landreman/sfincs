@@ -201,6 +201,8 @@ contains
 
     close(unit = fileUnit)
 
+    NFourier2 = NFourier*2-1
+
     ! Validate species parameters                                                                                                                                                                            
 
     NZs = maxNumSpecies

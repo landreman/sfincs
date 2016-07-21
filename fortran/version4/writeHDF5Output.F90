@@ -185,6 +185,8 @@ contains
        call writeHDF5Field("NFourier2", NFourier2, &
             "Number of Fourier modes in the expansion of the distribution function, counting both sine and cosine. " // &
             "NFourier2=2*NFourier-1 since the m=n=0 mode has a cosine component but no sine component.")
+       call writeHDF5Field("mmax", mmax, "Largest poloidal mode number allowed.")
+       call writeHDF5Field("nmax", nmax, "Largest toroidal mode number allowed.")
        call writeHDF5Field("Ntheta", Ntheta, "Number of grid points in the poloidal angle theta")
        call writeHDF5Field("Nzeta", Nzeta, "Number of grid points in the toroidal angle zeta")
        call writeHDF5Field("Nxi", Nxi, &
@@ -406,10 +408,10 @@ contains
        call h5sclose_f(dspaceIDForScalar, HDF5Error)
        call h5sclose_f(dspaceIDForSpecies, HDF5Error)
        call h5sclose_f(dspaceIDForx, HDF5Error)
-       call h5sclose_f(dspaceIDForExport_f_theta, HDF5Error)
-       call h5sclose_f(dspaceIDForExport_f_zeta, HDF5Error)
-       call h5sclose_f(dspaceIDForExport_f_xi, HDF5Error)
-       call h5sclose_f(dspaceIDForExport_f_x, HDF5Error)
+!!$       call h5sclose_f(dspaceIDForExport_f_theta, HDF5Error)
+!!$       call h5sclose_f(dspaceIDForExport_f_zeta, HDF5Error)
+!!$       call h5sclose_f(dspaceIDForExport_f_xi, HDF5Error)
+!!$       call h5sclose_f(dspaceIDForExport_f_x, HDF5Error)
 
        call h5fclose_f(HDF5FileID, HDF5Error)
 

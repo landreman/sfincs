@@ -165,7 +165,7 @@ module globalVariables
   !
   ! ********************************************************
 
-  real(prec), dimension(:), allocatable :: xm, xn
+  integer, dimension(:), allocatable :: xm, xn
   integer :: matrixSize, NxPotentials
   real(prec), dimension(:), allocatable :: theta, zeta, x, x_plus1
   real(prec) :: thetaWeight, zetaWeight
