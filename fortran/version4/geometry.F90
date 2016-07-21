@@ -1923,37 +1923,29 @@ contains
 
   subroutine computeBIntegrals
 
+    use FourierTransform
+
     implicit none
 
-    integer :: itheta, izeta
+    real(prec), dimension(:), allocatable :: FourierVector
 
     ! This subroutine computes VPrimeHat, FSABHat2, and (if needed) B0OverBBar, GHat, and IHat.
 
-    VPrimeHat = 0
-    FSABHat2 = 0
-    do itheta=1,Ntheta
-       do izeta=1,Nzeta
-          VPrimeHat = VPrimeHat + thetaWeights(itheta) * zetaWeights(izeta) / DHat(itheta,izeta)
-          FSABHat2 = FSABHat2 + thetaWeights(itheta) * zetaWeights(izeta) &
-               * BHat(itheta,izeta) * BHat(itheta,izeta) / DHat(itheta,izeta)
-       end do
-    end do
+    allocate(FourierVector(NFourier2))
 
-    FSABHat2 = FSABHat2 / VPrimeHat
+    call FourierTransform(1/DHat,FourierVector)
+    VPrimeHat = 4*pi*pi*FourierVector(1)
+
+    call FourierTransform(BHat*BHat/DHat,FourierVector)
+    FSABHat2 = 4*pi*pi*FourierVector(1)/VPrimeHat
 
     if (coordinateSystem .ne. COORDINATE_SYSTEM_BOOZER) then
        ! Compute B0, the (m=0,n=0) Boozer harmonic.
        ! We compute it using B0 = <B^3> / <B^2>, where the right hand side
        ! can be computed in any coordinate system.
-       B0OverBBar = 0
-       do itheta=1,Ntheta
-          do izeta=1,Nzeta
-             B0OverBBar = B0OverBBar + thetaWeights(itheta) * zetaWeights(izeta) &
-                  * (BHat(itheta,izeta) ** 3) / DHat(itheta,izeta)
-          end do
-       end do
 
-       B0OverBBar = B0OverBBar / VPrimeHat / FSABHat2
+       call FourierTransform(BHat*BHat*BHat/DHat,FourierVector)
+       B0OverBBar = 4*pi*pi*FourierVector(1) / VPrimeHat / FSABHat2
 
        ! Compute G and H for the case of non-Boozer coordinates.
        ! We don't actually need G or H for anything, but they are not much work to compute,
@@ -1963,10 +1955,16 @@ contains
        ! used for the kinetic calculation. But let's do this on the same grid for 2 reasons:
        ! (1) simplicity, and (2) since the trapezoid rule is spectrally
        ! accurate on a uniform periodic grid, so a fine grid is not required.)
-       GHat = dot_product(thetaWeights, matmul(BHat_sub_zeta,  zetaWeights)) / (4*pi*pi)
-       IHat = dot_product(thetaWeights, matmul(BHat_sub_theta, zetaWeights)) / (4*pi*pi)
+
+       call FourierTransform(BHat_sub_zeta,FourierVector)
+       GHat = FourierVector(1)
+
+       call FourierTransform(BHat_sub_theta,FourierVector)
+       IHat = FourierVector(1)
 
     end if
+
+    deallocate(FourierVector)
 
   end subroutine computeBIntegrals
 

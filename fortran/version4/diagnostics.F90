@@ -127,9 +127,11 @@
 
   subroutine extractPhi1(myVec)
 
-    use globalVariables, only: Phi1Hat, dPhi1Hatdtheta, dPhi1Hatdzeta, MPIComm, masterProc, ddtheta, ddzeta, Ntheta, Nzeta
-    use globalVariables, only: includePhi1, zero
+    use globalVariables, only: Phi1Hat_Fourier, dPhi1Hatdtheta_Fourier, dPhi1Hatdzeta_Fourier
+    use globalVariables, only: Phi1Hat_realSpace, dPhi1Hatdtheta_realSpace, dPhi1Hatdzeta_realSpace
+    use globalVariables, only: includePhi1, zero, MPIComm, masterProc, ddtheta, ddzeta, NFourier2
     use indices
+    use FourierTransformMod, only: inverseFourierTransform
     use petscvec
 
     implicit none
@@ -140,7 +142,7 @@
     PetscScalar, pointer :: solnArray(:)
     PetscErrorCode :: ierr
 
-    integer :: itheta, izeta, index
+    integer :: imn, index
 
     if (includePhi1) then
        if (masterProc) then
@@ -156,28 +158,24 @@
           ! Convert the PETSc vector into a normal Fortran array:
           call VecGetArrayF90(solnOnProc0, solnArray, ierr)
           
-          do itheta = 1,Ntheta
-             do izeta = 1,Nzeta
-                index = getIndex(1,1,1,itheta,izeta,BLOCK_QN)+1
-                ! Add 1 because getIndex returns 0-based PETSc indices, not 1-based fortran indices.
-                Phi1Hat(itheta,izeta) = solnarray(index) ! Note cast from PetscScalar -> real(prec) may happen here.
-             end do
+          do imn = 1,NFourier2
+             index = getIndex(1,1,1,imn,BLOCK_QN)+1
+             ! Add 1 because getIndex returns 0-based PETSc indices, not 1-based fortran indices.
+             Phi1Hat_Fourier(imn) = solnarray(index) ! Note cast from PetscScalar -> real(prec) may happen here.
           end do
           
           call VecRestoreArrayF90(solnOnProc0, solnArray, ierr)
        end if
 
        ! Send Phi1Hat from the masterProc to all procs:
-       call MPI_Bcast(Phi1Hat, Ntheta*Nzeta, MPI_DOUBLE_PRECISION, 0, MPIComm, ierr)
+       call MPI_Bcast(Phi1Hat_Fourier, NFourier2, MPI_DOUBLE_PRECISION, 0, MPIComm, ierr)
 
-       dPhi1Hatdtheta = matmul(ddtheta,Phi1Hat)
-       dPhi1Hatdzeta = transpose(matmul(ddzeta,transpose(Phi1Hat)))
+       dPhi1Hatdtheta_Fourier = matmul(ddtheta,Phi1Hat_Fourier)
+       dPhi1Hatdzeta_Fourier = matmul(ddzeta,Phi1Hat_Fourier)
+       call inverseFourierTransform(Phi1Hat_Fourier,Phi1Hat_realSpace)
+       call inverseFourierTransform(dPhi1Hatdtheta_Fourier,dPhi1Hatdtheta_realSpace)
+       call inverseFourierTransform(dPhi1Hatdzeta_Fourier, dPhi1Hatdzeta_realSpace)
 
-    else
-       ! We are not including Phi_1 in the calculation
-       Phi1Hat = zero
-       dPhi1Hatdtheta = zero
-       dPhi1Hatdzeta = zero
     end if
 
   end subroutine extractPhi1
@@ -191,7 +189,7 @@
     use indices
     use writeHDF5Output
     use petscvec
-    use export_f
+    !use export_f
 
     implicit none
 
@@ -226,7 +224,7 @@
     real(prec) :: factor, factor2, factor_vE, temp1, temp2, temp3
     integer :: itheta1, izeta1, ixi1, ix1
     integer :: itheta2, izeta2, ixi2, ix2
-    PetscLogDouble :: time1, time2
+    PetscLogDouble :: time1, time2, presentTime
     PetscViewer :: viewer
     character(len=200) :: filename
 
@@ -800,76 +798,76 @@
           end select
        end if
 
-
-       ! Interpolate the distribution function from the original grids (used for solving the kinetic equation)
-       ! onto whichever grids are requested in the export_f namelist.  I do this here by multiplying by a dense
-       ! matrix in each of the 4 coordinates (theta, zeta, x, xi).  This is not the fastest way to do what we want,
-       ! but it is relatively simple, and the time required (up to a few seconds) is negligible compared to the time
-       ! required for solving the kinetic equation.
-       call PetscTime(time1, ierr)
-       if (export_full_f) then
-          full_f = zero
-          do ispecies = 1,Nspecies
-             do itheta1 = 1,Ntheta
-                do izeta1 = 1,Nzeta
-                   do ixi1 = 1,Nxi
-                      do ix1 = 1,Nx
-                         index = getIndex(ispecies, ix1, ixi1, itheta1, izeta1, BLOCK_F)+1
-                         temp1 = solutionWithFullFArray(index)
-                         do itheta2 = 1,N_export_f_theta
-                            temp2 = temp1 * map_theta_to_export_f_theta(itheta2, itheta1)
-                            do izeta2 = 1,N_export_f_zeta
-                               temp3 = temp2 * map_zeta_to_export_f_zeta(izeta2, izeta1)
-                               do ix2 = 1,N_export_f_x
-                                  ! I arbitrarily chose to replace the loop over export_f_xi with ":"
-                                  ! We could pick any of the 4 coordinates for this.
-                                  full_f(ispecies, itheta2, izeta2, :, ix2) = &
-                                       full_f(ispecies, itheta2, izeta2, :, ix2) + temp3 &
-                                       * map_x_to_export_f_x(ix2, ix1) &
-                                       * map_xi_to_export_f_xi(:, ixi1)
-                               end do
-                            end do
-                         end do
-                      end do
-                   end do
-                end do
-             end do
-          end do
-       end if
-
-       if (export_delta_f) then
-          delta_f = zero
-          do ispecies = 1,Nspecies
-             do itheta1 = 1,Ntheta
-                do izeta1 = 1,Nzeta
-                   do ixi1 = 1,Nxi
-                      do ix1 = 1,Nx
-                         index = getIndex(ispecies, ix1, ixi1, itheta1, izeta1, BLOCK_F)+1
-                         temp1 = solutionWithDeltaFArray(index)
-                         do itheta2 = 1,N_export_f_theta
-                            temp2 = temp1 * map_theta_to_export_f_theta(itheta2, itheta1)
-                            do izeta2 = 1,N_export_f_zeta
-                               temp3 = temp2 * map_zeta_to_export_f_zeta(izeta2, izeta1)
-                               do ix2 = 1,N_export_f_x
-                                  ! I arbitrarily chose to replace the loop over export_f_xi with ":"
-                                  ! We could pick any of the 4 coordinates for this.
-                                  delta_f(ispecies, itheta2, izeta2, :, ix2) = &
-                                       delta_f(ispecies, itheta2, izeta2, :, ix2) + temp3 &
-                                       * map_x_to_export_f_x(ix2, ix1) &
-                                       * map_xi_to_export_f_xi(:, ixi1)
-                               end do
-                            end do
-                         end do
-                      end do
-                   end do
-                end do
-             end do
-          end do
-       end if
-       call PetscTime(time2, ierr)
-       if (export_delta_f .or. export_full_f) then
-          print *,"Time for exporting f: ", time2-time1, " seconds."
-       end if
+       ! export_f has not been updated to reflect the new Fourier discretization.
+!!$       ! Interpolate the distribution function from the original grids (used for solving the kinetic equation)
+!!$       ! onto whichever grids are requested in the export_f namelist.  I do this here by multiplying by a dense
+!!$       ! matrix in each of the 4 coordinates (theta, zeta, x, xi).  This is not the fastest way to do what we want,
+!!$       ! but it is relatively simple, and the time required (up to a few seconds) is negligible compared to the time
+!!$       ! required for solving the kinetic equation.
+!!$       call PetscTime(time1, ierr)
+!!$       if (export_full_f) then
+!!$          full_f = zero
+!!$          do ispecies = 1,Nspecies
+!!$             do itheta1 = 1,Ntheta
+!!$                do izeta1 = 1,Nzeta
+!!$                   do ixi1 = 1,Nxi
+!!$                      do ix1 = 1,Nx
+!!$                         index = getIndex(ispecies, ix1, ixi1, itheta1, izeta1, BLOCK_F)+1
+!!$                         temp1 = solutionWithFullFArray(index)
+!!$                         do itheta2 = 1,N_export_f_theta
+!!$                            temp2 = temp1 * map_theta_to_export_f_theta(itheta2, itheta1)
+!!$                            do izeta2 = 1,N_export_f_zeta
+!!$                               temp3 = temp2 * map_zeta_to_export_f_zeta(izeta2, izeta1)
+!!$                               do ix2 = 1,N_export_f_x
+!!$                                  ! I arbitrarily chose to replace the loop over export_f_xi with ":"
+!!$                                  ! We could pick any of the 4 coordinates for this.
+!!$                                  full_f(ispecies, itheta2, izeta2, :, ix2) = &
+!!$                                       full_f(ispecies, itheta2, izeta2, :, ix2) + temp3 &
+!!$                                       * map_x_to_export_f_x(ix2, ix1) &
+!!$                                       * map_xi_to_export_f_xi(:, ixi1)
+!!$                               end do
+!!$                            end do
+!!$                         end do
+!!$                      end do
+!!$                   end do
+!!$                end do
+!!$             end do
+!!$          end do
+!!$       end if
+!!$
+!!$       if (export_delta_f) then
+!!$          delta_f = zero
+!!$          do ispecies = 1,Nspecies
+!!$             do itheta1 = 1,Ntheta
+!!$                do izeta1 = 1,Nzeta
+!!$                   do ixi1 = 1,Nxi
+!!$                      do ix1 = 1,Nx
+!!$                         index = getIndex(ispecies, ix1, ixi1, itheta1, izeta1, BLOCK_F)+1
+!!$                         temp1 = solutionWithDeltaFArray(index)
+!!$                         do itheta2 = 1,N_export_f_theta
+!!$                            temp2 = temp1 * map_theta_to_export_f_theta(itheta2, itheta1)
+!!$                            do izeta2 = 1,N_export_f_zeta
+!!$                               temp3 = temp2 * map_zeta_to_export_f_zeta(izeta2, izeta1)
+!!$                               do ix2 = 1,N_export_f_x
+!!$                                  ! I arbitrarily chose to replace the loop over export_f_xi with ":"
+!!$                                  ! We could pick any of the 4 coordinates for this.
+!!$                                  delta_f(ispecies, itheta2, izeta2, :, ix2) = &
+!!$                                       delta_f(ispecies, itheta2, izeta2, :, ix2) + temp3 &
+!!$                                       * map_x_to_export_f_x(ix2, ix1) &
+!!$                                       * map_xi_to_export_f_xi(:, ixi1)
+!!$                               end do
+!!$                            end do
+!!$                         end do
+!!$                      end do
+!!$                   end do
+!!$                end do
+!!$             end do
+!!$          end do
+!!$       end if
+!!$       call PetscTime(time2, ierr)
+!!$       if (export_delta_f .or. export_full_f) then
+!!$          print *,"Time for exporting f: ", time2-time1, " seconds."
+!!$       end if
 
        call VecRestoreArrayF90(solutionWithFullFOnProc0, solutionWithFullFArray, ierr)
        call VecRestoreArrayF90(solutionWithDeltaFOnProc0, solutionWithDeltaFArray, ierr)
@@ -954,6 +952,10 @@
     call VecDestroy(solutionWithDeltaFOnProc0, ierr)
     call VecDestroy(f0OnProc0, ierr)
     !!!call VecDestroy(expPhi1, ierr) !!Added by AM 2016-06
+
+    call PetscTime(presentTime, ierr)
+    elapsedTime = startTime-presentTime
+
 
     ! updateOutputFile should be called by all procs since it contains MPI_Barrier
     ! (in order to be sure the HDF5 file is safely closed before moving on to the next computation.)

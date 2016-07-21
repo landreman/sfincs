@@ -13,7 +13,7 @@
     use petscdmda
     use geometry
     use indices
-    use export_f
+    !use export_f
 
     implicit none
 
@@ -614,12 +614,19 @@
     allocate(FSABFlow_vs_x(Nspecies,Nx))
 
     allocate(jHat(Ntheta,Nzeta))
-    allocate(Phi1Hat(Ntheta,Nzeta))
-    allocate(dPhi1Hatdtheta(Ntheta,Nzeta))
-    allocate(dPhi1Hatdzeta(Ntheta,Nzeta))
-    Phi1Hat = zero
-    dPhi1Hatdtheta = zero
-    dPhi1Hatdzeta = zero
+
+    allocate(Phi1Hat_Fourier(NFourier2))
+    allocate(dPhi1Hatdtheta_Fourier(NFourier2))
+    allocate(dPhi1Hatdzeta_Fourier(NFourier2))
+    allocate(Phi1Hat_realSpace(Ntheta,Nzeta))
+    allocate(dPhi1Hatdtheta_realSpace(Ntheta,Nzeta))
+    allocate(dPhi1Hatdzeta_realSpace(Ntheta,Nzeta))
+    Phi1Hat_Fourier = zero
+    dPhi1Hatdtheta_Fourier = zero
+    dPhi1Hatdzeta_Fourier = zero
+    Phi1Hat_realSpace = zero
+    dPhi1Hatdtheta_realSpace = zero
+    dPhi1Hatdzeta_realSpace = zero
 
     select case (constraintScheme)
     case (0)
@@ -646,9 +653,9 @@
 
     ! *******************************************************************************
 
-    if (export_full_f .or. export_delta_f) then
-       call setup_grids_for_export_f()
-    end if
+!!$    if (export_full_f .or. export_delta_f) then
+!!$       call setup_grids_for_export_f()
+!!$    end if
 
     if (masterProc) then
        print *,"------------------------------------------------------"

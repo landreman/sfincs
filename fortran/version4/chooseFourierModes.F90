@@ -74,6 +74,12 @@ subroutine chooseFourierModes()
   ! Sort amplitudes
   allocate(permutation(NFourier))
   call rank(amplitudes,permutation)
+  if (NFourier-NFourier_original+1<1) then
+     if (masterProc) then
+        print *,"ERROR! NFourier exceeds mmax*(nmax*2+1)+mmax+1"
+     end if
+     stop
+  end if
   xm_sorted = xm(permutation(NFourier:NFourier-NFourier_original+1:-1))
   xn_sorted = xn(permutation(NFourier:NFourier-NFourier_original+1:-1))
 !!$  print *,"amplitudes:",amplitudes

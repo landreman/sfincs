@@ -10,3 +10,7 @@ Aspects of the code that have changed in version 4 compared to version 3:
   regardless of whether a single- or double-precision PETSc library is used. This change facilitates
   working with single-precision PETSc libraries.
 
+* Removed Ntheta, Nzeta, NxPotentialsPerVth and xMax from sfincsScan_1. Added NFourier, mmax, and nmax.
+
+* Some variables in evaluateResidual.F90 were renamed to avoid references to 'right hand side',
+  which is obsolete now that we think in terms of a residual function.

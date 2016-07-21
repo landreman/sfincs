@@ -10,30 +10,21 @@ print "Beginning a convergence scan."
 
 #####################################################################################################################3
 
-###############################################################
-##In section below try/except structure removed by AM 2015-12##
-###############################################################
-#try:
 NFourier = readVariable("NFourier","int",required=False)
 
 if NFourier != None:
     baseValuePresent = True
 else:
+    # Default:
     NFourier = 10
     baseValuePresent = False
-##except:
-##    # Default
-##  NFourier = 15
-##  baseValuePresent = False
 
-#try:
 NFourierMaxFactor = readScanVariable("NFourierMaxFactor","float",required=False)
 NFourierMinFactor = readScanVariable("NFourierMinFactor","float",required=False)
 NFourierNumRuns = readScanVariable("NFourierNumRuns","int",required=False)
 
 if NFourierMaxFactor != None and NFourierMinFactor != None and NFourierNumRuns != None:
     scanPresent = True
-#except:
 else:
     NFourierMaxFactor = 1
     NFourierMinFactor = 1
@@ -53,7 +44,7 @@ if NFourierMaxFactor<0:
 if NFourierMinFactor<0:
     print "Error! NFourierMinFactor must be positive"
     exit(1)
-NFouriers = logspace_odd(NFourierMinFactor*NFourier,NFourierMaxFactor*NFourier,NFourierNumRuns)
+NFouriers = logspace_int(NFourierMinFactor*NFourier,NFourierMaxFactor*NFourier,NFourierNumRuns)
 try:
     NFouriers.remove(NFourier)
 except ValueError:
@@ -62,23 +53,105 @@ print "NFouriers:",NFouriers
 
 #####################################################################################################################3
 
-#try:
+mmax = readVariable("mmax","int",required=False)
+
+if mmax != None:
+    baseValuePresent = True
+else:
+    # Default:
+    mmax = 32
+    baseValuePresent = False
+
+mmaxMaxFactor = readScanVariable("mmaxMaxFactor","float",required=False)
+mmaxMinFactor = readScanVariable("mmaxMinFactor","float",required=False)
+mmaxNumRuns = readScanVariable("mmaxNumRuns","int",required=False)
+
+if mmaxMaxFactor != None and mmaxMinFactor != None and mmaxNumRuns != None:
+    scanPresent = True
+else:
+    mmaxMaxFactor = 1
+    mmaxMinFactor = 1
+    mmaxNumRuns = 0
+    scanPresent = False
+
+if scanPresent and (not baseValuePresent):
+    print "Error! If scanning mmax, you must set the base value for mmax."
+    exit(1)
+
+if mmax<0:
+    print "Error! mmax must be positive"
+    exit(1)
+if mmaxMaxFactor<0:
+    print "Error! mmaxMaxFactor must be positive"
+    exit(1)
+if mmaxMinFactor<0:
+    print "Error! mmaxMinFactor must be positive"
+    exit(1)
+mmaxs = logspace_int(mmaxMinFactor*mmax,mmaxMaxFactor*mmax,mmaxNumRuns)
+try:
+    mmaxs.remove(mmax)
+except ValueError:
+    pass
+print "mmaxs:",mmaxs
+
+#####################################################################################################################3
+
+nmax = readVariable("nmax","int",required=False)
+
+if nmax != None:
+    baseValuePresent = True
+else:
+    # Default:
+    nmax = 32
+    baseValuePresent = False
+
+nmaxMaxFactor = readScanVariable("nmaxMaxFactor","float",required=False)
+nmaxMinFactor = readScanVariable("nmaxMinFactor","float",required=False)
+nmaxNumRuns = readScanVariable("nmaxNumRuns","int",required=False)
+
+if nmaxMaxFactor != None and nmaxMinFactor != None and nmaxNumRuns != None:
+    scanPresent = True
+else:
+    nmaxMaxFactor = 1
+    nmaxMinFactor = 1
+    nmaxNumRuns = 0
+    scanPresent = False
+
+if scanPresent and (not baseValuePresent):
+    print "Error! If scanning nmax, you must set the base value for nmax."
+    exit(1)
+
+if nmax<0:
+    print "Error! nmax must be positive"
+    exit(1)
+if nmaxMaxFactor<0:
+    print "Error! nmaxMaxFactor must be positive"
+    exit(1)
+if nmaxMinFactor<0:
+    print "Error! nmaxMinFactor must be positive"
+    exit(1)
+nmaxs = logspace_int(nmaxMinFactor*nmax,nmaxMaxFactor*nmax,nmaxNumRuns)
+try:
+    nmaxs.remove(nmax)
+except ValueError:
+    pass
+print "nmaxs:",nmaxs
+
+#####################################################################################################################3
+
 Nxi = readVariable("Nxi","int",required=False)
 if Nxi != None:
     baseValuePresent = True
-#except:
 else:
     # Default
     Nxi = 16
     baseValuePresent = False
 
-#try:
 NxiMaxFactor = readScanVariable("NxiMaxFactor","float",required=False)
 NxiMinFactor = readScanVariable("NxiMinFactor","float",required=False)
 NxiNumRuns = readScanVariable("NxiNumRuns","int",required=False)
 if NxiMaxFactor != None and NxiMinFactor != None and NxiNumRuns != None:
     scanPresent = True
-#except:
 else:
     NxiMaxFactor = 1
     NxiMinFactor = 1
@@ -107,23 +180,19 @@ print "Nxis:",Nxis
 
 #####################################################################################################################3
 
-#try:
 NL = readVariable("NL","int",required=False)
 if NL != None:
     baseValuePresent = True
-#except:
 else:
     # Default
     NL = 4
     baseValuePresent = False
 
-#try:
 NLMaxFactor = readScanVariable("NLMaxFactor","float",required=False)
 NLMinFactor = readScanVariable("NLMinFactor","float",required=False)
 NLNumRuns = readScanVariable("NLNumRuns","int",required=False)
 if NLMaxFactor != None and NLMinFactor != None and NLNumRuns != None:
     scanPresent = True
-#except:
 else:
     NLMaxFactor = 1
     NLMinFactor = 1
@@ -152,23 +221,19 @@ print "NLs:",NLs
 
 #####################################################################################################################3
 
-#try:
 Nx = readVariable("Nx","int",required=False)
 if Nx != None:
     baseValuePresent = True
-#except:
 else:
     # Default
     Nx = 5
     baseValuePresent = False
 
-#try:
 NxMaxFactor = readScanVariable("NxMaxFactor","float",required=False)
 NxMinFactor = readScanVariable("NxMinFactor","float",required=False)
 NxNumRuns = readScanVariable("NxNumRuns","int",required=False)
 if NxMaxFactor != None and NxMinFactor != None and NxNumRuns != None:
     scanPresent = True
-#except:
 else:
     NxMaxFactor = 1
     NxMinFactor = 1
@@ -195,113 +260,22 @@ except ValueError:
     pass
 print "Nxs:",Nxs
 
-#####################################################################################################################3
-
-#try:
-NxPotentialsPerVth = readVariable("NxPotentialsPerVth","float",required=False)
-if NxPotentialsPerVth != None:
-    baseValuePresent = True
-#except:
-else:
-    # Default
-    NxPotentialsPerVth = 40.0
-    baseValuePresent = False
-
-#try:
-NxPotentialsPerVthMaxFactor = readScanVariable("NxPotentialsPerVthMaxFactor","float",required=False)
-NxPotentialsPerVthMinFactor = readScanVariable("NxPotentialsPerVthMinFactor","float",required=False)
-NxPotentialsPerVthNumRuns = readScanVariable("NxPotentialsPerVthNumRuns","int",required=False)
-if NxPotentialsPerVthMaxFactor != None and NxPotentialsPerVthMinFactor != None and NxPotentialsPerVthNumRuns != None:
-    scanPresent = True
-#except:
-else:
-    NxPotentialsPerVthMaxFactor = 1
-    NxPotentialsPerVthMinFactor = 1
-    NxPotentialsPerVthNumRuns = 0
-    scanPresent = False
-
-if scanPresent and (not baseValuePresent):
-    print "Error! If scanning NxPotentialsPerVth, you must set the base value for NxPotentialsPerVth."
-    exit(1)
-
-if NxPotentialsPerVth<0:
-    print "Error! NxPotentialsPerVth must be positive"
-    exit(1)
-if NxPotentialsPerVthMaxFactor<0:
-    print "Error! NxPotentialsPerVthMaxFactor must be positive"
-    exit(1)
-if NxPotentialsPerVthMinFactor<0:
-    print "Error! NxPotentialsPerVthMinFactor must be positive"
-    exit(1)
-NxPotentialsPerVths = logspace(NxPotentialsPerVthMinFactor*NxPotentialsPerVth,NxPotentialsPerVthMaxFactor*NxPotentialsPerVth,NxPotentialsPerVthNumRuns)
-for value in NxPotentialsPerVths:
-    if abs(value-NxPotentialsPerVth)/value < 1e-6:
-        NxPotentialsPerVths.remove(value)
-print "NxPotentialsPerVths:",NxPotentialsPerVths
 
 #####################################################################################################################3
 
-#try:
-xMax = readVariable("xMax","float",required=False)
-if xMax != None:
-    baseValuePresent = True
-#except:
-else:
-    # Default
-    xMax = 5.0
-    baseValuePresent = False
-
-#try:
-xMaxMaxFactor = readScanVariable("xMaxMaxFactor","float",required=False)
-xMaxMinFactor = readScanVariable("xMaxMinFactor","float",required=False)
-xMaxNumRuns = readScanVariable("xMaxNumRuns","int",required=False)
-if xMaxMaxFactor != None and xMaxMinFactor != None and xMaxNumRuns != None:
-    scanPresent = True
-#except:
-else:
-    xMaxMaxFactor = 1
-    xMaxMinFactor = 1
-    xMaxNumRuns = 0
-    scanPresent = False
-
-if scanPresent and (not baseValuePresent):
-    print "Error! If scanning xMax, you must set the base value for xMax."
-    exit(1)
-
-if xMax<0:
-    print "Error! xMax must be positive"
-    exit(1)
-if xMaxMaxFactor<0:
-    print "Error! xMaxMaxFactor must be positive"
-    exit(1)
-if xMaxMinFactor<0:
-    print "Error! xMaxMinFactor must be positive"
-    exit(1)
-xMaxs = logspace(xMaxMinFactor*xMax,xMaxMaxFactor*xMax,xMaxNumRuns)
-for value in xMaxs:
-    if abs(value-xMax)/value < 1e-6:
-        xMaxs.remove(value)
-print "xMaxs:",xMaxs
-
-#####################################################################################################################3
-
-#try:
 solverTolerance = readVariable("solverTolerance","float",required=False)
 if solverTolerance != None:
     baseValuePresent = True
-#except:
 else:
     # Default
     solverTolerance = 1e-6
     baseValuePresent = False
 
-#try:
 solverToleranceMaxFactor = readScanVariable("solverToleranceMaxFactor","float",required=False)
 solverToleranceMinFactor = readScanVariable("solverToleranceMinFactor","float",required=False)
 solverToleranceNumRuns = readScanVariable("solverToleranceNumRuns","int",required=False)
 if solverToleranceMaxFactor != None and solverToleranceMinFactor != None and solverToleranceNumRuns != None:
     scanPresent = True
-#except:
 else:
     solverToleranceMaxFactor = 1
     solverToleranceMinFactor = 1
@@ -329,9 +303,9 @@ print "solverTolerances:",solverTolerances
 
 #####################################################################################################################3
 
-numRunsInScan = 1+len(NFouriers)+len(Nxis)+len(NLs)+len(Nxs)+len(NxPotentialsPerVths)+len(xMaxs)+len(solverTolerances)
+numRunsInScan = 1+len(NFouriers)+len(mmaxs)+len(nmaxs)+len(Nxis)+len(NLs)+len(Nxs)+len(solverTolerances)
 
-baseCase = [NFourier,Nxi,NL,Nx,NxPotentialsPerVth,xMax,solverTolerance]
+baseCase = [NFourier,mmax,nmax,Nxi,NL,Nx,solverTolerance]
 
 parametersForScan = []
 for i in range(numRunsInScan):
@@ -343,6 +317,16 @@ descriptions = ["baseCase"]
 for i in range(len(NFouriers)):
     parametersForScan[currentIndex][0] = NFouriers[i]
     descriptions.append("NFourier" + str(NFouriers[i]))
+    currentIndex += 1
+
+for i in range(len(mmaxs)):
+    parametersForScan[currentIndex][0] = mmaxs[i]
+    descriptions.append("mmax" + str(mmaxs[i]))
+    currentIndex += 1
+
+for i in range(len(nmaxs)):
+    parametersForScan[currentIndex][0] = nmaxs[i]
+    descriptions.append("nmax" + str(nmaxs[i]))
     currentIndex += 1
 
 for i in range(len(Nxis)):
@@ -399,7 +383,7 @@ while runNum < numRunsInScan:
 
 print
 print "Here are the parameters for the "+str(numRunsInScan)+" runs we will launch:"
-print "[NFourier, Nxi, NL, Nx, NxPotentialsPerVth, xMax, solverTolerance]"
+print "[NFourier, mmax, nmax, Nxi, NL, Nx, solverTolerance]"
 print "-----------------------------------------------------------------------"
 for line in parametersForScan:
     print line
@@ -454,16 +438,16 @@ for runNum in range(numRunsInScan):
     for line in inputFile:
         if namelistLineContains(line,"NFourier"):
             line = "  NFourier = "+str(parametersForScan[runNum][0])+" ! Set by sfincsScan_1.\n"
+        if namelistLineContains(line,"mmax"):
+            line = "  mmax = "+str(parametersForScan[runNum][1])+" ! Set by sfincsScan_1.\n"
+        if namelistLineContains(line,"nmax"):
+            line = "  nmax = "+str(parametersForScan[runNum][2])+" ! Set by sfincsScan_1.\n"
         if namelistLineContains(line,"Nxi"):
-            line = "  Nxi = "+str(parametersForScan[runNum][1])+" ! Set by sfincsScan_1.\n"
+            line = "  Nxi = "+str(parametersForScan[runNum][3])+" ! Set by sfincsScan_1.\n"
         if namelistLineContains(line,"NL"):
-            line = "  NL = "+str(parametersForScan[runNum][2])+" ! Set by sfincsScan_1.\n"
+            line = "  NL = "+str(parametersForScan[runNum][4])+" ! Set by sfincsScan_1.\n"
         if namelistLineContains(line,"Nx"):
-            line = "  Nx = "+str(parametersForScan[runNum][3])+" ! Set by sfincsScan_1.\n"
-        if namelistLineContains(line,"NxPotentialsPerVth"):
-            line = "  NxPotentialsPerVth = "+str(parametersForScan[runNum][4])+" ! Set by sfincsScan_1.\n"
-        if namelistLineContains(line,"xMax"):
-            line = "  xMax = "+str(parametersForScan[runNum][5])+" ! Set by sfincsScan_1.\n"
+            line = "  Nx = "+str(parametersForScan[runNum][5])+" ! Set by sfincsScan_1.\n"
         if namelistLineContains(line,"solverTolerance"):
             line = "  solverTolerance = "+str(parametersForScan[runNum][6])+" ! Set by sfincsScan_1.\n"
         f.write(line)

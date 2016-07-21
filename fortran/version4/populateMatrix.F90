@@ -12,6 +12,8 @@
   subroutine populateMatrix(matrix, whichMatrix, stateVec)
 
     use petscmat
+    use FourierTransformMod
+    use FourierConvolutionMatrixMod
     use globalVariables
     use sparsify
     use indices

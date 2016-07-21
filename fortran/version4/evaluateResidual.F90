@@ -8,6 +8,8 @@
   subroutine evaluateResidual(mysnes, stateVec, residualVec, userContext, ierr)
 
     use petscsnes
+    use FourierTransformMod
+    use FourierConvolutionMatrixMod
     use globalVariables
     use indices
 
@@ -17,25 +19,32 @@
     Vec :: stateVec, residualVec
     PetscErrorCode :: ierr
     integer :: userContext(*)
-    Vec :: rhs
-!!    real(prec) :: scalar, xPartOfRHS, factor !!Commented by AM 2016-03
-    real(prec) :: scalar, xPartOfRHS, factor, xPartOfRHS2 !!Added by AM 2016-03
-    integer :: ix, L, itheta, izeta, ispecies, index
-    real(prec) :: THat, mHat, sqrtTHat, sqrtmHat, dfMdx
+    Vec :: termsInResidual
+    real(prec) :: factor, stuffToAdd
+    integer :: ix, L, imn, ispecies, index
+    real(prec) :: THat, mHat, sqrtTHat, sqrtmHat, nHat, Z
     Mat :: residualMatrix
-    real(prec) :: dPhiHatdpsiHatToUseInRHS
+    real(prec) :: dPhiHatdpsiHatToUseInDriveTerm
     PetscReal :: norm
     integer :: ixMin
     PetscViewer :: viewer
     character(len=200) :: filename
     PetscScalar :: PetscScalarZero, PetscScalarValue
-
-    ! This next line is used to cast 0 into either double or single precision, whichever is used in PETSc:
-    PetscScalarZero = 0
+    real(prec), dimension(:), allocatable :: FourierVector, FourierVector2
+    real(prec), dimension(:,:), allocatable :: spatialFactor
+    real(prec), dimension(:), allocatable :: xPart
 
     if (masterProc) then
        print *,"evaluateResidual called."
     end if
+
+    ! This next line is used to cast 0 into either double or single precision, whichever is used in PETSc:
+    PetscScalarZero = 0
+
+    allocate(FourierVector(NFourier2))
+    allocate(FourierVector2(NFourier2))
+    allocate(spatialFactor(Ntheta,Nzeta)
+    allocate(xPart(Nx))
 
     ! Often, evaluateResidual is called when the state vector is 0.
     ! In this case, there is no need to build the first matrix.
@@ -73,13 +82,13 @@
     ! --------------------------------------------------------------------------------
     ! --------------------------------------------------------------------------------
 
-    call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, rhs, ierr)
-    call VecSet(rhs, PetscScalarZero, ierr)
+    call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, termsInResidual, ierr)
+    call VecSet(termsInResidual, PetscScalarZero, ierr)
 
     if (RHSMode==1) then
-       dPhiHatdpsiHatToUseInRHS = dPhiHatdpsiHat
+       dPhiHatdpsiHatToUseInDriveTerm = dPhiHatdpsiHat
     else
-       dPhiHatdpsiHatToUseInRHS = 0
+       dPhiHatdpsiHatToUseInDriveTerm = 0
     end if
 
     if (pointAtX0) then
@@ -94,168 +103,116 @@
     end if
     !!!!!!!!!!!!!!!!!!!!!!!
 
-    ! First add the terms arising from \dot{\psi} df_M/d\psi
-    x2 = x*x
-    do ispecies = 1,Nspecies
-       THat = THats(ispecies)
-       mHat = mHats(ispecies)
-       sqrtTHat = sqrt(THat)
-       sqrtMHat = sqrt(mHat)
-       
-       do ix=ixMin,Nx
-          ! Old linear version:
-          !xPartOfRHS = x2(ix)*exp(-x2(ix))*( dnHatdpsiNs(ispecies)/nHats(ispecies) &
-          !     + alpha*Zs(ispecies)/THats(ispecies)*dPhiHatdpsiNToUse &
-          !     + (x2(ix) - three/two)*dTHatdpsiNs(ispecies)/THats(ispecies))
-
-          ! Old nonlinear version:
-          xPartOfRHS = x2(ix)*exp(-x2(ix))*( dnHatdpsiHats(ispecies)/nHats(ispecies) &
-               + alpha*Zs(ispecies)/THats(ispecies)*dPhiHatdpsiHatToUseInRHS &
-               + (x2(ix) - three/two)*dTHatdpsiHats(ispecies)/THats(ispecies))
-
-          !!Added by AM 2016-02!!
+    ! Do the next part all on the master proc.
+    if (masterProc) then
+       ! First add the terms arising from \dot{\psi} df_M/d\psi
+       x2 = x*x
+       xPart = x2*exp(-x2)
+       do ispecies = 1,Nspecies
+          THat = THats(ispecies)
+          mHat = mHats(ispecies)
+          nHat = nHats(ispecies)
+          Z    =    Zs(ispecies)
+          sqrtTHat = sqrt(THat)
+          sqrtMHat = sqrt(mHat)
+          
+          ! Handle spatial part of the residual terms R_m:
+          ! This part needs to be inside the species loop because the exp(-Z e Phi1/T) factor depends on species.
+          spatialFactor = exp(-Phi1Hat_realSpace*Z*alpha/THat) &
+               * DHat*(BHat_sub_theta*dBHatdzeta-BHat_sub_zeta*dBHatdtheta)/(BHat*BHat*BHat)
+          call FourierTransform(spatialFactor,FourierVector)
           if (includePhi1 .and. includePhi1InKineticEquation) then
-             xPartOfRHS2 = x2(ix)*exp(-x2(ix))*dTHatdpsiHats(ispecies)/(THats(ispecies)*THats(ispecies))
-          !!else
-          !!   xPartOfRHS2 = 0.0
+             call FourierTransform((Z*alpha*dTHatdpsiHat(ispecies)/(THat*THat))*Phi1Hat_realSpace * spatialFactor, FourierVector2)
           end if
-          !!!!!!!!!!!!!!!!!!!!!!!
 
-          !xPartOfRHS = x2(ix)*exp(-x2(ix))*( dnHatdpsiHats(ispecies)/nHats(ispecies) &
-          !     + (x2(ix) - three/two)*dTHatdpsiHats(ispecies)/THats(ispecies))
+          factor = Delta*nHat*mHat*sqrtMHat/(2*pi*sqrtpi*Z*sqrtTHat)
 
-          do itheta = ithetaMin,ithetaMax
-             do izeta = izetaMin,izetaMax
-                
-                !factor = Delta*nHats(ispecies)*mHat*sqrtMHat &
-                !     /(2*pi*sqrtpi*Zs(ispecies)*psiAHat*(BHat(itheta,izeta)**3)*sqrtTHat) &
-                !     *(GHat*dBHatdtheta(itheta,izeta) - IHat*dBHatdzeta(itheta,izeta))&
-                !     *xPartOfRHS
-                if (includePhi1 .and. includePhi1InKineticEquation) then !!Added by AM 2016-03
-                   factor = Delta*nHats(ispecies)*mHat*sqrtMHat &
-                        /(2*pi*sqrtpi*Zs(ispecies)*(BHat(itheta,izeta)**3)*sqrtTHat) &
-                        *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
-                        - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
-                        !!                     * DHat(itheta,izeta) * xPartOfRHS !!Commented by AM 2016-02
-                        * DHat(itheta,izeta) * (xPartOfRHS + xPartOfRHS2*Zs(ispecies)*alpha*Phi1Hat(itheta,izeta))  & !!Added by AM 2016-02
-                        * exp(-Zs(ispecies)*alpha*Phi1Hat(itheta,izeta)/THats(ispecies)) !!Added by AM 2016-02
-                else !!Added by AM 2016-03
-                   factor = Delta*nHats(ispecies)*mHat*sqrtMHat &
-                        /(2*pi*sqrtpi*Zs(ispecies)*(BHat(itheta,izeta)**3)*sqrtTHat) &
-                        *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
-                        - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
-                        * DHat(itheta,izeta) * xPartOfRHS
-                end if !!Added by AM 2016-03
-                
-                
+          do ix=ixMin,Nx
+             do imn = 1,NFourier2
+                ! stuffToAdd includes the dependence on species, space, and x, but not the Legendre dependence.
+                stuffToAdd = factor*xPart(ix)*FourierVector(imn)*(dNHatdpsiHats(ispecies)/nHat &
+                     + Z*alpha*dPhiHatdpsiHatToUseInDriveTerm/THat+(x2(ix)-three/two)*dTHatdpsiHat(ispecies)/THat)
+                if (includePhi1 .and. includePhi1InKineticEquation) then
+                   stuffToAdd = stuffToAdd + factor*xPart(ix)*FourierVector2(imn)
+                end if
+
                 L = 0
-                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                PetscScalarValue = (4/three)*factor ! Cast real(prec) to PetscScalar
-                call VecSetValue(rhs, index, PetscScalarValue, INSERT_VALUES, ierr)
+                index = getIndex(ispecies, ix, L+1, imn, BLOCK_F)
+                PetscScalarValue = (4/three)*stuffToAdd ! Cast real(prec) to PetscScalar
+                call VecSetValue(termsInResidual, index, PetscScalarValue, INSERT_VALUES, ierr)
                 
                 L = 2
-                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                PetscScalarValue = (two/three)*factor ! Cast real(prec) to PetscScalar
-                call VecSetValue(rhs, index, PetscScalarValue, INSERT_VALUES, ierr)
+                index = getIndex(ispecies, ix, L+1, imn, BLOCK_F)
+                PetscScalarValue = (two/three)*stuffToAdd ! Cast real(prec) to PetscScalar
+                call VecSetValue(termsInResidual, index, PetscScalarValue, INSERT_VALUES, ierr)
+
              end do
           end do
        end do
-    end do
-    
-    ! *******************************************************************************
-    ! SECTION ADDED BY AM 2016-02/03
-    ! Add part of the residual related to Phi1 in the quasineutrality equation
-    ! *******************************************************************************
 
-    if (includePhi1 .and. quasineutralityOption == 1) then
-       L=0
-       do itheta = ithetaMin,ithetaMax
-          do izeta = izetaMin,izetaMax
-             index = getIndex(1, 1, 1, itheta, izeta, BLOCK_QN)
-
-             PetscScalarValue = 0
-             do ispecies = 1,Nspecies
-
-!!$                call VecSetValue(rhs, index, - Zs(ispecies) * NHats(ispecies) &
-!!$                     * exp (- Zs(ispecies)* alpha * Phi1Hat(itheta,izeta) / THats(ispecies)), ADD_VALUES, ierr)
-
-                PetscScalarValue = PetscScalarValue - Zs(ispecies) * NHats(ispecies)* exp (- Zs(ispecies) * alpha * Phi1Hat(itheta,izeta) / THats(ispecies))
-             end do
-             
-             if (withAdiabatic) then
-
-!!$                call VecSetValue(rhs, index, - adiabaticZ * adiabaticNHat &
-!!$                     * exp (- adiabaticZ* alpha * Phi1Hat(itheta,izeta) / adiabaticTHat), ADD_VALUES, ierr)
-
-                PetscScalarValue = PetscScalarValue - adiabaticZ * adiabaticNHat * exp (- adiabaticZ* alpha * Phi1Hat(itheta,izeta) / adiabaticTHat)
-             end if
-             call VecSetValue(rhs, index, PetscScalarValue, INSERT_VALUES, ierr)
-          end do
-       end do
-    end if
-    ! *******************************************************************************
-
-
-!!$    ! Next add the terms arising from \dot{x} df_M/dx
-!!$    do ispecies = 1,Nspecies
-!!$       THat = THats(ispecies)
-!!$       mHat = mHats(ispecies)
-!!$       sqrtTHat = sqrt(THat)
-!!$       sqrtMHat = sqrt(mHat)
+! This next block of code has not yet been updated for the Fourier discretization.       
+!!$       ! *******************************************************************************
+!!$       ! SECTION ADDED BY AM 2016-02/03
+!!$       ! Add part of the residual related to Phi1 in the quasineutrality equation
+!!$       ! *******************************************************************************
 !!$       
-!!$       do ix=1,Nx
-!!$          dfMdx = -2*x(ix)*mHat*sqrtmHat*nHat*expx2(ix)/(pi*sqrtpi*THat*sqrtTHat)
-!!$
+!!$       if (includePhi1 .and. quasineutralityOption == 1) then
+!!$          L=0
 !!$          do itheta = ithetaMin,ithetaMax
-!!$             do izeta = 1,Nzeta
+!!$             do izeta = izetaMin,izetaMax
+!!$                index = getIndex(1, 1, 1, itheta, izeta, BLOCK_QN)
 !!$                
-!!$                factor = alpha*Delta*x(ix)*DHat(itheta,izeta)/(4*(BHat(itheta,izeta)**3)) &
-!!$                     * (BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
-!!$                     - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta)) &
-!!$                     * dPhiHatdpsiHat
-!!$
-!!$                L = 0
-!!$                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-!!$                call VecSetValue(rhs, index, (4/three)*factor, INSERT_VALUES, ierr)
+!!$                PetscScalarValue = 0
+!!$                do ispecies = 1,Nspecies
+!!$                   
+!!$!                call VecSetValue(rhs, index, - Zs(ispecies) * NHats(ispecies) &
+!!$!                     * exp (- Zs(ispecies)* alpha * Phi1Hat(itheta,izeta) / THats(ispecies)), ADD_VALUES, ierr)
+!!$                   
+!!$                   PetscScalarValue = PetscScalarValue - Zs(ispecies) * NHats(ispecies)* exp (- Zs(ispecies) * alpha * Phi1Hat(itheta,izeta) / THats(ispecies))
+!!$                end do
 !!$                
-!!$                L = 2
-!!$                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-!!$                call VecSetValue(rhs, index, (two/three)*factor, INSERT_VALUES, ierr)
+!!$                if (withAdiabatic) then
+!!$                   
+!!$!                call VecSetValue(rhs, index, - adiabaticZ * adiabaticNHat &
+!!$!                     * exp (- adiabaticZ* alpha * Phi1Hat(itheta,izeta) / adiabaticTHat), ADD_VALUES, ierr)
+!!$                   
+!!$                   PetscScalarValue = PetscScalarValue - adiabaticZ * adiabaticNHat * exp (- adiabaticZ* alpha * Phi1Hat(itheta,izeta) / adiabaticTHat)
+!!$                end if
+!!$                call VecSetValue(rhs, index, PetscScalarValue, INSERT_VALUES, ierr)
 !!$             end do
 !!$          end do
-!!$       end do
-!!$    end do
-
-    ! Add the inductive electric field term:
-    L=1
-    do ispecies = 1,Nspecies
-       do ix=ixMin,Nx
-          !factor = alpha*Zs(ispecies)*x(ix)*exp(-x2(ix))*EParallelHatToUse*(GHat+iota*IHat)&
-          !     *nHats(ispecies)*mHats(ispecies)/(pi*sqrtpi*THats(ispecies)*THats(ispecies)*FSABHat2)
-          factor = alpha*Zs(ispecies)*x(ix)*exp(-x2(ix))*EParallelHat &
-               *nHats(ispecies)*mHats(ispecies)/(pi*sqrtpi*THats(ispecies)*THats(ispecies)*FSABHat2)
-          do itheta=ithetaMin,ithetaMax
-             do izeta = izetaMin,izetaMax
-                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                PetscScalarValue = factor * BHat(itheta,izeta)
-                call VecSetValue(rhs, index, &
+!!$       end if
+!!$       ! *******************************************************************************
+       
+       
+       ! Add the inductive electric field term:
+       call FourierTransform(BHat,FourierVector)
+       L=1
+       do ispecies = 1,Nspecies
+          do ix=ixMin,Nx
+             factor = -alpha*Zs(ispecies)*x(ix)*exp(-x2(ix))*EParallelHat &
+                  *nHats(ispecies)*mHats(ispecies)/(pi*sqrtpi*THats(ispecies)*THats(ispecies)*FSABHat2)
+             do imn = 1,NFourier2
+                index = getIndex(ispecies, ix, L+1, imn, BLOCK_F)
+                PetscScalarValue = factor * FourierVector(imn)
+                call VecSetValue(termsInResidual, index, &
                      PetscScalarValue, INSERT_VALUES, ierr)
-                     !factor/BHat(itheta,izeta), INSERT_VALUES, ierr)
              end do
           end do
        end do
-    end do
+
+    end if ! End of section for only the master proc.
 
     ! Done inserting values.
-    ! Finally, assemble the RHS vector:
-    call VecAssemblyBegin(rhs, ierr)
-    call VecAssemblyEnd(rhs, ierr)
+    ! Finally, assemble the TERMSINRESIDUAL vector:
+    call VecAssemblyBegin(termsInResidual, ierr)
+    call VecAssemblyEnd(termsInResidual, ierr)
 
 
-    ! Subtract the RHS from the residual:
-    PetscScalarValue = -1 ! Cast -1 into type PetscScalar before passing it as a parameter.
-    call VecAXPY(residualVec, PetscScalarValue, rhs, ierr)
-    call VecDestroy(rhs, ierr)
+    ! Add the new terms to the residual:
+    PetscScalarValue = 1 ! Cast 1 into type PetscScalar before passing it as a parameter.
+    call VecAXPY(residualVec, PetscScalarValue, termsInResidual, ierr)
+    call VecDestroy(termsInResidual, ierr)
 
     if (saveMatlabOutput) then
        write (filename,fmt="(a,i3.3,a)") trim(MatlabOutputFilename) // "_iteration_", iterationForResidualOutput, &
@@ -284,5 +241,6 @@
     end if
 
     iterationForResidualOutput = iterationForResidualOutput + 1
+    deallocate(FourierVector,FourierVector2,spatialFactor)
 
   end subroutine evaluateResidual

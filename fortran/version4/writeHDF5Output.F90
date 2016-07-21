@@ -27,6 +27,8 @@ module writeHDF5Output
 
   integer(HSIZE_T), dimension(1), parameter :: dimForScalar = 1
   integer(HSIZE_T), dimension(1) :: dimForSpecies
+  integer(HSIZE_T), dimension(1) :: dimForFourier
+  integer(HSIZE_T), dimension(1) :: dimForFourier2
   integer(HSIZE_T), dimension(1) :: dimForTheta
   integer(HSIZE_T), dimension(1) :: dimForZeta
   integer(HSIZE_T), dimension(1) :: dimForx
@@ -39,6 +41,8 @@ module writeHDF5Output
 
   integer(HID_T) :: dspaceIDForScalar
   integer(HID_T) :: dspaceIDForSpecies
+  integer(HID_T) :: dspaceIDForFourier
+  integer(HID_T) :: dspaceIDForFourier2
   integer(HID_T) :: dspaceIDForTheta
   integer(HID_T) :: dspaceIDForZeta
   integer(HID_T) :: dspaceIDForx
@@ -62,11 +66,23 @@ module writeHDF5Output
   integer(HID_T) :: pForIterationSpecies
   integer(HID_T) :: dspaceIDForIterationSpecies
 
+  integer(HSIZE_T), dimension(2) :: dimForIterationFourier2
+  integer(HSIZE_T), dimension(2) :: maxDimForIterationFourier2
+  integer(HSIZE_T), dimension(2) :: dimForIterationFourier2Chunk
+  integer(HID_T) :: pForIterationFourier2
+  integer(HID_T) :: dspaceIDForIterationFourier2
+
   integer(HSIZE_T), dimension(3) :: dimForIterationSpeciesSources
   integer(HSIZE_T), dimension(3) :: maxDimForIterationSpeciesSources
   integer(HSIZE_T), dimension(3) :: dimForIterationSpeciesSourcesChunk
   integer(HID_T) :: pForIterationSpeciesSources
   integer(HID_T) :: dspaceIDForIterationSpeciesSources
+
+  integer(HSIZE_T), dimension(3) :: dimForIterationSpeciesFourier2
+  integer(HSIZE_T), dimension(3) :: maxDimForIterationSpeciesFourier2
+  integer(HSIZE_T), dimension(3) :: dimForIterationSpeciesFourier2Chunk
+  integer(HID_T) :: pForIterationSpeciesFourier2
+  integer(HID_T) :: dspaceIDForIterationSpeciesFourier2
 
   integer(HSIZE_T), dimension(3) :: dimForIterationThetaZeta
   integer(HSIZE_T), dimension(3) :: maxDimForIterationThetaZeta
@@ -111,13 +127,13 @@ module writeHDF5Output
 
   integer, parameter :: ARRAY_ITERATION = 100
   integer, parameter :: ARRAY_ITERATION_SPECIES = 101
-  integer, parameter :: ARRAY_ITERATION_THETA_ZETA = 102
-  integer, parameter :: ARRAY_ITERATION_SPECIES_THETA_ZETA = 103
-  integer, parameter :: ARRAY_ITERATION_SPECIES_SOURCES = 104
-  integer, parameter :: ARRAY_EXPORT_F = 105
-  integer, parameter :: ARRAY_ITERATION_SPECIES_X = 106
-
-  real(prec) :: elapsedTime_double
+  integer, parameter :: ARRAY_ITERATION_FOURIER2 = 102
+  integer, parameter :: ARRAY_ITERATION_THETA_ZETA = 103
+  integer, parameter :: ARRAY_ITERATION_SPECIES_THETA_ZETA = 104
+  integer, parameter :: ARRAY_ITERATION_SPECIES_SOURCES = 105
+  integer, parameter :: ARRAY_ITERATION_SPECIES_FOURIER2 = 106
+  integer, parameter :: ARRAY_EXPORT_F = 107
+  integer, parameter :: ARRAY_ITERATION_SPECIES_X = 108
 
 contains
 
@@ -131,7 +147,7 @@ contains
     ! 2. The dataspace arrays are created,
     ! 3. Variables that do not change with each iteration of SNES are saved to the .h5 file.
 
-    use export_f
+    !use export_f
     use xGrid, only: xGrid_k
     
     implicit none
@@ -165,6 +181,10 @@ contains
        call writeHDF5Field("RHSMode", RHSMode, &
             "Switch that controls how many times the kinetic equation is solved with different right-hand-side drive terms.")
        call writeHDF5Field("Nspecies", Nspecies, "Number of particle species")
+       call writeHDF5Field("NFourier", NFourier, "Number of (m,n) pairs retained in the Fourier expansion of the distribution function")
+       call writeHDF5Field("NFourier2", NFourier2, &
+            "Number of Fourier modes in the expansion of the distribution function, counting both sine and cosine. " // &
+            "NFourier2=2*NFourier-1 since the m=n=0 mode has a cosine component but no sine component.")
        call writeHDF5Field("Ntheta", Ntheta, "Number of grid points in the poloidal angle theta")
        call writeHDF5Field("Nzeta", Nzeta, "Number of grid points in the toroidal angle zeta")
        call writeHDF5Field("Nxi", Nxi, &
@@ -179,14 +199,13 @@ contains
             "Grid points in the poloidal angle, which runs from 0 to 2pi")
        call writeHDF5Field("zeta", zeta, dspaceIDForZeta, dimForZeta, &
             "Grid points in the toroidal angle, which runs from 0 to 2pi/Nperiods")
+       call writeHDF5Field("xm", xm, dspaceIDForFourier, dimForFourier, &
+            "Poloidal mode numbers used. Analogous to VMEC's xm array.")
+       call writeHDF5Field("xn", xn, dspaceIDForFourier, dimForFourier, &
+            "Toroidal mode numbers used. Analogous to VMEC's xn array.")
        call writeHDF5Field("x", x, dspaceIDForX, dimForX, &
             "Grid points in normalized speed, x_s = v / sqrt{2 T_s / m_s}, the same for each species s.")
        call writeHDF5Field("geometryScheme", geometryScheme, "")
-       call writeHDF5Field("thetaDerivativeScheme", thetaDerivativeScheme, "")
-       call writeHDF5Field("zetaDerivativeScheme", zetaDerivativeScheme, "")
-       call writeHDF5Field("ExBDerivativeSchemeTheta", ExBDerivativeSchemeTheta, "")
-       call writeHDF5Field("ExBDerivativeSchemeZeta", ExBDerivativeSchemeZeta, "")
-       call writeHDF5Field("magneticDriftDerivativeScheme", magneticDriftDerivativeScheme, "")
        call writeHDF5Field("xGridScheme", xGridScheme, "")
        call writeHDF5Field("xGrid_k", xGrid_k, "Exponent of x in the orthogonality relation for the speed polynomials")
        call writeHDF5Field("xPotentialsGridScheme", xPotentialsGridScheme, "")
@@ -195,8 +214,7 @@ contains
        call writeHDF5Field("preconditioner_x", preconditioner_x, "")
        call writeHDF5Field("preconditioner_x_min_L", preconditioner_x_min_L, "")
        call writeHDF5Field("preconditioner_xi", preconditioner_xi, "")
-       call writeHDF5Field("preconditioner_theta", preconditioner_theta, "")
-       call writeHDF5Field("preconditioner_zeta", preconditioner_zeta, "")
+       call writeHDF5Field("preconditioner_Fourier", preconditioner_Fourier, "")
        call writeHDF5Field("preconditioner_magnetic_drifts_max_L", preconditioner_magnetic_drifts_max_L, "")
        call writeHDF5Field("reusePreconditioner", reusePreconditioner, "Use the same preconditioner matrix at each iteration of the Newton solver? " &
             // boolDescription)
@@ -290,7 +308,6 @@ contains
        call writeHDF5Field("nHats", nHats, dspaceIDForSpecies, dimForSpecies, "Flux surface averaged density of each species, in units of nBar.")
 
 
-       !!Added by AM 2016-01!!
        call writeHDF5Field("withAdiabatic", withAdiabatic, "Is an adiabatic species included in the quasineutrality equation? " // boolDescription)
        if (withAdiabatic) then
        	  call writeHDF5Field("adiabaticZ", adiabaticZ, "Charge of adiabatic species, in units of the unit charge e (which is usually the proton charge.)")
@@ -298,13 +315,10 @@ contains
 	  call writeHDF5Field("adiabaticNHat", adiabaticNHat, "Flux surface averaged density of adiabatic species, in units of nBar.")
 	  call writeHDF5Field("adiabaticTHat", adiabaticTHat, "Average temperature of adiabatic species, in units of TBar.")
        end if
-       !!!!!!!!!!!!!!!!!!!!!!!
 
-       !!Added by AM 2016-02!!
        if (includePhi1) then
           call writeHDF5Field("quasineutralityOption", quasineutralityOption, "")
        end if
-       !!!!!!!!!!!!!!!!!!!!!!!
 
        call writeHDF5Field("dPhiHatdpsiHat", dPhiHatdpsiHat, "")
        call writeHDF5Field("dPhiHatdpsiN", dPhiHatdpsiN, "")
@@ -346,44 +360,47 @@ contains
        call writeHDF5Field("useIterativeLinearSolver", useIterativeLinearSolver, "")
        call writeHDF5Field("NIterations", 0, "")
 
-       call writeHDF5Field("export_full_f",  export_full_f,  "Save the full f distribution function in this file? " // boolDescription)
-       call writeHDF5Field("export_delta_f", export_delta_f, "Save the delta f distribution function in this file? " // boolDescription)
-       if (export_full_f .or. export_delta_f) then
-          call writeHDF5Field("export_f_theta_option", export_f_theta_option, &
-               "Which theta grid to use for exporting the distribution function.")
-          call writeHDF5Field("export_f_zeta_option", export_f_zeta_option, &
-               "Which zeta grid to use for exporting the distribution function.")
-          call writeHDF5Field("export_f_xi_option", export_f_xi_option, &
-               "Which xi discretization and grid to use for exporting the distribution function.")
-          call writeHDF5Field("export_f_x_option", export_f_x_option, &
-               "Which x grid to use for exporting the distribution function.")
-
-          call writeHDF5Field("N_export_f_theta", N_export_f_theta, &
-               "Size of export_f_theta, i.e. the number of theta values on which the distribution function is saved")
-          call writeHDF5Field("N_export_f_zeta", N_export_f_zeta, &
-               "Size of export_f_zeta, i.e. the number of zeta values on which the distribution function is saved")
-          if (export_f_xi_option >0) then
-             call writeHDF5Field("N_export_f_xi", N_export_f_xi, &
-                  "Size of export_f_xi, i.e. the number of xi values on which the distribution function is saved")
-          end if
-          call writeHDF5Field("N_export_f_x", N_export_f_x, &
-               "Size of export_f_x, i.e. the number of x values on which the distribution function is saved")
-
-          call writeHDF5Field("export_f_theta", export_f_theta, dspaceIDForExport_f_theta, dimForExport_f_theta, &
-               "Values of the poloidal angle theta for which the distribution functions delta f or full f are saved")
-          call writeHDF5Field("export_f_zeta", export_f_zeta, dspaceIDForExport_f_zeta, dimForExport_f_zeta, &
-               "Values of the toroidal angle zeta for which the distribution functions delta f or full f are saved")
-          if (export_f_xi_option > 0) then
-             call writeHDF5Field("export_f_xi", export_f_xi, dspaceIDForExport_f_xi, dimForExport_f_xi, &
-                  "Values of cos(pitch angle) xi for which the distribution functions delta f or full f are saved")
-          end if
-          call writeHDF5Field("export_f_x", export_f_x, dspaceIDForExport_f_x, dimForExport_f_x, &
-               "Values of normalized speed x for which the distribution functions delta f or full f are saved")
-       end if
+! export_f has not been updated to reflect the new Fourier discretization
+!!$       call writeHDF5Field("export_full_f",  export_full_f,  "Save the full f distribution function in this file? " // boolDescription)
+!!$       call writeHDF5Field("export_delta_f", export_delta_f, "Save the delta f distribution function in this file? " // boolDescription)
+!!$       if (export_full_f .or. export_delta_f) then
+!!$          call writeHDF5Field("export_f_theta_option", export_f_theta_option, &
+!!$               "Which theta grid to use for exporting the distribution function.")
+!!$          call writeHDF5Field("export_f_zeta_option", export_f_zeta_option, &
+!!$               "Which zeta grid to use for exporting the distribution function.")
+!!$          call writeHDF5Field("export_f_xi_option", export_f_xi_option, &
+!!$               "Which xi discretization and grid to use for exporting the distribution function.")
+!!$          call writeHDF5Field("export_f_x_option", export_f_x_option, &
+!!$               "Which x grid to use for exporting the distribution function.")
+!!$
+!!$          call writeHDF5Field("N_export_f_theta", N_export_f_theta, &
+!!$               "Size of export_f_theta, i.e. the number of theta values on which the distribution function is saved")
+!!$          call writeHDF5Field("N_export_f_zeta", N_export_f_zeta, &
+!!$               "Size of export_f_zeta, i.e. the number of zeta values on which the distribution function is saved")
+!!$          if (export_f_xi_option >0) then
+!!$             call writeHDF5Field("N_export_f_xi", N_export_f_xi, &
+!!$                  "Size of export_f_xi, i.e. the number of xi values on which the distribution function is saved")
+!!$          end if
+!!$          call writeHDF5Field("N_export_f_x", N_export_f_x, &
+!!$               "Size of export_f_x, i.e. the number of x values on which the distribution function is saved")
+!!$
+!!$          call writeHDF5Field("export_f_theta", export_f_theta, dspaceIDForExport_f_theta, dimForExport_f_theta, &
+!!$               "Values of the poloidal angle theta for which the distribution functions delta f or full f are saved")
+!!$          call writeHDF5Field("export_f_zeta", export_f_zeta, dspaceIDForExport_f_zeta, dimForExport_f_zeta, &
+!!$               "Values of the toroidal angle zeta for which the distribution functions delta f or full f are saved")
+!!$          if (export_f_xi_option > 0) then
+!!$             call writeHDF5Field("export_f_xi", export_f_xi, dspaceIDForExport_f_xi, dimForExport_f_xi, &
+!!$                  "Values of cos(pitch angle) xi for which the distribution functions delta f or full f are saved")
+!!$          end if
+!!$          call writeHDF5Field("export_f_x", export_f_x, dspaceIDForExport_f_x, dimForExport_f_x, &
+!!$               "Values of normalized speed x for which the distribution functions delta f or full f are saved")
+!!$       end if
 
        ! ----------------------------------------------------------------------
        ! ----------------------------------------------------------------------
 
+       call h5sclose_f(dspaceIDForFourier, HDF5Error)
+       call h5sclose_f(dspaceIDForFourier2, HDF5Error)
        call h5sclose_f(dspaceIDForTheta, HDF5Error)
        call h5sclose_f(dspaceIDForZeta, HDF5Error)
        call h5sclose_f(dspaceIDForThetaZeta, HDF5Error)
@@ -415,7 +432,7 @@ contains
     ! For an example of how to create an extendible array in HDF5, see
     ! http://www.hdfgroup.org/ftp/HDF5/current/src/unpacked/fortran/examples/h5_extend.f90
 
-    use export_f, only : full_f, delta_f, export_full_f, export_delta_f
+    !use export_f, only : full_f, delta_f, export_full_f, export_delta_f
 
     implicit none
 
@@ -442,9 +459,11 @@ contains
 
        dimForIteration(1) = iterationNum
        dimForIterationSpecies(1) = iterationNum
+       dimForIterationFourier2(1) = iterationNum
        dimForIterationThetaZeta(1) = iterationNum
        dimForIterationSpeciesThetaZeta(1) = iterationNum
        dimForIterationSpeciesSources(1) = iterationNum
+       dimForIterationSpeciesFourier2(1) = iterationNum
        dimForIterationSpeciesX(1) = iterationNum
        dimForExport_f(1) = iterationNum
 
@@ -649,29 +668,37 @@ contains
        call writeHDF5ExtensibleField(iterationNum, "FSABjHatOverRootFSAB2", FSABjHatOverRootFSAB2, ARRAY_ITERATION, "")
 
        if (includePhi1) then
-          call writeHDF5ExtensibleField(iterationNum, "Phi1Hat", Phi1Hat, ARRAY_ITERATION_THETA_ZETA, &
+          call writeHDF5ExtensibleField(iterationNum, "Phi1Hat_realSpace", Phi1Hat_realSpace, ARRAY_ITERATION_THETA_ZETA, &
                "Electrostatic potential Phi minus its flux-surface-average, in units of PhiBar")
-          call writeHDF5ExtensibleField(iterationNum, "dPhi1Hatdtheta", dPhi1Hatdtheta, ARRAY_ITERATION_THETA_ZETA, &
+          call writeHDF5ExtensibleField(iterationNum, "Phi1Hat_Fourier", Phi1Hat_Fourier, ARRAY_ITERATION_FOURIER2, &
+               "Electrostatic potential Phi minus its flux-surface-average, in units of PhiBar")
+          call writeHDF5ExtensibleField(iterationNum, "dPhi1Hatdtheta_realSpace", dPhi1Hatdtheta_realSpace, ARRAY_ITERATION_THETA_ZETA, &
                "Derivative of Phi_1 with respect to theta. Phi_1 = Electrostatic potential Phi minus its flux-surface-average, in units of PhiBar." //&
                "theta = poloidal angle")
-          call writeHDF5ExtensibleField(iterationNum, "dPhi1Hatdzeta", dPhi1Hatdzeta, ARRAY_ITERATION_THETA_ZETA,  &
+          call writeHDF5ExtensibleField(iterationNum, "dPhi1Hatdtheta_Fourier", dPhi1Hatdtheta_Fourier, ARRAY_ITERATION_FOURIER2, &
+               "Derivative of Phi_1 with respect to theta. Phi_1 = Electrostatic potential Phi minus its flux-surface-average, in units of PhiBar." //&
+               "theta = poloidal angle")
+          call writeHDF5ExtensibleField(iterationNum, "dPhi1Hatdzeta_realSpace", dPhi1Hatdzeta_realSpace, ARRAY_ITERATION_THETA_ZETA,  &
+               "Derivative of Phi_1 with respect to zeta. Phi_1 = Electrostatic potential Phi minus its flux-surface-average, in units of PhiBar." //&
+               "zeta = toroidal angle")
+          call writeHDF5ExtensibleField(iterationNum, "dPhi1Hatdzeta_Fourier", dPhi1Hatdzeta_Fourier, ARRAY_ITERATION_FOURIER2,  &
                "Derivative of Phi_1 with respect to zeta. Phi_1 = Electrostatic potential Phi minus its flux-surface-average, in units of PhiBar." //&
                "zeta = toroidal angle")
           call writeHDF5ExtensibleField(iterationNum, "lambda", lambda, ARRAY_ITERATION, &
                "Lagrange multiplier associated with the constraint that <Phi_1>=0. Should be within machine precision of 0.")
        end if
 
-       elapsedTime_double = elapsedTime ! Cast PetscScalar to real(prec)
-       call writeHDF5ExtensibleField(iterationNum, "elapsed time (s)", elapsedTime_double, ARRAY_ITERATION, "")
+! export_f has not been updated for the new Fourier discretization
+!!$       if (export_full_f) then
+!!$          call writeHDF5ExtensibleField(iterationNum,"full_f", full_f, ARRAY_EXPORT_F, &
+!!$               "Full distribution function for each species, normalized by nBar / (vBar ^3)")
+!!$       end if
+!!$       if (export_delta_f) then
+!!$          call writeHDF5ExtensibleField(iterationNum,"delta_f", delta_f, ARRAY_EXPORT_F, &
+!!$               "Distribution function for each species, normalized by nBar / (vBar ^3), subtracting the leading-order Maxwellian")
+!!$       end if
 
-       if (export_full_f) then
-          call writeHDF5ExtensibleField(iterationNum,"full_f", full_f, ARRAY_EXPORT_F, &
-               "Full distribution function for each species, normalized by nBar / (vBar ^3)")
-       end if
-       if (export_delta_f) then
-          call writeHDF5ExtensibleField(iterationNum,"delta_f", delta_f, ARRAY_EXPORT_F, &
-               "Distribution function for each species, normalized by nBar / (vBar ^3), subtracting the leading-order Maxwellian")
-       end if
+       call writeHDF5ExtensibleField(iterationNum, "elapsed time (s)", elapsedTime, ARRAY_ITERATION, "")
 
        if (constraintScheme .ne. 0) then
           call writeHDF5ExtensibleField(iterationNum, "sources", sources, ARRAY_ITERATION_SPECIES_SOURCES, "")
@@ -716,7 +743,7 @@ contains
 
     ! This subroutine creates the dataspaces.
 
-    use export_f, only: N_export_f_theta, N_export_f_zeta, N_export_f_xi, N_export_f_x
+    !use export_f, only: N_export_f_theta, N_export_f_zeta, N_export_f_xi, N_export_f_x
 
     implicit none
 
@@ -733,6 +760,13 @@ contains
     call h5screate_simple_f(rank, dimForSpecies, dspaceIDForSpecies, HDF5Error)
 
     rank = 1
+
+    dimForFourier = NFourier
+    call h5screate_simple_f(rank, dimForFourier, dspaceIDForFourier, HDF5Error)
+
+    dimForFourier2 = NFourier2
+    call h5screate_simple_f(rank, dimForFourier2, dspaceIDForFourier2, HDF5Error)
+
     dimForZeta = Nzeta
     call h5screate_simple_f(rank, dimForZeta, dspaceIDForZeta, HDF5Error)
 
@@ -742,30 +776,30 @@ contains
     dimForx = Nx
     call h5screate_simple_f(rank, dimForx, dspaceIDForx, HDF5Error)
 
-    dimForExport_f_theta = N_export_f_theta
-    call h5screate_simple_f(rank, dimForExport_f_theta, dspaceIDForExport_f_theta, HDF5Error)
-
-    dimForExport_f_zeta = N_export_f_zeta
-    call h5screate_simple_f(rank, dimForExport_f_zeta, dspaceIDForExport_f_zeta, HDF5Error)
-
-    dimForExport_f_xi = N_export_f_xi
-    call h5screate_simple_f(rank, dimForExport_f_xi, dspaceIDForExport_f_xi, HDF5Error)
-
-    dimForExport_f_x = N_export_f_x
-    call h5screate_simple_f(rank, dimForExport_f_x, dspaceIDForExport_f_x, HDF5Error)
+!!$    dimForExport_f_theta = N_export_f_theta
+!!$    call h5screate_simple_f(rank, dimForExport_f_theta, dspaceIDForExport_f_theta, HDF5Error)
+!!$
+!!$    dimForExport_f_zeta = N_export_f_zeta
+!!$    call h5screate_simple_f(rank, dimForExport_f_zeta, dspaceIDForExport_f_zeta, HDF5Error)
+!!$
+!!$    dimForExport_f_xi = N_export_f_xi
+!!$    call h5screate_simple_f(rank, dimForExport_f_xi, dspaceIDForExport_f_xi, HDF5Error)
+!!$
+!!$    dimForExport_f_x = N_export_f_x
+!!$    call h5screate_simple_f(rank, dimForExport_f_x, dspaceIDForExport_f_x, HDF5Error)
 
     rank = 2
     dimForThetaZeta(1) = Ntheta
     dimForThetaZeta(2) = Nzeta
     call h5screate_simple_f(rank, dimForThetaZeta, dspaceIDForThetaZeta, HDF5Error)
 
-    rank = 5
-    dimForExport_f(1) = Nspecies
-    dimForExport_f(2) = N_export_f_theta
-    dimForExport_f(3) = N_export_f_zeta
-    dimForExport_f(4) = N_export_f_xi
-    dimForExport_f(5) = N_export_f_x
-    call h5screate_simple_f(rank, dimForExport_f, dspaceIDForExport_f, HDF5Error)
+!!$    rank = 5
+!!$    dimForExport_f(1) = Nspecies
+!!$    dimForExport_f(2) = N_export_f_theta
+!!$    dimForExport_f(3) = N_export_f_zeta
+!!$    dimForExport_f(4) = N_export_f_xi
+!!$    dimForExport_f(5) = N_export_f_x
+!!$    call h5screate_simple_f(rank, dimForExport_f, dspaceIDForExport_f, HDF5Error)
 
     ! ------------------------------------------------------------------
     ! Next come the arrays that expand with each iteration of SNES.
@@ -785,6 +819,7 @@ contains
     ! -------------------------------------
 
     rank = 2
+
     dimForIterationSpecies(1)      = 1
     maxDimForIterationSpecies(1)   = H5S_UNLIMITED_F
     dimForIterationSpeciesChunk(1) = 1
@@ -797,6 +832,23 @@ contains
          HDF5Error, maxDimForIterationSpecies)
     call h5pcreate_f(H5P_DATASET_CREATE_F, pForIterationSpecies, HDF5Error)
     call h5pset_chunk_f(pForIterationSpecies, rank, dimForIterationSpeciesChunk, HDF5Error)
+
+    ! -------------------------------------
+
+    rank = 2
+
+    dimForIterationFourier2(1)      = 1
+    maxDimForIterationFourier2(1)   = H5S_UNLIMITED_F
+    dimForIterationFourier2Chunk(1) = 1
+
+    dimForIterationFourier2(2)      = NFourier2
+    maxDimForIterationFourier2(2)   = NFourier2
+    dimForIterationFourier2Chunk(2) = NFourier2
+
+    call h5screate_simple_f(rank, dimForIterationFourier2, dspaceIDForIterationFourier2, &
+         HDF5Error, maxDimForIterationFourier2)
+    call h5pcreate_f(H5P_DATASET_CREATE_F, pForIterationFourier2, HDF5Error)
+    call h5pset_chunk_f(pForIterationFourier2, rank, dimForIterationFourier2Chunk, HDF5Error)
 
     ! -------------------------------------
 
@@ -853,6 +905,26 @@ contains
     ! -------------------------------------
 
     rank = 3
+    dimForIterationSpeciesFourier2(1)      = 1
+    maxDimForIterationSpeciesFourier2(1)   = H5S_UNLIMITED_F
+    dimForIterationSpeciesFourier2Chunk(1) = 1
+
+    dimForIterationSpeciesFourier2(2)      = Nspecies
+    maxDimForIterationSpeciesFourier2(2)   = Nspecies
+    dimForIterationSpeciesFourier2Chunk(2) = Nspecies
+
+    dimForIterationSpeciesFourier2(3)      = NFourier2
+    maxDimForIterationSpeciesFourier2(3)   = NFourier2
+    dimForIterationSpeciesFourier2Chunk(3) = NFourier2
+
+    call h5screate_simple_f(rank, dimForIterationSpeciesFourier2, dspaceIDForIterationSpeciesFourier2, &
+         HDF5Error, maxDimForIterationSpeciesFourier2)
+    call h5pcreate_f(H5P_DATASET_CREATE_F, pForIterationSpeciesFourier2, HDF5Error)
+    call h5pset_chunk_f(pForIterationSpeciesFourier2, rank, dimForIterationSpeciesFourier2Chunk, HDF5Error)
+
+    ! -------------------------------------
+
+    rank = 3
     dimForIterationSpeciesX(1)      = 1
     maxDimForIterationSpeciesX(1)   = H5S_UNLIMITED_F
     dimForIterationSpeciesXChunk(1) = 1
@@ -896,35 +968,35 @@ contains
 
     ! -------------------------------------
 
-    rank = 6
-    dimForExport_f(1)      = 1
-    maxDimForExport_f(1)   = H5S_UNLIMITED_F
-    dimForExport_fChunk(1) = 1
-
-    dimForExport_f(2)      = Nspecies
-    maxDimForExport_f(2)   = Nspecies
-    dimForExport_fChunk(2) = Nspecies
-
-    dimForExport_f(3)      = N_export_f_theta
-    maxDimForExport_f(3)   = N_export_f_theta
-    dimForExport_fChunk(3) = N_export_f_theta
-
-    dimForExport_f(4)      = N_export_f_zeta
-    maxDimForExport_f(4)   = N_export_f_zeta
-    dimForExport_fChunk(4) = N_export_f_zeta
-
-    dimForExport_f(5)      = N_export_f_xi
-    maxDimForExport_f(5)   = N_export_f_xi
-    dimForExport_fChunk(5) = N_export_f_xi
-
-    dimForExport_f(6)      = N_export_f_x
-    maxDimForExport_f(6)   = N_export_f_x
-    dimForExport_fChunk(6) = N_export_f_x
-
-    call h5screate_simple_f(rank, dimForExport_f, dspaceIDForExport_f, &
-         HDF5Error, maxDimForExport_f)
-    call h5pcreate_f(H5P_DATASET_CREATE_F, pForExport_f, HDF5Error)
-    call h5pset_chunk_f(pForExport_f, rank, dimForExport_fChunk, HDF5Error)
+!!$    rank = 6
+!!$    dimForExport_f(1)      = 1
+!!$    maxDimForExport_f(1)   = H5S_UNLIMITED_F
+!!$    dimForExport_fChunk(1) = 1
+!!$
+!!$    dimForExport_f(2)      = Nspecies
+!!$    maxDimForExport_f(2)   = Nspecies
+!!$    dimForExport_fChunk(2) = Nspecies
+!!$
+!!$    dimForExport_f(3)      = N_export_f_theta
+!!$    maxDimForExport_f(3)   = N_export_f_theta
+!!$    dimForExport_fChunk(3) = N_export_f_theta
+!!$
+!!$    dimForExport_f(4)      = N_export_f_zeta
+!!$    maxDimForExport_f(4)   = N_export_f_zeta
+!!$    dimForExport_fChunk(4) = N_export_f_zeta
+!!$
+!!$    dimForExport_f(5)      = N_export_f_xi
+!!$    maxDimForExport_f(5)   = N_export_f_xi
+!!$    dimForExport_fChunk(5) = N_export_f_xi
+!!$
+!!$    dimForExport_f(6)      = N_export_f_x
+!!$    maxDimForExport_f(6)   = N_export_f_x
+!!$    dimForExport_fChunk(6) = N_export_f_x
+!!$
+!!$    call h5screate_simple_f(rank, dimForExport_f, dspaceIDForExport_f, &
+!!$         HDF5Error, maxDimForExport_f)
+!!$    call h5pcreate_f(H5P_DATASET_CREATE_F, pForExport_f, HDF5Error)
+!!$    call h5pset_chunk_f(pForExport_f, rank, dimForExport_fChunk, HDF5Error)
 
   end subroutine createHDF5Structures
 
@@ -959,9 +1031,11 @@ contains
 
        call h5pclose_f(pForIteration, HDF5Error)
        call h5pclose_f(pForIterationSpecies, HDF5Error)
+       call h5pclose_f(pForIterationFourier2, HDF5Error)
        call h5pclose_f(pForIterationSpeciesThetaZeta, HDF5Error)
        call h5pclose_f(pForIterationThetaZeta, HDF5Error)
        call h5pclose_f(pForIterationSpeciesSources, HDF5Error)
+       call h5pclose_f(pForIterationSpeciesFourier2, HDF5Error)
        call h5pclose_f(pForIterationSpeciesX, HDF5Error)
        call h5pclose_f(pForExport_f, HDF5Error)
 
@@ -1150,6 +1224,10 @@ contains
     
     if (dspaceID == dspaceIDForSpecies) then
        call h5dsset_label_f(dsetID, 1, "species", HDF5Error)
+    elseif (dspaceID == dspaceIDForFourier) then
+       ! No labels applied in this case.
+    elseif (dspaceID == dspaceIDForFourier2) then
+       ! No labels applied in this case.
     elseif (dspaceID == dspaceIDForTheta) then
        ! No labels applied in this case.
     elseif (dspaceID == dspaceIDForZeta) then
@@ -1369,6 +1447,13 @@ contains
        chunkProperties = pForIterationSpecies
        label1 = "species"
        label2 = "iteration"
+    case (ARRAY_ITERATION_FOURIER2)
+       originalDspaceID = dspaceIDForIterationFourier2
+       dim = dimForIterationFourier2
+       dimForChunk = dimForIterationFourier2Chunk
+       chunkProperties = pForIterationFourier2
+       label1 = "m,n Fourier modes: cosine,sine"
+       label2 = "iteration"
     case default
        print *,"This is writeHDF5ExtensibleField2"
        print *,"Error! Invalid arrayType:",arrayType
@@ -1440,6 +1525,14 @@ contains
        dimForChunk = dimForIterationSpeciesSourcesChunk
        chunkProperties = pForIterationSpeciesSources
        label1 = "sources"
+       label2 = "species"
+       label3 = "iteration"
+    case (ARRAY_ITERATION_SPECIES_FOURIER2)
+       originalDspaceID = dspaceIDForIterationSpeciesFourier2
+       dim = dimForIterationSpeciesFourier2
+       dimForChunk = dimForIterationSpeciesFourier2Chunk
+       chunkProperties = pForIterationSpeciesFourier2
+       label1 = "m,n Fourier modes: cosine,sine"
        label2 = "species"
        label3 = "iteration"
     case (ARRAY_ITERATION_SPECIES_X)
@@ -1560,7 +1653,7 @@ contains
 
   subroutine writeHDF5ExtensibleField6(iterationNum, arrayName, data, arrayType, description)
 
-    use export_f, only: export_f_xi_option
+    !use export_f, only: export_f_xi_option
 
     implicit none
 
@@ -1587,11 +1680,11 @@ contains
        chunkProperties = pForExport_f
 
        label1 = "export_f_x"
-       if (export_f_xi_option==0) then
-          label2 = "Legendre mode number in xi, i.e. n in P_n(xi). First index is P_0(xi)=1."
-       else
-          label2 = "export_f_xi"
-       end if
+!!$       if (export_f_xi_option==0) then
+!!$          label2 = "Legendre mode number in xi, i.e. n in P_n(xi). First index is P_0(xi)=1."
+!!$       else
+!!$          label2 = "export_f_xi"
+!!$       end if
        label3 = "export_f_zeta"
        label4 = "export_f_theta"
        label5 = "species"

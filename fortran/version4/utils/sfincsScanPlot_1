@@ -39,11 +39,11 @@ import matplotlib.pyplot as plt
 
 numRuns = 0
 NFouriers = []
+mmaxs = []
+nmaxs = []
 Nxis = []
 NLs = []
 Nxs = []
-NxPotentialsPerVths = []
-xMaxs = []
 solverTolerances = []
 Zs = []
 
@@ -95,11 +95,11 @@ for directory in directories:
     # The expression [()] converts from an h5py dataset to a numpy ndarray:
     integerToRepresentTrue = (f["integerToRepresentTrue"][()])
     NFouriers.append(f["NFourier"][()])
+    mmaxs.append(f["mmax"][()])
+    nmaxs.append(f["nmax"][()])
     Nxis.append(f["Nxi"][()])
     NLs.append(f["NL"][()])
     Nxs.append(f["Nx"][()])
-    NxPotentialsPerVths.append(f["NxPotentialsPerVth"][()])
-    xMaxs.append(f["xMax"][()])
     solverTolerances.append(f["solverTolerance"][()])
     Zs.append(f["Zs"][()])
     
@@ -331,6 +331,134 @@ if len(values)>1:
           PlotPhi1Bool = False
     ########################
 
+# Check whether mmax was scanned:
+data = mmaxs
+values = uniq(data)
+values.sort()
+if len(values)>1:
+    # Yes, a scan was performed in this variable.
+    parametersToVary.append("mmax")
+    abscissae.append(values)
+    # Ensure only 1 value is repeated:
+    numRepeatedValues = 0
+    for value in values:
+        if data.count(value)>1:
+            numRepeatedValues += 1
+            convergedValue = value
+    if numRepeatedValues>1:
+        print "Error! Multiple values of "+parametersToVary[-1]+" were repeated."
+        exit(1)
+    if numRepeatedValues==0:
+       convergedValue = data[baseCaseIndex]
+    thisScanResults = []
+    for value in values:
+        if value==convergedValue:
+            index = baseCaseIndex
+        else:
+            index = data.index(value)
+        thisScanResults.append(outputs[index])
+    print "A scan was performed in "+parametersToVary[-1]+", and the repeated value was "+str(convergedValue)
+    print "Values of the scanned parameter: ",abscissae[-1]
+    convergeds.append(convergedValue)
+    quantities.append(numpy.array(thisScanResults))
+
+    ##ADDED BY AM 2016-04 ##
+    if PlotPhi1Bool and includePhi1:
+       if (abscissae[-1])[0] == convergedValue:
+          minScanValue = "baseCase"
+       else :
+          minScanValue = "mmax" + str((abscissae[-1])[0])
+
+       if (abscissae[-1])[-1] == convergedValue:
+          maxScanValue = "baseCase"
+       else :
+          maxScanValue = "mmax" + str((abscissae[-1])[-1])
+
+       Phi1_Labels_Array.append(minScanValue)
+       Phi1_Labels_Array.append(maxScanValue)
+       try:
+          fmin = h5py.File(minScanValue + "/" + outputFilename, 'r')
+          fmax = h5py.File(maxScanValue + "/" + outputFilename, 'r')
+       except IOError:
+          print "Unable to open " + minScanValue + "/" + outputFilename + " or " + maxScanValue + "/" + outputFilename + ". Will not plot Phi1!"
+          PlotPhi1Bool = False
+          
+       try:
+          Phi1_Array.append( (fmin["Phi1Hat"][()])[:,:,-1] )
+          Phi1_Array.append( (fmax["Phi1Hat"][()])[:,:,-1] )
+          Phi1_Fourier_Array.append( fmin["Fourier"][()] )
+          Phi1_Fourier_Array.append( fmax["Fourier"][()] )
+          Phi1_Zeta_Array.append( fmin["zeta"][()] )
+          Phi1_Zeta_Array.append( fmax["zeta"][()] )
+       except:
+          print "Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!"
+          PlotPhi1Bool = False
+    ########################
+
+# Check whether nmax was scanned:
+data = nmaxs
+values = uniq(data)
+values.sort()
+if len(values)>1:
+    # Yes, a scan was performed in this variable.
+    parametersToVary.append("nmax")
+    abscissae.append(values)
+    # Ensure only 1 value is repeated:
+    numRepeatedValues = 0
+    for value in values:
+        if data.count(value)>1:
+            numRepeatedValues += 1
+            convergedValue = value
+    if numRepeatedValues>1:
+        print "Error! Multiple values of "+parametersToVary[-1]+" were repeated."
+        exit(1)
+    if numRepeatedValues==0:
+       convergedValue = data[baseCaseIndex]
+    thisScanResults = []
+    for value in values:
+        if value==convergedValue:
+            index = baseCaseIndex
+        else:
+            index = data.index(value)
+        thisScanResults.append(outputs[index])
+    print "A scan was performed in "+parametersToVary[-1]+", and the repeated value was "+str(convergedValue)
+    print "Values of the scanned parameter: ",abscissae[-1]
+    convergeds.append(convergedValue)
+    quantities.append(numpy.array(thisScanResults))
+
+    ##ADDED BY AM 2016-04 ##
+    if PlotPhi1Bool and includePhi1:
+       if (abscissae[-1])[0] == convergedValue:
+          minScanValue = "baseCase"
+       else :
+          minScanValue = "nmax" + str((abscissae[-1])[0])
+
+       if (abscissae[-1])[-1] == convergedValue:
+          maxScanValue = "baseCase"
+       else :
+          maxScanValue = "nmax" + str((abscissae[-1])[-1])
+
+       Phi1_Labels_Array.append(minScanValue)
+       Phi1_Labels_Array.append(maxScanValue)
+       try:
+          fmin = h5py.File(minScanValue + "/" + outputFilename, 'r')
+          fmax = h5py.File(maxScanValue + "/" + outputFilename, 'r')
+       except IOError:
+          print "Unable to open " + minScanValue + "/" + outputFilename + " or " + maxScanValue + "/" + outputFilename + ". Will not plot Phi1!"
+          PlotPhi1Bool = False
+          
+       try:
+          Phi1_Array.append( (fmin["Phi1Hat"][()])[:,:,-1] )
+          Phi1_Array.append( (fmax["Phi1Hat"][()])[:,:,-1] )
+          Phi1_Fourier_Array.append( fmin["Fourier"][()] )
+          Phi1_Fourier_Array.append( fmax["Fourier"][()] )
+          Phi1_Zeta_Array.append( fmin["zeta"][()] )
+          Phi1_Zeta_Array.append( fmax["zeta"][()] )
+       except:
+          print "Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!"
+          PlotPhi1Bool = False
+    ########################
+
 
 # Check whether Nxi was scanned:
 data = Nxis
@@ -524,133 +652,6 @@ if len(values)>1:
           PlotPhi1Bool = False
     ########################
 
-# Check whether NxPotentialsPerVth was scanned:
-data = NxPotentialsPerVths
-values = uniq(data)
-values.sort()
-if len(values)>1:
-    # Yes, a scan was performed in this variable.
-    parametersToVary.append("NxPotentialsPerVth")
-    abscissae.append(values)
-    # Ensure only 1 value is repeated:
-    numRepeatedValues = 0
-    for value in values:
-        if data.count(value)>1:
-            numRepeatedValues += 1
-            convergedValue = value
-    if numRepeatedValues>1:
-        print "Error! Multiple values of "+parametersToVary[-1]+" were repeated."
-        exit(1)
-    if numRepeatedValues==0:
-       convergedValue = data[baseCaseIndex]
-    thisScanResults = []
-    for value in values:
-        if value==convergedValue:
-            index = baseCaseIndex
-        else:
-            index = data.index(value)
-        thisScanResults.append(outputs[index])
-    print "A scan was performed in "+parametersToVary[-1]+", and the repeated value was "+str(convergedValue)
-    print "Values of the scanned parameter: ",abscissae[-1]
-    convergeds.append(convergedValue)
-    quantities.append(numpy.array(thisScanResults))
-
-    ##ADDED BY AM 2016-04 ##
-    if PlotPhi1Bool and includePhi1:
-       if (abscissae[-1])[0] == convergedValue:
-          minScanValue = "baseCase"
-       else :
-          minScanValue = "NxPotentialsPerVth" + "{:.4g}".format((abscissae[-1])[0])
-
-       if (abscissae[-1])[-1] == convergedValue:
-          maxScanValue = "baseCase"
-       else :
-          maxScanValue = "NxPotentialsPerVth" + "{:.4g}".format((abscissae[-1])[-1])
-
-       Phi1_Labels_Array.append(minScanValue)
-       Phi1_Labels_Array.append(maxScanValue)
-       try:
-          fmin = h5py.File(minScanValue + "/" + outputFilename, 'r')
-          fmax = h5py.File(maxScanValue + "/" + outputFilename, 'r')
-       except IOError:
-          print "Unable to open " + minScanValue + "/" + outputFilename + " or " + maxScanValue + "/" + outputFilename + ". Will not plot Phi1!"
-          PlotPhi1Bool = False
-          
-       try:
-          Phi1_Array.append( (fmin["Phi1Hat"][()])[:,:,-1] )
-          Phi1_Array.append( (fmax["Phi1Hat"][()])[:,:,-1] )
-          Phi1_Fourier_Array.append( fmin["Fourier"][()] )
-          Phi1_Fourier_Array.append( fmax["Fourier"][()] )
-          Phi1_Zeta_Array.append( fmin["zeta"][()] )
-          Phi1_Zeta_Array.append( fmax["zeta"][()] )
-       except:
-          print "Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!"
-          PlotPhi1Bool = False
-    ########################
-
-# Check whether xMax was scanned:
-data = xMaxs
-values = uniq(data)
-values.sort()
-if len(values)>1:
-    # Yes, a scan was performed in this variable.
-    parametersToVary.append("xMax")
-    abscissae.append(values)
-    # Ensure only 1 value is repeated:
-    numRepeatedValues = 0
-    for value in values:
-        if data.count(value)>1:
-            numRepeatedValues += 1
-            convergedValue = value
-    if numRepeatedValues>1:
-        print "Error! Multiple values of "+parametersToVary[-1]+" were repeated."
-        exit(1)
-    if numRepeatedValues==0:
-       convergedValue = data[baseCaseIndex]
-    thisScanResults = []
-    for value in values:
-        if value==convergedValue:
-            index = baseCaseIndex
-        else:
-            index = data.index(value)
-        thisScanResults.append(outputs[index])
-    print "A scan was performed in "+parametersToVary[-1]+", and the repeated value was "+str(convergedValue)
-    print "Values of the scanned parameter: ",abscissae[-1]
-    convergeds.append(convergedValue)
-    quantities.append(numpy.array(thisScanResults))
-
-    ##ADDED BY AM 2016-04 ##
-    if PlotPhi1Bool and includePhi1:
-       if (abscissae[-1])[0] == convergedValue:
-          minScanValue = "baseCase"
-       else :
-          minScanValue = "xMax" + "{:.4g}".format((abscissae[-1])[0])
-
-       if (abscissae[-1])[-1] == convergedValue:
-          maxScanValue = "baseCase"
-       else :
-          maxScanValue = "xMax" + "{:.4g}".format((abscissae[-1])[-1])
-
-       Phi1_Labels_Array.append(minScanValue)
-       Phi1_Labels_Array.append(maxScanValue)
-       try:
-          fmin = h5py.File(minScanValue + "/" + outputFilename, 'r')
-          fmax = h5py.File(maxScanValue + "/" + outputFilename, 'r')
-       except IOError:
-          print "Unable to open " + minScanValue + "/" + outputFilename + " or " + maxScanValue + "/" + outputFilename + ". Will not plot Phi1!"
-          PlotPhi1Bool = False
-          
-       try:
-          Phi1_Array.append( (fmin["Phi1Hat"][()])[:,:,-1] )
-          Phi1_Array.append( (fmax["Phi1Hat"][()])[:,:,-1] )
-          Phi1_Fourier_Array.append( fmin["Fourier"][()] )
-          Phi1_Fourier_Array.append( fmax["Fourier"][()] )
-          Phi1_Zeta_Array.append( fmin["zeta"][()] )
-          Phi1_Zeta_Array.append( fmax["zeta"][()] )
-       except:
-          print "Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!"
-          PlotPhi1Bool = False
-    ########################
 
 # Check whether solverTolerances was scanned:
 data = [-math.log10(x) for x in solverTolerances]
@@ -811,8 +812,7 @@ for iQuantity in range(numQuantities):
 
 
 titleString = "Plot generated by "+ inspect.getfile(inspect.currentframe()) + "\nRun in "+os.getcwd()
-ax = fig.add_axes([0,0,1,1], frameon=False)
-ax.text(0.5,0.99,titleString,horizontalalignment='center',verticalalignment='top')
+plt.figtext(0.5,0.99,titleString,horizontalalignment='center',verticalalignment='top')
 
 outputFile = open('sfincsScan.dat','wb')
 scanType=1
@@ -821,18 +821,6 @@ data = {'scanType':scanType, 'numQuantities':numQuantitiesForPickle, 'numRows':n
         'xdata':xdata, 'ydata':ydata, 'xlabels':xlabels, 'ylabels':ylabels,
         'xscales':xscales, 'yscales':yscales, 'ymins':ymins, 'ymaxs':ymaxs,
         'linespec':linespec}
-# pickle.dump(scanType,outputFile)
-# pickle.dump(numParameters*numQuantities,outputFile)
-# pickle.dump(numRows,outputFile)
-# pickle.dump(numCols,outputFile)
-# pickle.dump(xdata,outputFile)
-# pickle.dump(ydata,outputFile)
-# pickle.dump(xlabels,outputFile)
-# pickle.dump(ylabels,outputFile)
-# pickle.dump(xscales,outputFile)
-# pickle.dump(yscales,outputFile)
-# pickle.dump(ymins,outputFile)
-# pickle.dump(ymaxs,outputFile)
 pickle.dump(data,outputFile)
 outputFile.close()
 

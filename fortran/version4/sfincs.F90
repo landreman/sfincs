@@ -20,7 +20,6 @@ program sfincs
   implicit none
 
   PetscErrorCode ierr
-  PetscLogDouble :: startTime, time1
 
   call PetscInitialize(PETSC_NULL_CHARACTER, ierr)
 
@@ -47,8 +46,7 @@ program sfincs
      end if
   end if
 
-  call PetscTime(time1, ierr)
-  startTime = time1
+  call PetscTime(startTime, ierr)
 
   call readNamelistInput()
   call validateInput()

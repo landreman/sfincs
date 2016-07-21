@@ -193,7 +193,9 @@ module globalVariables
   real(prec), dimension(:,:), allocatable :: BHat_sup_theta, dBHat_sup_theta_dzeta, dBHat_sup_theta_dpsiHat
   real(prec), dimension(:,:), allocatable :: BHat_sup_zeta, dBHat_sup_zeta_dtheta, dBHat_sup_zeta_dpsiHat
   real(prec), dimension(:,:), allocatable :: BDotCurlB, uHat
-  real(prec), dimension(:,:), allocatable :: sources, jHat, Phi1Hat, dPhi1Hatdtheta, dPhi1Hatdzeta
+  real(prec), dimension(:,:), allocatable :: sources, jHat
+  real(prec), dimension(:), allocatable :: Phi1Hat_Fourier, dPhi1Hatdtheta_Fourier, dPhi1Hatdzeta_Fourier
+  real(prec), dimension(:), allocatable :: Phi1Hat_realSpace, dPhi1Hatdtheta_realSpace, dPhi1Hatdzeta_realSpace
   real(prec), dimension(:,:,:), allocatable :: densityPerturbation, totalDensity
   real(prec), dimension(:,:,:), allocatable :: pressurePerturbation, totalPressure, pressureAnisotropy
   real(prec), dimension(:,:,:), allocatable :: flow, velocityUsingFSADensity, velocityUsingTotalDensity
@@ -323,7 +325,8 @@ module globalVariables
   real(prec) :: ddpsiN2ddpsiHat, ddrHat2ddpsiHat, ddrN2ddpsiHat
   real(prec) :: ddpsiHat2ddpsiN, ddpsiHat2ddrHat, ddpsiHat2ddrN
 
-  PetscLogDouble :: elapsedTime
+  real(prec) :: elapsedTime
+  PetscLogDouble :: startTime
   integer :: didLinearCalculationConverge, didNonlinearCalculationConverge
   integer :: iterationForMatrixOutput, iterationForResidualOutput = 0, iterationForStateVectorOutput = 0
   logical :: firstMatrixCreation
@@ -332,7 +335,6 @@ module globalVariables
   real(prec), dimension(:,:), allocatable :: transportMatrix
 
   Vec :: f0
-
 
   ! ********************************************************
   !

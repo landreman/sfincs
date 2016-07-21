@@ -8,11 +8,9 @@
 subroutine preallocateMatrix(matrix, whichMatrix)
 
   use petscmat
-  use globalVariables, only: Nx, Nxi, Ntheta, Nzeta, Nspecies, matrixSize, includePhi1, &
-       !!constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, nonlinear, & !!Commented by AM 2016-02
-       constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, & !!Added by AM 2016-02
-       !!thetaDerivativeScheme, zetaDerivativeScheme, includeRadialExBDrive !!Commented by AM 2016-03
-       thetaDerivativeScheme, zetaDerivativeScheme, includePhi1InKineticEquation, quasineutralityOption !!Added by AM 2016-03
+  use globalVariables, only: Nx, Nxi, NFourier2, Nspecies, matrixSize, includePhi1, &
+       constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, & 
+       thetaDerivativeScheme, zetaDerivativeScheme, includePhi1InKineticEquation, quasineutralityOption
   use indices
 
   implicit none
@@ -22,16 +20,17 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   integer :: predictedNNZForEachRowOfPreconditioner, predictedNNZForEachRowOfTotalMatrix
   integer, dimension(:), allocatable :: predictedNNZsForEachRow, predictedNNZsForEachRowDiagonal
   PetscErrorCode :: ierr
-  integer :: tempInt1, i, itheta, izeta, ispecies, ix, index
+  integer :: tempInt1, i, imn, ispecies, ix, index
   integer :: firstRowThisProcOwns, lastRowThisProcOwns, numLocalRows
 
   if (masterProc) then
      print *,"Beginning preallocation for whichMatrix = ",whichMatrix
   end if
 
-  !predictedNNZForEachRowOfTotalMatrix = 4*(3*Nx + 5*3 + 5*3 + 5 + Nx)
-  !predictedNNZForEachRowOfTotalMatrix = 4*(3*Nx + 5*3 + 5*3 + 5 + Nx + Ntheta*Nzeta)
-  tempInt1 = Nspecies*Nx + 5*3 + 5*3 + 5 + 3*Nx + 2 + Nx*Ntheta*Nzeta
+  tempInt1 = Nspecies*Nx & ! Collision operator.
+       + NFourier2*5 & ! Streaming, ExB, and xiDot terms are pentadiagonal in L and are dense in Fourier.
+       + NFourier2*3*Nx & ! xDot term is dense in Fourier and x, and occupies (L-2,L,L+2). Subtract 1 to avoid double-counting
+       + 2 ! Sources
   if (tempInt1 > matrixSize) then
      tempInt1 = matrixSize
   end if
@@ -45,23 +44,12 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   allocate(predictedNNZsForEachRowDiagonal(matrixSize))
   ! Set tempInt1 to the expected number of nonzeros in a row of the kinetic equation block:
 
-  tempInt1 = 3*Nx &        ! ddx terms on diagonal from collision operator, and ell=L +/- 2 in xDot. (Dense in x, and tridiagonal in L.)
-       + (Nspecies-1)*Nx & ! inter-species collisional coupling. (Dense in x and species, -Nx since we already counted the diagonal-in-species block)
-       + 2                 ! particle and heat sources
 
-  if (thetaDerivativeScheme==0) then
-     tempInt1 = tempInt1 + Ntheta*5-1  ! d/dtheta terms (dense in theta, pentadiagonal in L, -1 since we already counted the diagonal)
-  else
-     tempInt1 = tempInt1 + 5*5-1       ! d/dtheta terms (pentadiagonal in theta, pentadiagonal in L, -1 since we already counted the diagonal)
-  end if
+  tempInt1 = Nspecies*Nx & ! Collision operator
+       + NFourier2*5 & ! Streaming, ExB, and xiDot terms are pentadiagonal in L and are dense in Fourier.
+       + NFourier2*3*Nx & ! xDot term is dense in Fourier and x, and occupies (L-2,L,L+2).
+       + 2 ! Sources
 
-  if (zetaDerivativeScheme==0) then
-     tempInt1 = tempInt1 + Nzeta*5-1  ! d/dzeta terms (dense in theta, pentadiagonal in L, -1 since we already counted the diagonal)
-  else
-     tempInt1 = tempInt1 + 5*5-1      ! d/dzeta terms (pentadiagonal in theta, pentadiagonal in L, -1 since we already counted the diagonal)
-  end if
-
-  ! We don't need to separately count the d/dxi terms, since they just add to the diagonals of the d/dtheta and d/dzeta terms we already counted.
 
 ! THIS TERM HAS BEEN REMOVED BY AM 2016-03 !
 !!$  if (includePhi1) then
@@ -71,6 +59,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
 !!$  end if
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+! The next block of code (for Phi1) has not been updated for the new Fourier discretization.
 !!  if (includeRadialExBDrive) then !!Commented by AM 2016-03
   if (includePhi1InKineticEquation .and. includePhi1) then !!Added by AM 2016-03
      tempInt1 = tempInt1 &
@@ -87,59 +76,54 @@ subroutine preallocateMatrix(matrix, whichMatrix)
      tempInt1 = matrixSize
   end if
   predictedNNZsForEachRow = tempInt1
-  
+
+  ! Handle the rows for constraints
   select case (constraintScheme)
   case (0)
   case (1, 3, 4)
-     ! The rows for the constraints have more nonzeros:
-     !predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta*Nx + 1
-     !predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta*Nx
+     ! The rows for the constraints have a different number of nonzeros:
      do ispecies=1,Nspecies
-        index = getIndex(ispecies,1,1,1,1,BLOCK_DENSITY_CONSTRAINT)
-        predictedNNZsForEachRow(index+1) = Ntheta*Nzeta*Nx + 1 ! +1 for diagonal
-        index = getIndex(ispecies,1,1,1,1,BLOCK_PRESSURE_CONSTRAINT)
-        predictedNNZsForEachRow(index+1) = Ntheta*Nzeta*Nx + 1 ! +1 for diagonal
+        index = getIndex(ispecies,1,1,1,BLOCK_DENSITY_CONSTRAINT)
+        predictedNNZsForEachRow(index+1) = NFourier2*Nx + 1 ! +1 for diagonal
+        index = getIndex(ispecies,1,1,1,BLOCK_PRESSURE_CONSTRAINT)
+        predictedNNZsForEachRow(index+1) = NFourier2*Nx + 1 ! +1 for diagonal
      end do
   case (2)
-     ! The rows for the constraints have more nonzeros:
-     !predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta + 1
-     !predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta
      do ispecies=1,Nspecies
         do ix = 1, Nx
-           index = getIndex(ispecies,ix,1,1,1,BLOCK_F_CONSTRAINT)
-           predictedNNZsForEachRow(index+1) = Ntheta*Nzeta + 1 ! +1 for diagonal
+           index = getIndex(ispecies,ix,1,1,BLOCK_F_CONSTRAINT)
+           predictedNNZsForEachRow(index+1) = NFourier2 + 1 ! +1 for diagonal
         end do
      end do
   case default
   end select
   
+  ! MJL 20160720: I think the code block below is appropriately updated for Fourier, but should be checked.
   if (includePhi1) then
      ! Set rows for the quasineutrality condition:
-     do itheta=1,Ntheta
-        do izeta=1,Nzeta
-           index = getIndex(1,1,1,itheta,izeta,BLOCK_QN)
+     do imn = 1,NFourier2
+        index = getIndex(1,1,1,imn,BLOCK_QN)
 
-           !!Added by AM 2016-03!!
-           if (quasineutralityOption == 1) then
-           !!!!!!!!!!!!!!!!!!!!!!!
-              ! Add 1 because we are indexing a Fortran array instead of a PETSc matrix:
-              predictedNNZsForEachRow(index+1) = Nx*Nspecies &  ! Integrals over f to get the density
-                   + 1 &          ! lambda
-                   + 1            ! Diagonal entry
+        !!Added by AM 2016-03!!
+        if (quasineutralityOption == 1) then
+!!!!!!!!!!!!!!!!!!!!!!!
+           ! Add 1 because we are indexing a Fortran array instead of a PETSc matrix:
+           predictedNNZsForEachRow(index+1) = Nx*Nspecies &  ! Integrals over f to get the density
+                + 1 &          ! lambda
+                + 1            ! Diagonal entry
               
            !!Added by AM 2016-03!!
-           else
-              ! Add 1 because we are indexing a Fortran array instead of a PETSc matrix:
-              predictedNNZsForEachRow(index+1) = Nx*1 &  ! Integrals over f to get the density (only 1 kinetic species for EUTERPE equations)
-                   + 1 &          ! lambda
-                   + 1            ! Diagonal entry
-           end if
-           !!!!!!!!!!!!!!!!!!!!!!!
-        end do
+        else
+           ! Add 1 because we are indexing a Fortran array instead of a PETSc matrix:
+           predictedNNZsForEachRow(index+1) = Nx*1 &  ! Integrals over f to get the density (only 1 kinetic species for EUTERPE equations)
+                + 1 &          ! lambda
+                + 1            ! Diagonal entry
+        end if
+!!!!!!!!!!!!!!!!!!!!!!!
      end do
      ! Set row for lambda constraint:
-     index = getIndex(1,1,1,1,1,BLOCK_PHI1_CONSTRAINT)
-     predictedNNZsForEachRow(index+1) = Ntheta*Nzeta + 1 ! <Phi_1>, plus 1 for diagonal.
+     index = getIndex(1,1,1,1,BLOCK_PHI1_CONSTRAINT)
+     predictedNNZsForEachRow(index+1) = NFourier2 + 1 ! <Phi_1>, plus 1 for diagonal.
   end if
   predictedNNZsForEachRowDiagonal = predictedNNZsForEachRow
   
