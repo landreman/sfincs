@@ -56,6 +56,7 @@
     integer, dimension(:), allocatable :: IPIV  ! Needed by LAPACK
     integer :: LAPACKInfo
     PetscLogDouble :: time1, time2
+    PetscLogDouble :: time3, time4, time5, time6
     real(prec), dimension(:,:), allocatable :: tempMatrix, tempMatrix2, extrapMatrix
     double precision :: myMatInfo(MAT_INFO_SIZE)
     integer :: NNZ, NNZAllocated, NMallocs
@@ -73,17 +74,23 @@
     real(prec), dimension(:), allocatable :: FourierVector
     real(prec), dimension(:,:), allocatable :: FourierMatrix, FourierMatrix2
     integer :: imn, imn_row, imn_col
-
     real(prec) :: dPhiHatdpsiHatToUseInRHS, xPartOfRHS, xPartOfRHS2 !!Added by AM 2016-03
 
     ! *******************************************************************************
     ! Do a few sundry initialization tasks:
     ! *******************************************************************************
 
+    call PetscTime(time1, ierr)
+    time3=time1
+    time5=time1
+
     ! This next line only matters for nonlinear calculations, in which the Mat objects for the matrix and preconditioner matrix 
     ! are reused at each iteration of SNES. In this case we need to clear all the previous entries, or else we would add the new
     ! values on top of the previous values:
     call MatZeroEntries(matrix,ierr)
+    call PetscTime(time6,ierr)
+    if (masterProc) print *,"  MatZetoEntries:",time6-time5,"sec"
+    time5=time6
 
     if (masterProc) then
        print *,"Running populateMatrix with whichMatrix = ",whichMatrix
@@ -112,8 +119,6 @@
        stop
     end select
 
-    call PetscTime(time1, ierr)
-
     ! Sometimes PETSc complains if any of the diagonal elements are not set.
     ! Therefore, set the entire diagonal to 0 to be safe.
     if (masterProc) then
@@ -121,6 +126,9 @@
           call MatSetValueDense(matrix, i-1, i-1, zero, ADD_VALUES, ierr)
        end do
     end if
+    call PetscTime(time6,ierr)
+    if (masterProc) print *,"  set diagonal:",time6-time5,"sec"
+    time5=time6
 
     ! Since PETSc's direct sparse solver complains if there are any zeros on the diagonal
     ! (unlike mumps or superlu_dist), then if we're using this solver
@@ -187,6 +195,9 @@
     ! *********************************************************
     ! Allocate small matrices:
     ! *********************************************************
+    call PetscTime(time6,ierr)
+    if (masterProc) print *,"  shouldBeNegligible:",time6-time5,"sec"
+    time5=time6
 
     allocate(FourierVector(NFourier2))
     allocate(FourierMatrix(NFourier2,NFourier2))
@@ -224,13 +235,22 @@
     allocate(IPIV(NxPotentials))
 
 
+    call PetscTime(time6,ierr)
+    if (masterProc) print *,"  allocations:",time6-time5,"sec"
+    time5=time6
+
     ! ************************************************************
     ! ************************************************************
     ! Begin adding the collisionless terms of the kinetic equation
     ! ************************************************************
     ! ************************************************************
 
+    call PetscTime(time4,ierr)
+    if (masterProc) print *," init:",time4-time3,"sec"
+
     do ispecies = 1,Nspecies
+       if (masterProc) print *," Beginning species",ispecies
+       call PetscTime(time3,ierr)
        nHat = nHats(ispecies)
        THat = THats(ispecies)
        mHat = mHats(ispecies)
@@ -243,17 +263,21 @@
        ! *********************************************************
        
        if (whichMatrix .ne. 2) then
+          call PetscTime(time5,ierr)
           call FourierTransform(sqrt(THat/mHat)*BHat_sup_theta/BHat, FourierVector)
           call FourierConvolutionMatrix(FourierVector,FourierMatrix)
           call FourierTransform(sqrt(THat/mHat)*BHat_sup_zeta/BHat, FourierVector)
           call FourierConvolutionMatrix(FourierVector,FourierMatrix2)
           FourierMatrix = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
+          call PetscTime(time6,ierr)
+          if (masterProc) print *,"  streaming Fourier+matmul:",time6-time5
+          time5=time6
           do L=LMin,LMax
              ! The L loop is outermost since we may eventually want to use a sparser Fourier matrix for the preconditioner at large L.
-             do ix=ixMin,Nx
+             do imn_col = 1,NFourier2
                 do imn_row = 1,NFourier2
-                   rowIndex = getIndex(ispecies, ix, L+1, imn_row, BLOCK_F)
-                   do imn_col = 1,NFourier2
+                   do ix=ixMin,Nx
+                      rowIndex = getIndex(ispecies, ix, L+1, imn_row, BLOCK_F)
 
                       ! Super-diagonal-in-L term
                       if (L < Nxi-1) then
@@ -274,7 +298,12 @@
                 end do
              end do
           end do
+          call PetscTime(time6,ierr)
+          if (masterProc) print *,"  streaming loops:",time6-time5
        end if
+       call PetscTime(time4,ierr)
+       if (masterProc) print *," streaming:",time4-time3,"sec"
+       time3=time4
 
        ! *********************************************************
        ! Add the ExB d/dtheta and d/dzeta terms:
@@ -308,6 +337,9 @@
              end do
           end do
        end if
+       call PetscTime(time4,ierr)
+       if (masterProc) print *," ExB:",time4-time3,"sec"
+       time3=time4
 
 ! The magnetic drift terms have not yet been updated for the Fourier spatial discreitzation.
 
@@ -554,6 +586,9 @@
              end do
           end do
        end if
+       call PetscTime(time4,ierr)
+       if (masterProc) print *," mirror:",time4-time3,"sec"
+       time3=time4
 
        ! *********************************************************
        ! Add the non-standard d/dxi term associated with E_r:
@@ -608,6 +643,10 @@
              end do
           end do
        end if
+       call PetscTime(time4,ierr)
+       if (masterProc) print *," Er xiDot:",time4-time3,"sec"
+       time3=time4
+
 
 !!$       ! ****************************************************************
 !!$       ! Add the non-standard d/dxi term associated with magnetic drifts:
@@ -743,6 +782,10 @@
           end do
           deallocate(xPartOfXDot)
        end if
+       call PetscTime(time4,ierr)
+       if (masterProc) print *," Er xDot:",time4-time3,"sec"
+       time3=time4
+
 
 ! The Phi1-related code below has not yet been updated for the new Fourier spatial discretization.
 !!$
@@ -1604,6 +1647,9 @@
           
        end select
     end if
+    call PetscTime(time4,ierr)
+    if (masterProc) print *," collision op:",time4-time3,"sec"
+    time3=time4
 
     ! *******************************************************************************
     ! *******************************************************************************
@@ -1875,6 +1921,8 @@
     ! Done inserting values into the matrices.
     ! Now finalize the matrix
     ! *******************************************************************************
+    call PetscTime(time4,ierr)
+    if (masterProc) print *," sources/constraints:",time4-time3,"sec"
 
     call PetscTime(time2, ierr)
     if (masterProc) then

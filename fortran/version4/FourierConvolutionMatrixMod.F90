@@ -25,7 +25,7 @@ contains
     ! vector should have been allocated with size  2*NFourier-1.
     ! matrix should have been allocated with size (2*NFourier-1, 2*NFourier-1).
 
-    use globalVariables, only: NFourier, NFourier2, xm, xn, prec
+    use globalVariables, only: NFourier, NFourier2, xm, xn, prec, masterProc
 
     implicit none
 
@@ -136,8 +136,20 @@ contains
     end do
     
     deallocate(halfVector)
+
+    numMatches=0
+    do imn1=1,NFourier2
+       do imn2=1,NFourier2
+          if (abs(matrix(imn2,imn1))>1e-12) then
+             numMatches = numMatches+1
+          end if
+       end do
+    end do
+
     call system_clock(toc)
-    print *,"  convolution matrix: ",real(toc-tic)/countrate,"sec"
+    if (masterProc) then
+       print *,"  convolution matrix: ",real(toc-tic)/countrate,"sec, nnz=",numMatches
+    end if
 
   end subroutine FourierConvolutionMatrix
 end module FourierConvolutionMatrixMod

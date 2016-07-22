@@ -14,3 +14,6 @@ Aspects of the code that have changed in version 4 compared to version 3:
 
 * Some variables in evaluateResidual.F90 were renamed to avoid references to 'right hand side',
   which is obsolete now that we think in terms of a residual function.
+
+* The default cntl(1) for mumps was changed from 1e-6 to 1e-3. This change reduces some sporadic 
+  outlier results.

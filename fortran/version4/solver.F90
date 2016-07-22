@@ -119,7 +119,7 @@ module solver
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
           ! The functions MatMumpsSetICNTL were introduced in PETSc 3.5.
           ! For earlier versions, we can achieve a similar result with the following hack:
-          call PetscOptionsInsertString("-mat_mumps_cntl_1 1e-6 -mat_mumps_icntl_4 2", ierr)
+          call PetscOptionsInsertString("-mat_mumps_cntl_1 1e-3 -mat_mumps_icntl_4 2", ierr)
 #endif
        case (2)
           call PCFactorSetMatSolverPackage(preconditionerContext, MATSOLVERSUPERLU_DIST, ierr)
@@ -225,7 +225,7 @@ module solver
        call PCFactorSetUpMatSolverPackage(preconditionerContext,ierr)
        call PCFactorGetMatrix(preconditionerContext,factorMat,ierr)
        mumps_which_cntl = 1
-       mumps_value = 1.e-6
+       mumps_value = 1.e-3
        call MatMumpsSetCntl(factorMat,mumps_which_cntl,mumps_value,ierr)
 
        ! Turn on mumps diagnostic output

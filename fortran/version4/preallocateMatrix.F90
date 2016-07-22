@@ -22,10 +22,12 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   PetscErrorCode :: ierr
   integer :: tempInt1, i, imn, ispecies, ix, index
   integer :: firstRowThisProcOwns, lastRowThisProcOwns, numLocalRows
+  PetscLogDouble :: time1, time2
 
   if (masterProc) then
      print *,"Beginning preallocation for whichMatrix = ",whichMatrix
   end if
+  call PetscTime(time1,ierr)
 
   tempInt1 = Nspecies*Nx & ! Collision operator.
        + NFourier2*5 & ! Streaming, ExB, and xiDot terms are pentadiagonal in L and are dense in Fourier.
@@ -45,11 +47,14 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   ! Set tempInt1 to the expected number of nonzeros in a row of the kinetic equation block:
 
 
-  tempInt1 = Nspecies*Nx & ! Collision operator
+  tempInt1 = Nspecies*Nx & ! Collision operator       
        + NFourier2*5 & ! Streaming, ExB, and xiDot terms are pentadiagonal in L and are dense in Fourier.
+!       +2
        + NFourier2*3*Nx & ! xDot term is dense in Fourier and x, and occupies (L-2,L,L+2).
        + 2 ! Sources
 
+! delete the next line eventually:
+!tempInt1 = tempInt1/24
 
 ! THIS TERM HAS BEEN REMOVED BY AM 2016-03 !
 !!$  if (includePhi1) then
@@ -206,5 +211,9 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   !if (masterProc) then
   !   print *,"Done with preallocation for whichMatrix = ",whichMatrix
   !end if
+  call PetscTime(time2,ierr)
+  if (masterProc) then
+     print *,"Time for preallocation:",time2-time1,"sec"
+  end if
 
 end subroutine preallocateMatrix
