@@ -5,7 +5,7 @@ module FourierConvolutionMatrixMod
 
 contains
 
-  subroutine FourierConvolutionMatrix(vector, matrix)
+  subroutine FourierConvolutionMatrix(vector, matrix, thresh)
 
     ! Suppose we have Fourier expansions for two functions, f(theta,zeta) and B(theta,zeta):
     ! B(theta,zeta) = \sum_{m1,n1} [ B^c_{m1,n1} cos(m1 theta - n1 zeta) + B^s_{m1,n1} sin(m1 theta - n1 zeta)
@@ -31,10 +31,13 @@ contains
 
     real(prec), intent(in), dimension(:) :: vector
     real(prec), intent(out), dimension(:,:) :: matrix
+    real(prec), intent(in) :: thresh
 
-    integer :: j, m, n, imn1, imn2, sign, numMatches, imn_new
+    integer :: j, m, n, imn1, imn2, sign, numMatches, numMatches2, imn_new
     real(prec), dimension(:), allocatable :: halfVector
+    real(prec), dimension(:,:), allocatable :: absMatrix
     integer :: tic, toc, countrate
+    real(prec) :: maximum
 
     ! ***************************************************************
     ! Validate input
@@ -54,6 +57,7 @@ contains
 
     call system_clock(tic,countrate)
     allocate(halfVector(NFourier2))
+    allocate(absMatrix(NFourier2,NFourier2))
     halfVector = 0.5*vector
 
     matrix = 0.0
@@ -137,18 +141,29 @@ contains
     
     deallocate(halfVector)
 
+    absMatrix = abs(matrix)
+    maximum = maxval(absMatrix)*thresh + (1d-30)
+
     numMatches=0
+    numMatches2=0
     do imn1=1,NFourier2
        do imn2=1,NFourier2
-          if (abs(matrix(imn2,imn1))>1e-12) then
+          if (absMatrix(imn2,imn1)>1e-12) then
              numMatches = numMatches+1
+          end if
+          if (absMatrix(imn2,imn1)<=maximum) then
+             matrix(imn2,imn1)=0
+          else
+             numMatches2 = numMatches2+1
           end if
        end do
     end do
 
+    deallocate(absMatrix)
+
     call system_clock(toc)
     if (masterProc) then
-       print *,"  convolution matrix: ",real(toc-tic)/countrate,"sec, nnz=",numMatches
+       print *,"  convolution matrix: ",real(toc-tic)/countrate,"sec, nnz=",numMatches,numMatches2
     end if
 
   end subroutine FourierConvolutionMatrix

@@ -140,6 +140,7 @@ module globalVariables
   real(prec)  :: NxPotentialsPerVth = 40.0
   real(prec) :: xMax = 5.0
   real(prec) :: solverTolerance = 1d-6
+  real(prec) :: FourierThreshold = 1d-12
 
 
   logical :: useIterativeLinearSolver=.true.
@@ -152,8 +153,11 @@ module globalVariables
   integer :: preconditioner_x=1, preconditioner_x_min_L=0
   integer :: preconditioner_Fourier=0, preconditioner_xi=1, preconditioner_species=1
   integer :: preconditioner_Fourier_min_L=0
+  real(prec) :: preconditioner_FourierThreshold=1d-6
   logical :: reusePreconditioner=.true.
   integer :: preconditioner_magnetic_drifts_max_L = 2
+  logical :: preconditioner_drop_xDot = .true.
+  logical :: preconditioner_drop_xiDot = .true.
 
   integer :: constraintScheme=-1
 
@@ -166,6 +170,7 @@ module globalVariables
   ! ********************************************************
 
   integer, dimension(:), allocatable :: xm, xn
+  real(prec), dimension(:,:), allocatable :: predictedAmplitudes
   integer :: matrixSize, NxPotentials
   real(prec), dimension(:), allocatable :: theta, zeta, x, x_plus1
   real(prec) :: thetaWeight, zetaWeight

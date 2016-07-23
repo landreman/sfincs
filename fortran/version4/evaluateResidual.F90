@@ -9,7 +9,6 @@
 
     use petscsnes
     use FourierTransformMod
-    use FourierConvolutionMatrixMod
     use globalVariables
     use indices
 

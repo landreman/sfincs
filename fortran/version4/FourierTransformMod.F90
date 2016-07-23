@@ -14,7 +14,7 @@ contains
 
   subroutine FourierTransform(realSpaceMatrix, FourierVector)
 
-    use globalVariables, only: Ntheta, Nzeta, theta, zeta, xm, xn, NFourier, NPeriods
+    use globalVariables, only: Ntheta, Nzeta, theta, zeta, xm, xn, NFourier, NPeriods, masterProc
     
     implicit none
     
@@ -69,7 +69,7 @@ contains
     FourierVector = FourierVector / (Ntheta*Nzeta)
 
     call system_clock(toc)
-    print *,"  Fourier transform:",real(toc-tic)/countrate,"sec."
+    if (masterProc) print *,"  Fourier transform:",real(toc-tic)/countrate,"sec."
 
   end subroutine FourierTransform
 
@@ -77,7 +77,7 @@ contains
 
   subroutine inverseFourierTransform(FourierVector, realSpaceMatrix)
 
-    use globalVariables, only: Ntheta, Nzeta, theta, zeta, xm, xn, NFourier, NFourier2
+    use globalVariables, only: Ntheta, Nzeta, theta, zeta, xm, xn, NFourier, NFourier2, masterProc, NPeriods
     
     implicit none
     
@@ -108,7 +108,7 @@ contains
     realSpaceMatrix = 0
     do imn = 2,NFourier ! Start at 2 rather than 1. We will handle the imn=1 (m=n=0) case later.
        m = xm(imn)
-       n = xn(imn)
+       n = xn(imn) / NPeriods
        do izeta = 1,Nzeta
           do itheta = 1,Ntheta
              !angle = m*theta(itheta) - n*zeta(izeta)
@@ -127,7 +127,7 @@ contains
     realSpaceMatrix = realSpaceMatrix + FourierVector(1)
     
     call system_clock(toc)
-    print *,"  inverse Fourier transform:",real(toc-tic)/countrate,"sec."
+    if (masterProc) print *,"  inverse Fourier transform:",real(toc-tic)/countrate,"sec."
 
   end subroutine inverseFourierTransform
 
@@ -135,7 +135,7 @@ contains
 
   subroutine initFourierTrig
 
-    use globalVariables, only: Ntheta, Nzeta, mmax, nmax, theta, zeta, NPeriods
+    use globalVariables, only: Ntheta, Nzeta, mmax, nmax, theta, zeta, NPeriods, masterProc
 
     implicit none
 
@@ -167,7 +167,7 @@ contains
     end do
 
     call system_clock(toc)
-    print *,"  init Fourier trig:",real(toc-tic)/countrate,"sec."
+    if (masterProc) print *,"  init Fourier trig:",real(toc-tic)/countrate,"sec."
   end subroutine initFourierTrig
 
 end module FourierTransformMod

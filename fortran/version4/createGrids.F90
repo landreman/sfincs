@@ -416,8 +416,9 @@
     ! *******************************************************************************
 
     ! Set up real-space grids for theta and zeta:
-    Ntheta = 2*mmax+3
-    Nzeta  = 2*nmax+3
+    Ntheta = 2*mmax+1
+    Nzeta  = 2*nmax+1
+    if (nmax==0) Nzeta=1
     allocate(theta(Ntheta))
     allocate(zeta(Nzeta))
     theta = [( 2*pi*j/Ntheta, j=0,Ntheta-1 )]

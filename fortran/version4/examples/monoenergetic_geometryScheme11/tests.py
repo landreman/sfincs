@@ -7,12 +7,12 @@
 
 execfile('../testsCommon.py')
 
-desiredTolerance = 0.001
+desiredTolerance = 0.01
 
 numFailures = 0
 
-numFailures += shouldBe("transportMatrix[0,0;;;]", -2.8156407763945913E-003, desiredTolerance)
-numFailures += shouldBe("transportMatrix[0,1;;;]", -0.00107726, desiredTolerance)
+numFailures += shouldBe("transportMatrix[0,0;;;]", -2.77481E-003, desiredTolerance)
+numFailures += shouldBe("transportMatrix[0,1;;;]", -0.00106011, desiredTolerance)
 numFailures += shouldBe("transportMatrix[1,0;;;]", -0.00106362, desiredTolerance)
 numFailures += shouldBe("transportMatrix[1,1;;;]", 0.885378, desiredTolerance)
 

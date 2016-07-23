@@ -117,7 +117,7 @@ if Nzeta < 2:
     ###############################################
 
     try:
-        totalDensity = f['totalDensity'][()]
+        totalDensity_realSpace = f['totalDensity_realSpace'][()]
     except KeyError:
         print "No physics output detected in .h5 file, so stopping here."
         plt.show()
@@ -127,15 +127,15 @@ if Nzeta < 2:
     # Plot the outputs for iteration 1
     ###############################################
 
-    densityPerturbation = f['densityPerturbation'][()]
+    densityNonadiabaticPerturbation_realSpace = f['densityNonadiabaticPerturbation_realSpace'][()]
     NIterations = int(f['NIterations'][()])
-    #totalDensity = f['totalDensity'][()]
-    Mach = f['MachUsingFSAThermalSpeed'][()]
-    totalPressure = f['totalPressure'][()]
+    #totalDensity_realSpace = f['totalDensity_realSpace'][()]
+    Mach = f['MachUsingFSAThermalSpeed_realSpace'][()]
+    totalPressure_realSpace = f['totalPressure_realSpace'][()]
     Zs = f['Zs'][()]
-    jHat = f['jHat'][()]
+    jHat_realSpace = f['jHat_realSpace'][()]
     if includePhi1 == integerToRepresentTrue:
-        Phi1Hat = f['Phi1Hat'][()]
+        Phi1Hat_realSpace = f['Phi1Hat_realSpace'][()]
 
     fig = plt.figure(2)
     fig.patch.set_facecolor('white')
@@ -147,20 +147,20 @@ if Nzeta < 2:
 
     ispecies=0
     iteration=0
-    temp = totalDensity[:,:,ispecies,iteration].transpose()
+    temp = totalDensity_realSpace[:,:,ispecies,iteration].transpose()
 
     iteration = 0
     for ispecies in range(0,NspeciesToPlot):
 
         # Plot density
         plt.subplot(numRows, numCols, ispecies*numCols+1)
-        #plt.plot(theta,totalDensity[:,:,ispecies,iteration].transpose(),linespec)
-        #plt.ylabel('totalDensity for species {} (Z={})'.format(ispecies+1,Zs[ispecies]))
-        plt.plot(theta,densityPerturbation[:,:,ispecies,iteration].transpose(),linespec)
-        plt.ylabel('densityPerturbation for species {} (Z={})'.format(ispecies+1,Zs[ispecies]))
+        #plt.plot(theta,totalDensity_realSpace[:,:,ispecies,iteration].transpose(),linespec)
+        #plt.ylabel('totalDensity_realSpace for species {} (Z={})'.format(ispecies+1,Zs[ispecies]))
+        plt.plot(theta,densityNonadiabaticPerturbation_realSpace[:,:,ispecies,iteration].transpose(),linespec)
+        plt.ylabel('densityNonadiabaticPerturbation_realSpace for species {} (Z={})'.format(ispecies+1,Zs[ispecies]))
         plt.xlabel('theta')
         if NIterations>1:
-            plt.plot(theta,densityPerturbation[:,:,ispecies,NIterations-1].transpose(),'.-r')
+            plt.plot(theta,densityNonadiabaticPerturbation_realSpace[:,:,ispecies,NIterations-1].transpose(),'.-r')
 
         # Plot Mach #
         plt.subplot(numRows, numCols, ispecies*numCols+2)
@@ -172,27 +172,27 @@ if Nzeta < 2:
 
         # Plot pressure
         plt.subplot(numRows, numCols, ispecies*numCols+3)
-        plt.plot(theta,totalPressure[:,:,ispecies,iteration].transpose(),linespec)
+        plt.plot(theta,totalPressure_realSpace[:,:,ispecies,iteration].transpose(),linespec)
         plt.ylabel('totalPressure for species {} (Z={})'.format(ispecies+1,Zs[ispecies]))
         plt.xlabel('theta')
         if NIterations>1:
-            plt.plot(theta,totalPressure[:,:,ispecies,NIterations-1].transpose(),'.-r')
+            plt.plot(theta,totalPressure_realSpace[:,:,ispecies,NIterations-1].transpose(),'.-r')
 
     # Plot parallel current
     plt.subplot(numRows, numCols, 4)
-    plt.plot(theta,jHat[:,:,iteration].transpose(),linespec)
+    plt.plot(theta,jHat_realSpace[:,:,iteration].transpose(),linespec)
     plt.ylabel('jHat (parallel current)')
     plt.xlabel('theta')
     if NIterations>1:
-        plt.plot(theta,jHat[:,:,NIterations-1].transpose(),'.-r')
+        plt.plot(theta,jHat_realSpace[:,:,NIterations-1].transpose(),'.-r')
 
     if includePhi1 == integerToRepresentTrue:
         plt.subplot(numRows, numCols, 8)
-        plt.plot(theta,Phi1Hat[:,:,iteration].transpose(),linespec)
+        plt.plot(theta,Phi1Hat_realSpace[:,:,iteration].transpose(),linespec)
         plt.ylabel('Phi1Hat')
         plt.xlabel('theta')
         if NIterations>1:
-            plt.plot(theta,Phi1Hat[:,:,NIterations-1].transpose(),'.-r')
+            plt.plot(theta,Phi1Hat_realSpace[:,:,NIterations-1].transpose(),'.-r')
 
     #plt.subplot(1,1,1)
     #plt.text(0.5,0.9,'Results for first iteration')
@@ -462,12 +462,50 @@ else:
     plt.figtext(0.5,0.99,"Figure 3 - "+titleString,horizontalalignment='center',verticalalignment='top')
 
     ###############################################
+    # Plot showing selection of Fourier modes
+    ###############################################
+
+    fig = plt.figure(4)
+    fig.patch.set_facecolor('white')
+
+    numRows = 1
+    numCols = 2
+
+    predictedAmplitudes = f['predictedAmplitudes'][()]
+    NFourier = f['NFourier'][()]
+    NPeriods = f['NPeriods'][()]
+    xm = f['xm'][()]
+    xn = f['xn'][()]
+    mmax = f['mmax'][()]
+    nmax = f['nmax'][()]
+
+    plt.subplot(numRows, numCols, 1)
+    plt.imshow(numpy.log10(predictedAmplitudes.transpose()),interpolation='nearest',extent=[-nmax,nmax,mmax,0])
+    plt.title('log10(predictedAmplitudes)')
+    plt.xlabel('n')
+    plt.ylabel('m')
+    plt.colorbar()
+
+    modesUsed = predictedAmplitudes.transpose()*0
+    for imn in range(NFourier):
+        modesUsed[xm[imn],xn[imn]/NPeriods+nmax]=1
+
+    plt.subplot(numRows, numCols, 2)
+    plt.imshow(modesUsed,interpolation='nearest',extent=[-nmax,nmax,mmax,0])
+    plt.title('modes used')
+    plt.xlabel('n')
+    plt.ylabel('m')
+
+    titleString = "Plot generated by "+ inspect.getfile(inspect.currentframe()) + "\nRun in "+os.getcwd()
+    plt.figtext(0.5,0.99,"Figure 4 - "+titleString,horizontalalignment='center',verticalalignment='top')
+
+    ###############################################
     # If sfincs terminated without physics output,
     # stop here.
     ###############################################
 
     try:
-        totalDensity = f['totalDensity'][()]
+        totalDensity_realSpace = f['totalDensity_realSpace'][()]
     except KeyError:
         print "No physics output detected in .h5 file, so stopping here."
         plt.show()
@@ -477,21 +515,21 @@ else:
     # Plot the outputs
     ###############################################
 
-    totalDensity = f['totalDensity'][()]
+    totalDensity_realSpace = f['totalDensity_realSpace'][()]
     NIterations = int(f['NIterations'][()])
-    Mach = f['MachUsingFSAThermalSpeed'][()]
-    totalPressure = f['totalPressure'][()]
+    Mach = f['MachUsingFSAThermalSpeed_realSpace'][()]
+    totalPressure_realSpace = f['totalPressure_realSpace'][()]
     Zs = f['Zs'][()]
-    jHat = f['jHat'][()]
+    jHat_realSpace = f['jHat_realSpace'][()]
     if includePhi1 == integerToRepresentTrue:
-        Phi1Hat = f['Phi1Hat'][()]
+        Phi1Hat_realSpace = f['Phi1Hat_realSpace'][()]
 
     if (NIterations==1):
         plotNums = [1]
     else:
         plotNums = [1,2]
 
-    numPlotsBeforeThis = 4
+    numPlotsBeforeThis = 5
     for plotNum in plotNums:
         fig = plt.figure(plotNum+numPlotsBeforeThis)
         fig.patch.set_facecolor('white')
@@ -507,13 +545,13 @@ else:
         else:
             iteration = NIterations-1
         print "Plotting iteration ",iteration+1
-        temp = totalDensity[:,:,ispecies,iteration].transpose()
+        temp = totalDensity_realSpace[:,:,ispecies,iteration].transpose()
 
         for ispecies in range(0,NspeciesToPlot):
 
             # Plot density
             plt.subplot(numRows, numCols, ispecies*numCols+1)
-            plt.contourf(zeta2D,theta2D,totalDensity[:,:,ispecies,iteration].transpose(),20)
+            plt.contourf(zeta2D,theta2D,totalDensity_realSpace[:,:,ispecies,iteration].transpose(),20)
             plt.colorbar()
             plt.title('totalDensity for species {} (Z={})'.format(ispecies+1,Zs[ispecies]))
             plt.xlabel('zeta')
@@ -529,7 +567,7 @@ else:
 
             # Plot pressure
             plt.subplot(numRows, numCols, ispecies*numCols+3)
-            plt.contourf(zeta,theta,totalPressure[:,:,ispecies,iteration].transpose(),20)
+            plt.contourf(zeta,theta,totalPressure_realSpace[:,:,ispecies,iteration].transpose(),20)
             plt.title('totalPressure for species {} (Z={})'.format(ispecies+1,Zs[ispecies]))
             plt.xlabel('zeta')
             plt.ylabel('theta')
@@ -537,7 +575,7 @@ else:
 
         # Plot parallel current
         plt.subplot(numRows, numCols, 4)
-        plt.contourf(zeta,theta,jHat[:,:,iteration].transpose(),20)
+        plt.contourf(zeta,theta,jHat_realSpace[:,:,iteration].transpose(),20)
         plt.title('jHat (parallel current)')
         plt.xlabel('zeta')
         plt.ylabel('theta')
@@ -545,7 +583,7 @@ else:
 
         if includePhi1 == integerToRepresentTrue:
             plt.subplot(numRows, numCols, 8)
-            plt.contourf(zeta,theta,Phi1Hat[:,:,iteration].transpose(),20)
+            plt.contourf(zeta,theta,Phi1Hat_realSpace[:,:,iteration].transpose(),20)
             plt.title('Phi1Hat')
             plt.xlabel('zeta')
             plt.ylabel('theta')
@@ -553,9 +591,9 @@ else:
 
         if includePhi1 == integerToRepresentTrue and numRows >= 3:
             plt.subplot(numRows, numCols, 12)
-            data = numpy.zeros(totalDensity[:,:,0,iteration].shape)
+            data = numpy.zeros(totalDensity_realSpace[:,:,0,iteration].shape)
             for ispecies in range(Nspecies):
-                data += totalDensity[:,:,ispecies,iteration] * Zs[ispecies]
+                data += totalDensity_realSpace[:,:,ispecies,iteration] * Zs[ispecies]
             plt.contourf(zeta,theta,data.transpose(),20)
             plt.title('Total charge density (should be 0)')
             plt.xlabel('zeta')
@@ -580,7 +618,7 @@ else:
     particleFlux_vm_psiHat = f['particleFlux_vm_psiHat'][()]
     heatFlux_vm_psiHat = f['heatFlux_vm_psiHat'][()]
 
-    fig = plt.figure(4)
+    fig = plt.figure(5)
     fig.patch.set_facecolor('white')
 
     numRows = NspeciesToPlot

@@ -401,24 +401,24 @@
 
        ! Spatial weight for flux-surface-average perturbation to density and pressure, and for flow:
        call FourierTransform(1/DHat,FourierVector)
-       call FourierConvolutionMatrix(FourierVector,FourierMatrix_DInverse)
+       call FourierConvolutionMatrix(FourierVector,FourierMatrix_DInverse,FourierThreshold)
        ! Spatial weight for FSABFlow:
        call FourierTransform(BHat/DHat,FourierVector)
-       call FourierConvolutionMatrix(FourierVector,FourierMatrix_BOverD)
+       call FourierConvolutionMatrix(FourierVector,FourierMatrix_BOverD,FourierThreshold)
        ! Spatial weight for particle and heat fluxes from magnetic drifts:
        call FourierTransform((BHat_sub_theta*dBHatdzeta - BHat_sub_zeta*dBHatdtheta)/(BHat*BHat*BHat),FourierVector)
-       call FourierConvolutionMatrix(FourierVector,FourierMatrix_particleHeat_vm)
+       call FourierConvolutionMatrix(FourierVector,FourierMatrix_particleHeat_vm,FourierThreshold)
        ! Spatial weight for momentum flux from magnetic drifts:
        call FourierTransform((BHat_sub_theta*dBHatdzeta - BHat_sub_zeta*dBHatdtheta)/(BHat*BHat),FourierVector)
-       call FourierConvolutionMatrix(FourierVector,FourierMatrix_momentum_vE)
+       call FourierConvolutionMatrix(FourierVector,FourierMatrix_momentum_vE,FourierThreshold)
        ! Spatial weight for particle and heat fluxes from ExB drift:
        call FourierTransform((BHat_sub_theta*dPhi1Hatdzeta_realSpace - BHat_sub_zeta*dPhi1Hatdtheta_realSpace) &
             /(BHat*BHat),FourierVector)
-       call FourierConvolutionMatrix(FourierVector,FourierMatrix_particleHeat_vE)
+       call FourierConvolutionMatrix(FourierVector,FourierMatrix_particleHeat_vE,FourierThreshold)
        ! Spatial weight for momentum flux from ExB drift:
        call FourierTransform((BHat_sub_theta*dPhi1Hatdzeta_realSpace - BHat_sub_zeta*dPhi1Hatdtheta_realSpace) &
             /(BHat),FourierVector)
-       call FourierConvolutionMatrix(FourierVector,FourierMatrix_momentum_vE)
+       call FourierConvolutionMatrix(FourierVector,FourierMatrix_momentum_vE,FourierThreshold)
 
        do ispecies = 1,Nspecies
           THat = THats(ispecies)

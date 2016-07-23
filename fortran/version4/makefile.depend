@@ -16,7 +16,7 @@ chooseFourierModes.o: rankMod.o FourierTransformMod.o globalVariables.o
 createGrids.o: globalVariables.o polynomialDiffMatrices.o xGrid.o geometry.o indices.o #export_f.o
 diagnostics.o: FourierTransformMod.o FourierConvolutionMatrixMod.o globalVariables.o indices.o writeHDF5Output.o
 evaluateJacobian.o: globalVariables.o
-evaluateResidual.o: FourierTransformMod.o FourierConvolutionMatrixMod.o globalVariables.o indices.o
+evaluateResidual.o: FourierTransformMod.o globalVariables.o indices.o
 #export_f.o: globalVariables.o xGrid.o
 FourierConvolutionMatrixMod.o: globalVariables.o
 FourierDifferentiationMatrices.o: globalVariables.o

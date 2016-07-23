@@ -75,6 +75,7 @@
     real(prec), dimension(:,:), allocatable :: FourierMatrix, FourierMatrix2
     integer :: imn, imn_row, imn_col
     real(prec) :: dPhiHatdpsiHatToUseInRHS, xPartOfRHS, xPartOfRHS2 !!Added by AM 2016-03
+    real(prec) :: thresh
 
     ! *******************************************************************************
     ! Do a few sundry initialization tasks:
@@ -192,6 +193,12 @@
        ixMin = 1
     end if
 
+    if (whichMatrix==0) then
+       thresh = preconditioner_FourierThreshold
+    else
+       thresh = FourierThreshold
+    end if
+
     ! *********************************************************
     ! Allocate small matrices:
     ! *********************************************************
@@ -265,9 +272,9 @@
        if (whichMatrix .ne. 2) then
           call PetscTime(time5,ierr)
           call FourierTransform(sqrt(THat/mHat)*BHat_sup_theta/BHat, FourierVector)
-          call FourierConvolutionMatrix(FourierVector,FourierMatrix)
+          call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
           call FourierTransform(sqrt(THat/mHat)*BHat_sup_zeta/BHat, FourierVector)
-          call FourierConvolutionMatrix(FourierVector,FourierMatrix2)
+          call FourierConvolutionMatrix(FourierVector,FourierMatrix2,thresh)
           FourierMatrix = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
           call PetscTime(time6,ierr)
           if (masterProc) print *,"  streaming Fourier+matmul:",time6-time5
@@ -313,14 +320,14 @@
           factor = alpha*Delta/two*dPhiHatdpsiHat
           if (useDKESExBDrift) then
              call FourierTransform( factor*DHat*BHat_sub_zeta /FSABHat2, FourierVector)
-             call FourierConvolutionMatrix(FourierVector,FourierMatrix)
+             call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
              call FourierTransform(-factor*DHat*BHat_sub_theta/FSABHat2, FourierVector)
-             call FourierConvolutionMatrix(FourierVector,FourierMatrix2)
+             call FourierConvolutionMatrix(FourierVector,FourierMatrix2,thresh)
           else
              call FourierTransform( factor*DHat*BHat_sub_zeta /(BHat*BHat), FourierVector)
-             call FourierConvolutionMatrix(FourierVector,FourierMatrix)
+             call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
              call FourierTransform(-factor*DHat*BHat_sub_theta/(BHat*BHat), FourierVector)
-             call FourierConvolutionMatrix(FourierVector,FourierMatrix2)
+             call FourierConvolutionMatrix(FourierVector,FourierMatrix2,thresh)
           end if
           FourierMatrix = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
           do L=LMin,LMax
@@ -558,7 +565,7 @@
        if (whichMatrix .ne. 2) then
           call FourierTransform(-sqrt(THat/mHat)*(BHat_sup_theta*dBHatdtheta+BHat_sup_zeta*dBHatdzeta) &
                / (2*BHat*BHat), FourierVector)
-          call FourierConvolutionMatrix(FourierVector,FourierMatrix)
+          call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
           do L=LMin,LMax
              ! The L loop is outermost since we may eventually want to use a sparser Fourier matrix for the preconditioner at large L.
              do ix=ixMin,Nx
@@ -594,7 +601,8 @@
        ! Add the non-standard d/dxi term associated with E_r:
        ! *********************************************************
 
-       if (includeElectricFieldTermInXiDot .and. (whichMatrix .ne. 2)) then
+       if (includeElectricFieldTermInXiDot .and. &
+            ((whichMatrix==0 .and. .not. preconditioner_drop_xiDot) .or. (whichMatrix==1) .or. (whichMatrix==3))) then
           factor = alpha*Delta*dPhiHatdpsiHat/4
           if (force0RadialCurrentInEquilibrium) then
              call FourierTransform(factor*DHat*(BHat_sub_zeta*dBHatdtheta - BHat_sub_theta*dBHatdzeta) &
@@ -604,7 +612,7 @@
                   -2*BHat*(dBHat_sub_zeta_dtheta-dBHat_sub_theta_dzeta)) &
                   /(BHat*BHat*BHat), FourierVector)
           end if
-          call FourierConvolutionMatrix(FourierVector,FourierMatrix)
+          call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
 
           do L=LMin,LMax
              ! The L loop is outermost since we may eventually want to use a sparser Fourier matrix for the preconditioner at large L.
@@ -704,18 +712,19 @@
        ! Add the collisionless d/dx term associated with E_r
        ! *********************************************************
 
-       if (includeXDotTerm .and. (whichMatrix .ne. 2)) then
+       if (includeXDotTerm .and. &
+            ((whichMatrix==0 .and. .not. preconditioner_drop_xDot) .or. (whichMatrix==1) .or. (whichMatrix==3))) then
           factor = -alpha*Delta*dPhiHatdpsiHat/4
           call FourierTransform(factor*DHat*(BHat_sub_theta*dBHatdzeta - BHat_sub_zeta*dBHatdtheta)/(BHat*BHat*BHat), &
                FourierVector)
-          call FourierConvolutionMatrix(FourierVector,FourierMatrix)
+          call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
 
           if (force0RadialCurrentInEquilibrium) then
              FourierMatrix2=0
           else
              call FourierTransform(2*factor*DHat*(dBHat_sub_zeta_dtheta - dBHat_sub_theta_dzeta)/(BHat*BHat), &
                   FourierVector)
-             call FourierConvolutionMatrix(FourierVector,FourierMatrix2)
+             call FourierConvolutionMatrix(FourierVector,FourierMatrix2,thresh)
           end if
 
           allocate(xPartOfXDot(Nx,Nx))
@@ -1769,7 +1778,7 @@
 
     if (whichMatrix .ne. 2 .and. procThatHandlesConstraints) then
        call FourierTransform(1/DHat,FourierVector)
-       call FourierConvolutionMatrix(FourierVector,FourierMatrix)
+       call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
 
        select case (constraintScheme)
        case (0)

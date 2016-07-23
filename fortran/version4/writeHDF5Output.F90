@@ -33,6 +33,7 @@ module writeHDF5Output
   integer(HSIZE_T), dimension(1) :: dimForZeta
   integer(HSIZE_T), dimension(1) :: dimForx
   integer(HSIZE_T), dimension(2) :: dimForThetaZeta
+  integer(HSIZE_T), dimension(2) :: dimForMMaxNMax
   integer(HSIZE_T), dimension(2) :: dimForTransportMatrix
   integer(HSIZE_T), dimension(1) :: dimForExport_f_theta
   integer(HSIZE_T), dimension(1) :: dimForExport_f_zeta
@@ -47,6 +48,7 @@ module writeHDF5Output
   integer(HID_T) :: dspaceIDForZeta
   integer(HID_T) :: dspaceIDForx
   integer(HID_T) :: dspaceIDForThetaZeta
+  integer(HID_T) :: dspaceIDForMMaxNMax
   integer(HID_T) :: dspaceIDForTransportMatrix
   integer(HID_T) :: dspaceIDForExport_f_theta
   integer(HID_T) :: dspaceIDForExport_f_zeta
@@ -216,7 +218,11 @@ contains
        call writeHDF5Field("preconditioner_x", preconditioner_x, "")
        call writeHDF5Field("preconditioner_x_min_L", preconditioner_x_min_L, "")
        call writeHDF5Field("preconditioner_xi", preconditioner_xi, "")
+       call writeHDF5Field("preconditioner_drop_xiDot", preconditioner_drop_xiDot, "")
+       call writeHDF5Field("preconditioner_drop_xDot", preconditioner_drop_xDot, "")
        call writeHDF5Field("preconditioner_Fourier", preconditioner_Fourier, "")
+       call writeHDF5Field("preconditioner_FourierThreshold", preconditioner_FourierThreshold, "")
+       call writeHDF5Field("FourierThreshold", FourierThreshold, "")
        call writeHDF5Field("preconditioner_magnetic_drifts_max_L", preconditioner_magnetic_drifts_max_L, "")
        call writeHDF5Field("reusePreconditioner", reusePreconditioner, "Use the same preconditioner matrix at each iteration of the Newton solver? " &
             // boolDescription)
@@ -281,6 +287,7 @@ contains
             "curl(B) dot grad psi = 0." //&
             "If false, allow dBHat_sub_zeta_dtheta - dBHat_sub_theta_dzeta to be nonzero. " // boolDescription)
 
+       call writeHDF5Field("predictedAmplitudes", predictedAmplitudes, dspaceIDForMMaxNMax, dimForMMaxNMax, "")
        if (geometryScheme==1) then
           call writeHDF5Field("epsilon_t", epsilon_t, "")
           call writeHDF5Field("epsilon_h", epsilon_h, "")
@@ -405,6 +412,7 @@ contains
        call h5sclose_f(dspaceIDForTheta, HDF5Error)
        call h5sclose_f(dspaceIDForZeta, HDF5Error)
        call h5sclose_f(dspaceIDForThetaZeta, HDF5Error)
+       call h5sclose_f(dspaceIDForMMaxNMax, HDF5Error)
        call h5sclose_f(dspaceIDForScalar, HDF5Error)
        call h5sclose_f(dspaceIDForSpecies, HDF5Error)
        call h5sclose_f(dspaceIDForx, HDF5Error)
@@ -857,6 +865,10 @@ contains
     dimForThetaZeta(1) = Ntheta
     dimForThetaZeta(2) = Nzeta
     call h5screate_simple_f(rank, dimForThetaZeta, dspaceIDForThetaZeta, HDF5Error)
+
+    dimForMMaxNMax(1) = mmax+1
+    dimForMMaxNMax(2) = nmax*2+1
+    call h5screate_simple_f(rank, dimForMMaxNMax, dspaceIDForMMaxNMax, HDF5Error)
 
 !!$    rank = 5
 !!$    dimForExport_f(1) = Nspecies
@@ -1338,6 +1350,9 @@ contains
     if (dspaceID == dspaceIDForThetaZeta) then
        call h5dsset_label_f(dsetID, 1, "zeta", HDF5Error)
        call h5dsset_label_f(dsetID, 2, "theta", HDF5Error)
+    elseif (dspaceID == dspaceIDForMMaxNMax) then
+       call h5dsset_label_f(dsetID, 1, "n (from -nmax to nmax)", HDF5Error)
+       call h5dsset_label_f(dsetID, 2, "m (from 0 to mmax)", HDF5Error)
     elseif (dspaceID == dspaceIDForTransportMatrix) then
        ! No labels applied in this case.
     else

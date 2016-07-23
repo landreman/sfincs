@@ -4,7 +4,7 @@ subroutine chooseFourierModes()
   use petscsys
   use FourierTransformMod
   use globalVariables, only: NFourier, NFourier2, xm, xn, mmax, nmax, NPeriods, prec, BHat, masterProc, &
-       Ntheta, Nzeta
+       Ntheta, Nzeta, predictedAmplitudes
 
   implicit none
 
@@ -15,6 +15,9 @@ subroutine chooseFourierModes()
   integer, dimension(:), allocatable :: xn_sorted, xm_sorted, permutation
 
   call initFourierTrig()
+
+  allocate(predictedAmplitudes(mmax+1,2*nmax+1))
+  predictedAmplitudes = 0
 
   if (nmax==0) then
      ! Axisymmetry
@@ -73,7 +76,10 @@ subroutine chooseFourierModes()
      ! Guess a function that we expect will have a similar Fourier spectrum to the distribution function:
      allocate(patternWithExpectedSpectrum(Ntheta,Nzeta))
      allocate(BScaledToNearly1(Ntheta,Nzeta))
-     BScaledToNearly1 = sum(BHat) / (Ntheta*Nzeta)
+     BScaledToNearly1 = BHat / (sum(BHat) / (Ntheta*Nzeta))
+     if (masterProc) then
+        print *,"max & min of BScaledToNearly1:",maxval(BScaledToNearly1),minval(BScaledToNearly1)
+     end if
      patternWithExpectedSpectrum = (BScaledToNearly1 ** 6) + 1/(BScaledToNearly1 ** 2)
      
      allocate(FourierVector(NFourier2))
@@ -88,12 +94,17 @@ subroutine chooseFourierModes()
      
      ! Add an offset proportional to sqrt(m^2 + n^2) so once the 'real' amplitude gets down to machine precision,
      ! additional modes get added first at low |m| and |n| rather than randomly.
-     amplitudes = amplitudes - (1.0d-12)*sqrt(real(xm*xm + ((real(xn)/NPeriods)**2)))
+     amplitudes = amplitudes - (1.0d-13)*sqrt(real(xm*xm + ((real(xn)/NPeriods)**2)))
      ! For plotting, it is convenient if the amplitudes are all >0:
      amplitudes = amplitudes - minval(amplitudes) + (1d-16)
      ! Make sure the m=n=0 mode comes first:
      amplitudes(1) = maxval(amplitudes) + 1
      
+     ! Copy 1D array to the 2D array that will be saved in the HDF5 file:
+     do imn=1,NFourier
+        predictedAmplitudes(xm(imn)+1, xn(imn)/NPeriods+nmax+1) = amplitudes(imn)
+     end do
+
      ! Sort amplitudes
      allocate(permutation(NFourier))
      call rank(amplitudes,permutation)
