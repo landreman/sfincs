@@ -74,7 +74,7 @@
     Mat :: matrix
     Vec :: inputVec, outputVec
     PetscErrorCode :: ierr
-
+    
     if (masterProc) print *,"Applying Jacobian matrix to a vector."
 
     call VecZeroEntries(outputVec,ierr)

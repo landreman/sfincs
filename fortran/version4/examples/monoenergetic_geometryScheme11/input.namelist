@@ -77,7 +77,6 @@
 /
 
 &preconditionerOptions
-  preconditioner_FourierThreshold = 1e-1
 /
 
 &export_f

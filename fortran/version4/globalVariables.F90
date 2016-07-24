@@ -153,7 +153,7 @@ module globalVariables
   integer :: preconditioner_x=1, preconditioner_x_min_L=0
   integer :: preconditioner_Fourier=0, preconditioner_xi=1, preconditioner_species=1
   integer :: preconditioner_Fourier_min_L=0
-  real(prec) :: preconditioner_FourierThreshold=1d-6
+  real(prec) :: preconditioner_FourierThreshold=1d-2
   logical :: reusePreconditioner=.true.
   integer :: preconditioner_magnetic_drifts_max_L = 2
   logical :: preconditioner_drop_xDot = .true.

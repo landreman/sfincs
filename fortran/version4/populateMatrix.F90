@@ -90,7 +90,7 @@
     ! values on top of the previous values:
     call MatZeroEntries(matrix,ierr)
     call PetscTime(time6,ierr)
-    if (masterProc) print *,"  MatZetoEntries:",time6-time5,"sec"
+    if (masterProc) print *,"  MatZeroEntries:",time6-time5,"sec"
     time5=time6
 
     if (masterProc) then
