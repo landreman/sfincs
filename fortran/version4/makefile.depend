@@ -1,6 +1,6 @@
 # -*- mode: makefile -*-
 
-OBJ_FILES = ChebyshevGrid.o ChebyshevInterpolationMatrix.o chooseFourierModes.o \
+OBJ_FILES = applyDenseTerms.o ChebyshevGrid.o ChebyshevInterpolationMatrix.o chooseFourierModes.o \
 	  createGrids.o diagnostics.o evaluateJacobian.o evaluateResidual.o  \
 	  FourierConvolutionMatrixMod.o FourierDifferentiationMatrices.o FourierTransformMod.o \
 	  geometry.o \
@@ -10,6 +10,7 @@ OBJ_FILES = ChebyshevGrid.o ChebyshevInterpolationMatrix.o chooseFourierModes.o 
 	  quadpack/quadpack.a readVMEC/readVMEC.a
 
 # Dependencies:
+applyDenseTerms.o: globalVariables.o FourierConvolutionMatrixMod.o FourierTransformMod.o indices.o
 ChebyshevGrid.o: globalVariables.o
 ChebyshevInterpolationMatrix.o: globalVariables.o
 chooseFourierModes.o: rankMod.o FourierTransformMod.o globalVariables.o

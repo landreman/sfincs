@@ -14,7 +14,8 @@
 #endif
 
     use petscsnes
-    use globalVariables, only: masterProc, useIterativeLinearSolver, firstMatrixCreation, reusePreconditioner
+    use globalVariables, only: masterProc, useIterativeLinearSolver, firstMatrixCreation, reusePreconditioner,&
+         MatForJacobian
 
     implicit none
 
@@ -53,8 +54,32 @@
           call populateMatrix(jacobianPC, 0, stateVec)
        end if
     end if
-    call populateMatrix(jacobian, 1, stateVec)
+    !call populateMatrix(jacobian, 1, stateVec)
+    if (firstMatrixCreation) then
+       call preallocateMatrix(MatForJacobian, 1)
+       call populateMatrix(MatForJacobian, 1, stateVec)
+    end if
 
     firstMatrixCreation = .false.
 
   end subroutine evaluateJacobian
+
+
+  subroutine applyJacobian(matrix, inputVec, outputVec, ierr)
+
+    use globalVariables, only: masterProc, MatForJacobian
+
+    implicit none
+
+    Mat :: matrix
+    Vec :: inputVec, outputVec
+    PetscErrorCode :: ierr
+
+    if (masterProc) print *,"Applying Jacobian matrix to a vector."
+
+    call VecZeroEntries(outputVec,ierr)
+    call applyDenseTerms(inputVec, outputVec, 1)
+
+    call MatMultAdd(MatForJacobian, inputVec, outputVec, outputVec, ierr)
+
+  end subroutine applyJacobian

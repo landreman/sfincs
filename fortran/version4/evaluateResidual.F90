@@ -45,7 +45,7 @@
     allocate(spatialFactor(Ntheta,Nzeta))
     allocate(xPart(Nx))
 
-    ! Often, evaluateResidual is called when the state vector is 0.
+    ! The first time evaluateResidual is called, the state vector is 0.
     ! In this case, there is no need to build the first matrix.
     call VecNorm(stateVec, NORM_INFINITY, norm, ierr)
     if (norm > 0) then

@@ -10,8 +10,11 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   use petscmat
   use globalVariables, only: Nx, Nxi, NFourier2, Nspecies, matrixSize, includePhi1, &
        constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, & 
-       includePhi1InKineticEquation, quasineutralityOption
+       includePhi1InKineticEquation, quasineutralityOption, prec, useDKESExBDrift, ddtheta, ddzeta
+  use globalVariables, only: BHat_sup_theta, BHat_sup_zeta, BHat, DHat, BHat_sub_zeta, BHat_sub_theta, FSABHat2, preconditioner_FourierThreshold
   use indices
+  use FourierTransformMod
+  use FourierConvolutionMatrixMod
 
   implicit none
 
@@ -23,6 +26,10 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   integer :: tempInt1, i, imn, ispecies, ix, index
   integer :: firstRowThisProcOwns, lastRowThisProcOwns, numLocalRows
   PetscLogDouble :: time1, time2
+  real(prec), dimension(:), allocatable :: FourierVector
+  real(prec), dimension(:,:), allocatable :: FourierMatrix, FourierMatrix2
+  integer :: imn_row,imn_col,counter,maxNNZPerRow
+  real(prec) :: factor, thresh
 
   if (masterProc) then
      print *,"Beginning preallocation for whichMatrix = ",whichMatrix
@@ -30,8 +37,8 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   call PetscTime(time1,ierr)
 
   tempInt1 = Nspecies*Nx & ! Collision operator.
-       + NFourier2*5 & ! Streaming, ExB, and xiDot terms are pentadiagonal in L and are dense in Fourier.
-       + NFourier2*3*Nx & ! xDot term is dense in Fourier and x, and occupies (L-2,L,L+2). Subtract 1 to avoid double-counting
+!       + NFourier2*5 & ! Streaming, ExB, and xiDot terms are pentadiagonal in L and are dense in Fourier.
+!       + NFourier2*3*Nx & ! xDot term is dense in Fourier and x, and occupies (L-2,L,L+2). Subtract 1 to avoid double-counting
        + 2 ! Sources
   if (tempInt1 > matrixSize) then
      tempInt1 = matrixSize
@@ -48,13 +55,62 @@ subroutine preallocateMatrix(matrix, whichMatrix)
 
 
   tempInt1 = Nspecies*Nx & ! Collision operator       
-       + NFourier2*5 & ! Streaming, ExB, and xiDot terms are pentadiagonal in L and are dense in Fourier.
+!       + NFourier2*5 & ! Streaming, ExB, and xiDot terms are pentadiagonal in L and are dense in Fourier.
 !       +2
-       + NFourier2*3*Nx & ! xDot term is dense in Fourier and x, and occupies (L-2,L,L+2).
+!       + NFourier2*3*Nx & ! xDot term is dense in Fourier and x, and occupies (L-2,L,L+2).
        + 2 ! Sources
 
-! delete the next line eventually:
-!tempInt1 = tempInt1/24
+  if (whichMatrix==0) then
+     ! Determine the number of nonzeros per row in the thresholded Fourier matrices
+     allocate(FourierVector(NFourier2))
+     allocate(FourierMatrix(NFourier2,NFourier2))
+     allocate(FourierMatrix2(NFourier2,NFourier2))
+     thresh = preconditioner_FourierThreshold
+
+     ! Streaming term:
+     call FourierTransform(BHat_sup_theta/BHat, FourierVector)
+     call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
+     call FourierTransform(BHat_sup_zeta/BHat, FourierVector)
+     call FourierConvolutionMatrix(FourierVector,FourierMatrix2,thresh)
+     FourierMatrix = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
+     maxNNZPerRow=0
+     do imn_row=1,NFourier2
+        counter=0
+        do imn_col=1,NFourier2
+           if (FourierMatrix(imn_row,imn_col)>0) counter=counter+1
+        end do
+        maxNNZPerRow = max(maxNNZPerRow,counter)
+     end do
+     if (masterProc) print *,"maxNNZPerRow for streaming:",maxNNZPerRow
+     tempInt1 = tempInt1 + maxNNZPerRow*2 ! *2 because this term lies on L = ell +/- 1
+
+     ! ExB term:
+     factor=1
+     if (useDKESExBDrift) then
+        call FourierTransform( factor*DHat*BHat_sub_zeta /FSABHat2, FourierVector)
+        call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
+        call FourierTransform(-factor*DHat*BHat_sub_theta/FSABHat2, FourierVector)
+        call FourierConvolutionMatrix(FourierVector,FourierMatrix2,thresh)
+     else
+        call FourierTransform( factor*DHat*BHat_sub_zeta /(BHat*BHat), FourierVector)
+        call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
+        call FourierTransform(-factor*DHat*BHat_sub_theta/(BHat*BHat), FourierVector)
+        call FourierConvolutionMatrix(FourierVector,FourierMatrix2,thresh)
+     end if
+     FourierMatrix = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
+     maxNNZPerRow=0
+     do imn_row=1,NFourier2
+        counter=0
+        do imn_col=1,NFourier2
+           if (FourierMatrix(imn_row,imn_col)>0) counter=counter+1
+        end do
+        maxNNZPerRow = max(maxNNZPerRow,counter)
+     end do
+     if (masterProc) print *,"maxNNZPerRow for ExB:",maxNNZPerRow
+     tempInt1 = tempInt1 + maxNNZPerRow ! This term is diagonal in L
+
+     deallocate(FourierVector,FourierMatrix,FourierMatrix2)
+  end if
 
 ! THIS TERM HAS BEEN REMOVED BY AM 2016-03 !
 !!$  if (includePhi1) then

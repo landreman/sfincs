@@ -269,7 +269,8 @@
        ! Add the streaming d/dtheta and d/dzeta terms:
        ! *********************************************************
        
-       if (whichMatrix .ne. 2) then
+       !if (whichMatrix .ne. 2) then
+       if (whichMatrix==0) then
           call PetscTime(time5,ierr)
           call FourierTransform(sqrt(THat/mHat)*BHat_sup_theta/BHat, FourierVector)
           call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
@@ -307,6 +308,8 @@
           end do
           call PetscTime(time6,ierr)
           if (masterProc) print *,"  streaming loops:",time6-time5
+       else
+          if (masterProc) print *,"  NOT adding streaming term"
        end if
        call PetscTime(time4,ierr)
        if (masterProc) print *," streaming:",time4-time3,"sec"
@@ -316,7 +319,8 @@
        ! Add the ExB d/dtheta and d/dzeta terms:
        ! *********************************************************
 
-       if (whichMatrix .ne. 2) then
+       !if (whichMatrix .ne. 2) then
+       if (whichMatrix==0) then
           factor = alpha*Delta/two*dPhiHatdpsiHat
           if (useDKESExBDrift) then
              call FourierTransform( factor*DHat*BHat_sub_zeta /FSABHat2, FourierVector)
@@ -343,6 +347,8 @@
                 end do
              end do
           end do
+       else
+          if (masterProc) print *,"   NOT adding ExB term"
        end if
        call PetscTime(time4,ierr)
        if (masterProc) print *," ExB:",time4-time3,"sec"
@@ -562,7 +568,8 @@
        ! Add the standard mirror term:
        ! *********************************************************
 
-       if (whichMatrix .ne. 2) then
+       !if (whichMatrix .ne. 2) then
+       if (whichMatrix==0) then
           call FourierTransform(-sqrt(THat/mHat)*(BHat_sup_theta*dBHatdtheta+BHat_sup_zeta*dBHatdzeta) &
                / (2*BHat*BHat), FourierVector)
           call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
@@ -592,6 +599,8 @@
                 end do
              end do
           end do
+       else
+          if (masterProc) print *,"   NOT adding mirror term"
        end if
        call PetscTime(time4,ierr)
        if (masterProc) print *," mirror:",time4-time3,"sec"
@@ -601,8 +610,10 @@
        ! Add the non-standard d/dxi term associated with E_r:
        ! *********************************************************
 
+!       if (includeElectricFieldTermInXiDot .and. &
+!            ((whichMatrix==0 .and. .not. preconditioner_drop_xiDot) .or. (whichMatrix==1) .or. (whichMatrix==3))) then
        if (includeElectricFieldTermInXiDot .and. &
-            ((whichMatrix==0 .and. .not. preconditioner_drop_xiDot) .or. (whichMatrix==1) .or. (whichMatrix==3))) then
+            ((whichMatrix==0 .and. .not. preconditioner_drop_xiDot))) then
           factor = alpha*Delta*dPhiHatdpsiHat/4
           if (force0RadialCurrentInEquilibrium) then
              call FourierTransform(factor*DHat*(BHat_sub_zeta*dBHatdtheta - BHat_sub_theta*dBHatdzeta) &
@@ -650,6 +661,8 @@
                 end do
              end do
           end do
+       else
+          if (masterProc) print *,"   NOT adding Er xiDot term"
        end if
        call PetscTime(time4,ierr)
        if (masterProc) print *," Er xiDot:",time4-time3,"sec"
@@ -712,8 +725,10 @@
        ! Add the collisionless d/dx term associated with E_r
        ! *********************************************************
 
+!       if (includeXDotTerm .and. &
+!            ((whichMatrix==0 .and. .not. preconditioner_drop_xDot) .or. (whichMatrix==1) .or. (whichMatrix==3))) then
        if (includeXDotTerm .and. &
-            ((whichMatrix==0 .and. .not. preconditioner_drop_xDot) .or. (whichMatrix==1) .or. (whichMatrix==3))) then
+            ((whichMatrix==0 .and. .not. preconditioner_drop_xDot))) then
           factor = -alpha*Delta*dPhiHatdpsiHat/4
           call FourierTransform(factor*DHat*(BHat_sub_theta*dBHatdzeta - BHat_sub_zeta*dBHatdtheta)/(BHat*BHat*BHat), &
                FourierVector)
@@ -790,6 +805,8 @@
              end do
           end do
           deallocate(xPartOfXDot)
+       else
+          if (masterProc) print *,"   NOT adding Er xDot"
        end if
        call PetscTime(time4,ierr)
        if (masterProc) print *," Er xDot:",time4-time3,"sec"

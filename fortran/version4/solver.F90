@@ -35,6 +35,9 @@ module solver
     PetscReal :: mumps_value
     PetscReal :: atol, rtol, stol, PetscRealValue
     integer :: maxit, maxf
+    PetscInt :: VecLocalSize
+
+    external applyJacobian
 
 !!Following three lines added by AM 2016-07-06
 #if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR > 6))
@@ -58,7 +61,14 @@ module solver
     call SNESSetFunction(mysnes, residualVec, evaluateResidual, PETSC_NULL_OBJECT, ierr)
 
     firstMatrixCreation = .true.
-    call preallocateMatrix(matrix, 1)
+
+    ! Create the Mat object for the Jacobian
+    !call preallocateMatrix(matrix, 1)
+    call VecGetLocalSize(solutionVec,VecLocalSize,ierr)
+    call MatCreateShell(PETSC_COMM_WORLD,VecLocalSize,VecLocalSize,matrixSize,matrixSize,&
+         PETSC_NULL_OBJECT,matrix,ierr)
+    call MatShellSetOperation(matrix,MATOP_MULT,applyJacobian,ierr)
+
     if (useIterativeLinearSolver) then
        call preallocateMatrix(preconditionerMatrix, 0)
        call SNESSetJacobian(mysnes, matrix, preconditionerMatrix, evaluateJacobian, PETSC_NULL_OBJECT, ierr)

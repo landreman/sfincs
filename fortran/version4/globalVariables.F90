@@ -4,9 +4,9 @@ module globalVariables
 
 #include "PETScVersions.F90"
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscvecdef.h>
+#include <finclude/petscmatdef.h>
 #else
-#include <petsc/finclude/petscvecdef.h>
+#include <petsc/finclude/petscmatdef.h>
 #endif
 
   ! Double precision, for calculations that are always done in double even when PETSc is compiled with single-precision
@@ -378,6 +378,7 @@ module globalVariables
   !integer :: iFourierMin, iFourierMax, localNFourier
   integer :: LMin, LMax, localNxi
   logical :: procThatHandlesConstraints
+  Mat :: MatForJacobian
 
 end module globalVariables
 
