@@ -346,8 +346,9 @@ module solver
        call VecSet(solutionVec, PetscRealValue, ierr)
 
        ! Build the main linear system matrix:
-       call populateMatrix(matrix,1,dummyVec)
-
+       !call populateMatrix(matrix,1,dummyVec)
+       call preallocateMatrix(MatForJacobian, 1)
+       call populateMatrix(MatForJacobian, 1, solutionVec)
 
        if (useIterativeLinearSolver) then
 

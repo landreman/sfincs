@@ -570,7 +570,8 @@
 
        !if (whichMatrix .ne. 2) then
        if (whichMatrix==0) then
-          call FourierTransform(-sqrt(THat/mHat)*(BHat_sup_theta*dBHatdtheta+BHat_sup_zeta*dBHatdzeta) &
+          speciesFactor = sqrt(THat/mHat)
+          call FourierTransform(-(BHat_sup_theta*dBHatdtheta+BHat_sup_zeta*dBHatdzeta) &
                / (2*BHat*BHat), FourierVector)
           call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
           do L=LMin,LMax
@@ -585,7 +586,7 @@
                          ell = L+1
                          colIndex = getIndex(ispecies,ix,ell+1,imn_col,BLOCK_F)
                          call MatSetValueSparse(matrix,rowIndex,colIndex,&
-                              (L+1)*(L+2)/(2*L+three)*x(ix)*FourierMatrix(imn_row,imn_col), ADD_VALUES, ierr)
+                              speciesFactor*(L+1)*(L+2)/(2*L+three)*x(ix)*FourierMatrix(imn_row,imn_col), ADD_VALUES, ierr)
                       end if
 
                       if (L>0) then
@@ -593,7 +594,7 @@
                          ell = L-1
                          colIndex = getIndex(ispecies,ix,ell+1,imn_col,BLOCK_F)
                          call MatSetValueSparse(matrix,rowIndex,colIndex,&
-                              -L*(L-1)/(2*L-one)*x(ix)*FourierMatrix(imn_row,imn_col), ADD_VALUES, ierr)
+                              speciesFactor*(-L)*(L-1)/(2*L-one)*x(ix)*FourierMatrix(imn_row,imn_col), ADD_VALUES, ierr)
                       end if
                    end do
                 end do

@@ -11,7 +11,9 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   use globalVariables, only: Nx, Nxi, NFourier2, Nspecies, matrixSize, includePhi1, &
        constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, & 
        includePhi1InKineticEquation, quasineutralityOption, prec, useDKESExBDrift, ddtheta, ddzeta
-  use globalVariables, only: BHat_sup_theta, BHat_sup_zeta, BHat, DHat, BHat_sub_zeta, BHat_sub_theta, FSABHat2, preconditioner_FourierThreshold
+  use globalVariables, only: BHat_sup_theta, BHat_sup_zeta, BHat, DHat, BHat_sub_zeta, BHat_sub_theta, FSABHat2, preconditioner_FourierThreshold,&
+       dBHatdtheta,dBHatdzeta
+
   use indices
   use FourierTransformMod
   use FourierConvolutionMatrixMod
@@ -77,7 +79,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
      do imn_row=1,NFourier2
         counter=0
         do imn_col=1,NFourier2
-           if (FourierMatrix(imn_row,imn_col)>0) counter=counter+1
+           if (abs(FourierMatrix(imn_row,imn_col))>0) counter=counter+1
         end do
         maxNNZPerRow = max(maxNNZPerRow,counter)
      end do
@@ -102,12 +104,26 @@ subroutine preallocateMatrix(matrix, whichMatrix)
      do imn_row=1,NFourier2
         counter=0
         do imn_col=1,NFourier2
-           if (FourierMatrix(imn_row,imn_col)>0) counter=counter+1
+           if (abs(FourierMatrix(imn_row,imn_col))>0) counter=counter+1
         end do
         maxNNZPerRow = max(maxNNZPerRow,counter)
      end do
      if (masterProc) print *,"maxNNZPerRow for ExB:",maxNNZPerRow
      tempInt1 = tempInt1 + maxNNZPerRow ! This term is diagonal in L
+
+     ! Normal mirror term:
+     call FourierTransform(-(BHat_sup_theta*dBHatdtheta+BHat_sup_zeta*dBHatdzeta)/ (2*BHat*BHat), FourierVector)
+     call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
+     maxNNZPerRow=0
+     do imn_row=1,NFourier2
+        counter=0
+        do imn_col=1,NFourier2
+           if (abs(FourierMatrix(imn_row,imn_col))>0) counter=counter+1
+        end do
+        maxNNZPerRow = max(maxNNZPerRow,counter)
+     end do
+     if (masterProc) print *,"maxNNZPerRow for mirror:",maxNNZPerRow
+     tempInt1 = tempInt1 + maxNNZPerRow*2 ! *2 because this term lies on L = ell +/- 1
 
      deallocate(FourierVector,FourierMatrix,FourierMatrix2)
   end if
