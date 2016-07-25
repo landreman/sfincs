@@ -7,6 +7,8 @@
 
   subroutine createGrids()
 
+    use FourierTransformMod
+    use FourierConvolutionMatrixMod
     use globalVariables
     use polynomialDiffMatrices
     use xGrid
@@ -32,6 +34,9 @@
     real(prec), dimension(:), allocatable :: x_subset, xWeights_subset
     real(prec), dimension(:,:), allocatable :: ddx_subset, d2dx2_subset
 
+    real(prec), dimension(:), allocatable :: FourierVector
+    real(prec), dimension(:,:), allocatable :: FourierMatrix, FourierMatrix2
+    real(prec) :: thresh
 
     DM :: myDM
     integer, parameter :: bufferLength = 200
@@ -68,11 +73,6 @@
           print *,"xMax               = ",xMax
        end if
        print *,"solverTolerance    = ",solverTolerance
-       if (useIterativeLinearSolver) then
-          print *,"For solving large linear systems, an iterative Krylov solver will be used."
-       else
-          print *,"For solving large linear systems, a direct solver will be used."
-       end if
     end if
 
     call computeMatrixSize()
@@ -494,6 +494,67 @@
        print *,"IHat (Boozer component multiplying grad theta) = ", IHat
        print *,"iota (Rotational transform) = ", iota
     end if
+
+    ! *********************************************************
+    ! Compute some Fourier convolution matrices that will be
+    ! used in each KSP iteration:
+    ! *********************************************************
+
+    allocate(FourierVector(NFourier2))
+    allocate(FourierMatrix(NFourier2,NFourier2))
+    allocate(FourierMatrix2(NFourier2,NFourier2))
+
+    allocate(FourierMatrix_streaming(NFourier2,NFourier2))
+    allocate(FourierMatrix_ExB(NFourier2,NFourier2))
+    allocate(FourierMatrix_mirror(NFourier2,NFourier2))
+    allocate(FourierMatrix_xiDot(NFourier2,NFourier2))
+    allocate(FourierMatrix_xDot(NFourier2,NFourier2))
+
+    thresh = FourierThreshold
+
+    ! Streaming term:
+    call FourierTransform(BHat_sup_theta/BHat, FourierVector)
+    call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
+    call FourierTransform(BHat_sup_zeta/BHat, FourierVector)
+    call FourierConvolutionMatrix(FourierVector,FourierMatrix2,thresh)
+    FourierMatrix_streaming = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
+
+    ! ExB drift term:
+    if (useDKESExBDrift) then
+       call FourierTransform( DHat*BHat_sub_zeta /FSABHat2, FourierVector)
+       call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
+       call FourierTransform(-DHat*BHat_sub_theta/FSABHat2, FourierVector)
+       call FourierConvolutionMatrix(FourierVector,FourierMatrix2,thresh)
+    else
+       call FourierTransform( DHat*BHat_sub_zeta /(BHat*BHat), FourierVector)
+       call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
+       call FourierTransform(-DHat*BHat_sub_theta/(BHat*BHat), FourierVector)
+       call FourierConvolutionMatrix(FourierVector,FourierMatrix2,thresh)
+    end if
+    FourierMatrix_ExB = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
+
+    ! Standard mirror term:
+    call FourierTransform(-(BHat_sup_theta*dBHatdtheta+BHat_sup_zeta*dBHatdzeta) &
+         / (2*BHat*BHat), FourierVector)
+    call FourierConvolutionMatrix(FourierVector,FourierMatrix_mirror,thresh)
+
+    ! Er xiDot term:
+    if (force0RadialCurrentInEquilibrium) then
+       call FourierTransform(DHat*(BHat_sub_zeta*dBHatdtheta - BHat_sub_theta*dBHatdzeta) &
+            /(BHat*BHat*BHat), FourierVector)
+    else
+       call FourierTransform(DHat*(BHat_sub_zeta*dBHatdtheta - BHat_sub_theta*dBHatdzeta &
+            -2*BHat*(dBHat_sub_zeta_dtheta-dBHat_sub_theta_dzeta)) &
+            /(BHat*BHat*BHat), FourierVector)
+    end if
+    call FourierConvolutionMatrix(FourierVector,FourierMatrix_xiDot,thresh)
+
+    ! Er xDot term:
+    call FourierTransform(DHat*(BHat_sub_theta*dBHatdzeta - BHat_sub_zeta*dBHatdtheta)/(BHat*BHat*BHat), &
+         FourierVector)
+    call FourierConvolutionMatrix(FourierVector,FourierMatrix_xDot,thresh)
+
+    deallocate(FourierVector,FourierMatrix,FourierMatrix2)
 
     ! *********************************************************
     ! Allocate some arrays that will be used later for output quantities:

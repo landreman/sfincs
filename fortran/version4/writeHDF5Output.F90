@@ -365,7 +365,6 @@ contains
        call writeHDF5Field("VPrimeHat", VPrimeHat, "")
        call writeHDF5Field("FSABHat2", FSABHat2, &
             "< B^2 >, the flux-surface-averaged squared magnitude of the magnetic field, in units of BBar^2")
-       call writeHDF5Field("useIterativeLinearSolver", useIterativeLinearSolver, "")
        call writeHDF5Field("NIterations", 0, "")
 
 ! export_f has not been updated to reflect the new Fourier discretization

@@ -10,11 +10,11 @@ OBJ_FILES = applyDenseTerms.o ChebyshevGrid.o ChebyshevInterpolationMatrix.o cho
 	  quadpack/quadpack.a readVMEC/readVMEC.a
 
 # Dependencies:
-applyDenseTerms.o: globalVariables.o FourierConvolutionMatrixMod.o FourierTransformMod.o indices.o
+applyDenseTerms.o: globalVariables.o indices.o
 ChebyshevGrid.o: globalVariables.o
 ChebyshevInterpolationMatrix.o: globalVariables.o
 chooseFourierModes.o: rankMod.o FourierTransformMod.o globalVariables.o
-createGrids.o: globalVariables.o polynomialDiffMatrices.o xGrid.o geometry.o indices.o #export_f.o
+createGrids.o: FourierConvolutionMatrixMod.o FourierTransformMod.o globalVariables.o polynomialDiffMatrices.o xGrid.o geometry.o indices.o #export_f.o
 diagnostics.o: FourierTransformMod.o FourierConvolutionMatrixMod.o globalVariables.o indices.o writeHDF5Output.o
 evaluateJacobian.o: globalVariables.o
 evaluateResidual.o: FourierTransformMod.o globalVariables.o indices.o

@@ -48,7 +48,7 @@
 
   subroutine checkIfKSPConverged(myKSP)
 
-    use globalVariables, only: integerToRepresentTrue, integerToRepresentFalse, useIterativeLinearSolver, masterProc
+    use globalVariables, only: integerToRepresentTrue, integerToRepresentFalse, masterProc
     use petscksp
 
     implicit none
@@ -58,66 +58,59 @@
     integer :: ierr
     integer :: didLinearCalculationConverge
 
-    if (useIterativeLinearSolver) then
-       call KSPGetConvergedReason(myKSP, reason, ierr)
-       if (reason>0) then
-          if (masterProc) then
-             print *,"Linear iteration (KSP) converged.  KSPConvergedReason = ", reason
-             select case (reason)
-             case (1)
-                print *,"  KSP_CONVERGED_RTOL_NORMAL: "
-             case (9)
-                print *,"  KSP_CONVERGED_ATOL_NORMAL: "
-             case (2)
-                print *,"  KSP_CONVERGED_RTOL: Norm decreased by rtol."
-             case (3)
-                print *,"  KSP_CONVERGED_ATOL: Norm is < abstol."
-             case (4)
-                print *,"  KSP_CONVERGED_ITS: "
-             case (5)
-                print *,"  KSP_CONVERGED_CG_NEG_CURVE: "
-             case (6)
-                print *,"  KSP_CONVERGED_CG_CONSTRAINED: "
-             case (7)
-                print *,"  KSP_CONVERGED_STEP_LENGTH: "
-             case (8)
-                print *,"  KSP_CONVERGED_HAPPY_BREAKDOWN: "
-             end select
-          end if
-          didLinearCalculationConverge = integerToRepresentTrue
-       else
-          if (masterProc) then
-             print *,"Linear iteration (KSP) did not converge :(   KSPConvergedReason = ", reason
-             select case (reason)
-             case (-2)
-                print *,"  KSP_DIVERGED_NULL: "
-             case (-3)
-                print *,"  KSP_DIVERGED_ITS: "
-             case (-4)
-                print *,"  KSP_DIVERGED_DTOL: "
-             case (-5)
-                print *,"  KSP_DIVERGED_BREAKDOWN: "
-             case (-6)
-                print *,"  KSP_DIVERGED_BREAKDOWN_BICG: "
-             case (-7)
-                print *,"  KSP_DIVERGED_NONSYMMETRIC: "
-             case (-8)
-                print *,"  KSP_DIVERGED_INDEFINITE_PC: "
-             case (-9)
-                print *,"  KSP_DIVERGED_NAN: "
-             case (-10)
-                print *,"  KSP_DIVERGED_INDEFINITE_MAT: "
-             case (0)
-                print *,"  KSP still iterating ?!?!"
-             end select
-          end if
-          didLinearCalculationConverge = integerToRepresentFalse
-       end if
-    else
+    call KSPGetConvergedReason(myKSP, reason, ierr)
+    if (reason>0) then
        if (masterProc) then
-          print *,"Direct linear solver succeeded."
+          print *,"Linear iteration (KSP) converged.  KSPConvergedReason = ", reason
+          select case (reason)
+          case (1)
+             print *,"  KSP_CONVERGED_RTOL_NORMAL: "
+          case (9)
+             print *,"  KSP_CONVERGED_ATOL_NORMAL: "
+          case (2)
+             print *,"  KSP_CONVERGED_RTOL: Norm decreased by rtol."
+          case (3)
+             print *,"  KSP_CONVERGED_ATOL: Norm is < abstol."
+          case (4)
+             print *,"  KSP_CONVERGED_ITS: "
+          case (5)
+             print *,"  KSP_CONVERGED_CG_NEG_CURVE: "
+          case (6)
+             print *,"  KSP_CONVERGED_CG_CONSTRAINED: "
+          case (7)
+             print *,"  KSP_CONVERGED_STEP_LENGTH: "
+          case (8)
+             print *,"  KSP_CONVERGED_HAPPY_BREAKDOWN: "
+          end select
        end if
        didLinearCalculationConverge = integerToRepresentTrue
+    else
+       if (masterProc) then
+          print *,"Linear iteration (KSP) did not converge :(   KSPConvergedReason = ", reason
+          select case (reason)
+          case (-2)
+             print *,"  KSP_DIVERGED_NULL: "
+          case (-3)
+             print *,"  KSP_DIVERGED_ITS: "
+          case (-4)
+             print *,"  KSP_DIVERGED_DTOL: "
+          case (-5)
+             print *,"  KSP_DIVERGED_BREAKDOWN: "
+          case (-6)
+             print *,"  KSP_DIVERGED_BREAKDOWN_BICG: "
+          case (-7)
+             print *,"  KSP_DIVERGED_NONSYMMETRIC: "
+          case (-8)
+             print *,"  KSP_DIVERGED_INDEFINITE_PC: "
+          case (-9)
+             print *,"  KSP_DIVERGED_NAN: "
+          case (-10)
+             print *,"  KSP_DIVERGED_INDEFINITE_MAT: "
+          case (0)
+             print *,"  KSP still iterating ?!?!"
+          end select
+       end if
+       didLinearCalculationConverge = integerToRepresentFalse
     end if
 
   end subroutine checkIfKSPConverged

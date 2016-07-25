@@ -10,8 +10,6 @@
 
     use petscvec
     use globalVariables 
-    use FourierTransformMod
-    use FourierConvolutionMatrixMod
     use indices
 
     implicit none
@@ -25,9 +23,8 @@
     PetscScalar, pointer :: stateArray(:)
     PetscLogDouble :: time1, time2, time3, time4, time5, time6
     integer :: ispecies, L, ell, imn, ix, ix_row, ix_col, index
-    real(prec) :: factor, LFactor, thresh
+    real(prec) :: factor, LFactor
     real(prec), dimension(:), allocatable :: FourierVector, FourierVector2
-    real(prec), dimension(:,:), allocatable :: FourierMatrix, FourierMatrix2
     real(prec), dimension(:,:), allocatable :: xPartOfXDot
 
 
@@ -45,11 +42,6 @@
     
     call VecGetArrayF90(inputVecLocal, stateArray, ierr)
 
-    allocate(FourierVector(NFourier2))
-    allocate(FourierVector2(NFourier2))
-    allocate(FourierMatrix(NFourier2,NFourier2))
-    allocate(FourierMatrix2(NFourier2,NFourier2))
-
     !if (masterProc) print *," Beginning species",ispecies
     !call PetscTime(time3,ierr)
 !!$       nHat = nHats(ispecies)
@@ -59,7 +51,16 @@
 !!$       sqrtTHat = sqrt(THat)
 !!$       sqrtMHat = sqrt(mHat)
 
-    thresh = FourierThreshold
+    allocate(FourierVector(NFourier2))
+    allocate(FourierVector2(NFourier2))
+
+    ! Note that the Fourier convolution matrices
+    ! FourierMatrix_streaming
+    ! FourierMatrix_ExB
+    ! FourierMatrix_mirror
+    ! FourierMatrix_xDot
+    ! FourierMatrix_xiDot
+    ! are generated in createGrids.F90
 
     ! *********************************************************
     ! Add the streaming d/dtheta and d/dzeta terms:
@@ -67,14 +68,6 @@
        
     call PetscTime(time3,ierr)
     time5=time3
-    call FourierTransform(BHat_sup_theta/BHat, FourierVector)
-    call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
-    call FourierTransform(BHat_sup_zeta/BHat, FourierVector)
-    call FourierConvolutionMatrix(FourierVector,FourierMatrix2,thresh)
-    FourierMatrix = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
-    call PetscTime(time6,ierr)
-    if (masterProc) print *,"  streaming Fourier+matmul:",time6-time5
-    time5=time6
     do ispecies = 1,Nspecies
        factor = sqrt(THats(ispecies)/mHats(ispecies))
        do ell=LMin,LMax
@@ -83,8 +76,9 @@
                 index = getIndex(ispecies, ix, ell+1, imn, BLOCK_F) + 1 ! +1 to go from PETsc to Fortran indices
                 FourierVector(imn) = stateArray(index)
              end do
-             !FourierVector2 = factor*matmul(FourierMatrix,FourierVector) ! The BLAS2 dgemv call in the next line is a faster version of this line.
-             call dgemv('n',NFourier2,NFourier2,factor,FourierMatrix,NFourier2,FourierVector,1,0.0d+0,FourierVector2,1)
+             !FourierVector2 = factor*matmul(FourierMatrix_streaming,FourierVector) ! The BLAS2 dgemv call in the next line is a faster version of this "matmul" command.
+             call dgemv('n',NFourier2,NFourier2,factor,FourierMatrix_streaming, &
+                  NFourier2,FourierVector,1,0.0d+0,FourierVector2,1)
 
              ! Super-diagonal-in-L term
              !if (L < Nxi-1) then
@@ -114,8 +108,6 @@
           end do
        end do
     end do
-    call PetscTime(time6,ierr)
-    if (masterProc) print *,"  streaming loops:",time6-time5
     call PetscTime(time4,ierr)
     if (masterProc) print *," streaming:",time4-time3,"sec"
     time3=time4
@@ -125,18 +117,6 @@
     ! *********************************************************
 
     factor = alpha*Delta/two*dPhiHatdpsiHat
-    if (useDKESExBDrift) then
-       call FourierTransform( factor*DHat*BHat_sub_zeta /FSABHat2, FourierVector)
-       call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
-       call FourierTransform(-factor*DHat*BHat_sub_theta/FSABHat2, FourierVector)
-       call FourierConvolutionMatrix(FourierVector,FourierMatrix2,thresh)
-    else
-       call FourierTransform( factor*DHat*BHat_sub_zeta /(BHat*BHat), FourierVector)
-       call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
-       call FourierTransform(-factor*DHat*BHat_sub_theta/(BHat*BHat), FourierVector)
-       call FourierConvolutionMatrix(FourierVector,FourierMatrix2,thresh)
-    end if
-    FourierMatrix = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
     do ispecies = 1,Nspecies
        do L=LMin,LMax
           do ix=1,Nx
@@ -144,8 +124,10 @@
                 index = getIndex(ispecies, ix, L+1, imn, BLOCK_F) + 1 ! +1 to go from PETsc to Fortran indices
                 FourierVector(imn) = stateArray(index)
              end do
-             !FourierVector2 = matmul(FourierMatrix,FourierVector)
-             call dgemv('n',NFourier2,NFourier2,1.0d+0,FourierMatrix,NFourier2,FourierVector,1,0.0d+0,FourierVector2,1)
+             !FourierVector2 = factor*matmul(FourierMatrix_ExB,FourierVector) ! The BLAS2 dgemv call in the next line is a faster version of this "matmul" command.
+             call dgemv('n',NFourier2,NFourier2,factor,FourierMatrix_ExB, &
+                  NFourier2,FourierVector,1,0.0d+0,FourierVector2,1)
+
              do imn = 1,NFourier2
                 index = getIndex(ispecies, ix, L+1, imn, BLOCK_F)
                 call VecSetValue(outputVec, index, &
@@ -155,16 +137,13 @@
        end do
     end do
     call PetscTime(time4,ierr)
-    if (masterProc) print *," ExB:",time4-time3,"sec"
+    if (masterProc) print *," ExB:      ",time4-time3,"sec"
     time3=time4
 
     ! *********************************************************
     ! Add the standard mirror term:
     ! *********************************************************
 
-    call FourierTransform(-(BHat_sup_theta*dBHatdtheta+BHat_sup_zeta*dBHatdzeta) &
-         / (2*BHat*BHat), FourierVector)
-    call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
     do ispecies = 1,Nspecies
        factor = sqrt(THats(ispecies)/mHats(ispecies))
        do ell=LMin,LMax
@@ -173,8 +152,9 @@
                 index = getIndex(ispecies,ix,ell+1,imn,BLOCK_F) + 1 ! +1 to go from PETsc to Fortran indices
                 FourierVector(imn) = stateArray(index)
              end do
-             !FourierVector2 = factor*matmul(FourierMatrix,FourierVector)
-             call dgemv('n',NFourier2,NFourier2,factor,FourierMatrix,NFourier2,FourierVector,1,0.0d+0,FourierVector2,1)
+             !FourierVector2 = factor*matmul(FourierMatrix,FourierVector) ! The BLAS2 dgemv call in the next line is a faster version of this "matmul" command.
+             call dgemv('n',NFourier2,NFourier2,factor,FourierMatrix_mirror,&
+                  NFourier2,FourierVector,1,0.0d+0,FourierVector2,1)
 
              !if (L<Nxi-1) then
              if (ell>0) then
@@ -205,25 +185,15 @@
        end do
     end do
     call PetscTime(time4,ierr)
-    if (masterProc) print *," mirror:",time4-time3,"sec"
+    if (masterProc) print *," mirror:   ",time4-time3,"sec"
     time3=time4
 
     ! *********************************************************
     ! Add the non-standard d/dxi term associated with E_r:
     ! *********************************************************
     
-    if (includeElectricFieldTermInXiDot) then
+    if (includeElectricFieldTermInXiDot .and. abs(dPhiHatdpsiHat)>0) then
        factor = alpha*Delta*dPhiHatdpsiHat/4
-       if (force0RadialCurrentInEquilibrium) then
-          call FourierTransform(factor*DHat*(BHat_sub_zeta*dBHatdtheta - BHat_sub_theta*dBHatdzeta) &
-               /(BHat*BHat*BHat), FourierVector)
-       else
-          call FourierTransform(factor*DHat*(BHat_sub_zeta*dBHatdtheta - BHat_sub_theta*dBHatdzeta &
-               -2*BHat*(dBHat_sub_zeta_dtheta-dBHat_sub_theta_dzeta)) &
-               /(BHat*BHat*BHat), FourierVector)
-       end if
-       call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
-       
        do ispecies=1,Nspecies
           do ell=LMin,LMax
              do ix=1,Nx
@@ -231,8 +201,9 @@
                    index = getIndex(ispecies,ix,ell+1,imn,BLOCK_F) + 1 ! +1 to go from PETsc to Fortran indices
                    FourierVector(imn)=stateArray(index)
                 end do
-                !FourierVector2 = matmul(FourierMatrix,FourierVector)
-                call dgemv('n',NFourier2,NFourier2,1.0d+0,FourierMatrix,NFourier2,FourierVector,1,0.0d+0,FourierVector2,1)
+                !FourierVector2 = factor*matmul(FourierMatrix_xiDot,FourierVector) ! The BLAS2 dgemv call in the next line is a faster version of this "matmul" command.
+                call dgemv('n',NFourier2,NFourier2,factor,FourierMatrix_xiDot, &
+                     NFourier2,FourierVector,1,0.0d+0,FourierVector2,1)
 
                 ! Diagonal-in-L term
                 L = ell
@@ -274,7 +245,7 @@
        end do
     end if
     call PetscTime(time4,ierr)
-    if (masterProc) print *," Er xiDot:",time4-time3,"sec"
+    if (masterProc) print *," Er xiDot: ",time4-time3,"sec"
     time3=time4
 
 
@@ -334,11 +305,7 @@
     ! Add the collisionless d/dx term associated with E_r
     ! *********************************************************
 
-    if (includeXDotTerm) then
-       factor = -alpha*Delta*dPhiHatdpsiHat/4
-       call FourierTransform(factor*DHat*(BHat_sub_theta*dBHatdzeta - BHat_sub_zeta*dBHatdtheta)/(BHat*BHat*BHat), &
-            FourierVector)
-       call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
+    if (includeXDotTerm .and. abs(dPhiHatdpsiHat)>0) then
 
 !!$       if (force0RadialCurrentInEquilibrium) then
 !!$          FourierMatrix2=0
@@ -353,6 +320,7 @@
           xPartOfXDot(ix,:) = x(ix) * ddx(ix,:)
        end do
 
+       factor = -alpha*Delta*dPhiHatdpsiHat/4
        do ispecies=1,Nspecies
           do ell=LMin,LMax
              do ix_col = 1,Nx
@@ -360,8 +328,9 @@
                    index = getIndex(ispecies,ix_col,ell+1,imn,BLOCK_F) + 1 ! +1 to go from PETsc to Fortran indices
                    FourierVector(imn) = stateArray(index)
                 end do
-                !FourierVector2 = matmul(FourierMatrix,FourierVector)
-                call dgemv('n',NFourier2,NFourier2,1.0d+0,FourierMatrix,NFourier2,FourierVector,1,0.0d+0,FourierVector2,1)
+                !FourierVector2 = factor*matmul(FourierMatrix_xDot,FourierVector) ! The BLAS2 dgemv call in the next line is a faster version of this "matmul" command.
+                call dgemv('n',NFourier2,NFourier2,factor,FourierMatrix_xDot, &
+                     NFourier2,FourierVector,1,0.0d+0,FourierVector2,1)
 
                 ! Term that is diagonal in L:
                 L=ell
@@ -416,16 +385,15 @@
        deallocate(xPartOfXDot)
     end if
     call PetscTime(time4,ierr)
-    if (masterProc) print *," Er xDot:",time4-time3,"sec"
+    if (masterProc) print *," Er xDot:  ",time4-time3,"sec"
     time3=time4
 
     call VecRestoreArrayF90(inputVecLocal, stateArray, ierr)
     call VecDestroy(inputVecLocal, ierr)
+    deallocate(FourierVector,FourierVector2)
 
     call VecAssemblyBegin(outputVec, ierr)
     call VecAssemblyEnd(outputVec, ierr)
-
-    deallocate(FourierVector,FourierVector2,FourierMatrix,FourierMatrix2)
 
     call PetscTime(time2,ierr)
     if (masterProc) print *,"Total time for applyDenseTerms:",time2-time1

@@ -143,8 +143,6 @@ module globalVariables
   real(prec) :: FourierThreshold = 1d-12
 
 
-  logical :: useIterativeLinearSolver=.true.
-
   integer :: whichParallelSolverToFactorPreconditioner = 1
   ! Options for whichParallelSolverToFactorPreconditioner:
   ! 1 = use mumps if it is detected, otherwise use superlu_dist
@@ -364,6 +362,13 @@ module globalVariables
   real(prec), dimension(:,:), allocatable :: transportMatrix
 
   Vec :: f0
+
+  real(prec), dimension(:,:), allocatable :: FourierMatrix_streaming
+  real(prec), dimension(:,:), allocatable :: FourierMatrix_ExB
+  real(prec), dimension(:,:), allocatable :: FourierMatrix_mirror
+  real(prec), dimension(:,:), allocatable :: FourierMatrix_xiDot
+  real(prec), dimension(:,:), allocatable :: FourierMatrix_xDot
+
 
   ! ********************************************************
   !

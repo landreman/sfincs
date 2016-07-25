@@ -61,7 +61,7 @@ contains
          FourierThreshold
 
     namelist / otherNumericalParameters /  &
-         useIterativeLinearSolver, xGridScheme, whichParallelSolverToFactorPreconditioner, &
+         xGridScheme, whichParallelSolverToFactorPreconditioner, &
          PETSCPreallocationStrategy, xPotentialsGridScheme, xGrid_k
 
     namelist / preconditionerOptions / preconditioner_x, preconditioner_x_min_L, &
