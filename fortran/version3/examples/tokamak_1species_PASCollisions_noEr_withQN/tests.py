@@ -11,16 +11,16 @@ desiredTolerance = 0.001
 
 numFailures = 0
 
-numFailures += shouldBe("FSABFlow[0,0;;;]", 1.31689894494766199E-002, desiredTolerance)
-numFailures += shouldBe("particleFlux_vE0_psiHat[0,0;;;]", 1.90603e-07, desiredTolerance)
-numFailures += shouldBe("particleFlux_vE_psiHat[0,0;;;]",  1.90603e-07, desiredTolerance)
-numFailures += shouldBe("particleFlux_vm_psiHat[0,0;;;]",  5.27685e-08, desiredTolerance)
-numFailures += shouldBe("particleFlux_vd1_psiHat[0,0;;;]", 2.43372e-07, desiredTolerance)
-numFailures += shouldBe("particleFlux_vd_psiHat[0,0;;;]",  2.43372e-07, desiredTolerance)
-numFailures += shouldBe("heatFlux_vE0_psiHat[0,0;;;]", 7.14762e-08, desiredTolerance)
-numFailures += shouldBe("heatFlux_vE_psiHat[0,0;;;]",  7.14762e-08, desiredTolerance)
-numFailures += shouldBe("heatFlux_vm_psiHat[0,0;;;]",  5.98473e-08, desiredTolerance)
-numFailures += shouldBe("heatFlux_vd_psiHat[0,0;;;]",  1.31324e-07, desiredTolerance)
-numFailures += shouldBe("heatFlux_vd1_psiHat[0,0;;;]", 1.31324e-07, desiredTolerance)
+numFailures += shouldBe("FSABFlow[0,1;;;]", 1.316898944950224e-02, desiredTolerance)
+numFailures += shouldBe("particleFlux_vE0_psiHat[0,1;;;]", 9.53017e-08, desiredTolerance)
+numFailures += shouldBe("particleFlux_vE_psiHat[0,1;;;]",  9.53017e-08, desiredTolerance)
+numFailures += shouldBe("particleFlux_vm_psiHat[0,1;;;]",  1.48084e-07, desiredTolerance)
+numFailures += shouldBe("particleFlux_vd1_psiHat[0,1;;;]", 2.43386e-07, desiredTolerance)
+numFailures += shouldBe("particleFlux_vd_psiHat[0,1;;;]",  2.43386e-07, desiredTolerance)
+numFailures += shouldBe("heatFlux_vE0_psiHat[0,1;;;]", 3.57381e-08, desiredTolerance)
+numFailures += shouldBe("heatFlux_vE_psiHat[0,1;;;]",  3.57381e-08, desiredTolerance)
+numFailures += shouldBe("heatFlux_vm_psiHat[0,1;;;]", 1.19420e-07, desiredTolerance)
+numFailures += shouldBe("heatFlux_vd_psiHat[0,1;;;]",  1.55158e-07, desiredTolerance)
+numFailures += shouldBe("heatFlux_vd1_psiHat[0,1;;;]", 1.55158e-07, desiredTolerance)
 
 exit(numFailures > 0)
