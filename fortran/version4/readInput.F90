@@ -58,7 +58,7 @@ contains
          xMax, &
          solverTolerance, &
          NxPotentialsPerVth, &
-         FourierThreshold
+         Fourier_threshold
 
     namelist / otherNumericalParameters /  &
          xGridScheme, whichParallelSolverToFactorPreconditioner, &
@@ -66,8 +66,9 @@ contains
 
     namelist / preconditionerOptions / preconditioner_x, preconditioner_x_min_L, &
          preconditioner_Fourier, preconditioner_xi, preconditioner_species, reusePreconditioner, &
-         preconditioner_Fourier_min_L, preconditioner_FourierThreshold, &
-         preconditioner_drop_xDot, preconditioner_drop_xiDot
+         preconditioner_Fourier_min_L, preconditioner_Fourier_threshold, &
+         preconditioner_drop_xDot, preconditioner_drop_xiDot, &
+         preconditioner_Fourier_max_nnz_per_row
 
 !!$    namelist / export_f / export_full_f, export_delta_f, export_f_theta, export_f_zeta, export_f_x, export_f_xi, &
 !!$         export_f_theta_option, export_f_zeta_option, export_f_xi_option, export_f_x_option

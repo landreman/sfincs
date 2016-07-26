@@ -109,7 +109,6 @@
   preconditioner_species = 0
   preconditioner_x = 0
   preconditioner_xi = 0
-  preconditioner_FourierThreshold=1e-12
 /
 
 &export_f

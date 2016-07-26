@@ -140,7 +140,7 @@ module globalVariables
   real(prec)  :: NxPotentialsPerVth = 40.0
   real(prec) :: xMax = 5.0
   real(prec) :: solverTolerance = 1d-6
-  real(prec) :: FourierThreshold = 1d-12
+  real(prec) :: Fourier_threshold = 1d-12
 
 
   integer :: whichParallelSolverToFactorPreconditioner = 1
@@ -151,11 +151,12 @@ module globalVariables
   integer :: preconditioner_x=1, preconditioner_x_min_L=0
   integer :: preconditioner_Fourier=0, preconditioner_xi=1, preconditioner_species=1
   integer :: preconditioner_Fourier_min_L=0
-  real(prec) :: preconditioner_FourierThreshold=1d-2
+  real(prec) :: preconditioner_Fourier_threshold=0.03
   logical :: reusePreconditioner=.true.
   integer :: preconditioner_magnetic_drifts_max_L = 2
   logical :: preconditioner_drop_xDot = .true.
   logical :: preconditioner_drop_xiDot = .true.
+  integer :: preconditioner_Fourier_max_nnz_per_row = 6
 
   integer :: constraintScheme=-1
 

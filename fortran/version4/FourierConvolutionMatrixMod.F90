@@ -5,7 +5,7 @@ module FourierConvolutionMatrixMod
 
 contains
 
-  subroutine FourierConvolutionMatrix(vector, matrix, thresh)
+  subroutine FourierConvolutionMatrix(vector, matrix, whichMatrix)
 
     ! Suppose we have Fourier expansions for two functions, f(theta,zeta) and B(theta,zeta):
     ! B(theta,zeta) = \sum_{m1,n1} [ B^c_{m1,n1} cos(m1 theta - n1 zeta) + B^s_{m1,n1} sin(m1 theta - n1 zeta)
@@ -21,23 +21,30 @@ contains
     ! If we think of [f^c; f^2] as a vector, then this formula above indicates that multiplying B*f amounts to
     ! operating on the f vector by a matrix. This subroutine constructs this matrix.
     
+    ! If whichMatrix==0, the resulting convolution matrix will be made more sparse (i.e. many elements
+    ! will be set to zero) to form a preconditioner. For any other value of whichMatrix, no simplification
+    ! will be performed.
 
     ! vector should have been allocated with size  2*NFourier-1.
     ! matrix should have been allocated with size (2*NFourier-1, 2*NFourier-1).
 
-    use globalVariables, only: NFourier, NFourier2, xm, xn, prec, masterProc
+    use globalVariables, only: NFourier, NFourier2, xm, xn, prec, masterProc, &
+         Fourier_threshold, preconditioner_Fourier_threshold, preconditioner_Fourier_max_nnz_per_row
+    use rankMod
 
     implicit none
 
     real(prec), intent(in), dimension(:) :: vector
     real(prec), intent(out), dimension(:,:) :: matrix
-    real(prec), intent(in) :: thresh
+    integer, intent(in) :: whichMatrix
 
     integer :: j, m, n, imn1, imn2, sign, numMatches, numMatches2, imn_new
     real(prec), dimension(:), allocatable :: halfVector
+    integer, dimension(:), allocatable :: ranks
     real(prec), dimension(:,:), allocatable :: absMatrix
     integer :: tic, toc, countrate
     real(prec) :: maximum
+    real(prec) :: thresh
 
     ! ***************************************************************
     ! Validate input
@@ -141,6 +148,39 @@ contains
     
     deallocate(halfVector)
 
+    ! Now, if this is the preconditioner, simplify the matrix by zero-ing out the small elements.
+
+    if (whichMatrix==0) then
+!!$       if (masterProc) then
+!!$          print *,"matrix before:"
+!!$          do imn1=1,NFourier2
+!!$             print *,matrix(imn1,:)
+!!$          end do
+!!$       end if
+
+       allocate(ranks(NFourier2))
+       do imn1 = 1,NFourier2
+          call rank(abs(matrix(imn1,:)),ranks)
+          do imn2 = 1, (NFourier2-preconditioner_Fourier_max_nnz_per_row)
+             matrix(imn1,ranks(imn2))=0
+          end do
+       end do
+       deallocate(ranks)
+
+!!$       if (masterProc) then
+!!$          print *,"matrix after:"
+!!$          do imn1=1,NFourier2
+!!$             print *,matrix(imn1,:)
+!!$          end do
+!!$       end if
+
+    end if
+
+    if (whichMatrix==0) then
+       thresh = preconditioner_Fourier_threshold
+    else
+       thresh = Fourier_threshold
+    end if
     absMatrix = abs(matrix)
     maximum = maxval(absMatrix)*thresh + (1d-30)
 

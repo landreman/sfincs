@@ -36,7 +36,7 @@
 
     real(prec), dimension(:), allocatable :: FourierVector
     real(prec), dimension(:,:), allocatable :: FourierMatrix, FourierMatrix2
-    real(prec) :: thresh
+    integer :: whichMatrix
 
     DM :: myDM
     integer, parameter :: bufferLength = 200
@@ -510,33 +510,33 @@
     allocate(FourierMatrix_xiDot(NFourier2,NFourier2))
     allocate(FourierMatrix_xDot(NFourier2,NFourier2))
 
-    thresh = FourierThreshold
+    whichMatrix = 1  ! This value will mean the convolution matrices are not simplified.
 
     ! Streaming term:
     call FourierTransform(BHat_sup_theta/BHat, FourierVector)
-    call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
+    call FourierConvolutionMatrix(FourierVector,FourierMatrix,whichMatrix)
     call FourierTransform(BHat_sup_zeta/BHat, FourierVector)
-    call FourierConvolutionMatrix(FourierVector,FourierMatrix2,thresh)
+    call FourierConvolutionMatrix(FourierVector,FourierMatrix2,whichMatrix)
     FourierMatrix_streaming = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
 
     ! ExB drift term:
     if (useDKESExBDrift) then
        call FourierTransform( DHat*BHat_sub_zeta /FSABHat2, FourierVector)
-       call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
+       call FourierConvolutionMatrix(FourierVector,FourierMatrix,whichMatrix)
        call FourierTransform(-DHat*BHat_sub_theta/FSABHat2, FourierVector)
-       call FourierConvolutionMatrix(FourierVector,FourierMatrix2,thresh)
+       call FourierConvolutionMatrix(FourierVector,FourierMatrix2,whichMatrix)
     else
        call FourierTransform( DHat*BHat_sub_zeta /(BHat*BHat), FourierVector)
-       call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
+       call FourierConvolutionMatrix(FourierVector,FourierMatrix,whichMatrix)
        call FourierTransform(-DHat*BHat_sub_theta/(BHat*BHat), FourierVector)
-       call FourierConvolutionMatrix(FourierVector,FourierMatrix2,thresh)
+       call FourierConvolutionMatrix(FourierVector,FourierMatrix2,whichMatrix)
     end if
     FourierMatrix_ExB = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
 
     ! Standard mirror term:
     call FourierTransform(-(BHat_sup_theta*dBHatdtheta+BHat_sup_zeta*dBHatdzeta) &
          / (2*BHat*BHat), FourierVector)
-    call FourierConvolutionMatrix(FourierVector,FourierMatrix_mirror,thresh)
+    call FourierConvolutionMatrix(FourierVector,FourierMatrix_mirror,whichMatrix)
 
     ! Er xiDot term:
     if (force0RadialCurrentInEquilibrium) then
@@ -547,12 +547,12 @@
             -2*BHat*(dBHat_sub_zeta_dtheta-dBHat_sub_theta_dzeta)) &
             /(BHat*BHat*BHat), FourierVector)
     end if
-    call FourierConvolutionMatrix(FourierVector,FourierMatrix_xiDot,thresh)
+    call FourierConvolutionMatrix(FourierVector,FourierMatrix_xiDot,whichMatrix)
 
     ! Er xDot term:
     call FourierTransform(DHat*(BHat_sub_theta*dBHatdzeta - BHat_sub_zeta*dBHatdtheta)/(BHat*BHat*BHat), &
          FourierVector)
-    call FourierConvolutionMatrix(FourierVector,FourierMatrix_xDot,thresh)
+    call FourierConvolutionMatrix(FourierVector,FourierMatrix_xDot,whichMatrix)
 
     deallocate(FourierVector,FourierMatrix,FourierMatrix2)
 

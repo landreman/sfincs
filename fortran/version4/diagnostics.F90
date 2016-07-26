@@ -230,6 +230,7 @@
     PetscLogDouble :: time1, time2, presentTime
     PetscViewer :: viewer
     character(len=200) :: filename
+    integer :: whichMatrix
 
     if (masterProc) then
        print *,"Computing diagnostics."
@@ -391,27 +392,27 @@
        allocate(FourierMatrix_particleHeat_vE(NFourier2,NFourier2))
        allocate(FourierMatrix_momentum_vE(NFourier2,NFourier2))
 
-
+       whichMatrix = 1 ! This value means the convolution matrices will not be simplified, as they would be for the preconditioner.
        ! Spatial weight for flux-surface-average perturbation to density and pressure, and for flow:
        call FourierTransform(1/DHat,FourierVector)
-       call FourierConvolutionMatrix(FourierVector,FourierMatrix_DInverse,FourierThreshold)
+       call FourierConvolutionMatrix(FourierVector,FourierMatrix_DInverse,whichMatrix)
        ! Spatial weight for FSABFlow:
        call FourierTransform(BHat/DHat,FourierVector)
-       call FourierConvolutionMatrix(FourierVector,FourierMatrix_BOverD,FourierThreshold)
+       call FourierConvolutionMatrix(FourierVector,FourierMatrix_BOverD,whichMatrix)
        ! Spatial weight for particle and heat fluxes from magnetic drifts:
        call FourierTransform((BHat_sub_theta*dBHatdzeta - BHat_sub_zeta*dBHatdtheta)/(BHat*BHat*BHat),FourierVector)
-       call FourierConvolutionMatrix(FourierVector,FourierMatrix_particleHeat_vm,FourierThreshold)
+       call FourierConvolutionMatrix(FourierVector,FourierMatrix_particleHeat_vm,whichMatrix)
        ! Spatial weight for momentum flux from magnetic drifts:
        call FourierTransform((BHat_sub_theta*dBHatdzeta - BHat_sub_zeta*dBHatdtheta)/(BHat*BHat),FourierVector)
-       call FourierConvolutionMatrix(FourierVector,FourierMatrix_momentum_vE,FourierThreshold)
+       call FourierConvolutionMatrix(FourierVector,FourierMatrix_momentum_vE,whichMatrix)
        ! Spatial weight for particle and heat fluxes from ExB drift:
        call FourierTransform((BHat_sub_theta*dPhi1Hatdzeta_realSpace - BHat_sub_zeta*dPhi1Hatdtheta_realSpace) &
             /(BHat*BHat),FourierVector)
-       call FourierConvolutionMatrix(FourierVector,FourierMatrix_particleHeat_vE,FourierThreshold)
+       call FourierConvolutionMatrix(FourierVector,FourierMatrix_particleHeat_vE,whichMatrix)
        ! Spatial weight for momentum flux from ExB drift:
        call FourierTransform((BHat_sub_theta*dPhi1Hatdzeta_realSpace - BHat_sub_zeta*dPhi1Hatdtheta_realSpace) &
             /(BHat),FourierVector)
-       call FourierConvolutionMatrix(FourierVector,FourierMatrix_momentum_vE,FourierThreshold)
+       call FourierConvolutionMatrix(FourierVector,FourierMatrix_momentum_vE,whichMatrix)
 
        do ispecies = 1,Nspecies
           THat = THats(ispecies)

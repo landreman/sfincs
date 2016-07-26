@@ -11,7 +11,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   use globalVariables, only: Nx, Nxi, NFourier2, Nspecies, matrixSize, includePhi1, &
        constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, & 
        includePhi1InKineticEquation, quasineutralityOption, prec, useDKESExBDrift, ddtheta, ddzeta
-  use globalVariables, only: BHat_sup_theta, BHat_sup_zeta, BHat, DHat, BHat_sub_zeta, BHat_sub_theta, FSABHat2, preconditioner_FourierThreshold,&
+  use globalVariables, only: BHat_sup_theta, BHat_sup_zeta, BHat, DHat, BHat_sub_zeta, BHat_sub_theta, FSABHat2, &
        dBHatdtheta,dBHatdzeta
 
   use indices
@@ -31,7 +31,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   real(prec), dimension(:), allocatable :: FourierVector
   real(prec), dimension(:,:), allocatable :: FourierMatrix, FourierMatrix2
   integer :: imn_row,imn_col,counter,maxNNZPerRow
-  real(prec) :: factor, thresh
+  real(prec) :: factor
 
   if (masterProc) then
      print *,"Beginning preallocation for whichMatrix = ",whichMatrix
@@ -67,13 +67,12 @@ subroutine preallocateMatrix(matrix, whichMatrix)
      allocate(FourierVector(NFourier2))
      allocate(FourierMatrix(NFourier2,NFourier2))
      allocate(FourierMatrix2(NFourier2,NFourier2))
-     thresh = preconditioner_FourierThreshold
 
      ! Streaming term:
      call FourierTransform(BHat_sup_theta/BHat, FourierVector)
-     call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
+     call FourierConvolutionMatrix(FourierVector,FourierMatrix,whichMatrix)
      call FourierTransform(BHat_sup_zeta/BHat, FourierVector)
-     call FourierConvolutionMatrix(FourierVector,FourierMatrix2,thresh)
+     call FourierConvolutionMatrix(FourierVector,FourierMatrix2,whichMatrix)
      FourierMatrix = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
      maxNNZPerRow=0
      do imn_row=1,NFourier2
@@ -90,14 +89,14 @@ subroutine preallocateMatrix(matrix, whichMatrix)
      factor=1
      if (useDKESExBDrift) then
         call FourierTransform( factor*DHat*BHat_sub_zeta /FSABHat2, FourierVector)
-        call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
+        call FourierConvolutionMatrix(FourierVector,FourierMatrix,whichMatrix)
         call FourierTransform(-factor*DHat*BHat_sub_theta/FSABHat2, FourierVector)
-        call FourierConvolutionMatrix(FourierVector,FourierMatrix2,thresh)
+        call FourierConvolutionMatrix(FourierVector,FourierMatrix2,whichMatrix)
      else
         call FourierTransform( factor*DHat*BHat_sub_zeta /(BHat*BHat), FourierVector)
-        call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
+        call FourierConvolutionMatrix(FourierVector,FourierMatrix,whichMatrix)
         call FourierTransform(-factor*DHat*BHat_sub_theta/(BHat*BHat), FourierVector)
-        call FourierConvolutionMatrix(FourierVector,FourierMatrix2,thresh)
+        call FourierConvolutionMatrix(FourierVector,FourierMatrix2,whichMatrix)
      end if
      FourierMatrix = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
      maxNNZPerRow=0
@@ -113,7 +112,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
 
      ! Normal mirror term:
      call FourierTransform(-(BHat_sup_theta*dBHatdtheta+BHat_sup_zeta*dBHatdzeta)/ (2*BHat*BHat), FourierVector)
-     call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
+     call FourierConvolutionMatrix(FourierVector,FourierMatrix,whichMatrix)
      maxNNZPerRow=0
      do imn_row=1,NFourier2
         counter=0

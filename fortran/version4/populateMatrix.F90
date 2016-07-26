@@ -75,7 +75,7 @@
     real(prec), dimension(:,:), allocatable :: FourierMatrix, FourierMatrix2
     integer :: imn, imn_row, imn_col
     real(prec) :: dPhiHatdpsiHatToUseInRHS, xPartOfRHS, xPartOfRHS2 !!Added by AM 2016-03
-    real(prec) :: thresh, FourierValue
+    real(prec) :: FourierValue
 
     ! *******************************************************************************
     ! Do a few sundry initialization tasks:
@@ -193,12 +193,6 @@
        ixMin = 1
     end if
 
-    if (whichMatrix==0) then
-       thresh = preconditioner_FourierThreshold
-    else
-       thresh = FourierThreshold
-    end if
-
     ! *********************************************************
     ! Allocate small matrices:
     ! *********************************************************
@@ -273,9 +267,9 @@
        if (whichMatrix==0) then
           call PetscTime(time5,ierr)
           call FourierTransform(sqrt(THat/mHat)*BHat_sup_theta/BHat, FourierVector)
-          call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
+          call FourierConvolutionMatrix(FourierVector,FourierMatrix,whichMatrix)
           call FourierTransform(sqrt(THat/mHat)*BHat_sup_zeta/BHat, FourierVector)
-          call FourierConvolutionMatrix(FourierVector,FourierMatrix2,thresh)
+          call FourierConvolutionMatrix(FourierVector,FourierMatrix2,whichMatrix)
           FourierMatrix = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
           call PetscTime(time6,ierr)
           if (masterProc) print *,"  streaming Fourier+matmul:",time6-time5
@@ -326,14 +320,14 @@
           factor = alpha*Delta/two*dPhiHatdpsiHat
           if (useDKESExBDrift) then
              call FourierTransform( factor*DHat*BHat_sub_zeta /FSABHat2, FourierVector)
-             call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
+             call FourierConvolutionMatrix(FourierVector,FourierMatrix,whichMatrix)
              call FourierTransform(-factor*DHat*BHat_sub_theta/FSABHat2, FourierVector)
-             call FourierConvolutionMatrix(FourierVector,FourierMatrix2,thresh)
+             call FourierConvolutionMatrix(FourierVector,FourierMatrix2,whichMatrix)
           else
              call FourierTransform( factor*DHat*BHat_sub_zeta /(BHat*BHat), FourierVector)
-             call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
+             call FourierConvolutionMatrix(FourierVector,FourierMatrix,whichMatrix)
              call FourierTransform(-factor*DHat*BHat_sub_theta/(BHat*BHat), FourierVector)
-             call FourierConvolutionMatrix(FourierVector,FourierMatrix2,thresh)
+             call FourierConvolutionMatrix(FourierVector,FourierMatrix2,whichMatrix)
           end if
           FourierMatrix = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
           do imn_col = 1,NFourier2
@@ -577,7 +571,7 @@
           speciesFactor = sqrt(THat/mHat)
           call FourierTransform(-(BHat_sup_theta*dBHatdtheta+BHat_sup_zeta*dBHatdzeta) &
                / (2*BHat*BHat), FourierVector)
-          call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
+          call FourierConvolutionMatrix(FourierVector,FourierMatrix,whichMatrix)
           do imn_col = 1,NFourier2
              do imn_row = 1,NFourier2
                 FourierValue = FourierMatrix(imn_row,imn_col)
@@ -630,7 +624,7 @@
                   -2*BHat*(dBHat_sub_zeta_dtheta-dBHat_sub_theta_dzeta)) &
                   /(BHat*BHat*BHat), FourierVector)
           end if
-          call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
+          call FourierConvolutionMatrix(FourierVector,FourierMatrix,whichMatrix)
           do imn_row=1,NFourier2
              do imn_col=1,NFourier2
                 FourierValue = FourierMatrix(imn_row,imn_col)
@@ -740,14 +734,14 @@
           factor = -alpha*Delta*dPhiHatdpsiHat/4
           call FourierTransform(factor*DHat*(BHat_sub_theta*dBHatdzeta - BHat_sub_zeta*dBHatdtheta)/(BHat*BHat*BHat), &
                FourierVector)
-          call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
+          call FourierConvolutionMatrix(FourierVector,FourierMatrix,whichMatrix)
 
           if (force0RadialCurrentInEquilibrium) then
              FourierMatrix2=0
           else
              call FourierTransform(2*factor*DHat*(dBHat_sub_zeta_dtheta - dBHat_sub_theta_dzeta)/(BHat*BHat), &
                   FourierVector)
-             call FourierConvolutionMatrix(FourierVector,FourierMatrix2,thresh)
+             call FourierConvolutionMatrix(FourierVector,FourierMatrix2,whichMatrix)
           end if
 
           allocate(xPartOfXDot(Nx,Nx))
@@ -1101,7 +1095,7 @@
 !!$                      if (L<(Nxi-1)) then
 !!$                         ell = L + 1
 !!$                         do ix_col=ixMinCol,Nx
-!!$                            if (abs(nonlinearTerm_Lp1(ix_row,ix_col))>threshholdForInclusion) then
+!!$                            if (abs(nonlinearTerm_Lp1(ix_row,ix_col))>thresholdForInclusion) then
 !!$                               colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F)
 !!$                               ! We must use MatSetValueDense instead of MatSetValueSparse here!!
 !!$                               call MatSetValueDense(matrix, rowIndex, colIndex, &
@@ -1803,8 +1797,8 @@
 
     if (whichMatrix .ne. 2 .and. procThatHandlesConstraints) then
        call FourierTransform(1/DHat,FourierVector)
-       call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
-       if (whichMatrix==0) FourierMatrix(1,2:NFourier2)=0
+       call FourierConvolutionMatrix(FourierVector,FourierMatrix,whichMatrix)
+       if (whichMatrix==0) FourierMatrix(1,2:NFourier2)=0 ! For preconditioner, keep only the m=n=0 component.
        
        select case (constraintScheme)
        case (0)
