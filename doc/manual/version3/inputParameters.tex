@@ -524,11 +524,45 @@ will be used.
 {Whenever \parlink{RHSMode} == 1 and \parlink{inputRadialCoordinateForGradients} == 3}
 {Radial temperature gradients of each species, with respect to the radial coordinate $r_N$, normalized by the reference temperature $\bar{T}$.}
 
+\myhrule
 
+\param{withAdiabatic}
+{Boolean}
+{\false}
+{Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true}
+{If this parameter is \true, an adiabatic species is added into the quasineutrality equation (but has no other effect).}
 
+\myhrule
 
+\param{adiabaticZ}
+{real}
+{-1.0}
+{Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true and \parlink{withAdiabatic} == \true}
+{Charge of adiabatic species, in units of the proton charge $e$.}
 
+\myhrule
 
+\param{adiabaticMHat}
+{real}
+{5.44617e-4}
+{Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true and \parlink{withAdiabatic} == \true}
+{Mass of adiabatic species, in units of the reference mass $\bar{m}$.}
+
+\myhrule
+
+\param{adiabaticNHat}
+{real}
+{1.0}
+{Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true and \parlink{withAdiabatic} == \true}
+{Density of adiabatic species, in units of the reference density $\bar{n}$.}
+
+\myhrule
+
+\param{adiabaticTHat}
+{real}
+{1.0}
+{Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true and \parlink{withAdiabatic} == \true}
+{Temperature of adiabatic species, in units of the reference temperature $\bar{T}$.}
 
 
 
@@ -795,38 +829,68 @@ instead of
 {Whenever \parlink{RHSMode} == 1.}
 {If false, no terms involving $\Phi_1 = \Phi-\left<\Phi\right>$ are included in the kinetic equation,
 and the quasineutrality equation is not solved.  If true, then terms involving $\Phi_1$ are included
-in the kinetic equation, and the quasineutrality equation is solved at each point on the flux surface.
+in the kinetic equation if \parlink{includePhi1inKineticEquation} = \true, and the quasineutrality equation is solved at each point on the flux surface (make sure that your input densities fulfill quasineutrality, see \parlink{quasineutralityOption}). 
 In this latter case, many more quantities are computed and saved in the output file, such as radial fluxes
-associated with the radial $\vect{E}\times\vect{B}$ drift.}
-
-\myhrule
-
-\param{includeRadialExBDrive}
-{Boolean}
-{\false}
-{Whenever \parlink{RHSMode} == 1.}
-{If true, the radial $\vect{E}\times\vect{B}$ term $(\vect{v}_{E} \cdot\nabla\psi)f_{Ms} [(1/n_s)(dn_s/d\psi) + (x_s^2-3/2)(1/T_s)(dT_s/d\psi)]$
-will be included in the kinetic equation. This is one of the terms considered in Ref \cite{Regana2013} which
-should be unimportant for the main ions but which may be important for impurities.
-Use of this option requires \parlink{includePhi1}=\true, since the radial $\vect{E}\times\vect{B}$ drift
-arises due to $\Phi_1$.
+associated with the radial $\vect{E}\times\vect{B}$ drift.\newline
+%%Text added by AM 2016-07
+If true, the system becomes nonlinear in the unknowns $f_{s1}$ and $\Phi_1$. 
+Newton's method will be used to solve the nonlinear system, meaning that the usual linear solve in \sfincs~must be iterated several times.
 }
 
 \myhrule
 
-\param{nonlinear}
+\param{includePhi1inKineticEquation}
 {Boolean}
-{\false}
-{Whenever \parlink{RHSMode} == 1.}
-{If true, the term
-$-(Z_s e/m) (\nabla_{||} \Phi_1) (\partial f_{s1}/\partial v_{||})_\mu$ will be included
-in the kinetic equation.  This is one of the terms considered in Ref \cite{Regana2013} which
-should be unimportant for the main ions but which may be important for impurities.
-This term is nonlinear in the unknowns $f_{s1}$ and $\Phi_1$.
-Newton's method will be used to solve the nonlinear system, meaning that the usual linear solve in \sfincs~must
-be iterated several times.
-Running with {\ttfamily nonlinear}=\true requires \parlink{includePhi1}=\true
+{\true}
+{Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true}
+{If true, the terms containing $\Phi_1$ will be included in the kinetic equation. 
+If false, and \parlink{includePhi1} = \true, then $\Phi_1$ is only included in the quasineutrality equation. 
 }
+
+\myhrule
+
+\param{quasineutralityOption}
+{integer}
+{1}
+{Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true}
+{This variable controls which quasineutrality equation is used, and must be set to either 1 or 2. Make sure that your input densities fulfill quasineutrality (also accounting for the adiabatic species if \parlink{withAdiabatic}=\true).\\
+
+{\ttfamily quasineutralityOption} = 1: Full quasineutrality equation. All species (kinetic and adiabatic if applicable) are included in the quasineutrality equation.\\
+
+{\ttfamily quasineutralityOption} = 2: {\ttfamily EUTERPE} quasineutrality. \sfincs~must be run with an adiabatic species, \parlink{withAdiabatic}=\true, and only the adiabatic species and the first kinetic species are included in the quasineutrality equation (their input densities must fulfill quasineutrality). This is the quasineutrality considered in Ref \cite{Regana2013}.
+}
+
+
+%%The includeRadialExBDrive parameter has been removed by AM 2016-07
+%\myhrule
+%
+%\param{includeRadialExBDrive}
+%{Boolean}
+%{\false}
+%{Whenever \parlink{RHSMode} == 1.}
+%{If true, the radial $\vect{E}\times\vect{B}$ term $(\vect{v}_{E} \cdot\nabla\psi)f_{Ms} [(1/n_s)(dn_s/d\psi) + (x_s^2-3/2)(1/T_s)(dT_s/d\psi)]$
+%will be included in the kinetic equation. This is one of the terms considered in Ref \cite{Regana2013} which
+%should be unimportant for the main ions but which may be important for impurities.
+%Use of this option requires \parlink{includePhi1}=\true, since the radial $\vect{E}\times\vect{B}$ drift
+%arises due to $\Phi_1$.
+%}
+
+%%The nonlinear parameter has been removed by AM 2016-07
+%\myhrule
+%
+%\param{nonlinear}
+%{Boolean}
+%{\false}
+%{Whenever \parlink{RHSMode} == 1.}
+%{If true, the term
+%$-(Z_s e/m) (\nabla_{||} \Phi_1) (\partial f_{s1}/\partial v_{||})_\mu$ will be included
+%in the kinetic equation.  This is one of the terms considered in Ref \cite{Regana2013} which
+%should be unimportant for the main ions but which may be important for impurities.
+%This term is nonlinear in the unknowns $f_{s1}$ and $\Phi_1$.
+%Newton's method will be used to solve the nonlinear system, meaning that the usual linear solve in \sfincs~must
+%be iterated several times.
+%Running with {\ttfamily nonlinear}=\true requires \parlink{includePhi1}=\true
+%}
 
 \myhrule
 
