@@ -75,7 +75,7 @@
     real(prec), dimension(:,:), allocatable :: FourierMatrix, FourierMatrix2
     integer :: imn, imn_row, imn_col
     real(prec) :: dPhiHatdpsiHatToUseInRHS, xPartOfRHS, xPartOfRHS2 !!Added by AM 2016-03
-    real(prec) :: thresh
+    real(prec) :: thresh, FourierValue
 
     ! *******************************************************************************
     ! Do a few sundry initialization tasks:
@@ -280,30 +280,32 @@
           call PetscTime(time6,ierr)
           if (masterProc) print *,"  streaming Fourier+matmul:",time6-time5
           time5=time6
-          do L=LMin,LMax
-             ! The L loop is outermost since we may eventually want to use a sparser Fourier matrix for the preconditioner at large L.
-             do imn_col = 1,NFourier2
-                do imn_row = 1,NFourier2
-                   do ix=ixMin,Nx
-                      rowIndex = getIndex(ispecies, ix, L+1, imn_row, BLOCK_F)
+          do imn_col = 1,NFourier2
+             do imn_row = 1,NFourier2
+                FourierValue = FourierMatrix(imn_row,imn_col)
+                if (abs(FourierValue)>0) then
+                   do L=LMin,LMax
+                      do ix=ixMin,Nx
+                         rowIndex = getIndex(ispecies, ix, L+1, imn_row, BLOCK_F)
+                         
+                         ! Super-diagonal-in-L term
+                         if (L < Nxi-1) then
+                            ell = L+1
+                            colIndex = getIndex(ispecies, ix, ell+1, imn_col, BLOCK_F)
+                            call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                                 (L+1)/(2*L+three)*x(ix)*FourierValue, ADD_VALUES, ierr)
+                         end if
 
-                      ! Super-diagonal-in-L term
-                      if (L < Nxi-1) then
-                         ell = L+1
-                         colIndex = getIndex(ispecies, ix, ell+1, imn_col, BLOCK_F)
-                         call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                              (L+1)/(2*L+three)*x(ix)*FourierMatrix(imn_row,imn_col), ADD_VALUES, ierr)
-                      end if
-
-                      ! Sub-diagonal-in-L term
-                      if (L > 0) then
-                         ell = L-1
-                         colIndex = getIndex(ispecies, ix, ell+1, imn_col, BLOCK_F)
-                         call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                              L/(2*L-one)*x(ix)*FourierMatrix(imn_row,imn_col), ADD_VALUES, ierr)
-                      end if
+                         ! Sub-diagonal-in-L term
+                         if (L > 0) then
+                            ell = L-1
+                            colIndex = getIndex(ispecies, ix, ell+1, imn_col, BLOCK_F)
+                            call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                                 L/(2*L-one)*x(ix)*FourierValue, ADD_VALUES, ierr)
+                         end if
+                      end do
                    end do
-                end do
+                end if
              end do
           end do
           call PetscTime(time6,ierr)
@@ -334,17 +336,19 @@
              call FourierConvolutionMatrix(FourierVector,FourierMatrix2,thresh)
           end if
           FourierMatrix = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
-          do L=LMin,LMax
-             ! The L loop is outermost since we may eventually want to use a sparser Fourier matrix for the preconditioner at large L.
-             do ix=ixMin,Nx
-                do imn_row = 1,NFourier2
-                   rowIndex = getIndex(ispecies, ix, L+1, imn_row, BLOCK_F)
-                   do imn_col = 1,NFourier2
-                      colIndex = getIndex(ispecies, ix, L+1, imn_col, BLOCK_F)
-                      call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                           FourierMatrix(imn_row,imn_col), ADD_VALUES, ierr)
+          do imn_col = 1,NFourier2
+             do imn_row = 1,NFourier2
+                FourierValue = FourierMatrix(imn_row,imn_col)
+                if (abs(FourierValue)>0) then
+                   do L=LMin,LMax
+                      do ix=ixMin,Nx
+                         rowIndex = getIndex(ispecies, ix, L+1, imn_row, BLOCK_F)
+                         colIndex = getIndex(ispecies, ix, L+1, imn_col, BLOCK_F)
+                         call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                              FourierValue, ADD_VALUES, ierr)
+                      end do
                    end do
-                end do
+                end if
              end do
           end do
        else
@@ -574,30 +578,32 @@
           call FourierTransform(-(BHat_sup_theta*dBHatdtheta+BHat_sup_zeta*dBHatdzeta) &
                / (2*BHat*BHat), FourierVector)
           call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
-          do L=LMin,LMax
-             ! The L loop is outermost since we may eventually want to use a sparser Fourier matrix for the preconditioner at large L.
-             do ix=ixMin,Nx
-                do imn_row = 1,NFourier2
-                   rowIndex = getIndex(ispecies,ix,L+1,imn_row,BLOCK_F)
-                   do imn_col = 1,NFourier2
+          do imn_col = 1,NFourier2
+             do imn_row = 1,NFourier2
+                FourierValue = FourierMatrix(imn_row,imn_col)
+                if (abs(FourierValue)>0) then
+                   do L=LMin,LMax
+                      do ix=ixMin,Nx
+                         rowIndex = getIndex(ispecies,ix,L+1,imn_row,BLOCK_F)
 
-                      if (L<Nxi-1) then
-                         ! Super-diagonal-in-L term:    
-                         ell = L+1
-                         colIndex = getIndex(ispecies,ix,ell+1,imn_col,BLOCK_F)
-                         call MatSetValueSparse(matrix,rowIndex,colIndex,&
-                              speciesFactor*(L+1)*(L+2)/(2*L+three)*x(ix)*FourierMatrix(imn_row,imn_col), ADD_VALUES, ierr)
-                      end if
+                         if (L<Nxi-1) then
+                            ! Super-diagonal-in-L term:    
+                            ell = L+1
+                            colIndex = getIndex(ispecies,ix,ell+1,imn_col,BLOCK_F)
+                            call MatSetValueSparse(matrix,rowIndex,colIndex,&
+                                 speciesFactor*(L+1)*(L+2)/(2*L+three)*x(ix)*FourierValue, ADD_VALUES, ierr)
+                         end if
 
-                      if (L>0) then
-                         ! Sub-diagonal-in-L term:
-                         ell = L-1
-                         colIndex = getIndex(ispecies,ix,ell+1,imn_col,BLOCK_F)
-                         call MatSetValueSparse(matrix,rowIndex,colIndex,&
-                              speciesFactor*(-L)*(L-1)/(2*L-one)*x(ix)*FourierMatrix(imn_row,imn_col), ADD_VALUES, ierr)
-                      end if
+                         if (L>0) then
+                            ! Sub-diagonal-in-L term:
+                            ell = L-1
+                            colIndex = getIndex(ispecies,ix,ell+1,imn_col,BLOCK_F)
+                            call MatSetValueSparse(matrix,rowIndex,colIndex,&
+                                 speciesFactor*(-L)*(L-1)/(2*L-one)*x(ix)*FourierValue, ADD_VALUES, ierr)
+                         end if
+                      end do
                    end do
-                end do
+                end if
              end do
           end do
        else
@@ -625,41 +631,42 @@
                   /(BHat*BHat*BHat), FourierVector)
           end if
           call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
+          do imn_row=1,NFourier2
+             do imn_col=1,NFourier2
+                FourierValue = FourierMatrix(imn_row,imn_col)
+                if (abs(FourierValue)>0) then
+                   do L=LMin,LMax
+                      do ix=ixMin,Nx
+                         rowIndex = getIndex(ispecies,ix,L+1,imn_row,BLOCK_F)
 
-          do L=LMin,LMax
-             ! The L loop is outermost since we may eventually want to use a sparser Fourier matrix for the preconditioner at large L.
-             do ix=ixMin,Nx
-                do imn_row=1,NFourier2
-                   rowIndex = getIndex(ispecies,ix,L+1,imn_row,BLOCK_F)
-                   do imn_col=1,NFourier2
+                         ! Diagonal-in-L term
+                         colIndex = getIndex(ispecies,ix,L+1,imn_col,BLOCK_F)
+                         call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                              (L+1)*L/((2*L-one)*(2*L+three))*FourierValue, ADD_VALUES, ierr)
 
-                      ! Diagonal-in-L term
-                      colIndex = getIndex(ispecies,ix,L+1,imn_col,BLOCK_F)
-                      call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                           (L+1)*L/((2*L-one)*(2*L+three))*FourierMatrix(imn_row,imn_col), ADD_VALUES, ierr)
+                         ! Drop the off-by-2 diagonal terms in L if this is the preconditioner
+                         ! and preconditioner_xi = 1:
+                         if (whichMatrix .ne. 0 .or. preconditioner_xi==0) then
+                            if (L<Nxi-2) then
+                               ! Super-super-diagonal-in-L term:
+                               ell = L+2
+                               colIndex=getIndex(ispecies,ix,ell+1,imn_col,BLOCK_F)
+                               call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                                    (L+3)*(L+2)*(L+1)/((two*L+5)*(2*L+three))*FourierValue, ADD_VALUES, ierr)
+                            end if
 
-                      ! Drop the off-by-2 diagonal terms in L if this is the preconditioner
-                      ! and preconditioner_xi = 1:
-                      if (whichMatrix .ne. 0 .or. preconditioner_xi==0) then
-                         if (L<Nxi-2) then
-                            ! Super-super-diagonal-in-L term:
-                            ell = L+2
-                            colIndex=getIndex(ispecies,ix,ell+1,imn_col,BLOCK_F)
-                            call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                                 (L+3)*(L+2)*(L+1)/((two*L+5)*(2*L+three))*FourierMatrix(imn_row,imn_col), ADD_VALUES, ierr)
+                            if (L>1) then
+                               ! Sub-sub-diagonal-in-L term:
+                               ell = L-2
+                               colIndex=getIndex(ispecies,ix,ell+1,imn_col,BLOCK_F)
+                               call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                                    -L*(L-1)*(L-2)/((2*L-3)*(2*L-one))*FourierValue, ADD_VALUES, ierr)
+                            end if
+
                          end if
-
-                         if (L>1) then
-                            ! Sub-sub-diagonal-in-L term:
-                            ell = L-2
-                            colIndex=getIndex(ispecies,ix,ell+1,imn_col,BLOCK_F)
-                            call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                                 -L*(L-1)*(L-2)/((2*L-3)*(2*L-one))*FourierMatrix(imn_row,imn_col), ADD_VALUES, ierr)
-                         end if
-
-                      end if
+                      end do
                    end do
-                end do
+                end if
              end do
           end do
        else
@@ -770,7 +777,7 @@
 
                          ! Term that is diagonal in L:
                          colIndex=getIndex(ispecies,ix_col,L+1,imn_col,BLOCK_F)
-                         stuffToAdd = two*(3*L*L+3*L-2)/((two*L+3)*(2*L-1))*FourierMatrix(imn_row,imn_col) &
+                         stuffToAdd = two*(3*L*L+3*L-2)/((two*L+3)*(2*L-1))*FourierValue &
                               + (2*L*L+2*L-one)/((two*L+3)*(2*L-1))*FourierMatrix2(imn_row,imn_col)
                          call MatSetValueSparse(matrix,rowIndex,colIndex, &
                               stuffToAdd*xPartOfXDot(ix_row,ix_col), ADD_VALUES, ierr)
@@ -784,7 +791,7 @@
                                ell = L + 2
                                colIndex=getIndex(ispecies,ix_col,ell+1,imn_col,BLOCK_F)
                                stuffToAdd = (L+1)*(L+2)/((two*L+5)*(2*L+3)) * &
-                                    (FourierMatrix(imn_row,imn_col)+FourierMatrix2(imn_row,imn_col))
+                                    (FourierValue+FourierMatrix2(imn_row,imn_col))
                                call MatSetValueSparse(matrix,rowIndex,colIndex, &
                                     stuffToAdd*xPartOfXDot(ix_row,ix_col), ADD_VALUES, ierr)
                             end if
@@ -794,7 +801,7 @@
                                ell = L - 2
                                colIndex=getIndex(ispecies,ix_col,ell+1,imn_col,BLOCK_F)
                                stuffToAdd = L*(L-1)/((two*L-3)*(2*L-1)) * &
-                                    (FourierMatrix(imn_row,imn_col)+FourierMatrix2(imn_row,imn_col))
+                                    (FourierValue+FourierMatrix2(imn_row,imn_col))
                                call MatSetValueSparse(matrix,rowIndex,colIndex, &
                                     stuffToAdd*xPartOfXDot(ix_row,ix_col), ADD_VALUES, ierr)
                             end if
@@ -1797,7 +1804,8 @@
     if (whichMatrix .ne. 2 .and. procThatHandlesConstraints) then
        call FourierTransform(1/DHat,FourierVector)
        call FourierConvolutionMatrix(FourierVector,FourierMatrix,thresh)
-
+       if (whichMatrix==0) FourierMatrix(1,2:NFourier2)=0
+       
        select case (constraintScheme)
        case (0)
           ! Do nothing here.
