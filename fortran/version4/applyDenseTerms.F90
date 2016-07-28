@@ -70,8 +70,8 @@
     time5=time3
     do ispecies = 1,Nspecies
        factor = sqrt(THats(ispecies)/mHats(ispecies))
-       do ell=LMin,LMax
-          do ix=1,Nx
+       do ix=1,Nx
+          do ell=0,Nxi_for_x(ix)-1
              do imn=1,NFourier2
                 index = getIndex(ispecies, ix, ell+1, imn, BLOCK_F) + 1 ! +1 to go from PETsc to Fortran indices
                 FourierVector(imn) = stateArray(index)
@@ -95,7 +95,7 @@
 
              ! Sub-diagonal-in-L term
              !if (L > 0) then
-             if (ell < Nxi-1) then
+             if (ell < Nxi_for_x(ix)-1) then
                 !ell = L-1
                 L = ell+1
                 LFactor = L/(2*L-one)*x(ix)
@@ -118,8 +118,8 @@
 
     factor = alpha*Delta/two*dPhiHatdpsiHat
     do ispecies = 1,Nspecies
-       do L=LMin,LMax
-          do ix=1,Nx
+       do ix=1,Nx
+          do L=0,Nxi_for_x(ix)-1
              do imn = 1,NFourier2
                 index = getIndex(ispecies, ix, L+1, imn, BLOCK_F) + 1 ! +1 to go from PETsc to Fortran indices
                 FourierVector(imn) = stateArray(index)
@@ -146,8 +146,8 @@
 
     do ispecies = 1,Nspecies
        factor = sqrt(THats(ispecies)/mHats(ispecies))
-       do ell=LMin,LMax
-          do ix=1,Nx
+       do ix=1,Nx
+          do ell=0,Nxi_for_x(ix)-1
              do imn = 1,NFourier2
                 index = getIndex(ispecies,ix,ell+1,imn,BLOCK_F) + 1 ! +1 to go from PETsc to Fortran indices
                 FourierVector(imn) = stateArray(index)
@@ -170,7 +170,7 @@
              end if
 
              !if (L>0) then
-             if (ell<Nxi-1) then
+             if (ell<Nxi_for_x(ix)-1) then
                 ! Sub-diagonal-in-L term:
                 !ell = L-1
                 L = ell + 1
@@ -195,8 +195,8 @@
     if (includeElectricFieldTermInXiDot .and. abs(dPhiHatdpsiHat)>0) then
        factor = alpha*Delta*dPhiHatdpsiHat/4
        do ispecies=1,Nspecies
-          do ell=LMin,LMax
-             do ix=1,Nx
+          do ix=1,Nx
+             do ell=0,Nxi_for_x(ix)-1
                 do imn=1,NFourier2
                    index = getIndex(ispecies,ix,ell+1,imn,BLOCK_F) + 1 ! +1 to go from PETsc to Fortran indices
                    FourierVector(imn)=stateArray(index)
@@ -228,7 +228,7 @@
                 end if
 
                 !if (L>1) then
-                if (ell<Nxi-2) then
+                if (ell<Nxi_for_x(ix)-2) then
                    ! Sub-sub-diagonal-in-L term:
                    !ell = L-2
                    L = ell+2
@@ -322,8 +322,8 @@
 
        factor = -alpha*Delta*dPhiHatdpsiHat/4
        do ispecies=1,Nspecies
-          do ell=LMin,LMax
-             do ix_col = 1,Nx
+          do ell=0,Nxi-1
+             do ix_col = min_x_for_L(ell),Nx
                 do imn = 1,NFourier2
                    index = getIndex(ispecies,ix_col,ell+1,imn,BLOCK_F) + 1 ! +1 to go from PETsc to Fortran indices
                    FourierVector(imn) = stateArray(index)
@@ -336,7 +336,7 @@
                 L=ell
                 !stuffToAdd = two*(3*L*L+3*L-2)/((two*L+3)*(2*L-1))*FourierMatrix(imn_row,imn_col) &
                 !     + (2*L*L+2*L-one)/((two*L+3)*(2*L-1))*FourierMatrix2(imn_row,imn_col)
-                do ix_row=1,Nx
+                do ix_row=min_x_for_L(L),Nx
                    LFactor = two*(3*L*L+3*L-2)/((two*L+3)*(2*L-1))*xPartOfXDot(ix_row,ix_col)
                    do imn = 1,NFourier2
                       index=getIndex(ispecies,ix_row,L+1,imn,BLOCK_F)
@@ -352,7 +352,7 @@
                    L = ell-2
                    !stuffToAdd = (L+1)*(L+2)/((two*L+5)*(2*L+3)) * &
                    !     (FourierMatrix(imn_row,imn_col)+FourierMatrix2(imn_row,imn_col))
-                   do ix_row=1,Nx
+                   do ix_row=min_x_for_L(L),Nx
                       LFactor = (L+1)*(L+2)/((two*L+5)*(2*L+3)) * xPartOfXDot(ix_row,ix_col)
                       do imn = 1,NFourier2
                          index=getIndex(ispecies,ix_row,L+1,imn,BLOCK_F)
@@ -369,7 +369,7 @@
                    L = ell + 2
                    !stuffToAdd = L*(L-1)/((two*L-3)*(2*L-1)) * &
                    !     (FourierMatrix(imn_row,imn_col)+FourierMatrix2(imn_row,imn_col))
-                   do ix_row=1,Nx
+                   do ix_row=min_x_for_L(L),Nx
                       LFactor = L*(L-1)/((two*L-3)*(2*L-1)) * xPartOfXDot(ix_row,ix_col)
                       do imn = 1,NFourier2
                          index=getIndex(ispecies,ix_row,L+1,imn,BLOCK_F)

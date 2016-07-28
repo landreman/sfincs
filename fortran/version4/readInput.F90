@@ -62,7 +62,7 @@ contains
 
     namelist / otherNumericalParameters /  &
          xGridScheme, whichParallelSolverToFactorPreconditioner, &
-         PETSCPreallocationStrategy, xPotentialsGridScheme, xGrid_k
+         PETSCPreallocationStrategy, xPotentialsGridScheme, xGrid_k, Nxi_vs_x_option
 
     namelist / preconditionerOptions / preconditioner_x, preconditioner_x_min_L, &
          preconditioner_Fourier, preconditioner_xi, preconditioner_species, reusePreconditioner, &

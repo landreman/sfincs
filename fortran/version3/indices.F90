@@ -131,6 +131,9 @@
     ! Enforce <f_1> = 0 at each x
     integer, parameter :: BLOCK_F_CONSTRAINT        = 9995
 
+    integer, private :: DKE_size
+    integer, private, dimension(:), allocatable :: first_index_for_x
+
   contains
 
     integer function getIndex(i_species, i_x, i_xi, i_theta, i_zeta, whichBlock)
@@ -141,7 +144,7 @@
       ! The input "local" indices (i_x, i_xi, etc) are 1-based, since small matrices are stored in Fortran.
       ! the output "global" index is 0-based, since PETSc uses 0-based indexing.
 
-      use globalVariables, only: Nspecies, Nx, Nxi, Ntheta, Nzeta, matrixSize, constraintScheme, includePhi1, masterProc
+      use globalVariables, only: Nspecies, Nx, Nxi, Ntheta, Nzeta, matrixSize, constraintScheme, includePhi1, masterProc, Nxi_for_x
 
       implicit none
 
@@ -174,8 +177,10 @@
          stop
       end if
 
-      if (i_xi > Nxi) then
-         print *,"Error: i_xi > Nxi"
+      if (i_xi > Nxi_for_x(i_x)) then
+         print *,"Error: i_xi > Nxi_for_x(i_x)"
+         print *,"i_xi:",i_xi
+         print *,"i_x:",i_x
          stop
       end if
 
@@ -217,19 +222,26 @@
 
       select case (whichBlock)
       case (BLOCK_F)
-         getIndex = (i_species-1)*Nx*Nxi*Ntheta*Nzeta &
-              +(i_x-1)*Nxi*Ntheta*Nzeta &
+!!$         getIndex = (i_species-1)*Nx*Nxi*Ntheta*Nzeta &
+!!$              +(i_x-1)*Nxi*Ntheta*Nzeta &
+!!$              +(i_xi-1)*Ntheta*Nzeta &
+!!$              +(i_theta-1)*Nzeta &
+!!$              +i_zeta -1
+         getIndex = (i_species-1)*DKE_size &
+              +first_index_for_x(i_x)*Ntheta*Nzeta &
               +(i_xi-1)*Ntheta*Nzeta &
               +(i_theta-1)*Nzeta &
               +i_zeta -1
 
       case (BLOCK_QN)
-         getIndex = Nspecies*Nx*Nxi*Ntheta*Nzeta &
+         !getIndex = Nspecies*Nx*Nxi*Ntheta*Nzeta &
+         getIndex = Nspecies*DKE_size &
               +(i_theta-1)*Nzeta &
               +i_zeta-1
 
       case (BLOCK_PHI1_CONSTRAINT)
-         getIndex = Nspecies*Nx*Nxi*Ntheta*Nzeta &
+         !getIndex = Nspecies*Nx*Nxi*Ntheta*Nzeta &
+         getIndex = Nspecies*DKE_size &
               +Ntheta*Nzeta
 
       case (BLOCK_DENSITY_CONSTRAINT)
@@ -239,11 +251,11 @@
             stop
          end if
          if (includePhi1) then
-            getIndex = Nspecies*Nx*Nxi*Ntheta*Nzeta &
+            getIndex = Nspecies*DKE_size &
                  + Ntheta*Nzeta + 1 &
                  + (i_species-1)*2
          else
-            getIndex = Nspecies*Nx*Nxi*Ntheta*Nzeta &
+            getIndex = Nspecies*DKE_size &
                  + (i_species-1)*2
          end if
 
@@ -254,11 +266,11 @@
             stop
          end if
          if (includePhi1) then
-            getIndex = Nspecies*Nx*Nxi*Ntheta*Nzeta &
+            getIndex = Nspecies*DKE_size &
                  + Ntheta*Nzeta + 1 &
                  + (i_species-1)*2 + 1
          else
-            getIndex = Nspecies*Nx*Nxi*Ntheta*Nzeta &
+            getIndex = Nspecies*DKE_size &
                  + (i_species-1)*2 + 1
          end if
 
@@ -269,11 +281,11 @@
             stop
          end if
          if (includePhi1) then
-            getIndex = Nspecies*Nx*Nxi*Ntheta*Nzeta &
+            getIndex = Nspecies*DKE_size &
                  + Ntheta*Nzeta + 1 &
                  + (i_species-1)*Nx + i_x - 1
          else
-            getIndex = Nspecies*Nx*Nxi*Ntheta*Nzeta &
+            getIndex = Nspecies*DKE_size &
                  + (i_species-1)*Nx + i_x - 1
          end if
 
@@ -301,12 +313,23 @@
 
     subroutine computeMatrixSize()
 
-      use globalVariables, only: Nspecies, Ntheta, Nzeta, Nx, Nxi, includePhi1, constraintScheme, masterProc, matrixSize
+      use globalVariables, only: Nspecies, Ntheta, Nzeta, Nx, Nxi, includePhi1, constraintScheme, masterProc, matrixSize, Nxi_for_x
 
       implicit none
 
-      matrixSize = Nspecies * Ntheta * Nzeta * Nxi * Nx
-      !matrixSize = Nspecies * Ntheta * Nzeta * Nxi * Nx + Ntheta * Nzeta + 1 ! Includes QN
+      integer :: ix
+
+      DKE_size = sum(Nxi_for_x)*Ntheta*Nzeta
+
+      matrixSize = Nspecies * DKE_size
+      !matrixSize = Nspecies * Ntheta * Nzeta * Nxi * Nx
+
+      allocate(first_index_for_x(Nx))
+      first_index_for_x(1)=0
+      do ix=2,Nx
+         first_index_for_x(ix) = first_index_for_x(ix-1)+Nxi_for_x(ix-1)
+      end do
+
 
       if (includePhi1) then
          ! Include quasineutrality at Ntheta*Nzeta grid points, plus the <Phi_1>=0 constraint:

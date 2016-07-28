@@ -174,6 +174,7 @@ module globalVariables
   integer :: constraintScheme=-1
 
   integer :: PETSCPreallocationStrategy=1
+  integer :: Nxi_for_x_option = 1
 
   ! ********************************************************
   !
@@ -181,6 +182,7 @@ module globalVariables
   !
   ! ********************************************************
 
+  integer, dimension(:), allocatable :: Nxi_for_x, min_x_for_L
   integer :: matrixSize, NxPotentials
   PetscScalar, dimension(:), allocatable :: theta, zeta, x, x_plus1
   PetscScalar, dimension(:), allocatable :: thetaWeights, zetaWeights

@@ -66,6 +66,7 @@
 /
 
 &otherNumericalParameters
+Nxi_vs_x_option=2
 /
 
 &preconditionerOptions

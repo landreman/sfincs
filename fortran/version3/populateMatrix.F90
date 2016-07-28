@@ -231,6 +231,7 @@
     ! ************************************************************
 
     do ispecies = 1,Nspecies
+       if (masterProc) print *,"Beginning species",ispecies
        nHat = nHats(ispecies)
        THat = THats(ispecies)
        mHat = mHats(ispecies)
@@ -243,6 +244,7 @@
        ! *********************************************************
        
        if (whichMatrix .ne. 2) then
+          if (masterProc) print *,"Beginning streaming ddtheta"
           allocate(thetaPartOfTerm(Ntheta,Ntheta))
           allocate(localThetaPartOfTerm(Ntheta,localNtheta))
           allocate(rowIndices(localNtheta))
@@ -266,13 +268,14 @@
                 thetaPartOfTerm = transpose(thetaPartOfTerm)
                 localThetaPartOfTerm = thetaPartOfTerm(:,ithetaMin:ithetaMax)
                 
-                do ix=ixMin,Nx
+                !do ix=ixMin,Nx
+                do ix=max(ixMin,min_x_for_L(L)),Nx
                    do itheta=1,localNtheta
                       rowIndices(itheta) = getIndex(ispecies, ix, L+1, ithetaMin+itheta-1, izeta, BLOCK_F)
                    end do
                    
                    ! Super-diagonal-in-L term
-                   if (L < Nxi-1) then
+                   if (L < Nxi_for_x(ix)-1) then
                       ell = L+1
                       do itheta=1,Ntheta
                          colIndices(itheta) = getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F)
@@ -308,6 +311,7 @@
        ! *********************************************************
 
        if (whichMatrix .ne. 2) then
+          if (masterProc) print *,"Beginning streaming ddzeta"
           allocate(zetaPartOfTerm(Nzeta,Nzeta))
           allocate(localZetaPartOfTerm(Nzeta,localNzeta))
           allocate(rowIndices(localNzeta))
@@ -330,13 +334,14 @@
                 zetaPartOfTerm = transpose(zetaPartOfTerm)
                 localZetaPartOfTerm = zetaPartOfTerm(:,izetaMin:izetaMax)
                 
-                do ix=ixMin,Nx
+                !do ix=ixMin,Nx
+                do ix=max(ixMin,min_x_for_L(L)),Nx
                    do izeta = 1,localNzeta
                       rowIndices(izeta)=getIndex(ispecies, ix, L+1, itheta, izetaMin+izeta-1, BLOCK_F)
                    end do
                    
                    ! Super-diagonal-in-L term
-                   if (L < Nxi-1) then
+                   if (L < Nxi_for_x(ix)-1) then
                       ell = L + 1
                       do izeta = 1,Nzeta
                          colIndices(izeta)=getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F)
@@ -372,6 +377,7 @@
        ! *********************************************************
 
        if (whichMatrix .ne. 2) then
+          if (masterProc) print *,"Beginning ExB ddtheta"
           factor = alpha*Delta/two*dPhiHatdpsiHat
           allocate(thetaPartOfTerm(Ntheta,Ntheta))
           allocate(localThetaPartOfTerm(Ntheta,localNtheta))
@@ -412,7 +418,8 @@
                 thetaPartOfTerm = transpose(thetaPartOfTerm*factor)
                 localThetaPartOfTerm = thetaPartOfTerm(:,ithetaMin:ithetaMax)
                 
-                do ix=ixMin,Nx
+                !do ix=ixMin,Nx
+                do ix=max(ixMin,min_x_for_L(L)),Nx
                    do itheta=1,localNtheta
                       rowIndices(itheta)=getIndex(ispecies,ix,L+1,itheta+ithetaMin-1,izeta,BLOCK_F)
                    end do
@@ -436,6 +443,7 @@
        ! *********************************************************
 
        if (whichMatrix .ne. 2) then
+          if (masterProc) print *,"Beginning ExB ddzeta"
           factor = -alpha*Delta/two*dPhiHatdpsiHat
           allocate(zetaPartOfTerm(Nzeta,Nzeta))
           allocate(localZetaPartOfTerm(Nzeta,localNzeta))
@@ -476,7 +484,8 @@
                 zetaPartOfTerm = transpose(zetaPartOfTerm*factor)
                 localzetaPartOfTerm = zetaPartOfTerm(:,izetaMin:izetaMax)
                 
-                do ix=ixMin,Nx
+                !do ix=ixMin,Nx
+                do ix=max(ixMin,min_x_for_L(L)),Nx
                    do izeta=1,localNzeta
                       rowIndices(izeta)=getIndex(ispecies,ix,L+1,itheta,izeta+izetaMin-1,BLOCK_F)
                    end do
@@ -542,7 +551,8 @@
                       end if
                    end if
 
-                   do ix = ixMin, Nx
+                   !do ix = ixMin, Nx
+                   do ix = max(ixMin,min_x_for_L(L)), Nx
                       rowIndex = getIndex(ispecies, ix, L+1, ithetaRow, izeta, BLOCK_F)
                       
                       factor = Delta*THat*DHat(ithetaRow,izeta)*x(ix)*x(ix) &
@@ -567,7 +577,7 @@
                          if (whichMatrix .ne. 0 .or. preconditioner_xi==0) then
 
                             ! Super-super-diagonal-in-L term
-                            if (L < Nxi-2) then
+                            if (L < Nxi_for_x(ix)-2) then
                                ell = L+2
                                colIndex = getIndex(ispecies, ix, ell+1, ithetaCol, izeta, BLOCK_F)
 
@@ -646,7 +656,8 @@
                       end if
                    end if
 
-                   do ix = ixMin, Nx
+                   !do ix = ixMin, Nx
+                   do ix = max(ixMin,min_x_for_L(L)), Nx
                       rowIndex = getIndex(ispecies, ix, L+1, itheta, izetaRow, BLOCK_F)
                       
                       factor = Delta*THat*DHat(itheta,izetaRow)*x(ix)*x(ix) &
@@ -671,7 +682,7 @@
                          if (whichMatrix .ne. 0 .or. preconditioner_xi==0) then
 
                             ! Super-super-diagonal-in-L term
-                            if (L < Nxi-2) then
+                            if (L < Nxi_for_x(ix)-2) then
                                ell = L+2
                                colIndex = getIndex(ispecies, ix, ell+1, itheta, izetaCol, BLOCK_F)
 
@@ -708,6 +719,7 @@
        ! *********************************************************
 
        if (whichMatrix .ne. 2) then
+          if (masterProc) print *,"Beginning mirror"
           do itheta=ithetaMin,ithetaMax
              do izeta=izetaMin,izetaMax
                 factor = -sqrtTHat/(2*sqrtMHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
@@ -715,10 +727,10 @@
                      + BHat_sup_zeta(itheta,izeta) * dBHatdzeta(itheta,izeta))
                 
                 do ix=ixMin,Nx
-                   do L=0,(Nxi-1)
+                   do L=0,(Nxi_for_x(ix)-1)
                       rowIndex=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
                       
-                      if (L<Nxi-1) then
+                      if (L<Nxi_for_x(ix)-1) then
                          ! Super-diagonal-in-L term:
                          ell = L+1
                          colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
@@ -737,6 +749,7 @@
                 end do
              end do
           end do
+          if (masterProc) print *,"Done with mirror"
        end if
 
        ! *********************************************************
@@ -759,7 +772,7 @@
                      * DHat(itheta,izeta) * temp
                      
                 do ix=ixMin,Nx
-                   do L=0,(Nxi-1)
+                   do L=0,(Nxi_for_x(ix)-1)
                       rowIndex=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
 
                       ! Diagonal-in-L term
@@ -770,7 +783,7 @@
                       ! and preconditioner_xi = 1:
                       if (whichMatrix .ne. 0 .or. preconditioner_xi==0) then
 
-                         if (L<Nxi-2) then
+                         if (L<Nxi_for_x(ix)-2) then
                             ! Super-super-diagonal-in-L term:
                             ell = L+2
                             colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
@@ -790,7 +803,7 @@
                 end do
              end do
           end do
-
+          if (masterProc) print *,"Done with Er xiDot"
        end if
 
        ! ****************************************************************
@@ -811,7 +824,7 @@
                 do ix=ixMin,Nx
                    factor = -Delta*DHat(itheta,izeta)*THat*x(ix)*x(ix)/(2*Z*(BHat(itheta,izeta)**3)) * temp
                      
-                   do L=0,(Nxi-1)
+                   do L=0,(Nxi_for_x(ix)-1)
                       rowIndex=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
 
                       ! Diagonal-in-L term
@@ -822,7 +835,7 @@
                       ! and preconditioner_xi = 1:
                       if (whichMatrix .ne. 0 .or. preconditioner_xi==0) then
 
-                         if (L<Nxi-2) then
+                         if (L<Nxi_for_x(ix)-2) then
                             ! Super-super-diagonal-in-L term:
                             ell = L+2
                             colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
@@ -913,7 +926,8 @@
                       xPartOfXDot = xPartOfXDot_minus
                    end if
 
-                   do ix=1,Nx
+                   rowIndices = -1
+                   do ix=min_x_for_L(L),Nx
                       rowIndices(ix)=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
                    end do
 
@@ -921,8 +935,10 @@
                    colIndices = rowIndices
                    stuffToAdd = two*(3*L*L+3*L-2)/((two*L+3)*(2*L-1))*xDotFactor &
                         + (2*L*L+2*L-one)/((two*L+3)*(2*L-1))*xDotFactor2
-                   do ix_col=ixMinCol,Nx
-                      do ix_row=ixMin,Nx
+!!$                   do ix_col=ixMinCol,Nx
+!!$                      do ix_row=ixMin,Nx
+                   do ix_col=max(ixMinCol,min_x_for_L(L)),Nx
+                      do ix_row=max(ixMin,min_x_for_L(L)),Nx
                          call MatSetValueSparse(matrix, rowIndices(ix_row), colIndices(ix_col), &
                               stuffToAdd*xPartOfXDot(ix_row,ix_col), ADD_VALUES, ierr)
                       end do
@@ -936,9 +952,11 @@
                       if (L<(Nxi-2)) then
                          ell = L + 2
                          stuffToAdd = (L+1)*(L+2)/((two*L+5)*(2*L+3))*(xDotFactor+xDotFactor2)
-                         do ix_col=ixMinCol,Nx
+                         !do ix_col=ixMinCol,Nx
+                         do ix_col=max(ixMinCol,min_x_for_L(ell)),Nx
                             colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F)
-                            do ix_row=ixMin,Nx
+                            !do ix_row=ixMin,Nx
+                            do ix_row=max(ixMin,min_x_for_L(L)),Nx
                                call MatSetValueSparse(matrix, rowIndices(ix_row), colIndex, &
                                     stuffToAdd*xPartOfXDot(ix_row,ix_col), ADD_VALUES, ierr)
                             end do
@@ -949,9 +967,11 @@
                       if (L>1) then
                          ell = L - 2
                          stuffToAdd = L*(L-1)/((two*L-3)*(2*L-1))*(xDotFactor+xDotFactor2)
-                         do ix_col=ixMinCol,Nx
+                         !do ix_col=ixMinCol,Nx
+                         do ix_col=max(ixMinCol,min_x_for_L(ell)),Nx
                             colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F)
-                            do ix_row=ixMin,Nx
+                            !do ix_row=ixMin,Nx
+                            do ix_row=max(ixMin,min_x_for_L(L)),Nx
                                call MatSetValueSparse(matrix, rowIndices(ix_row), colIndex, &
                                     stuffToAdd*xPartOfXDot(ix_row,ix_col), ADD_VALUES, ierr)
                             end do
@@ -1379,13 +1399,15 @@
                         * (BHat_sup_theta(itheta,izeta)*dPhi1Hatdtheta(itheta,izeta) &
                         + BHat_sup_zeta(itheta,izeta)*dPhi1Hatdzeta(itheta,izeta))
 
-                   do ix_row=ixMin,Nx
+                   !do ix_row=ixMin,Nx
+                   do ix_row=max(ixMin,min_x_for_L(L)),Nx
                       rowIndex = getIndex(ispecies,ix_row,L+1,itheta,izeta,BLOCK_F)
 
                       ! Term that is super-diagonal in L:
-                      if (L<(Nxi-1)) then
+                      if (L<Nxi-1) then
                          ell = L + 1
-                         do ix_col=ixMinCol,Nx
+                         !do ix_col=ixMinCol,Nx
+                         do ix_col=max(ixMinCol,min_x_for_L(ell)),Nx
                             if (abs(nonlinearTerm_Lp1(ix_row,ix_col))>threshholdForInclusion) then
                                colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F)
                                ! We must use MatSetValue instead of MatSetValueSparse here!!
@@ -1398,7 +1420,8 @@
                       ! Term that is sub-diagonal in L:
                       if (L>0) then
                          ell = L - 1
-                         do ix_col=ixMinCol,Nx
+                         !do ix_col=ixMinCol,Nx
+                         do ix_col=max(ixMinCol,min_x_for_L(ell)),Nx
                             if (abs(nonlinearTerm_Lm1(ix_row,ix_col))>threshholdForInclusion) then
                                colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F)
                                ! We must use MatSetValue instead of MatSetValueSparse here!!
@@ -1445,7 +1468,10 @@
                    if (L>0) then
                       ! Add the delta_{L-1, ell} terms:
                       ell = L-1
-                      do ix=1,Nx
+                      tempVector1=0
+                      tempVector2=0
+                      !do ix=1,Nx
+                      do ix=min_x_for_L(ell),Nx
                          index = getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
                          ! Add 1 because we are indexing a Fortran array instead of a PETSc object
                          tempVector1(ix) = stateArray(index+1)
@@ -1457,7 +1483,10 @@
                    if (L<Nxi-1) then
                       ! Add the delta_{L+1, ell} terms:
                       ell = L+1
-                      do ix=1,Nx
+                      tempVector1=0
+                      tempVector2=0
+                      !do ix=1,Nx
+                      do ix=min_x_for_L(ell),Nx
                          index = getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
                          ! Add 1 because we are indexing a Fortran array instead of a PETSc object
                          tempVector1(ix) = stateArray(index+1)
@@ -1466,7 +1495,8 @@
                       tempVector2 = tempVector2 + (L+1)/(two*L+3) * matmul(ddx,tempVector1)
                    end if
 
-                   do ix=ixMin,Nx
+                   !do ix=ixMin,Nx
+                   do ix=max(ixMin,min_x_for_L(L)),Nx
                       rowIndex = getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
 
                       ! Add the d Phi_1 / d theta term:
@@ -1516,6 +1546,7 @@
     ! The collision operator always acts on f1.
     ! The collision operator also acts on f0 if includeTemperatureEquilibrationTerm=.t.
 
+    if (masterProc) print *,"Beginning collisions"
     if (whichMatrix .ne. 2 .or. includeTemperatureEquilibrationTerm) then
 
        select case (collisionOperator)
@@ -1890,9 +1921,11 @@
                       
                       do itheta=ithetaMin,ithetaMax
                          do izeta=izetaMin,izetaMax
-                            do ix_row=ixMin,Nx
+                            !do ix_row=ixMin,Nx
+                            do ix_row=max(ixMin,min_x_for_L(L)),Nx
                                rowIndex=getIndex(iSpeciesA,ix_row,L+1,itheta,izeta,BLOCK_F)
-                               do ix_col = ixMinCol,Nx
+                               !do ix_col = ixMinCol,Nx
+                               do ix_col = max(ixMinCol,min_x_for_L(L)),Nx
                                   colIndex=getIndex(iSpeciesB,ix_col,L+1,itheta,izeta,BLOCK_F)
                                   call MatSetValueSparse(matrix, rowIndex, colIndex, &
                                        -nu_n*CHat(ix_row,ix_col), ADD_VALUES, ierr)
@@ -1953,8 +1986,9 @@
                 
              end do
              
-             do L=1, Nxi-1
-                do ix=ixMin,Nx
+             do ix=ixMin,Nx
+                !do L=1, Nxi-1
+                do L=1, Nxi_for_x(ix)-1
                    CHat_element = -oneHalf*nuDHat(iSpeciesA,ix)*L*(L+1)
                    
                    ! At this point, CHat contains the collision operator normalized by
@@ -1989,6 +2023,7 @@
     ! *******************************************************************************
     ! *******************************************************************************
 
+if (masterProc) print *,"Done with collisions"
     ! *******************************************************************************
     ! If there is a grid point at x=0, add the boundary conditions for f at x=0.
     ! *******************************************************************************
@@ -1996,7 +2031,7 @@
     if (pointAtX0 .and. whichMatrix .ne. 2) then
        ! For L > 0 modes, impose f=0 at x=0:
        ix = 1
-       do L = 1,(Nxi-1)
+       do L = 1,(Nxi_for_x(ix)-1)
           do itheta = ithetaMin,ithetaMax
              do izeta = izetaMin,izetaMax
                 do ispecies = 1,Nspecies

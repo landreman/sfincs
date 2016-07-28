@@ -812,8 +812,8 @@
           do ispecies = 1,Nspecies
              do itheta1 = 1,Ntheta
                 do izeta1 = 1,Nzeta
-                   do ixi1 = 1,Nxi
-                      do ix1 = 1,Nx
+                   do ix1 = 1,Nx
+                      do ixi1 = 1,Nxi_for_x(ix1)
                          index = getIndex(ispecies, ix1, ixi1, itheta1, izeta1, BLOCK_F)+1
                          temp1 = solutionWithFullFArray(index)
                          do itheta2 = 1,N_export_f_theta
@@ -842,8 +842,8 @@
           do ispecies = 1,Nspecies
              do itheta1 = 1,Ntheta
                 do izeta1 = 1,Nzeta
-                   do ixi1 = 1,Nxi
-                      do ix1 = 1,Nx
+                   do ix1 = 1,Nx
+                      do ixi1 = 1,Nxi_for_x(ix1)
                          index = getIndex(ispecies, ix1, ixi1, itheta1, izeta1, BLOCK_F)+1
                          temp1 = solutionWithDeltaFArray(index)
                          do itheta2 = 1,N_export_f_theta

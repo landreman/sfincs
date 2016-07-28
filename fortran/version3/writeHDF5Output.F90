@@ -179,6 +179,8 @@ contains
             "Grid points in the toroidal angle, which runs from 0 to 2pi/Nperiods")
        call writeHDF5Field("x", x, dspaceIDForX, dimForX, &
             "Grid points in normalized speed, x_s = v / sqrt{2 T_s / m_s}, the same for each species s.")
+       call writeHDF5Field("Nxi_for_x", Nxi_for_x, dspaceIDForX, dimForX, &
+            "Number of Legendre polynomials used for each grid point in x.")
        call writeHDF5Field("geometryScheme", geometryScheme, "")
        call writeHDF5Field("thetaDerivativeScheme", thetaDerivativeScheme, "")
        call writeHDF5Field("zetaDerivativeScheme", zetaDerivativeScheme, "")
@@ -189,6 +191,7 @@ contains
        call writeHDF5Field("xGrid_k", xGrid_k, "Exponent of x in the orthogonality relation for the speed polynomials")
        call writeHDF5Field("xPotentialsGridScheme", xPotentialsGridScheme, "")
        call writeHDF5Field("pointAtX0", pointAtX0, "Does the x grid include a point at x=0? " // boolDescription)
+       call writeHDF5Field("Nxi_for_x_option", Nxi_for_x_option, "Option determining how the number of Legendre polynomials varies with the x coordinate")
        call writeHDF5Field("preconditioner_species", preconditioner_species, "")
        call writeHDF5Field("preconditioner_x", preconditioner_x, "")
        call writeHDF5Field("preconditioner_x_min_L", preconditioner_x_min_L, "")

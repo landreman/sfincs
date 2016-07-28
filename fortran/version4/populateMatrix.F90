@@ -278,12 +278,12 @@
              do imn_row = 1,NFourier2
                 FourierValue = FourierMatrix(imn_row,imn_col)
                 if (abs(FourierValue)>0) then
-                   do L=LMin,LMax
-                      do ix=ixMin,Nx
+                   do ix=ixMin,Nx
+                      do L=0,Nxi_for_x(ix)-1
                          rowIndex = getIndex(ispecies, ix, L+1, imn_row, BLOCK_F)
                          
                          ! Super-diagonal-in-L term
-                         if (L < Nxi-1) then
+                         if (L < Nxi_for_x(ix)-1) then
                             ell = L+1
                             colIndex = getIndex(ispecies, ix, ell+1, imn_col, BLOCK_F)
                             call MatSetValueSparse(matrix, rowIndex, colIndex, &
@@ -334,8 +334,8 @@
              do imn_row = 1,NFourier2
                 FourierValue = FourierMatrix(imn_row,imn_col)
                 if (abs(FourierValue)>0) then
-                   do L=LMin,LMax
-                      do ix=ixMin,Nx
+                   do ix=ixMin,Nx
+                      do L=0,Nxi_for_x(ix)-1
                          rowIndex = getIndex(ispecies, ix, L+1, imn_row, BLOCK_F)
                          colIndex = getIndex(ispecies, ix, L+1, imn_col, BLOCK_F)
                          call MatSetValueSparse(matrix, rowIndex, colIndex, &
@@ -576,11 +576,11 @@
              do imn_row = 1,NFourier2
                 FourierValue = FourierMatrix(imn_row,imn_col)
                 if (abs(FourierValue)>0) then
-                   do L=LMin,LMax
-                      do ix=ixMin,Nx
+                   do ix=ixMin,Nx
+                      do L=0,Nxi_for_x(ix)-1
                          rowIndex = getIndex(ispecies,ix,L+1,imn_row,BLOCK_F)
 
-                         if (L<Nxi-1) then
+                         if (L<Nxi_for_x(ix)-1) then
                             ! Super-diagonal-in-L term:    
                             ell = L+1
                             colIndex = getIndex(ispecies,ix,ell+1,imn_col,BLOCK_F)
@@ -629,8 +629,8 @@
              do imn_col=1,NFourier2
                 FourierValue = FourierMatrix(imn_row,imn_col)
                 if (abs(FourierValue)>0) then
-                   do L=LMin,LMax
-                      do ix=ixMin,Nx
+                   do ix=ixMin,Nx
+                      do L=0,Nxi_for_x(ix)-1
                          rowIndex = getIndex(ispecies,ix,L+1,imn_row,BLOCK_F)
 
                          ! Diagonal-in-L term
@@ -641,7 +641,7 @@
                          ! Drop the off-by-2 diagonal terms in L if this is the preconditioner
                          ! and preconditioner_xi = 1:
                          if (whichMatrix .ne. 0 .or. preconditioner_xi==0) then
-                            if (L<Nxi-2) then
+                            if (L<Nxi_for_x(ix)-2) then
                                ! Super-super-diagonal-in-L term:
                                ell = L+2
                                colIndex=getIndex(ispecies,ix,ell+1,imn_col,BLOCK_F)
@@ -763,7 +763,7 @@
                 xPartOfXDot(ix,:) = x(ix) * ddxToUse(ix,:)
              end do
 
-             do ix_row = ixMin,Nx
+             do ix_row = min_x_for_L(L),Nx
                 do imn_row = 1,NFourier2
                    rowIndex = getIndex(ispecies,ix_row,L+1,imn_row,BLOCK_F)
                    do ix_col=ixMinCol,Nx
@@ -1590,9 +1590,9 @@
                       ! \bar{nu}, (the collision frequency at the reference mass, density, and temperature.)
                       
                       do imn=1,NFourier2
-                         do ix_row=ixMin,Nx
+                         do ix_row=min_x_for_L(L),Nx
                             rowIndex=getIndex(iSpeciesA,ix_row,L+1,imn,BLOCK_F)
-                            do ix_col = ixMinCol,Nx
+                            do ix_col = min_x_for_L(L),Nx
                                colIndex=getIndex(iSpeciesB,ix_col,L+1,imn,BLOCK_F)
                                call MatSetValueSparse(matrix, rowIndex, colIndex, &
                                     -nu_n*CHat(ix_row,ix_col), ADD_VALUES, ierr)
