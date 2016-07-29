@@ -231,7 +231,6 @@
     ! ************************************************************
 
     do ispecies = 1,Nspecies
-       if (masterProc) print *,"Beginning species",ispecies
        nHat = nHats(ispecies)
        THat = THats(ispecies)
        mHat = mHats(ispecies)
@@ -244,7 +243,6 @@
        ! *********************************************************
        
        if (whichMatrix .ne. 2) then
-          if (masterProc) print *,"Beginning streaming ddtheta"
           allocate(thetaPartOfTerm(Ntheta,Ntheta))
           allocate(localThetaPartOfTerm(Ntheta,localNtheta))
           allocate(rowIndices(localNtheta))
@@ -311,7 +309,6 @@
        ! *********************************************************
 
        if (whichMatrix .ne. 2) then
-          if (masterProc) print *,"Beginning streaming ddzeta"
           allocate(zetaPartOfTerm(Nzeta,Nzeta))
           allocate(localZetaPartOfTerm(Nzeta,localNzeta))
           allocate(rowIndices(localNzeta))
@@ -377,7 +374,6 @@
        ! *********************************************************
 
        if (whichMatrix .ne. 2) then
-          if (masterProc) print *,"Beginning ExB ddtheta"
           factor = alpha*Delta/two*dPhiHatdpsiHat
           allocate(thetaPartOfTerm(Ntheta,Ntheta))
           allocate(localThetaPartOfTerm(Ntheta,localNtheta))
@@ -443,7 +439,6 @@
        ! *********************************************************
 
        if (whichMatrix .ne. 2) then
-          if (masterProc) print *,"Beginning ExB ddzeta"
           factor = -alpha*Delta/two*dPhiHatdpsiHat
           allocate(zetaPartOfTerm(Nzeta,Nzeta))
           allocate(localZetaPartOfTerm(Nzeta,localNzeta))
@@ -719,7 +714,6 @@
        ! *********************************************************
 
        if (whichMatrix .ne. 2) then
-          if (masterProc) print *,"Beginning mirror"
           do itheta=ithetaMin,ithetaMax
              do izeta=izetaMin,izetaMax
                 factor = -sqrtTHat/(2*sqrtMHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
@@ -749,7 +743,6 @@
                 end do
              end do
           end do
-          if (masterProc) print *,"Done with mirror"
        end if
 
        ! *********************************************************
@@ -803,7 +796,6 @@
                 end do
              end do
           end do
-          if (masterProc) print *,"Done with Er xiDot"
        end if
 
        ! ****************************************************************
@@ -1546,7 +1538,6 @@
     ! The collision operator always acts on f1.
     ! The collision operator also acts on f0 if includeTemperatureEquilibrationTerm=.t.
 
-    if (masterProc) print *,"Beginning collisions"
     if (whichMatrix .ne. 2 .or. includeTemperatureEquilibrationTerm) then
 
        select case (collisionOperator)
@@ -2023,7 +2014,6 @@
     ! *******************************************************************************
     ! *******************************************************************************
 
-if (masterProc) print *,"Done with collisions"
     ! *******************************************************************************
     ! If there is a grid point at x=0, add the boundary conditions for f at x=0.
     ! *******************************************************************************

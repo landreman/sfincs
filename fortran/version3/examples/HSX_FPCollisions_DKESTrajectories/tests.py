@@ -18,7 +18,8 @@ numFailures += shouldBe("heatFlux_vm_psiHat[0,0;;;]", 1.492152938311221E-004, de
 
 # Check the second species:
 numFailures += shouldBe("FSABFlow[1,0;;;]", -38.2501896319117, desiredTolerance)
-numFailures += shouldBe("particleFlux_vm_psiHat[1,0;;;]",  2.104401838496566E-005, desiredTolerance)
+#numFailures += shouldBe("particleFlux_vm_psiHat[1,0;;;]",  2.104401838496566E-005, desiredTolerance) # Value for Nxi_for_x_option=0
+numFailures += shouldBe("particleFlux_vm_psiHat[1,0;;;]",  2.08554e-05, desiredTolerance)
 numFailures += shouldBe("heatFlux_vm_psiHat[1,0;;;]", 4.498651646222836E-002, desiredTolerance)
 
 numFailures += shouldBe("FSABjHat[0;;;]", 51.3368661328720, desiredTolerance)
