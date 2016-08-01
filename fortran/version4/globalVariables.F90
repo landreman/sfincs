@@ -175,7 +175,7 @@ module globalVariables
   integer :: matrixSize, NxPotentials
   real(prec), dimension(:), allocatable :: theta, zeta, x, x_plus1
   real(prec) :: thetaWeight, zetaWeight
-  real(prec), dimension(:,:), allocatable :: ddtheta, ddzeta
+  !real(prec), dimension(:,:), allocatable :: ddtheta, ddzeta
   real(prec), dimension(:), allocatable :: xWeights, xPotentials
   real(prec) :: maxxPotentials, zetaMax, xMaxNotTooSmall
   real(prec), dimension(:), allocatable :: x2, expx2
@@ -383,8 +383,8 @@ module globalVariables
   integer :: numProcs, myRank 
   logical :: masterProc
 
-  !integer :: iFourierMin, iFourierMax, localNFourier
-  integer :: LMin, LMax, localNxi
+  integer :: iFourierMin, iFourierMax, localNFourier
+  !integer :: LMin, LMax, localNxi
   logical :: procThatHandlesConstraints
   Mat :: MatForJacobian
 

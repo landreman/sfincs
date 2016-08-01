@@ -10,7 +10,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   use petscmat
   use globalVariables, only: Nx, Nxi, NFourier2, Nspecies, matrixSize, includePhi1, &
        constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, & 
-       includePhi1InKineticEquation, quasineutralityOption, prec, useDKESExBDrift, ddtheta, ddzeta
+       includePhi1InKineticEquation, quasineutralityOption, prec, useDKESExBDrift
   use globalVariables, only: BHat_sup_theta, BHat_sup_zeta, BHat, DHat, BHat_sub_zeta, BHat_sub_theta, FSABHat2, &
        dBHatdtheta,dBHatdzeta
 
@@ -29,7 +29,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   integer :: firstRowThisProcOwns, lastRowThisProcOwns, numLocalRows
   PetscLogDouble :: time1, time2
   real(prec), dimension(:), allocatable :: FourierVector
-  real(prec), dimension(:,:), allocatable :: FourierMatrix, FourierMatrix2
+  real(prec), dimension(:,:), allocatable :: FourierMatrix, FourierMatrix2, FourierMatrix3
   integer :: imn_row,imn_col,counter,maxNNZPerRow
   real(prec) :: factor
 
@@ -67,18 +67,20 @@ subroutine preallocateMatrix(matrix, whichMatrix)
      allocate(FourierVector(NFourier2))
      allocate(FourierMatrix(NFourier2,NFourier2))
      allocate(FourierMatrix2(NFourier2,NFourier2))
+     allocate(FourierMatrix3(NFourier2,NFourier2))
 
      ! Streaming term:
      call FourierTransform(BHat_sup_theta/BHat, FourierVector)
      call FourierConvolutionMatrix(FourierVector,FourierMatrix,whichMatrix)
      call FourierTransform(BHat_sup_zeta/BHat, FourierVector)
      call FourierConvolutionMatrix(FourierVector,FourierMatrix2,whichMatrix)
-     FourierMatrix = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
+     !FourierMatrix = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
+     call FourierDifferentiationMatrices(NFourier2,FourierMatrix,FourierMatrix2,FourierMatrix3)
      maxNNZPerRow=0
      do imn_row=1,NFourier2
         counter=0
         do imn_col=1,NFourier2
-           if (abs(FourierMatrix(imn_row,imn_col))>0) counter=counter+1
+           if (abs(FourierMatrix3(imn_row,imn_col))>0) counter=counter+1
         end do
         maxNNZPerRow = max(maxNNZPerRow,counter)
      end do
@@ -98,12 +100,13 @@ subroutine preallocateMatrix(matrix, whichMatrix)
         call FourierTransform(-factor*DHat*BHat_sub_theta/(BHat*BHat), FourierVector)
         call FourierConvolutionMatrix(FourierVector,FourierMatrix2,whichMatrix)
      end if
-     FourierMatrix = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
+     !FourierMatrix = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
+     call FourierDifferentiationMatrices(NFourier2,FourierMatrix,FourierMatrix2,FourierMatrix3)
      maxNNZPerRow=0
      do imn_row=1,NFourier2
         counter=0
         do imn_col=1,NFourier2
-           if (abs(FourierMatrix(imn_row,imn_col))>0) counter=counter+1
+           if (abs(FourierMatrix3(imn_row,imn_col))>0) counter=counter+1
         end do
         maxNNZPerRow = max(maxNNZPerRow,counter)
      end do
@@ -124,7 +127,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
      if (masterProc) print *,"maxNNZPerRow for mirror:",maxNNZPerRow
      tempInt1 = tempInt1 + maxNNZPerRow*2 ! *2 because this term lies on L = ell +/- 1
 
-     deallocate(FourierVector,FourierMatrix,FourierMatrix2)
+     deallocate(FourierVector,FourierMatrix,FourierMatrix2,FourierMatrix3)
   end if
 
 ! THIS TERM HAS BEEN REMOVED BY AM 2016-03 !

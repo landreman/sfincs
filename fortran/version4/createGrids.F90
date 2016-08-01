@@ -35,7 +35,7 @@
     real(prec), dimension(:,:), allocatable :: ddx_subset, d2dx2_subset
 
     real(prec), dimension(:), allocatable :: FourierVector
-    real(prec), dimension(:,:), allocatable :: FourierMatrix, FourierMatrix2
+    real(prec), dimension(:,:), allocatable :: FourierMatrix, FourierMatrix2, FourierMatrix3
     integer :: whichMatrix
     real(prec) :: temp
 
@@ -89,27 +89,27 @@
 
     ! Assign a range of theta indices to each processor.
     ! This is done by creating a PETSc DM that is not actually used for anything else.
-!!$    call DMDACreate1d(MPIComm, DM_BOUNDARY_NONE, NFourier2, 1, 0, PETSC_NULL_INTEGER, myDM, ierr)
-!!$    
-!!$    call DMDAGetCorners(myDM, iFourierMin, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, &
-!!$         localNFourier, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr)
-!!$    
-!!$    call DMDestroy(myDM, ierr)
-!!$
-!!$    ! Switch to 1-based indices:
-!!$    iFourierMin = iFourierMin + 1
-!!$    iFourierMax = iFourierMin+localNFourier-1
-!!$    write (procAssignments,fmt="(a,i4,a,i3,a,i3,a,i3,a,i3,a)") "Processor ",myRank," owns Fourier indices ",iFourierMin," to ",iFourierMax
-
-    call DMDACreate1d(MPIComm, DM_BOUNDARY_NONE, Nxi, 1, 0, PETSC_NULL_INTEGER, myDM, ierr)
+    call DMDACreate1d(MPIComm, DM_BOUNDARY_NONE, NFourier2, 1, 0, PETSC_NULL_INTEGER, myDM, ierr)
     
-    call DMDAGetCorners(myDM, LMin, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, &
-         localNxi, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr)
+    call DMDAGetCorners(myDM, iFourierMin, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, &
+         localNFourier, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr)
     
     call DMDestroy(myDM, ierr)
 
-    LMax = LMin+localNxi-1
-    write (procAssignments,fmt="(a,i4,a,i3,a,i3,a,i3,a,i3,a)") "Processor ",myRank," owns L= ",LMin," to ",LMax
+    ! Switch to 1-based indices:
+    iFourierMin = iFourierMin + 1
+    iFourierMax = iFourierMin+localNFourier-1
+    write (procAssignments,fmt="(a,i4,a,i3,a,i3,a,i3,a,i3,a)") "Processor ",myRank," owns Fourier indices ",iFourierMin," to ",iFourierMax
+
+!!$    call DMDACreate1d(MPIComm, DM_BOUNDARY_NONE, Nxi, 1, 0, PETSC_NULL_INTEGER, myDM, ierr)
+!!$    
+!!$    call DMDAGetCorners(myDM, LMin, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, &
+!!$         localNxi, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr)
+!!$    
+!!$    call DMDestroy(myDM, ierr)
+!!$
+!!$    LMax = LMin+localNxi-1
+!!$    write (procAssignments,fmt="(a,i4,a,i3,a,i3,a,i3,a,i3,a)") "Processor ",myRank," owns L= ",LMin," to ",LMax
 
     procThatHandlesConstraints = masterProc
 
@@ -516,9 +516,9 @@
 
     call chooseFourierModes()
 
-    allocate(ddtheta(NFourier2,NFourier2))
-    allocate(ddzeta (NFourier2,NFourier2))
-    call FourierDifferentiationMatrices(NFourier, xm, xn, ddtheta, ddzeta)
+!!$    allocate(ddtheta(NFourier2,NFourier2))
+!!$    allocate(ddzeta (NFourier2,NFourier2))
+!!$    call FourierDifferentiationMatrices(NFourier, xm, xn, ddtheta, ddzeta)
 
     ! *********************************************************
     ! Compute a few quantities related to the magnetic field:
@@ -549,12 +549,13 @@
     allocate(FourierVector(NFourier2))
     allocate(FourierMatrix(NFourier2,NFourier2))
     allocate(FourierMatrix2(NFourier2,NFourier2))
+    allocate(FourierMatrix3(NFourier2,NFourier2))
 
-    allocate(FourierMatrix_streaming(NFourier2,NFourier2))
-    allocate(FourierMatrix_ExB(NFourier2,NFourier2))
-    allocate(FourierMatrix_mirror(NFourier2,NFourier2))
-    allocate(FourierMatrix_xiDot(NFourier2,NFourier2))
-    allocate(FourierMatrix_xDot(NFourier2,NFourier2))
+    allocate(FourierMatrix_streaming(localNFourier,NFourier2))
+    allocate(FourierMatrix_ExB(localNFourier,NFourier2))
+    allocate(FourierMatrix_mirror(localNFourier,NFourier2))
+    allocate(FourierMatrix_xiDot(localNFourier,NFourier2))
+    allocate(FourierMatrix_xDot(localNFourier,NFourier2))
 
     whichMatrix = 1  ! This value will mean the convolution matrices are not simplified.
 
@@ -563,7 +564,9 @@
     call FourierConvolutionMatrix(FourierVector,FourierMatrix,whichMatrix)
     call FourierTransform(BHat_sup_zeta/BHat, FourierVector)
     call FourierConvolutionMatrix(FourierVector,FourierMatrix2,whichMatrix)
-    FourierMatrix_streaming = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
+    !FourierMatrix = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
+    call FourierDifferentiationMatrices(NFourier2,FourierMatrix,FourierMatrix2,FourierMatrix3)
+    FourierMatrix_streaming = FourierMatrix3(iFourierMin:iFourierMax,:)
 
     ! ExB drift term:
     if (useDKESExBDrift) then
@@ -577,12 +580,15 @@
        call FourierTransform(-DHat*BHat_sub_theta/(BHat*BHat), FourierVector)
        call FourierConvolutionMatrix(FourierVector,FourierMatrix2,whichMatrix)
     end if
-    FourierMatrix_ExB = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
+    !FourierMatrix = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
+    call FourierDifferentiationMatrices(NFourier2,FourierMatrix,FourierMatrix2,FourierMatrix3)
+    FourierMatrix_ExB = FourierMatrix3(iFourierMin:iFourierMax,:)
 
     ! Standard mirror term:
     call FourierTransform(-(BHat_sup_theta*dBHatdtheta+BHat_sup_zeta*dBHatdzeta) &
          / (2*BHat*BHat), FourierVector)
-    call FourierConvolutionMatrix(FourierVector,FourierMatrix_mirror,whichMatrix)
+    call FourierConvolutionMatrix(FourierVector,FourierMatrix,whichMatrix)
+    FourierMatrix_mirror = FourierMatrix(iFourierMin:iFourierMax,:)
 
     ! Er xiDot term:
     if (force0RadialCurrentInEquilibrium) then
@@ -593,14 +599,16 @@
             -2*BHat*(dBHat_sub_zeta_dtheta-dBHat_sub_theta_dzeta)) &
             /(BHat*BHat*BHat), FourierVector)
     end if
-    call FourierConvolutionMatrix(FourierVector,FourierMatrix_xiDot,whichMatrix)
+    call FourierConvolutionMatrix(FourierVector,FourierMatrix,whichMatrix)
+    FourierMatrix_xiDot = FourierMatrix(iFourierMin:iFourierMax,:)
 
     ! Er xDot term:
     call FourierTransform(DHat*(BHat_sub_theta*dBHatdzeta - BHat_sub_zeta*dBHatdtheta)/(BHat*BHat*BHat), &
          FourierVector)
-    call FourierConvolutionMatrix(FourierVector,FourierMatrix_xDot,whichMatrix)
+    call FourierConvolutionMatrix(FourierVector,FourierMatrix,whichMatrix)
+    FourierMatrix_xDot = FourierMatrix(iFourierMin:iFourierMax,:)
 
-    deallocate(FourierVector,FourierMatrix,FourierMatrix2)
+    deallocate(FourierVector,FourierMatrix,FourierMatrix2,FourierMatrix3)
 
     ! *********************************************************
     ! Allocate some arrays that will be used later for output quantities:

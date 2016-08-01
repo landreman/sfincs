@@ -140,7 +140,7 @@
       integer, intent(in) :: i_species, i_x, i_xi, i_Fourier, whichBlock
 
       ! Validate inputs:
-
+#ifdef DEBUG
       if (i_species < 1) then
          print *,"Error: i_species < 1"
          stop
@@ -196,7 +196,7 @@
          end if
          stop
       end if
-
+#endif
       ! Done with validation.
 
       select case (whichBlock)
@@ -278,6 +278,7 @@
 
       ! One last sanity check:
 
+#ifdef DEBUG
       if (getIndex < 0) then
          print *,"Error! Something went wrong, and the index came out less than 0."
          stop
@@ -287,6 +288,7 @@
          print *,"Error! Something went wrong, and the index came out larger than the matrix size."
          stop
       end if
+#endif
 
     end function getIndex
 
