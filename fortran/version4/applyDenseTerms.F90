@@ -39,216 +39,210 @@
     call VecScatterBegin(VecScatterContext, inputVec, inputVecLocal, INSERT_VALUES, SCATTER_FORWARD, ierr)
     call VecScatterEnd(VecScatterContext, inputVec, inputVecLocal, INSERT_VALUES, SCATTER_FORWARD, ierr)
     call VecScatterDestroy(VecScatterContext, ierr)
+
+    if (iFourierMax>=iFourierMin) then ! For procs that do not own any Fourier indices, do not try allocating arrays of size 0 or calling BLAS with
+       ! arrays of size 0. This causes errors.
     
-    call VecGetArrayF90(inputVecLocal, stateArray, ierr)
+       call VecGetArrayF90(inputVecLocal, stateArray, ierr)
 
-    !if (masterProc) print *," Beginning species",ispecies
-    !call PetscTime(time3,ierr)
-!!$       nHat = nHats(ispecies)
-!!$       THat = THats(ispecies)
-!!$       mHat = mHats(ispecies)
-!!$       Z = Zs(ispecies)
-!!$       sqrtTHat = sqrt(THat)
-!!$       sqrtMHat = sqrt(mHat)
+       allocate(FourierVector(NFourier2))
+       allocate(localFourierVector(localNFourier))
 
-    allocate(FourierVector(NFourier2))
-    allocate(localFourierVector(localNFourier))
-
-    ! Note that the Fourier convolution matrices
-    ! FourierMatrix_streaming
-    ! FourierMatrix_ExB
-    ! FourierMatrix_mirror
-    ! FourierMatrix_xDot
-    ! FourierMatrix_xiDot
-    ! are generated in createGrids.F90
-
-    ! *********************************************************
-    ! Add the streaming d/dtheta and d/dzeta terms:
-    ! *********************************************************
+       ! Note that the Fourier convolution matrices
+       ! FourierMatrix_streaming
+       ! FourierMatrix_ExB
+       ! FourierMatrix_mirror
+       ! FourierMatrix_xDot
+       ! FourierMatrix_xiDot
+       ! are generated in createGrids.F90
        
-    call PetscTime(time3,ierr)
-    time5=time3
-    do ispecies = 1,Nspecies
-       factor = sqrt(THats(ispecies)/mHats(ispecies))
-       do ix=1,Nx
-          do ell=0,Nxi_for_x(ix)-1
-             do imn=1,NFourier2
-                index = getIndex(ispecies, ix, ell+1, imn, BLOCK_F) + 1 ! +1 to go from PETsc to Fortran indices
-                FourierVector(imn) = stateArray(index)
-             end do
-             !localFourierVector = factor*matmul(FourierMatrix_streaming,FourierVector) ! The BLAS2 dgemv call in the next line is a faster version of this "matmul" command.
-             call dgemv('n',localNFourier,NFourier2,factor,FourierMatrix_streaming, &
-                  localNFourier,FourierVector,1,0.0d+0,localFourierVector,1)
-
-             ! Super-diagonal-in-L term
-             !if (L < Nxi-1) then
-             if (ell > 0) then
-                !ell = L+1
-                L = ell-1
-                LFactor = (L+1)/(2*L+three)*x(ix)
-                do imn=iFourierMin,iFourierMax
-                   index = getIndex(ispecies, ix, L+1, imn, BLOCK_F)
-                   call VecSetValue(outputVec, index,  &
-                        LFactor*localFourierVector(imn-iFourierMin+1), ADD_VALUES, ierr)
-                end do
-             end if
-
-             ! Sub-diagonal-in-L term
-             !if (L > 0) then
-             if (ell < Nxi_for_x(ix)-1) then
-                !ell = L-1
-                L = ell+1
-                LFactor = L/(2*L-one)*x(ix)
-                do imn = iFourierMin,iFourierMax
-                   index = getIndex(ispecies, ix, L+1, imn, BLOCK_F)
-                   call VecSetValue(outputVec, index, &
-                        LFactor*localFourierVector(imn-iFourierMin+1), ADD_VALUES, ierr)
-                end do
-             end if
-          end do
-       end do
-    end do
-    call PetscTime(time4,ierr)
-    if (masterProc) print *," streaming:",time4-time3,"sec"
-    time3=time4
-
-    ! *********************************************************
-    ! Add the ExB d/dtheta and d/dzeta terms:
-    ! *********************************************************
-
-    factor = alpha*Delta/two*dPhiHatdpsiHat
-    do ispecies = 1,Nspecies
-       do ix=1,Nx
-          do L=0,Nxi_for_x(ix)-1
-             do imn = 1,NFourier2
-                index = getIndex(ispecies, ix, L+1, imn, BLOCK_F) + 1 ! +1 to go from PETsc to Fortran indices
-                FourierVector(imn) = stateArray(index)
-             end do
-             !localFourierVector = factor*matmul(FourierMatrix_ExB,FourierVector) ! The BLAS2 dgemv call in the next line is a faster version of this "matmul" command.
-             call dgemv('n',localNFourier,NFourier2,factor,FourierMatrix_ExB, &
-                  localNFourier,FourierVector,1,0.0d+0,localFourierVector,1)
-
-             do imn = iFourierMin,iFourierMax
-                index = getIndex(ispecies, ix, L+1, imn, BLOCK_F)
-                call VecSetValue(outputVec, index, &
-                     localFourierVector(imn-iFourierMin+1), ADD_VALUES, ierr)
-             end do
-          end do
-       end do
-    end do
-    call PetscTime(time4,ierr)
-    if (masterProc) print *," ExB:      ",time4-time3,"sec"
-    time3=time4
-
-    ! *********************************************************
-    ! Add the standard mirror term:
-    ! *********************************************************
-
-    do ispecies = 1,Nspecies
-       factor = sqrt(THats(ispecies)/mHats(ispecies))
-       do ix=1,Nx
-          do ell=0,Nxi_for_x(ix)-1
-             do imn = 1,NFourier2
-                index = getIndex(ispecies,ix,ell+1,imn,BLOCK_F) + 1 ! +1 to go from PETsc to Fortran indices
-                FourierVector(imn) = stateArray(index)
-             end do
-             !localFourierVector = factor*matmul(FourierMatrix,FourierVector) ! The BLAS2 dgemv call in the next line is a faster version of this "matmul" command.
-             call dgemv('n',localNFourier,NFourier2,factor,FourierMatrix_mirror,&
-                  localNFourier,FourierVector,1,0.0d+0,localFourierVector,1)
-
-             !if (L<Nxi-1) then
-             if (ell>0) then
-                ! Super-diagonal-in-L term:    
-                !ell = L+1
-                L = ell-1
-                LFactor = (L+1)*(L+2)/(2*L+three)*x(ix)
-                do imn = iFourierMin,iFourierMax
-                   index = getIndex(ispecies,ix,L+1,imn,BLOCK_F)
-                   call VecSetValue(outputVec,index,&
-                        LFactor*localFourierVector(imn-iFourierMin+1), ADD_VALUES, ierr)
-                end do
-             end if
-
-             !if (L>0) then
-             if (ell<Nxi_for_x(ix)-1) then
-                ! Sub-diagonal-in-L term:
-                !ell = L-1
-                L = ell + 1
-                LFactor = -L*(L-1)/(2*L-one)*x(ix)
-                do imn = iFourierMin,iFourierMax
-                   index = getIndex(ispecies,ix,L+1,imn,BLOCK_F)
-                   call VecSetValue(outputVec,index,&
-                        LFactor*localFourierVector(imn-iFourierMin+1), ADD_VALUES, ierr)
-                end do
-             end if
-          end do
-       end do
-    end do
-    call PetscTime(time4,ierr)
-    if (masterProc) print *," mirror:   ",time4-time3,"sec"
-    time3=time4
-
-    ! *********************************************************
-    ! Add the non-standard d/dxi term associated with E_r:
-    ! *********************************************************
-    
-    if (includeElectricFieldTermInXiDot .and. abs(dPhiHatdpsiHat)>0) then
-       factor = alpha*Delta*dPhiHatdpsiHat/4
-       do ispecies=1,Nspecies
+       ! *********************************************************
+       ! Add the streaming d/dtheta and d/dzeta terms:
+       ! *********************************************************
+       
+       call PetscTime(time3,ierr)
+       time5=time3
+       do ispecies = 1,Nspecies
+          factor = sqrt(THats(ispecies)/mHats(ispecies))
           do ix=1,Nx
              do ell=0,Nxi_for_x(ix)-1
                 do imn=1,NFourier2
-                   index = getIndex(ispecies,ix,ell+1,imn,BLOCK_F) + 1 ! +1 to go from PETsc to Fortran indices
-                   FourierVector(imn)=stateArray(index)
+                   index = getIndex(ispecies, ix, ell+1, imn, BLOCK_F) + 1 ! +1 to go from PETsc to Fortran indices
+                   FourierVector(imn) = stateArray(index)
                 end do
-                !localFourierVector = factor*matmul(FourierMatrix_xiDot,FourierVector) ! The BLAS2 dgemv call in the next line is a faster version of this "matmul" command.
-                call dgemv('n',localNFourier,NFourier2,factor,FourierMatrix_xiDot, &
+                !localFourierVector = factor*matmul(FourierMatrix_streaming,FourierVector) ! The BLAS2 dgemv call in the next line is a faster version of this "matmul" command.
+                call dgemv('n',localNFourier,NFourier2,factor,FourierMatrix_streaming, &
                      localNFourier,FourierVector,1,0.0d+0,localFourierVector,1)
-
-                ! Diagonal-in-L term
-                L = ell
-                LFactor = (L+1)*L/((2*L-one)*(2*L+three))
-                do imn=iFourierMin,iFourierMax
-                   index = getIndex(ispecies,ix,ell+1,imn,BLOCK_F)
-                   call VecSetValue(outputVec, index, &
-                        LFactor*localFourierVector(imn-iFourierMin+1), ADD_VALUES, ierr)
-                end do
-
-                !if (L<Nxi-2) then
-                if (ell>1) then
-                   ! Super-super-diagonal-in-L term:
-                   !ell = L+2
-                   L = ell-2
-                   LFactor = (L+3)*(L+2)*(L+1)/((two*L+5)*(2*L+three))
+                
+                ! Super-diagonal-in-L term
+                !if (L < Nxi-1) then
+                if (ell > 0) then
+                   !ell = L+1
+                   L = ell-1
+                   LFactor = (L+1)/(2*L+three)*x(ix)
                    do imn=iFourierMin,iFourierMax
-                      index=getIndex(ispecies,ix,L+1,imn,BLOCK_F)
+                      index = getIndex(ispecies, ix, L+1, imn, BLOCK_F)
+                      call VecSetValue(outputVec, index,  &
+                           LFactor*localFourierVector(imn-iFourierMin+1), ADD_VALUES, ierr)
+                   end do
+                end if
+                
+                ! Sub-diagonal-in-L term
+                !if (L > 0) then
+                if (ell < Nxi_for_x(ix)-1) then
+                   !ell = L-1
+                   L = ell+1
+                   LFactor = L/(2*L-one)*x(ix)
+                   do imn = iFourierMin,iFourierMax
+                      index = getIndex(ispecies, ix, L+1, imn, BLOCK_F)
                       call VecSetValue(outputVec, index, &
                            LFactor*localFourierVector(imn-iFourierMin+1), ADD_VALUES, ierr)
                    end do
                 end if
-
-                !if (L>1) then
-                if (ell<Nxi_for_x(ix)-2) then
-                   ! Sub-sub-diagonal-in-L term:
-                   !ell = L-2
-                   L = ell+2
-                   LFactor = -L*(L-1)*(L-2)/((2*L-3)*(2*L-one))
-                   do imn=iFourierMin,iFourierMax
-                      index=getIndex(ispecies,ix,L+1,imn,BLOCK_F)
-                      call VecSetValue(outputVec, index, &
-                           LFactor*localFourierVector(imn-iFourierMin+1), ADD_VALUES, ierr)
-                   end do
-                end if
-
              end do
           end do
        end do
-    end if
-    call PetscTime(time4,ierr)
-    if (masterProc) print *," Er xiDot: ",time4-time3,"sec"
-    time3=time4
-
-
+       call PetscTime(time4,ierr)
+       if (masterProc) print *," streaming:",time4-time3,"sec"
+       time3=time4
+       
+       ! *********************************************************
+       ! Add the ExB d/dtheta and d/dzeta terms:
+       ! *********************************************************
+       
+       factor = alpha*Delta/two*dPhiHatdpsiHat
+       do ispecies = 1,Nspecies
+          do ix=1,Nx
+             do L=0,Nxi_for_x(ix)-1
+                do imn = 1,NFourier2
+                   index = getIndex(ispecies, ix, L+1, imn, BLOCK_F) + 1 ! +1 to go from PETsc to Fortran indices
+                   FourierVector(imn) = stateArray(index)
+                end do
+                !localFourierVector = factor*matmul(FourierMatrix_ExB,FourierVector) ! The BLAS2 dgemv call in the next line is a faster version of this "matmul" command.
+                call dgemv('n',localNFourier,NFourier2,factor,FourierMatrix_ExB, &
+                     localNFourier,FourierVector,1,0.0d+0,localFourierVector,1)
+                
+                do imn = iFourierMin,iFourierMax
+                   index = getIndex(ispecies, ix, L+1, imn, BLOCK_F)
+                   call VecSetValue(outputVec, index, &
+                        localFourierVector(imn-iFourierMin+1), ADD_VALUES, ierr)
+                end do
+             end do
+          end do
+       end do
+       call PetscTime(time4,ierr)
+       if (masterProc) print *," ExB:      ",time4-time3,"sec"
+       time3=time4
+       
+       ! *********************************************************
+       ! Add the standard mirror term:
+       ! *********************************************************
+       
+       do ispecies = 1,Nspecies
+          factor = sqrt(THats(ispecies)/mHats(ispecies))
+          do ix=1,Nx
+             do ell=0,Nxi_for_x(ix)-1
+                do imn = 1,NFourier2
+                   index = getIndex(ispecies,ix,ell+1,imn,BLOCK_F) + 1 ! +1 to go from PETsc to Fortran indices
+                   FourierVector(imn) = stateArray(index)
+                end do
+                !localFourierVector = factor*matmul(FourierMatrix,FourierVector) ! The BLAS2 dgemv call in the next line is a faster version of this "matmul" command.
+                call dgemv('n',localNFourier,NFourier2,factor,FourierMatrix_mirror,&
+                     localNFourier,FourierVector,1,0.0d+0,localFourierVector,1)
+                
+                !if (L<Nxi-1) then
+                if (ell>0) then
+                   ! Super-diagonal-in-L term:    
+                   !ell = L+1
+                   L = ell-1
+                   LFactor = (L+1)*(L+2)/(2*L+three)*x(ix)
+                   do imn = iFourierMin,iFourierMax
+                      index = getIndex(ispecies,ix,L+1,imn,BLOCK_F)
+                      call VecSetValue(outputVec,index,&
+                           LFactor*localFourierVector(imn-iFourierMin+1), ADD_VALUES, ierr)
+                   end do
+                end if
+                
+                !if (L>0) then
+                if (ell<Nxi_for_x(ix)-1) then
+                   ! Sub-diagonal-in-L term:
+                   !ell = L-1
+                   L = ell + 1
+                   LFactor = -L*(L-1)/(2*L-one)*x(ix)
+                   do imn = iFourierMin,iFourierMax
+                      index = getIndex(ispecies,ix,L+1,imn,BLOCK_F)
+                      call VecSetValue(outputVec,index,&
+                           LFactor*localFourierVector(imn-iFourierMin+1), ADD_VALUES, ierr)
+                   end do
+                end if
+             end do
+          end do
+       end do
+       call PetscTime(time4,ierr)
+       if (masterProc) print *," mirror:   ",time4-time3,"sec"
+       time3=time4
+       
+       ! *********************************************************
+       ! Add the non-standard d/dxi term associated with E_r:
+       ! *********************************************************
+       
+       if (includeElectricFieldTermInXiDot .and. abs(dPhiHatdpsiHat)>0) then
+          factor = alpha*Delta*dPhiHatdpsiHat/4
+          do ispecies=1,Nspecies
+             do ix=1,Nx
+                do ell=0,Nxi_for_x(ix)-1
+                   do imn=1,NFourier2
+                      index = getIndex(ispecies,ix,ell+1,imn,BLOCK_F) + 1 ! +1 to go from PETsc to Fortran indices
+                      FourierVector(imn)=stateArray(index)
+                   end do
+                   !localFourierVector = factor*matmul(FourierMatrix_xiDot,FourierVector) ! The BLAS2 dgemv call in the next line is a faster version of this "matmul" command.
+                   call dgemv('n',localNFourier,NFourier2,factor,FourierMatrix_xiDot, &
+                        localNFourier,FourierVector,1,0.0d+0,localFourierVector,1)
+                   
+                   ! Diagonal-in-L term
+                   L = ell
+                   LFactor = (L+1)*L/((2*L-one)*(2*L+three))
+                   do imn=iFourierMin,iFourierMax
+                      index = getIndex(ispecies,ix,ell+1,imn,BLOCK_F)
+                      call VecSetValue(outputVec, index, &
+                           LFactor*localFourierVector(imn-iFourierMin+1), ADD_VALUES, ierr)
+                   end do
+                   
+                   !if (L<Nxi-2) then
+                   if (ell>1) then
+                      ! Super-super-diagonal-in-L term:
+                      !ell = L+2
+                      L = ell-2
+                      LFactor = (L+3)*(L+2)*(L+1)/((two*L+5)*(2*L+three))
+                      do imn=iFourierMin,iFourierMax
+                         index=getIndex(ispecies,ix,L+1,imn,BLOCK_F)
+                         call VecSetValue(outputVec, index, &
+                              LFactor*localFourierVector(imn-iFourierMin+1), ADD_VALUES, ierr)
+                      end do
+                   end if
+                   
+                   !if (L>1) then
+                   if (ell<Nxi_for_x(ix)-2) then
+                      ! Sub-sub-diagonal-in-L term:
+                      !ell = L-2
+                      L = ell+2
+                      LFactor = -L*(L-1)*(L-2)/((2*L-3)*(2*L-one))
+                      do imn=iFourierMin,iFourierMax
+                         index=getIndex(ispecies,ix,L+1,imn,BLOCK_F)
+                         call VecSetValue(outputVec, index, &
+                              LFactor*localFourierVector(imn-iFourierMin+1), ADD_VALUES, ierr)
+                      end do
+                   end if
+                   
+                end do
+             end do
+          end do
+       end if
+       call PetscTime(time4,ierr)
+       if (masterProc) print *," Er xiDot: ",time4-time3,"sec"
+       time3=time4
+       
+       
 !!$       ! ****************************************************************
 !!$       ! Add the non-standard d/dxi term associated with magnetic drifts:
 !!$       ! ****************************************************************
@@ -301,12 +295,12 @@
 !!$
 !!$       end if
 
-    ! *********************************************************
-    ! Add the collisionless d/dx term associated with E_r
-    ! *********************************************************
-
-    if (includeXDotTerm .and. abs(dPhiHatdpsiHat)>0) then
-
+       ! *********************************************************
+       ! Add the collisionless d/dx term associated with E_r
+       ! *********************************************************
+       
+       if (includeXDotTerm .and. abs(dPhiHatdpsiHat)>0) then
+          
 !!$       if (force0RadialCurrentInEquilibrium) then
 !!$          FourierMatrix2=0
 !!$       else
@@ -314,86 +308,89 @@
 !!$               FourierVector)
 !!$          call FourierConvolutionMatrix(FourierVector,FourierMatrix2,thresh)
 !!$       end if
-
-       allocate(xPartOfXDot(Nx,Nx))
-       do ix=1,Nx
-          xPartOfXDot(ix,:) = x(ix) * ddx(ix,:)
-       end do
-
-       factor = -alpha*Delta*dPhiHatdpsiHat/4
-       do ispecies=1,Nspecies
-          do ell=0,Nxi-1
-             do ix_col = min_x_for_L(ell),Nx
-                do imn = 1,NFourier2
-                   index = getIndex(ispecies,ix_col,ell+1,imn,BLOCK_F) + 1 ! +1 to go from PETsc to Fortran indices
-                   FourierVector(imn) = stateArray(index)
-                end do
-                !localFourierVector = factor*matmul(FourierMatrix_xDot,FourierVector) ! The BLAS2 dgemv call in the next line is a faster version of this "matmul" command.
-                call dgemv('n',localNFourier,NFourier2,factor,FourierMatrix_xDot, &
-                     localNFourier,FourierVector,1,0.0d+0,localFourierVector,1)
-
-                ! Term that is diagonal in L:
-                L=ell
-                !stuffToAdd = two*(3*L*L+3*L-2)/((two*L+3)*(2*L-1))*FourierMatrix(imn_row,imn_col) &
-                !     + (2*L*L+2*L-one)/((two*L+3)*(2*L-1))*FourierMatrix2(imn_row,imn_col)
-                do ix_row=min_x_for_L(L),Nx
-                   LFactor = two*(3*L*L+3*L-2)/((two*L+3)*(2*L-1))*xPartOfXDot(ix_row,ix_col)
-                   do imn = iFourierMin,iFourierMax
-                      index=getIndex(ispecies,ix_row,L+1,imn,BLOCK_F)
-                      call VecSetValue(outputVec,index, &
-                           LFactor*localFourierVector(imn-iFourierMin+1), ADD_VALUES, ierr)
+          
+          allocate(xPartOfXDot(Nx,Nx))
+          do ix=1,Nx
+             xPartOfXDot(ix,:) = x(ix) * ddx(ix,:)
+          end do
+          
+          factor = -alpha*Delta*dPhiHatdpsiHat/4
+          do ispecies=1,Nspecies
+             do ell=0,Nxi-1
+                do ix_col = min_x_for_L(ell),Nx
+                   do imn = 1,NFourier2
+                      index = getIndex(ispecies,ix_col,ell+1,imn,BLOCK_F) + 1 ! +1 to go from PETsc to Fortran indices
+                      FourierVector(imn) = stateArray(index)
                    end do
-                end do
-                
-                ! Term that is super-super-diagonal in L:
-                !if (L<(Nxi-2)) then
-                if (ell>1) then
-                   !ell = L + 2
-                   L = ell-2
-                   !stuffToAdd = (L+1)*(L+2)/((two*L+5)*(2*L+3)) * &
-                   !     (FourierMatrix(imn_row,imn_col)+FourierMatrix2(imn_row,imn_col))
+                   !localFourierVector = factor*matmul(FourierMatrix_xDot,FourierVector) ! The BLAS2 dgemv call in the next line is a faster version of this "matmul" command.
+                   call dgemv('n',localNFourier,NFourier2,factor,FourierMatrix_xDot, &
+                        localNFourier,FourierVector,1,0.0d+0,localFourierVector,1)
+                   
+                   ! Term that is diagonal in L:
+                   L=ell
+                   !stuffToAdd = two*(3*L*L+3*L-2)/((two*L+3)*(2*L-1))*FourierMatrix(imn_row,imn_col) &
+                   !     + (2*L*L+2*L-one)/((two*L+3)*(2*L-1))*FourierMatrix2(imn_row,imn_col)
                    do ix_row=min_x_for_L(L),Nx
-                      LFactor = (L+1)*(L+2)/((two*L+5)*(2*L+3)) * xPartOfXDot(ix_row,ix_col)
+                      LFactor = two*(3*L*L+3*L-2)/((two*L+3)*(2*L-1))*xPartOfXDot(ix_row,ix_col)
                       do imn = iFourierMin,iFourierMax
                          index=getIndex(ispecies,ix_row,L+1,imn,BLOCK_F)
                          call VecSetValue(outputVec,index, &
                               LFactor*localFourierVector(imn-iFourierMin+1), ADD_VALUES, ierr)
                       end do
                    end do
-                end if
-                
-                ! Term that is sub-sub-diagonal in L:
-                !if (L>1) then
-                if (ell<Nxi-2) then
-                   !ell = L - 2
-                   L = ell + 2
-                   !stuffToAdd = L*(L-1)/((two*L-3)*(2*L-1)) * &
-                   !     (FourierMatrix(imn_row,imn_col)+FourierMatrix2(imn_row,imn_col))
-                   do ix_row=min_x_for_L(L),Nx
-                      LFactor = L*(L-1)/((two*L-3)*(2*L-1)) * xPartOfXDot(ix_row,ix_col)
-                      do imn = iFourierMin,iFourierMax
-                         index=getIndex(ispecies,ix_row,L+1,imn,BLOCK_F)
-                         call VecSetValue(outputVec,index, &
-                              LFactor*localFourierVector(imn-iFourierMin+1), ADD_VALUES, ierr)
+                   
+                   ! Term that is super-super-diagonal in L:
+                   !if (L<(Nxi-2)) then
+                   if (ell>1) then
+                      !ell = L + 2
+                      L = ell-2
+                      !stuffToAdd = (L+1)*(L+2)/((two*L+5)*(2*L+3)) * &
+                      !     (FourierMatrix(imn_row,imn_col)+FourierMatrix2(imn_row,imn_col))
+                      do ix_row=min_x_for_L(L),Nx
+                         LFactor = (L+1)*(L+2)/((two*L+5)*(2*L+3)) * xPartOfXDot(ix_row,ix_col)
+                         do imn = iFourierMin,iFourierMax
+                            index=getIndex(ispecies,ix_row,L+1,imn,BLOCK_F)
+                            call VecSetValue(outputVec,index, &
+                                 LFactor*localFourierVector(imn-iFourierMin+1), ADD_VALUES, ierr)
+                         end do
                       end do
-                   end do
-                end if
-
+                   end if
+                   
+                   ! Term that is sub-sub-diagonal in L:
+                   !if (L>1) then
+                   if (ell<Nxi-2) then
+                      !ell = L - 2
+                      L = ell + 2
+                      !stuffToAdd = L*(L-1)/((two*L-3)*(2*L-1)) * &
+                      !     (FourierMatrix(imn_row,imn_col)+FourierMatrix2(imn_row,imn_col))
+                      do ix_row=min_x_for_L(L),Nx
+                         LFactor = L*(L-1)/((two*L-3)*(2*L-1)) * xPartOfXDot(ix_row,ix_col)
+                         do imn = iFourierMin,iFourierMax
+                            index=getIndex(ispecies,ix_row,L+1,imn,BLOCK_F)
+                            call VecSetValue(outputVec,index, &
+                                 LFactor*localFourierVector(imn-iFourierMin+1), ADD_VALUES, ierr)
+                         end do
+                      end do
+                   end if
+                   
+                end do
              end do
           end do
-       end do
-       deallocate(xPartOfXDot)
-    end if
-    call PetscTime(time4,ierr)
-    if (masterProc) print *," Er xDot:  ",time4-time3,"sec"
-    time3=time4
-
-    call VecRestoreArrayF90(inputVecLocal, stateArray, ierr)
-    call VecDestroy(inputVecLocal, ierr)
-    deallocate(FourierVector,localFourierVector)
+          deallocate(xPartOfXDot)
+       end if
+       call PetscTime(time4,ierr)
+       if (masterProc) print *," Er xDot:  ",time4-time3,"sec"
+       time3=time4
+       
+       call VecRestoreArrayF90(inputVecLocal, stateArray, ierr)
+       deallocate(FourierVector,localFourierVector)
+       
+    end if  ! End test to see if this proc owns any Fourier indices
 
     call VecAssemblyBegin(outputVec, ierr)
     call VecAssemblyEnd(outputVec, ierr)
+
+    call VecDestroy(inputVecLocal, ierr)
 
     call PetscTime(time2,ierr)
     if (masterProc) print *,"Total time for applyDenseTerms:",time2-time1

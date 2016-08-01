@@ -62,11 +62,11 @@ contains
 
     namelist / otherNumericalParameters /  &
          xGridScheme, whichParallelSolverToFactorPreconditioner, &
-         PETSCPreallocationStrategy, xPotentialsGridScheme, xGrid_k, Nxi_vs_x_option
+         PETSCPreallocationStrategy, xPotentialsGridScheme, xGrid_k, Nxi_for_x_option
 
     namelist / preconditionerOptions / preconditioner_x, preconditioner_x_min_L, &
          preconditioner_Fourier, preconditioner_xi, preconditioner_species, reusePreconditioner, &
-         preconditioner_Fourier_min_L, preconditioner_Fourier_threshold, &
+         preconditioner_Fourier_max_modes, preconditioner_Fourier_threshold, &
          preconditioner_drop_xDot, preconditioner_drop_xiDot, &
          preconditioner_Fourier_max_nnz_per_row
 

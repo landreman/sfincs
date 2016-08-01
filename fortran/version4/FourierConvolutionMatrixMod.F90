@@ -29,7 +29,8 @@ contains
     ! matrix should have been allocated with size (2*NFourier-1, 2*NFourier-1).
 
     use globalVariables, only: NFourier, NFourier2, xm, xn, prec, masterProc, &
-         Fourier_threshold, preconditioner_Fourier_threshold, preconditioner_Fourier_max_nnz_per_row
+         Fourier_threshold, preconditioner_Fourier_threshold, preconditioner_Fourier_max_nnz_per_row,&
+         preconditioner_Fourier_max_modes
     use rankMod
 
     implicit none
@@ -66,6 +67,18 @@ contains
     allocate(halfVector(NFourier2))
     allocate(absMatrix(NFourier2,NFourier2))
     halfVector = 0.5*vector
+
+    if (whichMatrix==0) then
+       ! For preconditioner, keep only the preconditioner_Fourier_max_modes largest Fourier modes in the
+       ! vector before converting the vector to a convolution matrix:
+
+       allocate(ranks(NFourier2))
+       call rank(abs(halfVector),ranks)
+       do imn2 = 1, min(NFourier2-preconditioner_Fourier_max_modes, NFourier2-1)
+          halfVector(ranks(imn2))=0
+       end do
+       deallocate(ranks)
+    end if
 
     matrix = 0.0
     ! imn1 indexes the vector that is provided as input to this subroutine.
@@ -148,7 +161,8 @@ contains
     
     deallocate(halfVector)
 
-    ! Now, if this is the preconditioner, simplify the matrix by zero-ing out the small elements.
+    ! If this is the preconditioner, keep only the preconditioner_Fourier_max_nnz_per_row nonzero elements in each
+    ! row of the convolution matrix:
 
     if (whichMatrix==0) then
 !!$       if (masterProc) then
@@ -175,6 +189,8 @@ contains
 !!$       end if
 
     end if
+
+    ! Now, if this is the preconditioner, further simplify the matrix by zero-ing out the small elements.
 
     if (whichMatrix==0) then
        thresh = preconditioner_Fourier_threshold

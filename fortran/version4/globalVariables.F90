@@ -132,7 +132,7 @@ module globalVariables
 
   integer :: NFourier = 10
   integer :: NFourier2=0
-  integer :: mmax=32, nmax=32
+  integer :: mmax=64, nmax=64
   integer :: Ntheta, Nzeta
   integer :: Nxi = 16
   integer :: NL = 4
@@ -149,19 +149,19 @@ module globalVariables
   ! 2 = force use of superlu_dist, if it is available
 
   integer :: preconditioner_x=1, preconditioner_x_min_L=0
-  integer :: preconditioner_Fourier=0, preconditioner_xi=1, preconditioner_species=1
-  integer :: preconditioner_Fourier_min_L=0
+  integer :: preconditioner_Fourier=1, preconditioner_xi=1, preconditioner_species=1
+  integer :: preconditioner_Fourier_max_modes=5
   real(prec) :: preconditioner_Fourier_threshold=0.03
   logical :: reusePreconditioner=.true.
   integer :: preconditioner_magnetic_drifts_max_L = 2
   logical :: preconditioner_drop_xDot = .true.
   logical :: preconditioner_drop_xiDot = .true.
-  integer :: preconditioner_Fourier_max_nnz_per_row = 6
+  integer :: preconditioner_Fourier_max_nnz_per_row = 20
 
   integer :: constraintScheme=-1
 
   integer :: PETSCPreallocationStrategy=1
-  integer :: Nxi_vs_x_option = 1
+  integer :: Nxi_for_x_option = 1
 
   ! ********************************************************
   !

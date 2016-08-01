@@ -868,16 +868,30 @@ subroutine validateInput()
      stop
   end if
   
-  if (preconditioner_Fourier>0) then
+  if (preconditioner_Fourier>1) then
      if (masterProc) then
-        print *,"Error! preconditioner_Fourier cannot be more than 0."
+        print *,"Error! preconditioner_Fourier cannot be more than 1."
      end if
      stop
   end if
   
-  if (preconditioner_Fourier_min_L<0) then
+  if (preconditioner_Fourier_threshold >= 1) then
      if (masterProc) then
-        print *,"Error! preconditioner_Fourier_min_L should not be less than 0."
+        print *,"Error! preconditioner_Fourier_threshold should be less than 1."
+     end if
+     stop
+  end if
+  
+  if (preconditioner_Fourier_max_modes<1) then
+     if (masterProc) then
+        print *,"Error! preconditioner_Fourier_max_modes should not be less than 1."
+     end if
+     stop
+  end if
+  
+  if (preconditioner_Fourier_max_nnz_per_row<1) then
+     if (masterProc) then
+        print *,"Error! preconditioner_Fourier_max_nnz_per_row should not be less than 1."
      end if
      stop
   end if

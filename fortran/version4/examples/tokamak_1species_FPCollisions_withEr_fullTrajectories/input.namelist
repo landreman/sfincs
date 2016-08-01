@@ -103,9 +103,9 @@
 
 &preconditionerOptions
   ! Since the matrix size in this problem is so small, we can afford to make the preconditioner the same as the system matrix.
-  preconditioner_species = 0
-  preconditioner_x = 0
-  preconditioner_xi = 0
+  !preconditioner_species = 0
+  !preconditioner_x = 0
+  !preconditioner_xi = 0
 /
 
 &export_f

@@ -987,7 +987,7 @@
     !!!call VecDestroy(expPhi1, ierr) !!Added by AM 2016-06
 
     call PetscTime(presentTime, ierr)
-    elapsedTime = startTime-presentTime
+    elapsedTime = presentTime-startTime
     if (masterProc) then
        print *,"Total time since start:",elapsedTime,"sec"
     end if

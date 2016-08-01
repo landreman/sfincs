@@ -10,8 +10,14 @@ subroutine chooseFourierModes()
 
   integer :: NFourier_original
   integer :: m, n, index, imn
-  real(prec), dimension(:,:), allocatable :: patternWithExpectedSpectrum, BScaledToNearly1
-  real(prec), dimension(:), allocatable :: FourierVector, amplitudes
+  real(prec), dimension(:,:), allocatable :: patternWithExpectedSpectrum1
+  real(prec), dimension(:,:), allocatable :: patternWithExpectedSpectrum2
+  real(prec), dimension(:,:), allocatable :: patternWithExpectedSpectrum3
+  real(prec), dimension(:,:), allocatable :: BScaledToNearly1
+  real(prec), dimension(:), allocatable :: FourierVector1
+  real(prec), dimension(:), allocatable :: FourierVector2
+  real(prec), dimension(:), allocatable :: FourierVector3
+  real(prec), dimension(:), allocatable :: amplitudes
   integer, dimension(:), allocatable :: xn_sorted, xm_sorted, permutation
 
   call initFourierTrig()
@@ -74,22 +80,36 @@ subroutine chooseFourierModes()
 !!$  end do
      
      ! Guess a function that we expect will have a similar Fourier spectrum to the distribution function:
-     allocate(patternWithExpectedSpectrum(Ntheta,Nzeta))
+     allocate(patternWithExpectedSpectrum1(Ntheta,Nzeta))
+     allocate(patternWithExpectedSpectrum2(Ntheta,Nzeta))
+     allocate(patternWithExpectedSpectrum3(Ntheta,Nzeta))
      allocate(BScaledToNearly1(Ntheta,Nzeta))
      BScaledToNearly1 = BHat / (sum(BHat) / (Ntheta*Nzeta))
      if (masterProc) then
         print *,"max & min of BScaledToNearly1:",maxval(BScaledToNearly1),minval(BScaledToNearly1)
      end if
-     patternWithExpectedSpectrum = (BScaledToNearly1 ** 6) + 1/(BScaledToNearly1 ** 2)
+     patternWithExpectedSpectrum1 = (BScaledToNearly1 ** 6)
+     patternWithExpectedSpectrum2 = 1/(BScaledToNearly1 ** (1.3))
+     patternWithExpectedSpectrum3 = 1/(BScaledToNearly1 ** 2)
      
-     allocate(FourierVector(NFourier2))
-     call FourierTransform(patternWithExpectedSpectrum, FourierVector)
-     deallocate(patternWithExpectedSpectrum,BScaledToNearly1)
+     allocate(FourierVector1(NFourier2))
+     allocate(FourierVector2(NFourier2))
+     allocate(FourierVector3(NFourier2))
+     call FourierTransform(patternWithExpectedSpectrum1, FourierVector1)
+     call FourierTransform(patternWithExpectedSpectrum2, FourierVector2)
+     call FourierTransform(patternWithExpectedSpectrum3, FourierVector3)
+     deallocate(BScaledToNearly1)
+     deallocate(patternWithExpectedSpectrum1)
+     deallocate(patternWithExpectedSpectrum2)
+     deallocate(patternWithExpectedSpectrum3)
      
      allocate(amplitudes(NFourier))
      amplitudes=0
      do imn=2,NFourier
-        amplitudes(imn) = sqrt(FourierVector(imn)**2 + FourierVector(imn+NFourier-1)**2)
+        amplitudes(imn) = max( &
+             sqrt(FourierVector1(imn)**2 + FourierVector1(imn+NFourier-1)**2), &
+             sqrt(FourierVector2(imn)**2 + FourierVector2(imn+NFourier-1)**2), &
+             sqrt(FourierVector3(imn)**2 + FourierVector3(imn+NFourier-1)**2) )
      end do
      
      ! Add an offset proportional to sqrt(m^2 + n^2) so once the 'real' amplitude gets down to machine precision,
@@ -154,7 +174,9 @@ subroutine chooseFourierModes()
         print *,"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
      end if
      
-     deallocate(FourierVector)
+     deallocate(FourierVector1)
+     deallocate(FourierVector2)
+     deallocate(FourierVector3)
      deallocate(amplitudes)
      deallocate(xm_sorted,xn_sorted)
 

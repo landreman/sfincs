@@ -36,20 +36,6 @@ subroutine FourierDifferentiationMatrices(NFourier2, A, B, C)
      end do
   end do
 
-!!$  ddtheta=0.0
-!!$  ddzeta=0.0
-!!$
-!!$  do j=2,NFourier
-!!$     ! (d/dtheta) sin(m theta - n zeta) =  m cos(m theta - n zeta):
-!!$     ddtheta(j, j+NFourier-1) =  xm(j)
-!!$     ! (d/dtheta) cos(m theta - n zeta) = -m sin(m theta - n zeta):
-!!$     ddtheta(j+NFourier-1, j) = -xm(j)
-!!$     ! (d/dzeta) sin(m theta - n zeta) =  -n cos(m theta - n zeta):
-!!$     ddzeta(j, j+NFourier-1) = -xn(j)
-!!$     ! (d/dzeta) cos(m theta - n zeta) =   n sin(m theta - n zeta):
-!!$     ddzeta(j+NFourier-1, j) =  xn(j)
-!!$  end do
-
 
 end subroutine FourierDifferentiationMatrices
 

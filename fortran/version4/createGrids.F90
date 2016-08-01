@@ -416,8 +416,8 @@
     
     allocate(Nxi_for_x(Nx))
 
-    if (masterProc) print *,"Nxi_vs_x_option:",Nxi_vs_x_option
-    select case (Nxi_vs_x_option)
+    if (masterProc) print *,"Nxi_for_x_option:",Nxi_for_x_option
+    select case (Nxi_for_x_option)
     case (0)
        Nxi_for_x = Nxi
     case (1)
@@ -439,7 +439,7 @@
           Nxi_for_x(j) = max(3,NL,min(int(temp),Nxi))
        end do
     case default
-       if (masterProc) print *,"Error! Invalid Nxi_vs_x_option"
+       if (masterProc) print *,"Error! Invalid Nxi_for_x_option"
        stop
     end select
 

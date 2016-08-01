@@ -221,6 +221,8 @@ contains
        call writeHDF5Field("preconditioner_drop_xiDot", preconditioner_drop_xiDot, "")
        call writeHDF5Field("preconditioner_drop_xDot", preconditioner_drop_xDot, "")
        call writeHDF5Field("preconditioner_Fourier", preconditioner_Fourier, "")
+       call writeHDF5Field("preconditioner_Fourier_max_modes", preconditioner_Fourier_max_modes, "")
+       call writeHDF5Field("preconditioner_Fourier_max_nnz_per_row", preconditioner_Fourier_max_nnz_per_row, "")
        call writeHDF5Field("preconditioner_Fourier_threshold", preconditioner_Fourier_threshold, "")
        call writeHDF5Field("Fourier_threshold", Fourier_threshold, "")
        call writeHDF5Field("preconditioner_magnetic_drifts_max_L", preconditioner_magnetic_drifts_max_L, "")
