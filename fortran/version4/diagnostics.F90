@@ -122,7 +122,7 @@
 
     use globalVariables, only: Phi1Hat_Fourier, dPhi1Hatdtheta_Fourier, dPhi1Hatdzeta_Fourier
     use globalVariables, only: Phi1Hat_realSpace, dPhi1Hatdtheta_realSpace, dPhi1Hatdzeta_realSpace
-    use globalVariables, only: includePhi1, zero, MPIComm, masterProc, ddtheta, ddzeta, NFourier2
+    use globalVariables, only: includePhi1, zero, MPIComm, masterProc, NFourier2
     use indices
     use FourierTransformMod, only: inverseFourierTransform
     use petscvec
@@ -163,8 +163,8 @@
        ! Send Phi1Hat from the masterProc to all procs:
        call MPI_Bcast(Phi1Hat_Fourier, NFourier2, MPI_DOUBLE_PRECISION, 0, MPIComm, ierr)
 
-       dPhi1Hatdtheta_Fourier = matmul(ddtheta,Phi1Hat_Fourier)
-       dPhi1Hatdzeta_Fourier = matmul(ddzeta,Phi1Hat_Fourier)
+       call FourierDerivative(NFourier2,Phi1Hat_Fourier,dPhi1Hatdtheta_Fourier,1)
+       call FourierDerivative(NFourier2,Phi1Hat_Fourier,dPhi1Hatdzeta_Fourier, 2)
        call inverseFourierTransform(Phi1Hat_Fourier,Phi1Hat_realSpace)
        call inverseFourierTransform(dPhi1Hatdtheta_Fourier,dPhi1Hatdtheta_realSpace)
        call inverseFourierTransform(dPhi1Hatdzeta_Fourier, dPhi1Hatdzeta_realSpace)

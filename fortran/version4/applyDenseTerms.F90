@@ -24,7 +24,7 @@
     PetscLogDouble :: time1, time2, time3, time4, time5, time6
     integer :: ispecies, L, ell, imn, ix, ix_row, ix_col, index
     real(prec) :: factor, LFactor
-    real(prec), dimension(:), allocatable :: FourierVector, FourierVector2
+    real(prec), dimension(:), allocatable :: FourierVector, localFourierVector
     real(prec), dimension(:,:), allocatable :: xPartOfXDot
 
 
@@ -52,7 +52,7 @@
 !!$       sqrtMHat = sqrt(mHat)
 
     allocate(FourierVector(NFourier2))
-    allocate(FourierVector2(NFourier2))
+    allocate(localFourierVector(localNFourier))
 
     ! Note that the Fourier convolution matrices
     ! FourierMatrix_streaming
@@ -76,9 +76,9 @@
                 index = getIndex(ispecies, ix, ell+1, imn, BLOCK_F) + 1 ! +1 to go from PETsc to Fortran indices
                 FourierVector(imn) = stateArray(index)
              end do
-             !FourierVector2 = factor*matmul(FourierMatrix_streaming,FourierVector) ! The BLAS2 dgemv call in the next line is a faster version of this "matmul" command.
-             call dgemv('n',NFourier2,NFourier2,factor,FourierMatrix_streaming, &
-                  NFourier2,FourierVector,1,0.0d+0,FourierVector2,1)
+             !localFourierVector = factor*matmul(FourierMatrix_streaming,FourierVector) ! The BLAS2 dgemv call in the next line is a faster version of this "matmul" command.
+             call dgemv('n',localNFourier,NFourier2,factor,FourierMatrix_streaming, &
+                  localNFourier,FourierVector,1,0.0d+0,localFourierVector,1)
 
              ! Super-diagonal-in-L term
              !if (L < Nxi-1) then
@@ -86,10 +86,10 @@
                 !ell = L+1
                 L = ell-1
                 LFactor = (L+1)/(2*L+three)*x(ix)
-                do imn=1,NFourier2
+                do imn=iFourierMin,iFourierMax
                    index = getIndex(ispecies, ix, L+1, imn, BLOCK_F)
                    call VecSetValue(outputVec, index,  &
-                        LFactor*FourierVector2(imn), ADD_VALUES, ierr)
+                        LFactor*localFourierVector(imn-iFourierMin+1), ADD_VALUES, ierr)
                 end do
              end if
 
@@ -99,10 +99,10 @@
                 !ell = L-1
                 L = ell+1
                 LFactor = L/(2*L-one)*x(ix)
-                do imn = 1,NFourier2
+                do imn = iFourierMin,iFourierMax
                    index = getIndex(ispecies, ix, L+1, imn, BLOCK_F)
                    call VecSetValue(outputVec, index, &
-                        LFactor*FourierVector2(imn), ADD_VALUES, ierr)
+                        LFactor*localFourierVector(imn-iFourierMin+1), ADD_VALUES, ierr)
                 end do
              end if
           end do
@@ -124,14 +124,14 @@
                 index = getIndex(ispecies, ix, L+1, imn, BLOCK_F) + 1 ! +1 to go from PETsc to Fortran indices
                 FourierVector(imn) = stateArray(index)
              end do
-             !FourierVector2 = factor*matmul(FourierMatrix_ExB,FourierVector) ! The BLAS2 dgemv call in the next line is a faster version of this "matmul" command.
-             call dgemv('n',NFourier2,NFourier2,factor,FourierMatrix_ExB, &
-                  NFourier2,FourierVector,1,0.0d+0,FourierVector2,1)
+             !localFourierVector = factor*matmul(FourierMatrix_ExB,FourierVector) ! The BLAS2 dgemv call in the next line is a faster version of this "matmul" command.
+             call dgemv('n',localNFourier,NFourier2,factor,FourierMatrix_ExB, &
+                  localNFourier,FourierVector,1,0.0d+0,localFourierVector,1)
 
-             do imn = 1,NFourier2
+             do imn = iFourierMin,iFourierMax
                 index = getIndex(ispecies, ix, L+1, imn, BLOCK_F)
                 call VecSetValue(outputVec, index, &
-                     FourierVector2(imn), ADD_VALUES, ierr)
+                     localFourierVector(imn-iFourierMin+1), ADD_VALUES, ierr)
              end do
           end do
        end do
@@ -152,9 +152,9 @@
                 index = getIndex(ispecies,ix,ell+1,imn,BLOCK_F) + 1 ! +1 to go from PETsc to Fortran indices
                 FourierVector(imn) = stateArray(index)
              end do
-             !FourierVector2 = factor*matmul(FourierMatrix,FourierVector) ! The BLAS2 dgemv call in the next line is a faster version of this "matmul" command.
-             call dgemv('n',NFourier2,NFourier2,factor,FourierMatrix_mirror,&
-                  NFourier2,FourierVector,1,0.0d+0,FourierVector2,1)
+             !localFourierVector = factor*matmul(FourierMatrix,FourierVector) ! The BLAS2 dgemv call in the next line is a faster version of this "matmul" command.
+             call dgemv('n',localNFourier,NFourier2,factor,FourierMatrix_mirror,&
+                  localNFourier,FourierVector,1,0.0d+0,localFourierVector,1)
 
              !if (L<Nxi-1) then
              if (ell>0) then
@@ -162,10 +162,10 @@
                 !ell = L+1
                 L = ell-1
                 LFactor = (L+1)*(L+2)/(2*L+three)*x(ix)
-                do imn = 1,NFourier2
+                do imn = iFourierMin,iFourierMax
                    index = getIndex(ispecies,ix,L+1,imn,BLOCK_F)
                    call VecSetValue(outputVec,index,&
-                        LFactor*FourierVector2(imn), ADD_VALUES, ierr)
+                        LFactor*localFourierVector(imn-iFourierMin+1), ADD_VALUES, ierr)
                 end do
              end if
 
@@ -175,10 +175,10 @@
                 !ell = L-1
                 L = ell + 1
                 LFactor = -L*(L-1)/(2*L-one)*x(ix)
-                do imn = 1,NFourier2
+                do imn = iFourierMin,iFourierMax
                    index = getIndex(ispecies,ix,L+1,imn,BLOCK_F)
                    call VecSetValue(outputVec,index,&
-                        LFactor*FourierVector2(imn), ADD_VALUES, ierr)
+                        LFactor*localFourierVector(imn-iFourierMin+1), ADD_VALUES, ierr)
                 end do
              end if
           end do
@@ -201,17 +201,17 @@
                    index = getIndex(ispecies,ix,ell+1,imn,BLOCK_F) + 1 ! +1 to go from PETsc to Fortran indices
                    FourierVector(imn)=stateArray(index)
                 end do
-                !FourierVector2 = factor*matmul(FourierMatrix_xiDot,FourierVector) ! The BLAS2 dgemv call in the next line is a faster version of this "matmul" command.
-                call dgemv('n',NFourier2,NFourier2,factor,FourierMatrix_xiDot, &
-                     NFourier2,FourierVector,1,0.0d+0,FourierVector2,1)
+                !localFourierVector = factor*matmul(FourierMatrix_xiDot,FourierVector) ! The BLAS2 dgemv call in the next line is a faster version of this "matmul" command.
+                call dgemv('n',localNFourier,NFourier2,factor,FourierMatrix_xiDot, &
+                     localNFourier,FourierVector,1,0.0d+0,localFourierVector,1)
 
                 ! Diagonal-in-L term
                 L = ell
                 LFactor = (L+1)*L/((2*L-one)*(2*L+three))
-                do imn=1,NFourier2
+                do imn=iFourierMin,iFourierMax
                    index = getIndex(ispecies,ix,ell+1,imn,BLOCK_F)
                    call VecSetValue(outputVec, index, &
-                        LFactor*FourierVector2(imn), ADD_VALUES, ierr)
+                        LFactor*localFourierVector(imn-iFourierMin+1), ADD_VALUES, ierr)
                 end do
 
                 !if (L<Nxi-2) then
@@ -220,10 +220,10 @@
                    !ell = L+2
                    L = ell-2
                    LFactor = (L+3)*(L+2)*(L+1)/((two*L+5)*(2*L+three))
-                   do imn=1,NFourier2
+                   do imn=iFourierMin,iFourierMax
                       index=getIndex(ispecies,ix,L+1,imn,BLOCK_F)
                       call VecSetValue(outputVec, index, &
-                           LFactor*FourierVector2(imn), ADD_VALUES, ierr)
+                           LFactor*localFourierVector(imn-iFourierMin+1), ADD_VALUES, ierr)
                    end do
                 end if
 
@@ -233,10 +233,10 @@
                    !ell = L-2
                    L = ell+2
                    LFactor = -L*(L-1)*(L-2)/((2*L-3)*(2*L-one))
-                   do imn=1,NFourier2
+                   do imn=iFourierMin,iFourierMax
                       index=getIndex(ispecies,ix,L+1,imn,BLOCK_F)
                       call VecSetValue(outputVec, index, &
-                           LFactor*FourierVector2(imn), ADD_VALUES, ierr)
+                           LFactor*localFourierVector(imn-iFourierMin+1), ADD_VALUES, ierr)
                    end do
                 end if
 
@@ -328,9 +328,9 @@
                    index = getIndex(ispecies,ix_col,ell+1,imn,BLOCK_F) + 1 ! +1 to go from PETsc to Fortran indices
                    FourierVector(imn) = stateArray(index)
                 end do
-                !FourierVector2 = factor*matmul(FourierMatrix_xDot,FourierVector) ! The BLAS2 dgemv call in the next line is a faster version of this "matmul" command.
-                call dgemv('n',NFourier2,NFourier2,factor,FourierMatrix_xDot, &
-                     NFourier2,FourierVector,1,0.0d+0,FourierVector2,1)
+                !localFourierVector = factor*matmul(FourierMatrix_xDot,FourierVector) ! The BLAS2 dgemv call in the next line is a faster version of this "matmul" command.
+                call dgemv('n',localNFourier,NFourier2,factor,FourierMatrix_xDot, &
+                     localNFourier,FourierVector,1,0.0d+0,localFourierVector,1)
 
                 ! Term that is diagonal in L:
                 L=ell
@@ -338,10 +338,10 @@
                 !     + (2*L*L+2*L-one)/((two*L+3)*(2*L-1))*FourierMatrix2(imn_row,imn_col)
                 do ix_row=min_x_for_L(L),Nx
                    LFactor = two*(3*L*L+3*L-2)/((two*L+3)*(2*L-1))*xPartOfXDot(ix_row,ix_col)
-                   do imn = 1,NFourier2
+                   do imn = iFourierMin,iFourierMax
                       index=getIndex(ispecies,ix_row,L+1,imn,BLOCK_F)
                       call VecSetValue(outputVec,index, &
-                           LFactor*FourierVector2(imn), ADD_VALUES, ierr)
+                           LFactor*localFourierVector(imn-iFourierMin+1), ADD_VALUES, ierr)
                    end do
                 end do
                 
@@ -354,10 +354,10 @@
                    !     (FourierMatrix(imn_row,imn_col)+FourierMatrix2(imn_row,imn_col))
                    do ix_row=min_x_for_L(L),Nx
                       LFactor = (L+1)*(L+2)/((two*L+5)*(2*L+3)) * xPartOfXDot(ix_row,ix_col)
-                      do imn = 1,NFourier2
+                      do imn = iFourierMin,iFourierMax
                          index=getIndex(ispecies,ix_row,L+1,imn,BLOCK_F)
                          call VecSetValue(outputVec,index, &
-                              LFactor*FourierVector2(imn), ADD_VALUES, ierr)
+                              LFactor*localFourierVector(imn-iFourierMin+1), ADD_VALUES, ierr)
                       end do
                    end do
                 end if
@@ -371,10 +371,10 @@
                    !     (FourierMatrix(imn_row,imn_col)+FourierMatrix2(imn_row,imn_col))
                    do ix_row=min_x_for_L(L),Nx
                       LFactor = L*(L-1)/((two*L-3)*(2*L-1)) * xPartOfXDot(ix_row,ix_col)
-                      do imn = 1,NFourier2
+                      do imn = iFourierMin,iFourierMax
                          index=getIndex(ispecies,ix_row,L+1,imn,BLOCK_F)
                          call VecSetValue(outputVec,index, &
-                              LFactor*FourierVector2(imn), ADD_VALUES, ierr)
+                              LFactor*localFourierVector(imn-iFourierMin+1), ADD_VALUES, ierr)
                       end do
                    end do
                 end if
@@ -390,7 +390,7 @@
 
     call VecRestoreArrayF90(inputVecLocal, stateArray, ierr)
     call VecDestroy(inputVecLocal, ierr)
-    deallocate(FourierVector,FourierVector2)
+    deallocate(FourierVector,localFourierVector)
 
     call VecAssemblyBegin(outputVec, ierr)
     call VecAssemblyEnd(outputVec, ierr)
