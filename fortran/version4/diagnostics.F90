@@ -988,6 +988,9 @@
 
     call PetscTime(presentTime, ierr)
     elapsedTime = startTime-presentTime
+    if (masterProc) then
+       print *,"Total time since start:",elapsedTime,"sec"
+    end if
 
 
     ! updateOutputFile should be called by all procs since it contains MPI_Barrier
