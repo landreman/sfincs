@@ -88,13 +88,25 @@ for directory in directories:
         continue
 
     if math.isnan(dummy[0,0]):
-       print "Run in directory "+directory+" has NaNs, so skippipng it."
+       print "Run in directory "+directory+" has NaNs, so skipping it."
        continue
+
+    integerToRepresentTrue = (f["integerToRepresentTrue"][()])
+    includePhi1_new = (f["includePhi1"][()] == integerToRepresentTrue)
+
+    if includePhi1_new:
+       try:
+          if f["didNonlinearCalculationConverge"][()] != integerToRepresentTrue:
+             print "The nonlinear iteration in directory "+directory+" does not appear to have converged."
+             continue
+       except:
+          print "WARNING! Cannot read didNonlinearCalculationConverge in directory "+directory+" even though this is a nonlinear calculation."
+          print "You should manually check if the nonlinear iteration has converged!"
 
     print "Processing directory "+directory
 
     # The expression [()] converts from an h5py dataset to a numpy ndarray:
-    integerToRepresentTrue = (f["integerToRepresentTrue"][()])
+    #integerToRepresentTrue = (f["integerToRepresentTrue"][()])
     Nthetas.append(f["Ntheta"][()])
     Nzetas.append(f["Nzeta"][()])
     Nxis.append(f["Nxi"][()])
@@ -107,7 +119,7 @@ for directory in directories:
     
     RHSMode_new = f["RHSMode"][()]
     Nspecies_new = f["Nspecies"][()]
-    includePhi1_new = (f["includePhi1"][()] == integerToRepresentTrue)
+    #includePhi1_new = (f["includePhi1"][()] == integerToRepresentTrue)
     if numRuns == 0:
         RHSMode = RHSMode_new
         Nspecies = Nspecies_new

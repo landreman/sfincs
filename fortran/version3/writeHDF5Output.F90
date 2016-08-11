@@ -949,6 +949,14 @@ contains
        call writeHDF5Field("finished", integerToRepresentTrue, &
             "If this variable exists in sfincsOutput.h5, then SFINCS reached the end of all requested computations and exited gracefully.")
 
+       !!Added by AM 2016-08!!
+       if (includePhi1) then
+          call writeHDF5Field("didNonlinearCalculationConverge", didNonlinearCalculationConverge, &
+               "If this variable is .true. the nonlinear iteration has converged. " // boolDescription)
+       end if
+       !!!!!!!!!!!!!!!!!!!!!!!
+
+
        call h5sclose_f(dspaceIDForScalar, HDF5Error)
        call h5fclose_f(HDF5FileID, HDF5Error)
 
