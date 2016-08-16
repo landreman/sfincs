@@ -545,6 +545,11 @@ subroutine validateInput()
      print *,line
   end if
 
+  if (nmax>0 .and. FourierOption==0) then
+     NFourier = mmax*(2*nmax+1) + nmax + 1
+     NFourier2 = NFourier*2-1
+  end if
+
   if (NFourier > mmax*(2*nmax+1) + nmax + 1) then
      if (masterProc) then
         print *,line

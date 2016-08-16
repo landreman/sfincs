@@ -170,6 +170,8 @@ module globalVariables
   !
   ! ********************************************************
 
+  integer :: FourierOption = 2
+  real(prec) :: FourierFactor = 1.0
   real(prec), dimension(:,:,:), allocatable :: FourierAmplitudeVsL
   integer, dimension(:), allocatable :: Nxi_for_x, min_x_for_L, L_to_save
   integer, dimension(:), allocatable :: xm, xn
