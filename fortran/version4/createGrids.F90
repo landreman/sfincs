@@ -458,6 +458,25 @@
     call computeMatrixSize()
 
     ! *******************************************************************************
+    ! Select which values of L will be saved in the output file
+    ! *******************************************************************************
+
+    Nxi_to_save = min(Nxi_to_save,Nxi)
+    allocate(L_to_save(Nxi_to_save))
+    do j=1,(Nxi_to_save/2)
+       L_to_save(j) = j-1
+    end do
+    do j=(Nxi_to_save/2)+1, Nxi_to_save
+       L_to_save(j) = (Nxi_to_save/2) + int((j-((Nxi_to_save/2)+1.0))/(Nxi_to_save-((Nxi_to_save/2)+1))*(Nxi-1 - (Nxi_to_save/2)))
+    end do
+
+    if (masterProc) then
+       print *,"L_to_save:",L_to_save
+    end if
+
+    allocate(FourierAmplitudeVsL(Nspecies,Nxi_to_save,NFourier2))
+
+    ! *******************************************************************************
     ! Initialize quantities related to the poloidal and toroidal angle coordinates
     ! *******************************************************************************
 

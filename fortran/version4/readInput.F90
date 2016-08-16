@@ -58,7 +58,7 @@ contains
          xMax, &
          solverTolerance, &
          NxPotentialsPerVth, &
-         Fourier_threshold
+         Fourier_threshold, Nxi_to_save
 
     namelist / otherNumericalParameters /  &
          xGridScheme, whichParallelSolverToFactorPreconditioner, &

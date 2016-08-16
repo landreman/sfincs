@@ -830,7 +830,20 @@
 !!$       ! matrix in each of the 4 coordinates (theta, zeta, x, xi).  This is not the fastest way to do what we want,
 !!$       ! but it is relatively simple, and the time required (up to a few seconds) is negligible compared to the time
 !!$       ! required for solving the kinetic equation.
-!!$       call PetscTime(time1, ierr)
+       call PetscTime(time1, ierr)
+
+       FourierAmplitudeVsL=0
+       do ixi1 = 1,Nxi_to_save
+          do ix = min_x_for_L(L_to_save(ixi1)),Nx
+             temp1 = (x(ix)**4)*xWeights(ix)
+             do ispecies = 1,Nspecies
+                do imn = 1,NFourier2
+                   index = getIndex(ispecies, ix, L_to_save(ixi1)+1, imn, BLOCK_F)+1
+                   FourierAmplitudeVsL(ispecies, ixi1, imn) = FourierAmplitudeVsL(ispecies, ixi1, imn) + solutionWithDeltaFArray(index)*temp1
+                end do
+             end do
+          end do
+       end do
 !!$       if (export_full_f) then
 !!$          full_f = zero
 !!$          do ispecies = 1,Nspecies
@@ -890,10 +903,11 @@
 !!$             end do
 !!$          end do
 !!$       end if
-!!$       call PetscTime(time2, ierr)
-!!$       if (export_delta_f .or. export_full_f) then
-!!$          print *,"Time for exporting f: ", time2-time1, " seconds."
-!!$       end if
+       call PetscTime(time2, ierr)
+!       if (export_delta_f .or. export_full_f) then
+       !print *,"Time for exporting f: ", time2-time1, " seconds."
+       print *,"Time for computing FourierAmplitudesVsL: ", time2-time1, " seconds."
+!       end if
 
        call VecRestoreArrayF90(solutionWithFullFOnProc0, solutionWithFullFArray, ierr)
        call VecRestoreArrayF90(solutionWithDeltaFOnProc0, solutionWithDeltaFArray, ierr)

@@ -162,6 +162,7 @@ module globalVariables
 
   integer :: PETSCPreallocationStrategy=1
   integer :: Nxi_for_x_option = 1
+  integer :: Nxi_to_save = 12
 
   ! ********************************************************
   !
@@ -169,7 +170,8 @@ module globalVariables
   !
   ! ********************************************************
 
-  integer, dimension(:), allocatable :: Nxi_for_x, min_x_for_L
+  real(prec), dimension(:,:,:), allocatable :: FourierAmplitudeVsL
+  integer, dimension(:), allocatable :: Nxi_for_x, min_x_for_L, L_to_save
   integer, dimension(:), allocatable :: xm, xn
   real(prec), dimension(:,:), allocatable :: predictedAmplitudes
   integer :: matrixSize, NxPotentials
