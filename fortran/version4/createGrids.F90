@@ -423,7 +423,9 @@
     case (1)
        do j=1,Nx
           ! Linear ramp from 0.1*Nxi to Nxi as x increases from 0 to 2:
-          temp = Nxi*(0.1 + 0.9*x(j)/2)
+          !temp = Nxi*(0.1 + 0.9*x(j)/2)
+          ! Linear ramp from 0 to Nxi as x increases from 0 to 2:
+          temp = Nxi*(0.0 + 1.0*x(j)/2)
           ! Always keep at least 3 Legendre modes, for the sake of diagnostics.
           ! Always keep at least NL Legendre modes, to simplify the collision operator loops.
           ! Above the threshold value of x, keep exactly Nxi Legendre modes.
@@ -475,6 +477,7 @@
     end if
 
     allocate(FourierAmplitudeVsL(Nspecies,Nxi_to_save,NFourier2))
+    allocate(LegendreAmplitudeVsX(Nspecies,Nxi,Nx))
 
     ! *******************************************************************************
     ! Initialize quantities related to the poloidal and toroidal angle coordinates

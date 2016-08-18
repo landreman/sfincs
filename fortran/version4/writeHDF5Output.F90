@@ -112,6 +112,12 @@ module writeHDF5Output
   integer(HID_T) :: pForIterationSpeciesXiFourier2
   integer(HID_T) :: dspaceIDForIterationSpeciesXiFourier2
 
+  integer(HSIZE_T), dimension(4) :: dimForIterationSpeciesXiX
+  integer(HSIZE_T), dimension(4) :: maxDimForIterationSpeciesXiX
+  integer(HSIZE_T), dimension(4) :: dimForIterationSpeciesXiXChunk
+  integer(HID_T) :: pForIterationSpeciesXiX
+  integer(HID_T) :: dspaceIDForIterationSpeciesXiX
+
   integer(HSIZE_T), dimension(6) :: dimForExport_f
   integer(HSIZE_T), dimension(6) :: maxDimForExport_f
   integer(HSIZE_T), dimension(6) :: dimForExport_fChunk
@@ -145,6 +151,7 @@ module writeHDF5Output
   integer, parameter :: ARRAY_EXPORT_F = 107
   integer, parameter :: ARRAY_ITERATION_SPECIES_X = 108
   integer, parameter :: ARRAY_ITERATION_SPECIES_XI_FOURIER2 = 109
+  integer, parameter :: ARRAY_ITERATION_SPECIES_XI_X = 110
 
 contains
 
@@ -488,12 +495,18 @@ contains
        dimForIterationSpeciesThetaZeta(1) = iterationNum
        dimForIterationSpeciesSources(1) = iterationNum
        dimForIterationSpeciesFourier2(1) = iterationNum
+       dimForIterationSpeciesXiFourier2(1) = iterationNum
+       dimForIterationSpeciesXiX(1) = iterationNum
        dimForIterationSpeciesX(1) = iterationNum
        dimForExport_f(1) = iterationNum
 
        call writeHDF5ExtensibleField(iterationNum, "FourierAmplitudeVsL", FourierAmplitudeVsL, &
             ARRAY_ITERATION_SPECIES_XI_FOURIER2, &
-            "\int dx x^2 f_1, as a function of Legendre index and Fourier mode.")
+            "\int dx x^4 f_1, as a function of Legendre index and Fourier mode.")
+
+       call writeHDF5ExtensibleField(iterationNum, "LegendreAmplitudeVsX", LegendreAmplitudeVsX, &
+            ARRAY_ITERATION_SPECIES_XI_X, &
+            "Sum of abs(delta f) over all Fourier modes, broken out by species, xi, and x")
 
        call writeHDF5ExtensibleField(iterationNum, "densityNonadiabaticPerturbation_realSpace", densityNonadiabaticPerturbation_realSpace, &
             ARRAY_ITERATION_SPECIES_THETA_ZETA, &
@@ -1091,6 +1104,30 @@ contains
 
     ! -------------------------------------
 
+    rank = 4
+    dimForIterationSpeciesXiX(1)      = 1
+    maxDimForIterationSpeciesXiX(1)   = H5S_UNLIMITED_F
+    dimForIterationSpeciesXiXChunk(1) = 1
+
+    dimForIterationSpeciesXiX(2)      = Nspecies
+    maxDimForIterationSpeciesXiX(2)   = Nspecies
+    dimForIterationSpeciesXiXChunk(2) = Nspecies
+
+    dimForIterationSpeciesXiX(3)      = Nxi
+    maxDimForIterationSpeciesXiX(3)   = Nxi
+    dimForIterationSpeciesXiXChunk(3) = Nxi
+
+    dimForIterationSpeciesXiX(4)      = Nx
+    maxDimForIterationSpeciesXiX(4)   = Nx
+    dimForIterationSpeciesXiXChunk(4) = Nx
+
+    call h5screate_simple_f(rank, dimForIterationSpeciesXiX, dspaceIDForIterationSpeciesXiX, &
+         HDF5Error, maxDimForIterationSpeciesXiX)
+    call h5pcreate_f(H5P_DATASET_CREATE_F, pForIterationSpeciesXiX, HDF5Error)
+    call h5pset_chunk_f(pForIterationSpeciesXiX, rank, dimForIterationSpeciesXiXChunk, HDF5Error)
+
+    ! -------------------------------------
+
 !!$    rank = 6
 !!$    dimForExport_f(1)      = 1
 !!$    maxDimForExport_f(1)   = H5S_UNLIMITED_F
@@ -1161,6 +1198,7 @@ contains
        call h5pclose_f(pForIterationSpeciesFourier2, HDF5Error)
        call h5pclose_f(pForIterationSpeciesX, HDF5Error)
        call h5pclose_f(pForIterationSpeciesXiFourier2, HDF5Error)
+       call h5pclose_f(pForIterationSpeciesXiX, HDF5Error)
        call h5pclose_f(pForExport_f, HDF5Error)
 
        call h5close_f(HDF5Error)
@@ -1747,6 +1785,17 @@ contains
 
        label1 = "m,n Fourier modes: cosine,sine"
        label2 = "L_to_save"
+       label3 = "species"
+       label4 = "iteration"
+
+    case (ARRAY_ITERATION_SPECIES_XI_X)
+       originalDspaceID = dspaceIDForIterationSpeciesXiX
+       dim = dimForIterationSpeciesXiX
+       dimForChunk = dimForIterationSpeciesXiXChunk
+       chunkProperties = pForIterationSpeciesXiX
+
+       label1 = "x"
+       label2 = "L"
        label3 = "species"
        label4 = "iteration"
 

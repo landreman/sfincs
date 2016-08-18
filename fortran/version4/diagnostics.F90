@@ -906,8 +906,23 @@
        call PetscTime(time2, ierr)
 !       if (export_delta_f .or. export_full_f) then
        !print *,"Time for exporting f: ", time2-time1, " seconds."
-       print *,"Time for computing FourierAmplitudesVsL: ", time2-time1, " seconds."
+       print *,"Time for computing FourierAmplitudeVsL: ", time2-time1, " seconds."
 !       end if
+
+       call PetscTime(time1, ierr)
+       LegendreAmplitudeVsX=0
+       do ix = 1,Nx
+          do ixi1 = 1,Nxi_for_x(ix)
+             do ispecies = 1,Nspecies
+                do imn = 1,NFourier2
+                   index = getIndex(ispecies, ix, ixi1, imn, BLOCK_F)+1
+                   LegendreAmplitudeVsX(ispecies, ixi1, ix) = LegendreAmplitudeVsX(ispecies, ixi1, ix) + abs(solutionWithDeltaFArray(index))
+                end do
+             end do
+          end do
+       end do
+       call PetscTime(time2, ierr)
+       print *,"Time for computing LegendreAmplitudeVsX: ", time2-time1, " seconds."
 
        call VecRestoreArrayF90(solutionWithFullFOnProc0, solutionWithFullFArray, ierr)
        call VecRestoreArrayF90(solutionWithDeltaFOnProc0, solutionWithDeltaFArray, ierr)
