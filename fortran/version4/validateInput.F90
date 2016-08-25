@@ -28,6 +28,7 @@ subroutine validateInput()
      stop
   end if
   
+
   !!if (RHSMode == 2 .and. nonlinear) then !!Commented by AM 2016-02
   if (RHSMode == 2 .and. includePhi1) then !!Added by AM 2016-02
      if (masterProc) then
@@ -47,7 +48,13 @@ subroutine validateInput()
      ! Computing monoenergetic transport coefficients.
      ! Make sure the code is configured to use the DKES form of the kinetic equation.
 
-     !!if (nonlinear) then !!Commented by AM 2016-02
+     if (Nxi_for_x_option .ne. 0) then 
+        if (masterProc) then
+           print *,"Setting Nxi_for_x_option=0, since RHSMode=3."
+        end if
+        Nxi_for_x_option=0
+     end if
+
      if (includePhi1) then !!Added by AM 2016-02
         if (masterProc) then
            print *,line

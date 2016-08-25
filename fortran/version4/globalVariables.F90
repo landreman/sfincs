@@ -187,9 +187,7 @@ module globalVariables
   real(prec), dimension(:,:), allocatable :: ddx_preconditioner
   real(prec), dimension(:,:), allocatable :: interpolateXToXPotentials
 
-  real(prec), dimension(:,:,:,:,:), allocatable :: Rosenbluth_H
-  real(prec), dimension(:,:,:,:,:), allocatable :: Rosenbluth_dHdxb
-  real(prec), dimension(:,:,:,:,:), allocatable :: Rosenbluth_d2Gdxb2
+  real(prec), dimension(:,:,:,:,:), allocatable :: RosenbluthPotentialTerms
 
   integer, parameter :: COORDINATE_SYSTEM_UNINITIALIZED = -1
   integer, parameter :: COORDINATE_SYSTEM_BOOZER = 1

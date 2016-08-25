@@ -54,6 +54,13 @@ subroutine validateInput()
      ! Computing monoenergetic transport coefficients.
      ! Make sure the code is configured to use the DKES form of the kinetic equation.
 
+     if (Nxi_for_x_option .ne. 0) then 
+        if (masterProc) then
+           print *,"Setting Nxi_for_x_option=0, since RHSMode=3."
+        end if
+        Nxi_for_x_option=0
+     end if
+
      !!if (nonlinear) then !!Commented by AM 2016-02
      if (includePhi1) then !!Added by AM 2016-02
         if (masterProc) then

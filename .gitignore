@@ -7,6 +7,7 @@ sfincsOutput.h5
 job.out.*
 job.err.*
 *~
+*.aux
 \#*
 fortran/multiSpecies/BACKUP_2015-11-06_solveDKE.F90
 fortran/multiSpecies/BACKUP_solveDKE.F90

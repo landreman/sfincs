@@ -1464,26 +1464,7 @@
 
                          if (xGridScheme==5 .or. xGridScheme==6) then
                             ! New scheme for the Rosenbluth potential terms.
-
-                            speciesFactor = 3/(2*pi)*nHats(iSpeciesA) &
-                                 * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
-                                 / (THats(iSpeciesA) * sqrt(THats(iSpeciesA)*mHats(ispeciesA))) &
-                                 * THats(iSpeciesB)*mHats(iSpeciesA)/(THats(iSpeciesA)*mHats(iSpeciesB))
-
-                            ! Add terms involving H and d H / d x_b:
-                            temp = 1 - mHats(iSpeciesA)/mHats(iSpeciesB)
-                            do i=1,Nx
-                               M11(i,:) = M11(i,:) - speciesFactor*expx2(i)*( &
-                                    Rosenbluth_H(iSpeciesA,iSpeciesB,L+1,i,:) &
-                                    + temp * xb(i) * Rosenbluth_dHdxb(iSpeciesA,iSpeciesB,L+1,i,:))
-                            end do
-
-                            ! Add term involving d^2 G / d x_b^2:
-                            do i=1,Nx
-                               M11(i, :) = M11(i,:) + speciesFactor*expx2(i)*x2(i)&
-                                    * Rosenbluth_d2Gdxb2(iSpeciesA,iSpeciesB,L+1,i,:)
-                            end do
-
+                            M11 = M11 + RosenbluthPotentialTerms(iSpeciesA,iSpeciesB,L+1,:,:)
                             CHat = M11
 
                          else

@@ -357,12 +357,9 @@
     end select
 
     if ((xGridScheme==5 .or. xGridScheme==6) .and. (RHSMode .ne. 3)) then
-       allocate(Rosenbluth_H(Nspecies,Nspecies,NL,Nx,Nx))
-       allocate(Rosenbluth_dHdxb(Nspecies,Nspecies,NL,Nx,Nx))
-       allocate(Rosenbluth_d2Gdxb2(Nspecies,Nspecies,NL,Nx,Nx))
-       call computeRosenbluthPotentialResponse(Nx, x, xWeights, Nspecies, mHats, THats, NL, &
-         Rosenbluth_H, Rosenbluth_dHdxb, Rosenbluth_d2Gdxb2,.false.)
-         !Rosenbluth_H, Rosenbluth_dHdxb, Rosenbluth_d2Gdxb2,masterProc)
+       allocate(RosenbluthPotentialTerms(Nspecies,Nspecies,NL,Nx,Nx))
+       call computeRosenbluthPotentialResponse(Nx, x, xWeights, Nspecies, mHats, THats, nHats, Zs, NL, &
+         RosenbluthPotentialTerms,.false.)
     end if
 
 !    if (masterProc) then

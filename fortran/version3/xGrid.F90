@@ -255,8 +255,8 @@
 
     ! ---------------------------------------------------------------
 
-    subroutine computeRosenbluthPotentialResponse(Nx, x, xWeights, Nspecies, mHats, THats, NL, &
-         Rosenbluth_H, Rosenbluth_dHdxb, Rosenbluth_d2Gdxb2,verbose)
+    subroutine computeRosenbluthPotentialResponse(Nx, x, xWeights, Nspecies, mHats, THats, nHats, Zs, NL, &
+         RosenbluthPotentialTerms,verbose)
 
       ! This subroutine is the other major routine in this module.
       ! Here, we compute matrices which, when multiplied by a vector of distribution-function
@@ -265,10 +265,8 @@
       
       logical, intent(in) :: verbose
       integer, intent(in) :: Nx, Nspecies, NL
-      PetscScalar, dimension(:), intent(in) :: x, xWeights, mHats, THats
-      PetscScalar, dimension(:,:,:,:,:), intent(out) :: Rosenbluth_H
-      PetscScalar, dimension(:,:,:,:,:), intent(out) :: Rosenbluth_dHdxb
-      PetscScalar, dimension(:,:,:,:,:), intent(out) :: Rosenbluth_d2Gdxb2
+      PetscScalar, dimension(:), intent(in) :: x, xWeights, mHats, THats, nHats, Zs
+      PetscScalar, dimension(:,:,:,:,:), intent(out) :: RosenbluthPotentialTerms
       ! Order of indicies in the Rosenbluth response matrices:
       ! (species_row, species_col, L, x_row, x_col)
 
@@ -276,8 +274,10 @@
       PetscScalar, dimension(:,:), allocatable :: tempMatrix_H
       PetscScalar, dimension(:,:), allocatable :: tempMatrix_dHdxb
       PetscScalar, dimension(:,:), allocatable :: tempMatrix_d2Gdxb2
+      PetscScalar, dimension(:,:), allocatable :: tempMatrix_combined
+      PetscScalar, dimension(:), allocatable :: expx2
       integer :: i, L, iSpeciesA, iSpeciesB, ix, imode
-      PetscScalar :: alpha, speciesFactor, xb
+      PetscScalar :: alpha, speciesFactor, speciesFactor2, xb
       PetscScalar :: I_2pL, I_4pL, I_1mL, I_3mL
       PetscScalar, parameter :: pi = 3.14159265358979d+0
       PetscScalar, parameter :: one = 1., two = 2.
@@ -310,6 +310,10 @@
       allocate(tempMatrix_H(Nx,Nx))
       allocate(tempMatrix_dHdxb(Nx,Nx))
       allocate(tempMatrix_d2Gdxb2(Nx,Nx))
+      allocate(tempMatrix_combined(Nx,Nx))
+
+      allocate(expx2(Nx))
+      expx2=exp(-x*x)
 
       inf = 1
       !     inf = 1 corresponds to  (bound,+infinity),
@@ -340,6 +344,12 @@
             do iSpeciesB = 1,Nspecies
                speciesFactor = sqrt(THats(iSpeciesA)*mHats(iSpeciesB) &
                     / (THats(iSpeciesB) * mHats(iSpeciesA)))
+
+               speciesFactor2 = 3/(2*pi)*nHats(iSpeciesA) &
+                    * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
+                    / (THats(iSpeciesA) * sqrt(THats(iSpeciesA)*mHats(ispeciesA))) &
+                    * THats(iSpeciesB)*mHats(iSpeciesA)/(THats(iSpeciesA)*mHats(iSpeciesB))
+
                do ix = 1,Nx
                   xb =  x(ix) * speciesFactor
                   ! j denotes which polynomial, beginning with 1 rather than 0.
@@ -456,23 +466,21 @@
                   end do
                end do
 
-               Rosenbluth_H(iSpeciesA, iSpeciesB, L+1, :, :)       = matmul(tempMatrix_H, collocation2modal)
-               Rosenbluth_dHdxb(iSpeciesA, iSpeciesB, L+1, :, :)   = matmul(tempMatrix_dHdxb, collocation2modal)
-               Rosenbluth_d2Gdxb2(iSpeciesA, iSpeciesB, L+1, :, :) = matmul(tempMatrix_d2Gdxb2, collocation2modal)
+               tempMatrix_combined=0
+               do i=1,Nx
+                  tempMatrix_combined(i,:) = speciesFactor2*expx2(i)*( &
+                       - tempMatrix_H(i,:) &
+                       - (1 - mHats(iSpeciesA)/mHats(iSpeciesB)) * (x(i) * speciesFactor) * tempMatrix_dHdxb(i,:) &
+                       + x(i)*x(i) * tempMatrix_d2Gdxb2(i,:))
+               end do
+
+               RosenbluthPotentialTerms(iSpeciesA, iSpeciesB, L+1, :, :) = matmul(tempMatrix_combined, collocation2modal)
 
                if (verbose) then
                   print *,"For iSpeciesA=",iSpeciesA,",iSpeciesB=",iSpeciesB,",L=",L
-                  print *,"Rosenbluth_H="
+                  print *,"RosenbluthPotentialTerms="
                   do ix=1,NX
-                     print *,Rosenbluth_H(iSpeciesA,iSpeciesB,L+1,ix,:)
-                  end do
-                  print *,"Rosenbluth_dHdxb="
-                  do ix=1,NX
-                     print *,Rosenbluth_dHdxb(iSpeciesA,iSpeciesB,L+1,ix,:)
-                  end do
-                  print *,"Rosenbluth_d2Gdxb2="
-                  do ix=1,NX
-                     print *,Rosenbluth_d2Gdxb2(iSpeciesA,iSpeciesB,L+1,ix,:)
+                     print *,RosenbluthPotentialTerms(iSpeciesA,iSpeciesB,L+1,ix,:)
                   end do
                end if
             end do
@@ -482,6 +490,7 @@
       deallocate(tempMatrix_H)
       deallocate(tempMatrix_dHdxb)
       deallocate(tempMatrix_d2Gdxb2)
+      deallocate(tempMatrix_combined)
       deallocate(collocation2modal)
 
     end subroutine computeRosenbluthPotentialResponse
