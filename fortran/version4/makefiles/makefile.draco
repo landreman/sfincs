@@ -2,9 +2,7 @@
 #
 # To compile on draco, first load the following modules:
 #
-# module load netcdf-serial
-# module load hdf5-serial 
-# module load petsc-real 
+# module load netcdf-serial hdf5-serial petsc-openmp-real
 #
 # Also set the following environment variables:
 #
@@ -13,14 +11,14 @@
 # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HDF5_HOME}/lib:${NETCDF_HOME}/lib
 #
 # (You might wish to put the above lines in your .bashrc file.)
-# These settings worked as of 2016-Feb-06.
+# These settings worked as of 2016-September-09.
 #
 # Then run 
 # make clean
 # make -j
 #
 # To use the plotting routines in utils/ you also need to load the following modules:
-# module load python27/python python27/scipy python27/h5py
+# module load anaconda
 
 # These next 2 includes set FC, FLINKER, and PETSC_LIB:
 # For PETSc version 3.6.0 and later, use the following 2 lines:

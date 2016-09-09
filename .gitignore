@@ -18,3 +18,4 @@ fortran/singleSpecies/host.list
 fortran/version3/testDevDir/
 sfincsBinary*
 .DS_Store
+sfincsJob*

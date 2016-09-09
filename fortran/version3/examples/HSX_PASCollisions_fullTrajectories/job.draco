@@ -12,7 +12,12 @@
 #SBATCH --partition=express
 
 #SBATCH --nodes=2
-#SBATCH --ntasks-per-node=12
+#SBATCH --ntasks-per-node=32
+# for OpenMP:
+#SBATCH --cpus-per-task=1
+export OMP_NUM_THREADS=1
+# For pinning threads correctly:
+export OMP_PLACES=cores
 
 # Wall clock limit:
 #SBATCH --time=00:30:00
