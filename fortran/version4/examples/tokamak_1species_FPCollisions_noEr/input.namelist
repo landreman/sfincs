@@ -106,9 +106,9 @@
 &preconditionerOptions
   ! Since the matrix size is so small for this example, we can afford to make the preconditioner matrix
   ! the same as the real system matrix.
-  preconditioner_species = 0
-  preconditioner_x = 0
-  preconditioner_xi = 0
+  !preconditioner_species = 0
+  !preconditioner_x = 0
+  !preconditioner_xi = 0
 /
 
 &export_f

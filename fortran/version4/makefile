@@ -21,6 +21,11 @@
 # does not matter.  If you do not want to link NetCDF, do not assign any value to USE_NETCDF here.
 USE_NETCDF ?= X
 
+# Do you want to include the slower version of getIndices which includes validation of the subroutine parameters?
+# If yes, set the DEBUG variable here to any value; the actual value does not matter.
+# If no (i.e. you want the faster getIndices with no validation), do not assign any value to DEBUG here.
+DEBUG ?= x
+
 ##############################################################################3
 # End of parameters
 ##############################################################################3
@@ -47,6 +52,9 @@ include $(SYSTEM_MAKEFILE)
 
 ifdef USE_NETCDF
 	EXTRA_COMPILE_FLAGS += -DUSE_NETCDF
+endif
+ifdef DEBUG
+	EXTRA_COMPILE_FLAGS += -DDEBUG
 endif
 
 include makefile.depend

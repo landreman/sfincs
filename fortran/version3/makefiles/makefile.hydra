@@ -33,10 +33,10 @@ include ${PETSC_DIR}/conf/variables
 include ${PETSC_DIR}/conf/rules
 
 # Any other flags for compiling, such as -I include flags:
-EXTRA_COMPILE_FLAGS = -I${HDF5_HOME}/include -I${PETSC_DIR}/include -I${NETCDF_HOME}/include
+EXTRA_COMPILE_FLAGS = -I${HDF5_HOME}/include -I${PETSC_DIR}/include -I${NETCDF_HOME}/include -openmp
 
 # Any other flags for linking, such as -l library flags:
-EXTRA_LINK_FLAGS = -L${HDF5_HOME}/lib -lhdf5_fortran -lhdf5 -lhdf5_hl -lhdf5hl_fortran -L${NETCDF_HOME}/lib -lnetcdf -lnetcdff
+EXTRA_LINK_FLAGS = -L${HDF5_HOME}/lib -lhdf5_fortran -lhdf5 -lhdf5_hl -lhdf5hl_fortran -L${NETCDF_HOME}/lib -lnetcdf -lnetcdff -openmp  -Wl,-ydgemm_
 
 
 # The next parameters are used only for running selected examples "make test"

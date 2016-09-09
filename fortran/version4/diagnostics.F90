@@ -122,7 +122,7 @@
 
     use globalVariables, only: Phi1Hat_Fourier, dPhi1Hatdtheta_Fourier, dPhi1Hatdzeta_Fourier
     use globalVariables, only: Phi1Hat_realSpace, dPhi1Hatdtheta_realSpace, dPhi1Hatdzeta_realSpace
-    use globalVariables, only: includePhi1, zero, MPIComm, masterProc, ddtheta, ddzeta, NFourier2
+    use globalVariables, only: includePhi1, zero, MPIComm, masterProc, NFourier2
     use indices
     use FourierTransformMod, only: inverseFourierTransform
     use petscvec
@@ -163,8 +163,8 @@
        ! Send Phi1Hat from the masterProc to all procs:
        call MPI_Bcast(Phi1Hat_Fourier, NFourier2, MPI_DOUBLE_PRECISION, 0, MPIComm, ierr)
 
-       dPhi1Hatdtheta_Fourier = matmul(ddtheta,Phi1Hat_Fourier)
-       dPhi1Hatdzeta_Fourier = matmul(ddzeta,Phi1Hat_Fourier)
+       call FourierDerivative(NFourier2,Phi1Hat_Fourier,dPhi1Hatdtheta_Fourier,1)
+       call FourierDerivative(NFourier2,Phi1Hat_Fourier,dPhi1Hatdzeta_Fourier, 2)
        call inverseFourierTransform(Phi1Hat_Fourier,Phi1Hat_realSpace)
        call inverseFourierTransform(dPhi1Hatdtheta_Fourier,dPhi1Hatdtheta_realSpace)
        call inverseFourierTransform(dPhi1Hatdzeta_Fourier, dPhi1Hatdzeta_realSpace)
@@ -830,7 +830,20 @@
 !!$       ! matrix in each of the 4 coordinates (theta, zeta, x, xi).  This is not the fastest way to do what we want,
 !!$       ! but it is relatively simple, and the time required (up to a few seconds) is negligible compared to the time
 !!$       ! required for solving the kinetic equation.
-!!$       call PetscTime(time1, ierr)
+       call PetscTime(time1, ierr)
+
+       FourierAmplitudeVsL=0
+       do ixi1 = 1,Nxi_to_save
+          do ix = min_x_for_L(L_to_save(ixi1)),Nx
+             temp1 = (x(ix)**4)*xWeights(ix)
+             do ispecies = 1,Nspecies
+                do imn = 1,NFourier2
+                   index = getIndex(ispecies, ix, L_to_save(ixi1)+1, imn, BLOCK_F)+1
+                   FourierAmplitudeVsL(ispecies, ixi1, imn) = FourierAmplitudeVsL(ispecies, ixi1, imn) + solutionWithDeltaFArray(index)*temp1
+                end do
+             end do
+          end do
+       end do
 !!$       if (export_full_f) then
 !!$          full_f = zero
 !!$          do ispecies = 1,Nspecies
@@ -890,10 +903,26 @@
 !!$             end do
 !!$          end do
 !!$       end if
-!!$       call PetscTime(time2, ierr)
-!!$       if (export_delta_f .or. export_full_f) then
-!!$          print *,"Time for exporting f: ", time2-time1, " seconds."
-!!$       end if
+       call PetscTime(time2, ierr)
+!       if (export_delta_f .or. export_full_f) then
+       !print *,"Time for exporting f: ", time2-time1, " seconds."
+       print *,"Time for computing FourierAmplitudeVsL: ", time2-time1, " seconds."
+!       end if
+
+       call PetscTime(time1, ierr)
+       LegendreAmplitudeVsX=0
+       do ix = 1,Nx
+          do ixi1 = 1,Nxi_for_x(ix)
+             do ispecies = 1,Nspecies
+                do imn = 1,NFourier2
+                   index = getIndex(ispecies, ix, ixi1, imn, BLOCK_F)+1
+                   LegendreAmplitudeVsX(ispecies, ixi1, ix) = LegendreAmplitudeVsX(ispecies, ixi1, ix) + abs(solutionWithDeltaFArray(index))
+                end do
+             end do
+          end do
+       end do
+       call PetscTime(time2, ierr)
+       print *,"Time for computing LegendreAmplitudeVsX: ", time2-time1, " seconds."
 
        call VecRestoreArrayF90(solutionWithFullFOnProc0, solutionWithFullFArray, ierr)
        call VecRestoreArrayF90(solutionWithDeltaFOnProc0, solutionWithDeltaFArray, ierr)
@@ -987,7 +1016,10 @@
     !!!call VecDestroy(expPhi1, ierr) !!Added by AM 2016-06
 
     call PetscTime(presentTime, ierr)
-    elapsedTime = startTime-presentTime
+    elapsedTime = presentTime-startTime
+    if (masterProc) then
+       print *,"Total time since start:",elapsedTime,"sec"
+    end if
 
 
     ! updateOutputFile should be called by all procs since it contains MPI_Barrier

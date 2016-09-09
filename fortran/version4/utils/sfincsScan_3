@@ -119,10 +119,13 @@ elif scanVariable == "constraintscheme":
     mustBeInteger = True
 elif scanVariable == "magneticdriftscheme":
     mustBeInteger = True
-elif scanVariable == "ntheta":
+elif scanVariable == "nfourier":
     print resolutionWarning
     mustBeInteger = True
-elif scanVariable == "nzeta":
+elif scanVariable == "mmax":
+    print resolutionWarning
+    mustBeInteger = True
+elif scanVariable == "nmax":
     print resolutionWarning
     mustBeInteger = True
 elif scanVariable == "nxi":
@@ -143,9 +146,7 @@ elif scanVariable == "xmax":
 elif scanVariable == "solvertolerance":
     print resolutionWarning
     mustBeInteger = False
-elif scanVariable == "thetaderivativescheme":
-    mustBeInteger = True
-elif scanVariable == "zetaderivativescheme":
+elif scanVariable == "nxi_for_x_option":
     mustBeInteger = True
 elif scanVariable == "xgridscheme":
     mustBeInteger = True
@@ -153,9 +154,6 @@ elif scanVariable == "xgrid_k":
     mustBeInteger = True
 elif scanVariable == "xpotentialsgridscheme":
     mustBeInteger = True
-elif scanVariable == "exbderivativescheme":
-    mustBeInteger = True
-elif scanVariable == "magneticdriftderivativescheme":
     mustBeInteger = True
 elif scanVariable == "whichparallelsolvertofactorpreconditioner":
     mustBeInteger = True
@@ -168,14 +166,14 @@ elif scanVariable == "preconditioner_x":
     mustBeInteger = True
 elif scanVariable == "preconditioner_x_min_l":
     mustBeInteger = True
-elif scanVariable == "preconditioner_theta":
+elif scanVariable == "preconditioner_fourier":
     mustBeInteger = True
-elif scanVariable == "preconditioner_theta_min_l":
+elif scanVariable == "preconditioner_fourier_max_nnz_per_row":
     mustBeInteger = True
-elif scanVariable == "preconditioner_zeta":
-    mustBeInteger = True
-elif scanVariable == "preconditioner_zeta_min_l":
-    mustBeInteger = True
+elif scanVariable == "preconditioner_fourier_threshold":
+    mustBeInteger = False
+elif scanVariable == "preconditioner_fourier_max_modes":
+    mustBeInteger = False
 elif scanVariable == "preconditioner_xi":
     mustBeInteger = True
 elif scanVariable == "export_f_theta_option":

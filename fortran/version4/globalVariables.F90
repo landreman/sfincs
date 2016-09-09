@@ -132,7 +132,7 @@ module globalVariables
 
   integer :: NFourier = 10
   integer :: NFourier2=0
-  integer :: mmax=32, nmax=32
+  integer :: mmax=64, nmax=64
   integer :: Ntheta, Nzeta
   integer :: Nxi = 16
   integer :: NL = 4
@@ -149,18 +149,20 @@ module globalVariables
   ! 2 = force use of superlu_dist, if it is available
 
   integer :: preconditioner_x=1, preconditioner_x_min_L=0
-  integer :: preconditioner_Fourier=0, preconditioner_xi=1, preconditioner_species=1
-  integer :: preconditioner_Fourier_min_L=0
+  integer :: preconditioner_Fourier=1, preconditioner_xi=1, preconditioner_species=1
+  integer :: preconditioner_Fourier_max_modes=5
   real(prec) :: preconditioner_Fourier_threshold=0.03
   logical :: reusePreconditioner=.true.
   integer :: preconditioner_magnetic_drifts_max_L = 2
   logical :: preconditioner_drop_xDot = .true.
   logical :: preconditioner_drop_xiDot = .true.
-  integer :: preconditioner_Fourier_max_nnz_per_row = 6
+  integer :: preconditioner_Fourier_max_nnz_per_row = 20
 
   integer :: constraintScheme=-1
 
   integer :: PETSCPreallocationStrategy=1
+  integer :: Nxi_for_x_option = 1
+  integer :: Nxi_to_save = 12
 
   ! ********************************************************
   !
@@ -168,12 +170,16 @@ module globalVariables
   !
   ! ********************************************************
 
+  integer :: FourierOption = 2
+  real(prec) :: FourierFactor = 1.0
+  real(prec), dimension(:,:,:), allocatable :: FourierAmplitudeVsL, LegendreAmplitudeVsX
+  integer, dimension(:), allocatable :: Nxi_for_x, min_x_for_L, L_to_save
   integer, dimension(:), allocatable :: xm, xn
   real(prec), dimension(:,:), allocatable :: predictedAmplitudes
   integer :: matrixSize, NxPotentials
   real(prec), dimension(:), allocatable :: theta, zeta, x, x_plus1
   real(prec) :: thetaWeight, zetaWeight
-  real(prec), dimension(:,:), allocatable :: ddtheta, ddzeta
+  !real(prec), dimension(:,:), allocatable :: ddtheta, ddzeta
   real(prec), dimension(:), allocatable :: xWeights, xPotentials
   real(prec) :: maxxPotentials, zetaMax, xMaxNotTooSmall
   real(prec), dimension(:), allocatable :: x2, expx2
@@ -181,9 +187,7 @@ module globalVariables
   real(prec), dimension(:,:), allocatable :: ddx_preconditioner
   real(prec), dimension(:,:), allocatable :: interpolateXToXPotentials
 
-  real(prec), dimension(:,:,:,:,:), allocatable :: Rosenbluth_H
-  real(prec), dimension(:,:,:,:,:), allocatable :: Rosenbluth_dHdxb
-  real(prec), dimension(:,:,:,:,:), allocatable :: Rosenbluth_d2Gdxb2
+  real(prec), dimension(:,:,:,:,:), allocatable :: RosenbluthPotentialTerms
 
   integer, parameter :: COORDINATE_SYSTEM_UNINITIALIZED = -1
   integer, parameter :: COORDINATE_SYSTEM_BOOZER = 1
@@ -381,8 +385,8 @@ module globalVariables
   integer :: numProcs, myRank 
   logical :: masterProc
 
-  !integer :: iFourierMin, iFourierMax, localNFourier
-  integer :: LMin, LMax, localNxi
+  integer :: iFourierMin, iFourierMax, localNFourier
+  !integer :: LMin, LMax, localNxi
   logical :: procThatHandlesConstraints
   Mat :: MatForJacobian
 

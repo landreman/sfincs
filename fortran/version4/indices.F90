@@ -119,6 +119,9 @@
     ! Enforce <f_1> = 0 at each x
     integer, parameter :: BLOCK_F_CONSTRAINT        = 9995
 
+    integer, private :: DKE_size
+    integer, private, dimension(:), allocatable :: first_index_for_x
+
   contains
 
     integer function getIndex(i_species, i_x, i_xi, i_Fourier, whichBlock)
@@ -129,14 +132,15 @@
       ! The input "local" indices (i_x, i_xi, etc) are 1-based, since small matrices are stored in Fortran.
       ! the output "global" index is 0-based, since PETSc uses 0-based indexing.
 
-      use globalVariables, only: Nspecies, Nx, Nxi, NFourier2, matrixSize, constraintScheme, includePhi1, masterProc
+      use globalVariables, only: Nspecies, Nx, Nxi, NFourier2, matrixSize, constraintScheme, includePhi1, masterProc, &
+           Nxi_for_x
 
       implicit none
 
       integer, intent(in) :: i_species, i_x, i_xi, i_Fourier, whichBlock
 
       ! Validate inputs:
-
+#ifdef DEBUG
       if (i_species < 1) then
          print *,"Error: i_species < 1"
          stop
@@ -162,8 +166,10 @@
          stop
       end if
 
-      if (i_xi > Nxi) then
-         print *,"Error: i_xi > Nxi"
+      if (i_xi > Nxi_for_x(i_x)) then
+         print *,"Error: i_xi > Nxi_for_x(i_x)"
+         print *,"i_x=",i_x
+         print *,"i_xi=",i_xi
          stop
       end if
 
@@ -190,22 +196,28 @@
          end if
          stop
       end if
-
+#endif
       ! Done with validation.
 
       select case (whichBlock)
       case (BLOCK_F)
-         getIndex = (i_species-1)*Nx*Nxi*NFourier2 &
-              +(i_x-1)*Nxi*NFourier2 &
+!!$         getIndex = (i_species-1)*Nx*Nxi*NFourier2 &
+!!$              +(i_x-1)*Nxi*NFourier2 &
+!!$              +(i_xi-1)*NFourier2 &
+!!$              +i_Fourier -1
+         getIndex = (i_species-1)*DKE_size &
+              +first_index_for_x(i_x)*NFourier2 &
               +(i_xi-1)*NFourier2 &
-              +i_Fourier -1
+              +i_Fourier - 1
 
       case (BLOCK_QN)
-         getIndex = Nspecies*Nx*Nxi*NFourier2 &
+!!$         getIndex = Nspecies*Nx*Nxi*NFourier2 &
+         getIndex = Nspecies*DKE_size &
               +i_Fourier-1
 
       case (BLOCK_PHI1_CONSTRAINT)
-         getIndex = Nspecies*Nx*Nxi*NFourier2 &
+!!$         getIndex = Nspecies*Nx*Nxi*NFourier2 &
+         getIndex = Nspecies*DKE_size &
               +NFourier2
 
       case (BLOCK_DENSITY_CONSTRAINT)
@@ -215,11 +227,13 @@
             stop
          end if
          if (includePhi1) then
-            getIndex = Nspecies*Nx*Nxi*NFourier2 &
+!!$            getIndex = Nspecies*Nx*Nxi*NFourier2 &
+            getIndex = Nspecies*DKE_size &
                  + NFourier2 + 1 &
                  + (i_species-1)*2
          else
-            getIndex = Nspecies*Nx*Nxi*NFourier2 &
+!!$            getIndex = Nspecies*Nx*Nxi*NFourier2 &
+            getIndex = Nspecies*DKE_size &
                  + (i_species-1)*2
          end if
 
@@ -230,11 +244,13 @@
             stop
          end if
          if (includePhi1) then
-            getIndex = Nspecies*Nx*Nxi*NFourier2 &
+!!$            getIndex = Nspecies*Nx*Nxi*NFourier2 &
+            getIndex = Nspecies*DKE_size &
                  + NFourier2 + 1 &
                  + (i_species-1)*2 + 1
          else
-            getIndex = Nspecies*Nx*Nxi*NFourier2 &
+!!$            getIndex = Nspecies*Nx*Nxi*NFourier2 &
+            getIndex = Nspecies*DKE_size &
                  + (i_species-1)*2 + 1
          end if
 
@@ -245,11 +261,13 @@
             stop
          end if
          if (includePhi1) then
-            getIndex = Nspecies*Nx*Nxi*NFourier2 &
+!!$            getIndex = Nspecies*Nx*Nxi*NFourier2 &
+            getIndex = Nspecies*DKE_size &
                  + NFourier2 + 1 &
                  + (i_species-1)*Nx + i_x - 1
          else
-            getIndex = Nspecies*Nx*Nxi*NFourier2 &
+!!$            getIndex = Nspecies*Nx*Nxi*NFourier2 &
+            getIndex = Nspecies*DKE_size &
                  + (i_species-1)*Nx + i_x - 1
          end if
 
@@ -260,6 +278,7 @@
 
       ! One last sanity check:
 
+#ifdef DEBUG
       if (getIndex < 0) then
          print *,"Error! Something went wrong, and the index came out less than 0."
          stop
@@ -269,6 +288,7 @@
          print *,"Error! Something went wrong, and the index came out larger than the matrix size."
          stop
       end if
+#endif
 
     end function getIndex
 
@@ -277,11 +297,19 @@
 
     subroutine computeMatrixSize()
 
-      use globalVariables, only: Nspecies, NFourier2, Nx, Nxi, includePhi1, constraintScheme, masterProc, matrixSize
+      use globalVariables, only: Nspecies, NFourier2, Nx, Nxi, includePhi1, constraintScheme, masterProc, matrixSize, Nxi_for_x
 
       implicit none
 
-      matrixSize = Nspecies * NFourier2 * Nxi * Nx
+      integer :: ix
+
+      DKE_size = sum(Nxi_for_x)*NFourier2
+      matrixSize = Nspecies * DKE_size
+      allocate(first_index_for_x(Nx))
+      first_index_for_x(1)=0
+      do ix=2,Nx
+         first_index_for_x(ix) = first_index_for_x(ix-1)+Nxi_for_x(ix-1)
+      end do
 
       if (includePhi1) then
          ! Enforce quasineutrality for NFourier2 modes, plus the <Phi_1>=0 constraint:

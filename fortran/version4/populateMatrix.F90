@@ -72,7 +72,7 @@
     real(prec), dimension(:), allocatable :: tempVector1, tempVector2
     real(prec), dimension(:,:), allocatable :: tempExtrapMatrix, fToFInterpolationMatrix_plus1
     real(prec), dimension(:), allocatable :: FourierVector
-    real(prec), dimension(:,:), allocatable :: FourierMatrix, FourierMatrix2
+    real(prec), dimension(:,:), allocatable :: FourierMatrix, FourierMatrix2, FourierMatrix3
     integer :: imn, imn_row, imn_col
     real(prec) :: dPhiHatdpsiHatToUseInRHS, xPartOfRHS, xPartOfRHS2 !!Added by AM 2016-03
     real(prec) :: FourierValue
@@ -203,6 +203,7 @@
     allocate(FourierVector(NFourier2))
     allocate(FourierMatrix(NFourier2,NFourier2))
     allocate(FourierMatrix2(NFourier2,NFourier2))
+    allocate(FourierMatrix3(NFourier2,NFourier2))
 
     allocate(ddxToUse(Nx,Nx))
     allocate(ddxToUse_plus(Nx,Nx))
@@ -270,20 +271,21 @@
           call FourierConvolutionMatrix(FourierVector,FourierMatrix,whichMatrix)
           call FourierTransform(sqrt(THat/mHat)*BHat_sup_zeta/BHat, FourierVector)
           call FourierConvolutionMatrix(FourierVector,FourierMatrix2,whichMatrix)
-          FourierMatrix = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
+          !FourierMatrix = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
+          call FourierDifferentiationMatrices(NFourier2,FourierMatrix,FourierMatrix2,FourierMatrix3)
           call PetscTime(time6,ierr)
           if (masterProc) print *,"  streaming Fourier+matmul:",time6-time5
           time5=time6
-          do imn_col = 1,NFourier2
+          do imn_col = iFourierMin,iFourierMax
              do imn_row = 1,NFourier2
-                FourierValue = FourierMatrix(imn_row,imn_col)
+                FourierValue = FourierMatrix3(imn_row,imn_col)
                 if (abs(FourierValue)>0) then
-                   do L=LMin,LMax
-                      do ix=ixMin,Nx
+                   do ix=ixMin,Nx
+                      do L=0,Nxi_for_x(ix)-1
                          rowIndex = getIndex(ispecies, ix, L+1, imn_row, BLOCK_F)
                          
                          ! Super-diagonal-in-L term
-                         if (L < Nxi-1) then
+                         if (L < Nxi_for_x(ix)-1) then
                             ell = L+1
                             colIndex = getIndex(ispecies, ix, ell+1, imn_col, BLOCK_F)
                             call MatSetValueSparse(matrix, rowIndex, colIndex, &
@@ -329,13 +331,14 @@
              call FourierTransform(-factor*DHat*BHat_sub_theta/(BHat*BHat), FourierVector)
              call FourierConvolutionMatrix(FourierVector,FourierMatrix2,whichMatrix)
           end if
-          FourierMatrix = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
-          do imn_col = 1,NFourier2
+          !FourierMatrix = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
+          call FourierDifferentiationMatrices(NFourier2,FourierMatrix,FourierMatrix2,FourierMatrix3)
+          do imn_col = iFourierMin,iFourierMax
              do imn_row = 1,NFourier2
-                FourierValue = FourierMatrix(imn_row,imn_col)
+                FourierValue = FourierMatrix3(imn_row,imn_col)
                 if (abs(FourierValue)>0) then
-                   do L=LMin,LMax
-                      do ix=ixMin,Nx
+                   do ix=ixMin,Nx
+                      do L=0,Nxi_for_x(ix)-1
                          rowIndex = getIndex(ispecies, ix, L+1, imn_row, BLOCK_F)
                          colIndex = getIndex(ispecies, ix, L+1, imn_col, BLOCK_F)
                          call MatSetValueSparse(matrix, rowIndex, colIndex, &
@@ -572,15 +575,15 @@
           call FourierTransform(-(BHat_sup_theta*dBHatdtheta+BHat_sup_zeta*dBHatdzeta) &
                / (2*BHat*BHat), FourierVector)
           call FourierConvolutionMatrix(FourierVector,FourierMatrix,whichMatrix)
-          do imn_col = 1,NFourier2
+          do imn_col = iFourierMin,iFourierMax
              do imn_row = 1,NFourier2
                 FourierValue = FourierMatrix(imn_row,imn_col)
                 if (abs(FourierValue)>0) then
-                   do L=LMin,LMax
-                      do ix=ixMin,Nx
+                   do ix=ixMin,Nx
+                      do L=0,Nxi_for_x(ix)-1
                          rowIndex = getIndex(ispecies,ix,L+1,imn_row,BLOCK_F)
 
-                         if (L<Nxi-1) then
+                         if (L<Nxi_for_x(ix)-1) then
                             ! Super-diagonal-in-L term:    
                             ell = L+1
                             colIndex = getIndex(ispecies,ix,ell+1,imn_col,BLOCK_F)
@@ -625,12 +628,12 @@
                   /(BHat*BHat*BHat), FourierVector)
           end if
           call FourierConvolutionMatrix(FourierVector,FourierMatrix,whichMatrix)
-          do imn_row=1,NFourier2
-             do imn_col=1,NFourier2
+          do imn_col=iFourierMin,iFourierMax
+             do imn_row=1,NFourier2
                 FourierValue = FourierMatrix(imn_row,imn_col)
                 if (abs(FourierValue)>0) then
-                   do L=LMin,LMax
-                      do ix=ixMin,Nx
+                   do ix=ixMin,Nx
+                      do L=0,Nxi_for_x(ix)-1
                          rowIndex = getIndex(ispecies,ix,L+1,imn_row,BLOCK_F)
 
                          ! Diagonal-in-L term
@@ -641,7 +644,7 @@
                          ! Drop the off-by-2 diagonal terms in L if this is the preconditioner
                          ! and preconditioner_xi = 1:
                          if (whichMatrix .ne. 0 .or. preconditioner_xi==0) then
-                            if (L<Nxi-2) then
+                            if (L<Nxi_for_x(ix)-2) then
                                ! Super-super-diagonal-in-L term:
                                ell = L+2
                                colIndex=getIndex(ispecies,ix,ell+1,imn_col,BLOCK_F)
@@ -746,7 +749,8 @@
 
           allocate(xPartOfXDot(Nx,Nx))
 
-          do L=LMin,LMax
+          !do L=LMin,LMax
+          do L=0,Nxi-1
              if (L>0 .and. pointAtX0) then
                 ixMinCol = 2
              else
@@ -763,7 +767,7 @@
                 xPartOfXDot(ix,:) = x(ix) * ddxToUse(ix,:)
              end do
 
-             do ix_row = ixMin,Nx
+             do ix_row = min_x_for_L(L),Nx
                 do imn_row = 1,NFourier2
                    rowIndex = getIndex(ispecies,ix_row,L+1,imn_row,BLOCK_F)
                    do ix_col=ixMinCol,Nx
@@ -1430,7 +1434,8 @@
           ! Now we are ready to add the collision operator to the main matrix.
           ! *****************************************************************
           
-          do L=LMin,LMax
+          !do L=LMin,LMax
+          do L=0,(Nxi-1)
              if (L>0 .and. pointAtX0) then
                 ixMinCol = 2
              else
@@ -1459,26 +1464,7 @@
 
                          if (xGridScheme==5 .or. xGridScheme==6) then
                             ! New scheme for the Rosenbluth potential terms.
-
-                            speciesFactor = 3/(2*pi)*nHats(iSpeciesA) &
-                                 * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
-                                 / (THats(iSpeciesA) * sqrt(THats(iSpeciesA)*mHats(ispeciesA))) &
-                                 * THats(iSpeciesB)*mHats(iSpeciesA)/(THats(iSpeciesA)*mHats(iSpeciesB))
-
-                            ! Add terms involving H and d H / d x_b:
-                            temp = 1 - mHats(iSpeciesA)/mHats(iSpeciesB)
-                            do i=1,Nx
-                               M11(i,:) = M11(i,:) - speciesFactor*expx2(i)*( &
-                                    Rosenbluth_H(iSpeciesA,iSpeciesB,L+1,i,:) &
-                                    + temp * xb(i) * Rosenbluth_dHdxb(iSpeciesA,iSpeciesB,L+1,i,:))
-                            end do
-
-                            ! Add term involving d^2 G / d x_b^2:
-                            do i=1,Nx
-                               M11(i, :) = M11(i,:) + speciesFactor*expx2(i)*x2(i)&
-                                    * Rosenbluth_d2Gdxb2(iSpeciesA,iSpeciesB,L+1,i,:)
-                            end do
-
+                            M11 = M11 + RosenbluthPotentialTerms(iSpeciesA,iSpeciesB,L+1,:,:)
                             CHat = M11
 
                          else
@@ -1589,10 +1575,10 @@
                       ! At this point, CHat contains the collision operator normalized by
                       ! \bar{nu}, (the collision frequency at the reference mass, density, and temperature.)
                       
-                      do imn=1,NFourier2
-                         do ix_row=ixMin,Nx
+                      do imn=iFourierMin,iFourierMax
+                         do ix_row=min_x_for_L(L),Nx
                             rowIndex=getIndex(iSpeciesA,ix_row,L+1,imn,BLOCK_F)
-                            do ix_col = ixMinCol,Nx
+                            do ix_col = min_x_for_L(L),Nx
                                colIndex=getIndex(iSpeciesB,ix_col,L+1,imn,BLOCK_F)
                                call MatSetValueSparse(matrix, rowIndex, colIndex, &
                                     -nu_n*CHat(ix_row,ix_col), ADD_VALUES, ierr)
@@ -1652,14 +1638,15 @@
                 
              end do
              
-             do L=LMin,LMax
-                do ix=ixMin,Nx
+             !do L=LMin,LMax
+             do L=1,Nxi-1
+                do ix=max(ixMin,min_x_for_L(L)),Nx
                    CHat_element = -oneHalf*nuDHat(iSpeciesA,ix)*L*(L+1)
                    
                    ! At this point, CHat contains the collision operator normalized by
                    ! \bar{nu}, (the collision frequency at the reference mass, density, and temperature.)
                    
-                   do imn=1,NFourier2
+                   do imn=iFourierMin,iFourierMax
                       index=getIndex(iSpeciesA,ix,L+1,imn,BLOCK_F)
                       call MatSetValueSparse(matrix, index, index, &
                            -nu_n*CHat_element, ADD_VALUES, ierr)
@@ -2010,7 +1997,7 @@
        call VecDestroy(vecOnEveryProc, ierr)
     end if
 
-  deallocate(FourierVector,FourierMatrix,FourierMatrix2)
+  deallocate(FourierVector,FourierMatrix,FourierMatrix2,FourierMatrix3)
 
   end subroutine populateMatrix
 

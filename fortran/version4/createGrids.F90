@@ -35,8 +35,9 @@
     real(prec), dimension(:,:), allocatable :: ddx_subset, d2dx2_subset
 
     real(prec), dimension(:), allocatable :: FourierVector
-    real(prec), dimension(:,:), allocatable :: FourierMatrix, FourierMatrix2
+    real(prec), dimension(:,:), allocatable :: FourierMatrix, FourierMatrix2, FourierMatrix3
     integer :: whichMatrix
+    real(prec) :: temp
 
     DM :: myDM
     integer, parameter :: bufferLength = 200
@@ -75,8 +76,6 @@
        print *,"solverTolerance    = ",solverTolerance
     end if
 
-    call computeMatrixSize()
-
     ! *******************************************************************************
     ! *******************************************************************************
     !
@@ -90,27 +89,27 @@
 
     ! Assign a range of theta indices to each processor.
     ! This is done by creating a PETSc DM that is not actually used for anything else.
-!!$    call DMDACreate1d(MPIComm, DM_BOUNDARY_NONE, NFourier2, 1, 0, PETSC_NULL_INTEGER, myDM, ierr)
-!!$    
-!!$    call DMDAGetCorners(myDM, iFourierMin, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, &
-!!$         localNFourier, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr)
-!!$    
-!!$    call DMDestroy(myDM, ierr)
-!!$
-!!$    ! Switch to 1-based indices:
-!!$    iFourierMin = iFourierMin + 1
-!!$    iFourierMax = iFourierMin+localNFourier-1
-!!$    write (procAssignments,fmt="(a,i4,a,i3,a,i3,a,i3,a,i3,a)") "Processor ",myRank," owns Fourier indices ",iFourierMin," to ",iFourierMax
-
-    call DMDACreate1d(MPIComm, DM_BOUNDARY_NONE, Nxi, 1, 0, PETSC_NULL_INTEGER, myDM, ierr)
+    call DMDACreate1d(MPIComm, DM_BOUNDARY_NONE, NFourier2, 1, 0, PETSC_NULL_INTEGER, myDM, ierr)
     
-    call DMDAGetCorners(myDM, LMin, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, &
-         localNxi, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr)
+    call DMDAGetCorners(myDM, iFourierMin, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, &
+         localNFourier, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr)
     
     call DMDestroy(myDM, ierr)
 
-    LMax = LMin+localNxi-1
-    write (procAssignments,fmt="(a,i4,a,i3,a,i3,a,i3,a,i3,a)") "Processor ",myRank," owns L= ",LMin," to ",LMax
+    ! Switch to 1-based indices:
+    iFourierMin = iFourierMin + 1
+    iFourierMax = iFourierMin+localNFourier-1
+    write (procAssignments,fmt="(a,i4,a,i3,a,i3,a,i3,a,i3,a)") "Processor ",myRank," owns Fourier indices ",iFourierMin," to ",iFourierMax
+
+!!$    call DMDACreate1d(MPIComm, DM_BOUNDARY_NONE, Nxi, 1, 0, PETSC_NULL_INTEGER, myDM, ierr)
+!!$    
+!!$    call DMDAGetCorners(myDM, LMin, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, &
+!!$         localNxi, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr)
+!!$    
+!!$    call DMDestroy(myDM, ierr)
+!!$
+!!$    LMax = LMin+localNxi-1
+!!$    write (procAssignments,fmt="(a,i4,a,i3,a,i3,a,i3,a,i3,a)") "Processor ",myRank," owns L= ",LMin," to ",LMax
 
     procThatHandlesConstraints = masterProc
 
@@ -358,12 +357,9 @@
     end select
 
     if ((xGridScheme==5 .or. xGridScheme==6) .and. (RHSMode .ne. 3)) then
-       allocate(Rosenbluth_H(Nspecies,Nspecies,NL,Nx,Nx))
-       allocate(Rosenbluth_dHdxb(Nspecies,Nspecies,NL,Nx,Nx))
-       allocate(Rosenbluth_d2Gdxb2(Nspecies,Nspecies,NL,Nx,Nx))
-       call computeRosenbluthPotentialResponse(Nx, x, xWeights, Nspecies, mHats, THats, NL, &
-         Rosenbluth_H, Rosenbluth_dHdxb, Rosenbluth_d2Gdxb2,.false.)
-         !Rosenbluth_H, Rosenbluth_dHdxb, Rosenbluth_d2Gdxb2,masterProc)
+       allocate(RosenbluthPotentialTerms(Nspecies,Nspecies,NL,Nx,Nx))
+       call computeRosenbluthPotentialResponse(Nx, x, xWeights, Nspecies, mHats, THats, nHats, Zs, NL, &
+         RosenbluthPotentialTerms,.false.)
     end if
 
 !    if (masterProc) then
@@ -410,6 +406,75 @@
     deallocate(xWeights_plus1)
     deallocate(ddx_plus1)
     deallocate(d2dx2_plus1)
+
+    ! *******************************************************************************
+    ! Set the number of Legendre modes used for each value of x
+    ! *******************************************************************************
+    
+    allocate(Nxi_for_x(Nx))
+
+    if (masterProc) print *,"Nxi_for_x_option:",Nxi_for_x_option
+    select case (Nxi_for_x_option)
+    case (0)
+       Nxi_for_x = Nxi
+    case (1)
+       do j=1,Nx
+          ! Linear ramp from 0.1*Nxi to Nxi as x increases from 0 to 2:
+          !temp = Nxi*(0.1 + 0.9*x(j)/2)
+          ! Linear ramp from 0 to Nxi as x increases from 0 to 2:
+          temp = Nxi*(0.0 + 1.0*x(j)/2)
+          ! Always keep at least 3 Legendre modes, for the sake of diagnostics.
+          ! Always keep at least NL Legendre modes, to simplify the collision operator loops.
+          ! Above the threshold value of x, keep exactly Nxi Legendre modes.
+          Nxi_for_x(j) = max(3,NL,min(int(temp),Nxi))
+       end do
+    case (2)
+       do j=1,Nx
+          ! Quadratic ramp from 0.1*Nxi to Nxi as x increases from 0 to 2:
+          temp = Nxi*(0.1 + 0.9*( (x(j)/2)**2) )
+          ! Always keep at least 3 Legendre modes, for the sake of diagnostics.
+          ! Always keep at least NL Legendre modes, to simplify the collision operator loops.
+          ! Above the threshold value of x, keep exactly Nxi Legendre modes.
+          Nxi_for_x(j) = max(3,NL,min(int(temp),Nxi))
+       end do
+    case default
+       if (masterProc) print *,"Error! Invalid Nxi_for_x_option"
+       stop
+    end select
+
+    allocate(min_x_for_L(0:(Nxi-1)))
+    min_x_for_L=1
+    do j=1,Nx
+       min_x_for_L(Nxi_for_x(j):) = j+1
+    end do
+
+    if (masterProc) then
+       print *,"x:",x
+       print *,"Nxi for each x:",Nxi_for_x
+       print *,"min_x_for_L:",min_x_for_L
+    end if
+
+    call computeMatrixSize()
+
+    ! *******************************************************************************
+    ! Select which values of L will be saved in the output file
+    ! *******************************************************************************
+
+    Nxi_to_save = min(Nxi_to_save,Nxi)
+    allocate(L_to_save(Nxi_to_save))
+    do j=1,(Nxi_to_save/2)
+       L_to_save(j) = j-1
+    end do
+    do j=(Nxi_to_save/2)+1, Nxi_to_save
+       L_to_save(j) = (Nxi_to_save/2) + int((j-((Nxi_to_save/2)+1.0))/(Nxi_to_save-((Nxi_to_save/2)+1))*(Nxi-1 - (Nxi_to_save/2)))
+    end do
+
+    if (masterProc) then
+       print *,"L_to_save:",L_to_save
+    end if
+
+    allocate(FourierAmplitudeVsL(Nspecies,Nxi_to_save,NFourier2))
+    allocate(LegendreAmplitudeVsX(Nspecies,Nxi,Nx))
 
     ! *******************************************************************************
     ! Initialize quantities related to the poloidal and toroidal angle coordinates
@@ -470,9 +535,9 @@
 
     call chooseFourierModes()
 
-    allocate(ddtheta(NFourier2,NFourier2))
-    allocate(ddzeta (NFourier2,NFourier2))
-    call FourierDifferentiationMatrices(NFourier, xm, xn, ddtheta, ddzeta)
+!!$    allocate(ddtheta(NFourier2,NFourier2))
+!!$    allocate(ddzeta (NFourier2,NFourier2))
+!!$    call FourierDifferentiationMatrices(NFourier, xm, xn, ddtheta, ddzeta)
 
     ! *********************************************************
     ! Compute a few quantities related to the magnetic field:
@@ -503,12 +568,13 @@
     allocate(FourierVector(NFourier2))
     allocate(FourierMatrix(NFourier2,NFourier2))
     allocate(FourierMatrix2(NFourier2,NFourier2))
+    allocate(FourierMatrix3(NFourier2,NFourier2))
 
-    allocate(FourierMatrix_streaming(NFourier2,NFourier2))
-    allocate(FourierMatrix_ExB(NFourier2,NFourier2))
-    allocate(FourierMatrix_mirror(NFourier2,NFourier2))
-    allocate(FourierMatrix_xiDot(NFourier2,NFourier2))
-    allocate(FourierMatrix_xDot(NFourier2,NFourier2))
+    allocate(FourierMatrix_streaming(localNFourier,NFourier2))
+    allocate(FourierMatrix_ExB(localNFourier,NFourier2))
+    allocate(FourierMatrix_mirror(localNFourier,NFourier2))
+    allocate(FourierMatrix_xiDot(localNFourier,NFourier2))
+    allocate(FourierMatrix_xDot(localNFourier,NFourier2))
 
     whichMatrix = 1  ! This value will mean the convolution matrices are not simplified.
 
@@ -517,7 +583,9 @@
     call FourierConvolutionMatrix(FourierVector,FourierMatrix,whichMatrix)
     call FourierTransform(BHat_sup_zeta/BHat, FourierVector)
     call FourierConvolutionMatrix(FourierVector,FourierMatrix2,whichMatrix)
-    FourierMatrix_streaming = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
+    !FourierMatrix = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
+    call FourierDifferentiationMatrices(NFourier2,FourierMatrix,FourierMatrix2,FourierMatrix3)
+    FourierMatrix_streaming = FourierMatrix3(iFourierMin:iFourierMax,:)
 
     ! ExB drift term:
     if (useDKESExBDrift) then
@@ -531,12 +599,15 @@
        call FourierTransform(-DHat*BHat_sub_theta/(BHat*BHat), FourierVector)
        call FourierConvolutionMatrix(FourierVector,FourierMatrix2,whichMatrix)
     end if
-    FourierMatrix_ExB = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
+    !FourierMatrix = matmul(FourierMatrix,ddtheta) + matmul(FourierMatrix2,ddzeta)
+    call FourierDifferentiationMatrices(NFourier2,FourierMatrix,FourierMatrix2,FourierMatrix3)
+    FourierMatrix_ExB = FourierMatrix3(iFourierMin:iFourierMax,:)
 
     ! Standard mirror term:
     call FourierTransform(-(BHat_sup_theta*dBHatdtheta+BHat_sup_zeta*dBHatdzeta) &
          / (2*BHat*BHat), FourierVector)
-    call FourierConvolutionMatrix(FourierVector,FourierMatrix_mirror,whichMatrix)
+    call FourierConvolutionMatrix(FourierVector,FourierMatrix,whichMatrix)
+    FourierMatrix_mirror = FourierMatrix(iFourierMin:iFourierMax,:)
 
     ! Er xiDot term:
     if (force0RadialCurrentInEquilibrium) then
@@ -547,14 +618,16 @@
             -2*BHat*(dBHat_sub_zeta_dtheta-dBHat_sub_theta_dzeta)) &
             /(BHat*BHat*BHat), FourierVector)
     end if
-    call FourierConvolutionMatrix(FourierVector,FourierMatrix_xiDot,whichMatrix)
+    call FourierConvolutionMatrix(FourierVector,FourierMatrix,whichMatrix)
+    FourierMatrix_xiDot = FourierMatrix(iFourierMin:iFourierMax,:)
 
     ! Er xDot term:
     call FourierTransform(DHat*(BHat_sub_theta*dBHatdzeta - BHat_sub_zeta*dBHatdtheta)/(BHat*BHat*BHat), &
          FourierVector)
-    call FourierConvolutionMatrix(FourierVector,FourierMatrix_xDot,whichMatrix)
+    call FourierConvolutionMatrix(FourierVector,FourierMatrix,whichMatrix)
+    FourierMatrix_xDot = FourierMatrix(iFourierMin:iFourierMax,:)
 
-    deallocate(FourierVector,FourierMatrix,FourierMatrix2)
+    deallocate(FourierVector,FourierMatrix,FourierMatrix2,FourierMatrix3)
 
     ! *********************************************************
     ! Allocate some arrays that will be used later for output quantities:

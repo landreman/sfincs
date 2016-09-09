@@ -1266,6 +1266,29 @@ For large (high resolution) problems, the iterative solver will usually be faste
 Use {\ttfamily PETSCPreallocationStrategy} = 1 unless you know what you are doing.}
 
 
+\myhrule
+
+\param{Nxi\_for\_x\_option}
+{integer}
+{1}
+{Always}
+{This setting controls how the number of Legendre polynomials depends on the speed $x$ for representing the distribution function.
+You can see the actual number of Legendre polynomials used for each $x$ grid point by examining the {\ttfamily Nxi\_for\_x} variable
+in the output file.\\
+
+{\ttfamily Nxi\_for\_x\_option} = 0: Use the same number (\parlink{Nxi}) of Legendre polynomials for all $x$.  This approach is
+simplest, but it is somewhat inefficient since small values of $x$ represent higher collisionality, so there is weaker pitch-angle dependence
+of the distribution function.\\
+
+{\ttfamily Nxi\_for\_x\_option} = 1: The number of Legendre polynomials will be a linear function of $x$ up to $x=2$,
+at which point \parlink{Nxi} polynomials will be used. For $x>2$, the number of Legendre polynomials used will remain at \parlink{Nxi}.\\
+
+{\ttfamily Nxi\_for\_x\_option} = 2: The number of Legendre polynomials will be a quadratic function of $x$ up to $x=2$,
+at which point \parlink{Nxi} polynomials will be used. For $x>2$, the number of Legendre polynomials used will remain at \parlink{Nxi}.\\
+
+}
+
+
 
 
 

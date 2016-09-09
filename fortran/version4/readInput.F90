@@ -58,15 +58,15 @@ contains
          xMax, &
          solverTolerance, &
          NxPotentialsPerVth, &
-         Fourier_threshold
+         Fourier_threshold, Nxi_to_save
 
     namelist / otherNumericalParameters /  &
          xGridScheme, whichParallelSolverToFactorPreconditioner, &
-         PETSCPreallocationStrategy, xPotentialsGridScheme, xGrid_k
+         PETSCPreallocationStrategy, xPotentialsGridScheme, xGrid_k, Nxi_for_x_option, FourierOption, FourierFactor
 
     namelist / preconditionerOptions / preconditioner_x, preconditioner_x_min_L, &
          preconditioner_Fourier, preconditioner_xi, preconditioner_species, reusePreconditioner, &
-         preconditioner_Fourier_min_L, preconditioner_Fourier_threshold, &
+         preconditioner_Fourier_max_modes, preconditioner_Fourier_threshold, &
          preconditioner_drop_xDot, preconditioner_drop_xiDot, &
          preconditioner_Fourier_max_nnz_per_row
 

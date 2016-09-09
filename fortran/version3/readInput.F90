@@ -74,7 +74,8 @@ contains
          useIterativeLinearSolver, thetaDerivativeScheme, zetaDerivativeScheme, &
          ExBDerivativeSchemeTheta, ExBDerivativeSchemeZeta, &
          xDotDerivativeScheme, xGridScheme, whichParallelSolverToFactorPreconditioner, &
-         PETSCPreallocationStrategy, xPotentialsGridScheme, xGrid_k, magneticDriftDerivativeScheme
+         PETSCPreallocationStrategy, xPotentialsGridScheme, xGrid_k, magneticDriftDerivativeScheme, &
+         Nxi_for_x_option
 
     namelist / preconditionerOptions / preconditioner_x, preconditioner_x_min_L, preconditioner_zeta, &
          preconditioner_theta, preconditioner_xi, preconditioner_species, reusePreconditioner, &

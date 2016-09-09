@@ -11,14 +11,25 @@ desiredTolerance = 0.001
 
 numFailures = 0
 
+## Old values for Nxi_for_x_option=0:
+## Species 1
+#numFailures += shouldBe("FSABFlow[0,0;;;]", -0.00417179, desiredTolerance)
+#numFailures += shouldBe("particleFlux_vm_psiHat[0,0;;;]",  -4.34448e-07, desiredTolerance)
+#numFailures += shouldBe("heatFlux_vm_psiHat[0,0;;;]", -2.33701e-06, desiredTolerance)
+#
+## Species 2
+#numFailures += shouldBe("FSABFlow[1,0;;;]", -0.000557432, desiredTolerance)
+#numFailures += shouldBe("particleFlux_vm_psiHat[1,0;;;]",  -6.31378e-09, desiredTolerance)
+#numFailures += shouldBe("heatFlux_vm_psiHat[1,0;;;]",  -3.3701e-08, desiredTolerance)
+
 # Species 1
-numFailures += shouldBe("FSABFlow[0,0;;;]", -0.00417179, desiredTolerance)
-numFailures += shouldBe("particleFlux_vm_psiHat[0,0;;;]",  -4.34448e-07, desiredTolerance)
-numFailures += shouldBe("heatFlux_vm_psiHat[0,0;;;]", -2.33701e-06, desiredTolerance)
+numFailures += shouldBe("FSABFlow[0,0;;;]", -0.00417896, desiredTolerance)
+numFailures += shouldBe("particleFlux_vm_psiHat[0,0;;;]", -4.36428e-07 , desiredTolerance)
+numFailures += shouldBe("heatFlux_vm_psiHat[0,0;;;]", -2.34336e-06, desiredTolerance)
 
 # Species 2
-numFailures += shouldBe("FSABFlow[1,0;;;]", -0.000557432, desiredTolerance)
-numFailures += shouldBe("particleFlux_vm_psiHat[1,0;;;]",  -6.31378e-09, desiredTolerance)
-numFailures += shouldBe("heatFlux_vm_psiHat[1,0;;;]",  -3.3701e-08, desiredTolerance)
+numFailures += shouldBe("FSABFlow[1,0;;;]", -0.00056099, desiredTolerance)
+numFailures += shouldBe("particleFlux_vm_psiHat[1,0;;;]", -6.31647e-09, desiredTolerance)
+numFailures += shouldBe("heatFlux_vm_psiHat[1,0;;;]",  -3.37095e-08, desiredTolerance)
 
 exit(numFailures > 0)

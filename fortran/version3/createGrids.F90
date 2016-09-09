@@ -31,7 +31,7 @@
     PetscScalar, dimension(:,:), allocatable :: interpolateXToXPotentials_plus1, extrapMatrix
     PetscScalar, dimension(:), allocatable :: x_subset, xWeights_subset
     PetscScalar, dimension(:,:), allocatable :: ddx_subset, d2dx2_subset
-
+    PetscScalar :: temp
 
     DM :: myDM
     integer, parameter :: bufferLength = 200
@@ -103,7 +103,6 @@
        end if
     end if
 
-    call computeMatrixSize()
 
     ! *******************************************************************************
     ! *******************************************************************************
@@ -969,12 +968,9 @@
     end select
 
     if ((xGridScheme==5 .or. xGridScheme==6) .and. (RHSMode .ne. 3)) then
-       allocate(Rosenbluth_H(Nspecies,Nspecies,NL,Nx,Nx))
-       allocate(Rosenbluth_dHdxb(Nspecies,Nspecies,NL,Nx,Nx))
-       allocate(Rosenbluth_d2Gdxb2(Nspecies,Nspecies,NL,Nx,Nx))
-       call computeRosenbluthPotentialResponse(Nx, x, xWeights, Nspecies, mHats, THats, NL, &
-         Rosenbluth_H, Rosenbluth_dHdxb, Rosenbluth_d2Gdxb2,.false.)
-         !Rosenbluth_H, Rosenbluth_dHdxb, Rosenbluth_d2Gdxb2,masterProc)
+       allocate(RosenbluthPotentialTerms(Nspecies,Nspecies,NL,Nx,Nx))
+       call computeRosenbluthPotentialResponse(Nx, x, xWeights, Nspecies, mHats, THats, nHats, Zs, NL, &
+         RosenbluthPotentialTerms,.false.)
     end if
 
 !    if (masterProc) then
@@ -1037,6 +1033,54 @@
     deallocate(xWeights_plus1)
     deallocate(ddx_plus1)
     deallocate(d2dx2_plus1)
+
+
+    ! *******************************************************************************
+    ! Set the number of Legendre modes used for each value of x
+    ! *******************************************************************************
+    
+    allocate(Nxi_for_x(Nx))
+
+    if (masterProc) print *,"Nxi_for_x_option:",Nxi_for_x_option
+    select case (Nxi_for_x_option)
+    case (0)
+       Nxi_for_x = Nxi
+    case (1)
+       do j=1,Nx
+          ! Linear ramp from 0.1*Nxi to Nxi as x increases from 0 to 2:
+          temp = Nxi*(0.1 + 0.9*x(j)/2)
+          ! Always keep at least 3 Legendre modes, for the sake of diagnostics.
+          ! Always keep at least NL Legendre modes, to simplify the collision operator loops.
+          ! Above the threshold value of x, keep exactly Nxi Legendre modes.
+          Nxi_for_x(j) = max(3,NL,min(int(temp),Nxi))
+       end do
+    case (2)
+       do j=1,Nx
+          ! Quadratic ramp from 0.1*Nxi to Nxi as x increases from 0 to 2:
+          temp = Nxi*(0.1 + 0.9*( (x(j)/2)**2) )
+          ! Always keep at least 3 Legendre modes, for the sake of diagnostics.
+          ! Always keep at least NL Legendre modes, to simplify the collision operator loops.
+          ! Above the threshold value of x, keep exactly Nxi Legendre modes.
+          Nxi_for_x(j) = max(3,NL,min(int(temp),Nxi))
+       end do
+    case default
+       if (masterProc) print *,"Error! Invalid Nxi_for_x_option"
+       stop
+    end select
+
+    allocate(min_x_for_L(0:(Nxi-1)))
+    min_x_for_L=1
+    do j=1,Nx
+       min_x_for_L(Nxi_for_x(j):) = j+1
+    end do
+
+    if (masterProc) then
+       print *,"x:",x
+       print *,"Nxi for each x:",Nxi_for_x
+       print *,"min_x_for_L:",min_x_for_L
+    end if
+
+    call computeMatrixSize()
 
     ! *******************************************************************************
 

@@ -32,6 +32,7 @@ module writeHDF5Output
   integer(HSIZE_T), dimension(1) :: dimForTheta
   integer(HSIZE_T), dimension(1) :: dimForZeta
   integer(HSIZE_T), dimension(1) :: dimForx
+  integer(HSIZE_T), dimension(1) :: dimForxi
   integer(HSIZE_T), dimension(2) :: dimForThetaZeta
   integer(HSIZE_T), dimension(2) :: dimForMMaxNMax
   integer(HSIZE_T), dimension(2) :: dimForTransportMatrix
@@ -47,6 +48,7 @@ module writeHDF5Output
   integer(HID_T) :: dspaceIDForTheta
   integer(HID_T) :: dspaceIDForZeta
   integer(HID_T) :: dspaceIDForx
+  integer(HID_T) :: dspaceIDForxi
   integer(HID_T) :: dspaceIDForThetaZeta
   integer(HID_T) :: dspaceIDForMMaxNMax
   integer(HID_T) :: dspaceIDForTransportMatrix
@@ -104,6 +106,18 @@ module writeHDF5Output
   integer(HID_T) :: pForIterationSpeciesThetaZeta
   integer(HID_T) :: dspaceIDForIterationSpeciesThetaZeta
 
+  integer(HSIZE_T), dimension(4) :: dimForIterationSpeciesXiFourier2
+  integer(HSIZE_T), dimension(4) :: maxDimForIterationSpeciesXiFourier2
+  integer(HSIZE_T), dimension(4) :: dimForIterationSpeciesXiFourier2Chunk
+  integer(HID_T) :: pForIterationSpeciesXiFourier2
+  integer(HID_T) :: dspaceIDForIterationSpeciesXiFourier2
+
+  integer(HSIZE_T), dimension(4) :: dimForIterationSpeciesXiX
+  integer(HSIZE_T), dimension(4) :: maxDimForIterationSpeciesXiX
+  integer(HSIZE_T), dimension(4) :: dimForIterationSpeciesXiXChunk
+  integer(HID_T) :: pForIterationSpeciesXiX
+  integer(HID_T) :: dspaceIDForIterationSpeciesXiX
+
   integer(HSIZE_T), dimension(6) :: dimForExport_f
   integer(HSIZE_T), dimension(6) :: maxDimForExport_f
   integer(HSIZE_T), dimension(6) :: dimForExport_fChunk
@@ -136,6 +150,8 @@ module writeHDF5Output
   integer, parameter :: ARRAY_ITERATION_SPECIES_FOURIER2 = 106
   integer, parameter :: ARRAY_EXPORT_F = 107
   integer, parameter :: ARRAY_ITERATION_SPECIES_X = 108
+  integer, parameter :: ARRAY_ITERATION_SPECIES_XI_FOURIER2 = 109
+  integer, parameter :: ARRAY_ITERATION_SPECIES_XI_X = 110
 
 contains
 
@@ -193,6 +209,8 @@ contains
        call writeHDF5Field("Nzeta", Nzeta, "Number of grid points in the toroidal angle zeta")
        call writeHDF5Field("Nxi", Nxi, &
             "Number of Legendre polynomial modes P(v_parallel / v) for representing the distribution functions.")
+       call writeHDF5Field("Nxi_to_save", Nxi_to_save, &
+            "Number of Legendre polynomial modes to save in FourierAmplitudeVsL.")
        call writeHDF5Field("NL", NL, &
             "Number of Legendre polynomial modes P(v_parallel / v) for representing the Rosenbluth potentials in the Fokker-Planck operator.")
        call writeHDF5Field("Nx", Nx, "Number of grid points in speed for representing the distribution functions.")
@@ -209,6 +227,8 @@ contains
             "Toroidal mode numbers used. Analogous to VMEC's xn array.")
        call writeHDF5Field("x", x, dspaceIDForX, dimForX, &
             "Grid points in normalized speed, x_s = v / sqrt{2 T_s / m_s}, the same for each species s.")
+       call writeHDF5Field("L_to_save", L_to_save, dspaceIDForXi, dimForXi, &
+            "Legendre indices used to report FourierAmplitudeVsL.")
        call writeHDF5Field("geometryScheme", geometryScheme, "")
        call writeHDF5Field("xGridScheme", xGridScheme, "")
        call writeHDF5Field("xGrid_k", xGrid_k, "Exponent of x in the orthogonality relation for the speed polynomials")
@@ -221,6 +241,8 @@ contains
        call writeHDF5Field("preconditioner_drop_xiDot", preconditioner_drop_xiDot, "")
        call writeHDF5Field("preconditioner_drop_xDot", preconditioner_drop_xDot, "")
        call writeHDF5Field("preconditioner_Fourier", preconditioner_Fourier, "")
+       call writeHDF5Field("preconditioner_Fourier_max_modes", preconditioner_Fourier_max_modes, "")
+       call writeHDF5Field("preconditioner_Fourier_max_nnz_per_row", preconditioner_Fourier_max_nnz_per_row, "")
        call writeHDF5Field("preconditioner_Fourier_threshold", preconditioner_Fourier_threshold, "")
        call writeHDF5Field("Fourier_threshold", Fourier_threshold, "")
        call writeHDF5Field("preconditioner_magnetic_drifts_max_L", preconditioner_magnetic_drifts_max_L, "")
@@ -415,6 +437,7 @@ contains
        call h5sclose_f(dspaceIDForScalar, HDF5Error)
        call h5sclose_f(dspaceIDForSpecies, HDF5Error)
        call h5sclose_f(dspaceIDForx, HDF5Error)
+       call h5sclose_f(dspaceIDForxi, HDF5Error)
 !!$       call h5sclose_f(dspaceIDForExport_f_theta, HDF5Error)
 !!$       call h5sclose_f(dspaceIDForExport_f_zeta, HDF5Error)
 !!$       call h5sclose_f(dspaceIDForExport_f_xi, HDF5Error)
@@ -472,8 +495,18 @@ contains
        dimForIterationSpeciesThetaZeta(1) = iterationNum
        dimForIterationSpeciesSources(1) = iterationNum
        dimForIterationSpeciesFourier2(1) = iterationNum
+       dimForIterationSpeciesXiFourier2(1) = iterationNum
+       dimForIterationSpeciesXiX(1) = iterationNum
        dimForIterationSpeciesX(1) = iterationNum
        dimForExport_f(1) = iterationNum
+
+       call writeHDF5ExtensibleField(iterationNum, "FourierAmplitudeVsL", FourierAmplitudeVsL, &
+            ARRAY_ITERATION_SPECIES_XI_FOURIER2, &
+            "\int dx x^4 f_1, as a function of Legendre index and Fourier mode.")
+
+       call writeHDF5ExtensibleField(iterationNum, "LegendreAmplitudeVsX", LegendreAmplitudeVsX, &
+            ARRAY_ITERATION_SPECIES_XI_X, &
+            "Sum of abs(delta f) over all Fourier modes, broken out by species, xi, and x")
 
        call writeHDF5ExtensibleField(iterationNum, "densityNonadiabaticPerturbation_realSpace", densityNonadiabaticPerturbation_realSpace, &
             ARRAY_ITERATION_SPECIES_THETA_ZETA, &
@@ -848,6 +881,9 @@ contains
     dimForx = Nx
     call h5screate_simple_f(rank, dimForx, dspaceIDForx, HDF5Error)
 
+    dimForxi = Nxi_to_save
+    call h5screate_simple_f(rank, dimForxi, dspaceIDForxi, HDF5Error)
+
 !!$    dimForExport_f_theta = N_export_f_theta
 !!$    call h5screate_simple_f(rank, dimForExport_f_theta, dspaceIDForExport_f_theta, HDF5Error)
 !!$
@@ -1044,6 +1080,54 @@ contains
 
     ! -------------------------------------
 
+    rank = 4
+    dimForIterationSpeciesXiFourier2(1)      = 1
+    maxDimForIterationSpeciesXiFourier2(1)   = H5S_UNLIMITED_F
+    dimForIterationSpeciesXiFourier2Chunk(1) = 1
+
+    dimForIterationSpeciesXiFourier2(2)      = Nspecies
+    maxDimForIterationSpeciesXiFourier2(2)   = Nspecies
+    dimForIterationSpeciesXiFourier2Chunk(2) = Nspecies
+
+    dimForIterationSpeciesXiFourier2(3)      = Nxi_to_save
+    maxDimForIterationSpeciesXiFourier2(3)   = Nxi_to_save
+    dimForIterationSpeciesXiFourier2Chunk(3) = Nxi_to_save
+
+    dimForIterationSpeciesXiFourier2(4)      = NFourier2
+    maxDimForIterationSpeciesXiFourier2(4)   = NFourier2
+    dimForIterationSpeciesXiFourier2Chunk(4) = NFourier2
+
+    call h5screate_simple_f(rank, dimForIterationSpeciesXiFourier2, dspaceIDForIterationSpeciesXiFourier2, &
+         HDF5Error, maxDimForIterationSpeciesXiFourier2)
+    call h5pcreate_f(H5P_DATASET_CREATE_F, pForIterationSpeciesXiFourier2, HDF5Error)
+    call h5pset_chunk_f(pForIterationSpeciesXiFourier2, rank, dimForIterationSpeciesXiFourier2Chunk, HDF5Error)
+
+    ! -------------------------------------
+
+    rank = 4
+    dimForIterationSpeciesXiX(1)      = 1
+    maxDimForIterationSpeciesXiX(1)   = H5S_UNLIMITED_F
+    dimForIterationSpeciesXiXChunk(1) = 1
+
+    dimForIterationSpeciesXiX(2)      = Nspecies
+    maxDimForIterationSpeciesXiX(2)   = Nspecies
+    dimForIterationSpeciesXiXChunk(2) = Nspecies
+
+    dimForIterationSpeciesXiX(3)      = Nxi
+    maxDimForIterationSpeciesXiX(3)   = Nxi
+    dimForIterationSpeciesXiXChunk(3) = Nxi
+
+    dimForIterationSpeciesXiX(4)      = Nx
+    maxDimForIterationSpeciesXiX(4)   = Nx
+    dimForIterationSpeciesXiXChunk(4) = Nx
+
+    call h5screate_simple_f(rank, dimForIterationSpeciesXiX, dspaceIDForIterationSpeciesXiX, &
+         HDF5Error, maxDimForIterationSpeciesXiX)
+    call h5pcreate_f(H5P_DATASET_CREATE_F, pForIterationSpeciesXiX, HDF5Error)
+    call h5pset_chunk_f(pForIterationSpeciesXiX, rank, dimForIterationSpeciesXiXChunk, HDF5Error)
+
+    ! -------------------------------------
+
 !!$    rank = 6
 !!$    dimForExport_f(1)      = 1
 !!$    maxDimForExport_f(1)   = H5S_UNLIMITED_F
@@ -1113,6 +1197,8 @@ contains
        call h5pclose_f(pForIterationSpeciesSources, HDF5Error)
        call h5pclose_f(pForIterationSpeciesFourier2, HDF5Error)
        call h5pclose_f(pForIterationSpeciesX, HDF5Error)
+       call h5pclose_f(pForIterationSpeciesXiFourier2, HDF5Error)
+       call h5pclose_f(pForIterationSpeciesXiX, HDF5Error)
        call h5pclose_f(pForExport_f, HDF5Error)
 
        call h5close_f(HDF5Error)
@@ -1688,6 +1774,28 @@ contains
 
        label1 = "zeta"
        label2 = "theta"
+       label3 = "species"
+       label4 = "iteration"
+
+    case (ARRAY_ITERATION_SPECIES_XI_FOURIER2)
+       originalDspaceID = dspaceIDForIterationSpeciesXiFourier2
+       dim = dimForIterationSpeciesXiFourier2
+       dimForChunk = dimForIterationSpeciesXiFourier2Chunk
+       chunkProperties = pForIterationSpeciesXiFourier2
+
+       label1 = "m,n Fourier modes: cosine,sine"
+       label2 = "L_to_save"
+       label3 = "species"
+       label4 = "iteration"
+
+    case (ARRAY_ITERATION_SPECIES_XI_X)
+       originalDspaceID = dspaceIDForIterationSpeciesXiX
+       dim = dimForIterationSpeciesXiX
+       dimForChunk = dimForIterationSpeciesXiXChunk
+       chunkProperties = pForIterationSpeciesXiX
+
+       label1 = "x"
+       label2 = "L"
        label3 = "species"
        label4 = "iteration"
 
