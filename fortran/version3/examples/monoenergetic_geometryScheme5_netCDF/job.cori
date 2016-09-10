@@ -7,5 +7,6 @@
 
 # Default ordering on edison is PORD, which gives mumps error -9.
 # We use -mat_mumps_icntl_7 3 to switch to the SCOTCH ordering, which seems more robust.
-srun -n 32 ../../sfincs -ksp_view -mat_mumps_icntl_7 3
+export OMP_NUM_THREADS=2
+srun -n 16 -c $OMP_NUM_THREADS ../../sfincs -ksp_view -mat_mumps_icntl_7 3
 
