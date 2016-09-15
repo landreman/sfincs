@@ -516,12 +516,16 @@
 
              do izeta = izetaMin, izetaMax                
                 do ithetaRow = ithetaMin, ithetaMax
-                   geometricFactor1 = (BHat_sub_zeta(ithetaRow,izeta)*dBHatdpsiHat(ithetaRow,izeta) &
-                        - BHat_sub_psi(ithetaRow,izeta)*dBHatdzeta(ithetaRow,izeta))
-                   
-                   geometricFactor2 = 2 * BHat(ithetaRow,izeta) &
-                        * (dBHat_sub_psi_dzeta(ithetaRow,izeta) - dBHat_sub_zeta_dpsiHat(ithetaRow,izeta))
-
+                   if (magneticDriftScheme==3) .or.  (magneticDriftScheme==4) then
+                      geometricFactor1 = 0
+                      geometricFactor2 = 0
+                   else
+                      geometricFactor1 = (BHat_sub_zeta(ithetaRow,izeta)*dBHatdpsiHat(ithetaRow,izeta) &
+                      - BHat_sub_psi(ithetaRow,izeta)*dBHatdzeta(ithetaRow,izeta))
+                      
+                      geometricFactor2 = 2 * BHat(ithetaRow,izeta) &
+                      * (dBHat_sub_psi_dzeta(ithetaRow,izeta) - dBHat_sub_zeta_dpsiHat(ithetaRow,izeta))
+                   end if
                    if (magneticDriftScheme==2) then
                       geometricFactor3 = BDotCurlB(ithetaRow,izeta)*BHat_sup_theta(ithetaRow,izeta) &
                            /(BHat(ithetaRow,izeta)*DHat(ithetaRow,izeta))
@@ -621,12 +625,35 @@
 
              do itheta = ithetaMin, ithetaMax                
                 do izetaRow = izetaMin, izetaMax
-                   geometricFactor1 = (BHat_sub_psi(itheta,izetaRow)*dBHatdtheta(itheta,izetaRow) &
-                        - BHat_sub_theta(itheta,izetaRow)*dBHatdpsiHat(itheta,izetaRow))
-                   
-                   geometricFactor2 = 2 * BHat(itheta,izetaRow) &
-                        * (dBHat_sub_theta_dpsiHat(itheta,izetaRow) - dBHat_sub_psi_dtheta(itheta,izetaRow))
 
+                   if (magneticDriftScheme==3) then
+                      geometricFactor1 = &
+                           (BHat_sub_psi(itheta,izetaRow)* &
+                           (dBHatdtheta(itheta,izetaRow) + dBHatdzeta(itheta,izetaRow)/iota)&
+                           - (BHat_sub_theta(itheta,izetaRow)+BHat_sub_zeta(itheta,izetaRow)/iota) &
+                           *dBHatdpsiHat(itheta,izetaRow))
+                      
+                      geometricFactor2 = 2 * BHat(itheta,izetaRow) &
+                           * (dBHat_sub_theta_dpsiHat(itheta,izetaRow) + dBHat_sub_zeta_dpsiHat(itheta,izetaRow)/iota &
+                           - (dBHat_sub_psi_dtheta(itheta,izetaRow)+dBHat_sub_psi_dtheta(itheta,izetaRow)/iota))
+                   else if (magneticDriftScheme==4) then
+                      geometricFactor1 = &
+                           (BHat_sub_psi(itheta,izetaRow)* &
+                           (dBHatdtheta(itheta,izetaRow) + dBHatdzeta(itheta,izetaRow)/iota)&
+                           - (BHat_sub_theta(itheta,izetaRow)+BHat_sub_zeta(itheta,izetaRow)/iota) &
+                           *dBHatdpsiHat(itheta,izetaRow))
+                      
+                      geometricFactor2 = 2 * BHat(itheta,izetaRow) &
+                           * (dBHat_sub_theta_dpsiHat(itheta,izetaRow) + dBHat_sub_zeta_dpsiHat(itheta,izetaRow)/iota  &
+                           - diotadpsiHat / iota^2 * BHat_sub_zeta(itheta,izetaRow) &
+                           - (dBHat_sub_psi_dtheta(itheta,izetaRow)+dBHat_sub_psi_dtheta(itheta,izetaRow)/iota))
+                   else
+                      geometricFactor1 = (BHat_sub_psi(itheta,izetaRow)*dBHatdtheta(itheta,izetaRow) &
+                           - BHat_sub_theta(itheta,izetaRow)*dBHatdpsiHat(itheta,izetaRow))
+                      
+                      geometricFactor2 = 2 * BHat(itheta,izetaRow) &
+                           * (dBHat_sub_theta_dpsiHat(itheta,izetaRow) - dBHat_sub_psi_dtheta(itheta,izetaRow))
+                   end if
                    if (magneticDriftScheme==2) then
                       geometricFactor3 = BDotCurlB(itheta,izetaRow)*BHat_sup_zeta(itheta,izetaRow) &
                            /(BHat(itheta,izetaRow)*DHat(itheta,izetaRow))
