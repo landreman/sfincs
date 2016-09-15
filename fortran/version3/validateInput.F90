@@ -460,9 +460,9 @@ subroutine validateInput()
      stop
   end if
 
-  if (magneticDriftScheme>2) then
+  if (magneticDriftScheme>4) then
      if (masterProc) then
-        print *,"Error! magneticDriftScheme must be <= 2."
+        print *,"Error! magneticDriftScheme must be <= 4."
      end if
      stop
   end if
