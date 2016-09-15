@@ -516,13 +516,13 @@
 
              do izeta = izetaMin, izetaMax                
                 do ithetaRow = ithetaMin, ithetaMax
-                   if (magneticDriftScheme==3) .or.  (magneticDriftScheme==4) then
+                   if ((magneticDriftScheme==3) .or. (magneticDriftScheme==4)) then
                       geometricFactor1 = 0
                       geometricFactor2 = 0
                    else
                       geometricFactor1 = (BHat_sub_zeta(ithetaRow,izeta)*dBHatdpsiHat(ithetaRow,izeta) &
                       - BHat_sub_psi(ithetaRow,izeta)*dBHatdzeta(ithetaRow,izeta))
-                      
+                     
                       geometricFactor2 = 2 * BHat(ithetaRow,izeta) &
                       * (dBHat_sub_psi_dzeta(ithetaRow,izeta) - dBHat_sub_zeta_dpsiHat(ithetaRow,izeta))
                    end if
@@ -645,7 +645,7 @@
                       
                       geometricFactor2 = 2 * BHat(itheta,izetaRow) &
                            * (dBHat_sub_theta_dpsiHat(itheta,izetaRow) + dBHat_sub_zeta_dpsiHat(itheta,izetaRow)/iota  &
-                           - diotadpsiHat / iota^2 * BHat_sub_zeta(itheta,izetaRow) &
+                           - diotadpsiHat / (iota*iota) * BHat_sub_zeta(itheta,izetaRow) &
                            - (dBHat_sub_psi_dtheta(itheta,izetaRow)+dBHat_sub_psi_dtheta(itheta,izetaRow)/iota))
                    else
                       geometricFactor1 = (BHat_sub_psi(itheta,izetaRow)*dBHatdtheta(itheta,izetaRow) &
