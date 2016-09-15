@@ -832,12 +832,15 @@
        if ((magneticDriftScheme>0) .and. (whichMatrix .ne. 2)) then
           do itheta=ithetaMin,ithetaMax
              do izeta=izetaMin,izetaMax
-
-                temp = (dBHat_sub_psi_dzeta(itheta,izeta) - dBHat_sub_zeta_dpsiHat(itheta,izeta)) * dBHatdtheta(itheta,izeta) &
-                     + (dBHat_sub_theta_dpsiHat(itheta,izeta) - dBHat_sub_psi_dtheta(itheta,izeta)) * dBHatdzeta(itheta,izeta)
-
-                if (.not. force0RadialCurrentInEquilibrium) then
-                   temp = temp + (dBHat_sub_zeta_dtheta(itheta,izeta) - dBHat_sub_theta_dzeta(itheta,izeta)) * dBHatdpsiHat(itheta,izeta)
+                if ((magneticDriftScheme==3) .or. (magneticDriftScheme==4)) then
+                   temp = 0
+                else
+                   temp = (dBHat_sub_psi_dzeta(itheta,izeta) - dBHat_sub_zeta_dpsiHat(itheta,izeta)) * dBHatdtheta(itheta,izeta) &
+                        + (dBHat_sub_theta_dpsiHat(itheta,izeta) - dBHat_sub_psi_dtheta(itheta,izeta)) * dBHatdzeta(itheta,izeta)
+                   
+                   if (.not. force0RadialCurrentInEquilibrium) then
+                      temp = temp + (dBHat_sub_zeta_dtheta(itheta,izeta) - dBHat_sub_theta_dzeta(itheta,izeta)) * dBHatdpsiHat(itheta,izeta)
+                   end if
                 end if
 
                 do ix=ixMin,Nx
