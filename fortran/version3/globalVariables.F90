@@ -46,7 +46,7 @@ module globalVariables
 
   integer :: geometryScheme = 1
   PetscScalar ::  GHat = 3.7481d+0, IHat = 0.0, iota = 0.4542d+0, B0OverBBar = 1.0, psiAHat = 0.15596d+0
-  PetscScalar ::  diotadpsiHat !!Added by HS 2016-09-15
+  PetscScalar ::  diotadpsiHat = 0.0 !!Added by HS 2016-09-15
   PetscScalar :: epsilon_t = -0.07053d+0, epsilon_h = 0.05067d+0, epsilon_antisymm = 0.0
   integer :: NPeriods = 0, helicity_l = 2, helicity_n = 10, helicity_antisymm_l = 1, helicity_antisymm_n = 0
   character(len=200) :: equilibriumFile = ""
