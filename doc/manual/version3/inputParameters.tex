@@ -915,7 +915,18 @@ distribution function is isotropic and so does not directly give any parallel or
 
 {\ttfamily magneticDriftScheme} = 1: Use the magnetic drift $v_m = (v_{||} / \Omega_c) \nabla \times (v_{||} \vect{b})$.\\
 
-{\ttfamily magneticDriftScheme} = 2: Use the grad-B and curvature drift, plus the parallel velocity correction $v_{\perp}^2/(2 \Omega_c) \vect{b} \vect{b} \cdot \nabla \times \vect{b}$.
+{\ttfamily magneticDriftScheme} = 2: Use the grad-B and curvature
+drift, plus the parallel velocity correction $v_{\perp}^2/(2 \Omega_c)
+\vect{b} \vect{b} \cdot \nabla \times \vect{b}$.\\
+
+{\ttfamily magneticDriftScheme} = 3: Magnetic drift as defined in
+Eq.~(67) in \cite{Kasilov2014}.\\
+
+{\ttfamily magneticDriftScheme} = 4: Magnetic drift as defined in
+Eq.~(16) in \cite{Martitsch2016}. (This only works for .bc magnetic
+geometry input files so far)\\
+
+
 }
 
 

@@ -316,7 +316,7 @@ contains
     PetscScalar :: rN_old,  rN_new, B0_old, B0_new, B0OverBBarL, B0OverBBarH
     PetscScalar :: hHatHarmonics_amplitude, uHatHarmonics_amplitude
     PetscScalar :: dBHat_sub_psi_dthetaHarmonics_amplitude, dBHat_sub_psi_dzetaHarmonics_amplitude
-    PetscScalar :: DeltapsiHat !, diotadpsiHat moved to global variables
+    PetscScalar :: DeltapsiHat !, diotadpsiHat moved to global variables 2016-09-15 HS
     PetscScalar :: RadialWeight = 1.0 ! weight of closest surface with rN<=rN_wish
 
     ! For the BHarmonics_parity array, 
