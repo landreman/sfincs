@@ -291,6 +291,9 @@ contains
     integer, dimension(:), allocatable :: BHarmonics_lL, BHarmonics_nL, BHarmonics_lH, BHarmonics_nH
     PetscScalar, dimension(:), allocatable :: BHarmonics_amplitudes
     PetscScalar, dimension(:), allocatable :: BHarmonics_amplitudesL, BHarmonics_amplitudesH
+    PetscScalar, dimension(:), allocatable :: RHarmonics_L, RHarmonics_H
+    PetscScalar, dimension(:), allocatable :: ZHarmonics_L, ZHarmonics_H
+    PetscScalar, dimension(:), allocatable :: dzHarmonics_L, dzHarmonics_H
     logical, dimension(:), allocatable :: BHarmonics_parity
     logical, dimension(:), allocatable :: BHarmonics_parityL, BHarmonics_parityH
     PetscScalar, dimension(:,:), allocatable :: hHat, duHatdtheta, duHatdzeta
@@ -312,7 +315,8 @@ contains
     logical :: end_of_file, proceed, include_mn, nearbyRadiiGiven, nonStelSym
     integer, parameter :: max_no_of_modes = 10000
     integer, dimension(max_no_of_modes) :: modesm_old, modesm_new, modesn_old, modesn_new
-    PetscScalar, dimension(max_no_of_modes) :: modesb_old, modesb_new
+    PetscScalar, dimension(max_no_of_modes) :: modesb_old, modesb_new, modesR_old, modesR_new
+    PetscScalar, dimension(max_no_of_modes) :: modesZ_old, modesZ_new, modesdz_old, modesdz_new
     PetscScalar :: rN_old,  rN_new, B0_old, B0_new, B0OverBBarL, B0OverBBarH
     PetscScalar :: hHatHarmonics_amplitude, uHatHarmonics_amplitude
     PetscScalar :: dBHat_sub_psi_dthetaHarmonics_amplitude, dBHat_sub_psi_dzetaHarmonics_amplitude
@@ -551,6 +555,9 @@ contains
           modesm_old = 0
           modesn_old = 0
           modesb_old = 0
+          modesR_old = 0
+          modesZ_old = 0
+          modesdz_old = 0
           iota_old = 0
           GHat_old = 0
           IHat_old = 0
@@ -562,6 +569,9 @@ contains
           modesm_new = 0
           modesn_new = 0
           modesb_new = 0
+          modesR_new = 0
+          modesZ_new = 0
+          modesdz_new = 0
           iota_new = 0
           GHat_new = 0
           IHat_new = 0
@@ -579,6 +589,9 @@ contains
              modesm_old = modesm_new
              modesn_old = modesn_new
              modesb_old = modesb_new
+             modesR_old = modesR_new
+             modesZ_old = modesZ_new
+             modesdz_old = modesdz_new
              iota_old = iota_new
              GHat_old = GHat_new
              IHat_old = IHat_new
@@ -628,6 +641,9 @@ contains
                       end if
                       modesm_new(modeind) = dataIntegers(1)
                       modesn_new(modeind) = dataIntegers(2)
+                      modesR_new(modeind) = dataNumbers(1)
+                      modesZ_new(modeind) = dataNumbers(2)
+                      modesdz_new(modeind) = dataNumbers(3)
                       modesb_new(modeind) = dataNumbers(4)
                    end if
                 end if
@@ -675,17 +691,29 @@ contains
        allocate(BHarmonics_lL(NHarmonicsL))
        allocate(BHarmonics_nL(NHarmonicsL))
        allocate(BHarmonics_amplitudesL(NHarmonicsL))
+       allocate(RHarmonics_L(NHarmonicsL))
+       allocate(ZHarmonics_L(NHarmonicsL))
+       allocate(dzHarmonics_L(NHarmonicsL))
        allocate(BHarmonics_parityL(NHarmonicsL))
        allocate(BHarmonics_lH(NHarmonicsH))
        allocate(BHarmonics_nH(NHarmonicsH))
        allocate(BHarmonics_amplitudesH(NHarmonicsH))
+       allocate(RHarmonics_H(NHarmonicsH))
+       allocate(ZHarmonics_H(NHarmonicsH))
+       allocate(dzHarmonics_H(NHarmonicsH))
        allocate(BHarmonics_parityH(NHarmonicsH))
        BHarmonics_lL = modesm_old(1:NHarmonicsL)
        BHarmonics_nL = modesn_old(1:NHarmonicsL)
        BHarmonics_amplitudesL = modesb_old(1:NHarmonicsL)
+       RHarmonics_L = modesR_old(1:NHarmonicsL)
+       ZHarmonics_L = modesZ_old(1:NHarmonicsL)
+       dzHarmonics_L = modesdz_old(1:NHarmonicsL)
        BHarmonics_lH = modesm_new(1:NHarmonicsH)
        BHarmonics_nH = modesn_new(1:NHarmonicsH)
        BHarmonics_amplitudesH = modesb_new(1:NHarmonicsH)
+       RHarmonics_H  = modesR_new(1:NHarmonicsH)
+       ZHarmonics_H  = modesZ_new(1:NHarmonicsH)
+       dzHarmonics_H = modesdz_new(1:NHarmonicsH)
        BHarmonics_parityL = .true.
        BHarmonics_parityH = .true.
 
@@ -721,6 +749,9 @@ contains
           BHarmonics_nL=BHarmonics_nL*(-1) !toroidal direction sign switch
           BHarmonics_nH=BHarmonics_nH*(-1) !toroidal direction sign switch
        end if
+       dzHarmonics_L = dzHarmonics_L*(-1) !toroidal direction sign switch 
+       dzHarmonics_H = dzHarmonics_H*(-1) !toroidal direction sign switch 
+       
        dBHat_sub_zeta_dpsiHat = (GHat_new-GHat_old)/DeltapsiHat
        dBHat_sub_theta_dpsiHat =(IHat_new-IHat_old)/DeltapsiHat
        diotadpsiHat= (iota_new-iota_old)/DeltapsiHat
@@ -757,6 +788,9 @@ contains
           modesm_old = 0
           modesn_old = 0
           modesb_old = 0
+          modesR_old = 0
+          modesZ_old = 0
+          modesdz_old = 0
           iota_old = 0
           GHat_old = 0
           IHat_old = 0
@@ -768,6 +802,9 @@ contains
           modesm_new = 0
           modesn_new = 0
           modesb_new = 0
+          modesR_new = 0
+          modesZ_new = 0
+          modesdz_new = 0
           iota_new = 0
           GHat_new = 0
           IHat_new = 0
@@ -785,6 +822,9 @@ contains
              modesm_old = modesm_new
              modesn_old = modesn_new
              modesb_old = modesb_new
+             modesR_old = modesR_new
+             modesZ_old = modesZ_new
+             modesdz_old = modesdz_new
              iota_old = iota_new
              GHat_old = GHat_new
              IHat_old = IHat_new
@@ -834,10 +874,16 @@ contains
                       modeind = modeind + 1
                       modesm_new(modeind) = dataIntegers(1)
                       modesn_new(modeind) = dataIntegers(2)
+                      modesR_new(modeind) = data8Numbers(1) !Cosinus component
+                      modesZ_new(modeind) = data8Numbers(4) !Sinus component
+                      modesdz_new(modeind)= data8Numbers(6) !Sinus component
                       modesb_new(modeind) = data8Numbers(7) !Cosinus component
                       modeind = modeind + 1
                       modesm_new(modeind) = dataIntegers(1)
                       modesn_new(modeind) = dataIntegers(2)
+                      modesR_new(modeind) = data8Numbers(2) !Sinus component
+                      modesZ_new(modeind) = data8Numbers(3) !Cosinus component
+                      modesdz_new(modeind)= data8Numbers(5) !Cosinus component
                       modesb_new(modeind) = data8Numbers(8) !Sinus component
                    end if
                 end if
@@ -885,17 +931,29 @@ contains
        allocate(BHarmonics_lL(NHarmonicsL))
        allocate(BHarmonics_nL(NHarmonicsL))
        allocate(BHarmonics_amplitudesL(NHarmonicsL))
+       allocate(RHarmonics_L(NHarmonicsL))
+       allocate(ZHarmonics_L(NHarmonicsL))
+       allocate(dzHarmonics_L(NHarmonicsL))
        allocate(BHarmonics_parityL(NHarmonicsL))
        allocate(BHarmonics_lH(NHarmonicsH))
        allocate(BHarmonics_nH(NHarmonicsH))
        allocate(BHarmonics_amplitudesH(NHarmonicsH))
+       allocate(RHarmonics_H(NHarmonicsH))
+       allocate(ZHarmonics_H(NHarmonicsH))
+       allocate(dzHarmonics_H(NHarmonicsH))
        allocate(BHarmonics_parityH(NHarmonicsH))
        BHarmonics_lL = modesm_old(1:NHarmonicsL)
        BHarmonics_nL = modesn_old(1:NHarmonicsL)
        BHarmonics_amplitudesL = modesb_old(1:NHarmonicsL)
+       RHarmonics_L = modesR_old(1:NHarmonicsL)
+       ZHarmonics_L = modesZ_old(1:NHarmonicsL)
+       dzHarmonics_L = modesdz_old(1:NHarmonicsL)
        BHarmonics_lH = modesm_new(1:NHarmonicsH)
        BHarmonics_nH = modesn_new(1:NHarmonicsH)
        BHarmonics_amplitudesH = modesb_new(1:NHarmonicsH)
+       RHarmonics_H = modesR_new(1:NHarmonicsH)
+       ZHarmonics_H = modesZ_new(1:NHarmonicsH)
+       dzHarmonics_H = modesdz_new(1:NHarmonicsH)
        do i = 0, NHarmonicsL/2-1
           BHarmonics_parityL(2*i+1)=.true.
           BHarmonics_parityL(2*i+2)=.false.
@@ -922,6 +980,9 @@ contains
           BHarmonics_nL=BHarmonics_nL*(-1) !toroidal direction sign switch
           BHarmonics_nH=BHarmonics_nH*(-1) !toroidal direction sign switch
        end if
+       dzHarmonics_L = dzHarmonics_L*(-1) !toroidal direction sign switch 
+       dzHarmonics_H = dzHarmonics_H*(-1) !toroidal direction sign switch 
+
        dBHat_sub_zeta_dpsiHat = (GHat_new-GHat_old)/DeltapsiHat
        dBHat_sub_theta_dpsiHat =(IHat_new-IHat_old)/DeltapsiHat
        diotadpsiHat= (iota_new-iota_old)/DeltapsiHat
