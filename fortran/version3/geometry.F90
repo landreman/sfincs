@@ -312,7 +312,7 @@ contains
     PetscScalar, dimension(:,:), allocatable :: geomang, dgeomangdtheta, dgeomangdzeta, d2geomangdtheta2, d2geomangdzeta2, d2geomangdthetadzeta
     PetscScalar, dimension(:,:), allocatable :: dXdtheta, dXdzeta, dYdtheta, dYdzeta
     PetscScalar, dimension(:,:), allocatable :: d2Xdtheta2, d2Xdthetadzeta, d2Xdzeta2, d2Ydtheta2, d2Ydthetadzeta, d2Ydzeta2
-    PetscScalar, dimension(:,:), allocatable :: gradpsi_X, gradpsi_Y, gradpsi_Z, gpsipsi, CX, CY, CZ
+    PetscScalar, dimension(:,:), allocatable :: gradpsiX, gradpsiY, gradpsiZ, gpsipsi, CX, CY, CZ
     
     integer :: fileUnit, didFileAccessWork
     character(len=200) :: lineOfFile
@@ -1785,21 +1785,21 @@ contains
        allocate(d2Ydtheta2(Ntheta,Nzeta))
        allocate(d2Ydthetadzeta(Ntheta,Nzeta))
        allocate(d2Ydzeta2(Ntheta,Nzeta))
-       allocate(gradpsi_X(Ntheta,Nzeta))
-       allocate(gradpsi_Y(Ntheta,Nzeta))
-       allocate(gradpsi_Z(Ntheta,Nzeta))
+       allocate(gradpsiX(Ntheta,Nzeta))
+       allocate(gradpsiY(Ntheta,Nzeta))
+       allocate(gradpsiZ(Ntheta,Nzeta))
        allocate(gpsipsi(Ntheta,Nzeta))
        allocate(CX(Ntheta,Nzeta))
        allocate(CY(Ntheta,Nzeta))
        allocate(CZ(Ntheta,Nzeta))
 
        do itheta = 1,Ntheta
-          geomang(itheta,:) = Dz(itheta,:) - zeta(itheta,:) !geometric toroidal angle, (R, geomang, Z) is right handed
-          dgeomangdtheta(itheta,:)      = dDz_dtheta(itheta,:)
-          dgeomangdzeta(itheta,:)       = dDz_dzeta(itheta,:) - 1
-          d2geomangdtheta2(itheta,:)    = d2Dz_dtheta2(itheta,:)
-          d2geomangdzeta2(itheta,:)     = d2Dz_dzeta2(itheta,:)
-          d2geomangdthetadzeta(itheta,:)= d2Dz_dthetadzeta(itheta,:)
+          geomang(itheta,:) = Dz(itheta,:) - zeta !geometric toroidal angle, (R, geomang, Z) is right handed
+          dgeomangdtheta(itheta,:)      = dDzdtheta(itheta,:)
+          dgeomangdzeta(itheta,:)       = dDzdzeta(itheta,:) - 1
+          d2geomangdtheta2(itheta,:)    = d2Dzdtheta2(itheta,:)
+          d2geomangdzeta2(itheta,:)     = d2Dzdzeta2(itheta,:)
+          d2geomangdthetadzeta(itheta,:)= d2Dzdthetadzeta(itheta,:)
 
           dXdtheta(itheta,:)=dRHatdtheta(itheta,:)*cos(geomang(itheta,:))-RHat(itheta,:)*dgeomangdtheta(itheta,:)*sin(geomang(itheta,:))
           dXdzeta(itheta,:) =dRHatdzeta(itheta,:) *cos(geomang(itheta,:))-RHat(itheta,:)*dgeomangdzeta(itheta,:) *sin(geomang(itheta,:))
@@ -1832,15 +1832,15 @@ contains
           +RHat(itheta,:)*d2geomangdzeta2(itheta,:)*cos(geomang(itheta,:)) &
           -RHat(itheta,:)*dgeomangdzeta(itheta,:)**2*sin(geomang(itheta,:))
 
-          gradpsi_X(itheta,:)=BHat(itheta,:)*BHat(itheta,:)/(GHat+iota*IHat)* &
+          gradpsiX(itheta,:)=BHat(itheta,:)*BHat(itheta,:)/(GHat+iota*IHat)* &
                (dYdtheta(itheta,:)*dZdzeta(itheta,:)-dZdtheta(itheta,:)*dYdzeta(itheta,:))
-          gradpsi_Y(itheta,:)=BHat(itheta,:)*BHat(itheta,:)/(GHat+iota*IHat)* &
+          gradpsiY(itheta,:)=BHat(itheta,:)*BHat(itheta,:)/(GHat+iota*IHat)* &
                (dZdtheta(itheta,:)*dXdzeta(itheta,:)-dXdtheta(itheta,:)*dZdzeta(itheta,:))
-          gradpsi_Z(itheta,:)=BHat(itheta,:)*BHat(itheta,:)/(GHat+iota*IHat)* &
+          gradpsiZ(itheta,:)=BHat(itheta,:)*BHat(itheta,:)/(GHat+iota*IHat)* &
                (dXdtheta(itheta,:)*dYdzeta(itheta,:)-dYdtheta(itheta,:)*dXdzeta(itheta,:))
-          gpsipsi(itheta,:)=gradpsi_X(itheta,:)*gradpsi_X(itheta,:)+&
-                            gradpsi_Y(itheta,:)*gradpsi_Y(itheta,:)+&
-                            gradpsi_Z(itheta,:)*gradpsi_Z(itheta,:)
+          gpsipsi(itheta,:)=gradpsiX(itheta,:)*gradpsiX(itheta,:)+&
+                            gradpsiY(itheta,:)*gradpsiY(itheta,:)+&
+                            gradpsiZ(itheta,:)*gradpsiZ(itheta,:)
 
           CX(itheta,:)=(d2Xdzeta2(itheta,:)+2*iota*d2Xdthetadzeta(itheta,:)+iota**2*d2Xdtheta2(itheta,:))&
                *(BHat(itheta,:)**2/(GHat+iota*IHat))**2
@@ -1853,10 +1853,10 @@ contains
           !                           CX(itheta,:)*gradpsi_X(itheta,:)+ &
           !                           CY(itheta,:)*gradpsi_Y(itheta,:)+ &
           !                           CZ(itheta,:)*gradpsi_Z(itheta,:)
-          gradpsidotgradB_overgpsipsi(itheta,:) = (CX(itheta,:)*gradpsi_X(itheta,:)+ &
-                                                   CY(itheta,:)*gradpsi_Y(itheta,:)+ &
-                                                   CZ(itheta,:)*gradpsi_Z(itheta,:)) &
-                                                   /((BHat(itheta,:)*gpsipsi(itheta,:)) &
+          gradpsidotgradB_overgpsipsi(itheta,:) = (CX(itheta,:)*gradpsiX(itheta,:)+ &
+                                                   CY(itheta,:)*gradpsiY(itheta,:)+ &
+                                                   CZ(itheta,:)*gradpsiZ(itheta,:)) &
+                                                   /(BHat(itheta,:)*gpsipsi(itheta,:)) &
                                                   - pPrimeHat(itheta,:)
        end do
        
