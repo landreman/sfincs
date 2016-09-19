@@ -1835,7 +1835,7 @@ contains
           gradpsiX(itheta,:)=BHat(itheta,:)*BHat(itheta,:)/(GHat+iota*IHat)* &
                (dYdtheta(itheta,:)*dZHatdzeta(itheta,:)-dZHatdtheta(itheta,:)*dYdzeta(itheta,:))
           gradpsiY(itheta,:)=BHat(itheta,:)*BHat(itheta,:)/(GHat+iota*IHat)* &
-               (dZdtheta(itheta,:)*dXdzeta(itheta,:)-dXdtheta(itheta,:)*dZHatdzeta(itheta,:))
+               (dZHatdtheta(itheta,:)*dXdzeta(itheta,:)-dXdtheta(itheta,:)*dZHatdzeta(itheta,:))
           gradpsiZ(itheta,:)=BHat(itheta,:)*BHat(itheta,:)/(GHat+iota*IHat)* &
                (dXdtheta(itheta,:)*dYdzeta(itheta,:)-dYdtheta(itheta,:)*dXdzeta(itheta,:))
           gpsipsi(itheta,:)=gradpsiX(itheta,:)*gradpsiX(itheta,:)+&
