@@ -1833,9 +1833,9 @@ contains
           -RHat(itheta,:)*dgeomangdzeta(itheta,:)**2*sin(geomang(itheta,:))
 
           gradpsiX(itheta,:)=BHat(itheta,:)*BHat(itheta,:)/(GHat+iota*IHat)* &
-               (dYdtheta(itheta,:)*dZdzeta(itheta,:)-dZdtheta(itheta,:)*dYdzeta(itheta,:))
+               (dYdtheta(itheta,:)*dZHatdzeta(itheta,:)-dZHatdtheta(itheta,:)*dYdzeta(itheta,:))
           gradpsiY(itheta,:)=BHat(itheta,:)*BHat(itheta,:)/(GHat+iota*IHat)* &
-               (dZdtheta(itheta,:)*dXdzeta(itheta,:)-dXdtheta(itheta,:)*dZdzeta(itheta,:))
+               (dZdtheta(itheta,:)*dXdzeta(itheta,:)-dXdtheta(itheta,:)*dZHatdzeta(itheta,:))
           gradpsiZ(itheta,:)=BHat(itheta,:)*BHat(itheta,:)/(GHat+iota*IHat)* &
                (dXdtheta(itheta,:)*dYdzeta(itheta,:)-dYdtheta(itheta,:)*dXdzeta(itheta,:))
           gpsipsi(itheta,:)=gradpsiX(itheta,:)*gradpsiX(itheta,:)+&
@@ -1857,7 +1857,7 @@ contains
                                                    CY(itheta,:)*gradpsiY(itheta,:)+ &
                                                    CZ(itheta,:)*gradpsiZ(itheta,:)) &
                                                    /(BHat(itheta,:)*gpsipsi(itheta,:)) &
-                                                  - pPrimeHat(itheta,:)/BHat(itheta,:)
+                                                  - pPrimeHat/BHat(itheta,:)
        end do
        
        deallocate(geomang)
