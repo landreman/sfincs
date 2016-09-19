@@ -517,8 +517,11 @@
              do izeta = izetaMin, izetaMax                
                 do ithetaRow = ithetaMin, ithetaMax
                    if ((magneticDriftScheme==3) .or. (magneticDriftScheme==4)) then
-                      geometricFactor1 = 0
-                      geometricFactor2 = 0
+                      geometricFactor1 = 0.0
+                      geometricFactor2 = 0.0
+                   else if (magneticDriftScheme==5)
+                      geometricFactor1 = GHat * gradpsidotgradB_overgpsipsi(ithetaRow,izeta)
+                      geometricFactor2 = GHat * 2.0 * pPrimeHat / BHat
                    else
                       geometricFactor1 = (BHat_sub_zeta(ithetaRow,izeta)*dBHatdpsiHat(ithetaRow,izeta) &
                       - BHat_sub_psi(ithetaRow,izeta)*dBHatdzeta(ithetaRow,izeta))
@@ -647,6 +650,9 @@
                            * (dBHat_sub_theta_dpsiHat(itheta,izetaRow) + dBHat_sub_zeta_dpsiHat(itheta,izetaRow)/iota  &
                            - diotadpsiHat / (iota*iota) * BHat_sub_zeta(itheta,izetaRow) &
                            - (dBHat_sub_psi_dtheta(itheta,izetaRow)+dBHat_sub_psi_dtheta(itheta,izetaRow)/iota))
+                   else if (magneticDriftScheme==5)
+                      geometricFactor1 = -IHat * gradpsidotgradB_overgpsipsi(ithetaRow,izeta)
+                      geometricFactor2 = -IHat * 2.0 * pPrimeHat / BHat
                    else
                       geometricFactor1 = (BHat_sub_psi(itheta,izetaRow)*dBHatdtheta(itheta,izetaRow) &
                            - BHat_sub_theta(itheta,izetaRow)*dBHatdpsiHat(itheta,izetaRow))
@@ -834,6 +840,10 @@
              do izeta=izetaMin,izetaMax
                 if ((magneticDriftScheme==3) .or. (magneticDriftScheme==4)) then
                    temp = 0
+                else if (magneticDriftScheme==5) then !Sugama's function alpha is set to (1-xi^2)/(1+xi^2) for the normal curvature terms
+                   temp = - (  BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
+                             - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta)) &
+                          / BHat(itheta,izeta) * gradpsidotgradB_overgpsipsi(itheta,izeta)
                 else
                    temp = (dBHat_sub_psi_dzeta(itheta,izeta) - dBHat_sub_zeta_dpsiHat(itheta,izeta)) * dBHatdtheta(itheta,izeta) &
                         + (dBHat_sub_theta_dpsiHat(itheta,izeta) - dBHat_sub_psi_dtheta(itheta,izeta)) * dBHatdzeta(itheta,izeta)

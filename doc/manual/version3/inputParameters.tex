@@ -923,7 +923,17 @@ drift, plus the parallel velocity correction $v_{\perp}^2/(2 \Omega_c)
 Eq.~(67) in \cite{Kasilov2014}.\\
 
 {\ttfamily magneticDriftScheme} = 4: Magnetic drift as defined in
-Eq.~(16) in \cite{Martitsch2016}. (This only works for .bc magnetic
+Eq.~(16) in \cite{Martitsch2016}.\\ (This {\ttfamily
+  magneticDriftScheme} only works for .bc magnetic
+geometry input files so far)\\
+
+{\ttfamily magneticDriftScheme} = 5: Magnetic drift as defined in
+Eqs.~(46--48) in \cite{Sugama2016}. The function $\alpha$
+ is chosen as $\alpha=(1-\xi^2)/(1+\xi^2)$ for the terms
+in Eq.~(48) proportional to the normal curvature, which are the terms
+that need
+to be regularized at $\xi=\pm 1$.\\
+(This {\ttfamily magneticDriftScheme} only works for .bc magnetic
 geometry input files so far)\\
 
 

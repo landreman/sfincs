@@ -460,11 +460,20 @@ subroutine validateInput()
      stop
   end if
 
-  if (magneticDriftScheme>4) then
+  if (magneticDriftScheme>5) then
      if (masterProc) then
-        print *,"Error! magneticDriftScheme must be <= 4."
+        print *,"Error! magneticDriftScheme must be <= 5."
      end if
      stop
+  end if
+
+  if (magneticDriftScheme>2) then
+     if (.not.( (geometryScheme == 11) .or. (geometryScheme == 12) )) then
+        if (masterProc) then
+           print *,"Error! magneticDriftScheme 3, 4 and 5 have only been implemented for geometryScheme 11 and 12."
+        end if
+        stop        
+     end if
   end if
 
   if (magneticDriftScheme>0 .and. includePhi1) then
