@@ -519,21 +519,21 @@
                    if ((magneticDriftScheme==3) .or. (magneticDriftScheme==4)) then
                       geometricFactor1 = 0.0
                       geometricFactor2 = 0.0
-                   else if (magneticDriftScheme==5)
+                   else if (magneticDriftScheme==5) then
                       geometricFactor1 = GHat * gradpsidotgradB_overgpsipsi(ithetaRow,izeta)
-                      geometricFactor2 = GHat * 2.0 * pPrimeHat / BHat
+                      geometricFactor2 = GHat * 2.0 * pPrimeHat / BHat(ithetaRow,izeta)
                    else
                       geometricFactor1 = (BHat_sub_zeta(ithetaRow,izeta)*dBHatdpsiHat(ithetaRow,izeta) &
                       - BHat_sub_psi(ithetaRow,izeta)*dBHatdzeta(ithetaRow,izeta))
                      
-                      geometricFactor2 = 2 * BHat(ithetaRow,izeta) &
+                      geometricFactor2 = 2.0 * BHat(ithetaRow,izeta) &
                       * (dBHat_sub_psi_dzeta(ithetaRow,izeta) - dBHat_sub_zeta_dpsiHat(ithetaRow,izeta))
                    end if
                    if (magneticDriftScheme==2) then
                       geometricFactor3 = BDotCurlB(ithetaRow,izeta)*BHat_sup_theta(ithetaRow,izeta) &
                            /(BHat(ithetaRow,izeta)*DHat(ithetaRow,izeta))
                    else
-                      geometricFactor3 = 0
+                      geometricFactor3 = 0.0
                    end if
 
                    if (magneticDriftDerivativeScheme==0) then
@@ -636,7 +636,7 @@
                            - (BHat_sub_theta(itheta,izetaRow)+BHat_sub_zeta(itheta,izetaRow)/iota) &
                            *dBHatdpsiHat(itheta,izetaRow))
                       
-                      geometricFactor2 = 2 * BHat(itheta,izetaRow) &
+                      geometricFactor2 = 2.0 * BHat(itheta,izetaRow) &
                            * (dBHat_sub_theta_dpsiHat(itheta,izetaRow) + dBHat_sub_zeta_dpsiHat(itheta,izetaRow)/iota &
                            - (dBHat_sub_psi_dtheta(itheta,izetaRow)+dBHat_sub_psi_dtheta(itheta,izetaRow)/iota))
                    else if (magneticDriftScheme==4) then
@@ -646,25 +646,25 @@
                            - (BHat_sub_theta(itheta,izetaRow)+BHat_sub_zeta(itheta,izetaRow)/iota) &
                            *dBHatdpsiHat(itheta,izetaRow))
                       
-                      geometricFactor2 = 2 * BHat(itheta,izetaRow) &
+                      geometricFactor2 = 2.0 * BHat(itheta,izetaRow) &
                            * (dBHat_sub_theta_dpsiHat(itheta,izetaRow) + dBHat_sub_zeta_dpsiHat(itheta,izetaRow)/iota  &
                            - diotadpsiHat / (iota*iota) * BHat_sub_zeta(itheta,izetaRow) &
                            - (dBHat_sub_psi_dtheta(itheta,izetaRow)+dBHat_sub_psi_dtheta(itheta,izetaRow)/iota))
-                   else if (magneticDriftScheme==5)
+                   else if (magneticDriftScheme==5) then
                       geometricFactor1 = -IHat * gradpsidotgradB_overgpsipsi(ithetaRow,izeta)
-                      geometricFactor2 = -IHat * 2.0 * pPrimeHat / BHat
+                      geometricFactor2 = -IHat * 2.0 * pPrimeHat / BHat(ithetaRow,izeta)
                    else
                       geometricFactor1 = (BHat_sub_psi(itheta,izetaRow)*dBHatdtheta(itheta,izetaRow) &
                            - BHat_sub_theta(itheta,izetaRow)*dBHatdpsiHat(itheta,izetaRow))
                       
-                      geometricFactor2 = 2 * BHat(itheta,izetaRow) &
+                      geometricFactor2 = 2.0 * BHat(itheta,izetaRow) &
                            * (dBHat_sub_theta_dpsiHat(itheta,izetaRow) - dBHat_sub_psi_dtheta(itheta,izetaRow))
                    end if
                    if (magneticDriftScheme==2) then
                       geometricFactor3 = BDotCurlB(itheta,izetaRow)*BHat_sup_zeta(itheta,izetaRow) &
                            /(BHat(itheta,izetaRow)*DHat(itheta,izetaRow))
                    else
-                      geometricFactor3 = 0
+                      geometricFactor3 = 0.0
                    end if
 
                    if (magneticDriftDerivativeScheme==0) then
