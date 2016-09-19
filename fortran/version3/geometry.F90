@@ -324,7 +324,7 @@ contains
     integer, dimension(2) :: dataIntegers
     integer :: no_of_modes_old, no_of_modes_new, modeind, numB0s, startn, stopn
     PetscScalar :: iota_old, iota_new, GHat_old, GHat_new, IHat_old, IHat_new
-    PetscScalar :: pPrimeHat, pPrimeHat_old, pPrimeHat_new, invFSA_BHat2
+    PetscScalar :: pPrimeHat_old, pPrimeHat_new, invFSA_BHat2
     logical :: end_of_file, proceed, include_mn, nearbyRadiiGiven, nonStelSym
     integer, parameter :: max_no_of_modes = 10000
     integer, dimension(max_no_of_modes) :: modesm_old, modesm_new, modesn_old, modesn_new
@@ -1846,7 +1846,7 @@ contains
                *(BHat(itheta,:)**2/(GHat+iota*IHat))**2
           CY(itheta,:)=(d2Ydzeta2(itheta,:)+2*iota*d2Ydthetadzeta(itheta,:)+iota**2*d2Ydtheta2(itheta,:))&
                *(BHat(itheta,:)**2/(GHat+iota*IHat))**2
-          CZ(itheta,:)=(d2Zdzeta2(itheta,:)+2*iota*d2Zdthetadzeta(itheta,:)+iota**2*d2Zdtheta2(itheta,:))&
+          CZ(itheta,:)=(d2ZHatdzeta2(itheta,:)+2*iota*d2ZHatdthetadzeta(itheta,:)+iota**2*d2ZHatdtheta2(itheta,:))&
                *(BHat(itheta,:)**2/(GHat+iota*IHat))**2
 
           !normal_curvature(itheta,:)=1/(BHat(itheta,:)**2*sqrt(gpsipsi(itheta,:))) * &
@@ -1857,7 +1857,7 @@ contains
                                                    CY(itheta,:)*gradpsiY(itheta,:)+ &
                                                    CZ(itheta,:)*gradpsiZ(itheta,:)) &
                                                    /(BHat(itheta,:)*gpsipsi(itheta,:)) &
-                                                  - pPrimeHat(itheta,:)
+                                                  - pPrimeHat(itheta,:)/BHat(itheta,:)
        end do
        
        deallocate(geomang)
@@ -1876,9 +1876,9 @@ contains
        deallocate(d2Ydtheta2)
        deallocate(d2Ydthetadzeta)
        deallocate(d2Ydzeta2)
-       deallocate(gradpsi_X)
-       deallocate(gradpsi_Y)
-       deallocate(gradpsi_Z)
+       deallocate(gradpsiX)
+       deallocate(gradpsiY)
+       deallocate(gradpsiZ)
        deallocate(gpsipsi)
        deallocate(CX)
        deallocate(CY)
