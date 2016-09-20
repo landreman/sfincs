@@ -521,7 +521,8 @@
                       geometricFactor2 = 0.0
                    else if (magneticDriftScheme==5) then
                       geometricFactor1 = GHat * gradpsidotgradB_overgpsipsi(ithetaRow,izeta)
-                      geometricFactor2 = GHat * 2.0 * pPrimeHat / BHat(ithetaRow,izeta)
+                      !geometricFactor2 = GHat * 2.0 * pPrimeHat / BHat(ithetaRow,izeta) !unregularized
+                      geometricFactor2 = - 2.0 * geometricFactor1
                    else
                       geometricFactor1 = (BHat_sub_zeta(ithetaRow,izeta)*dBHatdpsiHat(ithetaRow,izeta) &
                       - BHat_sub_psi(ithetaRow,izeta)*dBHatdzeta(ithetaRow,izeta))
@@ -652,7 +653,8 @@
                            - (dBHat_sub_psi_dtheta(itheta,izetaRow)+dBHat_sub_psi_dtheta(itheta,izetaRow)/iota))
                    else if (magneticDriftScheme==5) then
                       geometricFactor1 = -IHat * gradpsidotgradB_overgpsipsi(ithetaRow,izeta)
-                      geometricFactor2 = -IHat * 2.0 * pPrimeHat / BHat(ithetaRow,izeta)
+                      !geometricFactor2 = -IHat * 2.0 * pPrimeHat / BHat(ithetaRow,izeta) !unregularized
+                      geometricFactor2 = - 2.0 * geometricFactor1
                    else
                       geometricFactor1 = (BHat_sub_psi(itheta,izetaRow)*dBHatdtheta(itheta,izetaRow) &
                            - BHat_sub_theta(itheta,izetaRow)*dBHatdpsiHat(itheta,izetaRow))
