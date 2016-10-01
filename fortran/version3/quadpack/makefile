@@ -9,7 +9,7 @@ OBJ_FILES = d1mach.o  dqagi.o  dqk15i.o  dqk41.o  dqpsrt.o   qage.o   qk15.o   q
 
 all: $(OBJ_FILES)
 	ar rcs quadpack.a $(OBJ_FILES)
-	rm *.o
+#	rm *.o
 
 %.o: %.f
 	$(FC) $(EXTRA_COMPILE_FLAGS) -c $<

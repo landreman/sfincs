@@ -219,6 +219,7 @@ contains
     integer :: itheta,izeta
     PetscScalar :: DHat11, BHat_sub_theta11, BHat_sub_zeta11
 
+    print *,"&&& 1"
     ! Using the selected radial coordinate, set input quantities for the other radial coordinates:
     call setInputRadialCoordinateWish()
     ! Note that this call only sets the "wish" radial coordinates, not the final radial coordinates
@@ -227,12 +228,15 @@ contains
 
     ! Set the radius to a silly value here to make sure the proper value is set eventually:
     rN = -9999
+    print *,"&&& 2"
 
     select case (geometryScheme)
     case (1,2,3,4,11,12)
        coordinateSystem = COORDINATE_SYSTEM_BOOZER
+       print *,"&&& 3"
        call computeBHat_Boozer()
     case (5,6,7)
+       print *,"&&& 4"
        coordinateSystem = COORDINATE_SYSTEM_VMEC
        call computeBHat_VMEC()
     case default
@@ -240,14 +244,17 @@ contains
        stop
     end select
 
+    print *,"&&& 5"
     BDotCurlB = DHat * (  BHat_sub_theta * dBHat_sub_psi_dzeta &
                         - BHat_sub_theta * dBHat_sub_zeta_dpsiHat &
                         + BHat_sub_zeta * dBHat_sub_theta_dpsiHat &
                         - BHat_sub_zeta * dBHat_sub_psi_dtheta)
 
+    print *,"&&& 6"
     if (.not. force0RadialCurrentInEquilibrium) then
        BDotCurlB = BDotCurlB + DHat * BHat_sub_psi * (dBHat_sub_zeta_dtheta - dBHat_sub_theta_dzeta)
     end if
+    print *,"&&& 7"
 
     ! Validate geometry arrays:
     DHat11 = DHat(1,1)
@@ -275,7 +282,7 @@ contains
           end if
        end do
     end do
-    
+    print *,"&&& 9"
   end subroutine computeBHat
 
   ! ---------------------------------------------------------------------------------------

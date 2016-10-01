@@ -1128,8 +1128,9 @@
     
     allocate(NTVKernel(Ntheta,Nzeta))
 
-
+    print *,"^^^ 1"
     call computeBHat()
+    print *,"^^^ 2"
 
     ! *********************************************************
     ! Compute a few quantities related to the magnetic field:
