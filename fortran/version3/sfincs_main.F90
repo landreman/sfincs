@@ -106,15 +106,12 @@ module sfincs_main
     
     ! Initialize NPeriods, psiAHat, and aHat.  We need to know NPeriods before
     ! we can initialize the zeta grid.
-    print *,"AAA"
     call initializeGeometry()
-    print *,"BBB"
     
     ! Do various calculations that will not need to be repeated at each
     ! iteration, such as setting up the coordinate grids and evaluating
     ! the magnetic field and its derivatives on the spatial grid.
     call createGrids()
-    print *,"CCC"
 
     if (RHSMode==3) then
        ! Monoenergetic coefficient computation.
@@ -123,7 +120,7 @@ module sfincs_main
        nu_n = nuPrime * B0OverBBar / (GHat + iota * IHat)
        dPhiHatdpsiHat = 2 / (alpha * Delta) * EStar * iota * B0OverBBar / GHat
     end if
-    print *,"DDD"
+
     ! For input quantities that depend on the radial coordinate, pick out the values for the selected
     ! radial coordinate, and use these values to over-write values for the other radial coordinates.
     call setInputRadialCoordinate()

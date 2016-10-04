@@ -29,7 +29,6 @@ contains
     end if
 
     ! First, set psiHat_wish itself:
-    print *,"111"
 
     select case (inputRadialCoordinate)
     case (0)
@@ -101,13 +100,11 @@ contains
        stop
     end select
 
-    print *,"222"
     ! Now, use psiHat_wish to set the others:
     
     psiN_wish = psiHat_wish / psiAHat
     rHat_wish = sqrt(aHat * aHat * psiHat_wish / psiAHat)
     rN_wish = sqrt(psiHat_wish / psiAHat)
-    print *,"333"
 
     ! Validate input again, just to be safe:
 
