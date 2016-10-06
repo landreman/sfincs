@@ -1027,24 +1027,24 @@ contains
        dBHatdzeta = 0
 
        !I do not Bother to calculate Sugama's drift for geometryScheme=1,2,3,4.
-       RHat = 0 
-       dRHatdtheta      = 0
-       dRHatdzeta       = 0
-       d2RHatdtheta2    = 0
-       d2RHatdzeta2     = 0
-       d2RHatdthetadzeta= 0
-       ZHatL = 0 
-       dZHatdtheta      = 0
-       dZHatdzeta       = 0
-       d2ZHatdtheta2    = 0
-       d2ZHatdzeta2     = 0
-       d2ZHatdthetadzeta= 0
-       DzL = 0 
-       dDzdtheta      = 0
-       dDzdzeta       = 0
-       d2Dzdtheta2    = 0
-       d2Dzdzeta2     = 0
-       d2Dzdthetadzeta= 0
+       !RHat = 0 
+       !dRHatdtheta      = 0
+       !dRHatdzeta       = 0
+       !d2RHatdtheta2    = 0
+       !d2RHatdzeta2     = 0
+       !d2RHatdthetadzeta= 0
+       !ZHatL = 0 
+       !dZHatdtheta      = 0
+       !dZHatdzeta       = 0
+       !d2ZHatdtheta2    = 0
+       !d2ZHatdzeta2     = 0
+       !d2ZHatdthetadzeta= 0
+       !DzL = 0 
+       !dDzdtheta      = 0
+       !dDzdzeta       = 0
+       !d2Dzdtheta2    = 0
+       !d2Dzdzeta2     = 0
+       !d2Dzdthetadzeta= 0
 
        
        do i = 1, NHarmonics
