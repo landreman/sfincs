@@ -1,3 +1,4 @@
+
 #include "PETScVersions.F90"
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
 #include <finclude/petscsysdef.h>
@@ -56,7 +57,7 @@ module sfincs_main
 
   ! -----------------------------------------------------------------------------------
 
-  subroutine run_sfincs
+  subroutine prepare_sfincs
 
     use globalVariables
     use writeHDF5Output
@@ -124,6 +125,20 @@ module sfincs_main
     ! For input quantities that depend on the radial coordinate, pick out the values for the selected
     ! radial coordinate, and use these values to over-write values for the other radial coordinates.
     call setInputRadialCoordinate()
+
+  end subroutine prepare_sfincs
+
+  ! -----------------------------------------------------------------------------------
+
+  subroutine run_sfincs
+
+    use globalVariables, only : masterProc
+    use writeHDF5Output
+    use solver
+    
+    implicit none
+    
+    PetscErrorCode ierr
 
     ! Create HDF5 data structures, and save the quantities that will not change
     ! at each iteration of the solver (i.e. save all quantities except diagnostics.)
