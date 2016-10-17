@@ -2595,6 +2595,21 @@ contains
 
     end if
 
+    if (masterProc) then
+       print *,"---- Geometry parameters: ----"
+       print *,"Geometry scheme = ", geometryScheme
+       print *,"psiAHat (Normalized toroidal flux at the last closed flux surface) = ", psiAHat
+       print *,"aHat (Radius of the last closed flux surface in units of RHat) = ", aHat
+       if (geometryScheme==1) then
+          print *,"epsilon_t = ", epsilon_t
+          print *,"epsilon_h = ", epsilon_h
+          print *,"epsilon_antisymm = ", epsilon_antisymm
+       end if
+       print *,"GHat (Boozer component multiplying grad zeta) = ", GHat
+       print *,"IHat (Boozer component multiplying grad theta) = ", IHat
+       print *,"iota (Rotational transform) = ", iota
+    end if
+
   end subroutine computeBIntegrals
 
 ! Set scale to value of rippleScale for non-axisymmetric or non-quasisymmetric components
