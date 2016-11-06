@@ -45,7 +45,7 @@ function computeBHat_Boozer()
 
 global B0OverBBar GHat IHat iota epsilon_t epsilon_h epsilon_antisymm
 global helicity_l helicity_n helicity_antisymm_l helicity_antisymm_n
-global psiAHat Ntheta Nzeta NPeriods rN rN_wish
+global psiAHat Nalpha Nzeta NPeriods rN rN_wish
 global equilibriumFile min_Bmn_to_load
 global BHat dBHatdtheta dBHatdzeta dBHatdpsiHat
 global DHat BHat_sub_psi BHat_sub_theta BHat_sub_zeta BHat_sup_theta BHat_sup_zeta
@@ -54,7 +54,7 @@ global dBHat_sub_theta_dpsiHat dBHat_sub_theta_dzeta
 global dBHat_sub_zeta_dpsiHat dBHat_sub_zeta_dtheta
 global dBHat_sup_theta_dpsiHat dBHat_sup_theta_dzeta
 global dBHat_sup_zeta_dpsiHat dBHat_sup_zeta_dtheta
-global theta2D zeta2D geometryScheme
+global alpha2D theta2D zeta2D geometryScheme
 
 switch geometryScheme
     case 1
@@ -462,10 +462,12 @@ switch geometryScheme
         error('Invalid setting for geometryScheme')
 end
 
+theta2D = alpha2D + iota*zeta2D;
+
 NHarmonics = numel(BHarmonics_amplitudes);
-BHat = B0OverBBar * ones(Ntheta,Nzeta);
-dBHatdtheta = zeros(Ntheta,Nzeta);
-dBHatdzeta = zeros(Ntheta,Nzeta);
+BHat = B0OverBBar * ones(Nalpha,Nzeta);
+dBHatdtheta = zeros(Nalpha,Nzeta);
+dBHatdzeta = zeros(Nalpha,Nzeta);
 for i=1:NHarmonics
     if BHarmonics_parity(i) %The cosine components of BHat
         BHat = BHat + B0OverBBar * BHarmonics_amplitudes(i) *...
@@ -489,12 +491,12 @@ end
 % Calculate parallel current u from harmonics of 1/B^2. Used in NTV calculation.
 % \nabla_\parallel u = (2/B^4) \nabla B \times \vector{B} \cdot \iota \nabla \psi
 % ---------------------------------------------------------------------------------------
-uHat = zeros(Ntheta,Nzeta);
-duHatdtheta = zeros(Ntheta,Nzeta);
-duHatdzeta = zeros(Ntheta,Nzeta);
+uHat = zeros(Nalpha,Nzeta);
+duHatdtheta = zeros(Nalpha,Nzeta);
+duHatdzeta = zeros(Nalpha,Nzeta);
 hHat=1./(BHat.^2);
 if any(BHarmonics_parity==0) %sine components exist
-    for m=0:floor(Ntheta/2)-1 %Nyquist max freq.
+    for m=0:floor(Nalpha/2)-1 %Nyquist max freq.
         if m==0
             nrange=1:floor(Nzeta/2)-1;
         else
@@ -502,7 +504,7 @@ if any(BHarmonics_parity==0) %sine components exist
         end
         for n=nrange
             %cos
-            hHatHarmonics_amplitude = 2/(Ntheta*Nzeta) *...
+            hHatHarmonics_amplitude = 2/(Nalpha*Nzeta) *...
                 sum(sum(cos(m * theta2D  - n * NPeriods * zeta2D).*hHat));
             uHatHarmonics_amplitude = ...
                 iota*(GHat*m + IHat*n * NPeriods)/(n * NPeriods - iota*m) * hHatHarmonics_amplitude;
@@ -513,7 +515,7 @@ if any(BHarmonics_parity==0) %sine components exist
                 + uHatHarmonics_amplitude * n * NPeriods * sin(m * theta2D - n * NPeriods * zeta2D);
             
             %sin
-            hHatHarmonics_amplitude = 2/(Ntheta*Nzeta) *...
+            hHatHarmonics_amplitude = 2/(Nalpha*Nzeta) *...
                 sum(sum(sin(m * theta2D  - n * NPeriods * zeta2D).*hHat));
             uHatHarmonics_amplitude = ...
                 iota*(GHat*m + IHat*n * NPeriods)/(n * NPeriods - iota*m) * hHatHarmonics_amplitude;
@@ -525,14 +527,14 @@ if any(BHarmonics_parity==0) %sine components exist
         end
     end
 else %only cosinus components
-    for m=0:floor(Ntheta/2)-1 %Nyquist max freq.
+    for m=0:floor(Nalpha/2)-1 %Nyquist max freq.
         if m==0
             nrange=1:floor(Nzeta/2)-1;
         else
             nrange=-floor(Nzeta/2):(floor(Nzeta/2)-1);
         end
         for n=nrange
-            hHatHarmonics_amplitude = 2/(Ntheta*Nzeta) *...
+            hHatHarmonics_amplitude = 2/(Nalpha*Nzeta) *...
                 sum(sum(cos(m * theta2D  - n * NPeriods * zeta2D).*hHat));
             uHatHarmonics_amplitude = ...
                 iota*(GHat*m + IHat*n * NPeriods)/(n * NPeriods - iota*m) * hHatHarmonics_amplitude;
@@ -600,7 +602,7 @@ global dBHat_sub_theta_dpsiHat dBHat_sub_theta_dzeta
 global dBHat_sub_zeta_dpsiHat dBHat_sub_zeta_dtheta
 global dBHat_sup_theta_dpsiHat dBHat_sup_theta_dzeta
 global dBHat_sup_zeta_dpsiHat dBHat_sup_zeta_dtheta
-global theta2D zeta2D
+global alpha2D theta2D zeta2D
 
 psiN_full = linspace(0,1,vmec.ns);
 psiN_half = psiN_full(2:end) - 0.5*(psiN_full(2)-psiN_full(1));
@@ -685,32 +687,34 @@ for i=1:2
     B00 = B00 + vmecRadialWeight_half(i) * vmec.bmnc(1, vmecRadialIndex_half(i));
 end
 
-BHat = zeros(size(theta2D));
-DHatInverse = zeros(size(theta2D));
-dBHatdpsiHat = zeros(size(theta2D));
-dBHatdtheta = zeros(size(theta2D));
-dBHatdzeta = zeros(size(theta2D));
+theta2D = alpha2D + iota*zeta2D
 
-BHat_sub_psi = zeros(size(theta2D));
-BHat_sub_theta = zeros(size(theta2D));
-BHat_sub_zeta = zeros(size(theta2D));
-BHat_sup_theta = zeros(size(theta2D));
-BHat_sup_zeta = zeros(size(theta2D));
+BHat = zeros(size(alpha2D));
+DHatInverse = zeros(size(alpha2D));
+dBHatdpsiHat = zeros(size(alpha2D));
+dBHatdtheta = zeros(size(alpha2D));
+dBHatdzeta = zeros(size(alpha2D));
 
-dBHat_sub_psi_dtheta = zeros(size(theta2D));
-dBHat_sub_psi_dzeta = zeros(size(theta2D));
+BHat_sub_psi = zeros(size(alpha2D));
+BHat_sub_theta = zeros(size(alpha2D));
+BHat_sub_zeta = zeros(size(alpha2D));
+BHat_sup_theta = zeros(size(alpha2D));
+BHat_sup_zeta = zeros(size(alpha2D));
 
-dBHat_sub_theta_dpsiHat = zeros(size(theta2D));
-dBHat_sub_theta_dzeta = zeros(size(theta2D));
+dBHat_sub_psi_dtheta = zeros(size(alpha2D));
+dBHat_sub_psi_dzeta = zeros(size(alpha2D));
 
-dBHat_sub_zeta_dtheta = zeros(size(theta2D));
-dBHat_sub_zeta_dpsiHat = zeros(size(theta2D));
+dBHat_sub_theta_dpsiHat = zeros(size(alpha2D));
+dBHat_sub_theta_dzeta = zeros(size(alpha2D));
 
-dBHat_sup_theta_dpsiHat = zeros(size(theta2D));
-dBHat_sup_theta_dzeta = zeros(size(theta2D));
+dBHat_sub_zeta_dtheta = zeros(size(alpha2D));
+dBHat_sub_zeta_dpsiHat = zeros(size(alpha2D));
 
-dBHat_sup_zeta_dtheta = zeros(size(theta2D));
-dBHat_sup_zeta_dpsiHat = zeros(size(theta2D));
+dBHat_sup_theta_dpsiHat = zeros(size(alpha2D));
+dBHat_sup_theta_dzeta = zeros(size(alpha2D));
+
+dBHat_sup_zeta_dtheta = zeros(size(alpha2D));
+dBHat_sup_zeta_dpsiHat = zeros(size(alpha2D));
 
 numSymmetricModesIncluded = 0;
 numAntisymmetricModesIncluded = 0;

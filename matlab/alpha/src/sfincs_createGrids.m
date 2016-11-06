@@ -11,6 +11,7 @@ global xInterpolationScheme xPotentialsInterpolationScheme NxPotentials
 global xPotentials ddxPotentials d2dx2Potentials interpolateXToXPotentials
 global indexVars Nspecies includePhi1 transportMatrix
 global BLOCK_F BLOCK_QN BLOCK_PHI1_CONSTRAINT BLOCK_DENSITY_CONSTRAINT BLOCK_PRESSURE_CONSTRAINT BLOCK_F_CONSTRAINT
+global zeta_to_impose_DKE zetaMax
 
 % *************************************************************************
 % Do a few sundry initialization tasks:
@@ -95,8 +96,8 @@ switch preconditioner_alpha
         [~, ~, ddalpha_preconditioner, ~] = sfincs_uniformDiffMatrices(Nalpha, 0, 2*pi, scheme);
     case 2
         ddalpha_preconditioner = zeros(size(ddalpha));
-    case 3
-        ddalpha_preconditioner = eye(Nalpha);
+    otherwise
+        error('Invalid preconditioner_alpha')
 end
     
 
@@ -112,30 +113,53 @@ if Nzeta==1
     ddzeta=0;
     ddzeta_preconditioner=0;
 else
+    
     switch zetaDerivativeScheme
         case 1
-            % Uniform periodic finite differences with 3-point stencil
-            scheme = 0;
+            zeta_stencil_size=3;
+            zeta_to_impose_DKE = 2:(Nzeta-1);
+            Delta_zeta = (2*pi)/(NPeriods*(Nzeta-2));
+            zeta_scheme=2;
+            [zeta, ~, ddzeta, ~] = sfincs_uniformDiffMatrices(Nzeta, -Delta_zeta, zetaMax, zeta_scheme);
+            assert(abs(zeta(2)-zeta(1)-Delta_zeta)<1e-12)
+            zetaWeights=ones(size(zeta));
+            zetaWeights(1)  =0;
+            zetaWeights(end)=0;
+            zetaWeights = zetaWeights * Delta_zeta * NPeriods;
         case 2
-            % Uniform periodic finite differences with 5-point stencil
-            scheme = 10;
+            zeta_stencil_size=5;
+            zeta_to_impose_DKE = 3:(Nzeta-2);
+            Delta_zeta = (2*pi)/(NPeriods*(Nzeta-4));
+            zeta_scheme=12;
+            [zeta, ~, ddzeta, ~] = sfincs_uniformDiffMatrices(Nzeta, -2*Delta_zeta, zetaMax+Delta_zeta, zeta_scheme);
+            assert(abs(zeta(2)-zeta(1)-Delta_zeta)<1e-12)
+            zetaWeights=ones(size(zeta));
+            zetaWeights(1:2)      =0;
+            zetaWeights(end-1:end)=0;
+            zetaWeights = zetaWeights * Delta_zeta * NPeriods;
         otherwise
-            error('Error! Invalid zetaDerivativeScheme')
+            error('Invalid zetaDerivativeScheme')
     end
-    [zeta, zetaWeights, ddzeta, ~] = sfincs_uniformDiffMatrices(Nzeta, 0, zetaMax, scheme);
-    zetaWeights = zetaWeights * NPeriods;
+
+    
+    
+   
     
     switch preconditioner_zeta
         case 0
             ddzeta_preconditioner = ddzeta;
         case 1
             % Uniform periodic finite differences with 3-point stencil
-            scheme = 0;
-            [~, ~, ddzeta_preconditioner, ~] = sfincs_uniformDiffMatrices(Nzeta, 0, zetaMax, scheme);
+            if zetaDerivativeScheme==1
+                ddzeta_preconditioner = ddzeta;
+            else
+                zeta_scheme = 2;
+                [~, ~, ddzeta_preconditioner, ~] = sfincs_uniformDiffMatrices(Nzeta, -2*Delta_zeta, zetaMax+Delta_zeta, zeta_scheme);
+            end
         case 2
             ddzeta_preconditioner = zeros(size(ddzeta));
-        case 3
-            ddzeta_preconditioner = eye(Nzeta);
+        otherwise
+            error('Invalid preconditioner_zeta')
     end
 end
 

@@ -20,6 +20,8 @@ global momentumFlux_vm0_psiHat momentumFlux_vm_psiHat momentumFlux_vE0_psiHat mo
 global heatFlux_vm0_psiHat heatFlux_vm_psiHat heatFlux_vE0_psiHat heatFlux_vE_psiHat heatFlux_vd_psiHat heatFlux_vd1_psiHat heatFlux_withoutPhi1_psiHat
 global jHat FSABjHat FSABjHatOverB0 FSABjHatOverRootFSAB2
 global totalDensity totalPressure velocityUsingFSADensity velocityUsingTotalDensity MachUsingFSAThermalSpeed
+global alphaDerivativeScheme zetaDerivativeScheme alpha_interpolation_stencil preconditioner_alpha_interpolation_stencil
+global preconditioner_alpha preconditioner_zeta preconditioner_xi preconditioner_x preconditioner_species
 
 %filename = 'sfincsOutput.h5';
 
@@ -95,6 +97,16 @@ compare('BHat_sub_theta')
 compare('BHat_sub_zeta')
 compare('BHat_sup_theta')
 compare('BHat_sup_zeta')
+
+compare('alphaDerivativeScheme')
+compare('zetaDerivativeScheme')
+compare('alpha_interpolation_stencil')
+compare('preconditioner_alpha_interpolation_stencil')
+compare('preconditioner_alpha')
+compare('preconditioner_zeta')
+compare('preconditioner_xi')
+compare('preconditioner_x')
+compare('preconditioner_species')
 
 compare('dBHat_sub_psi_dtheta')
 compare('dBHat_sub_psi_dzeta')

@@ -251,7 +251,7 @@
           elseif (izeta > Nzeta - zeta_pad_size) then
              sign = 1
           else
-             print *,"skipping izeta=",izeta
+             !print *,"skipping izeta=",izeta
              cycle
           end if
           
@@ -259,7 +259,7 @@
           alpha_interpolation_matrix = -alpha_interpolation_matrix
 
           izeta_interpolation = izeta-sign*zeta_shift
-          print *,"izeta=",izeta,", izeta_interpolation=",izeta_interpolation
+          !print *,"izeta=",izeta,", izeta_interpolation=",izeta_interpolation
           do ix=ixMin,Nx
              do ixi=1,Nxi_for_x(ix)
                 do ialphaRow = ialphaMin,ialphaMax
@@ -281,8 +281,7 @@
        end do
        deallocate(alpha_interpolation_matrix)
     end if
-    print *,"Done with interpolation"
-
+   
     ! ************************************************************
     ! ************************************************************
     ! Begin adding the collisionless terms of the kinetic equation
@@ -339,7 +338,7 @@
                          ell = L - 1
                          factor = L/(2*L-one)*x(ix)
                          do izetaCol = 1,Nzeta
-                            colIndex = getIndex(ispecies, ix, ell+1, ialpha, izetaRow, BLOCK_F)
+                            colIndex = getIndex(ispecies, ix, ell+1, ialpha, izetaCol, BLOCK_F)
                             
                             call MatSetValueSparse(matrix, rowIndex, colIndex, &
                                  factor*zetaPartOfTerm(izetaRow,izetaCol), ADD_VALUES, ierr)

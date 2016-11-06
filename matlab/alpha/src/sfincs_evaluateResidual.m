@@ -6,6 +6,7 @@ global Zs THats mHats nHats dnHatdpsiHats dTHatdpsiHats EParallelHat
 global BHat DHat FSABHat2 BHat_sub_zeta BHat_sub_theta
 global dBHatdtheta dBHatdzeta Phi1Hat includePhi1 includePhi1InKineticEquation
 global quasineutralityOption withAdiabatic adiabaticZ adiabaticNHat adiabaticTHat
+global zeta_to_impose_DKE
 
 fprintf('Evaluating residual.\n')
 
@@ -47,7 +48,6 @@ sqrtpi = sqrt(pi);
 
 % Add R_m, the part of the residual involving the radial magnetic drift.
 % Also add the inductive parallel electric field term. 
-allZeta = 1:Nzeta;
 rhs = zeros(matrixSize,1);
 for ispecies = 1:Nspecies
     Z = Zs(ispecies);
@@ -86,16 +86,16 @@ for ispecies = 1:Nspecies
             % Gradient terms:
             
             L = 0;
-            indices = sfincs_indices(ispecies, ix, L+1, ialpha, allZeta, BLOCK_F, indexVars);
-            rhs(indices) =  (4/3)*xAndSpatialPartOfRHS(ialpha,:);
+            indices = sfincs_indices(ispecies, ix, L+1, ialpha, zeta_to_impose_DKE, BLOCK_F, indexVars);
+            rhs(indices) =  (4/3)*xAndSpatialPartOfRHS(ialpha,zeta_to_impose_DKE);
             
             L = 2;
-            indices = sfincs_indices(ispecies, ix, L+1, ialpha, allZeta, BLOCK_F, indexVars);
-            rhs(indices) = (2/3)*xAndSpatialPartOfRHS(ialpha,:);
+            indices = sfincs_indices(ispecies, ix, L+1, ialpha, zeta_to_impose_DKE, BLOCK_F, indexVars);
+            rhs(indices) = (2/3)*xAndSpatialPartOfRHS(ialpha,zeta_to_impose_DKE);
             % Inductive term:
             L = 1;
-            indices = sfincs_indices(ispecies, ix, L+1, ialpha, allZeta, BLOCK_F, indexVars);
-            rhs(indices) = inductiveFactor * BHat(ialpha,:);
+            indices = sfincs_indices(ispecies, ix, L+1, ialpha, zeta_to_impose_DKE, BLOCK_F, indexVars);
+            rhs(indices) = inductiveFactor * BHat(ialpha,zeta_to_impose_DKE);
             
         end
     end

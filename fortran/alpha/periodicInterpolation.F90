@@ -40,7 +40,7 @@ subroutine periodicInterpolation(N, matrix, shift, stencil)
   indexBelow = floor(N*shift2/(2*pi)) + 1
   ! Only used if stencil is odd. Note that 1 <= nearestIndex <= N+1.
   nearestIndex = nint(N*shift2/(2*pi)) + 1
-  print *,"shift2=",shift2,", nearestIndex=",nearestIndex
+  !print *,"shift2=",shift2,", nearestIndex=",nearestIndex
 
   allocate(pattern(N))
   pattern=0

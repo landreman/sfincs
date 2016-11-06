@@ -2,7 +2,7 @@ function sfincs_compareMatricesAndVectorsToFortran(directory)
 
 global Jacobian preconditionerMatrix initialResidual stateVector
 
-addpath('~/petsc-3.6.3/share/petsc/matlab')
+%addpath('~/petsc-3.6.3/share/petsc/matlab')
 
 % Check how many Jacobian matrices were saved:
 for i=0:100
@@ -33,7 +33,10 @@ end
 last_stateVector_found = i-1;
 if i==0
     fprintf('No sfincsBinary_iteration_000_stateVector file found.\n')
-    return
+    %return
+    stateVectorFound = false;
+else
+    stateVectorFound = true;
 end
 fprintf('Iteration for last state vector found: %d\n',last_stateVector_found)
 
@@ -54,11 +57,12 @@ filename = last_whichmatrix_1_filename;
 fprintf('Attempting to read %s\n',filename)
 Jacobian_fortran = PetscBinaryRead(filename);
 
-%filename = fullfile(directory,'sfincsBinary_iteration_000_stateVector');
-filename = last_stateVector_filename;
-fprintf('Attempting to read %s\n',filename)
-stateVector_fortran = PetscBinaryRead(filename);
-
+if stateVectorFound
+    %filename = fullfile(directory,'sfincsBinary_iteration_000_stateVector');
+    filename = last_stateVector_filename;
+    fprintf('Attempting to read %s\n',filename)
+    stateVector_fortran = PetscBinaryRead(filename);
+end
 
 figure(4)
 clf
@@ -76,16 +80,18 @@ subplot(numRows,numCols,3)
 plot(initialResidual - residual_fortran,'.-m')
 title('Differences in initial residual vector')
 
-subplot(numRows,numCols,2)
-plot(stateVector,'.-','DisplayName','matlab')
-hold on
-plot(stateVector_fortran,'x:r','DisplayName','fortran')
-legend show
-title('Final stateVector')
-
-subplot(numRows,numCols,4)
-plot(stateVector - stateVector_fortran,'.-m')
-title('Differences in final stateVector')
+if stateVectorFound
+    subplot(numRows,numCols,2)
+    plot(stateVector,'.-','DisplayName','matlab')
+    hold on
+    plot(stateVector_fortran,'x:r','DisplayName','fortran')
+    legend show
+    title('Final stateVector')
+    
+    subplot(numRows,numCols,4)
+    plot(stateVector - stateVector_fortran,'.-m')
+    title('Differences in final stateVector')
+end
 
 figure(5)
 clf
