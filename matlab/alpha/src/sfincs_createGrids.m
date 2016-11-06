@@ -1,12 +1,12 @@
 function sfincs_createGrids()
 
-global Ntheta Nzeta Nx Nxi NL NxPotentialsPerVth xMax solverTolerance xGrid_k
+global Nalpha Nzeta Nx Nxi NL NxPotentialsPerVth xMax solverTolerance xGrid_k
 global constraintScheme collisionOperator NPeriods pointAtX0
-global thetaDerivativeScheme zetaDerivativeScheme forceOddNthetaAndNzeta
-global theta ddtheta thetaWeights ddtheta_preconditioner preconditioner_theta
+global alphaDerivativeScheme zetaDerivativeScheme forceOddNalphaAndNzeta
+global alpha ddalpha alphaWeights ddalpha_preconditioner preconditioner_alpha
 global zeta ddzeta zetaWeights ddzeta_preconditioner preconditioner_zeta
 global x xWeights ddx d2dx2 ddx_preconditioner xGridScheme xPotentialsGridScheme
-global theta2D zeta2D RHSMode preconditioner_x xMaxPotentials
+global alpha2D zeta2D RHSMode preconditioner_x xMaxPotentials
 global xInterpolationScheme xPotentialsInterpolationScheme NxPotentials
 global xPotentials ddxPotentials d2dx2Potentials interpolateXToXPotentials
 global indexVars Nspecies includePhi1 transportMatrix
@@ -24,9 +24,9 @@ if constraintScheme < 0
     end
 end 
     
-if forceOddNthetaAndNzeta
-    if mod(Ntheta,2)==0
-        Ntheta=Ntheta+1;
+if forceOddNalphaAndNzeta
+    if mod(Nalpha,2)==0
+        Nalpha=Nalpha+1;
     end
     if mod(Nzeta,2)==0
         Nzeta=Nzeta+1;
@@ -34,7 +34,7 @@ if forceOddNthetaAndNzeta
 end
 
 indexVars = struct();
-indexVars.Ntheta = Ntheta;
+indexVars.Nalpha = Nalpha;
 indexVars.Nzeta = Nzeta;
 indexVars.Nspecies = Nspecies;
 indexVars.Nx = Nx;
@@ -54,7 +54,7 @@ elseif RHSMode==3
 end
 
 fprintf('---- Numerical parameters: ----\n')
-fprintf('            Ntheta = %d\n',Ntheta)
+fprintf('            Nalpha = %d\n',Nalpha)
 fprintf('             Nzeta = %d\n',Nzeta)
 fprintf('               Nxi = %d\n',Nxi)
 fprintf('                NL = %d\n',NL)
@@ -68,10 +68,10 @@ fprintf('   solverTolerance = %d\n',solverTolerance)
 sfincs_computeMatrixSize()
 
 % *************************************************************************
-% Generate abscissae, quadrature weights, and derivative matrix for theta grid.
+% Generate abscissae, quadrature weights, and derivative matrix for alpha grid.
 % *************************************************************************
 
-switch thetaDerivativeScheme
+switch alphaDerivativeScheme
     case 0
         % Spectral uniform
         scheme = 20;
@@ -82,21 +82,21 @@ switch thetaDerivativeScheme
         % Uniform periodic finite differences with 5-point stencil
         scheme = 10;
     otherwise
-        error('Error! Invalid thetaDerivativeScheme')
+        error('Error! Invalid alphaDerivativeScheme')
 end
-[theta, thetaWeights, ddtheta, ~] = sfincs_uniformDiffMatrices(Ntheta, 0, 2*pi, scheme);
+[alpha, alphaWeights, ddalpha, ~] = sfincs_uniformDiffMatrices(Nalpha, 0, 2*pi, scheme);
 
-switch preconditioner_theta
+switch preconditioner_alpha
     case 0
-        ddtheta_preconditioner = ddtheta;
+        ddalpha_preconditioner = ddalpha;
     case 1
         % Uniform periodic finite differences with 3-point stencil
         scheme = 0;
-        [~, ~, ddtheta_preconditioner, ~] = sfincs_uniformDiffMatrices(Ntheta, 0, 2*pi, scheme);
+        [~, ~, ddalpha_preconditioner, ~] = sfincs_uniformDiffMatrices(Nalpha, 0, 2*pi, scheme);
     case 2
-        ddtheta_preconditioner = zeros(size(ddtheta));
+        ddalpha_preconditioner = zeros(size(ddalpha));
     case 3
-        ddtheta_preconditioner = eye(Ntheta);
+        ddalpha_preconditioner = eye(Nalpha);
 end
     
 
@@ -113,9 +113,6 @@ if Nzeta==1
     ddzeta_preconditioner=0;
 else
     switch zetaDerivativeScheme
-        case 0
-            % Spectral uniform
-            scheme = 20;
         case 1
             % Uniform periodic finite differences with 3-point stencil
             scheme = 0;
@@ -288,7 +285,7 @@ end
 % Also compute a few quantities related to the magnetic field
 % *************************************************************************
 
-[zeta2D, theta2D] = meshgrid(zeta,theta);
+[zeta2D, alpha2D] = meshgrid(zeta,alpha);
 
 sfincs_computeBHat()
 sfincs_computeBIntegrals()
