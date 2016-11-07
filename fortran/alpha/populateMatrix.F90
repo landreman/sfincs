@@ -41,7 +41,7 @@
     integer :: rowIndex2, L2 !!Added by AM 2016-03
     integer :: ell, iSpeciesA, iSpeciesB, maxL
     integer, dimension(:), allocatable :: rowIndices, colIndices
-    PetscScalar, dimension(:,:), allocatable :: ddxToUse, d2dx2ToUse, zetaPartOfTerm
+    PetscScalar, dimension(:,:), allocatable :: ddxToUse, d2dx2ToUse, zetaPartOfTerm, alphaPartOfTerm
     PetscScalar, dimension(:,:), allocatable :: fToFInterpolationMatrix
     PetscScalar, dimension(:,:), allocatable :: potentialsToFInterpolationMatrix
     PetscScalar, dimension(:,:,:,:), allocatable :: CECD
@@ -228,7 +228,6 @@
     ! ************************************************************
     ! ************************************************************
 
-    !if (.false.) then
     if (whichMatrix .ne. 2) then
        if (whichMatrix==0) then
           stencil = preconditioner_alpha_interpolation_stencil
@@ -352,135 +351,108 @@
           deallocate(zetaPartOfTerm)
        end if
 
-!!$       ! *********************************************************
-!!$       ! Add the ExB d/dalpha term:
-!!$       ! *********************************************************
-!!$
-!!$       if (whichMatrix .ne. 2) then
-!!$          factor = gamma*Delta/two*dPhiHatdpsiHat
-!!$          allocate(thetaPartOfTerm(Nalpha,Nalpha))
-!!$          allocate(localThetaPartOfTerm(Nalpha,localNalpha))
-!!$          allocate(rowIndices(localNalpha))
-!!$          allocate(colIndices(Nalpha))
-!!$          do L=0,(Nxi-1)
-!!$
-!!$             if (ExBDerivativeSchemeTheta==0) then
-!!$                if (whichMatrix>0 .or. L < preconditioner_theta_min_L) then
-!!$                   ddalphaToUse = ddalpha
-!!$                else
-!!$                   ddalphaToUse = ddalpha_preconditioner
-!!$                end if
-!!$             else
-!!$                ! Assume DHat has the same sign everywhere. (Should be true even for VMEC coordinates.)
-!!$                ! Assume BHat_sub_zeta has the same sign everywhere. (True for Boozer but in principle could be violated for VMEC coordinates?)
-!!$                if (factor*DHat(1,1)*BHat_sub_zeta(1,1) > 0) then
-!!$                   ddalphaToUse = ddalpha_ExB_plus
-!!$                else
-!!$                   ddalphaToUse = ddalpha_ExB_minus
-!!$                end if
-!!$             end if
-!!$
-!!$             do izeta=izetaMinDKE,izetaMaxDKE
-!!$                if (useDKESExBDrift) then
-!!$                   do ialpha=1,Nalpha
-!!$                      thetaPartOfTerm(ialpha,:) = ddalphaToUse(ialpha,:) / FSABHat2 &
-!!$                           * DHat(ialpha,izeta) * BHat_sub_zeta(ialpha,izeta)
-!!$                   end do
-!!$                else
-!!$                   do ialpha=1,Nalpha
-!!$                      thetaPartOfTerm(ialpha,:) = ddalphaToUse(ialpha,:) / (BHat(ialpha,izeta) ** 2) &
-!!$                           * DHat(ialpha,izeta) * BHat_sub_zeta(ialpha,izeta)
-!!$                   end do
-!!$                end if
-!!$                
-!!$                ! PETSc uses the opposite convention to Fortran:
-!!$                thetaPartOfTerm = transpose(thetaPartOfTerm*factor)
-!!$                localThetaPartOfTerm = thetaPartOfTerm(:,ialphaMin:ialphaMax)
-!!$                
-!!$                !do ix=ixMin,Nx
-!!$                do ix=max(ixMin,min_x_for_L(L)),Nx
-!!$                   do ialpha=1,localNalpha
-!!$                      rowIndices(ialpha)=getIndex(ispecies,ix,L+1,ialpha+ialphaMin-1,izeta,BLOCK_F)
-!!$                   end do
-!!$                   do ialpha=1,Nalpha
-!!$                      colIndices(ialpha)=getIndex(ispecies,ix,L+1,ialpha,izeta,BLOCK_F)
-!!$                   end do
-!!$                   
-!!$                   call MatSetValuesSparse(matrix, localNalpha, rowIndices, Nalpha, colIndices, &
-!!$                        localThetaPartOfTerm, ADD_VALUES, ierr)
-!!$                end do
-!!$             end do
-!!$          end do
-!!$          deallocate(rowIndices)
-!!$          deallocate(colIndices)
-!!$          deallocate(thetaPartOfTerm)
-!!$          deallocate(localThetaPartOfTerm)
-!!$       end if
-!!$
-!!$       ! *********************************************************
-!!$       ! Add the ExB d/dzeta term:
-!!$       ! *********************************************************
-!!$
-!!$       if (whichMatrix .ne. 2) then
-!!$          factor = -gamma*Delta/two*dPhiHatdpsiHat
-!!$          allocate(zetaPartOfTerm(Nzeta,Nzeta))
-!!$          allocate(localZetaPartOfTerm(Nzeta,localNzeta))
-!!$          allocate(rowIndices(localNzeta))
-!!$          allocate(colIndices(Nzeta))
-!!$          do L=0,(Nxi-1)
-!!$
-!!$             if (ExBDerivativeSchemeZeta==0) then
-!!$                if (whichMatrix>0 .or. L < preconditioner_zeta_min_L) then
-!!$                   ddzetaToUse = ddzeta
-!!$                else
-!!$                   ddzetaToUse = ddzeta_preconditioner
-!!$                end if
-!!$             else
-!!$                ! Assume DHat has the same sign everywhere. (Should be true even for VMEC coordinates.)
-!!$                ! Assume BHat_sub_theta has the same sign everywhere. (True for Boozer but could be violated for VMEC coordinates?)
-!!$                if (factor*DHat(1,1)*BHat_sub_theta(1,1) > 0) then
-!!$                   ddzetaToUse = ddzeta_ExB_plus
-!!$                else
-!!$                   ddzetaToUse = ddzeta_ExB_minus
-!!$                end if
-!!$             end if
-!!$
-!!$             do ialpha=ialphaMin, ialphaMax
-!!$                if (useDKESExBDrift) then
-!!$                   do izeta=1,Nzeta
-!!$                      zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / FSABHat2 &
-!!$                           * DHat(ialpha,izeta) * BHat_sub_theta(ialpha,izeta)
-!!$                   end do
-!!$                else
-!!$                   do izeta=1,Nzeta
-!!$                      zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / (BHat(ialpha,izeta) ** 2) &
-!!$                           * DHat(ialpha,izeta) * BHat_sub_theta(ialpha,izeta)
-!!$                   end do
-!!$                end if
-!!$                
-!!$                ! PETSc uses the opposite convention to Fortran:
-!!$                zetaPartOfTerm = transpose(zetaPartOfTerm*factor)
-!!$                localzetaPartOfTerm = zetaPartOfTerm(:,izetaMin:izetaMax)
-!!$                
-!!$                !do ix=ixMin,Nx
-!!$                do ix=max(ixMin,min_x_for_L(L)),Nx
-!!$                   do izeta=1,localNzeta
-!!$                      rowIndices(izeta)=getIndex(ispecies,ix,L+1,ialpha,izeta+izetaMin-1,BLOCK_F)
-!!$                   end do
-!!$                   do izeta=1,Nzeta
-!!$                      colIndices(izeta)=getIndex(ispecies,ix,L+1,ialpha,izeta,BLOCK_F)
-!!$                   end do
-!!$                   
-!!$                   call MatSetValuesSparse(matrix, localNzeta, rowIndices, Nzeta, colIndices, &
-!!$                        localZetaPartOfTerm, ADD_VALUES, ierr)
-!!$                end do
-!!$             end do
-!!$          end do
-!!$          deallocate(rowIndices)
-!!$          deallocate(colIndices)
-!!$          deallocate(zetaPartOfTerm)
-!!$          deallocate(localZetaPartOfTerm)
-!!$       end if
+       ! *********************************************************
+       ! Add the ExB d/dalpha term:
+       ! *********************************************************
+
+       if (whichMatrix .ne. 2) then
+          factor = gamma*Delta/two*dPhiHatdpsiHat
+          allocate(alphaPartOfTerm(Nalpha,Nalpha))
+          do L=0,(Nxi-1)
+
+             if (ExBDerivativeSchemeAlpha==0) then
+                if (whichMatrix>0 .or. L < preconditioner_alpha_min_L) then
+                   ddalphaToUse = ddalpha
+                else
+                   ddalphaToUse = ddalpha_preconditioner
+                end if
+             else
+                if (factor > 0) then
+                   ddalphaToUse = ddalpha_ExB_plus
+                else
+                   ddalphaToUse = ddalpha_ExB_minus
+                end if
+             end if
+
+             do izeta=izetaMinDKE,izetaMaxDKE
+                if (useDKESExBDrift) then
+                   do ialpha=1,Nalpha
+                      alphaPartOfTerm(ialpha,:) = ddalphaToUse(ialpha,:) / FSABHat2 &
+                           * BHat(ialpha,izeta) * BHat(ialpha,izeta)
+                   end do
+                else
+                   alphaPartOfTerm = ddalphaToUse
+                end if
+                                
+                !do ix=ixMin,Nx
+                do ix=max(ixMin,min_x_for_L(L)),Nx
+                   do ialphaRow = ialphaMin,ialphaMax
+                      rowIndex = getIndex(ispecies,ix,L+1,ialphaRow,izeta,BLOCK_F)
+                      do ialphaCol = 1,Nalpha
+                         colIndex = getIndex(ispecies,ix,L+1,ialphaCol,izeta,BLOCK_F)
+                         call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                              factor*alphaPartOfTerm(ialphaRow,ialphaCol), ADD_VALUES, ierr)
+                      end do
+                   end do
+                end do
+             end do
+          end do
+          deallocate(alphaPartOfTerm)
+       end if
+
+       ! *********************************************************
+       ! Add the ExB d/dzeta term:
+       ! *********************************************************
+
+       if (whichMatrix .ne. 2) then
+          factor = -gamma*Delta/two*dPhiHatdpsiHat
+          allocate(zetaPartOfTerm(Nzeta,Nzeta))
+          do L=0,(Nxi-1)
+
+             if (ExBDerivativeSchemeZeta==0) then
+                if (whichMatrix>0 .or. L < preconditioner_zeta_min_L) then
+                   ddzetaToUse = ddzeta
+                else
+                   ddzetaToUse = ddzeta_preconditioner
+                end if
+             else
+                ! Assume DHat has the same sign everywhere. (Should be true even for VMEC coordinates.)
+                ! Assume BHat_sub_theta has the same sign everywhere. (True for Boozer but could be violated for VMEC coordinates?)
+                if (factor*DHat(1,1)*BHat_sub_theta(1,1) > 0) then
+                   ddzetaToUse = ddzeta_ExB_plus
+                else
+                   ddzetaToUse = ddzeta_ExB_minus
+                end if
+             end if
+
+             do ialpha=ialphaMin, ialphaMax
+                if (useDKESExBDrift) then
+                   do izeta=1,Nzeta
+                      zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / FSABHat2 &
+                           * DHat(ialpha,izeta) * BHat_sub_theta(ialpha,izeta)
+                   end do
+                else
+                   do izeta=1,Nzeta
+                      zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / (BHat(ialpha,izeta) ** 2) &
+                           * DHat(ialpha,izeta) * BHat_sub_theta(ialpha,izeta)
+                   end do
+                end if
+                
+                !do ix=ixMin,Nx
+                do ix=max(ixMin,min_x_for_L(L)),Nx
+                   do izetaRow = izetaMinDKE,izetaMaxDKE
+                      rowIndex = getIndex(ispecies,ix,L+1,ialpha,izetaRow,BLOCK_F)
+                      do izetaCol = 1,Nzeta
+                         colIndex = getIndex(ispecies,ix,L+1,ialpha,izetaCol,BLOCK_F)
+                         call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                              factor*zetaPartOfTerm(izetaRow,izetaCol), ADD_VALUES, ierr)
+                      end do
+                   end do
+                end do
+             end do
+          end do
+          deallocate(zetaPartOfTerm)
+       end if
 
 !!$       ! *********************************************************
 !!$       ! Add the magnetic drift d/dtheta term:
@@ -521,7 +493,7 @@
 !!$                   end if
 !!$
 !!$                   if (magneticDriftDerivativeScheme==0) then
-!!$                      if (whichMatrix>0 .or. L < preconditioner_theta_min_L) then
+!!$                      if (whichMatrix>0 .or. L < preconditioner_alpha_min_L) then
 !!$                         ddalphaToUse = ddalpha
 !!$                      else
 !!$                         ddalphaToUse = ddalpha_preconditioner

@@ -1165,70 +1165,53 @@ contains
              end if
              if (include_mn) then
                 do ialpha = 1,Nalpha
-                   BHatL(ialpha,:) = BHatL(ialpha,:) + BHarmonics_amplitudesL(i) * &
-                        cos(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   theta = alpha(ialpha) + iota*zeta
+                   angle = BHarmonics_lL(i) * theta - NPeriods * BHarmonics_nL(i) * zeta
+                   sinangle = sin(angle)
+                   cosangle = cos(angle)
 
-                   dBHatdthetaL(ialpha,:) = dBHatdthetaL(ialpha,:) - BHarmonics_amplitudesL(i) * BHarmonics_lL(i) * &
-                        sin(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   BHatL(ialpha,:) = BHatL(ialpha,:) + BHarmonics_amplitudesL(i) * cosangle
 
-                   dBHatdzetaL(ialpha,:) = dBHatdzetaL(ialpha,:) + BHarmonics_amplitudesL(i) * Nperiods * BHarmonics_nL(i) * &
-                        sin(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   dBHatdthetaL(ialpha,:) = dBHatdthetaL(ialpha,:) - BHarmonics_amplitudesL(i) * BHarmonics_lL(i) * sinangle
+
+                   dBHatdzetaL(ialpha,:) = dBHatdzetaL(ialpha,:) + BHarmonics_amplitudesL(i) * Nperiods * BHarmonics_nL(i) * sinangle
 
                    !The following are only there to calculate Sugama's magnetic drift
-                   RHatL(ialpha,:) = RHatL(ialpha,:) + RHarmonics_L(i) * &
-                        cos(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   RHatL(ialpha,:) = RHatL(ialpha,:) + RHarmonics_L(i) * cosangle
 
-                   dRHatdthetaL(ialpha,:) = dRHatdthetaL(ialpha,:) - RHarmonics_L(i) * BHarmonics_lL(i) * &
-                        sin(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   dRHatdthetaL(ialpha,:) = dRHatdthetaL(ialpha,:) - RHarmonics_L(i) * BHarmonics_lL(i) * sinangle
 
-                   dRHatdzetaL(ialpha,:) = dRHatdzetaL(ialpha,:) + RHarmonics_L(i) * Nperiods * BHarmonics_nL(i) * &
-                        sin(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   dRHatdzetaL(ialpha,:) = dRHatdzetaL(ialpha,:) + RHarmonics_L(i) * Nperiods * BHarmonics_nL(i) * sinangle
 
-                   d2RHatdtheta2L(ialpha,:) = d2RHatdtheta2L(ialpha,:) - RHarmonics_L(i) * BHarmonics_lL(i)**2 * &
-                        cos(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   d2RHatdtheta2L(ialpha,:) = d2RHatdtheta2L(ialpha,:) - RHarmonics_L(i) * BHarmonics_lL(i)**2 * cosangle
 
-                   d2RHatdzeta2L(ialpha,:) = d2RHatdzeta2L(ialpha,:) - RHarmonics_L(i) * (Nperiods * BHarmonics_nL(i))**2 * &
-                        cos(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   d2RHatdzeta2L(ialpha,:) = d2RHatdzeta2L(ialpha,:) - RHarmonics_L(i) * (Nperiods * BHarmonics_nL(i))**2 * cosangle
 
-                   d2RHatdthetadzetaL(ialpha,:) = d2RHatdthetadzetaL(ialpha,:) + RHarmonics_L(i) * BHarmonics_lL(i)*Nperiods*BHarmonics_nL(i) * &
-                        cos(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   d2RHatdthetadzetaL(ialpha,:) = d2RHatdthetadzetaL(ialpha,:) + RHarmonics_L(i) * BHarmonics_lL(i)*Nperiods*BHarmonics_nL(i) * cosangle
 
-                   ZHatL(ialpha,:) = ZHatL(ialpha,:) + ZHarmonics_L(i) * &
-                        sin(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   ZHatL(ialpha,:) = ZHatL(ialpha,:) + ZHarmonics_L(i) * sinangle
 
-                   dZHatdthetaL(ialpha,:) = dZHatdthetaL(ialpha,:) + ZHarmonics_L(i) * BHarmonics_lL(i) * &
-                        cos(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   dZHatdthetaL(ialpha,:) = dZHatdthetaL(ialpha,:) + ZHarmonics_L(i) * BHarmonics_lL(i) * cosangle
 
-                   dZHatdzetaL(ialpha,:) = dZHatdzetaL(ialpha,:) - ZHarmonics_L(i) * Nperiods * BHarmonics_nL(i) * &
-                        cos(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   dZHatdzetaL(ialpha,:) = dZHatdzetaL(ialpha,:) - ZHarmonics_L(i) * Nperiods * BHarmonics_nL(i) * cosangle
 
-                   d2ZHatdtheta2L(ialpha,:) = d2ZHatdtheta2L(ialpha,:) - ZHarmonics_L(i) * BHarmonics_lL(i)**2 * &
-                        sin(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   d2ZHatdtheta2L(ialpha,:) = d2ZHatdtheta2L(ialpha,:) - ZHarmonics_L(i) * BHarmonics_lL(i)**2 * sinangle
 
-                   d2ZHatdzeta2L(ialpha,:) = d2ZHatdzeta2L(ialpha,:) - ZHarmonics_L(i) * (Nperiods * BHarmonics_nL(i))**2 * &
-                        sin(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   d2ZHatdzeta2L(ialpha,:) = d2ZHatdzeta2L(ialpha,:) - ZHarmonics_L(i) * (Nperiods * BHarmonics_nL(i))**2 * sinangle
 
-                   d2ZHatdthetadzetaL(ialpha,:) = d2ZHatdthetadzetaL(ialpha,:) + ZHarmonics_L(i) * BHarmonics_lL(i)*Nperiods*BHarmonics_nL(i) * &
-                        sin(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   d2ZHatdthetadzetaL(ialpha,:) = d2ZHatdthetadzetaL(ialpha,:) + ZHarmonics_L(i) * BHarmonics_lL(i)*Nperiods*BHarmonics_nL(i) * sinangle
 
-                   DzL(ialpha,:) = DzL(ialpha,:) + DzHarmonics_L(i) * &
-                        sin(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   DzL(ialpha,:) = DzL(ialpha,:) + DzHarmonics_L(i) * sinangle
 
-                   dDzdthetaL(ialpha,:) = dDzdthetaL(ialpha,:) + DzHarmonics_L(i) * BHarmonics_lL(i) * &
-                        cos(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   dDzdthetaL(ialpha,:) = dDzdthetaL(ialpha,:) + DzHarmonics_L(i) * BHarmonics_lL(i) * cosangle
 
-                   dDzdzetaL(ialpha,:) = dDzdzetaL(ialpha,:) - DzHarmonics_L(i) * Nperiods * BHarmonics_nL(i) * &
-                        cos(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   dDzdzetaL(ialpha,:) = dDzdzetaL(ialpha,:) - DzHarmonics_L(i) * Nperiods * BHarmonics_nL(i) * cosangle
 
-                   d2Dzdtheta2L(ialpha,:) = d2Dzdtheta2L(ialpha,:) - DzHarmonics_L(i) * BHarmonics_lL(i)**2 * &
-                        sin(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   d2Dzdtheta2L(ialpha,:) = d2Dzdtheta2L(ialpha,:) - DzHarmonics_L(i) * BHarmonics_lL(i)**2 * sinangle
 
-                   d2Dzdzeta2L(ialpha,:) = d2Dzdzeta2L(ialpha,:) - DzHarmonics_L(i) * (Nperiods * BHarmonics_nL(i))**2 * &
-                        sin(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   d2Dzdzeta2L(ialpha,:) = d2Dzdzeta2L(ialpha,:) - DzHarmonics_L(i) * (Nperiods * BHarmonics_nL(i))**2 * sinangle
 
-                   d2DzdthetadzetaL(ialpha,:) = d2DzdthetadzetaL(ialpha,:) + DzHarmonics_L(i) * BHarmonics_lL(i)*Nperiods*BHarmonics_nL(i) * &
-                        sin(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
-
+                   d2DzdthetadzetaL(ialpha,:) = d2DzdthetadzetaL(ialpha,:) + DzHarmonics_L(i) * BHarmonics_lL(i)*Nperiods*BHarmonics_nL(i) * sinangle
 
                 end do
              end if
@@ -1247,70 +1230,53 @@ contains
              end if
              if (include_mn) then
                 do ialpha = 1,Nalpha
-                   BHatL(ialpha,:) = BHatL(ialpha,:) + BHarmonics_amplitudesL(i) * &
-                        sin(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   theta = alpha(ialpha) + iota*zeta
+                   angle = BHarmonics_lL(i) * theta - NPeriods * BHarmonics_nL(i) * zeta
+                   sinangle = sin(angle)
+                   cosangle = cos(angle)
 
-                   dBHatdthetaL(ialpha,:) = dBHatdthetaL(ialpha,:) + BHarmonics_amplitudesL(i) * BHarmonics_lL(i) * &
-                        cos(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   BHatL(ialpha,:) = BHatL(ialpha,:) + BHarmonics_amplitudesL(i) * sinangle
 
-                   dBHatdzetaL(ialpha,:) = dBHatdzetaL(ialpha,:) - BHarmonics_amplitudesL(i) * Nperiods * BHarmonics_nL(i) * &
-                        cos(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   dBHatdthetaL(ialpha,:) = dBHatdthetaL(ialpha,:) + BHarmonics_amplitudesL(i) * BHarmonics_lL(i) * cosangle
+
+                   dBHatdzetaL(ialpha,:) = dBHatdzetaL(ialpha,:) - BHarmonics_amplitudesL(i) * Nperiods * BHarmonics_nL(i) * cosangle
                    
                    !The following are only there to calculate Sugama's magnetic drift
-                   RHatL(ialpha,:) = RHatL(ialpha,:) + RHarmonics_L(i) * &
-                        sin(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   RHatL(ialpha,:) = RHatL(ialpha,:) + RHarmonics_L(i) * sinangle
 
-                   dRHatdthetaL(ialpha,:) = dRHatdthetaL(ialpha,:) + RHarmonics_L(i) * BHarmonics_lL(i) * &
-                        cos(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   dRHatdthetaL(ialpha,:) = dRHatdthetaL(ialpha,:) + RHarmonics_L(i) * BHarmonics_lL(i) * cosangle
 
-                   dRHatdzetaL(ialpha,:) = dRHatdzetaL(ialpha,:) - RHarmonics_L(i) * Nperiods * BHarmonics_nL(i) * &
-                        cos(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   dRHatdzetaL(ialpha,:) = dRHatdzetaL(ialpha,:) - RHarmonics_L(i) * Nperiods * BHarmonics_nL(i) * cosangle
 
-                   d2RHatdtheta2L(ialpha,:) = d2RHatdtheta2L(ialpha,:) - RHarmonics_L(i) * BHarmonics_lL(i)**2 * &
-                        sin(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   d2RHatdtheta2L(ialpha,:) = d2RHatdtheta2L(ialpha,:) - RHarmonics_L(i) * BHarmonics_lL(i)**2 * sinangle
 
-                   d2RHatdzeta2L(ialpha,:) = d2RHatdzeta2L(ialpha,:) - RHarmonics_L(i) * (Nperiods * BHarmonics_nL(i))**2 * &
-                        sin(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   d2RHatdzeta2L(ialpha,:) = d2RHatdzeta2L(ialpha,:) - RHarmonics_L(i) * (Nperiods * BHarmonics_nL(i))**2 * sinangle
 
-                   d2RHatdthetadzetaL(ialpha,:) = d2RHatdthetadzetaL(ialpha,:) + RHarmonics_L(i) * BHarmonics_lL(i)*Nperiods*BHarmonics_nL(i) * &
-                        sin(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   d2RHatdthetadzetaL(ialpha,:) = d2RHatdthetadzetaL(ialpha,:) + RHarmonics_L(i) * BHarmonics_lL(i)*Nperiods*BHarmonics_nL(i) * sinangle
 
-                   ZHatL(ialpha,:) = ZHatL(ialpha,:) + ZHarmonics_L(i) * &
-                        cos(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   ZHatL(ialpha,:) = ZHatL(ialpha,:) + ZHarmonics_L(i) * cosangle
 
-                   dZHatdthetaL(ialpha,:) = dZHatdthetaL(ialpha,:) - ZHarmonics_L(i) * BHarmonics_lL(i) * &
-                        sin(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   dZHatdthetaL(ialpha,:) = dZHatdthetaL(ialpha,:) - ZHarmonics_L(i) * BHarmonics_lL(i) * sinangle
 
-                   dZHatdzetaL(ialpha,:) = dZHatdzetaL(ialpha,:) + ZHarmonics_L(i) * Nperiods * BHarmonics_nL(i) * &
-                        sin(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   dZHatdzetaL(ialpha,:) = dZHatdzetaL(ialpha,:) + ZHarmonics_L(i) * Nperiods * BHarmonics_nL(i) * sinangle
 
-                   d2ZHatdtheta2L(ialpha,:) = d2ZHatdtheta2L(ialpha,:) - ZHarmonics_L(i) * BHarmonics_lL(i)**2 * &
-                        cos(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   d2ZHatdtheta2L(ialpha,:) = d2ZHatdtheta2L(ialpha,:) - ZHarmonics_L(i) * BHarmonics_lL(i)**2 * cosangle
 
-                   d2ZHatdzeta2L(ialpha,:) = d2ZHatdzeta2L(ialpha,:) - ZHarmonics_L(i) * (Nperiods * BHarmonics_nL(i))**2 * &
-                        cos(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   d2ZHatdzeta2L(ialpha,:) = d2ZHatdzeta2L(ialpha,:) - ZHarmonics_L(i) * (Nperiods * BHarmonics_nL(i))**2 * cosangle
 
-                   d2ZHatdthetadzetaL(ialpha,:) = d2ZHatdthetadzetaL(ialpha,:) + ZHarmonics_L(i) * BHarmonics_lL(i)*Nperiods*BHarmonics_nL(i) * &
-                        cos(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   d2ZHatdthetadzetaL(ialpha,:) = d2ZHatdthetadzetaL(ialpha,:) + ZHarmonics_L(i) * BHarmonics_lL(i)*Nperiods*BHarmonics_nL(i) * cosangle
 
-                   DzL(ialpha,:) = DzL(ialpha,:) + DzHarmonics_L(i) * &
-                        cos(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   DzL(ialpha,:) = DzL(ialpha,:) + DzHarmonics_L(i) * cosangle
 
-                   dDzdthetaL(ialpha,:) = dDzdthetaL(ialpha,:) - DzHarmonics_L(i) * BHarmonics_lL(i) * &
-                        sin(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   dDzdthetaL(ialpha,:) = dDzdthetaL(ialpha,:) - DzHarmonics_L(i) * BHarmonics_lL(i) * sinangle
 
-                   dDzdzetaL(ialpha,:) = dDzdzetaL(ialpha,:) + DzHarmonics_L(i) * Nperiods * BHarmonics_nL(i) * &
-                        sin(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   dDzdzetaL(ialpha,:) = dDzdzetaL(ialpha,:) + DzHarmonics_L(i) * Nperiods * BHarmonics_nL(i) * sinangle
 
-                   d2Dzdtheta2L(ialpha,:) = d2Dzdtheta2L(ialpha,:) - DzHarmonics_L(i) * BHarmonics_lL(i)**2 * &
-                        cos(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   d2Dzdtheta2L(ialpha,:) = d2Dzdtheta2L(ialpha,:) - DzHarmonics_L(i) * BHarmonics_lL(i)**2 * cosangle
 
-                   d2Dzdzeta2L(ialpha,:) = d2Dzdzeta2L(ialpha,:) - DzHarmonics_L(i) * (Nperiods * BHarmonics_nL(i))**2 * &
-                        cos(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
+                   d2Dzdzeta2L(ialpha,:) = d2Dzdzeta2L(ialpha,:) - DzHarmonics_L(i) * (Nperiods * BHarmonics_nL(i))**2 * cosangle
 
-                   d2DzdthetadzetaL(ialpha,:) = d2DzdthetadzetaL(ialpha,:) + DzHarmonics_L(i) * BHarmonics_lL(i)*Nperiods*BHarmonics_nL(i) * &
-                        cos(BHarmonics_lL(i) * theta(ialpha) - NPeriods * BHarmonics_nL(i) * zeta)
-
+                   d2DzdthetadzetaL(ialpha,:) = d2DzdthetadzetaL(ialpha,:) + DzHarmonics_L(i) * BHarmonics_lL(i)*Nperiods*BHarmonics_nL(i) * cosangle
 
                 end do
              end if
@@ -1375,70 +1341,53 @@ contains
              end if
              if (include_mn) then
                 do ialpha = 1,Nalpha
-                   BHatH(ialpha,:) = BHatH(ialpha,:) + BHarmonics_amplitudesH(i) * &
-                        cos(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   theta = alpha(ialpha) + iota*zeta
+                   angle = BHarmonics_lH(i) * theta - NPeriods * BHarmonics_nH(i) * zeta
+                   sinangle = sin(angle)
+                   cosangle = cos(angle)
 
-                   dBHatdthetaH(ialpha,:) = dBHatdthetaH(ialpha,:) - BHarmonics_amplitudesH(i) * BHarmonics_lH(i) * &
-                        sin(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   BHatH(ialpha,:) = BHatH(ialpha,:) + BHarmonics_amplitudesH(i) * cosangle
 
-                   dBHatdzetaH(ialpha,:) = dBHatdzetaH(ialpha,:) + BHarmonics_amplitudesH(i) * Nperiods * BHarmonics_nH(i) * &
-                        sin(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   dBHatdthetaH(ialpha,:) = dBHatdthetaH(ialpha,:) - BHarmonics_amplitudesH(i) * BHarmonics_lH(i) * sinangle
+
+                   dBHatdzetaH(ialpha,:) = dBHatdzetaH(ialpha,:) + BHarmonics_amplitudesH(i) * Nperiods * BHarmonics_nH(i) * sinangle
 
                    !The following are only there to calculate Sugama's magnetic drift
-                   RHatH(ialpha,:) = RHatH(ialpha,:) + RHarmonics_H(i) * &
-                        cos(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   RHatH(ialpha,:) = RHatH(ialpha,:) + RHarmonics_H(i) * cosangle
 
-                   dRHatdthetaH(ialpha,:) = dRHatdthetaH(ialpha,:) - RHarmonics_H(i) * BHarmonics_lH(i) * &
-                        sin(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   dRHatdthetaH(ialpha,:) = dRHatdthetaH(ialpha,:) - RHarmonics_H(i) * BHarmonics_lH(i) * sinangle
 
-                   dRHatdzetaH(ialpha,:) = dRHatdzetaH(ialpha,:) + RHarmonics_H(i) * Nperiods * BHarmonics_nH(i) * &
-                        sin(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   dRHatdzetaH(ialpha,:) = dRHatdzetaH(ialpha,:) + RHarmonics_H(i) * Nperiods * BHarmonics_nH(i) * sinangle
 
-                   d2RHatdtheta2H(ialpha,:) = d2RHatdtheta2H(ialpha,:) - RHarmonics_H(i) * BHarmonics_lH(i)**2 * &
-                        cos(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   d2RHatdtheta2H(ialpha,:) = d2RHatdtheta2H(ialpha,:) - RHarmonics_H(i) * BHarmonics_lH(i)**2 * cosangle
 
-                   d2RHatdzeta2H(ialpha,:) = d2RHatdzeta2H(ialpha,:) - RHarmonics_H(i) * (Nperiods * BHarmonics_nH(i))**2 * &
-                        cos(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   d2RHatdzeta2H(ialpha,:) = d2RHatdzeta2H(ialpha,:) - RHarmonics_H(i) * (Nperiods * BHarmonics_nH(i))**2 * cosangle
 
-                   d2RHatdthetadzetaH(ialpha,:) = d2RHatdthetadzetaH(ialpha,:) + RHarmonics_H(i) * BHarmonics_lH(i)*Nperiods*BHarmonics_nH(i) * &
-                        cos(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   d2RHatdthetadzetaH(ialpha,:) = d2RHatdthetadzetaH(ialpha,:) + RHarmonics_H(i) * BHarmonics_lH(i)*Nperiods*BHarmonics_nH(i) * cosangle
 
-                   ZHatH(ialpha,:) = ZHatH(ialpha,:) + ZHarmonics_H(i) * &
-                        sin(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   ZHatH(ialpha,:) = ZHatH(ialpha,:) + ZHarmonics_H(i) * sinangle
 
-                   dZHatdthetaH(ialpha,:) = dZHatdthetaH(ialpha,:) + ZHarmonics_H(i) * BHarmonics_lH(i) * &
-                        cos(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   dZHatdthetaH(ialpha,:) = dZHatdthetaH(ialpha,:) + ZHarmonics_H(i) * BHarmonics_lH(i) * cosangle
 
-                   dZHatdzetaH(ialpha,:) = dZHatdzetaH(ialpha,:) - ZHarmonics_H(i) * Nperiods * BHarmonics_nH(i) * &
-                        cos(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   dZHatdzetaH(ialpha,:) = dZHatdzetaH(ialpha,:) - ZHarmonics_H(i) * Nperiods * BHarmonics_nH(i) * cosangle
 
-                   d2ZHatdtheta2H(ialpha,:) = d2ZHatdtheta2H(ialpha,:) - ZHarmonics_H(i) * BHarmonics_lH(i)**2 * &
-                        sin(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   d2ZHatdtheta2H(ialpha,:) = d2ZHatdtheta2H(ialpha,:) - ZHarmonics_H(i) * BHarmonics_lH(i)**2 * sinangle
 
-                   d2ZHatdzeta2H(ialpha,:) = d2ZHatdzeta2H(ialpha,:) - ZHarmonics_H(i) * (Nperiods * BHarmonics_nH(i))**2 * &
-                        sin(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   d2ZHatdzeta2H(ialpha,:) = d2ZHatdzeta2H(ialpha,:) - ZHarmonics_H(i) * (Nperiods * BHarmonics_nH(i))**2 * sinangle
 
-                   d2ZHatdthetadzetaH(ialpha,:) = d2ZHatdthetadzetaH(ialpha,:) + ZHarmonics_H(i) * BHarmonics_lH(i)*Nperiods*BHarmonics_nH(i) * &
-                        sin(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   d2ZHatdthetadzetaH(ialpha,:) = d2ZHatdthetadzetaH(ialpha,:) + ZHarmonics_H(i) * BHarmonics_lH(i)*Nperiods*BHarmonics_nH(i) * sinangle
 
-                   DzH(ialpha,:) = DzH(ialpha,:) + DzHarmonics_H(i) * &
-                        sin(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   DzH(ialpha,:) = DzH(ialpha,:) + DzHarmonics_H(i) * sinangle
 
-                   dDzdthetaH(ialpha,:) = dDzdthetaH(ialpha,:) + DzHarmonics_H(i) * BHarmonics_lH(i) * &
-                        cos(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   dDzdthetaH(ialpha,:) = dDzdthetaH(ialpha,:) + DzHarmonics_H(i) * BHarmonics_lH(i) * cosangle
 
-                   dDzdzetaH(ialpha,:) = dDzdzetaH(ialpha,:) - DzHarmonics_H(i) * Nperiods * BHarmonics_nH(i) * &
-                        cos(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   dDzdzetaH(ialpha,:) = dDzdzetaH(ialpha,:) - DzHarmonics_H(i) * Nperiods * BHarmonics_nH(i) * cosangle
 
-                   d2Dzdtheta2H(ialpha,:) = d2Dzdtheta2H(ialpha,:) - DzHarmonics_H(i) * BHarmonics_lH(i)**2 * &
-                        sin(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   d2Dzdtheta2H(ialpha,:) = d2Dzdtheta2H(ialpha,:) - DzHarmonics_H(i) * BHarmonics_lH(i)**2 * sinangle
 
-                   d2Dzdzeta2H(ialpha,:) = d2Dzdzeta2H(ialpha,:) - DzHarmonics_H(i) * (Nperiods * BHarmonics_nH(i))**2 * &
-                        sin(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   d2Dzdzeta2H(ialpha,:) = d2Dzdzeta2H(ialpha,:) - DzHarmonics_H(i) * (Nperiods * BHarmonics_nH(i))**2 * sinangle
 
-                   d2DzdthetadzetaH(ialpha,:) = d2DzdthetadzetaH(ialpha,:) + DzHarmonics_H(i) * BHarmonics_lH(i)*Nperiods*BHarmonics_nH(i) * &
-                        sin(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
-
+                   d2DzdthetadzetaH(ialpha,:) = d2DzdthetadzetaH(ialpha,:) + DzHarmonics_H(i) * BHarmonics_lH(i)*Nperiods*BHarmonics_nH(i) * sinangle
 
                 end do
              end if
@@ -1457,69 +1406,53 @@ contains
              end if
              if (include_mn) then
                 do ialpha = 1,Nalpha
-                   BHatH(ialpha,:) = BHatH(ialpha,:) + BHarmonics_amplitudesH(i) * &
-                        sin(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   theta = alpha(ialpha) + iota*zeta
+                   angle = BHarmonics_lH(i) * theta - NPeriods * BHarmonics_nH(i) * zeta
+                   sinangle = sin(angle)
+                   cosangle = cos(angle)
 
-                   dBHatdthetaH(ialpha,:) = dBHatdthetaH(ialpha,:) + BHarmonics_amplitudesH(i) * BHarmonics_lH(i) * &
-                        cos(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   BHatH(ialpha,:) = BHatH(ialpha,:) + BHarmonics_amplitudesH(i) * sinangle
 
-                   dBHatdzetaH(ialpha,:) = dBHatdzetaH(ialpha,:) - BHarmonics_amplitudesH(i) * Nperiods * BHarmonics_nH(i) * &
-                        cos(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   dBHatdthetaH(ialpha,:) = dBHatdthetaH(ialpha,:) + BHarmonics_amplitudesH(i) * BHarmonics_lH(i) * cosangle
+
+                   dBHatdzetaH(ialpha,:) = dBHatdzetaH(ialpha,:) - BHarmonics_amplitudesH(i) * Nperiods * BHarmonics_nH(i) * cosangle
 
                    !The following are only there to calculate Sugama's magnetic drift
-                   RHatH(ialpha,:) = RHatH(ialpha,:) + RHarmonics_H(i) * &
-                        sin(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   RHatH(ialpha,:) = RHatH(ialpha,:) + RHarmonics_H(i) * sinangle
 
-                   dRHatdthetaH(ialpha,:) = dRHatdthetaH(ialpha,:) + RHarmonics_H(i) * BHarmonics_lH(i) * &
-                        cos(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   dRHatdthetaH(ialpha,:) = dRHatdthetaH(ialpha,:) + RHarmonics_H(i) * BHarmonics_lH(i) * cosangle
 
-                   dRHatdzetaH(ialpha,:) = dRHatdzetaH(ialpha,:) - RHarmonics_H(i) * Nperiods * BHarmonics_nH(i) * &
-                        cos(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   dRHatdzetaH(ialpha,:) = dRHatdzetaH(ialpha,:) - RHarmonics_H(i) * Nperiods * BHarmonics_nH(i) * cosangle
 
-                   d2RHatdtheta2H(ialpha,:) = d2RHatdtheta2H(ialpha,:) - RHarmonics_H(i) * BHarmonics_lH(i)**2 * &
-                        sin(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   d2RHatdtheta2H(ialpha,:) = d2RHatdtheta2H(ialpha,:) - RHarmonics_H(i) * BHarmonics_lH(i)**2 * sinangle
 
-                   d2RHatdzeta2H(ialpha,:) = d2RHatdzeta2H(ialpha,:) - RHarmonics_H(i) * (Nperiods * BHarmonics_nH(i))**2 * &
-                        sin(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   d2RHatdzeta2H(ialpha,:) = d2RHatdzeta2H(ialpha,:) - RHarmonics_H(i) * (Nperiods * BHarmonics_nH(i))**2 * sinangle
 
-                   d2RHatdthetadzetaH(ialpha,:) = d2RHatdthetadzetaH(ialpha,:) + RHarmonics_H(i) * BHarmonics_lH(i)*Nperiods*BHarmonics_nH(i) * &
-                        sin(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   d2RHatdthetadzetaH(ialpha,:) = d2RHatdthetadzetaH(ialpha,:) + RHarmonics_H(i) * BHarmonics_lH(i)*Nperiods*BHarmonics_nH(i) * sinangle
 
-                   ZHatH(ialpha,:) = ZHatH(ialpha,:) + ZHarmonics_H(i) * &
-                        cos(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   ZHatH(ialpha,:) = ZHatH(ialpha,:) + ZHarmonics_H(i) * cosangle
 
-                   dZHatdthetaH(ialpha,:) = dZHatdthetaH(ialpha,:) - ZHarmonics_H(i) * BHarmonics_lH(i) * &
-                        sin(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   dZHatdthetaH(ialpha,:) = dZHatdthetaH(ialpha,:) - ZHarmonics_H(i) * BHarmonics_lH(i) * sinangle
 
-                   dZHatdzetaH(ialpha,:) = dZHatdzetaH(ialpha,:) + ZHarmonics_H(i) * Nperiods * BHarmonics_nH(i) * &
-                        sin(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   dZHatdzetaH(ialpha,:) = dZHatdzetaH(ialpha,:) + ZHarmonics_H(i) * Nperiods * BHarmonics_nH(i) * sinangle
 
-                   d2ZHatdtheta2H(ialpha,:) = d2ZHatdtheta2H(ialpha,:) - ZHarmonics_H(i) * BHarmonics_lH(i)**2 * &
-                        cos(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   d2ZHatdtheta2H(ialpha,:) = d2ZHatdtheta2H(ialpha,:) - ZHarmonics_H(i) * BHarmonics_lH(i)**2 * cosangle
 
-                   d2ZHatdzeta2H(ialpha,:) = d2ZHatdzeta2H(ialpha,:) - ZHarmonics_H(i) * (Nperiods * BHarmonics_nH(i))**2 * &
-                        cos(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   d2ZHatdzeta2H(ialpha,:) = d2ZHatdzeta2H(ialpha,:) - ZHarmonics_H(i) * (Nperiods * BHarmonics_nH(i))**2 * cosangle
 
-                   d2ZHatdthetadzetaH(ialpha,:) = d2ZHatdthetadzetaH(ialpha,:) + ZHarmonics_H(i) * BHarmonics_lH(i)*Nperiods*BHarmonics_nH(i) * &
-                        cos(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   d2ZHatdthetadzetaH(ialpha,:) = d2ZHatdthetadzetaH(ialpha,:) + ZHarmonics_H(i) * BHarmonics_lH(i)*Nperiods*BHarmonics_nH(i) * cosangle
 
-                   DzH(ialpha,:) = DzH(ialpha,:) + DzHarmonics_H(i) * &
-                        cos(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   DzH(ialpha,:) = DzH(ialpha,:) + DzHarmonics_H(i) * cosangle
 
-                   dDzdthetaH(ialpha,:) = dDzdthetaH(ialpha,:) - DzHarmonics_H(i) * BHarmonics_lH(i) * &
-                        sin(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   dDzdthetaH(ialpha,:) = dDzdthetaH(ialpha,:) - DzHarmonics_H(i) * BHarmonics_lH(i) * sinangle
 
-                   dDzdzetaH(ialpha,:) = dDzdzetaH(ialpha,:) + DzHarmonics_H(i) * Nperiods * BHarmonics_nH(i) * &
-                        sin(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   dDzdzetaH(ialpha,:) = dDzdzetaH(ialpha,:) + DzHarmonics_H(i) * Nperiods * BHarmonics_nH(i) * sinangle
 
-                   d2Dzdtheta2H(ialpha,:) = d2Dzdtheta2H(ialpha,:) - DzHarmonics_H(i) * BHarmonics_lH(i)**2 * &
-                        cos(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   d2Dzdtheta2H(ialpha,:) = d2Dzdtheta2H(ialpha,:) - DzHarmonics_H(i) * BHarmonics_lH(i)**2 * cosangle
 
-                   d2Dzdzeta2H(ialpha,:) = d2Dzdzeta2H(ialpha,:) - DzHarmonics_H(i) * (Nperiods * BHarmonics_nH(i))**2 * &
-                        cos(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   d2Dzdzeta2H(ialpha,:) = d2Dzdzeta2H(ialpha,:) - DzHarmonics_H(i) * (Nperiods * BHarmonics_nH(i))**2 * cosangle
 
-                   d2DzdthetadzetaH(ialpha,:) = d2DzdthetadzetaH(ialpha,:) + DzHarmonics_H(i) * BHarmonics_lH(i)*Nperiods*BHarmonics_nH(i) * &
-                        cos(BHarmonics_lH(i) * theta(ialpha) - NPeriods * BHarmonics_nH(i) * zeta)
+                   d2DzdthetadzetaH(ialpha,:) = d2DzdthetadzetaH(ialpha,:) + DzHarmonics_H(i) * BHarmonics_lH(i)*Nperiods*BHarmonics_nH(i) * cosangle
 
                 end do
              end if

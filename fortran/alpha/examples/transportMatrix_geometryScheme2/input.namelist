@@ -1,0 +1,81 @@
+! Input file for SFINCS version 3.
+! See the user manual for documentation of the parameters in this file.
+!----------------------------------------------------------------------
+
+!ss scanType = 1
+
+!   Settings specific to scanType = 3:
+!ss scanVariable = collisionOperator
+!ss scanVariableMin = 0
+!ss scanVariableMax = 1
+!ss scanVariableN = 2
+!ss scanVariableScale = linear
+
+&general
+  RHSMode = 2  ! 3x3 ion transport matrix
+/
+
+&geometryParameters
+  geometryScheme = 2  ! Simplified LHD model
+/
+
+&speciesParameters
+  Zs = 1
+  mHats = 1
+  nHats = 1.0d+0
+  THats = 1.0d+0
+/
+
+&physicsParameters
+  Delta = 4.5694d-3
+  gamma = 1.0d+0
+
+  ! For THat=1, mHat=1, nHat=1,
+  ! then nu_n = nuPrime * B0OverBBar / (GHat + iota * IHat)
+  ! For LHD, then, nu_n = nuPrime * 0.2668018
+  nu_n = 0.2668018d+0
+
+  Er = 0.0d+0
+
+  collisionOperator = 0
+  includeXDotTerm = .true.
+  includeElectricFieldTermInXiDot = .true.
+  useDKESExBDrift = .false.
+  includePhi1 = .false.
+/
+
+&resolutionParameters
+  Nalpha = 15
+!ss NalphaMinFactor = 0.7
+!ss NalphaMaxFactor = 2
+!ss NalphaNumRuns = 5
+
+  Nzeta = 13
+!ss NzetaMinFactor = 0.8
+!ss NzetaMaxFactor = 2
+!ss NzetaNumRuns = 5
+
+  Nxi = 14
+!ss NxiMinFactor = 0.8
+!ss NxiMaxFactor = 2
+!ss NxiNumRuns = 6
+  
+  Nx = 8
+!ss NxMinFactor = 0.8
+!ss NxMaxFactor = 2
+!ss NxNumRuns = 3
+
+  solverTolerance = 1d-6
+!ss solverToleranceMinFactor = 0.1
+!ss solverToleranceMaxFactor = 10
+!ss solverToleranceNumRuns = 3
+/
+
+&otherNumericalParameters
+/
+
+&preconditionerOptions
+/
+
+&export_f
+/

@@ -533,6 +533,15 @@
              scheme = 2
              call uniformDiffMatrices(Nzeta, -2*Delta_zeta, zetaMax+Delta_zeta, scheme, zeta_preconditioner, &
                   zetaWeights_preconditioner, ddzeta_preconditioner, d2dzeta2_preconditioner)
+
+!!$             print *,"ddzeta:"
+!!$             do i=1,Nzeta
+!!$                print *,ddzeta(i,:)
+!!$             end do
+!!$             print *,"ddzeta_preconditioner:"
+!!$             do i=1,Nzeta
+!!$                print *,ddzeta_preconditioner(i,:)
+!!$             end do
           end if
 
        case default
