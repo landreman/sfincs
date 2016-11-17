@@ -1,16 +1,17 @@
 function sfincs_createGrids()
 
-global Ntheta Nzeta Nx Nxi NL NxPotentialsPerVth xMax solverTolerance xGrid_k
+global Nalpha Nzeta Nx Nxi NL NxPotentialsPerVth xMax solverTolerance xGrid_k
 global constraintScheme collisionOperator NPeriods pointAtX0
-global thetaDerivativeScheme zetaDerivativeScheme forceOddNthetaAndNzeta
-global theta ddtheta thetaWeights ddtheta_preconditioner preconditioner_theta
+global alphaDerivativeScheme zetaDerivativeScheme forceOddNalphaAndNzeta
+global alpha ddalpha alphaWeights ddalpha_preconditioner preconditioner_alpha
 global zeta ddzeta zetaWeights ddzeta_preconditioner preconditioner_zeta
 global x xWeights ddx d2dx2 ddx_preconditioner xGridScheme xPotentialsGridScheme
-global theta2D zeta2D RHSMode preconditioner_x xMaxPotentials
+global alpha2D zeta2D RHSMode preconditioner_x xMaxPotentials
 global xInterpolationScheme xPotentialsInterpolationScheme NxPotentials
 global xPotentials ddxPotentials d2dx2Potentials interpolateXToXPotentials
 global indexVars Nspecies includePhi1 transportMatrix
 global BLOCK_F BLOCK_QN BLOCK_PHI1_CONSTRAINT BLOCK_DENSITY_CONSTRAINT BLOCK_PRESSURE_CONSTRAINT BLOCK_F_CONSTRAINT
+global zeta_to_impose_DKE zetaMax
 
 % *************************************************************************
 % Do a few sundry initialization tasks:
@@ -24,9 +25,9 @@ if constraintScheme < 0
     end
 end 
     
-if forceOddNthetaAndNzeta
-    if mod(Ntheta,2)==0
-        Ntheta=Ntheta+1;
+if forceOddNalphaAndNzeta
+    if mod(Nalpha,2)==0
+        Nalpha=Nalpha+1;
     end
     if mod(Nzeta,2)==0
         Nzeta=Nzeta+1;
@@ -34,7 +35,7 @@ if forceOddNthetaAndNzeta
 end
 
 indexVars = struct();
-indexVars.Ntheta = Ntheta;
+indexVars.Nalpha = Nalpha;
 indexVars.Nzeta = Nzeta;
 indexVars.Nspecies = Nspecies;
 indexVars.Nx = Nx;
@@ -54,7 +55,7 @@ elseif RHSMode==3
 end
 
 fprintf('---- Numerical parameters: ----\n')
-fprintf('            Ntheta = %d\n',Ntheta)
+fprintf('            Nalpha = %d\n',Nalpha)
 fprintf('             Nzeta = %d\n',Nzeta)
 fprintf('               Nxi = %d\n',Nxi)
 fprintf('                NL = %d\n',NL)
@@ -68,10 +69,10 @@ fprintf('   solverTolerance = %d\n',solverTolerance)
 sfincs_computeMatrixSize()
 
 % *************************************************************************
-% Generate abscissae, quadrature weights, and derivative matrix for theta grid.
+% Generate abscissae, quadrature weights, and derivative matrix for alpha grid.
 % *************************************************************************
 
-switch thetaDerivativeScheme
+switch alphaDerivativeScheme
     case 0
         % Spectral uniform
         scheme = 20;
@@ -82,21 +83,21 @@ switch thetaDerivativeScheme
         % Uniform periodic finite differences with 5-point stencil
         scheme = 10;
     otherwise
-        error('Error! Invalid thetaDerivativeScheme')
+        error('Error! Invalid alphaDerivativeScheme')
 end
-[theta, thetaWeights, ddtheta, ~] = sfincs_uniformDiffMatrices(Ntheta, 0, 2*pi, scheme);
+[alpha, alphaWeights, ddalpha, ~] = sfincs_uniformDiffMatrices(Nalpha, 0, 2*pi, scheme);
 
-switch preconditioner_theta
+switch preconditioner_alpha
     case 0
-        ddtheta_preconditioner = ddtheta;
+        ddalpha_preconditioner = ddalpha;
     case 1
         % Uniform periodic finite differences with 3-point stencil
         scheme = 0;
-        [~, ~, ddtheta_preconditioner, ~] = sfincs_uniformDiffMatrices(Ntheta, 0, 2*pi, scheme);
+        [~, ~, ddalpha_preconditioner, ~] = sfincs_uniformDiffMatrices(Nalpha, 0, 2*pi, scheme);
     case 2
-        ddtheta_preconditioner = zeros(size(ddtheta));
-    case 3
-        ddtheta_preconditioner = eye(Ntheta);
+        ddalpha_preconditioner = zeros(size(ddalpha));
+    otherwise
+        error('Invalid preconditioner_alpha')
 end
     
 
@@ -112,33 +113,53 @@ if Nzeta==1
     ddzeta=0;
     ddzeta_preconditioner=0;
 else
+    
     switch zetaDerivativeScheme
-        case 0
-            % Spectral uniform
-            scheme = 20;
         case 1
-            % Uniform periodic finite differences with 3-point stencil
-            scheme = 0;
+            zeta_stencil_size=3;
+            zeta_to_impose_DKE = 2:(Nzeta-1);
+            Delta_zeta = (2*pi)/(NPeriods*(Nzeta-2));
+            zeta_scheme=2;
+            [zeta, ~, ddzeta, ~] = sfincs_uniformDiffMatrices(Nzeta, -Delta_zeta, zetaMax, zeta_scheme);
+            assert(abs(zeta(2)-zeta(1)-Delta_zeta)<1e-12)
+            zetaWeights=ones(size(zeta));
+            zetaWeights(1)  =0;
+            zetaWeights(end)=0;
+            zetaWeights = zetaWeights * Delta_zeta * NPeriods;
         case 2
-            % Uniform periodic finite differences with 5-point stencil
-            scheme = 10;
+            zeta_stencil_size=5;
+            zeta_to_impose_DKE = 3:(Nzeta-2);
+            Delta_zeta = (2*pi)/(NPeriods*(Nzeta-4));
+            zeta_scheme=12;
+            [zeta, ~, ddzeta, ~] = sfincs_uniformDiffMatrices(Nzeta, -2*Delta_zeta, zetaMax+Delta_zeta, zeta_scheme);
+            assert(abs(zeta(2)-zeta(1)-Delta_zeta)<1e-12)
+            zetaWeights=ones(size(zeta));
+            zetaWeights(1:2)      =0;
+            zetaWeights(end-1:end)=0;
+            zetaWeights = zetaWeights * Delta_zeta * NPeriods;
         otherwise
-            error('Error! Invalid zetaDerivativeScheme')
+            error('Invalid zetaDerivativeScheme')
     end
-    [zeta, zetaWeights, ddzeta, ~] = sfincs_uniformDiffMatrices(Nzeta, 0, zetaMax, scheme);
-    zetaWeights = zetaWeights * NPeriods;
+
+    
+    
+   
     
     switch preconditioner_zeta
         case 0
             ddzeta_preconditioner = ddzeta;
         case 1
             % Uniform periodic finite differences with 3-point stencil
-            scheme = 0;
-            [~, ~, ddzeta_preconditioner, ~] = sfincs_uniformDiffMatrices(Nzeta, 0, zetaMax, scheme);
+            if zetaDerivativeScheme==1
+                ddzeta_preconditioner = ddzeta;
+            else
+                zeta_scheme = 2;
+                [~, ~, ddzeta_preconditioner, ~] = sfincs_uniformDiffMatrices(Nzeta, -2*Delta_zeta, zetaMax+Delta_zeta, zeta_scheme);
+            end
         case 2
             ddzeta_preconditioner = zeros(size(ddzeta));
-        case 3
-            ddzeta_preconditioner = eye(Nzeta);
+        otherwise
+            error('Invalid preconditioner_zeta')
     end
 end
 
@@ -288,7 +309,7 @@ end
 % Also compute a few quantities related to the magnetic field
 % *************************************************************************
 
-[zeta2D, theta2D] = meshgrid(zeta,theta);
+[zeta2D, alpha2D] = meshgrid(zeta,alpha);
 
 sfincs_computeBHat()
 sfincs_computeBIntegrals()
