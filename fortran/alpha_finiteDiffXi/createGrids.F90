@@ -627,7 +627,11 @@
        zetaWeights = Delta_zeta * Nperiods
        zetaWeights(1:buffer_zeta_points_on_each_side) = 0
        zetaWeights(Nzeta-buffer_zeta_points_on_each_side+1:Nzeta) = 0
-       
+       if (abs(sum(zetaWeights)-2*pi) > 1.0e-12) then
+          print *,"Error! zetaWeights do not sum to 2pi:",zetaWeights
+          stop
+       end if
+
     end if
 
     !zetaWeights = zetaWeights * NPeriods
@@ -921,6 +925,10 @@
        end do
     end if
 
+    if (abs(sum(xiWeights)-2) > 1.0e-12) then
+       print *,"Error! xiWeights do not sum to 2:",zetaWeights
+       stop
+    end if
 
     ! The following arrays will not be needed:
     deallocate(d2dxi2,ddxi)

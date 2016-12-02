@@ -476,7 +476,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
      end do
 
   case (110,111)
-     ! upwinding, with 1 point on 1 side, and 2 points on the other side.
+     ! upwinding, with 1 point on 1 side, and 3 points on the other side.
 
      if (N<5) then
         print *,"Error! N must be at least 5 for scheme 110,111"
@@ -491,7 +491,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
      end do
 
   case (112)
-     ! upwinding, with 1 point on 1 side, and 2 points on the other side.
+     ! upwinding, with 1 point on 1 side, and 3 points on the other side.
 
      if (N<5) then
         print *,"Error! N must be at least 5 for scheme 112"
