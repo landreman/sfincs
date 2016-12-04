@@ -106,8 +106,7 @@ module globalVariables
 
   logical :: includeXDotTerm = .true.
   logical :: includeElectricFieldTermInXiDot = .true.
-  logical :: useDKESExBDrift = .false.
-  logical :: include_fDivVE_term = .false.
+  integer :: ExB_option = 1
   logical :: includeTemperatureEquilibrationTerm = .false.
   logical :: includePhi1 = .false.
 !!  logical :: includeRadialExBDrive = .false. !!Commented by AM 2016-02
@@ -117,7 +116,6 @@ module globalVariables
 
   integer :: magneticDriftScheme = 0
 
-  !!Added by AM 2016-02!!
   integer :: quasineutralityOption = 1
   !!!!!!!!!!!!!!!!!!!!!!!
 
@@ -131,9 +129,12 @@ module globalVariables
 
   integer :: alpha_derivative_option = 8
   integer :: zeta_derivative_option = 8
+  integer :: xi_derivative_option = 8
   integer :: alpha_interpolation_stencil = 4
+  integer :: pitch_angle_scattering_option = 3
+  integer :: xi_quadrature_option = 3
 
-  integer :: xDotDerivativeScheme = 0
+  !integer :: xDotDerivativeScheme = 0
 
   integer :: xPotentialsGridScheme = 2, xPotentialsInterpolationScheme
   integer :: xGridScheme = 5, xInterpolationScheme
@@ -170,7 +171,7 @@ module globalVariables
   integer :: constraintScheme=-1
 
   integer :: PETSCPreallocationStrategy=1
-  integer :: Nxi_for_x_option = 1
+  integer :: Nxi_for_x_option = 0
 
   ! ********************************************************
   !
@@ -186,8 +187,7 @@ module globalVariables
   PetscScalar, dimension(:,:), allocatable :: ddzeta_plus, ddzeta_minus, ddzeta_plus_preconditioner, ddzeta_minus_preconditioner
   PetscScalar, dimension(:,:), allocatable :: ddxi_plus, ddxi_minus, ddxi_plus_preconditioner, ddxi_minus_preconditioner
   PetscScalar, dimension(:,:), allocatable :: pitch_angle_scattering_operator, pitch_angle_scattering_operator_preconditioner
-  PetscScalar :: buffer_zeta_points_on_each_side
-  PetscScalar :: xi_quadrature_option = 4
+  integer :: buffer_zeta_points_on_each_side
   PetscScalar, dimension(:), allocatable :: xWeights, xPotentials
   PetscScalar :: maxxPotentials, zetaMax, xMaxNotTooSmall
   PetscScalar, dimension(:), allocatable :: x2, expx2

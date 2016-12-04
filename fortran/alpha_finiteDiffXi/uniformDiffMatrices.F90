@@ -212,6 +212,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, option, quadrature_option, x, weig
      case default
         print *,"Error! Unrecognized quadrature_option:",quadrature_option
         stop
+     end select
   end select
 
   ! ***************************************************************

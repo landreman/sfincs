@@ -37,7 +37,6 @@
     integer :: status(MPI_STATUS_SIZE)
     logical :: call_uniform_diff_matrices
     integer :: derivative_option_plus, derivative_option_minus, derivative_option, quadrature_option
-    PetscScalar :: Delta_zeta
 
     ! *******************************************************************************
     ! Do a few sundry initialization tasks:
@@ -373,8 +372,8 @@
        if (masterProc) then
           print *,"   But only the diagonal is kept."
        end if
-       do j=1:Nalpha
-          do k=1:Nalpha
+       do j=1,Nalpha
+          do k=1,Nalpha
              if (j .ne. k) then
                 ddalpha_plus_preconditioner(j,k) = 0
                 ddalpha_minus_preconditioner(j,k) = 0
@@ -400,11 +399,10 @@
 
     allocate(zeta(Nzeta))
     allocate(zetaWeights(Nzeta))
-    allocate(ddzeta(Nzeta,Nzeta))
-    allocate(ddzeta_ExB_plus(Nzeta,Nzeta))
-    allocate(ddzeta_ExB_minus(Nzeta,Nzeta))
-    allocate(ddzeta_magneticDrift_plus(Nzeta,Nzeta))
-    allocate(ddzeta_magneticDrift_minus(Nzeta,Nzeta))
+    allocate(ddzeta_plus(Nzeta,Nzeta))
+    allocate(ddzeta_minus(Nzeta,Nzeta))
+    allocate(ddzeta_plus_preconditioner(Nzeta,Nzeta))
+    allocate(ddzeta_minus_preconditioner(Nzeta,Nzeta))
     allocate(d2dzeta2(Nzeta,Nzeta))
 
     if (Nzeta==1) then
@@ -504,9 +502,9 @@
        Delta_zeta = 2*pi/(Nperiods*(Nzeta-2*buffer_zeta_points_on_each_side))
        quadrature_option = 0 ! This value is not actually matter, since we will over-write the integration weights.
        call uniformDiffMatrices(Nzeta, -Delta_zeta*buffer_zeta_points_on_each_side, zetaMax+Delta_zeta*(buffer_zeta_points_on_each_side-1), &
-            derivative_option_plus,  zeta_quadrature_option, zeta, zetaWeights, ddzeta_plus, d2dzeta2)
+            derivative_option_plus,  quadrature_option, zeta, zetaWeights, ddzeta_plus, d2dzeta2)
        call uniformDiffMatrices(Nzeta, -Delta_zeta*buffer_zeta_points_on_each_side, zetaMax+Delta_zeta*(buffer_zeta_points_on_each_side-1), &
-            derivative_option_minus, zeta_quadrature_option, zeta, zetaWeights, ddzeta_minus, d2dzeta2)
+            derivative_option_minus, quadrature_option, zeta, zetaWeights, ddzeta_minus, d2dzeta2)
 
        if (abs(zeta(2)-zeta(1)-Delta_zeta)>1e-12) stop "Something went wrong computing ddzeta for main matrix."
 
@@ -609,8 +607,8 @@
           if (masterProc) then
              print *,"   But only the diagonal is kept."
           end if
-          do j=1:Nzeta
-             do k=1:Nzeta
+          do j=1,Nzeta
+             do k=1,Nzeta
                 if (j .ne. k) then
                    ddzeta_plus_preconditioner(j,k) = 0
                    ddzeta_minus_preconditioner(j,k) = 0
@@ -687,7 +685,9 @@
     end select
 
     call uniformDiffMatrices(Nxi, -one, one, derivative_option, xi_quadrature_option, xi, xiWeights, ddxi, d2dxi2)
-    pitch_angle_scattering_operator = (1/two)*(1-xi*xi)*d2dxi2 - xi*ddxi
+    do j=1,Nxi
+       pitch_angle_scattering_operator(j,:) = (1/two)*(1-xi(j)*xi(j))*d2dxi2(j,:) - xi(j)*ddxi(j,:)
+    end do
 
     ! *******************************************************************************
     ! Handle d/dxi for the pitch angle scattering operator in the preconditioner matrix.
@@ -734,14 +734,16 @@
     if (call_uniform_diff_matrices) then
        call uniformDiffMatrices(Nxi, zero, two*pi, derivative_option, xi_quadrature_option, xi, xiWeights, ddxi,  d2dxi2)
     end if
-    pitch_angle_scattering_operator_preconditioner = (1/two)*(1-xi*xi)*d2dxi2 - xi*ddxi
+    do j=1,Nxi
+       pitch_angle_scattering_operator_preconditioner(j,:) = (1/two)*(1-xi(j)*xi(j))*d2dxi2(j,:) - xi(j)*ddxi(j,:)
+    end do
 
     if (preconditioner_xi_derivative_option<0) then
        if (masterProc) then
           print *,"   But only the diagonal is kept."
        end if
-       do j=1:Nxi
-          do k=1:Nxi
+       do j=1,Nxi
+          do k=1,Nxi
              if (j .ne. k) then
                 pitch_angle_scattering_operator_preconditioner(j,k) = 0
              end if
@@ -915,8 +917,8 @@
        if (masterProc) then
           print *,"   But only the diagonal is kept."
        end if
-       do j=1:Nxi
-          do k=1:Nxi
+       do j=1,Nxi
+          do k=1,Nxi
              if (j .ne. k) then
                 ddxi_plus_preconditioner(j,k) = 0
                 ddxi_minus_preconditioner(j,k) = 0
@@ -1076,191 +1078,191 @@
        NxPotentials = 1
     end if
 
-    ! To allow for upwinding in the xDot term associated with Er, set up some other differentiation matrices:
-    allocate(ddx_xDot_plus(Nx,Nx))
-    allocate(ddx_xDot_preconditioner_plus(Nx,Nx))
-    allocate(ddx_xDot_minus(Nx,Nx))
-    allocate(ddx_xDot_preconditioner_minus(Nx,Nx))
-
-    select case (xDotDerivativeScheme)
-    case (-2)
-       ddx_xDot_plus = zero
-       ddx_xDot_minus = zero
-       allocate(x_subset(Nx-1))
-       allocate(ddx_subset(Nx-1,Nx-1))
-       allocate(d2dx2_subset(Nx-1,Nx-1))
-
-       x_subset = x(1:Nx-1)
-       call makeXPolynomialDiffMatrices(x_subset,ddx_subset,d2dx2_subset)
-       ddx_xDot_plus(1:Nx-1,1:Nx-1) = ddx_subset
-
-       x_subset = x(2:Nx)
-       call makeXPolynomialDiffMatrices(x_subset,ddx_subset,d2dx2_subset)
-       ddx_xDot_minus(2:Nx,2:Nx) = ddx_subset
-
-       deallocate(x_subset,ddx_subset,d2dx2_subset)
-
-    case (-1)
-       ddx_xDot_plus = zero
-       ddx_xDot_minus = zero
-       do i=i,Nx
-          allocate(x_subset(i))
-          allocate(ddx_subset(i,i))
-          allocate(d2dx2_subset(i,i))
-
-          x_subset = x(1:i)
-          call makeXPolynomialDiffMatrices(x_subset,ddx_subset,d2dx2_subset)
-          ddx_xDot_plus(i,1:i) = ddx_subset(i,:)
-
-          x_subset = x(Nx-i+1:Nx)
-          call makeXPolynomialDiffMatrices(x_subset,ddx_subset,d2dx2_subset)
-          ddx_xDot_minus(Nx-i+1,Nx-i+1:Nx) = ddx_subset(1,:)
-
-          deallocate(x_subset,ddx_subset,d2dx2_subset)
-       end do
-
-    case (0)
-       ddx_xDot_plus = ddx
-       ddx_xDot_minus = ddx
-
-    case (1)
-       scheme = 32
-       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
-       ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
-
-       scheme = 42
-       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
-       ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
-
-    case (2)
-       scheme = 52
-       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
-       ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
-
-       scheme = 62
-       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
-       ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
-
-    case (3)
-       scheme = 52
-       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
-       ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
-
-       scheme = 62
-       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
-       ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
-       do i = 2,Nx
-          ddx_xDot_minus(Nx,i) =  ddx_xDot_minus(Nx-1,i-1)
-       end do
-
-    case (4)
-       scheme = 82
-       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
-       ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
-
-       scheme = 92
-       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
-       ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
-
-    case (5)
-       scheme = 82
-       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
-       ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
-       ! I'm not sure whether these next lines are good or not
-       do i = 1,Nx
-          ddx_xDot_plus(2,i) =  ddx(2,i)
-       end do
-
-       scheme = 92
-       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
-       ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
-       do i = 2,Nx
-          ddx_xDot_minus(Nx,i) =  ddx_xDot_minus(Nx-1,i-1)
-       end do
-
-    case (6)
-       do i=1,Nx
-          do j=1,Nx
-             ddx_xDot_plus(i,j) = expx2(i) * ddx(i,j) / expx2(j)
-             if (i==j) then
-                ddx_xDot_plus(i,j) = ddx_xDot_plus(i,j) - 2*x(i)
-             end if
-             ddx_xDot_minus(i,j) = ddx_xDot_plus(i,j)
-          end do
-       end do
-
-    case (7)
-
-       scheme = 82
-       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
-       ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
+!!$    ! To allow for upwinding in the xDot term associated with Er, set up some other differentiation matrices:
+!!$    allocate(ddx_xDot_plus(Nx,Nx))
+!!$    allocate(ddx_xDot_preconditioner_plus(Nx,Nx))
+!!$    allocate(ddx_xDot_minus(Nx,Nx))
+!!$    allocate(ddx_xDot_preconditioner_minus(Nx,Nx))
+!!$
+!!$    select case (xDotDerivativeScheme)
+!!$    case (-2)
+!!$       ddx_xDot_plus = zero
+!!$       ddx_xDot_minus = zero
+!!$       allocate(x_subset(Nx-1))
+!!$       allocate(ddx_subset(Nx-1,Nx-1))
+!!$       allocate(d2dx2_subset(Nx-1,Nx-1))
+!!$
+!!$       x_subset = x(1:Nx-1)
+!!$       call makeXPolynomialDiffMatrices(x_subset,ddx_subset,d2dx2_subset)
+!!$       ddx_xDot_plus(1:Nx-1,1:Nx-1) = ddx_subset
+!!$
+!!$       x_subset = x(2:Nx)
+!!$       call makeXPolynomialDiffMatrices(x_subset,ddx_subset,d2dx2_subset)
+!!$       ddx_xDot_minus(2:Nx,2:Nx) = ddx_subset
+!!$
+!!$       deallocate(x_subset,ddx_subset,d2dx2_subset)
+!!$
+!!$    case (-1)
+!!$       ddx_xDot_plus = zero
+!!$       ddx_xDot_minus = zero
+!!$       do i=i,Nx
+!!$          allocate(x_subset(i))
+!!$          allocate(ddx_subset(i,i))
+!!$          allocate(d2dx2_subset(i,i))
+!!$
+!!$          x_subset = x(1:i)
+!!$          call makeXPolynomialDiffMatrices(x_subset,ddx_subset,d2dx2_subset)
+!!$          ddx_xDot_plus(i,1:i) = ddx_subset(i,:)
+!!$
+!!$          x_subset = x(Nx-i+1:Nx)
+!!$          call makeXPolynomialDiffMatrices(x_subset,ddx_subset,d2dx2_subset)
+!!$          ddx_xDot_minus(Nx-i+1,Nx-i+1:Nx) = ddx_subset(1,:)
+!!$
+!!$          deallocate(x_subset,ddx_subset,d2dx2_subset)
+!!$       end do
+!!$
+!!$    case (0)
+!!$       ddx_xDot_plus = ddx
+!!$       ddx_xDot_minus = ddx
+!!$
+!!$    case (1)
+!!$       scheme = 32
+!!$       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+!!$       ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
+!!$
+!!$       scheme = 42
+!!$       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+!!$       ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
+!!$
+!!$    case (2)
+!!$       scheme = 52
+!!$       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+!!$       ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
+!!$
+!!$       scheme = 62
+!!$       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+!!$       ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
+!!$
+!!$    case (3)
+!!$       scheme = 52
+!!$       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+!!$       ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
+!!$
+!!$       scheme = 62
+!!$       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+!!$       ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
+!!$       do i = 2,Nx
+!!$          ddx_xDot_minus(Nx,i) =  ddx_xDot_minus(Nx-1,i-1)
+!!$       end do
+!!$
+!!$    case (4)
+!!$       scheme = 82
+!!$       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+!!$       ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
+!!$
+!!$       scheme = 92
+!!$       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+!!$       ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
+!!$
+!!$    case (5)
+!!$       scheme = 82
+!!$       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+!!$       ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
 !!$       ! I'm not sure whether these next lines are good or not
 !!$       do i = 1,Nx
 !!$          ddx_xDot_plus(2,i) =  ddx(2,i)
 !!$       end do
-
-       scheme = 92
-       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
-       ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
-       do i = 2,Nx
-          ddx_xDot_minus(Nx,i) =  ddx_xDot_minus(Nx-1,i-1)
-       end do
-
-       do i=1,Nx
-          do j=1,Nx
-             ddx_xDot_plus(i,j) = expx2(i) * ddx_xDot_plus(i,j) / expx2(j)
-             ddx_xDot_minus(i,j) = expx2(i) * ddx_xDot_minus(i,j) / expx2(j)
-             if (i==j) then
-                ddx_xDot_plus(i,j) = ddx_xDot_plus(i,j) - 2*x(i)
-                ddx_xDot_minus(i,j) = ddx_xDot_minus(i,j) - 2*x(i)
-             end if
-          end do
-       end do
-
-    case (8)
-       scheme = 102
-       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
-       ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
-
-       scheme = 112
-       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
-       ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
-       do i = 3,Nx
-          ddx_xDot_minus(Nx,i)     =  ddx_xDot_minus(Nx-2,i-2)
-          ddx_xDot_minus(Nx-1,i) =  ddx_xDot_minus(Nx-2,i-1)
-       end do
-
-    case (9)
-       ! Where trajectories are going into the domain (ddx_xDot_minus), use the standard ddx, in which the first ghost point is set to 0.
-       ! Where trajectories are leaving the domain (ddx_xDot_plus), use scheme=12 without setting any ghost points to 0.
-       ddx_xDot_minus = ddx
-       
-       allocate(x_subset(Nx))
-       allocate(xWeights_subset(Nx))
-       allocate(d2dx2_subset(Nx,Nx))
-
-       scheme = 12
-       call uniformDiffMatrices(Nx, zero, x(Nx), scheme, x_subset, x_subset, ddx_xDot_plus, d2dx2_subset)
-
-       deallocate(x_subset,xWeights_subset,d2dx2_subset)
-
-    case (10)
-       ! Same as case 9, but switching plus and minus. This should be backwards.
-       ddx_xDot_plus = ddx
-       
-       allocate(x_subset(Nx))
-       allocate(xWeights_subset(Nx))
-       allocate(d2dx2_subset(Nx,Nx))
-
-       scheme = 12
-       call uniformDiffMatrices(Nx, zero, x(Nx), scheme, x_subset, x_subset, ddx_xDot_minus, d2dx2_subset)
-
-       deallocate(x_subset,xWeights_subset,d2dx2_subset)
-
-    case default
-       print *,"Error!  Invalid xDotDerivativeScheme"
-       stop
-    end select
+!!$
+!!$       scheme = 92
+!!$       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+!!$       ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
+!!$       do i = 2,Nx
+!!$          ddx_xDot_minus(Nx,i) =  ddx_xDot_minus(Nx-1,i-1)
+!!$       end do
+!!$
+!!$    case (6)
+!!$       do i=1,Nx
+!!$          do j=1,Nx
+!!$             ddx_xDot_plus(i,j) = expx2(i) * ddx(i,j) / expx2(j)
+!!$             if (i==j) then
+!!$                ddx_xDot_plus(i,j) = ddx_xDot_plus(i,j) - 2*x(i)
+!!$             end if
+!!$             ddx_xDot_minus(i,j) = ddx_xDot_plus(i,j)
+!!$          end do
+!!$       end do
+!!$
+!!$    case (7)
+!!$
+!!$       scheme = 82
+!!$       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+!!$       ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
+!!$!       ! I'm not sure whether these next lines are good or not
+!!$!       do i = 1,Nx
+!!$!          ddx_xDot_plus(2,i) =  ddx(2,i)
+!!$!       end do
+!!$
+!!$       scheme = 92
+!!$       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+!!$       ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
+!!$       do i = 2,Nx
+!!$          ddx_xDot_minus(Nx,i) =  ddx_xDot_minus(Nx-1,i-1)
+!!$       end do
+!!$
+!!$       do i=1,Nx
+!!$          do j=1,Nx
+!!$             ddx_xDot_plus(i,j) = expx2(i) * ddx_xDot_plus(i,j) / expx2(j)
+!!$             ddx_xDot_minus(i,j) = expx2(i) * ddx_xDot_minus(i,j) / expx2(j)
+!!$             if (i==j) then
+!!$                ddx_xDot_plus(i,j) = ddx_xDot_plus(i,j) - 2*x(i)
+!!$                ddx_xDot_minus(i,j) = ddx_xDot_minus(i,j) - 2*x(i)
+!!$             end if
+!!$          end do
+!!$       end do
+!!$
+!!$    case (8)
+!!$       scheme = 102
+!!$       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+!!$       ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
+!!$
+!!$       scheme = 112
+!!$       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+!!$       ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
+!!$       do i = 3,Nx
+!!$          ddx_xDot_minus(Nx,i)     =  ddx_xDot_minus(Nx-2,i-2)
+!!$          ddx_xDot_minus(Nx-1,i) =  ddx_xDot_minus(Nx-2,i-1)
+!!$       end do
+!!$
+!!$    case (9)
+!!$       ! Where trajectories are going into the domain (ddx_xDot_minus), use the standard ddx, in which the first ghost point is set to 0.
+!!$       ! Where trajectories are leaving the domain (ddx_xDot_plus), use scheme=12 without setting any ghost points to 0.
+!!$       ddx_xDot_minus = ddx
+!!$       
+!!$       allocate(x_subset(Nx))
+!!$       allocate(xWeights_subset(Nx))
+!!$       allocate(d2dx2_subset(Nx,Nx))
+!!$
+!!$       scheme = 12
+!!$       call uniformDiffMatrices(Nx, zero, x(Nx), scheme, x_subset, x_subset, ddx_xDot_plus, d2dx2_subset)
+!!$
+!!$       deallocate(x_subset,xWeights_subset,d2dx2_subset)
+!!$
+!!$    case (10)
+!!$       ! Same as case 9, but switching plus and minus. This should be backwards.
+!!$       ddx_xDot_plus = ddx
+!!$       
+!!$       allocate(x_subset(Nx))
+!!$       allocate(xWeights_subset(Nx))
+!!$       allocate(d2dx2_subset(Nx,Nx))
+!!$
+!!$       scheme = 12
+!!$       call uniformDiffMatrices(Nx, zero, x(Nx), scheme, x_subset, x_subset, ddx_xDot_minus, d2dx2_subset)
+!!$
+!!$       deallocate(x_subset,xWeights_subset,d2dx2_subset)
+!!$
+!!$    case default
+!!$       print *,"Error!  Invalid xDotDerivativeScheme"
+!!$       stop
+!!$    end select
 
     allocate(xPotentials(NxPotentials))
     allocate(xWeightsPotentials(NxPotentials))
@@ -1307,28 +1309,28 @@
     end if
 
     ddx_preconditioner = 0
-    ddx_xDot_preconditioner_plus = 0
-    ddx_xDot_preconditioner_minus = 0
+    !ddx_xDot_preconditioner_plus = 0
+    !ddx_xDot_preconditioner_minus = 0
     select case (preconditioner_x)
     case (0)
        ! No simplification in x:
        ddx_preconditioner = ddx
-       ddx_xDot_preconditioner_plus = ddx_xDot_plus
-       ddx_xDot_preconditioner_minus = ddx_xDot_minus
+       !ddx_xDot_preconditioner_plus = ddx_xDot_plus
+       !ddx_xDot_preconditioner_minus = ddx_xDot_minus
     case (1)
        ! Keep only diagonal terms in x:
        do i=1,Nx
           ddx_preconditioner(i,i) = ddx(i,i)
-          ddx_xDot_preconditioner_plus(i,i) = ddx_xDot_plus(i,i)
-          ddx_xDot_preconditioner_minus(i,i) = ddx_xDot_minus(i,i)
+          !ddx_xDot_preconditioner_plus(i,i) = ddx_xDot_plus(i,i)
+          !ddx_xDot_preconditioner_minus(i,i) = ddx_xDot_minus(i,i)
        end do
     case (2)
        ! Keep only upper-triangular terms in x:
        do i=1,Nx
           do j=i,Nx
              ddx_preconditioner(i,j) = ddx(i,j)
-             ddx_xDot_preconditioner_plus(i,j) = ddx_xDot_plus(i,j)
-             ddx_xDot_preconditioner_minus(i,j) = ddx_xDot_minus(i,j)
+             !ddx_xDot_preconditioner_plus(i,j) = ddx_xDot_plus(i,j)
+             !ddx_xDot_preconditioner_minus(i,j) = ddx_xDot_minus(i,j)
           end do
        end do
     case (3)
@@ -1337,8 +1339,8 @@
           do j=1,Nx
              if (abs(i-j) <= 1) then
                 ddx_preconditioner(i,j) = ddx(i,j)
-                ddx_xDot_preconditioner_plus(i,j) = ddx_xDot_plus(i,j)
-                ddx_xDot_preconditioner_minus(i,j) = ddx_xDot_minus(i,j)
+                !ddx_xDot_preconditioner_plus(i,j) = ddx_xDot_plus(i,j)
+                !ddx_xDot_preconditioner_minus(i,j) = ddx_xDot_minus(i,j)
              end if
           end do
        end do
@@ -1346,13 +1348,13 @@
        ! Keep only diagonal and super-diagonal in x:
        do i=1,Nx
           ddx_preconditioner(i,i) = ddx(i,i)
-          ddx_xDot_preconditioner_plus(i,i) = ddx_xDot_plus(i,i)
-          ddx_xDot_preconditioner_minus(i,i) = ddx_xDot_minus(i,i)
+          !ddx_xDot_preconditioner_plus(i,i) = ddx_xDot_plus(i,i)
+          !ddx_xDot_preconditioner_minus(i,i) = ddx_xDot_minus(i,i)
        end do
        do i=1,(Nx-1)
           ddx_preconditioner(i,i+1) = ddx(i,i+1)
-          ddx_xDot_preconditioner_plus(i,i+1) = ddx_xDot_plus(i,i+1)
-          ddx_xDot_preconditioner_minus(i,i+1) = ddx_xDot_minus(i,i+1)
+          !ddx_xDot_preconditioner_plus(i,i+1) = ddx_xDot_plus(i,i+1)
+          !ddx_xDot_preconditioner_minus(i,i+1) = ddx_xDot_minus(i,i+1)
        end do
     case default
        print *,"Error! Invalid preconditioner_x"
@@ -1380,26 +1382,26 @@
        do i=1,Nx
           print *,ddx(i,:)
        end do
-       print *,"ddx_xDot_plus:"
-       do i=1,Nx
-          print *,ddx_xDot_plus(i,:)
-       end do
-       print *,"ddx_xDot_minus:"
-       do i=1,Nx
-          print *,ddx_xDot_minus(i,:)
-       end do
+!!$       print *,"ddx_xDot_plus:"
+!!$       do i=1,Nx
+!!$          print *,ddx_xDot_plus(i,:)
+!!$       end do
+!!$       print *,"ddx_xDot_minus:"
+!!$       do i=1,Nx
+!!$          print *,ddx_xDot_minus(i,:)
+!!$       end do
        print *,"ddx_preconditioner:"
        do i=1,Nx
           print *,ddx_preconditioner(i,:)
        end do
-       print *,"ddx_xDot_preconditioner_plus:"
-       do i=1,Nx
-          print *,ddx_xDot_preconditioner_plus(i,:)
-       end do
-       print *,"ddx_xDot_preconditioner_minus:"
-       do i=1,Nx
-          print *,ddx_xDot_preconditioner_minus(i,:)
-       end do
+!!$       print *,"ddx_xDot_preconditioner_plus:"
+!!$       do i=1,Nx
+!!$          print *,ddx_xDot_preconditioner_plus(i,:)
+!!$       end do
+!!$       print *,"ddx_xDot_preconditioner_minus:"
+!!$       do i=1,Nx
+!!$          print *,ddx_xDot_preconditioner_minus(i,:)
+!!$       end do
 !!$       print *,"d2dx2:"
 !!$       do i=1,Nx
 !!$          print *,d2dx2(i,:)
