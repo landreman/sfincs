@@ -599,8 +599,10 @@
        
        if (call_uniform_diff_matrices) then
           quadrature_option = 0
-          call uniformDiffMatrices(Nalpha, zero, two*pi, derivative_option_plus,  quadrature_option, alpha, alphaWeights, ddalpha_plus_preconditioner,  d2dalpha2)
-          call uniformDiffMatrices(Nalpha, zero, two*pi, derivative_option_minus, quadrature_option, alpha, alphaWeights, ddalpha_minus_preconditioner, d2dalpha2)
+          call uniformDiffMatrices(Nzeta, -Delta_zeta*buffer_zeta_points_on_each_side, zetaMax+Delta_zeta*(buffer_zeta_points_on_each_side-1), &
+               derivative_option_plus,  quadrature_option, zeta, zetaWeights, ddzeta_plus_preconditioner, d2dzeta2)
+          call uniformDiffMatrices(Nzeta, -Delta_zeta*buffer_zeta_points_on_each_side, zetaMax+Delta_zeta*(buffer_zeta_points_on_each_side-1), &
+               derivative_option_minus, quadrature_option, zeta, zetaWeights, ddzeta_minus_preconditioner, d2dzeta2)
        end if
 
        if (preconditioner_zeta_derivative_option<0) then
@@ -618,10 +620,7 @@
        end if
        
        if (abs(zeta(2)-zeta(1)-Delta_zeta)>1e-12) stop "Something went wrong computing ddzeta for preconditioner matrix."
-       
-       izetaMinDKE = max(izetaMin,1+buffer_zeta_points_on_each_side)
-       izetaMaxDKE = min(izetaMax,Nzeta-buffer_zeta_points_on_each_side)
-       
+              
        zetaWeights = Delta_zeta * Nperiods
        zetaWeights(1:buffer_zeta_points_on_each_side) = 0
        zetaWeights(Nzeta-buffer_zeta_points_on_each_side+1:Nzeta) = 0
@@ -636,6 +635,9 @@
 
     ! The following arrays will not be needed:
     deallocate(d2dzeta2)
+
+    izetaMinDKE = max(izetaMin,1+buffer_zeta_points_on_each_side)
+    izetaMaxDKE = min(izetaMax,Nzeta-buffer_zeta_points_on_each_side)
 
 
     ! *******************************************************************************
@@ -688,6 +690,7 @@
     do j=1,Nxi
        pitch_angle_scattering_operator(j,:) = (1/two)*(1-xi(j)*xi(j))*d2dxi2(j,:) - xi(j)*ddxi(j,:)
     end do
+    if (masterProc) print *,"At stage 1, xi=",xi
 
     ! *******************************************************************************
     ! Handle d/dxi for the pitch angle scattering operator in the preconditioner matrix.
@@ -715,14 +718,14 @@
           print *,"Preconditioner pitch angle scattering operator is discretized using centered finite differences:"
           print *,"   1 point on either side."
        end if
-       derivative_option = 0
+       derivative_option = 2
 
     case (3)
        if (masterProc) then
           print *,"Preconditioner pitch angle scattering operator is discretized using centered finite differences:"
           print *,"   2 points on either side."
        end if
-       derivative_option = 10
+       derivative_option = 12
 
     case default
        if (masterProc) then
@@ -732,12 +735,13 @@
     end select
 
     if (call_uniform_diff_matrices) then
-       call uniformDiffMatrices(Nxi, zero, two*pi, derivative_option, xi_quadrature_option, xi, xiWeights, ddxi,  d2dxi2)
+       call uniformDiffMatrices(Nxi, -one, one, derivative_option, xi_quadrature_option, xi, xiWeights, ddxi, d2dxi2)
     end if
     do j=1,Nxi
        pitch_angle_scattering_operator_preconditioner(j,:) = (1/two)*(1-xi(j)*xi(j))*d2dxi2(j,:) - xi(j)*ddxi(j,:)
     end do
 
+    if (masterProc) print *,"At stage 2, xi=",xi
     if (preconditioner_xi_derivative_option<0) then
        if (masterProc) then
           print *,"   But only the diagonal is kept."
@@ -822,6 +826,7 @@
 
     call uniformDiffMatrices(Nxi, -one, one, derivative_option_plus,  xi_quadrature_option, xi, xiWeights, ddxi_plus,  d2dxi2)
     call uniformDiffMatrices(Nxi, -one, one, derivative_option_minus, xi_quadrature_option, xi, xiWeights, ddxi_minus, d2dxi2)
+    if (masterProc) print *,"At stage 3, xi=",xi
 
     ! *******************************************************************************
     ! Handle d/dxi for the mirror term in the preconditioner matrix.
@@ -850,7 +855,7 @@
           print *,"Preconditioner d/dxi derivatives discretized using centered finite differences:"
           print *,"   1 point on either side."
        end if
-       derivative_option_plus = 0
+       derivative_option_plus = 2
        derivative_option_minus = derivative_option_plus
 
     case (3)
@@ -858,7 +863,7 @@
           print *,"Preconditioner d/dxi derivatives discretized using centered finite differences:"
           print *,"   2 points on either side."
        end if
-       derivative_option_plus = 10
+       derivative_option_plus = 12
        derivative_option_minus = derivative_option_plus
 
     case (4)
@@ -866,40 +871,40 @@
           print *,"Preconditioner d/dxi derivatives discretized using upwinded finite differences:"
           print *,"   0 points on one side, 1 point on the other side."
        end if
-       derivative_option_plus  = 30
-       derivative_option_minus = 40
+       derivative_option_plus  = 32
+       derivative_option_minus = 42
 
     case (5)
        if (masterProc) then
           print *,"Preconditioner d/dxi derivatives discretized using upwinded finite differences:"
           print *,"   0 points on one side, 2 points on the other side."
        end if
-       derivative_option_plus  = 50
-       derivative_option_minus = 60
+       derivative_option_plus  = 52
+       derivative_option_minus = 62
 
     case (6)
        if (masterProc) then
           print *,"Preconditioner d/dxi derivatives discretized using upwinded finite differences:"
           print *,"   1 point on one side, 2 points on the other side."
        end if
-       derivative_option_plus  = 80
-       derivative_option_minus = 90
+       derivative_option_plus  = 82
+       derivative_option_minus = 92
 
     case (7)
        if (masterProc) then
           print *,"Preconditioner d/dxi derivatives discretized using upwinded finite differences:"
           print *,"   1 point on one side, 3 points on the other side."
        end if
-       derivative_option_plus  = 100
-       derivative_option_minus = 110
+       derivative_option_plus  = 102
+       derivative_option_minus = 112
 
     case (8)
        if (masterProc) then
           print *,"Preconditioner d/dxi derivatives discretized using upwinded finite differences:"
           print *,"   2 point on one side, 3 points on the other side."
        end if
-       derivative_option_plus  = 120
-       derivative_option_minus = 130
+       derivative_option_plus  = 122
+       derivative_option_minus = 132
 
     case default
        if (masterProc) then
@@ -909,9 +914,10 @@
     end select
 
     if (call_uniform_diff_matrices) then
-       call uniformDiffMatrices(Nxi, zero, two*pi, derivative_option_plus,  xi_quadrature_option, xi, xiWeights, ddxi_plus_preconditioner,  d2dxi2)
-       call uniformDiffMatrices(Nxi, zero, two*pi, derivative_option_minus, xi_quadrature_option, xi, xiWeights, ddxi_minus_preconditioner, d2dxi2)
+       call uniformDiffMatrices(Nxi, -one, one, derivative_option_plus,  xi_quadrature_option, xi, xiWeights, ddxi_plus_preconditioner,  d2dxi2)
+       call uniformDiffMatrices(Nxi, -one, one, derivative_option_minus, xi_quadrature_option, xi, xiWeights, ddxi_minus_preconditioner, d2dxi2)
     end if
+    if (masterProc) print *,"At stage 4, xi=",xi
 
     if (preconditioner_xi_derivative_option<0) then
        if (masterProc) then
@@ -1269,7 +1275,8 @@
     allocate(ddxPotentials(NxPotentials, NxPotentials))
     allocate(d2dx2Potentials(NxPotentials, NxPotentials))
     if (RHSMode .ne. 3) then
-       call uniformDiffMatrices(NxPotentials, zero, xMaxNotTooSmall, 12, xPotentials, &
+       quadrature_option = 0
+       call uniformDiffMatrices(NxPotentials, zero, xMaxNotTooSmall, 12, quadrature_option, xPotentials, &
             xWeightsPotentials, ddxPotentials, d2dx2Potentials)
     else
        xPotentials = 0
@@ -1428,7 +1435,7 @@
     deallocate(ddx_plus1)
     deallocate(d2dx2_plus1)
 
-
+    
     ! *******************************************************************************
     ! Set the number of Legendre modes used for each value of x
     ! *******************************************************************************

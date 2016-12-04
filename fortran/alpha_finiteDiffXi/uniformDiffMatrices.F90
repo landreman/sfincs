@@ -172,7 +172,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, option, quadrature_option, x, weig
      ! Include a point at xMax but not xMin:
      x = [( (xMax-xMin)*i/(N)+xMin, i=1,N )]
   case default
-     print *,"Error! Invalid value for option"
+     print *,"Error! Invalid value for option in uniformDiffMatrices, location 1:", option
      stop
   end select
 
@@ -536,11 +536,11 @@ subroutine uniformDiffMatrices(N, xMin, xMax, option, quadrature_option, x, weig
         ddx(i,i+3) =  1/(12*dx)
      end do
 
-  case (120,121)
+  case (120,121,122)
      ! upwinding, with 2 points on 1 side, and 3 points on the other side.
 
      if (N<5) then
-        print *,"Error! N must be at least 5 for option 120,121"
+        print *,"Error! N must be at least 5 for option 120,121,122"
         stop
      end if
      do i=1,N
@@ -552,14 +552,11 @@ subroutine uniformDiffMatrices(N, xMin, xMax, option, quadrature_option, x, weig
         ddx(i,modulo(i-4,N)+1) = -1/(30*dx)
      end do
 
-!  case (122)
-     ! Not implemented yet!
-
-  case (130,131)
+  case (130,131,132)
      ! upwinding, with 2 points on 1 side, and 3 points on the other side.
 
      if (N<5) then
-        print *,"Error! N must be at least 5 for option 130,131"
+        print *,"Error! N must be at least 5 for option 130,131,132"
         stop
      end if
      do i=1,N
@@ -571,10 +568,6 @@ subroutine uniformDiffMatrices(N, xMin, xMax, option, quadrature_option, x, weig
         ddx(i,modulo(i+2,N)+1) =  1/(30*dx)
 
      end do
-
-!  case (132)
-     ! Not implemented yet!
-
 
   end select
 
@@ -695,6 +688,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, option, quadrature_option, x, weig
 
   case (12)
      ! 5 point stencil, aperiodic:
+     print *,"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
 
      ddx(1,1)= -25/(12*dx)
      ddx(1,2)= 4/(dx)
@@ -806,7 +800,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, option, quadrature_option, x, weig
      d2dx2(2,1) = -2/dx2
 
   case (32)
-     ! Nothing to be done here
+     ddx(1,1) = 1/dx
 
   case (40,41)
      ddx(N,1) = 1/dx
@@ -820,7 +814,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, option, quadrature_option, x, weig
      d2dx2(N-1,N) = -2/dx2
 
   case (42)
-     ! Nothing to be done here
+     ddx(N,N) = -1/dx
 
   case (50,51)
      ddx(1,1) = (1.5d+0)/(dx)
@@ -915,8 +909,24 @@ subroutine uniformDiffMatrices(N, xMin, xMax, option, quadrature_option, x, weig
   case (120,121,130,131)
      ! Handled previously
 
+  case (122)
+     ddx(N,1:2)=0
+     ddx(N-1,1)=0
+     
+     ddx(1,(N-2):N)=0
+     ddx(2,(N-1):N)=0
+     ddx(3,N)=0
+
+  case (132)
+     ddx(1:2,N)=0
+     ddx(1,N-1)=0
+            
+     ddx((N-2):N,1)=0
+     ddx((N-1):N,2)=0
+     ddx(N,3)=0
+
   case default
-     print *,"Error! Invalid value for option."
+     print *,"Error! Invalid value for option in uniformDiffMatrices, location 2:", option
      stop
   end select
 

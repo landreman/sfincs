@@ -30,7 +30,11 @@ module writeHDF5Output
   integer(HSIZE_T), dimension(1) :: dimForAlpha
   integer(HSIZE_T), dimension(1) :: dimForZeta
   integer(HSIZE_T), dimension(1) :: dimForx
+  integer(HSIZE_T), dimension(1) :: dimForxi
   integer(HSIZE_T), dimension(2) :: dimForAlphaZeta
+  integer(HSIZE_T), dimension(2) :: dimForAlphaAlpha
+  integer(HSIZE_T), dimension(2) :: dimForZetaZeta
+  integer(HSIZE_T), dimension(2) :: dimForxixi
   integer(HSIZE_T), dimension(2) :: dimForTransportMatrix
   integer(HSIZE_T), dimension(1) :: dimForExport_f_theta
   integer(HSIZE_T), dimension(1) :: dimForExport_f_zeta
@@ -42,7 +46,11 @@ module writeHDF5Output
   integer(HID_T) :: dspaceIDForAlpha
   integer(HID_T) :: dspaceIDForZeta
   integer(HID_T) :: dspaceIDForx
+  integer(HID_T) :: dspaceIDForxi
   integer(HID_T) :: dspaceIDForAlphaZeta
+  integer(HID_T) :: dspaceIDForAlphaAlpha
+  integer(HID_T) :: dspaceIDForZetaZeta
+  integer(HID_T) :: dspaceIDForxixi
   integer(HID_T) :: dspaceIDForTransportMatrix
   integer(HID_T) :: dspaceIDForExport_f_theta
   integer(HID_T) :: dspaceIDForExport_f_zeta
@@ -179,6 +187,24 @@ contains
             "Grid points in the toroidal angle, which runs from 0 to 2pi/Nperiods")
        call writeHDF5Field("x", x, dspaceIDForX, dimForX, &
             "Grid points in normalized speed, x_s = v / sqrt{2 T_s / m_s}, the same for each species s.")
+       call writeHDF5Field("xi", xi, dspaceIDForXi, dimForXi, &
+            "Grid points for cosine of the pitch angle, v||/v.")
+       call writeHDF5Field("xiWeights", xiWeights, dspaceIDForXi, dimForXi, &
+            "Quadrature weights in xi")
+       call writeHDF5Field("ddalpha_plus", ddalpha_plus, dspaceIDforAlphaAlpha, dimForAlphaAlpha, "")
+       call writeHDF5Field("ddalpha_minus", ddalpha_minus, dspaceIDforAlphaAlpha, dimForAlphaAlpha, "")
+       call writeHDF5Field("ddalpha_plus_preconditioner", ddalpha_plus_preconditioner, dspaceIDforAlphaAlpha, dimForAlphaAlpha, "")
+       call writeHDF5Field("ddalpha_minus_preconditioner", ddalpha_minus_preconditioner, dspaceIDforAlphaAlpha, dimForAlphaAlpha, "")
+       call writeHDF5Field("ddzeta_plus", ddzeta_plus, dspaceIDforZetaZeta, dimForZetaZeta, "")
+       call writeHDF5Field("ddzeta_minus", ddzeta_minus, dspaceIDforZetaZeta, dimForZetaZeta, "")
+       call writeHDF5Field("ddzeta_plus_preconditioner", ddzeta_plus_preconditioner, dspaceIDforZetaZeta, dimForZetaZeta, "")
+       call writeHDF5Field("ddzeta_minus_preconditioner", ddzeta_minus_preconditioner, dspaceIDforZetaZeta, dimForZetaZeta, "")
+       call writeHDF5Field("ddxi_plus", ddxi_plus, dspaceIDforxixi, dimForxixi, "")
+       call writeHDF5Field("ddxi_minus", ddxi_minus, dspaceIDforxixi, dimForxixi, "")
+       call writeHDF5Field("ddxi_plus_preconditioner", ddxi_plus_preconditioner, dspaceIDforxixi, dimForxixi, "")
+       call writeHDF5Field("ddxi_minus_preconditioner", ddxi_minus_preconditioner, dspaceIDforxixi, dimForxixi, "")
+       call writeHDF5Field("pitch_angle_scattering_operator", pitch_angle_scattering_operator, dspaceIDforxixi, dimForxixi, "")
+       call writeHDF5Field("pitch_angle_scattering_operator_preconditioner", pitch_angle_scattering_operator_preconditioner, dspaceIDforxixi, dimForxixi, "")
        call writeHDF5Field("Nxi_for_x", Nxi_for_x, dspaceIDForX, dimForX, &
             "Number of Legendre polynomials used for each grid point in x.")
        call writeHDF5Field("geometryScheme", geometryScheme, "")
@@ -389,9 +415,13 @@ contains
        call h5sclose_f(dspaceIDForAlpha, HDF5Error)
        call h5sclose_f(dspaceIDForZeta, HDF5Error)
        call h5sclose_f(dspaceIDForAlphaZeta, HDF5Error)
+       call h5sclose_f(dspaceIDForAlphaAlpha, HDF5Error)
+       call h5sclose_f(dspaceIDForZetaZeta, HDF5Error)
+       call h5sclose_f(dspaceIDForxixi, HDF5Error)
        call h5sclose_f(dspaceIDForScalar, HDF5Error)
        call h5sclose_f(dspaceIDForSpecies, HDF5Error)
        call h5sclose_f(dspaceIDForx, HDF5Error)
+       call h5sclose_f(dspaceIDForxi, HDF5Error)
 !!$       call h5sclose_f(dspaceIDForExport_f_theta, HDF5Error)
 !!$       call h5sclose_f(dspaceIDForExport_f_zeta, HDF5Error)
 !!$       call h5sclose_f(dspaceIDForExport_f_xi, HDF5Error)
@@ -743,6 +773,9 @@ contains
     dimForx = Nx
     call h5screate_simple_f(rank, dimForx, dspaceIDForx, HDF5Error)
 
+    dimForxi = Nxi
+    call h5screate_simple_f(rank, dimForxi, dspaceIDForxi, HDF5Error)
+
 !!$    dimForExport_f_theta = N_export_f_theta
 !!$    call h5screate_simple_f(rank, dimForExport_f_theta, dspaceIDForExport_f_theta, HDF5Error)
 !!$
@@ -759,6 +792,18 @@ contains
     dimForAlphaZeta(1) = Nalpha
     dimForAlphaZeta(2) = Nzeta
     call h5screate_simple_f(rank, dimForAlphaZeta, dspaceIDForAlphaZeta, HDF5Error)
+
+    dimForAlphaAlpha(1) = Nalpha
+    dimForAlphaAlpha(2) = Nalpha
+    call h5screate_simple_f(rank, dimForAlphaAlpha, dspaceIDForAlphaAlpha, HDF5Error)
+
+    dimForZetaZeta(1) = Nzeta
+    dimForZetaZeta(2) = Nzeta
+    call h5screate_simple_f(rank, dimForZetaZeta, dspaceIDForZetaZeta, HDF5Error)
+
+    dimForxixi(1) = Nxi
+    dimForxixi(2) = Nxi
+    call h5screate_simple_f(rank, dimForxixi, dspaceIDForxixi, HDF5Error)
 
 !!$    rank = 5
 !!$    dimForExport_f(1) = Nspecies
@@ -1165,6 +1210,8 @@ contains
        ! No labels applied in this case.
     elseif (dspaceID == dspaceIDForx) then
        ! No labels applied in this case.
+    elseif (dspaceID == dspaceIDForxi) then
+       ! No labels applied in this case.
     elseif (dspaceID == dspaceIDForExport_f_theta) then
        ! No labels applied in this case.
     elseif (dspaceID == dspaceIDForExport_f_zeta) then
@@ -1204,6 +1251,15 @@ contains
     if (dspaceID == dspaceIDForAlphaZeta) then
        call h5dsset_label_f(dsetID, 1, "zeta", HDF5Error)
        call h5dsset_label_f(dsetID, 2, "alpha", HDF5Error)
+    elseif (dspaceID == dspaceIDForAlphaAlpha) then
+       call h5dsset_label_f(dsetID, 1, "alpha", HDF5Error)
+       call h5dsset_label_f(dsetID, 2, "alpha", HDF5Error)
+    elseif (dspaceID == dspaceIDForZetaZeta) then
+       call h5dsset_label_f(dsetID, 1, "zeta", HDF5Error)
+       call h5dsset_label_f(dsetID, 2, "zeta", HDF5Error)
+    elseif (dspaceID == dspaceIDForxixi) then
+       call h5dsset_label_f(dsetID, 1, "xi", HDF5Error)
+       call h5dsset_label_f(dsetID, 2, "xi", HDF5Error)
     elseif (dspaceID == dspaceIDForTransportMatrix) then
        ! No labels applied in this case.
     else

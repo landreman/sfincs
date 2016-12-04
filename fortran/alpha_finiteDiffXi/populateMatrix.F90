@@ -224,6 +224,7 @@
     ! ************************************************************
     ! ************************************************************
 
+    if (masterProc) print *,"Beginning alpha interpolation"
     if (whichMatrix .ne. 2) then
        if (whichMatrix==0) then
           stencil = preconditioner_alpha_interpolation_stencil
@@ -270,6 +271,7 @@
        end do
        deallocate(alpha_interpolation_matrix)
     end if
+    if (masterProc) print *,"Done with alpha interpolation"
    
     ! ************************************************************
     ! ************************************************************
@@ -289,6 +291,7 @@
        ! Add the d/dzeta term:
        ! *********************************************************
        
+       if (masterProc) print *,"Beginning d/dzeta"
        allocate(ddzeta_to_use(Nzeta,Nzeta))
        if ((whichMatrix .ne. 2) .and. (Nzeta > 1)) then
           do izeta_row = izetaMinDKE,izetaMaxDKE
@@ -333,7 +336,8 @@
        izeta_row = -1
        izeta_col = -1
        deallocate(ddzeta_to_use)
-       
+       if (masterProc) print *,"Done with d/dzeta"
+
        
        ! *********************************************************
        ! Add the d/dalpha term:

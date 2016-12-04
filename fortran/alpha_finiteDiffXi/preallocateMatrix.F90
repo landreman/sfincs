@@ -64,10 +64,11 @@ subroutine preallocateMatrix(matrix, whichMatrix)
 
   tempInt1 = 2 & ! particle and heat sources
        + Nx ! xdot
-  tempInt1 = tempInt1 + max(max_nnz_per_row(Nalpha,ddalpha_plus), max_nnz_per_row(Nalpha,ddalpha_minus))
-  tempInt1 = tempInt1 + max(max_nnz_per_row(Nzeta,ddzeta_plus), max_nnz_per_row(Nzeta,ddzeta_minus))
+  ! Below, the 1 is subtracted because we already counted the diagonal, above.
+  tempInt1 = tempInt1 + max(max_nnz_per_row(Nalpha,ddalpha_plus), max_nnz_per_row(Nalpha,ddalpha_minus)) - 1
+  tempInt1 = tempInt1 + max(max_nnz_per_row(Nzeta,ddzeta_plus), max_nnz_per_row(Nzeta,ddzeta_minus)) - 1
   tempInt1 = tempInt1 + max(max_nnz_per_row(Nxi,ddxi_plus+100*pitch_angle_scattering_operator), &
-       max_nnz_per_row(Nxi,ddxi_minus+100*pitch_angle_scattering_operator))
+       max_nnz_per_row(Nxi,ddxi_minus+100*pitch_angle_scattering_operator)) - 1
   ! I need to add the nonzeros for the Fokker-Planck operator.
   if (masterProc) then
      print *,"nnz per row for ddalpha_plus:",max_nnz_per_row(Nalpha,ddalpha_plus)
@@ -222,7 +223,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
 contains
 
   function max_nnz_per_row(N, matrix)
-    
+    ! This function intentionally always includes a nonzero for the diagonal, even if the diagonal element is 0!
     implicit none
     
     integer :: N, max_nnz_per_row
@@ -233,7 +234,7 @@ contains
     do row = 1,N
        counter = 0
        do col = 1,N
-          if (abs(matrix(row,col))>1e-12) counter = counter+1
+          if (abs(matrix(row,col))>1e-12 .or. (row==col)) counter = counter+1
        end do
        max_nnz_per_row = max(counter,max_nnz_per_row)
     end do
