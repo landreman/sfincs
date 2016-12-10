@@ -49,6 +49,9 @@ subroutine uniformDiffMatrices(N, xMin, xMax, option, quadrature_option, x, weig
   !      stencils are used for the 2nd and penultimate rows of the 
   !      differentiation matrices.  With this option, both differentiation 
   !      matrices are strictly penta-diagonal.
+  ! 14 = Similar to 12 and 13, except the first 2 rows are changed so there is never downwinding.
+  ! 15 = Similar to 12 and 13, except the last 2 rows are changed so there is never upwinding.
+  ! 16 = Similar to 12 and 13, except the first and last 2 rows are changed so there is never upwinding.
   ! 20 = The domain [xMin, xMax] is assumed to be periodic. Spectral
   !      differentiation matrices are returned. A grid point will be placed 
   !      at xMin but not xMax.
@@ -162,7 +165,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, option, quadrature_option, x, weig
   ! ***************************************************************
 
   select case (option)
-  case (2, 3, 12, 13, 32, 42, 52, 62, 82, 92, 102, 112, 122, 132)
+  case (2, 3, 12, 13, 14, 15, 16, 32, 42, 52, 62, 82, 92, 102, 112, 122, 132)
      ! Include points at both xMin and xMax:
      x = [( (xMax-xMin)*i/(N-1)+xMin, i=0,N-1 )]
   case (0,10,20,30,40,50,60,80,90,100,110,120,130)
@@ -185,7 +188,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, option, quadrature_option, x, weig
 
   weights=dx
   select case (option)
-  case (2, 3, 12, 13, 32, 42, 52, 62, 82, 92, 102, 112, 122, 132)
+  case (2, 3, 12, 13, 14, 15, 16, 32, 42, 52, 62, 82, 92, 102, 112, 122, 132)
      ! Grid is aperiodic
      select case (quadrature_option)
      case (0)
@@ -238,7 +241,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, option, quadrature_option, x, weig
         d2dx2(i,i-1)=1/(dx2)
      end do
 
-  case (10,11,12,13)
+  case (10,11,12,13, 14, 15, 16)
      ! 4th order (5 point stencil):
      if (N<5) then
         print *,"Error! N must be at least 5 for the 5-point stencil methods"
@@ -688,7 +691,6 @@ subroutine uniformDiffMatrices(N, xMin, xMax, option, quadrature_option, x, weig
 
   case (12)
      ! 5 point stencil, aperiodic:
-     print *,"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
 
      ddx(1,1)= -25/(12*dx)
      ddx(1,2)= 4/(dx)
@@ -785,6 +787,132 @@ subroutine uniformDiffMatrices(N, xMin, xMax, option, quadrature_option, x, weig
      d2dx2(N-1,N-1)=-2/(dx2)
      d2dx2(N-1,N-2)=1/(dx2)
      d2dx2(N-1,N-3)=0
+
+  case (14)
+     ! 5 point stencil, aperiodic:
+
+     ! Leave 1st row 0: there is no way to avoid upwinding.
+
+     ! For 2nd row, use centered differences:
+     ddx(2,1)= -1/(2*dx)
+     ddx(2,3)=  1/(2*dx)
+
+     ddx(N,N)= 25/(12*dx)
+     ddx(N,N-1)= -4/(dx)
+     ddx(N,N-2)=3/dx
+     ddx(N,N-3)=-4/(3*dx)
+     ddx(N,N-4)=1/(4*dx)
+
+     ddx(N-1,N)= 1/(4*dx)
+     ddx(N-1,N-1)= 5/(6*dx)
+     ddx(N-1,N-2)=-3/(2*dx)
+     ddx(N-1,N-3)=1/(2*dx)
+     ddx(N-1,N-4)=-1/(12*dx)
+
+
+     d2dx2(1,1)=35/(12*dx2)
+     d2dx2(1,2)=-26/(3*dx2)
+     d2dx2(1,3)=19/(2*dx2)
+     d2dx2(1,4)=-14/(3*dx2)
+     d2dx2(1,5)=11/(12*dx2)
+
+     d2dx2(2,1)=11/(12*dx2)
+     d2dx2(2,2)=-5/(3*dx2)
+     d2dx2(2,3)=1/(2*dx2)
+     d2dx2(2,4)=1/(3*dx2)
+     d2dx2(2,5)=-1/(12*dx2)
+
+     d2dx2(N,N)=35/(12*dx2)
+     d2dx2(N,N-1)=-26/(3*dx2)
+     d2dx2(N,N-2)=19/(2*dx2)
+     d2dx2(N,N-3)=-14/(3*dx2)
+     d2dx2(N,N-4)=11/(12*dx2)
+
+     d2dx2(N-1,N-0)=11/(12*dx2)
+     d2dx2(N-1,N-1)=-5/(3*dx2)
+     d2dx2(N-1,N-2)=1/(2*dx2)
+     d2dx2(N-1,N-3)=1/(3*dx2)
+     d2dx2(N-1,N-4)=-1/(12*dx2)
+
+  case (15)
+     ! 5 point stencil, aperiodic:
+
+     ddx(1,1)= -25/(12*dx)
+     ddx(1,2)= 4/(dx)
+     ddx(1,3)=-3/dx
+     ddx(1,4)=4/(3*dx)
+     ddx(1,5)=-1/(4*dx)
+
+     ddx(2,1)= -1/(4*dx)
+     ddx(2,2)= -5/(6*dx)
+     ddx(2,3)=3/(2*dx)
+     ddx(2,4)=-1/(2*dx)
+     ddx(2,5)=1/(12*dx)
+
+     ! Penultimate row: use centered differences:
+     ddx(N-1,N)   =  1/(2*dx)
+     ddx(N-1,N-2) = -1/(2*dx)
+
+     ! Leave last row of ddx 0: there is no way to avoid upwinding.
+
+     d2dx2(1,1)=35/(12*dx2)
+     d2dx2(1,2)=-26/(3*dx2)
+     d2dx2(1,3)=19/(2*dx2)
+     d2dx2(1,4)=-14/(3*dx2)
+     d2dx2(1,5)=11/(12*dx2)
+
+     d2dx2(2,1)=11/(12*dx2)
+     d2dx2(2,2)=-5/(3*dx2)
+     d2dx2(2,3)=1/(2*dx2)
+     d2dx2(2,4)=1/(3*dx2)
+     d2dx2(2,5)=-1/(12*dx2)
+
+     d2dx2(N,N)=35/(12*dx2)
+     d2dx2(N,N-1)=-26/(3*dx2)
+     d2dx2(N,N-2)=19/(2*dx2)
+     d2dx2(N,N-3)=-14/(3*dx2)
+     d2dx2(N,N-4)=11/(12*dx2)
+
+     d2dx2(N-1,N-0)=11/(12*dx2)
+     d2dx2(N-1,N-1)=-5/(3*dx2)
+     d2dx2(N-1,N-2)=1/(2*dx2)
+     d2dx2(N-1,N-3)=1/(3*dx2)
+     d2dx2(N-1,N-4)=-1/(12*dx2)
+
+  case (16)
+     ! 5 point stencil, aperiodic:
+
+
+     ddx(2,1)= -1/(2*dx)
+     ddx(2,3)=  1/(2*dx)
+
+     ddx(N-1,N)  = 1/(2*dx)
+     ddx(N-1,N-2)=-1/(2*dx)
+
+
+     d2dx2(1,1)=35/(12*dx2)
+     d2dx2(1,2)=-26/(3*dx2)
+     d2dx2(1,3)=19/(2*dx2)
+     d2dx2(1,4)=-14/(3*dx2)
+     d2dx2(1,5)=11/(12*dx2)
+
+     d2dx2(2,1)=11/(12*dx2)
+     d2dx2(2,2)=-5/(3*dx2)
+     d2dx2(2,3)=1/(2*dx2)
+     d2dx2(2,4)=1/(3*dx2)
+     d2dx2(2,5)=-1/(12*dx2)
+
+     d2dx2(N,N)=35/(12*dx2)
+     d2dx2(N,N-1)=-26/(3*dx2)
+     d2dx2(N,N-2)=19/(2*dx2)
+     d2dx2(N,N-3)=-14/(3*dx2)
+     d2dx2(N,N-4)=11/(12*dx2)
+
+     d2dx2(N-1,N-0)=11/(12*dx2)
+     d2dx2(N-1,N-1)=-5/(3*dx2)
+     d2dx2(N-1,N-2)=1/(2*dx2)
+     d2dx2(N-1,N-3)=1/(3*dx2)
+     d2dx2(N-1,N-4)=-1/(12*dx2)
 
   case (20,21)
      ! Nothing to be done here

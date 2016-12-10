@@ -445,7 +445,6 @@
                       
                       flow(ispecies,ialpha,izeta) = flow(ispecies,ialpha,izeta) &
                            + flowFactor*xi(ixi)*xWeights(ix)*flowIntegralWeights(ix)*xiWeights(ixi)*solutionWithDeltaFArray(index)
-                           !+ flowFactor*xi(ixi)*xWeights(ix)*flowIntegralWeights(ix)*xiWeights(ixi)*solutionWithFullFArray(index)
                       
                       FSABFlow_vs_x(ispecies,ix) = FSABFlow_vs_x(ispecies,ix) &
                            + flowFactor*xi(ixi)*xWeights(ix)*flowIntegralWeights(ix)*xiWeights(ixi)*solutionWithDeltaFArray(index) &

@@ -659,9 +659,31 @@
     allocate(pitch_angle_scattering_operator(Nxi,Nxi))
     allocate(pitch_angle_scattering_operator_preconditioner(Nxi,Nxi))
 
+    if (pitch_angle_scattering_option==1 .or. xi_derivative_option==1) then
+       if (masterProc) then
+          print *,"Since at least one of pitch_angle_scattering_option or xi_derivative_option is 1,"
+          print *,"we will use a non-preconditioned Chebyshev grid in xi for both."
+       end if
+       pitch_angle_scattering_option = 1
+       xi_derivative_option = 1
+       preconditioner_pitch_angle_scattering_option = 100
+       preconditioner_xi_derivative_option = 100
+
+       call ChebyshevGrid(Nxi, -one, one, xi, xiWeights, ddxi_plus)
+       ddxi_minus = ddxi_plus
+       ddxi_plus_preconditioner = ddxi_plus
+       ddxi_minus_preconditioner = ddxi_minus
+       d2dxi2 = matmul(ddxi,ddxi)
+       do j=1,Nxi
+          pitch_angle_scattering_operator(j,:) = (1/two)*(1-xi(j)*xi(j))*d2dxi2(j,:) - xi(j)*ddxi(j,:)
+       end do
+       pitch_angle_scattering_operator_preconditioner = pitch_angle_scattering_operator
+    else
+
     ! *******************************************************************************
     ! Handle d/dxi for the pitch angle scattering operator in the main matrix.
     ! *******************************************************************************
+
 
     select case (pitch_angle_scattering_option)
 
@@ -742,7 +764,7 @@
     end do
 
     if (masterProc) print *,"At stage 2, xi=",xi
-    if (preconditioner_xi_derivative_option<0) then
+    if (preconditioner_pitch_angle_scattering_option<0) then
        if (masterProc) then
           print *,"   But only the diagonal is kept."
        end if
@@ -774,8 +796,8 @@
           print *,"d/dxi derivatives discretized using centered finite differences:"
           print *,"   2 points on either side."
        end if
-       derivative_option_plus = 12
-       derivative_option_minus = derivative_option_plus
+       derivative_option_plus  = 16
+       derivative_option_minus = 16
 
     case (4)
        if (masterProc) then
@@ -863,8 +885,8 @@
           print *,"Preconditioner d/dxi derivatives discretized using centered finite differences:"
           print *,"   2 points on either side."
        end if
-       derivative_option_plus = 12
-       derivative_option_minus = derivative_option_plus
+       derivative_option_plus  = 16
+       derivative_option_minus = 16
 
     case (4)
        if (masterProc) then
@@ -932,6 +954,7 @@
           end do
        end do
     end if
+    end if
 
     if (abs(sum(xiWeights)-2) > 1.0e-12) then
        print *,"Error! xiWeights do not sum to 2:",zetaWeights
@@ -940,6 +963,7 @@
 
     ! The following arrays will not be needed:
     deallocate(d2dxi2,ddxi)
+
 
     ! *******************************************************************************
     ! Build x grids, integration weights, and differentiation matrices.
