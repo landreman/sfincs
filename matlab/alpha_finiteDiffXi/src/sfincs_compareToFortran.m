@@ -2,7 +2,8 @@ function sfincs_compareToFortran(filename)
 
 global Zs mHats nHats THats withAdiabatic
 global Nspecies Nalpha Nzeta Nxi Nx NL dPhiHatdpsiHat collisionOperator RHSMode
-global alpha zeta x transportMatrix
+global alpha zeta x xi transportMatrix
+global alphaWeights zetaWeights xWeights xiWeights
 global geometryScheme GHat IHat VPrimeHat FSABHat2 B0OverBBar iota BDotCurlB
 global BHat dBHatdtheta dBHatdzeta dBHatdpsiHat
 global DHat BHat_sub_psi BHat_sub_theta BHat_sub_zeta BHat_sup_theta BHat_sup_zeta
@@ -13,6 +14,11 @@ global dBHat_sup_theta_dpsiHat dBHat_sup_theta_dzeta
 global dBHat_sup_zeta_dpsiHat dBHat_sup_zeta_dtheta
 global psiHat psiN rHat rN
 global includePhi1 includePhi1InKineticEquation
+
+global ddalpha_plus ddalpha_minus ddalpha_plus_preconditioner ddalpha_minus_preconditioner
+global ddzeta_plus ddzeta_minus ddzeta_plus_preconditioner ddzeta_minus_preconditioner
+global ddxi_plus ddxi_minus ddxi_plus_preconditioner ddxi_minus_preconditioner
+global pitch_angle_scattering_operator pitch_angle_scattering_operator_preconditioner
 
 global FSADensityPerturbation FSABFlow FSAPressurePerturbation
 global particleFlux_vm0_psiHat particleFlux_vm_psiHat particleFlux_vE0_psiHat particleFlux_vE_psiHat particleFlux_vd_psiHat particleFlux_vd1_psiHat
@@ -72,6 +78,30 @@ compare('NL')
 compare('alpha')
 compare('zeta')
 compare('x')
+compare('xi')
+
+compare('ddalpha_plus')
+compare('ddalpha_minus')
+compare('ddalpha_plus_preconditioner')
+compare('ddalpha_minus_preconditioner')
+
+compare('ddzeta_plus')
+compare('ddzeta_minus')
+compare('ddzeta_plus_preconditioner')
+compare('ddzeta_minus_preconditioner')
+
+compare('ddxi_plus')
+compare('ddxi_minus')
+compare('ddxi_plus_preconditioner')
+compare('ddxi_minus_preconditioner')
+
+compare('pitch_angle_scattering_operator')
+compare('pitch_angle_scattering_operator_preconditioner')
+
+%compare('alphaWeights')
+%compare('zetaWeights')
+%compare('xWeights')
+compare('xiWeights')
 compare('psiHat')
 compare('psiN')
 compare('rHat')

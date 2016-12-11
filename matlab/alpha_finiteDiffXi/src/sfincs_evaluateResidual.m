@@ -95,6 +95,7 @@ end
 
 % Add Z n_0 exp(-Z e Phi1/T) term in quasineutrality:
 if includePhi1 && (quasineutralityOption==1)
+    error('Not ready yet for alpha_finiteDiffXi')
     stuffToAdd = zeros(Nalpha,Nzeta);
     for ispecies = 1:Nspecies
         stuffToAdd = stuffToAdd + Zs(ispecies)*nHats(ispecies) ...

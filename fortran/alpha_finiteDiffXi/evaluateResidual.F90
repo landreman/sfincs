@@ -110,6 +110,7 @@
           do ialpha = ialphaMin,ialphaMax
              do izeta = izetaMinDKE,izetaMaxDKE                
                 if (includePhi1 .and. includePhi1InKineticEquation) then !!Added by AM 2016-03
+                   stop "This part not yet ready for alpha_finiteDiffXi"
                    factor = Delta*nHats(ispecies)*mHat*sqrtMHat &
                         /(2*pi*sqrtpi*Zs(ispecies)*(BHat(ialpha,izeta)**3)*sqrtTHat) &
                         *(BHat_sub_zeta(ialpha,izeta)*dBHatdtheta(ialpha,izeta) &
@@ -132,7 +133,7 @@
                 
                 do ixi = 1,Nxi_for_x(ix)
                    index = getIndex(ispecies, ix, ixi, ialpha, izeta, BLOCK_F)
-                   call VecSetValue(rhs, index, (1+xi(ixi)*xi(ixi))*factor, INSERT_VALUES, ierr)
+                   call VecSetValue(rhs, index, (1+xi(ixi)*xi(ixi))*factor, ADD_VALUES, ierr)
                 end do
              end do
           end do
@@ -145,6 +146,7 @@
     ! *******************************************************************************
 
     if (includePhi1 .and. quasineutralityOption == 1) then
+       stop "This section not ready yet for the alpha_finiteDiffXi version"
        L=0
        do ialpha = ialphaMin,ialphaMax
           do izeta = izetaMin,izetaMax
@@ -166,7 +168,7 @@
 
                 factor = factor - adiabaticZ * adiabaticNHat * exp (- adiabaticZ* gamma * Phi1Hat(ialpha,izeta) / adiabaticTHat)
              end if
-             call VecSetValue(rhs, index, factor, INSERT_VALUES, ierr)
+             call VecSetValue(rhs, index, factor, ADD_VALUES, ierr)
           end do
        end do
     end if
@@ -193,11 +195,11 @@
 !!$
 !!$                L = 0
 !!$                index = getIndex(ispecies, ix, L+1, ialpha, izeta, BLOCK_F)
-!!$                call VecSetValue(rhs, index, (4/three)*factor, INSERT_VALUES, ierr)
+!!$                call VecSetValue(rhs, index, (4/three)*factor, ADD_VALUES, ierr)
 !!$                
 !!$                L = 2
 !!$                index = getIndex(ispecies, ix, L+1, ialpha, izeta, BLOCK_F)
-!!$                call VecSetValue(rhs, index, (two/three)*factor, INSERT_VALUES, ierr)
+!!$                call VecSetValue(rhs, index, (two/three)*factor, ADD_VALUES, ierr)
 !!$             end do
 !!$          end do
 !!$       end do
@@ -215,8 +217,8 @@
              do izeta = izetaMinDKE,izetaMaxDKE
                 index = getIndex(ispecies, ix, L+1, ialpha, izeta, BLOCK_F)
                 call VecSetValue(rhs, index, &
-                     factor * BHat(ialpha,izeta), INSERT_VALUES, ierr)
-                     !factor/BHat(ialpha,izeta), INSERT_VALUES, ierr)
+                     factor * BHat(ialpha,izeta), ADD_VALUES, ierr)
+                     !factor/BHat(ialpha,izeta), ADD_VALUES, ierr)
              end do
           end do
        end do

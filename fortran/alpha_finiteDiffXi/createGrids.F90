@@ -796,8 +796,8 @@
           print *,"d/dxi derivatives discretized using centered finite differences:"
           print *,"   2 points on either side."
        end if
-       derivative_option_plus  = 16
-       derivative_option_minus = 16
+       derivative_option_plus  = 12
+       derivative_option_minus = 12
 
     case (4)
        if (masterProc) then
@@ -885,8 +885,8 @@
           print *,"Preconditioner d/dxi derivatives discretized using centered finite differences:"
           print *,"   2 points on either side."
        end if
-       derivative_option_plus  = 16
-       derivative_option_minus = 16
+       derivative_option_plus  = 12
+       derivative_option_minus = 12
 
     case (4)
        if (masterProc) then
