@@ -44,8 +44,9 @@ Nzeta = 1;
 Nxi = 31;
 Nx = 8;
 
-global xi_derivative_option
+global xi_derivative_option useIterativeLinearSolver
 xi_derivative_option = 3;
+useIterativeLinearSolver = false;
 
 global preconditioner_xi_derivative_option preconditioner_pitch_angle_scattering_option
 preconditioner_xi_derivative_option = 3;

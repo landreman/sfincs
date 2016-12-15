@@ -10,7 +10,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   use petscmat
   use globalVariables, only: Nx, Nxi, Nalpha, Nzeta, Nspecies, matrixSize, includePhi1, &
        constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, & 
-       includePhi1InKineticEquation, quasineutralityOption ,&
+       includePhi1InKineticEquation, quasineutralityOption, collisionOperator, &
        ddalpha_plus, ddalpha_minus, ddzeta_plus, ddzeta_minus, ddxi_plus, ddxi_minus, pitch_angle_scattering_operator
   use indices
 
@@ -74,6 +74,10 @@ subroutine preallocateMatrix(matrix, whichMatrix)
      print *,"nnz per row for ddalpha_plus:",max_nnz_per_row(Nalpha,ddalpha_plus)
      print *,"nnz per row for ddzeta_plus: ",max_nnz_per_row(Nzeta,ddzeta_plus)
      print *,"nnz per row for ddxi_plus:   ",max_nnz_per_row(Nxi,ddxi_plus)
+  end if
+  if (collisionOperator==0) then
+     ! Eventually, add a test so these terms are only added if preconditioner_x=0.
+     tempInt1 = tempInt1 + Nspecies*Nx*Nxi - 1
   end if
 
   if (includePhi1InKineticEquation .and. includePhi1) then !!Added by AM 2016-03

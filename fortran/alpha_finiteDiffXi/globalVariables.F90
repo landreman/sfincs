@@ -129,7 +129,7 @@ module globalVariables
 
   integer :: alpha_derivative_option = 8
   integer :: zeta_derivative_option = 8
-  integer :: xi_derivative_option = 8
+  integer :: xi_derivative_option = 3 ! Should be 8 eventually
   integer :: alpha_interpolation_stencil = 4
   integer :: pitch_angle_scattering_option = 3
   integer :: xi_quadrature_option = 3
@@ -164,8 +164,11 @@ module globalVariables
 
   integer :: preconditioner_alpha_interpolation_stencil = 2
   integer :: preconditioner_x=1, preconditioner_zeta_derivative_option=4
-  integer :: preconditioner_alpha_derivative_option=-4, preconditioner_xi_derivative_option=4, preconditioner_species=1
+  integer :: preconditioner_alpha_derivative_option=-4 ! In readInput.F90, this default is changed to +4 if Nzeta==1.
+  integer :: preconditioner_xi_derivative_option=2 ! Should be 4 eventually.
+  integer :: preconditioner_species=1
   integer :: preconditioner_pitch_angle_scattering_option=2
+  integer :: preconditioner_field_term_xi_option = 1 ! Should be 1 or 2 eventually.
   logical :: reusePreconditioner=.true.
 
   integer :: constraintScheme=-1
@@ -196,6 +199,8 @@ module globalVariables
   PetscScalar, dimension(:,:), allocatable :: interpolateXToXPotentials
 
   PetscScalar, dimension(:,:,:,:,:), allocatable :: RosenbluthPotentialTerms
+  PetscScalar, dimension(:,:), allocatable :: Legendre_polynomials
+  PetscScalar, dimension(:,:,:), allocatable :: Legendre_projection
 
   integer, parameter :: COORDINATE_SYSTEM_UNINITIALIZED = -1
   integer, parameter :: COORDINATE_SYSTEM_BOOZER = 1

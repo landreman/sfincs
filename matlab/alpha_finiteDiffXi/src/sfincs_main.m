@@ -4,7 +4,7 @@ startTime = tic;
 
 fprintf('***************************************************************************\n')
 fprintf('SFINCS: Stellarator Fokker-Plank Iterative Neoclassical Conservative Solver\n')
-fprintf('Version 3 - Matlab serial edition\n')
+fprintf('Alpha finite difference xi version - Matlab serial edition\n')
 
 sfincs_validateInput()
 

@@ -69,7 +69,7 @@ contains
     namelist / preconditionerOptions / preconditioner_x, preconditioner_zeta_derivative_option, &
          preconditioner_alpha_derivative_option, preconditioner_xi_derivative_option, preconditioner_species, reusePreconditioner, &
          preconditioner_pitch_angle_scattering_option, &
-         preconditioner_alpha_interpolation_stencil
+         preconditioner_alpha_interpolation_stencil, preconditioner_field_term_xi_option
 
 !!$    namelist / export_f / export_full_f, export_delta_f, export_f_theta, export_f_zeta, export_f_x, export_f_xi, &
 !!$         export_f_theta_option, export_f_zeta_option, export_f_xi_option, export_f_x_option
@@ -179,6 +179,9 @@ contains
        if (masterProc) then
           print *,"Successfully read parameters from otherNumericalParameters namelist in ", trim(filename), "."
        end if
+
+       ! Preconditioner default parameters that depend on other parameters go here:
+       if (Nzeta==1) preconditioner_alpha_derivative_option = 4
 
        read(fileUnit, nml=preconditionerOptions, iostat=didFileAccessWork)
        if (didFileAccessWork /= 0) then

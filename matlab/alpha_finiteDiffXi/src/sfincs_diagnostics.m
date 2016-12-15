@@ -1,11 +1,11 @@
 function sfincs_diagnostics()
 
 global stateVector f0 constraintScheme sources force0RadialCurrentInEquilibrium
-global Nalpha Nzeta Nspecies Nx alphaWeights zetaWeights RHSMode
+global Nalpha Nzeta Nspecies Nx Nxi alphaWeights zetaWeights RHSMode
 global Phi1Hat dPhi1Hatdalpha dPhi1Hatdzeta ddalpha ddzeta includePhi1
 global BLOCK_F BLOCK_QN BLOCK_PHI1_CONSTRAINT BLOCK_DENSITY_CONSTRAINT BLOCK_PRESSURE_CONSTRAINT BLOCK_F_CONSTRAINT indexVars
 global BHat DHat BHat_sub_theta BHat_sub_zeta dBHatdtheta dBHatdzeta dBHat_sub_zeta_dtheta dBHat_sub_theta_dzeta
-global THats Zs mHats nHats x xWeights Delta gamma
+global THats Zs mHats nHats x xWeights xi xiWeights Delta gamma
 global B0OverBBar FSABHat2 VPrimeHat
 global GHat iota IHat transportMatrix whichRHS
 
@@ -107,52 +107,67 @@ for ispecies = 1:Nspecies
     sqrtT = sqrt(THat);
     sqrtm = sqrt(mHat);
     
-    densityWeights = 4*pi*THat*sqrtT/(mHat*sqrtm)*(x.*x.*xWeights)';
-    flowWeights = 4*pi*THat*THat/(3*mHat*mHat)*(x.*x.*x.*xWeights)';
-    pressureWeights = 8*pi*THat*THat*sqrtT/(3*mHat*sqrtm)*(x.*x.*x.*x.*xWeights)';
-    particleFluxWeights_vm = pi*Delta*THat*THat*sqrtT/(Z*VPrimeHat*mHat*sqrtm)*(x.*x.*x.*x.*xWeights)';
-    particleFluxWeights_vE = 2*gamma*pi*Delta*THat*sqrtT/(VPrimeHat*mHat*sqrtm)*(x.*x.*xWeights)';
-    momentumFluxWeights_vm = pi*Delta*THat*THat*THat/(Z*VPrimeHat*mHat)*(x.*x.*x.*x.*x.*xWeights)';
-    momentumFluxWeights_vE = 2*gamma*pi*Delta*THat*THat/(VPrimeHat*mHat)*(x.*x.*x.*xWeights)';
-    heatFluxWeights_vm = pi*Delta*THat*THat*THat*sqrtT/(2*Z*VPrimeHat*mHat*sqrtm)*(x.*x.*x.*x.*x.*x.*xWeights)';
-    heatFluxWeights_vE = 2*gamma*pi*Delta*THat*THat*sqrtT/(2*VPrimeHat*mHat*sqrtm)*(x.*x.*x.*x.*xWeights)';
+    densityWeights = 2*pi*nHat*(x.*x.*xWeights)';
+    flowWeights = 2*pi*nHat*sqrtT/(sqrtm)*(x.*x.*x.*xWeights)';
+    pressureWeights = 4*pi*THat*nHat/(3)*(x.*x.*x.*x.*xWeights)';
+    particleFluxWeights_vm = pi*Delta*THat/(Z*VPrimeHat)*(x.*x.*x.*x.*xWeights)';
+    particleFluxWeights_vE = 2*gamma*pi*Delta/(VPrimeHat)*(x.*x.*xWeights)';
+    momentumFluxWeights_vm = pi*Delta*THat*sqrtT*sqrtm/(Z*VPrimeHat)*(x.*x.*x.*x.*x.*xWeights)';
+    momentumFluxWeights_vE = 2*gamma*pi*Delta*sqrtT*sqrtm/(VPrimeHat)*(x.*x.*x.*xWeights)';
+    heatFluxWeights_vm = pi*Delta*THat*THat/(2*Z*VPrimeHat)*(x.*x.*x.*x.*x.*x.*xWeights)';
+    heatFluxWeights_vE = 2*gamma*pi*Delta*THat/(2*VPrimeHat)*(x.*x.*x.*x.*xWeights)';
         
     % Do all the integrals over x and xi:
     for ialpha = 1:Nalpha
         for izeta = 1:Nzeta
-            
-            L = 0;
-            indices = sfincs_indices(ispecies, 1:Nx, L+1, ialpha, izeta, BLOCK_F, indexVars);
-            densityPerturbation(ispecies, ialpha, izeta) = densityWeights * stateVector(indices);
-            pressurePerturbation(ispecies, ialpha, izeta) = pressureWeights * stateVector(indices);
-            particleFluxBeforeSurfaceIntegral_vm0(ispecies, ialpha, izeta) = (factor(ialpha,izeta)*8/3+factor2(ialpha,izeta)*2/3)*particleFluxWeights_vm * f0(indices);
-            particleFluxBeforeSurfaceIntegral_vm(ispecies, ialpha, izeta) = (factor(ialpha,izeta)*8/3+factor2(ialpha,izeta)*2/3)*particleFluxWeights_vm * fullf(indices);
-            particleFluxBeforeSurfaceIntegral_vE0(ispecies, ialpha, izeta) = factor_vE(ialpha,izeta) * particleFluxWeights_vE * f0(indices);
-            particleFluxBeforeSurfaceIntegral_vE(ispecies, ialpha, izeta) = factor_vE(ialpha,izeta) * particleFluxWeights_vE * fullf(indices);
-            heatFluxBeforeSurfaceIntegral_vm0(ispecies, ialpha, izeta) = (factor(ialpha,izeta)*8/3+factor2(ialpha,izeta)*2/3)*heatFluxWeights_vm * f0(indices);
-            heatFluxBeforeSurfaceIntegral_vm(ispecies, ialpha, izeta) = (factor(ialpha,izeta)*8/3+factor2(ialpha,izeta)*2/3)*heatFluxWeights_vm * fullf(indices);
-            heatFluxBeforeSurfaceIntegral_vE0(ispecies, ialpha, izeta) = factor_vE(ialpha,izeta) * heatFluxWeights_vE * f0(indices);
-            heatFluxBeforeSurfaceIntegral_vE(ispecies, ialpha, izeta) = factor_vE(ialpha,izeta) * heatFluxWeights_vE * fullf(indices);
-            
-            L = 1;
-            indices = sfincs_indices(ispecies, 1:Nx, L+1, ialpha, izeta, BLOCK_F, indexVars);
-            flow(ispecies, ialpha, izeta) = flowWeights * stateVector(indices);
-            momentumFluxBeforeSurfaceIntegral_vm0(ispecies, ialpha, izeta) = (factor(ialpha,izeta)*16/15+factor2(ialpha,izeta)*2/5)*BHat(ialpha,izeta)*momentumFluxWeights_vm * f0(indices);
-            momentumFluxBeforeSurfaceIntegral_vm(ispecies, ialpha, izeta) = (factor(ialpha,izeta)*16/15+factor2(ialpha,izeta)*2/5)*BHat(ialpha,izeta)*momentumFluxWeights_vm * fullf(indices);
-            momentumFluxBeforeSurfaceIntegral_vE0(ispecies, ialpha, izeta) = factor_vE(ialpha,izeta)*2/3*BHat(ialpha,izeta)*momentumFluxWeights_vE * f0(indices);
-            momentumFluxBeforeSurfaceIntegral_vE(ispecies, ialpha, izeta) = factor_vE(ialpha,izeta)*2/3*BHat(ialpha,izeta)*momentumFluxWeights_vE * fullf(indices);
-            
-            L = 2;
-            indices = sfincs_indices(ispecies, 1:Nx, L+1, ialpha, izeta, BLOCK_F, indexVars);
-            particleFluxBeforeSurfaceIntegral_vm0(ispecies, ialpha, izeta) = particleFluxBeforeSurfaceIntegral_vm0(ispecies, ialpha, izeta) + (factor(ialpha,izeta)+factor2(ialpha,izeta))*4/15*particleFluxWeights_vm * f0(indices);
-            particleFluxBeforeSurfaceIntegral_vm(ispecies, ialpha, izeta) = particleFluxBeforeSurfaceIntegral_vm(ispecies, ialpha, izeta) + (factor(ialpha,izeta)+factor2(ialpha,izeta))*4/15*particleFluxWeights_vm * fullf(indices);
-            heatFluxBeforeSurfaceIntegral_vm0(ispecies, ialpha, izeta) = heatFluxBeforeSurfaceIntegral_vm0(ispecies, ialpha, izeta) + (factor(ialpha,izeta)+factor2(ialpha,izeta))*4/15*heatFluxWeights_vm * f0(indices);
-            heatFluxBeforeSurfaceIntegral_vm(ispecies, ialpha, izeta) = heatFluxBeforeSurfaceIntegral_vm(ispecies, ialpha, izeta) + (factor(ialpha,izeta)+factor2(ialpha,izeta))*4/15*heatFluxWeights_vm * fullf(indices);
-            
-            L = 3;
-            indices = sfincs_indices(ispecies, 1:Nx, L+1, ialpha, izeta, BLOCK_F, indexVars);
-            momentumFluxBeforeSurfaceIntegral_vm0(ispecies, ialpha, izeta) = momentumFluxBeforeSurfaceIntegral_vm0(ispecies, ialpha, izeta) + (factor(ialpha,izeta)+factor2(ialpha,izeta))*4/35*BHat(ialpha,izeta)*momentumFluxWeights_vm * f0(indices);
-            momentumFluxBeforeSurfaceIntegral_vm(ispecies, ialpha, izeta) = momentumFluxBeforeSurfaceIntegral_vm(ispecies, ialpha, izeta) + (factor(ialpha,izeta)+factor2(ialpha,izeta))*4/35*BHat(ialpha,izeta)*momentumFluxWeights_vm * fullf(indices);
+            for ixi = 1:Nxi
+                indices = sfincs_indices(ispecies, 1:Nx, ixi, ialpha, izeta, BLOCK_F, indexVars);
+                
+                densityPerturbation(ispecies, ialpha, izeta) = densityPerturbation(ispecies, ialpha, izeta) + ...
+                    xiWeights(ixi)*densityWeights * stateVector(indices);
+                
+                flow(ispecies, ialpha, izeta) = flow(ispecies, ialpha, izeta) + ...
+                    xiWeights(ixi)*xi(ixi) * flowWeights * stateVector(indices);
+                
+                pressurePerturbation(ispecies, ialpha, izeta) = pressurePerturbation(ispecies, ialpha, izeta) + ...
+                    xiWeights(ixi)*pressureWeights * stateVector(indices);
+                
+                particleFluxBeforeSurfaceIntegral_vm0(ispecies, ialpha, izeta) = particleFluxBeforeSurfaceIntegral_vm0(ispecies, ialpha, izeta) + ...
+                    xiWeights(ixi)*(factor(ialpha,izeta)*(1+xi(ixi)*xi(ixi))+factor2(ialpha,izeta)*xi(ixi)*xi(ixi))*particleFluxWeights_vm * f0(indices);
+                
+                particleFluxBeforeSurfaceIntegral_vm(ispecies, ialpha, izeta) = particleFluxBeforeSurfaceIntegral_vm(ispecies, ialpha, izeta) + ...
+                    xiWeights(ixi)*(factor(ialpha,izeta)*(1+xi(ixi)*xi(ixi))+factor2(ialpha,izeta)*xi(ixi)*xi(ixi))*particleFluxWeights_vm * fullf(indices);
+                
+                particleFluxBeforeSurfaceIntegral_vE0(ispecies, ialpha, izeta) = particleFluxBeforeSurfaceIntegral_vE0(ispecies, ialpha, izeta) + ...
+                    xiWeights(ixi)*factor_vE(ialpha,izeta) * particleFluxWeights_vE * f0(indices);
+                
+                particleFluxBeforeSurfaceIntegral_vE(ispecies, ialpha, izeta) = particleFluxBeforeSurfaceIntegral_vE(ispecies, ialpha, izeta) + ...
+                    xiWeights(ixi)*factor_vE(ialpha,izeta) * particleFluxWeights_vE * fullf(indices);
+                
+                heatFluxBeforeSurfaceIntegral_vm0(ispecies, ialpha, izeta) = heatFluxBeforeSurfaceIntegral_vm0(ispecies, ialpha, izeta) + ...
+                    xiWeights(ixi)*(factor(ialpha,izeta)*(1+xi(ixi)*xi(ixi))+factor2(ialpha,izeta)*xi(ixi)*xi(ixi))*heatFluxWeights_vm * f0(indices);
+                
+                heatFluxBeforeSurfaceIntegral_vm(ispecies, ialpha, izeta) = heatFluxBeforeSurfaceIntegral_vm(ispecies, ialpha, izeta) + ...
+                    xiWeights(ixi)*(factor(ialpha,izeta)*(1+xi(ixi)*xi(ixi))+factor2(ialpha,izeta)*xi(ixi)*xi(ixi))*heatFluxWeights_vm * fullf(indices);
+                
+                heatFluxBeforeSurfaceIntegral_vE0(ispecies, ialpha, izeta) = heatFluxBeforeSurfaceIntegral_vE0(ispecies, ialpha, izeta) + ...
+                    xiWeights(ixi)*factor_vE(ialpha,izeta) * heatFluxWeights_vE * f0(indices);
+                
+                heatFluxBeforeSurfaceIntegral_vE(ispecies, ialpha, izeta) = heatFluxBeforeSurfaceIntegral_vE(ispecies, ialpha, izeta) + ...
+                    xiWeights(ixi)*factor_vE(ialpha,izeta) * heatFluxWeights_vE * fullf(indices);
+                
+                momentumFluxBeforeSurfaceIntegral_vm0(ispecies, ialpha, izeta) = momentumFluxBeforeSurfaceIntegral_vm0(ispecies, ialpha, izeta) + ...
+                    xiWeights(ixi)*xi(ixi)*(factor(ialpha,izeta)*(1+xi(ixi)*xi(ixi))+factor2(ialpha,izeta)*xi(ixi)*xi(ixi))*BHat(ialpha,izeta)*momentumFluxWeights_vm * f0(indices);
+                
+                momentumFluxBeforeSurfaceIntegral_vm(ispecies, ialpha, izeta) = momentumFluxBeforeSurfaceIntegral_vm(ispecies, ialpha, izeta) + ...
+                    xiWeights(ixi)*xi(ixi)*(factor(ialpha,izeta)*(1+xi(ixi)*xi(ixi))+factor2(ialpha,izeta)*xi(ixi)*xi(ixi))*BHat(ialpha,izeta)*momentumFluxWeights_vm * fullf(indices);
+                
+                momentumFluxBeforeSurfaceIntegral_vE0(ispecies, ialpha, izeta) = momentumFluxBeforeSurfaceIntegral_vE0(ispecies, ialpha, izeta) + ...
+                    xiWeights(ixi)*xi(ixi)*factor_vE(ialpha,izeta)*BHat(ialpha,izeta)*momentumFluxWeights_vE * f0(indices);
+                
+                momentumFluxBeforeSurfaceIntegral_vE(ispecies, ialpha, izeta) = momentumFluxBeforeSurfaceIntegral_vE(ispecies, ialpha, izeta) + ...
+                    xiWeights(ixi)*xi(ixi)*factor_vE(ialpha,izeta)*BHat(ialpha,izeta)*momentumFluxWeights_vE * fullf(indices);
+            end
         end
     end
     

@@ -402,12 +402,12 @@
 !!$          momentumFluxFactor_vE = 2*gamma*pi*Delta*THat*THat/(VPrimeHat*mHat)
 !!$          heatFluxFactor_vm = pi*Delta*THat*THat*THat*sqrtTHat/(2*Zs(ispecies)*VPrimeHat*mHat*sqrtMHat)
 !!$          heatFluxFactor_vE = 2*gamma*pi*Delta*THat*THat*sqrtTHat/(2*VPrimeHat*mHat*sqrtMHat)
-          particleFluxFactor_vm = pi*Delta*THat/(Zs(ispecies)*VPrimeHat)
-          particleFluxFactor_vE = gamma*pi*Delta/(VPrimeHat)
-          momentumFluxFactor_vm = pi*Delta*THat*THat*THat/(Zs(ispecies)*VPrimeHat*mHat)
-          momentumFluxFactor_vE = 2*gamma*pi*Delta*THat*THat/(VPrimeHat*mHat)
-          heatFluxFactor_vm = pi*Delta*THat*THat/(2*Zs(ispecies)*VPrimeHat)
-          heatFluxFactor_vE = gamma*pi*Delta*THat/(2*VPrimeHat)
+          particleFluxFactor_vm = nHat*pi*Delta*THat/(Zs(ispecies)*VPrimeHat)
+          particleFluxFactor_vE = nHat*gamma*pi*Delta/(VPrimeHat)
+          momentumFluxFactor_vm = nHat*pi*Delta*THat*THat*THat/(Zs(ispecies)*VPrimeHat*mHat)
+          momentumFluxFactor_vE = nHat*2*gamma*pi*Delta*THat*THat/(VPrimeHat*mHat)
+          heatFluxFactor_vm = nHat*pi*Delta*THat*THat/(2*Zs(ispecies)*VPrimeHat)
+          heatFluxFactor_vE = nHat*gamma*pi*Delta*THat/(2*VPrimeHat)
 
           ! I haven't looked at how the NTV should be computed in the new units.
           ! Here is the way it was done in the multispecies linear version:

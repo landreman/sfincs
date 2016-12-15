@@ -18,7 +18,7 @@
     implicit none
 
     PetscErrorCode :: ierr
-    integer :: i, j, k, ialpha, izeta, scheme
+    integer :: i, j, k, ialpha, izeta, scheme, L
     PetscScalar, dimension(:,:), allocatable :: d2dalpha2, d2dzeta2, ddxi, d2dxi2
     PetscScalar, dimension(:), allocatable :: xWeightsPotentials
 
@@ -28,6 +28,7 @@
     PetscScalar, dimension(:), allocatable :: x_subset, xWeights_subset
     PetscScalar, dimension(:,:), allocatable :: ddx_subset, d2dx2_subset
     PetscScalar :: temp, Delta_zeta
+    PetscScalar, dimension(:), allocatable :: xi_to_Legendre
 
     DM :: myDM
     integer, parameter :: bufferLength = 200
@@ -669,8 +670,9 @@
        preconditioner_pitch_angle_scattering_option = 100
        preconditioner_xi_derivative_option = 100
 
-       call ChebyshevGrid(Nxi, -one, one, xi, xiWeights, ddxi_plus)
-       ddxi_minus = ddxi_plus
+       call ChebyshevGrid(Nxi, -one, one, xi, xiWeights, ddxi)
+       ddxi_plus = ddxi
+       ddxi_minus = ddxi
        ddxi_plus_preconditioner = ddxi_plus
        ddxi_minus_preconditioner = ddxi_minus
        d2dxi2 = matmul(ddxi,ddxi)
@@ -1460,6 +1462,43 @@
     deallocate(d2dx2_plus1)
 
     
+    ! *******************************************************************************
+    ! Compute the Legendre polynomials recursively
+    ! *******************************************************************************
+    
+    if (NL>0) then
+       allocate(Legendre_polynomials(Nxi,NL))
+       Legendre_polynomials = 1 ! This line takes care of the L=0 polynomial.
+       if (NL>1) Legendre_polynomials(:,2) = xi
+       do L = 1, NL-2
+          Legendre_polynomials(:,L+1+1) = ((2*L+1)*xi*Legendre_polynomials(:,L+1) - L*Legendre_polynomials(:,L-1+1)) / (L+one)
+       end do
+
+       print *,'Here come Legendre polynomials:'
+       do k=1,Nxi
+          print *,Legendre_polynomials(k,:)
+       end do
+       print *,"xiWeights:"
+       print *,xiWeights
+
+       allocate(Legendre_projection(Nxi,Nxi,NL))
+       allocate(xi_to_Legendre(Nxi))
+       do j=1,NL
+          L = j-1
+          xi_to_Legendre = (2*L+one)/2*Legendre_polynomials(:,j) * xiWeights
+          print *,"For L=",L,", here is xi_to_Legendre:"
+          print *,xi_to_Legendre
+          do k=1,Nxi
+             Legendre_projection(k,:,j) = xi_to_Legendre * Legendre_polynomials(k,j)
+          end do
+          print *,"For L=",L,", here is the Legendre projection matrix:"
+          do k=1,Nxi
+             print *,Legendre_projection(k,:,j)
+          end do
+       end do
+       deallocate(xi_to_Legendre)
+    end if
+
     ! *******************************************************************************
     ! Set the number of Legendre modes used for each value of x
     ! *******************************************************************************

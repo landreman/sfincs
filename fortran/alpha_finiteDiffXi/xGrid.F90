@@ -345,10 +345,17 @@
                speciesFactor = sqrt(THats(iSpeciesA)*mHats(iSpeciesB) &
                     / (THats(iSpeciesB) * mHats(iSpeciesA)))
 
-               speciesFactor2 = 3/(2*pi)*nHats(iSpeciesA) &
+               ! Version 3 normalization:
+               !speciesFactor2 = 3/(2*pi)*nHats(iSpeciesA) &
+               !     * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
+               !     / (THats(iSpeciesA) * sqrt(THats(iSpeciesA)*mHats(ispeciesA))) &
+               !     * THats(iSpeciesB)*mHats(iSpeciesA)/(THats(iSpeciesA)*mHats(iSpeciesB))
+
+               ! New normalization:
+               speciesFactor2 = 3/(2*pi)*nHats(iSpeciesB) &
                     * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
-                    / (THats(iSpeciesA) * sqrt(THats(iSpeciesA)*mHats(ispeciesA))) &
-                    * THats(iSpeciesB)*mHats(iSpeciesA)/(THats(iSpeciesA)*mHats(iSpeciesB))
+                    * sqrt(mHats(iSpeciesB)/THats(ispeciesB)) &
+                    / (THats(iSpeciesA)*mHats(iSpeciesA))
 
                do ix = 1,Nx
                   xb =  x(ix) * speciesFactor

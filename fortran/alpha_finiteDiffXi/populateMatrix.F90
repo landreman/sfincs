@@ -41,25 +41,19 @@
     integer :: rowIndex2, L2 !!Added by AM 2016-03
     integer :: ell, iSpeciesA, iSpeciesB, maxL
     integer, dimension(:), allocatable :: rowIndices, colIndices
-    PetscScalar, dimension(:,:), allocatable :: ddx_to_use, d2dx2ToUse, zetaPartOfTerm, alphaPartOfTerm
+    PetscScalar, dimension(:,:), allocatable :: ddx_to_use, d2dx2_to_use, zetaPartOfTerm, alphaPartOfTerm
     PetscScalar, dimension(:,:), allocatable :: fToFInterpolationMatrix
     PetscScalar, dimension(:,:), allocatable :: potentialsToFInterpolationMatrix
     PetscScalar, dimension(:,:,:,:), allocatable :: CECD
     PetscScalar :: xPartOfSource1, xPartOfSource2, geometricFactor1, geometricFactor2, geometricFactor3
-    PetscScalar, dimension(:,:), allocatable :: M11, M21, M32, LaplacianTimesX2WithoutL, nuDHat
+    PetscScalar, dimension(:,:), allocatable ::  nuDHat
     PetscScalar, dimension(:), allocatable :: erfs, Psi_Chandra
-    PetscScalar, dimension(:,:), allocatable :: CHat, M22, M33, M12, M13
-    PetscScalar, dimension(:,:), allocatable :: M22BackslashM21, M33BackslashM32
-    PetscScalar, dimension(:,:,:), allocatable :: M22BackslashM21s, M33BackslashM32s
-    integer, dimension(:), allocatable :: IPIV  ! Needed by LAPACK
-    integer :: LAPACKInfo
     PetscLogDouble :: time1, time2
     PetscScalar, dimension(:,:), allocatable :: ddalpha_to_use, ddzeta_to_use, ddxi_to_use
     PetscScalar, dimension(:,:), allocatable :: pitch_angle_scattering_operator_to_use
-    PetscScalar, dimension(:,:), allocatable :: tempMatrix, tempMatrix2, extrapMatrix
     double precision :: myMatInfo(MAT_INFO_SIZE)
     integer :: NNZ, NNZAllocated, NMallocs
-    PetscScalar :: CHat_element, dfMdx
+    PetscScalar :: dfMdx
     character(len=200) :: whichMatrixName, filename
     PetscViewer :: viewer
     integer :: ialpha_row, ialpha_col, izeta_row, izeta_col, ixMin, ixMinCol
@@ -74,6 +68,9 @@
     PetscScalar, dimension(:,:), allocatable :: alpha_interpolation_matrix
     integer :: zeta_shift, zeta_pad_size
     integer :: stencil, sign, izeta_interpolation
+    integer :: iSpecies_min, iSpecies_max, ix_min, ix_max
+    PetscScalar, dimension(:,:), allocatable :: collision_operator_xi_block
+    PetscScalar, dimension(:,:,:), allocatable :: Legendre_projection_to_use
 
     ! *******************************************************************************
     ! Do a few sundry initialization tasks:
@@ -189,7 +186,7 @@
     ! Allocate small matrices:
     ! *********************************************************
 
-    allocate(d2dx2ToUse(Nx,Nx))
+    allocate(d2dx2_to_use(Nx,Nx))
 
     allocate(xb(Nx))
     allocate(expxb2(Nx))
@@ -199,23 +196,6 @@
     allocate(fToFInterpolationMatrix(Nx,Nx))
     allocate(potentialsToFInterpolationMatrix(Nx, NxPotentials))
     allocate(CECD(Nspecies, Nspecies, Nx, Nx))
-
-    allocate(M21(NxPotentials, Nx))
-    allocate(M32(NxPotentials, NxPotentials))
-    allocate(M22BackslashM21(NxPotentials, Nx))
-    allocate(M33BackslashM32(NxPotentials, NxPotentials))
-    allocate(M22BackslashM21s(NL,NxPotentials, Nx))
-    allocate(M33BackslashM32s(NL,NxPotentials, NxPotentials))
-    allocate(LaplacianTimesX2WithoutL(NxPotentials, NxPotentials))
-
-    allocate(M12(Nx,NxPotentials))
-    allocate(M13(Nx,NxPotentials))
-    allocate(M22(NxPotentials,NxPotentials))
-    allocate(M33(NxPotentials,NxPotentials))
-
-    allocate(M11(Nx,Nx))
-    allocate(CHat(Nx,Nx))
-    allocate(IPIV(NxPotentials))
 
     
     ! ************************************************************
@@ -351,6 +331,7 @@
                    do ixi = 1,Nxi_for_x(ix)
                       if (Nzeta > 1) then
                          ! We are in a stellarator
+                         factor = 0
                          select case (ExB_option)
                          case (1)
                             factor = gamma*Delta*sqrtMHat/(2*sqrtTHat)*BHat(ialpha_row,izeta)/DHat(ialpha_row,izeta)*dPhiHatdpsiHat
@@ -362,9 +343,9 @@
                          factor = iota * x(ix) * xi(ixi)
                          select case (ExB_option)
                          case (1)
-                            factor = factor + gamma*Delta*sqrtMHat*dPhiHatdpsiHat*BHat_sub_zeta(ialpha,izeta)/(2*BHat(ialpha,izeta)*sqrtTHat)
+                            factor = factor + gamma*Delta*sqrtMHat*dPhiHatdpsiHat*BHat_sub_zeta(ialpha_row,izeta)/(2*BHat(ialpha_row,izeta)*sqrtTHat)
                          case (2)
-                            factor = factor + gamma*Delta*sqrtMHat*dPhiHatdpsiHat*BHat_sub_zeta(ialpha,izeta)*BHat(ialpha,izeta)/(2*FSABHat2*sqrtTHat)
+                            factor = factor + gamma*Delta*sqrtMHat*dPhiHatdpsiHat*BHat_sub_zeta(ialpha_row,izeta)*BHat(ialpha_row,izeta)/(2*FSABHat2*sqrtTHat)
                          end select
                       end if
 
@@ -913,88 +894,9 @@
           ! create several matrices which will be needed.
           ! *********************************************************
           
-          allocate(tempMatrix(Nx, NxPotentials))
-          allocate(tempMatrix2(NxPotentials, NxPotentials))
-          allocate(extrapMatrix(Nx, NxPotentials))
-          
           ! For future possible preconditioners, I might want the change the following 2 lines.
           ddx_to_use = ddx
-          d2dx2ToUse = d2dx2
-          
-          ! First assemble rows 2 and 3 of the block linear system, since they
-          ! are independent of psi and independent of species.
-          
-          M32 = zero
-          M21 = 4*pi*interpolateXToXPotentials
-          do i=2,NxPotentials-1
-             M21(i,:) = M21(i,:)*xPotentials(i)*xPotentials(i)
-             M32(i,i) = -2*xPotentials(i)*xPotentials(i)
-          end do
-          M21(1,:)=zero
-          M21(NxPotentials,:)=zero
-          M32(1,:)=zero
-          M32(NxPotentials,:)=zero
-          do i=1,NxPotentials
-             LaplacianTimesX2WithoutL(i,:) = xPotentials(i)*xPotentials(i)*d2dx2Potentials(i,:) &
-                  + 2 * xPotentials(i) * ddxPotentials(i,:)
-          end do
-          
-          do L=0,(NL-1)
-             M22 = LaplacianTimesX2WithoutL
-             do i=1,NxPotentials
-                M22(i,i) = M22(i,i) - L*(L+1)
-             end do
-             
-             ! Add Dirichlet or Neumann boundary condition for potentials at x=0:
-             if (L==0) then
-                M22(1,:)=ddxPotentials(1,:)
-             else
-                M22(1,:) = 0
-                M22(1,1) = 1
-             end if
-             M33 = M22;
-             
-             ! Add Robin boundary condition for potentials at x=xMax:
-             M22(NxPotentials,:) = xMaxNotTooSmall*ddxPotentials(NxPotentials,:)
-             M22(NxPotentials,NxPotentials) = M22(NxPotentials,NxPotentials) + L+1
-             
-             ! Boundary condition for G:
-             M33(NxPotentials,:) = xMaxNotTooSmall*xMaxNotTooSmall*d2dx2Potentials(NxPotentials,:) &
-                  + (2*L+1)*xMaxNotTooSmall*ddxPotentials(NxPotentials,:)
-             M33(NxPotentials,NxPotentials) = M33(NxPotentials,NxPotentials) + (L*L-1)
-             
-             if (L /= 0) then
-                M22(NxPotentials,1)=0
-                M33(NxPotentials,1)=0
-             end if
-             
-             ! Call LAPACK subroutine DGESV to solve a linear system
-             ! Note: this subroutine changes M22 and M33!
-             M22BackslashM21 = M21  ! This will be overwritten by LAPACK.
-#if defined(PETSC_USE_REAL_SINGLE)
-             call SGESV(NxPotentials, Nx, M22, NxPotentials, IPIV, M22BackslashM21, NxPotentials, LAPACKInfo)
-#else
-             call DGESV(NxPotentials, Nx, M22, NxPotentials, IPIV, M22BackslashM21, NxPotentials, LAPACKInfo)
-#endif
-             if (LAPACKInfo /= 0) then
-                print *, "Error in LAPACK call: info = ", LAPACKInfo
-                stop
-             end if
-             M33BackslashM32 = M32  ! This will be overwritten by LAPACK.
-#if defined(PETSC_USE_REAL_SINGLE)
-             call SGESV(NxPotentials, NxPotentials, M33, NxPotentials, IPIV, M33BackslashM32, NxPotentials, LAPACKInfo)
-#else
-             call DGESV(NxPotentials, NxPotentials, M33, NxPotentials, IPIV, M33BackslashM32, NxPotentials, LAPACKInfo)
-#endif
-             if (LAPACKInfo /= 0) then
-                print *, "Error in LAPACK call: info = ", LAPACKInfo
-                stop
-             end if
-             
-             M33BackslashM32s(L+1,:,:) = M33BackslashM32
-             M22BackslashM21s(L+1,:,:) = M22BackslashM21
-          end do
-          
+          d2dx2_to_use = d2dx2
           
           nuDHat = zero
           CECD = zero
@@ -1071,8 +973,13 @@
                 ! add CD (the part of the field term independent of Rosenbluth potentials.
                 ! CD is dense in the species indices.
                 
-                speciesFactor = 3 * nHats(iSpeciesA)  * mHats(iSpeciesA)/mHats(iSpeciesB) &
-                     * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / T32m
+                ! Old version 3 normalization:
+                !speciesFactor = 3 * nHats(iSpeciesA)  * mHats(iSpeciesA)/mHats(iSpeciesB) &
+                !     * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / T32m
+                
+                ! New normalization
+                speciesFactor = 3 * nHats(iSpeciesB)  * sqrt(mHats(iSpeciesB)/THats(iSpeciesB)) &
+                     * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / (THats(iSpeciesB)*mHats(iSpeciesA))
                 
                 do ix=1,Nx
                    CECD(iSpeciesA, iSpeciesB, ix, :) = CECD(iSpeciesA, iSpeciesB, ix, :) &
@@ -1089,7 +996,7 @@
                    !Now add the d2dx2 and ddx terms in CE:
                    !CE is diagonal in the species indices, so use iSpeciesA for both indices in CECD:
                    CECD(iSpeciesA, iSpeciesA, ix, :) = CECD(iSpeciesA, iSpeciesA, ix, :) &
-                        + speciesFactor * (Psi_Chandra(ix)/x(ix)*d2dx2ToUse(ix,:) &
+                        + speciesFactor * (Psi_Chandra(ix)/x(ix)*d2dx2_to_use(ix,:) &
                         + (-2*THats(iSpeciesA)*mHats(iSpeciesB)/(THats(iSpeciesB)*mHats(iSpeciesA)) &
                         * Psi_Chandra(ix)*(1-mHats(iSpeciesA)/mHats(iSpeciesB)) &
                         + (erfs(ix)-Psi_Chandra(ix))/x2(ix)) * ddx_to_use(ix,:))
@@ -1104,177 +1011,101 @@
                 end do
                 
              end do
-          end do
-          
+          end do          
           
           ! *****************************************************************
           ! Now we are ready to add the collision operator to the main matrix.
           ! *****************************************************************
-          
-          do L=0, Nxi-1
-             if (L>0 .and. pointAtX0) then
-                ixMinCol = 2
+
+          allocate(collision_operator_xi_block(Nxi,Nxi))
+          allocate(pitch_angle_scattering_operator_to_use(Nxi,Nxi))
+          if (whichMatrix==0) then
+             pitch_angle_scattering_operator_to_use = pitch_angle_scattering_operator_preconditioner
+          else
+             pitch_angle_scattering_operator_to_use = pitch_angle_scattering_operator
+          end if
+
+          if (NL>0) then
+             allocate(Legendre_projection_to_use(Nxi,Nxi,NL))
+             if (whichMatrix==0 .and. preconditioner_field_term_xi_option==1) then
+                ! Keep only the part that is diagonal in xi.
+                Legendre_projection_to_use = 0
+                do ixi = 1,Nxi
+                   Legendre_projection_to_use(ixi,ixi,:) = Legendre_projection(ixi,ixi,:)
+                end do
+             elseif (whichMatrix==0 .and. preconditioner_field_term_xi_option==2) then
+                ! Keep only the part that is tridiagonal in xi.
+                Legendre_projection_to_use = 0
+                do ixi = 1,Nxi ! Handle diagonal
+                   Legendre_projection_to_use(ixi,ixi,:) = Legendre_projection(ixi,ixi,:)
+                end do
+                do ixi = 1,Nxi-1 ! Handle +/- 1 off-diagonal.
+                   Legendre_projection_to_use(ixi,ixi+1,:) = Legendre_projection(ixi,ixi+1,:)
+                   Legendre_projection_to_use(ixi+1,ixi,:) = Legendre_projection(ixi+1,ixi,:)
+                end do
              else
-                ixMinCol = 1
+                ! Keep full xi coupling.
+                Legendre_projection_to_use = Legendre_projection
              end if
+          end if
 
-             do iSpeciesB = 1,Nspecies
-                do iSpeciesA = 1,Nspecies
-                   if (iSpeciesA==iSpeciesB .or. whichMatrix>0 .or. preconditioner_species==0) then
-                      
-                      speciesFactor = sqrt(THats(iSpeciesA)*mHats(iSpeciesB) &
-                           / (THats(iSpeciesB) * mHats(iSpeciesA)))
-                      xb =  x * speciesFactor
-                      
-                      ! Build M11
-                      M11 = CECD(iSpeciesA, iSpeciesB,:,:)
-                      if (iSpeciesA == iSpeciesB) then
-                         do i=1,Nx
-                            M11(i,i) = M11(i,i) + (-oneHalf*nuDHat(iSpeciesA,i)*L*(L+1))
-                         end do
+          do iSpeciesB = 1,Nspecies
+             if (whichMatrix==0 .and. preconditioner_species==1) then
+                iSpecies_min = iSpeciesB
+                iSpecies_max = iSpeciesB
+             else
+                iSpecies_min = 1
+                iSpecies_max = Nspecies
+             end if
+             do iSpeciesA = iSpecies_min, iSpecies_max
+                do ix_row = 1,Nx
+                   if (whichMatrix==0.and. preconditioner_x==1) then
+                      ix_min = ix_row
+                      ix_max = ix_row
+                   else
+                      ix_min = 1
+                      ix_max = Nx
+                   end if
+                   do ix_col = ix_min, ix_max
+                      collision_operator_xi_block = 0
+                      do ixi = 1,Nxi
+                         ! Add energy scattering, plus the part of the field term that does not depend on the Rosenbluth potentials:
+                         ! (These terms are diagonal in xi.)
+                         collision_operator_xi_block(ixi,ixi) = CECD(iSpeciesA,iSpeciesB,ix_row,ix_col)
+                      end do
+                      do L = 0,NL-1
+                         ! Add the terms in the field part involving the Rosenbluth potentials:
+                         ! (These terms are generally dense in xi.)
+                         collision_operator_xi_block = collision_operator_xi_block + Legendre_projection_to_use(:,:,L+1) * RosenbluthPotentialTerms(iSpeciesA,iSpeciesB,L+1,ix_row,ix_col)
+                      end do
+                      if (iSpeciesA==iSpeciesB .and. ix_row==ix_col) then
+                         ! Add pitch angle scattering:
+                         ! (This operator is usually tri-diagonal or penta-diagonal in xi.)
+                         collision_operator_xi_block = collision_operator_xi_block + pitch_angle_scattering_operator_to_use * nuDHat(iSpeciesA,ix_row)
                       end if
-                      
-                      !   if (.false.) then
-                      if (L < NL) then
-                         ! Add Rosenbluth potential terms.
 
-                         if (xGridScheme==5 .or. xGridScheme==6) then
-                            ! New scheme for the Rosenbluth potential terms.
-                            M11 = M11 + RosenbluthPotentialTerms(iSpeciesA,iSpeciesB,L+1,:,:)
-                            CHat = M11
-
-                         else
-                            ! Original scheme for the Rosenbluth potential terms.
-
-                            speciesFactor2 = sqrt(THats(iSpeciesA)*mHats(iSpeciesB) &
-                                 / (THats(iSpeciesB) * mHats(iSpeciesA)))
-                         
-                            ! Build M13:
-                            call interpolationMatrix(NxPotentials, Nx, xPotentials, x*speciesFactor2, &
-                                 xPotentialsInterpolationScheme, potentialsToFInterpolationMatrix, extrapMatrix)
-                         
-                            speciesFactor = 3/(2*pi)*nHats(iSpeciesA) &
-                                 * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
-                                 / (THats(iSpeciesA) * sqrt(THats(iSpeciesA)*mHats(ispeciesA))) &
-                                 * THats(iSpeciesB)*mHats(iSpeciesA)/(THats(iSpeciesA)*mHats(iSpeciesB))
-                         
-                            tempMatrix = matmul(potentialsToFInterpolationMatrix, d2dx2Potentials)
-                            do i=1,Nx
-                               !M13(i, :) = speciesFactor*expx2(i)*x2(i)*tempMatrix(i,:)
-                               M13(i, :) = speciesFactor*expx2(i) * (x2(i)*tempMatrix(i,:) &
-                                    + THats(ispeciesB)*mHats(ispeciesA)/(THats(ispeciesA)*mHats(ispeciesB)) &
-                                    *(L+1)*(L+2)*(maxxPotentials ** (L+1)) * (xb(i) ** (-L-1))*extrapMatrix(i,:))
-                            end do
-                         
-                            temp = 1-mHats(iSpeciesA)/mHats(iSpeciesB)
-                            do i=1,NxPotentials
-                               tempMatrix2(i,:) = temp*xPotentials(i)*ddxPotentials(i,:)
-                               tempMatrix2(i,i) = tempMatrix2(i,i) + one
-                            end do
-                            tempMatrix = matmul(potentialsToFInterpolationMatrix, tempMatrix2)
-                            do i=1,Nx
-                               !M12(i,:) = -speciesFactor*expx2(i)*tempMatrix(i,:)
-                               M12(i,:) = -speciesFactor*expx2(i) * ( tempMatrix(i,:) &
-                                    +( -((maxxPotentials/xb(i)) ** (L+1)) &
-                                    * ((L+1)*(1-mHats(ispeciesA)/mHats(ispeciesB)) - 1) &
-                                    -THats(ispeciesB)*mHats(ispeciesA)/(THats(ispeciesA)*mHats(ispeciesB))&
-                                    *((L+1)*(L+2)/(2*L-1) * (maxxPotentials**(L+3))*(xb(i) ** (-L-1)) &
-                                    -L*(L-1)/(2*L-1) * (maxxPotentials ** (L+1))*(xb(i)**(-L+1)))) &
-                                    *extrapMatrix(i,:))
-                            end do
-                         
-                            ! Possibly add Dirichlet boundary condition for potentials at x=0:
-                            if (L /= 0) then
-                               M12(:,1) = 0
-                               M13(:,1) = 0
-                            end if
-                         
-                            !CHat = M11 -  (M12 - M13 * (M33 \ M32)) * (M22 \ M21);
-                            CHat = M11 - matmul(M12 - matmul(M13, M33BackslashM32s(L+1,:,:)),&
-                                 M22BackslashM21s(L+1,:,:))
-                         end if
-                      else
-                         CHat = M11;
-                      end if
-                      
-                      !if (whichMatrix==0 .and. L >= preconditioner_x_min_L) then
-                      if (whichMatrix==0) then
-                         ! We're making the preconditioner, so simplify the x part of the matrix if desired.
-                         select case (preconditioner_x)
-                         case (0)
-                            ! Do nothing.
-                         case (1)
-                            ! Keep only diagonal in x:
-                            do i=1,Nx
-                               do j=1,Nx
-                                  if (i /= j) then
-                                     CHat(i,j) = zero
-                                  end if
-                               end do
-                            end do
-                         case (2)
-                            ! Keep only upper-triangular part:
-                            do i=2,Nx
-                               do j=1,(i-1)
-                                  CHat(i,j) = zero
-                               end do
-                            end do
-                         case (3,5)
-                            ! Keep only tridiagonal part:
-                            do i=1,Nx
-                               do j=1,Nx
-                                  if (abs(i-j)>1) then
-                                     CHat(i,j) = zero
-                                  end if
-                               end do
-                            end do
-                         case (4)
-                            ! Keep only the diagonal and super-diagonal:
-                            do i=1,Nx
-                               do j=1,Nx
-                                  if (i /= j .and. j /= (i+1)) then
-                                     CHat(i,j) = zero
-                                  end if
-                               end do
-                            end do
-                         case default
-                            print *,"Error! Invalid preconditioner_x"
-                            stop
-                         end select
-                         
-                      end if
-                      
-                      ! Note: in previous versions I take the transpose of CHat here,
-                      ! but since I have switched to using MatSetValueSparse instead of MatSetValuesSparse,
-                      ! the transpose should no longer be applied here.
-                      !CHat = transpose(CHat)
-                      
-                      ! At this point, CHat contains the collision operator normalized by
-                      ! \bar{nu}, (the collision frequency at the reference mass, density, and temperature.)
-                      
-                      do ialpha=ialphaMin,ialphaMax
-                         do izeta=izetaMinDKE,izetaMaxDKE
-                            !do ix_row=ixMin,Nx
-                            do ix_row=max(ixMin,min_x_for_L(L)),Nx
-                               rowIndex=getIndex(iSpeciesA,ix_row,L+1,ialpha,izeta,BLOCK_F)
-                               !do ix_col = ixMinCol,Nx
-                               do ix_col = max(ixMinCol,min_x_for_L(L)),Nx
-                                  colIndex=getIndex(iSpeciesB,ix_col,L+1,ialpha,izeta,BLOCK_F)
+                      do ialpha = ialphaMin,ialphaMax
+                         do izeta = izetaMinDKE,izetaMaxDKE
+                            factor = -nu_n*BHat(ialpha,izeta)*sqrt(mHats(ispeciesA)/THats(ispeciesA))/DHat(ialpha,izeta)
+                            do ixi_col = 1,Nxi
+                               colIndex = getIndex(iSpeciesB,ix_col,ixi_col,ialpha,izeta,BLOCK_F)
+                               do ixi_row = 1,Nxi
+                                  rowIndex = getIndex(iSpeciesA,ix_row,ixi_row,ialpha,izeta,BLOCK_F)
                                   call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                                       -nu_n*CHat(ix_row,ix_col), ADD_VALUES, ierr)
+                                       factor*collision_operator_xi_block(ixi_row,ixi_col), ADD_VALUES, ierr)
                                end do
                             end do
                          end do
                       end do
-                      
-                   end if
+                   end do
                 end do
              end do
           end do
+                      
+          deallocate(pitch_angle_scattering_operator_to_use)
+          if (allocated(Legendre_projection_to_use)) deallocate(Legendre_projection_to_use)
+          deallocate(collision_operator_xi_block)
           
-          deallocate(tempMatrix)
-          deallocate(tempMatrix2)
-          deallocate(extrapMatrix)
           
           ! *******************************************************************************
           ! *******************************************************************************
