@@ -17,9 +17,8 @@
     Vec :: stateVec, residualVec
     PetscErrorCode :: ierr
     integer :: userContext(*)
-    Vec :: rhs
-!!    PetscScalar :: scalar, xPartOfRHS, factor !!Commented by AM 2016-03
-    PetscScalar :: scalar, xPartOfRHS, factor, xPartOfRHS2 !!Added by AM 2016-03
+    Vec :: inhomogeneous_terms
+    PetscScalar :: scalar, x_part, factor, x_part_2
     integer :: ix, ixi, L, ialpha, izeta, ispecies, index
     PetscScalar :: THat, mHat, sqrtTHat, sqrtmHat, dfMdx
     Mat :: residualMatrix
@@ -69,8 +68,8 @@
     ! --------------------------------------------------------------------------------
     ! --------------------------------------------------------------------------------
 
-    call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, rhs, ierr)
-    call VecSet(rhs, zero, ierr)
+    call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, inhomogeneous_terms, ierr)
+    call VecSet(inhomogeneous_terms, zero, ierr)
 
     if (RHSMode==1) then
        dPhiHatdpsiHatToUseInRHS = dPhiHatdpsiHat
@@ -99,41 +98,41 @@
        sqrtMHat = sqrt(mHat)
        
        do ix=ixMin,Nx
-          xPartOfRHS = x2(ix)*exp(-x2(ix))*( dnHatdpsiHats(ispecies)/nHats(ispecies) &
+          x_part = x2(ix)*exp(-x2(ix))*( dnHatdpsiHats(ispecies)/nHats(ispecies) &
                + gamma*Zs(ispecies)/THats(ispecies)*dPhiHatdpsiHatToUseInRHS &
                + (x2(ix) - three/two)*dTHatdpsiHats(ispecies)/THats(ispecies))
 
           if (includePhi1 .and. includePhi1InKineticEquation) then
-             xPartOfRHS2 = x2(ix)*exp(-x2(ix))*dTHatdpsiHats(ispecies)/(THats(ispecies)*THats(ispecies))
+             x_part_2 = x2(ix)*exp(-x2(ix))*dTHatdpsiHats(ispecies)/(THats(ispecies)*THats(ispecies))
           end if
 
           do ialpha = ialphaMin,ialphaMax
              do izeta = izetaMinDKE,izetaMaxDKE                
                 if (includePhi1 .and. includePhi1InKineticEquation) then !!Added by AM 2016-03
                    stop "This part not yet ready for alpha_finiteDiffXi"
-                   factor = Delta*nHats(ispecies)*mHat*sqrtMHat &
+                   factor = -Delta*nHats(ispecies)*mHat*sqrtMHat &
                         /(2*pi*sqrtpi*Zs(ispecies)*(BHat(ialpha,izeta)**3)*sqrtTHat) &
                         *(BHat_sub_zeta(ialpha,izeta)*dBHatdtheta(ialpha,izeta) &
                         - BHat_sub_theta(ialpha,izeta)*dBHatdzeta(ialpha,izeta))&
-                        !!                     * DHat(ialpha,izeta) * xPartOfRHS !!Commented by AM 2016-02
-                        * DHat(ialpha,izeta) * (xPartOfRHS + xPartOfRHS2*Zs(ispecies)*gamma*Phi1Hat(ialpha,izeta))  & !!Added by AM 2016-02
+                        !!                     * DHat(ialpha,izeta) * x_part !!Commented by AM 2016-02
+                        * DHat(ialpha,izeta) * (x_part + x_part_2*Zs(ispecies)*gamma*Phi1Hat(ialpha,izeta))  & !!Added by AM 2016-02
                         * exp(-Zs(ispecies)*gamma*Phi1Hat(ialpha,izeta)/THats(ispecies)) !!Added by AM 2016-02
                 else
 !!$                   factor = Delta*nHats(ispecies)*mHat*sqrtMHat &
 !!$                        /(2*pi*sqrtpi*Zs(ispecies)*(BHat(ialpha,izeta)**3)*sqrtTHat) &
 !!$                        *(BHat_sub_zeta(ialpha,izeta)*dBHatdtheta(ialpha,izeta) &
 !!$                        - BHat_sub_theta(ialpha,izeta)*dBHatdzeta(ialpha,izeta))&
-!!$                        * DHat(ialpha,izeta) * xPartOfRHS
-                   factor = Delta*sqrtTHat*sqrtMHat &
+!!$                        * DHat(ialpha,izeta) * x_part
+                   factor = -Delta*sqrtTHat*sqrtMHat &
                         /(2*pi*sqrtpi*Zs(ispecies)*BHat(ialpha,izeta)*BHat(ialpha,izeta)) &
                         *(BHat_sub_zeta(ialpha,izeta)*dBHatdtheta(ialpha,izeta) &
                         - BHat_sub_theta(ialpha,izeta)*dBHatdzeta(ialpha,izeta))&
-                        * xPartOfRHS
+                        * x_part
                 end if 
                 
                 do ixi = 1,Nxi_for_x(ix)
                    index = getIndex(ispecies, ix, ixi, ialpha, izeta, BLOCK_F)
-                   call VecSetValue(rhs, index, (1+xi(ixi)*xi(ixi))*factor, ADD_VALUES, ierr)
+                   call VecSetValue(inhomogeneous_terms, index, (1+xi(ixi)*xi(ixi))*factor, ADD_VALUES, ierr)
                 end do
              end do
           end do
@@ -168,7 +167,7 @@
 
                 factor = factor - adiabaticZ * adiabaticNHat * exp (- adiabaticZ* gamma * Phi1Hat(ialpha,izeta) / adiabaticTHat)
              end if
-             call VecSetValue(rhs, index, factor, ADD_VALUES, ierr)
+             call VecSetValue(inhomogeneous_terms, index, factor, ADD_VALUES, ierr)
           end do
        end do
     end if
@@ -206,19 +205,19 @@
 !!$    end do
 
     ! Add the inductive electric field term:
-    L=1
     do ispecies = 1,Nspecies
        do ix=ixMin,Nx
-          !factor = gamma*Zs(ispecies)*x(ix)*exp(-x2(ix))*EParallelHatToUse*(GHat+iota*IHat)&
-          !     *nHats(ispecies)*mHats(ispecies)/(pi*sqrtpi*THats(ispecies)*THats(ispecies)*FSABHat2)
-          factor = gamma*Zs(ispecies)*x(ix)*exp(-x2(ix))*EParallelHat &
-               *nHats(ispecies)*mHats(ispecies)/(pi*sqrtpi*THats(ispecies)*THats(ispecies)*FSABHat2)
           do ialpha=ialphaMin,ialphaMax
              do izeta = izetaMinDKE,izetaMaxDKE
-                index = getIndex(ispecies, ix, L+1, ialpha, izeta, BLOCK_F)
-                call VecSetValue(rhs, index, &
-                     factor * BHat(ialpha,izeta), ADD_VALUES, ierr)
-                     !factor/BHat(ialpha,izeta), ADD_VALUES, ierr)
+                !factor = gamma*Zs(ispecies)*x(ix)*exp(-x2(ix))*EParallelHat &
+                !     *nHats(ispecies)*mHats(ispecies)/(pi*sqrtpi*THats(ispecies)*THats(ispecies)*FSABHat2)
+                factor = -gamma*Zs(ispecies)*x(ix)*exp(-x2(ix))*EParallelHat &
+                     *BHat(ialpha,izeta)*BHat(ialpha,izeta)/(pi*sqrtpi*THats(ispecies)*DHat(ialpha,izeta)*FSABHat2)
+                do ixi = 1,Nxi
+                   index = getIndex(ispecies, ix, ixi, ialpha, izeta, BLOCK_F)
+                   call VecSetValue(inhomogeneous_terms, index, &
+                        factor * xi(ixi), ADD_VALUES, ierr)
+                end do
              end do
           end do
        end do
@@ -226,14 +225,14 @@
 
     ! Done inserting values.
     ! Finally, assemble the RHS vector:
-    call VecAssemblyBegin(rhs, ierr)
-    call VecAssemblyEnd(rhs, ierr)
+    call VecAssemblyBegin(inhomogeneous_terms, ierr)
+    call VecAssemblyEnd(inhomogeneous_terms, ierr)
 
 
-    ! Subtract the RHS from the residual:
-    scalar = -1
-    call VecAXPY(residualVec, scalar, rhs, ierr)
-    call VecDestroy(rhs, ierr)
+    ! Add the inhomogeneous terms to the residual:
+    scalar = 1
+    call VecAXPY(residualVec, scalar, inhomogeneous_terms, ierr)
+    call VecDestroy(inhomogeneous_terms, ierr)
 
     if (saveMatlabOutput) then
        write (filename,fmt="(a,i3.3,a)") trim(MatlabOutputFilename) // "_iteration_", iterationForResidualOutput, &

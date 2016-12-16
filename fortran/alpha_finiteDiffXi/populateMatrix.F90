@@ -442,7 +442,8 @@
                 do ix_row = 1,Nx
                    do ixi = 1,Nxi
                       ! The next line contains \dot{\hat{x}}:
-                      factor = -gamma*Delta*sqrtMHat*dPhiHatdpsiHat/(4*sqrtTHat*BHat(ialpha,izeta)*BHat(ialpha,izeta))
+                      factor = x(ix_row)*(1+xi(ixi)*xi(ixi))*gamma*Delta*sqrtMHat*dPhiHatdpsiHat/(4*sqrtTHat*BHat(ialpha,izeta)*BHat(ialpha,izeta)) &
+                           * (BHat_sub_zeta(ialpha,izeta)*dBHatdtheta(ialpha,izeta) - BHat_sub_theta(ialpha,izeta)*dBHatdzeta(ialpha,izeta))
                       if (whichMatrix>0) then
                          ! Not preconditioner
                          ddx_to_use = ddx
