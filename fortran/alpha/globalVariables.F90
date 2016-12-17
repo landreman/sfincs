@@ -129,13 +129,23 @@ module globalVariables
   ! ********************************************************
   ! ********************************************************
 
-  integer :: alphaDerivativeScheme = 2
-  integer :: zetaDerivativeScheme = 2
+  integer :: streaming_theta_derivative_option = 8
+  integer :: streaming_zeta_derivative_option = 8
+  integer :: ExB_alpha_derivative_option = 8
+  integer :: ExB_zeta_derivative_option = 8
   integer :: alpha_interpolation_stencil = 4
-  integer :: preconditioner_alpha_interpolation_stencil = 2
 
-  integer :: ExBDerivativeSchemeAlpha = 0
-  integer :: ExBDerivativeSchemeZeta = 0
+  integer :: preconditioner_streaming_theta_derivative_option = 4
+  integer :: preconditioner_streaming_zeta_derivative_option = 4
+  integer :: preconditioner_ExB_alpha_derivative_option = 4
+  integer :: preconditioner_ExB_zeta_derivative_option = 4
+  integer :: preconditioner_alpha_interpolation_stencil = 4
+
+  integer :: preconditioner_streaming_theta_min_L = 0
+  integer :: preconditioner_streaming_zeta_min_L = 0
+  integer :: preconditioner_ExB_alpha_min_L = 0
+  integer :: preconditioner_ExB_zeta_min_L = 0
+
   integer :: magneticDriftDerivativeScheme = 3
   integer :: xDotDerivativeScheme = 0
 
@@ -165,9 +175,9 @@ module globalVariables
   ! 1 = use mumps if it is detected, otherwise use superlu_dist
   ! 2 = force use of superlu_dist, if it is available
 
-  integer :: preconditioner_x=1, preconditioner_x_min_L=0, preconditioner_zeta=1
-  integer :: preconditioner_alpha=2, preconditioner_xi=1, preconditioner_species=1
-  integer :: preconditioner_alpha_min_L=0, preconditioner_zeta_min_L=0
+  integer :: preconditioner_x=1, preconditioner_x_min_L=0
+  integer :: preconditioner_xi=1
+  integer :: preconditioner_species=1
   logical :: reusePreconditioner=.true.
   integer :: preconditioner_magnetic_drifts_max_L = 2
 
@@ -186,9 +196,22 @@ module globalVariables
   integer :: matrixSize, NxPotentials
   PetscScalar, dimension(:), allocatable :: alpha, zeta, x, x_plus1
   PetscScalar, dimension(:), allocatable :: alphaWeights, zetaWeights
-  PetscScalar, dimension(:,:), allocatable :: ddalpha, ddzeta
-  PetscScalar, dimension(:,:), allocatable :: ddalpha_ExB_plus, ddalpha_ExB_minus
-  PetscScalar, dimension(:,:), allocatable :: ddzeta_ExB_plus, ddzeta_ExB_minus
+
+  PetscScalar, dimension(:,:), allocatable :: streaming_ddtheta_plus, streaming_ddtheta_minus
+  PetscScalar, dimension(:,:), allocatable :: streaming_ddtheta_plus_preconditioner, streaming_ddtheta_minus_preconditioner
+  PetscScalar, dimension(:,:), allocatable :: streaming_ddzeta_plus, streaming_ddzeta_minus
+  PetscScalar, dimension(:,:), allocatable :: streaming_ddzeta_plus_preconditioner, streaming_ddzeta_minus_preconditioner
+
+  PetscScalar, dimension(:,:), allocatable :: streaming_ddtheta_sum, streaming_ddtheta_difference
+  PetscScalar, dimension(:,:), allocatable :: streaming_ddtheta_sum_preconditioner, streaming_ddtheta_difference_preconditioner
+  PetscScalar, dimension(:,:), allocatable :: streaming_ddzeta_sum, streaming_ddzeta_difference
+  PetscScalar, dimension(:,:), allocatable :: streaming_ddzeta_sum_preconditioner, streaming_ddzeta_difference_preconditioner
+
+  PetscScalar, dimension(:,:), allocatable :: ExB_ddalpha_plus, ExB_ddalpha_minus
+  PetscScalar, dimension(:,:), allocatable :: ExB_ddalpha_plus_preconditioner, ExB_ddalpha_minus_preconditioner
+  PetscScalar, dimension(:,:), allocatable :: ExB_ddzeta_plus, ExB_ddzeta_minus
+  PetscScalar, dimension(:,:), allocatable :: ExB_ddzeta_plus_preconditioner, ExB_ddzeta_minus_preconditioner
+
   PetscScalar, dimension(:,:), allocatable :: ddalpha_magneticDrift_plus, ddalpha_magneticDrift_minus
   PetscScalar, dimension(:,:), allocatable :: ddzeta_magneticDrift_plus, ddzeta_magneticDrift_minus
   PetscScalar, dimension(:), allocatable :: xWeights, xPotentials
@@ -198,8 +221,6 @@ module globalVariables
   PetscScalar, dimension(:,:), allocatable :: ddx_xDot_plus, ddx_xDot_preconditioner_plus
   PetscScalar, dimension(:,:), allocatable :: ddx_xDot_minus, ddx_xDot_preconditioner_minus
   PetscScalar, dimension(:,:), allocatable :: ddx_preconditioner
-  PetscScalar, dimension(:,:), allocatable :: ddalpha_preconditioner
-  PetscScalar, dimension(:,:), allocatable :: ddzeta_preconditioner
   PetscScalar, dimension(:,:), allocatable :: interpolateXToXPotentials
 
   PetscScalar, dimension(:,:,:,:,:), allocatable :: RosenbluthPotentialTerms

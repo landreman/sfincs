@@ -20,11 +20,10 @@
     PetscErrorCode :: ierr
     integer :: i, j, ialpha, izeta, scheme
     PetscScalar, dimension(:,:), allocatable :: d2dalpha2, d2dzeta2
-    PetscScalar, dimension(:), allocatable :: alpha_preconditioner, alphaWeights_preconditioner
-    PetscScalar, dimension(:,:), allocatable :: d2dalpha2_preconditioner
-    PetscScalar, dimension(:), allocatable :: zeta_preconditioner, zetaWeights_preconditioner
-    PetscScalar, dimension(:,:), allocatable :: d2dzeta2_preconditioner
+    PetscScalar, dimension(:), allocatable :: alpha_dummy, alpha_weights_dummy
     PetscScalar, dimension(:), allocatable :: xWeightsPotentials
+    integer :: derivative_option_plus, derivative_option_minus, quadrature_option
+    logical :: call_uniform_diff_matrices
 
     PetscScalar, dimension(:), allocatable :: xWeights_plus1
     PetscScalar, dimension(:,:), allocatable :: ddx_plus1, d2dx2_plus1
@@ -74,26 +73,6 @@
           print *,"xMax               = ",xMax
        end if
        print *,"solverTolerance    = ",solverTolerance
-       select case (alphaDerivativeScheme)
-       case (0)
-          print *,"Alpha derivative: spectral collocation"
-       case (1)
-          print *,"Alpha derivative: centered finite differences, 3-point stencil"
-       case (2)
-          print *,"Alpha derivative: centered finite differences, 5-point stencil"
-       case default
-          print *,"Error! Invalid setting for alphaDerivativeScheme"
-          stop
-       end select
-       select case (zetaDerivativeScheme)
-       case (1)
-          print *,"Zeta derivative: centered finite differences, 3-point stencil"
-       case (2)
-          print *,"Zeta derivative: centered finite differences, 5-point stencil"
-       case default
-          print *,"Error! Invalid setting for zetaDerivativeScheme"
-          stop
-       end select
        if (useIterativeLinearSolver) then
           print *,"For solving large linear systems, an iterative Krylov solver will be used."
        else
@@ -198,70 +177,427 @@
 
 
     ! *******************************************************************************
+    ! *******************************************************************************
+    !
     ! Build alpha grid, integration weights, and differentiation matrices:
+    !
+    ! *******************************************************************************
     ! *******************************************************************************
 
     allocate(alpha(Nalpha))
     allocate(alphaWeights(Nalpha))
-    allocate(ddalpha(Nalpha,Nalpha))
-    allocate(ddalpha_ExB_plus(Nalpha,Nalpha))
-    allocate(ddalpha_ExB_minus(Nalpha,Nalpha))
+    allocate(alpha_dummy(Nalpha))
+    allocate(alpha_weights_dummy(Nalpha))
+
+    allocate(streaming_ddtheta_plus(Nalpha,Nalpha))
+    allocate(streaming_ddtheta_minus(Nalpha,Nalpha))
+    allocate(streaming_ddtheta_plus_preconditioner(Nalpha,Nalpha))
+    allocate(streaming_ddtheta_minus_preconditioner(Nalpha,Nalpha))
+    allocate(streaming_ddtheta_sum(Nalpha,Nalpha))
+    allocate(streaming_ddtheta_difference(Nalpha,Nalpha))
+    allocate(streaming_ddtheta_sum_preconditioner(Nalpha,Nalpha))
+    allocate(streaming_ddtheta_difference_preconditioner(Nalpha,Nalpha))
+
+    allocate(ExB_ddalpha_plus(Nalpha,Nalpha))
+    allocate(ExB_ddalpha_minus(Nalpha,Nalpha))
+    allocate(ExB_ddalpha_plus_preconditioner(Nalpha,Nalpha))
+    allocate(ExB_ddalpha_minus_preconditioner(Nalpha,Nalpha))
+
     allocate(ddalpha_magneticDrift_plus(Nalpha,Nalpha))
     allocate(ddalpha_magneticDrift_minus(Nalpha,Nalpha))
     allocate(d2dalpha2(Nalpha,Nalpha))
-    allocate(alpha_preconditioner(Nalpha))
-    allocate(alphaWeights_preconditioner(Nalpha))
-    allocate(ddalpha_preconditioner(Nalpha,Nalpha))
-    allocate(d2dalpha2_preconditioner(Nalpha,Nalpha))
 
-    select case (alphaDerivativeScheme)
-    case (0)
-       scheme = 20
+    ! *******************************************************************************
+    ! Handle ddalpha (really ddtheta) operator for streaming term in axisymmetry
+    ! *******************************************************************************
+
+    select case (streaming_theta_derivative_option)
+
     case (1)
-       scheme = 0
+       if (masterProc) then
+          print *,"Axisymmetry streaming d/dtheta derivative discretized using Fourier pseudospectral method."
+       end if
+       derivative_option_plus = 20
+       derivative_option_minus = derivative_option_plus
+
     case (2)
-       scheme = 10
+       if (masterProc) then
+          print *,"Axisymmetry streaming d/dtheta derivative discretized using centered finite differences:"
+          print *,"   1 point on either side."
+       end if
+       derivative_option_plus = 0
+       derivative_option_minus = derivative_option_plus
+
+    case (3)
+       if (masterProc) then
+          print *,"Axisymmetry streaming d/dtheta derivative discretized using centered finite differences:"
+          print *,"   2 points on either side."
+       end if
+       derivative_option_plus = 10
+       derivative_option_minus = derivative_option_plus
+
+    case (4)
+       if (masterProc) then
+          print *,"Axisymmetry streaming d/dtheta derivative discretized using upwinded finite differences:"
+          print *,"   0 points on one side, 1 point on the other side."
+       end if
+       derivative_option_plus  = 30
+       derivative_option_minus = 40
+
+    case (5)
+       if (masterProc) then
+          print *,"Axisymmetry streaming d/dtheta derivative discretized using upwinded finite differences:"
+          print *,"   0 points on one side, 2 points on the other side."
+       end if
+       derivative_option_plus  = 50
+       derivative_option_minus = 60
+
+    case (6)
+       if (masterProc) then
+          print *,"Axisymmetry streaming d/dtheta derivative discretized using upwinded finite differences:"
+          print *,"   1 point on one side, 2 points on the other side."
+       end if
+       derivative_option_plus  = 80
+       derivative_option_minus = 90
+
+    case (7)
+       if (masterProc) then
+          print *,"Axisymmetry streaming d/dtheta derivative discretized using upwinded finite differences:"
+          print *,"   1 point on one side, 3 points on the other side."
+       end if
+       derivative_option_plus  = 100
+       derivative_option_minus = 110
+
+    case (8)
+       if (masterProc) then
+          print *,"Axisymmetry streaming d/dtheta derivative discretized using upwinded finite differences:"
+          print *,"   2 point on one side, 3 points on the other side."
+       end if
+       derivative_option_plus  = 120
+       derivative_option_minus = 130
+
     case default
        if (masterProc) then
-          print *,"Error! Invalid setting for alphaDerivativeScheme"
+          print *,"Error! Invalid setting for streaming_theta_derivative_option:",streaming_theta_derivative_option
        end if
        stop
     end select
 
-    call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha, alphaWeights, ddalpha, d2dalpha2)
+    quadrature_option = 0
+    call uniformDiffMatrices(Nalpha, zero, two*pi, derivative_option_plus,  quadrature_option, alpha, alphaWeights, streaming_ddtheta_plus,  d2dalpha2)
+    call uniformDiffMatrices(Nalpha, zero, two*pi, derivative_option_minus, quadrature_option, alpha, alphaWeights, streaming_ddtheta_minus, d2dalpha2)
 
-    ! Create upwinded matrices for ExB terms:
-    !print *,"Creating upwinded matrices for ExB terms, alpha"
-    select case (ExBDerivativeSchemeAlpha)
+    streaming_ddtheta_sum        = (streaming_ddtheta_plus + streaming_ddtheta_minus)/two
+    streaming_ddtheta_difference = (streaming_ddtheta_plus - streaming_ddtheta_minus)/two
+
+    ! *******************************************************************************
+    ! Handle d/dalpha (really d/dtheta) for streaming term in axisymmetry, preconditioner:
+    ! *******************************************************************************
+
+    call_uniform_diff_matrices = .true.
+    select case (abs(preconditioner_streaming_theta_derivative_option))
     case (0)
-       ! It should not matter what ddalpha_ExB_plus and ddalpha_ExB_minus are in this case.
-       ddalpha_ExB_plus = ddalpha
-       ddalpha_ExB_minus = ddalpha
+       if (masterProc) then
+          print *,"Axisymmetry streaming d/dtheta term is dropped in the preconditioner."
+       end if
+       streaming_ddtheta_plus_preconditioner = 0
+       streaming_ddtheta_minus_preconditioner = 0
+       call_uniform_diff_matrices = .false.
+
+    case (100)
+       if (masterProc) then
+          print *,"Axisymmetry streaming d/dtheta matrix is the same in the preconditioner."
+       end if
+       streaming_ddtheta_plus_preconditioner  = streaming_ddtheta_plus
+       streaming_ddtheta_minus_preconditioner = streaming_ddtheta_minus
+       call_uniform_diff_matrices = .false.
+
     case (1)
-       scheme = 80
-       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_preconditioner, &
-            alphaWeights_preconditioner, ddalpha_ExB_plus, d2dalpha2_preconditioner)
-       scheme = 90
-       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_preconditioner, &
-            alphaWeights_preconditioner, ddalpha_ExB_minus, d2dalpha2_preconditioner)
+       if (masterProc) then
+          print *,"Preconditioner axisymmetry streaming d/dtheta derivative discretized using Fourier pseudospectral method."
+       end if
+       derivative_option_plus = 20
+       derivative_option_minus = derivative_option_plus
+
     case (2)
-       scheme = 100
-       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_preconditioner, &
-            alphaWeights_preconditioner, ddalpha_ExB_plus, d2dalpha2_preconditioner)
-       scheme = 110
-       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_preconditioner, &
-            alphaWeights_preconditioner, ddalpha_ExB_minus, d2dalpha2_preconditioner)
+       if (masterProc) then
+          print *,"Preconditioner axisymmetry streaming d/dtheta derivative discretized using centered finite differences:"
+          print *,"   1 point on either side."
+       end if
+       derivative_option_plus = 0
+       derivative_option_minus = derivative_option_plus
+
     case (3)
-       scheme = 120
-       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_preconditioner, &
-            alphaWeights_preconditioner, ddalpha_ExB_plus, d2dalpha2_preconditioner)
-       scheme = 130
-       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_preconditioner, &
-            alphaWeights_preconditioner, ddalpha_ExB_minus, d2dalpha2_preconditioner)
+       if (masterProc) then
+          print *,"Preconditioner axisymmetry streaming d/dtheta derivative discretized using centered finite differences:"
+          print *,"   2 points on either side."
+       end if
+       derivative_option_plus = 10
+       derivative_option_minus = derivative_option_plus
+
+    case (4)
+       if (masterProc) then
+          print *,"Preconditioner axisymmetry streaming d/dtheta derivative discretized using upwinded finite differences:"
+          print *,"   0 points on one side, 1 point on the other side."
+       end if
+       derivative_option_plus  = 30
+       derivative_option_minus = 40
+
+    case (5)
+       if (masterProc) then
+          print *,"Preconditioner axisymmetry streaming d/dtheta derivative discretized using upwinded finite differences:"
+          print *,"   0 points on one side, 2 points on the other side."
+       end if
+       derivative_option_plus  = 50
+       derivative_option_minus = 60
+
+    case (6)
+       if (masterProc) then
+          print *,"Preconditioner axisymmetry streaming d/dtheta derivative discretized using upwinded finite differences:"
+          print *,"   1 point on one side, 2 points on the other side."
+       end if
+       derivative_option_plus  = 80
+       derivative_option_minus = 90
+
+    case (7)
+       if (masterProc) then
+          print *,"Preconditioner axisymmetry streaming d/dtheta derivative discretized using upwinded finite differences:"
+          print *,"   1 point on one side, 3 points on the other side."
+       end if
+       derivative_option_plus  = 100
+       derivative_option_minus = 110
+
+    case (8)
+       if (masterProc) then
+          print *,"Preconditioner axisymmetry streaming d/dtheta derivative discretized using upwinded finite differences:"
+          print *,"   2 point on one side, 3 points on the other side."
+       end if
+       derivative_option_plus  = 120
+       derivative_option_minus = 130
+
     case default
-       print *,"Error! Invalid ExBDerivativeSchemeAlpha:",ExBDerivativeSchemeAlpha
+       if (masterProc) then
+          print *,"Error! Invalid setting for preconditioner_streaming_theta_derivative_option:",preconditioner_streaming_theta_derivative_option
+       end if
        stop
     end select
+
+    if (call_uniform_diff_matrices) then
+       quadrature_option = 0
+       call uniformDiffMatrices(Nalpha, zero, two*pi, derivative_option_plus,  quadrature_option, alpha, alphaWeights, streaming_ddtheta_plus_preconditioner,  d2dalpha2)
+       call uniformDiffMatrices(Nalpha, zero, two*pi, derivative_option_minus, quadrature_option, alpha, alphaWeights, streaming_ddtheta_minus_preconditioner, d2dalpha2)
+    end if
+
+    if (preconditioner_streaming_theta_derivative_option<0) then
+       if (masterProc) then
+          print *,"   But only the diagonal is kept."
+       end if
+       do j=1,Nalpha
+          do k=1,Nalpha
+             if (j .ne. k) then
+                streaming_ddtheta_plus_preconditioner(j,k) = 0
+                streaming_ddtheta_minus_preconditioner(j,k) = 0
+             end if
+          end do
+       end do
+    end if
+
+    streaming_ddtheta_sum_preconditioner        = (streaming_ddtheta_plus_preconditioner + streaming_ddtheta_minus_preconditioner)/two
+    streaming_ddtheta_difference_preconditioner = (streaming_ddtheta_plus_preconditioner - streaming_ddtheta_minus_preconditioner)/two
+
+    ! *******************************************************************************
+    ! Handle d/dalpha operator for the ExB term
+    ! *******************************************************************************
+
+    select case (ExB_alpha_derivative_option)
+
+    case (1)
+       if (masterProc) then
+          print *,"ExB d/dalpha derivative discretized using Fourier pseudospectral method."
+       end if
+       derivative_option_plus = 20
+       derivative_option_minus = derivative_option_plus
+
+    case (2)
+       if (masterProc) then
+          print *,"ExB d/dalpha derivative discretized using centered finite differences:"
+          print *,"   1 point on either side."
+       end if
+       derivative_option_plus = 0
+       derivative_option_minus = derivative_option_plus
+
+    case (3)
+       if (masterProc) then
+          print *,"ExB d/dalpha derivative discretized using centered finite differences:"
+          print *,"   2 points on either side."
+       end if
+       derivative_option_plus = 10
+       derivative_option_minus = derivative_option_plus
+
+    case (4)
+       if (masterProc) then
+          print *,"ExB d/dalpha derivative discretized using upwinded finite differences:"
+          print *,"   0 points on one side, 1 point on the other side."
+       end if
+       derivative_option_plus  = 30
+       derivative_option_minus = 40
+
+    case (5)
+       if (masterProc) then
+          print *,"ExB d/dalpha derivative discretized using upwinded finite differences:"
+          print *,"   0 points on one side, 2 points on the other side."
+       end if
+       derivative_option_plus  = 50
+       derivative_option_minus = 60
+
+    case (6)
+       if (masterProc) then
+          print *,"ExB d/dalpha derivative discretized using upwinded finite differences:"
+          print *,"   1 point on one side, 2 points on the other side."
+       end if
+       derivative_option_plus  = 80
+       derivative_option_minus = 90
+
+    case (7)
+       if (masterProc) then
+          print *,"ExB d/dalpha derivative discretized using upwinded finite differences:"
+          print *,"   1 point on one side, 3 points on the other side."
+       end if
+       derivative_option_plus  = 100
+       derivative_option_minus = 110
+
+    case (8)
+       if (masterProc) then
+          print *,"ExB d/dalpha derivative discretized using upwinded finite differences:"
+          print *,"   2 point on one side, 3 points on the other side."
+       end if
+       derivative_option_plus  = 120
+       derivative_option_minus = 130
+
+    case default
+       if (masterProc) then
+          print *,"Error! Invalid setting for ExB_alpha_derivative_option:",ExB_alpha_derivative_option
+       end if
+       stop
+    end select
+
+    quadrature_option = 0
+    call uniformDiffMatrices(Nalpha, zero, two*pi, derivative_option_plus,  quadrature_option, alpha, alphaWeights, ExB_ddalpha_plus,  d2dalpha2)
+    call uniformDiffMatrices(Nalpha, zero, two*pi, derivative_option_minus, quadrature_option, alpha, alphaWeights, ExB_ddalpha_minus, d2dalpha2)
+
+    ! *******************************************************************************
+    ! Handle d/dalpha for ExB term, preconditioner:
+    ! *******************************************************************************
+
+    call_uniform_diff_matrices = .true.
+    select case (abs(preconditioner_ExB_alpha_derivative_option))
+    case (0)
+       if (masterProc) then
+          print *,"ExB d/dalpha term is dropped in the preconditioner."
+       end if
+       ExB_ddalpha_plus_preconditioner = 0
+       ExB_ddalpha_minus_preconditioner = 0
+       call_uniform_diff_matrices = .false.
+
+    case (100)
+       if (masterProc) then
+          print *,"ExB d/dalpha matrix is the same in the preconditioner."
+       end if
+       ExB_ddalpha_plus_preconditioner  = ExB_ddalpha_plus
+       ExB_ddalpha_minus_preconditioner = ExB_ddalpha_minus
+       call_uniform_diff_matrices = .false.
+
+    case (1)
+       if (masterProc) then
+          print *,"Preconditioner ExB d/dalpha derivative discretized using Fourier pseudospectral method."
+       end if
+       derivative_option_plus = 20
+       derivative_option_minus = derivative_option_plus
+
+    case (2)
+       if (masterProc) then
+          print *,"Preconditioner ExB d/dalpha derivative discretized using centered finite differences:"
+          print *,"   1 point on either side."
+       end if
+       derivative_option_plus = 0
+       derivative_option_minus = derivative_option_plus
+
+    case (3)
+       if (masterProc) then
+          print *,"Preconditioner ExB d/dalpha derivative discretized using centered finite differences:"
+          print *,"   2 points on either side."
+       end if
+       derivative_option_plus = 10
+       derivative_option_minus = derivative_option_plus
+
+    case (4)
+       if (masterProc) then
+          print *,"Preconditioner ExB d/dalpha derivative discretized using upwinded finite differences:"
+          print *,"   0 points on one side, 1 point on the other side."
+       end if
+       derivative_option_plus  = 30
+       derivative_option_minus = 40
+
+    case (5)
+       if (masterProc) then
+          print *,"Preconditioner ExB d/dalpha derivative discretized using upwinded finite differences:"
+          print *,"   0 points on one side, 2 points on the other side."
+       end if
+       derivative_option_plus  = 50
+       derivative_option_minus = 60
+
+    case (6)
+       if (masterProc) then
+          print *,"Preconditioner ExB d/dalpha derivative discretized using upwinded finite differences:"
+          print *,"   1 point on one side, 2 points on the other side."
+       end if
+       derivative_option_plus  = 80
+       derivative_option_minus = 90
+
+    case (7)
+       if (masterProc) then
+          print *,"Preconditioner ExB d/dalpha derivative discretized using upwinded finite differences:"
+          print *,"   1 point on one side, 3 points on the other side."
+       end if
+       derivative_option_plus  = 100
+       derivative_option_minus = 110
+
+    case (8)
+       if (masterProc) then
+          print *,"Preconditioner ExB d/dalpha derivative discretized using upwinded finite differences:"
+          print *,"   2 point on one side, 3 points on the other side."
+       end if
+       derivative_option_plus  = 120
+       derivative_option_minus = 130
+
+    case default
+       if (masterProc) then
+          print *,"Error! Invalid setting for alpha_derivative_option:",alpha_derivative_option
+       end if
+       stop
+    end select
+
+    if (call_uniform_diff_matrices) then
+       quadrature_option = 0
+       call uniformDiffMatrices(Nalpha, zero, two*pi, derivative_option_plus,  quadrature_option, alpha, alphaWeights, ExB_ddalpha_plus_preconditioner,  d2dalpha2)
+       call uniformDiffMatrices(Nalpha, zero, two*pi, derivative_option_minus, quadrature_option, alpha, alphaWeights, ExB_ddalpha_minus_preconditioner, d2dalpha2)
+    end if
+
+    if (preconditioner_ExB_alpha_derivative_option<0) then
+       if (masterProc) then
+          print *,"   But only the diagonal is kept."
+       end if
+       do j=1,Nalpha
+          do k=1,Nalpha
+             if (j .ne. k) then
+                ExB_ddalpha_plus_preconditioner(j,k) = 0
+                ExB_ddalpha_minus_preconditioner(j,k) = 0
+             end if
+          end do
+       end do
+    end if
+
+
 
     ! Create upwinded matrices for magneticDrift terms:
     !print *,"Creating upwinded matrices for magneticDrift terms, alpha"
@@ -272,81 +608,54 @@
        ddalpha_magneticDrift_minus = ddalpha
     case (1)
        scheme = 80
-       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_preconditioner, &
-            alphaWeights_preconditioner, ddalpha_magneticDrift_plus, d2dalpha2_preconditioner)
+       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_dummy, &
+            alphaWeights_dummy, ddalpha_magneticDrift_plus, d2dalpha2)
        scheme = 90
-       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_preconditioner, &
-            alphaWeights_preconditioner, ddalpha_magneticDrift_minus, d2dalpha2_preconditioner)
+       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_dummy, &
+            alphaWeights_dummy, ddalpha_magneticDrift_minus, d2dalpha2)
     case (2)
        scheme = 100
-       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_preconditioner, &
-            alphaWeights_preconditioner, ddalpha_magneticDrift_plus, d2dalpha2_preconditioner)
+       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_dummy, &
+            alphaWeights_dummy, ddalpha_magneticDrift_plus, d2dalpha2)
        scheme = 110
-       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_preconditioner, &
-            alphaWeights_preconditioner, ddalpha_magneticDrift_minus, d2dalpha2_preconditioner)
+       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_dummy, &
+            alphaWeights_dummy, ddalpha_magneticDrift_minus, d2dalpha2)
     case (3)
        scheme = 120
-       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_preconditioner, &
-            alphaWeights_preconditioner, ddalpha_magneticDrift_plus, d2dalpha2_preconditioner)
+       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_dummy, &
+            alphaWeights_dummy, ddalpha_magneticDrift_plus, d2dalpha2)
        scheme = 130
-       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_preconditioner, &
-            alphaWeights_preconditioner, ddalpha_magneticDrift_minus, d2dalpha2_preconditioner)
+       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_dummy, &
+            alphaWeights_dummy, ddalpha_magneticDrift_minus, d2dalpha2)
     case (-1)
        scheme = 90
-       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_preconditioner, &
-            alphaWeights_preconditioner, ddalpha_magneticDrift_plus, d2dalpha2_preconditioner)
+       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_dummy, &
+            alphaWeights_dummy, ddalpha_magneticDrift_plus, d2dalpha2)
        scheme = 80
-       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_preconditioner, &
-            alphaWeights_preconditioner, ddalpha_magneticDrift_minus, d2dalpha2_preconditioner)
+       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_dummy, &
+            alphaWeights_dummy, ddalpha_magneticDrift_minus, d2dalpha2)
     case (-2)
        scheme = 110
-       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_preconditioner, &
-            alphaWeights_preconditioner, ddalpha_magneticDrift_plus, d2dalpha2_preconditioner)
+       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_dummy, &
+            alphaWeights_dummy, ddalpha_magneticDrift_plus, d2dalpha2)
        scheme = 100
-       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_preconditioner, &
-            alphaWeights_preconditioner, ddalpha_magneticDrift_minus, d2dalpha2_preconditioner)
+       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_dummy, &
+            alphaWeights_dummy, ddalpha_magneticDrift_minus, d2dalpha2)
     case (-3)
        scheme = 130
-       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_preconditioner, &
-            alphaWeights_preconditioner, ddalpha_magneticDrift_plus, d2dalpha2_preconditioner)
+       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_dummy, &
+            alphaWeights_dummy, ddalpha_magneticDrift_plus, d2dalpha2)
        scheme = 120
-       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_preconditioner, &
-            alphaWeights_preconditioner, ddalpha_magneticDrift_minus, d2dalpha2_preconditioner)
+       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_dummy, &
+            alphaWeights_dummy, ddalpha_magneticDrift_minus, d2dalpha2)
     case default
        print *,"Error! Invalid magneticDriftDerivativeScheme:",magneticDriftDerivativeScheme
        stop
     end select
 
-    ! If needed, also make a sparser differentiation matrix for the preconditioner:
-    select case(preconditioner_alpha)
-    case (0)
-
-       ! Alpha coupling in preconditioner is identical to the full matrix:
-       ddalpha_preconditioner = ddalpha
-
-    case (1)
-       ! Preconditioner has a 3-point stencil instead of a 5-point stencil:
-       scheme = 0
-       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_preconditioner, &
-            alphaWeights_preconditioner, ddalpha_preconditioner, d2dalpha2_preconditioner)
-
-    case (2)
-       ! All alpha coupling is dropped in the preconditioner:
-       ddalpha_preconditioner = zero
-
-    case default
-       if (masterProc) then
-          print *,"Error! Invalid setting for preconditioner_alpha."
-       end if
-       stop
-
-    end select
 
     ! The following arrays will not be needed:
     deallocate(d2dalpha2)
-    deallocate(alpha_preconditioner)
-    deallocate(alphaWeights_preconditioner)
-    deallocate(d2dalpha2_preconditioner)
 
 
     ! *******************************************************************************
@@ -357,7 +666,16 @@
 
     allocate(zeta(Nzeta))
     allocate(zetaWeights(Nzeta))
-    allocate(ddzeta(Nzeta,Nzeta))
+
+    allocate(ddzeta_upwind(Nzeta,Nzeta))
+    allocate(ddzeta_downwind(Nzeta,Nzeta))
+    allocate(ddzeta_upwind_preconditioner(Nzeta,Nzeta))
+    allocate(ddzeta_downwind_preconditioner(Nzeta,Nzeta))
+    allocate(ddzeta_plus(Nzeta,Nzeta))
+    allocate(ddzeta_minus(Nzeta,Nzeta))
+    allocate(ddzeta_plus_preconditioner(Nzeta,Nzeta))
+    allocate(ddzeta_minus_preconditioner(Nzeta,Nzeta))
+
     allocate(ddzeta_ExB_plus(Nzeta,Nzeta))
     allocate(ddzeta_ExB_minus(Nzeta,Nzeta))
     allocate(ddzeta_magneticDrift_plus(Nzeta,Nzeta))
