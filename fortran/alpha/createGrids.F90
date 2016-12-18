@@ -18,9 +18,10 @@
     implicit none
 
     PetscErrorCode :: ierr
-    integer :: i, j, ialpha, izeta, scheme
+    integer :: i, j, k, ialpha, izeta, scheme
     PetscScalar, dimension(:,:), allocatable :: d2dalpha2, d2dzeta2
     PetscScalar, dimension(:), allocatable :: alpha_dummy, alpha_weights_dummy
+    PetscScalar, dimension(:), allocatable :: zeta_dummy, zeta_weights_dummy
     PetscScalar, dimension(:), allocatable :: xWeightsPotentials
     integer :: derivative_option_plus, derivative_option_minus, quadrature_option
     logical :: call_uniform_diff_matrices
@@ -572,7 +573,7 @@
 
     case default
        if (masterProc) then
-          print *,"Error! Invalid setting for alpha_derivative_option:",alpha_derivative_option
+          print *,"Error! Invalid setting for preconditioner_ExB_alpha_derivative_option:",preconditioner_ExB_alpha_derivative_option
        end if
        stop
     end select
@@ -598,288 +599,623 @@
     end if
 
 
-
+    quadrature_option = 0
     ! Create upwinded matrices for magneticDrift terms:
     !print *,"Creating upwinded matrices for magneticDrift terms, alpha"
     select case (magneticDriftDerivativeScheme)
     case (0)
        ! It should not matter what ddalpha_magneticDrift_plus and ddalpha_magneticDrift_minus are in this case.
-       ddalpha_magneticDrift_plus = ddalpha
-       ddalpha_magneticDrift_minus = ddalpha
+       ddalpha_magneticDrift_plus = ExB_ddalpha_plus
+       ddalpha_magneticDrift_minus = ExB_ddalpha_minus
     case (1)
        scheme = 80
-       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_dummy, &
-            alphaWeights_dummy, ddalpha_magneticDrift_plus, d2dalpha2)
+       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, quadrature_option, alpha_dummy, &
+            alpha_weights_dummy, ddalpha_magneticDrift_plus, d2dalpha2)
        scheme = 90
-       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_dummy, &
-            alphaWeights_dummy, ddalpha_magneticDrift_minus, d2dalpha2)
+       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, quadrature_option, alpha_dummy, &
+            alpha_weights_dummy, ddalpha_magneticDrift_minus, d2dalpha2)
     case (2)
        scheme = 100
-       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_dummy, &
-            alphaWeights_dummy, ddalpha_magneticDrift_plus, d2dalpha2)
+       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, quadrature_option, alpha_dummy, &
+            alpha_weights_dummy, ddalpha_magneticDrift_plus, d2dalpha2)
        scheme = 110
-       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_dummy, &
-            alphaWeights_dummy, ddalpha_magneticDrift_minus, d2dalpha2)
+       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, quadrature_option, alpha_dummy, &
+            alpha_weights_dummy, ddalpha_magneticDrift_minus, d2dalpha2)
     case (3)
        scheme = 120
-       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_dummy, &
-            alphaWeights_dummy, ddalpha_magneticDrift_plus, d2dalpha2)
+       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, quadrature_option, alpha_dummy, &
+            alpha_weights_dummy, ddalpha_magneticDrift_plus, d2dalpha2)
        scheme = 130
-       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_dummy, &
-            alphaWeights_dummy, ddalpha_magneticDrift_minus, d2dalpha2)
+       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, quadrature_option, alpha_dummy, &
+            alpha_weights_dummy, ddalpha_magneticDrift_minus, d2dalpha2)
     case (-1)
        scheme = 90
-       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_dummy, &
-            alphaWeights_dummy, ddalpha_magneticDrift_plus, d2dalpha2)
+       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, quadrature_option, alpha_dummy, &
+            alpha_weights_dummy, ddalpha_magneticDrift_plus, d2dalpha2)
        scheme = 80
-       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_dummy, &
-            alphaWeights_dummy, ddalpha_magneticDrift_minus, d2dalpha2)
+       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, quadrature_option, alpha_dummy, &
+            alpha_weights_dummy, ddalpha_magneticDrift_minus, d2dalpha2)
     case (-2)
        scheme = 110
-       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_dummy, &
-            alphaWeights_dummy, ddalpha_magneticDrift_plus, d2dalpha2)
+       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, quadrature_option, alpha_dummy, &
+            alpha_weights_dummy, ddalpha_magneticDrift_plus, d2dalpha2)
        scheme = 100
-       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_dummy, &
-            alphaWeights_dummy, ddalpha_magneticDrift_minus, d2dalpha2)
+       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, quadrature_option, alpha_dummy, &
+            alpha_weights_dummy, ddalpha_magneticDrift_minus, d2dalpha2)
     case (-3)
        scheme = 130
-       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_dummy, &
-            alphaWeights_dummy, ddalpha_magneticDrift_plus, d2dalpha2)
+       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, quadrature_option, alpha_dummy, &
+            alpha_weights_dummy, ddalpha_magneticDrift_plus, d2dalpha2)
        scheme = 120
-       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, alpha_dummy, &
-            alphaWeights_dummy, ddalpha_magneticDrift_minus, d2dalpha2)
+       call uniformDiffMatrices(Nalpha, zero, two*pi, scheme, quadrature_option, alpha_dummy, &
+            alpha_weights_dummy, ddalpha_magneticDrift_minus, d2dalpha2)
     case default
        print *,"Error! Invalid magneticDriftDerivativeScheme:",magneticDriftDerivativeScheme
        stop
     end select
 
 
-    ! The following arrays will not be needed:
-    deallocate(d2dalpha2)
+    ! The following arrays will not be needed any more:
+    deallocate(d2dalpha2, alpha_dummy, alpha_weights_dummy)
 
 
     ! *******************************************************************************
+    ! *******************************************************************************
+    !
     ! Build zeta grid, integration weights, and differentiation matrices:
+    !
+    ! *******************************************************************************
     ! *******************************************************************************
 
     zetaMax = 2*pi/NPeriods
 
     allocate(zeta(Nzeta))
     allocate(zetaWeights(Nzeta))
+    allocate(d2dzeta2(Nzeta,Nzeta))
+    allocate(zeta_dummy(Nzeta))
+    allocate(zeta_weights_dummy(Nzeta))
 
-    allocate(ddzeta_upwind(Nzeta,Nzeta))
-    allocate(ddzeta_downwind(Nzeta,Nzeta))
-    allocate(ddzeta_upwind_preconditioner(Nzeta,Nzeta))
-    allocate(ddzeta_downwind_preconditioner(Nzeta,Nzeta))
-    allocate(ddzeta_plus(Nzeta,Nzeta))
-    allocate(ddzeta_minus(Nzeta,Nzeta))
-    allocate(ddzeta_plus_preconditioner(Nzeta,Nzeta))
-    allocate(ddzeta_minus_preconditioner(Nzeta,Nzeta))
+    allocate(streaming_ddzeta_plus(Nzeta,Nzeta))
+    allocate(streaming_ddzeta_minus(Nzeta,Nzeta))
+    allocate(streaming_ddzeta_plus_preconditioner(Nzeta,Nzeta))
+    allocate(streaming_ddzeta_minus_preconditioner(Nzeta,Nzeta))
+    allocate(streaming_ddzeta_sum(Nzeta,Nzeta))
+    allocate(streaming_ddzeta_difference(Nzeta,Nzeta))
+    allocate(streaming_ddzeta_sum_preconditioner(Nzeta,Nzeta))
+    allocate(streaming_ddzeta_difference_preconditioner(Nzeta,Nzeta))
 
-    allocate(ddzeta_ExB_plus(Nzeta,Nzeta))
-    allocate(ddzeta_ExB_minus(Nzeta,Nzeta))
+    allocate(ExB_ddzeta_plus(Nzeta,Nzeta))
+    allocate(ExB_ddzeta_minus(Nzeta,Nzeta))
+    allocate(ExB_ddzeta_plus_preconditioner(Nzeta,Nzeta))
+    allocate(ExB_ddzeta_minus_preconditioner(Nzeta,Nzeta))
+
     allocate(ddzeta_magneticDrift_plus(Nzeta,Nzeta))
     allocate(ddzeta_magneticDrift_minus(Nzeta,Nzeta))
-    allocate(d2dzeta2(Nzeta,Nzeta))
-    allocate(zeta_preconditioner(Nzeta))
-    allocate(zetaWeights_preconditioner(Nzeta))
-    allocate(ddzeta_preconditioner(Nzeta,Nzeta))
-    allocate(d2dzeta2_preconditioner(Nzeta,Nzeta))
 
     if (Nzeta==1) then
        ! Axisymmetry:
        zeta = 0
        zetaWeights = 2*pi
-       ddzeta = 0
        d2dzeta2 = 0 ! d2dzeta2 is not actually used.
-       ddzeta_ExB_plus = 0
-       ddzeta_ExB_minus = 0
+
+       streaming_ddzeta_plus = 0
+       streaming_ddzeta_minus = 0
+       streaming_ddzeta_plus_preconditioner = 0
+       streaming_ddzeta_minus_preconditioner = 0
+
+       streaming_ddzeta_sum = 0
+       streaming_ddzeta_difference = 0
+       streaming_ddzeta_sum_preconditioner = 0
+       streaming_ddzeta_difference_preconditioner = 0
+
+       ExB_ddzeta_plus = 0
+       ExB_ddzeta_minus = 0
+       ExB_ddzeta_plus_preconditioner = 0
+       ExB_ddzeta_minus_preconditioner = 0
+
        ddzeta_magneticDrift_plus = 0
        ddzeta_magneticDrift_minus = 0
     else
        ! Not axisymmetric.
 
-       select case (zetaDerivativeScheme)
-       case (1)
-          Delta_zeta = 2*pi/(Nperiods*(Nzeta-2))
-          scheme = 2
-          call uniformDiffMatrices(Nzeta, -Delta_zeta, zetaMax, scheme, zeta, zetaWeights, ddzeta, d2dzeta2)
-          if (abs(zeta(2)-zeta(1)-Delta_zeta)>1e-12) stop "Something went wrong computing ddzeta"
+       ! *******************************************************************************
+       ! First, handle d/dzeta for the streaming term in the main matrix:
+       ! *******************************************************************************
 
-          zetaWeights = 1
-          zetaWeights(1) = 0
-          zetaWeights(Nzeta) = 0
-          zetaWeights = zetaWeights * Delta_zeta * Nperiods
-
-          izetaMinDKE = max(izetaMin,2)
-          izetaMaxDKE = min(izetaMax,Nzeta-1)
-
-          print *,"izetaMinDKE=",izetaMinDKE,", izetaMaxDKE=",izetaMaxDKE
+       select case (streaming_zeta_derivative_option)
 
        case (2)
-          Delta_zeta = 2*pi/(Nperiods*(Nzeta-4))
-          scheme = 12
-          call uniformDiffMatrices(Nzeta, -2*Delta_zeta, zetaMax+Delta_zeta, scheme, zeta, zetaWeights, ddzeta, d2dzeta2)
-          if (abs(zeta(2)-zeta(1)-Delta_zeta)>1e-12) stop "Something went wrong computing ddzeta"
-
-          zetaWeights = 1
-          zetaWeights(1) = 0
-          zetaWeights(2) = 0
-          zetaWeights(Nzeta) = 0
-          zetaWeights(Nzeta-1) = 0
-          zetaWeights = zetaWeights * Delta_zeta * Nperiods
-
-          izetaMinDKE = max(izetaMin,3)
-          izetaMaxDKE = min(izetaMax,Nzeta-2)
-
-          print *,"izetaMinDKE=",izetaMinDKE,", izetaMaxDKE=",izetaMaxDKE
-
+          if (masterProc) then
+             print *,"Streaming d/dzeta derivative discretized using centered finite differences:"
+             print *,"   1 point on either side."
+          end if
+          buffer_zeta_points_on_each_side = 1
+          derivative_option_plus = 2
+          derivative_option_minus = derivative_option_plus
+          
+       case (3)
+          if (masterProc) then
+             print *,"Streaming d/dzeta derivative discretized using centered finite differences:"
+             print *,"   2 points on either side."
+          end if
+          buffer_zeta_points_on_each_side = 2
+          derivative_option_plus = 12
+          derivative_option_minus = derivative_option_plus
+          
+       case (4)
+          if (masterProc) then
+             print *,"Streaming d/dzeta derivative discretized using upwinded finite differences:"
+             print *,"   0 points on one side, 1 point on the other side."
+          end if
+          buffer_zeta_points_on_each_side = 1
+          derivative_option_plus  = 32
+          derivative_option_minus = 42
+          
+       case (5)
+          if (masterProc) then
+             print *,"Streaming d/dzeta derivative discretized using upwinded finite differences:"
+             print *,"   0 points on one side, 2 points on the other side."
+          end if
+          buffer_zeta_points_on_each_side = 2
+          derivative_option_plus  = 52
+          derivative_option_minus = 62
+          
+       case (6)
+          if (masterProc) then
+             print *,"Streaming d/dzeta derivative discretized using upwinded finite differences:"
+             print *,"   1 point on one side, 2 points on the other side."
+          end if
+          buffer_zeta_points_on_each_side = 2
+          derivative_option_plus  = 82
+          derivative_option_minus = 92
+          
+       case (7)
+          if (masterProc) then
+             print *,"Streaming d/dzeta derivative discretized using upwinded finite differences:"
+             print *,"   1 point on one side, 3 points on the other side."
+          end if
+          buffer_zeta_points_on_each_side = 3
+          derivative_option_plus  = 102
+          derivative_option_minus = 112
+          
+       case (8)
+          if (masterProc) then
+             print *,"Streaming d/dzeta derivative discretized using upwinded finite differences:"
+             print *,"   2 point on one side, 3 points on the other side."
+          end if
+          buffer_zeta_points_on_each_side = 3
+          derivative_option_plus  = 122
+          derivative_option_minus = 132
+          
        case default
           if (masterProc) then
-             print *,"Error! Invalid setting for zetaDerivativeScheme"
+             print *,"Error! Invalid setting for streaming_zeta_derivative_option:",streaming_zeta_derivative_option
           end if
           stop
        end select
+       
+       Delta_zeta = 2*pi/(Nperiods*(Nzeta-2*buffer_zeta_points_on_each_side))
+       quadrature_option = 0 ! This value does not actually matter, since we will over-write the integration weights.
+       call uniformDiffMatrices(Nzeta, -Delta_zeta*buffer_zeta_points_on_each_side, zetaMax+Delta_zeta*(buffer_zeta_points_on_each_side-1), &
+            derivative_option_plus,  quadrature_option, zeta, zetaWeights, streaming_ddzeta_plus, d2dzeta2)
+       call uniformDiffMatrices(Nzeta, -Delta_zeta*buffer_zeta_points_on_each_side, zetaMax+Delta_zeta*(buffer_zeta_points_on_each_side-1), &
+            derivative_option_minus, quadrature_option, zeta, zetaWeights, streaming_ddzeta_minus, d2dzeta2)
 
-       ! Create upwinded matrices for ExB terms:
-       !print *,"Creating upwinded matrices for ExB terms, zeta"
-       select case (ExBDerivativeSchemeZeta)
+       if (abs(zeta(2)-zeta(1)-Delta_zeta)>1e-12) stop "Something went wrong computing ddzeta for main matrix."
+
+       if (masterProc) then
+          print *,"Number of buffer points on each side of the zeta grid:",buffer_zeta_points_on_each_side
+       end if
+
+       ! *******************************************************************************
+       ! Handle d/dzeta for the streaming term in the preconditioner matrix.
+       ! *******************************************************************************
+
+       call_uniform_diff_matrices = .true.
+       select case (abs(preconditioner_streaming_zeta_derivative_option))
        case (0)
-          ! It should not matter what ddzeta_ExB_plus and ddzeta_ExB_minus are in this case.
-          ddzeta_ExB_plus = ddzeta
-          ddzeta_ExB_minus = ddzeta
-       case (1)
-          scheme = 80
-          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
-               zetaWeights_preconditioner, ddzeta_ExB_plus, d2dzeta2_preconditioner)
-          scheme = 90
-          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
-               zetaWeights_preconditioner, ddzeta_ExB_minus, d2dzeta2_preconditioner)
+          if (masterProc) then
+             print *,"Streaming d/dzeta term is dropped in the preconditioner."
+          end if
+          streaming_ddzeta_plus_preconditioner = 0
+          streaming_ddzeta_minus_preconditioner = 0
+          call_uniform_diff_matrices = .false.
+          
+       case (100)
+          if (masterProc) then
+             print *,"d/dzeta matrices are the same in the preconditioner."
+          end if
+          streaming_ddzeta_plus_preconditioner  = streaming_ddzeta_plus
+          streaming_ddzeta_minus_preconditioner = streaming_ddzeta_minus
+          call_uniform_diff_matrices = .false.          
+          
        case (2)
-          scheme = 100
-          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
-               zetaWeights_preconditioner, ddzeta_ExB_plus, d2dzeta2_preconditioner)
-          scheme = 110
-          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
-               zetaWeights_preconditioner, ddzeta_ExB_minus, d2dzeta2_preconditioner)
+          if (masterProc) then
+             print *,"Preconditioner streaming d/dzeta derivative discretized using centered finite differences:"
+             print *,"   1 point on either side."
+          end if
+          derivative_option_plus = 2
+          derivative_option_minus = derivative_option_plus
+          
        case (3)
-          scheme = 120
-          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
-               zetaWeights_preconditioner, ddzeta_ExB_plus, d2dzeta2_preconditioner)
-          scheme = 130
-          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
-               zetaWeights_preconditioner, ddzeta_ExB_minus, d2dzeta2_preconditioner)
+          if (masterProc) then
+             print *,"Preconditioner streaming d/dzeta derivative discretized using centered finite differences:"
+             print *,"   2 points on either side."
+          end if
+          derivative_option_plus = 12
+          derivative_option_minus = derivative_option_plus
+
+       case (4)
+          if (masterProc) then
+             print *,"Preconditioner streaming d/dzeta derivative discretized using upwinded finite differences:"
+             print *,"   0 points on one side, 1 point on the other side."
+          end if
+          derivative_option_plus  = 32
+          derivative_option_minus = 42
+          
+       case (5)
+          if (masterProc) then
+             print *,"Preconditioner streaming d/dzeta derivative discretized using upwinded finite differences:"
+             print *,"   0 points on one side, 2 points on the other side."
+          end if
+          derivative_option_plus  = 52
+          derivative_option_minus = 62
+          
+       case (6)
+          if (masterProc) then
+             print *,"Preconditioner streaming d/dzeta derivative discretized using upwinded finite differences:"
+             print *,"   1 point on one side, 2 points on the other side."
+          end if
+          derivative_option_plus  = 82
+          derivative_option_minus = 92
+          
+       case (7)
+          if (masterProc) then
+             print *,"Preconditioner streaming d/dzeta derivative discretized using upwinded finite differences:"
+             print *,"   1 point on one side, 3 points on the other side."
+          end if
+          derivative_option_plus  = 102
+          derivative_option_minus = 112
+          
+       case (8)
+          if (masterProc) then
+             print *,"Preconditioner streaming d/dzeta derivative discretized using upwinded finite differences:"
+             print *,"   2 point on one side, 3 points on the other side."
+          end if
+          derivative_option_plus  = 122
+          derivative_option_minus = 132
+          
        case default
-          print *,"Error! Invalid ExBDerivativeSchemeZeta:",ExBDerivativeSchemeZeta
+          if (masterProc) then
+             print *,"Error! Invalid setting for streaming_zeta_derivative_option:",streaming_zeta_derivative_option
+          end if
           stop
        end select
+       
+       if (call_uniform_diff_matrices) then
+          quadrature_option = 0
+          call uniformDiffMatrices(Nzeta, -Delta_zeta*buffer_zeta_points_on_each_side, zetaMax+Delta_zeta*(buffer_zeta_points_on_each_side-1), &
+               derivative_option_plus,  quadrature_option, zeta, zetaWeights, streaming_ddzeta_plus_preconditioner, d2dzeta2)
+          call uniformDiffMatrices(Nzeta, -Delta_zeta*buffer_zeta_points_on_each_side, zetaMax+Delta_zeta*(buffer_zeta_points_on_each_side-1), &
+               derivative_option_minus, quadrature_option, zeta, zetaWeights, streaming_ddzeta_minus_preconditioner, d2dzeta2)
+       end if
 
+       if (preconditioner_ExB_zeta_derivative_option<0) then
+          if (masterProc) then
+             print *,"   But only the diagonal is kept."
+          end if
+          do j=1,Nzeta
+             do k=1,Nzeta
+                if (j .ne. k) then
+                   streaming_ddzeta_plus_preconditioner(j,k) = 0
+                   streaming_ddzeta_minus_preconditioner(j,k) = 0
+                end if
+             end do
+          end do
+       end if
+       
+       if (abs(zeta(2)-zeta(1)-Delta_zeta)>1e-12) stop "Something went wrong computing streaming ddzeta for preconditioner matrix."
+              
+
+
+       ! *******************************************************************************
+       ! Handle d/dzeta for the ExB term in the main matrix:
+       ! *******************************************************************************
+
+       select case (ExB_zeta_derivative_option)
+
+       case (2)
+          if (masterProc) then
+             print *,"ExB d/dzeta derivative discretized using centered finite differences:"
+             print *,"   1 point on either side."
+          end if
+          derivative_option_plus = 2
+          derivative_option_minus = derivative_option_plus
+          
+       case (3)
+          if (masterProc) then
+             print *,"ExB d/dzeta derivative discretized using centered finite differences:"
+             print *,"   2 points on either side."
+          end if
+          derivative_option_plus = 12
+          derivative_option_minus = derivative_option_plus
+          
+       case (4)
+          if (masterProc) then
+             print *,"ExB d/dzeta derivative discretized using upwinded finite differences:"
+             print *,"   0 points on one side, 1 point on the other side."
+          end if
+          derivative_option_plus  = 32
+          derivative_option_minus = 42
+          
+       case (5)
+          if (masterProc) then
+             print *,"ExB d/dzeta derivative discretized using upwinded finite differences:"
+             print *,"   0 points on one side, 2 points on the other side."
+          end if
+          derivative_option_plus  = 52
+          derivative_option_minus = 62
+          
+       case (6)
+          if (masterProc) then
+             print *,"ExB d/dzeta derivative discretized using upwinded finite differences:"
+             print *,"   1 point on one side, 2 points on the other side."
+          end if
+          derivative_option_plus  = 82
+          derivative_option_minus = 92
+          
+       case (7)
+          if (masterProc) then
+             print *,"ExB d/dzeta derivative discretized using upwinded finite differences:"
+             print *,"   1 point on one side, 3 points on the other side."
+          end if
+          derivative_option_plus  = 102
+          derivative_option_minus = 112
+          
+       case (8)
+          if (masterProc) then
+             print *,"ExB d/dzeta derivative discretized using upwinded finite differences:"
+             print *,"   2 point on one side, 3 points on the other side."
+          end if
+          derivative_option_plus  = 122
+          derivative_option_minus = 132
+          
+       case default
+          if (masterProc) then
+             print *,"Error! Invalid setting for ExB_zeta_derivative_option:",ExB_zeta_derivative_option
+          end if
+          stop
+       end select
+       
+       quadrature_option = 0 ! This value does not actually matter, since we will over-write the integration weights.
+       call uniformDiffMatrices(Nzeta, -Delta_zeta*buffer_zeta_points_on_each_side, zetaMax+Delta_zeta*(buffer_zeta_points_on_each_side-1), &
+            derivative_option_plus,  quadrature_option, zeta, zetaWeights, ExB_ddzeta_plus, d2dzeta2)
+       call uniformDiffMatrices(Nzeta, -Delta_zeta*buffer_zeta_points_on_each_side, zetaMax+Delta_zeta*(buffer_zeta_points_on_each_side-1), &
+            derivative_option_minus, quadrature_option, zeta, zetaWeights, ExB_ddzeta_minus, d2dzeta2)
+
+       if (abs(zeta(2)-zeta(1)-Delta_zeta)>1e-12) stop "Something went wrong computing ddzeta for main matrix."
+
+       ! *******************************************************************************
+       ! Handle d/dzeta for the ExB term in the preconditioner matrix.
+       ! *******************************************************************************
+
+       call_uniform_diff_matrices = .true.
+       select case (abs(preconditioner_ExB_zeta_derivative_option))
+       case (0)
+          if (masterProc) then
+             print *,"ExB d/dzeta term is dropped in the preconditioner."
+          end if
+          ExB_ddzeta_plus_preconditioner = 0
+          ExB_ddzeta_minus_preconditioner = 0
+          call_uniform_diff_matrices = .false.
+          
+       case (100)
+          if (masterProc) then
+             print *,"d/dzeta matrices are the same in the preconditioner."
+          end if
+          ExB_ddzeta_plus_preconditioner  = ExB_ddzeta_plus
+          ExB_ddzeta_minus_preconditioner = ExB_ddzeta_minus
+          call_uniform_diff_matrices = .false.          
+          
+       case (2)
+          if (masterProc) then
+             print *,"Preconditioner ExB d/dzeta derivative discretized using centered finite differences:"
+             print *,"   1 point on either side."
+          end if
+          derivative_option_plus = 2
+          derivative_option_minus = derivative_option_plus
+          
+       case (3)
+          if (masterProc) then
+             print *,"Preconditioner ExB d/dzeta derivative discretized using centered finite differences:"
+             print *,"   2 points on either side."
+          end if
+          derivative_option_plus = 12
+          derivative_option_minus = derivative_option_plus
+
+       case (4)
+          if (masterProc) then
+             print *,"Preconditioner ExB d/dzeta derivative discretized using upwinded finite differences:"
+             print *,"   0 points on one side, 1 point on the other side."
+          end if
+          derivative_option_plus  = 32
+          derivative_option_minus = 42
+          
+       case (5)
+          if (masterProc) then
+             print *,"Preconditioner ExB d/dzeta derivative discretized using upwinded finite differences:"
+             print *,"   0 points on one side, 2 points on the other side."
+          end if
+          derivative_option_plus  = 52
+          derivative_option_minus = 62
+          
+       case (6)
+          if (masterProc) then
+             print *,"Preconditioner ExB d/dzeta derivative discretized using upwinded finite differences:"
+             print *,"   1 point on one side, 2 points on the other side."
+          end if
+          derivative_option_plus  = 82
+          derivative_option_minus = 92
+          
+       case (7)
+          if (masterProc) then
+             print *,"Preconditioner ExB d/dzeta derivative discretized using upwinded finite differences:"
+             print *,"   1 point on one side, 3 points on the other side."
+          end if
+          derivative_option_plus  = 102
+          derivative_option_minus = 112
+          
+       case (8)
+          if (masterProc) then
+             print *,"Preconditioner ExB d/dzeta derivative discretized using upwinded finite differences:"
+             print *,"   2 point on one side, 3 points on the other side."
+          end if
+          derivative_option_plus  = 122
+          derivative_option_minus = 132
+          
+       case default
+          if (masterProc) then
+             print *,"Error! Invalid setting for ExB_zeta_derivative_option:",ExB_zeta_derivative_option
+          end if
+          stop
+       end select
+       
+       if (call_uniform_diff_matrices) then
+          quadrature_option = 0
+          call uniformDiffMatrices(Nzeta, -Delta_zeta*buffer_zeta_points_on_each_side, zetaMax+Delta_zeta*(buffer_zeta_points_on_each_side-1), &
+               derivative_option_plus,  quadrature_option, zeta, zetaWeights, ExB_ddzeta_plus_preconditioner, d2dzeta2)
+          call uniformDiffMatrices(Nzeta, -Delta_zeta*buffer_zeta_points_on_each_side, zetaMax+Delta_zeta*(buffer_zeta_points_on_each_side-1), &
+               derivative_option_minus, quadrature_option, zeta, zetaWeights, ExB_ddzeta_minus_preconditioner, d2dzeta2)
+       end if
+
+       if (preconditioner_ExB_zeta_derivative_option<0) then
+          if (masterProc) then
+             print *,"   But only the diagonal is kept."
+          end if
+          do j=1,Nzeta
+             do k=1,Nzeta
+                if (j .ne. k) then
+                   ExB_ddzeta_plus_preconditioner(j,k) = 0
+                   ExB_ddzeta_minus_preconditioner(j,k) = 0
+                end if
+             end do
+          end do
+       end if
+       
+       if (abs(zeta(2)-zeta(1)-Delta_zeta)>1e-12) stop "Something went wrong computing ExB ddzeta for preconditioner matrix."
+              
+
+
+
+
+       quadrature_option = 0
        ! Create upwinded matrices for magneticDrift terms:
        !print *,"Creating upwinded matrices for magneticDrift terms, zeta"
        select case (magneticDriftDerivativeScheme)
        case (0)
           ! It should not matter what ddzeta_magneticDrift_plus and ddzeta_magneticDrift_minus are in this case.
-          ddzeta_magneticDrift_plus = ddzeta
-          ddzeta_magneticDrift_minus = ddzeta
+          ddzeta_magneticDrift_plus = ExB_ddzeta_plus
+          ddzeta_magneticDrift_minus = ExB_ddzeta_minus
        case (1)
           scheme = 80
-          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
-               zetaWeights_preconditioner, ddzeta_magneticDrift_plus, d2dzeta2_preconditioner)
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, quadrature_option, zeta_dummy, &
+               zeta_weights_dummy, ddzeta_magneticDrift_plus, d2dzeta2)
           scheme = 90
-          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
-               zetaWeights_preconditioner, ddzeta_magneticDrift_minus, d2dzeta2_preconditioner)
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, quadrature_option, zeta_dummy, &
+               zeta_weights_dummy, ddzeta_magneticDrift_minus, d2dzeta2)
        case (2)
           scheme = 100
-          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
-               zetaWeights_preconditioner, ddzeta_magneticDrift_plus, d2dzeta2_preconditioner)
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, quadrature_option, zeta_dummy, &
+               zeta_weights_dummy, ddzeta_magneticDrift_plus, d2dzeta2)
           scheme = 110
-          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
-               zetaWeights_preconditioner, ddzeta_magneticDrift_minus, d2dzeta2_preconditioner)
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, quadrature_option, zeta_dummy, &
+               zeta_weights_dummy, ddzeta_magneticDrift_minus, d2dzeta2)
        case (3)
           scheme = 120
-          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
-               zetaWeights_preconditioner, ddzeta_magneticDrift_plus, d2dzeta2_preconditioner)
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, quadrature_option, zeta_dummy, &
+               zeta_weights_dummy, ddzeta_magneticDrift_plus, d2dzeta2)
           scheme = 130
-          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
-               zetaWeights_preconditioner, ddzeta_magneticDrift_minus, d2dzeta2_preconditioner)
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, quadrature_option, zeta_dummy, &
+               zeta_weights_dummy, ddzeta_magneticDrift_minus, d2dzeta2)
        case (-1)
           scheme = 90
-          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
-               zetaWeights_preconditioner, ddzeta_magneticDrift_plus, d2dzeta2_preconditioner)
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, quadrature_option, zeta_dummy, &
+               zeta_weights_dummy, ddzeta_magneticDrift_plus, d2dzeta2)
           scheme = 80
-          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
-               zetaWeights_preconditioner, ddzeta_magneticDrift_minus, d2dzeta2_preconditioner)
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, quadrature_option, zeta_dummy, &
+               zeta_weights_dummy, ddzeta_magneticDrift_minus, d2dzeta2)
        case (-2)
           scheme = 110
-          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
-               zetaWeights_preconditioner, ddzeta_magneticDrift_plus, d2dzeta2_preconditioner)
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, quadrature_option, zeta_dummy, &
+               zeta_weights_dummy, ddzeta_magneticDrift_plus, d2dzeta2)
           scheme = 100
-          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
-               zetaWeights_preconditioner, ddzeta_magneticDrift_minus, d2dzeta2_preconditioner)
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, quadrature_option, zeta_dummy, &
+               zeta_weights_dummy, ddzeta_magneticDrift_minus, d2dzeta2)
        case (-3)
           scheme = 130
-          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
-               zetaWeights_preconditioner, ddzeta_magneticDrift_plus, d2dzeta2_preconditioner)
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, quadrature_option, zeta_dummy, &
+               zeta_weights_dummy, ddzeta_magneticDrift_plus, d2dzeta2)
           scheme = 120
-          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta_preconditioner, &
-               zetaWeights_preconditioner, ddzeta_magneticDrift_minus, d2dzeta2_preconditioner)
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, quadrature_option, zeta_dummy, &
+               zeta_weights_dummy, ddzeta_magneticDrift_minus, d2dzeta2)
        case default
           print *,"Error! Invalid magneticDriftDerivativeScheme:",magneticDriftDerivativeScheme
           stop
        end select
 
-    end if
+       ! Now compute the real zeta integration weights.
+       ! This part must come after all the calls to uniformDiffMatrices that use zetaWeights as an argument.
 
-    ! If needed, also make a sparser differentiation matrix for the preconditioner:
-    if (Nzeta==1) then
-       zeta_preconditioner = 0
-       zetaWeights_preconditioner = 2*pi
-       ddzeta_preconditioner = 0
-       d2dzeta2_preconditioner = 0
-    else
-       select case (preconditioner_zeta)
-       case (0)
-          ! Zeta coupling in preconditioner is identical to the full matrix:
-          ddzeta_preconditioner = ddzeta
-
-       case (1)
-          ! Preconditioner has a 3-point stencil instead of a 5-point stencil:
-
-          if (zetaDerivativeScheme==1) then
-             ddzeta_preconditioner = ddzeta
-          else
-             scheme = 2
-             call uniformDiffMatrices(Nzeta, -2*Delta_zeta, zetaMax+Delta_zeta, scheme, zeta_preconditioner, &
-                  zetaWeights_preconditioner, ddzeta_preconditioner, d2dzeta2_preconditioner)
-
-!!$             print *,"ddzeta:"
-!!$             do i=1,Nzeta
-!!$                print *,ddzeta(i,:)
-!!$             end do
-!!$             print *,"ddzeta_preconditioner:"
-!!$             do i=1,Nzeta
-!!$                print *,ddzeta_preconditioner(i,:)
-!!$             end do
-          end if
-
-       case default
-          if (masterProc) then
-             print *,"Error! Invalid setting for preconditioner_zeta."
-          end if
+       zetaWeights = Delta_zeta * Nperiods
+       zetaWeights(1:buffer_zeta_points_on_each_side) = 0
+       zetaWeights(Nzeta-buffer_zeta_points_on_each_side+1:Nzeta) = 0
+       if (abs(sum(zetaWeights)-2*pi) > 1.0e-12) then
+          print *,"Error! zetaWeights do not sum to 2pi:",zetaWeights
           stop
+       end if
 
-       end select
-    end if
+    end if  ! End of "if (Nzeta==1)"
 
-    !zetaWeights = zetaWeights * NPeriods
+    streaming_ddzeta_sum        = (streaming_ddzeta_plus + streaming_ddzeta_minus)/two
+    streaming_ddzeta_difference = (streaming_ddzeta_plus - streaming_ddzeta_minus)/two
+
+    streaming_ddzeta_sum_preconditioner        = (streaming_ddzeta_plus_preconditioner + streaming_ddzeta_minus_preconditioner)/two
+    streaming_ddzeta_difference_preconditioner = (streaming_ddzeta_plus_preconditioner - streaming_ddzeta_minus_preconditioner)/two
+
+    izetaMinDKE = max(izetaMin,1+buffer_zeta_points_on_each_side)
+    izetaMaxDKE = min(izetaMax,Nzeta-buffer_zeta_points_on_each_side)
 
     ! The following arrays will not be needed:
     deallocate(d2dzeta2)
-    deallocate(zeta_preconditioner)
-    deallocate(zetaWeights_preconditioner)
-    deallocate(d2dzeta2_preconditioner)
+    deallocate(zeta_dummy)
+    deallocate(zeta_weights_dummy)
 
-
+    if (masterProc) then
+       print *,"alpha:"
+       print *,alpha
+       print *,"alphaWeights:"
+       print *,alphaWeights
+       print *,"zeta:"
+       print *,zeta
+       print *,"zetaWeights:"
+       print *,zetaWeights
+       print *,"streaming_ddzeta_sum:"
+       do j=1,Nzeta
+          print *,streaming_ddzeta_sum(j,:)
+       end do
+       print *,"streaming_ddzeta_difference:"
+       do j=1,Nzeta
+          print *,streaming_ddzeta_difference(j,:)
+       end do
+       print *,"streaming_ddzeta_sum_preconditioner:"
+       do j=1,Nzeta
+          print *,streaming_ddzeta_sum_preconditioner(j,:)
+       end do
+       print *,"streaming_ddzeta_difference_preconditioner:"
+       do j=1,Nzeta
+          print *,streaming_ddzeta_difference_preconditioner(j,:)
+       end do
+    end if
     ! *******************************************************************************
     ! Build x grids, integration weights, and differentiation matrices.
     ! Also build interpolation matrices to map functions from one x grid to the other.
@@ -939,7 +1275,8 @@
           pointAtX0 = .true.
 
           scheme = 12
-          call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+          quadrature_option = 0
+          call uniformDiffMatrices(Nx+1, zero, xMax, scheme, quadrature_option, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
           x_plus1(1)=0 ! For some reason it usually comes out to be 2d-314
           x = x_plus1(1:Nx)
           xWeights = xWeights_plus1(1:Nx)
@@ -1029,6 +1366,7 @@
     allocate(ddx_xDot_minus(Nx,Nx))
     allocate(ddx_xDot_preconditioner_minus(Nx,Nx))
 
+    quadrature_option = 0
     select case (xDotDerivativeScheme)
     case (-2)
        ddx_xDot_plus = zero
@@ -1072,29 +1410,29 @@
 
     case (1)
        scheme = 32
-       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, quadrature_option, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
        ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
 
        scheme = 42
-       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, quadrature_option, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
        ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
 
     case (2)
        scheme = 52
-       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, quadrature_option, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
        ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
 
        scheme = 62
-       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, quadrature_option, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
        ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
 
     case (3)
        scheme = 52
-       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, quadrature_option, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
        ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
 
        scheme = 62
-       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, quadrature_option, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
        ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
        do i = 2,Nx
           ddx_xDot_minus(Nx,i) =  ddx_xDot_minus(Nx-1,i-1)
@@ -1102,16 +1440,16 @@
 
     case (4)
        scheme = 82
-       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, quadrature_option, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
        ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
 
        scheme = 92
-       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, quadrature_option, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
        ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
 
     case (5)
        scheme = 82
-       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, quadrature_option, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
        ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
        ! I'm not sure whether these next lines are good or not
        do i = 1,Nx
@@ -1119,7 +1457,7 @@
        end do
 
        scheme = 92
-       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, quadrature_option, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
        ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
        do i = 2,Nx
           ddx_xDot_minus(Nx,i) =  ddx_xDot_minus(Nx-1,i-1)
@@ -1139,7 +1477,7 @@
     case (7)
 
        scheme = 82
-       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, quadrature_option, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
        ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
 !!$       ! I'm not sure whether these next lines are good or not
 !!$       do i = 1,Nx
@@ -1147,7 +1485,7 @@
 !!$       end do
 
        scheme = 92
-       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, quadrature_option, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
        ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
        do i = 2,Nx
           ddx_xDot_minus(Nx,i) =  ddx_xDot_minus(Nx-1,i-1)
@@ -1166,11 +1504,11 @@
 
     case (8)
        scheme = 102
-       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, quadrature_option, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
        ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
 
        scheme = 112
-       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, quadrature_option, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
        ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
        do i = 3,Nx
           ddx_xDot_minus(Nx,i)     =  ddx_xDot_minus(Nx-2,i-2)
@@ -1187,7 +1525,7 @@
        allocate(d2dx2_subset(Nx,Nx))
 
        scheme = 12
-       call uniformDiffMatrices(Nx, zero, x(Nx), scheme, x_subset, x_subset, ddx_xDot_plus, d2dx2_subset)
+       call uniformDiffMatrices(Nx, zero, x(Nx), scheme, quadrature_option, x_subset, x_subset, ddx_xDot_plus, d2dx2_subset)
 
        deallocate(x_subset,xWeights_subset,d2dx2_subset)
 
@@ -1200,7 +1538,7 @@
        allocate(d2dx2_subset(Nx,Nx))
 
        scheme = 12
-       call uniformDiffMatrices(Nx, zero, x(Nx), scheme, x_subset, x_subset, ddx_xDot_minus, d2dx2_subset)
+       call uniformDiffMatrices(Nx, zero, x(Nx), scheme, quadrature_option, x_subset, x_subset, ddx_xDot_minus, d2dx2_subset)
 
        deallocate(x_subset,xWeights_subset,d2dx2_subset)
 
@@ -1214,7 +1552,7 @@
     allocate(ddxPotentials(NxPotentials, NxPotentials))
     allocate(d2dx2Potentials(NxPotentials, NxPotentials))
     if (RHSMode .ne. 3) then
-       call uniformDiffMatrices(NxPotentials, zero, xMaxNotTooSmall, 12, xPotentials, &
+       call uniformDiffMatrices(NxPotentials, zero, xMaxNotTooSmall, 12, quadrature_option, xPotentials, &
             xWeightsPotentials, ddxPotentials, d2dx2Potentials)
     else
        xPotentials = 0
@@ -1372,7 +1710,6 @@
     deallocate(xWeights_plus1)
     deallocate(ddx_plus1)
     deallocate(d2dx2_plus1)
-
 
     ! *******************************************************************************
     ! Set the number of Legendre modes used for each value of x

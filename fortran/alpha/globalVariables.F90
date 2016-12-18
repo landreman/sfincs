@@ -194,6 +194,7 @@ module globalVariables
 
   integer, dimension(:), allocatable :: Nxi_for_x, min_x_for_L
   integer :: matrixSize, NxPotentials
+  integer :: buffer_zeta_points_on_each_side
   PetscScalar, dimension(:), allocatable :: alpha, zeta, x, x_plus1
   PetscScalar, dimension(:), allocatable :: alphaWeights, zetaWeights
 

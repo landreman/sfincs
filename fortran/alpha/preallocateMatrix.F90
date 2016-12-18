@@ -10,7 +10,8 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   use petscmat
   use globalVariables, only: Nx, Nxi, Nalpha, Nzeta, Nspecies, matrixSize, includePhi1, &
        constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, & 
-       alphaDerivativeScheme, zetaDerivativeScheme, includePhi1InKineticEquation, quasineutralityOption 
+       includePhi1InKineticEquation, quasineutralityOption, &
+       streaming_ddtheta_sum, streaming_ddtheta_difference, streaming_ddzeta_sum, streaming_ddzeta_difference
   use indices
 
   implicit none
@@ -47,16 +48,19 @@ subroutine preallocateMatrix(matrix, whichMatrix)
        + (Nspecies-1)*Nx & ! inter-species collisional coupling. (Dense in x and species, -Nx since we already counted the diagonal-in-species block)
        + 2                 ! particle and heat sources
 
-  if (alphaDerivativeScheme==0) then
-     tempInt1 = tempInt1 + Nalpha*5-1  ! d/dalpha terms (dense in alpha, pentadiagonal in L, -1 since we already counted the diagonal)
+  ! 20161217 Need to update the estimates below for ExB terms
+  if (Nzeta==1) then
+     ! Axisymmetric
+     tempInt1 = tempInt1 + max_nnz_per_row(Nalpha,streaming_ddtheta_sum)*2 + max_nnz_per_row(Nalpha,streaming_ddtheta_difference)*3 - 1
+     if (masterProc) then
+        print *,"nnz per row for streaming_ddtheta_sum:       ",max_nnz_per_row(Nalpha,streaming_ddtheta_sum)
+        print *,"nnz per row for streaming_ddtheta_difference:",max_nnz_per_row(Nalpha,streaming_ddtheta_difference)
+     end if
   else
-     tempInt1 = tempInt1 + 5*5-1       ! d/dalpha terms (pentadiagonal in alpha, pentadiagonal in L, -1 since we already counted the diagonal)
-  end if
-
-  if (zetaDerivativeScheme==0) then
-     tempInt1 = tempInt1 + Nzeta*5-1  ! d/dzeta terms (dense in alpha, pentadiagonal in L, -1 since we already counted the diagonal)
-  else
-     tempInt1 = tempInt1 + 5*5-1      ! d/dzeta terms (pentadiagonal in alpha, pentadiagonal in L, -1 since we already counted the diagonal)
+     ! Nonaxisymmetric
+     tempInt1 = tempInt1 + max_nnz_per_row(Nzeta,streaming_ddzeta_sum)*2 + max_nnz_per_row(Nzeta,streaming_ddzeta_difference)*3 - 1
+        print *,"nnz per row for streaming_ddzeta_sum:       ",max_nnz_per_row(Nzeta,streaming_ddzeta_sum)
+        print *,"nnz per row for streaming_ddzeta_difference:",max_nnz_per_row(Nzeta,streaming_ddzeta_difference)
   end if
 
   ! We don't need to separately count the d/dxi terms, since they just add to the diagonals of the d/dalpha and d/dzeta terms we already counted.
@@ -220,5 +224,27 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   !if (masterProc) then
   !   print *,"Done with preallocation for whichMatrix = ",whichMatrix
   !end if
+
+contains
+
+  function max_nnz_per_row(N, matrix)
+    ! This function intentionally always includes a nonzero for the diagonal, even if the diagonal element is 0!
+    implicit none
+    
+    integer :: N, max_nnz_per_row
+    PetscScalar, dimension(N,N) :: matrix
+    integer :: row, col, counter
+    
+    max_nnz_per_row = 0
+    do row = 1,N
+       counter = 0
+       do col = 1,N
+          if (abs(matrix(row,col))>1e-12 .or. (row==col)) counter = counter+1
+       end do
+       max_nnz_per_row = max(counter,max_nnz_per_row)
+       !print *,counter, max_nnz_per_row
+    end do
+    !print *,"  ------"
+  end function max_nnz_per_row
 
 end subroutine preallocateMatrix
