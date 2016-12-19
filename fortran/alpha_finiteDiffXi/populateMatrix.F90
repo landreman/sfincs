@@ -1074,11 +1074,14 @@
                          ! (These terms are diagonal in xi.)
                          collision_operator_xi_block(ixi,ixi) = CECD(iSpeciesA,iSpeciesB,ix_row,ix_col)
                       end do
-                      do L = 0,NL-1
-                         ! Add the terms in the field part involving the Rosenbluth potentials:
-                         ! (These terms are generally dense in xi.)
-                         collision_operator_xi_block = collision_operator_xi_block + Legendre_projection_to_use(:,:,L+1) * RosenbluthPotentialTerms(iSpeciesA,iSpeciesB,L+1,ix_row,ix_col)
-                      end do
+                      if (whichMatrix==0 .or. preconditioner_field_term_xi_option==0) then
+                         ! Otherwise the field term will be added by apply_dense_terms.F90
+                         do L = 0,NL-1
+                            ! Add the terms in the field part involving the Rosenbluth potentials:
+                            ! (These terms are generally dense in xi.)
+                            collision_operator_xi_block = collision_operator_xi_block + Legendre_projection_to_use(:,:,L+1) * RosenbluthPotentialTerms(iSpeciesA,iSpeciesB,L+1,ix_row,ix_col)
+                         end do
+                      end if
                       if (iSpeciesA==iSpeciesB .and. ix_row==ix_col) then
                          ! Add pitch angle scattering:
                          ! (This operator is usually tri-diagonal or penta-diagonal in xi.)

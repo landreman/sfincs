@@ -35,6 +35,9 @@ module solver
     PetscReal :: mumps_value
     PetscReal :: atol, rtol, stol
     integer :: maxit, maxf
+    PetscInt :: VecLocalSize
+
+    external apply_Jacobian
 
 !!Following three lines added by AM 2016-07-06
 #if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR > 6))
@@ -58,56 +61,35 @@ module solver
     call SNESSetFunction(mysnes, residualVec, evaluateResidual, PETSC_NULL_OBJECT, ierr)
 
     firstMatrixCreation = .true.
-    call preallocateMatrix(matrix, 1)
-    if (useIterativeLinearSolver) then
-       call preallocateMatrix(preconditionerMatrix, 0)
-       call SNESSetJacobian(mysnes, matrix, preconditionerMatrix, evaluateJacobian, PETSC_NULL_OBJECT, ierr)
-    else
-       call SNESSetJacobian(mysnes, matrix, matrix, evaluateJacobian, PETSC_NULL_OBJECT, ierr)
-    end if
+
+    ! Create the Mat object for the Jacobian
+    !call preallocateMatrix(matrix, 1)
+    call VecGetLocalSize(solutionVec,VecLocalSize,ierr)
+    call MatCreateShell(PETSC_COMM_WORLD,VecLocalSize,VecLocalSize,matrixSize,matrixSize,&
+         PETSC_NULL_OBJECT,matrix,ierr)
+    call MatShellSetOperation(matrix,MATOP_MULT,apply_Jacobian,ierr)
+
+    call preallocateMatrix(preconditionerMatrix, 0)
+    call SNESSetJacobian(mysnes, matrix, preconditionerMatrix, evaluateJacobian, PETSC_NULL_OBJECT, ierr)
 
     call SNESGetKSP(mysnes, KSPInstance, ierr)
 
-    if (useIterativeLinearSolver) then
-!!$#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
-!!$       ! Syntax for PETSc versions up through 3.4
-!!$       call KSPSetOperators(KSPInstance, matrix, preconditionerMatrix, SAME_PRECONDITIONER, ierr)
-!!$#else
-!!$       ! Syntax for PETSc version 3.5 and later
-!!$       call KSPSetOperators(KSPInstance, matrix, preconditionerMatrix, ierr)
-!!$#endif
-       call KSPGetPC(KSPInstance, preconditionerContext, ierr)
-       call PCSetType(preconditionerContext, PCLU, ierr)
-       call KSPSetType(KSPInstance, KSPGMRES, ierr)   ! Set the Krylov solver algorithm to GMRES
-       call KSPGMRESSetRestart(KSPInstance, 2000, ierr)
-       call KSPSetTolerances(KSPInstance, solverTolerance, PETSC_DEFAULT_REAL, &
-            PETSC_DEFAULT_REAL, PETSC_DEFAULT_INTEGER, ierr)
+    call KSPGetPC(KSPInstance, preconditionerContext, ierr)
+    call PCSetType(preconditionerContext, PCLU, ierr)
+    call KSPSetType(KSPInstance, KSPGMRES, ierr)   ! Set the Krylov solver algorithm to GMRES
+    call KSPGMRESSetRestart(KSPInstance, 2000, ierr)
+    call KSPSetTolerances(KSPInstance, solverTolerance, PETSC_DEFAULT_REAL, &
+         PETSC_DEFAULT_REAL, PETSC_DEFAULT_INTEGER, ierr)
 
-       ! Allow options to be controlled using command-line flags:
-       call KSPSetFromOptions(KSPInstance, ierr)
+    ! Allow options to be controlled using command-line flags:
+    call KSPSetFromOptions(KSPInstance, ierr)
 !! #if #else #endif added by AM 2016-07-06 
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 7))
-       call KSPMonitorSet(KSPInstance, KSPMonitorDefault, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
+    call KSPMonitorSet(KSPInstance, KSPMonitorDefault, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
 #else
-       call PetscViewerAndFormatCreate(PETSC_VIEWER_STDOUT_WORLD, PETSC_VIEWER_DEFAULT, vf, ierr) !!Added by AM 2016-07-06
-       call KSPMonitorSet(KSPInstance, KSPMonitorDefault, vf, PetscViewerAndFormatDestroy, ierr) !!Added by AM 2016-07-06 
+    call PetscViewerAndFormatCreate(PETSC_VIEWER_STDOUT_WORLD, PETSC_VIEWER_DEFAULT, vf, ierr) !!Added by AM 2016-07-06
+    call KSPMonitorSet(KSPInstance, KSPMonitorDefault, vf, PetscViewerAndFormatDestroy, ierr) !!Added by AM 2016-07-06 
 #endif
-
-    else
-       ! Direct solver:
-!!$#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
-!!$       ! Syntax for PETSc versions up through 3.4
-!!$       call KSPSetOperators(KSPInstance, matrix, matrix, SAME_PRECONDITIONER, ierr)
-!!$#else
-!!$       ! Syntax for PETSc version 3.5 and later
-!!$       call KSPSetOperators(KSPInstance, matrix, matrix, ierr)
-!!$#endif
-       call KSPGetPC(KSPInstance, preconditionerContext, ierr)
-       call PCSetType(preconditionerContext, PCLU, ierr)
-       call KSPSetType(KSPInstance, KSPPREONLY, ierr)
-       ! Allow options to be controlled using command-line flags:
-       call KSPSetFromOptions(KSPInstance, ierr)
-    end if
 
     if (isAParallelDirectSolverInstalled) then
        select case (whichParallelSolverToFactorPreconditioner)
@@ -332,37 +314,22 @@ module solver
        call VecSet(solutionVec, zero, ierr)
 
        ! Build the main linear system matrix:
-       call populateMatrix(matrix,1,dummyVec)
+       !call populateMatrix(matrix,1,dummyVec)
+       call preallocateMatrix(Mat_for_Jacobian, 1)
+       call populateMatrix(Mat_for_Jacobian, 1, solutionVec)
 
-
-       if (useIterativeLinearSolver) then
-
-          ! Build the preconditioner:
-          call populateMatrix(preconditionerMatrix,0,dummyVec)
+       ! Build the preconditioner:
+       call populateMatrix(preconditionerMatrix,0,dummyVec)
 
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))                                                                                                                       
-          ! Syntax for PETSc versions up through 3.4
-          call KSPSetOperators(KSPInstance, matrix, preconditionerMatrix, SAME_PRECONDITIONER, ierr)
+       ! Syntax for PETSc versions up through 3.4
+       call KSPSetOperators(KSPInstance, matrix, preconditionerMatrix, SAME_PRECONDITIONER, ierr)
 #else
-          ! Syntax for PETSc version 3.5 and later
-          call KSPSetOperators(KSPInstance, matrix, preconditionerMatrix, ierr)
-          call KSPSetReusePreconditioner(KSPInstance, PETSC_TRUE, ierr)
-          call PCSetReusePreconditioner(preconditionerContext, PETSC_TRUE, ierr)
+       ! Syntax for PETSc version 3.5 and later
+       call KSPSetOperators(KSPInstance, matrix, preconditionerMatrix, ierr)
+       call KSPSetReusePreconditioner(KSPInstance, PETSC_TRUE, ierr)
+       call PCSetReusePreconditioner(preconditionerContext, PETSC_TRUE, ierr)
 #endif
-
-       else
-          ! Direct solver, so no preconditioner needed.
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))                                                                                                                       
-          ! Syntax for PETSc versions up through 3.4
-          call KSPSetOperators(KSPInstance, matrix, matrix, SAME_PRECONDITIONER, ierr)
-#else
-          ! Syntax for PETSc version 3.5 and later
-          call KSPSetOperators(KSPInstance, matrix, matrix, ierr)
-          call KSPSetReusePreconditioner(KSPInstance, PETSC_TRUE, ierr)
-          call PCSetReusePreconditioner(preconditionerContext, PETSC_TRUE, ierr)
-#endif
-
-       end if
 
        select case (RHSMode)
        case (2)

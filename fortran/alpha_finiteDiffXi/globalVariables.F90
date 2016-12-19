@@ -4,9 +4,9 @@ module globalVariables
 
 #include "PETScVersions.F90"
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscvecdef.h>
+#include <finclude/petscmatdef.h>
 #else
-#include <petsc/finclude/petscvecdef.h>
+#include <petsc/finclude/petscmatdef.h>
 #endif
 
   character(len=50), parameter :: inputFilename = "input.namelist"
@@ -368,6 +368,8 @@ module globalVariables
   integer :: ialphaMin, ialphaMax, localNalpha
   integer :: izetaMin, izetaMax, localNzeta, izetaMinDKE, izetaMaxDKE
   logical :: procThatHandlesConstraints
+
+  Mat :: Mat_for_Jacobian
 
 end module globalVariables
 

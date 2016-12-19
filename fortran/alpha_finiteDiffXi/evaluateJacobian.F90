@@ -14,7 +14,8 @@
 #endif
 
     use petscsnes
-    use globalVariables, only: masterProc, useIterativeLinearSolver, firstMatrixCreation, reusePreconditioner
+    use globalVariables, only: masterProc, firstMatrixCreation, reusePreconditioner, &
+         Mat_for_Jacobian
 
     implicit none
 
@@ -46,15 +47,37 @@
     ! If we try to re-assemble the matrix with additional nonzero entries without first re-allocating space for the nonzeros,
     ! we get the error about 'new nonzero caused a malloc'. Therefore, here we destroy the matrices and reallocate them.
 
-    if (useIterativeLinearSolver) then
-       ! If reusePreconditioner = true, then we only need to assemble the preconditioner in the first iteration.
-       ! If reusePreconditioner = false, then we need to assemble the preconditioner in every iteration.
-       if (firstMatrixCreation .or. .not. reusePreconditioner) then
-          call populateMatrix(jacobianPC, 0, stateVec)
-       end if
+    ! If reusePreconditioner = true, then we only need to assemble the preconditioner in the first iteration.
+    ! If reusePreconditioner = false, then we need to assemble the preconditioner in every iteration.
+    if (firstMatrixCreation .or. .not. reusePreconditioner) then
+       call populateMatrix(jacobianPC, 0, stateVec)
     end if
-    call populateMatrix(jacobian, 1, stateVec)
+    !call populateMatrix(jacobian, 1, stateVec)
+    if (firstMatrixCreation) then
+       call preallocateMatrix(Mat_for_Jacobian, 1)
+       call populateMatrix(Mat_for_Jacobian, 1, stateVec)
+    end if
 
     firstMatrixCreation = .false.
 
   end subroutine evaluateJacobian
+
+
+  subroutine apply_Jacobian(matrix, inputVec, outputVec, ierr)
+
+    use globalVariables, only: masterProc, Mat_for_Jacobian, collisionOperator, preconditioner_field_term_xi_option
+
+    implicit none
+
+    Mat :: matrix
+    Vec :: inputVec, outputVec
+    PetscErrorCode :: ierr
+
+    if (masterProc) print *,"Applying Jacobian matrix to a vector."
+
+    !if (collisionOperator==0 .and. preconditioner_field_term_xi_option>0) then
+    call VecZeroEntries(outputVec,ierr)
+    call apply_dense_terms(inputVec, outputVec, 1)
+    call MatMultAdd(Mat_for_Jacobian, inputVec, outputVec, outputVec, ierr)
+
+  end subroutine apply_Jacobian

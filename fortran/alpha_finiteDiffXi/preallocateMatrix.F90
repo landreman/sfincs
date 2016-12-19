@@ -11,7 +11,8 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   use globalVariables, only: Nx, Nxi, Nalpha, Nzeta, Nspecies, matrixSize, includePhi1, &
        constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, & 
        includePhi1InKineticEquation, quasineutralityOption, collisionOperator, &
-       ddalpha_plus, ddalpha_minus, ddzeta_plus, ddzeta_minus, ddxi_plus, ddxi_minus, pitch_angle_scattering_operator
+       ddalpha_plus, ddalpha_minus, ddzeta_plus, ddzeta_minus, ddxi_plus, ddxi_minus, pitch_angle_scattering_operator, &
+       preconditioner_field_term_xi_option
   use indices
 
   implicit none
@@ -77,7 +78,16 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   end if
   if (collisionOperator==0) then
      ! Eventually, add a test so these terms are only added if preconditioner_x=0.
-     tempInt1 = tempInt1 + Nspecies*Nx*Nxi - 1
+     select case (preconditioner_field_term_xi_option)
+     case (0)
+        tempInt1 = tempInt1 + Nspecies*Nx*Nxi - 1
+     case (1)
+        tempInt1 = tempInt1 + Nspecies*Nx - 1
+     case (2)
+        tempInt1 = tempInt1 + Nspecies*Nx*3 - 1
+     case default
+        print *,"Error! Invalid preconditioner_field_term_xi_option:",preconditioner_field_term_xi_option
+     end select
   end if
 
   if (includePhi1InKineticEquation .and. includePhi1) then !!Added by AM 2016-03

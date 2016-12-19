@@ -225,6 +225,7 @@ contains
        call writeHDF5Field("preconditioner_pitch_angle_scattering_option", preconditioner_pitch_angle_scattering_option, "")
        call writeHDF5Field("preconditioner_species", preconditioner_species, "")
        call writeHDF5Field("preconditioner_x", preconditioner_x, "")
+       call writeHDF5Field("preconditioner_field_term_xi_option", preconditioner_field_term_xi_option, "")
        call writeHDF5Field("preconditioner_alpha_interpolation_stencil", preconditioner_alpha_interpolation_stencil, "")
        call writeHDF5Field("reusePreconditioner", reusePreconditioner, "Use the same preconditioner matrix at each iteration of the Newton solver? " &
             // boolDescription)

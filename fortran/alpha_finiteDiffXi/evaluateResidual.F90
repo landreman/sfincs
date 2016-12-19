@@ -37,11 +37,15 @@
     call VecNorm(stateVec, NORM_INFINITY, norm, ierr)
     if (norm > 0) then
 
-       ! Some terms in the residual are computed by calling populateMatrix(...,3)
+       ! Begin with the linear terms that are dense:
+       call VecZeroEntries(residualVec,ierr)
+       call apply_dense_terms(stateVec, residualVec, 1)
+
+       ! Other terms in the residual are computed by calling populateMatrix(...,3)
        ! and multiplying the result by the state vector:
        call preallocateMatrix(residualMatrix, 3)
        call populateMatrix(residualMatrix, 3, stateVec)
-       call MatMult(residualMatrix, stateVec, residualVec, ierr)
+       call MatMultAdd(residualMatrix, stateVec, residualVec, residualVec, ierr)
        call MatDestroy(residualMatrix, ierr)
 
     else
