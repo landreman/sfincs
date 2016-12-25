@@ -39,7 +39,8 @@
 !ss NalphaMaxFactor = 2.5
 !ss NalphaNumRuns = 15
 
-  Nzeta = 23
+!  Nzeta = 19
+  Nzeta = 25
 !ss NzetaMinFactor = 0.6
 !ss NzetaMaxFactor = 2.5
 !ss NzetaNumRuns = 15
@@ -62,17 +63,17 @@
 
 &otherNumericalParameters
 !Nxi_for_x_option=0
-streaming_zeta_derivative_option=8
-alpha_interpolation_stencil=2
+!streaming_zeta_derivative_option=8
+!alpha_interpolation_stencil=2
 /
 
 &preconditionerOptions
-preconditioner_streaming_zeta_derivative_option=4
-preconditioner_alpha_interpolation_stencil=2
-preconditioner_xi=0
+!preconditioner_streaming_zeta_derivative_option=4
+!preconditioner_alpha_interpolation_stencil=2
+!preconditioner_xi=1
 !preconditioner_species=0
 !preconditioner_x=0
-preconditioner_streaming_zeta_min_L=4
+!preconditioner_streaming_zeta_min_L=4
 /
 
 &export_f

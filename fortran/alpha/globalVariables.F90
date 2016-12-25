@@ -137,9 +137,9 @@ module globalVariables
 
   integer :: preconditioner_streaming_theta_derivative_option = 4
   integer :: preconditioner_streaming_zeta_derivative_option = 4
-  integer :: preconditioner_ExB_alpha_derivative_option = 4
+  integer :: preconditioner_ExB_alpha_derivative_option = 0
   integer :: preconditioner_ExB_zeta_derivative_option = 4
-  integer :: preconditioner_alpha_interpolation_stencil = 4
+  integer :: preconditioner_alpha_interpolation_stencil = 2
 
   integer :: preconditioner_streaming_theta_min_L = 0
   integer :: preconditioner_streaming_zeta_min_L = 0
@@ -176,7 +176,7 @@ module globalVariables
   ! 2 = force use of superlu_dist, if it is available
 
   integer :: preconditioner_x=1, preconditioner_x_min_L=0
-  integer :: preconditioner_xi=1
+  integer :: preconditioner_xi=0
   integer :: preconditioner_species=1
   logical :: reusePreconditioner=.true.
   integer :: preconditioner_magnetic_drifts_max_L = 2

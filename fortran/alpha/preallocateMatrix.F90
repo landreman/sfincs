@@ -11,7 +11,8 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   use globalVariables, only: Nx, Nxi, Nalpha, Nzeta, Nspecies, matrixSize, includePhi1, &
        constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, & 
        includePhi1InKineticEquation, quasineutralityOption, &
-       streaming_ddtheta_sum, streaming_ddtheta_difference, streaming_ddzeta_sum, streaming_ddzeta_difference
+       streaming_ddtheta_sum, streaming_ddtheta_difference, streaming_ddzeta_sum, streaming_ddzeta_difference, &
+       ExB_ddalpha_plus
   use indices
 
   implicit none
@@ -58,7 +59,10 @@ subroutine preallocateMatrix(matrix, whichMatrix)
      end if
   else
      ! Nonaxisymmetric
-     tempInt1 = tempInt1 + max_nnz_per_row(Nzeta,streaming_ddzeta_sum)*2 + max_nnz_per_row(Nzeta,streaming_ddzeta_difference)*3 - 1
+     tempInt1 = tempInt1 + max_nnz_per_row(Nzeta,streaming_ddzeta_sum)*2 &  ! +/- 1 diagonal in L, in streaming term
+          + max_nnz_per_row(Nzeta,streaming_ddzeta_difference)*3 & ! diagonal and +/- 2 diagonal in L, in streaming term
+          + max_nnz_per_row(Nalpha,ExB_ddalpha_plus) & ! ExB term
+          - 1  ! We already counted the diagonal
         print *,"nnz per row for streaming_ddzeta_sum:       ",max_nnz_per_row(Nzeta,streaming_ddzeta_sum)
         print *,"nnz per row for streaming_ddzeta_difference:",max_nnz_per_row(Nzeta,streaming_ddzeta_difference)
   end if

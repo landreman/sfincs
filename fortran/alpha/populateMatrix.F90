@@ -33,7 +33,7 @@
     PetscScalar :: Z, nHat, THat, mHat, sqrtTHat, sqrtMHat, speciesFactor, speciesFactor2
     PetscScalar :: T32m, factor, L_factor, temp, temp1, temp2, xDotFactor, xDotFactor2, stuffToAdd
     PetscScalar :: factor1, factor2, factorJ1, factorJ2, factorJ3, factorJ4, factorJ5  !!Added by AM 2016-03
-    PetscScalar, dimension(:), allocatable :: xb, expxb2
+    PetscScalar, dimension(:), allocatable :: xb, expxb2, zeta_part_of_term
     PetscScalar, dimension(:,:), allocatable :: xPartOfXDot_plus, xPartOfXDot_minus, xPartOfXDot
     PetscScalar, dimension(:,:), allocatable :: ddxToUse_plus, ddxToUse_minus
     integer :: i, j, ix, ispecies, ialpha, izeta, L, ixi, index, ix_row, ix_col
@@ -41,7 +41,7 @@
     integer :: rowIndex2, L2 !!Added by AM 2016-03
     integer :: ell, iSpeciesA, iSpeciesB, maxL
     integer, dimension(:), allocatable :: rowIndices, colIndices
-    PetscScalar, dimension(:,:), allocatable :: ddxToUse, d2dx2ToUse, zetaPartOfTerm, alphaPartOfTerm
+    PetscScalar, dimension(:,:), allocatable :: ddxToUse, d2dx2ToUse, alphaPartOfTerm
     PetscScalar, dimension(:,:), allocatable :: fToFInterpolationMatrix
     PetscScalar, dimension(:,:), allocatable :: potentialsToFInterpolationMatrix
     PetscScalar, dimension(:,:,:,:), allocatable :: CECD
@@ -297,8 +297,8 @@
        ! Add the streaming d/dtheta term (only in axisymmetry)
        ! *********************************************************
 
-       if (masterProc) print *,"Beginning streaming d/dtheta"
        if ((whichMatrix .ne. 2) .and. (Nzeta==1)) then
+          if (masterProc) print *,"Beginning streaming d/dtheta"
           allocate(ddtheta_sum_to_use(Nalpha,Nalpha))
           allocate(ddtheta_difference_to_use(Nalpha,Nalpha))
           do L=0,(Nxi-1)
@@ -310,6 +310,7 @@
                 ddtheta_sum_to_use = streaming_ddtheta_sum_preconditioner
                 ddtheta_difference_to_use = streaming_ddtheta_difference_preconditioner
              end if
+             if (BHat_sup_theta(1,1) < 0) ddtheta_difference_to_use = -ddtheta_difference_to_use
 
              do ix=max(ixMin,min_x_for_L(L)),Nx
                 do ialphaRow=ialphaMin, ialphaMax
@@ -368,15 +369,15 @@
              end do
           end do
           deallocate(ddtheta_sum_to_use, ddtheta_difference_to_use)
+          if (masterProc) print *,"Done with streaming d/dtheta"
        end if
-       if (masterProc) print *,"Done with streaming d/dtheta"
 
        ! *********************************************************
        ! Add the streaming d/dzeta term (only in NONaxisymmetry)
        ! *********************************************************
 
-       if (masterProc) print *,"Beginning streaming d/dzeta"
        if ((whichMatrix .ne. 2) .and. (Nzeta>1)) then
+          if (masterProc) print *,"Beginning streaming d/dzeta"
           allocate(ddzeta_sum_to_use(Nzeta,Nzeta))
           allocate(ddzeta_difference_to_use(Nzeta,Nzeta))
           do L=0,(Nxi-1)
@@ -388,6 +389,7 @@
                 ddzeta_sum_to_use = streaming_ddzeta_sum_preconditioner
                 ddzeta_difference_to_use = streaming_ddzeta_difference_preconditioner
              end if
+             if (BHat_sup_zeta(1,1) < 0) ddzeta_difference_to_use = -ddzeta_difference_to_use
 
              do ix=max(ixMin,min_x_for_L(L)),Nx
                 do ialpha=ialphaMin, ialphaMax
@@ -446,66 +448,108 @@
              end do
           end do
           deallocate(ddzeta_sum_to_use, ddzeta_difference_to_use)
+          if (masterProc) print *,"Done with streaming d/dzeta"
        end if
-       if (masterProc) print *,"Done with streaming d/dzeta"
+
+
+
+
+
 
        ! *********************************************************
        ! Add the ExB d/dalpha term:
        ! *********************************************************
 
+       if (whichMatrix .ne. 2 .and. Nzeta>1) then
+          factor = gamma*Delta/two*dPhiHatdpsiHat
+          allocate(alphaPartOfTerm(Nalpha,Nalpha))
+          do L=0,(Nxi-1)
 
+             if (whichMatrix>0 .or. L < preconditioner_ExB_alpha_min_L) then
+                if (factor > 0) then
+                   ddalphaToUse = ExB_ddalpha_plus
+                else
+                   ddalphaToUse = ExB_ddalpha_minus
+                end if
+             else
+                if (factor > 0) then
+                   ddalphaToUse = ExB_ddalpha_plus_preconditioner
+                else
+                   ddalphaToUse = ExB_ddalpha_minus_preconditioner
+                end if
+             end if
 
+             do izeta=izetaMinDKE,izetaMaxDKE
+                if (useDKESExBDrift) then
+                   do ialpha=1,Nalpha
+                      alphaPartOfTerm(ialpha,:) = ddalphaToUse(ialpha,:) / FSABHat2 &
+                           * BHat(ialpha,izeta) * BHat(ialpha,izeta)
+                   end do
+                else
+                   alphaPartOfTerm = ddalphaToUse
+                end if
+                                
+                !do ix=ixMin,Nx
+                do ix=max(ixMin,min_x_for_L(L)),Nx
+                   do ialphaRow = ialphaMin,ialphaMax
+                      rowIndex = getIndex(ispecies,ix,L+1,ialphaRow,izeta,BLOCK_F)
+                      do ialphaCol = 1,Nalpha
+                         colIndex = getIndex(ispecies,ix,L+1,ialphaCol,izeta,BLOCK_F)
+                         call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                              factor*alphaPartOfTerm(ialphaRow,ialphaCol), ADD_VALUES, ierr)
+                      end do
+                   end do
+                end do
+             end do
+          end do
+          deallocate(alphaPartOfTerm)
+       end if
 
+       ! *********************************************************
+       ! Add the ExB d/zeta term:
+       ! *********************************************************
 
-!!$
-!!$       ! *********************************************************
-!!$       ! Add the ExB d/dalpha term:
-!!$       ! *********************************************************
-!!$
-!!$       if (whichMatrix .ne. 2) then
-!!$          factor = gamma*Delta/two*dPhiHatdpsiHat
-!!$          allocate(alphaPartOfTerm(Nalpha,Nalpha))
-!!$          do L=0,(Nxi-1)
-!!$
-!!$             if (ExBDerivativeSchemeAlpha==0) then
-!!$                if (whichMatrix>0 .or. L < preconditioner_alpha_min_L) then
-!!$                   ddalphaToUse = ddalpha
-!!$                else
-!!$                   ddalphaToUse = ddalpha_preconditioner
-!!$                end if
-!!$             else
-!!$                if (factor > 0) then
-!!$                   ddalphaToUse = ddalpha_ExB_plus
-!!$                else
-!!$                   ddalphaToUse = ddalpha_ExB_minus
-!!$                end if
-!!$             end if
-!!$
-!!$             do izeta=izetaMinDKE,izetaMaxDKE
-!!$                if (useDKESExBDrift) then
-!!$                   do ialpha=1,Nalpha
-!!$                      alphaPartOfTerm(ialpha,:) = ddalphaToUse(ialpha,:) / FSABHat2 &
-!!$                           * BHat(ialpha,izeta) * BHat(ialpha,izeta)
-!!$                   end do
-!!$                else
-!!$                   alphaPartOfTerm = ddalphaToUse
-!!$                end if
-!!$                                
-!!$                !do ix=ixMin,Nx
-!!$                do ix=max(ixMin,min_x_for_L(L)),Nx
-!!$                   do ialphaRow = ialphaMin,ialphaMax
-!!$                      rowIndex = getIndex(ispecies,ix,L+1,ialphaRow,izeta,BLOCK_F)
-!!$                      do ialphaCol = 1,Nalpha
-!!$                         colIndex = getIndex(ispecies,ix,L+1,ialphaCol,izeta,BLOCK_F)
-!!$                         call MatSetValueSparse(matrix, rowIndex, colIndex, &
-!!$                              factor*alphaPartOfTerm(ialphaRow,ialphaCol), ADD_VALUES, ierr)
-!!$                      end do
-!!$                   end do
-!!$                end do
-!!$             end do
-!!$          end do
-!!$          deallocate(alphaPartOfTerm)
-!!$       end if
+       if (whichMatrix .ne. 2 .and. Nzeta>1) then
+          allocate(zeta_part_of_term(Nzeta))
+          do L=0,(Nxi-1)
+             do ialpha=ialphaMin,ialphaMax
+                do izetaRow = izetaMinDKE,izetaMaxDKE
+                   factor = -gamma*Delta/two*dPhiHatdpsiHat*DHat(ialpha,izetaRow)*BHat_sub_theta(ialpha,izetaRow)
+                   if (useDKESExBDrift) then
+                      factor = factor / FSABHat2
+                   else
+                      factor = factor / (BHat(ialpha,izetaRow) * BHat(ialpha,izetaRow))
+                   end if
+
+                   if (whichMatrix>0 .or. L < preconditioner_ExB_zeta_min_L) then
+                      if (factor > 0) then
+                         zeta_part_of_term = ExB_ddzeta_plus(izetaRow,:)
+                      else
+                         zeta_part_of_term = ExB_ddzeta_minus(izetaRow,:)
+                      end if
+                   else
+                      if (factor > 0) then
+                         zeta_part_of_term = ExB_ddzeta_plus_preconditioner(izetaRow,:)
+                      else
+                         zeta_part_of_term = ExB_ddzeta_minus_preconditioner(izetaRow,:)
+                      end if
+                   end if
+                                
+                   !do ix=ixMin,Nx
+                   do ix=max(ixMin,min_x_for_L(L)),Nx
+                      rowIndex = getIndex(ispecies,ix,L+1,ialpha,izetaRow,BLOCK_F)
+                      do izetaCol = 1,Nzeta
+                         colIndex = getIndex(ispecies,ix,L+1,ialpha,izetaCol,BLOCK_F)
+                         call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                              factor*zeta_part_of_term(izetaCol), ADD_VALUES, ierr)
+                      end do
+                   end do
+                end do
+             end do
+          end do
+          deallocate(zeta_part_of_term)
+       end if
+
 !!$
 !!$       ! *********************************************************
 !!$       ! Add the ExB d/dzeta term:

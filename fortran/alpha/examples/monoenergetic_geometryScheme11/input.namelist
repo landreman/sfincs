@@ -46,7 +46,8 @@
 !ss NalphaMaxFactor = 2
 !ss NalphaNumRuns = 10
 
-  Nzeta = 31
+!  Nzeta = 31
+  Nzeta = 37
 !ss NzetaMinFactor = 1
 !ss NzetaMaxFactor = 2
 !ss NzetaNumRuns = 10

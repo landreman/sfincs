@@ -1190,7 +1190,8 @@
     deallocate(zeta_dummy)
     deallocate(zeta_weights_dummy)
 
-    if (masterProc) then
+    !if (masterProc) then
+    if (.false.) then
        print *,"alpha:"
        print *,alpha
        print *,"alphaWeights:"

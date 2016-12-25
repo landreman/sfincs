@@ -50,12 +50,14 @@
 !ss NalphaMaxFactor = 2
 !ss NalphaNumRuns = 5
 
-  Nzeta = 13
+!  Nzeta = 13
+  Nzeta = 19
 !ss NzetaMinFactor = 0.8
 !ss NzetaMaxFactor = 2
 !ss NzetaNumRuns = 5
 
-  Nxi = 14
+!  Nxi = 14
+  Nxi = 22
 !ss NxiMinFactor = 0.8
 !ss NxiMaxFactor = 2
 !ss NxiNumRuns = 6

@@ -1,8 +1,8 @@
-function [x, w, D, DD] = sfincs_uniformDiffMatrices(N, xMin, xMax, scheme)
+function [x, w, D, DD] = uniformDiffMatrices(N, xMin, xMax, scheme, quadrature_option)
 % Finite difference and spectral differentiation matrices and integration
 % weights for a uniform grid.
 %
-% Created by Matt Landreman, 
+% Created by Matt Landreman,
 % Massachusetts Institute of Technology, Plasma Science & Fusion Center,
 % 2012.
 %
@@ -15,46 +15,46 @@ function [x, w, D, DD] = sfincs_uniformDiffMatrices(N, xMin, xMax, scheme)
 %
 % Options for scheme:
 % 0 =  The domain [xMin, xMax] is assumed to be periodic. A 3-point stencil
-%      is used everywhere. A grid point will be placed at xMin but not 
+%      is used everywhere. A grid point will be placed at xMin but not
 %      xMax.
 % 1 =  Same as scheme=0, except a grid point will be placed at xMax but not
 %      xMin.
-% 2 =  The domain [xMin, xMax] is assumed to be non-periodic. A 3-point 
+% 2 =  The domain [xMin, xMax] is assumed to be non-periodic. A 3-point
 %      stencil is used everywhere.  The first and last row of the
 %      differentiation matrices will use one-sided differences, so they
 %      will each have a non-tridiagonal element.
 % 3 =  The same as scheme=2, except that the first differentiation matrix
 %      will use a 2-point 1-sided stencil for the first and last elements
 %      so the matrix is strictly tri-diagonal.  The 2nd derivative matrix
-%      is the same as for option 2, since it is not possible to compute 
+%      is the same as for option 2, since it is not possible to compute
 %      the 2nd derivative with only a 2-point stencil.
 % 10 = The domain [xMin, xMax] is assumed to be periodic. A 5-point stencil
-%      is used everywhere. A grid point will be placed at xMin but not 
+%      is used everywhere. A grid point will be placed at xMin but not
 %      xMax.  This option is like scheme=0 but more accurate.
 % 11 = Same as scheme=10, except a grid point will be placed at xMax but
 %      not xMin.  This option is like scheme=1 but more accurate.
-% 12 = The domain [xMin, xMax] is assumed to be non-periodic. A 5-point 
-%      stencil is used everywhere.  The first two and last two rows of 
-%      the differentiation matrices will then each have non-pentadiagonal 
+% 12 = The domain [xMin, xMax] is assumed to be non-periodic. A 5-point
+%      stencil is used everywhere.  The first two and last two rows of
+%      the differentiation matrices will then each have non-pentadiagonal
 %      elements.
 % 13 = The same as option 12, except that 3-point stencils are used for the
-%      first and last rows of the differentiation matrices, and 4-point 
-%      stencils are used for the 2nd and penultimate rows of the 
-%      differentiation matrices.  With this option, both differentiation 
+%      first and last rows of the differentiation matrices, and 4-point
+%      stencils are used for the 2nd and penultimate rows of the
+%      differentiation matrices.  With this option, both differentiation
 %      matrices are strictly penta-diagonal.
 % 20 = The domain [xMin, xMax] is assumed to be periodic. Spectral
-%      differentiation matrices are returned. A grid point will be placed 
+%      differentiation matrices are returned. A grid point will be placed
 %      at xMin but not xMax.
 % 21 = Same as scheme=20, except a grid point will be placed at xMax but not
 %      xMin.
 % 30 = Periodic with a grid point at xMin but not xMax.  Upwinding to the
-%      left. A 2-point stencil is used for the first derivative and a 
+%      left. A 2-point stencil is used for the first derivative and a
 %      3-point stencil is used for the second derivative.
 % 31 = Periodic with a grid point at xMax but not xMin.  Upwinding to the
-%      left. A 2-point stencil is used for the first derivative and a 
+%      left. A 2-point stencil is used for the first derivative and a
 %      3-point stencil is used for the second derivative.
 % 32 = Aperiodic.  Upwinding to the left. A 2-point stencil is used for the
-%      first derivative and a 3-point stencil is used for the second 
+%      first derivative and a 3-point stencil is used for the second
 %      derivative.  The top row of D and the top two rows of DD are zero.
 % 40 = Same as 30 but upwinding to the right.
 % 41 = Same as 31 but upwinding to the right.
@@ -64,7 +64,7 @@ function [x, w, D, DD] = sfincs_uniformDiffMatrices(N, xMin, xMax, scheme)
 %      left. A 3-point stencil is used for both derivatives.
 % 51 = Periodic with a grid point at xMax but not xMin.  Upwinding to the
 %      left. A 3-point stencil is used for both derivatives.
-% 52 = Aperiodic.  Upwinding to the left. A 3-point stencil is used for 
+% 52 = Aperiodic.  Upwinding to the left. A 3-point stencil is used for
 %      both derivatives.  The top row of both matrices is all zero. The
 %      second row of D uses a 2-point stencil.
 % 60 = Same as 50 but upwinding to the right.
@@ -73,10 +73,40 @@ function [x, w, D, DD] = sfincs_uniformDiffMatrices(N, xMin, xMax, scheme)
 %      derivative matrices is all zero. The penultimate row of D uses a
 %      2-point stencil.
 % 70 = The domain [xMin, xMax] is assumed to be periodic. A 7-point stencil
-%      is used everywhere. A grid point will be placed at xMin but not 
+%      is used everywhere. A grid point will be placed at xMin but not
 %      xMax.  This option is like scheme=0 but more accurate.
 % 71 = Same as scheme=70, except a grid point will be placed at xMax but
 %      not xMin.  This option is like scheme=1 but more accurate.
+% 80 = Periodic with a grid point at xMin but not xMax.  The first derivative is upwinded to the
+%      left. A stencil is used with 1 point on 1 side and 2 points on the
+%      other side. The second derivative is the same as in scheme 0.
+% 81 = Same as 80 but with a grid point at xMax and not xMin.
+% 82 = Like 80 but not periodic, with a grid point at both xMin and xMax.
+%      The top row of D is zero.
+% 90 = Same as 80 but upwinding to the right.
+% 91 = Same as 90 but with a grid point at xMax and not xMin.
+% 92 = Like 90 but not periodic, with a grid point at both xMin and xMax.
+%      The bottom row of D is zero.
+% 100 = Periodic with a grid point at xMin but not xMax.
+%       1st derivative only. Upwinded to the left.
+%       Stencil has 1 point on 1 side, 3 points on the other side
+% 101 = Same as 100, but with no grid point at xMin and with a grid point at xMax.
+% 102 = Same as 100, but aperiodic, with grid points at both xMin and xMax.
+% 110 = Periodic with a grid point at xMin but not xMax.
+%       1st derivative only. Upwinded to the right.
+%       Stencil has 1 point on 1 side, 3 points on the other side
+% 111 = Same as 110, but with no grid point at xMin and with a grid point at xMax.
+% 112 = Same as 100, but aperiodic, with grid points at both xMin and xMax.
+% 120 = Periodic with a grid point at xMin but not xMax.
+%       1st derivative only. Upwinded to the left.
+%       Stencil has 2 points on 1 side, 3 points on the other side
+% 121 = Same as 120, but with no grid point at xMin and with a grid point at xMax.
+% 122 = Same as 120, but aperiodic, with grid points at both xMin and xMax.
+% 130 = Periodic with a grid point at xMin but not xMax.
+%       1st derivative only. Upwinded to the right.
+%       Stencil has 2 points on 1 side, 3 points on the other side.
+% 131 = Same as 130, but with no grid point at xMin and with a grid point at xMax.
+% 132 = Same as 130, but aperiodic, with grid points at both xMin and xMax.
 %
 % Outputs:
 %   x = column vector with the grid points.
@@ -121,7 +151,7 @@ end
 
 % Create grid:
 switch scheme
-    case {0, 1, 10, 11, 20, 21, 30, 31, 40, 41, 50, 51, 60, 61, 70, 71}
+    case {0, 1, 10, 11, 20, 21, 30, 31, 40, 41, 50, 51, 60, 61, 70, 71, 80, 81, 90, 91, 100, 101, 110, 111, 120, 121, 130, 131}
         % Periodic
         x=linspace(xMin, xMax, N+1)';
     otherwise
@@ -129,10 +159,10 @@ switch scheme
         x=linspace(xMin, xMax, N)';
 end
 switch scheme
-    case {0, 10, 20, 30, 40, 50, 60, 70}
+    case {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130}
         % Drop point at xMax:
         x(end)=[];
-    case {1, 11, 21, 31, 41, 51, 61, 71}
+    case {1, 11, 21, 31, 41, 51, 61, 71, 81, 91, 101, 111, 121, 131}
         % Drop point at xMin:
         x(1)=[];
 end
@@ -142,10 +172,33 @@ dx2=dx*dx;
 % Create integration weights for the trapezoid rule:
 w=ones(size(x));
 switch scheme
-    case {2,3,12,13, 32, 42, 52, 62}
+    case {2,3,12,13, 32, 42, 52, 62, 82, 92, 102, 112, 122, 132}
         % Domain is aperiodic
-        w(1)=0.5;
-        w(end)=0.5;
+        switch quadrature_option
+            case 0
+                % Standard trapezoid rule
+                w(1)=0.5;
+                w(end)=0.5;
+            case 1
+                w(1)   = 5/12;
+                w(end) = 5/12;
+                w(2)     = 13/12;
+                w(end-1) = 13/12;
+            case 2
+                w(1)   = 2/5;
+                w(end) = 2/5;
+                w(2)     = 11/10;
+                w(end-1) = 11/10;
+            case 3
+                w(1)   = 3/8;
+                w(end) = 3/8;
+                w(2)     = 7/6;
+                w(end-1) = 7/6;
+                w(3)     = 23/24;
+                w(end-2) = 23/24;
+            case default
+                error('Invalid quadrature_option')
+        end
 end
 w=w*dx;
 
@@ -212,6 +265,150 @@ switch scheme
         D = ( -1.5*diag(ones(N,1), 0) + 2*diag(ones(N-1,1),1) - 0.5*diag(ones(N-2,1),2))/dx;
         DD = ( diag(ones(N,1), 0) - 2*diag(ones(N-1,1),1) + diag(ones(N-2,1),2))/dx2;
         
+    case {80,81,82}
+        % 4 point stencil (upwinding, with 1 point on 1 side, and 2 points on the other side.)
+        if N<5
+            error('N must be at least 5 for this stencil')
+        end
+        a = zeros(1,N);
+        a(2)   =  1/(3*dx);
+        a(1)   =  1/(2*dx);
+        a(N)   = -1/(dx);
+        a(N-1) =  1/(6*dx);
+        D = toeplitz([a(1),fliplr(a(2:end))],a);
+        
+        a = zeros(1,N);
+        a(2) =  1/(dx2);
+        a(1) = -2/(dx2);
+        a(N) =  1/(dx2);
+        DD = toeplitz(a);
+        
+        if scheme==82
+            D(N,1)=0;
+            
+            D(1,N)=0;
+            D(2,N)=0;
+            D(1,N-1)=0;
+        end
+        
+    case {90,91,92}
+        % 4 point stencil (upwinding, with 1 point on 1 side, and 2 points on the other side.)
+        % Exactly like 80,81,82 but upwinding the other way.
+        if N<5
+            error('N must be at least 5 for this stencil')
+        end
+        a = zeros(1,N);
+        a(N) = -1/(3*dx);
+        a(1) = -1/(2*dx);
+        a(2) =  1/(dx);
+        a(3) = -1/(6*dx);
+        D = toeplitz([a(1),fliplr(a(2:end))],a);
+        
+        a = zeros(1,N);
+        a(2) =  1/(dx2);
+        a(1) = -2/(dx2);
+        a(N) =  1/(dx2);
+        DD = toeplitz(a);
+        
+        if scheme==92
+            D(1,N)=0;
+            
+            D(N,1)=0;
+            D(N,2)=0;
+            D(N-1,1)=0;
+        end
+        
+    case {100,101,102}
+        % Upwinding, with 1 point on 1 side, and 3 points on the other side.
+        if N<5
+            error('N must be at least 5 for this stencil')
+        end
+        a = zeros(1,N);
+        a(2)   =  1/(4*dx);
+        a(1)   =  5/(6*dx);
+        a(N)   = -3/(2*dx);
+        a(N-1) =  1/(2*dx);
+        a(N-2) = -1/(12*dx);
+        D = toeplitz([a(1),fliplr(a(2:end))],a);
+        DD = zeros(N);
+        
+        if scheme==102
+            D(N,1)=0;
+            
+            D(1,(N-2):N)=0;
+            D(2,(N-1):N)=0;
+            D(3,N)=0;
+        end
+        
+    case {110,111,112}
+        % Upwinding, with 1 point on 1 side, and 3 points on the other side.
+        % Same as 100,101,102, but upwinding the other way.
+        if N<5
+            error('N must be at least 5 for this stencil')
+        end
+        a = zeros(1,N);
+        a(N)   = -1/(4*dx);
+        a(1)   = -5/(6*dx);
+        a(2)   =  3/(2*dx);
+        a(3)   = -1/(2*dx);
+        a(4)   =  1/(12*dx);
+        D = toeplitz([a(1),fliplr(a(2:end))],a);
+        DD = zeros(N);
+        
+        if scheme==112
+            D(1,N)=0;
+            
+            D((N-2):N,1)=0;
+            D((N-1):N,2)=0;
+            D(N,3)=0;
+        end
+    case {120,121,122}
+        % Upwinding, with 2 points on 1 side, and 3 points on the other side.
+        if N<6
+            error('N must be at least 6 for this stencil')
+        end
+        a = zeros(1,N);
+        a(3)   = -1/(20*dx);
+        a(2)   =  1/(2*dx);
+        a(1)   =  1/(3*dx);
+        a(N)   = -1/(dx);
+        a(N-1) =  1/(4*dx);
+        a(N-2) = -1/(30*dx);
+        D = toeplitz([a(1),fliplr(a(2:end))],a);
+        DD = zeros(N);
+        
+        if scheme==122
+            D(N,1:2)=0;
+            D(N-1,1)=0;
+            
+            D(1,(N-2):N)=0;
+            D(2,(N-1):N)=0;
+            D(3,N)=0;
+        end
+    case {130,131,132}
+        % Upwinding, with 2 points on 1 side, and 3 points on the other side.
+        % Same as 120,121,122, but upwinding the other way.
+        if N<6
+            error('N must be at least 6 for this stencil')
+        end
+        a = zeros(1,N);
+        a(N-1) =  1/(20*dx);
+        a(N)   = -1/(2*dx);
+        a(1)   = -1/(3*dx);
+        a(2)   =  1/(dx);
+        a(3)   = -1/(4*dx);
+        a(4)   =  1/(30*dx);
+        D = toeplitz([a(1),fliplr(a(2:end))],a);
+        DD = zeros(N);
+        
+        if scheme==132
+            D(1:2,N)=0;
+            D(1,N-1)=0;
+            
+            D((N-2):N,1)=0;
+            D((N-1):N,2)=0;
+            D(N,3)=0;
+        end
     case {20, 21}
         % Create spectral differentiation matrices.
         % Here I've cut and pasted code from the fourdif.m routine in the
@@ -223,7 +420,7 @@ switch scheme
         h=2*pi/N;                                % grid spacing
         kk=(1:N-1)';
         n1=floor((N-1)/2); n2=ceil((N-1)/2);
-
+        
         % Build first derivative matrix D:
         if rem(N,2)==0                         % compute first column of 1st derivative matrix
             topc=cot((1:n2)'*h/2);
@@ -260,7 +457,7 @@ switch scheme
         
         DD(1, end) = 1/dx2;
         DD(end, 1) = 1/dx2;
-
+        
     case 2
         % 3-point stencil, aperiodic
         D(1,1)=-1.5/dx;
@@ -278,7 +475,7 @@ switch scheme
         DD(end,end)=1/dx2;
         DD(end,end-1)=-2/dx2;
         DD(end,end-2)=1/dx2;
-
+        
     case 3
         % Aperiodic.
         % 2-point stencil for the first and last rows of the first
@@ -286,7 +483,7 @@ switch scheme
         % The 2nd derivative matrix is the same as for scheme=0 (i.e. not
         % strictly tri-diagonal) since it is not possible to approximate
         % the 2nd derivative with a 2-point stencil.
-
+        
         D(1,1)=-1/dx;
         D(1,2)=1/dx;
         
@@ -300,7 +497,7 @@ switch scheme
         DD(end,end)=1/dx2;
         DD(end,end-1)=-2/dx2;
         DD(end,end-2)=1/dx2;
-    
+        
     case {10,11}
         % 5-point stencil, periodic
         
@@ -315,11 +512,11 @@ switch scheme
         DD(1, end) = (4/3)/dx2;
         DD(1, end-1) = -(1/12)/dx2;
         DD(2, end) = -(1/12)/dx2;
-
+        
         DD(end, 1) = (4/3)/dx2;
         DD(end, 2) = -(1/12)/dx2;
         DD(end-1, 1) = -(1/12)/dx2;
-
+        
     case 12
         % 5-point stencil, aperiodic
         
@@ -378,25 +575,25 @@ switch scheme
         % differentiation matrices, and 4-point stencil for the 2nd and
         % penultimate rows of the differentiation matrices, so the matrices
         % are strictly penta-diagonal.
-
+        
         D(1,1)=-1.5/dx;
         D(1,2)=2/dx;
         D(1,3)=-0.5/dx;
-                
+        
         D(end,end)=1.5/dx;
         D(end,end-1)=-2/dx;
         D(end,end-2)=0.5/dx;
-
+        
         D(2,1)=-1/(3*dx);
         D(2,2)=-1/(2*dx);
         D(2,3)=1/(dx);
         D(2,4)=-1/(6*dx);
-
+        
         D(end-1,end-0)=1/(3*dx);
         D(end-1,end-1)=1/(2*dx);
         D(end-1,end-2)=-1/(dx);
         D(end-1,end-3)=1/(6*dx);
-
+        
         DD(1,1)=1/dx2;
         DD(1,2)=-2/dx2;
         DD(1,3)=1/dx2;
@@ -404,7 +601,7 @@ switch scheme
         DD(end,end)=1/dx2;
         DD(end,end-1)=-2/dx2;
         DD(end,end-2)=1/dx2;
-    
+        
         % It turns out that the 4-point stencil for the second derivative
         % has a weight of 0 for the most distant point, making it identical
         % to the 3-point stencil:
@@ -413,15 +610,15 @@ switch scheme
         DD(2,2)=-2/(dx2);
         DD(2,3)=1/(dx2);
         DD(2,4)=0;
-
+        
         DD(end-1,end-0)=1/(dx2);
         DD(end-1,end-1)=-2/(dx2);
         DD(end-1,end-2)=1/(dx2);
         DD(end-1,end-3)=0;
-
+        
     case {20, 21}
         % Nothing to be done here.
-
+        
     case {30,31}
         D(1,N) = -1/dx;
         DD(1,N) = -2/dx2;
@@ -516,7 +713,8 @@ switch scheme
         DD(end-1, 2) = 2/(180*dx2);
         
         DD(end-2, 1) = 2/(180*dx2);
-        
+    case {80,81,82,90,91,92,100,101,102,110,111,112,120,121,122,130,131,132}
+        % Already done.
     otherwise
         error('Invalid input value for ''scheme''')
 end
