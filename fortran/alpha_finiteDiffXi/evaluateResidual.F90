@@ -127,7 +127,7 @@
 !!$                        *(BHat_sub_zeta(ialpha,izeta)*dBHatdtheta(ialpha,izeta) &
 !!$                        - BHat_sub_theta(ialpha,izeta)*dBHatdzeta(ialpha,izeta))&
 !!$                        * DHat(ialpha,izeta) * x_part
-                   factor = -Delta*sqrtTHat*sqrtMHat &
+                   factor = -sqrt_g_sign*Delta*sqrtTHat*sqrtMHat &
                         /(2*pi*sqrtpi*Zs(ispecies)*BHat(ialpha,izeta)*BHat(ialpha,izeta)) &
                         *(BHat_sub_zeta(ialpha,izeta)*dBHatdtheta(ialpha,izeta) &
                         - BHat_sub_theta(ialpha,izeta)*dBHatdzeta(ialpha,izeta))&
@@ -216,7 +216,7 @@
                 !factor = gamma*Zs(ispecies)*x(ix)*exp(-x2(ix))*EParallelHat &
                 !     *nHats(ispecies)*mHats(ispecies)/(pi*sqrtpi*THats(ispecies)*THats(ispecies)*FSABHat2)
                 factor = -gamma*Zs(ispecies)*x(ix)*exp(-x2(ix))*EParallelHat &
-                     *BHat(ialpha,izeta)*BHat(ialpha,izeta)/(pi*sqrtpi*THats(ispecies)*DHat(ialpha,izeta)*FSABHat2)
+                     *BHat(ialpha,izeta)*BHat(ialpha,izeta)/(pi*sqrtpi*THats(ispecies)*abs(DHat(ialpha,izeta))*FSABHat2)
                 do ixi = 1,Nxi
                    index = getIndex(ispecies, ix, ixi, ialpha, izeta, BLOCK_F)
                    call VecSetValue(inhomogeneous_terms, index, &

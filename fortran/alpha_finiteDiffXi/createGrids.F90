@@ -714,7 +714,7 @@
     do j=1,Nxi
        pitch_angle_scattering_operator(j,:) = (1/two)*(1-xi(j)*xi(j))*d2dxi2(j,:) - xi(j)*ddxi(j,:)
     end do
-    if (masterProc) print *,"At stage 1, xi=",xi
+    !if (masterProc) print *,"At stage 1, xi=",xi
 
     ! *******************************************************************************
     ! Handle d/dxi for the pitch angle scattering operator in the preconditioner matrix.
@@ -765,7 +765,7 @@
        pitch_angle_scattering_operator_preconditioner(j,:) = (1/two)*(1-xi(j)*xi(j))*d2dxi2(j,:) - xi(j)*ddxi(j,:)
     end do
 
-    if (masterProc) print *,"At stage 2, xi=",xi
+    !if (masterProc) print *,"At stage 2, xi=",xi
     if (preconditioner_pitch_angle_scattering_option<0) then
        if (masterProc) then
           print *,"   But only the diagonal is kept."
@@ -850,7 +850,7 @@
 
     call uniformDiffMatrices(Nxi, -one, one, derivative_option_plus,  xi_quadrature_option, xi, xiWeights, ddxi_plus,  d2dxi2)
     call uniformDiffMatrices(Nxi, -one, one, derivative_option_minus, xi_quadrature_option, xi, xiWeights, ddxi_minus, d2dxi2)
-    if (masterProc) print *,"At stage 3, xi=",xi
+    !if (masterProc) print *,"At stage 3, xi=",xi
 
     ! *******************************************************************************
     ! Handle d/dxi for the mirror term in the preconditioner matrix.
@@ -941,7 +941,7 @@
        call uniformDiffMatrices(Nxi, -one, one, derivative_option_plus,  xi_quadrature_option, xi, xiWeights, ddxi_plus_preconditioner,  d2dxi2)
        call uniformDiffMatrices(Nxi, -one, one, derivative_option_minus, xi_quadrature_option, xi, xiWeights, ddxi_minus_preconditioner, d2dxi2)
     end if
-    if (masterProc) print *,"At stage 4, xi=",xi
+    !if (masterProc) print *,"At stage 4, xi=",xi
 
     if (preconditioner_xi_derivative_option<0) then
        if (masterProc) then
@@ -1474,27 +1474,27 @@
           Legendre_polynomials(:,L+1+1) = ((2*L+1)*xi*Legendre_polynomials(:,L+1) - L*Legendre_polynomials(:,L-1+1)) / (L+one)
        end do
 
-       print *,'Here come Legendre polynomials:'
-       do k=1,Nxi
-          print *,Legendre_polynomials(k,:)
-       end do
-       print *,"xiWeights:"
-       print *,xiWeights
+!!$       print *,'Here come Legendre polynomials:'
+!!$       do k=1,Nxi
+!!$          print *,Legendre_polynomials(k,:)
+!!$       end do
+!!$       print *,"xiWeights:"
+!!$       print *,xiWeights
 
        allocate(Legendre_projection(Nxi,Nxi,NL))
        allocate(xi_to_Legendre(Nxi))
        do j=1,NL
           L = j-1
           xi_to_Legendre = (2*L+one)/2*Legendre_polynomials(:,j) * xiWeights
-          print *,"For L=",L,", here is xi_to_Legendre:"
-          print *,xi_to_Legendre
+          !print *,"For L=",L,", here is xi_to_Legendre:"
+          !print *,xi_to_Legendre
           do k=1,Nxi
              Legendre_projection(k,:,j) = xi_to_Legendre * Legendre_polynomials(k,j)
           end do
-          print *,"For L=",L,", here is the Legendre projection matrix:"
-          do k=1,Nxi
-             print *,Legendre_projection(k,:,j)
-          end do
+          !print *,"For L=",L,", here is the Legendre projection matrix:"
+          !do k=1,Nxi
+          !   print *,Legendre_projection(k,:,j)
+          !end do
        end do
        deallocate(xi_to_Legendre)
     end if

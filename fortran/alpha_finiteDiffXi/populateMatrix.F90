@@ -35,22 +35,21 @@
     PetscScalar :: factor1, factor2, factorJ1, factorJ2, factorJ3, factorJ4, factorJ5  !!Added by AM 2016-03
     PetscScalar, dimension(:), allocatable :: xb, expxb2
     PetscScalar, dimension(:,:), allocatable :: xPartOfXDot_plus, xPartOfXDot_minus, xPartOfXDot
-    PetscScalar, dimension(:,:), allocatable :: ddx_to_use_plus, ddx_to_use_minus
+    !PetscScalar, dimension(:,:), allocatable :: ddx_to_use_plus, ddx_to_use_minus
     integer :: i, j, ix, ispecies, ialpha, izeta, L, ixi, index, ix_row, ix_col, ixi_row, ixi_col
     integer :: rowIndex, colIndex
-    integer :: rowIndex2, L2 !!Added by AM 2016-03
+    integer :: rowIndex1, rowIndex2, L2 !!Added by AM 2016-03
     integer :: ell, iSpeciesA, iSpeciesB, maxL
     integer, dimension(:), allocatable :: rowIndices, colIndices
-    PetscScalar, dimension(:,:), allocatable :: ddx_to_use, d2dx2_to_use, zetaPartOfTerm, alphaPartOfTerm
+    PetscScalar, dimension(:,:), allocatable :: d2dx2_to_use, zetaPartOfTerm, alphaPartOfTerm
     PetscScalar, dimension(:,:), allocatable :: fToFInterpolationMatrix
     PetscScalar, dimension(:,:), allocatable :: potentialsToFInterpolationMatrix
     PetscScalar, dimension(:,:,:,:), allocatable :: CECD
     PetscScalar :: xPartOfSource1, xPartOfSource2, geometricFactor1, geometricFactor2, geometricFactor3
     PetscScalar, dimension(:,:), allocatable ::  nuDHat
     PetscScalar, dimension(:), allocatable :: erfs, Psi_Chandra
-    PetscLogDouble :: time1, time2
-    PetscScalar, dimension(:,:), allocatable :: ddalpha_to_use, ddzeta_to_use, ddxi_to_use
-    PetscScalar, dimension(:,:), allocatable :: pitch_angle_scattering_operator_to_use
+    PetscLogDouble :: time1, time2, time3, time4
+    PetscScalar, dimension(:,:), pointer :: ddalpha_to_use, ddzeta_to_use, ddxi_to_use, pitch_angle_scattering_operator_to_use, ddx_to_use
     double precision :: myMatInfo(MAT_INFO_SIZE)
     integer :: NNZ, NNZAllocated, NMallocs
     PetscScalar :: dfMdx
@@ -75,6 +74,8 @@
     ! *******************************************************************************
     ! Do a few sundry initialization tasks:
     ! *******************************************************************************
+
+    call PetscTime(time3, ierr)
 
     ! This next line only matters for nonlinear calculations, in which the Mat objects for the matrix and preconditioner matrix 
     ! are reused at each iteration of SNES. In this case we need to clear all the previous entries, or else we would add the new
@@ -197,6 +198,10 @@
     allocate(potentialsToFInterpolationMatrix(Nx, NxPotentials))
     allocate(CECD(Nspecies, Nspecies, Nx, Nx))
 
+
+    call PetscTime(time4, ierr)
+    if (masterProc) print *,"  Time for init:",time4-time3
+    call PetscTime(time3, ierr)
     
     ! ************************************************************
     ! ************************************************************
@@ -218,10 +223,12 @@
        do izeta = izetaMin,izetaMax
           if (izeta <= buffer_zeta_points_on_each_side) then
              sign = -1
+             print *,"Left interpolation for izeta=",izeta
           elseif (izeta > Nzeta - buffer_zeta_points_on_each_side) then
              sign = 1
+             print *,"Right interpolation for izeta=",izeta
           else
-             !print *,"skipping izeta=",izeta
+             print *,"skipping izeta=",izeta
              cycle
           end if
           
@@ -253,6 +260,10 @@
     end if
     if (masterProc) print *,"Done with alpha interpolation"
    
+    call PetscTime(time4, ierr)
+    if (masterProc) print *,"  Time for alpha interp:",time4-time3
+    call PetscTime(time3, ierr)
+
     ! ************************************************************
     ! ************************************************************
     ! Begin adding the collisionless terms of the kinetic equation
@@ -272,33 +283,33 @@
        ! *********************************************************
        
        if (masterProc) print *,"Beginning d/dzeta"
-       allocate(ddzeta_to_use(Nzeta,Nzeta))
+       !allocate(ddzeta_to_use(Nzeta,Nzeta))
        if ((whichMatrix .ne. 2) .and. (Nzeta > 1)) then
           do izeta_row = izetaMinDKE,izetaMaxDKE
              do ialpha = ialphaMin,ialphaMax
                 do ix = 1,Nx
                    do ixi = 1,Nxi_for_x(ix)
-                      factor = x(ix)*xi(ixi)
+                      factor = x(ix)*xi(ixi)*sqrt_g_sign
                       select case (ExB_option)
                       case (1)
-                         factor = factor - (gamma*Delta*sqrtMHat/(2*sqrtTHat))*BHat_sub_theta(ialpha,izeta_row)/BHat(ialpha,izeta_row)*dPhiHatdpsiHat
+                         factor = factor - sqrt_g_sign*(gamma*Delta*sqrtMHat/(2*sqrtTHat))*BHat_sub_theta(ialpha,izeta_row)/BHat(ialpha,izeta_row)*dPhiHatdpsiHat
                       case (2)
-                         factor = factor - (gamma*Delta*sqrtMHat/(2*sqrtTHat))*BHat_sub_theta(ialpha,izeta_row)*BHat(ialpha,izeta_row)/FSABHat2*dPhiHatdpsiHat
+                         factor = factor - sqrt_g_sign*(gamma*Delta*sqrtMHat/(2*sqrtTHat))*BHat_sub_theta(ialpha,izeta_row)*BHat(ialpha,izeta_row)/FSABHat2*dPhiHatdpsiHat
                       end select
 
                       if (whichMatrix>0) then
                          ! Not preconditioner
                          if (factor>0) then
-                            ddzeta_to_use = ddzeta_plus
+                            ddzeta_to_use => ddzeta_plus
                          else
-                            ddzeta_to_use = ddzeta_minus
+                            ddzeta_to_use => ddzeta_minus
                          end if
                       else
                          ! Preconditioner
                          if (factor>0) then
-                            ddzeta_to_use = ddzeta_plus_preconditioner
+                            ddzeta_to_use => ddzeta_plus_preconditioner
                          else
-                            ddzeta_to_use = ddzeta_minus_preconditioner
+                            ddzeta_to_use => ddzeta_minus_preconditioner
                          end if
                       end if
                       rowIndex = getIndex(ispecies, ix, ixi, ialpha, izeta_row, BLOCK_F)
@@ -315,7 +326,7 @@
        ! To generate an error if these variables are used by mistake later:
        izeta_row = -1
        izeta_col = -1
-       deallocate(ddzeta_to_use)
+       !deallocate(ddzeta_to_use)
        if (masterProc) print *,"Done with d/dzeta"
 
        
@@ -323,7 +334,7 @@
        ! Add the d/dalpha term:
        ! *********************************************************
 
-       allocate(ddalpha_to_use(Nalpha,Nalpha))
+       !allocate(ddalpha_to_use(Nalpha,Nalpha))
        if (whichMatrix .ne. 2) then
           do izeta = izetaMinDKE,izetaMaxDKE
              do ialpha_row = ialphaMin,ialphaMax
@@ -334,34 +345,34 @@
                          factor = 0
                          select case (ExB_option)
                          case (1)
-                            factor = gamma*Delta*sqrtMHat/(2*sqrtTHat)*BHat(ialpha_row,izeta)/DHat(ialpha_row,izeta)*dPhiHatdpsiHat
+                            factor = sqrt_g_sign*gamma*Delta*sqrtMHat/(2*sqrtTHat)*BHat(ialpha_row,izeta)/DHat(ialpha_row,izeta)*dPhiHatdpsiHat
                          case (2)
-                            factor = gamma*Delta*sqrtMHat/(2*sqrtTHat)*(BHat(ialpha_row,izeta) ** 3)/(DHat(ialpha_row,izeta)*FSABHat2)*dPhiHatdpsiHat
+                            factor = sqrt_g_sign*gamma*Delta*sqrtMHat/(2*sqrtTHat)*(BHat(ialpha_row,izeta) ** 3)/(DHat(ialpha_row,izeta)*FSABHat2)*dPhiHatdpsiHat
                          end select
                       else
                          ! Nzeta==1, so we are in a tokamak.
-                         factor = iota * x(ix) * xi(ixi)
+                         factor = iota * x(ix) * xi(ixi) * sqrt_g_sign
                          select case (ExB_option)
                          case (1)
-                            factor = factor + gamma*Delta*sqrtMHat*dPhiHatdpsiHat*BHat_sub_zeta(ialpha_row,izeta)/(2*BHat(ialpha_row,izeta)*sqrtTHat)
+                            factor = factor + sqrt_g_sign*gamma*Delta*sqrtMHat*dPhiHatdpsiHat*BHat_sub_zeta(ialpha_row,izeta)/(2*BHat(ialpha_row,izeta)*sqrtTHat)
                          case (2)
-                            factor = factor + gamma*Delta*sqrtMHat*dPhiHatdpsiHat*BHat_sub_zeta(ialpha_row,izeta)*BHat(ialpha_row,izeta)/(2*FSABHat2*sqrtTHat)
+                            factor = factor + sqrt_g_sign*gamma*Delta*sqrtMHat*dPhiHatdpsiHat*BHat_sub_zeta(ialpha_row,izeta)*BHat(ialpha_row,izeta)/(2*FSABHat2*sqrtTHat)
                          end select
                       end if
 
                       if (whichMatrix>0) then
                          ! Not preconditioner
                          if (factor>0) then
-                            ddalpha_to_use = ddalpha_plus
+                            ddalpha_to_use => ddalpha_plus
                          else
-                            ddalpha_to_use = ddalpha_minus
+                            ddalpha_to_use => ddalpha_minus
                          end if
                       else
                          ! Preconditioner
                          if (factor>0) then
-                            ddalpha_to_use = ddalpha_plus_preconditioner
+                            ddalpha_to_use => ddalpha_plus_preconditioner
                          else
-                            ddalpha_to_use = ddalpha_minus_preconditioner
+                            ddalpha_to_use => ddalpha_minus_preconditioner
                          end if
                       end if
 
@@ -379,39 +390,39 @@
        ! To generate an error if these variables are used by mistake later:
        ialpha_row = -1
        ialpha_col = -1
-       deallocate(ddalpha_to_use)
+       !deallocate(ddalpha_to_use)
 
 
        ! *********************************************************
        ! Add the d/dxi term:
        ! *********************************************************
 
-       allocate(ddxi_to_use(Nxi,Nxi))
+       !allocate(ddxi_to_use(Nxi,Nxi))
        if (whichMatrix .ne. 2) then
           do izeta = izetaMinDKE,izetaMaxDKE
              do ialpha = ialphaMin,ialphaMax
                 do ix = 1,Nx
                    do ixi_row = 1,Nxi_for_x(ix)
                       ! The next line contains \dot{\hat{\xi}}:
-                      factor = - x(ix)*(1-xi(ixi_row)*xi(ixi_row))/(2*BHat(ialpha,izeta)) * (dBHatdzeta(ialpha,izeta)+iota*dBHatdtheta(ialpha,izeta))
+                      factor = - sqrt_g_sign*x(ix)*(1-xi(ixi_row)*xi(ixi_row))/(2*BHat(ialpha,izeta)) * (dBHatdzeta(ialpha,izeta)+iota*dBHatdtheta(ialpha,izeta))
                       if (includeElectricFieldTermInXiDot) then
-                         factor = factor + xi(ixi_row)*(1-xi(ixi_row)*xi(ixi_row))*gamma*Delta*sqrtMHat/(4*sqrtTHat*BHat(ialpha,izeta)*BHat(ialpha,izeta)) &
+                         factor = factor + sqrt_g_sign*xi(ixi_row)*(1-xi(ixi_row)*xi(ixi_row))*gamma*Delta*sqrtMHat/(4*sqrtTHat*BHat(ialpha,izeta)*BHat(ialpha,izeta)) &
                               * (BHat_sub_zeta(ialpha,izeta)*dBHatdtheta(ialpha,izeta) - BHat_sub_theta(ialpha,izeta)*dBHatdzeta(ialpha,izeta))*dPhiHatdpsiHat
                       end if
 
                       if (whichMatrix>0) then
                          ! Not preconditioner
                          if (factor>0) then
-                            ddxi_to_use = ddxi_plus
+                            ddxi_to_use => ddxi_plus
                          else
-                            ddxi_to_use = ddxi_minus
+                            ddxi_to_use => ddxi_minus
                          end if
                       else
                          ! Preconditioner
                          if (factor>0) then
-                            ddxi_to_use = ddxi_plus_preconditioner
+                            ddxi_to_use => ddxi_plus_preconditioner
                          else
-                            ddxi_to_use = ddxi_minus_preconditioner
+                            ddxi_to_use => ddxi_minus_preconditioner
                          end if
                       end if
                       rowIndex = getIndex(ispecies, ix, ixi_row, ialpha, izeta, BLOCK_F)
@@ -428,28 +439,28 @@
        ! To generate an error if these variables are used by mistake later:
        ixi_row = -1
        ixi_col = -1
-       deallocate(ddxi_to_use)
+       !deallocate(ddxi_to_use)
 
 
        ! *********************************************************
        ! Add the d/dx term:
        ! *********************************************************
 
-       allocate(ddx_to_use(Nx,Nx))
+       !allocate(ddx_to_use(Nx,Nx))
        if ((whichMatrix .ne. 2) .and. includeXDotTerm) then
           do izeta = izetaMinDKE,izetaMaxDKE
              do ialpha = ialphaMin,ialphaMax
                 do ix_row = 1,Nx
                    do ixi = 1,Nxi
                       ! The next line contains \dot{\hat{x}}:
-                      factor = x(ix_row)*(1+xi(ixi)*xi(ixi))*gamma*Delta*sqrtMHat*dPhiHatdpsiHat/(4*sqrtTHat*BHat(ialpha,izeta)*BHat(ialpha,izeta)) &
+                      factor = sqrt_g_sign*x(ix_row)*(1+xi(ixi)*xi(ixi))*gamma*Delta*sqrtMHat*dPhiHatdpsiHat/(4*sqrtTHat*BHat(ialpha,izeta)*BHat(ialpha,izeta)) &
                            * (BHat_sub_zeta(ialpha,izeta)*dBHatdtheta(ialpha,izeta) - BHat_sub_theta(ialpha,izeta)*dBHatdzeta(ialpha,izeta))
                       if (whichMatrix>0) then
                          ! Not preconditioner
-                         ddx_to_use = ddx
+                         ddx_to_use => ddx
                       else
                          ! Preconditioner
-                         ddx_to_use = ddx_preconditioner
+                         ddx_to_use => ddx_preconditioner
                       end if
                       rowIndex = getIndex(ispecies, ix_row, ixi, ialpha, izeta, BLOCK_F)
                       do ix_col = 1,Nx
@@ -465,7 +476,7 @@
        ! To generate an error if these variables are used by mistake later:
        ix_row = -1
        ix_col = -1
-       deallocate(ddx_to_use)
+       !deallocate(ddx_to_use)
 
 
 
@@ -864,6 +875,10 @@
 
     end do ! End of loop over species for the collisionless terms.
 
+    call PetscTime(time4, ierr)
+    if (masterProc) print *,"  Time for collisionless terms:",time4-time3
+    call PetscTime(time3, ierr)
+
     ! *********************************************************
     ! *********************************************************
     !
@@ -896,7 +911,7 @@
           ! *********************************************************
           
           ! For future possible preconditioners, I might want the change the following 2 lines.
-          ddx_to_use = ddx
+          ddx_to_use => ddx
           d2dx2_to_use = d2dx2
           
           nuDHat = zero
@@ -920,6 +935,7 @@
 #endif
                    erfs(ix) = temp2
                 end do
+                ! The subtraction in the next line causes a loss of some digits at small x. Is there a better method?
                 Psi_Chandra = (erfs - 2/sqrtpi * xb * expxb2) / (2*xb*xb)
                 
                 T32m = THats(iSpeciesA) * sqrt(THats(iSpeciesA)*mHats(ispeciesA))
@@ -1019,11 +1035,11 @@
           ! *****************************************************************
 
           allocate(collision_operator_xi_block(Nxi,Nxi))
-          allocate(pitch_angle_scattering_operator_to_use(Nxi,Nxi))
+          !allocate(pitch_angle_scattering_operator_to_use(Nxi,Nxi))
           if (whichMatrix==0) then
-             pitch_angle_scattering_operator_to_use = pitch_angle_scattering_operator_preconditioner
+             pitch_angle_scattering_operator_to_use => pitch_angle_scattering_operator_preconditioner
           else
-             pitch_angle_scattering_operator_to_use = pitch_angle_scattering_operator
+             pitch_angle_scattering_operator_to_use => pitch_angle_scattering_operator
           end if
 
           if (NL>0) then
@@ -1090,7 +1106,7 @@
 
                       do ialpha = ialphaMin,ialphaMax
                          do izeta = izetaMinDKE,izetaMaxDKE
-                            factor = -nu_n*BHat(ialpha,izeta)*sqrt(mHats(ispeciesA)/THats(ispeciesA))/DHat(ialpha,izeta)
+                            factor = -nu_n*BHat(ialpha,izeta)*sqrt(mHats(ispeciesA)/THats(ispeciesA))/abs(DHat(ialpha,izeta))
                             do ixi_col = 1,Nxi
                                colIndex = getIndex(iSpeciesB,ix_col,ixi_col,ialpha,izeta,BLOCK_F)
                                do ixi_row = 1,Nxi
@@ -1106,7 +1122,7 @@
              end do
           end do
                       
-          deallocate(pitch_angle_scattering_operator_to_use)
+          !deallocate(pitch_angle_scattering_operator_to_use)
           if (allocated(Legendre_projection_to_use)) deallocate(Legendre_projection_to_use)
           deallocate(collision_operator_xi_block)
           
@@ -1124,11 +1140,11 @@
           ! Pure pitch-angle scattering collision operator
           ! *********************************************************
 
-          allocate(pitch_angle_scattering_operator_to_use(Nxi,Nxi))
+          !allocate(pitch_angle_scattering_operator_to_use(Nxi,Nxi))
           if (whichMatrix==0) then
-             pitch_angle_scattering_operator_to_use = pitch_angle_scattering_operator_preconditioner
+             pitch_angle_scattering_operator_to_use => pitch_angle_scattering_operator_preconditioner
           else
-             pitch_angle_scattering_operator_to_use = pitch_angle_scattering_operator
+             pitch_angle_scattering_operator_to_use => pitch_angle_scattering_operator
           end if
 
           nuDHat = zero
@@ -1149,6 +1165,7 @@
 #endif
                    erfs(ix) = temp2
                 end do
+                ! The subtraction in the next line causes a loss of some digits at small x. Is there a better method?
                 Psi_Chandra = (erfs - 2/sqrtpi * xb * expxb2) / (2*xb*xb)
                 
                 T32m = THats(iSpeciesA) * sqrt(THats(iSpeciesA)*mHats(ispeciesA))
@@ -1160,11 +1177,11 @@
                      * nHats(iSpeciesB)*(erfs - Psi_Chandra)/(x*x*x)
                 
              end do
-             
+
              do ix=ixMin,Nx
                 do ialpha=ialphaMin,ialphaMax
                    do izeta=izetaMinDKE,izetaMaxDKE
-                      factor = -nu_n*BHat(ialpha,izeta)*sqrt(mHats(ispeciesA)/THats(ispeciesA))/DHat(ialpha,izeta)*nuDHat(iSpeciesA,ix)
+                      factor = -nu_n*BHat(ialpha,izeta)*sqrt(mHats(ispeciesA)/THats(ispeciesA))/abs(DHat(ialpha,izeta))*nuDHat(iSpeciesA,ix)
                       do ixi_row = 1,Nxi
                          rowIndex=getIndex(iSpeciesA,ix,ixi_row,ialpha,izeta,BLOCK_F)
                          do ixi_col = 1,Nxi
@@ -1177,7 +1194,7 @@
                 end do
              end do
           end do
-          deallocate(pitch_angle_scattering_operator_to_use)
+          !deallocate(pitch_angle_scattering_operator_to_use)
           
        case default
           print *,"Error! collisionOperator must be 0 or 1."
@@ -1185,6 +1202,10 @@
           
        end select
     end if
+
+    call PetscTime(time4, ierr)
+    if (masterProc) print *,"  Time for collision op:",time4-time3
+    call PetscTime(time3, ierr)
 
     ! *******************************************************************************
     ! *******************************************************************************
@@ -1313,11 +1334,16 @@
        end select
     end if
        
+    call PetscTime(time4, ierr)
+    if (masterProc) print *,"  Time for sources:",time4-time3
+    call PetscTime(time3, ierr)
+
     ! *******************************************************************************
     ! Add the density and pressure constraints:
     ! *******************************************************************************
 
-    if (whichMatrix .ne. 2 .and. procThatHandlesConstraints) then
+    !if (whichMatrix .ne. 2 .and. procThatHandlesConstraints) then
+    if (whichMatrix .ne. 2) then
        select case (constraintScheme)
        case (0)
           ! Do nothing here.
@@ -1326,25 +1352,29 @@
           ! Force the flux-surface-averaged perturbed density and 
           ! flux-surface-averaged perturbed pressure to be zero.
 
-          do ialpha=1,Nalpha
-             do izeta=1,Nzeta
-                do ixi=1,Nxi
-                   ! The matrix elements must be proportional to 1/DHat, and the sum should exclude the repeated values of zeta,
-                   ! but otherwise the row could probably be scaled any way you like. Here we include a factor 1/VPrimeHat so the 
-                   ! row is dimensionless and the row sum is O(1), which seems like a reasonable scaling.
-                   !factor = alphaWeights(ialpha)*zetaWeights(izeta)/DHat(ialpha,izeta)
-                   factor = xiWeights(ixi)*alphaWeights(ialpha)*zetaWeights(izeta)/(DHat(ialpha,izeta)*VPrimeHat)
-
-                   do ix=1,Nx
-                      do ispecies=1,Nspecies
+          do ispecies=1,Nspecies
+             rowIndex1 = getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)
+             rowIndex2 = getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)
+             !do ialpha=1,Nalpha
+             do ialpha = ialphaMin, ialphaMax
+                !do izeta=1,Nzeta
+                do izeta = izetaMinDKE, izetaMaxDKE
+                   do ixi=1,Nxi
+                      ! The matrix elements must be proportional to 1/DHat, and the sum should exclude the repeated values of zeta,
+                      ! but otherwise the row could probably be scaled any way you like. Here we include a factor 1/VPrimeHat so the 
+                      ! row is dimensionless and the row sum is O(1), which seems like a reasonable scaling.
+                      !factor = alphaWeights(ialpha)*zetaWeights(izeta)/DHat(ialpha,izeta)
+                      factor = xiWeights(ixi)*alphaWeights(ialpha)*zetaWeights(izeta)/(DHat(ialpha,izeta)*VPrimeHat)
+                      
+                      do ix=1,Nx
                          colIndex = getIndex(ispecies, ix, ixi, ialpha, izeta, BLOCK_F)
                          
-                         rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)
-                         call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                         !call MatSetValueSparse(matrix, rowIndex1, colIndex, &
+                         call MatSetValue(matrix, rowIndex1, colIndex, &
                               x2(ix)*xWeights(ix)*factor, ADD_VALUES, ierr)
                          
-                         rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)
-                         call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                         !call MatSetValueSparse(matrix, rowIndex2, colIndex, &
+                         call MatSetValue(matrix, rowIndex2, colIndex, &
                               x2(ix)*x2(ix)*xWeights(ix)*factor, ADD_VALUES, ierr)
                       end do
                    end do
@@ -1396,6 +1426,10 @@
           stop
        end select
     end if
+
+    call PetscTime(time4, ierr)
+    if (masterProc) print *,"  Time for constraints:",time4-time3
+    call PetscTime(time3, ierr)
 
     ! *******************************************************************************
     ! SECTION MODIFIED BY AM 2016-02/03
@@ -1546,6 +1580,9 @@
        call VecScatterDestroy(vecScatterContext, ierr)
        call VecDestroy(vecOnEveryProc, ierr)
     end if
+
+    call PetscTime(time4, ierr)
+    if (masterProc) print *,"  Time for remaining stuff:",time4-time3
 
   end subroutine populateMatrix
 

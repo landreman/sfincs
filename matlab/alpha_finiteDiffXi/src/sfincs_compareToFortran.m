@@ -1,6 +1,6 @@
 function sfincs_compareToFortran(filename)
 
-global Zs mHats nHats THats withAdiabatic
+global Zs mHats nHats THats withAdiabatic dnHatdpsiHats dTHatdpsiHats
 global Nspecies Nalpha Nzeta Nxi Nx NL dPhiHatdpsiHat collisionOperator RHSMode
 global alpha zeta x xi transportMatrix
 global alphaWeights zetaWeights xWeights xiWeights
@@ -68,6 +68,10 @@ compare('Zs')
 compare('mHats')
 compare('nHats')
 compare('THats')
+% The next 2 lines are a hack to deal with the slightly different variable
+% name in the .h5 output file.
+dnHatdpsiHat = dnHatdpsiHats; compare('dnHatdpsiHat')
+dTHatdpsiHat = dTHatdpsiHats; compare('dTHatdpsiHat')
 compare('withAdiabatic')
 compare('Nspecies')
 compare('Nalpha')

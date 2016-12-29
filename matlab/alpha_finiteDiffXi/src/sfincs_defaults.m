@@ -145,7 +145,7 @@ global nonlinearTolerance maxNumNonlinearIterations
 
 alpha_derivative_option = 8;
 zeta_derivative_option = 8;
-xi_derivative_option = 8;
+xi_derivative_option = 3;
 pitch_angle_scattering_option = 3;
 alpha_interpolation_stencil = 4;
 xi_quadrature_option = 3;

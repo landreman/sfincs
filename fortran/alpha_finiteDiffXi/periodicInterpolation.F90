@@ -10,6 +10,8 @@ subroutine periodicInterpolation(N, matrix, shift, stencil)
   ! known on N uniformly spaced grid points on the domain [0,2*pi).
   ! 'matrix' should have been allocated with size (N,N).
 
+  use rank_mod
+
   implicit none
 
   integer, intent(in) :: N, stencil
@@ -18,8 +20,10 @@ subroutine periodicInterpolation(N, matrix, shift, stencil)
 
   PetscScalar :: shift2, value
   PetscScalar, parameter :: pi=3.14159265358979d+0
-  integer :: nearestIndex, indexBelow, j, k, firstIndex, index
-  PetscScalar, dimension(:), allocatable :: pattern, x
+  integer :: nearestIndex, indexBelow, j, k, firstIndex, index, N_possible_shifts, shift_to_try
+  PetscScalar, dimension(:), allocatable :: pattern, x, possible_shifts, errors
+  integer, dimension(:), allocatable :: indices
+  logical :: found_a_solution
 
   ! Validate:
   if (stencil <= 0) then
@@ -47,7 +51,43 @@ subroutine periodicInterpolation(N, matrix, shift, stencil)
   ! 'pattern' is the first _row_ of the interpolation matrix.
 
   if (stencil==1) then
-     ! If nearestIndex = N+1, change it to 1:
+     ! Here we alter nearestIndex to ensure that the amount of shift (nearestIndex-1)
+     ! is relatively prime with N, since otherwise subsets of the alpha grid decouple from each other,
+     ! yielding a singular matrix. (It is like having a rational iota.)
+     print *,"Original alpha shift:",nearestIndex-1
+
+     N_possible_shifts = 3*N  ! Almost certainly more than necessary...
+     allocate(possible_shifts(N_possible_shifts))
+     allocate(errors(N_possible_shifts))
+     allocate(indices(N_possible_shifts))
+
+     possible_shifts = [( j-N, j=1,N_possible_shifts )]
+     errors = [( abs(N*shift2/(2*pi) - possible_shifts(j)), j=1,N_possible_shifts )]
+     call rank(errors,indices)
+     print *,"possible_shifts:",possible_shifts
+     print *,"errors:",errors
+     print *,"indices:",indices
+     ! The 'rank' subroutine returns results in descending order.
+     found_a_solution = .false.
+     do j=1,N_possible_shifts
+        shift_to_try = possible_shifts(indices(j))
+        print *,"gcd(",N,",",shift_to_try,")=",gcd(N,shift_to_try)
+        if (gcd(N,shift_to_try)==1) then
+           ! If the greatest common divisor==1, then this shift is relatively prime to N,
+           ! so accept this shift.
+           found_a_solution = .true.
+           nearestIndex = shift_to_try + 1
+           exit
+        end if
+     end do
+     if (.not. found_a_solution) then
+        print *,"Error in periodicInterpolation for stencil=1."
+     end if
+
+     deallocate(possible_shifts,errors,indices)
+     print *,"Adjusted alpha shift:",nearestIndex-1
+
+     ! Ensure nearestIndex is in the range [1,N]:
      index = modulo(nearestIndex-1,N)+1
      pattern(index)=1
   else
@@ -86,5 +126,24 @@ subroutine periodicInterpolation(N, matrix, shift, stencil)
 
   deallocate(pattern)
 
-end subroutine periodicInterpolation
+contains
 
+  ! Greatest common divisor
+  function gcd(v, t)
+    integer :: gcd
+    integer, intent(in) :: v, t
+    integer :: c, b, a
+    
+    b = t
+    a = v
+    do
+       c = mod(a, b)
+       if ( c == 0) exit
+       a = b
+       b = c
+    end do
+    gcd = b ! abs(b)
+    
+  end function gcd
+
+end subroutine periodicInterpolation

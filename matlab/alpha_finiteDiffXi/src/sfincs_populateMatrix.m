@@ -15,7 +15,7 @@ global BLOCK_F BLOCK_QN BLOCK_PHI1_CONSTRAINT BLOCK_DENSITY_CONSTRAINT BLOCK_PRE
 global includePhi1 includePhi1InKineticEquation ExB_option includeXDotTerm includeElectricFieldTermInXiDot magneticDriftScheme
 global Delta gamma nu_n Phi1Hat dPhi1Hatdalpha dPhi1Hatdzeta stateVector
 global BDotCurlB FSABHat2 dPhiHatdpsiHat force0RadialCurrentInEquilibrium
-global BHat dBHatdtheta dBHatdzeta dBHatdpsiHat GHat B0OverBBar VPrimeHat
+global BHat dBHatdtheta dBHatdzeta dBHatdpsiHat GHat B0OverBBar VPrimeHat sqrt_g_sign
 global DHat BHat_sub_psi BHat_sub_theta BHat_sub_zeta BHat_sup_theta BHat_sup_zeta
 global dBHat_sub_psi_dtheta dBHat_sub_psi_dzeta
 global dBHat_sub_theta_dpsiHat dBHat_sub_theta_dzeta
@@ -166,9 +166,9 @@ for ispecies = 1:Nspecies
             case 0
                 Er_term = zeros(Nalpha,Nzeta);
             case 1
-                Er_term = - (gamma*Delta*sqrtm*dPhiHatdpsiHat*BHat_sub_theta) ./ (2*sqrtT*BHat);
+                Er_term = - (sqrt_g_sign*gamma*Delta*sqrtm*dPhiHatdpsiHat*BHat_sub_theta) ./ (2*sqrtT*BHat);
             case 2
-                Er_term = - (gamma*Delta*sqrtm*dPhiHatdpsiHat*BHat_sub_theta.*BHat) / (2*sqrtT*FSABHat2);
+                Er_term = - (sqrt_g_sign*gamma*Delta*sqrtm*dPhiHatdpsiHat*BHat_sub_theta.*BHat) / (2*sqrtT*FSABHat2);
             otherwise
                 error('Invalid ExB_option')
         end
@@ -176,7 +176,7 @@ for ispecies = 1:Nspecies
             for ialpha = 1:Nalpha
                 for ix = 1:Nx
                     for ixi = 1:Nxi
-                        factor = x(ix)*xi(ixi) + Er_term(ialpha,izeta_row);
+                        factor = sqrt_g_sign*x(ix)*xi(ixi) + Er_term(ialpha,izeta_row);
                         if factor>0
                             stuff_to_add = factor*ddzeta_plus_to_use(izeta_row,:);
                         else
@@ -213,16 +213,16 @@ for ispecies = 1:Nspecies
                 case 0
                     Er_term = zeros(Nalpha,Nzeta);
                 case 1
-                    Er_term = (gamma*Delta*sqrtm*dPhiHatdpsiHat*BHat_sub_zeta) ./ (2*sqrtT*BHat);
+                    Er_term = (sqrt_g_sign*gamma*Delta*sqrtm*dPhiHatdpsiHat*BHat_sub_zeta) ./ (2*sqrtT*BHat);
                 case 2
-                    Er_term = (gamma*Delta*sqrtm*dPhiHatdpsiHat*BHat_sub_zeta.*BHat) / (2*sqrtT*FSABHat2);
+                    Er_term = (sqrt_g_sign*gamma*Delta*sqrtm*dPhiHatdpsiHat*BHat_sub_zeta.*BHat) / (2*sqrtT*FSABHat2);
                 otherwise
                     error('Invalid ExB_option')
             end
             for ialpha_row = 1:Nalpha
                 for ix = 1:Nx
                     for ixi = 1:Nxi
-                        factor = iota*x(ix)*xi(ixi) + Er_term(ialpha_row,izeta);
+                        factor = sqrt_g_sign*iota*x(ix)*xi(ixi) + Er_term(ialpha_row,izeta);
                         if factor>0
                             stuff_to_add = factor*ddalpha_plus_to_use(ialpha_row,:);
                         else
@@ -242,9 +242,9 @@ for ispecies = 1:Nspecies
                 case 0
                     Er_term = zeros(Nalpha,Nzeta);
                 case 1
-                    Er_term = (gamma*Delta*sqrtm*dPhiHatdpsiHat*BHat) ./ (2*sqrtT*DHat);
+                    Er_term = (gamma*Delta*sqrtm*dPhiHatdpsiHat*BHat) ./ (2*sqrtT*abs(DHat));
                 case 2
-                    Er_term = (gamma*Delta*sqrtm*dPhiHatdpsiHat*(BHat.^3)) ./ (2*sqrtT*DHat*FSABHat2);
+                    Er_term = (gamma*Delta*sqrtm*dPhiHatdpsiHat*(BHat.^3)) ./ (2*sqrtT*abs(DHat)*FSABHat2);
                 otherwise
                     error('Invalid ExB_option')
             end
@@ -282,10 +282,10 @@ for ispecies = 1:Nspecies
             ddxi_minus_to_use = ddxi_minus;
         end
         
-        mirrorTermSpatialPart = -(iota*dBHatdtheta + dBHatdzeta) ./ (2*BHat);
+        mirrorTermSpatialPart = -(sqrt_g_sign*iota*dBHatdtheta + dBHatdzeta) ./ (2*BHat);
 
         if includeElectricFieldTermInXiDot
-            Er_term = (gamma*Delta*sqrtm*dPhiHatdpsiHat*(BHat_sub_zeta.*dBHatdtheta - BHat_sub_theta.*dBHatdzeta)) ...
+            Er_term = (sqrt_g_sign*gamma*Delta*sqrtm*dPhiHatdpsiHat*(BHat_sub_zeta.*dBHatdtheta - BHat_sub_theta.*dBHatdzeta)) ...
                 ./ (4*sqrtT*BHat.*BHat);
         else
             Er_term = zeros(Nalpha,Nzeta);
@@ -324,7 +324,7 @@ for ispecies = 1:Nspecies
             x_part_of_x_dot = diag(x)*ddx;
         end
         
-        factor = -(gamma*Delta*sqrtm*dPhiHatdpsiHat* (BHat_sub_theta.*dBHatdzeta - BHat_sub_zeta.*dBHatdtheta))./(4*sqrtT*(BHat.^2));
+        factor = -(sqrt_g_sign*gamma*Delta*sqrtm*dPhiHatdpsiHat* (BHat_sub_theta.*dBHatdzeta - BHat_sub_zeta.*dBHatdtheta))./(4*sqrtT*(BHat.^2));
         for ialpha = 1:Nalpha
             for izeta = zeta_to_impose_DKE
                 for ixi = 1:Nxi
@@ -363,6 +363,8 @@ switch (collisionOperator)
                 erfs = erf(xb);
                 xb2  = xb.*xb;
                 expxb2 = exp(-xb2);
+                % The subtraction in the next line causes a loss of some
+                % digits at small x. Is there a better method?
                 Psi = (erfs - 2/sqrtpi*xb .* expxb2) ./ (2*xb2);
                 nuD(:,speciesA) = nuD(:,speciesA) + (speciesFactorTest * (erfs - Psi) ./ (x.^3));
                 coefficientOfd2dx2 = Psi./x;
@@ -533,6 +535,8 @@ switch (collisionOperator)
                 erfs = erf(xb);
                 xb2  = xb.*xb;
                 expxb2 = exp(-xb2);
+                % The subtraction in the next line causes a loss of some
+                % digits at small x. Is there a better method?
                 Psi = (erfs - 2/sqrtpi*xb .* expxb2) ./ (2*xb2);
                 nuD(:,speciesA) = nuD(:,speciesA) + (speciesFactorTest * (erfs - Psi) ./ (x.^3));
             end
@@ -545,7 +549,7 @@ switch (collisionOperator)
         end
         
         for iSpecies = 1:Nspecies
-            spatial_part = - (nu_n * BHat * sqrt(mHats(iSpecies))) ./ (DHat * sqrt(THats(iSpecies)));
+            spatial_part = - (nu_n * BHat * sqrt(mHats(iSpecies))) ./ (abs(DHat) * sqrt(THats(iSpecies)));
             for ialpha = 1:Nalpha
                 for izeta = zeta_to_impose_DKE
                     for ix = 1:Nx

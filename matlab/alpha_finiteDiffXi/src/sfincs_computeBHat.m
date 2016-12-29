@@ -3,7 +3,7 @@ function sfincs_computeBHat()
 global rN geometryScheme plotB
 global BDotCurlB DHat BHat_sub_theta BHat_sub_zeta BHat_sub_psi
 global dBHat_sub_psi_dzeta dBHat_sub_zeta_dpsiHat dBHat_sub_theta_dpsiHat dBHat_sub_psi_dtheta dBHat_sub_zeta_dtheta dBHat_sub_theta_dzeta
-global force0RadialCurrentInEquilibrium
+global force0RadialCurrentInEquilibrium sqrt_g_sign
 
 
 % Using the selected radial coordinate, set input quantities for the other radial coordinates:
@@ -30,6 +30,12 @@ BDotCurlB = DHat .* (...
 
 if ~force0RadialCurrentInEquilibrium
     BDotCurlB = BDotCurlB + DHat .* BHat_sub_psi .* (dBHat_sub_zeta_dtheta - dBHat_sub_theta_dzeta);
+end
+
+if DHat(1,1)>0
+    sqrt_g_sign=1;
+else
+    sqrt_g_sign=-1;
 end
 
 if plotB

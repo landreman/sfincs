@@ -3,7 +3,7 @@ function residual = sfincs_evaluateResidual()
 global stateVector matrixSize RHSMode pointAtX0 dPhiHatdpsiHat includeTemperatureEquilibrationTerm f0
 global x xi Nspecies Nalpha Nzeta Nxi Nx Delta gamma BLOCK_F BLOCK_QN indexVars
 global Zs THats mHats nHats dnHatdpsiHats dTHatdpsiHats EParallelHat
-global BHat DHat FSABHat2 BHat_sub_zeta BHat_sub_theta
+global BHat DHat FSABHat2 BHat_sub_zeta BHat_sub_theta sqrt_g_sign
 global dBHatdtheta dBHatdzeta Phi1Hat includePhi1 includePhi1InKineticEquation
 global quasineutralityOption withAdiabatic adiabaticZ adiabaticNHat adiabaticTHat
 global zeta_to_impose_DKE
@@ -57,7 +57,7 @@ for ispecies = 1:Nspecies
     sqrtTHat = sqrt(THat);
     sqrtmHat = sqrt(mHat);
     
-    spatialFactor = Delta*sqrtmHat*sqrtTHat ...
+    spatialFactor = sqrt_g_sign*Delta*sqrtmHat*sqrtTHat ...
         ./(2*pi*sqrtpi*Z*(BHat.^2)) ...
         .*(BHat_sub_theta.*dBHatdzeta - BHat_sub_zeta.*dBHatdtheta);
         

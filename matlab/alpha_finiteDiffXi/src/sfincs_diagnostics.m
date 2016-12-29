@@ -110,12 +110,12 @@ for ispecies = 1:Nspecies
     densityWeights = 2*pi*nHat*(x.*x.*xWeights)';
     flowWeights = 2*pi*nHat*sqrtT/(sqrtm)*(x.*x.*x.*xWeights)';
     pressureWeights = 4*pi*THat*nHat/(3)*(x.*x.*x.*x.*xWeights)';
-    particleFluxWeights_vm = pi*Delta*THat/(Z*VPrimeHat)*(x.*x.*x.*x.*xWeights)';
-    particleFluxWeights_vE = 2*gamma*pi*Delta/(VPrimeHat)*(x.*x.*xWeights)';
-    momentumFluxWeights_vm = pi*Delta*THat*sqrtT*sqrtm/(Z*VPrimeHat)*(x.*x.*x.*x.*x.*xWeights)';
-    momentumFluxWeights_vE = 2*gamma*pi*Delta*sqrtT*sqrtm/(VPrimeHat)*(x.*x.*x.*xWeights)';
-    heatFluxWeights_vm = pi*Delta*THat*THat/(2*Z*VPrimeHat)*(x.*x.*x.*x.*x.*x.*xWeights)';
-    heatFluxWeights_vE = 2*gamma*pi*Delta*THat/(2*VPrimeHat)*(x.*x.*x.*x.*xWeights)';
+    particleFluxWeights_vm = nHat*pi*Delta*THat/(Z*VPrimeHat)*(x.*x.*x.*x.*xWeights)';
+    particleFluxWeights_vE = nHat*2*gamma*pi*Delta/(VPrimeHat)*(x.*x.*xWeights)';
+    momentumFluxWeights_vm = nHat*pi*Delta*THat*sqrtT*sqrtm/(Z*VPrimeHat)*(x.*x.*x.*x.*x.*xWeights)';
+    momentumFluxWeights_vE = nHat*2*gamma*pi*Delta*sqrtT*sqrtm/(VPrimeHat)*(x.*x.*x.*xWeights)';
+    heatFluxWeights_vm = nHat*pi*Delta*THat*THat/(2*Z*VPrimeHat)*(x.*x.*x.*x.*x.*x.*xWeights)';
+    heatFluxWeights_vE = nHat*2*gamma*pi*Delta*THat/(2*VPrimeHat)*(x.*x.*x.*x.*xWeights)';
         
     % Do all the integrals over x and xi:
     for ialpha = 1:Nalpha

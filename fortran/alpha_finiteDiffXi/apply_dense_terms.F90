@@ -62,7 +62,7 @@
     do ialpha = ialphaMin,ialphaMax
        do izeta = izetaMinDKE,izetaMaxDKE
           !factor = -nu_n*BHat(ialpha,izeta)*species_factor(ispeciesA)/DHat(ialpha,izeta)
-          factor = -nu_n*BHat(ialpha,izeta)/DHat(ialpha,izeta)
+          factor = -nu_n*BHat(ialpha,izeta)/abs(DHat(ialpha,izeta))
           do iSpeciesB = 1,Nspecies
              do ix_col = 1,Nx
                 do ixi = 1,Nxi

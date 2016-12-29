@@ -247,6 +247,13 @@ contains
        BDotCurlB = BDotCurlB + DHat * BHat_sub_psi * (dBHat_sub_zeta_dtheta - dBHat_sub_theta_dzeta)
     end if
 
+    ! The Jacobian should have the same sign everywhere.
+    if (DHat(1,1) > 0) then
+       sqrt_g_sign = 1
+    else
+       sqrt_g_sign = -1
+    end if
+
     ! Validate geometry arrays:
     DHat11 = DHat(1,1)
     BHat_sub_theta11 = BHat_sub_theta(1,1)

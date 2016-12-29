@@ -162,7 +162,7 @@ module globalVariables
   ! 1 = use mumps if it is detected, otherwise use superlu_dist
   ! 2 = force use of superlu_dist, if it is available
 
-  integer :: preconditioner_alpha_interpolation_stencil = 2
+  integer :: preconditioner_alpha_interpolation_stencil = 1
   integer :: preconditioner_x=1, preconditioner_zeta_derivative_option=4
   integer :: preconditioner_alpha_derivative_option=-4 ! In readInput.F90, this default is changed to +4 if Nzeta==1.
   integer :: preconditioner_xi_derivative_option=2 ! Should be 4 eventually.
@@ -186,16 +186,16 @@ module globalVariables
   integer :: matrixSize, NxPotentials
   PetscScalar, dimension(:), allocatable :: alpha, zeta, x, x_plus1, xi
   PetscScalar, dimension(:), allocatable :: alphaWeights, zetaWeights, xiWeights
-  PetscScalar, dimension(:,:), allocatable :: ddalpha_plus, ddalpha_minus, ddalpha_plus_preconditioner, ddalpha_minus_preconditioner
-  PetscScalar, dimension(:,:), allocatable :: ddzeta_plus, ddzeta_minus, ddzeta_plus_preconditioner, ddzeta_minus_preconditioner
-  PetscScalar, dimension(:,:), allocatable :: ddxi_plus, ddxi_minus, ddxi_plus_preconditioner, ddxi_minus_preconditioner
-  PetscScalar, dimension(:,:), allocatable :: pitch_angle_scattering_operator, pitch_angle_scattering_operator_preconditioner
+  PetscScalar, dimension(:,:), allocatable, target :: ddalpha_plus, ddalpha_minus, ddalpha_plus_preconditioner, ddalpha_minus_preconditioner
+  PetscScalar, dimension(:,:), allocatable, target :: ddzeta_plus, ddzeta_minus, ddzeta_plus_preconditioner, ddzeta_minus_preconditioner
+  PetscScalar, dimension(:,:), allocatable, target :: ddxi_plus, ddxi_minus, ddxi_plus_preconditioner, ddxi_minus_preconditioner
+  PetscScalar, dimension(:,:), allocatable, target :: pitch_angle_scattering_operator, pitch_angle_scattering_operator_preconditioner
   integer :: buffer_zeta_points_on_each_side
   PetscScalar, dimension(:), allocatable :: xWeights, xPotentials
   PetscScalar :: maxxPotentials, zetaMax, xMaxNotTooSmall
   PetscScalar, dimension(:), allocatable :: x2, expx2
-  PetscScalar, dimension(:,:), allocatable :: ddx, d2dx2, ddxPotentials, d2dx2Potentials
-  PetscScalar, dimension(:,:), allocatable :: ddx_preconditioner
+  PetscScalar, dimension(:,:), allocatable :: d2dx2, ddxPotentials, d2dx2Potentials
+  PetscScalar, dimension(:,:), allocatable, target :: ddx, ddx_preconditioner
   PetscScalar, dimension(:,:), allocatable :: interpolateXToXPotentials
 
   PetscScalar, dimension(:,:,:,:,:), allocatable :: RosenbluthPotentialTerms
@@ -207,6 +207,7 @@ module globalVariables
   integer, parameter :: COORDINATE_SYSTEM_VMEC = 2
   integer :: coordinateSystem = COORDINATE_SYSTEM_UNINITIALIZED
 
+  PetscScalar :: sqrt_g_sign
   PetscScalar, dimension(:,:), allocatable :: BHat, dBHatdtheta, dBHatdzeta, dBHatdpsiHat, DHat
   PetscScalar, dimension(:,:), allocatable :: BHat_sub_psi, dBHat_sub_psi_dtheta, dBHat_sub_psi_dzeta
   PetscScalar, dimension(:,:), allocatable :: BHat_sub_theta, dBHat_sub_theta_dzeta, dBHat_sub_theta_dpsiHat
