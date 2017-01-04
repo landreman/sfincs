@@ -1981,7 +1981,7 @@ contains
     PetscScalar :: vmecRadialWeight_half(2)
     PetscScalar, dimension(:), allocatable :: dr2, psiN_full, psiN_half
     PetscScalar, dimension(:), allocatable :: vmec_dBHatdpsiHat, vmec_dBHat_sub_theta_dpsiHat, vmec_dBHat_sub_zeta_dpsiHat
-    PetscScalar, dimension(:), allocatable :: vmec_dRdpsiHat, vmec_dZdpsiHat
+    PetscScalar, dimension(:), allocatable :: vmec_dRdpsiHat, vmec_dZdpsiHat, vmec_dpdpsiHat
     integer :: i, j, index, isurf, itheta, izeta, m, n
     PetscScalar :: min_dr2, angle, sin_angle, cos_angle, b, b00, temp, dphi, dpsi
     integer :: numSymmetricModesIncluded, numAntisymmetricModesIncluded
@@ -2002,6 +2002,7 @@ contains
     allocate(vmec_dBHat_sub_zeta_dpsiHat(vmec%ns))
     allocate(vmec_dRdpsiHat(vmec%ns))
     allocate(vmec_dZdpsiHat(vmec%ns))
+    allocate(vmec_dpdpsiHat(vmec%ns))
 
     allocate(R(Ntheta,Nzeta))
     allocate(dRdtheta(Ntheta,Nzeta))
@@ -2234,6 +2235,13 @@ contains
 
     iota = vmec%iotas(vmecRadialIndex_half(1)) * vmecRadialWeight_half(1) &
          + vmec%iotas(vmecRadialIndex_half(2)) * vmecRadialWeight_half(2)
+
+    dpsi = vmec%phi(2)/(2*pi)
+    vmec_dpdpsiHat = 0
+    vmec_dpdpsiHat(2:vmec%ns) = (vmec%presf(2:vmec%ns) - vmec%presf(1:vmec%ns-1)) / dpsi
+    pPrimeHat = (4*pi*1.0d-7) * ( &
+         vmec_dpdpsiHat(vmecRadialIndex_half(1)) * vmecRadialWeight_half(1) &
+         + vmec_dpdpsiHat(vmecRadialIndex_half(2)) * vmecRadialWeight_half(2))
 
     BHat = zero
     DHat = zero
@@ -2645,6 +2653,7 @@ contains
     deallocate(vmec_dBHat_sub_zeta_dpsiHat)
     deallocate(vmec_dRdpsiHat)
     deallocate(vmec_dZdpsiHat)
+    deallocate(vmec_dpdpsiHat)
     deallocate(R,dRdtheta,dRdzeta,dRdpsiHat)
     deallocate(dXdtheta,dXdzeta,dXdpsiHat)
     deallocate(dYdtheta,dYdzeta,dYdpsiHat)
