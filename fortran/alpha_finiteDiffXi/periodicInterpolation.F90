@@ -54,6 +54,18 @@ subroutine periodicInterpolation(N, matrix, shift, stencil)
      ! Here we alter nearestIndex to ensure that the amount of shift (nearestIndex-1)
      ! is relatively prime with N, since otherwise subsets of the alpha grid decouple from each other,
      ! yielding a singular matrix. (It is like having a rational iota.)
+
+     if (gcd(N,nearestIndex-1) .ne. 1) then
+        print *,"*******************************************************************"
+        print *,"*******************************************************************"
+        print *,"Warning: The nearest-integer shift in alpha at the ends of the zeta"
+        print *,"domain for this value of iota is not relatively prime with Nalpha."
+        print *,"This will cause KSP/GMRES to require more iterations. It is"
+        print *,"recommended that you change to either a higher or lower Nalpha."
+        print *,"*******************************************************************"
+        print *,"*******************************************************************"
+     end if
+
      print *,"Original alpha shift:",nearestIndex-1
 
      N_possible_shifts = 3*N  ! Almost certainly more than necessary...
