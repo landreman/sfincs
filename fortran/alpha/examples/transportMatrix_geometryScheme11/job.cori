@@ -1,0 +1,10 @@
+#!/bin/bash -l
+
+#SBATCH -p regular
+#SBATCH -N 1
+#SBATCH -t 00:30:00
+#SBATCH -J sfincs
+
+export OMP_NUM_THREADS=1
+srun -n 32 -c $OMP_NUM_THREADS ../../sfincs -ksp_view -mat_mumps_icntl_28 1
+

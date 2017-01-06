@@ -20,6 +20,7 @@ from scipy import interpolate
 from scipy.io import netcdf
 import matplotlib.pyplot as plt
 import matplotlib
+import sys ##Added by AM 2016-12
 from math import pi, sqrt
 
 #######################################################################################
@@ -516,6 +517,9 @@ generalEr_max_fine = []
 generalEr_min = []
 generalEr_min_fine = []
 
+MinFloat_array = pow(10, sys.float_info.min_10_exp)*numpy.ones(len(radii_psiN)) ##Added by AM 2016-12
+MinFloat_array_fine = pow(10, sys.float_info.min_10_exp)*numpy.ones(len(psiN_fine)) ##Added by AM 2016-12
+
 profilesScheme = readScanVariable("profilesScheme","int")
 if profilesScheme == 1:
     #####################################################
@@ -596,23 +600,27 @@ if profilesScheme == 1:
         interpolator = interpolate.splrep(data_psiN, data_nHats[ispecies])
         if len(radii)>0:
             # The if/else block is here because interpolate.splev fails if new grid is empty.
-            nHats.append(interpolate.splev(radii_psiN,interpolator, der=0))
+            ##nHats.append(interpolate.splev(radii_psiN,interpolator, der=0)) ##Commented by AM 2016-12
+            nHats.append(numpy.maximum(interpolate.splev(radii_psiN,interpolator, der=0), MinFloat_array)) ##Added by AM 2016-12 (to avoid negative density)
             dnHatdpsiN.append(interpolate.splev(radii_psiN,interpolator, der=1))
         else:
             nHats.append([]) 
             dnHatdradii.append([])
-        nHats_fine.append(interpolate.splev(psiN_fine,interpolator, der=0))
+        ##nHats_fine.append(interpolate.splev(psiN_fine,interpolator, der=0)) ##Commented by AM 2016-12
+        nHats_fine.append(numpy.maximum(interpolate.splev(psiN_fine,interpolator, der=0), MinFloat_array_fine)) ##Added by AM 2016-12 (to avoid negative density)
         dnHatdpsiN_fine.append(interpolate.splev(psiN_fine,interpolator, der=1))
 
         interpolator = interpolate.splrep(data_psiN, data_THats[ispecies])
         if len(radii)>0:
             # The if/else block is here because interpolate.splev fails if new grid is empty.
-            THats.append(interpolate.splev(radii_psiN,interpolator, der=0))
+            ##THats.append(interpolate.splev(radii_psiN,interpolator, der=0)) ##Commented by AM 2016-12
+            THats.append(numpy.maximum(interpolate.splev(radii_psiN,interpolator, der=0), MinFloat_array)) ##Added by AM 2016-12 (to avoid negative temperature)
             dTHatdpsiN.append(interpolate.splev(radii_psiN,interpolator, der=1))
         else:
             THats.append([])
             dTHatdpsiN.append([])
-        THats_fine.append(interpolate.splev(psiN_fine,interpolator, der=0))
+        ##THats_fine.append(interpolate.splev(psiN_fine,interpolator, der=0)) ##Commented by AM 2016-12
+        THats_fine.append(numpy.maximum(interpolate.splev(psiN_fine,interpolator, der=0), MinFloat_array_fine)) ##Added by AM 2016-12 (to avoid negative temperature)
         dTHatdpsiN_fine.append(interpolate.splev(psiN_fine,interpolator, der=1))
 
     interpolator = interpolate.splrep(data_psiN, data_NErs)

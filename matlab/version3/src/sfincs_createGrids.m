@@ -29,7 +29,7 @@ if forceOddNthetaAndNzeta
         Ntheta=Ntheta+1;
     end
     if mod(Nzeta,2)==0
-        Ntheta=Ntheta+1;
+        Nzeta=Nzeta+1;
     end
 end
 
@@ -123,7 +123,7 @@ else
             % Uniform periodic finite differences with 5-point stencil
             scheme = 10;
         otherwise
-            error('Error! Invalid thetaDerivativeScheme')
+            error('Error! Invalid zetaDerivativeScheme')
     end
     [zeta, zetaWeights, ddzeta, ~] = sfincs_uniformDiffMatrices(Nzeta, 0, zetaMax, scheme);
     zetaWeights = zetaWeights * NPeriods;
