@@ -548,11 +548,15 @@ contains
        else
           do
              read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
+             !print *,lineOfFile
              if (lineOfFile(1:2) /= "CC") exit
           end do
 
           ! Read header line:
           read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) headerIntegers, headerReals
+          !print *,'headerIntegers, headerReals='
+          !print *,headerIntegers
+          !print *,headerReals
           if (didFileAccessWork /= 0) then
              print *,"Unable to read header from the magnetic equilibrium file ",equilibriumFile
              stop
@@ -596,6 +600,8 @@ contains
 
           ! Skip a line
           read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
+          !print *,'s line='
+          !print *,lineOfFile
 
           do 
              if ((rN_new .ge. rN_wish) .or. end_of_file) exit
@@ -616,10 +622,17 @@ contains
              pPrimeHat_old = pPrimeHat_new
              numB0s = 0
 
-             ! Skip a line:
-             read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
+             if (.not.(index(lineOfFile,"[A]") > 0)) then !units were not on this line, so skip next
+                ! Skip a line:
+                read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
+                !print *,'skip unit [A] line='
+                !print *,lineOfFile
+             end if
+
              ! Read the header for the magnetic surface:
              read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) surfHeader
+             print *,'surfHeader='
+             print *,surfHeader
 
              rN_new = sqrt(surfHeader(1))       ! r/a = sqrt(psi/psi_a)
              iota_new = surfHeader(2)
@@ -634,6 +647,10 @@ contains
              read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
              proceed = .true.
              modeind = 0
+             !print *,'s line='
+             !print *,lineOfFile
+
+
              do
                 if (.not. proceed) exit
 
@@ -644,9 +661,15 @@ contains
                 else if (index(lineOfFile,"s") > 0) then
                    ! Next flux surface has been reached
                    proceed = .false.
+                   !print *,'s line='
+                   !print *,lineOfFile
                 else
-                   read(unit=lineOfFile, fmt=*) dataIntegers, dataNumbers
-                   if (dataIntegers(1) == 0 .and. dataIntegers(2) == 0) then
+                  read(unit=lineOfFile, fmt=*) dataIntegers, dataNumbers
+                  !print *,'dataIntegers='
+                  !print *,dataIntegers
+                  !print *,'dataNumbers='
+                  !print *,dataNumbers
+                  if (dataIntegers(1) == 0 .and. dataIntegers(2) == 0) then
                       B0_new = dataNumbers(4)
                       R0_new = dataNumbers(1)
                       numB0s = numB0s + 1
