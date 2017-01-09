@@ -35,7 +35,10 @@ def readRunspec(therunspecFilename):
     def numberatend(strng):
         thenumb=0
         if strng[-2]=="_":
-            thenumb=int(strng[-1])
+            try: #Added by AM 2017-01
+                thenumb=int(strng[-1])
+            except: #Added by AM 2017-01
+                thenumb=0 #Added by AM 2017-01
         return thenumb
 
     if not os.path.isfile(therunspecFilename):
