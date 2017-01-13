@@ -1063,6 +1063,15 @@
           ! Above the threshold value of x, keep exactly Nxi Legendre modes.
           Nxi_for_x(j) = max(3,NL,min(int(temp),Nxi))
        end do
+    case (3)
+       do j=1,Nx
+          ! Linear ramp from 0.1*Nxi to Nxi as x increases from 0 to 2:
+          temp = Nxi*(0.1 + 0.9*x(j)/2)
+          ! Always keep at least 3 Legendre modes, for the sake of diagnostics.
+          ! Always keep at least NL Legendre modes, to simplify the collision operator loops.
+          ! Unlike option 1, here we will keep MORE than Nxi points when x>2.
+          Nxi_for_x(j) = max(3,NL,int(temp))
+       end do
     case default
        if (masterProc) print *,"Error! Invalid Nxi_for_x_option"
        stop
