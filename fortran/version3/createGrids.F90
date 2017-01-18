@@ -31,7 +31,7 @@
     PetscScalar, dimension(:,:), allocatable :: interpolateXToXPotentials_plus1, extrapMatrix
     PetscScalar, dimension(:), allocatable :: x_subset, xWeights_subset
     PetscScalar, dimension(:,:), allocatable :: ddx_subset, d2dx2_subset
-    PetscScalar :: temp
+    PetscScalar :: temp, d32, d21, denominator
 
     DM :: myDM
     integer, parameter :: bufferLength = 200
@@ -864,6 +864,39 @@
        call uniformDiffMatrices(Nx, zero, x(Nx), scheme, x_subset, x_subset, ddx_xDot_minus, d2dx2_subset)
 
        deallocate(x_subset,xWeights_subset,d2dx2_subset)
+
+    case (11)
+       ! Tridiagonal finite difference matrix for an irregular grid, so it is compatible with
+       ! the polynomial pseudospectral grid:
+       ! See notes 20170118-02.
+       ddx_xDot_plus = 0
+
+       ! First row:
+       ddx_xDot_plus(1,1) = -one/(x(2)-x(1))
+       ddx_xDot_plus(1,2) =  one/(x(2)-x(1))
+
+       ! Last row:
+       ddx_xDot_plus(Nx,Nx-1) = -one/(x(Nx)-x(Nx-1))
+       ddx_xDot_plus(Nx,Nx-0) =  one/(x(Nx)-x(Nx-1))
+
+       ! Interior rows:
+       do j=2,Nx-1
+          d32 = x(j+1) - x(j)
+          d21 = x(j) - x(j-1)
+          denominator = d21*d32*(d21+d32)
+          ddx_xDot_plus(j, j-1) = -d32*d32/denominator
+          ddx_xDot_plus(j, j  ) = (d32*d32 - d21*d21)/denominator
+          ddx_xDot_plus(j, j+1) =  d21*d21/denominator
+       end do
+
+       if (masterProc) then
+          print *,"Here comes ddx_xDot_plus:"
+          do j=1,Nx
+             print *,ddx_xDot_plus(j,:)
+          end do
+       end if
+
+       ddx_xDot_minus = ddx_xDot_plus
 
     case default
        print *,"Error!  Invalid xDotDerivativeScheme"
