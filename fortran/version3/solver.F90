@@ -4,6 +4,7 @@
 #else
 #include <petsc/finclude/petscsnesdef.h>
 #endif
+#define MATSOLVERMKL_CPARDISO     "mkl_cpardiso"
 
 module solver
 
@@ -128,6 +129,13 @@ module solver
           end if
           ! Turn on superlu_dist diagnostic output:
           call PetscOptionsInsertString("-mat_superlu_dist_statprint", ierr)
+       case (3)
+          call PCFactorSetMatSolverPackage(preconditionerContext, MATSOLVERMKL_CPARDISO, ierr)
+          if (masterProc) then
+             print *,"We will use mkl_cpardiso to factorize the preconditioner."
+          end if
+          call PetscOptionsInsertString("-mat_mkl_cpardiso_1 1", ierr)
+          call PetscOptionsInsertString("-mat_mkl_cpardiso_10 7 -mat_mkl_cpardiso_8 1", ierr)
        case default
           if (masterProc) then
              print *,"Error: Invalid setting for whichParallelSolverToFactorPreconditioner"
@@ -514,6 +522,18 @@ module solver
     end if
     if (whichParallelSolverToFactorPreconditioner==2) then
        whichParallelSolverToFactorPreconditioner = 1
+    end if
+#endif
+
+#ifdef PETSC_HAVE_MKL_CPARDISO
+    whichParallelSolverToFactorPreconditioner = 3
+    isAParallelDirectSolverInstalled = .true.
+    if (masterProc) then
+       print *,"mkl_cpardiso detected"
+    end if
+#else
+    if (masterProc) then
+       print *,"mkl_cpardiso not detected"
     end if
 #endif
 
