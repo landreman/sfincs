@@ -631,8 +631,8 @@ contains
 
              ! Read the header for the magnetic surface:
              read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) surfHeader
-             print *,'surfHeader='
-             print *,surfHeader
+             !print *,'surfHeader='
+             !print *,surfHeader
 
              rN_new = sqrt(surfHeader(1))       ! r/a = sqrt(psi/psi_a)
              iota_new = surfHeader(2)
