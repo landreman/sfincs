@@ -388,14 +388,14 @@ The code only uses {\ttfamily aBar} for converting between the various radial co
 {1}
 {Only when \parlink{geometryScheme} == 5, 11 or 12.}
 {Controls whether the nearest available flux surface in the {\ttfamily
-    vmec wout} file or .bc file is used, or whether radial interpolation is applied to the data
+    vmec wout} file or {\ttfamily .bc} file is used, or whether radial interpolation is applied to the data
 to obtain the magnetic field components on the exact surface requested.\\
 
 {\ttfamily VMECRadialOption}=0: Use the exact {\ttfamily XXX\_wish} flux surface requested, by interpolating from the radial grid.\\
 
 {\ttfamily VMECRadialOption}=1: Use a surface that may be slightly
 different from {\ttfamily XXX\_wish} to get the nearest available flux
-surface from \vmec's HALF grid (or the .bc file grid).  
+surface from \vmec's HALF grid (or the {\ttfamily .bc} file grid).  
    The components of $\vect{B}$ in \vmec~are stored on the half grid, so interpolation is then unnecessary.\\
 
 {\ttfamily VMECRadialOption}=2: Use a surface that may be slightly different from {\ttfamily XXX\_wish} to get the nearest available flux surface from \vmec's FULL grid.
