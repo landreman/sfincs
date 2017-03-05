@@ -201,7 +201,7 @@ contains
 ! Then call setBoozerCoordinates(), which is a subroutine that sets the other arrays.
 !
 ! For coordinates other than Boozer coordinates, you must set all the following arrays directly:
-!  BHat, dBHatdtheta, dBHatdzeta, dBHatdpsiHat, DHat
+!  BHat, dBHatdtheta, dBHatdzeta, dBHatdpsiHat, sqrt_g
 !  BHat_sub_psi, dBHat_sub_psi_dtheta, dBHat_sub_psi_dzeta
 !  BHat_sub_theta, dBHat_sub_theta_dzeta, dBHat_sub_theta_dpsiHat
 !  BHat_sub_zeta, dBHat_sub_zeta_dtheta, dBHat_sub_zeta_dpsiHat
@@ -217,7 +217,7 @@ contains
     implicit none
 
     integer :: itheta,izeta
-    PetscScalar :: DHat11, BHat_sub_theta11, BHat_sub_zeta11
+    PetscScalar :: sqrt_g_11, BHat_sub_theta11, BHat_sub_zeta11
 
     ! Using the selected radial coordinate, set input quantities for the other radial coordinates:
     call setInputRadialCoordinateWish()
@@ -240,17 +240,17 @@ contains
        stop
     end select
 
-    BDotCurlB = DHat * (  BHat_sub_theta * dBHat_sub_psi_dzeta &
+    BDotCurlB = (1/sqrt_g) * (  BHat_sub_theta * dBHat_sub_psi_dzeta &
                         - BHat_sub_theta * dBHat_sub_zeta_dpsiHat &
                         + BHat_sub_zeta * dBHat_sub_theta_dpsiHat &
                         - BHat_sub_zeta * dBHat_sub_psi_dtheta)
 
     if (.not. force0RadialCurrentInEquilibrium) then
-       BDotCurlB = BDotCurlB + DHat * BHat_sub_psi * (dBHat_sub_zeta_dtheta - dBHat_sub_theta_dzeta)
+       BDotCurlB = BDotCurlB + BHat_sub_psi / sqrt_g * (dBHat_sub_zeta_dtheta - dBHat_sub_theta_dzeta)
     end if
 
     ! Validate geometry arrays:
-    DHat11 = DHat(1,1)
+    sqrt_g_11 = sqrt_g(1,1)
     BHat_sub_theta11 = BHat_sub_theta(1,1)
     BHat_sub_zeta11 = BHat_sub_zeta(1,1)
     do itheta=1,Ntheta
@@ -259,20 +259,10 @@ contains
              print *,"ERROR! BHat is not everywhere positive!"
              stop
           end if
-          if (DHat(itheta,izeta)*DHat11 <= 0) then
-             print *,"ERROR! DHat does not have the same sign everywhere!"
+          if (sqrt_g(itheta,izeta)*sqrt_g_11 <= 0) then
+             print *,"ERROR! sqrt_g does not have the same sign everywhere!"
              stop
           end if
-!!$          if (ExBDerivativeSchemeZeta > 0 .and. BHat_sub_theta(itheta,izeta)*BHat_sub_theta11 < -1d-15) then
-!!$             print *,"ERROR! ExBDerivativeSchemeZeta>0 assumes BHat_sub_theta has the same sign everywhere,"
-!!$             print *,"       but the sign of BHat_sub_theta is not the same everywhere."
-!!$             stop
-!!$          end if
-!!$          if (ExBDerivativeSchemeTheta > 0 .and. BHat_sub_zeta(itheta,izeta)*BHat_sub_zeta11 < -1d-15) then
-!!$             print *,"ERROR! ExBDerivativeSchemeTheta>0 assumes BHat_sub_zeta has the same sign everywhere,"
-!!$             print *,"       but the sign of BHat_sub_zeta is not the same everywhere."
-!!$             stop
-!!$          end if
        end do
     end do
     
@@ -1946,9 +1936,10 @@ contains
 
     ! Set the Jacobian and various other components of B:
 
-    DHat = BHat * BHat / (GHat + iota * IHat)
-    BHat_sup_theta = iota * DHat
-    BHat_sup_zeta = DHat
+    !DHat = BHat * BHat / (GHat + iota * IHat)
+    sqrt_g = (GHat + iota * IHat) / (BHat * BHat)
+    BHat_sup_theta = iota / sqrt_g
+    BHat_sup_zeta = 1/sqrt_g
     BHat_sub_theta = IHat
     BHat_sub_zeta = GHat
 
@@ -1958,7 +1949,7 @@ contains
             / (GHat + iota * IHat) / (GHat + iota * IHat)
        dBHat_sup_zeta_dtheta = 2.0 * BHat *dBHatdtheta / (GHat + iota * IHat)
        
-       dBHat_sup_theta_dpsiHat = iota * dBHat_sup_zeta_dpsiHat + diotadpsiHat* DHat
+       dBHat_sup_theta_dpsiHat = iota * dBHat_sup_zeta_dpsiHat + diotadpsiHat / sqrt_g
        dBHat_sup_theta_dzeta = iota * 2.0 * BHat *dBHatdzeta / (GHat + iota * IHat)
     end if
 
@@ -2206,7 +2197,7 @@ contains
          + vmec%iotas(vmecRadialIndex_half(2)) * vmecRadialWeight_half(2)
 
     BHat = zero
-    DHat = zero
+    sqrt_g = zero
     dBHatdtheta = zero
     dBHatdzeta = zero
     dBHatdpsiHat = zero
@@ -2298,13 +2289,12 @@ contains
 
                    do isurf = 1,2
                       ! Handle Jacobian:
-                      ! SFINCS's DHat is the INVERSE Jacobian of the (psiHat, theta, zeta) coordinates.
+                      ! SFINCS's sqrt_g is the Jacobian of the (psiHat, theta, zeta) coordinates.
                       ! VMEC's gmnc and gmns are the Jacobian of the (psiN, theta, zeta) coordinates.
                       ! Because one uses psiHat and the other uses psiN, we need a factor of psiAHat for conversion.
-                      ! We will also set DHat = 1 / DHat at the end of this loop.
                       temp = vmec%gmnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf) / (psiAHat)
                       temp = temp*scaleFactor
-                      DHat(itheta,izeta) = DHat(itheta,izeta) + temp * cos_angle
+                      sqrt_g(itheta,izeta) = sqrt_g(itheta,izeta) + temp * cos_angle
 
                       ! Handle B sup theta:
                       ! Note that VMEC's bsupumnc and bsupumns are exactly the same as SFINCS's BHat_sup_theta, with no conversion factors of 2pi needed.
@@ -2442,13 +2432,12 @@ contains
                       
                       do isurf = 1,2
                          ! Handle Jacobian:
-                         ! SFINCS's DHat is the INVERSE Jacobian of the (psiHat, theta, zeta) coordinates.
+                         ! SFINCS's sqrt_g is the Jacobian of the (psiHat, theta, zeta) coordinates.
                          ! VMEC's gmnc and gmns are the Jacobian of the (psiN, theta, zeta) coordinates.
                          ! Because one uses psiHat and the other uses psiN, we need a factor of psiAHat for conversion.
-                         ! We will also set DHat = 1 / DHat at the end of this loop.
                          temp = vmec%gmns(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf) / (psiAHat)
                          temp = temp*scaleFactor
-                         DHat(itheta,izeta) = DHat(itheta,izeta) + temp * sin_angle
+                         sqrt_g(itheta,izeta) = sqrt_g(itheta,izeta) + temp * sin_angle
                          
                          ! Handle B sup theta:
                          ! Note that VMEC's bsupumnc and bsupumns are exactly the same as SFINCS's BHat_sup_theta, with no conversion factors of 2pi needed.
@@ -2526,9 +2515,6 @@ contains
        end if
     end if
 
-    ! Convert Jacobian to inverse Jacobian:
-    DHat = one / DHat
-
     ! These next lines should be replaced eventually with a proper calculation:
     dBHat_sup_theta_dpsiHat = 0
     dBHat_sup_zeta_dpsiHat = 0
@@ -2561,9 +2547,9 @@ contains
     FSABHat2 = 0
     do itheta=1,Ntheta
        do izeta=1,Nzeta
-          VPrimeHat = VPrimeHat + thetaWeights(itheta) * zetaWeights(izeta) / DHat(itheta,izeta)
+          VPrimeHat = VPrimeHat + thetaWeights(itheta) * zetaWeights(izeta) * sqrt_g(itheta,izeta)
           FSABHat2 = FSABHat2 + thetaWeights(itheta) * zetaWeights(izeta) &
-               * BHat(itheta,izeta) * BHat(itheta,izeta) / DHat(itheta,izeta)
+               * BHat(itheta,izeta) * BHat(itheta,izeta) * sqrt_g(itheta,izeta)
        end do
     end do
 
@@ -2577,7 +2563,7 @@ contains
        do itheta=1,Ntheta
           do izeta=1,Nzeta
              B0OverBBar = B0OverBBar + thetaWeights(itheta) * zetaWeights(izeta) &
-                  * (BHat(itheta,izeta) ** 3) / DHat(itheta,izeta)
+                  * (BHat(itheta,izeta) ** 3) * sqrt_g(itheta,izeta)
           end do
        end do
 

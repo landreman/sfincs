@@ -18,7 +18,7 @@
     implicit none
 
     PetscErrorCode :: ierr
-    integer :: i, j, k, itheta, izeta, scheme, L
+    integer :: i, j, k, itheta, izeta, ispecies, scheme, L
     PetscScalar, dimension(:,:), allocatable :: d2dtheta2, d2dzeta2, ddxi, d2dxi2
     PetscScalar, dimension(:), allocatable :: xWeightsPotentials
 
@@ -27,7 +27,7 @@
     PetscScalar, dimension(:,:), allocatable :: interpolateXToXPotentials_plus1, extrapMatrix
     PetscScalar, dimension(:), allocatable :: x_subset, xWeights_subset
     PetscScalar, dimension(:,:), allocatable :: ddx_subset, d2dx2_subset
-    PetscScalar :: temp, Delta_zeta
+    PetscScalar :: temp, Delta_zeta, v_s
     PetscScalar, dimension(:), allocatable :: xi_to_Legendre
 
     DM :: myDM
@@ -1531,7 +1531,7 @@
     ! *******************************************************************************
     ! *******************************************************************************
 
-    allocate(DHat(Ntheta,Nzeta))
+    allocate(sqrt_g(Ntheta,Nzeta))
 
     allocate(BHat(Ntheta,Nzeta))
     allocate(BDotCurlB(Ntheta,Nzeta))
@@ -1586,6 +1586,41 @@
        print *,"IHat (Boozer component multiplying grad theta) = ", IHat
        print *,"iota (Rotational transform) = ", iota
     end if
+
+    allocate(spatial_scaling(Ntheta,Nzeta))
+    select case (spatial_scaling_option)
+    case (1)
+       if (Nzeta==1) then
+          spatial_scaling = abs(BHat / BHat_sup_theta)
+       else
+          spatial_scaling = abs(BHat / BHat_sup_zeta)
+       end if
+    case (2)
+       if (Nzeta==1) then
+          spatial_scaling = abs( (theta(2)-theta(1)) * BHat / BHat_sup_theta )
+       else
+          spatial_scaling = abs( (zeta(2) - zeta(1)) * BHat / BHat_sub_zeta  )
+       end if
+    case default
+       if (masterProc) print *,"Error! Invalid spatial_scaling_option:",spatial_scaling_option
+       stop
+    end select
+
+    allocate(x_scaling(Nx,Nspecies))
+    do ispecies = 1,Nspecies
+       !v_s = sqrt(2*THats(ispecies)/mHats(ispecies)) ! Once I switch to SI units, include the 2 here.
+       v_s = sqrt(THats(ispecies)/mHats(ispecies))    ! But while using the old units, v_s is measured in units of vBar, so there is no 2.
+
+       select case (x_scaling_option)
+       case (1)
+          x_scaling(:,ispecies) = 1 / (x * v_s)
+       case (2)
+          x_scaling(:,ispecies) = 1 / v_s
+       case default
+          if (masterProc) print *,"Error! Invalid x_scaling_option:",x_scaling_option
+          stop
+       end select
+    end do
 
     ! *********************************************************
     ! Allocate some arrays that will be used later for output quantities:

@@ -392,9 +392,9 @@
           !densityFactor = 4*pi*THat*sqrtTHat/(mHat*sqrtMHat)
           !flowFactor = 4*pi*THat*THat/(three*mHat*mHat)
           !pressureFactor = 8*pi*THat*THat*sqrtTHat/(three*mHat*sqrtMHat)
-          densityFactor = 2*pi*nHat
-          flowFactor = 2*pi*nHat*sqrtTHat/(sqrtMHat)
-          pressureFactor = 4*pi*nHat*THat/(three)
+          densityFactor = 2*nHat/sqrtpi
+          flowFactor = 2*nHat*sqrtTHat/(sqrtMHat*sqrtpi)
+          pressureFactor = 4*nHat*THat/(three*sqrtpi)
 
 !!$          particleFluxFactor_vm = pi*Delta*THat*THat*sqrtTHat/(Zs(ispecies)*VPrimeHat*mHat*sqrtMHat)
 !!$          particleFluxFactor_vE = 2*gamma*pi*Delta*THat*sqrtTHat/(VPrimeHat*mHat*sqrtMHat)
@@ -402,12 +402,12 @@
 !!$          momentumFluxFactor_vE = 2*gamma*pi*Delta*THat*THat/(VPrimeHat*mHat)
 !!$          heatFluxFactor_vm = pi*Delta*THat*THat*THat*sqrtTHat/(2*Zs(ispecies)*VPrimeHat*mHat*sqrtMHat)
 !!$          heatFluxFactor_vE = 2*gamma*pi*Delta*THat*THat*sqrtTHat/(2*VPrimeHat*mHat*sqrtMHat)
-          particleFluxFactor_vm = nHat*pi*Delta*THat/(Zs(ispecies)*VPrimeHat)
-          particleFluxFactor_vE = nHat*gamma*pi*Delta/(VPrimeHat)
-          momentumFluxFactor_vm = nHat*pi*Delta*THat*THat*THat/(Zs(ispecies)*VPrimeHat*mHat)
-          momentumFluxFactor_vE = nHat*2*gamma*pi*Delta*THat*THat/(VPrimeHat*mHat)
-          heatFluxFactor_vm = nHat*pi*Delta*THat*THat/(2*Zs(ispecies)*VPrimeHat)
-          heatFluxFactor_vE = nHat*gamma*pi*Delta*THat/(2*VPrimeHat)
+          particleFluxFactor_vm = nHat*Delta*THat/(Zs(ispecies)*VPrimeHat*sqrtpi)
+          particleFluxFactor_vE = nHat*gamma*Delta/(VPrimeHat*sqrtpi)
+          momentumFluxFactor_vm = nHat*Delta*THat*THat*THat/(Zs(ispecies)*VPrimeHat*mHat*sqrtpi)
+          momentumFluxFactor_vE = nHat*2*gamma*Delta*THat*THat/(VPrimeHat*mHat*sqrtpi)
+          heatFluxFactor_vm = nHat*Delta*THat*THat/(2*Zs(ispecies)*VPrimeHat*sqrtpi)
+          heatFluxFactor_vE = nHat*gamma*Delta*THat/(2*VPrimeHat*sqrtpi)
 
           ! I haven't looked at how the NTV should be computed in the new units.
           ! Here is the way it was done in the multispecies linear version:
@@ -448,7 +448,7 @@
                       
                       FSABFlow_vs_x(ispecies,ix) = FSABFlow_vs_x(ispecies,ix) &
                            + flowFactor*xi(ixi)*xWeights(ix)*flowIntegralWeights(ix)*xiWeights(ixi)*solutionWithDeltaFArray(index) &
-                           * thetaWeights(itheta) * zetaWeights(izeta) * BHat(itheta,izeta) / DHat(itheta,izeta)
+                           * thetaWeights(itheta) * zetaWeights(izeta) * BHat(itheta,izeta) * sqrt_g(itheta,izeta)
 
                       pressurePerturbation(ispecies,itheta,izeta) = pressurePerturbation(ispecies,itheta,izeta) &
                            + pressureFactor*xWeights(ix)*pressureIntegralWeights(ix)*xiWeights(ixi)*solutionWithDeltaFArray(index)
@@ -602,13 +602,13 @@
              B2 = BHat(:,izeta)*BHat(:,izeta)
 
              FSADensityPerturbation(ispecies) = FSADensityPerturbation(ispecies) + zetaWeights(izeta) &
-                  * dot_product(thetaWeights, densityPerturbation(ispecies,:,izeta)/DHat(:,izeta))
+                  * dot_product(thetaWeights, densityPerturbation(ispecies,:,izeta) * sqrt_g(:,izeta))
 
              FSABFlow(ispecies) = FSABFlow(ispecies) + zetaWeights(izeta) &
-                  * dot_product(thetaWeights, flow(ispecies,:,izeta)*BHat(:,izeta)/DHat(:,izeta))
+                  * dot_product(thetaWeights, flow(ispecies,:,izeta)*BHat(:,izeta) * sqrt_g(:,izeta))
 
              FSAPressurePerturbation(ispecies) = FSAPressurePerturbation(ispecies) + zetaWeights(izeta) &
-                  * dot_product(thetaWeights, pressurePerturbation(ispecies,:,izeta)/DHat(:,izeta))
+                  * dot_product(thetaWeights, pressurePerturbation(ispecies,:,izeta) * sqrt_g(:,izeta))
 
              particleFlux_vm0_psiHat(ispecies) = particleFlux_vm0_psiHat(ispecies) + zetaWeights(izeta) &
                   * dot_product(thetaWeights, particleFluxBeforeSurfaceIntegral_vm0(ispecies,:,izeta))

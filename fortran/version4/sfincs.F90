@@ -22,30 +22,6 @@ program sfincs
   PetscErrorCode ierr
   PetscLogDouble :: startTime, time1
 
-
-!!$  integer :: N,j,stencil
-!!$  PetscScalar :: shift
-!!$  PetscScalar, dimension(:,:), allocatable :: matrix
-!!$
-!!$  !shift=0
-!!$  stencil=3
-!!$  do N=4,7
-!!$     allocate(matrix(N,N))
-!!$     do shift = -7.2,7.2,2.1
-!!$     !do stencil=1,4
-!!$        print *,"N=",N,", shift=",shift
-!!$        !print *,"N=",N,", stencil=",stencil
-!!$        call periodicInterpolation(N,matrix,shift,stencil)
-!!$        do j=1,N
-!!$           print *,matrix(j,:)
-!!$        end do
-!!$        print *,""
-!!$     end do
-!!$     deallocate(matrix)
-!!$  end do
-!!$
-!!$  stop
-
   call PetscInitialize(PETSC_NULL_CHARACTER, ierr)
 
   call MPI_COMM_SIZE(PETSC_COMM_WORLD, numProcs, ierr)
@@ -57,8 +33,8 @@ program sfincs
 
   if (masterProc) then
      print *,"****************************************************************************"
-     print *,"SFINCS: Stellarator Fokker-Plank Iterative Neoclassical Conservative Solver"
-     print *,"Alpha-coordinate version, finite differences in xi."
+     print *,"SFINCS: Stellarator Fokker-Plank Iterative NeoClassical Solver"
+     print *,"Version 4."
 #if defined(PETSC_USE_REAL_SINGLE)
      print *,"Using single precision."
 #else

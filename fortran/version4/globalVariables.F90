@@ -117,6 +117,8 @@ module globalVariables
   integer :: magneticDriftScheme = 0
 
   integer :: quasineutralityOption = 1
+
+  PetscScalar :: ln_Lambda = 16
   !!!!!!!!!!!!!!!!!!!!!!!
 
   ! ********************************************************
@@ -155,8 +157,9 @@ module globalVariables
   ! 1 = use mumps if it is detected, otherwise use superlu_dist
   ! 2 = force use of superlu_dist, if it is available
 
-  integer :: preconditioner_x=1, preconditioner_zeta_derivative_option=4
-  integer :: preconditioner_theta_derivative_option = 4 ! In readInput.F90, this default is changed to +4 if Nzeta==1.
+  integer :: preconditioner_x=1
+  integer :: preconditioner_zeta_derivative_option=4
+  integer :: preconditioner_theta_derivative_option = 4
   integer :: preconditioner_xi_derivative_option = 4
   integer :: preconditioner_species=1
   integer :: preconditioner_pitch_angle_scattering_option=2
@@ -167,6 +170,9 @@ module globalVariables
 
   integer :: PETSCPreallocationStrategy=1
   integer :: Nxi_for_x_option = 0
+  integer :: x_scaling_option = 1
+  integer :: spatial_scaling_option = 1
+  logical :: fieldsplit
 
   ! ********************************************************
   !
@@ -198,8 +204,7 @@ module globalVariables
   integer, parameter :: COORDINATE_SYSTEM_VMEC = 2
   integer :: coordinateSystem = COORDINATE_SYSTEM_UNINITIALIZED
 
-  PetscScalar :: sqrt_g_sign
-  PetscScalar, dimension(:,:), allocatable :: BHat, dBHatdtheta, dBHatdzeta, dBHatdpsiHat, DHat
+  PetscScalar, dimension(:,:), allocatable :: BHat, dBHatdtheta, dBHatdzeta, dBHatdpsiHat, sqrt_g, spatial_scaling, x_scaling
   PetscScalar, dimension(:,:), allocatable :: BHat_sub_psi, dBHat_sub_psi_dtheta, dBHat_sub_psi_dzeta
   PetscScalar, dimension(:,:), allocatable :: BHat_sub_theta, dBHat_sub_theta_dzeta, dBHat_sub_theta_dpsiHat
   PetscScalar, dimension(:,:), allocatable :: BHat_sub_zeta, dBHat_sub_zeta_dtheta, dBHat_sub_zeta_dpsiHat

@@ -30,8 +30,8 @@
     ! 3 = matrix which multiplies f1 when evaluating the residual
 
     PetscErrorCode :: ierr
-    PetscScalar :: Z, nHat, THat, mHat, sqrtTHat, sqrtMHat, speciesFactor, speciesFactor2
-    PetscScalar :: T32m, factor, LFactor, temp, temp1, temp2, xDotFactor, xDotFactor2, stuffToAdd
+    PetscScalar :: Z, nHat, THat, mHat, sqrtTHat, sqrtMHat, speciesFactor, speciesFactor2, v_s
+    PetscScalar :: T32m, factor, spatial_factor, LFactor, temp, temp1, temp2, xDotFactor, xDotFactor2, stuffToAdd
     PetscScalar :: factor1, factor2, factorJ1, factorJ2, factorJ3, factorJ4, factorJ5  !!Added by AM 2016-03
     PetscScalar, dimension(:), allocatable :: xb, expxb2
     PetscScalar, dimension(:,:), allocatable :: xPartOfXDot_plus, xPartOfXDot_minus, xPartOfXDot
@@ -70,10 +70,13 @@
     integer :: iSpecies_min, iSpecies_max, ix_min, ix_max
     PetscScalar, dimension(:,:), allocatable :: collision_operator_xi_block
     PetscScalar, dimension(:,:,:), allocatable :: Legendre_projection_to_use
+    PetscScalar :: Er_factor
 
     ! *******************************************************************************
     ! Do a few sundry initialization tasks:
     ! *******************************************************************************
+
+    Er_factor = Delta * gamma / 2 ! When I switch to SI units, I can replace Er_factor with 1
 
     call PetscTime(time3, ierr)
 
@@ -198,7 +201,6 @@
     allocate(potentialsToFInterpolationMatrix(Nx, NxPotentials))
     allocate(CECD(Nspecies, Nspecies, Nx, Nx))
 
-
     call PetscTime(time4, ierr)
     if (masterProc) print *,"  Time for init:",time4-time3
     call PetscTime(time3, ierr)
@@ -216,25 +218,28 @@
        Z = Zs(ispecies)
        sqrtTHat = sqrt(THat)
        sqrtMHat = sqrt(mHat)
+       v_s = sqrt(THat/mHat) ! Using the version3 normalizations, there is no 2 here. But when I move to SI units, add a 2 inside the sqrt.
 
        ! *********************************************************
        ! Add the d/dzeta term:
        ! *********************************************************
        
        if (masterProc) print *,"Beginning d/dzeta"
-       !allocate(ddzeta_to_use(Nzeta,Nzeta))
        if ((whichMatrix .ne. 2) .and. (Nzeta > 1)) then
           do izeta_row = izetaMin,izetaMax
              do itheta = ithetaMin,ithetaMax
                 do ix = 1,Nx
                    do ixi = 1,Nxi_for_x(ix)
-                      factor = x(ix)*xi(ixi)*sqrt_g_sign
+                      ! Next line is the parallel streaming term:
+                      factor = v_s * x(ix) * xi(ixi) * BHat_sup_zeta(itheta,izeta_row) / BHat(itheta,izeta_row)
+                      ! Add the ExB term:
                       select case (ExB_option)
                       case (1)
-                         factor = factor - sqrt_g_sign*(gamma*Delta*sqrtMHat/(2*sqrtTHat))*BHat_sub_theta(itheta,izeta_row)/BHat(itheta,izeta_row)*dPhiHatdpsiHat
+                         factor = factor - BHat_sub_theta(itheta,izeta_row)/(sqrt_g(itheta,izeta_row)*BHat(itheta,izeta_row)*BHat(itheta,izeta_row))*dPhiHatdpsiHat*Er_factor
                       case (2)
-                         factor = factor - sqrt_g_sign*(gamma*Delta*sqrtMHat/(2*sqrtTHat))*BHat_sub_theta(itheta,izeta_row)*BHat(itheta,izeta_row)/FSABHat2*dPhiHatdpsiHat
+                         factor = factor - BHat_sub_theta(itheta,izeta_row)/(sqrt_g(itheta,izeta_row)*FSABHat2)*dPhiHatdpsiHat*Er_factor
                       end select
+                      factor = factor * spatial_scaling(itheta,izeta_row) * x_scaling(ix,ispecies)
 
                       if (whichMatrix>0) then
                          ! Not preconditioner
@@ -265,7 +270,6 @@
        ! To generate an error if these variables are used by mistake later:
        izeta_row = -1
        izeta_col = -1
-       !deallocate(ddzeta_to_use)
        if (masterProc) print *,"Done with d/dzeta"
 
        
@@ -273,31 +277,21 @@
        ! Add the d/dtheta term:
        ! *********************************************************
 
-       !allocate(ddtheta_to_use(Ntheta,Ntheta))
        if (whichMatrix .ne. 2) then
           do izeta = izetaMin,izetaMax
              do itheta_row = ithetaMin,ithetaMax
                 do ix = 1,Nx
                    do ixi = 1,Nxi_for_x(ix)
-                      if (Nzeta > 1) then
-                         ! We are in a stellarator
-                         factor = 0
-                         select case (ExB_option)
-                         case (1)
-                            factor = sqrt_g_sign*gamma*Delta*sqrtMHat/(2*sqrtTHat)*BHat(itheta_row,izeta)/DHat(itheta_row,izeta)*dPhiHatdpsiHat
-                         case (2)
-                            factor = sqrt_g_sign*gamma*Delta*sqrtMHat/(2*sqrtTHat)*(BHat(itheta_row,izeta) ** 3)/(DHat(itheta_row,izeta)*FSABHat2)*dPhiHatdpsiHat
-                         end select
-                      else
-                         ! Nzeta==1, so we are in a tokamak.
-                         factor = iota * x(ix) * xi(ixi) * sqrt_g_sign
-                         select case (ExB_option)
-                         case (1)
-                            factor = factor + sqrt_g_sign*gamma*Delta*sqrtMHat*dPhiHatdpsiHat*BHat_sub_zeta(itheta_row,izeta)/(2*BHat(itheta_row,izeta)*sqrtTHat)
-                         case (2)
-                            factor = factor + sqrt_g_sign*gamma*Delta*sqrtMHat*dPhiHatdpsiHat*BHat_sub_zeta(itheta_row,izeta)*BHat(itheta_row,izeta)/(2*FSABHat2*sqrtTHat)
-                         end select
-                      end if
+                      ! Next line is the parallel streaming term:
+                      factor = v_s * x(ix) * xi(ixi) * BHat_sup_theta(itheta_row,izeta) / BHat(itheta_row,izeta)
+                      ! Add the ExB term:
+                      select case (ExB_option)
+                      case (1)
+                         factor = factor + BHat_sub_zeta(itheta_row,izeta)/(sqrt_g(itheta_row,izeta)*BHat(itheta_row,izeta)*BHat(itheta_row,izeta))*dPhiHatdpsiHat*Er_factor
+                      case (2)
+                         factor = factor + BHat_sub_zeta(itheta_row,izeta)/(sqrt_g(itheta_row,izeta)*FSABHat2)*dPhiHatdpsiHat*Er_factor
+                      end select
+                      factor = factor * spatial_scaling(itheta_row,izeta) * x_scaling(ix,ispecies)
 
                       if (whichMatrix>0) then
                          ! Not preconditioner
@@ -329,25 +323,25 @@
        ! To generate an error if these variables are used by mistake later:
        itheta_row = -1
        itheta_col = -1
-       !deallocate(ddtheta_to_use)
 
 
        ! *********************************************************
        ! Add the d/dxi term:
        ! *********************************************************
 
-       !allocate(ddxi_to_use(Nxi,Nxi))
        if (whichMatrix .ne. 2) then
           do izeta = izetaMin,izetaMax
              do itheta = ithetaMin,ithetaMax
                 do ix = 1,Nx
                    do ixi_row = 1,Nxi_for_x(ix)
-                      ! The next line contains \dot{\hat{\xi}}:
-                      factor = - sqrt_g_sign*x(ix)*(1-xi(ixi_row)*xi(ixi_row))/(2*BHat(itheta,izeta)) * (dBHatdzeta(itheta,izeta)+iota*dBHatdtheta(itheta,izeta))
+                      ! The next line is the standard mirror term:
+                      factor = - v_s*x(ix)*(1-xi(ixi_row)*xi(ixi_row))/(2*BHat(itheta,izeta)*BHat(itheta,izeta)*sqrt_g(itheta,izeta)) &
+                           * (dBHatdzeta(itheta,izeta)+iota*dBHatdtheta(itheta,izeta))
                       if (includeElectricFieldTermInXiDot) then
-                         factor = factor + sqrt_g_sign*xi(ixi_row)*(1-xi(ixi_row)*xi(ixi_row))*gamma*Delta*sqrtMHat/(4*sqrtTHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
-                              * (BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))*dPhiHatdpsiHat
+                         factor = factor + xi(ixi_row)*(1-xi(ixi_row)*xi(ixi_row))/(2*sqrt_g(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)) &
+                              * (BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))*dPhiHatdpsiHat*Er_factor
                       end if
+                      factor = factor * spatial_scaling(itheta,izeta) * x_scaling(ix,ispecies)
 
                       if (whichMatrix>0) then
                          ! Not preconditioner
@@ -378,22 +372,20 @@
        ! To generate an error if these variables are used by mistake later:
        ixi_row = -1
        ixi_col = -1
-       !deallocate(ddxi_to_use)
 
 
        ! *********************************************************
        ! Add the d/dx term:
        ! *********************************************************
 
-       !allocate(ddx_to_use(Nx,Nx))
        if ((whichMatrix .ne. 2) .and. includeXDotTerm) then
           do izeta = izetaMin,izetaMax
              do itheta = ithetaMin,ithetaMax
+                spatial_factor = spatial_scaling(itheta,izeta)*dPhiHatdpsiHat/(2*sqrt_g(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)) &
+                     * (BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))*Er_factor
                 do ix_row = 1,Nx
                    do ixi = 1,Nxi
-                      ! The next line contains \dot{\hat{x}}:
-                      factor = sqrt_g_sign*x(ix_row)*(1+xi(ixi)*xi(ixi))*gamma*Delta*sqrtMHat*dPhiHatdpsiHat/(4*sqrtTHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
-                           * (BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))
+                      factor = spatial_factor * x_scaling(ix_row,ispecies) * x(ix_row) * (1 + xi(ixi)*xi(ixi))
                       if (whichMatrix>0) then
                          ! Not preconditioner
                          ddx_to_use => ddx
@@ -415,7 +407,6 @@
        ! To generate an error if these variables are used by mistake later:
        ix_row = -1
        ix_col = -1
-       !deallocate(ddx_to_use)
 
 
 
@@ -929,13 +920,13 @@
                 ! add CD (the part of the field term independent of Rosenbluth potentials.
                 ! CD is dense in the species indices.
                 
-                ! Old version 3 normalization:
-                !speciesFactor = 3 * nHats(iSpeciesA)  * mHats(iSpeciesA)/mHats(iSpeciesB) &
-                !     * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / T32m
+                ! version 3 normalization:
+                speciesFactor = 3 * nHats(iSpeciesA)  * mHats(iSpeciesA)/mHats(iSpeciesB) &
+                     * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / T32m
                 
-                ! New normalization
-                speciesFactor = 3 * nHats(iSpeciesB)  * sqrt(mHats(iSpeciesB)/THats(iSpeciesB)) &
-                     * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / (THats(iSpeciesB)*mHats(iSpeciesA))
+                ! alpha_finiteDiffXi normalization
+                !speciesFactor = 3 * nHats(iSpeciesB)  * sqrt(mHats(iSpeciesB)/THats(iSpeciesB)) &
+                !     * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / (THats(iSpeciesB)*mHats(iSpeciesA))
                 
                 do ix=1,Nx
                    CECD(iSpeciesA, iSpeciesB, ix, :) = CECD(iSpeciesA, iSpeciesB, ix, :) &
@@ -1045,7 +1036,8 @@
 
                       do itheta = ithetaMin,ithetaMax
                          do izeta = izetaMin,izetaMax
-                            factor = -nu_n*BHat(itheta,izeta)*sqrt(mHats(ispeciesA)/THats(ispeciesA))/abs(DHat(itheta,izeta))
+                            !factor = -nu_n*BHat(itheta,izeta)*sqrt(mHats(ispeciesA)/THats(ispeciesA))/abs(DHat(itheta,izeta))
+                            factor = -nu_n*spatial_scaling(itheta,izeta)*x_scaling(ix_row,iSpeciesA)
                             do ixi_col = 1,Nxi
                                colIndex = getIndex(iSpeciesB,ix_col,ixi_col,itheta,izeta,BLOCK_F)
                                do ixi_row = 1,Nxi
@@ -1079,7 +1071,6 @@
           ! Pure pitch-angle scattering collision operator
           ! *********************************************************
 
-          !allocate(pitch_angle_scattering_operator_to_use(Nxi,Nxi))
           if (whichMatrix==0) then
              pitch_angle_scattering_operator_to_use => pitch_angle_scattering_operator_preconditioner
           else
@@ -1120,7 +1111,8 @@
              do ix=ixMin,Nx
                 do itheta=ithetaMin,ithetaMax
                    do izeta=izetaMin,izetaMax
-                      factor = -nu_n*BHat(itheta,izeta)*sqrt(mHats(ispeciesA)/THats(ispeciesA))/abs(DHat(itheta,izeta))*nuDHat(iSpeciesA,ix)
+                      !factor = -nu_n*BHat(itheta,izeta)*sqrt(mHats(ispeciesA)/THats(ispeciesA))/abs(DHat(itheta,izeta))*nuDHat(iSpeciesA,ix)
+                      factor = -nu_n*spatial_scaling(itheta,izeta)*x_scaling(ix,iSpeciesA)*nuDHat(iSpeciesA,ix)
                       do ixi_row = 1,Nxi
                          rowIndex=getIndex(iSpeciesA,ix,ixi_row,itheta,izeta,BLOCK_F)
                          do ixi_col = 1,Nxi
@@ -1133,7 +1125,6 @@
                 end do
              end do
           end do
-          !deallocate(pitch_angle_scattering_operator_to_use)
           
        case default
           print *,"Error! collisionOperator must be 0 or 1."
@@ -1234,7 +1225,7 @@
              end select
              do itheta = ithetaMin,ithetaMax
                 do izeta = izetaMin,izetaMax
-                   factor = (B0OverBBar/GHat)*BHat(itheta,izeta)/DHat(itheta,izeta)
+                   factor = 1
                    do ispecies = 1,Nspecies
                       do ixi = 1,Nxi_for_x(ix)
                          rowIndex = getIndex(ispecies, ix, ixi, itheta, izeta, BLOCK_F)
@@ -1254,7 +1245,7 @@
           ! Add a source (which is constant on the flux surface and independent of xi) at each x.
           do itheta = ithetaMin,ithetaMax
              do izeta = izetaMin,izetaMax
-                factor = (B0OverBBar/GHat)*BHat(itheta,izeta)/DHat(itheta,izeta)
+                factor = 1
                 do ix = ixMin,Nx
                    do ixi = 1,Nxi_for_x(ix)
                       do ispecies = 1,Nspecies
@@ -1299,11 +1290,10 @@
                 !do izeta=1,Nzeta
                 do izeta = izetaMin, izetaMax
                    do ixi=1,Nxi
-                      ! The matrix elements must be proportional to 1/DHat, and the sum should exclude the repeated values of zeta,
+                      ! The matrix elements must be proportional to sqrt_g,
                       ! but otherwise the row could probably be scaled any way you like. Here we include a factor 1/VPrimeHat so the 
                       ! row is dimensionless and the row sum is O(1), which seems like a reasonable scaling.
-                      !factor = thetaWeights(itheta)*zetaWeights(izeta)/DHat(itheta,izeta)
-                      factor = xiWeights(ixi)*thetaWeights(itheta)*zetaWeights(izeta)/(DHat(itheta,izeta)*VPrimeHat)
+                      factor = xiWeights(ixi)*thetaWeights(itheta)*zetaWeights(izeta)*sqrt_g(itheta,izeta)/VPrimeHat
                       
                       do ix=1,Nx
                          colIndex = getIndex(ispecies, ix, ixi, itheta, izeta, BLOCK_F)
@@ -1328,11 +1318,10 @@
           do itheta=1,Ntheta
              do izeta=1,Nzeta
                 do ixi=1,Nxi
-                   ! The matrix elements must be proportional to 1/DHat, and the sum should exclude the repeated values of zeta,
+                   ! The matrix elements must be proportional to sqrt_g,
                    ! but otherwise the row could probably be scaled any way you like. Here we include a factor 1/VPrimeHat so the 
                    ! row is dimensionless and the row sum is O(1), which seems like a reasonable scaling.
-                   !factor = thetaWeights(itheta)*zetaWeights(izeta)/DHat(itheta,izeta)
-                   factor = xiWeights(ixi)*thetaWeights(itheta)*zetaWeights(izeta)/(DHat(itheta,izeta)*VPrimeHat)
+                   factor = xiWeights(ixi)*thetaWeights(itheta)*zetaWeights(izeta)*sqrt_g(itheta,izeta)/VPrimeHat
 
                    do ix=ixMin,Nx
                       do ispecies = 1,Nspecies
@@ -1446,13 +1435,39 @@
           end do
 
           call MatSetValuesSparse(matrix, 1, rowIndices(1), Nzeta, colIndices, &
-               thetaWeights(itheta)*zetaWeights/DHat(itheta,:), ADD_VALUES, ierr)
+               thetaWeights(itheta)*zetaWeights*sqrt_g(itheta,:), ADD_VALUES, ierr)
        end do
 
        deallocate(rowIndices)
        deallocate(colIndices)
     end if
 
+    
+    ! *******************************************************************************
+    ! If we are going to use a fieldsplit preconditioner, then put 1's on the
+    ! diagonal for the source/constraint blocks of the preconditioner.
+    ! *******************************************************************************
+
+    if (whichMatrix==0 .and. procThatHandlesConstraints .and. fieldsplit) then
+       select case (constraintScheme)
+       case (0)
+          ! Do nothing here.
+       case (1,3,4)
+          do ispecies=1,Nspecies
+             rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)
+             call MatSetValue(matrix, rowIndex, rowIndex, one, ADD_VALUES, ierr)
+             rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)
+             call MatSetValue(matrix, rowIndex, rowIndex, one, ADD_VALUES, ierr)
+          end do
+       case (2)
+          do ix=ixMin,Nx
+             do ispecies = 1,Nspecies
+                rowIndex = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)
+                call MatSetValue(matrix, rowIndex, rowIndex, one, ADD_VALUES, ierr)
+             end do
+          end do
+       end select
+    end if
 
     ! *******************************************************************************
     ! Done inserting values into the matrices.
@@ -1538,7 +1553,7 @@
     implicit none
 
     integer :: ix, ixi, itheta, izeta, ispecies, index
-    PetscScalar :: factor, pi32
+    PetscScalar :: factor
     PetscErrorCode :: ierr
 
     if (masterProc) then
@@ -1547,19 +1562,15 @@
 
     call VecSet(f0, zero, ierr)
     
-    pi32 = pi*sqrt(pi)
     do ispecies = 1,Nspecies
        do ix = 1,Nx
-          !factor = nHats(ispecies)*mHats(ispecies)/(pi*THats(ispecies)) &
-          !     * sqrt(mHats(ispecies)/(pi*THats(ispecies))) * expx2(ix)
-          factor = expx2(ix) / (pi32)
+          factor = expx2(ix)
           do itheta = ithetaMin,ithetaMax
              do izeta = izetaMin,izetaMax
                 do ixi = 1,Nxi_for_x(ix)
                    index = getIndex(ispecies, ix, ixi, itheta, izeta, BLOCK_F)
                    call VecSetValue(f0, index, &
-                !!     factor, INSERT_VALUES, ierr) !!Commented by AM 2016-06
-                        exp(-Zs(ispecies)*gamma*Phi1Hat(itheta,izeta)/THats(ispecies))*factor, INSERT_VALUES, ierr) !!Added by AM 2016-06
+                        exp(-Zs(ispecies)*gamma*Phi1Hat(itheta,izeta)/THats(ispecies))*factor, INSERT_VALUES, ierr) ! This line needs fixing when Phi1 is included.
                 end do
              end do
           end do

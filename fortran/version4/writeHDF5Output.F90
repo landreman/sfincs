@@ -229,8 +229,8 @@ contains
             // boolDescription)
        call writeHDF5Field("constraintScheme", constraintScheme, "")
 
-       call writeHDF5Field("DHat", DHat, dspaceIDForThetaZeta, dimForThetaZeta, &
-            "Inverse Jacobian (grad psi dot grad theta cross grad zeta, where 2*pi*psi is the toroidal flux), in units of BBar / RBar")
+       call writeHDF5Field("sqrt_g", sqrt_g, dspaceIDForThetaZeta, dimForThetaZeta, &
+            "Jacobian 1/(grad psi dot grad theta cross grad zeta), where 2*pi*psi is the toroidal flux)")
        call writeHDF5Field("BHat", BHat, dspaceIDForThetaZeta, dimForThetaZeta, &
             "Magnitude of the magnetic field, in units of BBar")
        call writeHDF5Field("dBHatdpsiHat", dBHatdpsiHat, dspaceIDForThetaZeta, dimForThetaZeta, "")

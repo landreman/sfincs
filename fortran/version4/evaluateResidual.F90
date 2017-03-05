@@ -32,7 +32,7 @@
        print *,"evaluateResidual called."
     end if
 
-    ! Often, evaluateResidual is called when the state vector is 0.
+    ! In the first iteration of SNES, evaluateResidual is called when the state vector is 0.
     ! In this case, there is no need to build the first matrix.
     call VecNorm(stateVec, NORM_INFINITY, norm, ierr)
     if (norm > 0) then
@@ -114,12 +114,12 @@
              do izeta = izetaMin,izetaMax                
                 if (includePhi1 .and. includePhi1InKineticEquation) then !!Added by AM 2016-03
                    stop "This part not yet ready for theta_finiteDiffXi"
-                   factor = -Delta*nHats(ispecies)*mHat*sqrtMHat &
-                        /(2*pi*sqrtpi*Zs(ispecies)*(BHat(itheta,izeta)**3)*sqrtTHat) &
+                   factor = -spatial_scaling(itheta,izeta)*Delta*nHats(ispecies)*mHat*sqrtMHat &
+                        /(2*Zs(ispecies)*(BHat(itheta,izeta)**3)*sqrtTHat) &
                         *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
                         - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
                         !!                     * DHat(itheta,izeta) * x_part !!Commented by AM 2016-02
-                        * DHat(itheta,izeta) * (x_part + x_part_2*Zs(ispecies)*gamma*Phi1Hat(itheta,izeta))  & !!Added by AM 2016-02
+                        / sqrt_g(itheta,izeta) * (x_part + x_part_2*Zs(ispecies)*gamma*Phi1Hat(itheta,izeta))  & !!Added by AM 2016-02
                         * exp(-Zs(ispecies)*gamma*Phi1Hat(itheta,izeta)/THats(ispecies)) !!Added by AM 2016-02
                 else
 !!$                   factor = Delta*nHats(ispecies)*mHat*sqrtMHat &
@@ -127,11 +127,11 @@
 !!$                        *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
 !!$                        - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
 !!$                        * DHat(itheta,izeta) * x_part
-                   factor = -sqrt_g_sign*Delta*sqrtTHat*sqrtMHat &
-                        /(2*pi*sqrtpi*Zs(ispecies)*BHat(itheta,izeta)*BHat(itheta,izeta)) &
+                   factor = -Delta*THat &
+                        /(2*Zs(ispecies)*BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)*sqrt_g(itheta,izeta)) &
                         *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
                         - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
-                        * x_part
+                        * x_part * spatial_scaling(itheta,izeta) * x_scaling(ix,ispecies)
                 end if 
                 
                 do ixi = 1,Nxi_for_x(ix)
@@ -216,7 +216,7 @@
                 !factor = gamma*Zs(ispecies)*x(ix)*exp(-x2(ix))*EParallelHat &
                 !     *nHats(ispecies)*mHats(ispecies)/(pi*sqrtpi*THats(ispecies)*THats(ispecies)*FSABHat2)
                 factor = -gamma*Zs(ispecies)*x(ix)*exp(-x2(ix))*EParallelHat &
-                     *BHat(itheta,izeta)*BHat(itheta,izeta)/(pi*sqrtpi*THats(ispecies)*abs(DHat(itheta,izeta))*FSABHat2)
+                     *BHat(itheta,izeta)*BHat(itheta,izeta)/(THats(ispecies)*FSABHat2) ! This expression is wrong!!!! 
                 do ixi = 1,Nxi
                    index = getIndex(ispecies, ix, ixi, itheta, izeta, BLOCK_F)
                    call VecSetValue(inhomogeneous_terms, index, &

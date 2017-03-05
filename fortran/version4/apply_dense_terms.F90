@@ -62,7 +62,8 @@
     do itheta = ithetaMin,ithetaMax
        do izeta = izetaMin,izetaMax
           !factor = -nu_n*BHat(itheta,izeta)*species_factor(ispeciesA)/DHat(itheta,izeta)
-          factor = -nu_n*BHat(itheta,izeta)/abs(DHat(itheta,izeta))
+          !factor = -nu_n*BHat(itheta,izeta)/abs(DHat(itheta,izeta))
+          factor = -nu_n*spatial_scaling(itheta,izeta)
           do iSpeciesB = 1,Nspecies
              do ix_col = 1,Nx
                 do ixi = 1,Nxi
