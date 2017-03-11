@@ -193,6 +193,7 @@
     ! Handle d/dtheta for the main matrix.
     ! *******************************************************************************
 
+    call_uniform_diff_matrices = .true.
     select case (theta_derivative_option)
 
     case (1)
@@ -258,6 +259,26 @@
        derivative_option_plus  = 120
        derivative_option_minus = 130
 
+    case (10)
+       if (masterProc) then
+          print *,"d/dtheta derivatives discretized using partially upwinded finite differences:"
+          print *,"   2 point on one side, 3 points on the other side."
+          print *,"   upwinding factor:",theta_upwinding_factor
+       end if
+
+       call_uniform_diff_matrices = .false.
+       quadrature_option = 0
+       derivative_option_plus  = 120
+       derivative_option_minus = 130
+       call uniformDiffMatrices(Ntheta, zero, two*pi, derivative_option_plus,  quadrature_option, theta, thetaWeights, ddtheta_plus_preconditioner,  d2dtheta2)
+       call uniformDiffMatrices(Ntheta, zero, two*pi, derivative_option_minus, quadrature_option, theta, thetaWeights, ddtheta_minus_preconditioner, d2dtheta2)
+       derivative_option_plus  = 10
+       derivative_option_minus = 10
+       call uniformDiffMatrices(Ntheta, zero, two*pi, derivative_option_plus,  quadrature_option, theta, thetaWeights, ddtheta_plus,  d2dtheta2)
+       call uniformDiffMatrices(Ntheta, zero, two*pi, derivative_option_minus, quadrature_option, theta, thetaWeights, ddtheta_minus, d2dtheta2)
+       ddtheta_plus  = (1-theta_upwinding_factor) * ddtheta_plus  + theta_upwinding_factor * ddtheta_plus_preconditioner
+       ddtheta_minus = (1-theta_upwinding_factor) * ddtheta_minus + theta_upwinding_factor * ddtheta_minus_preconditioner
+
     case default
        if (masterProc) then
           print *,"Error! Invalid setting for theta_derivative_option:",theta_derivative_option
@@ -265,9 +286,11 @@
        stop
     end select
 
-    quadrature_option = 0
-    call uniformDiffMatrices(Ntheta, zero, two*pi, derivative_option_plus,  quadrature_option, theta, thetaWeights, ddtheta_plus,  d2dtheta2)
-    call uniformDiffMatrices(Ntheta, zero, two*pi, derivative_option_minus, quadrature_option, theta, thetaWeights, ddtheta_minus, d2dtheta2)
+    if (call_uniform_diff_matrices) then
+       quadrature_option = 0
+       call uniformDiffMatrices(Ntheta, zero, two*pi, derivative_option_plus,  quadrature_option, theta, thetaWeights, ddtheta_plus,  d2dtheta2)
+       call uniformDiffMatrices(Ntheta, zero, two*pi, derivative_option_minus, quadrature_option, theta, thetaWeights, ddtheta_minus, d2dtheta2)
+    end if
 
     ! *******************************************************************************
     ! Handle d/dtheta for the preconditioner matrix.
@@ -356,7 +379,7 @@
 
     case default
        if (masterProc) then
-          print *,"Error! Invalid setting for theta_derivative_option:",theta_derivative_option
+          print *,"Error! Invalid setting for preconditioner_theta_derivative_option:",preconditioner_theta_derivative_option
        end if
        stop
     end select
@@ -424,6 +447,8 @@
        ! First, handle d/dzeta for the main matrix:
        ! *******************************************************************************
 
+       call_uniform_diff_matrices = .true.
+
        select case (zeta_derivative_option)
 
        case (2)
@@ -482,16 +507,37 @@
           derivative_option_plus  = 120
           derivative_option_minus = 130
           
+       case (10)
+          if (masterProc) then
+             print *,"d/dzeta derivatives discretized using partially upwinded finite differences:"
+             print *,"   2 point on one side, 3 points on the other side."
+             print *,"   Upwinding factor:",zeta_upwinding_factor
+          end if
+          call_uniform_diff_matrices = .false.
+          quadrature_option = 0
+          derivative_option_plus  = 120
+          derivative_option_minus = 130
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, derivative_option_plus,  quadrature_option, zeta, zetaWeights, ddzeta_plus_preconditioner,  d2dzeta2)
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, derivative_option_minus, quadrature_option, zeta, zetaWeights, ddzeta_minus_preconditioner, d2dzeta2)
+          derivative_option_plus  = 10
+          derivative_option_minus = 10
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, derivative_option_plus,  quadrature_option, zeta, zetaWeights, ddzeta_plus,  d2dzeta2)
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, derivative_option_minus, quadrature_option, zeta, zetaWeights, ddzeta_minus, d2dzeta2)
+          ddzeta_plus  = (1-zeta_upwinding_factor) * ddzeta_plus  + zeta_upwinding_factor * ddzeta_plus_preconditioner
+          ddzeta_minus = (1-zeta_upwinding_factor) * ddzeta_minus + zeta_upwinding_factor * ddzeta_minus_preconditioner
+
        case default
           if (masterProc) then
              print *,"Error! Invalid setting for zeta_derivative_option:",zeta_derivative_option
           end if
           stop
        end select
-       
-       quadrature_option = 0 
-       call uniformDiffMatrices(Nzeta, 0, zetaMax, derivative_option_plus,  quadrature_option, zeta, zetaWeights, ddzeta_plus, d2dzeta2)
-       call uniformDiffMatrices(Nzeta, 0, zetaMax, derivative_option_minus, quadrature_option, zeta, zetaWeights, ddzeta_minus, d2dzeta2)
+
+       if (call_uniform_diff_matrices) then
+          quadrature_option = 0 
+          call uniformDiffMatrices(Nzeta, 0, zetaMax, derivative_option_plus,  quadrature_option, zeta, zetaWeights, ddzeta_plus, d2dzeta2)
+          call uniformDiffMatrices(Nzeta, 0, zetaMax, derivative_option_minus, quadrature_option, zeta, zetaWeights, ddzeta_minus, d2dzeta2)
+       end if
 
        ! *******************************************************************************
        ! Handle d/dzeta for the preconditioner matrix.

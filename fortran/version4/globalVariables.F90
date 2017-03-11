@@ -129,11 +129,13 @@ module globalVariables
   ! ********************************************************
   ! ********************************************************
 
-  integer :: theta_derivative_option = 8
+  integer :: theta_derivative_option = 10
   integer :: zeta_derivative_option = 8
   integer :: xi_derivative_option = 8
   integer :: pitch_angle_scattering_option = 3
   integer :: xi_quadrature_option = 3
+  PetscScalar :: theta_upwinding_factor = 0.2
+  PetscScalar :: zeta_upwinding_factor = 0.0
 
   !integer :: xDotDerivativeScheme = 0
 

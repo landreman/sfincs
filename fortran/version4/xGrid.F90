@@ -351,7 +351,7 @@
                !     / (THats(iSpeciesA) * sqrt(THats(iSpeciesA)*mHats(ispeciesA))) &
                !     * THats(iSpeciesB)*mHats(iSpeciesA)/(THats(iSpeciesA)*mHats(iSpeciesB))
 
-               ! New normalization:
+               ! Alpha_finiteDiffXi normalization:
                speciesFactor2 = 3/(2*pi)*nHats(iSpeciesB) &
                     * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
                     * sqrt(mHats(iSpeciesB)/THats(ispeciesB)) &

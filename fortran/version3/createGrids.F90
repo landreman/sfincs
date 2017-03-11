@@ -1049,19 +1049,19 @@
        do j=1,Nx
           ! Linear ramp from 0.1*Nxi to Nxi as x increases from 0 to 2:
           temp = Nxi*(0.1 + 0.9*x(j)/2)
-          ! Always keep at least 3 Legendre modes, for the sake of diagnostics.
+          ! Always keep at least 4 Legendre modes, for the sake of diagnostics.
           ! Always keep at least NL Legendre modes, to simplify the collision operator loops.
           ! Above the threshold value of x, keep exactly Nxi Legendre modes.
-          Nxi_for_x(j) = max(3,NL,min(int(temp),Nxi))
+          Nxi_for_x(j) = max(4,NL,min(int(temp),Nxi))
        end do
     case (2)
        do j=1,Nx
           ! Quadratic ramp from 0.1*Nxi to Nxi as x increases from 0 to 2:
           temp = Nxi*(0.1 + 0.9*( (x(j)/2)**2) )
-          ! Always keep at least 3 Legendre modes, for the sake of diagnostics.
+          ! Always keep at least 4 Legendre modes, for the sake of diagnostics.
           ! Always keep at least NL Legendre modes, to simplify the collision operator loops.
           ! Above the threshold value of x, keep exactly Nxi Legendre modes.
-          Nxi_for_x(j) = max(3,NL,min(int(temp),Nxi))
+          Nxi_for_x(j) = max(4,NL,min(int(temp),Nxi))
        end do
     case default
        if (masterProc) print *,"Error! Invalid Nxi_for_x_option"

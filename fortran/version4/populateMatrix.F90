@@ -78,6 +78,8 @@
 
     Er_factor = Delta * gamma / 2 ! When I switch to SI units, I can replace Er_factor with 1
 
+    print *,"zetaWeights:",zetaWeights
+
     call PetscTime(time3, ierr)
 
     ! This next line only matters for nonlinear calculations, in which the Mat objects for the matrix and preconditioner matrix 
@@ -335,8 +337,8 @@
                 do ix = 1,Nx
                    do ixi_row = 1,Nxi_for_x(ix)
                       ! The next line is the standard mirror term:
-                      factor = - v_s*x(ix)*(1-xi(ixi_row)*xi(ixi_row))/(2*BHat(itheta,izeta)*BHat(itheta,izeta)*sqrt_g(itheta,izeta)) &
-                           * (dBHatdzeta(itheta,izeta)+iota*dBHatdtheta(itheta,izeta))
+                      factor = - v_s*x(ix)*(1-xi(ixi_row)*xi(ixi_row))/(2*BHat(itheta,izeta)*BHat(itheta,izeta)) &
+                           * (BHat_sup_theta(itheta,izeta)*dBHatdtheta(itheta,izeta) + BHat_sup_zeta(itheta,izeta)*dBHatdzeta(itheta,izeta))
                       if (includeElectricFieldTermInXiDot) then
                          factor = factor + xi(ixi_row)*(1-xi(ixi_row)*xi(ixi_row))/(2*sqrt_g(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)) &
                               * (BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))*dPhiHatdpsiHat*Er_factor
@@ -921,12 +923,17 @@
                 ! CD is dense in the species indices.
                 
                 ! version 3 normalization:
-                speciesFactor = 3 * nHats(iSpeciesA)  * mHats(iSpeciesA)/mHats(iSpeciesB) &
-                     * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / T32m
+                !speciesFactor = 3 * nHats(iSpeciesA)  * mHats(iSpeciesA)/mHats(iSpeciesB) &
+                !     * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / T32m
                 
                 ! alpha_finiteDiffXi normalization
-                !speciesFactor = 3 * nHats(iSpeciesB)  * sqrt(mHats(iSpeciesB)/THats(iSpeciesB)) &
-                !     * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / (THats(iSpeciesB)*mHats(iSpeciesA))
+                speciesFactor = 3 * nHats(iSpeciesB)  * sqrt(mHats(iSpeciesB)/THats(iSpeciesB)) &
+                     * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / (THats(iSpeciesB)*mHats(iSpeciesA))
+                
+                ! WRONG normalization
+                !speciesFactor = 3 * nHats(iSpeciesB) * nHats(ispeciesB) * sqrt(mHats(iSpeciesA) * mHats(iSpeciesB)) &
+                !     * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
+                !     / (THats(iSpeciesA)*THats(iSpeciesB)*sqrt(THats(iSpeciesA)*THats(iSpeciesB)))
                 
                 do ix=1,Nx
                    CECD(iSpeciesA, iSpeciesB, ix, :) = CECD(iSpeciesA, iSpeciesB, ix, :) &
@@ -965,7 +972,6 @@
           ! *****************************************************************
 
           allocate(collision_operator_xi_block(Nxi,Nxi))
-          !allocate(pitch_angle_scattering_operator_to_use(Nxi,Nxi))
           if (whichMatrix==0) then
              pitch_angle_scattering_operator_to_use => pitch_angle_scattering_operator_preconditioner
           else
@@ -1053,7 +1059,6 @@
              end do
           end do
                       
-          !deallocate(pitch_angle_scattering_operator_to_use)
           if (allocated(Legendre_projection_to_use)) deallocate(Legendre_projection_to_use)
           deallocate(collision_operator_xi_block)
           
@@ -1223,10 +1228,12 @@
              case default
                 stop "Invalid constraintScheme!"
              end select
-             do itheta = ithetaMin,ithetaMax
-                do izeta = izetaMin,izetaMax
-                   factor = 1
-                   do ispecies = 1,Nspecies
+             temp = Ntheta*Nzeta/sum(spatial_scaling)
+             do ispecies = 1,Nspecies
+                speciesFactor = sqrt(THats(ispecies)/mHats(ispecies)) ! Include 2 when I move to SI units?
+                do itheta = ithetaMin,ithetaMax
+                   do izeta = izetaMin,izetaMax
+                      factor = spatial_scaling(itheta,izeta) * temp * x_scaling(ix,ispecies) * speciesFactor ! This quantity is scaled so it should be O(1)
                       do ixi = 1,Nxi_for_x(ix)
                          rowIndex = getIndex(ispecies, ix, ixi, itheta, izeta, BLOCK_F)
                          
@@ -1243,12 +1250,14 @@
           
        case (2)
           ! Add a source (which is constant on the flux surface and independent of xi) at each x.
-          do itheta = ithetaMin,ithetaMax
-             do izeta = izetaMin,izetaMax
-                factor = 1
-                do ix = ixMin,Nx
-                   do ixi = 1,Nxi_for_x(ix)
-                      do ispecies = 1,Nspecies
+          temp = Ntheta*Nzeta/sum(spatial_scaling)
+          do ispecies = 1,Nspecies
+             speciesFactor = sqrt(THats(ispecies)/mHats(ispecies)) ! Include 2 when I move to SI units?
+             do itheta = ithetaMin,ithetaMax
+                do izeta = izetaMin,izetaMax
+                   do ix = ixMin,Nx
+                      factor = spatial_scaling(itheta,izeta) * temp * x_scaling(ix,ispecies) * speciesFactor ! This quantity is scaled so it should be O(1) 
+                      do ixi = 1,Nxi_for_x(ix)
                          rowIndex = getIndex(ispecies, ix, ixi, itheta, izeta, BLOCK_F)
                          colIndex = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)
                          call MatSetValue(matrix, rowIndex, colIndex, factor, ADD_VALUES, ierr)
