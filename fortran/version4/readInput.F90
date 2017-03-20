@@ -64,12 +64,13 @@ contains
          xi_derivative_option, pitch_angle_scattering_option, &
          xi_quadrature_option, xGridScheme, whichParallelSolverToFactorPreconditioner, &
          PETSCPreallocationStrategy, xPotentialsGridScheme, xGrid_k,  &
-         Nxi_for_x_option, theta_upwinding_factor, zeta_upwinding_factor
+         Nxi_for_x_option, theta_upwinding_factor, zeta_upwinding_factor, &
+         null_space_option, spatial_scaling_option, constraint_scaling_option, x_scaling_option
 
     namelist / preconditionerOptions / preconditioner_x, preconditioner_zeta_derivative_option, &
          preconditioner_theta_derivative_option, preconditioner_xi_derivative_option, preconditioner_species, reusePreconditioner, &
          preconditioner_pitch_angle_scattering_option, &
-         preconditioner_field_term_xi_option
+         preconditioner_field_term_xi_option, preconditioning_option
 
 !!$    namelist / export_f / export_full_f, export_delta_f, export_f_theta, export_f_zeta, export_f_x, export_f_xi, &
 !!$         export_f_theta_option, export_f_zeta_option, export_f_xi_option, export_f_x_option
@@ -169,6 +170,9 @@ contains
        if (masterProc) then
           print *,"Successfully read parameters from resolutionParameters namelist in ", trim(filename), "."
        end if
+
+       ! The default value of theta_derivative_option depends on Nzeta:
+       if (Nzeta==1) theta_derivative_option = 8
 
        read(fileUnit, nml=otherNumericalParameters, iostat=didFileAccessWork)
        if (didFileAccessWork /= 0) then

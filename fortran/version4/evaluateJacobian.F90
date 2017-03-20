@@ -15,7 +15,7 @@
 
     use petscsnes
     use globalVariables, only: masterProc, firstMatrixCreation, reusePreconditioner, &
-         Mat_for_Jacobian
+         Mat_for_Jacobian, fieldsplit, Nspecies, Nx, null_space_option
 
     implicit none
 
@@ -28,6 +28,12 @@
     ! Syntax for PETSc versions up through 3.4
     MatStructure :: flag
 #endif
+    KSP :: myksp
+    PC :: preconditionerContext
+    KSP, dimension(:), allocatable :: sub_ksps
+    Mat :: sub_Amat, sub_Pmat
+    MatNullSpace :: nullspace
+    integer :: j, num_fieldsplits
 
     if (masterProc) then
        print *,"evaluateJacobian called."
@@ -59,6 +65,47 @@
     end if
 
     firstMatrixCreation = .false.
+
+    if (fieldsplit .and. null_space_option>0) then
+       if (null_space_option==1 .and. masterProc) print *,"Adding null space"
+       if (null_space_option==2 .and. masterProc) print *,"Adding NEAR null space"
+       call SNESGetKSP(mysnes, myksp, ierr)
+       call KSPSetUp(myksp, ierr)
+       call KSPGetPC(myksp, preconditionerContext, ierr)
+       allocate(sub_ksps(Nspecies*Nx+1))
+       call PCFieldSplitGetSubKSP(preconditionerContext, num_fieldsplits, sub_ksps, ierr)
+       do j = 1,Nspecies*Nx
+          call KSPGetOperators(sub_ksps(j), sub_Amat, sub_Pmat, ierr)
+          print *,"Does sub_Amat==sub_Pmat?",sub_Amat==sub_Pmat
+          call MatNullSpaceCreate(PETSC_COMM_WORLD,PETSC_TRUE,0,0,nullspace,ierr)
+          select case (null_space_option)
+          case (1)
+             call MatSetNullSpace(sub_Pmat,nullspace,ierr)
+          case (2)
+             call MatSetNearNullSpace(sub_Pmat,nullspace,ierr)
+          case default
+             print *,"Invalid null_space_option:",null_space_option
+             stop
+          end select
+          call MatNullSpaceDestroy(nullspace,ierr)
+          !print *,"Here comes the Pmat for fieldsplit",j-1
+          !call MatView(sub_Pmat,PETSC_VIEWER_STDOUT_WORLD,ierr)
+       end do
+       ! The next lines are temporary:
+       j = Nspecies*Nx+1
+       call KSPGetOperators(sub_ksps(j), sub_Amat, sub_Pmat, ierr)
+       print *,"Does sub_Amat==sub_Pmat?",sub_Amat==sub_Pmat
+       print *,"Here comes the Pmat for fieldsplit",j-1
+       call MatView(sub_Pmat,PETSC_VIEWER_STDOUT_WORLD,ierr)
+       deallocate(sub_ksps)
+    else
+       if (masterProc) print *,"NOT adding null space"
+    end if
+
+!!$    call SNESGetKSP(mysnes, myksp, ierr)
+!!$    call KSPGetOperators(myksp, sub_Amat, sub_Pmat, ierr)
+!!$    print *,"Here comes main Pmat:"
+!!$    call MatView(sub_Pmat,PETSC_VIEWER_STDOUT_WORLD,ierr)
 
   end subroutine evaluateJacobian
 

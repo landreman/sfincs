@@ -78,8 +78,6 @@
 
     Er_factor = Delta * gamma / 2 ! When I switch to SI units, I can replace Er_factor with 1
 
-    print *,"zetaWeights:",zetaWeights
-
     call PetscTime(time3, ierr)
 
     ! This next line only matters for nonlinear calculations, in which the Mat objects for the matrix and preconditioner matrix 
@@ -1324,13 +1322,23 @@
           ! Force the flux-surface-averaged distribution function to be zero
           ! at each value of x:
 
-          do itheta=1,Ntheta
-             do izeta=1,Nzeta
+          temp = Ntheta*Nzeta/sum(sqrt_g)
+          do itheta = ithetaMin,ithetaMax
+             do izeta = izetaMin,izetaMax
                 do ixi=1,Nxi
                    ! The matrix elements must be proportional to sqrt_g,
                    ! but otherwise the row could probably be scaled any way you like. Here we include a factor 1/VPrimeHat so the 
                    ! row is dimensionless and the row sum is O(1), which seems like a reasonable scaling.
-                   factor = xiWeights(ixi)*thetaWeights(itheta)*zetaWeights(izeta)*sqrt_g(itheta,izeta)/VPrimeHat
+                   select case (constraint_scaling_option)
+                   case (1)
+                      factor = xiWeights(ixi)*thetaWeights(itheta)*zetaWeights(izeta)*sqrt_g(itheta,izeta)/VPrimeHat
+                   case (2)
+                      factor = sqrt_g(itheta,izeta)/VPrimeHat
+                   case (3)
+                      factor = sqrt_g(itheta,izeta) * temp
+                   case default
+                      print *,"Invalid constraint_scaling_option:",constraint_scaling_option
+                   end select
 
                    do ix=ixMin,Nx
                       do ispecies = 1,Nspecies
@@ -1462,6 +1470,7 @@
        case (0)
           ! Do nothing here.
        case (1,3,4)
+          print *,"Adding 1s on the source/constraint diagonal block for fieldsplit."
           do ispecies=1,Nspecies
              rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)
              call MatSetValue(matrix, rowIndex, rowIndex, one, ADD_VALUES, ierr)
@@ -1469,6 +1478,7 @@
              call MatSetValue(matrix, rowIndex, rowIndex, one, ADD_VALUES, ierr)
           end do
        case (2)
+          print *,"Adding 1s on the source/constraint diagonal block for fieldsplit."
           do ix=ixMin,Nx
              do ispecies = 1,Nspecies
                 rowIndex = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)

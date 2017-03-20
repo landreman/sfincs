@@ -26,7 +26,7 @@ quadpack.o:
 radialCoordinates.o: globalVariables.o
 readInput.o: globalVariables.o xGrid.o # export_f.o
 sfincs.o: geometry.o globalVariables.o writeHDF5Output.o readInput.o solver.o radialCoordinates.o
-solver.o: globalVariables.o
+solver.o: globalVariables.o indices.o
 sparsify.o:
 uniformDiffMatrices.o: 
 uniformInterpolationMatrix.o: 

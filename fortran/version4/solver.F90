@@ -8,7 +8,9 @@
 module solver
 
   use petscsnesdef
+  use petsckspdef
   use globalVariables
+  use indices
 
   implicit none
 
@@ -23,7 +25,7 @@ module solver
     Mat :: matrix, preconditionerMatrix
     SNES :: mysnes
     KSP :: KSPInstance
-    PC :: preconditionerContext
+    PC :: preconditionerContext, sub_preconditioner
     integer :: numRHSs
     SNESConvergedReason :: reason
     KSPConvergedReason :: KSPReason
@@ -36,6 +38,12 @@ module solver
     PetscReal :: atol, rtol, stol
     integer :: maxit, maxf
     PetscInt :: VecLocalSize
+    IS, dimension(:), allocatable :: ISs
+    integer :: IS_index, IS_array_index, ix, ispecies, ixi, itheta, izeta, num_fieldsplits, j
+    integer, dimension(:), allocatable :: IS_array
+    KSP, dimension(:), allocatable :: sub_ksps
+    Mat :: sub_Amat, sub_Pmat
+    MatNullSpace :: nullspace
 
     external apply_Jacobian
 
@@ -50,6 +58,8 @@ module solver
        print *,"Entering main solver loop."
     end if
     iterationForMatrixOutput = 0
+
+    call PetscOptionsInsertString(PETSC_NULL_OBJECT,"-options_left -snes_view", ierr)
 
     call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, solutionVec, ierr)
     call VecDuplicate(solutionVec, residualVec, ierr)
@@ -75,68 +85,200 @@ module solver
     call SNESGetKSP(mysnes, KSPInstance, ierr)
 
     call KSPGetPC(KSPInstance, preconditionerContext, ierr)
-    call PCSetType(preconditionerContext, PCLU, ierr)
-    call KSPSetType(KSPInstance, KSPGMRES, ierr)   ! Set the Krylov solver algorithm to GMRES
-    call KSPGMRESSetRestart(KSPInstance, 2000, ierr)
+    select case (preconditioning_option)
+    case (1)
+       ! Direct solver
+       fieldsplit = .false.
+       call PCSetType(preconditionerContext, PCLU, ierr)
+       call KSPSetType(KSPInstance, KSPGMRES, ierr)   ! Set the Krylov solver algorithm to GMRES
+       call KSPGMRESSetRestart(KSPInstance, 2000, ierr)
+
+       if (isAParallelDirectSolverInstalled) then
+          select case (whichParallelSolverToFactorPreconditioner)
+          case (1)
+             call PCFactorSetMatSolverPackage(preconditionerContext, MATSOLVERMUMPS, ierr)
+             if (masterProc) then
+                print *,"We will use mumps to factorize the preconditioner."
+             end if
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
+             ! The functions MatMumpsSetICNTL were introduced in PETSc 3.5.
+             ! For earlier versions, we can achieve a similar result with the following hack:
+             call PetscOptionsInsertString("-mat_mumps_cntl_1 1e-6 -mat_mumps_icntl_4 2", ierr)
+#endif
+          case (2)
+             call PCFactorSetMatSolverPackage(preconditionerContext, MATSOLVERSUPERLU_DIST, ierr)
+             if (masterProc) then
+                print *,"We will use superlu_dist to factorize the preconditioner."
+             end if
+             ! Turn on superlu_dist diagnostic output:
+             call PetscOptionsInsertString("-mat_superlu_dist_statprint", ierr)
+          case default
+             if (masterProc) then
+                print *,"Error: Invalid setting for whichParallelSolverToFactorPreconditioner"
+                stop
+             end if
+          end select
+       else
+          if (masterProc) then
+             print *,"We will use PETSc's serial sparse direct solver to factorize the preconditioner."
+          end if
+
+          ! When using PETSc's built-in solver (which is only done when running with a single processor),
+          ! I often get 2 kinds of errors. One kind of error is a "zero pivot" error.  Other times, there is
+          ! no explicit error message, but KSP converges really slowly, and the answers come out wrong.
+          ! The next few lines seem to help minimize this problem:
+
+          ! The available orderings are natural, nd, 1wd, rcm, and qmd.
+          ! natural (i.e. no reordering) is horrible since the LU factors are very dense.
+          ! nd, rcm, and qmd all seem to work with some examples but fail with others. You should try one of these 3 options.
+          ! 1wd seems to use more memory.
+          call PCFactorSetMatOrderingType(preconditionerContext, MATORDERINGRCM, ierr)
+          call PCFactorReorderForNonzeroDiagonal(preconditionerContext, 1d-12, ierr) 
+          call PCFactorSetZeroPivot(preconditionerContext, 1d-200, ierr) 
+       end if
+
+       ! End of steps used for direct LU factorization of the preconditioner.
+
+    case (2,3,4)
+       ! Fieldsplit
+       fieldsplit = .true.
+       if (masterProc) then
+          print *,"Setting up PETSc FIELDSPLIT preconditioning"
+          select case (preconditioning_option)
+          case (2)
+             print *,"  Using PETSc's GAMG (algebraic multigrid) on the blocks for the kinetic equation."
+          case (3)
+             print *,"  Using Hypre BoomerAMG (algebraic multigrid) on the blocks for the kinetic equation."
+          case (4)
+             print *,"  Using LU factorization on the blocks for the kinetic equation."
+          case default
+             print *,"Error! Invalid preconditioning_option:",preconditioning_option
+             stop
+          end select
+       end if
+       call PCSetType(preconditionerContext, PCFIELDSPLIT, ierr)
+       call PCFIELDSPLITSetType(preconditionerContext, PC_COMPOSITE_ADDITIVE, ierr)
+
+       allocate(ISs(Nx*Nspecies+1))
+       allocate(is_array(matrixSize))
+       IS_index = 1
+       ! The order of these loops must be consistent with getIndices(), or else PETSc gives an error about the loops not being sorted.
+       do ispecies = 1,Nspecies
+          do ix = 1,Nx
+             IS_array_index = 1
+             do ixi = 1,Nxi
+                do itheta = 1,Ntheta
+                   do izeta = 1,Nzeta
+                      IS_array(IS_array_index) = getIndex(ispecies, ix, ixi, itheta, izeta, BLOCK_F)
+                      IS_array_index = IS_array_index + 1
+                   end do
+                end do
+             end do
+             ! Check how to handle parallelization!!
+             call ISCreateGeneral(PETSC_COMM_WORLD,Ntheta*Nzeta*Nxi,IS_array,PETSC_COPY_VALUES,ISs(IS_index),ierr)
+             !call ISView(ISs(IS_index),PETSC_VIEWER_STDOUT_WORLD,ierr)
+             !call PCFieldSplitSetIS(preconditionerContext,PETSC_NULL_CHARACTER,ISs(IS_index),ierr)
+             call PCFieldSplitSetIS(preconditionerContext,'f',ISs(IS_index),ierr)
+             IS_index = IS_index + 1
+          end do
+       end do
+
+       ! Handle the 'field' for the sources and constraints
+       select case (constraintScheme)
+       case (0)
+          ! Nothing to do
+       case (1,3,4)
+          IS_array_index = 1
+          do ispecies = 1,Nspecies
+             IS_array(IS_array_index) = getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)
+             IS_array_index = IS_array_index + 1
+             IS_array(IS_array_index) = getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)
+             IS_array_index = IS_array_index + 1
+          end do
+          call ISCreateGeneral(PETSC_COMM_WORLD,2*Nspecies,IS_array,PETSC_COPY_VALUES,ISs(IS_index),ierr)
+          call ISView(ISs(IS_index),PETSC_VIEWER_STDOUT_WORLD,ierr)
+          call PCFieldSplitSetIS(preconditionerContext,'constraints',ISs(IS_index),ierr)
+       case (2)
+          IS_array_index = 1
+          do ispecies = 1,Nspecies
+             do ix = 1,Nx
+                IS_array(IS_array_index) = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)
+                IS_array_index = IS_array_index + 1
+             end do
+          end do
+          call ISCreateGeneral(PETSC_COMM_WORLD,Nx*Nspecies,IS_array,PETSC_COPY_VALUES,ISs(IS_index),ierr)
+          call ISView(ISs(IS_index),PETSC_VIEWER_STDOUT_WORLD,ierr)
+          call PCFieldSplitSetIS(preconditionerContext,'constraints',ISs(IS_index),ierr)
+       case default
+          if (masterProc) print *,"Invalid constraintScheme:",constraintScheme
+          stop
+       end select
+
+       call KSPSetType(KSPInstance, KSPFGMRES, ierr)   ! Set the Krylov solver algorithm to Flexible GMRES
+       call KSPGMRESSetRestart(KSPInstance, 200, ierr)
+
+       allocate(sub_ksps(Nspecies*Nx+1))
+       call PCFieldSplitGetSubKSP(preconditionerContext, num_fieldsplits, sub_ksps, ierr)
+       if (constraintScheme .ne. 0) then
+          ! Set the source/constraint diagonal block to use Jacobi
+          j = Nspecies*Nx + 1
+          call KSPSetType(sub_ksps(j),KSPPREONLY,ierr)
+          call KSPGetPC(sub_ksps(j), sub_preconditioner, ierr)
+          call PCSetType(sub_preconditioner, PCJACOBI, ierr)
+       end if
+
+       do j = 1,Nspecies*Nx
+          ! For each of the diagonal blocks corresponding to the kinetic equation, set the appropriate preconditioner:
+          call KSPSetType(sub_ksps(j),KSPPREONLY,ierr)
+          !call MatNullSpaceCreate(PETSC_COMM_WORLD,PETSC_TRUE,0,0,nullspace,ierr)
+          !call KSPSetNullSpace(sub_ksps(j),nullspace,ierr)
+          !call MatNullSpaceDestroy(nullspace,ierr)
+
+          !call KSPGetOperators(sub_ksps(j), sub_Amat, sub_Pmat, ierr)
+          !print *,"Does sub_Amat==sub_Pmat?",sub_Amat==sub_Pmat
+          !call MatNullSpaceCreate(PETSC_COMM_WORLD,PETSC_TRUE,0,0,nullspace,ierr)
+          !call MatSetNullSpace(sub_Pmat,nullspace,ierr)
+          !call MatNullSpaceDestroy(nullspace,ierr)
+
+          call KSPGetPC(sub_ksps(j), sub_preconditioner, ierr)
+          select case (preconditioning_option)
+          case (2)
+             call PCSetType(sub_preconditioner, PCGAMG, ierr)
+          case (3)
+             call PCSetType(sub_preconditioner, PCHYPRE, ierr)
+          case (4)
+             call PCSetType(sub_preconditioner, PCLU, ierr)
+             if (isAParallelDirectSolverInstalled) then
+                select case (whichParallelSolverToFactorPreconditioner)
+                case (1)
+                   call PCFactorSetMatSolverPackage(sub_preconditioner, MATSOLVERMUMPS, ierr)
+                case (2)
+                   call PCFactorSetMatSolverPackage(sub_preconditioner, MATSOLVERSUPERLU_DIST, ierr)
+                end select
+             end if
+          case default
+             stop "Should not get here!"
+          end select
+       end do
+
+    case default
+       if (masterProc) print *,"Error! Invalid preconditioning_option:",preconditioning_option
+       stop
+    end select
+
     call KSPSetTolerances(KSPInstance, solverTolerance, PETSC_DEFAULT_REAL, &
          PETSC_DEFAULT_REAL, PETSC_DEFAULT_INTEGER, ierr)
 
     ! Allow options to be controlled using command-line flags:
     call KSPSetFromOptions(KSPInstance, ierr)
-!! #if #else #endif added by AM 2016-07-06 
+
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 7))
     call KSPMonitorSet(KSPInstance, KSPMonitorDefault, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
 #else
     call PetscViewerAndFormatCreate(PETSC_VIEWER_STDOUT_WORLD, PETSC_VIEWER_DEFAULT, vf, ierr) !!Added by AM 2016-07-06
-    call KSPMonitorSet(KSPInstance, KSPMonitorDefault, vf, PetscViewerAndFormatDestroy, ierr) !!Added by AM 2016-07-06 
+    !call KSPMonitorSet(KSPInstance, KSPMonitorDefault, vf, PetscViewerAndFormatDestroy, ierr) !!Added by AM 2016-07-06 
+    call KSPMonitorSet(KSPInstance, KSPMonitorTrueResidualNorm, vf, PetscViewerAndFormatDestroy, ierr) !!Added by AM 2016-07-06 
 #endif
-
-    if (isAParallelDirectSolverInstalled) then
-       select case (whichParallelSolverToFactorPreconditioner)
-       case (1)
-          call PCFactorSetMatSolverPackage(preconditionerContext, MATSOLVERMUMPS, ierr)
-          if (masterProc) then
-             print *,"We will use mumps to factorize the preconditioner."
-          end if
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
-          ! The functions MatMumpsSetICNTL were introduced in PETSc 3.5.
-          ! For earlier versions, we can achieve a similar result with the following hack:
-          call PetscOptionsInsertString("-mat_mumps_cntl_1 1e-6 -mat_mumps_icntl_4 2", ierr)
-#endif
-       case (2)
-          call PCFactorSetMatSolverPackage(preconditionerContext, MATSOLVERSUPERLU_DIST, ierr)
-          if (masterProc) then
-             print *,"We will use superlu_dist to factorize the preconditioner."
-          end if
-          ! Turn on superlu_dist diagnostic output:
-          call PetscOptionsInsertString("-mat_superlu_dist_statprint", ierr)
-       case default
-          if (masterProc) then
-             print *,"Error: Invalid setting for whichParallelSolverToFactorPreconditioner"
-             stop
-          end if
-       end select
-    else
-       if (masterProc) then
-          print *,"We will use PETSc's serial sparse direct solver to factorize the preconditioner."
-       end if
-
-       ! When using PETSc's built-in solver (which is only done when running with a single processor),
-       ! I often get 2 kinds of errors. One kind of error is a "zero pivot" error.  Other times, there is
-       ! no explicit error message, but KSP converges really slowly, and the answers come out wrong.
-       ! The next few lines seem to help minimize this problem:
-
-       ! The available orderings are natural, nd, 1wd, rcm, and qmd.
-       ! natural (i.e. no reordering) is horrible since the LU factors are very dense.
-       ! nd, rcm, and qmd all seem to work with some examples but fail with others. You should try one of these 3 options.
-       ! 1wd seems to use more memory.
-       call PCFactorSetMatOrderingType(preconditionerContext, MATORDERINGRCM, ierr)
-
-       call PCFactorReorderForNonzeroDiagonal(preconditionerContext, 1d-12, ierr) 
-
-       call PCFactorSetZeroPivot(preconditionerContext, 1d-200, ierr) 
-    end if
-
     
     ! Tell PETSc to call the diagnostics subroutine at each iteration of SNES:
     call SNESMonitorSet(mysnes, diagnosticsMonitor, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
@@ -189,7 +331,7 @@ module solver
 
     call SNESSetFromOptions(mysnes, ierr)
 
-    if (isAParallelDirectSolverInstalled .and. (whichParallelSolverToFactorPreconditioner==1)) then
+    if (preconditioning_option==1 .and. isAParallelDirectSolverInstalled .and. (whichParallelSolverToFactorPreconditioner==1)) then
        ! When mumps is the solver, it is very handy to set mumps's control parameter CNTL(1) to a number like 1e-6.
        ! CNTL(1) is a threshhold for pivoting. For the default value of 0.01, there is a lot of pivoting.
        ! This causes memory demands to increase beyond mumps's initial estimate, causing errors (INFO(1)=-9).
@@ -221,6 +363,19 @@ module solver
        call MatMumpsSetIcntl(factorMat,mumps_which_cntl,50,ierr)
 #endif
     end if
+
+!    if (fieldsplit) then
+!       print *,"AAAAAAAAAAAAA"
+!       call SNESSetUp(mysnes, ierr)
+!       call KSPSetUp(KSPInstance, ierr)
+!!$       do j = 1,Nspecies*Nx
+!!$          call KSPGetOperators(sub_ksps(j), sub_Amat, sub_Pmat, ierr)
+!!$          print *,"Does sub_Amat==sub_Pmat?",sub_Amat==sub_Pmat
+!!$          call MatNullSpaceCreate(PETSC_COMM_WORLD,PETSC_TRUE,0,0,nullspace,ierr)
+!!$          call MatSetNullSpace(sub_Pmat,nullspace,ierr)
+!!$          call MatNullSpaceDestroy(nullspace,ierr)
+!!$       end do
+!    end if
 
     ! ***********************************************************************
     ! ***********************************************************************

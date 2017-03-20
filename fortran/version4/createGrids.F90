@@ -1647,10 +1647,29 @@
        else
           spatial_scaling = abs( (zeta(2) - zeta(1)) * BHat / BHat_sub_zeta  )
        end if
+    case (3)
+       if (Nzeta==1) then
+          spatial_scaling = abs(BHat / BHat_sup_theta)
+       else
+          spatial_scaling = abs(BHat / BHat_sup_zeta)
+       end if
+       spatial_scaling = sum(spatial_scaling)/(Ntheta*Nzeta)
+    case (4)
+       if (Nzeta==1) then
+          spatial_scaling = abs( (theta(2)-theta(1)) * BHat / BHat_sup_theta )
+       else
+          spatial_scaling = abs( (zeta(2) - zeta(1)) * BHat / BHat_sub_zeta  )
+       end if
+       spatial_scaling = sum(spatial_scaling)/(Ntheta*Nzeta)
     case default
        if (masterProc) print *,"Error! Invalid spatial_scaling_option:",spatial_scaling_option
        stop
     end select
+
+    if (masterProc) then
+       print *,"Here comes spatial_scaling:"
+       print *,spatial_scaling
+    end if
 
     allocate(x_scaling(Nx,Nspecies))
     do ispecies = 1,Nspecies

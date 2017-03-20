@@ -64,6 +64,8 @@
   ExB_option = 1
 
   includePhi1 = .false.
+
+!  constraintScheme = 0
 /
 
 &resolutionParameters
@@ -82,7 +84,7 @@
 !ss NxiMaxFactor = 2
 !ss NxiNumRuns = 6
   
-  Nx = 8
+  Nx = 1
 !ss NxMinFactor = 0.8
 !ss NxMaxFactor = 2
 !ss NxNumRuns = 3
@@ -95,6 +97,19 @@
 /
 
 &otherNumericalParameters
+!theta_derivative_option=4
+!xi_derivative_option=4
+!pitch_angle_scattering_option=2
+
+null_space_option=1
+! 0 = no null space attached
+! 1 = null space attached
+! 2 = near null space attached
+
+spatial_scaling_option=4
+constraint_scaling_option=3
+
+!x_scaling_option=2
 /
 
 &preconditionerOptions
@@ -102,6 +117,11 @@
   ! the same as the real system matrix.
   preconditioner_species = 0
   preconditioner_x = 0
+preconditioning_option=3
+! 1 = no fieldsplit, LU
+! 2 = fieldsplit, GAMG
+! 3 = fieldsplit, Hypre
+! 4 = fieldsplit, LU
 /
 
 &export_f
