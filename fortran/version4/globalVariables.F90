@@ -4,9 +4,9 @@ module globalVariables
 
 #include "PETScVersions.F90"
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscmatdef.h>
+#include <finclude/petsckspdef.h>
 #else
-#include <petsc/finclude/petscmatdef.h>
+#include <petsc/finclude/petsckspdef.h>
 #endif
 
   character(len=50), parameter :: inputFilename = "input.namelist"
@@ -174,7 +174,7 @@ module globalVariables
   integer :: PETSCPreallocationStrategy=1
   integer :: Nxi_for_x_option = 0
   integer :: x_scaling_option = 1
-  integer :: spatial_scaling_option = 1
+  integer :: spatial_scaling_option = 3
   integer :: constraint_scaling_option = 1
   logical :: fieldsplit = .false.
   integer :: null_space_option=1
@@ -356,6 +356,9 @@ module globalVariables
 
   Vec :: f0
 
+  Mat :: Mat_for_Jacobian, Mat_for_preconditioner
+  KSP :: inner_KSP
+  PC :: inner_preconditioner
 
   ! ********************************************************
   !
@@ -371,7 +374,6 @@ module globalVariables
   integer :: izetaMin, izetaMax, localNzeta
   logical :: procThatHandlesConstraints
 
-  Mat :: Mat_for_Jacobian
 
 end module globalVariables
 

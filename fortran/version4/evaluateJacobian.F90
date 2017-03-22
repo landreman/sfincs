@@ -15,7 +15,8 @@
 
     use petscsnes
     use globalVariables, only: masterProc, firstMatrixCreation, reusePreconditioner, &
-         Mat_for_Jacobian, fieldsplit, Nspecies, Nx, null_space_option
+         Mat_for_Jacobian, fieldsplit, Nspecies, Nx, null_space_option, &
+         Mat_for_preconditioner, inner_preconditioner, inner_KSP
 
     implicit none
 
@@ -29,7 +30,7 @@
     MatStructure :: flag
 #endif
     KSP :: myksp
-    PC :: preconditionerContext
+    !PC :: preconditionerContext
     KSP, dimension(:), allocatable :: sub_ksps
     Mat :: sub_Amat, sub_Pmat
     MatNullSpace :: nullspace
@@ -56,9 +57,9 @@
     ! If reusePreconditioner = true, then we only need to assemble the preconditioner in the first iteration.
     ! If reusePreconditioner = false, then we need to assemble the preconditioner in every iteration.
     if (firstMatrixCreation .or. .not. reusePreconditioner) then
-       call populateMatrix(jacobianPC, 0, stateVec)
+       !call populateMatrix(jacobianPC, 0, stateVec)
+       call populateMatrix(Mat_for_preconditioner, 0, stateVec)
     end if
-    !call populateMatrix(jacobian, 1, stateVec)
     if (firstMatrixCreation) then
        call preallocateMatrix(Mat_for_Jacobian, 1)
        call populateMatrix(Mat_for_Jacobian, 1, stateVec)
@@ -69,11 +70,13 @@
     if (fieldsplit .and. null_space_option>0) then
        if (null_space_option==1 .and. masterProc) print *,"Adding null space"
        if (null_space_option==2 .and. masterProc) print *,"Adding NEAR null space"
-       call SNESGetKSP(mysnes, myksp, ierr)
-       call KSPSetUp(myksp, ierr)
-       call KSPGetPC(myksp, preconditionerContext, ierr)
+!!$       call SNESGetKSP(mysnes, myksp, ierr)
+!!$       call KSPSetUp(myksp, ierr)
+!!$       call KSPGetPC(myksp, preconditionerContext, ierr)
+       call KSPSetUp(inner_KSP, ierr)
        allocate(sub_ksps(Nspecies*Nx+1))
-       call PCFieldSplitGetSubKSP(preconditionerContext, num_fieldsplits, sub_ksps, ierr)
+       !call PCFieldSplitGetSubKSP(preconditionerContext, num_fieldsplits, sub_ksps, ierr)
+       call PCFieldSplitGetSubKSP(inner_preconditioner, num_fieldsplits, sub_ksps, ierr)
        do j = 1,Nspecies*Nx
           call KSPGetOperators(sub_ksps(j), sub_Amat, sub_Pmat, ierr)
           print *,"Does sub_Amat==sub_Pmat?",sub_Amat==sub_Pmat

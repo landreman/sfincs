@@ -1,6 +1,6 @@
 # -*- mode: makefile -*-
 
-OBJ_FILES = apply_dense_terms.o ChebyshevGrid.o ChebyshevInterpolationMatrix.o \
+OBJ_FILES = apply_dense_terms.o apply_preconditioner.o ChebyshevGrid.o ChebyshevInterpolationMatrix.o \
 	  createGrids.o diagnostics.o evaluateJacobian.o evaluateResidual.o geometry.o \
 	  globalVariables.o indices.o polynomialDiffMatrices.o polynomialInterpolationMatrix.o \
 	  populateMatrix.o preallocateMatrix.o quadpack.o radialCoordinates.o readInput.o sfincs.o solver.o sparsify.o \
@@ -9,6 +9,7 @@ OBJ_FILES = apply_dense_terms.o ChebyshevGrid.o ChebyshevInterpolationMatrix.o \
 
 # Dependencies:
 apply_dense_terms.o: globalVariables.o indices.o
+apply_preconditioner.o: globalVariables.o
 ChebyshevGrid.o: 
 ChebyshevInterpolationMatrix.o: 
 createGrids.o: globalVariables.o polynomialDiffMatrices.o xGrid.o geometry.o indices.o # export_f.o

@@ -22,10 +22,10 @@ module solver
 
     PetscErrorCode :: ierr
     Vec :: solutionVec, residualVec
-    Mat :: matrix, preconditionerMatrix
+    Mat :: matrix  !, preconditionerMatrix
     SNES :: mysnes
-    KSP :: KSPInstance
-    PC :: preconditionerContext, sub_preconditioner
+    KSP :: outer_KSP
+    PC :: outer_preconditioner, sub_preconditioner
     integer :: numRHSs
     SNESConvergedReason :: reason
     KSPConvergedReason :: KSPReason
@@ -46,6 +46,7 @@ module solver
     MatNullSpace :: nullspace
 
     external apply_Jacobian
+    external apply_preconditioner
 
 !!Following three lines added by AM 2016-07-06
 #if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR > 6))
@@ -55,7 +56,7 @@ module solver
     external evaluateJacobian, evaluateResidual, diagnosticsMonitor
 
     if (masterProc) then
-       print *,"Entering main solver loop."
+       print *,"Setting up PETSc solver."
     end if
     iterationForMatrixOutput = 0
 
@@ -79,24 +80,33 @@ module solver
          PETSC_NULL_OBJECT,matrix,ierr)
     call MatShellSetOperation(matrix,MATOP_MULT,apply_Jacobian,ierr)
 
-    call preallocateMatrix(preconditionerMatrix, 0)
-    call SNESSetJacobian(mysnes, matrix, preconditionerMatrix, evaluateJacobian, PETSC_NULL_OBJECT, ierr)
+    !call preallocateMatrix(preconditionerMatrix, 0)
+    !call SNESSetJacobian(mysnes, matrix, preconditionerMatrix, evaluateJacobian, PETSC_NULL_OBJECT, ierr)
+    call preallocateMatrix(Mat_for_preconditioner, 0)
+    call SNESSetJacobian(mysnes, matrix, Mat_for_preconditioner, evaluateJacobian, PETSC_NULL_OBJECT, ierr)
 
-    call SNESGetKSP(mysnes, KSPInstance, ierr)
+    call SNESGetKSP(mysnes, outer_KSP, ierr)
+    call KSPGetPC(outer_KSP, outer_preconditioner, ierr)
+    call PCSetType(outer_preconditioner, PCSHELL, ierr)
+    call PCShellSetApply(outer_preconditioner, apply_preconditioner, ierr)
 
-    call KSPGetPC(KSPInstance, preconditionerContext, ierr)
+    call KSPCreate(MPIComm, inner_ksp, ierr)
+    call KSPSetType(inner_ksp, KSPPREONLY, ierr)
+    call KSPGetPC(inner_ksp, inner_preconditioner, ierr)
+    call KSPSetOperators(inner_ksp, Mat_for_preconditioner, Mat_for_preconditioner, ierr)
+
     select case (preconditioning_option)
     case (1)
        ! Direct solver
        fieldsplit = .false.
-       call PCSetType(preconditionerContext, PCLU, ierr)
-       call KSPSetType(KSPInstance, KSPGMRES, ierr)   ! Set the Krylov solver algorithm to GMRES
-       call KSPGMRESSetRestart(KSPInstance, 2000, ierr)
+       call PCSetType(inner_preconditioner, PCLU, ierr)
+       call KSPSetType(outer_KSP, KSPGMRES, ierr)   ! Set the Krylov solver algorithm to GMRES
+       call KSPGMRESSetRestart(outer_KSP, 2000, ierr)
 
        if (isAParallelDirectSolverInstalled) then
           select case (whichParallelSolverToFactorPreconditioner)
           case (1)
-             call PCFactorSetMatSolverPackage(preconditionerContext, MATSOLVERMUMPS, ierr)
+             call PCFactorSetMatSolverPackage(inner_preconditioner, MATSOLVERMUMPS, ierr)
              if (masterProc) then
                 print *,"We will use mumps to factorize the preconditioner."
              end if
@@ -106,7 +116,7 @@ module solver
              call PetscOptionsInsertString("-mat_mumps_cntl_1 1e-6 -mat_mumps_icntl_4 2", ierr)
 #endif
           case (2)
-             call PCFactorSetMatSolverPackage(preconditionerContext, MATSOLVERSUPERLU_DIST, ierr)
+             call PCFactorSetMatSolverPackage(inner_preconditioner, MATSOLVERSUPERLU_DIST, ierr)
              if (masterProc) then
                 print *,"We will use superlu_dist to factorize the preconditioner."
              end if
@@ -132,32 +142,32 @@ module solver
           ! natural (i.e. no reordering) is horrible since the LU factors are very dense.
           ! nd, rcm, and qmd all seem to work with some examples but fail with others. You should try one of these 3 options.
           ! 1wd seems to use more memory.
-          call PCFactorSetMatOrderingType(preconditionerContext, MATORDERINGRCM, ierr)
-          call PCFactorReorderForNonzeroDiagonal(preconditionerContext, 1d-12, ierr) 
-          call PCFactorSetZeroPivot(preconditionerContext, 1d-200, ierr) 
+          call PCFactorSetMatOrderingType(inner_preconditioner, MATORDERINGRCM, ierr)
+          call PCFactorReorderForNonzeroDiagonal(inner_preconditioner, 1d-12, ierr) 
+          call PCFactorSetZeroPivot(inner_preconditioner, 1d-200, ierr) 
        end if
 
        ! End of steps used for direct LU factorization of the preconditioner.
 
-    case (2,3,4)
+    case (2,3,4,5,6,7)
        ! Fieldsplit
        fieldsplit = .true.
        if (masterProc) then
           print *,"Setting up PETSc FIELDSPLIT preconditioning"
           select case (preconditioning_option)
-          case (2)
+          case (2,5)
              print *,"  Using PETSc's GAMG (algebraic multigrid) on the blocks for the kinetic equation."
-          case (3)
+          case (3,6)
              print *,"  Using Hypre BoomerAMG (algebraic multigrid) on the blocks for the kinetic equation."
-          case (4)
+          case (4,7)
              print *,"  Using LU factorization on the blocks for the kinetic equation."
           case default
              print *,"Error! Invalid preconditioning_option:",preconditioning_option
              stop
           end select
        end if
-       call PCSetType(preconditionerContext, PCFIELDSPLIT, ierr)
-       call PCFIELDSPLITSetType(preconditionerContext, PC_COMPOSITE_ADDITIVE, ierr)
+       call PCSetType(inner_preconditioner, PCFIELDSPLIT, ierr)
+       call PCFIELDSPLITSetType(inner_preconditioner, PC_COMPOSITE_ADDITIVE, ierr)
 
        allocate(ISs(Nx*Nspecies+1))
        allocate(is_array(matrixSize))
@@ -177,8 +187,8 @@ module solver
              ! Check how to handle parallelization!!
              call ISCreateGeneral(PETSC_COMM_WORLD,Ntheta*Nzeta*Nxi,IS_array,PETSC_COPY_VALUES,ISs(IS_index),ierr)
              !call ISView(ISs(IS_index),PETSC_VIEWER_STDOUT_WORLD,ierr)
-             !call PCFieldSplitSetIS(preconditionerContext,PETSC_NULL_CHARACTER,ISs(IS_index),ierr)
-             call PCFieldSplitSetIS(preconditionerContext,'f',ISs(IS_index),ierr)
+             !call PCFieldSplitSetIS(inner_preconditioner,PETSC_NULL_CHARACTER,ISs(IS_index),ierr)
+             call PCFieldSplitSetIS(inner_preconditioner,'f',ISs(IS_index),ierr)
              IS_index = IS_index + 1
           end do
        end do
@@ -197,7 +207,7 @@ module solver
           end do
           call ISCreateGeneral(PETSC_COMM_WORLD,2*Nspecies,IS_array,PETSC_COPY_VALUES,ISs(IS_index),ierr)
           call ISView(ISs(IS_index),PETSC_VIEWER_STDOUT_WORLD,ierr)
-          call PCFieldSplitSetIS(preconditionerContext,'constraints',ISs(IS_index),ierr)
+          call PCFieldSplitSetIS(inner_preconditioner,'constraints',ISs(IS_index),ierr)
        case (2)
           IS_array_index = 1
           do ispecies = 1,Nspecies
@@ -208,17 +218,17 @@ module solver
           end do
           call ISCreateGeneral(PETSC_COMM_WORLD,Nx*Nspecies,IS_array,PETSC_COPY_VALUES,ISs(IS_index),ierr)
           call ISView(ISs(IS_index),PETSC_VIEWER_STDOUT_WORLD,ierr)
-          call PCFieldSplitSetIS(preconditionerContext,'constraints',ISs(IS_index),ierr)
+          call PCFieldSplitSetIS(inner_preconditioner,'constraints',ISs(IS_index),ierr)
        case default
           if (masterProc) print *,"Invalid constraintScheme:",constraintScheme
           stop
        end select
 
-       call KSPSetType(KSPInstance, KSPFGMRES, ierr)   ! Set the Krylov solver algorithm to Flexible GMRES
-       call KSPGMRESSetRestart(KSPInstance, 200, ierr)
+       call KSPSetType(outer_KSP, KSPFGMRES, ierr)   ! Set the Krylov solver algorithm to Flexible GMRES
+       call KSPGMRESSetRestart(outer_KSP, 200, ierr)
 
        allocate(sub_ksps(Nspecies*Nx+1))
-       call PCFieldSplitGetSubKSP(preconditionerContext, num_fieldsplits, sub_ksps, ierr)
+       call PCFieldSplitGetSubKSP(inner_preconditioner, num_fieldsplits, sub_ksps, ierr)
        if (constraintScheme .ne. 0) then
           ! Set the source/constraint diagonal block to use Jacobi
           j = Nspecies*Nx + 1
@@ -242,11 +252,11 @@ module solver
 
           call KSPGetPC(sub_ksps(j), sub_preconditioner, ierr)
           select case (preconditioning_option)
-          case (2)
+          case (2,5)
              call PCSetType(sub_preconditioner, PCGAMG, ierr)
-          case (3)
+          case (3,6)
              call PCSetType(sub_preconditioner, PCHYPRE, ierr)
-          case (4)
+          case (4,7)
              call PCSetType(sub_preconditioner, PCLU, ierr)
              if (isAParallelDirectSolverInstalled) then
                 select case (whichParallelSolverToFactorPreconditioner)
@@ -266,18 +276,18 @@ module solver
        stop
     end select
 
-    call KSPSetTolerances(KSPInstance, solverTolerance, PETSC_DEFAULT_REAL, &
+    call KSPSetTolerances(outer_KSP, solverTolerance, PETSC_DEFAULT_REAL, &
          PETSC_DEFAULT_REAL, PETSC_DEFAULT_INTEGER, ierr)
 
     ! Allow options to be controlled using command-line flags:
-    call KSPSetFromOptions(KSPInstance, ierr)
+    call KSPSetFromOptions(outer_KSP, ierr)
 
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 7))
-    call KSPMonitorSet(KSPInstance, KSPMonitorDefault, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
+    call KSPMonitorSet(outer_KSP, KSPMonitorDefault, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
 #else
     call PetscViewerAndFormatCreate(PETSC_VIEWER_STDOUT_WORLD, PETSC_VIEWER_DEFAULT, vf, ierr) !!Added by AM 2016-07-06
-    !call KSPMonitorSet(KSPInstance, KSPMonitorDefault, vf, PetscViewerAndFormatDestroy, ierr) !!Added by AM 2016-07-06 
-    call KSPMonitorSet(KSPInstance, KSPMonitorTrueResidualNorm, vf, PetscViewerAndFormatDestroy, ierr) !!Added by AM 2016-07-06 
+    !call KSPMonitorSet(outer_KSP, KSPMonitorDefault, vf, PetscViewerAndFormatDestroy, ierr) !!Added by AM 2016-07-06 
+    call KSPMonitorSet(outer_KSP, KSPMonitorTrueResidualNorm, vf, PetscViewerAndFormatDestroy, ierr) !!Added by AM 2016-07-06 
 #endif
     
     ! Tell PETSc to call the diagnostics subroutine at each iteration of SNES:
@@ -289,8 +299,8 @@ module solver
        ! In this case the associated code appears in evaluateJacobian.F90
 #else
        ! Syntax for PETSc version 3.5 and later
-       call KSPSetReusePreconditioner(KSPInstance, PETSC_TRUE, ierr)
-       call PCSetReusePreconditioner(preconditionerContext, PETSC_TRUE, ierr)
+       call KSPSetReusePreconditioner(outer_KSP, PETSC_TRUE, ierr)
+       call PCSetReusePreconditioner(inner_preconditioner, PETSC_TRUE, ierr)
 #endif
     end if
 
@@ -344,8 +354,8 @@ module solver
        ! Syntax for PETSc versions up through 3.4
 #else
        ! These commands must be AFTER SNESSetFromOptions or else there is a seg fault.
-       call PCFactorSetUpMatSolverPackage(preconditionerContext,ierr)
-       call PCFactorGetMatrix(preconditionerContext,factorMat,ierr)
+       call PCFactorSetUpMatSolverPackage(inner_preconditioner,ierr)
+       call PCFactorGetMatrix(inner_preconditioner,factorMat,ierr)
        mumps_which_cntl = 1
        mumps_value = 1.e-6
        call MatMumpsSetCntl(factorMat,mumps_which_cntl,mumps_value,ierr)
@@ -367,7 +377,7 @@ module solver
 !    if (fieldsplit) then
 !       print *,"AAAAAAAAAAAAA"
 !       call SNESSetUp(mysnes, ierr)
-!       call KSPSetUp(KSPInstance, ierr)
+!       call KSPSetUp(outer_KSP, ierr)
 !!$       do j = 1,Nspecies*Nx
 !!$          call KSPGetOperators(sub_ksps(j), sub_Amat, sub_Pmat, ierr)
 !!$          print *,"Does sub_Amat==sub_Pmat?",sub_Amat==sub_Pmat
@@ -474,16 +484,16 @@ module solver
        call populateMatrix(Mat_for_Jacobian, 1, solutionVec)
 
        ! Build the preconditioner:
-       call populateMatrix(preconditionerMatrix,0,dummyVec)
+       call populateMatrix(Mat_for_preconditioner,0,dummyVec)
 
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))                                                                                                                       
        ! Syntax for PETSc versions up through 3.4
-       call KSPSetOperators(KSPInstance, matrix, preconditionerMatrix, SAME_PRECONDITIONER, ierr)
+       call KSPSetOperators(outer_KSP, matrix, Mat_for_preconditioner, SAME_PRECONDITIONER, ierr)
 #else
        ! Syntax for PETSc version 3.5 and later
-       call KSPSetOperators(KSPInstance, matrix, preconditionerMatrix, ierr)
-       call KSPSetReusePreconditioner(KSPInstance, PETSC_TRUE, ierr)
-       call PCSetReusePreconditioner(preconditionerContext, PETSC_TRUE, ierr)
+       call KSPSetOperators(outer_KSP, matrix, Mat_for_preconditioner, ierr)
+       call KSPSetReusePreconditioner(outer_KSP, PETSC_TRUE, ierr)
+       call PCSetReusePreconditioner(inner_preconditioner, PETSC_TRUE, ierr)
 #endif
 
        select case (RHSMode)
@@ -553,7 +563,7 @@ module solver
           call PetscTime(time1, ierr)
           if (solveSystem) then
              ! All the magic happens in this next line!
-             call KSPSolve(KSPInstance,residualVec, solutionVec, ierr)
+             call KSPSolve(outer_KSP,residualVec, solutionVec, ierr)
           end if
 
           call PetscTime(time2, ierr)
@@ -562,7 +572,7 @@ module solver
           end if
           call PetscTime(time1, ierr)
 
-          call checkIfKSPConverged(KSPInstance)
+          call checkIfKSPConverged(outer_KSP)
 
           ! Compute flows, fluxes, etc.:
           call diagnostics(solutionVec, whichRHS)
@@ -590,7 +600,7 @@ module solver
     ! A seg fault occurs in nonlinear runs if we call MatDestroy here, since the matrix was already destroyed (and a different Mat created) in evaluateJacobian().
 !!$    call MatDestroy(matrix, ierr)
 !!$    if (useIterativeLinearSolver) then
-!!$       call MatDestroy(preconditionerMatrix, ierr)
+!!$       call MatDestroy(Mat_for_preconditioner, ierr)
 !!$    end if
     call SNESDestroy(mysnes,ierr)
 

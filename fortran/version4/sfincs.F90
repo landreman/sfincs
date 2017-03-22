@@ -23,6 +23,8 @@ program sfincs
   PetscLogDouble :: startTime, time1
 
   call PetscInitialize(PETSC_NULL_CHARACTER, ierr)
+!  call PetscViewerPushFormat(PETSC_VIEWER_STDOUT_WORLD,PETSC_VIEWER_ASCII_INFO_DETAIL, ierr) ! Causes more detailed output from MatView.
+  call PetscViewerPushFormat(PETSC_VIEWER_STDOUT_WORLD,PETSC_VIEWER_ASCII_MATLAB, ierr) ! Causes more detailed output from MatView.
 
   call MPI_COMM_SIZE(PETSC_COMM_WORLD, numProcs, ierr)
   call MPI_COMM_RANK(PETSC_COMM_WORLD, myRank, ierr)
