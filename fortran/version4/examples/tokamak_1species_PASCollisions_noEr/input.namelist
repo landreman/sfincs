@@ -64,13 +64,10 @@
   ExB_option = 1
 
   includePhi1 = .false.
-
-!  constraintScheme = 0
 /
 
 &resolutionParameters
   Ntheta = 21
-!  Ntheta = 9
 !ss NthetaMinFactor = 0.7
 !ss NthetaMaxFactor = 2
 !ss NthetaNumRuns = 5
@@ -81,7 +78,6 @@
 !ss NzetaNumRuns = 5
 
   Nxi = 31
-!  Nxi = 6
 !ss NxiMinFactor = 0.8
 !ss NxiMaxFactor = 2
 !ss NxiNumRuns = 6
@@ -103,13 +99,13 @@
 !xi_derivative_option=4
 !pitch_angle_scattering_option=2
 
-null_space_option=0
+!null_space_option=0
 ! 0 = no null space attached
 ! 1 = null space attached
 ! 2 = near null space attached
 
-spatial_scaling_option=4
-constraint_scaling_option=1
+!spatial_scaling_option=4
+!constraint_scaling_option=1
 
 !x_scaling_option=2
 /

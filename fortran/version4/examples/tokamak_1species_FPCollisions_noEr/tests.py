@@ -11,7 +11,7 @@ desiredTolerance = 0.002
 
 numFailures = 0
 
-numFailures += shouldBe("FSABFlow[0,0;;;]", 3.31053540633345494E-002, desiredTolerance)
-numFailures += shouldBe("heatFlux_vm_psiHat[0,0;;;]", 9.80304762108666200E-008, desiredTolerance)
+numFailures += shouldBe("FSABFlow[0,0;;;]", 0.0331076, desiredTolerance)
+numFailures += shouldBe("heatFlux_vm_psiHat[0,0;;;]", 9.68504e-08, desiredTolerance)
 
 exit(numFailures > 0)

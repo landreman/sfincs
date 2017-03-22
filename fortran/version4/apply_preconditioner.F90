@@ -18,7 +18,6 @@
     PC :: outer_preconditioner
     Vec :: input_Vec, output_Vec
     KSPConvergedReason :: reason
-    logical :: first_call = .true.
     integer, dimension(:), allocatable :: IS_array
     integer :: IS_array_index, ix, ispecies, ixi, itheta, izeta, j
     ! For these next variables, the 'save' attribute means these variables can be initialized in the first pass
@@ -26,6 +25,7 @@
     KSP, save :: constraints_times_sources_KSP
     Mat, save :: sources_Mat, constraints_Mat, constraints_times_sources_Mat
     IS, save :: IS_all, IS_source_constraint
+    logical, save :: first_call = .true.
     Vec :: temp_Vec_1, temp_Vec_2, ainv_times_stuff_Vec, c_times_r_Vec, y_Vec, s_Vec
     PC :: constraints_times_sources_PC
     logical :: verbose = .false.
