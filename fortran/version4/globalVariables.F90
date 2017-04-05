@@ -346,7 +346,9 @@ module globalVariables
   PetscScalar :: ddpsiN2ddpsiHat, ddrHat2ddpsiHat, ddrN2ddpsiHat
   PetscScalar :: ddpsiHat2ddpsiN, ddpsiHat2ddrHat, ddpsiHat2ddrN
 
-  PetscLogDouble :: elapsedTime
+  PetscLogDouble :: sfincs_start_time, iteration_start_time
+  PetscLogDouble :: time_for_iteration
+  integer :: number_of_KSP_iterations
   integer :: didLinearCalculationConverge, didNonlinearCalculationConverge
   integer :: iterationForMatrixOutput, iterationForResidualOutput = 0, iterationForStateVectorOutput = 0
   logical :: firstMatrixCreation

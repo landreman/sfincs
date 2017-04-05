@@ -64,6 +64,8 @@
   useDKESExBDrift = .false.
 
   includePhi1 = .false.
+
+constraintScheme=0
 /
 
 &resolutionParameters

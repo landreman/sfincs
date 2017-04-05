@@ -23,6 +23,8 @@ program sfincs
   PetscLogDouble :: startTime, time1
 
   call PetscInitialize(PETSC_NULL_CHARACTER, ierr)
+  call PetscTime(sfincs_start_time, ierr)
+  iteration_start_time = sfincs_start_time
   call PetscViewerPushFormat(PETSC_VIEWER_STDOUT_WORLD,PETSC_VIEWER_ASCII_INFO_DETAIL, ierr) ! Causes more detailed output from MatView.
 !  call PetscViewerPushFormat(PETSC_VIEWER_STDOUT_WORLD,PETSC_VIEWER_ASCII_MATLAB, ierr) ! Causes more detailed output from MatView.
 

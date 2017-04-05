@@ -111,6 +111,7 @@ module writeHDF5Output
 
   interface writeHDF5ExtensibleField
      module procedure writeHDF5ExtensibleField1
+     module procedure writeHDF5ExtensibleField1_int
      module procedure writeHDF5ExtensibleField2
      module procedure writeHDF5ExtensibleField3
      module procedure writeHDF5ExtensibleField4
@@ -692,7 +693,11 @@ contains
                "Lagrange multiplier associated with the constraint that <Phi_1>=0. Should be within machine precision of 0.")
        end if
 
-       call writeHDF5ExtensibleField(iterationNum, "elapsed time (s)", elapsedTime, ARRAY_ITERATION, "")
+       call writeHDF5ExtensibleField(iterationNum, "time_for_iteration", time_for_iteration, ARRAY_ITERATION, "Number of seconds for this iteration" // &
+            " (either 1 iteration of the nonlinear solver SNES, or the solve for 1 right-hand-side of the transport matrix.)")
+
+       call writeHDF5ExtensibleField(iterationNum, "number_of_KSP_iterations", number_of_KSP_iterations, ARRAY_ITERATION, "Number of iterations of the PETSC" // &
+            " linear solver (KSP) for this iteration of the nonlinear solver SNES, or for this column of the transport matrix.")
 
 !!$       if (export_full_f) then
 !!$          call writeHDF5ExtensibleField(iterationNum,"full_f", full_f, ARRAY_EXPORT_F, &
@@ -979,6 +984,9 @@ contains
 
     implicit none
 
+    PetscLogDouble :: end_time, total_time
+    PetscErrorCode :: ierr
+
     integer :: rank
 
     if (masterProc) then
@@ -996,6 +1004,12 @@ contains
 
        call writeHDF5Field("finished", integerToRepresentTrue, &
             "If this variable exists in sfincsOutput.h5, then SFINCS reached the end of all requested computations and exited gracefully.")
+
+       call PetscTime(end_time, ierr)
+       total_time = end_time - sfincs_start_time
+       if (masterProc) print *,"Total time for sfincs:",total_time,' seconds.'
+       call writeHDF5Field("total_time", total_time, &
+            "Total number of seconds it took for sfincs to execute, including all iterations.")
 
        !!Added by AM 2016-08!!
        if (includePhi1) then
@@ -1403,6 +1417,67 @@ contains
     call h5dclose_f(dsetID, HDF5Error)
 
   end subroutine writeHDF5ExtensibleField1
+
+  ! -----------------------------------------------------------------------------------
+
+  subroutine writeHDF5ExtensibleField1_int(iterationNum, arrayName, data, arrayType, description)
+
+    implicit none
+
+    integer, parameter :: rank = 1
+    integer, intent(in) :: iterationNum
+    character(len=*) :: arrayName
+    integer(HID_T) :: dsetID
+    integer(HID_T) :: dspaceID, memspaceID, originalDspaceID
+    integer :: temp, arrayType
+    character(len=*) :: description
+    integer :: data
+    integer(HSIZE_T) :: offset(rank)
+    integer(HSIZE_T), dimension(rank) :: dim, dimForChunk
+    integer(HID_T) :: chunkProperties
+    character(len=100) :: label1
+
+    offset = (/ iterationNum-1 /)
+
+    select case (arrayType)
+    case (ARRAY_ITERATION)
+       originalDspaceID = dspaceIDForIteration
+       dim = dimForIteration
+       dimForChunk = dimForIterationChunk
+       chunkProperties = pForIteration
+       label1 = "iteration"
+    case default
+       print *,"This is writeHDF5ExtensibleField1"
+       print *,"Error! Invalid arrayType:",arrayType
+       stop
+    end select
+
+    if (iterationNum==1) then
+       call h5dcreate_f(HDF5FileID, arrayName, H5T_NATIVE_INTEGER, originalDspaceID, &
+            dsetID, HDF5Error, chunkProperties)
+
+       call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, &
+            data, dimForSpecies, HDF5Error)
+
+       call h5dsset_label_f(dsetID, 1, trim(label1), HDF5Error)
+       call h5ltset_attribute_string_f(HDF5FileID, arrayName, attribute_name, description, HDF5Error)
+    else
+       ! Extend an existing array in the .h5 file:
+       call h5dopen_f(HDF5FileID, arrayName, dsetID, HDF5Error)
+       call h5dset_extent_f(dsetID, dim, HDF5Error)
+       call h5dget_space_f(dsetID, dspaceID, HDF5Error)
+       call h5sselect_hyperslab_f(dspaceID, H5S_SELECT_SET_F, offset, &
+            dimForChunk, HDF5Error)
+       call h5screate_simple_f(rank, dimForChunk, memspaceID, HDF5Error)
+       call H5dwrite_f(dsetID, H5T_NATIVE_INTEGER, data, dimForChunk, HDF5Error, &
+            memspaceID, dspaceID)
+       call h5sclose_f(dspaceID, HDF5Error)
+       call h5sclose_f(memspaceID, HDF5Error)
+    end if
+
+    call h5dclose_f(dsetID, HDF5Error)
+
+  end subroutine writeHDF5ExtensibleField1_int
 
   ! -----------------------------------------------------------------------------------
 

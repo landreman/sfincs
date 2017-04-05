@@ -528,6 +528,8 @@ module solver
              print *,"################################################################"
           end if
 
+          call PetscTime(iteration_start_time, ierr)
+
           ! To get a transport matrix, change the equilibrium gradients here.
           select case (RHSMode)
           case (2)
@@ -600,7 +602,7 @@ module solver
           call checkIfKSPConverged(outer_KSP)
 
           ! Compute flows, fluxes, etc.:
-          call diagnostics(solutionVec, whichRHS)
+          call diagnostics(outer_KSP, solutionVec, whichRHS)
 
        end do
 

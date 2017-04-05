@@ -29,17 +29,14 @@
        print "(a,es14.7,a)","--------- Residual function norm: ",residual," -----------------------------"
     end if
 
-    if (iterationNum==0) then
-       return
-    end if
-
+    if (iterationNum==0) return
 
     call SNESGetKSP(mysnes, myKSP, ierr)
     call checkIfKSPConverged(myKSP)
 
     iterationForMatrixOutput = iterationNum
     call SNESGetSolution(mysnes, soln, ierr)
-    call diagnostics(soln, iterationNum)
+    call diagnostics(myKSP, soln, iterationNum)
 
   end subroutine diagnosticsMonitor
 
@@ -186,7 +183,7 @@
   ! *******************************************************************************************
   ! *******************************************************************************************
 
-  subroutine diagnostics(solutionWithDeltaF, iterationNum)
+  subroutine diagnostics(myKSP, solutionWithDeltaF, iterationNum)
 
     use globalVariables
     use indices
@@ -225,13 +222,17 @@
     PetscScalar :: factor, factor2, factor_vE, temp1, temp2, temp3
     integer :: itheta1, izeta1, ixi1, ix1
     integer :: itheta2, izeta2, ixi2, ix2
-    PetscLogDouble :: time1, time2
+    PetscLogDouble :: time1, time2, iteration_end_time
     PetscViewer :: viewer
     character(len=200) :: filename
+    KSP :: myKSP
 
     if (masterProc) then
        print *,"Computing diagnostics."
     end if
+
+    call KSPGetIterationNumber(myKSP, number_of_KSP_iterations, ierr)
+    if (masterProc) print *,"number_of_KSP_iterations:",number_of_KSP_iterations
 
     ! Find Phi_1 in the PETSc Vec, and store Phi_1 in a standard Fortran 2D array:
     call extractPhi1(solutionWithDeltaF)
@@ -962,6 +963,10 @@
     call VecDestroy(f0OnProc0, ierr)
     !!!call VecDestroy(expPhi1, ierr) !!Added by AM 2016-06
 
+    call PetscTime(iteration_end_time, ierr)
+    time_for_iteration = iteration_end_time - iteration_start_time
+    if (masterProc) print *,"Time for this iteration:",time_for_iteration," seconds."
+
     ! updateOutputFile should be called by all procs since it contains MPI_Barrier
     ! (in order to be sure the HDF5 file is safely closed before moving on to the next computation.)
     if (RHSMode >1 .and. whichRHS==transportMatrixSize) then
@@ -969,6 +974,9 @@
     else
        call updateOutputFile(iterationNum, .false.)
     end if
+
+    ! Reset the iteration timer to time the next iteration:
+    call PetscTime(iteration_start_time, ierr)
 
     if (saveMatlabOutput) then
        write (filename,fmt="(a,i3.3,a)") trim(MatlabOutputFilename) // "_iteration_", iterationForStateVectorOutput, &
