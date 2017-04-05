@@ -1731,10 +1731,10 @@
        stop
     end select
 
-    if (masterProc) then
-       print *,"Here comes spatial_scaling:"
-       print *,spatial_scaling
-    end if
+!!$    if (masterProc) then
+!!$       print *,"Here comes spatial_scaling:"
+!!$       print *,spatial_scaling
+!!$    end if
 
     allocate(x_scaling(Nx,Nspecies))
     do ispecies = 1,Nspecies

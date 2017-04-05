@@ -1290,38 +1290,55 @@
           ! Force the flux-surface-averaged perturbed density and 
           ! flux-surface-averaged perturbed pressure to be zero.
 
-          do ispecies=1,Nspecies
-             rowIndex1 = getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)
-             rowIndex2 = getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)
-             !do itheta=1,Ntheta
-             do itheta = ithetaMin, ithetaMax
-                !do izeta=1,Nzeta
-                do izeta = izetaMin, izetaMax
-                   do ixi=1,Nxi
+          ! We add these elements using as few calls to MatSetValues as possible, because otherwise PETSc gets really slow.
+
+          j = (ithetaMax-ithetaMin+1)*(izetaMax-izetaMin+1)*Nxi*Nx ! j = number of theta*zeta*xi*x grid points owned by this proc.
+          allocate(values_to_add(j,2))
+          allocate(colIndices(j))
+          allocate(rowIndices(2))
+          index = 1
+          index = 1
+          do ix = 1,Nx
+             do ixi=1,Nxi
+                do itheta = ithetaMin,ithetaMax
+                   do izeta = izetaMin,izetaMax
                       ! The matrix elements must be proportional to sqrt_g,
                       ! but otherwise the row could probably be scaled any way you like. Here we include a factor 1/VPrimeHat so the 
                       ! row is dimensionless and the row sum is O(1), which seems like a reasonable scaling.
                       factor = xiWeights(ixi)*thetaWeights(itheta)*zetaWeights(izeta)*sqrt_g(itheta,izeta)/VPrimeHat
-                      
-                      do ix=1,Nx
-                         colIndex = getIndex(ispecies, ix, ixi, itheta, izeta, BLOCK_F)
-                         
-                         !call MatSetValueSparse(matrix, rowIndex1, colIndex, &
-                         call MatSetValue(matrix, rowIndex1, colIndex, &
-                              x2(ix)*xWeights(ix)*factor, ADD_VALUES, ierr)
-                         
-                         !call MatSetValueSparse(matrix, rowIndex2, colIndex, &
-                         call MatSetValue(matrix, rowIndex2, colIndex, &
-                              x2(ix)*x2(ix)*xWeights(ix)*factor, ADD_VALUES, ierr)
-                      end do
+
+                      values_to_add(index,1) = x2(ix)*xWeights(ix)*factor
+                      values_to_Add(index,2) = x2(ix)*x2(ix)*xWeights(ix)*factor
+                      index = index + 1
                    end do
                 end do
              end do
           end do
+          ! The order of loops here (species,x,xi,theta,zeta) should match the order in get_indices(). Otherwise, matrix assembly gets quite slow.
+          do ispecies=1,Nspecies
+             rowIndices(1) = getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)
+             rowIndices(2) = getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)
+             index = 1
+             ! It is critical that these next loops go in the same order as the loops for populating values_to_add above!
+             do ix=1,Nx
+                do ixi=1,Nxi
+                   do itheta = ithetaMin, ithetaMax
+                      do izeta = izetaMin, izetaMax
+                         colIndices(index) = getIndex(ispecies, ix, ixi, itheta, izeta, BLOCK_F)
+                         index = index + 1
+                      end do
+                   end do
+                end do
+             end do
+             call MatSetValues(matrix, 2, rowIndices, j, colIndices, values_to_add, ADD_VALUES, ierr)
+          end do
+          deallocate(rowIndices,colIndices,values_to_add)
 
        case (2)
           ! Force the flux-surface-averaged distribution function to be zero
           ! at each value of x:
+
+          ! We add these elements using as few calls to MatSetValues as possible, because otherwise PETSc gets really slow.
 
           temp = Ntheta*Nzeta/sum(sqrt_g)
           j = (ithetaMax-ithetaMin+1)*(izetaMax-izetaMin+1)*Nxi ! j = number of theta*zeta*xi grid points owned by this proc.
@@ -1350,10 +1367,12 @@
                 end do
              end do
           end do
+          ! The order of loops here (species,x,xi,theta,zeta) should match the order in get_indices(). Otherwise, matrix assembly gets quite slow.
           do ispecies = 1,Nspecies
              do ix=ixMin,Nx
                 rowIndices = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)
                 index = 1
+                ! It is critical that these next loops go in the same order as the loops for populating values_to_add above!
                 do ixi=1,Nxi
                    do itheta = ithetaMin,ithetaMax
                       do izeta = izetaMin,izetaMax
