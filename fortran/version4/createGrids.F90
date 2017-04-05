@@ -739,15 +739,15 @@
           end if
           stop
        end if
-       if (abs(sum(xiWeights*xi*xi)-2.0/3) > 1.0e-2) then
-          if (masterProc) then
-             print *,"Error! xiWeights*xi*xi does not sum to 2/3!"
-             print *,"xi:",xi
-             print *,"xiWeights:",xiWeights
-             print *,"Sum is",sum(xiWeights*xi*xi)
-          end if
-          stop
-       end if
+!!$       if (abs(sum(xiWeights*xi*xi)-2.0/3) > 1.0e-2) then
+!!$          if (masterProc) then
+!!$             print *,"Error! xiWeights*xi*xi does not sum to 2/3!"
+!!$             print *,"xi:",xi
+!!$             print *,"xiWeights:",xiWeights
+!!$             print *,"Sum is",sum(xiWeights*xi*xi)
+!!$          end if
+!!$          stop
+!!$       end if
 
        ! *******************************************************************************
        ! Handle d/dxi for the pitch angle scattering operator in the main matrix.

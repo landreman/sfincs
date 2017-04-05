@@ -746,7 +746,7 @@ subroutine validateInput()
         print *,"**            Good values for solverTolerance are typically 1e-5 to 1e-7."
         print *,line
         print *,line
-     elseif (solverTolerance > 1e-5) then
+     elseif (solverTolerance > 2e-5) then
         print *,line
         print *,line
         print *,"**   WARNING: You selected a large solverTolerance, which may cause the Krylov/KSP iteration"

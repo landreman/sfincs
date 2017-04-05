@@ -83,6 +83,7 @@
 !ss NxiNumRuns = 6
   
   Nx = 8
+!  Nx = 1
 !ss NxMinFactor = 0.8
 !ss NxMaxFactor = 2
 !ss NxNumRuns = 3
@@ -99,7 +100,7 @@
 !xi_derivative_option=4
 !pitch_angle_scattering_option=2
 
-!null_space_option=0
+null_space_option=0
 ! 0 = no null space attached
 ! 1 = null space attached
 ! 2 = near null space attached
@@ -113,8 +114,8 @@
 &preconditionerOptions
   ! Since the matrix size is so small for this example, we can afford to make the preconditioner matrix
   ! the same as the real system matrix.
-  preconditioner_species = 0
-  preconditioner_x = 0
+!  preconditioner_species = 0
+!  preconditioner_x = 0
 preconditioning_option=6
 ! 1 = no fieldsplit, LU
 ! 2 = fieldsplit, GAMG

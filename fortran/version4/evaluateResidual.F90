@@ -18,7 +18,7 @@
     PetscErrorCode :: ierr
     integer :: userContext(*)
     Vec :: inhomogeneous_terms
-    PetscScalar :: scalar, x_part, factor, x_part_2
+    PetscScalar :: scalar, x_part, factor, x_part_2, species_factor
     integer :: ix, ixi, L, itheta, izeta, ispecies, index
     PetscScalar :: THat, mHat, sqrtTHat, sqrtmHat, dfMdx
     Mat :: residualMatrix
@@ -210,13 +210,13 @@
 
     ! Add the inductive electric field term:
     do ispecies = 1,Nspecies
+       species_factor = sqrt(THats(ispecies)/mHats(ispecies))
        do ix=ixMin,Nx
           do itheta=ithetaMin,ithetaMax
              do izeta = izetaMin,izetaMax
-                !factor = gamma*Zs(ispecies)*x(ix)*exp(-x2(ix))*EParallelHat &
-                !     *nHats(ispecies)*mHats(ispecies)/(pi*sqrtpi*THats(ispecies)*THats(ispecies)*FSABHat2)
-                factor = -gamma*Zs(ispecies)*x(ix)*exp(-x2(ix))*EParallelHat &
-                     *BHat(itheta,izeta)*BHat(itheta,izeta)/(THats(ispecies)*FSABHat2) ! This expression is wrong!!!! 
+                factor = -species_factor*gamma*Zs(ispecies)*x(ix)*exp(-x2(ix))*EParallelHat &
+                     *BHat(itheta,izeta)/(THats(ispecies)*FSABHat2) &
+                     * spatial_scaling(itheta,izeta) * x_scaling(ix,ispecies)
                 do ixi = 1,Nxi
                    index = getIndex(ispecies, ix, ixi, itheta, izeta, BLOCK_F)
                    call VecSetValue(inhomogeneous_terms, index, &

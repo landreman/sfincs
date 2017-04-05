@@ -5,18 +5,14 @@
 #include <petsc/finclude/petscsnesdef.h>
 #endif
 
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
-       ! Syntax for PETSc versions up through 3.4
-  subroutine evaluateJacobian(mysnes, stateVec, jacobian, jacobianPC, flag, userContext, ierr)
-#else
-       ! Syntax for PETSc version 3.5 and later
+  ! Syntax for PETSc version 3.5 and later
   subroutine evaluateJacobian(mysnes, stateVec, jacobian, jacobianPC, userContext, ierr)
-#endif
 
     use petscsnes
     use globalVariables, only: masterProc, firstMatrixCreation, reusePreconditioner, &
          Mat_for_Jacobian, fieldsplit, Nspecies, Nx, null_space_option, &
-         Mat_for_preconditioner, inner_preconditioner, inner_KSP
+         Mat_for_preconditioner, inner_preconditioner, inner_KSP, &
+         myRank
 
     implicit none
 
@@ -25,30 +21,17 @@
     Mat :: jacobian, jacobianPC
     PetscErrorCode :: ierr
     integer :: userContext(*)
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
-    ! Syntax for PETSc versions up through 3.4
-    MatStructure :: flag
-#endif
     KSP :: myksp
     !PC :: preconditionerContext
     KSP, dimension(:), allocatable :: sub_ksps
     Mat :: sub_Amat, sub_Pmat
     MatNullSpace :: nullspace
     integer :: j, num_fieldsplits
+    integer :: firstRowThisProcOwns, lastRowThisProcOwns, num_rows, num_columns
 
     if (masterProc) then
        print *,"evaluateJacobian called."
     end if
-
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
-    ! Syntax for PETSc versions up through 3.4.
-    ! For PETSc versions 3.5 and later, the code related to 'reusePreconditioner' is implemented in solver.F90.
-    if (reusePreconditioner) then
-       flag = SAME_PRECONDITIONER
-    else
-       flag = DIFFERENT_NONZERO_PATTERN
-    end if
-#endif
 
     ! When PETSc assembles a matrix, it reduces the structure of nonzeros to the actual number of nonzeros.
     ! If we try to re-assemble the matrix with additional nonzero entries without first re-allocating space for the nonzeros,
@@ -67,20 +50,28 @@
 
     firstMatrixCreation = .false.
 
+    if (fieldsplit) then
+       call KSPSetUp(inner_KSP, ierr) 
+       allocate(sub_ksps(Nspecies*Nx+1))
+       !call PCFieldSplitGetSubKSP(preconditionerContext, num_fieldsplits, sub_ksps, ierr)
+       call PCFieldSplitGetSubKSP(inner_preconditioner, num_fieldsplits, sub_ksps, ierr)
+       do j = 1,Nspecies*Nx+1
+          call KSPGetOperators(sub_ksps(j), sub_Amat, sub_Pmat, ierr)
+          print *,"Does sub_Amat==sub_Pmat?",sub_Amat==sub_Pmat
+          call MatGetOwnershipRange(sub_Pmat, firstRowThisProcOwns, lastRowThisProcOwns, ierr)
+          call MatGetSize(sub_Pmat, num_rows, num_columns, ierr)
+          print "(a,i2,a,i3,a,i5,a,i5,a,i5)","Fieldsplit ",j,": Proc",myRank," owns indices",firstRowThisProcOwns," to",lastRowThisProcOwns-1," of",num_rows
+       end do
+    end if
+
     if (fieldsplit .and. null_space_option>0) then
        if (null_space_option==1 .and. masterProc) print *,"Adding null space"
        if (null_space_option==2 .and. masterProc) print *,"Adding NEAR null space"
 !!$       call SNESGetKSP(mysnes, myksp, ierr)
 !!$       call KSPSetUp(myksp, ierr)
 !!$       call KSPGetPC(myksp, preconditionerContext, ierr)
-       call KSPSetUp(inner_KSP, ierr)
-       allocate(sub_ksps(Nspecies*Nx+1))
-       !call PCFieldSplitGetSubKSP(preconditionerContext, num_fieldsplits, sub_ksps, ierr)
-       call PCFieldSplitGetSubKSP(inner_preconditioner, num_fieldsplits, sub_ksps, ierr)
+       call MatNullSpaceCreate(PETSC_COMM_WORLD,PETSC_TRUE,0,0,nullspace,ierr)
        do j = 1,Nspecies*Nx
-          call KSPGetOperators(sub_ksps(j), sub_Amat, sub_Pmat, ierr)
-          print *,"Does sub_Amat==sub_Pmat?",sub_Amat==sub_Pmat
-          call MatNullSpaceCreate(PETSC_COMM_WORLD,PETSC_TRUE,0,0,nullspace,ierr)
           select case (null_space_option)
           case (1)
              call MatSetNullSpace(sub_Pmat,nullspace,ierr)
@@ -90,10 +81,10 @@
              print *,"Invalid null_space_option:",null_space_option
              stop
           end select
-          call MatNullSpaceDestroy(nullspace,ierr)
           !print *,"Here comes the Pmat for fieldsplit",j-1
           !call MatView(sub_Pmat,PETSC_VIEWER_STDOUT_WORLD,ierr)
        end do
+       call MatNullSpaceDestroy(nullspace,ierr)
        ! The next lines are temporary:
        j = Nspecies*Nx+1
        call KSPGetOperators(sub_ksps(j), sub_Amat, sub_Pmat, ierr)

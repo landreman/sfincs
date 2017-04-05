@@ -25,9 +25,13 @@
     integer :: iSpeciesA, iSpeciesB, L, itheta, izeta, ixi, ix_row, ix_col, index
     PetscScalar :: factor
     PetscScalar, dimension(:), allocatable :: xi_vector_in, xi_vector_out, species_factor
+    PetscLogEvent :: event
 
     ! Only execute the rest of this subroutine if we need to:
     if (collisionOperator .ne. 0 .or. preconditioner_field_term_xi_option==0) return
+
+    call PetscLogEventRegister('apply_dense_terms', 0, event, ierr)
+    call PetscLogEventBegin(event, ierr)
 
     if (masterProc) print *,"Applying dense terms for whichMatrix=",whichMatrix
     call PetscTime(time1,ierr)
@@ -106,5 +110,7 @@
 
     call PetscTime(time2,ierr)
     if (masterProc) print *,"Total time for apply_dense_terms:",time2-time1
+
+    call PetscLogEventEnd(event, ierr)
 
   end subroutine apply_dense_terms

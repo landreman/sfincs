@@ -23,8 +23,8 @@ program sfincs
   PetscLogDouble :: startTime, time1
 
   call PetscInitialize(PETSC_NULL_CHARACTER, ierr)
-!  call PetscViewerPushFormat(PETSC_VIEWER_STDOUT_WORLD,PETSC_VIEWER_ASCII_INFO_DETAIL, ierr) ! Causes more detailed output from MatView.
-  call PetscViewerPushFormat(PETSC_VIEWER_STDOUT_WORLD,PETSC_VIEWER_ASCII_MATLAB, ierr) ! Causes more detailed output from MatView.
+  call PetscViewerPushFormat(PETSC_VIEWER_STDOUT_WORLD,PETSC_VIEWER_ASCII_INFO_DETAIL, ierr) ! Causes more detailed output from MatView.
+!  call PetscViewerPushFormat(PETSC_VIEWER_STDOUT_WORLD,PETSC_VIEWER_ASCII_MATLAB, ierr) ! Causes more detailed output from MatView.
 
   call MPI_COMM_SIZE(PETSC_COMM_WORLD, numProcs, ierr)
   call MPI_COMM_RANK(PETSC_COMM_WORLD, myRank, ierr)
@@ -111,7 +111,8 @@ program sfincs
      ! Monoenergetic coefficient computation.
      ! Overwrite nu_n and dPhiHatd* using nuPrime and EStar.
 
-     nu_n = nuPrime * B0OverBBar / (GHat + iota * IHat)
+     ! 20170331 MJL: The absolute value below is needed to ensure the matrix remains diagonally dominant if GHat<0. If we use RHSMode=3 for a non-stellarator-symmetric plasma, the coefficients may not be independent of sgn(nu), so some thought should be given to the signs.
+     nu_n = abs(nuPrime * B0OverBBar / (GHat + iota * IHat))
      dPhiHatdpsiHat = 2 / (gamma * Delta) * EStar * iota * B0OverBBar / GHat
   end if
 

@@ -30,7 +30,7 @@ module solver
     SNESConvergedReason :: reason
     KSPConvergedReason :: KSPReason
     PetscLogDouble :: time1, time2
-    integer :: userContext(1)
+    integer :: userContext(1) = 0
     Vec :: dummyVec
     Mat :: factorMat
     PetscInt :: mumps_which_cntl
@@ -44,6 +44,8 @@ module solver
     KSP, dimension(:), allocatable :: sub_ksps
     Mat :: sub_Amat, sub_Pmat
     MatNullSpace :: nullspace
+    Vec :: temp_Vec
+    integer :: fieldsplit_index_min, fieldsplit_index_max
 
     external apply_Jacobian
     external apply_preconditioner
@@ -61,6 +63,7 @@ module solver
     iterationForMatrixOutput = 0
 
     call PetscOptionsInsertString(PETSC_NULL_OBJECT,"-options_left -snes_view", ierr)
+!    call PetscOptionsInsertString(PETSC_NULL_OBJECT,"-options_left -snes_view -log_summary", ierr)
 
     call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, solutionVec, ierr)
     call VecDuplicate(solutionVec, residualVec, ierr)
@@ -69,19 +72,17 @@ module solver
     call init_f0()
 
     call SNESCreate(MPIComm, mysnes, ierr)
+    call SNESAppendOptionsPrefix(mysnes, 'outer_', ierr)
     call SNESSetFunction(mysnes, residualVec, evaluateResidual, PETSC_NULL_OBJECT, ierr)
 
     firstMatrixCreation = .true.
 
     ! Create the Mat object for the Jacobian
-    !call preallocateMatrix(matrix, 1)
     call VecGetLocalSize(solutionVec,VecLocalSize,ierr)
     call MatCreateShell(PETSC_COMM_WORLD,VecLocalSize,VecLocalSize,matrixSize,matrixSize,&
          PETSC_NULL_OBJECT,matrix,ierr)
     call MatShellSetOperation(matrix,MATOP_MULT,apply_Jacobian,ierr)
 
-    !call preallocateMatrix(preconditionerMatrix, 0)
-    !call SNESSetJacobian(mysnes, matrix, preconditionerMatrix, evaluateJacobian, PETSC_NULL_OBJECT, ierr)
     call preallocateMatrix(Mat_for_preconditioner, 0)
     call SNESSetJacobian(mysnes, matrix, Mat_for_preconditioner, evaluateJacobian, PETSC_NULL_OBJECT, ierr)
 
@@ -91,6 +92,7 @@ module solver
     call PCShellSetApply(outer_preconditioner, apply_preconditioner, ierr)
 
     call KSPCreate(MPIComm, inner_ksp, ierr)
+    call KSPAppendOptionsPrefix(inner_ksp, 'inner_', ierr)
     call KSPSetType(inner_ksp, KSPPREONLY, ierr)
     call KSPGetPC(inner_ksp, inner_preconditioner, ierr)
     call KSPSetOperators(inner_ksp, Mat_for_preconditioner, Mat_for_preconditioner, ierr)
@@ -110,11 +112,6 @@ module solver
              if (masterProc) then
                 print *,"We will use mumps to factorize the preconditioner."
              end if
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
-             ! The functions MatMumpsSetICNTL were introduced in PETSc 3.5.
-             ! For earlier versions, we can achieve a similar result with the following hack:
-             call PetscOptionsInsertString("-mat_mumps_cntl_1 1e-6 -mat_mumps_icntl_4 2", ierr)
-#endif
           case (2)
              call PCFactorSetMatSolverPackage(inner_preconditioner, MATSOLVERSUPERLU_DIST, ierr)
              if (masterProc) then
@@ -172,7 +169,11 @@ module solver
        allocate(ISs(Nx*Nspecies+1))
        allocate(is_array(matrixSize))
        IS_index = 1
-       ! The order of these loops must be consistent with getIndices(), or else PETSc gives an error about the loops not being sorted.
+       ! For splitting the fields among procs, copy the division PETSc uses for a Vec:
+       call VecCreateMPI(MPIComm, PETSC_DECIDE, Ntheta*Nzeta*Nxi, temp_Vec, ierr)
+       call VecGetOwnershipRange(temp_Vec, fieldsplit_index_min, fieldsplit_index_max, ierr)
+       call VecDestroy(temp_Vec, ierr)
+       ! The order of these loops must be consistent with getIndices(), or else PETSc gives an error about the IS values not being sorted.
        do ispecies = 1,Nspecies
           do ix = 1,Nx
              IS_array_index = 1
@@ -184,16 +185,21 @@ module solver
                    end do
                 end do
              end do
-             ! Check how to handle parallelization!!
-             call ISCreateGeneral(PETSC_COMM_WORLD,Ntheta*Nzeta*Nxi,IS_array,PETSC_COPY_VALUES,ISs(IS_index),ierr)
+             select case (fieldsplit_parallelization_option)
+             case (1)
+                call ISCreateGeneral(PETSC_COMM_WORLD,fieldsplit_index_max-fieldsplit_index_min,IS_array(fieldsplit_index_min+1:fieldsplit_index_max),PETSC_COPY_VALUES,ISs(IS_index),ierr)
+             case default
+                print *,"Error! Invalid fieldsplit_parallelization_option:",fieldsplit_parallelization_option
+                stop
+             end select
+             !if (masterProc) print *,"Here comes the IS for fieldsplit index",IS_index
              !call ISView(ISs(IS_index),PETSC_VIEWER_STDOUT_WORLD,ierr)
-             !call PCFieldSplitSetIS(inner_preconditioner,PETSC_NULL_CHARACTER,ISs(IS_index),ierr)
              call PCFieldSplitSetIS(inner_preconditioner,'f',ISs(IS_index),ierr)
              IS_index = IS_index + 1
           end do
        end do
 
-       ! Handle the 'field' for the sources and constraints
+       ! Set up an index set (IS) for the sources and constraints
        select case (constraintScheme)
        case (0)
           ! Nothing to do
@@ -205,7 +211,13 @@ module solver
              IS_array(IS_array_index) = getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)
              IS_array_index = IS_array_index + 1
           end do
-          call ISCreateGeneral(PETSC_COMM_WORLD,2*Nspecies,IS_array,PETSC_COPY_VALUES,ISs(IS_index),ierr)
+          if (myRank == numProcs-1) then
+             ! This rank handles the whole field: 
+             call ISCreateGeneral(PETSC_COMM_WORLD,2*Nspecies,IS_array,PETSC_COPY_VALUES,ISs(IS_index),ierr)
+          else
+             ! Other ranks don't handle any of this field:
+             call ISCreateGeneral(PETSC_COMM_WORLD,0,IS_array,PETSC_COPY_VALUES,ISs(IS_index),ierr)
+          end if
           call ISView(ISs(IS_index),PETSC_VIEWER_STDOUT_WORLD,ierr)
           call PCFieldSplitSetIS(inner_preconditioner,'constraints',ISs(IS_index),ierr)
        case (2)
@@ -216,7 +228,13 @@ module solver
                 IS_array_index = IS_array_index + 1
              end do
           end do
-          call ISCreateGeneral(PETSC_COMM_WORLD,Nx*Nspecies,IS_array,PETSC_COPY_VALUES,ISs(IS_index),ierr)
+          if (myRank == numProcs-1) then
+             ! This rank handles the whole field:
+             call ISCreateGeneral(PETSC_COMM_WORLD,Nx*Nspecies,IS_array,PETSC_COPY_VALUES,ISs(IS_index),ierr)
+          else
+             ! Other ranks don't handle any of this field:
+             call ISCreateGeneral(PETSC_COMM_WORLD,0,IS_array,PETSC_COPY_VALUES,ISs(IS_index),ierr)
+          end if
           call ISView(ISs(IS_index),PETSC_VIEWER_STDOUT_WORLD,ierr)
           call PCFieldSplitSetIS(inner_preconditioner,'constraints',ISs(IS_index),ierr)
        case default
@@ -294,14 +312,12 @@ module solver
     call SNESMonitorSet(mysnes, diagnosticsMonitor, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
 
     if (reusePreconditioner) then
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
-       ! Syntax for PETSc versions up through 3.4
-       ! In this case the associated code appears in evaluateJacobian.F90
-#else
        ! Syntax for PETSc version 3.5 and later
+       ! Do I actually need all 4 of these commands?
        call KSPSetReusePreconditioner(outer_KSP, PETSC_TRUE, ierr)
+       call KSPSetReusePreconditioner(inner_KSP, PETSC_TRUE, ierr)
+       call PCSetReusePreconditioner(outer_preconditioner, PETSC_TRUE, ierr)
        call PCSetReusePreconditioner(inner_preconditioner, PETSC_TRUE, ierr)
-#endif
     end if
 
     ! In older versions of PETSC (either <3.5 or <3.4, I'm not certain)
@@ -373,6 +389,8 @@ module solver
        call MatMumpsSetIcntl(factorMat,mumps_which_cntl,50,ierr)
 #endif
     end if
+
+    call KSPSetFromOptions(inner_ksp, ierr)
 
 !    if (fieldsplit) then
 !       print *,"AAAAAAAAAAAAA"
@@ -478,23 +496,23 @@ module solver
        !  Set f=0:
        call VecSet(solutionVec, zero, ierr)
 
-       ! Build the main linear system matrix:
-       !call populateMatrix(matrix,1,dummyVec)
-       call preallocateMatrix(Mat_for_Jacobian, 1)
-       call populateMatrix(Mat_for_Jacobian, 1, solutionVec)
-
-       ! Build the preconditioner:
-       call populateMatrix(Mat_for_preconditioner,0,dummyVec)
-
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))                                                                                                                       
-       ! Syntax for PETSc versions up through 3.4
-       call KSPSetOperators(outer_KSP, matrix, Mat_for_preconditioner, SAME_PRECONDITIONER, ierr)
-#else
-       ! Syntax for PETSc version 3.5 and later
        call KSPSetOperators(outer_KSP, matrix, Mat_for_preconditioner, ierr)
-       call KSPSetReusePreconditioner(outer_KSP, PETSC_TRUE, ierr)
-       call PCSetReusePreconditioner(inner_preconditioner, PETSC_TRUE, ierr)
-#endif
+
+       ! Call evaluateJacobian, which has the effect of populating the main matrix and preconditioner matrix.
+       call evaluateJacobian(mysnes, solutionVec, matrix, Mat_for_preconditioner, userContext, ierr) ! The Mat arguments are not actually used.
+
+!!$       ! Build the main linear system matrix:
+!!$       !call populateMatrix(matrix,1,dummyVec)
+!!$       call preallocateMatrix(Mat_for_Jacobian, 1)
+!!$       call populateMatrix(Mat_for_Jacobian, 1, solutionVec)
+!!$
+!!$       ! Build the preconditioner:
+!!$       call populateMatrix(Mat_for_preconditioner,0,dummyVec)
+
+       ! Syntax for PETSc version 3.5 and later
+       !call KSPSetOperators(outer_KSP, matrix, Mat_for_preconditioner, ierr)
+       !call KSPSetReusePreconditioner(outer_KSP, PETSC_TRUE, ierr)
+       !call PCSetReusePreconditioner(inner_preconditioner, PETSC_TRUE, ierr)
 
        select case (RHSMode)
        case (2)
@@ -565,6 +583,13 @@ module solver
              ! All the magic happens in this next line!
              call KSPSolve(outer_KSP,residualVec, solutionVec, ierr)
           end if
+
+!!$          if (whichRHS==1) then
+!!$             print *,"Here comes Mat_for_Jacobian:"
+!!$             call MatView(Mat_for_Jacobian, PETSC_VIEWER_STDOUT_WORLD,ierr)
+!!$             print *,"Here comes Mat_for_preconditioner:"
+!!$             call MatView(Mat_for_preconditioner, PETSC_VIEWER_STDOUT_WORLD,ierr)
+!!$          end if
 
           call PetscTime(time2, ierr)
           if (masterProc) then

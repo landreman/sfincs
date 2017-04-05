@@ -41,6 +41,7 @@
     integer :: rowIndex1, rowIndex2, L2 !!Added by AM 2016-03
     integer :: ell, iSpeciesA, iSpeciesB, maxL
     integer, dimension(:), allocatable :: rowIndices, colIndices
+    PetscScalar, dimension(:,:), allocatable :: values_to_add
     PetscScalar, dimension(:,:), allocatable :: d2dx2_to_use, zetaPartOfTerm, thetaPartOfTerm
     PetscScalar, dimension(:,:), allocatable :: fToFInterpolationMatrix
     PetscScalar, dimension(:,:), allocatable :: potentialsToFInterpolationMatrix
@@ -1323,9 +1324,14 @@
           ! at each value of x:
 
           temp = Ntheta*Nzeta/sum(sqrt_g)
-          do itheta = ithetaMin,ithetaMax
-             do izeta = izetaMin,izetaMax
-                do ixi=1,Nxi
+          j = (ithetaMax-ithetaMin+1)*(izetaMax-izetaMin+1)*Nxi ! j = number of theta*zeta*xi grid points owned by this proc.
+          allocate(values_to_add(j,1))
+          allocate(colIndices(j))
+          allocate(rowIndices(1))
+          index = 1
+          do ixi=1,Nxi
+             do itheta = ithetaMin,ithetaMax
+                do izeta = izetaMin,izetaMax
                    ! The matrix elements must be proportional to sqrt_g,
                    ! but otherwise the row could probably be scaled any way you like. Here we include a factor 1/VPrimeHat so the 
                    ! row is dimensionless and the row sum is O(1), which seems like a reasonable scaling.
@@ -1339,18 +1345,27 @@
                    case default
                       print *,"Invalid constraint_scaling_option:",constraint_scaling_option
                    end select
-
-                   do ix=ixMin,Nx
-                      do ispecies = 1,Nspecies
-                         colIndex = getIndex(ispecies, ix, ixi, itheta, izeta, BLOCK_F)
-                         rowIndex = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)
-                         call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                              factor, ADD_VALUES, ierr)
-                      end do
-                   end do
+                   values_to_add(index,1) = factor
+                   index = index + 1
                 end do
              end do
           end do
+          do ispecies = 1,Nspecies
+             do ix=ixMin,Nx
+                rowIndices = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)
+                index = 1
+                do ixi=1,Nxi
+                   do itheta = ithetaMin,ithetaMax
+                      do izeta = izetaMin,izetaMax
+                         colIndices(index) = getIndex(ispecies, ix, ixi, itheta, izeta, BLOCK_F)
+                         index = index + 1
+                      end do
+                   end do
+                end do
+                call MatSetValues(matrix, 1, rowIndices, j, colIndices, values_to_add, ADD_VALUES, ierr)
+             end do
+          end do
+          deallocate(values_to_add,rowIndices,colIndices)
 
           if (pointAtX0) then
              ! If the "normal" <f>=0 constraint is imposed at x=0, it gives a singular matrix.
