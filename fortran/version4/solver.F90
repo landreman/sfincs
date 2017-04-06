@@ -62,8 +62,7 @@ module solver
     end if
     iterationForMatrixOutput = 0
 
-    call PetscOptionsInsertString(PETSC_NULL_OBJECT,"-options_left -snes_view", ierr)
-!    call PetscOptionsInsertString(PETSC_NULL_OBJECT,"-options_left -snes_view -log_summary", ierr)
+    call PetscOptionsInsertString(PETSC_NULL_OBJECT,"-options_left", ierr) ! This helps for spotting misspelled options!
 
     call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, solutionVec, ierr)
     call VecDuplicate(solutionVec, residualVec, ierr)
@@ -165,6 +164,15 @@ module solver
        end if
        call PCSetType(inner_preconditioner, PCFIELDSPLIT, ierr)
        call PCFIELDSPLITSetType(inner_preconditioner, PC_COMPOSITE_ADDITIVE, ierr)
+
+       if (preconditioning_option==2 .or. preconditioning_option==5) then
+          ! With GAMG, it seems necessary to change the 'number of smoothing steps' from the default (1) to 0.
+          ! I don't understand at a deep level what this does, but the PETSc manual recommends this change (section 4.4.5 on GAMG)
+          ! for non-symmetric problems, and indeed, this change seems necessary for gamg to work with sfincs.
+          ! There is a command PCGAMGSetNSmooths, but it does not seem to work. Looking at src/ksp/pc/impls/gamg/agg.c
+          ! it appears nsmooths is reset when reading options. Anyhow, the line below seems to work.
+          call PetscOptionsInsertString(PETSC_NULL_OBJECT,"-inner_fieldsplit_f_pc_gamg_agg_nsmooths 0", ierr)
+       end if
 
        allocate(ISs(Nx*Nspecies+1))
        allocate(is_array(matrixSize))
@@ -272,6 +280,9 @@ module solver
           select case (preconditioning_option)
           case (2,5)
              call PCSetType(sub_preconditioner, PCGAMG, ierr)
+             !call PCGAMGSetSymGraph(sub_preconditioner, .true., ierr) ! This GAMG setting seems to be required for >1 proc with a non-symmetric matrix.
+             !call PCGAMGSetNSmooths(sub_preconditioner, 0, ierr) ! I'm not exactly sure what this command does, but the PETSc manual recommends changing the number of smoothing steps from 1 (default) to 0 for non-symmetric problems, and indeed, this change seems necessary for gamg to work with sfincs.
+             call PCGAMGSetThreshold(sub_preconditioner, gamg_threshold, ierr)
           case (3,6)
              call PCSetType(sub_preconditioner, PCHYPRE, ierr)
           case (4,7)

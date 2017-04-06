@@ -178,6 +178,7 @@ module globalVariables
   integer :: constraint_scaling_option = 1
   logical :: fieldsplit = .false.
   integer :: null_space_option=0
+  PetscReal :: gamg_threshold = 0.2
 
   ! ********************************************************
   !

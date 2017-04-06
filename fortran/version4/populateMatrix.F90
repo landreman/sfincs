@@ -225,7 +225,6 @@
        ! Add the d/dzeta term:
        ! *********************************************************
        
-       if (masterProc) print *,"Beginning d/dzeta"
        if ((whichMatrix .ne. 2) .and. (Nzeta > 1)) then
           do izeta_row = izetaMin,izetaMax
              do itheta = ithetaMin,ithetaMax
@@ -271,7 +270,6 @@
        ! To generate an error if these variables are used by mistake later:
        izeta_row = -1
        izeta_col = -1
-       if (masterProc) print *,"Done with d/dzeta"
 
        
        ! *********************************************************

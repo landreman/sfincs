@@ -20,14 +20,18 @@
 # sudo port install py27-scipy +gcc5
 # sudo port install py27-matplotlib
 
-PETSC_DIR=/opt/local/lib/petsc
+#PETSC_DIR=/opt/local/lib/petsc
+
+PETSC_DIR=/Users/mattland/petsc/petsc-3.7.5
+PETSC_ARCH=20170406-16
 
 # The next 2 lines work for PETSc version 3.6.0 and later:
 include ${PETSC_DIR}/lib/petsc/conf/variables
 include ${PETSC_DIR}/lib/petsc/conf/rules
 
 # Any other flags for compiling, such as -I include flags:
-EXTRA_COMPILE_FLAGS = -I${PETSC_DIR}/include -I/opt/local/include -ffree-line-length-none -O0 -g
+#EXTRA_COMPILE_FLAGS = -I${PETSC_DIR}/include -I/opt/local/include -ffree-line-length-none -O0 -g
+EXTRA_COMPILE_FLAGS = -I${PETSC_DIR}/include -I${PETSC_DIR}/${PETSC_ARCH}/include -I/opt/local/include -ffree-line-length-none
 # /opt/local/include is where macports puts the include files for hdf5 and netcdf.
 
 # Any other flags for linking, such as -l library flags:

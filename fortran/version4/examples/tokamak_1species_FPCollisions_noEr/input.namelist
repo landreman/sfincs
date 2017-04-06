@@ -98,7 +98,7 @@
 /
 
 &preconditionerOptions
-preconditioning_option = 6
+preconditioning_option = 5
 /
 
 &export_f

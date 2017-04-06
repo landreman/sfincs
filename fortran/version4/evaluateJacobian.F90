@@ -12,7 +12,7 @@
     use globalVariables, only: masterProc, firstMatrixCreation, reusePreconditioner, &
          Mat_for_Jacobian, fieldsplit, Nspecies, Nx, null_space_option, &
          Mat_for_preconditioner, inner_preconditioner, inner_KSP, &
-         myRank
+         myRank, preconditioning_option
 
     implicit none
 
@@ -21,13 +21,13 @@
     Mat :: jacobian, jacobianPC
     PetscErrorCode :: ierr
     integer :: userContext(*)
-    KSP :: myksp
-    !PC :: preconditionerContext
+    KSP :: myksp, Richardson_ksp
     KSP, dimension(:), allocatable :: sub_ksps
     Mat :: sub_Amat, sub_Pmat
     MatNullSpace :: nullspace
-    integer :: j, num_fieldsplits
+    integer :: j, num_fieldsplits, level, N_levels
     integer :: firstRowThisProcOwns, lastRowThisProcOwns, num_rows, num_columns
+    PC :: gamg_pc
 
     if (masterProc) then
        print *,"evaluateJacobian called."
@@ -60,7 +60,7 @@
           print *,"Does sub_Amat==sub_Pmat?",sub_Amat==sub_Pmat
           call MatGetOwnershipRange(sub_Pmat, firstRowThisProcOwns, lastRowThisProcOwns, ierr)
           call MatGetSize(sub_Pmat, num_rows, num_columns, ierr)
-          print "(a,i2,a,i3,a,i5,a,i5,a,i5)","Fieldsplit ",j,": Proc",myRank," owns indices",firstRowThisProcOwns," to",lastRowThisProcOwns-1," of",num_rows
+          print "(a,i2,a,i3,a,i5,a,i7,a,i7)","Fieldsplit ",j,": Proc",myRank," owns indices",firstRowThisProcOwns," to",lastRowThisProcOwns-1," of",num_rows
        end do
     end if
 
@@ -94,6 +94,23 @@
        deallocate(sub_ksps)
     else
        if (masterProc) print *,"NOT adding null space"
+    end if
+
+
+    if (preconditioning_option==2 .or. preconditioning_option==5) then
+       ! For GAMG, we need to change the sub-KSPs from Chebyshev (which doesn't seem to work for sfincs) to Richardson.
+       ! We put this loop after the addition of the null space because it seems necessary to call KSPSetUp on the gamg block
+       ! before extracting the Chebyshev KSPs inside.
+       do j = 1,Nspecies*Nx
+          call KSPSetUp(sub_ksps(j), ierr)
+          call KSPGetPC(sub_ksps(j), gamg_pc, ierr)
+          call PCMGGetLevels(gamg_pc, N_levels, ierr)
+          if (masterProc) print *,"N_levels=",N_levels
+          do level = 1,N_levels-1 ! Level 0 is the coarse level, and we don't want to change the KSP for that level.
+             call PCMGGetSmoother(gamg_pc, level, Richardson_ksp, ierr)
+             call KSPSetType(Richardson_ksp, KSPRICHARDSON, ierr)
+          end do
+       end do
     end if
 
 !!$    call SNESGetKSP(mysnes, myksp, ierr)
