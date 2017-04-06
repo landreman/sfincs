@@ -46,14 +46,13 @@ module solver
     MatNullSpace :: nullspace
     Vec :: temp_Vec
     integer :: fieldsplit_index_min, fieldsplit_index_max
+#if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR > 6))
+    PetscViewerAndFormat vf 
+#endif
 
     external apply_Jacobian
     external apply_preconditioner
 
-!!Following three lines added by AM 2016-07-06
-#if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR > 6))
-    PetscViewerAndFormat vf !!Added by AM 2016-07-06
-#endif
 
     external evaluateJacobian, evaluateResidual, diagnosticsMonitor
 
@@ -172,6 +171,9 @@ module solver
           ! There is a command PCGAMGSetNSmooths, but it does not seem to work. Looking at src/ksp/pc/impls/gamg/agg.c
           ! it appears nsmooths is reset when reading options. Anyhow, the line below seems to work.
           call PetscOptionsInsertString(PETSC_NULL_OBJECT,"-inner_fieldsplit_f_pc_gamg_agg_nsmooths 0", ierr)
+          ! This next line seems necessary to get gamg to work with >1 proc. A command PCGAMGSetSymGraph exists, but it doesn't
+          ! seem to work, probably for the same reason as nsmooths.
+          call PetscOptionsInsertString(PETSC_NULL_OBJECT,"-inner_fieldsplit_f_pc_gamg_sym_graph 1", ierr)
        end if
 
        allocate(ISs(Nx*Nspecies+1))
@@ -280,7 +282,7 @@ module solver
           select case (preconditioning_option)
           case (2,5)
              call PCSetType(sub_preconditioner, PCGAMG, ierr)
-             !call PCGAMGSetSymGraph(sub_preconditioner, .true., ierr) ! This GAMG setting seems to be required for >1 proc with a non-symmetric matrix.
+             !call PCGAMGSetSymGraph(sub_preconditioner, .false., ierr) ! This GAMG setting seems to be required for >1 proc with a non-symmetric matrix.
              !call PCGAMGSetNSmooths(sub_preconditioner, 0, ierr) ! I'm not exactly sure what this command does, but the PETSc manual recommends changing the number of smoothing steps from 1 (default) to 0 for non-symmetric problems, and indeed, this change seems necessary for gamg to work with sfincs.
              call PCGAMGSetThreshold(sub_preconditioner, gamg_threshold, ierr)
           case (3,6)
