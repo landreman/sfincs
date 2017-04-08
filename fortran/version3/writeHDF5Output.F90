@@ -255,6 +255,7 @@ contains
        call writeHDF5Field("GHat", GHat, "")
        call writeHDF5Field("IHat", IHat, "")
        call writeHDF5Field("iota", iota, "(Rationalized) rotational transform = 1 / (safety factor q)")
+       call writeHDF5Field("diotadpsiHat", diotadpsiHat, "Radial derivative of the rotational transform. This quantity is used only for certain magneticDriftScheme values.")
        call writeHDF5Field("coordinateSystem", coordinateSystem, "")
        call writeHDF5Field("magneticDriftScheme", magneticDriftScheme, "Which version of the poloidal and toroidal magnetic drifts to use.")
        call writeHDF5Field("force0RadialCurrentInEquilibrium", force0RadialCurrentInEquilibrium,&

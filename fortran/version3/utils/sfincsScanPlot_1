@@ -798,7 +798,7 @@ if len(values)>1:
 # Now make the plot
 # ***************************************************
 
-fig = plt.figure(1)
+fig = plt.figure(figsize=(16,8.5))
 fig.patch.set_facecolor('white')
 #ax = plt.axes([0,0,1,1],axisbg='w')
 

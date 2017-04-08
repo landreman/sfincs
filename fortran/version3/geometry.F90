@@ -102,7 +102,7 @@ contains
        NPeriods = vmec%nfp
        psiAHat = vmec%phi(vmec%ns)/(2*pi)
        ! Aminor_p is not set in this format, so we must specify a value in the input namelist.
-       if (aHat-0.5585d+0 < 1e-4 .and. masterProc) then
+       if (abs(aHat-0.5585d+0) < 1e-4 .and. masterProc) then
           print *,"###############################################################################################"
           print *,"WARNING: It appears you have not explicitly set aHat to a value other than the default."
           print *,"This is probably wrong. For geometryScheme=6, aHat is not set using the NEMEC equilibrium file."

@@ -936,8 +936,23 @@ Eqs.~(46--48) in \cite{Sugama2016}. The function $\alpha$
 in Eq.~(48) proportional to the normal curvature, which are the terms
 that need
 to be regularized at $\xi=\pm 1$.\\
-(This {\ttfamily magneticDriftScheme} only works for .bc magnetic
-geometry input files so far)\\
+
+{\ttfamily magneticDriftScheme} = 6: Same as {\ttfamily magneticDriftScheme} 5,
+except that no regularization is applied to the magnetic drift terms multiplying $\partial f/\partial \theta$
+and $\partial f/\partial\zeta$. Regularization is still applied to the magnetic drift term multiplying $\partial f/\partial \xi$.\\
+
+{\ttfamily magneticDriftScheme} = 7: Same as {\ttfamily magneticDriftScheme} 1,
+except the contribution to $\dot{\xi}$ from the magnetic drifts is dropped.\\
+
+{\ttfamily magneticDriftScheme} = 8: Same as {\ttfamily magneticDriftScheme} 1,
+except the magnetic shear term for axisymmetry is added to the coefficient of $\partial f/\partial \zeta$.
+There is no change to the coefficient of $\partial f/\partial\theta.$ This option only makes sense for straight field line coordinates
+and nearly axisymmetric geometry.\\
+
+{\ttfamily magneticDriftScheme} = 9: Same as {\ttfamily magneticDriftScheme} 1,
+except the magnetic shear term for axisymmetry is added to the coefficient of $\partial f/\partial \theta$.
+There is no change to the coefficient of $\partial f/\partial\zeta.$ This option only makes sense for straight field line coordinates
+and nearly axisymmetric geometry.\\
 
 
 }

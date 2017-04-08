@@ -89,6 +89,8 @@ test_make:
 	@echo PETSC_LIB is $(PETSC_LIB)
 	@echo TARGET is $(TARGET)
 	@echo OBJ_FILES is $(OBJ_FILES)
+	@echo PETSC_DIR is $(PETSC_DIR)
+	@echo PETSC_ARCH is $(PETSC_ARCH)
 
 test: $(TARGET)
 	@echo "Beginning functional tests." && cd examples && export SFINCS_RETEST=no && ./runExamples.py

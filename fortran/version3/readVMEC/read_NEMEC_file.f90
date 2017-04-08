@@ -174,6 +174,7 @@
       allocate(hoverr(vmec%ns),fjcuru(vmec%ns),fjcurv(vmec%ns))         
       allocate(hspecw(vmec%ns))
       allocate(vmec%phips(vmec%ns))
+      allocate(vmec%presf(vmec%ns))
 
       !allocate(fsve(0:nsin),hsve(1:nsin))
 
@@ -332,7 +333,13 @@
       vmec%bsubsmns(:,:,1) = hbsubsmns(:,:,2)*1.5_DP - hbsubsmns(:,:,3)*0.5_DP
       vmec%bsubsmnc(:,:,vmec%ns) = hbsubsmnc(:,:,vmec%ns)*1.5_DP - hbsubsmnc(:,:,vmec%ns-1)*0.5_DP
       vmec%bsubsmns(:,:,vmec%ns) = hbsubsmns(:,:,vmec%ns)*1.5_DP - hbsubsmns(:,:,vmec%ns-1)*0.5_DP
+
+      ! Convert pressure from the half to full mesh
+      vmec%presf(2:vmec%ns-1) = (hpres(2:vmec%ns-1) + hpres(3:vmec%ns)) / 2
+      vmec%presf(1) = hpres(2)*1.5_DP - hpres(3)*0.5_DP
+      vmec%presf(vmec%ns) = hpres(vmec%ns)*1.5_DP - hpres(vmec%ns-1)*0.5_DP
       
+
     end subroutine read_nemec_file
 
 !-----------------------------------------------------------------------------!
