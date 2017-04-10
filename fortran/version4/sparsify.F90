@@ -6,6 +6,8 @@ module sparsify
   ! prevents zero entries from being added to the nonzero structure of the matrix, increasing
   ! sparsity.
 
+  use kinds
+
   implicit none
 
 #include "PETScVersions.F90"
@@ -26,11 +28,13 @@ contains
     Mat :: myMat
     integer :: row, col
     InsertMode :: mode
-    PetscScalar :: valueToSet
+    real(prec) :: valueToSet
+    PetscScalar :: valueToSet_PetscScalar
     PetscErrorCode :: err
 
     if (abs(valueToSet) > threshholdForInclusion) then
-       call MatSetValue(myMat, row, col, valueToSet, mode, err)
+       valueToSet_PetscScalar = valueToSet ! Cast type from double to single if needed. 
+       call MatSetValue(myMat, row, col, valueToSet_PetscScalar, mode, err)
     end if
 
   end subroutine MatSetValueSparse
@@ -43,7 +47,8 @@ contains
     Mat :: myMat
     integer :: m, n, row, col
     integer :: idxm(m), idxn(n)
-    PetscScalar :: v(n,m), valueToSet
+    real(prec) :: v(n,m)
+    PetscScalar :: valueToSet
     InsertMode :: mode
     PetscErrorCode :: err
 

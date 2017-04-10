@@ -24,6 +24,7 @@
 
 PETSC_DIR=/Users/mattland/petsc/petsc-3.7.5
 PETSC_ARCH=20170406-16
+#PETSC_ARCH=20170410-01-singlePrecision_soNoHypre
 
 # The next 2 lines work for PETSc version 3.6.0 and later:
 include ${PETSC_DIR}/lib/petsc/conf/variables

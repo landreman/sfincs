@@ -21,6 +21,7 @@ module solver
     implicit none
 
     PetscErrorCode :: ierr
+    PetscScalar :: scalar
     Vec :: solutionVec, residualVec
     Mat :: matrix  !, preconditionerMatrix
     SNES :: mysnes
@@ -52,8 +53,6 @@ module solver
 
     external apply_Jacobian
     external apply_preconditioner
-
-
     external evaluateJacobian, evaluateResidual, diagnosticsMonitor
 
     if (masterProc) then
@@ -307,8 +306,14 @@ module solver
        stop
     end select
 
-    call KSPSetTolerances(outer_KSP, solverTolerance, PETSC_DEFAULT_REAL, &
+    scalar = solverTolerance
+    call KSPSetTolerances(outer_KSP, scalar, PETSC_DEFAULT_REAL, &
          PETSC_DEFAULT_REAL, PETSC_DEFAULT_INTEGER, ierr)
+
+#if defined(PETSC_USE_REAL_SINGLE)
+    ! When using single precision, it sometimes helps to use the gmres setting below that is less susceptible to roundoff error:
+    call KSPGMRESSetCGSRefinementType(outer_KSP, KSP_GMRES_CGS_REFINE_IFNEEDED, ierr)
+#endif
 
     ! Allow options to be controlled using command-line flags:
     call KSPSetFromOptions(outer_KSP, ierr)
@@ -431,7 +436,7 @@ module solver
        ! Single solve, either linear or nonlinear.
 
        !  Set initial guess for the solution:
-       call VecSet(solutionVec, zero, ierr)
+       call VecZeroEntries(solutionVec, ierr)
 
        if (masterProc) then
           print *,"------------------------------------------------------"
@@ -507,7 +512,7 @@ module solver
        ! Do a linear solve for multiple right-hand sides to get the transport matrix.
 
        !  Set f=0:
-       call VecSet(solutionVec, zero, ierr)
+       call VecZeroEntries(solutionVec, ierr)
 
        call KSPSetOperators(outer_KSP, matrix, Mat_for_preconditioner, ierr)
 
@@ -583,11 +588,12 @@ module solver
           ! (-1) * the residual when f=0.
 
           !  Set f=0:
-          call VecSet(solutionVec, zero, ierr)
+          call VecZeroEntries(solutionVec, ierr)
 
           call evaluateResidual(mysnes, solutionVec, residualVec, userContext, ierr)
           ! Multiply the residual by (-1):
-          call VecScale(residualVec, -1d+0, ierr)
+          scalar = -1
+          call VecScale(residualVec, scalar, ierr)
 
           if (masterProc) then
              print *,"Beginning the main solve.  This could take a while ..."
@@ -666,23 +672,23 @@ module solver
 #ifdef PETSC_HAVE_MUMPS
     isAParallelDirectSolverInstalled = .true.
     if (masterProc) then
-       print *,"mumps detected"
+       print *,"mumps detected."
     end if
 #else
     whichParallelSolverToFactorPreconditioner = 2
     if (masterProc) then
-       print *,"mumps not detected"
+       print *,"mumps not detected."
     end if
 #endif
 
 #ifdef PETSC_HAVE_SUPERLU_DIST
     isAParallelDirectSolverInstalled = .true.
     if (masterProc) then
-       print *,"superlu_dist detected"
+       print *,"superlu_dist detected."
     end if
 #else
     if (masterProc) then
-       print *,"superlu_dist not detected"
+       print *,"superlu_dist not detected."
     end if
     if (whichParallelSolverToFactorPreconditioner==2) then
        whichParallelSolverToFactorPreconditioner = 1

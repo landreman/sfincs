@@ -30,30 +30,31 @@
     ! 3 = matrix which multiplies f1 when evaluating the residual
 
     PetscErrorCode :: ierr
-    PetscScalar :: Z, nHat, THat, mHat, sqrtTHat, sqrtMHat, speciesFactor, speciesFactor2, v_s
-    PetscScalar :: T32m, factor, spatial_factor, LFactor, temp, temp1, temp2, xDotFactor, xDotFactor2, stuffToAdd
-    PetscScalar :: factor1, factor2, factorJ1, factorJ2, factorJ3, factorJ4, factorJ5  !!Added by AM 2016-03
-    PetscScalar, dimension(:), allocatable :: xb, expxb2
-    PetscScalar, dimension(:,:), allocatable :: xPartOfXDot_plus, xPartOfXDot_minus, xPartOfXDot
-    !PetscScalar, dimension(:,:), allocatable :: ddx_to_use_plus, ddx_to_use_minus
+    PetscScalar :: scalar
+    real(prec) :: Z, nHat, THat, mHat, sqrtTHat, sqrtMHat, speciesFactor, speciesFactor2, v_s
+    real(prec) :: T32m, factor, spatial_factor, LFactor, temp, temp1, temp2, xDotFactor, xDotFactor2, stuffToAdd
+    real(prec) :: factor1, factor2, factorJ1, factorJ2, factorJ3, factorJ4, factorJ5  !!Added by AM 2016-03
+    real(prec), dimension(:), allocatable :: xb, expxb2
+    real(prec), dimension(:,:), allocatable :: xPartOfXDot_plus, xPartOfXDot_minus, xPartOfXDot
+    !real(prec), dimension(:,:), allocatable :: ddx_to_use_plus, ddx_to_use_minus
     integer :: i, j, ix, ispecies, itheta, izeta, L, ixi, index, ix_row, ix_col, ixi_row, ixi_col
     integer :: rowIndex, colIndex
     integer :: rowIndex1, rowIndex2, L2 !!Added by AM 2016-03
     integer :: ell, iSpeciesA, iSpeciesB, maxL
     integer, dimension(:), allocatable :: rowIndices, colIndices
     PetscScalar, dimension(:,:), allocatable :: values_to_add
-    PetscScalar, dimension(:,:), allocatable :: d2dx2_to_use, zetaPartOfTerm, thetaPartOfTerm
-    PetscScalar, dimension(:,:), allocatable :: fToFInterpolationMatrix
-    PetscScalar, dimension(:,:), allocatable :: potentialsToFInterpolationMatrix
-    PetscScalar, dimension(:,:,:,:), allocatable :: CECD
-    PetscScalar :: xPartOfSource1, xPartOfSource2, geometricFactor1, geometricFactor2, geometricFactor3
-    PetscScalar, dimension(:,:), allocatable ::  nuDHat
-    PetscScalar, dimension(:), allocatable :: erfs, Psi_Chandra
+    real(prec), dimension(:,:), allocatable :: d2dx2_to_use, zetaPartOfTerm, thetaPartOfTerm
+    real(prec), dimension(:,:), allocatable :: fToFInterpolationMatrix
+    real(prec), dimension(:,:), allocatable :: potentialsToFInterpolationMatrix
+    real(prec), dimension(:,:,:,:), allocatable :: CECD
+    real(prec) :: xPartOfSource1, xPartOfSource2, geometricFactor1, geometricFactor2, geometricFactor3
+    real(prec), dimension(:,:), allocatable ::  nuDHat
+    real(prec), dimension(:), allocatable :: erfs, Psi_Chandra
     PetscLogDouble :: time1, time2, time3, time4
-    PetscScalar, dimension(:,:), pointer :: ddtheta_to_use, ddzeta_to_use, ddxi_to_use, pitch_angle_scattering_operator_to_use, ddx_to_use
+    real(prec), dimension(:,:), pointer :: ddtheta_to_use, ddzeta_to_use, ddxi_to_use, pitch_angle_scattering_operator_to_use, ddx_to_use
     double precision :: myMatInfo(MAT_INFO_SIZE)
     integer :: NNZ, NNZAllocated, NMallocs
-    PetscScalar :: dfMdx
+    real(prec) :: dfMdx
     character(len=200) :: whichMatrixName, filename
     PetscViewer :: viewer
     integer :: itheta_row, itheta_col, izeta_row, izeta_col, ixMin, ixMinCol
@@ -61,17 +62,17 @@
     Vec :: vecOnEveryProc
     PetscScalar, pointer :: stateArray(:)
     logical :: useStateVec
-    PetscScalar, dimension(:,:), allocatable :: nonlinearTerm_Lp1, nonlinearTerm_Lm1
-    PetscScalar, dimension(:), allocatable :: tempVector1, tempVector2
-    PetscScalar, dimension(:,:), allocatable :: tempExtrapMatrix, fToFInterpolationMatrix_plus1
-    PetscScalar :: dPhiHatdpsiHatToUseInRHS, xPartOfRHS, xPartOfRHS2 !!Added by AM 2016-03
-    PetscScalar, dimension(:,:), allocatable :: theta_interpolation_matrix
+    real(prec), dimension(:,:), allocatable :: nonlinearTerm_Lp1, nonlinearTerm_Lm1
+    real(prec), dimension(:), allocatable :: tempVector1, tempVector2
+    real(prec), dimension(:,:), allocatable :: tempExtrapMatrix, fToFInterpolationMatrix_plus1
+    real(prec) :: dPhiHatdpsiHatToUseInRHS, xPartOfRHS, xPartOfRHS2 !!Added by AM 2016-03
+    real(prec), dimension(:,:), allocatable :: theta_interpolation_matrix
     integer :: zeta_shift, zeta_pad_size
     integer :: stencil, sign, izeta_interpolation
     integer :: iSpecies_min, iSpecies_max, ix_min, ix_max
-    PetscScalar, dimension(:,:), allocatable :: collision_operator_xi_block
-    PetscScalar, dimension(:,:,:), allocatable :: Legendre_projection_to_use
-    PetscScalar :: Er_factor
+    real(prec), dimension(:,:), allocatable :: collision_operator_xi_block
+    real(prec), dimension(:,:,:), allocatable :: Legendre_projection_to_use
+    real(prec) :: Er_factor
 
     ! *******************************************************************************
     ! Do a few sundry initialization tasks:
@@ -118,8 +119,9 @@
     ! Sometimes PETSc complains if any of the diagonal elements are not set.
     ! Therefore, set the entire diagonal to 0 to be safe.
     if (masterProc) then
+       scalar = 0.0d+0 ! Cast to type PetscScalar
        do i=1,matrixSize
-          call MatSetValue(matrix, i-1, i-1, zero, ADD_VALUES, ierr)
+          call MatSetValue(matrix, i-1, i-1, scalar, ADD_VALUES, ierr)
        end do
     end if
 
@@ -133,7 +135,7 @@
        print *,"   of the preconditioner is being shifted."
 
        ! Amount of shift:
-       temp = 1d+0
+       scalar = 1d+0
 
        select case (constraintScheme)
        case (0)
@@ -141,15 +143,15 @@
        case (1,3,4)
           do ispecies = 1,Nspecies
              index = getIndex(ispecies,1,1,1,1,BLOCK_DENSITY_CONSTRAINT)
-             call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
+             call MatSetValue(matrix, index, index, scalar, ADD_VALUES, ierr)
              index = getIndex(ispecies,1,1,1,1,BLOCK_PRESSURE_CONSTRAINT)
-             call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
+             call MatSetValue(matrix, index, index, scalar, ADD_VALUES, ierr)
           end do
        case (2)
           do ispecies = 1,Nspecies
              do ix = 1,Nx
                 index = getIndex(ispecies,ix,1,1,1,BLOCK_F_CONSTRAINT)
-                call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
+                call MatSetValue(matrix, index, index, scalar, ADD_VALUES, ierr)
              end do
           end do
        case default
@@ -157,11 +159,11 @@
        end select
        if (includePhi1) then
           index = getIndex(1,1,1,1,1,BLOCK_PHI1_CONSTRAINT)
-          call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
+          call MatSetValue(matrix, index, index, scalar, ADD_VALUES, ierr)
           do itheta = 1,Ntheta
              do izeta = 1,Nzeta
                 index = getIndex(1,1,1,itheta,izeta,BLOCK_QN)
-                call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
+                call MatSetValue(matrix, index, index, scalar, ADD_VALUES, ierr)
              end do
           end do
        end if
@@ -1253,11 +1255,11 @@
              do itheta = ithetaMin,ithetaMax
                 do izeta = izetaMin,izetaMax
                    do ix = ixMin,Nx
-                      factor = spatial_scaling(itheta,izeta) * temp * x_scaling(ix,ispecies) * speciesFactor ! This quantity is scaled so it should be O(1) 
+                      scalar = spatial_scaling(itheta,izeta) * temp * x_scaling(ix,ispecies) * speciesFactor ! This quantity is scaled so it should be O(1) 
                       do ixi = 1,Nxi_for_x(ix)
                          rowIndex = getIndex(ispecies, ix, ixi, itheta, izeta, BLOCK_F)
                          colIndex = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)
-                         call MatSetValue(matrix, rowIndex, colIndex, factor, ADD_VALUES, ierr)
+                         call MatSetValue(matrix, rowIndex, colIndex, scalar, ADD_VALUES, ierr)
                       end do
                    end do
                 end do
@@ -1390,11 +1392,11 @@
              ! imposed at other x values. So instead, just set the diagonal to 1 so this row of the matrix does nothing.
 
              ix = 1
+             scalar = 1.0d+0 ! Cast to PetscScalar
              do ispecies = 1,Nspecies
                 rowIndex = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)
                 colIndex = rowIndex
-                call MatSetValue(matrix, rowIndex, colIndex, &
-                     one, ADD_VALUES, ierr)
+                call MatSetValue(matrix, rowIndex, colIndex, scalar, ADD_VALUES, ierr)
              end do
           end if
 
@@ -1505,16 +1507,16 @@
           print *,"Adding 1s on the source/constraint diagonal block for fieldsplit."
           do ispecies=1,Nspecies
              rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)
-             call MatSetValue(matrix, rowIndex, rowIndex, one, ADD_VALUES, ierr)
+             call MatSetValueSparse(matrix, rowIndex, rowIndex, one, ADD_VALUES, ierr)
              rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)
-             call MatSetValue(matrix, rowIndex, rowIndex, one, ADD_VALUES, ierr)
+             call MatSetValueSparse(matrix, rowIndex, rowIndex, one, ADD_VALUES, ierr)
           end do
        case (2)
           print *,"Adding 1s on the source/constraint diagonal block for fieldsplit."
           do ix=ixMin,Nx
              do ispecies = 1,Nspecies
                 rowIndex = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)
-                call MatSetValue(matrix, rowIndex, rowIndex, one, ADD_VALUES, ierr)
+                call MatSetValueSparse(matrix, rowIndex, rowIndex, one, ADD_VALUES, ierr)
              end do
           end do
        end select
@@ -1604,7 +1606,8 @@
     implicit none
 
     integer :: ix, ixi, itheta, izeta, ispecies, index
-    PetscScalar :: factor
+    real(prec) :: factor
+    PetscScalar :: scalar
     PetscErrorCode :: ierr
 
     if (masterProc) then
@@ -1620,8 +1623,8 @@
              do izeta = izetaMin,izetaMax
                 do ixi = 1,Nxi_for_x(ix)
                    index = getIndex(ispecies, ix, ixi, itheta, izeta, BLOCK_F)
-                   call VecSetValue(f0, index, &
-                        exp(-Zs(ispecies)*gamma*Phi1Hat(itheta,izeta)/THats(ispecies))*factor, INSERT_VALUES, ierr) ! This line needs fixing when Phi1 is included.
+                   scalar = exp(-Zs(ispecies)*gamma*Phi1Hat(itheta,izeta)/THats(ispecies))*factor ! Cast from real(prec) to PetscScalar
+                   call VecSetValue(f0, index, scalar, INSERT_VALUES, ierr) ! This line needs fixing when Phi1 is included.
                 end do
              end do
           end do

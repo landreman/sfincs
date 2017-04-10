@@ -2,35 +2,37 @@
 
 OBJ_FILES = apply_dense_terms.o apply_preconditioner.o ChebyshevGrid.o ChebyshevInterpolationMatrix.o \
 	  createGrids.o diagnostics.o evaluateJacobian.o evaluateResidual.o geometry.o \
-	  globalVariables.o indices.o polynomialDiffMatrices.o polynomialInterpolationMatrix.o \
+	  globalVariables.o indices.o kinds.o polynomialDiffMatrices.o polynomialInterpolationMatrix.o \
 	  populateMatrix.o preallocateMatrix.o quadpack.o radialCoordinates.o readInput.o sfincs.o solver.o sparsify.o \
 	  uniformDiffMatrices.o uniformInterpolationMatrix.o validateInput.o writeHDF5Output.o xGrid.o \
 	  readVMEC/readVMEC.a
 
 # Dependencies:
-apply_dense_terms.o: globalVariables.o indices.o
+apply_dense_terms.o: globalVariables.o indices.o kinds.o
 apply_preconditioner.o: globalVariables.o
-ChebyshevGrid.o: 
-ChebyshevInterpolationMatrix.o: 
-createGrids.o: globalVariables.o polynomialDiffMatrices.o xGrid.o geometry.o indices.o # export_f.o
-diagnostics.o: globalVariables.o indices.o writeHDF5Output.o
+ChebyshevGrid.o: kinds.o
+ChebyshevInterpolationMatrix.o: kinds.o
+createGrids.o: globalVariables.o kinds.o polynomialDiffMatrices.o xGrid.o geometry.o indices.o # export_f.o
+diagnostics.o: globalVariables.o kinds.o indices.o writeHDF5Output.o
 evaluateJacobian.o: globalVariables.o
-evaluateResidual.o: globalVariables.o indices.o
+evaluateResidual.o: globalVariables.o indices.o kinds.o
 #export_f.o: globalVariables.o xGrid.o
-geometry.o: globalVariables.o radialCoordinates.o readVMEC/readVMEC.a
+geometry.o: globalVariables.o kinds.o radialCoordinates.o readVMEC/readVMEC.a
+globalVariables.o: kinds.o
 indices.o: globalVariables.o
-polynomialDiffMatrices.o: xGrid.o
-polynomialInterpolationMatrix.o: 
-populateMatrix.o: globalVariables.o sparsify.o indices.o xGrid.o
-preallocateMatrix.o: indices.o globalVariables.o
+kinds.o:
+polynomialDiffMatrices.o: kinds.o xGrid.o
+polynomialInterpolationMatrix.o: kinds.o
+populateMatrix.o: globalVariables.o kinds.o sparsify.o indices.o xGrid.o
+preallocateMatrix.o: indices.o globalVariables.o kinds.o
 quadpack.o:
 radialCoordinates.o: globalVariables.o
 readInput.o: globalVariables.o xGrid.o # export_f.o
 sfincs.o: geometry.o globalVariables.o writeHDF5Output.o readInput.o solver.o radialCoordinates.o
 solver.o: globalVariables.o indices.o
-sparsify.o:
-uniformDiffMatrices.o: 
-uniformInterpolationMatrix.o: 
-validateInput.o: globalVariables.o xGrid.o
-writeHDF5Output.o: globalVariables.o xGrid.o # export_f.o
-xGrid.o:
+sparsify.o: kinds.o
+uniformDiffMatrices.o: kinds.o
+uniformInterpolationMatrix.o: kinds.o
+validateInput.o: globalVariables.o kinds.o xGrid.o
+writeHDF5Output.o: globalVariables.o kinds.o xGrid.o # export_f.o
+xGrid.o: kinds.o

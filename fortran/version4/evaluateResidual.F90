@@ -7,6 +7,7 @@
 
   subroutine evaluateResidual(mysnes, stateVec, residualVec, userContext, ierr)
 
+    use kinds
     use petscsnes
     use globalVariables
     use indices
@@ -18,11 +19,12 @@
     PetscErrorCode :: ierr
     integer :: userContext(*)
     Vec :: inhomogeneous_terms
-    PetscScalar :: scalar, x_part, factor, x_part_2, species_factor
+    PetscScalar :: scalar
+    real(prec) :: x_part, factor, x_part_2, species_factor
     integer :: ix, ixi, L, itheta, izeta, ispecies, index
-    PetscScalar :: THat, mHat, sqrtTHat, sqrtmHat, dfMdx
+    real(prec) :: THat, mHat, sqrtTHat, sqrtmHat, dfMdx
     Mat :: residualMatrix
-    PetscScalar :: dPhiHatdpsiHatToUseInRHS
+    real(prec) :: dPhiHatdpsiHatToUseInRHS
     PetscReal :: norm
     integer :: ixMin
     PetscViewer :: viewer
@@ -52,7 +54,7 @@
        if (masterProc) then
           print *,"State vector is 0 so I will skip building the first matrix when evaluating the residual."
        end if
-       call VecSet(residualVec, zero, ierr)
+       call VecZeroEntries(residualVec, ierr)
     end if
 
     ! The collision term (temperature equilibration) in the residual is computed by calling populateMatrix(...,2)
@@ -73,7 +75,7 @@
     ! --------------------------------------------------------------------------------
 
     call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, inhomogeneous_terms, ierr)
-    call VecSet(inhomogeneous_terms, zero, ierr)
+    call VecZeroEntries(inhomogeneous_terms, ierr)
 
     if (RHSMode==1) then
        dPhiHatdpsiHatToUseInRHS = dPhiHatdpsiHat
@@ -136,7 +138,8 @@
                 
                 do ixi = 1,Nxi_for_x(ix)
                    index = getIndex(ispecies, ix, ixi, itheta, izeta, BLOCK_F)
-                   call VecSetValue(inhomogeneous_terms, index, (1+xi(ixi)*xi(ixi))*factor, ADD_VALUES, ierr)
+                   scalar = (1+xi(ixi)*xi(ixi))*factor
+                   call VecSetValue(inhomogeneous_terms, index, scalar, ADD_VALUES, ierr)
                 end do
              end do
           end do
@@ -171,7 +174,8 @@
 
                 factor = factor - adiabaticZ * adiabaticNHat * exp (- adiabaticZ* gamma * Phi1Hat(itheta,izeta) / adiabaticTHat)
              end if
-             call VecSetValue(inhomogeneous_terms, index, factor, ADD_VALUES, ierr)
+             scalar = factor
+             call VecSetValue(inhomogeneous_terms, index, scalar, ADD_VALUES, ierr)
           end do
        end do
     end if
@@ -219,8 +223,8 @@
                      * spatial_scaling(itheta,izeta) * x_scaling(ix,ispecies)
                 do ixi = 1,Nxi
                    index = getIndex(ispecies, ix, ixi, itheta, izeta, BLOCK_F)
-                   call VecSetValue(inhomogeneous_terms, index, &
-                        factor * xi(ixi), ADD_VALUES, ierr)
+                   scalar = factor * xi(ixi)
+                   call VecSetValue(inhomogeneous_terms, index, scalar, ADD_VALUES, ierr)
                 end do
              end do
           end do
@@ -232,11 +236,16 @@
     call VecAssemblyBegin(inhomogeneous_terms, ierr)
     call VecAssemblyEnd(inhomogeneous_terms, ierr)
 
+!    print *,"Here comes inhomogeneous_terms:"
+!    call VecView(inhomogeneous_terms, PETSC_VIEWER_STDOUT_WORLD,ierr)
 
     ! Add the inhomogeneous terms to the residual:
     scalar = 1
     call VecAXPY(residualVec, scalar, inhomogeneous_terms, ierr)
     call VecDestroy(inhomogeneous_terms, ierr)
+
+!    print *,"Here comes residualVec:"
+!    call VecView(residualVec, PETSC_VIEWER_STDOUT_WORLD,ierr)
 
     if (saveMatlabOutput) then
        write (filename,fmt="(a,i3.3,a)") trim(MatlabOutputFilename) // "_iteration_", iterationForResidualOutput, &

@@ -7,6 +7,7 @@
 
   subroutine createGrids()
 
+    use kinds
     use globalVariables
     use polynomialDiffMatrices
     use xGrid
@@ -19,18 +20,18 @@
 
     PetscErrorCode :: ierr
     integer :: i, j, k, itheta, izeta, ispecies, scheme, L
-    PetscScalar, dimension(:,:), allocatable :: d2dtheta2, d2dzeta2, ddxi, d2dxi2
-    PetscScalar, dimension(:), allocatable :: xWeightsPotentials
+    real(prec), dimension(:,:), allocatable :: d2dtheta2, d2dzeta2, ddxi, d2dxi2
+    real(prec), dimension(:), allocatable :: xWeightsPotentials
 
-    PetscScalar, dimension(:), allocatable :: xWeights_plus1
-    PetscScalar, dimension(:,:), allocatable :: ddx_plus1, d2dx2_plus1
-    PetscScalar, dimension(:,:), allocatable :: interpolateXToXPotentials_plus1, extrapMatrix
-    PetscScalar, dimension(:), allocatable :: x_subset, xWeights_subset
-    PetscScalar, dimension(:,:), allocatable :: ddx_subset, d2dx2_subset
-    PetscScalar :: temp, Delta_zeta, v_s
-    PetscScalar, dimension(:), allocatable :: xi_to_Legendre
-    PetscScalar, dimension(:,:), allocatable :: d2dy2, ddy, ddy_plus, ddy_minus
-    PetscScalar, dimension(:), allocatable :: y, y_dummy, yWeights_dummy, yWeights, dxi_dy, d2xi_dy2
+    real(prec), dimension(:), allocatable :: xWeights_plus1
+    real(prec), dimension(:,:), allocatable :: ddx_plus1, d2dx2_plus1
+    real(prec), dimension(:,:), allocatable :: interpolateXToXPotentials_plus1, extrapMatrix
+    real(prec), dimension(:), allocatable :: x_subset, xWeights_subset
+    real(prec), dimension(:,:), allocatable :: ddx_subset, d2dx2_subset
+    real(prec) :: temp, Delta_zeta, v_s
+    real(prec), dimension(:), allocatable :: xi_to_Legendre
+    real(prec), dimension(:,:), allocatable :: d2dy2, ddy, ddy_plus, ddy_minus
+    real(prec), dimension(:), allocatable :: y, y_dummy, yWeights_dummy, yWeights, dxi_dy, d2xi_dy2
 
     DM :: myDM
     integer, parameter :: bufferLength = 200
@@ -41,7 +42,7 @@
     logical :: call_uniform_diff_matrices
     integer :: derivative_option_plus, derivative_option_minus, derivative_option, quadrature_option
 
-    PetscScalar :: nonuniform_xi_a = 0.7, nonuniform_xi_b = 0.3 ! b=1-a
+    real(prec) :: nonuniform_xi_a = 0.7, nonuniform_xi_b = 0.3 ! b=1-a
 
     ! *******************************************************************************
     ! Do a few sundry initialization tasks:
@@ -1913,24 +1914,24 @@
 
     function compute_xi_from_y(yy)
       implicit none
-      PetscScalar, intent(in) :: yy
-      PetscScalar :: compute_xi_from_y
+      real(prec), intent(in) :: yy
+      real(prec) :: compute_xi_from_y
       
       compute_xi_from_y = nonuniform_xi_a * yy + nonuniform_xi_b * (yy ** 5)
     end function compute_xi_from_y
     
     function compute_dxi_dy(yy)
       implicit none
-      PetscScalar, intent(in) :: yy
-      PetscScalar :: compute_dxi_dy
+      real(prec), intent(in) :: yy
+      real(prec) :: compute_dxi_dy
       
       compute_dxi_dy = nonuniform_xi_a + 5*nonuniform_xi_b * (yy ** 4)
     end function compute_dxi_dy
     
     function compute_d2xi_dy2(yy)
       implicit none
-      PetscScalar, intent(in) :: yy
-      PetscScalar :: compute_d2xi_dy2
+      real(prec), intent(in) :: yy
+      real(prec) :: compute_d2xi_dy2
       
       compute_d2xi_dy2 = 20*nonuniform_xi_b * (yy ** 3)
     end function compute_d2xi_dy2

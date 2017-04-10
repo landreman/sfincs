@@ -25,7 +25,7 @@ program sfincs
   call PetscInitialize(PETSC_NULL_CHARACTER, ierr)
   call PetscTime(sfincs_start_time, ierr)
   iteration_start_time = sfincs_start_time
-  call PetscViewerPushFormat(PETSC_VIEWER_STDOUT_WORLD,PETSC_VIEWER_ASCII_INFO_DETAIL, ierr) ! Causes more detailed output from MatView.
+!  call PetscViewerPushFormat(PETSC_VIEWER_STDOUT_WORLD,PETSC_VIEWER_ASCII_INFO_DETAIL, ierr) ! Causes more detailed output from MatView.
 !  call PetscViewerPushFormat(PETSC_VIEWER_STDOUT_WORLD,PETSC_VIEWER_ASCII_MATLAB, ierr) ! Causes more detailed output from MatView.
 
   call MPI_COMM_SIZE(PETSC_COMM_WORLD, numProcs, ierr)
@@ -37,7 +37,7 @@ program sfincs
 
   if (masterProc) then
      print *,"****************************************************************************"
-     print *,"SFINCS: Stellarator Fokker-Plank Iterative NeoClassical Solver"
+     print *,"SFINCS: The Stellarator Fokker-Plank Iterative NeoClassical Solver"
      print *,"Version 4."
 #if defined(PETSC_USE_REAL_SINGLE)
      print *,"Using single precision."

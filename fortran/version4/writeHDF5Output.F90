@@ -4,6 +4,7 @@
 
 module writeHDF5Output
 
+  use kinds
   use globalVariables
   use petscsysdef
   use HDF5
@@ -1185,7 +1186,7 @@ contains
 
     character(len=*) :: arrayName
     integer(HID_T) :: dsetID
-    PetscScalar :: data
+    real(prec) :: data
     character(len=*) :: description
 
     call h5dcreate_f(HDF5FileID, arrayName, H5T_NATIVE_DOUBLE, dspaceIDForScalar, dsetID, HDF5Error)
@@ -1209,7 +1210,7 @@ contains
     integer(HID_T) :: dspaceID
     integer(HSIZE_T), dimension(*) :: dims
     character(len=*) :: description
-    PetscScalar, dimension(*) :: data
+    real(prec), dimension(*) :: data
 
     call h5dcreate_f(HDF5FileID, arrayName, H5T_NATIVE_DOUBLE, dspaceID, dsetID, HDF5Error)
     
@@ -1253,7 +1254,7 @@ contains
     integer(HID_T) :: dsetID
     integer(HID_T) :: dspaceID
     integer(HSIZE_T), dimension(*) :: dims
-    PetscScalar, dimension(:,:) :: data
+    real(prec), dimension(:,:) :: data
     character(len=*) :: description
     character(len=100) :: label
 
@@ -1297,7 +1298,7 @@ contains
 !!$    integer(HID_T) :: dsetID
 !!$    integer(HID_T) :: dspaceID
 !!$    integer(HSIZE_T), dimension(*) :: dims
-!!$    PetscScalar, dimension(:,:,:,:,:) :: data
+!!$    real(prec), dimension(:,:,:,:,:) :: data
 !!$    character(len=*) :: description
 !!$    character(len=100) :: label
 !!$    integer :: iteration
@@ -1370,7 +1371,7 @@ contains
     integer(HID_T) :: dspaceID, memspaceID, originalDspaceID
     integer :: temp, arrayType
     character(len=*) :: description
-    PetscScalar :: data
+    real(prec) :: data
     integer(HSIZE_T) :: offset(rank)
     integer(HSIZE_T), dimension(rank) :: dim, dimForChunk
     integer(HID_T) :: chunkProperties
@@ -1492,7 +1493,7 @@ contains
     integer(HID_T) :: dspaceID, memspaceID, originalDspaceID
     integer :: temp, arrayType
     character(len=*) :: description
-    PetscScalar, dimension(:) :: data
+    real(prec), dimension(:) :: data
     integer(HSIZE_T) :: offset(rank)
     integer(HSIZE_T), dimension(rank) :: dim, dimForChunk
     integer(HID_T) :: chunkProperties
@@ -1556,7 +1557,7 @@ contains
     integer(HID_T) :: dspaceID, memspaceID, originalDspaceID
     integer :: temp, arrayType
     character(len=*) :: description
-    PetscScalar, dimension(:,:) :: data
+    real(prec), dimension(:,:) :: data
     integer(HSIZE_T) :: offset(rank)
     integer(HSIZE_T), dimension(rank) :: dim, dimForChunk
     integer(HID_T) :: chunkProperties
@@ -1638,7 +1639,7 @@ contains
     integer(HID_T) :: dspaceID, memspaceID, originalDspaceID
     integer :: temp, arrayType
     character(len=*) :: description
-    PetscScalar, dimension(:,:,:) :: data
+    real(prec), dimension(:,:,:) :: data
     integer(HSIZE_T) :: offset(rank)
     integer(HSIZE_T), dimension(rank) :: dim, dimForChunk
     integer(HID_T) :: chunkProperties
@@ -1710,7 +1711,7 @@ contains
     integer(HID_T) :: dspaceID, memspaceID, originalDspaceID
     integer :: temp, arrayType
     character(len=*) :: description
-    PetscScalar, dimension(:,:,:,:,:) :: data
+    real(prec), dimension(:,:,:,:,:) :: data
     integer(HSIZE_T) :: offset(rank)
     integer(HSIZE_T), dimension(rank) :: dim, dimForChunk
     integer(HID_T) :: chunkProperties

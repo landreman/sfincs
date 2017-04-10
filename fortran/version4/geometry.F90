@@ -11,19 +11,12 @@
 
 module geometry
 
+  use kinds
   use globalVariables
   use radialCoordinates
-  use petscsysdef
   use readVMEC
 
   implicit none
-
-#include "PETScVersions.F90"
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscsysdef.h>
-#else
-#include <petsc/finclude/petscsysdef.h>
-#endif
 
 contains
 
@@ -46,7 +39,7 @@ contains
     integer :: fileUnit, didFileAccessWork
     character(len=200) :: lineOfFile
     integer, dimension(4) :: headerIntegers
-    PetscScalar, dimension(3) :: headerReals
+    real(prec), dimension(3) :: headerReals
 
     select case (geometryScheme)
     case (1)
@@ -217,7 +210,7 @@ contains
     implicit none
 
     integer :: itheta,izeta
-    PetscScalar :: sqrt_g_11, BHat_sub_theta11, BHat_sub_zeta11
+    real(prec) :: sqrt_g_11, BHat_sub_theta11, BHat_sub_zeta11
 
     ! Using the selected radial coordinate, set input quantities for the other radial coordinates:
     call setInputRadialCoordinateWish()
@@ -279,53 +272,53 @@ contains
     integer :: itheta, izeta, NHarmonics, NHarmonicsL, NHarmonicsH, i, m, n
     integer, dimension(:), allocatable :: BHarmonics_l, BHarmonics_n
     integer, dimension(:), allocatable :: BHarmonics_lL, BHarmonics_nL, BHarmonics_lH, BHarmonics_nH
-    PetscScalar, dimension(:), allocatable :: BHarmonics_amplitudes
-    PetscScalar, dimension(:), allocatable :: BHarmonics_amplitudesL, BHarmonics_amplitudesH
-    PetscScalar, dimension(:), allocatable :: RHarmonics_L, RHarmonics_H
-    PetscScalar, dimension(:), allocatable :: ZHarmonics_L, ZHarmonics_H
-    PetscScalar, dimension(:), allocatable :: dzHarmonics_L, dzHarmonics_H
+    real(prec), dimension(:), allocatable :: BHarmonics_amplitudes
+    real(prec), dimension(:), allocatable :: BHarmonics_amplitudesL, BHarmonics_amplitudesH
+    real(prec), dimension(:), allocatable :: RHarmonics_L, RHarmonics_H
+    real(prec), dimension(:), allocatable :: ZHarmonics_L, ZHarmonics_H
+    real(prec), dimension(:), allocatable :: dzHarmonics_L, dzHarmonics_H
     logical, dimension(:), allocatable :: BHarmonics_parity
     logical, dimension(:), allocatable :: BHarmonics_parityL, BHarmonics_parityH
-    PetscScalar, dimension(:,:), allocatable :: hHat, duHatdtheta, duHatdzeta
-    PetscScalar :: R0
-    PetscScalar, dimension(:,:), allocatable :: BHatL, dBHatdthetaL, dBHatdzetaL
-    PetscScalar, dimension(:,:), allocatable :: BHatH, dBHatdthetaH, dBHatdzetaH
-    PetscScalar, dimension(:,:), allocatable :: RHat,  dRHatdtheta,  dRHatdzeta,  d2RHatdtheta2,  d2RHatdzeta2,  d2RHatdthetadzeta
-    PetscScalar, dimension(:,:), allocatable :: RHatL, dRHatdthetaL, dRHatdzetaL, d2RHatdtheta2L, d2RHatdzeta2L, d2RHatdthetadzetaL
-    PetscScalar, dimension(:,:), allocatable :: RHatH, dRHatdthetaH, dRHatdzetaH, d2RHatdtheta2H, d2RHatdzeta2H, d2RHatdthetadzetaH
-    PetscScalar, dimension(:,:), allocatable :: ZHat,  dZHatdtheta,  dZHatdzeta,  d2ZHatdtheta2,  d2ZHatdzeta2,  d2ZHatdthetadzeta
-    PetscScalar, dimension(:,:), allocatable :: ZHatL, dZHatdthetaL, dZHatdzetaL, d2ZHatdtheta2L, d2ZHatdzeta2L, d2ZHatdthetadzetaL
-    PetscScalar, dimension(:,:), allocatable :: ZHatH, dZHatdthetaH, dZHatdzetaH, d2ZHatdtheta2H, d2ZHatdzeta2H, d2ZHatdthetadzetaH
-    PetscScalar, dimension(:,:), allocatable :: Dz,  dDzdtheta,  dDzdzeta,  d2Dzdtheta2,  d2Dzdzeta2,  d2Dzdthetadzeta
-    PetscScalar, dimension(:,:), allocatable :: DzL, dDzdthetaL, dDzdzetaL, d2Dzdtheta2L, d2Dzdzeta2L, d2DzdthetadzetaL
-    PetscScalar, dimension(:,:), allocatable :: DzH, dDzdthetaH, dDzdzetaH, d2Dzdtheta2H, d2Dzdzeta2H, d2DzdthetadzetaH
-    PetscScalar, dimension(:,:), allocatable :: geomang, dgeomangdtheta, dgeomangdzeta, d2geomangdtheta2, d2geomangdzeta2, d2geomangdthetadzeta
-    PetscScalar, dimension(:,:), allocatable :: dXdtheta, dXdzeta, dYdtheta, dYdzeta
-    PetscScalar, dimension(:,:), allocatable :: d2Xdtheta2, d2Xdthetadzeta, d2Xdzeta2, d2Ydtheta2, d2Ydthetadzeta, d2Ydzeta2
-    PetscScalar, dimension(:,:), allocatable :: gradpsiX, gradpsiY, gradpsiZ, gpsipsi, CX, CY, CZ
+    real(prec), dimension(:,:), allocatable :: hHat, duHatdtheta, duHatdzeta
+    real(prec) :: R0
+    real(prec), dimension(:,:), allocatable :: BHatL, dBHatdthetaL, dBHatdzetaL
+    real(prec), dimension(:,:), allocatable :: BHatH, dBHatdthetaH, dBHatdzetaH
+    real(prec), dimension(:,:), allocatable :: RHat,  dRHatdtheta,  dRHatdzeta,  d2RHatdtheta2,  d2RHatdzeta2,  d2RHatdthetadzeta
+    real(prec), dimension(:,:), allocatable :: RHatL, dRHatdthetaL, dRHatdzetaL, d2RHatdtheta2L, d2RHatdzeta2L, d2RHatdthetadzetaL
+    real(prec), dimension(:,:), allocatable :: RHatH, dRHatdthetaH, dRHatdzetaH, d2RHatdtheta2H, d2RHatdzeta2H, d2RHatdthetadzetaH
+    real(prec), dimension(:,:), allocatable :: ZHat,  dZHatdtheta,  dZHatdzeta,  d2ZHatdtheta2,  d2ZHatdzeta2,  d2ZHatdthetadzeta
+    real(prec), dimension(:,:), allocatable :: ZHatL, dZHatdthetaL, dZHatdzetaL, d2ZHatdtheta2L, d2ZHatdzeta2L, d2ZHatdthetadzetaL
+    real(prec), dimension(:,:), allocatable :: ZHatH, dZHatdthetaH, dZHatdzetaH, d2ZHatdtheta2H, d2ZHatdzeta2H, d2ZHatdthetadzetaH
+    real(prec), dimension(:,:), allocatable :: Dz,  dDzdtheta,  dDzdzeta,  d2Dzdtheta2,  d2Dzdzeta2,  d2Dzdthetadzeta
+    real(prec), dimension(:,:), allocatable :: DzL, dDzdthetaL, dDzdzetaL, d2Dzdtheta2L, d2Dzdzeta2L, d2DzdthetadzetaL
+    real(prec), dimension(:,:), allocatable :: DzH, dDzdthetaH, dDzdzetaH, d2Dzdtheta2H, d2Dzdzeta2H, d2DzdthetadzetaH
+    real(prec), dimension(:,:), allocatable :: geomang, dgeomangdtheta, dgeomangdzeta, d2geomangdtheta2, d2geomangdzeta2, d2geomangdthetadzeta
+    real(prec), dimension(:,:), allocatable :: dXdtheta, dXdzeta, dYdtheta, dYdzeta
+    real(prec), dimension(:,:), allocatable :: d2Xdtheta2, d2Xdthetadzeta, d2Xdzeta2, d2Ydtheta2, d2Ydthetadzeta, d2Ydzeta2
+    real(prec), dimension(:,:), allocatable :: gradpsiX, gradpsiY, gradpsiZ, gpsipsi, CX, CY, CZ
     
     integer :: fileUnit, didFileAccessWork
     character(len=200) :: lineOfFile
     integer, dimension(4) :: headerIntegers
-    PetscScalar, dimension(3) :: headerReals
-    PetscScalar, dimension(6) :: surfHeader
-    PetscScalar, dimension(4) :: dataNumbers
-    PetscScalar, dimension(8) :: data8Numbers
+    real(prec), dimension(3) :: headerReals
+    real(prec), dimension(6) :: surfHeader
+    real(prec), dimension(4) :: dataNumbers
+    real(prec), dimension(8) :: data8Numbers
     integer, dimension(2) :: dataIntegers
     integer :: no_of_modes_old, no_of_modes_new, modeind, numB0s, startn, stopn
-    PetscScalar :: iota_old, iota_new, GHat_old, GHat_new, IHat_old, IHat_new
-    PetscScalar :: pPrimeHat_old, pPrimeHat_new, invFSA_BHat2
+    real(prec) :: iota_old, iota_new, GHat_old, GHat_new, IHat_old, IHat_new
+    real(prec) :: pPrimeHat_old, pPrimeHat_new, invFSA_BHat2
     logical :: end_of_file, proceed, include_mn, nearbyRadiiGiven, nonStelSym
     integer, parameter :: max_no_of_modes = 10000
     integer, dimension(max_no_of_modes) :: modesm_old, modesm_new, modesn_old, modesn_new
-    PetscScalar, dimension(max_no_of_modes) :: modesb_old, modesb_new, modesR_old, modesR_new
-    PetscScalar, dimension(max_no_of_modes) :: modesZ_old, modesZ_new, modesDz_old, modesDz_new
-    PetscScalar :: rN_old,  rN_new, B0_old, B0_new, B0OverBBarL, B0OverBBarH
-    PetscScalar :: R0_old, R0_new, R0L, R0H
-    PetscScalar :: hHatHarmonics_amplitude, uHatHarmonics_amplitude
-    PetscScalar :: dBHat_sub_psi_dthetaHarmonics_amplitude, dBHat_sub_psi_dzetaHarmonics_amplitude
-    PetscScalar :: DeltapsiHat !, diotadpsiHat moved to global variables 2016-09-15 HS
-    PetscScalar :: RadialWeight = 1.0 ! weight of closest surface with rN<=rN_wish
+    real(prec), dimension(max_no_of_modes) :: modesb_old, modesb_new, modesR_old, modesR_new
+    real(prec), dimension(max_no_of_modes) :: modesZ_old, modesZ_new, modesDz_old, modesDz_new
+    real(prec) :: rN_old,  rN_new, B0_old, B0_new, B0OverBBarL, B0OverBBarH
+    real(prec) :: R0_old, R0_new, R0L, R0H
+    real(prec) :: hHatHarmonics_amplitude, uHatHarmonics_amplitude
+    real(prec) :: dBHat_sub_psi_dthetaHarmonics_amplitude, dBHat_sub_psi_dzetaHarmonics_amplitude
+    real(prec) :: DeltapsiHat !, diotadpsiHat moved to global variables 2016-09-15 HS
+    real(prec) :: RadialWeight = 1.0 ! weight of closest surface with rN<=rN_wish
 
     ! For the BHarmonics_parity array, 
     ! true indicates the contribution to B(theta,zeta) has the form
@@ -1968,14 +1961,14 @@ contains
 
     integer :: vmecRadialIndex_full(2)
     integer :: vmecRadialIndex_half(2)
-    PetscScalar :: vmecRadialWeight_full(2)
-    PetscScalar :: vmecRadialWeight_half(2)
-    PetscScalar, dimension(:), allocatable :: dr2, psiN_full, psiN_half
-    PetscScalar, dimension(:), allocatable :: vmec_dBHatdpsiHat, vmec_dBHat_sub_theta_dpsiHat, vmec_dBHat_sub_zeta_dpsiHat
+    real(prec) :: vmecRadialWeight_full(2)
+    real(prec) :: vmecRadialWeight_half(2)
+    real(prec), dimension(:), allocatable :: dr2, psiN_full, psiN_half
+    real(prec), dimension(:), allocatable :: vmec_dBHatdpsiHat, vmec_dBHat_sub_theta_dpsiHat, vmec_dBHat_sub_zeta_dpsiHat
     integer :: i, j, index, isurf, itheta, izeta, m, n
-    PetscScalar :: min_dr2, angle, sin_angle, cos_angle, b, b00, temp, dphi, dpsi
+    real(prec) :: min_dr2, angle, sin_angle, cos_angle, b, b00, temp, dphi, dpsi
     integer :: numSymmetricModesIncluded, numAntisymmetricModesIncluded
-    PetscScalar :: scaleFactor
+    real(prec) :: scaleFactor
 
     ! This subroutine is written so that only psiN_wish is used, not the other *_wish quantities.
 
@@ -2588,7 +2581,7 @@ contains
   function setScaleFactor(n,m) result(scale)
     integer :: n
     integer :: m
-    PetscScalar :: scale 
+    real(prec) :: scale 
     scale = 1
     if (helicity_n == 0 .and. n /= 0) then
       scale = rippleScale

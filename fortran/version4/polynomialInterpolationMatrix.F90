@@ -1,10 +1,3 @@
-#include "PETScVersions.F90"
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscsysdef.h>
-#else
-#include <petsc/finclude/petscsysdef.h>
-#endif
-  
 subroutine polynomialInterpolationMatrix(N, M, xk, x, alpxk, alpx, matrix)
   ! This module returns the matrix for spectral interpolation from any grid to
   ! any other grid, using any weights. However, the method is poorly
@@ -27,11 +20,6 @@ subroutine polynomialInterpolationMatrix(N, M, xk, x, alpxk, alpx, matrix)
   !     The code implements the barycentric formula; see page 252 in
   !     P. Henrici, Essentials of Numerical Analysis, Wiley, 1982.
   !
-  ! The type PetscScalar is used, so this module can be used in a PETSc
-  ! application. However, no other PETSc functionality is used, so you can
-  ! replace the type with e.g. real if you want to build a non-PETSc
-  ! application.
-  !
   ! Matt Landreman
   ! Massachusetts Institute of Technology
   ! Plasma Science & Fusion Center
@@ -53,15 +41,17 @@ subroutine polynomialInterpolationMatrix(N, M, xk, x, alpxk, alpx, matrix)
   ! x and alpx should be 1D arrays with the same size. (Call it M.)
   ! matrix should be preallocated with size (M rows) x (N columns).
 
+  use kinds
+
   implicit none
 
   integer, intent(in) :: N, M
-  PetscScalar, dimension(N), intent(in) :: xk, alpxk
-  PetscScalar, dimension(M), intent(in) :: x, alpx
-  PetscScalar, intent(out) :: matrix(M,N)
+  real(prec), dimension(N), intent(in) :: xk, alpxk
+  real(prec), dimension(M), intent(in) :: x, alpx
+  real(prec), intent(out) :: matrix(M,N)
   integer :: i
-  PetscScalar, dimension(:,:), allocatable :: xkMatrixified, D, xMatrixified
-  PetscScalar, dimension(:), allocatable :: w
+  real(prec), dimension(:,:), allocatable :: xkMatrixified, D, xMatrixified
+  real(prec), dimension(:), allocatable :: w
 
   allocate(xkMatrixified(N,N))
   allocate(D(N,N))

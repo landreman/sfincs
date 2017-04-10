@@ -1,10 +1,3 @@
-#include "PETScVersions.F90"
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscsysdef.h>
-#else
-#include <petsc/finclude/petscsysdef.h>
-#endif
-
 subroutine ChebyshevInterpolationMatrix(N, M, xk, x, matrix)
   ! Interpolates from Chebyshev points xk to a new grid x.
   ! Based on the Matlab function chebint included with DMSuite.
@@ -18,15 +11,17 @@ subroutine ChebyshevInterpolationMatrix(N, M, xk, x, matrix)
   ! Outputs:
   ! matrix(M,N) = interpolation matrix
 
+  use kinds
+
   implicit none
 
   integer, intent(in) :: N, M
-  PetscScalar, intent(in) :: xk(N), x(M)
-  PetscScalar, intent(out) :: matrix(M,N)
+  real(prec), intent(in) :: xk(N), x(M)
+  real(prec), intent(out) :: matrix(M,N)
 
   integer :: i, j
-  PetscScalar, allocatable :: w(:), D(:,:), denominator(:), xScaled(:), xkScaled(:)
-  PetscScalar :: temp, xMin, xMax, xMid
+  real(prec), allocatable :: w(:), D(:,:), denominator(:), xScaled(:), xkScaled(:)
+  real(prec) :: temp, xMin, xMax, xMid
 
   if (N<1) then
      print *,"Error! N must be at least 1."

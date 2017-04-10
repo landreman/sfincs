@@ -7,6 +7,7 @@
 
 subroutine preallocateMatrix(matrix, whichMatrix)
 
+  use kinds
   use petscmat
   use globalVariables, only: Nx, Nxi, Ntheta, Nzeta, Nspecies, matrixSize, includePhi1, &
        constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, & 
@@ -241,7 +242,7 @@ contains
     implicit none
     
     integer :: N, max_nnz_per_row
-    PetscScalar, dimension(N,N) :: matrix
+    real(prec), dimension(N,N) :: matrix
     integer :: row, col, counter
     
     max_nnz_per_row = 0

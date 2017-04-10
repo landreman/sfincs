@@ -1,23 +1,25 @@
 #include "PETScVersions.F90"
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscsysdef.h>
+#include <finclude/petsckspdef.h>
 #else
-#include <petsc/finclude/petscsysdef.h>
+#include <petsc/finclude/petsckspdef.h>
 #endif
 
 subroutine validateInput()
 
+  use kinds
   use globalVariables
   use xGrid, only: xGrid_k
+  use petscksp
 
   implicit none
 
   character(len=*), parameter :: line="******************************************************************"
-  PetscScalar :: chargeDensity
-  PetscScalar :: maxSingleChargeDensity !!Added by AM 2016-03
+  real(prec) :: chargeDensity
+  real(prec) :: maxSingleChargeDensity !!Added by AM 2016-03
   integer :: ispecies
   logical :: flag
-  PetscScalar :: lnLambda, eC, epsilon0, mproton
+  real(prec) :: lnLambda, eC, epsilon0, mproton
 
   ! General namelist
 
@@ -843,6 +845,22 @@ subroutine validateInput()
      print *,line
      print *,line
   end if
+
+#ifdef PETSC_HAVE_HYPRE
+  if (masterProc) print *,"Hypre detected."
+#else
+  if (masterProc) print *,"Hypre not detected."
+  if (preconditioning_option==6) then
+     preconditioning_option=5
+     print *,line
+     print *,line
+     print *,"** WARNING: Hypre preconditioner was requested (preconditioning_option=6),"
+     print *,"** but Hypre is not available in this PETSc library. Switching to the GAMG"
+     print *,"** preconditioner (preconditioning_option=5)."
+     print *,line
+     print *,line
+  end if
+#endif
   
 end subroutine validateInput
 

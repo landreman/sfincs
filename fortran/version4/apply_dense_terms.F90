@@ -8,6 +8,7 @@
 
   subroutine apply_dense_terms(inputVec, outputVec, whichMatrix)
 
+    use kinds
     use petscvec
     use globalVariables 
     use indices
@@ -79,9 +80,15 @@
                       factor = -nu_n*spatial_scaling(itheta,izeta)*x_scaling(ix_row,iSpeciesA)
                       do L = 0,NL-1
                          !call dgemv('n',Nxi,Nxi,species_factor(iSpeciesA)*factor* RosenbluthPotentialTerms(iSpeciesA,iSpeciesB,L+1,ix_row,ix_col),&
+#if defined(PETSC_USE_REAL_SINGLE)
+                         call sgemv('n',Nxi,Nxi,factor* RosenbluthPotentialTerms(iSpeciesA,iSpeciesB,L+1,ix_row,ix_col),&
+                              Legendre_projection(:,:,L+1),&
+                              Nxi,xi_vector_in,1,1.0e+0,xi_vector_out,1)
+#else
                          call dgemv('n',Nxi,Nxi,factor* RosenbluthPotentialTerms(iSpeciesA,iSpeciesB,L+1,ix_row,ix_col),&
                               Legendre_projection(:,:,L+1),&
                               Nxi,xi_vector_in,1,1.0d+0,xi_vector_out,1)
+#endif
                       end do
                       do ixi = 1,Nxi
                          index = getIndex(ispeciesA,ix_row,ixi,itheta,izeta,BLOCK_F)

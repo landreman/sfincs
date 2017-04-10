@@ -1,10 +1,3 @@
-#include "PETScVersions.F90"
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscsysdef.h>
-#else
-#include <petsc/finclude/petscsysdef.h>
-#endif
-
 subroutine uniformDiffMatrices(N, xMin, xMax, option, quadrature_option, x, weights, ddx, d2dx2)
   ! Finite difference and spectral differentiation matrices and integration
   ! weights for a uniform grid.
@@ -132,18 +125,20 @@ subroutine uniformDiffMatrices(N, xMin, xMax, option, quadrature_option, x, weig
   !   ddx = matrix for differentiation.
   !   d2dx2 = matrix for the 2nd derivative.
 
+  use kinds
+
   implicit none
 
   integer, intent(in) :: N, option, quadrature_option
-  PetscScalar, intent(in) :: xMin, xMax
-  PetscScalar, intent(out), dimension(N) :: x, weights
-  PetscScalar, intent(out), dimension(N,N) :: ddx, d2dx2
+  real(prec), intent(in) :: xMin, xMax
+  real(prec), intent(out), dimension(N) :: x, weights
+  real(prec), intent(out), dimension(N,N) :: ddx, d2dx2
   integer :: i
-  PetscScalar :: dx, dx2
-  PetscScalar :: h
+  real(prec) :: dx, dx2
+  real(prec) :: h
   integer :: n1, n2
-  PetscScalar, allocatable :: topc(:), col1(:)
-  PetscScalar, parameter :: pi = 3.1415926535897932384626433d+0
+  real(prec), allocatable :: topc(:), col1(:)
+  real(prec), parameter :: pi = 3.1415926535897932384626433d+0
 
   ! ***************************************************************
   ! Validate input
