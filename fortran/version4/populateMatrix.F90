@@ -1281,7 +1281,8 @@
     ! *******************************************************************************
 
     !if (whichMatrix .ne. 2 .and. procThatHandlesConstraints) then
-    if (whichMatrix .ne. 2) then
+    if (whichMatrix .ne. 2 .and. (myRank==numProcs-1)) then
+    !if (whichMatrix .ne. 2) then
        select case (constraintScheme)
        case (0)
           ! Do nothing here.
@@ -1292,7 +1293,8 @@
 
           ! We add these elements using as few calls to MatSetValues as possible, because otherwise PETSc gets really slow.
 
-          j = (ithetaMax-ithetaMin+1)*(izetaMax-izetaMin+1)*Nxi*Nx ! j = number of theta*zeta*xi*x grid points owned by this proc.
+          !j = (ithetaMax-ithetaMin+1)*(izetaMax-izetaMin+1)*Nxi*Nx ! j = number of theta*zeta*xi*x grid points owned by this proc.
+          j = Ntheta*Nzeta*Nxi*Nx ! j = number of theta*zeta*xi*x grid points owned by this proc.
           allocate(values_to_add(j,2))
           allocate(colIndices(j))
           allocate(rowIndices(2))
@@ -1300,8 +1302,10 @@
           index = 1
           do ix = 1,Nx
              do ixi=1,Nxi
-                do itheta = ithetaMin,ithetaMax
-                   do izeta = izetaMin,izetaMax
+                !do itheta = ithetaMin,ithetaMax
+                !   do izeta = izetaMin,izetaMax
+                do itheta = 1,Ntheta
+                   do izeta = 1,Nzeta
                       ! The matrix elements must be proportional to sqrt_g,
                       ! but otherwise the row could probably be scaled any way you like. Here we include a factor 1/VPrimeHat so the 
                       ! row is dimensionless and the row sum is O(1), which seems like a reasonable scaling.
@@ -1322,8 +1326,10 @@
              ! It is critical that these next loops go in the same order as the loops for populating values_to_add above!
              do ix=1,Nx
                 do ixi=1,Nxi
-                   do itheta = ithetaMin, ithetaMax
-                      do izeta = izetaMin, izetaMax
+                   !do itheta = ithetaMin, ithetaMax
+                   !   do izeta = izetaMin, izetaMax
+                   do itheta = 1,Ntheta
+                      do izeta = 1,Nzeta
                          colIndices(index) = getIndex(ispecies, ix, ixi, itheta, izeta, BLOCK_F)
                          index = index + 1
                       end do
@@ -1341,14 +1347,17 @@
           ! We add these elements using as few calls to MatSetValues as possible, because otherwise PETSc gets really slow.
 
           temp = Ntheta*Nzeta/sum(sqrt_g)
-          j = (ithetaMax-ithetaMin+1)*(izetaMax-izetaMin+1)*Nxi ! j = number of theta*zeta*xi grid points owned by this proc.
+          !j = (ithetaMax-ithetaMin+1)*(izetaMax-izetaMin+1)*Nxi ! j = number of theta*zeta*xi grid points owned by this proc.
+          j = Ntheta*Nzeta*Nxi ! j = number of theta*zeta*xi grid points owned by this proc.
           allocate(values_to_add(j,1))
           allocate(colIndices(j))
           allocate(rowIndices(1))
           index = 1
           do ixi=1,Nxi
-             do itheta = ithetaMin,ithetaMax
-                do izeta = izetaMin,izetaMax
+             !do itheta = ithetaMin,ithetaMax
+             !   do izeta = izetaMin,izetaMax
+             do itheta = 1,Ntheta
+                do izeta = 1,Nzeta
                    ! The matrix elements must be proportional to sqrt_g,
                    ! but otherwise the row could probably be scaled any way you like. Here we include a factor 1/VPrimeHat so the 
                    ! row is dimensionless and the row sum is O(1), which seems like a reasonable scaling.
@@ -1374,8 +1383,10 @@
                 index = 1
                 ! It is critical that these next loops go in the same order as the loops for populating values_to_add above!
                 do ixi=1,Nxi
-                   do itheta = ithetaMin,ithetaMax
-                      do izeta = izetaMin,izetaMax
+                   !do itheta = ithetaMin,ithetaMax
+                   !   do izeta = izetaMin,izetaMax
+                   do itheta = 1,Ntheta
+                      do izeta = 1,Nzeta
                          colIndices(index) = getIndex(ispecies, ix, ixi, itheta, izeta, BLOCK_F)
                          index = index + 1
                       end do
