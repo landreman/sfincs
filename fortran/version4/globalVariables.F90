@@ -161,7 +161,7 @@ module globalVariables
   ! 1 = use mumps if it is detected, otherwise use superlu_dist
   ! 2 = force use of superlu_dist, if it is available
 
-  integer :: preconditioning_option = 6
+  integer :: preconditioning_option = 5
   integer :: preconditioner_x=1
   integer :: preconditioner_zeta_derivative_option=4
   integer :: preconditioner_theta_derivative_option = 4

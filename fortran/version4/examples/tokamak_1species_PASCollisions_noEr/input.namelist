@@ -116,7 +116,7 @@ null_space_option=0
   ! the same as the real system matrix.
 !  preconditioner_species = 0
 !  preconditioner_x = 0
-preconditioning_option=6
+preconditioning_option=5
 ! 1 = no fieldsplit, LU
 ! 2 = fieldsplit, GAMG
 ! 3 = fieldsplit, Hypre
