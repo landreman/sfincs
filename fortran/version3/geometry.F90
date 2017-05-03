@@ -43,7 +43,7 @@ contains
 
     implicit none
 
-    integer :: fileUnit, didFileAccessWork
+    integer :: fileUnit, didFileAccessWork, Turkin_sign
     character(len=200) :: lineOfFile
     integer, dimension(4) :: headerIntegers
     PetscScalar, dimension(3) :: headerReals
@@ -119,10 +119,18 @@ contains
           print *,"Unable to open magnetic equilibrium file."
           stop
        else
+          Turkin_sign = 1
           do
              read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
              ! Skip lines that begin with "CC":
-             if (lineOfFile(1:2) /= "CC") exit
+             if (lineOfFile(1:2) /= "CC") then
+                exit
+             else
+                if (index(lineOfFile,"CStconfig")>0) then
+                   Turkin_sign = -1 ! This file was saved by Yuriy Turkin.
+                                    ! He has then changed a sign, which I here change back to Joachim Geiger's convention
+                end if                
+             end if
           end do
 
           ! Read header line:
@@ -144,7 +152,7 @@ contains
        end if
 
        !Switch from a left-handed to right-handed (radial,poloidal,toroidal) system
-       psiAHat=psiAHat*(-1)           !toroidal direction sign switch
+       psiAHat=psiAHat*(-1)*Turkin_sign           !toroidal direction sign switch, and possibly Yuriy Turkin's sign
 
     case (12)
        fileUnit = 11
