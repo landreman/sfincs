@@ -1251,6 +1251,26 @@ The recommended setting is {\ttfamily xPotentialsGridScheme} = 2.}
 
 \myhrule
 
+\param{xDotDerivativeScheme}
+{integer}
+{0}
+{Whenever \parlink{includeXDotTerm} is \true.}
+{Changes the differentiation matrix used for the collisionless $\dot{x} \propto E_r$ term. This parameter
+does not affect the differentiation matrix used for the energy scattering part of the collision operator.\\
+
+{\ttfamily xDotDerivativeScheme} = 0: Use the same differentiation matrix for the $\dot{x}$ term as for the collision operator.\\
+
+{\ttfamily xDotDerivativeScheme} = 11: Use a low-order tri-diagonal differentiation matrix for the $\dot{x}$ term.\\
+
+Other values of {\ttfamily xDotDerivativeScheme} have been implemented (see {\ttfamily createGrids.F90}) but are
+not recommended. The recommended setting is almost always {\ttfamily xDotDerivativeScheme} = 0.
+The one exception is sometimes when \parlink{magneticDriftScheme}$>0$, in which
+case the convergence with respect to \parlink{Nx} is sometimes poor for values of $E_r$ near the peak in the radial fluxes.
+In this case, {\ttfamily xDotDerivativeScheme} = 11 may resolve the problem.
+}
+
+\myhrule
+
 \param{useIterativeLinearSolver}
 {Boolean}
 {\true}
