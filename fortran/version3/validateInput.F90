@@ -924,16 +924,16 @@ subroutine validateInput()
      stop
   end if
   
-  if (xDotDerivativeScheme>10) then
+  if (xDotDerivativeScheme>11) then
      if (masterProc) then
-        print *,"Error! xDotDerivativeScheme cannot be more than 10."
+        print *,"Error! xDotDerivativeScheme cannot be more than 11."
      end if
      stop
   end if
   
-  if (xDotDerivativeScheme>0 .and. (xGridScheme .ne. 3 .and. xGridScheme .ne. 4)) then
+  if (xDotDerivativeScheme>0 .and. xDotDerivativeScheme .ne. 11 .and. (xGridScheme .ne. 3 .and. xGridScheme .ne. 4)) then
      if (masterProc) then
-        print *,"Error! If xDotDerivativeScheme is >0, then xGridScheme must be either 3 or 4."
+        print *,"Error! If xDotDerivativeScheme is >0 and not 11, then xGridScheme must be either 3 or 4."
      end if
      stop
   end if

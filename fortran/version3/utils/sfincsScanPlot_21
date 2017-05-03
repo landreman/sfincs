@@ -288,20 +288,29 @@ if not logYaxis :
    yscales.append('linear')
 else:
    ydata = outputs_array
-   yscales.append('symlog')
+   yscales.append('log') ##AM 2017-02 changed 'symlog' to 'log'
    
 
 xlabels.append(xAxisLabels[0])
 ylabels.append(yAxisLabels[0]) 
 
 if logXaxis : 
-   xscales.append('symlog')
+   xscales.append('log') ##AM 2017-02 changed 'symlog' to 'log' 
 else:
    xscales.append('linear') 
    
 plt.plot(xdata,ydata,linespec)
-plt.xscale(xscales[-1])
-plt.yscale(yscales[-1])
+try: ##Added by AM 2017-02 
+   plt.xscale(xscales[-1])
+except: ##Added by AM 2017-02  
+   plt.xscale('symlog') ##Added by AM 2017-02  
+
+try: ##Added by AM 2017-02 
+   plt.yscale(yscales[-1])
+except: ##Added by AM 2017-02
+   plt.yscale('symlog') ##Added by AM 2017-02
+
+
 plt.xlabel(xlabels[-1])
 plt.ylabel(ylabels[-1])
 ymin,ymax = plt.ylim()

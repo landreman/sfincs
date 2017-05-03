@@ -202,6 +202,8 @@ elif scanVariable == "export_f_x_option":
 elif scanVariable == "export_f_x":
     print warningText
     mustBeInteger = False
+elif scanVariable == "ripplescale":
+	 mustBeInteger = False
 else:
     print "Error! The selected scanVariable is either not a valid input namelist parameter or it is one that does not take a numerical value."
     exit(1)
