@@ -46,7 +46,7 @@
        ! Other terms in the residual are computed by calling populateMatrix(...,3)
        ! and multiplying the result by the state vector:
        call preallocateMatrix(residualMatrix, 3)
-       call populateMatrix(residualMatrix, 3, stateVec)
+       call populateMatrix(residualMatrix, 3, stateVec, 1)
        call MatMultAdd(residualMatrix, stateVec, residualVec, residualVec, ierr)
        call MatDestroy(residualMatrix, ierr)
 
@@ -61,7 +61,7 @@
     ! any multiplying the result by the Vec f0:
     if (includeTemperatureEquilibrationTerm) then
        call preallocateMatrix(residualMatrix, 2)
-       call populateMatrix(residualMatrix, 2, stateVec)
+       call populateMatrix(residualMatrix, 2, stateVec, 1)
        call MatMultAdd(residualMatrix, f0, residualVec, residualVec, ierr)
        call MatDestroy(residualMatrix, ierr)
     end if
@@ -112,16 +112,16 @@
              x_part_2 = x2(ix)*exp(-x2(ix))*dTHatdpsiHats(ispecies)/(THats(ispecies)*THats(ispecies))
           end if
 
-          do itheta = ithetaMin,ithetaMax
-             do izeta = izetaMin,izetaMax                
+          do itheta = levels(1)%ithetaMin, levels(1)%ithetaMax
+             do izeta = levels(1)%izetaMin, levels(1)%izetaMax                
                 if (includePhi1 .and. includePhi1InKineticEquation) then !!Added by AM 2016-03
                    stop "This part not yet ready for theta_finiteDiffXi"
-                   factor = -spatial_scaling(itheta,izeta)*Delta*nHats(ispecies)*mHat*sqrtMHat &
-                        /(2*Zs(ispecies)*(BHat(itheta,izeta)**3)*sqrtTHat) &
-                        *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
-                        - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
+                   factor = -levels(1)%spatial_scaling(itheta,izeta)*Delta*nHats(ispecies)*mHat*sqrtMHat &
+                        /(2*Zs(ispecies)*(levels(1)%BHat(itheta,izeta)**3)*sqrtTHat) &
+                        *(levels(1)%BHat_sub_zeta(itheta,izeta)*levels(1)%dBHatdtheta(itheta,izeta) &
+                        - levels(1)%BHat_sub_theta(itheta,izeta)*levels(1)%dBHatdzeta(itheta,izeta))&
                         !!                     * DHat(itheta,izeta) * x_part !!Commented by AM 2016-02
-                        / sqrt_g(itheta,izeta) * (x_part + x_part_2*Zs(ispecies)*gamma*Phi1Hat(itheta,izeta))  & !!Added by AM 2016-02
+                        / levels(1)%sqrt_g(itheta,izeta) * (x_part + x_part_2*Zs(ispecies)*gamma*Phi1Hat(itheta,izeta))  & !!Added by AM 2016-02
                         * exp(-Zs(ispecies)*gamma*Phi1Hat(itheta,izeta)/THats(ispecies)) !!Added by AM 2016-02
                 else
 !!$                   factor = Delta*nHats(ispecies)*mHat*sqrtMHat &
@@ -130,15 +130,15 @@
 !!$                        - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
 !!$                        * DHat(itheta,izeta) * x_part
                    factor = -Delta*THat &
-                        /(2*Zs(ispecies)*BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)*sqrt_g(itheta,izeta)) &
-                        *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
-                        - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
-                        * x_part * spatial_scaling(itheta,izeta) * x_scaling(ix,ispecies)
+                        /(2*Zs(ispecies)*levels(1)%BHat(itheta,izeta)*levels(1)%BHat(itheta,izeta)*levels(1)%BHat(itheta,izeta)*levels(1)%sqrt_g(itheta,izeta)) &
+                        *(levels(1)%BHat_sub_zeta(itheta,izeta)*levels(1)%dBHatdtheta(itheta,izeta) &
+                        - levels(1)%BHat_sub_theta(itheta,izeta)*levels(1)%dBHatdzeta(itheta,izeta))&
+                        * x_part * levels(1)%spatial_scaling(itheta,izeta) * x_scaling(ix,ispecies)
                 end if 
                 
-                do ixi = 1,Nxi_for_x(ix)
-                   index = getIndex(ispecies, ix, ixi, itheta, izeta, BLOCK_F)
-                   scalar = (1+xi(ixi)*xi(ixi))*factor
+                do ixi = 1,levels(1)%Nxi_for_x(ix)
+                   index = getIndex(1,ispecies, ix, ixi, itheta, izeta, BLOCK_F)
+                   scalar = (1+levels(1)%xi(ixi)*levels(1)%xi(ixi))*factor
                    call VecSetValue(inhomogeneous_terms, index, scalar, ADD_VALUES, ierr)
                 end do
              end do
@@ -156,7 +156,7 @@
        L=0
        do itheta = ithetaMin,ithetaMax
           do izeta = izetaMin,izetaMax
-             index = getIndex(1, 1, 1, itheta, izeta, BLOCK_QN)
+             index = getIndex(1,1, 1, 1, itheta, izeta, BLOCK_QN)
 
              factor = 0
              do ispecies = 1,Nspecies
@@ -201,11 +201,11 @@
 !!$                     * dPhiHatdpsiHat
 !!$
 !!$                L = 0
-!!$                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+!!$                index = getIndex(1,ispecies, ix, L+1, itheta, izeta, BLOCK_F)
 !!$                call VecSetValue(rhs, index, (4/three)*factor, ADD_VALUES, ierr)
 !!$                
 !!$                L = 2
-!!$                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+!!$                index = getIndex(1,ispecies, ix, L+1, itheta, izeta, BLOCK_F)
 !!$                call VecSetValue(rhs, index, (two/three)*factor, ADD_VALUES, ierr)
 !!$             end do
 !!$          end do
@@ -216,14 +216,14 @@
     do ispecies = 1,Nspecies
        species_factor = sqrt(THats(ispecies)/mHats(ispecies))
        do ix=ixMin,Nx
-          do itheta=ithetaMin,ithetaMax
-             do izeta = izetaMin,izetaMax
+          do itheta = levels(1)%ithetaMin,levels(1)%ithetaMax
+             do izeta = levels(1)%izetaMin,levels(1)%izetaMax
                 factor = -species_factor*gamma*Zs(ispecies)*x(ix)*exp(-x2(ix))*EParallelHat &
-                     *BHat(itheta,izeta)/(THats(ispecies)*FSABHat2) &
-                     * spatial_scaling(itheta,izeta) * x_scaling(ix,ispecies)
-                do ixi = 1,Nxi
-                   index = getIndex(ispecies, ix, ixi, itheta, izeta, BLOCK_F)
-                   scalar = factor * xi(ixi)
+                     *levels(1)%BHat(itheta,izeta)/(THats(ispecies)*FSABHat2) &
+                     * levels(1)%spatial_scaling(itheta,izeta) * x_scaling(ix,ispecies)
+                do ixi = 1,levels(1)%Nxi_for_x(ix)
+                   index = getIndex(1,ispecies, ix, ixi, itheta, izeta, BLOCK_F)
+                   scalar = factor * levels(1)%xi(ixi)
                    call VecSetValue(inhomogeneous_terms, index, scalar, ADD_VALUES, ierr)
                 end do
              end do

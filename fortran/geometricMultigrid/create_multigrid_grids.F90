@@ -1109,61 +1109,60 @@
           !   print *,Legendre_projection(k,:,j)
           !end do
        end do
-       deallocate(xi_to_Legendre)
+       deallocate(xi_to_Legendre,Legendre_polynomials)
     end if
 
-! I need to deal with this next section...
-!!$    ! *******************************************************************************
-!!$    ! Set the number of Legendre modes used for each value of x
-!!$    ! *******************************************************************************
-!!$    
-!!$    allocate(Nxi_for_x(Nx))
-!!$
-!!$    if (masterProc) print *,"Nxi_for_x_option:",Nxi_for_x_option
-!!$    select case (Nxi_for_x_option)
-!!$    case (0)
-!!$       Nxi_for_x = Nxi
-!!$    case (1)
-!!$       do j=1,Nx
-!!$          ! Linear ramp from 0.1*Nxi to Nxi as x increases from 0 to 2:
-!!$          temp = Nxi*(0.1 + 0.9*x(j)/2)
-!!$          ! Always keep at least 3 Legendre modes, for the sake of diagnostics.
-!!$          ! Always keep at least NL Legendre modes, to simplify the collision operator loops.
-!!$          ! Above the threshold value of x, keep exactly Nxi Legendre modes.
-!!$          Nxi_for_x(j) = max(3,NL,min(int(temp),Nxi))
-!!$       end do
-!!$    case (2)
-!!$       do j=1,Nx
-!!$          ! Quadratic ramp from 0.1*Nxi to Nxi as x increases from 0 to 2:
-!!$          temp = Nxi*(0.1 + 0.9*( (x(j)/2)**2) )
-!!$          ! Always keep at least 3 Legendre modes, for the sake of diagnostics.
-!!$          ! Always keep at least NL Legendre modes, to simplify the collision operator loops.
-!!$          ! Above the threshold value of x, keep exactly Nxi Legendre modes.
-!!$          Nxi_for_x(j) = max(3,NL,min(int(temp),Nxi))
-!!$       end do
-!!$    case default
-!!$       if (masterProc) print *,"Error! Invalid Nxi_for_x_option"
-!!$       stop
-!!$    end select
-!!$
-!!$    allocate(min_x_for_L(0:(Nxi-1)))
-!!$    min_x_for_L=1
-!!$    do j=1,Nx
-!!$       min_x_for_L(Nxi_for_x(j):) = j+1
-!!$    end do
-!!$
-!!$    if (masterProc) then
-!!$       print *,"x:",x
-!!$       print *,"Nxi for each x:",Nxi_for_x
-!!$       print *,"min_x_for_L:",min_x_for_L
-!!$    end if
+    ! *******************************************************************************
+    ! Set the number of Legendre modes used for each value of x
+    ! *******************************************************************************
+    
+    allocate(levels(level)%Nxi_for_x(Nx))
 
-    call computeMatrixSize()
+    if (masterProc) print *,"Nxi_for_x_option:",Nxi_for_x_option
+    select case (Nxi_for_x_option)
+    case (0)
+       levels(level)%Nxi_for_x = Nxi
+    case (1)
+       do j=1,Nx
+          ! Linear ramp from 0.1*Nxi to Nxi as x increases from 0 to 2:
+          temp = Nxi*(0.1 + 0.9*x(j)/2)
+          ! Always keep at least 3 Legendre modes, for the sake of diagnostics.
+          ! Always keep at least NL Legendre modes, to simplify the collision operator loops.
+          ! Above the threshold value of x, keep exactly Nxi Legendre modes.
+          levels(level)%Nxi_for_x(j) = max(3,NL,min(int(temp),Nxi))
+       end do
+    case (2)
+       do j=1,Nx
+          ! Quadratic ramp from 0.1*Nxi to Nxi as x increases from 0 to 2:
+          temp = Nxi*(0.1 + 0.9*( (x(j)/2)**2) )
+          ! Always keep at least 3 Legendre modes, for the sake of diagnostics.
+          ! Always keep at least NL Legendre modes, to simplify the collision operator loops.
+          ! Above the threshold value of x, keep exactly Nxi Legendre modes.
+          levels(level)%Nxi_for_x(j) = max(3,NL,min(int(temp),Nxi))
+       end do
+    case default
+       if (masterProc) print *,"Error! Invalid Nxi_for_x_option"
+       stop
+    end select
 
-    !----------------------------------------------------------------------
+    allocate(levels(level)%min_x_for_L(0:(Nxi-1)))
+    levels(level)%min_x_for_L=1
+    do j=1,Nx
+       levels(level)%min_x_for_L(levels(level)%Nxi_for_x(j):) = j+1
+    end do
+
+    if (masterProc) then
+       print *,"x:",x
+       print *,"Nxi for each x:",levels(level)%Nxi_for_x
+       print *,"min_x_for_L:",levels(level)%min_x_for_L
+    end if
+
+    call computeMatrixSize(level)
+
+    !--------------------------------------------------------------------------
     ! Allocate arrays for quantities related to the magnetic geometry that are
     ! needed on every multigrid level.
-    !----------------------------------------------------------------------
+    !--------------------------------------------------------------------------
 
     allocate(levels(level)%sqrt_g(Ntheta,Nzeta))
 
@@ -1195,6 +1194,45 @@
     allocate(levels(level)%dBHat_sup_zeta_dtheta(Ntheta,Nzeta))
 
     allocate(levels(level)%gradpsidotgradB_overgpsipsi(Ntheta,Nzeta))
+
+    allocate(spatial_scaling(Ntheta,Nzeta))
+    select case (spatial_scaling_option)
+    case (1)
+       if (Nzeta==1) then
+          spatial_scaling = abs(BHat / BHat_sup_theta)
+       else
+          spatial_scaling = abs(BHat / BHat_sup_zeta)
+       end if
+    case (2)
+       if (Nzeta==1) then
+          spatial_scaling = abs( (theta(2)-theta(1)) * BHat / BHat_sup_theta )
+       else
+          spatial_scaling = abs( (zeta(2) - zeta(1)) * BHat / BHat_sub_zeta  )
+       end if
+    case (3)
+       if (Nzeta==1) then
+          spatial_scaling = abs(BHat / BHat_sup_theta)
+       else
+          spatial_scaling = abs(BHat / BHat_sup_zeta)
+       end if
+       spatial_scaling = sum(spatial_scaling)/(Ntheta*Nzeta)
+    case (4)
+       if (Nzeta==1) then
+          spatial_scaling = abs( (theta(2)-theta(1)) * BHat / BHat_sup_theta )
+       else
+          spatial_scaling = abs( (zeta(2) - zeta(1)) * BHat / BHat_sub_zeta  )
+       end if
+       spatial_scaling = sum(spatial_scaling)/(Ntheta*Nzeta)
+    case default
+       if (masterProc) print *,"Error! Invalid spatial_scaling_option:",spatial_scaling_option
+       stop
+    end select
+
+!!$    if (masterProc) then
+!!$       print *,"Here comes spatial_scaling:"
+!!$       print *,spatial_scaling
+!!$    end if
+
 
     if (masterProc) then
        print *,"------------------------------------------------------"

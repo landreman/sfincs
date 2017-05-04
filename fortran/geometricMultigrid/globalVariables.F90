@@ -161,7 +161,7 @@ module globalVariables
   ! 1 = use mumps if it is detected, otherwise use superlu_dist
   ! 2 = force use of superlu_dist, if it is available
 
-  integer :: preconditioning_option = 5
+  integer :: preconditioning_option = 1
   integer :: preconditioner_x=1
   integer :: preconditioner_zeta_derivative_option=4
   integer :: preconditioner_theta_derivative_option = 4
@@ -186,7 +186,6 @@ module globalVariables
   !
   ! ********************************************************
 
-  integer, dimension(:), allocatable :: Nxi_for_x, min_x_for_L
   integer :: matrixSize, NxPotentials
   real(prec), dimension(:), allocatable :: theta, zeta, x, x_plus1, xi
   real(prec), dimension(:), allocatable :: thetaWeights, zetaWeights, xiWeights
@@ -209,7 +208,7 @@ module globalVariables
   integer, parameter :: COORDINATE_SYSTEM_VMEC = 2
   integer :: coordinateSystem = COORDINATE_SYSTEM_UNINITIALIZED
 
-  real(prec), dimension(:,:), allocatable :: spatial_scaling, x_scaling
+  real(prec), dimension(:,:), allocatable :: x_scaling
   real(prec), dimension(:,:), allocatable :: sources, jHat, Phi1Hat, dPhi1Hatdtheta, dPhi1Hatdzeta
   real(prec), dimension(:,:,:), allocatable :: densityPerturbation, totalDensity
   real(prec), dimension(:,:,:), allocatable :: pressurePerturbation, totalPressure, pressureAnisotropy
@@ -410,8 +409,12 @@ module globalVariables
      integer :: ithetaMin, ithetaMax
      integer :: izetaMin, izetaMax
 
-     Mat :: low_order_matrix, high_order_matrix, mixed_order_matrix
+     integer, dimension(:), allocatable :: Nxi_for_x, min_x_for_L
+     integer :: DKE_size
+     integer, dimension(:), allocatable :: first_index_for_x
+     real(prec), dimension(:,:), allocatable :: spatial_scaling
 
+     Mat :: low_order_matrix, high_order_matrix, mixed_order_matrix
      Mat :: smoothing_matrix
 
   end type multigrid_level

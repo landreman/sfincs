@@ -70,7 +70,7 @@ subroutine setup_multigrid()
   call PCSetType(inner_preconditioner, PCMG, ierr)
 
   call set_grid_resolutions()
-  call PCMGSetLevels(inner_preconditioner,N_levels, PETSC_NULL_OBJECT,ierr)
+  call PCMGSetLevels(inner_preconditioner, N_levels, PETSC_NULL_OBJECT, ierr)
 
   do j = 1,N_levels
      call create_multigrid_grids(j)

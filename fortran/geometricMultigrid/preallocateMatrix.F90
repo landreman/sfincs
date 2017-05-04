@@ -5,31 +5,36 @@
 #include <petsc/finclude/petscmatdef.h>
 #endif
 
-subroutine preallocateMatrix(matrix, whichMatrix)
+subroutine preallocateMatrix(matrix, whichMatrix, level)
 
   use kinds
   use petscmat
-  use globalVariables, only: Nx, Nxi, Ntheta, Nzeta, Nspecies, matrixSize, includePhi1, &
+  use globalVariables, only: levels, Nx, Nspecies, includePhi1, &
        constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, & 
        includePhi1InKineticEquation, quasineutralityOption, collisionOperator, &
-       ddtheta_plus, ddtheta_minus, ddzeta_plus, ddzeta_minus, ddxi_plus, ddxi_minus, pitch_angle_scattering_operator, &
        preconditioner_field_term_xi_option
   use indices
 
   implicit none
 
-  integer, intent(in) :: whichMatrix
+  integer, intent(in) :: whichMatrix, level
   Mat :: matrix
   integer :: predictedNNZForEachRowOfPreconditioner, predictedNNZForEachRowOfTotalMatrix
   integer, dimension(:), allocatable :: predictedNNZsForEachRow, predictedNNZsForEachRowDiagonal
   PetscErrorCode :: ierr
   integer :: tempInt1, i, itheta, izeta, ispecies, ix, index
   integer :: firstRowThisProcOwns, lastRowThisProcOwns, numLocalRows
+  integer :: Ntheta, Nzeta, Nxi, matrixSize
 
   if (masterProc) then
      print *,"Beginning preallocation for whichMatrix = ",whichMatrix
   end if
 
+  Ntheta = levels(level)%Ntheta
+  Nzeta  = levels(level)%Nzeta
+  Nxi    = levels(level)%Nxi
+  matrixSize = levels(level)%matrixSize
+  
   !predictedNNZForEachRowOfTotalMatrix = 4*(3*Nx + 5*3 + 5*3 + 5 + Nx)
   !predictedNNZForEachRowOfTotalMatrix = 4*(3*Nx + 5*3 + 5*3 + 5 + Nx + Ntheta*Nzeta)
   tempInt1 = Nspecies*Nx + 5*3 + 5*3 + 5 + 3*Nx + 2 + Nx*Ntheta*Nzeta
@@ -44,38 +49,19 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   
   allocate(predictedNNZsForEachRow(matrixSize))
   allocate(predictedNNZsForEachRowDiagonal(matrixSize))
-  ! Set tempInt1 to the expected number of nonzeros in a row of the kinetic equation block:
-
-!!$  tempInt1 = 3*Nx &        ! ddx terms on diagonal from collision operator, and ell=L +/- 2 in xDot. (Dense in x, and tridiagonal in L.)
-!!$       + (Nspecies-1)*Nx & ! inter-species collisional coupling. (Dense in x and species, -Nx since we already counted the diagonal-in-species block)
-!!$       + 2                 ! particle and heat sources
-!!$
-!!$  if (thetaDerivativeScheme==0) then
-!!$     tempInt1 = tempInt1 + Ntheta*5-1  ! d/dtheta terms (dense in theta, pentadiagonal in L, -1 since we already counted the diagonal)
-!!$  else
-!!$     tempInt1 = tempInt1 + 5*5-1       ! d/dtheta terms (pentadiagonal in theta, pentadiagonal in L, -1 since we already counted the diagonal)
-!!$  end if
-!!$
-!!$  if (zetaDerivativeScheme==0) then
-!!$     tempInt1 = tempInt1 + Nzeta*5-1  ! d/dzeta terms (dense in theta, pentadiagonal in L, -1 since we already counted the diagonal)
-!!$  else
-!!$     tempInt1 = tempInt1 + 5*5-1      ! d/dzeta terms (pentadiagonal in theta, pentadiagonal in L, -1 since we already counted the diagonal)
-!!$  end if
-!!$
-!!$  ! We don't need to separately count the d/dxi terms, since they just add to the diagonals of the d/dtheta and d/dzeta terms we already counted.
 
   tempInt1 = 2 & ! particle and heat sources
        + Nx ! xdot
   ! Below, the 1 is subtracted because we already counted the diagonal, above.
-  tempInt1 = tempInt1 + max(max_nnz_per_row(Ntheta,ddtheta_plus), max_nnz_per_row(Ntheta,ddtheta_minus)) - 1
-  tempInt1 = tempInt1 + max(max_nnz_per_row(Nzeta,ddzeta_plus), max_nnz_per_row(Nzeta,ddzeta_minus)) - 1
-  tempInt1 = tempInt1 + max(max_nnz_per_row(Nxi,ddxi_plus+100*pitch_angle_scattering_operator), &
-       max_nnz_per_row(Nxi,ddxi_minus+100*pitch_angle_scattering_operator)) - 1
+  tempInt1 = tempInt1 + max(max_nnz_per_row(Ntheta,levels(level)%ddtheta_plus), max_nnz_per_row(Ntheta,levels(level)%ddtheta_minus)) - 1
+  tempInt1 = tempInt1 + max(max_nnz_per_row(Nzeta,levels(level)%ddzeta_plus), max_nnz_per_row(Nzeta,levels(level)%ddzeta_minus)) - 1
+  tempInt1 = tempInt1 + max(max_nnz_per_row(Nxi,levels(level)%ddxi_plus+100*levels(level)%pitch_angle_scattering_operator), &
+       max_nnz_per_row(Nxi,levels(level)%ddxi_minus+100*levels(level)%pitch_angle_scattering_operator)) - 1
   ! I need to add the nonzeros for the Fokker-Planck operator.
   if (masterProc) then
-     print *,"nnz per row for ddtheta_plus:",max_nnz_per_row(Ntheta,ddtheta_plus)
-     print *,"nnz per row for ddzeta_plus: ",max_nnz_per_row(Nzeta,ddzeta_plus)
-     print *,"nnz per row for ddxi_plus:   ",max_nnz_per_row(Nxi,ddxi_plus)
+     print *,"nnz per row for ddtheta_plus:",max_nnz_per_row(Ntheta,levels(level)%ddtheta_plus)
+     print *,"nnz per row for ddzeta_plus: ",max_nnz_per_row(Nzeta,levels(level)%ddzeta_plus)
+     print *,"nnz per row for ddxi_plus:   ",max_nnz_per_row(Nxi,levels(level)%ddxi_plus)
   end if
   if (collisionOperator==0) then
      ! Eventually, add a test so these terms are only added if preconditioner_x=0.
@@ -109,16 +95,16 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   case (1, 3, 4)
      ! The rows for the constraints have more nonzeros:
      do ispecies=1,Nspecies
-        index = getIndex(ispecies,1,1,1,1,BLOCK_DENSITY_CONSTRAINT)
+        index = getIndex(level,ispecies,1,1,1,1,BLOCK_DENSITY_CONSTRAINT)
         predictedNNZsForEachRow(index+1) = Ntheta*Nzeta*Nxi*Nx + 1 ! +1 for diagonal
-        index = getIndex(ispecies,1,1,1,1,BLOCK_PRESSURE_CONSTRAINT)
+        index = getIndex(level,ispecies,1,1,1,1,BLOCK_PRESSURE_CONSTRAINT)
         predictedNNZsForEachRow(index+1) = Ntheta*Nzeta*Nxi*Nx + 1 ! +1 for diagonal
      end do
   case (2)
      ! The rows for the constraints have more nonzeros:
      do ispecies=1,Nspecies
         do ix = 1, Nx
-           index = getIndex(ispecies,ix,1,1,1,BLOCK_F_CONSTRAINT)
+           index = getIndex(level,ispecies,ix,1,1,1,BLOCK_F_CONSTRAINT)
            predictedNNZsForEachRow(index+1) = Ntheta*Nzeta*Nxi + 1 ! +1 for diagonal
         end do
      end do
@@ -129,7 +115,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
      ! Set rows for the quasineutrality condition:
      do itheta=1,Ntheta
         do izeta=1,Nzeta
-           index = getIndex(1,1,1,itheta,izeta,BLOCK_QN)
+           index = getIndex(level,1,1,1,itheta,izeta,BLOCK_QN)
 
            !!Added by AM 2016-03!!
            if (quasineutralityOption == 1) then
@@ -150,7 +136,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
         end do
      end do
      ! Set row for lambda constraint:
-     index = getIndex(1,1,1,1,1,BLOCK_PHI1_CONSTRAINT)
+     index = getIndex(level,1,1,1,1,1,BLOCK_PHI1_CONSTRAINT)
      predictedNNZsForEachRow(index+1) = Ntheta*Nzeta + 1 ! <Phi_1>, plus 1 for diagonal.
   end if
   predictedNNZsForEachRowDiagonal = predictedNNZsForEachRow
@@ -255,6 +241,7 @@ contains
     end do
     
   end function max_nnz_per_row
+
 end subroutine preallocateMatrix
 
 ! -----------------------------------------------------

@@ -1,10 +1,3 @@
-#include "PETScVersions.F90"
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscsysdef.h>
-#else
-#include <petsc/finclude/petscsysdef.h>
-#endif
-
 subroutine nonperiodic_interpolation(N, M, x, y, matrix)
   ! Builds a matrix for interpolating from a non-periodic grid to any
   ! other grid, using a 2-point stencil (linear interpolation).
@@ -20,15 +13,17 @@ subroutine nonperiodic_interpolation(N, M, x, y, matrix)
   !
   ! Outside the range of the input x grid, we use a constant extrapolation.
 
+  use kinds
+
   implicit none
 
   integer, intent(in) :: N, M
-  PetscScalar, intent(in) :: x(N), y(M)
-  PetscScalar, intent(out) :: matrix(M,N)
+  real(prec), intent(in) :: x(N), y(M)
+  real(prec), intent(out) :: matrix(M,N)
   integer :: i, j, index=1
   logical flag
   integer :: indicesToUse(2), k
-  PetscScalar :: x0, x1, xx
+  real(prec) :: x0, x1, xx
 
   ! Initialize matrix to 0:
   matrix=0d+0

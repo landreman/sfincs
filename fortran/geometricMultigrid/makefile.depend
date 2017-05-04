@@ -23,8 +23,8 @@ geometry.o: globalVariables.o kinds.o radialCoordinates.o readVMEC/readVMEC.a
 globalVariables.o: kinds.o
 indices.o: globalVariables.o
 kinds.o:
-nonperiodic_interpolation.o: globalVariables.o
-periodic_interpolation.o: globalVariables.o
+nonperiodic_interpolation.o: kinds.o
+periodic_interpolation.o: kinds.o
 polynomialDiffMatrices.o: kinds.o xGrid.o
 polynomialInterpolationMatrix.o: kinds.o
 populateMatrix.o: globalVariables.o kinds.o sparsify.o indices.o xGrid.o
@@ -34,7 +34,7 @@ radialCoordinates.o: globalVariables.o
 readInput.o: globalVariables.o xGrid.o # export_f.o
 restriction_prolongation_matrices.o: globalVariables.o
 setup_multigrid.o: globalVariables.o
-set_grid_resolutions.o: globalVariables.o
+set_grid_resolutions.o: globalVariables.o kinds.o
 sfincs.o: geometry.o globalVariables.o writeHDF5Output.o readInput.o solver.o radialCoordinates.o
 solver.o: globalVariables.o indices.o
 sparsify.o: kinds.o

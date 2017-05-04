@@ -9,7 +9,7 @@ subroutine restriction_prolongation_matrices(fine_level)
 
   use petscmat
   use indices
-  use variables, only: levels, multigrid_restriction_matrices, multigrid_prolongation_matrices, numProcs, one, constraint_option, &
+  use globalVariables, only: levels, multigrid_restriction_matrices, multigrid_prolongation_matrices, numProcs, one, constraint_option, &
        restriction_option, pi, zetaMax, masterProc
 
   implicit none
@@ -143,12 +143,12 @@ subroutine restriction_prolongation_matrices(fine_level)
 !!$  call MatGetRowSum(multigrid_prolongation_matrices(fine_level), row_sums, ierr)
 !!$  call VecView(row_sums,PETSC_VIEWER_STDOUT_WORLD, ierr) 
 
-  write (filename,fmt="(a,i1,a)") "mmc_restriction_matrix_level_",fine_level,".dat"
+  write (filename,fmt="(a,i1,a)") "sfincs_restriction_matrix_level_",fine_level,".dat"
   call PetscViewerBinaryOpen(PETSC_COMM_WORLD, trim(filename), FILE_MODE_WRITE, viewer, ierr)
   call MatView(multigrid_restriction_matrices(fine_level), viewer, ierr)
   call PetscViewerDestroy(viewer, ierr)
 
-  write (filename,fmt="(a,i1,a)") "mmc_prolongation_matrix_level_",fine_level,".dat"
+  write (filename,fmt="(a,i1,a)") "sfincs_prolongation_matrix_level_",fine_level,".dat"
   call PetscViewerBinaryOpen(PETSC_COMM_WORLD, trim(filename), FILE_MODE_WRITE, viewer, ierr)
   call MatView(multigrid_prolongation_matrices(fine_level), viewer, ierr)
   call PetscViewerDestroy(viewer, ierr)

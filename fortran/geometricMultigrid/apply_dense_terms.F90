@@ -71,13 +71,13 @@
           do iSpeciesB = 1,Nspecies
              do ix_col = 1,Nx
                 do ixi = 1,Nxi
-                   index = getIndex(ispeciesB,ix_col,ixi,itheta,izeta,BLOCK_F) + 1 ! +1 to go from PETsc to Fortran indices
+                   index = getIndex(1,ispeciesB,ix_col,ixi,itheta,izeta,BLOCK_F) + 1 ! +1 to go from PETsc to Fortran indices
                    xi_vector_in(ixi) = stateArray(index)
                 end do
                 do iSpeciesA = 1,Nspecies
                    do ix_row = 1,Nx
                       xi_vector_out = 0
-                      factor = -nu_n*spatial_scaling(itheta,izeta)*x_scaling(ix_row,iSpeciesA)
+                      factor = -nu_n*levels(1)%spatial_scaling(itheta,izeta)*x_scaling(ix_row,iSpeciesA)
                       do L = 0,NL-1
                          !call dgemv('n',Nxi,Nxi,species_factor(iSpeciesA)*factor* RosenbluthPotentialTerms(iSpeciesA,iSpeciesB,L+1,ix_row,ix_col),&
 #if defined(PETSC_USE_REAL_SINGLE)
@@ -91,7 +91,7 @@
 #endif
                       end do
                       do ixi = 1,Nxi
-                         index = getIndex(ispeciesA,ix_row,ixi,itheta,izeta,BLOCK_F)
+                         index = getIndex(1,ispeciesA,ix_row,ixi,itheta,izeta,BLOCK_F)
                          call VecSetValue(outputVec,index,xi_vector_out(ixi), ADD_VALUES, ierr)
                       end do
                    end do

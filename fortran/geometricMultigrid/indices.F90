@@ -131,12 +131,9 @@
     ! Enforce <f_1> = 0 at each x
     integer, parameter :: BLOCK_F_CONSTRAINT        = 9995
 
-    integer, private :: DKE_size
-    integer, private, dimension(:), allocatable :: first_index_for_x
-
   contains
 
-    integer function getIndex(i_species, i_x, i_xi, i_theta, i_zeta, whichBlock)
+    integer function getIndex(level, i_species, i_x, i_xi, i_theta, i_zeta, whichBlock)
 
       ! This function takes as inputs "local" indices in the species, x, xi, theta, and zeta grids,
       ! and returns the "global" index, i.e. the row or column of the master matrix.
@@ -144,11 +141,17 @@
       ! The input "local" indices (i_x, i_xi, etc) are 1-based, since small matrices are stored in Fortran.
       ! the output "global" index is 0-based, since PETSc uses 0-based indexing.
 
-      use globalVariables, only: Nspecies, Nx, Nxi, Ntheta, Nzeta, matrixSize, constraintScheme, includePhi1, masterProc, Nxi_for_x
+      use globalVariables, only: levels, Nspecies, Nx, constraintScheme, includePhi1, masterProc
 
       implicit none
 
-      integer, intent(in) :: i_species, i_x, i_xi, i_theta, i_zeta, whichBlock
+      integer, intent(in) :: level, i_species, i_x, i_xi, i_theta, i_zeta, whichBlock
+      integer :: Ntheta, Nzeta, Nxi, matrixSize
+
+      Ntheta = levels(level)%Ntheta
+      Nzeta  = levels(level)%Nzeta
+      Nxi    = levels(level)%Nxi
+      matrixSize = levels(level)%matrixSize
 
       ! Validate inputs:
 
@@ -177,7 +180,7 @@
          stop
       end if
 
-      if (i_xi > Nxi_for_x(i_x)) then
+      if (i_xi > levels(level)%Nxi_for_x(i_x)) then
          print *,"Error: i_xi > Nxi_for_x(i_x)"
          print *,"i_xi:",i_xi
          print *,"i_x:",i_x
@@ -227,21 +230,21 @@
 !!$              +(i_xi-1)*Ntheta*Nzeta &
 !!$              +(i_theta-1)*Nzeta &
 !!$              +i_zeta -1
-         getIndex = (i_species-1)*DKE_size &
-              +first_index_for_x(i_x)*Ntheta*Nzeta &
+         getIndex = (i_species-1)*levels(level)%DKE_size &
+              +levels(level)%first_index_for_x(i_x)*Ntheta*Nzeta &
               +(i_xi-1)*Ntheta*Nzeta &
               +(i_theta-1)*Nzeta &
               +i_zeta -1
 
       case (BLOCK_QN)
          !getIndex = Nspecies*Nx*Nxi*Ntheta*Nzeta &
-         getIndex = Nspecies*DKE_size &
+         getIndex = Nspecies*levels(level)%DKE_size &
               +(i_theta-1)*Nzeta &
               +i_zeta-1
 
       case (BLOCK_PHI1_CONSTRAINT)
          !getIndex = Nspecies*Nx*Nxi*Ntheta*Nzeta &
-         getIndex = Nspecies*DKE_size &
+         getIndex = Nspecies*levels(level)%DKE_size &
               +Ntheta*Nzeta
 
       case (BLOCK_DENSITY_CONSTRAINT)
@@ -251,11 +254,11 @@
             stop
          end if
          if (includePhi1) then
-            getIndex = Nspecies*DKE_size &
+            getIndex = Nspecies*levels(level)%DKE_size &
                  + Ntheta*Nzeta + 1 &
                  + (i_species-1)*2
          else
-            getIndex = Nspecies*DKE_size &
+            getIndex = Nspecies*levels(level)%DKE_size &
                  + (i_species-1)*2
          end if
 
@@ -266,11 +269,11 @@
             stop
          end if
          if (includePhi1) then
-            getIndex = Nspecies*DKE_size &
+            getIndex = Nspecies*levels(level)%DKE_size &
                  + Ntheta*Nzeta + 1 &
                  + (i_species-1)*2 + 1
          else
-            getIndex = Nspecies*DKE_size &
+            getIndex = Nspecies*levels(level)%DKE_size &
                  + (i_species-1)*2 + 1
          end if
 
@@ -281,11 +284,11 @@
             stop
          end if
          if (includePhi1) then
-            getIndex = Nspecies*DKE_size &
+            getIndex = Nspecies*levels(level)%DKE_size &
                  + Ntheta*Nzeta + 1 &
                  + (i_species-1)*Nx + i_x - 1
          else
-            getIndex = Nspecies*DKE_size &
+            getIndex = Nspecies*levels(level)%DKE_size &
                  + (i_species-1)*Nx + i_x - 1
          end if
 
@@ -311,45 +314,50 @@
     ! ---------------------------------------------------------------
     ! ---------------------------------------------------------------
 
-    subroutine computeMatrixSize()
+    subroutine computeMatrixSize(level)
 
-      use globalVariables, only: Nspecies, Ntheta, Nzeta, Nx, Nxi, includePhi1, constraintScheme, masterProc, matrixSize, Nxi_for_x
+      use globalVariables, only: levels, Nspecies, Nx, includePhi1, constraintScheme, masterProc, matrixSize
 
       implicit none
 
+      integer, intent(in) :: level
       integer :: ix
 
-      DKE_size = sum(Nxi_for_x)*Ntheta*Nzeta
+      Ntheta = levels(level)%Ntheta
+      Nzeta  = levels(level)%Nzeta
+      Nxi    = levels(level)%Nxi
 
-      matrixSize = Nspecies * DKE_size
+      levels(level)%DKE_size = sum(levels(level)%Nxi_for_x)*Ntheta*Nzeta
+
+      levels(level)%matrixSize = Nspecies * levels(level)%DKE_size
       !matrixSize = Nspecies * Ntheta * Nzeta * Nxi * Nx
 
-      allocate(first_index_for_x(Nx))
-      first_index_for_x(1)=0
+      allocate(levels(level)%first_index_for_x(Nx))
+      levels(level)%first_index_for_x(1) = 0
       do ix=2,Nx
-         first_index_for_x(ix) = first_index_for_x(ix-1)+Nxi_for_x(ix-1)
+         levels(level)%first_index_for_x(ix) = levels(level)%first_index_for_x(ix-1) + levels(level)%Nxi_for_x(ix-1)
       end do
 
 
       if (includePhi1) then
          ! Include quasineutrality at Ntheta*Nzeta grid points, plus the <Phi_1>=0 constraint:
-         matrixSize = matrixSize + Ntheta*Nzeta + 1
+         levels(level)%matrixSize = levels(level)%matrixSize + Ntheta*Nzeta + 1
       end if
 
       select case (constraintScheme)
       case (0)
       case (1,3,4)
-         matrixSize = matrixSize + 2 * Nspecies
+         levels(level)%matrixSize = levels(level)%matrixSize + 2 * Nspecies
       case (2)
-         matrixSize = matrixSize + Nx * Nspecies
+         levels(level)%matrixSize = levels(level)%matrixSize + Nx * Nspecies
       case default
          print *,"Error! Invalid constraintScheme"
          stop
       end select
 
-      if (masterProc) then
-         print *,"The matrix is ",matrixSize,"x",matrixSize," elements."
-      end if
+      if (level==1) matrixSize = levels(level)%matrixSize
+
+      if (masterProc) print "(a,i3,a,i10,a,i10)"," The matrix for level",level," is",levels(level)%matrixSize," x",levels(level)%matrixSize," elements."
 
     end subroutine computeMatrixSize
 

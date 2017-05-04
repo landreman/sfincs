@@ -1,23 +1,16 @@
-#include "PETScVersions.F90"
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscsysdef.h>
-#else
-#include <petsc/finclude/petscsysdef.h>
-#endif
-
 subroutine set_grid_resolutions()
 
-  use petscsys
-  use variables
+  use kinds
+  use globalVariables
 
   implicit none
 
-  PetscScalar :: temp_float
-  PetscInt :: temp_int, j
-  PetscScalar, parameter :: small = 1.0d-12
+  real(prec) :: temp_float
+  integer :: temp_int, j
+  real(prec), parameter :: small = 1.0d-12
   integer, parameter :: max_N_levels = 20
-  PetscScalar :: Ntheta_candidates(max_N_levels), Nzeta_candidates(max_N_levels), Nxi_candidates(max_N_levels)
-  PetscScalar :: theta_coupling, zeta_coupling, xi_coupling, factor, new_max_coupling
+  real(prec) :: Ntheta_candidates(max_N_levels), Nzeta_candidates(max_N_levels), Nxi_candidates(max_N_levels)
+  real(prec) :: theta_coupling, zeta_coupling, xi_coupling, factor, new_max_coupling
 
   N_levels = 1
   Ntheta_min = min(Ntheta_min,Ntheta)
@@ -295,6 +288,7 @@ subroutine set_grid_resolutions()
      end do
   end if
 
+  ! Sanity test:
   if (Ntheta .ne. levels(1)%Ntheta) stop "Error! Ntheta should equal Ntheta_levels(1)"
   if (Nzeta  .ne. levels(1)%Nzeta ) stop "Error! Nzeta should equal Nzeta_levels(1)"
   if (Nxi    .ne. levels(1)%Nxi   ) stop "Error! Nxi should equal Nxi_levels(1)"

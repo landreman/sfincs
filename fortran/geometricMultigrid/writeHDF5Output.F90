@@ -207,7 +207,7 @@ contains
        call writeHDF5Field("ddxi_minus_preconditioner", levels(1)%ddxi_minus_preconditioner, dspaceIDforxixi, dimForxixi, "")
        call writeHDF5Field("pitch_angle_scattering_operator", levels(1)%pitch_angle_scattering_operator, dspaceIDforxixi, dimForxixi, "")
        call writeHDF5Field("pitch_angle_scattering_operator_preconditioner", levels(1)%pitch_angle_scattering_operator_preconditioner, dspaceIDforxixi, dimForxixi, "")
-       call writeHDF5Field("Nxi_for_x", Nxi_for_x, dspaceIDForX, dimForX, &
+       call writeHDF5Field("Nxi_for_x", levels(1)%Nxi_for_x, dspaceIDForX, dimForX, &
             "Number of Legendre polynomials used for each grid point in x.")
        call writeHDF5Field("geometryScheme", geometryScheme, "")
        call writeHDF5Field("theta_derivative_option", theta_derivative_option, "")

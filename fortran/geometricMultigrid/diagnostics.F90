@@ -155,7 +155,7 @@
           
           do itheta = 1,Ntheta
              do izeta = 1,Nzeta
-                index = getIndex(1,1,1,itheta,izeta,BLOCK_QN)+1
+                index = getIndex(1,1,1,1,itheta,izeta,BLOCK_QN)+1
                 ! Add 1 because getIndex returns 0-based PETSc indices, not 1-based fortran indices.
                 Phi1Hat(itheta,izeta) = solnarray(index)
              end do
@@ -220,6 +220,7 @@
     real(prec), dimension(:), allocatable :: heatFluxIntegralWeights_vm
     real(prec), dimension(:), allocatable :: heatFluxIntegralWeights_vE
     real(prec), dimension(:), allocatable :: NTVIntegralWeights
+    real(prec), dimension(:), pointer :: xi, thetaWeights, zetaWeights, xiWeights
     real(prec) :: factor, factor2, factor_vE, temp1, temp2, temp3
     integer :: itheta1, izeta1, ixi1, ix1
     integer :: itheta2, izeta2, ixi2, ix2
@@ -231,6 +232,12 @@
     if (masterProc) then
        print *,"Computing diagnostics."
     end if
+
+    ! Set up some aliases for quantities on the finest grid:
+    xi => levels(1)%xi
+    thetaWeights => levels(1)%thetaWeights
+    zetaWeights => levels(1)%zetaWeights
+    xiWeights => levels(1)%xiWeights
 
     call KSPGetIterationNumber(myKSP, number_of_KSP_iterations, ierr)
     if (masterProc) print *,"number_of_KSP_iterations:",number_of_KSP_iterations
@@ -253,7 +260,7 @@
     !!!   do ix = 1,Nx
     !!!      do itheta = ithetaMin,ithetaMax
     !!!         do izeta = izetaMin,izetaMax
-    !!!            index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+    !!!            index = getIndex(1,ispecies, ix, L+1, itheta, izeta, BLOCK_F)
     !!!            call VecSetValue(expPhi1, index, &
     !!!                 exp(-Zs(ispecies)*gamma*Phi1Hat(itheta,izeta)/THats(ispecies)), INSERT_VALUES, ierr)
     !!!         end do
@@ -362,14 +369,14 @@
        case (0)
        case (1,3,4)
           do ispecies = 1,Nspecies
-             sources(ispecies,1) = solutionWithDeltaFArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)+1)
-             sources(ispecies,2) = solutionWithDeltaFArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)+1)
+             sources(ispecies,1) = solutionWithDeltaFArray(getIndex(1,ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)+1)
+             sources(ispecies,2) = solutionWithDeltaFArray(getIndex(1,ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)+1)
              ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
           end do
        case (2)
           do ispecies = 1,Nspecies
              do ix=1,Nx
-                sources(ispecies,ix) = solutionWithDeltaFArray(getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)+1)
+                sources(ispecies,ix) = solutionWithDeltaFArray(getIndex(1,ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)+1)
                 ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
              end do
           end do
@@ -379,7 +386,7 @@
        end select
 
        if (includePhi1) then
-          lambda = solutionWithDeltaFArray(getIndex(1, 1, 1, 1, 1, BLOCK_PHI1_CONSTRAINT)+1)
+          lambda = solutionWithDeltaFArray(getIndex(1,1, 1, 1, 1, 1, BLOCK_PHI1_CONSTRAINT)+1)
        else
           lambda = zero
        end if
@@ -422,24 +429,24 @@
 
                 !factor = (GHat*dBHatdtheta(itheta,izeta) - IHat*dBHatdzeta(itheta,izeta))/(BHat(itheta,izeta) ** 3)
 
-                factor = (BHat_sub_theta(itheta,izeta) * dBHatdzeta(itheta,izeta) &
-                     - BHat_sub_zeta(itheta,izeta) * dBHatdtheta(itheta,izeta)) / (BHat(itheta,izeta) ** 3)
+                factor = (level(1)%BHat_sub_theta(itheta,izeta) * level(1)%dBHatdzeta(itheta,izeta) &
+                     - level(1)%BHat_sub_zeta(itheta,izeta) * level(1)%dBHatdtheta(itheta,izeta)) / (level(1)%BHat(itheta,izeta) ** 3)
 
                 if (force0RadialCurrentInEquilibrium) then
                    factor2 = 0
                 else
                    ! Note: this next line has not been tested, since I haven't used eqilibria with a radial current.
-                   factor2 = 2 * (dBHat_sub_zeta_dtheta(itheta,izeta) - dBHat_sub_theta_dzeta(itheta,izeta)) &
-                        / (BHat(itheta,izeta) ** 2)
+                   factor2 = 2 * (level(1)%dBHat_sub_zeta_dtheta(itheta,izeta) - level(1)%dBHat_sub_theta_dzeta(itheta,izeta)) &
+                        / (level(1)%BHat(itheta,izeta) ** 2)
                 end if
 
-                factor_vE = (BHat_sub_theta(itheta,izeta) * dPhi1Hatdzeta(itheta,izeta) &
-                     -BHat_sub_zeta(itheta,izeta) * dPhi1Hatdtheta(itheta,izeta)) &
-                     / (BHat(itheta,izeta) ** 2)
+                factor_vE = (level(1)%BHat_sub_theta(itheta,izeta) * dPhi1Hatdzeta(itheta,izeta) &
+                     -level(1)%BHat_sub_zeta(itheta,izeta) * dPhi1Hatdtheta(itheta,izeta)) &
+                     / (level(1)%BHat(itheta,izeta) ** 2)
 
                 do ix=1,Nx
                    do ixi = 1,Nxi
-                      index = getIndex(ispecies, ix, ixi, itheta, izeta, BLOCK_F)+1
+                      index = getIndex(1,ispecies, ix, ixi, itheta, izeta, BLOCK_F)+1
                       ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
 
                       densityPerturbation(ispecies,itheta,izeta) = densityPerturbation(ispecies,itheta,izeta) &
@@ -449,20 +456,20 @@
                            + flowFactor*xi(ixi)*xWeights(ix)*flowIntegralWeights(ix)*xiWeights(ixi)*solutionWithDeltaFArray(index)
                       
                       FSABFlow_vs_x(ispecies,ix) = FSABFlow_vs_x(ispecies,ix) &
-                           + flowFactor*xi(ixi)*xWeights(ix)*flowIntegralWeights(ix)*xiWeights(ixi)*solutionWithDeltaFArray(index) &
-                           * thetaWeights(itheta) * zetaWeights(izeta) * BHat(itheta,izeta) * sqrt_g(itheta,izeta)
+                           + flowFactor*xi(xi)*xWeights(ix)*flowIntegralWeights(ix)*xiWeights(ixi)*solutionWithDeltaFArray(index) &
+                           * thetaWeights(itheta) * zetaWeights(izeta) * BHat(itheta,izeta) * level(1)%sqrt_g(itheta,izeta)
 
                       pressurePerturbation(ispecies,itheta,izeta) = pressurePerturbation(ispecies,itheta,izeta) &
                            + pressureFactor*xWeights(ix)*pressureIntegralWeights(ix)*xiWeights(ixi)*solutionWithDeltaFArray(index)
                       
                       particleFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
                            = particleFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
-                           + (factor * (1+xi(ixi)*xi(ixi)) + factor2 * (xi(ixi)*xi(ixi))) * particleFluxFactor_vm &
+                           + (factor * (1+xi(xi)*xi(xi)) + factor2 * (xi(xi)*xi(xi))) * particleFluxFactor_vm &
                            * xWeights(ix)*particleFluxIntegralWeights_vm(ix)*xiWeights(ixi)*f0Array(index)
                       
                       particleFluxBeforeSurfaceIntegral_vm(ispecies,itheta,izeta) &
                            = particleFluxBeforeSurfaceIntegral_vm(ispecies,itheta,izeta) &
-                           + (factor * (1+xi(ixi)*xi(ixi)) + factor2 * (xi(ixi)*xi(ixi))) * particleFluxFactor_vm &
+                           + (factor * (1+xi(xi)*xi(xi)) + factor2 * (xi(xi)*xi(xi))) * particleFluxFactor_vm &
                            * xWeights(ix)*particleFluxIntegralWeights_vm(ix)*xiWeights(ixi)*solutionWithFullFArray(index)
 
                       particleFluxBeforeSurfaceIntegral_vE0(ispecies,itheta,izeta) &
@@ -479,7 +486,7 @@
                       
                       heatFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
                            = heatFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
-                           + (factor * (1+xi(ixi)*xi(ixi)) + factor2 * (xi(ixi)*xi(ixi))) * heatFluxFactor_vm &
+                           + (factor * (1+xi(xi)*xi(xi)) + factor2 * (xi(ixi)*xi(ixi))) * heatFluxFactor_vm &
                            * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*xiWeights(ixi)*f0Array(index)
                       
                       heatFluxBeforeSurfaceIntegral_vm(ispecies,itheta,izeta) &
@@ -512,7 +519,7 @@
 !!$                      
 !!$
 !!$                      L = 1
-!!$                      index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+!!$                      index = getIndex(1,ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
 !!$                      ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
 !!$                      
 !!$                      
@@ -537,7 +544,7 @@
 !!$                        * xWeights(ix)*momentumFluxIntegralWeights_vE(ix)*solutionWithFullFArray(index)
 !!$
 !!$                   L = 2
-!!$                   index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+!!$                   index = getIndex(1,ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
 !!$                   ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
 !!$
 !!$                   particleFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
@@ -583,7 +590,7 @@
 !!$
 !!$
 !!$                   L = 3
-!!$                   index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+!!$                   index = getIndex(1,ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
 !!$                   ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
 !!$
 !!$                   momentumFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
@@ -601,16 +608,16 @@
           end do
 
           do izeta=1,Nzeta
-             B2 = BHat(:,izeta)*BHat(:,izeta)
+             B2 = level(1)%BHat(:,izeta)*level(1)%BHat(:,izeta)
 
              FSADensityPerturbation(ispecies) = FSADensityPerturbation(ispecies) + zetaWeights(izeta) &
-                  * dot_product(thetaWeights, densityPerturbation(ispecies,:,izeta) * sqrt_g(:,izeta))
+                  * dot_product(thetaWeights, densityPerturbation(ispecies,:,izeta) * level(1)%sqrt_g(:,izeta))
 
              FSABFlow(ispecies) = FSABFlow(ispecies) + zetaWeights(izeta) &
-                  * dot_product(thetaWeights, flow(ispecies,:,izeta)*BHat(:,izeta) * sqrt_g(:,izeta))
+                  * dot_product(thetaWeights, flow(ispecies,:,izeta)*level(1)%BHat(:,izeta) * level(1)%sqrt_g(:,izeta))
 
              FSAPressurePerturbation(ispecies) = FSAPressurePerturbation(ispecies) + zetaWeights(izeta) &
-                  * dot_product(thetaWeights, pressurePerturbation(ispecies,:,izeta) * sqrt_g(:,izeta))
+                  * dot_product(thetaWeights, pressurePerturbation(ispecies,:,izeta) * level(1)%sqrt_g(:,izeta))
 
              particleFlux_vm0_psiHat(ispecies) = particleFlux_vm0_psiHat(ispecies) + zetaWeights(izeta) &
                   * dot_product(thetaWeights, particleFluxBeforeSurfaceIntegral_vm0(ispecies,:,izeta))
@@ -823,7 +830,7 @@
 !!$                do izeta1 = 1,Nzeta
 !!$                   do ix1 = 1,Nx
 !!$                      do ixi1 = 1,Nxi_for_x(ix1)
-!!$                         index = getIndex(ispecies, ix1, ixi1, itheta1, izeta1, BLOCK_F)+1
+!!$                         index = getIndex(1,ispecies, ix1, ixi1, itheta1, izeta1, BLOCK_F)+1
 !!$                         temp1 = solutionWithFullFArray(index)
 !!$                         do itheta2 = 1,N_export_f_theta
 !!$                            temp2 = temp1 * map_theta_to_export_f_theta(itheta2, itheta1)
@@ -853,7 +860,7 @@
 !!$                do izeta1 = 1,Nzeta
 !!$                   do ix1 = 1,Nx
 !!$                      do ixi1 = 1,Nxi_for_x(ix1)
-!!$                         index = getIndex(ispecies, ix1, ixi1, itheta1, izeta1, BLOCK_F)+1
+!!$                         index = getIndex(1,ispecies, ix1, ixi1, itheta1, izeta1, BLOCK_F)+1
 !!$                         temp1 = solutionWithDeltaFArray(index)
 !!$                         do itheta2 = 1,N_export_f_theta
 !!$                            temp2 = temp1 * map_theta_to_export_f_theta(itheta2, itheta1)

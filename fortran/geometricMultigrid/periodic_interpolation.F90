@@ -1,10 +1,3 @@
-#include "PETScVersions.F90"
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscsysdef.h>
-#else
-#include <petsc/finclude/petscsysdef.h>
-#endif
-
 subroutine periodic_interpolation(N, M, period, y, matrix)
   ! Builds a matrix for interpolating from a uniform periodic grid to any
   ! other grid, using a 2-point stencil (linear interpolation). It is assumed
@@ -21,16 +14,18 @@ subroutine periodic_interpolation(N, M, period, y, matrix)
   !
   ! Outside the range of the input x grid, we use a constant extrapolation.
 
+  use kinds
+
   implicit none
 
   integer, intent(in) :: N, M
-  PetscScalar, intent(in) :: y(M), period
-  PetscScalar, intent(out) :: matrix(M,N)
+  real(prec), intent(in) :: y(M), period
+  real(prec), intent(out) :: matrix(M,N)
   integer :: i, j, index=1
   logical flag
   integer :: indicesToUse(2), k
-  PetscScalar :: x0, x1, xx
-  PetscScalar, allocatable, dimension(:) :: x, y_copy
+  real(prec) :: x0, x1, xx
+  real(prec), allocatable, dimension(:) :: x, y_copy
 
   ! Initialize matrix to 0:
   matrix=0d+0

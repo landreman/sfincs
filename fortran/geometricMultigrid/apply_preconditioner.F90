@@ -101,9 +101,9 @@
                 if (myRank == numProcs-1) then
                    IS_array_index = 1
                    do ispecies = 1,Nspecies
-                      IS_array(IS_array_index) = getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)
+                      IS_array(IS_array_index) = getIndex(1,ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)
                       IS_array_index = IS_array_index + 1
-                      IS_array(IS_array_index) = getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)
+                      IS_array(IS_array_index) = getIndex(1,ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)
                       IS_array_index = IS_array_index + 1
                    end do
                    call ISCreateGeneral(PETSC_COMM_WORLD,2*Nspecies,IS_array,PETSC_COPY_VALUES,IS_source_constraint,ierr)
@@ -117,7 +117,7 @@
                    IS_array_index = 1
                    do ispecies = 1,Nspecies
                       do ix = 1,Nx
-                         IS_array(IS_array_index) = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)
+                         IS_array(IS_array_index) = getIndex(1,ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)
                          IS_array_index = IS_array_index + 1
                       end do
                    end do
