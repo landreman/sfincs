@@ -30,62 +30,56 @@ subroutine setup_multigrid()
 
   if (masterProc) print *,"Entering setup_multigrid"
 
+  ! *******************************************************************
+  ! Do setup tasks that are independent of the PETSc solvers.
+  ! *******************************************************************
+
+  call set_grid_resolutions()
+  do j = 1,N_levels
+     call create_multigrid_grids(j)
+  end do
+  call evaluate_B_on_grids()
+
   iterationForMatrixOutput = 0
 
   call PetscOptionsInsertString(PETSC_NULL_OBJECT,"-options_left", ierr) ! This helps for spotting misspelled options!
 
-  call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, solutionVec, ierr)
-  call VecDuplicate(solutionVec, residualVec, ierr)
-
-  call VecDuplicate(solutionVec, f0, ierr)
-  call init_f0()
-
-  call SNESCreate(MPIComm, mysnes, ierr)
-  call SNESAppendOptionsPrefix(mysnes, 'outer_', ierr)
-  call SNESSetFunction(mysnes, residualVec, evaluateResidual, PETSC_NULL_OBJECT, ierr)
-
-  firstMatrixCreation = .true.
-
-  ! Create the Mat object for the Jacobian
-  call VecGetLocalSize(solutionVec,VecLocalSize,ierr)
-  call MatCreateShell(PETSC_COMM_WORLD,VecLocalSize,VecLocalSize,matrixSize,matrixSize,&
-       PETSC_NULL_OBJECT,matrix,ierr)
-  call MatShellSetOperation(matrix,MATOP_MULT,apply_Jacobian,ierr)
-  
-  call preallocateMatrix(Mat_for_preconditioner, 0)
-  call SNESSetJacobian(mysnes, matrix, Mat_for_preconditioner, evaluateJacobian, PETSC_NULL_OBJECT, ierr)
-  
-  call SNESGetKSP(mysnes, outer_KSP, ierr)
-  call KSPGetPC(outer_KSP, outer_preconditioner, ierr)
-  call PCSetType(outer_preconditioner, PCSHELL, ierr)
-  call PCShellSetApply(outer_preconditioner, apply_preconditioner, ierr)
-  call KSPSetType(outer_KSP, KSPGMRES, ierr)   ! 20170503 Should this be FGMRES?
-  call KSPGMRESSetRestart(outer_KSP, 2000, ierr)
-  
-  call KSPCreate(MPIComm, inner_ksp, ierr)
-  call KSPAppendOptionsPrefix(inner_ksp, 'inner_', ierr)
-  call KSPSetType(inner_ksp, KSPPREONLY, ierr)
-  call KSPGetPC(inner_ksp, inner_preconditioner, ierr)
-  call KSPSetOperators(inner_ksp, Mat_for_preconditioner, Mat_for_preconditioner, ierr)
-  call PCSetType(inner_preconditioner, PCMG, ierr)
-
-  call set_grid_resolutions()
-  call PCMGSetLevels(inner_preconditioner, N_levels, PETSC_NULL_OBJECT, ierr)
-
-  do j = 1,N_levels
-     call create_multigrid_grids(j)
-  end do
-
-  call computeB()
+  ! *******************************************************************
+  ! Preallocate all the matrices that will be needed. We only need to
+  ! preallocate these once.
+  ! *******************************************************************
 
   ! Always build the high-order matrix at the finest level:
   call preallocateMatrix(levels(1)%high_order_matrix,1,1)
-  call populateMatrix(levels(1)%high_order_matrix,1,1)
 
-  if (defect_option==4) then
-     call preallocateMatrix(levels(N_levels)%mixed_order_matrix,10,N_levels)
-     call populateMatrix(levels(N_levels)%mixed_order_matrix,10,N_levels)
-  end if
+  ! We need smoothing matrices on every level except the coarsest level, where we do a direct solve.
+  do level = 1,N_levels-1
+     call preallocateMatrix(levels(level)%smoothing_matrix,4,level)
+  end do
+
+  select case (defect_option)
+  case (1)
+     ! In this case, we need low order matrices on every level
+     do level = 1,N_levels
+        call preallocateMatrix(levels(level)%low_order_matrix,0,level)
+     end do
+  case (2)
+     ! In this case, we need high order matrices on every level. We already did level 1, so start at level 2.
+     do level = 2,N_levels
+        call preallocateMatrix(levels(level)%high_order_matrix,1,level)
+     end do
+  case default
+     print *,"Error! Invalid defect_option:",defect_option
+     stop
+  end select
+
+  ! *******************************************************************
+  ! Set up PETSc solvers.
+  ! *******************************************************************
+
+
+  ! Always build the high-order matrix at the finest level:
+  call populateMatrix(levels(1)%high_order_matrix,1,1)
 
   do j = 1,N_levels
     
@@ -108,6 +102,43 @@ subroutine setup_multigrid()
 
   end do
 
+  call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, solutionVec, ierr)
+  call VecDuplicate(solutionVec, residualVec, ierr)
+
+  call VecDuplicate(solutionVec, f0, ierr)
+  call init_f0()
+
+  call SNESCreate(MPIComm, mysnes, ierr)
+  call SNESAppendOptionsPrefix(mysnes, 'outer_', ierr)
+  call SNESSetFunction(mysnes, residualVec, evaluateResidual, PETSC_NULL_OBJECT, ierr)
+
+  firstMatrixCreation = .true.
+
+  ! Create the shell Mat object for the Jacobian
+  call VecGetLocalSize(solutionVec,VecLocalSize,ierr)
+  call MatCreateShell(PETSC_COMM_WORLD,VecLocalSize,VecLocalSize,matrixSize,matrixSize,&
+       PETSC_NULL_OBJECT,matrix,ierr)
+  call MatShellSetOperation(matrix,MATOP_MULT,apply_Jacobian,ierr)
+  
+  call preallocateMatrix(Mat_for_preconditioner, 0)
+  call SNESSetJacobian(mysnes, matrix, Mat_for_preconditioner, evaluateJacobian, PETSC_NULL_OBJECT, ierr)
+  
+  call SNESGetKSP(mysnes, outer_KSP, ierr)
+  call KSPGetPC(outer_KSP, outer_preconditioner, ierr)
+  call PCSetType(outer_preconditioner, PCSHELL, ierr)
+  call PCShellSetApply(outer_preconditioner, apply_preconditioner, ierr)
+  call KSPSetType(outer_KSP, KSPGMRES, ierr)   ! 20170503 Should this be FGMRES?
+  call KSPGMRESSetRestart(outer_KSP, 2000, ierr)
+  
+  call KSPCreate(MPIComm, inner_ksp, ierr)
+  call KSPAppendOptionsPrefix(inner_ksp, 'inner_', ierr)
+  call KSPSetType(inner_ksp, KSPPREONLY, ierr)
+  call KSPGetPC(inner_ksp, inner_preconditioner, ierr)
+  call KSPSetOperators(inner_ksp, Mat_for_preconditioner, Mat_for_preconditioner, ierr)
+  call PCSetType(inner_preconditioner, PCMG, ierr)
+
+  call PCMGSetLevels(inner_preconditioner, N_levels, PETSC_NULL_OBJECT, ierr)
+
   call KSPSetOperators(main_ksp, levels(1)%high_order_matrix, levels(1)%low_order_matrix, ierr)
   do j = 1,N_levels
      if (defect_option==1) then
@@ -117,7 +148,10 @@ subroutine setup_multigrid()
      end if
   end do
 
-  matrixSize = levels(1)%matrixSize
+  ! *******************************************************************
+  ! Set up restriction and prolongation (interpolation) matrices.
+  ! These never change from iteration to iteration.
+  ! *******************************************************************
 
   allocate(multigrid_prolongation_matrices(N_levels-1))
   allocate(multigrid_restriction_matrices(N_levels-1))

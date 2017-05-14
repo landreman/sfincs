@@ -1195,34 +1195,34 @@
 
     allocate(levels(level)%gradpsidotgradB_overgpsipsi(Ntheta,Nzeta))
 
-    allocate(spatial_scaling(Ntheta,Nzeta))
+    allocate(levels(level)%spatial_scaling(Ntheta,Nzeta))
     select case (spatial_scaling_option)
     case (1)
        if (Nzeta==1) then
-          spatial_scaling = abs(BHat / BHat_sup_theta)
+          levels(level)%spatial_scaling = abs(BHat / BHat_sup_theta)
        else
-          spatial_scaling = abs(BHat / BHat_sup_zeta)
+          levels(level)%spatial_scaling = abs(BHat / BHat_sup_zeta)
        end if
     case (2)
        if (Nzeta==1) then
-          spatial_scaling = abs( (theta(2)-theta(1)) * BHat / BHat_sup_theta )
+          levels(level)%spatial_scaling = abs( (theta(2)-theta(1)) * BHat / BHat_sup_theta )
        else
-          spatial_scaling = abs( (zeta(2) - zeta(1)) * BHat / BHat_sub_zeta  )
+          levels(level)%spatial_scaling = abs( (zeta(2) - zeta(1)) * BHat / BHat_sub_zeta  )
        end if
     case (3)
        if (Nzeta==1) then
-          spatial_scaling = abs(BHat / BHat_sup_theta)
+          levels(level)%spatial_scaling = abs(BHat / BHat_sup_theta)
        else
-          spatial_scaling = abs(BHat / BHat_sup_zeta)
+          levels(level)%spatial_scaling = abs(BHat / BHat_sup_zeta)
        end if
-       spatial_scaling = sum(spatial_scaling)/(Ntheta*Nzeta)
+       levels(level)%spatial_scaling = sum(levels(level)%spatial_scaling)/(Ntheta*Nzeta)
     case (4)
        if (Nzeta==1) then
-          spatial_scaling = abs( (theta(2)-theta(1)) * BHat / BHat_sup_theta )
+          levels(level)%spatial_scaling = abs( (theta(2)-theta(1)) * BHat / BHat_sup_theta )
        else
-          spatial_scaling = abs( (zeta(2) - zeta(1)) * BHat / BHat_sub_zeta  )
+          levels(level)%spatial_scaling = abs( (zeta(2) - zeta(1)) * BHat / BHat_sub_zeta  )
        end if
-       spatial_scaling = sum(spatial_scaling)/(Ntheta*Nzeta)
+       levels(level)%spatial_scaling = sum(levels(level)%spatial_scaling)/(Ntheta*Nzeta)
     case default
        if (masterProc) print *,"Error! Invalid spatial_scaling_option:",spatial_scaling_option
        stop

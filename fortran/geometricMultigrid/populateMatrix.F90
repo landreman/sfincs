@@ -28,6 +28,7 @@
     ! 1 = Jacobian
     ! 2 = matrix which multiplies f0 when evaluating the residual
     ! 3 = matrix which multiplies f1 when evaluating the residual
+    ! 4 = Smoothing matrix. Same as whichMatrix=0, except the constraint rows and source columns are replaced by just a 1 on the diagonal.
 
     PetscErrorCode :: ierr
     PetscScalar :: scalar
@@ -162,13 +163,6 @@
        end if
        stop
     end select
-  ! Values for whichMatrix:
-  ! 0 = low-order preconditioner matrix, used only on the coarsest grid.
-  ! 1 = high-order 'real' matrix, used only on the finest grid.
-  ! 4 = Like the low-order preconditioner matrix, except the sources and constraints are not included, and there is a 1 on the corresponding diagonal
-  ! 5 = Like 4, but only the diagonal and the off-diagonal-in-zeta terms.
-  ! 6 = Like 4, but only the off-diagonal-in theta, xi, and x terms.
-  ! 10 = Like 1, except low-order derivatives are used for the d/dzeta terms.
 
     call PetscTime(time1, ierr)
 
@@ -1249,7 +1243,7 @@
     ! Add sources:
     ! *******************************************************************************
 
-    if (whichMatrix .ne. 2) then
+    if (whichMatrix==0 .or. whichMatrix==1 .or. whichMatrix==3) then
        select case (constraintScheme)
        case (0)
           ! Do nothing here.
@@ -1337,7 +1331,7 @@
     ! *******************************************************************************
 
     !if (whichMatrix .ne. 2 .and. procThatHandlesConstraints) then
-    if (whichMatrix .ne. 2 .and. (myRank==numProcs-1)) then
+    if ((whichMatrix==0 .or. whichMatrix==1 .or. whichMatrix==3) .and. (myRank==numProcs-1)) then
     !if (whichMatrix .ne. 2) then
        select case (constraintScheme)
        case (0)
@@ -1542,7 +1536,7 @@
     ! Add the constraint < Phi_1 > = 0
     ! *******************************************************************************
 
-    if (whichMatrix .ne. 2 .and. procThatHandlesConstraints .and. includePhi1) then
+    if ((whichMatrix==0 .or. whichMatrix==1 .or. whichMatrix==3) .and. procThatHandlesConstraints .and. includePhi1) then
        allocate(rowIndices(1))
        allocate(colIndices(Nzeta))
 
@@ -1562,16 +1556,16 @@
 
     
     ! *******************************************************************************
-    ! If we are going to use a fieldsplit preconditioner, then put 1's on the
+    ! For the smoothing matrices, put 1's on the
     ! diagonal for the source/constraint blocks of the preconditioner.
     ! *******************************************************************************
 
-    if (whichMatrix==0 .and. procThatHandlesConstraints .and. fieldsplit) then
+    if (whichMatrix==4 .and. procThatHandlesConstraints) then
        select case (constraintScheme)
        case (0)
           ! Do nothing here.
        case (1,3,4)
-          print *,"Adding 1s on the source/constraint diagonal block for fieldsplit."
+          print *,"Adding 1s on the source/constraint diagonal block."
           do ispecies=1,Nspecies
              rowIndex = getIndex(level, ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)
              call MatSetValueSparse(matrix, rowIndex, rowIndex, one, ADD_VALUES, ierr)
@@ -1579,7 +1573,7 @@
              call MatSetValueSparse(matrix, rowIndex, rowIndex, one, ADD_VALUES, ierr)
           end do
        case (2)
-          print *,"Adding 1s on the source/constraint diagonal block for fieldsplit."
+          print *,"Adding 1s on the source/constraint diagonal block."
           do ix=ixMin,Nx
              do ispecies = 1,Nspecies
                 rowIndex = getIndex(level, ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)

@@ -414,19 +414,24 @@ module globalVariables
      integer, dimension(:), allocatable :: first_index_for_x
      real(prec), dimension(:,:), allocatable :: spatial_scaling
 
-     Mat :: low_order_matrix, high_order_matrix, mixed_order_matrix
-     Mat :: smoothing_matrix
+     Mat :: low_order_matrix, high_order_matrix, smoothing_matrix
 
   end type multigrid_level
 
   type (multigrid_level), allocatable, dimension(:), target :: levels
 
   Mat, allocatable, dimension(:) :: multigrid_prolongation_matrices, multigrid_restriction_matrices
-  integer :: smoothing_option, restriction_option, coarsen_option=1, defect_option
-  PetscBool :: coarsen_theta, coarsen_zeta, coarsen_xi
+  integer :: smoothing_option = 1
+  integer :: coarsen_option = 1
+  integer :: defect_option = 2
+  logical :: coarsen_theta = .false.
+  logical :: coarsen_zeta = .true.
+  logical :: coarsen_xi = .false.
   integer :: N_levels
   integer, allocatable, dimension(:) :: Ntheta_levels, Nzeta_levels, Nxi_levels
-  integer :: Ntheta_min, Nzeta_min, Nxi_min
+  integer :: Ntheta_min = 7
+  integer :: Nzeta_min = 7
+  integer :: Nxi_min = 9
 
 end module globalVariables
 

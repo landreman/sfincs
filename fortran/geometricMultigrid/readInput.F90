@@ -65,7 +65,9 @@ contains
          xi_quadrature_option, xGridScheme, whichParallelSolverToFactorPreconditioner, &
          PETSCPreallocationStrategy, xPotentialsGridScheme, xGrid_k,  &
          Nxi_for_x_option, theta_upwinding_factor, zeta_upwinding_factor, &
-         spatial_scaling_option, constraint_scaling_option, x_scaling_option
+         spatial_scaling_option, constraint_scaling_option, x_scaling_option, &
+         coarsen_option, defect_option, smoothing_option, coarsen_theta, coarsen_zeta, coarsen_xi, &
+         Ntheta_min, Nzeta_min, Nxi_min
 
     namelist / preconditionerOptions / preconditioner_x, preconditioner_zeta_derivative_option, &
          preconditioner_theta_derivative_option, preconditioner_xi_derivative_option, preconditioner_species, reusePreconditioner, &

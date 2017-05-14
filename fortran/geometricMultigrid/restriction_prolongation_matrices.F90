@@ -10,7 +10,7 @@ subroutine restriction_prolongation_matrices(fine_level)
   use petscmat
   use indices
   use globalVariables, only: levels, multigrid_restriction_matrices, multigrid_prolongation_matrices, numProcs, one, constraint_option, &
-       restriction_option, pi, zetaMax, masterProc
+       pi, zetaMax, masterProc
 
   implicit none
 
@@ -124,15 +124,9 @@ subroutine restriction_prolongation_matrices(fine_level)
   call VecGetSize(row_sums, num_rows, ierr)
   call MatGetRowSum(multigrid_restriction_matrices(fine_level), row_sums, ierr)
   call MatGetSize(multigrid_restriction_matrices(fine_level), num_rows, num_cols, ierr)
-  select case (restriction_option)
-  case (1)
-     call VecReciprocal(row_sums, ierr)
-     call VecGetSize(row_sums, num_rows, ierr)
-     call MatDiagonalScale(multigrid_restriction_matrices(fine_level), row_sums, PETSC_NULL_OBJECT, ierr)
-  case default
-     print *,"Error! Invalid restriction_option:",restriction_option
-     stop
-  end select
+  call VecReciprocal(row_sums, ierr)
+  call VecGetSize(row_sums, num_rows, ierr)
+  call MatDiagonalScale(multigrid_restriction_matrices(fine_level), row_sums, PETSC_NULL_OBJECT, ierr)
 
   ! Clean up.
   call VecDestroy(row_sums, ierr)

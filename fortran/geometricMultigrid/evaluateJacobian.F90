@@ -37,6 +37,37 @@
        call populateMatrix(Mat_for_Jacobian, 1, stateVec)
     end if
 
+  ! Always build the high-order matrix at the finest level:
+  call populateMatrix(levels(1)%high_order_matrix,1,stateVec,1)
+
+  ! We need smoothing matrices on every level except the coarsest level, where we do a direct solve.
+  do level = 1,N_levels-1
+     call populateMatrix(levels(level)%smoothing_matrix,4,stateVec,level)
+  end do
+
+  select case (defect_option)
+  case (1)
+     ! In this case, we need low order matrices on every level
+     do level = 1,N_levels
+        ! If we re-use the factorization for the coarsest level, then only populate it on the first SNES iteration.
+        if (level<N_levels .or. firstMatrixCreation .or. .not. reusePreconditioner) then
+           call populateMatrix(levels(level)%low_order_matrix,0,stateVec,level)
+        end if
+     end do
+  case (2)
+     ! In this case, we need high order matrices on every level. We already did level 1, so start at level 2.
+     do level = 2,N_levels
+        ! If we re-use the factorization for the coarsest level, then only populate it on the first SNES iteration.
+        if (level<N_levels .or. firstMatrixCreation .or. .not. reusePreconditioner) then
+           call populateMatrix(levels(level)%high_order_matrix,1,stateVec,level)
+        end if
+     end do
+  case default
+     print *,"Error! Invalid defect_option:",defect_option
+     stop
+  end select
+
+
     firstMatrixCreation = .false.
 
   end subroutine evaluateJacobian
