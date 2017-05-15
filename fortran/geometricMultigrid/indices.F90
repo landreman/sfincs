@@ -358,7 +358,7 @@
 
       if (level==1) matrixSize = levels(level)%matrixSize
 
-      if (masterProc) print "(a,i3,a,i10,a,i10)"," The matrix for level",level," is",levels(level)%matrixSize," x",levels(level)%matrixSize," elements."
+      if (masterProc) print "(a,i3,a,i10,a,i10,a)"," The matrix for level",level," is",levels(level)%matrixSize," x",levels(level)%matrixSize," elements."
 
     end subroutine computeMatrixSize
 

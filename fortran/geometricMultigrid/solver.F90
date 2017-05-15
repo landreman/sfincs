@@ -23,25 +23,10 @@ module solver
     PetscErrorCode :: ierr
     PetscScalar :: scalar
     Vec :: solutionVec, residualVec
-    SNES :: mysnes
-    KSP :: outer_KSP
-    PC :: outer_preconditioner, sub_preconditioner
     integer :: numRHSs
     SNESConvergedReason :: reason
-    KSPConvergedReason :: KSPReason
     PetscLogDouble :: time1, time2
     integer :: userContext(1) = 0
-    Vec :: dummyVec
-    Mat :: factorMat
-    PetscInt :: mumps_which_cntl
-    PetscReal :: mumps_value
-    PetscReal :: atol, rtol, stol
-    integer :: maxit, maxf
-    PetscInt :: VecLocalSize
-    KSP, dimension(:), allocatable :: sub_ksps
-    Mat :: sub_Amat, sub_Pmat
-    MatNullSpace :: nullspace
-    Vec :: temp_Vec
 
     ! ***********************************************************************
     ! ***********************************************************************
@@ -50,6 +35,9 @@ module solver
     !
     ! ***********************************************************************
     ! ***********************************************************************
+
+    call VecDuplicate(f0, solutionVec, ierr)
+    call VecDuplicate(f0, residualVec, ierr)
 
     select case (RHSMode)
     case (1)
@@ -67,7 +55,7 @@ module solver
        call PetscTime(time1, ierr)
        if (solveSystem) then
           ! All the magic happens in this next line!
-          call SNESSolve(mysnes,PETSC_NULL_OBJECT, solutionVec, ierr)
+          call SNESSolve(outer_snes,PETSC_NULL_OBJECT, solutionVec, ierr)
        end if
 
        call PetscTime(time2, ierr)
@@ -78,7 +66,7 @@ module solver
 
        !!if (nonlinear) then !!Commented by AM 2016-02
        if (includePhi1) then !!Added by AM 2016-02
-          call SNESGetConvergedReason(mysnes, reason, ierr)
+          call SNESGetConvergedReason(outer_snes, reason, ierr)
           if (reason>0) then
              if (masterProc) then
                 print *,"Nonlinear iteration (SNES) converged!  SNESConvergedReason = ", reason
@@ -137,7 +125,7 @@ module solver
        call KSPSetOperators(outer_KSP, levels(1)%high_order_matrix, levels(1)%high_order_matrix, ierr)
 
        ! Call evaluateJacobian, which has the effect of populating the main matrix and preconditioner matrix.
-       call evaluateJacobian(mysnes, solutionVec, levels(1)%high_order_matrix, levels(1)%high_order_matrix, userContext, ierr) ! The Mat arguments are not actually used.
+       call evaluateJacobian(outer_snes, solutionVec, levels(1)%high_order_matrix, levels(1)%high_order_matrix, userContext, ierr) ! The Mat arguments are not actually used.
 
 !!$       ! Build the main linear system matrix:
 !!$       !call populateMatrix(matrix,1,dummyVec)
@@ -210,7 +198,7 @@ module solver
           !  Set f=0:
           call VecZeroEntries(solutionVec, ierr)
 
-          call evaluateResidual(mysnes, solutionVec, residualVec, userContext, ierr)
+          call evaluateResidual(outer_snes, solutionVec, residualVec, userContext, ierr)
           ! Multiply the residual by (-1):
           scalar = -1
           call VecScale(residualVec, scalar, ierr)
@@ -268,7 +256,7 @@ module solver
 !!$    if (useIterativeLinearSolver) then
 !!$       call MatDestroy(Mat_for_preconditioner, ierr)
 !!$    end if
-    call SNESDestroy(mysnes,ierr)
+    call SNESDestroy(outer_snes,ierr)
 
 
   end subroutine mainSolverLoop

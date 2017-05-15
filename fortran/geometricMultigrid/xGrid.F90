@@ -91,10 +91,9 @@
       integer :: key = 6
       integer :: i, info, N_copy
       real(prec) :: oldc = 1d+0, amountToAdd
-      real(prec) :: absTol = 1d-5, relTol = 1d-13
       real(prec), allocatable :: a_copy(:), sqrtb(:), d(:), eigenvectors(:,:), LAPACKWorkspace(:)
 
-      real(prec) :: abserr,finiteBound,EPSABS,EPSREL,WORK,LAPACK_abstol
+      real(prec) :: abserr,finiteBound,EPSABS,EPSREL,LAPACK_abstol
       integer :: ier, inf, last, limit, neval
       real(prec), dimension(workspaceSize) :: alist, blist, rlist, elist
       integer, dimension(workspaceSize) :: iord
@@ -258,7 +257,7 @@
       real(prec), dimension(:,:), allocatable :: tempMatrix_d2Gdxb2
       real(prec), dimension(:,:), allocatable :: tempMatrix_combined
       real(prec), dimension(:), allocatable :: expx2
-      integer :: i, L, iSpeciesA, iSpeciesB, ix, imode
+      integer :: i, L, iSpeciesA, iSpeciesB, ix
       real(prec) :: alpha, speciesFactor, speciesFactor2, xb
       real(prec) :: I_2pL, I_4pL, I_1mL, I_3mL
       real(prec), parameter :: pi = 3.14159265358979d+0

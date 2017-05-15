@@ -37,7 +37,8 @@ subroutine nonperiodic_interpolation(N, M, x, y, matrix)
 !!$  interval = x(2)-x(1)
   do j=2,N
      if (x(j-1) >= x(j)) then 
-        print *,"Error! x grid points are not sorted in increasing order."
+        print *,"Error in nonperiodic_interpolation()! x grid points are not sorted in increasing order."
+        print *,x
         stop
      end if
 !!$     if (abs(x(j)-x(j-1)-interval) > 1d-10) then

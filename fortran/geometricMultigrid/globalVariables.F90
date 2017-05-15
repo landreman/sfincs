@@ -6,9 +6,9 @@ module globalVariables
 
 #include "PETScVersions.F90"
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petsckspdef.h>
+#include <finclude/petscsnesdef.h>
 #else
-#include <petsc/finclude/petsckspdef.h>
+#include <petsc/finclude/petscsnesdef.h>
 #endif
 
   character(len=50), parameter :: inputFilename = "input.namelist"
@@ -351,6 +351,8 @@ module globalVariables
 
   Vec :: f0
 
+  SNES :: outer_snes
+  KSP :: outer_KSP
   KSP :: inner_KSP
   PC :: inner_preconditioner
 

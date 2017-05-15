@@ -1,26 +1,33 @@
 #include "PETScVersions.F90"
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petsckspdef.h>
+#include <finclude/petscsnesdef.h>
 #else
-#include <petsc/finclude/petsckspdef.h>
+#include <petsc/finclude/petscsnesdef.h>
 #endif
 
   subroutine setup_multigrid()
 
-    use petscmat
-    use petscksp
+    use petscsnes
+    !use petscksp
     use globalVariables
+    use geometry
 
     implicit none
 
-    integer :: j, k, level
-    Vec :: temp_vec
+    integer :: j, level
     PetscErrorCode :: ierr
-    character(len=100) :: filename
-    PetscViewer :: viewer
     KSP :: smoother_ksp, ksp_on_coarsest_level
     PC :: smoother_pc, pc_on_coarsest_level
     Mat :: apply_Jacobian_shell_matrix
+    Mat :: factorMat
+    PetscInt :: mumps_which_cntl
+    PetscReal :: mumps_value
+    PetscReal :: atol, rtol, stol
+    integer :: maxit, maxf
+    PetscInt :: VecLocalSize
+    PetscScalar :: scalar
+    PC :: outer_preconditioner
+    Vec :: residualVec
 #if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR > 6))
     PetscViewerAndFormat vf 
 #endif
@@ -78,25 +85,24 @@
     ! Set up PETSc solvers.
     ! *******************************************************************
 
-    call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, solutionVec, ierr)
-    call VecDuplicate(solutionVec, residualVec, ierr)
-    call VecDuplicate(solutionVec, f0, ierr)
+    call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, residualVec, ierr)
+    call VecDuplicate(residualVec, f0, ierr)
     call init_f0()
 
-    call SNESCreate(MPIComm, mysnes, ierr)
-    call SNESAppendOptionsPrefix(mysnes, 'outer_', ierr)
-    call SNESSetFunction(mysnes, residualVec, evaluateResidual, PETSC_NULL_OBJECT, ierr)
+    call SNESCreate(MPIComm, outer_snes, ierr)
+    call SNESAppendOptionsPrefix(outer_snes, 'outer_', ierr)
+    call SNESSetFunction(outer_snes, residualVec, evaluateResidual, PETSC_NULL_OBJECT, ierr)
 
     firstMatrixCreation = .true.
 
     ! Create the shell Mat object for the Jacobian
-    call VecGetLocalSize(solutionVec,VecLocalSize,ierr)
+    call VecGetLocalSize(residualVec,VecLocalSize,ierr)
     call MatCreateShell(PETSC_COMM_WORLD,VecLocalSize,VecLocalSize,matrixSize,matrixSize,&
          PETSC_NULL_OBJECT,apply_Jacobian_shell_matrix,ierr)
     call MatShellSetOperation(apply_Jacobian_shell_matrix,MATOP_MULT,apply_Jacobian,ierr)
-    call SNESSetJacobian(mysnes, apply_Jacobian_shell_matrix, apply_Jacobian_shell_matrix, evaluateJacobian, PETSC_NULL_OBJECT, ierr)
+    call SNESSetJacobian(outer_snes, apply_Jacobian_shell_matrix, apply_Jacobian_shell_matrix, evaluateJacobian, PETSC_NULL_OBJECT, ierr)
 
-    call SNESGetKSP(mysnes, outer_KSP, ierr)
+    call SNESGetKSP(outer_snes, outer_KSP, ierr)
     call KSPGetPC(outer_KSP, outer_preconditioner, ierr)
     call PCSetType(outer_preconditioner, PCSHELL, ierr)
     call PCShellSetApply(outer_preconditioner, apply_preconditioner, ierr)
@@ -254,7 +260,7 @@
 #endif
 
     ! Tell PETSc to call the diagnostics subroutine at each iteration of SNES:
-    call SNESMonitorSet(mysnes, diagnosticsMonitor, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
+    call SNESMonitorSet(outer_snes, diagnosticsMonitor, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
 
     if (reusePreconditioner) then
        ! Syntax for PETSc version 3.5 and later
@@ -269,16 +275,16 @@
     ! the monitor is never called when snes type = SNESKSPONLY.
     ! Therefore, it is preferable to always have snes type = SNESNEWTONLS but set the 
     ! number of iterations to 1 for a linear run.
-    call SNESSetType(mysnes, SNESNEWTONLS, ierr)
+    call SNESSetType(outer_snes, SNESNEWTONLS, ierr)
     !!if (nonlinear) then !!Commented by AM 2016-02
     if (includePhi1) then !!Added by AM 2016-02
        if (masterProc) then
           print *,"Since this is a nonlinear run, we will use Newton's method."
        end if
     else
-       call SNESGetTolerances(mysnes, atol, rtol, stol, maxit, maxf, ierr)
+       call SNESGetTolerances(outer_snes, atol, rtol, stol, maxit, maxf, ierr)
        maxit = 1
-       call SNESSetTolerances(mysnes, atol, rtol, stol, maxit, maxf, ierr)
+       call SNESSetTolerances(outer_snes, atol, rtol, stol, maxit, maxf, ierr)
        if (masterProc) then
           print *,"Since this is a linear run, we will only take a single step, and not iterate Newton's method."
        end if
@@ -288,19 +294,19 @@
 !!$    if (nonlinear) then
 !!$       ! SNESNEWTONLS = Newton's method with an optional line search.
 !!$       ! As of PETSc version 3.5, this is the default algorithm, but I'll set it manually here anyway to be safe.
-!!$       call SNESSetType(mysnes, SNESNEWTONLS, ierr)
+!!$       call SNESSetType(outer_snes, SNESNEWTONLS, ierr)
 !!$       if (masterProc) then
 !!$          print *,"Since this is a nonlinear run, we will use Newton's method."
 !!$       end if
 !!$    else
 !!$       ! SNESKSPONLY = Only do 1 linear step.
-!!$       call SNESSetType(mysnes, SNESKSPONLY, ierr)
+!!$       call SNESSetType(outer_snes, SNESKSPONLY, ierr)
 !!$       if (masterProc) then
 !!$          print *,"Since this is a linear run, we will only take a single step, and not iterate Newton's method."
 !!$       end if
 !!$    end if
 
-    call SNESSetFromOptions(mysnes, ierr)
+    call SNESSetFromOptions(outer_snes, ierr)
 
     if (isAParallelDirectSolverInstalled .and. (whichParallelSolverToFactorPreconditioner==1)) then
        ! When mumps is the solver, it is very handy to set mumps's control parameter CNTL(1) to a number like 1e-6.

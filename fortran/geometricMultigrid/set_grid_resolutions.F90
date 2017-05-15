@@ -89,7 +89,8 @@ subroutine set_grid_resolutions()
      ! Coupling is like d/dx, where dx~1/N, so coupling is like N.
      theta_coupling = iota * Ntheta / (2*pi)
      zeta_coupling = Nzeta * Nperiods / (2*pi)
-     xi_coupling = nu * Nxi / 2
+     stop "For this coarsen_option, I need a sensible definition of nu..."
+     !xi_coupling = nu * Nxi / 2
      Ntheta_candidates(1) = Ntheta
      Nzeta_candidates(1) = Nzeta
      Nxi_candidates(1) = Nxi

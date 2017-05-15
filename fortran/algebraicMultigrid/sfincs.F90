@@ -38,7 +38,7 @@ program sfincs
   if (masterProc) then
      print *,"****************************************************************************"
      print *,"SFINCS: The Stellarator Fokker-Plank Iterative NeoClassical Solver"
-     print *,"Version 4."
+     print *,"Algebraic multigrid version."
 #if defined(PETSC_USE_REAL_SINGLE)
      print *,"Using single precision."
 #else

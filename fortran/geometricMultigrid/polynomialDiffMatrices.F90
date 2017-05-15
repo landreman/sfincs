@@ -108,7 +108,7 @@ contains
     real(prec), intent(in), dimension(:) :: x
     real(prec), intent(out) :: ddx(:,:), d2dx2(:,:)
     integer :: i, N
-    real(prec), dimension(:,:), allocatable :: XX, DX, CC, CCC, Z, XXX, Y, D, oldY, repmatDiagD
+    real(prec), dimension(:,:), allocatable :: XX, DX, CC, CCC, Z, XXX, Y, oldY, repmatDiagD
     real(prec), dimension(:), allocatable :: c
     ! XXX in this subroutine corresponds to X in the DMSuite version of poldif
 

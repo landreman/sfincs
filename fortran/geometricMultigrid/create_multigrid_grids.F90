@@ -32,7 +32,7 @@
     real(prec), dimension(:,:), allocatable :: d2dy2, ddy, ddy_plus, ddy_minus
     real(prec), dimension(:), allocatable :: y_dummy, yWeights_dummy, yWeights, dxi_dy, d2xi_dy2
     real(prec), dimension(:,:), allocatable :: Legendre_polynomials
-
+    logical :: describe_stencils
     DM :: myDM
     integer, parameter :: bufferLength = 200
     character(len=bufferLength) :: procAssignments
@@ -63,6 +63,7 @@
     izetaMax  => levels(level)%izetaMax
     
     if (masterProc) print "(a,i3,a)"," ---- Initializing grids for multigrid level",level,"----"
+    describe_stencils = (masterProc .and. level==0)
 
     ! *******************************************************************************
     ! *******************************************************************************
@@ -190,14 +191,14 @@
     select case (theta_derivative_option)
 
     case (1)
-       if (masterProc) then
+       if (describe_stencils) then
           print *,"d/dtheta derivatives discretized using Fourier pseudospectral method."
        end if
        derivative_option_plus = 20
        derivative_option_minus = derivative_option_plus
 
     case (2)
-       if (masterProc) then
+       if (describe_stencils) then
           print *,"d/dtheta derivatives discretized using centered finite differences:"
           print *,"   1 point on either side."
        end if
@@ -205,7 +206,7 @@
        derivative_option_minus = derivative_option_plus
 
     case (3)
-       if (masterProc) then
+       if (describe_stencils) then
           print *,"d/dtheta derivatives discretized using centered finite differences:"
           print *,"   2 points on either side."
        end if
@@ -213,7 +214,7 @@
        derivative_option_minus = derivative_option_plus
 
     case (4)
-       if (masterProc) then
+       if (describe_stencils) then
           print *,"d/dtheta derivatives discretized using upwinded finite differences:"
           print *,"   0 points on one side, 1 point on the other side."
        end if
@@ -221,7 +222,7 @@
        derivative_option_minus = 40
 
     case (5)
-       if (masterProc) then
+       if (describe_stencils) then
           print *,"d/dtheta derivatives discretized using upwinded finite differences:"
           print *,"   0 points on one side, 2 points on the other side."
        end if
@@ -229,7 +230,7 @@
        derivative_option_minus = 60
 
     case (6)
-       if (masterProc) then
+       if (describe_stencils) then
           print *,"d/dtheta derivatives discretized using upwinded finite differences:"
           print *,"   1 point on one side, 2 points on the other side."
        end if
@@ -237,7 +238,7 @@
        derivative_option_minus = 90
 
     case (7)
-       if (masterProc) then
+       if (describe_stencils) then
           print *,"d/dtheta derivatives discretized using upwinded finite differences:"
           print *,"   1 point on one side, 3 points on the other side."
        end if
@@ -245,7 +246,7 @@
        derivative_option_minus = 110
 
     case (8)
-       if (masterProc) then
+       if (describe_stencils) then
           print *,"d/dtheta derivatives discretized using upwinded finite differences:"
           print *,"   2 point on one side, 3 points on the other side."
        end if
@@ -253,7 +254,7 @@
        derivative_option_minus = 130
 
     case (10)
-       if (masterProc) then
+       if (describe_stencils) then
           print *,"d/dtheta derivatives discretized using partially upwinded finite differences:"
           print *,"   2 point on one side, 3 points on the other side."
           print *,"   upwinding factor:",theta_upwinding_factor
@@ -292,7 +293,7 @@
     call_uniform_diff_matrices = .true.
     select case (abs(preconditioner_theta_derivative_option))
     case (0)
-       if (masterProc) then
+       if (describe_stencils) then
           print *,"d/dtheta terms are dropped in the preconditioner."
        end if
        ddtheta_plus_preconditioner = 0
@@ -300,7 +301,7 @@
        call_uniform_diff_matrices = .false.
 
     case (100)
-       if (masterProc) then
+       if (describe_stencils) then
           print *,"d/dtheta matrices are the same in the preconditioner."
        end if
        ddtheta_plus_preconditioner  = ddtheta_plus
@@ -308,14 +309,14 @@
        call_uniform_diff_matrices = .false.
 
     case (1)
-       if (masterProc) then
+       if (describe_stencils) then
           print *,"Preconditioner d/dtheta derivatives discretized using Fourier pseudospectral method."
        end if
        derivative_option_plus = 20
        derivative_option_minus = derivative_option_plus
 
     case (2)
-       if (masterProc) then
+       if (describe_stencils) then
           print *,"Preconditioner d/dtheta derivatives discretized using centered finite differences:"
           print *,"   1 point on either side."
        end if
@@ -323,7 +324,7 @@
        derivative_option_minus = derivative_option_plus
 
     case (3)
-       if (masterProc) then
+       if (describe_stencils) then
           print *,"Preconditioner d/dtheta derivatives discretized using centered finite differences:"
           print *,"   2 points on either side."
        end if
@@ -331,7 +332,7 @@
        derivative_option_minus = derivative_option_plus
 
     case (4)
-       if (masterProc) then
+       if (describe_stencils) then
           print *,"Preconditioner d/dtheta derivatives discretized using upwinded finite differences:"
           print *,"   0 points on one side, 1 point on the other side."
        end if
@@ -339,7 +340,7 @@
        derivative_option_minus = 40
 
     case (5)
-       if (masterProc) then
+       if (describe_stencils) then
           print *,"Preconditioner d/dtheta derivatives discretized using upwinded finite differences:"
           print *,"   0 points on one side, 2 points on the other side."
        end if
@@ -347,7 +348,7 @@
        derivative_option_minus = 60
 
     case (6)
-       if (masterProc) then
+       if (describe_stencils) then
           print *,"Preconditioner d/dtheta derivatives discretized using upwinded finite differences:"
           print *,"   1 point on one side, 2 points on the other side."
        end if
@@ -355,7 +356,7 @@
        derivative_option_minus = 90
 
     case (7)
-       if (masterProc) then
+       if (describe_stencils) then
           print *,"Preconditioner d/dtheta derivatives discretized using upwinded finite differences:"
           print *,"   1 point on one side, 3 points on the other side."
        end if
@@ -363,7 +364,7 @@
        derivative_option_minus = 110
 
     case (8)
-       if (masterProc) then
+       if (describe_stencils) then
           print *,"Preconditioner d/dtheta derivatives discretized using upwinded finite differences:"
           print *,"   2 point on one side, 3 points on the other side."
        end if
@@ -384,7 +385,7 @@
     end if
 
     if (preconditioner_theta_derivative_option<0) then
-       if (masterProc) then
+       if (describe_stencils) then
           print *,"   But only the diagonal is kept."
        end if
        do j=1,Ntheta
@@ -452,7 +453,7 @@
        select case (zeta_derivative_option)
 
        case (2)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"d/dzeta derivatives discretized using centered finite differences:"
              print *,"   1 point on either side."
           end if
@@ -460,7 +461,7 @@
           derivative_option_minus = derivative_option_plus
           
        case (3)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"d/dzeta derivatives discretized using centered finite differences:"
              print *,"   2 points on either side."
           end if
@@ -468,7 +469,7 @@
           derivative_option_minus = derivative_option_plus
           
        case (4)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"d/dzeta derivatives discretized using upwinded finite differences:"
              print *,"   0 points on one side, 1 point on the other side."
           end if
@@ -476,7 +477,7 @@
           derivative_option_minus = 40
           
        case (5)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"d/dzeta derivatives discretized using upwinded finite differences:"
              print *,"   0 points on one side, 2 points on the other side."
           end if
@@ -484,7 +485,7 @@
           derivative_option_minus = 60
           
        case (6)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"d/dzeta derivatives discretized using upwinded finite differences:"
              print *,"   1 point on one side, 2 points on the other side."
           end if
@@ -492,7 +493,7 @@
           derivative_option_minus = 90
           
        case (7)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"d/dzeta derivatives discretized using upwinded finite differences:"
              print *,"   1 point on one side, 3 points on the other side."
           end if
@@ -500,7 +501,7 @@
           derivative_option_minus = 110
           
        case (8)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"d/dzeta derivatives discretized using upwinded finite differences:"
              print *,"   2 point on one side, 3 points on the other side."
           end if
@@ -508,7 +509,7 @@
           derivative_option_minus = 130
           
        case (10)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"d/dzeta derivatives discretized using partially upwinded finite differences:"
              print *,"   2 point on one side, 3 points on the other side."
              print *,"   Upwinding factor:",zeta_upwinding_factor
@@ -546,7 +547,7 @@
        call_uniform_diff_matrices = .true.
        select case (abs(preconditioner_zeta_derivative_option))
        case (0)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"d/dzeta terms are dropped in the preconditioner."
           end if
           ddzeta_plus_preconditioner = 0
@@ -554,7 +555,7 @@
           call_uniform_diff_matrices = .false.
           
        case (100)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"d/dzeta matrices are the same in the preconditioner."
           end if
           ddzeta_plus_preconditioner  = ddzeta_plus
@@ -562,7 +563,7 @@
           call_uniform_diff_matrices = .false.          
           
        case (2)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"Preconditioner d/dzeta derivatives discretized using centered finite differences:"
              print *,"   1 point on either side."
           end if
@@ -570,7 +571,7 @@
           derivative_option_minus = derivative_option_plus
           
        case (3)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"Preconditioner d/dzeta derivatives discretized using centered finite differences:"
              print *,"   2 points on either side."
           end if
@@ -578,7 +579,7 @@
           derivative_option_minus = derivative_option_plus
 
        case (4)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"Preconditioner d/dzeta derivatives discretized using upwinded finite differences:"
              print *,"   0 points on one side, 1 point on the other side."
           end if
@@ -586,7 +587,7 @@
           derivative_option_minus = 40
           
        case (5)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"Preconditioner d/dzeta derivatives discretized using upwinded finite differences:"
              print *,"   0 points on one side, 2 points on the other side."
           end if
@@ -594,7 +595,7 @@
           derivative_option_minus = 60
           
        case (6)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"Preconditioner d/dzeta derivatives discretized using upwinded finite differences:"
              print *,"   1 point on one side, 2 points on the other side."
           end if
@@ -602,7 +603,7 @@
           derivative_option_minus = 90
           
        case (7)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"Preconditioner d/dzeta derivatives discretized using upwinded finite differences:"
              print *,"   1 point on one side, 3 points on the other side."
           end if
@@ -610,7 +611,7 @@
           derivative_option_minus = 110
           
        case (8)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"Preconditioner d/dzeta derivatives discretized using upwinded finite differences:"
              print *,"   2 point on one side, 3 points on the other side."
           end if
@@ -633,7 +634,7 @@
        end if
 
        if (preconditioner_zeta_derivative_option<0) then
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"   But only the diagonal is kept."
           end if
           do j=1,Nzeta
@@ -695,7 +696,7 @@
     pitch_angle_scattering_operator_preconditioner => levels(level)%pitch_angle_scattering_operator_preconditioner
 
     if (pitch_angle_scattering_option==1 .or. xi_derivative_option==1) then
-       if (masterProc) then
+       if (describe_stencils) then
           print *,"Since at least one of pitch_angle_scattering_option or xi_derivative_option is 1,"
           print *,"we will use a non-preconditioned Chebyshev grid in xi for both."
        end if
@@ -705,6 +706,7 @@
        preconditioner_xi_derivative_option = 100
 
        call ChebyshevGrid(Nxi, -one, one, xi, xiWeights, ddxi)
+       y = xi
        ddxi_plus = ddxi
        ddxi_minus = ddxi
        ddxi_plus_preconditioner = ddxi_plus
@@ -765,14 +767,14 @@
        select case (pitch_angle_scattering_option)
           
        case (2)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"Pitch angle scattering operator discretized using centered finite differences:"
              print *,"   1 point on either side."
           end if
           derivative_option = 2
           
        case (3)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"Pitch angle scattering operator discretized using centered finite differences:"
              print *,"   2 points on either side."
           end if
@@ -800,7 +802,7 @@
        call_uniform_diff_matrices = .true.
        select case (abs(preconditioner_pitch_angle_scattering_option))
        case (0)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"Pitch angle scattering operator is dropped in the preconditioner."
           end if
           ddy = 0
@@ -808,21 +810,21 @@
           call_uniform_diff_matrices = .false.
           
        case (100)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"Pitch angle scattering operator is the same in the preconditioner."
           end if
           ! ddy and d2dy2 will be carried over from the previous section then.
           call_uniform_diff_matrices = .false.
           
        case (2)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"Preconditioner pitch angle scattering operator is discretized using centered finite differences:"
              print *,"   1 point on either side."
           end if
           derivative_option = 2
           
        case (3)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"Preconditioner pitch angle scattering operator is discretized using centered finite differences:"
              print *,"   2 points on either side."
           end if
@@ -846,7 +848,7 @@
        end do
        
        if (preconditioner_pitch_angle_scattering_option<0) then
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"   But only the diagonal is kept."
           end if
           do j=1,Nxi
@@ -865,7 +867,7 @@
        select case (xi_derivative_option)
           
        case (2)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"d/dxi derivatives discretized using centered finite differences:"
              print *,"   1 point on either side."
           end if
@@ -873,7 +875,7 @@
           derivative_option_minus = derivative_option_plus
           
        case (3)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"d/dxi derivatives discretized using centered finite differences:"
              print *,"   2 points on either side."
           end if
@@ -881,7 +883,7 @@
           derivative_option_minus = 12
           
        case (4)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"d/dxi derivatives discretized using upwinded finite differences:"
              print *,"   0 points on one side, 1 point on the other side."
           end if
@@ -889,7 +891,7 @@
           derivative_option_minus = 42
           
        case (5)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"d/dxi derivatives discretized using upwinded finite differences:"
              print *,"   0 points on one side, 2 points on the other side."
           end if
@@ -897,7 +899,7 @@
           derivative_option_minus = 62
           
        case (6)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"d/dxi derivatives discretized using upwinded finite differences:"
              print *,"   1 point on one side, 2 points on the other side."
           end if
@@ -905,7 +907,7 @@
           derivative_option_minus = 92
           
        case (7)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"d/dxi derivatives discretized using upwinded finite differences:"
              print *,"   1 point on one side, 3 points on the other side."
           end if
@@ -913,7 +915,7 @@
           derivative_option_minus = 112
           
        case (8)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"d/dxi derivatives discretized using upwinded finite differences:"
              print *,"   2 point on one side, 3 points on the other side."
              print *,"   High accuracy at the domain ends, though upwinding breaks down there."
@@ -922,7 +924,7 @@
           derivative_option_minus = 132
           
        case (9)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"d/dxi derivatives discretized using upwinded finite differences:"
              print *,"   2 point on one side, 3 points on the other side."
              print *,"   Upwinding all the way to the domain ends, meaning lower accuracy there."
@@ -951,7 +953,7 @@
        call_uniform_diff_matrices = .true.
        select case (abs(preconditioner_xi_derivative_option))
        case (0)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"d/dxi terms are dropped in the preconditioner."
           end if
           ddxi_plus_preconditioner = 0
@@ -959,7 +961,7 @@
           call_uniform_diff_matrices = .false.
 
        case (100)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"d/dxi matrices are the same in the preconditioner."
           end if
           ddxi_plus_preconditioner  = ddxi_plus
@@ -967,7 +969,7 @@
           call_uniform_diff_matrices = .false.
           
        case (2)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"Preconditioner d/dxi derivatives discretized using centered finite differences:"
              print *,"   1 point on either side."
           end if
@@ -975,7 +977,7 @@
           derivative_option_minus = derivative_option_plus
           
        case (3)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"Preconditioner d/dxi derivatives discretized using centered finite differences:"
              print *,"   2 points on either side."
           end if
@@ -983,7 +985,7 @@
           derivative_option_minus = 12
           
        case (4)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"Preconditioner d/dxi derivatives discretized using upwinded finite differences:"
              print *,"   0 points on one side, 1 point on the other side."
           end if
@@ -991,7 +993,7 @@
           derivative_option_minus = 42
           
        case (5)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"Preconditioner d/dxi derivatives discretized using upwinded finite differences:"
              print *,"   0 points on one side, 2 points on the other side."
           end if
@@ -999,7 +1001,7 @@
           derivative_option_minus = 62
           
        case (6)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"Preconditioner d/dxi derivatives discretized using upwinded finite differences:"
              print *,"   1 point on one side, 2 points on the other side."
           end if
@@ -1007,7 +1009,7 @@
           derivative_option_minus = 92
           
        case (7)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"Preconditioner d/dxi derivatives discretized using upwinded finite differences:"
              print *,"   1 point on one side, 3 points on the other side."
           end if
@@ -1015,7 +1017,7 @@
           derivative_option_minus = 112
           
        case (8)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"Preconditioner d/dxi derivatives discretized using upwinded finite differences:"
              print *,"   2 point on one side, 3 points on the other side."
              print *,"   High accuracy at the domain ends, though upwinding breaks down there."
@@ -1024,7 +1026,7 @@
           derivative_option_minus = 132
           
        case (9)
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"Preconditioner d/dxi derivatives discretized using upwinded finite differences:"
              print *,"   2 point on one side, 3 points on the other side."
              print *,"   Upwinding all the way to the domain ends, meaning lower accuracy there."
@@ -1049,7 +1051,7 @@
        end if
        
        if (preconditioner_xi_derivative_option<0) then
-          if (masterProc) then
+          if (describe_stencils) then
              print *,"   But only the diagonal is kept."
           end if
           do j=1,Nxi
@@ -1065,7 +1067,7 @@
 
     ! The following arrays will not be needed:
     deallocate(d2dxi2,ddxi)
-    deallocate(d2dy2,ddy,y_dummy,yWeights_dummy,yWeights,ddy_plus,ddy_minus,y)
+    deallocate(d2dy2,ddy,y_dummy,yWeights_dummy,yWeights,ddy_plus,ddy_minus)
 
     ! *******************************************************************************
     ! Compute the Legendre polynomials recursively
@@ -1143,7 +1145,7 @@
        levels(level)%min_x_for_L(levels(level)%Nxi_for_x(j):) = j+1
     end do
 
-    if (masterProc) then
+    if (masterProc .and. level==1) then
        print *,"x:",x
        print *,"Nxi for each x:",levels(level)%Nxi_for_x
        print *,"min_x_for_L:",levels(level)%min_x_for_L
@@ -1198,10 +1200,7 @@
     end if
 
 
-    if (masterProc) then
-       print *,"------------------------------------------------------"
-       print *,"Done creating grids."
-    end if
+    if (masterProc) print *,"Done creating grids for level",level
 
 
   contains

@@ -36,7 +36,7 @@ subroutine interpolationMatrix(N, M, x, y, scheme, matrix, extrapMatrix)
   integer :: i, j, index=1
   logical flag
   integer :: indicesToUse(4), k
-  real(prec) :: x0, x1, x2, x3, xx, xi, xj, denomP, denomQ, interval
+  real(prec) :: x0, x1, x2, x3, xx, interval
 
   ! Initialize matrix to 0:
   matrix=0d+0
@@ -51,7 +51,7 @@ subroutine interpolationMatrix(N, M, x, y, scheme, matrix, extrapMatrix)
   interval = x(2)-x(1)
   do j=2,N
      if (x(j-1) >= x(j)) then 
-        print *,"Error! x grid points are not sorted in increasing order."
+        print *,"Error in uniformInterpolationMatrix.F90! x grid points are not sorted in increasing order."
         stop
      end if
      if (abs(x(j)-x(j-1)-interval) > 1d-10) then

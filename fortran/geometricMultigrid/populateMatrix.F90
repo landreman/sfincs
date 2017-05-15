@@ -138,9 +138,7 @@
     ! values on top of the previous values:
     call MatZeroEntries(matrix,ierr)
 
-    if (masterProc) then
-       print *,"Running populateMatrix with whichMatrix = ",whichMatrix
-    end if
+    if (masterProc) print "(a,i2,a,i3,a)"," Running populateMatrix with whichMatrix =",whichMatrix," at level",level,"."
 
     select case (whichMatrix)
     case (0)
@@ -158,6 +156,9 @@
        ! This matrix is quite similar to the Jacobian matrix (whichMatrix=1), since most terms in the system of equations are linear.
        ! However there are a few differences related to the nonlinear terms.
        whichMatrixName = "residual f1"
+    case (4)
+       ! The matrix used for smoothing the residual at a given level of multigrid.
+       whichMatrixName = "smoother"
     case default
        if (masterProc) then
           print *,"Error! whichMatrix must be 0, 1, 2, or 3."
@@ -1619,8 +1620,8 @@
     ! *******************************************************************************
 
     if (saveMatlabOutput) then
-       write (filename,fmt="(a,i3.3,a,i1,a)") trim(MatlabOutputFilename) // "_iteration_", iterationForMatrixOutput, &
-            "_whichMatrix_",whichMatrix,".m"
+       write (filename,fmt="(a,i3.3,a,i1,a,i2.2,a)") trim(MatlabOutputFilename) // "_iteration_", iterationForMatrixOutput, &
+            "_whichMatrix_",whichMatrix,"_level_",level,".m"
        if (masterProc) then
           print *,"Saving matrix in matlab format: ",trim(filename)
        end if
@@ -1634,8 +1635,8 @@
     end if
 
     if (saveMatricesAndVectorsInBinary) then
-       write (filename,fmt="(a,i3.3,a,i1)") trim(binaryOutputFilename) // "_iteration_", iterationForMatrixOutput, &
-            "_whichMatrix_",whichMatrix
+       write (filename,fmt="(a,i3.3,a,i1,a,i2.2,a)") trim(binaryOutputFilename) // "_iteration_", iterationForMatrixOutput, &
+            "_whichMatrix_",whichMatrix,"_level_",level,".m"
        if (masterProc) then
           print *,"Saving matrix in binary format: ",trim(filename)
        end if
