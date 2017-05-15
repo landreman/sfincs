@@ -10,7 +10,7 @@
   subroutine apply_preconditioner(outer_preconditioner, input_Vec, output_Vec, ierr)
 
     use petscksp
-    use globalVariables, only: masterProc, numProcs, myRank, inner_KSP, Mat_for_Jacobian, matrixSize, constraintScheme, Nx, Nspecies, one, &
+    use globalVariables, only: levels, masterProc, numProcs, myRank, inner_KSP, matrixSize, constraintScheme, Nx, Nspecies, one, &
          preconditioning_option, MPIComm
     use indices
 
@@ -133,9 +133,9 @@
 
              ! Now 'slice' the big matrix to get the smaller non-square matrices that represent the sources and constraints:
              ! All rows, last columns -> sources_Mat
-             call MatGetSubMatrix(Mat_for_Jacobian, IS_all, IS_source_constraint, MAT_INITIAL_MATRIX, sources_Mat, ierr)
+             call MatGetSubMatrix(levels(1)%high_order_matrix, IS_all, IS_source_constraint, MAT_INITIAL_MATRIX, sources_Mat, ierr)
              ! Last rows, all columns -> constraints_Mat
-             call MatGetSubMatrix(Mat_for_Jacobian, IS_source_constraint, IS_all, MAT_INITIAL_MATRIX, constraints_Mat, ierr)
+             call MatGetSubMatrix(levels(1)%high_order_matrix, IS_source_constraint, IS_all, MAT_INITIAL_MATRIX, constraints_Mat, ierr)
 
              ! The matrix given by the product of the constraints and sources will be used later. Compute it now.
              call MatMatMult(constraints_Mat, sources_Mat, MAT_INITIAL_MATRIX, PETSC_DEFAULT_REAL, constraints_times_sources_Mat, ierr)

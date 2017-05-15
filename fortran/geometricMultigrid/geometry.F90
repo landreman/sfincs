@@ -22,11 +22,17 @@ module geometry
 
   public :: initialize_geometry, evaluate_B_on_grids
 
-
   integer :: vmecRadialIndex_full(2)
   integer :: vmecRadialIndex_half(2)
   real(prec) :: vmecRadialWeight_full(2)
   real(prec) :: vmecRadialWeight_half(2)
+
+  integer, parameter :: max_num_modes = 10000
+  integer, dimension(2) :: num_modes
+  integer, dimension(max_num_modes,2) :: modes_l, modes_n
+  logical, dimension(max_num_modes,2) :: modes_parity
+  real(prec), dimension(max_num_modes,2) :: modes_B, modes_R, modes_Z, modes_delta_zeta
+  real(prec), dimension(2) :: Boozer_radial_weights
 
 contains
 
@@ -294,34 +300,7 @@ contains
 
     implicit none
 
-    integer :: itheta, izeta, NHarmonics, NHarmonicsL, NHarmonicsH, i, m, n
-    integer, dimension(:), allocatable :: BHarmonics_l, BHarmonics_n
-    integer, dimension(:), allocatable :: BHarmonics_lL, BHarmonics_nL, BHarmonics_lH, BHarmonics_nH
-    real(prec), dimension(:), allocatable :: BHarmonics_amplitudes
-    real(prec), dimension(:), allocatable :: BHarmonics_amplitudesL, BHarmonics_amplitudesH
-    real(prec), dimension(:), allocatable :: RHarmonics_L, RHarmonics_H
-    real(prec), dimension(:), allocatable :: ZHarmonics_L, ZHarmonics_H
-    real(prec), dimension(:), allocatable :: dzHarmonics_L, dzHarmonics_H
-    logical, dimension(:), allocatable :: BHarmonics_parity
-    logical, dimension(:), allocatable :: BHarmonics_parityL, BHarmonics_parityH
-    real(prec), dimension(:,:), allocatable :: hHat, duHatdtheta, duHatdzeta
-    real(prec) :: R0
-    real(prec), dimension(:,:), allocatable :: BHatL, dBHatdthetaL, dBHatdzetaL
-    real(prec), dimension(:,:), allocatable :: BHatH, dBHatdthetaH, dBHatdzetaH
-    real(prec), dimension(:,:), allocatable :: RHat,  dRHatdtheta,  dRHatdzeta,  d2RHatdtheta2,  d2RHatdzeta2,  d2RHatdthetadzeta
-    real(prec), dimension(:,:), allocatable :: RHatL, dRHatdthetaL, dRHatdzetaL, d2RHatdtheta2L, d2RHatdzeta2L, d2RHatdthetadzetaL
-    real(prec), dimension(:,:), allocatable :: RHatH, dRHatdthetaH, dRHatdzetaH, d2RHatdtheta2H, d2RHatdzeta2H, d2RHatdthetadzetaH
-    real(prec), dimension(:,:), allocatable :: ZHat,  dZHatdtheta,  dZHatdzeta,  d2ZHatdtheta2,  d2ZHatdzeta2,  d2ZHatdthetadzeta
-    real(prec), dimension(:,:), allocatable :: ZHatL, dZHatdthetaL, dZHatdzetaL, d2ZHatdtheta2L, d2ZHatdzeta2L, d2ZHatdthetadzetaL
-    real(prec), dimension(:,:), allocatable :: ZHatH, dZHatdthetaH, dZHatdzetaH, d2ZHatdtheta2H, d2ZHatdzeta2H, d2ZHatdthetadzetaH
-    real(prec), dimension(:,:), allocatable :: Dz,  dDzdtheta,  dDzdzeta,  d2Dzdtheta2,  d2Dzdzeta2,  d2Dzdthetadzeta
-    real(prec), dimension(:,:), allocatable :: DzL, dDzdthetaL, dDzdzetaL, d2Dzdtheta2L, d2Dzdzeta2L, d2DzdthetadzetaL
-    real(prec), dimension(:,:), allocatable :: DzH, dDzdthetaH, dDzdzetaH, d2Dzdtheta2H, d2Dzdzeta2H, d2DzdthetadzetaH
-    real(prec), dimension(:,:), allocatable :: geomang, dgeomangdtheta, dgeomangdzeta, d2geomangdtheta2, d2geomangdzeta2, d2geomangdthetadzeta
-    real(prec), dimension(:,:), allocatable :: dXdtheta, dXdzeta, dYdtheta, dYdzeta
-    real(prec), dimension(:,:), allocatable :: d2Xdtheta2, d2Xdthetadzeta, d2Xdzeta2, d2Ydtheta2, d2Ydthetadzeta, d2Ydzeta2
-    real(prec), dimension(:,:), allocatable :: gradpsiX, gradpsiY, gradpsiZ, gpsipsi, CX, CY, CZ
-
+    integer :: j
     integer :: fileUnit, didFileAccessWork
     character(len=200) :: lineOfFile
     integer, dimension(4) :: headerIntegers
@@ -330,20 +309,9 @@ contains
     real(prec), dimension(4) :: dataNumbers
     real(prec), dimension(8) :: data8Numbers
     integer, dimension(2) :: dataIntegers
-    integer :: no_of_modes_old, no_of_modes_new, modeind, numB0s, startn, stopn
-    real(prec) :: iota_old, iota_new, GHat_old, GHat_new, IHat_old, IHat_new
-    real(prec) :: pPrimeHat_old, pPrimeHat_new, invFSA_BHat2
+    integer :: modeind, numB0s
     logical :: end_of_file, proceed, include_mn, nearbyRadiiGiven, nonStelSym
-    integer, parameter :: max_no_of_modes = 10000
-    integer, dimension(max_no_of_modes) :: modesm_old, modesm_new, modesn_old, modesn_new
-    real(prec), dimension(max_no_of_modes) :: modesb_old, modesb_new, modesR_old, modesR_new
-    real(prec), dimension(max_no_of_modes) :: modesZ_old, modesZ_new, modesDz_old, modesDz_new
-    real(prec) :: rN_old,  rN_new, B0_old, B0_new, B0OverBBarL, B0OverBBarH
-    real(prec) :: R0_old, R0_new, R0L, R0H
-    real(prec) :: hHatHarmonics_amplitude, uHatHarmonics_amplitude
-    real(prec) :: dBHat_sub_psi_dthetaHarmonics_amplitude, dBHat_sub_psi_dzetaHarmonics_amplitude
-    real(prec) :: DeltapsiHat !, diotadpsiHat moved to global variables 2016-09-15 HS
-    real(prec) :: RadialWeight = 1.0 ! weight of closest surface with rN<=rN_wish
+    real(prec) :: DeltapsiHat
 
     ! For the BHarmonics_parity array, 
     ! true indicates the contribution to B(theta,zeta) has the form
@@ -351,27 +319,25 @@ contains
     ! while false indicates the contribution to B(theta,zeta) has the form
     ! sin(l * theta - n * zeta)
 
-    ! Initialise some quantities which will otherwise only be calculated
-    ! in geometryScheme 11 and 12 
-    dBHatdpsiHat = 0
-    BHat_sub_psi = 0
-    dBHat_sub_psi_dtheta = 0
-    dBHat_sub_psi_dzeta = 0
-
-    dBHat_sub_theta_dpsiHat = 0
-    dBHat_sub_theta_dzeta = 0 !Always zero in Boozer coords.
-
-    dBHat_sub_zeta_dpsiHat = 0
-    dBHat_sub_zeta_dtheta = 0 !Always zero in Boozer coords.
-
-    dBHat_sup_theta_dpsiHat = 0
-    dBHat_sup_theta_dzeta = 0
-
-    dBHat_sup_zeta_dpsiHat = 0
-    dBHat_sup_zeta_dtheta = 0
     diotadpsiHat = 0
 
-    nearbyRadiiGiven = .false. !Will be the case for all geometrySchemes except 11 and 12
+    modes_parity = .true.
+    num_modes = 0
+    Boozer_radial_weights = zero
+    Boozer_radial_weights(1) = one
+
+    modes_l = 0
+    modes_n = 0
+    modes_B = 0
+    modes_R = 0
+    modes_Z = 0
+    modes_delta_zeta = 0
+
+    GHat_surfaces = 0
+    IHat_surfaces = 0
+    iota_surfaces = 0
+    pPrimeHat_surfaces = 0
+    rN_surfaces = 0
 
     select case (geometryScheme)
     case (1)
@@ -379,37 +345,31 @@ contains
        ! B = B0 * [1 + epsilon_t * cos(theta) + epsilon_h * cos(helicity_l * theta - helicity_n * zeta) ...
        !             + epsilon_antisymm * sin(helicity_antisymm_l * theta - helicity_antisymm_n * zeta) ...
 
-
-       NHarmonics = 3
-       allocate(BHarmonics_l(NHarmonics))
-       allocate(BHarmonics_n(NHarmonics))
-       allocate(BHarmonics_amplitudes(NHarmonics))
-       allocate(BHarmonics_parity(NHarmonics))
-       BHarmonics_parity = .true.
+       num_modes(1) = 3
 
        i = 1
-       BHarmonics_l(i) = 1
-       BHarmonics_n(i) = 0
-       BHarmonics_amplitudes(i) = epsilon_t
+       modes_l(i,1) = 1
+       modes_n(i,1) = 0
+       modes_B(i,1) = epsilon_t
 
        i = 2
-       BHarmonics_l(i) = helicity_l
+       modes_l(i,1) = helicity_l
        if (helicity_n == 0) then
-          BHarmonics_n(i) = 0
+          modes_n(i,1) = 0
        else
-          BHarmonics_n(i) = 1
+          modes_n(i,1) = 1
        end if
-       BHarmonics_amplitudes(i) = epsilon_h
+       modes_B(i,1) = epsilon_h
 
        i = 3
-       BHarmonics_parity(i) = .false.
-       BHarmonics_l(i) = helicity_antisymm_l
+       modes_parity(i,1) = .false.
+       modes_l(i,1) = helicity_antisymm_l
        if (helicity_n == 0) then
-          BHarmonics_n(i) = helicity_antisymm_n
+          modes_n(i,1) = helicity_antisymm_n
        else
-          BHarmonics_n(i) = helicity_antisymm_n / helicity_n
+          modes_n(i,1) = helicity_antisymm_n / helicity_n
        end if
-       BHarmonics_amplitudes(i) = epsilon_antisymm
+       modes_B(i,1) = epsilon_antisymm
 
        if (helicity_n == 0) then
           if (helicity_antisymm_n .ne. 0) then
@@ -424,7 +384,7 @@ contains
        dGdpHat = 0 !Not implemented as an input for this case yet, could be put in namelist input if needed
        !rN = -1 !dummy
        rN = rN_wish
-       BHarmonics_amplitudes=BHarmonics_amplitudes*B0OverBBar
+       modes_B = modes_B * B0OverBBar
 
     case (2)
        ! A three-harmonic approximation of the LHD standard configuration.
@@ -433,27 +393,22 @@ contains
 
        iota = 0.4542d+0
 
-       NHarmonics = 3
-       allocate(BHarmonics_l(NHarmonics))
-       allocate(BHarmonics_n(NHarmonics))
-       allocate(BHarmonics_amplitudes(NHarmonics))
-       allocate(BHarmonics_parity(NHarmonics))
-       BHarmonics_parity = .true.
+       num_modes(1) = 3
 
        i = 1
-       BHarmonics_l(i) = 1
-       BHarmonics_n(i) = 0
-       BHarmonics_amplitudes(i) = -0.07053d+0
+       modes_l(i,1) = 1
+       modes_n(i,1) = 0
+       modes_B(i,1) = -0.07053d+0
 
        i = 2
-       BHarmonics_l(i) = 2
-       BHarmonics_n(i) = 1
-       BHarmonics_amplitudes(i) = 0.05067d+0
+       modes_l(i,1) = 2
+       modes_n(i,1) = 1
+       modes_B(i,1) = 0.05067d+0
 
        i = 3
-       BHarmonics_l(i) = 1
-       BHarmonics_n(i) = 1
-       BHarmonics_amplitudes(i) = -0.01476d+0
+       modes_l(i,1) = 1
+       modes_n(i,1) = 1
+       modes_B(i,1) = -0.01476d+0
 
        B0OverBBar = 1.0d+0  ! (Tesla)
        R0 = 3.7481d+0 ! (meters)
@@ -462,7 +417,7 @@ contains
        dGdpHat = 0
        !rN = -1 !dummy
        rN = rN_wish
-       BHarmonics_amplitudes=BHarmonics_amplitudes*B0OverBBar
+       modes_B = modes_B * B0OverBBar
 
     case (3)
        ! A four-harmonic approximation of the LHD inward-shifted configuration.
@@ -471,32 +426,27 @@ contains
 
        iota = 0.4692d+0
 
-       NHarmonics = 4
-       allocate(BHarmonics_l(NHarmonics))
-       allocate(BHarmonics_n(NHarmonics))
-       allocate(BHarmonics_amplitudes(NHarmonics))
-       allocate(BHarmonics_parity(NHarmonics))
-       BHarmonics_parity = .true.
+       num_modes(1) = 4
 
        i = 1
-       BHarmonics_l(i) = 1
-       BHarmonics_n(i) = 0
-       BHarmonics_amplitudes(i) = -0.05927d+0
+       modes_l(i,1) = 1
+       modes_n(i,1) = 0
+       modes_B(i,1) = -0.05927d+0
 
        i = 2
-       BHarmonics_l(i) = 2
-       BHarmonics_n(i) = 1
-       BHarmonics_amplitudes(i) = 0.05267d+0
+       modes_l(i,1) = 2
+       modes_n(i,1) = 1
+       modes_B(i,1) = 0.05267d+0
 
        i = 3
-       BHarmonics_l(i) = 1
-       BHarmonics_n(i) = 1
-       BHarmonics_amplitudes(i) = -0.04956d+0
+       modes_l(i,1) = 1
+       modes_n(i,1) = 1
+       modes_B(i,1) = -0.04956d+0
 
        i = 4
-       BHarmonics_l(i) = 0
-       BHarmonics_n(i) = 1
-       BHarmonics_amplitudes(i) = 0.01045d+0
+       modes_l(i,1) = 0
+       modes_n(i,1) = 1
+       modes_B(i,1) = 0.01045d+0
 
        B0OverBBar = 1.0d+0  ! (Tesla)
        R0 = 3.6024d+0 ! (meters)
@@ -505,7 +455,7 @@ contains
        dGdpHat = 0
        !normradius = -1 !dummy
        rN = rN_wish
-       BHarmonics_amplitudes=BHarmonics_amplitudes*B0OverBBar
+       modes_B = modes_B * B0OverBBar
 
     case (4)
        ! A three-harmonic approximation of the W7-X standard configuration.
@@ -514,27 +464,22 @@ contains
 
        iota = 0.8700d+0
 
-       NHarmonics = 3
-       allocate(BHarmonics_l(NHarmonics))
-       allocate(BHarmonics_n(NHarmonics))
-       allocate(BHarmonics_amplitudes(NHarmonics))
-       allocate(BHarmonics_parity(NHarmonics))
-       BHarmonics_parity = .true.
+       num_modes(1) = 3
 
        i = 1
-       BHarmonics_l(i) = 0
-       BHarmonics_n(i) = 1
-       BHarmonics_amplitudes(i) = 0.04645d+0
+       modes_l(i,1) = 0
+       modes_n(i,1) = 1
+       modes_B(i,1) = 0.04645d+0
 
        i = 2
-       BHarmonics_l(i) = 1
-       BHarmonics_n(i) = 1
-       BHarmonics_amplitudes(i) = -0.04351d+0
+       modes_l(i,1) = 1
+       modes_n(i,1) = 1
+       modes_B(i,1) = -0.04351d+0
 
        i = 3
-       BHarmonics_l(i) = 1
-       BHarmonics_n(i) = 0
-       BHarmonics_amplitudes(i) = -0.01902d+0
+       modes_l(i,1) = 1
+       modes_n(i,1) = 0
+       modes_B(i,1) = -0.01902d+0
 
        B0OverBBar = 3.089d+0  ! (Tesla)
        R0 = 5.5267d+0 ! (meters)
@@ -543,9 +488,9 @@ contains
        dGdpHat = 0
        !normradius = -1 !dummy
        rN = rN_wish
-       BHarmonics_amplitudes=BHarmonics_amplitudes*B0OverBBar
+       modes_B = modes_B * B0OverBBar
 
-    case (11)
+    case (11, 12)
        ! Read Boozer coordinate file in .bc format used at IPP Greifswald
 
        fileUnit = 11
@@ -553,200 +498,186 @@ contains
        if (didFileAccessWork /= 0) then
           print *,"Unable to open magnetic equilibrium file ",equilibriumFile
           stop
-       else
-          do
-             read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
-             if (lineOfFile(1:2) /= "CC") exit
-          end do
+       end if
 
-          ! Read header line:
-          read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) headerIntegers, headerReals
-          if (didFileAccessWork /= 0) then
-             print *,"Unable to read header from the magnetic equilibrium file ",equilibriumFile
-             stop
-          end if
-
-          !NPeriods = headerIntegers(4)
-          !psiAHat  = headerReals(1)/2/pi !Convert the flux from Tm^2 to Tm^2/rad
-          !aHat     = headerReals(2)      !minor radius in meters
-
-          end_of_file = .false.
-
-          rN_old = 0
-          no_of_modes_old = 0
-          modesm_old = 0
-          modesn_old = 0
-          modesb_old = 0
-          modesR_old = 0
-          modesZ_old = 0
-          modesDz_old = 0
-          iota_old = 0
-          GHat_old = 0
-          IHat_old = 0
-          B0_old = 0
-          R0_old = 0
-          pPrimeHat_old = 0
-
-          rN_new = 0
-          no_of_modes_new = 0
-          modesm_new = 0
-          modesn_new = 0
-          modesb_new = 0
-          modesR_new = 0
-          modesZ_new = 0
-          modesDz_new = 0
-          iota_new = 0
-          GHat_new = 0
-          IHat_new = 0
-          B0_new = 0
-          R0_new = 0
-          pPrimeHat_new = 0
-
-          ! Skip a line
+       do
           read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
+          if (lineOfFile(1:2) /= "CC") exit
+       end do
 
-          do 
-             if ((rN_new .ge. rN_wish) .or. end_of_file) exit
+       ! Read header line:
+       read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) headerIntegers, headerReals
+       if (didFileAccessWork /= 0) then
+          print *,"Unable to read header from the magnetic equilibrium file ",equilibriumFile
+          stop
+       end if
 
-             rN_old = rN_new
-             no_of_modes_old = no_of_modes_new
-             modesm_old = modesm_new
-             modesn_old = modesn_new
-             modesb_old = modesb_new
-             modesR_old = modesR_new
-             modesZ_old = modesZ_new
-             modesDz_old = modesDz_new
-             iota_old = iota_new
-             GHat_old = GHat_new
-             IHat_old = IHat_new
-             B0_old = B0_new
-             R0_old = R0_new
-             pPrimeHat_old = pPrimeHat_new
-             numB0s = 0
+       !NPeriods = headerIntegers(4)
+       !psiAHat  = headerReals(1)/2/pi !Convert the flux from Tm^2 to Tm^2/rad
+       !aHat     = headerReals(2)      !minor radius in meters
 
-             ! Skip a line:
+       end_of_file = .false.
+
+       rN_surfaces = 0
+       num_modes = 0
+       iota_surfaces = 0
+       GHat_surfaces = 0
+       IHat_surfaces = 0
+       B0 = 0
+       R0 = 0
+       pPrimeHat = 0
+       num_surfaces_read = 0
+
+       ! Skip a line
+       read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
+
+       do 
+          if ((rN_surfaces(1) .ge. rN_wish) .or. end_of_file) exit
+
+          ! Set new surface 3 equal to previous surface 2,
+          ! then set new surface 2 equal to previous surface 1:
+          do j = 1,1 ! Eventually I may want to change this to include 3 surfaces
+             modes_l(1:num_modes(j),j+1) = modes_l(1:num_modes(j),j)
+             modes_n(1:num_modes(j),j+1) = modes_n(1:num_modes(j),j)
+             modes_B(1:num_modes(j),j+1) = modes_B(1:num_modes(j),j)
+             modes_R(1:num_modes(j),j+1) = modes_R(1:num_modes(j),j)
+             modes_Z(1:num_modes(j),j+1) = modes_Z(1:num_modes(j),j)
+             modes_zeta_shift(1:num_modes(j),j+1) = modes_zeta_shift(1:num_modes(j),j)
+             iota_surfaces(j+1) = iota_surfaces(j)
+             GHat_surfaces(j+1) = GHat_surfaces(j)
+             IHat_surfaces(j+1) = IHat_surfaces(j)
+             pPrimeHat_surfaces(j+1) = pPrimeHat_surfaces(j)
+             rN_surfaces(j+1) = rN_surfaces(j)
+             num_modes_(j+1) = num_modes(j)
+          end do
+          B0 = 0
+          R0 = 0
+          numB0s = 0
+
+          ! Skip a line:
+          read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
+          ! Read the header for the magnetic surface:
+          read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) surfHeader
+
+          rN_surfaces(1) = sqrt(surfHeader(1))       ! r/a = sqrt(psi/psi_a)
+          iota_surfaces(1) = surfHeader(2)
+          ! Note that G and I have a minus sign in the following two lines
+          ! because Ampere's law comes with a minus sign in the left-handed
+          ! (r,pol,tor) system.
+          GHat_surfaces(1) = -surfHeader(3)*NPeriods/2/pi*(4*pi*1d-7) !Tesla*meter
+          IHat_surfaces(1) = -surfHeader(4)/2/pi*(4*pi*1d-7)          !Tesla*meter
+          pPrimeHat_surfaces(1) = surfheader(5)/psiAHat*(4*pi*1e-7)   ! dpdpsi=pPrimeHat/mu_0
+
+          ! Skip units line:
+          read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
+          proceed = .true.
+          modeind = 0
+          do
+             if (.not. proceed) exit
+
              read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
-             ! Read the header for the magnetic surface:
-             read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) surfHeader
-
-             rN_new = sqrt(surfHeader(1))       ! r/a = sqrt(psi/psi_a)
-             iota_new = surfHeader(2)
-             ! Note that G and I have a minus sign in the following two lines
-             ! because Ampere's law comes with a minus sign in the left-handed
-             ! (r,pol,tor) system.
-             GHat_new = -surfHeader(3)*NPeriods/2/pi*(4*pi*1d-7) !Tesla*meter
-             IHat_new = -surfHeader(4)/2/pi*(4*pi*1d-7)          !Tesla*meter
-             pPrimeHat_new = surfheader(5)/psiAHat*(4*pi*1e-7)   ! dpdpsi=pPrimeHat/mu_0
-
-             ! Skip units line:
-             read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
-             proceed = .true.
-             modeind = 0
-             do
-                if (.not. proceed) exit
-
-                read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
-                if (didFileAccessWork /= 0) then
-                   proceed = .false.
-                   end_of_file = .true.
-                else if (index(lineOfFile,"s") > 0) then
-                   ! Next flux surface has been reached
-                   proceed = .false.
-                else
-                   read(unit=lineOfFile, fmt=*) dataIntegers, dataNumbers
-                   if (dataIntegers(1) == 0 .and. dataIntegers(2) == 0) then
-                      B0_new = dataNumbers(4)
-                      R0_new = dataNumbers(1)
-                      numB0s = numB0s + 1
-                   else if (abs(dataNumbers(4)) > min_Bmn_to_load) then
+             if (didFileAccessWork /= 0) then
+                proceed = .false.
+                end_of_file = .true.
+             else if (index(lineOfFile,"s") > 0) then
+                ! Next flux surface has been reached
+                proceed = .false.
+             else
+                read(unit=lineOfFile, fmt=*) dataIntegers, dataNumbers
+                if (dataIntegers(1) == 0 .and. dataIntegers(2) == 0) then
+                   if (geometryScheme==11) then
+                      B0 = dataNumbers(4)
+                   else
+                      B0 = dataNumbers(7)
+                   end if
+                   R0 = dataNumbers(1)
+                   numB0s = numB0s + 1
+                else if (abs(dataNumbers(4)) > min_Bmn_to_load) then
+                   if (modeind + 2 > max_num_modes) then
+                      print *,"The value of max_no_of_modes in geometry.F90 was insufficient."
+                      print *,"Either increase this value and recompile, or else increase min_Bmn_to_load."
+                      stop
+                   end if
+                   if (geometryScheme==11) then
                       modeind = modeind + 1
-                      if (modeind > max_no_of_modes) then
-                         print *,"The value of max_no_of_modes in geometry.F90 was insufficient."
-                         print *,"Either increase this value and recompile, or else increase min_Bmn_to_load."
-                         stop
-                      end if
-                      modesm_new(modeind) = dataIntegers(1)
-                      modesn_new(modeind) = dataIntegers(2)
-                      modesR_new(modeind) = dataNumbers(1)
-                      modesZ_new(modeind) = dataNumbers(2)
-                      modesDz_new(modeind) = dataNumbers(3)
-                      modesb_new(modeind) = dataNumbers(4)
+                      modes_l(modeind,1) = dataIntegers(1)
+                      modes_n(modeind,1) = dataIntegers(2)
+                      modes_R(modeind,1) = dataNumbers(1)
+                      modes_Z(modeind,1) = dataNumbers(2)
+                      modes_delta_zeta(modeind,1) = dataNumbers(3)
+                      modes_B(modeind,1) = dataNumbers(4)
+                   else
+                      ! geometryScheme==12
+                      modeind = modeind + 1
+                      modes_l(modeind) = dataIntegers(1)
+                      modes_n(modeind) = dataIntegers(2)
+                      modes_R(modeind) = data8Numbers(1) !Cosinus component
+                      modes_Z(modeind) = data8Numbers(4) !Sinus component
+                      modes_delta_zeta(modeind)= data8Numbers(6) !Sinus component
+                      modes_B(modeind) = data8Numbers(7) !Cosinus component
+                      modeind = modeind + 1
+                      modes_l(modeind) = dataIntegers(1)
+                      modes_n(modeind) = dataIntegers(2)
+                      modes_R(modeind) = data8Numbers(2) !Sinus component
+                      modes_Z(modeind) = data8Numbers(3) !Cosinus component
+                      modes_delta_zeta(modeind)= data8Numbers(5) !Cosinus component
+                      modes_B(modeind) = data8Numbers(8) !Sinus component
+                      modes_parity(modeind) = .false.
                    end if
                 end if
-             end do
-             if (numB0s == 0) then
-                print *,"Error: no (0,0) mode found in magnetic equilibrium file ",equilibriumFile
-             else if (numB0s > 1) then
-                print *,"Error: more than 1 (0,0) mode found in magnetic equilibrium file ",equilibriumFile
              end if
-             no_of_modes_new = modeind
           end do
+          if (numB0s == 0) then
+             print *,"Error: no (0,0) mode found in magnetic equilibrium file ",equilibriumFile
+          else if (numB0s > 1) then
+             print *,"Error: more than 1 (0,0) mode found in magnetic equilibrium file ",equilibriumFile
+          end if
+          num_modes(1) = modeind
+          num_surfaces_read = num_surface_read + 1
+       end do
 
-       end if
 
        close(unit = fileUnit)
-       if (masterProc) then
-          print *,"Successfully read magnetic equilibrium from file ",trim(equilibriumFile)
-       end if
+       if (masterProc) print *,"Successfully read magnetic equilibrium from file ",trim(equilibriumFile)
 
-       DeltapsiHat = psiAHat * (rN_new*rN_new-rN_old*rN_old)
-       nearbyRadiiGiven = .true.
+       DeltapsiHat = psiAHat * (rN_surface(1)*rN_surface(1) - rN_surface(2)*rN_surface(2))
 
-       if (VMECRadialOption == 1) then !Choose the nearest flux surface available
-          if (abs(rN_old - rN_wish) < abs(rN_new - rN_wish)) then
-             RadialWeight = 1.0
-             rN = rN_old
-          else
-             RadialWeight = 0.0
-             rN = rN_new
+       if (num_surfaces_read==0) then
+          if (masterProc) print *,"Error! No surfaces found in equilibrium file ",trim(equilibriumFile)
+          stop
+       elseif (num_surfaces_read==1) then
+          if (masterProc) print *,"Only 1 magnetic surface found in the equilibrium file."
+          Boozer_radial_weights(1) = one
+          Boozer_radial_weights(2) = zero
+       else
+          ! At least 2 surfaces found in the equilibrium file
+          if (VMECRadialOption == 1) then !Choose the nearest flux surface available
+             if (abs(rN_surfaces(1) - rN_wish) < abs(rN_surfaces(2) - rN_wish)) then
+                Boozer_radial_weights(1) = one
+                Boozer_radial_weights(2) = zero
+                rN = rN_surfaces(1)
+             else
+                Boozer_radial_weights(1) = zero
+                Boozer_radial_weights(2) = one
+                rN = rN_surfaces(2)
+             end if
+          else !Linear interpolation in s=rN^2
+             Boozer_radial_weights(2) = (rN_surfaces(1)**2 - rN_wish**2) / (rN_surfaces(1)**2 - rN_surfaces(2)**2)
+             Boozer_radial_weights(1) = one - Boozer_radial_weights(1)
+             rN   = rN_wish
           end if
-       else !Linear interpolation in s=rN^2
-          RadialWeight = (rN_new*rN_new-rN_wish*rN_wish) / (rN_new*rN_new-rN_old*rN_old)
-          rN   = rN_wish
        end if
-       iota = iota_old*RadialWeight+iota_new*(1.0-RadialWeight)
-       GHat = GHat_old*RadialWeight+GHat_new*(1.0-RadialWeight)
-       IHat = IHat_old*RadialWeight+IHat_new*(1.0-RadialWeight)
-       B0OverBBar = B0_old*RadialWeight+B0_new*(1.0-RadialWeight)
-       R0         = R0_old*RadialWeight+R0_new*(1.0-RadialWeight)
-       pPrimeHat = pPrimeHat_old*RadialWeight+pPrimeHat_new*(1.0-RadialWeight)
+       if (masterProc) then
+          print *,"Boozer_radial_weights:",Boozer_radial_weights
+          print *,"num_modes:",num_modes
+       end if
 
-       B0OverBBarL=B0_old
-       B0OverBBarH=B0_new
-       R0L=R0_old
-       R0H=R0_new
-       NHarmonicsL = no_of_modes_old
-       NHarmonicsH = no_of_modes_new
-       allocate(BHarmonics_lL(NHarmonicsL))
-       allocate(BHarmonics_nL(NHarmonicsL))
-       allocate(BHarmonics_amplitudesL(NHarmonicsL))
-       allocate(RHarmonics_L(NHarmonicsL))
-       allocate(ZHarmonics_L(NHarmonicsL))
-       allocate(DzHarmonics_L(NHarmonicsL))
-       allocate(BHarmonics_parityL(NHarmonicsL))
-       allocate(BHarmonics_lH(NHarmonicsH))
-       allocate(BHarmonics_nH(NHarmonicsH))
-       allocate(BHarmonics_amplitudesH(NHarmonicsH))
-       allocate(RHarmonics_H(NHarmonicsH))
-       allocate(ZHarmonics_H(NHarmonicsH))
-       allocate(DzHarmonics_H(NHarmonicsH))
-       allocate(BHarmonics_parityH(NHarmonicsH))
-       BHarmonics_lL = modesm_old(1:NHarmonicsL)
-       BHarmonics_nL = modesn_old(1:NHarmonicsL)
-       BHarmonics_amplitudesL = modesb_old(1:NHarmonicsL)
-       RHarmonics_L = modesR_old(1:NHarmonicsL)
-       ZHarmonics_L = modesZ_old(1:NHarmonicsL)
-       DzHarmonics_L = modesDz_old(1:NHarmonicsL)*2*pi/NPeriods
-       BHarmonics_lH = modesm_new(1:NHarmonicsH)
-       BHarmonics_nH = modesn_new(1:NHarmonicsH)
-       BHarmonics_amplitudesH = modesb_new(1:NHarmonicsH)
-       RHarmonics_H  = modesR_new(1:NHarmonicsH)
-       ZHarmonics_H  = modesZ_new(1:NHarmonicsH)
-       DzHarmonics_H = modesDz_new(1:NHarmonicsH)*2*pi/NPeriods
-       BHarmonics_parityL = .true.
-       BHarmonics_parityH = .true.
-
-       !dGdpHat=(GHat_new-GHat_old)/(rN_new*rN_new-rN_old*rN_old)/pPrimeHat
+       iota = dot_product(Boozer_radial_weights, iota_surfaces)
+       GHat = dot_product(Boozer_radial_weights, GHat_surfaces)
+       IHat = dot_product(Boozer_radial_weights, IHat_surfaces)
+       B0OverBBar = dot_product(Boozer_radial_weights, B0_surfaces)
+       R0 = dot_product(Boozer_radial_weights, R0_surfaces)
+       pPrimeHat = dot_product(Boozer_radial_weights, pPrimeHat_surfaces)
 
        !Unnnecessary step:
        !BHarmonics_amplitudes = BHarmonics_amplitudes / B0OverBBar
@@ -756,272 +687,25 @@ contains
           !Therefore, the flip is performed if they have the same sign here.
           !print *,"This is a stellarator symmetric file from Joachim Geiger. It will now be turned 180 degrees around a horizontal axis <=> flip the sign of G and I, so that it matches the sign of its total toroidal flux."
           GHat    =-GHat
-          GHat_new=-GHat_new
-          GHat_old=-GHat_old
+          GHat_surfaces = -GHat_surfaces
           IHat    =-IHat
-          IHat_new=-IHat_new
-          IHat_old=-IHat_old
+          IHat_surfaces = -IHat_surfaces
           !dGdpHat=-dGdpHat
        end if
 
        !Switch from a left-handed to right-handed (radial,poloidal,toroidal) system
        !(The toroidal direction sign switch psiAHat=psiAHat*(-1) was already made in the initializeGeometry routine)
-       GHat     = GHat*(-1)                   !toroidal direction sign switch
-       GHat_new = GHat_new*(-1)               !toroidal direction sign switch
-       GHat_old = GHat_old*(-1)               !toroidal direction sign switch
-       iota     = iota*(-1)                   !toroidal direction sign switch
-       iota_new = iota_new*(-1)               !toroidal direction sign switch
-       iota_old = iota_old*(-1)               !toroidal direction sign switch
-       if (.not. nearbyRadiiGiven) then
-          BHarmonics_n=BHarmonics_n*(-1) !toroidal direction sign switch
-       else
-          BHarmonics_nL=BHarmonics_nL*(-1) !toroidal direction sign switch
-          BHarmonics_nH=BHarmonics_nH*(-1) !toroidal direction sign switch
-       end if
-       DzHarmonics_L = DzHarmonics_L*(-1) !toroidal direction sign switch 
-       DzHarmonics_H = DzHarmonics_H*(-1) !toroidal direction sign switch 
+       GHat          = -GHat
+       GHat_surfaces = -GHat_surfaces
+       IHat          = -IHat
+       IHat_surfaces = -IHat_surfaces
+       iota          = -iota
+       iota_surfaces = -iota_surfaces
+       modes_n = -modes_n
+       modes_delta_zeta = -modes_delta_zeta
 
-       dBHat_sub_zeta_dpsiHat = (GHat_new-GHat_old)/DeltapsiHat
-       dBHat_sub_theta_dpsiHat =(IHat_new-IHat_old)/DeltapsiHat
-       diotadpsiHat= (iota_new-iota_old)/DeltapsiHat
-
-    case (12)
-       ! Read Boozer coordinate file in a generalisation of the .bc format used at IPP Greifswald for non-stellarator symmetric equilibria 
-
-       fileUnit = 11
-       open(unit=fileUnit, file=equilibriumFile, action="read", status="old", iostat=didFileAccessWork)
-       if (didFileAccessWork /= 0) then
-          print *,"Unable to open magnetic equilibrium file ",equilibriumFile
-          stop
-       else
-          do
-             read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
-             if (lineOfFile(1:2) /= "CC") exit
-          end do
-
-          ! Read header line:
-          read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) headerIntegers, headerReals
-          if (didFileAccessWork /= 0) then
-             print *,"Unable to read header from the magnetic equilibrium file ",equilibriumFile
-             stop
-          end if
-
-          !NPeriods = headerIntegers(4)
-          !psiAHat  = headerReals(1)/2/pi !Convert the flux from Tm^2 to Tm^2/rad
-          !aHat     = headerReals(2)      !minor radius in meters
-
-          end_of_file = .false.
-
-          rN_old = 0
-          no_of_modes_old = 0
-          modesm_old = 0
-          modesn_old = 0
-          modesb_old = 0
-          modesR_old = 0
-          modesZ_old = 0
-          modesDz_old = 0
-          iota_old = 0
-          GHat_old = 0
-          IHat_old = 0
-          B0_old = 0
-          R0_old = 0
-          pPrimeHat_old = 0
-
-          rN_new = 0
-          no_of_modes_new = 0
-          modesm_new = 0
-          modesn_new = 0
-          modesb_new = 0
-          modesR_new = 0
-          modesZ_new = 0
-          modesDz_new = 0
-          iota_new = 0
-          GHat_new = 0
-          IHat_new = 0
-          B0_new = 0
-          R0_new = 0
-          pPrimeHat_new = 0
-
-          ! Skip a line
-          read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
-
-          do 
-             if ((rN_new .ge. rN_wish) .or. end_of_file) exit
-
-             rN_old = rN_new
-             no_of_modes_old = no_of_modes_new
-             modesm_old = modesm_new
-             modesn_old = modesn_new
-             modesb_old = modesb_new
-             modesR_old = modesR_new
-             modesZ_old = modesZ_new
-             modesDz_old = modesDz_new
-             iota_old = iota_new
-             GHat_old = GHat_new
-             IHat_old = IHat_new
-             B0_old = B0_new
-             R0_old = R0_new
-             pPrimeHat_old = pPrimeHat_new
-             numB0s = 0
-
-             ! Skip a line:
-             read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
-             ! Read the header for the magnetic surface:
-             read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) surfHeader
-
-             rN_new = sqrt(surfHeader(1))       ! r/a = sqrt(psi/psi_a)
-             iota_new = surfHeader(2)
-             ! Note that G and I has a minus sign in the following two lines
-             ! because Ampere's law comes with a minus sign in the left-handed
-             ! (r,pol,tor) system.
-             GHat_new = -surfHeader(3)*NPeriods/2/pi*(4*pi*1d-7) !Tesla*meter
-             IHat_new = -surfHeader(4)/2/pi*(4*pi*1d-7)          !Tesla*meter
-             pPrimeHat_new = surfheader(5)/psiAHat*(4*pi*1e-7)   ! dpdpsi=pPrimeHat/mu_0
-
-             ! Skip units line:
-             read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
-             proceed = .true.
-             modeind = 0
-             do
-                if (.not. proceed) exit
-
-                read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
-                if (didFileAccessWork /= 0) then
-                   proceed = .false.
-                   end_of_file = .true.
-                else if (index(lineOfFile,"s") > 0) then
-                   ! Next flux surface has been reached
-                   proceed = .false.
-                else
-                   read(unit=lineOfFile, fmt=*) dataIntegers, data8Numbers
-                   if (dataIntegers(1) == 0 .and. dataIntegers(2) == 0) then
-                      B0_new = data8Numbers(7)
-                      R0_new = data8Numbers(1)
-                      numB0s = numB0s + 1
-                   else if (abs(data8Numbers(7)) > min_Bmn_to_load) then
-                      if (modeind + 2 > max_no_of_modes) then
-                         print *,"The value of max_no_of_modes in geometry.F90 was insufficient."
-                         print *,"Either increase this value and recompile, or else increase min_Bmn_to_load."
-                         stop
-                      end if
-                      modeind = modeind + 1
-                      modesm_new(modeind) = dataIntegers(1)
-                      modesn_new(modeind) = dataIntegers(2)
-                      modesR_new(modeind) = data8Numbers(1) !Cosinus component
-                      modesZ_new(modeind) = data8Numbers(4) !Sinus component
-                      modesDz_new(modeind)= data8Numbers(6) !Sinus component
-                      modesb_new(modeind) = data8Numbers(7) !Cosinus component
-                      modeind = modeind + 1
-                      modesm_new(modeind) = dataIntegers(1)
-                      modesn_new(modeind) = dataIntegers(2)
-                      modesR_new(modeind) = data8Numbers(2) !Sinus component
-                      modesZ_new(modeind) = data8Numbers(3) !Cosinus component
-                      modesDz_new(modeind)= data8Numbers(5) !Cosinus component
-                      modesb_new(modeind) = data8Numbers(8) !Sinus component
-                   end if
-                end if
-             end do
-             if (numB0s == 0) then
-                print *,"Error: no (0,0) mode found in magnetic equilibrium file ",equilibriumFile
-             else if (numB0s > 1) then
-                print *,"Error: more than 1 (0,0) mode found in magnetic equilibrium file ",equilibriumFile
-             end if
-             no_of_modes_new = modeind
-          end do
-
-       end if
-
-       close(unit = fileUnit)
-       if (masterProc) then
-          print *,"Successfully read magnetic equilibrium from file ",trim(equilibriumFile)
-       end if
-
-       DeltapsiHat = psiAHat * (rN_new*rN_new-rN_old*rN_old)
-       nearbyRadiiGiven = .true.
-
-       if (VMECRadialOption == 1) then !Choose the nearest flux surface available
-          if (abs(rN_old - rN_wish) < abs(rN_new - rN_wish)) then
-             RadialWeight = 1.0
-             rN = rN_old
-          else
-             RadialWeight = 0.0
-             rN = rN_new
-          end if
-       else !Linear interpolation in s=rN^2
-          RadialWeight = (rN_new*rN_new-rN_wish*rN_wish) / (rN_new*rN_new-rN_old*rN_old)
-          rN   = rN_wish
-       end if
-       iota = iota_old*RadialWeight+iota_new*(1.0-RadialWeight)
-       GHat = GHat_old*RadialWeight+GHat_new*(1.0-RadialWeight)
-       IHat = IHat_old*RadialWeight+IHat_new*(1.0-RadialWeight)
-       B0OverBBar = B0_old*RadialWeight+B0_new*(1.0-RadialWeight)
-       R0         = R0_old*RadialWeight+R0_new*(1.0-RadialWeight)
-       pPrimeHat = pPrimeHat_old*RadialWeight+pPrimeHat_new*(1.0-RadialWeight)
-
-       B0OverBBarL=B0_old
-       B0OverBBarH=B0_new
-       R0L=R0_old
-       R0H=R0_new
-       NHarmonicsL = no_of_modes_old
-       NHarmonicsH = no_of_modes_new
-       allocate(BHarmonics_lL(NHarmonicsL))
-       allocate(BHarmonics_nL(NHarmonicsL))
-       allocate(BHarmonics_amplitudesL(NHarmonicsL))
-       allocate(RHarmonics_L(NHarmonicsL))
-       allocate(ZHarmonics_L(NHarmonicsL))
-       allocate(DzHarmonics_L(NHarmonicsL))
-       allocate(BHarmonics_parityL(NHarmonicsL))
-       allocate(BHarmonics_lH(NHarmonicsH))
-       allocate(BHarmonics_nH(NHarmonicsH))
-       allocate(BHarmonics_amplitudesH(NHarmonicsH))
-       allocate(RHarmonics_H(NHarmonicsH))
-       allocate(ZHarmonics_H(NHarmonicsH))
-       allocate(DzHarmonics_H(NHarmonicsH))
-       allocate(BHarmonics_parityH(NHarmonicsH))
-       BHarmonics_lL = modesm_old(1:NHarmonicsL)
-       BHarmonics_nL = modesn_old(1:NHarmonicsL)
-       BHarmonics_amplitudesL = modesb_old(1:NHarmonicsL)
-       RHarmonics_L = modesR_old(1:NHarmonicsL)
-       ZHarmonics_L = modesZ_old(1:NHarmonicsL)
-       DzHarmonics_L = modesDz_old(1:NHarmonicsL)*2*pi/NPeriods
-       BHarmonics_lH = modesm_new(1:NHarmonicsH)
-       BHarmonics_nH = modesn_new(1:NHarmonicsH)
-       BHarmonics_amplitudesH = modesb_new(1:NHarmonicsH)
-       RHarmonics_H = modesR_new(1:NHarmonicsH)
-       ZHarmonics_H = modesZ_new(1:NHarmonicsH)
-       DzHarmonics_H = modesDz_new(1:NHarmonicsH)*2*pi/NPeriods
-       do i = 0, NHarmonicsL/2-1
-          BHarmonics_parityL(2*i+1)=.true.
-          BHarmonics_parityL(2*i+2)=.false.
-       end do
-       do i = 0, NHarmonicsH/2-1
-          BHarmonics_parityH(2*i+1)=.true.
-          BHarmonics_parityH(2*i+2)=.false.
-       end do
-
-       !This unnecessary scaling has has been removed !!!!!!!
-       !BHarmonics_amplitudes = BHarmonics_amplitudes / B0OverBBar
-
-       !Switch from a left-handed to right-handed (radial,poloidal,toroidal) system
-       !(The toroidal direction sign switch psiAHat=psiAHat*(-1) was already made in the initializeGeometry routine)
-       GHat     = GHat*(-1)                   !toroidal direction sign switch
-       GHat_new = GHat_new*(-1)               !toroidal direction sign switch
-       GHat_old = GHat_old*(-1)               !toroidal direction sign switch
-       iota     = iota*(-1)                   !toroidal direction sign switch
-       iota_new = iota_new*(-1)               !toroidal direction sign switch
-       iota_old = iota_old*(-1)               !toroidal direction sign switch
-       if (.not. nearbyRadiiGiven) then
-          BHarmonics_n=BHarmonics_n*(-1) !toroidal direction sign switch
-       else
-          BHarmonics_nL=BHarmonics_nL*(-1) !toroidal direction sign switch
-          BHarmonics_nH=BHarmonics_nH*(-1) !toroidal direction sign switch
-       end if
-       DzHarmonics_L = DzHarmonics_L*(-1) !toroidal direction sign switch 
-       DzHarmonics_H = DzHarmonics_H*(-1) !toroidal direction sign switch 
-
-       dBHat_sub_zeta_dpsiHat = (GHat_new-GHat_old)/DeltapsiHat
-       dBHat_sub_theta_dpsiHat =(IHat_new-IHat_old)/DeltapsiHat
-       diotadpsiHat= (iota_new-iota_old)/DeltapsiHat
+       ! Compute radial derivatives. 
+       diotadpsiHat= (iota_surfaces(1)-iota_surfaces(2))/DeltapsiHat
 
     case default
        print *,"Error! Invalid geometryScheme"
@@ -1037,954 +721,104 @@ contains
 
     implicit none
 
-    if (.not. nearbyRadiiGiven) then
-       ! Initialize arrays:
-       BHat = B0OverBBar ! This includes the (0,0) component.
-       dBHatdtheta = 0
-       dBHatdzeta = 0
+    integer :: level, isurf, iln, itheta, izeta, l, n
+    real(prec) :: angle, sinangle, cosangle
 
-       !I do not Bother to calculate Sugama's drift for geometryScheme=1,2,3,4.
-       !RHat = 0 
-       !dRHatdtheta      = 0
-       !dRHatdzeta       = 0
-       !d2RHatdtheta2    = 0
-       !d2RHatdzeta2     = 0
-       !d2RHatdthetadzeta= 0
-       !ZHatL = 0 
-       !dZHatdtheta      = 0
-       !dZHatdzeta       = 0
-       !d2ZHatdtheta2    = 0
-       !d2ZHatdzeta2     = 0
-       !d2ZHatdthetadzeta= 0
-       !DzL = 0 
-       !dDzdtheta      = 0
-       !dDzdzeta       = 0
-       !d2Dzdtheta2    = 0
-       !d2Dzdzeta2     = 0
-       !d2Dzdthetadzeta= 0
+    do level = 1,N_levels
 
+       ! Initialize arrays that are set by sums in the loops below:
+       levels(level)%BHat = 0
+       levels(level)%dBHatdtheta = 0
+       levels(level)%dBHatdzeta = 0
 
-       do i = 1, NHarmonics
-          if (BHarmonics_parity(i)) then   ! The cosine components of BHat
+       do isurf = 1,2
+          do iln = 1,num_modes(isurf)
+             l = modes_l(iln,isurf)
+             n = modes_n(iln,isurf)
              include_mn = .false.
-             if ((abs(BHarmonics_n(i))<=int(Nzeta/2.0)).and.(BHarmonics_l(i)<=int(Nzeta/2.0))) then
-                include_mn = .true.
+             if ((abs(n)<=int(Nzeta/2.0)).and.(abs(l)<=int(Ntheta/2.0))) include_mn = .true.
+             if ((.not. modes_parity(iln,isurf)) .and. (l==0 .or. real(abs(l))==Ntheta/2.0)) then
+                if (l==0 .or. abs(real(n))==Nzeta/2.0 ) include_mn=.false.
              end if
-             if (Nzeta==1) then
-                include_mn = .true.
-             end if
-             if (include_mn) then
-                do itheta = 1,Ntheta
-                   BHat(itheta,:) = BHat(itheta,:) + BHarmonics_amplitudes(i) * &
-                        cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-
-                   dBHatdtheta(itheta,:) = dBHatdtheta(itheta,:) - BHarmonics_amplitudes(i) * BHarmonics_l(i) * &
-                        sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-
-                   dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) + BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
-                        sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-
-                end do
-             end if
-          else  ! The sine components of BHat
-             include_mn=.false.
-             if ((abs(BHarmonics_n(i))<=int(Nzeta/2.0)).and.(BHarmonics_l(i)<=int(Nzeta/2.0))) then
-                include_mn=.true.
-             end if
-             if (BHarmonics_l(i)==0 .or. real(BHarmonics_l(i))==Ntheta/2.0) then
-                if (BHarmonics_n(i)==0 .or. abs(real(BHarmonics_n(i)))==Nzeta/2.0 ) then
-                   include_mn=.false.
+             if (Nzeta==1) include_mn = .true.
+             if (level==1 .and. masterProc) then
+                if (include_mn) then
+                   print *,"Including the mode with l=",l," m=",m" isurf=",isurf
+                else
+                   print *,"NOT including the mode with l=",l," m=",m" isurf=",isurf
                 end if
              end if
-             if (Nzeta==1) then
-                include_mn = .true.
-             end if
              if (include_mn) then
-                do itheta = 1,Ntheta
-                   BHat(itheta,:) = BHat(itheta,:) + BHarmonics_amplitudes(i) * &
-                        sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                do itheta = 1,levels(level)%Ntheta
+                   do izeta = 1,levels(level)%Nzeta
+                      angle = l * levels(level)%theta(itheta) - NPeriods * n * levels(level)%zeta(izeta)
+                      sinangle = sin(angle)
+                      cosangle = cos(angle)
 
-                   dBHatdtheta(itheta,:) = dBHatdtheta(itheta,:) + BHarmonics_amplitudes(i) * BHarmonics_l(i) * &
-                        cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                      if (modes_parity(iln,isurf)) then
+                         ! Stellarator-symmetric modes
+                         levels(level)%BHat(itheta,izeta) = levels(level)%BHat(itheta,izeta) &
+                              + modes_B(iln,isurf) * cosangle * Boozer_radial_weights(isurf)
 
-                   dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) - BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
-                        cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                         levels(level)%dBHatdtheta(itheta,izeta) = levels(level)%dBHatdtheta(itheta,izeta) &
+                              - l * modes_B(iln,isurf) * sinangle * Boozer_radial_weights(isurf)
 
+                         levels(level)%dBHatdzeta(itheta,izeta) = levels(level)%dBHatdzeta(itheta,izeta) &
+                              + n * NPeriods * modes_B(iln,isurf) * sinangle * Boozer_radial_weights(isurf)
+                      else
+                         ! Stellarator-antisymmetric modes
+                         levels(level)%BHat(itheta,izeta) = levels(level)%BHat(itheta,izeta) &
+                              + modes_B(iln,isurf) * sinangle * Boozer_radial_weights(isurf)
+
+                         levels(level)%dBHatdtheta(itheta,izeta) = levels(level)%dBHatdtheta(itheta,izeta) &
+                              + l * modes_B(iln,isurf) * cosangle * Boozer_radial_weights(isurf)
+
+                         levels(level)%dBHatdzeta(itheta,izeta) = levels(level)%dBHatdzeta(itheta,izeta) &
+                              - n * NPeriods * modes_B(iln,isurf) * cosangle * Boozer_radial_weights(isurf)
+                      end if
+                   end do
                 end do
              end if
-          end if
-       end do
-    else !Two nearby radii L and H are given 
-       allocate(BHatL(Ntheta,Nzeta))
-       allocate(dBHatdthetaL(Ntheta,Nzeta))
-       allocate(dBHatdzetaL(Ntheta,Nzeta))
-
-       allocate(RHatL(Ntheta,Nzeta))
-       allocate(dRHatdthetaL(Ntheta,Nzeta))
-       allocate(dRHatdzetaL(Ntheta,Nzeta))
-       allocate(d2RHatdtheta2L(Ntheta,Nzeta))
-       allocate(d2RHatdzeta2L(Ntheta,Nzeta))
-       allocate(d2RHatdthetadzetaL(Ntheta,Nzeta))
-
-       allocate(ZHatL(Ntheta,Nzeta))
-       allocate(dZHatdthetaL(Ntheta,Nzeta))
-       allocate(dZHatdzetaL(Ntheta,Nzeta))
-       allocate(d2ZHatdtheta2L(Ntheta,Nzeta))
-       allocate(d2ZHatdzeta2L(Ntheta,Nzeta))
-       allocate(d2ZHatdthetadzetaL(Ntheta,Nzeta))
-
-       allocate(DzL(Ntheta,Nzeta))
-       allocate(dDzdthetaL(Ntheta,Nzeta))
-       allocate(dDzdzetaL(Ntheta,Nzeta))
-       allocate(d2Dzdtheta2L(Ntheta,Nzeta))
-       allocate(d2Dzdzeta2L(Ntheta,Nzeta))
-       allocate(d2DzdthetadzetaL(Ntheta,Nzeta))
-
-       BHatL = B0OverBBarL ! This includes the (0,0) component.
-       dBHatdthetaL = 0
-       dBHatdzetaL = 0
-
-       RHatL = R0L ! This includes the (0,0) component.
-       dRHatdthetaL      = 0
-       dRHatdzetaL       = 0
-       d2RHatdtheta2L    = 0
-       d2RHatdzeta2L     = 0
-       d2RHatdthetadzetaL= 0
-       ZHatL = 0 ! This includes the (0,0) component.
-       dZHatdthetaL      = 0
-       dZHatdzetaL       = 0
-       d2ZHatdtheta2L    = 0
-       d2ZHatdzeta2L     = 0
-       d2ZHatdthetadzetaL= 0
-       DzL = 0 ! This includes the (0,0) component.
-       dDzdthetaL      = 0
-       dDzdzetaL       = 0
-       d2Dzdtheta2L    = 0
-       d2Dzdzeta2L     = 0
-       d2DzdthetadzetaL= 0
-
-       do i = 1, NHarmonicsL
-          if (BHarmonics_parityL(i)) then   ! The cosine components of BHat
-             include_mn = .false.
-             if ((abs(BHarmonics_nL(i))<=int(Nzeta/2.0)).and.(BHarmonics_lL(i)<=int(Ntheta/2.0))) then
-                include_mn = .true.
-             end if
-             if (Nzeta==1) then
-                include_mn = .true.
-             end if
-             if (include_mn) then
-                do itheta = 1,Ntheta
-                   BHatL(itheta,:) = BHatL(itheta,:) + BHarmonics_amplitudesL(i) * &
-                        cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   dBHatdthetaL(itheta,:) = dBHatdthetaL(itheta,:) - BHarmonics_amplitudesL(i) * BHarmonics_lL(i) * &
-                        sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   dBHatdzetaL(itheta,:) = dBHatdzetaL(itheta,:) + BHarmonics_amplitudesL(i) * Nperiods * BHarmonics_nL(i) * &
-                        sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   !The following are only there to calculate Sugama's magnetic drift
-                   RHatL(itheta,:) = RHatL(itheta,:) + RHarmonics_L(i) * &
-                        cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   dRHatdthetaL(itheta,:) = dRHatdthetaL(itheta,:) - RHarmonics_L(i) * BHarmonics_lL(i) * &
-                        sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   dRHatdzetaL(itheta,:) = dRHatdzetaL(itheta,:) + RHarmonics_L(i) * Nperiods * BHarmonics_nL(i) * &
-                        sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   d2RHatdtheta2L(itheta,:) = d2RHatdtheta2L(itheta,:) - RHarmonics_L(i) * BHarmonics_lL(i)**2 * &
-                        cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   d2RHatdzeta2L(itheta,:) = d2RHatdzeta2L(itheta,:) - RHarmonics_L(i) * (Nperiods * BHarmonics_nL(i))**2 * &
-                        cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   d2RHatdthetadzetaL(itheta,:) = d2RHatdthetadzetaL(itheta,:) + RHarmonics_L(i) * BHarmonics_lL(i)*Nperiods*BHarmonics_nL(i) * &
-                        cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   ZHatL(itheta,:) = ZHatL(itheta,:) + ZHarmonics_L(i) * &
-                        sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   dZHatdthetaL(itheta,:) = dZHatdthetaL(itheta,:) + ZHarmonics_L(i) * BHarmonics_lL(i) * &
-                        cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   dZHatdzetaL(itheta,:) = dZHatdzetaL(itheta,:) - ZHarmonics_L(i) * Nperiods * BHarmonics_nL(i) * &
-                        cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   d2ZHatdtheta2L(itheta,:) = d2ZHatdtheta2L(itheta,:) - ZHarmonics_L(i) * BHarmonics_lL(i)**2 * &
-                        sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   d2ZHatdzeta2L(itheta,:) = d2ZHatdzeta2L(itheta,:) - ZHarmonics_L(i) * (Nperiods * BHarmonics_nL(i))**2 * &
-                        sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   d2ZHatdthetadzetaL(itheta,:) = d2ZHatdthetadzetaL(itheta,:) + ZHarmonics_L(i) * BHarmonics_lL(i)*Nperiods*BHarmonics_nL(i) * &
-                        sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   DzL(itheta,:) = DzL(itheta,:) + DzHarmonics_L(i) * &
-                        sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   dDzdthetaL(itheta,:) = dDzdthetaL(itheta,:) + DzHarmonics_L(i) * BHarmonics_lL(i) * &
-                        cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   dDzdzetaL(itheta,:) = dDzdzetaL(itheta,:) - DzHarmonics_L(i) * Nperiods * BHarmonics_nL(i) * &
-                        cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   d2Dzdtheta2L(itheta,:) = d2Dzdtheta2L(itheta,:) - DzHarmonics_L(i) * BHarmonics_lL(i)**2 * &
-                        sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   d2Dzdzeta2L(itheta,:) = d2Dzdzeta2L(itheta,:) - DzHarmonics_L(i) * (Nperiods * BHarmonics_nL(i))**2 * &
-                        sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   d2DzdthetadzetaL(itheta,:) = d2DzdthetadzetaL(itheta,:) + DzHarmonics_L(i) * BHarmonics_lL(i)*Nperiods*BHarmonics_nL(i) * &
-                        sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-
-                end do
-             end if
-          else  ! The sine components of BHat
-             include_mn=.false.
-             if ((abs(BHarmonics_nL(i))<=int(Nzeta/2.0)).and.(BHarmonics_lL(i)<=int(Ntheta/2.0))) then
-                include_mn=.true.
-             end if
-             if (BHarmonics_lL(i)==0 .or. real(BHarmonics_lL(i))==Ntheta/2.0) then
-                if (BHarmonics_nL(i)==0 .or. abs(real(BHarmonics_nL(i)))==Nzeta/2.0 ) then
-                   include_mn=.false.
-                end if
-             end if
-             if (Nzeta==1) then
-                include_mn = .true.
-             end if
-             if (include_mn) then
-                do itheta = 1,Ntheta
-                   BHatL(itheta,:) = BHatL(itheta,:) + BHarmonics_amplitudesL(i) * &
-                        sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   dBHatdthetaL(itheta,:) = dBHatdthetaL(itheta,:) + BHarmonics_amplitudesL(i) * BHarmonics_lL(i) * &
-                        cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   dBHatdzetaL(itheta,:) = dBHatdzetaL(itheta,:) - BHarmonics_amplitudesL(i) * Nperiods * BHarmonics_nL(i) * &
-                        cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   !The following are only there to calculate Sugama's magnetic drift
-                   RHatL(itheta,:) = RHatL(itheta,:) + RHarmonics_L(i) * &
-                        sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   dRHatdthetaL(itheta,:) = dRHatdthetaL(itheta,:) + RHarmonics_L(i) * BHarmonics_lL(i) * &
-                        cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   dRHatdzetaL(itheta,:) = dRHatdzetaL(itheta,:) - RHarmonics_L(i) * Nperiods * BHarmonics_nL(i) * &
-                        cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   d2RHatdtheta2L(itheta,:) = d2RHatdtheta2L(itheta,:) - RHarmonics_L(i) * BHarmonics_lL(i)**2 * &
-                        sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   d2RHatdzeta2L(itheta,:) = d2RHatdzeta2L(itheta,:) - RHarmonics_L(i) * (Nperiods * BHarmonics_nL(i))**2 * &
-                        sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   d2RHatdthetadzetaL(itheta,:) = d2RHatdthetadzetaL(itheta,:) + RHarmonics_L(i) * BHarmonics_lL(i)*Nperiods*BHarmonics_nL(i) * &
-                        sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   ZHatL(itheta,:) = ZHatL(itheta,:) + ZHarmonics_L(i) * &
-                        cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   dZHatdthetaL(itheta,:) = dZHatdthetaL(itheta,:) - ZHarmonics_L(i) * BHarmonics_lL(i) * &
-                        sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   dZHatdzetaL(itheta,:) = dZHatdzetaL(itheta,:) + ZHarmonics_L(i) * Nperiods * BHarmonics_nL(i) * &
-                        sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   d2ZHatdtheta2L(itheta,:) = d2ZHatdtheta2L(itheta,:) - ZHarmonics_L(i) * BHarmonics_lL(i)**2 * &
-                        cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   d2ZHatdzeta2L(itheta,:) = d2ZHatdzeta2L(itheta,:) - ZHarmonics_L(i) * (Nperiods * BHarmonics_nL(i))**2 * &
-                        cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   d2ZHatdthetadzetaL(itheta,:) = d2ZHatdthetadzetaL(itheta,:) + ZHarmonics_L(i) * BHarmonics_lL(i)*Nperiods*BHarmonics_nL(i) * &
-                        cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   DzL(itheta,:) = DzL(itheta,:) + DzHarmonics_L(i) * &
-                        cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   dDzdthetaL(itheta,:) = dDzdthetaL(itheta,:) - DzHarmonics_L(i) * BHarmonics_lL(i) * &
-                        sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   dDzdzetaL(itheta,:) = dDzdzetaL(itheta,:) + DzHarmonics_L(i) * Nperiods * BHarmonics_nL(i) * &
-                        sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   d2Dzdtheta2L(itheta,:) = d2Dzdtheta2L(itheta,:) - DzHarmonics_L(i) * BHarmonics_lL(i)**2 * &
-                        cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   d2Dzdzeta2L(itheta,:) = d2Dzdzeta2L(itheta,:) - DzHarmonics_L(i) * (Nperiods * BHarmonics_nL(i))**2 * &
-                        cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                   d2DzdthetadzetaL(itheta,:) = d2DzdthetadzetaL(itheta,:) + DzHarmonics_L(i) * BHarmonics_lL(i)*Nperiods*BHarmonics_nL(i) * &
-                        cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-
-                end do
-             end if
-          end if
-       end do
-       allocate(BHatH(Ntheta,Nzeta))
-       allocate(dBHatdthetaH(Ntheta,Nzeta))
-       allocate(dBHatdzetaH(Ntheta,Nzeta))
-
-       allocate(RHatH(Ntheta,Nzeta))
-       allocate(dRHatdthetaH(Ntheta,Nzeta))
-       allocate(dRHatdzetaH(Ntheta,Nzeta))
-       allocate(d2RHatdtheta2H(Ntheta,Nzeta))
-       allocate(d2RHatdzeta2H(Ntheta,Nzeta))
-       allocate(d2RHatdthetadzetaH(Ntheta,Nzeta))
-
-       allocate(ZHatH(Ntheta,Nzeta))
-       allocate(dZHatdthetaH(Ntheta,Nzeta))
-       allocate(dZHatdzetaH(Ntheta,Nzeta))
-       allocate(d2ZHatdtheta2H(Ntheta,Nzeta))
-       allocate(d2ZHatdzeta2H(Ntheta,Nzeta))
-       allocate(d2ZHatdthetadzetaH(Ntheta,Nzeta))
-
-       allocate(DzH(Ntheta,Nzeta))
-       allocate(dDzdthetaH(Ntheta,Nzeta))
-       allocate(dDzdzetaH(Ntheta,Nzeta))
-       allocate(d2Dzdtheta2H(Ntheta,Nzeta))
-       allocate(d2Dzdzeta2H(Ntheta,Nzeta))
-       allocate(d2DzdthetadzetaH(Ntheta,Nzeta))
-
-       BHatH = B0OverBBarH ! This includes the (0,0) component.
-       dBHatdthetaH = 0
-       dBHatdzetaH = 0
-
-       RHatH = R0H ! This includes the (0,0) component.
-       dRHatdthetaH      = 0
-       dRHatdzetaH       = 0
-       d2RHatdtheta2H    = 0
-       d2RHatdzeta2H     = 0
-       d2RHatdthetadzetaH= 0
-       ZHatH = 0 ! This includes the (0,0) component.
-       dZHatdthetaH      = 0
-       dZHatdzetaH       = 0
-       d2ZHatdtheta2H    = 0
-       d2ZHatdzeta2H     = 0
-       d2ZHatdthetadzetaH= 0
-       DzH = 0 ! This includes the (0,0) component.
-       dDzdthetaH      = 0
-       dDzdzetaH       = 0
-       d2Dzdtheta2H    = 0
-       d2Dzdzeta2H     = 0
-       d2DzdthetadzetaH= 0
-
-       do i = 1, NHarmonicsH
-          if (BHarmonics_parityH(i)) then   ! The cosine components of BHat
-             include_mn = .false.
-             if ((abs(BHarmonics_nH(i))<=int(Nzeta/2.0)).and.(BHarmonics_lH(i)<=int(Ntheta/2.0))) then
-                include_mn = .true.
-             end if
-             if (Nzeta==1) then
-                include_mn = .true.
-             end if
-             if (include_mn) then
-                do itheta = 1,Ntheta
-                   BHatH(itheta,:) = BHatH(itheta,:) + BHarmonics_amplitudesH(i) * &
-                        cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   dBHatdthetaH(itheta,:) = dBHatdthetaH(itheta,:) - BHarmonics_amplitudesH(i) * BHarmonics_lH(i) * &
-                        sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   dBHatdzetaH(itheta,:) = dBHatdzetaH(itheta,:) + BHarmonics_amplitudesH(i) * Nperiods * BHarmonics_nH(i) * &
-                        sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   !The following are only there to calculate Sugama's magnetic drift
-                   RHatH(itheta,:) = RHatH(itheta,:) + RHarmonics_H(i) * &
-                        cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   dRHatdthetaH(itheta,:) = dRHatdthetaH(itheta,:) - RHarmonics_H(i) * BHarmonics_lH(i) * &
-                        sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   dRHatdzetaH(itheta,:) = dRHatdzetaH(itheta,:) + RHarmonics_H(i) * Nperiods * BHarmonics_nH(i) * &
-                        sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   d2RHatdtheta2H(itheta,:) = d2RHatdtheta2H(itheta,:) - RHarmonics_H(i) * BHarmonics_lH(i)**2 * &
-                        cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   d2RHatdzeta2H(itheta,:) = d2RHatdzeta2H(itheta,:) - RHarmonics_H(i) * (Nperiods * BHarmonics_nH(i))**2 * &
-                        cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   d2RHatdthetadzetaH(itheta,:) = d2RHatdthetadzetaH(itheta,:) + RHarmonics_H(i) * BHarmonics_lH(i)*Nperiods*BHarmonics_nH(i) * &
-                        cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   ZHatH(itheta,:) = ZHatH(itheta,:) + ZHarmonics_H(i) * &
-                        sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   dZHatdthetaH(itheta,:) = dZHatdthetaH(itheta,:) + ZHarmonics_H(i) * BHarmonics_lH(i) * &
-                        cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   dZHatdzetaH(itheta,:) = dZHatdzetaH(itheta,:) - ZHarmonics_H(i) * Nperiods * BHarmonics_nH(i) * &
-                        cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   d2ZHatdtheta2H(itheta,:) = d2ZHatdtheta2H(itheta,:) - ZHarmonics_H(i) * BHarmonics_lH(i)**2 * &
-                        sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   d2ZHatdzeta2H(itheta,:) = d2ZHatdzeta2H(itheta,:) - ZHarmonics_H(i) * (Nperiods * BHarmonics_nH(i))**2 * &
-                        sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   d2ZHatdthetadzetaH(itheta,:) = d2ZHatdthetadzetaH(itheta,:) + ZHarmonics_H(i) * BHarmonics_lH(i)*Nperiods*BHarmonics_nH(i) * &
-                        sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   DzH(itheta,:) = DzH(itheta,:) + DzHarmonics_H(i) * &
-                        sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   dDzdthetaH(itheta,:) = dDzdthetaH(itheta,:) + DzHarmonics_H(i) * BHarmonics_lH(i) * &
-                        cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   dDzdzetaH(itheta,:) = dDzdzetaH(itheta,:) - DzHarmonics_H(i) * Nperiods * BHarmonics_nH(i) * &
-                        cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   d2Dzdtheta2H(itheta,:) = d2Dzdtheta2H(itheta,:) - DzHarmonics_H(i) * BHarmonics_lH(i)**2 * &
-                        sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   d2Dzdzeta2H(itheta,:) = d2Dzdzeta2H(itheta,:) - DzHarmonics_H(i) * (Nperiods * BHarmonics_nH(i))**2 * &
-                        sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   d2DzdthetadzetaH(itheta,:) = d2DzdthetadzetaH(itheta,:) + DzHarmonics_H(i) * BHarmonics_lH(i)*Nperiods*BHarmonics_nH(i) * &
-                        sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-
-                end do
-             end if
-          else  ! The sine components of BHat
-             include_mn=.false.
-             if ((abs(BHarmonics_nH(i))<=int(Nzeta/2.0)).and.(BHarmonics_lH(i)<=int(Ntheta/2.0))) then
-                include_mn=.true.
-             end if
-             if (BHarmonics_lH(i)==0 .or. real(BHarmonics_lH(i))==Ntheta/2.0) then
-                if (BHarmonics_nH(i)==0 .or. abs(real(BHarmonics_nH(i)))==Nzeta/2.0 ) then
-                   include_mn=.false.
-                end if
-             end if
-             if (Nzeta==1) then
-                include_mn = .true.
-             end if
-             if (include_mn) then
-                do itheta = 1,Ntheta
-                   BHatH(itheta,:) = BHatH(itheta,:) + BHarmonics_amplitudesH(i) * &
-                        sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   dBHatdthetaH(itheta,:) = dBHatdthetaH(itheta,:) + BHarmonics_amplitudesH(i) * BHarmonics_lH(i) * &
-                        cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   dBHatdzetaH(itheta,:) = dBHatdzetaH(itheta,:) - BHarmonics_amplitudesH(i) * Nperiods * BHarmonics_nH(i) * &
-                        cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   !The following are only there to calculate Sugama's magnetic drift
-                   RHatH(itheta,:) = RHatH(itheta,:) + RHarmonics_H(i) * &
-                        sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   dRHatdthetaH(itheta,:) = dRHatdthetaH(itheta,:) + RHarmonics_H(i) * BHarmonics_lH(i) * &
-                        cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   dRHatdzetaH(itheta,:) = dRHatdzetaH(itheta,:) - RHarmonics_H(i) * Nperiods * BHarmonics_nH(i) * &
-                        cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   d2RHatdtheta2H(itheta,:) = d2RHatdtheta2H(itheta,:) - RHarmonics_H(i) * BHarmonics_lH(i)**2 * &
-                        sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   d2RHatdzeta2H(itheta,:) = d2RHatdzeta2H(itheta,:) - RHarmonics_H(i) * (Nperiods * BHarmonics_nH(i))**2 * &
-                        sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   d2RHatdthetadzetaH(itheta,:) = d2RHatdthetadzetaH(itheta,:) + RHarmonics_H(i) * BHarmonics_lH(i)*Nperiods*BHarmonics_nH(i) * &
-                        sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   ZHatH(itheta,:) = ZHatH(itheta,:) + ZHarmonics_H(i) * &
-                        cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   dZHatdthetaH(itheta,:) = dZHatdthetaH(itheta,:) - ZHarmonics_H(i) * BHarmonics_lH(i) * &
-                        sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   dZHatdzetaH(itheta,:) = dZHatdzetaH(itheta,:) + ZHarmonics_H(i) * Nperiods * BHarmonics_nH(i) * &
-                        sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   d2ZHatdtheta2H(itheta,:) = d2ZHatdtheta2H(itheta,:) - ZHarmonics_H(i) * BHarmonics_lH(i)**2 * &
-                        cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   d2ZHatdzeta2H(itheta,:) = d2ZHatdzeta2H(itheta,:) - ZHarmonics_H(i) * (Nperiods * BHarmonics_nH(i))**2 * &
-                        cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   d2ZHatdthetadzetaH(itheta,:) = d2ZHatdthetadzetaH(itheta,:) + ZHarmonics_H(i) * BHarmonics_lH(i)*Nperiods*BHarmonics_nH(i) * &
-                        cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   DzH(itheta,:) = DzH(itheta,:) + DzHarmonics_H(i) * &
-                        cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   dDzdthetaH(itheta,:) = dDzdthetaH(itheta,:) - DzHarmonics_H(i) * BHarmonics_lH(i) * &
-                        sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   dDzdzetaH(itheta,:) = dDzdzetaH(itheta,:) + DzHarmonics_H(i) * Nperiods * BHarmonics_nH(i) * &
-                        sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   d2Dzdtheta2H(itheta,:) = d2Dzdtheta2H(itheta,:) - DzHarmonics_H(i) * BHarmonics_lH(i)**2 * &
-                        cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   d2Dzdzeta2H(itheta,:) = d2Dzdzeta2H(itheta,:) - DzHarmonics_H(i) * (Nperiods * BHarmonics_nH(i))**2 * &
-                        cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                   d2DzdthetadzetaH(itheta,:) = d2DzdthetadzetaH(itheta,:) + DzHarmonics_H(i) * BHarmonics_lH(i)*Nperiods*BHarmonics_nH(i) * &
-                        cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                end do
-             end if
-          end if
-       end do
-       do itheta = 1,Ntheta
-          BHat(itheta,:) = BHatL(itheta,:)*RadialWeight + BHatH(itheta,:)*(1.0-RadialWeight)
-          dBHatdtheta(itheta,:) = dBHatdthetaL(itheta,:)*RadialWeight + dBHatdthetaH(itheta,:)*(1.0-RadialWeight)
-          dBHatdzeta(itheta,:)  =  dBHatdzetaL(itheta,:)*RadialWeight +  dBHatdzetaH(itheta,:)*(1.0-RadialWeight)
-          dBHatdpsiHat(itheta,:)= (BHatH(itheta,:)-BHatL(itheta,:)) / DeltapsiHat
-
-       end do
-
-       if (nearbyRadiiGiven) then !implemented only for geometryScheme 11 and 12 so far
-          allocate(RHat(Ntheta,Nzeta))
-          allocate(dRHatdtheta(Ntheta,Nzeta))
-          allocate(dRHatdzeta(Ntheta,Nzeta))
-          allocate(d2RHatdtheta2(Ntheta,Nzeta))
-          allocate(d2RHatdzeta2(Ntheta,Nzeta))
-          allocate(d2RHatdthetadzeta(Ntheta,Nzeta))
-          allocate(ZHat(Ntheta,Nzeta))
-          allocate(dZHatdtheta(Ntheta,Nzeta))
-          allocate(dZHatdzeta(Ntheta,Nzeta))
-          allocate(d2ZHatdtheta2(Ntheta,Nzeta))
-          allocate(d2ZHatdzeta2(Ntheta,Nzeta))
-          allocate(d2ZHatdthetadzeta(Ntheta,Nzeta))
-          allocate(Dz(Ntheta,Nzeta))
-          allocate(dDzdtheta(Ntheta,Nzeta))
-          allocate(dDzdzeta(Ntheta,Nzeta))
-          allocate(d2Dzdtheta2(Ntheta,Nzeta))
-          allocate(d2Dzdzeta2(Ntheta,Nzeta))
-          allocate(d2Dzdthetadzeta(Ntheta,Nzeta))
-          do itheta = 1,Ntheta
-             RHat(itheta,:) = RHatL(itheta,:)*RadialWeight + RHatH(itheta,:)*(1.0-RadialWeight)
-             dRHatdtheta(itheta,:) = dRHatdthetaL(itheta,:)*RadialWeight + dRHatdthetaH(itheta,:)*(1.0-RadialWeight)
-             dRHatdzeta(itheta,:)  =  dRHatdzetaL(itheta,:)*RadialWeight +  dRHatdzetaH(itheta,:)*(1.0-RadialWeight)
-             d2RHatdtheta2(itheta,:) = d2RHatdtheta2L(itheta,:)*RadialWeight + d2RHatdtheta2H(itheta,:)*(1.0-RadialWeight)
-             d2RHatdzeta2(itheta,:)  =  d2RHatdzeta2L(itheta,:)*RadialWeight +  d2RHatdzeta2H(itheta,:)*(1.0-RadialWeight)
-             d2RHatdthetadzeta(itheta,:) = d2RHatdthetadzetaL(itheta,:)*RadialWeight + d2RHatdthetadzetaH(itheta,:)*(1.0-RadialWeight)
-
-             ZHat(itheta,:) = ZHatL(itheta,:)*RadialWeight + ZHatH(itheta,:)*(1.0-RadialWeight)
-             dZHatdtheta(itheta,:) = dZHatdthetaL(itheta,:)*RadialWeight + dZHatdthetaH(itheta,:)*(1.0-RadialWeight)
-             dZHatdzeta(itheta,:)  =  dZHatdzetaL(itheta,:)*RadialWeight +  dZHatdzetaH(itheta,:)*(1.0-RadialWeight)
-             d2ZHatdtheta2(itheta,:) = d2ZHatdtheta2L(itheta,:)*RadialWeight + d2ZHatdtheta2H(itheta,:)*(1.0-RadialWeight)
-             d2ZHatdzeta2(itheta,:)  =  d2ZHatdzeta2L(itheta,:)*RadialWeight +  d2ZHatdzeta2H(itheta,:)*(1.0-RadialWeight)
-             d2ZHatdthetadzeta(itheta,:) = d2ZHatdthetadzetaL(itheta,:)*RadialWeight + d2ZHatdthetadzetaH(itheta,:)*(1.0-RadialWeight)
-
-             Dz(itheta,:) = DzL(itheta,:)*RadialWeight + DzH(itheta,:)*(1.0-RadialWeight)
-             dDzdtheta(itheta,:) = dDzdthetaL(itheta,:)*RadialWeight + dDzdthetaH(itheta,:)*(1.0-RadialWeight)
-             dDzdzeta(itheta,:)  =  dDzdzetaL(itheta,:)*RadialWeight +  dDzdzetaH(itheta,:)*(1.0-RadialWeight)
-             d2Dzdtheta2(itheta,:) = d2Dzdtheta2L(itheta,:)*RadialWeight + d2Dzdtheta2H(itheta,:)*(1.0-RadialWeight)
-             d2Dzdzeta2(itheta,:)  =  d2Dzdzeta2L(itheta,:)*RadialWeight +  d2Dzdzeta2H(itheta,:)*(1.0-RadialWeight)
-             d2Dzdthetadzeta(itheta,:) = d2DzdthetadzetaL(itheta,:)*RadialWeight + d2DzdthetadzetaH(itheta,:)*(1.0-RadialWeight)
           end do
-       end if
-    end if
-
-    ! ---------------------------------------------------------------------------------------
-    ! Calculate parallel current u from harmonics of 1/B^2. Used in NTV calculation.
-    ! \nabla_\parallel u = (2/B^4) \nabla B \times \vector{B} \cdot \iota \nabla \psi 
-    ! ---------------------------------------------------------------------------------------
-    allocate(hHat(Ntheta,Nzeta))
-    allocate(duHatdtheta(Ntheta,Nzeta))
-    allocate(duHatdzeta(Ntheta,Nzeta))
-
-    uHat = 0
-    duHatdtheta = 0
-    duHatdzeta = 0
-    BHat_sub_psi = 0
-    dBHat_sub_psi_dtheta = 0
-    dBHat_sub_psi_dzeta = 0
-    invFSA_BHat2 = 0
-    do itheta = 1,Ntheta
-       do izeta = 1,Nzeta
-          hHat(itheta,izeta) = 1.0 / (BHat(itheta,izeta)*BHat(itheta,izeta))
-          invFSA_BHat2 = invFSA_BHat2 + hHat(itheta,izeta)/Ntheta/Nzeta
        end do
+
+       ! Set the Jacobian and various other components of B:
+       levels(level)%sqrt_g = (GHat + iota * IHat) / (levels(level)%BHat ** 2)
+       levels(level)%BHat_sup_theta = iota / levels(level)%sqrt_g
+       levels(level)%BHat_sup_zeta = 1/level(level)%sqrt_g
+       levels(level)%BHat_sub_theta = IHat
+       levels(level)%BHat_sub_zeta = GHat
+
+       ! These next arrays turn out to be 0 for Boozer coordinates:
+       levels(level)%dBHat_sub_theta_dzeta = 0
+       levels(level)%dBHat_sub_zeta_dtheta = 0
+
+       ! These next arrays are generally nonzero, but I haven't gotten around to setting them properly:
+       levels(level)%dBHatdpsiHat = 0
+       levels(level)%BHat_sub_psi = 0
+       levels(level)%dBHat_sub_psi_dtheta = 0
+       levels(level)%dBHat_sub_psi_dzeta = 0
+       levels(level)%dBHat_sub_theta_dpsiHat = 0
+       levels(level)%dBHat_sub_zeta_dpsiHat = 0
     end do
 
-    if (.not. nearbyRadiiGiven) then
-       nonStelSym = any(.not. BHarmonics_parity)
-    else
-       nonStelSym = any(.not. BHarmonics_parityL) .or. any(.not. BHarmonics_parityH)
-    end if
-    if (nonStelSym) then !sine components exist
-       do m = 0,int(Ntheta/2.0) !Nyquist max freq.
-          if (m == 0) then
-             startn=1
-          else if (real(m)==Ntheta/2.0) then
-             startn=0
-          else if (real(int(Nzeta/2.0))==Nzeta/2.0) then
-             startn=-int(Nzeta/2.0)+1
-          else
-             startn=-int(Nzeta/2.0)
-          end if
-          stopn=int(Nzeta/2.0)
-          do n = startn,stopn 
-             !cos
-             hHatHarmonics_amplitude = 0
-             do itheta = 1,Ntheta
-                if ((m == 0 .and. real(n)==Nzeta/2.0) .or. (real(m)==Ntheta/2.0 .and. n==0) .or. &
-                     (real(m)==Ntheta/2.0 .and. real(n)==Nzeta/2.0)) then
-                   hHatHarmonics_amplitude = hHatHarmonics_amplitude + 1.0/(Ntheta*Nzeta) * &
-                        dot_product(cos(m * theta(itheta)  - n * NPeriods * zeta), hHat(itheta,:))
-                else
-                   hHatHarmonics_amplitude = hHatHarmonics_amplitude + 2.0/(Ntheta*Nzeta) * &
-                        dot_product(cos(m * theta(itheta)  - n * NPeriods * zeta), hHat(itheta,:))
-                end if
-             end do
-             uHatHarmonics_amplitude = &
-                  iota*(GHat*m + IHat*n * NPeriods)/(n * NPeriods - iota*m) * hHatHarmonics_amplitude
-             dBHat_sub_psi_dthetaHarmonics_amplitude = &
-                  -pPrimeHat/iota*(uHatHarmonics_amplitude-iota*IHat*hHatHarmonics_amplitude)
-             dBHat_sub_psi_dzetaHarmonics_amplitude = &
-                  pPrimeHat*(uHatHarmonics_amplitude+GHat*hHatHarmonics_amplitude)
-
-             do itheta = 1,Ntheta
-                uHat(itheta,:) = uHat(itheta,:) &
-                     + uHatHarmonics_amplitude * cos(m * theta(itheta) - n * NPeriods * zeta)
-                duHatdtheta(itheta,:) = duHatdtheta(itheta,:) &
-                     - uHatHarmonics_amplitude * m * sin(m * theta(itheta) - n * NPeriods * zeta)
-                duHatdzeta(itheta,:) = duHatdzeta(itheta,:) &
-                     + uHatHarmonics_amplitude * n * NPeriods * sin(m * theta(itheta) - n * NPeriods * zeta)
-                dBHat_sub_psi_dtheta(itheta,:) = dBHat_sub_psi_dtheta(itheta,:) &
-		     + dBHat_sub_psi_dthetaHarmonics_amplitude * cos(m * theta(itheta) - n * NPeriods * zeta)
-                dBHat_sub_psi_dzeta(itheta,:) = dBHat_sub_psi_dzeta(itheta,:) &
-		     + dBHat_sub_psi_dzetaHarmonics_amplitude * cos(m * theta(itheta) - n * NPeriods * zeta)
-             end do
-             if (n==0) then
-                do itheta = 1,Ntheta
-                   BHat_sub_psi(itheta,:) = BHat_sub_psi(itheta,:) &
-                        + dBHat_sub_psi_dthetaHarmonics_amplitude / m &
-                        * sin(m * theta(itheta) - n * NPeriods * zeta)
-                end do
-             else
-                do itheta = 1,Ntheta
-                   BHat_sub_psi(itheta,:) = BHat_sub_psi(itheta,:) &
-                        - dBHat_sub_psi_dzetaHarmonics_amplitude / n / NPeriods  &
-                        * sin(m * theta(itheta) - n * NPeriods * zeta)
-                end do
-             end if
-
-             !sin
-             hHatHarmonics_amplitude = 0
-             if (.not.((m == 0 .and. real(n)==Nzeta/2.0) .or. (real(m)==Ntheta/2.0 .and. n==0) .or. &
-                  (real(m)==Ntheta/2.0 .and. real(n)==Nzeta/2.0))) then
-                do itheta = 1,Ntheta
-                   hHatHarmonics_amplitude = hHatHarmonics_amplitude + 2.0/(Ntheta*Nzeta) * &
-                        dot_product(sin(m * theta(itheta)  - n * NPeriods * zeta), hHat(itheta,:))
-                end do
-             end if
-             uHatHarmonics_amplitude = &
-                  iota*(GHat*m + IHat*n * NPeriods)/(n * NPeriods - iota*m) * hHatHarmonics_amplitude
-             dBHat_sub_psi_dthetaHarmonics_amplitude = &
-                  -pPrimeHat/iota*(uHatHarmonics_amplitude-iota*IHat*hHatHarmonics_amplitude)
-             dBHat_sub_psi_dzetaHarmonics_amplitude = &
-                  pPrimeHat*(uHatHarmonics_amplitude+GHat*hHatHarmonics_amplitude)
-             do itheta = 1,Ntheta
-                uHat(itheta,:) = uHat(itheta,:) &
-                     + uHatHarmonics_amplitude * sin(m * theta(itheta) - n * NPeriods * zeta)
-                duHatdtheta(itheta,:) = duHatdtheta(itheta,:) &
-                     + uHatHarmonics_amplitude * m * cos(m * theta(itheta) - n * NPeriods * zeta)
-                duHatdzeta(itheta,:) = duHatdzeta(itheta,:) &
-                     - uHatHarmonics_amplitude * n * NPeriods * cos(m * theta(itheta) - n * NPeriods * zeta)
-                dBHat_sub_psi_dtheta(itheta,:) = dBHat_sub_psi_dtheta(itheta,:) &
-		     + dBHat_sub_psi_dthetaHarmonics_amplitude * sin(m * theta(itheta) - n * NPeriods * zeta)
-                dBHat_sub_psi_dzeta(itheta,:) = dBHat_sub_psi_dzeta(itheta,:) &
-		     + dBHat_sub_psi_dzetaHarmonics_amplitude * sin(m * theta(itheta) - n * NPeriods * zeta)
-             end do
-             if (n==0) then
-                do itheta = 1,Ntheta
-                   BHat_sub_psi(itheta,:) = BHat_sub_psi(itheta,:) &
-                        - dBHat_sub_psi_dthetaHarmonics_amplitude / m &
-                        * cos(m * theta(itheta) - n * NPeriods * zeta)
-                end do
-             else
-                do itheta = 1,Ntheta
-                   BHat_sub_psi(itheta,:) = BHat_sub_psi(itheta,:) &
-                        + dBHat_sub_psi_dzetaHarmonics_amplitude / n / NPeriods &
-                        * cos(m * theta(itheta) - n * NPeriods * zeta)
-                end do
-             end if
-          end do
-       end do
-    else !only cosinus components
-       do m = 0,int(Ntheta/2.0) !Nyquist max freq.
-          if (m == 0) then
-             startn=1
-          else if (real(m)==Ntheta/2.0) then
-             startn=0
-          else if (real(int(Nzeta/2.0))==Nzeta/2.0) then
-             startn=-int(Nzeta/2.0)+1
-          else
-             startn=-int(Nzeta/2.0)
-          end if
-          stopn=int(Nzeta/2.0)
-          do n = startn,stopn 
-             !cos
-             hHatHarmonics_amplitude = 0
-             do itheta = 1,Ntheta
-                if ((m == 0 .and. real(n)==Nzeta/2.0) .or. (real(m)==Ntheta/2.0 .and. n==0) .or. &
-                     (real(m)==Ntheta/2.0 .and. real(n)==Nzeta/2.0)) then
-                   hHatHarmonics_amplitude = hHatHarmonics_amplitude + 1.0/(Ntheta*Nzeta) * &
-                        dot_product(cos(m * theta(itheta)  - n * NPeriods * zeta), hHat(itheta,:))
-                else
-                   hHatHarmonics_amplitude = hHatHarmonics_amplitude + 2.0/(Ntheta*Nzeta) * &
-                        dot_product(cos(m * theta(itheta)  - n * NPeriods * zeta), hHat(itheta,:))
-                end if
-             end do
-             uHatHarmonics_amplitude = &
-                  iota*(GHat*m + IHat*n * NPeriods)/(n * NPeriods - iota*m) * hHatHarmonics_amplitude
-             dBHat_sub_psi_dthetaHarmonics_amplitude = &
-                  -pPrimeHat/iota*(uHatHarmonics_amplitude-iota*IHat*hHatHarmonics_amplitude)
-             dBHat_sub_psi_dzetaHarmonics_amplitude = &
-                  pPrimeHat*(uHatHarmonics_amplitude+GHat*hHatHarmonics_amplitude)
-             do itheta = 1,Ntheta
-                uHat(itheta,:) = uHat(itheta,:) &
-                     + uHatHarmonics_amplitude * cos(m * theta(itheta) - n * NPeriods * zeta)
-                duHatdtheta(itheta,:) = duHatdtheta(itheta,:) &
-                     - uHatHarmonics_amplitude * m * sin(m * theta(itheta) - n * NPeriods * zeta)
-                duHatdzeta(itheta,:) = duHatdzeta(itheta,:) &
-                     + uHatHarmonics_amplitude * n * NPeriods * sin(m * theta(itheta) - n * NPeriods * zeta)
-                dBHat_sub_psi_dtheta(itheta,:) = dBHat_sub_psi_dtheta(itheta,:) &
-		     + dBHat_sub_psi_dthetaHarmonics_amplitude * cos(m * theta(itheta) - n * NPeriods * zeta)
-                dBHat_sub_psi_dzeta(itheta,:) = dBHat_sub_psi_dzeta(itheta,:) &
-		     + dBHat_sub_psi_dzetaHarmonics_amplitude * cos(m * theta(itheta) - n * NPeriods * zeta)
-             end do
-             if (n==0) then
-                do itheta = 1,Ntheta
-                   BHat_sub_psi(itheta,:) = BHat_sub_psi(itheta,:) &
-                        + dBHat_sub_psi_dthetaHarmonics_amplitude / m &
-                        * sin(m * theta(itheta) - n * NPeriods * zeta)
-                end do
-             else
-                do itheta = 1,Ntheta
-                   BHat_sub_psi(itheta,:) = BHat_sub_psi(itheta,:) &
-                        - dBHat_sub_psi_dzetaHarmonics_amplitude / n / NPeriods  &
-                        * sin(m * theta(itheta) - n * NPeriods * zeta)
-                end do
-             end if
-          end do
-       end do
-    end if
-
-    ! This method is also right, but I prefer the above one to make sure that the 00 comp. is 0
-    !do itheta = 1,Ntheta
-    !   dBHat_sub_psi_dtheta(itheta,:) = -pPrimeHat/iota*(uHat(itheta,:)-iota*IHat*(hHat(itheta,:)-1/FSABHat2))
-    !   dBHat_sub_psi_dzeta(itheta,:)  =  pPrimeHat*(uHat(itheta,:)+GHat*(hHat(itheta,:)-1/FSABHat2))
-    !end do
-
-    do itheta = 1,Ntheta
-       do izeta = 1,Nzeta
-          NTVKernel(itheta,izeta) = 2.0/5.0 / BHat(itheta,izeta) * ( &
-               (uHat(itheta,izeta) - GHat*invFSA_BHat2) * (iota * dBHatdtheta(itheta,izeta) + dBHatdzeta(itheta,izeta)) &
-               + iota * hHat(itheta,izeta) * (GHat*dBHatdtheta(itheta,izeta) - IHat*dBHatdzeta(itheta,izeta)) )
-       end do
-    end do
-
-    ! ---------------------------------------------------------------------------------------
-    ! Calculate the normal curvature, which is needed in Sugama's magnetic drift
-    ! ---------------------------------------------------------------------------------------
-    if (.not. nearbyRadiiGiven) then
-       gradpsidotgradB_overgpsipsi=0 !implemented only for geometryScheme 11 and 12 so far
-    else  
-       allocate(geomang(Ntheta,Nzeta))
-       allocate(dgeomangdtheta(Ntheta,Nzeta))
-       allocate(dgeomangdzeta(Ntheta,Nzeta))
-       allocate(d2geomangdtheta2(Ntheta,Nzeta))
-       allocate(d2geomangdzeta2(Ntheta,Nzeta))
-       allocate(d2geomangdthetadzeta(Ntheta,Nzeta))
-       allocate(dXdtheta(Ntheta,Nzeta))
-       allocate(dXdzeta(Ntheta,Nzeta))
-       allocate(dYdtheta(Ntheta,Nzeta))
-       allocate(dYdzeta(Ntheta,Nzeta))
-       allocate(d2Xdtheta2(Ntheta,Nzeta))
-       allocate(d2Xdthetadzeta(Ntheta,Nzeta))
-       allocate(d2Xdzeta2(Ntheta,Nzeta))
-       allocate(d2Ydtheta2(Ntheta,Nzeta))
-       allocate(d2Ydthetadzeta(Ntheta,Nzeta))
-       allocate(d2Ydzeta2(Ntheta,Nzeta))
-       allocate(gradpsiX(Ntheta,Nzeta))
-       allocate(gradpsiY(Ntheta,Nzeta))
-       allocate(gradpsiZ(Ntheta,Nzeta))
-       allocate(gpsipsi(Ntheta,Nzeta))
-       allocate(CX(Ntheta,Nzeta))
-       allocate(CY(Ntheta,Nzeta))
-       allocate(CZ(Ntheta,Nzeta))
-
-       do itheta = 1,Ntheta
-          geomang(itheta,:) = Dz(itheta,:) - zeta !geometric toroidal angle, (R, geomang, Z) is right handed
-          dgeomangdtheta(itheta,:)      = dDzdtheta(itheta,:)
-          dgeomangdzeta(itheta,:)       = dDzdzeta(itheta,:) - 1
-          d2geomangdtheta2(itheta,:)    = d2Dzdtheta2(itheta,:)
-          d2geomangdzeta2(itheta,:)     = d2Dzdzeta2(itheta,:)
-          d2geomangdthetadzeta(itheta,:)= d2Dzdthetadzeta(itheta,:)
-
-          dXdtheta(itheta,:)=dRHatdtheta(itheta,:)*cos(geomang(itheta,:))-RHat(itheta,:)*dgeomangdtheta(itheta,:)*sin(geomang(itheta,:))
-          dXdzeta(itheta,:) =dRHatdzeta(itheta,:) *cos(geomang(itheta,:))-RHat(itheta,:)*dgeomangdzeta(itheta,:) *sin(geomang(itheta,:))
-          dYdtheta(itheta,:)=dRHatdtheta(itheta,:)*sin(geomang(itheta,:))+RHat(itheta,:)*dgeomangdtheta(itheta,:)*cos(geomang(itheta,:))
-          dYdzeta(itheta,:) =dRHatdzeta(itheta,:) *sin(geomang(itheta,:))+RHat(itheta,:)*dgeomangdzeta(itheta,:) *cos(geomang(itheta,:))
-
-          d2Xdtheta2(itheta,:)=d2RHatdtheta2(itheta,:)*cos(geomang(itheta,:)) &
-               -2*dRHatdtheta(itheta,:)*dgeomangdtheta(itheta,:)*sin(geomang(itheta,:))&
-               -RHat(itheta,:)*d2geomangdtheta2(itheta,:)*sin(geomang(itheta,:)) &
-               -RHat(itheta,:)*dgeomangdtheta(itheta,:)**2*cos(geomang(itheta,:))
-          d2Xdthetadzeta(itheta,:)=d2RHatdthetadzeta(itheta,:)*cos(geomang(itheta,:)) &
-               -(dRHatdtheta(itheta,:)*dgeomangdzeta(itheta,:)+dRHatdzeta(itheta,:)*dgeomangdtheta(itheta,:))*sin(geomang(itheta,:)) &
-               -RHat(itheta,:)*d2geomangdthetadzeta(itheta,:)*sin(geomang(itheta,:)) &
-               -RHat(itheta,:)*dgeomangdtheta(itheta,:)*dgeomangdzeta(itheta,:)*cos(geomang(itheta,:))
-          d2Xdzeta2(itheta,:)=d2RHatdzeta2(itheta,:)*cos(geomang(itheta,:)) &
-               -2*dRHatdzeta(itheta,:)*dgeomangdzeta(itheta,:)*sin(geomang(itheta,:))&
-               -RHat(itheta,:)*d2geomangdzeta2(itheta,:)*sin(geomang(itheta,:)) &
-               -RHat(itheta,:)*dgeomangdzeta(itheta,:)**2*cos(geomang(itheta,:))
-
-          d2Ydtheta2(itheta,:)=d2RHatdtheta2(itheta,:)*sin(geomang(itheta,:)) &
-               +2*dRHatdtheta(itheta,:)*dgeomangdtheta(itheta,:)*cos(geomang(itheta,:))&
-               +RHat(itheta,:)*d2geomangdtheta2(itheta,:)*cos(geomang(itheta,:)) &
-               -RHat(itheta,:)*dgeomangdtheta(itheta,:)**2*sin(geomang(itheta,:))
-          d2Ydthetadzeta(itheta,:)=d2RHatdthetadzeta(itheta,:)*sin(geomang(itheta,:)) &
-               +(dRHatdtheta(itheta,:)*dgeomangdzeta(itheta,:)+dRHatdzeta(itheta,:)*dgeomangdtheta(itheta,:))*cos(geomang(itheta,:)) &
-               +RHat(itheta,:)*d2geomangdthetadzeta(itheta,:)*cos(geomang(itheta,:)) &
-               -RHat(itheta,:)*dgeomangdtheta(itheta,:)*dgeomangdzeta(itheta,:)*sin(geomang(itheta,:))
-          d2Ydzeta2(itheta,:)=d2RHatdzeta2(itheta,:)*sin(geomang(itheta,:)) &
-               +2*dRHatdzeta(itheta,:)*dgeomangdzeta(itheta,:)*cos(geomang(itheta,:))&
-               +RHat(itheta,:)*d2geomangdzeta2(itheta,:)*cos(geomang(itheta,:)) &
-               -RHat(itheta,:)*dgeomangdzeta(itheta,:)**2*sin(geomang(itheta,:))
-
-          gradpsiX(itheta,:)=BHat(itheta,:)*BHat(itheta,:)/(GHat+iota*IHat)* &
-               (dYdtheta(itheta,:)*dZHatdzeta(itheta,:)-dZHatdtheta(itheta,:)*dYdzeta(itheta,:))
-          gradpsiY(itheta,:)=BHat(itheta,:)*BHat(itheta,:)/(GHat+iota*IHat)* &
-               (dZHatdtheta(itheta,:)*dXdzeta(itheta,:)-dXdtheta(itheta,:)*dZHatdzeta(itheta,:))
-          gradpsiZ(itheta,:)=BHat(itheta,:)*BHat(itheta,:)/(GHat+iota*IHat)* &
-               (dXdtheta(itheta,:)*dYdzeta(itheta,:)-dYdtheta(itheta,:)*dXdzeta(itheta,:))
-          gpsipsi(itheta,:)=gradpsiX(itheta,:)*gradpsiX(itheta,:)+&
-               gradpsiY(itheta,:)*gradpsiY(itheta,:)+&
-               gradpsiZ(itheta,:)*gradpsiZ(itheta,:)
-
-          CX(itheta,:)=(d2Xdzeta2(itheta,:)+2*iota*d2Xdthetadzeta(itheta,:)+iota**2*d2Xdtheta2(itheta,:))&
-               *(BHat(itheta,:)**2/(GHat+iota*IHat))**2
-          CY(itheta,:)=(d2Ydzeta2(itheta,:)+2*iota*d2Ydthetadzeta(itheta,:)+iota**2*d2Ydtheta2(itheta,:))&
-               *(BHat(itheta,:)**2/(GHat+iota*IHat))**2
-          CZ(itheta,:)=(d2ZHatdzeta2(itheta,:)+2*iota*d2ZHatdthetadzeta(itheta,:)+iota**2*d2ZHatdtheta2(itheta,:))&
-               *(BHat(itheta,:)**2/(GHat+iota*IHat))**2
-
-          !normal_curvature(itheta,:)=1/(BHat(itheta,:)**2*sqrt(gpsipsi(itheta,:))) * &
-          !                           CX(itheta,:)*gradpsi_X(itheta,:)+ &
-          !                           CY(itheta,:)*gradpsi_Y(itheta,:)+ &
-          !                           CZ(itheta,:)*gradpsi_Z(itheta,:)
-          gradpsidotgradB_overgpsipsi(itheta,:) = (CX(itheta,:)*gradpsiX(itheta,:)+ &
-               CY(itheta,:)*gradpsiY(itheta,:)+ &
-               CZ(itheta,:)*gradpsiZ(itheta,:)) &
-               /(BHat(itheta,:)*gpsipsi(itheta,:)) &
-               - pPrimeHat/BHat(itheta,:)
-       end do
-
-       deallocate(geomang)
-       deallocate(dgeomangdtheta)
-       deallocate(dgeomangdzeta)
-       deallocate(d2geomangdtheta2)
-       deallocate(d2geomangdzeta2)
-       deallocate(d2geomangdthetadzeta)
-       deallocate(dXdtheta)
-       deallocate(dXdzeta)
-       deallocate(dYdtheta)
-       deallocate(dYdzeta)
-       deallocate(d2Xdtheta2)
-       deallocate(d2Xdthetadzeta)
-       deallocate(d2Xdzeta2)
-       deallocate(d2Ydtheta2)
-       deallocate(d2Ydthetadzeta)
-       deallocate(d2Ydzeta2)
-       deallocate(gradpsiX)
-       deallocate(gradpsiY)
-       deallocate(gradpsiZ)
-       deallocate(gpsipsi)
-       deallocate(CX)
-       deallocate(CY)
-       deallocate(CZ)
-    end if
-
-    if (.not. nearbyRadiiGiven) then
-       deallocate(BHarmonics_l)
-       deallocate(BHarmonics_n)
-       deallocate(BHarmonics_amplitudes)
-       deallocate(BHarmonics_parity)
-    else
-       deallocate(BHarmonics_lL)
-       deallocate(BHarmonics_nL)
-       deallocate(BHarmonics_amplitudesL)
-       deallocate(BHarmonics_parityL)
-       deallocate(BHarmonics_lH)
-       deallocate(BHarmonics_nH)
-       deallocate(BHarmonics_amplitudesH)
-       deallocate(BHarmonics_parityH)
-       deallocate(RHatL)
-       deallocate(dRHatdthetaL)
-       deallocate(dRHatdzetaL)
-       deallocate(d2RHatdtheta2L)
-       deallocate(d2RHatdzeta2L)
-       deallocate(d2RHatdthetadzetaL)
-       deallocate(ZHatL)
-       deallocate(dZHatdthetaL)
-       deallocate(dZHatdzetaL)
-       deallocate(d2ZHatdtheta2L)
-       deallocate(d2ZHatdzeta2L)
-       deallocate(d2ZHatdthetadzetaL)
-       deallocate(DzL)
-       deallocate(dDzdthetaL)
-       deallocate(dDzdzetaL)
-       deallocate(d2Dzdtheta2L)
-       deallocate(d2Dzdzeta2L)
-       deallocate(d2DzdthetadzetaL)
-       deallocate(RHatH)
-       deallocate(dRHatdthetaH)
-       deallocate(dRHatdzetaH)
-       deallocate(d2RHatdtheta2H)
-       deallocate(d2RHatdzeta2H)
-       deallocate(d2RHatdthetadzetaH)
-       deallocate(ZHatH)
-       deallocate(dZHatdthetaH)
-       deallocate(dZHatdzetaH)
-       deallocate(d2ZHatdtheta2H)
-       deallocate(d2ZHatdzeta2H)
-       deallocate(d2ZHatdthetadzetaH)
-       deallocate(DzH)
-       deallocate(dDzdthetaH)
-       deallocate(dDzdzetaH)
-       deallocate(d2Dzdtheta2H)
-       deallocate(d2Dzdzeta2H)
-       deallocate(d2DzdthetadzetaH)
-    end if
-
-    ! Set the Jacobian and various other components of B:
-
-    !DHat = BHat * BHat / (GHat + iota * IHat)
-    sqrt_g = (GHat + iota * IHat) / (BHat * BHat)
-    BHat_sup_theta = iota / sqrt_g
-    BHat_sup_zeta = 1/sqrt_g
-    BHat_sub_theta = IHat
-    BHat_sub_zeta = GHat
-
-    if (nearbyRadiiGiven) then
-       dBHat_sup_zeta_dpsiHat = 2.0 * BHat *dBHatdpsiHat / (GHat + iota * IHat) &
-            -(dBHat_sub_zeta_dpsiHat + iota*dBHat_sub_theta_dpsiHat + diotadpsiHat*IHat) &
-            / (GHat + iota * IHat) / (GHat + iota * IHat)
-       dBHat_sup_zeta_dtheta = 2.0 * BHat *dBHatdtheta / (GHat + iota * IHat)
-
-       dBHat_sup_theta_dpsiHat = iota * dBHat_sup_zeta_dpsiHat + diotadpsiHat / sqrt_g
-       dBHat_sup_theta_dzeta = iota * 2.0 * BHat *dBHatdzeta / (GHat + iota * IHat)
-    end if
-
-    !possible double-check
-    !dBHatdpsiHat= sqrt(hHat)/2.0*( dBHat_sup_theta_dpsiHat*BHat_sub_theta &
-    !                              +dBHat_sub_theta_dpsiHat*BHat_sup_theta &
-    !                              +dBHat_sup_zeta_dpsiHat *BHat_sub_zeta &
-    !                              +dBHat_sub_zeta_dpsiHat *BHat_sup_zeta)
+!!$
+!!$
+!!$    if (nearbyRadiiGiven) then
+!!$       dBHat_sup_zeta_dpsiHat = 2.0 * BHat *dBHatdpsiHat / (GHat + iota * IHat) &
+!!$            -(dBHat_sub_zeta_dpsiHat + iota*dBHat_sub_theta_dpsiHat + diotadpsiHat*IHat) &
+!!$            / (GHat + iota * IHat) / (GHat + iota * IHat)
+!!$       dBHat_sup_zeta_dtheta = 2.0 * BHat *dBHatdtheta / (GHat + iota * IHat)
+!!$
+!!$       dBHat_sup_theta_dpsiHat = iota * dBHat_sup_zeta_dpsiHat + diotadpsiHat / sqrt_g
+!!$       dBHat_sup_theta_dzeta = iota * 2.0 * BHat *dBHatdzeta / (GHat + iota * IHat)
+!!$    end if
+!!$
+!!$    !possible double-check
+!!$    !dBHatdpsiHat= sqrt(hHat)/2.0*( dBHat_sup_theta_dpsiHat*BHat_sub_theta &
+!!$    !                              +dBHat_sub_theta_dpsiHat*BHat_sup_theta &
+!!$    !                              +dBHat_sup_zeta_dpsiHat *BHat_sub_zeta &
+!!$    !                              +dBHat_sub_zeta_dpsiHat *BHat_sup_zeta)
   end subroutine evaluate_B_on_grids_Boozer
 
   ! -----------------------------------------------------------------------------------------

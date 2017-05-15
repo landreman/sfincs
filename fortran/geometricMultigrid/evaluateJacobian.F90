@@ -9,8 +9,7 @@
   subroutine evaluateJacobian(mysnes, stateVec, jacobian, jacobianPC, userContext, ierr)
 
     use petscsnes
-    use globalVariables, only: masterProc, firstMatrixCreation, reusePreconditioner, &
-         Mat_for_Jacobian, Mat_for_preconditioner
+    use globalVariables, only: masterProc, firstMatrixCreation, reusePreconditioner, levels
 
     implicit none
 
@@ -37,35 +36,35 @@
        call populateMatrix(Mat_for_Jacobian, 1, stateVec)
     end if
 
-  ! Always build the high-order matrix at the finest level:
-  call populateMatrix(levels(1)%high_order_matrix,1,stateVec,1)
+    ! Always build the high-order matrix at the finest level:
+    call populateMatrix(levels(1)%high_order_matrix,1,stateVec,1)
 
-  ! We need smoothing matrices on every level except the coarsest level, where we do a direct solve.
-  do level = 1,N_levels-1
-     call populateMatrix(levels(level)%smoothing_matrix,4,stateVec,level)
-  end do
+    ! We need smoothing matrices on every level except the coarsest level, where we do a direct solve.
+    do level = 1,N_levels-1
+       call populateMatrix(levels(level)%smoothing_matrix,4,stateVec,level)
+    end do
 
-  select case (defect_option)
-  case (1)
-     ! In this case, we need low order matrices on every level
-     do level = 1,N_levels
-        ! If we re-use the factorization for the coarsest level, then only populate it on the first SNES iteration.
-        if (level<N_levels .or. firstMatrixCreation .or. .not. reusePreconditioner) then
-           call populateMatrix(levels(level)%low_order_matrix,0,stateVec,level)
-        end if
-     end do
-  case (2)
-     ! In this case, we need high order matrices on every level. We already did level 1, so start at level 2.
-     do level = 2,N_levels
-        ! If we re-use the factorization for the coarsest level, then only populate it on the first SNES iteration.
-        if (level<N_levels .or. firstMatrixCreation .or. .not. reusePreconditioner) then
-           call populateMatrix(levels(level)%high_order_matrix,1,stateVec,level)
-        end if
-     end do
-  case default
-     print *,"Error! Invalid defect_option:",defect_option
-     stop
-  end select
+    select case (defect_option)
+    case (1)
+       ! In this case, we need low order matrices on every level
+       do level = 1,N_levels
+          ! If we re-use the factorization for the coarsest level, then only populate it on the first SNES iteration.
+          if (level<N_levels .or. firstMatrixCreation .or. .not. reusePreconditioner) then
+             call populateMatrix(levels(level)%low_order_matrix,0,stateVec,level)
+          end if
+       end do
+    case (2)
+       ! In this case, we need high order matrices on every level. We already did level 1, so start at level 2.
+       do level = 2,N_levels
+          ! If we re-use the factorization for the coarsest level, then only populate it on the first SNES iteration.
+          if (level<N_levels .or. firstMatrixCreation .or. .not. reusePreconditioner) then
+             call populateMatrix(levels(level)%high_order_matrix,1,stateVec,level)
+          end if
+       end do
+    case default
+       print *,"Error! Invalid defect_option:",defect_option
+       stop
+    end select
 
 
     firstMatrixCreation = .false.
@@ -75,7 +74,7 @@
 
   subroutine apply_Jacobian(matrix, inputVec, outputVec, ierr)
 
-    use globalVariables, only: masterProc, Mat_for_Jacobian, collisionOperator, preconditioner_field_term_xi_option
+    use globalVariables, only: levels, masterProc, collisionOperator, preconditioner_field_term_xi_option
 
     implicit none
 
@@ -88,6 +87,6 @@
     !if (collisionOperator==0 .and. preconditioner_field_term_xi_option>0) then
     call VecZeroEntries(outputVec,ierr)
     call apply_dense_terms(inputVec, outputVec, 1)
-    call MatMultAdd(Mat_for_Jacobian, inputVec, outputVec, outputVec, ierr)
+    call MatMultAdd(levels(1)%high_order_matrix, inputVec, outputVec, outputVec, ierr)
 
   end subroutine apply_Jacobian

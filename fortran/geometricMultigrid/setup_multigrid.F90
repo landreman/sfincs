@@ -20,6 +20,7 @@ subroutine setup_multigrid()
   PetscViewer :: viewer
   KSP :: smoother_ksp, ksp_on_coarsest_level
   PC :: smoother_pc, pc_on_coarsest_level
+  Mat :: apply_Jacobian_shell_matrix
 #if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR > 6))
   PetscViewerAndFormat vf 
 #endif
@@ -77,31 +78,6 @@ subroutine setup_multigrid()
   ! Set up PETSc solvers.
   ! *******************************************************************
 
-
-  ! Always build the high-order matrix at the finest level:
-  call populateMatrix(levels(1)%high_order_matrix,1,1)
-
-  do j = 1,N_levels
-    
-     if (defect_option > 1 .and. j>1) then
-        ! Build the high-order matrix at this level:
-        call preallocateMatrix(levels(j)%high_order_matrix,1,j)
-        call populateMatrix(levels(j)%high_order_matrix,1,j)
-     end if
-
-     ! Build the low-order matrix at this level:
-     if (j==N_levels) then
-        ! DO include constraint and source at the coarse level, where we do a direct solve.
-        call preallocateMatrix(levels(j)%low_order_matrix,0,j)
-        call populateMatrix(levels(j)%low_order_matrix,0,j)
-     else
-        ! DON'T include constraint and source at finer levels, where we do smoothing.
-        call preallocateMatrix(levels(j)%low_order_matrix,4,j)
-        call populateMatrix(levels(j)%low_order_matrix,4,j)
-     end if
-
-  end do
-
   call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, solutionVec, ierr)
   call VecDuplicate(solutionVec, residualVec, ierr)
 
@@ -117,11 +93,9 @@ subroutine setup_multigrid()
   ! Create the shell Mat object for the Jacobian
   call VecGetLocalSize(solutionVec,VecLocalSize,ierr)
   call MatCreateShell(PETSC_COMM_WORLD,VecLocalSize,VecLocalSize,matrixSize,matrixSize,&
-       PETSC_NULL_OBJECT,matrix,ierr)
-  call MatShellSetOperation(matrix,MATOP_MULT,apply_Jacobian,ierr)
-  
-  call preallocateMatrix(Mat_for_preconditioner, 0)
-  call SNESSetJacobian(mysnes, matrix, Mat_for_preconditioner, evaluateJacobian, PETSC_NULL_OBJECT, ierr)
+       PETSC_NULL_OBJECT,apply_Jacobian_shell_matrix,ierr)
+  call MatShellSetOperation(apply_Jacobian_shell_matrix,MATOP_MULT,apply_Jacobian,ierr)
+  call SNESSetJacobian(mysnes, apply_Jacobian_shell_matrix, apply_Jacobian_shell_matrix, evaluateJacobian, PETSC_NULL_OBJECT, ierr)
   
   call SNESGetKSP(mysnes, outer_KSP, ierr)
   call KSPGetPC(outer_KSP, outer_preconditioner, ierr)
@@ -134,12 +108,9 @@ subroutine setup_multigrid()
   call KSPAppendOptionsPrefix(inner_ksp, 'inner_', ierr)
   call KSPSetType(inner_ksp, KSPPREONLY, ierr)
   call KSPGetPC(inner_ksp, inner_preconditioner, ierr)
-  call KSPSetOperators(inner_ksp, Mat_for_preconditioner, Mat_for_preconditioner, ierr)
   call PCSetType(inner_preconditioner, PCMG, ierr)
-
   call PCMGSetLevels(inner_preconditioner, N_levels, PETSC_NULL_OBJECT, ierr)
-
-  call KSPSetOperators(main_ksp, levels(1)%high_order_matrix, levels(1)%low_order_matrix, ierr)
+  call KSPSetOperators(inner_ksp, levels(1)%high_order_matrix, levels(1)%high_order_matrix, ierr)
   do j = 1,N_levels
      if (defect_option==1) then
         call PCMGSetResidual(inner_preconditioner, N_levels-j, PCMGResidualDefault, levels(j)%low_order_matrix, ierr)

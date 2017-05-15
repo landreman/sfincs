@@ -351,7 +351,6 @@ module globalVariables
 
   Vec :: f0
 
-  Mat :: Mat_for_Jacobian, Mat_for_preconditioner
   KSP :: inner_KSP
   PC :: inner_preconditioner
 
