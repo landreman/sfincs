@@ -9,7 +9,7 @@
   subroutine evaluateJacobian(mysnes, stateVec, jacobian, jacobianPC, userContext, ierr)
 
     use petscsnes
-    use globalVariables, only: masterProc, firstMatrixCreation, reusePreconditioner, levels
+    use globalVariables, only: masterProc, firstMatrixCreation, reusePreconditioner, levels, N_levels, defect_option
 
     implicit none
 
@@ -18,23 +18,13 @@
     Mat :: jacobian, jacobianPC
     PetscErrorCode :: ierr
     integer :: userContext(*)
+    integer :: level
 
     if (masterProc) print *,"evaluateJacobian called."
 
     ! When PETSc assembles a matrix, it reduces the structure of nonzeros to the actual number of nonzeros.
     ! If we try to re-assemble the matrix with additional nonzero entries without first re-allocating space for the nonzeros,
     ! we get the error about 'new nonzero caused a malloc'. Therefore, here we destroy the matrices and reallocate them.
-
-    ! If reusePreconditioner = true, then we only need to assemble the preconditioner in the first iteration.
-    ! If reusePreconditioner = false, then we need to assemble the preconditioner in every iteration.
-    if (firstMatrixCreation .or. .not. reusePreconditioner) then
-       !call populateMatrix(jacobianPC, 0, stateVec)
-       call populateMatrix(Mat_for_preconditioner, 0, stateVec)
-    end if
-    if (firstMatrixCreation) then
-       call preallocateMatrix(Mat_for_Jacobian, 1)
-       call populateMatrix(Mat_for_Jacobian, 1, stateVec)
-    end if
 
     ! Always build the high-order matrix at the finest level:
     call populateMatrix(levels(1)%high_order_matrix,1,stateVec,1)
@@ -66,7 +56,6 @@
        stop
     end select
 
-
     firstMatrixCreation = .false.
 
   end subroutine evaluateJacobian
@@ -74,7 +63,7 @@
 
   subroutine apply_Jacobian(matrix, inputVec, outputVec, ierr)
 
-    use globalVariables, only: levels, masterProc, collisionOperator, preconditioner_field_term_xi_option
+    use globalVariables, only: levels, masterProc
 
     implicit none
 

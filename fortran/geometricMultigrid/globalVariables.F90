@@ -189,10 +189,10 @@ module globalVariables
   integer :: matrixSize, NxPotentials
   real(prec), dimension(:), allocatable :: theta, zeta, x, x_plus1, xi
   real(prec), dimension(:), allocatable :: thetaWeights, zetaWeights, xiWeights
-  real(prec), dimension(:,:), allocatable, target :: ddtheta_plus, ddtheta_minus, ddtheta_plus_preconditioner, ddtheta_minus_preconditioner
-  real(prec), dimension(:,:), allocatable, target :: ddzeta_plus, ddzeta_minus, ddzeta_plus_preconditioner, ddzeta_minus_preconditioner
-  real(prec), dimension(:,:), allocatable, target :: ddxi_plus, ddxi_minus, ddxi_plus_preconditioner, ddxi_minus_preconditioner
-  real(prec), dimension(:,:), allocatable, target :: pitch_angle_scattering_operator, pitch_angle_scattering_operator_preconditioner
+!  real(prec), dimension(:,:), allocatable, target :: ddtheta_plus, ddtheta_minus, ddtheta_plus_preconditioner, ddtheta_minus_preconditioner
+!  real(prec), dimension(:,:), allocatable, target :: ddzeta_plus, ddzeta_minus, ddzeta_plus_preconditioner, ddzeta_minus_preconditioner
+!  real(prec), dimension(:,:), allocatable, target :: ddxi_plus, ddxi_minus, ddxi_plus_preconditioner, ddxi_minus_preconditioner
+!  real(prec), dimension(:,:), allocatable, target :: pitch_angle_scattering_operator, pitch_angle_scattering_operator_preconditioner
   real(prec), dimension(:), allocatable :: xWeights, xPotentials
   real(prec) :: maxxPotentials, zetaMax, xMaxNotTooSmall
   real(prec), dimension(:), allocatable :: x2, expx2

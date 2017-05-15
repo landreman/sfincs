@@ -21,7 +21,7 @@
     Vec :: input_Vec, output_Vec
     KSPConvergedReason :: reason
     integer, dimension(:), allocatable :: IS_array
-    integer :: IS_array_index, ix, ispecies, ixi, itheta, izeta, j
+    integer :: IS_array_index, ix, ispecies, j
     ! For these next variables, the 'save' attribute means these variables can be initialized in the first pass
     ! through this subroutine, and used again on subsequent calls to this subroutine.
     KSP, save :: constraints_times_sources_KSP

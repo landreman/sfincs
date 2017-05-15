@@ -322,6 +322,7 @@
 
       integer, intent(in) :: level
       integer :: ix
+      integer :: Ntheta, Nzeta, Nxi
 
       Ntheta = levels(level)%Ntheta
       Nzeta  = levels(level)%Nzeta

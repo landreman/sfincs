@@ -23,7 +23,6 @@ module solver
     PetscErrorCode :: ierr
     PetscScalar :: scalar
     Vec :: solutionVec, residualVec
-    Mat :: matrix  !, preconditionerMatrix
     SNES :: mysnes
     KSP :: outer_KSP
     PC :: outer_preconditioner, sub_preconditioner
@@ -135,10 +134,10 @@ module solver
        !  Set f=0:
        call VecZeroEntries(solutionVec, ierr)
 
-       call KSPSetOperators(outer_KSP, matrix, Mat_for_preconditioner, ierr)
+       call KSPSetOperators(outer_KSP, levels(1)%high_order_matrix, levels(1)%high_order_matrix, ierr)
 
        ! Call evaluateJacobian, which has the effect of populating the main matrix and preconditioner matrix.
-       call evaluateJacobian(mysnes, solutionVec, matrix, Mat_for_preconditioner, userContext, ierr) ! The Mat arguments are not actually used.
+       call evaluateJacobian(mysnes, solutionVec, levels(1)%high_order_matrix, levels(1)%high_order_matrix, userContext, ierr) ! The Mat arguments are not actually used.
 
 !!$       ! Build the main linear system matrix:
 !!$       !call populateMatrix(matrix,1,dummyVec)

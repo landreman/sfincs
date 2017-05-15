@@ -22,7 +22,7 @@
     VecScatter :: VecScatterContext
     Vec :: inputVecLocal
     PetscScalar, pointer :: stateArray(:)
-    PetscLogDouble :: time1, time2, time3, time4, time5, time6
+    PetscLogDouble :: time1, time2, time3, time4
     integer :: iSpeciesA, iSpeciesB, L, itheta, izeta, ixi, ix_row, ix_col, index
     PetscScalar :: factor
     PetscScalar, dimension(:), allocatable :: xi_vector_in, xi_vector_out, species_factor
@@ -64,8 +64,8 @@
     ! *********************************************************
        
     call PetscTime(time3,ierr)
-    do itheta = ithetaMin,ithetaMax
-       do izeta = izetaMin,izetaMax
+    do itheta = levels(1)%ithetaMin,levels(1)%ithetaMax
+       do izeta = levels(1)%izetaMin,levels(1)%izetaMax
           !factor = -nu_n*BHat(itheta,izeta)*species_factor(ispeciesA)/DHat(itheta,izeta)
           !factor = -nu_n*BHat(itheta,izeta)/abs(DHat(itheta,izeta))
           do iSpeciesB = 1,Nspecies

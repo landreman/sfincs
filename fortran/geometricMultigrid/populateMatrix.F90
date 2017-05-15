@@ -12,7 +12,8 @@
   subroutine populateMatrix(matrix, whichMatrix, stateVec, level)
 
     use petscmat
-    use globalVariables, Ntheta_fine => Ntheta, Nzeta_fine => Nzeta, Nxi_fine => Nxi, matrixSize_fine => matrixSize
+    use globalVariables, Ntheta_fine => Ntheta, Nzeta_fine => Nzeta, Nxi_fine => Nxi, matrixSize_fine => matrixSize, &
+         xi_fine => xi, thetaWeights_fine => thetaWeights, zetaWeights_fine => zetaWeights, xiWeights_fine => xiWeights
     use sparsify
     use indices
     use xGrid, only: xGrid_k
@@ -291,7 +292,7 @@
                       case (2)
                          factor = factor - BHat_sub_theta(itheta,izeta_row)/(sqrt_g(itheta,izeta_row)*FSABHat2)*dPhiHatdpsiHat*Er_factor
                       end select
-                      factor = factor * spatial_scaling(itheta,izeta_row) * x_scaling(ix,ispecies)
+                      factor = factor * levels(level)%spatial_scaling(itheta,izeta_row) * x_scaling(ix,ispecies)
 
                       if (whichMatrix>0) then
                          ! Not preconditioner
@@ -342,7 +343,7 @@
                       case (2)
                          factor = factor + BHat_sub_zeta(itheta_row,izeta)/(sqrt_g(itheta_row,izeta)*FSABHat2)*dPhiHatdpsiHat*Er_factor
                       end select
-                      factor = factor * spatial_scaling(itheta_row,izeta) * x_scaling(ix,ispecies)
+                      factor = factor * levels(level)%spatial_scaling(itheta_row,izeta) * x_scaling(ix,ispecies)
 
                       if (whichMatrix>0) then
                          ! Not preconditioner
@@ -392,7 +393,7 @@
                          factor = factor + xi(ixi_row)*(1-xi(ixi_row)*xi(ixi_row))/(2*sqrt_g(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)) &
                               * (BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))*dPhiHatdpsiHat*Er_factor
                       end if
-                      factor = factor * spatial_scaling(itheta,izeta) * x_scaling(ix,ispecies)
+                      factor = factor * levels(level)%spatial_scaling(itheta,izeta) * x_scaling(ix,ispecies)
 
                       if (whichMatrix>0) then
                          ! Not preconditioner
@@ -432,7 +433,7 @@
        if ((whichMatrix .ne. 2) .and. includeXDotTerm) then
           do izeta = izetaMin,izetaMax
              do itheta = ithetaMin,ithetaMax
-                spatial_factor = spatial_scaling(itheta,izeta)*dPhiHatdpsiHat/(2*sqrt_g(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)) &
+                spatial_factor = levels(level)%spatial_scaling(itheta,izeta)*dPhiHatdpsiHat/(2*sqrt_g(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)) &
                      * (BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))*Er_factor
                 do ix_row = 1,Nx
                    do ixi = 1,Nxi
@@ -1092,7 +1093,7 @@
                       do itheta = ithetaMin,ithetaMax
                          do izeta = izetaMin,izetaMax
                             !factor = -nu_n*BHat(itheta,izeta)*sqrt(mHats(ispeciesA)/THats(ispeciesA))/abs(DHat(itheta,izeta))
-                            factor = -nu_n*spatial_scaling(itheta,izeta)*x_scaling(ix_row,iSpeciesA)
+                            factor = -nu_n*levels(level)%spatial_scaling(itheta,izeta)*x_scaling(ix_row,iSpeciesA)
                             do ixi_col = 1,Nxi
                                colIndex = getIndex(level,iSpeciesB,ix_col,ixi_col,itheta,izeta,BLOCK_F)
                                do ixi_row = 1,Nxi
@@ -1166,7 +1167,7 @@
                 do itheta=ithetaMin,ithetaMax
                    do izeta=izetaMin,izetaMax
                       !factor = -nu_n*BHat(itheta,izeta)*sqrt(mHats(ispeciesA)/THats(ispeciesA))/abs(DHat(itheta,izeta))*nuDHat(iSpeciesA,ix)
-                      factor = -nu_n*spatial_scaling(itheta,izeta)*x_scaling(ix,iSpeciesA)*nuDHat(iSpeciesA,ix)
+                      factor = -nu_n*levels(level)%spatial_scaling(itheta,izeta)*x_scaling(ix,iSpeciesA)*nuDHat(iSpeciesA,ix)
                       do ixi_row = 1,Nxi
                          rowIndex=getIndex(level,iSpeciesA,ix,ixi_row,itheta,izeta,BLOCK_F)
                          do ixi_col = 1,Nxi
@@ -1277,12 +1278,12 @@
              case default
                 stop "Invalid constraintScheme!"
              end select
-             temp = Ntheta*Nzeta/sum(spatial_scaling)
+             temp = Ntheta*Nzeta/sum(levels(level)%spatial_scaling)
              do ispecies = 1,Nspecies
                 speciesFactor = sqrt(THats(ispecies)/mHats(ispecies)) ! Include 2 when I move to SI units?
                 do itheta = ithetaMin,ithetaMax
                    do izeta = izetaMin,izetaMax
-                      factor = spatial_scaling(itheta,izeta) * temp * x_scaling(ix,ispecies) * speciesFactor ! This quantity is scaled so it should be O(1)
+                      factor = levels(level)%spatial_scaling(itheta,izeta) * temp * x_scaling(ix,ispecies) * speciesFactor ! This quantity is scaled so it should be O(1)
                       do ixi = 1,levels(level)%Nxi_for_x(ix)
                          rowIndex = getIndex(level, ispecies, ix, ixi, itheta, izeta, BLOCK_F)
                          
@@ -1299,13 +1300,13 @@
           
        case (2)
           ! Add a source (which is constant on the flux surface and independent of xi) at each x.
-          temp = Ntheta*Nzeta/sum(spatial_scaling)
+          temp = Ntheta*Nzeta/sum(levels(level)%spatial_scaling)
           do ispecies = 1,Nspecies
              speciesFactor = sqrt(THats(ispecies)/mHats(ispecies)) ! Include 2 when I move to SI units?
              do itheta = ithetaMin,ithetaMax
                 do izeta = izetaMin,izetaMax
                    do ix = ixMin,Nx
-                      scalar = spatial_scaling(itheta,izeta) * temp * x_scaling(ix,ispecies) * speciesFactor ! This quantity is scaled so it should be O(1) 
+                      scalar = levels(level)%spatial_scaling(itheta,izeta) * temp * x_scaling(ix,ispecies) * speciesFactor ! This quantity is scaled so it should be O(1) 
                       do ixi = 1,levels(level)%Nxi_for_x(ix)
                          rowIndex = getIndex(level, ispecies, ix, ixi, itheta, izeta, BLOCK_F)
                          colIndex = getIndex(level, ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)
@@ -1680,10 +1681,10 @@
     do ispecies = 1,Nspecies
        do ix = 1,Nx
           factor = expx2(ix)
-          do itheta = ithetaMin,ithetaMax
-             do izeta = izetaMin,izetaMax
-                do ixi = 1,levels(level)%Nxi_for_x(ix)
-                   index = getIndex(level, ispecies, ix, ixi, itheta, izeta, BLOCK_F)
+          do itheta = levels(1)%ithetaMin,levels(1)%ithetaMax
+             do izeta = levels(1)%izetaMin,levels(1)%izetaMax
+                do ixi = 1,levels(1)%Nxi_for_x(ix)
+                   index = getIndex(1, ispecies, ix, ixi, itheta, izeta, BLOCK_F)
                    scalar = exp(-Zs(ispecies)*gamma*Phi1Hat(itheta,izeta)/THats(ispecies))*factor ! Cast from real(prec) to PetscScalar
                    call VecSetValue(f0, index, scalar, INSERT_VALUES, ierr) ! This line needs fixing when Phi1 is included.
                 end do

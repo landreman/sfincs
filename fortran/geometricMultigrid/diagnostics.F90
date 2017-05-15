@@ -124,7 +124,7 @@
 
   subroutine extractPhi1(myVec)
 
-    use globalVariables, only: Phi1Hat, dPhi1Hatdtheta, dPhi1Hatdzeta, MPIComm, masterProc, ddtheta_plus, ddzeta_plus, Ntheta, Nzeta
+    use globalVariables, only: levels, Phi1Hat, dPhi1Hatdtheta, dPhi1Hatdzeta, MPIComm, masterProc, Ntheta, Nzeta
     use globalVariables, only: includePhi1, zero
     use indices
     use petscvec
@@ -168,8 +168,8 @@
        call MPI_Bcast(Phi1Hat, Ntheta*Nzeta, MPI_DOUBLE_PRECISION, 0, MPIComm, ierr)
 
        stop "Error! I need to deal with upwinding the Phi1 derivatives in the diagnostics.F90 extractPhi1 subroutine."
-       dPhi1Hatdtheta = matmul(ddtheta_plus,Phi1Hat)
-       dPhi1Hatdzeta = transpose(matmul(ddzeta_plus,transpose(Phi1Hat)))
+       dPhi1Hatdtheta = matmul(levels(1)%ddtheta_plus,Phi1Hat)
+       dPhi1Hatdzeta = transpose(matmul(levels(1)%ddzeta_plus,transpose(Phi1Hat)))
 
     else
        ! We are not including Phi_1 in the calculation
@@ -204,7 +204,7 @@
 
     real(prec) :: THat, mHat, sqrtTHat, sqrtMHat, nHat
     real(prec), dimension(:), allocatable :: B2
-    integer :: i, j, ix, ixi, ispecies, itheta, izeta, L, index
+    integer :: i, ix, ixi, ispecies, itheta, izeta, index
     real(prec) :: densityFactor, flowFactor, pressureFactor
     real(prec) :: particleFluxFactor_vm, particleFluxFactor_vE
     real(prec) :: momentumFluxFactor_vm, momentumFluxFactor_vE
@@ -220,11 +220,10 @@
     real(prec), dimension(:), allocatable :: heatFluxIntegralWeights_vm
     real(prec), dimension(:), allocatable :: heatFluxIntegralWeights_vE
     real(prec), dimension(:), allocatable :: NTVIntegralWeights
-    real(prec), dimension(:), pointer :: xi, thetaWeights, zetaWeights, xiWeights
-    real(prec) :: factor, factor2, factor_vE, temp1, temp2, temp3
-    integer :: itheta1, izeta1, ixi1, ix1
-    integer :: itheta2, izeta2, ixi2, ix2
-    PetscLogDouble :: time1, time2, iteration_end_time
+    real(prec) :: factor, factor2, factor_vE
+!    integer :: itheta1, izeta1, ixi1, ix1
+!    integer :: itheta2, izeta2, ixi2, ix2
+    PetscLogDouble :: iteration_end_time
     PetscViewer :: viewer
     character(len=200) :: filename
     KSP :: myKSP
@@ -232,12 +231,6 @@
     if (masterProc) then
        print *,"Computing diagnostics."
     end if
-
-    ! Set up some aliases for quantities on the finest grid:
-    xi => levels(1)%xi
-    thetaWeights => levels(1)%thetaWeights
-    zetaWeights => levels(1)%zetaWeights
-    xiWeights => levels(1)%xiWeights
 
     call KSPGetIterationNumber(myKSP, number_of_KSP_iterations, ierr)
     if (masterProc) print *,"number_of_KSP_iterations:",number_of_KSP_iterations
@@ -429,20 +422,20 @@
 
                 !factor = (GHat*dBHatdtheta(itheta,izeta) - IHat*dBHatdzeta(itheta,izeta))/(BHat(itheta,izeta) ** 3)
 
-                factor = (level(1)%BHat_sub_theta(itheta,izeta) * level(1)%dBHatdzeta(itheta,izeta) &
-                     - level(1)%BHat_sub_zeta(itheta,izeta) * level(1)%dBHatdtheta(itheta,izeta)) / (level(1)%BHat(itheta,izeta) ** 3)
+                factor = (levels(1)%BHat_sub_theta(itheta,izeta) * levels(1)%dBHatdzeta(itheta,izeta) &
+                     - levels(1)%BHat_sub_zeta(itheta,izeta) * levels(1)%dBHatdtheta(itheta,izeta)) / (levels(1)%BHat(itheta,izeta) ** 3)
 
                 if (force0RadialCurrentInEquilibrium) then
                    factor2 = 0
                 else
                    ! Note: this next line has not been tested, since I haven't used eqilibria with a radial current.
-                   factor2 = 2 * (level(1)%dBHat_sub_zeta_dtheta(itheta,izeta) - level(1)%dBHat_sub_theta_dzeta(itheta,izeta)) &
-                        / (level(1)%BHat(itheta,izeta) ** 2)
+                   factor2 = 2 * (levels(1)%dBHat_sub_zeta_dtheta(itheta,izeta) - levels(1)%dBHat_sub_theta_dzeta(itheta,izeta)) &
+                        / (levels(1)%BHat(itheta,izeta) ** 2)
                 end if
 
-                factor_vE = (level(1)%BHat_sub_theta(itheta,izeta) * dPhi1Hatdzeta(itheta,izeta) &
-                     -level(1)%BHat_sub_zeta(itheta,izeta) * dPhi1Hatdtheta(itheta,izeta)) &
-                     / (level(1)%BHat(itheta,izeta) ** 2)
+                factor_vE = (levels(1)%BHat_sub_theta(itheta,izeta) * dPhi1Hatdzeta(itheta,izeta) &
+                     -levels(1)%BHat_sub_zeta(itheta,izeta) * dPhi1Hatdtheta(itheta,izeta)) &
+                     / (levels(1)%BHat(itheta,izeta) ** 2)
 
                 do ix=1,Nx
                    do ixi = 1,Nxi
@@ -456,20 +449,20 @@
                            + flowFactor*xi(ixi)*xWeights(ix)*flowIntegralWeights(ix)*xiWeights(ixi)*solutionWithDeltaFArray(index)
                       
                       FSABFlow_vs_x(ispecies,ix) = FSABFlow_vs_x(ispecies,ix) &
-                           + flowFactor*xi(xi)*xWeights(ix)*flowIntegralWeights(ix)*xiWeights(ixi)*solutionWithDeltaFArray(index) &
-                           * thetaWeights(itheta) * zetaWeights(izeta) * BHat(itheta,izeta) * level(1)%sqrt_g(itheta,izeta)
+                           + flowFactor*xi(ixi)*xWeights(ix)*flowIntegralWeights(ix)*xiWeights(ixi)*solutionWithDeltaFArray(index) &
+                           * thetaWeights(itheta) * zetaWeights(izeta) * levels(1)%BHat(itheta,izeta) * levels(1)%sqrt_g(itheta,izeta)
 
                       pressurePerturbation(ispecies,itheta,izeta) = pressurePerturbation(ispecies,itheta,izeta) &
                            + pressureFactor*xWeights(ix)*pressureIntegralWeights(ix)*xiWeights(ixi)*solutionWithDeltaFArray(index)
                       
                       particleFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
                            = particleFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
-                           + (factor * (1+xi(xi)*xi(xi)) + factor2 * (xi(xi)*xi(xi))) * particleFluxFactor_vm &
+                           + (factor * (1+xi(ixi)*xi(ixi)) + factor2 * (xi(ixi)*xi(ixi))) * particleFluxFactor_vm &
                            * xWeights(ix)*particleFluxIntegralWeights_vm(ix)*xiWeights(ixi)*f0Array(index)
                       
                       particleFluxBeforeSurfaceIntegral_vm(ispecies,itheta,izeta) &
                            = particleFluxBeforeSurfaceIntegral_vm(ispecies,itheta,izeta) &
-                           + (factor * (1+xi(xi)*xi(xi)) + factor2 * (xi(xi)*xi(xi))) * particleFluxFactor_vm &
+                           + (factor * (1+xi(ixi)*xi(ixi)) + factor2 * (xi(ixi)*xi(ixi))) * particleFluxFactor_vm &
                            * xWeights(ix)*particleFluxIntegralWeights_vm(ix)*xiWeights(ixi)*solutionWithFullFArray(index)
 
                       particleFluxBeforeSurfaceIntegral_vE0(ispecies,itheta,izeta) &
@@ -486,7 +479,7 @@
                       
                       heatFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
                            = heatFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
-                           + (factor * (1+xi(xi)*xi(xi)) + factor2 * (xi(ixi)*xi(ixi))) * heatFluxFactor_vm &
+                           + (factor * (1+xi(ixi)*xi(ixi)) + factor2 * (xi(ixi)*xi(ixi))) * heatFluxFactor_vm &
                            * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*xiWeights(ixi)*f0Array(index)
                       
                       heatFluxBeforeSurfaceIntegral_vm(ispecies,itheta,izeta) &
@@ -608,16 +601,16 @@
           end do
 
           do izeta=1,Nzeta
-             B2 = level(1)%BHat(:,izeta)*level(1)%BHat(:,izeta)
+             B2 = levels(1)%BHat(:,izeta)*levels(1)%BHat(:,izeta)
 
              FSADensityPerturbation(ispecies) = FSADensityPerturbation(ispecies) + zetaWeights(izeta) &
-                  * dot_product(thetaWeights, densityPerturbation(ispecies,:,izeta) * level(1)%sqrt_g(:,izeta))
+                  * dot_product(thetaWeights, densityPerturbation(ispecies,:,izeta) * levels(1)%sqrt_g(:,izeta))
 
              FSABFlow(ispecies) = FSABFlow(ispecies) + zetaWeights(izeta) &
-                  * dot_product(thetaWeights, flow(ispecies,:,izeta)*level(1)%BHat(:,izeta) * level(1)%sqrt_g(:,izeta))
+                  * dot_product(thetaWeights, flow(ispecies,:,izeta)*levels(1)%BHat(:,izeta) * levels(1)%sqrt_g(:,izeta))
 
              FSAPressurePerturbation(ispecies) = FSAPressurePerturbation(ispecies) + zetaWeights(izeta) &
-                  * dot_product(thetaWeights, pressurePerturbation(ispecies,:,izeta) * level(1)%sqrt_g(:,izeta))
+                  * dot_product(thetaWeights, pressurePerturbation(ispecies,:,izeta) * levels(1)%sqrt_g(:,izeta))
 
              particleFlux_vm0_psiHat(ispecies) = particleFlux_vm0_psiHat(ispecies) + zetaWeights(izeta) &
                   * dot_product(thetaWeights, particleFluxBeforeSurfaceIntegral_vm0(ispecies,:,izeta))

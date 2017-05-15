@@ -1,10 +1,3 @@
-#include "PETScVersions.F90"
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscdmdadef.h>
-#else
-#include <petsc/finclude/petscdmdadef.h>
-#endif
-
   subroutine create_single_grids()
 
     use kinds
@@ -16,15 +9,12 @@
 
     implicit none
 
-    PetscErrorCode :: ierr
-    integer :: i, j, k, itheta, izeta, ispecies, scheme
+    integer :: i, j, ispecies, scheme, quadrature_option
     real(prec), dimension(:), allocatable :: xWeightsPotentials
     real(prec), dimension(:), allocatable :: xWeights_plus1
     real(prec), dimension(:,:), allocatable :: ddx_plus1, d2dx2_plus1
     real(prec), dimension(:,:), allocatable :: interpolateXToXPotentials_plus1, extrapMatrix
-    real(prec), dimension(:), allocatable :: x_subset, xWeights_subset
-    real(prec), dimension(:,:), allocatable :: ddx_subset, d2dx2_subset
-    real(prec) :: temp, Delta_zeta, v_s
+    real(prec) :: v_s
 
     ! *******************************************************************************
     ! Build x grids, integration weights, and differentiation matrices.

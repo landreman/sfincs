@@ -9,8 +9,8 @@ subroutine restriction_prolongation_matrices(fine_level)
 
   use petscmat
   use indices
-  use globalVariables, only: levels, multigrid_restriction_matrices, multigrid_prolongation_matrices, numProcs, one, constraint_option, &
-       pi, zetaMax, masterProc
+  use globalVariables, only: levels, multigrid_restriction_matrices, multigrid_prolongation_matrices, numProcs, one, constraintScheme, &
+       pi, zetaMax, masterProc, Nspecies, Nx, procThatHandlesConstraints
 
   implicit none
 
@@ -26,7 +26,7 @@ subroutine restriction_prolongation_matrices(fine_level)
   PetscScalar :: theta_value, zeta_value, xi_value
   PetscErrorCode :: ierr
   Vec :: row_sums
-  integer :: num_rows, num_cols, j, nnz_per_row
+  integer :: num_rows, num_cols, j, nnz_per_row, ix, ispecies
   character(len=100) :: filename
   PetscViewer :: viewer
 
@@ -82,12 +82,37 @@ subroutine restriction_prolongation_matrices(fine_level)
   else
      call MatMPIAIJSetPreallocation(multigrid_prolongation_matrices(fine_level), nnz_per_row, PETSC_NULL_INTEGER, nnz_per_row, PETSC_NULL_INTEGER, ierr)
   end if
-  ! Transfer the source/constraint element at the end by itself:
-  if (constraint_option==1) then
-     ! Remember -1 since PETSc uses 0-based indices
-     call MatSetValue(multigrid_prolongation_matrices(fine_level), levels(fine_level)%matrixSize-1, levels(coarse_level)%matrixSize-1, &
-          one, ADD_VALUES, ierr)
+
+  ! Transfer the source/constraint elements without change:
+  if (procThatHandlesConstraints) then
+     select case (constraintScheme)
+     case (0)
+        ! Nothing to do in this case.
+     case (1,3,4)
+        do ispecies = 1,Nspecies
+           call MatSetValue(multigrid_prolongation_matrices(fine_level), &
+                getIndex(  fine_level, ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT), &
+                getIndex(coarse_level, ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT), &
+                one, ADD_VALUES, ierr)
+           call MatSetValue(multigrid_prolongation_matrices(fine_level), &
+                getIndex(  fine_level, ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT), &
+                getIndex(coarse_level, ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT), &
+                one, ADD_VALUES, ierr)
+        end do
+     case (2)
+        do ispecies = 1,Nspecies
+           do ix = 1,Nx
+              call MatSetValue(multigrid_prolongation_matrices(fine_level), &
+                   getIndex(  fine_level, ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT), &
+                   getIndex(coarse_level, ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT), &
+                   one, ADD_VALUES, ierr)
+           end do
+        end do
+     case default
+        stop "Should not get here!"
+     end select
   end if
+
   ! Now populate the 3D prolongation matrix.
   ! Parallelize the looping over rows (fine grid) but not the looping over columns (coarse grid)
   do itheta_coarse = 1,Ntheta_coarse
@@ -102,10 +127,14 @@ subroutine restriction_prolongation_matrices(fine_level)
                  do ixi_fine = 1,Nxi_fine
                     xi_value = xi_prolongation(ixi_fine, ixi_coarse)
                     if (abs(xi_value)>1e-12) then
-                       call MatSetValue(multigrid_prolongation_matrices(fine_level), &
-                            getIndex(fine_level, itheta_fine, izeta_fine, ixi_fine), &
-                            getIndex(coarse_level, itheta_coarse, izeta_coarse, ixi_coarse), &
-                            theta_value*zeta_value*xi_value, ADD_VALUES, ierr)
+                       do ispecies = 1,Nspecies
+                          do ix = 1,Nx
+                             call MatSetValue(multigrid_prolongation_matrices(fine_level), &
+                                  getIndex(  fine_level, ispecies, ix, ixi_fine,   itheta_fine,   izeta_fine,   BLOCK_F), &
+                                  getIndex(coarse_level, ispecies, ix, ixi_coarse, itheta_coarse, izeta_coarse, BLOCK_F), &
+                                  theta_value*zeta_value*xi_value, ADD_VALUES, ierr)
+                          end do
+                       end do
                     end if
                  end do
               end do

@@ -288,7 +288,70 @@ contains
              end if
           end do
        end do
+
+       allocate(levels(level)%spatial_scaling(Ntheta,Nzeta))
+       select case (spatial_scaling_option)
+       case (1)
+          if (Nzeta==1) then
+             levels(level)%spatial_scaling = abs(levels(level)%BHat / levels(level)%BHat_sup_theta)
+          else
+             levels(level)%spatial_scaling = abs(levels(level)%BHat / levels(level)%BHat_sup_zeta)
+          end if
+       case (2)
+          if (Nzeta==1) then
+             levels(level)%spatial_scaling = abs( (levels(level)%theta(2)-levels(level)%theta(1)) * levels(level)%BHat / levels(level)%BHat_sup_theta )
+          else
+             levels(level)%spatial_scaling = abs( (levels(level)%zeta(2) - levels(level)%zeta(1)) * levels(level)%BHat / levels(level)%BHat_sub_zeta  )
+          end if
+       case (3)
+          if (Nzeta==1) then
+             levels(level)%spatial_scaling = abs(levels(level)%BHat / levels(level)%BHat_sup_theta)
+          else
+             levels(level)%spatial_scaling = abs(levels(level)%BHat / levels(level)%BHat_sup_zeta)
+          end if
+          ! Try the level's local Ntheta and Nzeta:
+          levels(level)%spatial_scaling = sum(levels(level)%spatial_scaling)/(levels(level)%Ntheta * levels(level)%Nzeta)
+          stop "Need to decide whether to use the level or fine Ntheta and Nzeta"
+       case (4)
+          if (Nzeta==1) then
+             levels(level)%spatial_scaling = abs( (levels(level)%theta(2)-levels(level)%theta(1)) * levels(level)%BHat / levels(level)%BHat_sup_theta )
+          else
+             levels(level)%spatial_scaling = abs( (levels(level)%zeta(2) - levels(level)%zeta(1)) * levels(level)%BHat / levels(level)%BHat_sub_zeta  )
+          end if
+          ! Try the level's local Ntheta and Nzeta:
+          levels(level)%spatial_scaling = sum(levels(level)%spatial_scaling)/(levels(level)%Ntheta * levels(level)%Nzeta)
+          stop "Need to decide whether to use the level or fine Ntheta and Nzeta"
+       case (5)
+          if (Nzeta==1) then
+             levels(level)%spatial_scaling = abs(levels(level)%BHat / levels(level)%BHat_sup_theta)
+          else
+             levels(level)%spatial_scaling = abs(levels(level)%BHat / levels(level)%BHat_sup_zeta)
+          end if
+          ! Try the global Ntheta and Nzeta:
+          levels(level)%spatial_scaling = sum(levels(level)%spatial_scaling)/(Ntheta * Nzeta)
+          stop "Need to decide whether to use the level or fine Ntheta and Nzeta"
+       case (6)
+          if (Nzeta==1) then
+             levels(level)%spatial_scaling = abs( (levels(level)%theta(2)-levels(level)%theta(1)) * levels(level)%BHat / levels(level)%BHat_sup_theta )
+          else
+             levels(level)%spatial_scaling = abs( (levels(level)%zeta(2) - levels(level)%zeta(1)) * levels(level)%BHat / levels(level)%BHat_sub_zeta  )
+          end if
+          ! Try the global Ntheta and Nzeta:
+          levels(level)%spatial_scaling = sum(levels(level)%spatial_scaling)/(Ntheta * Nzeta)
+          stop "Need to decide whether to use the level or fine Ntheta and Nzeta"
+       case default
+          if (masterProc) print *,"Error! Invalid spatial_scaling_option:",spatial_scaling_option
+          stop
+       end select
+
+!!$    if (masterProc) then
+!!$       print *,"Here comes spatial_scaling:"
+!!$       print *,spatial_scaling
+!!$    end if
+
     end do
+
+    call compute_B_integrals()
 
   end subroutine evaluate_B_on_grids
 
@@ -300,18 +363,20 @@ contains
 
     implicit none
 
-    integer :: j
+    integer :: j, i
     integer :: fileUnit, didFileAccessWork
     character(len=200) :: lineOfFile
     integer, dimension(4) :: headerIntegers
     real(prec), dimension(3) :: headerReals
     real(prec), dimension(6) :: surfHeader
-    real(prec), dimension(4) :: dataNumbers
+    real(prec), dimension(7) :: dataNumbers
     real(prec), dimension(8) :: data8Numbers
     integer, dimension(2) :: dataIntegers
-    integer :: modeind, numB0s
-    logical :: end_of_file, proceed, include_mn, nearbyRadiiGiven, nonStelSym
-    real(prec) :: DeltapsiHat
+    integer :: modeind, numB0s, num_surfaces_read
+    logical :: end_of_file, proceed
+    real(prec) :: DeltapsiHat, R0
+    real(prec), dimension(2) :: GHat_surfaces, IHat_surfaces, iota_surfaces, pPrimeHat_surfaces, rN_surfaces
+    real(prec), dimension(2) :: B0_surfaces, R0_surfaces
 
     ! For the BHarmonics_parity array, 
     ! true indicates the contribution to B(theta,zeta) has the form
@@ -523,9 +588,9 @@ contains
        iota_surfaces = 0
        GHat_surfaces = 0
        IHat_surfaces = 0
-       B0 = 0
-       R0 = 0
-       pPrimeHat = 0
+       B0_surfaces = 0
+       R0_surfaces = 0
+       pPrimeHat_surfaces = 0
        num_surfaces_read = 0
 
        ! Skip a line
@@ -537,21 +602,22 @@ contains
           ! Set new surface 3 equal to previous surface 2,
           ! then set new surface 2 equal to previous surface 1:
           do j = 1,1 ! Eventually I may want to change this to include 3 surfaces
+             modes_parity(1:num_modes(j),j+1) = modes_parity(1:num_modes(j),j)
              modes_l(1:num_modes(j),j+1) = modes_l(1:num_modes(j),j)
              modes_n(1:num_modes(j),j+1) = modes_n(1:num_modes(j),j)
              modes_B(1:num_modes(j),j+1) = modes_B(1:num_modes(j),j)
              modes_R(1:num_modes(j),j+1) = modes_R(1:num_modes(j),j)
              modes_Z(1:num_modes(j),j+1) = modes_Z(1:num_modes(j),j)
-             modes_zeta_shift(1:num_modes(j),j+1) = modes_zeta_shift(1:num_modes(j),j)
+             modes_delta_zeta(1:num_modes(j),j+1) = modes_delta_zeta(1:num_modes(j),j)
              iota_surfaces(j+1) = iota_surfaces(j)
              GHat_surfaces(j+1) = GHat_surfaces(j)
              IHat_surfaces(j+1) = IHat_surfaces(j)
              pPrimeHat_surfaces(j+1) = pPrimeHat_surfaces(j)
              rN_surfaces(j+1) = rN_surfaces(j)
-             num_modes_(j+1) = num_modes(j)
+             num_modes(j+1) = num_modes(j)
+             B0_surfaces(j+1) = B0_surfaces(j)
+             R0_surfaces(j+1) = R0_surfaces(j)
           end do
-          B0 = 0
-          R0 = 0
           numB0s = 0
 
           ! Skip a line:
@@ -586,11 +652,11 @@ contains
                 read(unit=lineOfFile, fmt=*) dataIntegers, dataNumbers
                 if (dataIntegers(1) == 0 .and. dataIntegers(2) == 0) then
                    if (geometryScheme==11) then
-                      B0 = dataNumbers(4)
+                      B0_surfaces(1) = dataNumbers(4)
                    else
-                      B0 = dataNumbers(7)
+                      B0_surfaces(1) = dataNumbers(7)
                    end if
-                   R0 = dataNumbers(1)
+                   R0_surfaces(1) = dataNumbers(1)
                    numB0s = numB0s + 1
                 else if (abs(dataNumbers(4)) > min_Bmn_to_load) then
                    if (modeind + 2 > max_num_modes) then
@@ -609,20 +675,20 @@ contains
                    else
                       ! geometryScheme==12
                       modeind = modeind + 1
-                      modes_l(modeind) = dataIntegers(1)
-                      modes_n(modeind) = dataIntegers(2)
-                      modes_R(modeind) = data8Numbers(1) !Cosinus component
-                      modes_Z(modeind) = data8Numbers(4) !Sinus component
-                      modes_delta_zeta(modeind)= data8Numbers(6) !Sinus component
-                      modes_B(modeind) = data8Numbers(7) !Cosinus component
+                      modes_l(modeind,1) = dataIntegers(1)
+                      modes_n(modeind,1) = dataIntegers(2)
+                      modes_R(modeind,1) = data8Numbers(1) !Cosinus component
+                      modes_Z(modeind,1) = data8Numbers(4) !Sinus component
+                      modes_delta_zeta(modeind,1)= data8Numbers(6) !Sinus component
+                      modes_B(modeind,1) = data8Numbers(7) !Cosinus component
                       modeind = modeind + 1
-                      modes_l(modeind) = dataIntegers(1)
-                      modes_n(modeind) = dataIntegers(2)
-                      modes_R(modeind) = data8Numbers(2) !Sinus component
-                      modes_Z(modeind) = data8Numbers(3) !Cosinus component
-                      modes_delta_zeta(modeind)= data8Numbers(5) !Cosinus component
-                      modes_B(modeind) = data8Numbers(8) !Sinus component
-                      modes_parity(modeind) = .false.
+                      modes_l(modeind,1) = dataIntegers(1)
+                      modes_n(modeind,1) = dataIntegers(2)
+                      modes_R(modeind,1) = data8Numbers(2) !Sinus component
+                      modes_Z(modeind,1) = data8Numbers(3) !Cosinus component
+                      modes_delta_zeta(modeind,1)= data8Numbers(5) !Cosinus component
+                      modes_B(modeind,1) = data8Numbers(8) !Sinus component
+                      modes_parity(modeind,1) = .false.
                    end if
                 end if
              end if
@@ -633,14 +699,14 @@ contains
              print *,"Error: more than 1 (0,0) mode found in magnetic equilibrium file ",equilibriumFile
           end if
           num_modes(1) = modeind
-          num_surfaces_read = num_surface_read + 1
+          num_surfaces_read = num_surfaces_read + 1
        end do
 
 
        close(unit = fileUnit)
        if (masterProc) print *,"Successfully read magnetic equilibrium from file ",trim(equilibriumFile)
 
-       DeltapsiHat = psiAHat * (rN_surface(1)*rN_surface(1) - rN_surface(2)*rN_surface(2))
+       DeltapsiHat = psiAHat * (rN_surfaces(1)*rN_surfaces(1) - rN_surfaces(2)*rN_surfaces(2))
 
        if (num_surfaces_read==0) then
           if (masterProc) print *,"Error! No surfaces found in equilibrium file ",trim(equilibriumFile)
@@ -723,11 +789,12 @@ contains
 
     integer :: level, isurf, iln, itheta, izeta, l, n
     real(prec) :: angle, sinangle, cosangle
+    logical :: include_ln
 
     do level = 1,N_levels
 
        ! Initialize arrays that are set by sums in the loops below:
-       levels(level)%BHat = 0
+       levels(level)%BHat = B0OverBBar
        levels(level)%dBHatdtheta = 0
        levels(level)%dBHatdzeta = 0
 
@@ -735,20 +802,20 @@ contains
           do iln = 1,num_modes(isurf)
              l = modes_l(iln,isurf)
              n = modes_n(iln,isurf)
-             include_mn = .false.
-             if ((abs(n)<=int(Nzeta/2.0)).and.(abs(l)<=int(Ntheta/2.0))) include_mn = .true.
+             include_ln = .false.
+             if ((abs(n)<=int(Nzeta/2.0)).and.(abs(l)<=int(Ntheta/2.0))) include_ln = .true.
              if ((.not. modes_parity(iln,isurf)) .and. (l==0 .or. real(abs(l))==Ntheta/2.0)) then
-                if (l==0 .or. abs(real(n))==Nzeta/2.0 ) include_mn=.false.
+                if (l==0 .or. abs(real(n))==Nzeta/2.0 ) include_ln=.false.
              end if
-             if (Nzeta==1) include_mn = .true.
+             if (Nzeta==1) include_ln = .true.
              if (level==1 .and. masterProc) then
-                if (include_mn) then
-                   print *,"Including the mode with l=",l," m=",m" isurf=",isurf
+                if (include_ln) then
+                   print *,"Including the mode with l=",l," n=",n," isurf=",isurf
                 else
-                   print *,"NOT including the mode with l=",l," m=",m" isurf=",isurf
+                   print *,"NOT including the mode with l=",l," n=",n," isurf=",isurf
                 end if
              end if
-             if (include_mn) then
+             if (include_ln) then
                 do itheta = 1,levels(level)%Ntheta
                    do izeta = 1,levels(level)%Nzeta
                       angle = l * levels(level)%theta(itheta) - NPeriods * n * levels(level)%zeta(izeta)
@@ -785,7 +852,7 @@ contains
        ! Set the Jacobian and various other components of B:
        levels(level)%sqrt_g = (GHat + iota * IHat) / (levels(level)%BHat ** 2)
        levels(level)%BHat_sup_theta = iota / levels(level)%sqrt_g
-       levels(level)%BHat_sup_zeta = 1/level(level)%sqrt_g
+       levels(level)%BHat_sup_zeta = 1/levels(level)%sqrt_g
        levels(level)%BHat_sub_theta = IHat
        levels(level)%BHat_sub_zeta = GHat
 
@@ -823,13 +890,13 @@ contains
 
   ! -----------------------------------------------------------------------------------------
 
-  subroutine init_B_Fourier_modes_VMEC
+  subroutine load_B_Fourier_modes_VMEC
 
     implicit none
 
     real(prec), dimension(:), allocatable :: dr2, psiN_full, psiN_half
     integer :: i, j, index
-    real(prec) :: min_dr2, b, temp, dphi, dpsi
+    real(prec) :: min_dr2, dphi
 
     ! This subroutine is written so that only psiN_wish is used, not the other *_wish quantities.
 
@@ -1047,7 +1114,7 @@ contains
     deallocate(psiN_full)
     deallocate(psiN_half)
 
-  end subroutine init_B_Fourier_modes_VMEC
+  end subroutine load_B_Fourier_modes_VMEC
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1057,8 +1124,8 @@ contains
 
     integer :: level
     real(prec), dimension(:), allocatable :: vmec_dBHatdpsiHat, vmec_dBHat_sub_theta_dpsiHat, vmec_dBHat_sub_zeta_dpsiHat
-    integer :: i, j, isurf, itheta, izeta, m, n
-    real(prec) :: angle, sin_angle, cos_angle, b, b00, temp, dphi, dpsi
+    integer :: isurf, itheta, izeta, m, n
+    real(prec) :: angle, sin_angle, cos_angle, b, b00, temp, dpsi
     integer :: numSymmetricModesIncluded, numAntisymmetricModesIncluded
     real(prec) :: scale_factor
 
@@ -1122,7 +1189,7 @@ contains
                   + vmec%bmnc(n,m,vmecRadialIndex_half(2)) * vmecRadialWeight_half(2)
 
              ! Set scale_factor to rippleScale for non-axisymmetric or non-quasisymmetric modes
-             scaleFactor = set_scale_factor(n,m)
+             scale_factor = set_scale_factor(n,m)
              b = b*scale_factor
 
              if (abs(b/b00) >= min_Bmn_to_load) then

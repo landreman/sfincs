@@ -5,10 +5,14 @@
 #include <petsc/finclude/petscdmdadef.h>
 #endif
 
-  subroutine createGrids(level)
+  subroutine create_multigrid_grids(level)
 
     use kinds
-    use globalVariables, Ntheta_fine => Ntheta, Nzeta_fine => Nzeta, Nxi_fine => Nxi, matrixSize_fine => matrixSize
+    use globalVariables, Ntheta_fine => Ntheta, theta_fine => theta, thetaWeights_fine => thetaWeights, &
+         Nzeta_fine => Nzeta, zeta_fine => zeta, zetaWeights_fine => zetaWeights, &
+         Nxi_fine => Nxi, xi_fine => xi, xiWeights_fine => xiWeights
+!         theta_fine => theta, ddtheta_plus_fine => ddtheta_plus, ddtheta_minus_fine => ddzeta_fine => zeta, xi_fine => xi, 
+!    use globalVariables
     use polynomialDiffMatrices
     use xGrid
     use petscdmda
@@ -21,19 +25,12 @@
     integer, intent(in) :: level
 
     PetscErrorCode :: ierr
-    integer :: i, j, k, itheta, izeta, ispecies, scheme, L
+    integer :: i, j, k, L, localNtheta, localNzeta
     real(prec), dimension(:,:), allocatable :: d2dtheta2, d2dzeta2, ddxi, d2dxi2
-    real(prec), dimension(:), allocatable :: xWeightsPotentials
-
-    real(prec), dimension(:), allocatable :: xWeights_plus1
-    real(prec), dimension(:,:), allocatable :: ddx_plus1, d2dx2_plus1
-    real(prec), dimension(:,:), allocatable :: interpolateXToXPotentials_plus1, extrapMatrix
-    real(prec), dimension(:), allocatable :: x_subset, xWeights_subset
-    real(prec), dimension(:,:), allocatable :: ddx_subset, d2dx2_subset
-    real(prec) :: temp, Delta_zeta, v_s
+    real(prec) :: temp
     real(prec), dimension(:), allocatable :: xi_to_Legendre
     real(prec), dimension(:,:), allocatable :: d2dy2, ddy, ddy_plus, ddy_minus
-    real(prec), dimension(:), allocatable :: y, y_dummy, yWeights_dummy, yWeights, dxi_dy, d2xi_dy2
+    real(prec), dimension(:), allocatable :: y_dummy, yWeights_dummy, yWeights, dxi_dy, d2xi_dy2
     real(prec), dimension(:,:), allocatable :: Legendre_polynomials
 
     DM :: myDM
@@ -48,10 +45,9 @@
     real(prec) :: nonuniform_xi_a = 0.7, nonuniform_xi_b = 0.3 ! b=1-a
 
     ! For convenience, use some short variable names to refer to quantities on this level:
-    integer, pointer :: Ntheta, Nzeta, Nxi, matrixSize
+    integer, pointer :: Ntheta, Nzeta, Nxi
     integer, pointer :: ithetaMin, ithetaMax, izetaMin, izetaMax
     PetscScalar, dimension(:), pointer :: theta, zeta, xi, thetaWeights, zetaWeights, xiWeights, y
-    PetscScalar, dimension(:,:), pointer :: B, dBdtheta, dBdzeta
     PetscScalar, dimension(:,:), pointer :: ddtheta_plus, ddtheta_minus, ddtheta_plus_preconditioner, ddtheta_minus_preconditioner
     PetscScalar, dimension(:,:), pointer :: ddzeta_plus, ddzeta_minus, ddzeta_plus_preconditioner, ddzeta_minus_preconditioner
     PetscScalar, dimension(:,:), pointer :: ddxi_plus, ddxi_minus, ddxi_plus_preconditioner, ddxi_minus_preconditioner
@@ -61,16 +57,12 @@
     Ntheta => levels(level)%Ntheta
     Nzeta  => levels(level)%Nzeta
     Nxi    => levels(level)%Nxi
-    matrixSize => levels(level)%matrixSize
     ithetaMin => levels(level)%ithetaMin
     ithetaMax => levels(level)%ithetaMax
     izetaMin  => levels(level)%izetaMin
     izetaMax  => levels(level)%izetaMax
     
     if (masterProc) print "(a,i3,a)"," ---- Initializing grids for multigrid level",level,"----"
-    matrixSize = Ntheta*Nzeta*Nxi
-    if (constraint_option==1) matrixSize = matrixSize + 1
-    if (masterProc) print *,"matrixSize:",matrixSize
 
     ! *******************************************************************************
     ! *******************************************************************************
@@ -426,7 +418,7 @@
     allocate(levels(level)%ddzeta_minus(Nzeta,Nzeta))
     allocate(levels(level)%ddzeta_plus_preconditioner(Nzeta,Nzeta))
     allocate(levels(level)%ddzeta_minus_preconditioner(Nzeta,Nzeta))
-    allocate(levels(level)%d2dzeta2(Nzeta,Nzeta))
+    allocate(d2dzeta2(Nzeta,Nzeta))
 
     zeta => levels(level)%zeta
     zetaWeights  => levels(level)%zetaWeights
@@ -1195,43 +1187,15 @@
 
     allocate(levels(level)%gradpsidotgradB_overgpsipsi(Ntheta,Nzeta))
 
-    allocate(levels(level)%spatial_scaling(Ntheta,Nzeta))
-    select case (spatial_scaling_option)
-    case (1)
-       if (Nzeta==1) then
-          levels(level)%spatial_scaling = abs(BHat / BHat_sup_theta)
-       else
-          levels(level)%spatial_scaling = abs(BHat / BHat_sup_zeta)
-       end if
-    case (2)
-       if (Nzeta==1) then
-          levels(level)%spatial_scaling = abs( (theta(2)-theta(1)) * BHat / BHat_sup_theta )
-       else
-          levels(level)%spatial_scaling = abs( (zeta(2) - zeta(1)) * BHat / BHat_sub_zeta  )
-       end if
-    case (3)
-       if (Nzeta==1) then
-          levels(level)%spatial_scaling = abs(BHat / BHat_sup_theta)
-       else
-          levels(level)%spatial_scaling = abs(BHat / BHat_sup_zeta)
-       end if
-       levels(level)%spatial_scaling = sum(levels(level)%spatial_scaling)/(Ntheta*Nzeta)
-    case (4)
-       if (Nzeta==1) then
-          levels(level)%spatial_scaling = abs( (theta(2)-theta(1)) * BHat / BHat_sup_theta )
-       else
-          levels(level)%spatial_scaling = abs( (zeta(2) - zeta(1)) * BHat / BHat_sub_zeta  )
-       end if
-       levels(level)%spatial_scaling = sum(levels(level)%spatial_scaling)/(Ntheta*Nzeta)
-    case default
-       if (masterProc) print *,"Error! Invalid spatial_scaling_option:",spatial_scaling_option
-       stop
-    end select
 
-!!$    if (masterProc) then
-!!$       print *,"Here comes spatial_scaling:"
-!!$       print *,spatial_scaling
-!!$    end if
+    if (level==1) then
+       theta_fine = theta
+       zeta_fine = zeta
+       xi_fine = xi
+       thetaWeights_fine = thetaWeights
+       zetaWeights_fine = zetaWeights
+       xiWeights_fine = xiWeights
+    end if
 
 
     if (masterProc) then
@@ -1266,4 +1230,4 @@
       compute_d2xi_dy2 = 20*nonuniform_xi_b * (yy ** 3)
     end function compute_d2xi_dy2
     
-  end subroutine createGrids
+  end subroutine create_multigrid_grids

@@ -22,7 +22,7 @@
     PetscScalar :: scalar
     real(prec) :: x_part, factor, x_part_2, species_factor
     integer :: ix, ixi, L, itheta, izeta, ispecies, index
-    real(prec) :: THat, mHat, sqrtTHat, sqrtmHat, dfMdx
+    real(prec) :: THat, mHat, sqrtTHat, sqrtmHat
     Mat :: residualMatrix
     real(prec) :: dPhiHatdpsiHatToUseInRHS
     PetscReal :: norm
@@ -154,8 +154,8 @@
     if (includePhi1 .and. quasineutralityOption == 1) then
        stop "This section not ready yet for the theta_finiteDiffXi version"
        L=0
-       do itheta = ithetaMin,ithetaMax
-          do izeta = izetaMin,izetaMax
+       do itheta = levels(1)%ithetaMin,levels(1)%ithetaMax
+          do izeta = levels(1)%izetaMin,levels(1)%izetaMax
              index = getIndex(1,1, 1, 1, itheta, izeta, BLOCK_QN)
 
              factor = 0
