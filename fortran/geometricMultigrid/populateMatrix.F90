@@ -161,7 +161,7 @@
        whichMatrixName = "smoother"
     case default
        if (masterProc) then
-          print *,"Error! whichMatrix must be 0, 1, 2, or 3."
+          print *,"Error! whichMatrix must be an integer in the range [0,4]."
        end if
        stop
     end select
@@ -295,7 +295,7 @@
                       end select
                       factor = factor * levels(level)%spatial_scaling(itheta,izeta_row) * x_scaling(ix,ispecies)
 
-                      if (whichMatrix>0) then
+                      if (whichMatrix == 1 .or. whichMatrix==3) then
                          ! Not preconditioner
                          if (factor>0) then
                             ddzeta_to_use => levels(level)%ddzeta_plus
@@ -346,7 +346,7 @@
                       end select
                       factor = factor * levels(level)%spatial_scaling(itheta_row,izeta) * x_scaling(ix,ispecies)
 
-                      if (whichMatrix>0) then
+                      if (whichMatrix==1 .or. whichMatrix==3) then
                          ! Not preconditioner
                          if (factor>0) then
                             ddtheta_to_use => levels(level)%ddtheta_plus
@@ -396,7 +396,7 @@
                       end if
                       factor = factor * levels(level)%spatial_scaling(itheta,izeta) * x_scaling(ix,ispecies)
 
-                      if (whichMatrix>0) then
+                      if (whichMatrix==1 .or. whichMatrix==3) then
                          ! Not preconditioner
                          if (factor>0) then
                             ddxi_to_use => levels(level)%ddxi_plus
@@ -439,7 +439,7 @@
                 do ix_row = 1,Nx
                    do ixi = 1,Nxi
                       factor = spatial_factor * x_scaling(ix_row,ispecies) * x(ix_row) * (1 + xi(ixi)*xi(ixi))
-                      if (whichMatrix>0) then
+                      if (whichMatrix==1 .or. whichMatrix==3) then
                          ! Not preconditioner
                          ddx_to_use => ddx
                       else
@@ -1023,21 +1023,21 @@
           ! *****************************************************************
 
           allocate(collision_operator_xi_block(Nxi,Nxi))
-          if (whichMatrix==0) then
-             pitch_angle_scattering_operator_to_use => levels(level)%pitch_angle_scattering_operator_preconditioner
-          else
+          if (whichMatrix==1 .or. whichMatrix==2 .or. whichMatrix==3) then
              pitch_angle_scattering_operator_to_use => levels(level)%pitch_angle_scattering_operator
+          else
+             pitch_angle_scattering_operator_to_use => levels(level)%pitch_angle_scattering_operator_preconditioner
           end if
 
           if (NL>0) then
              allocate(Legendre_projection_to_use(Nxi,Nxi,NL))
-             if (whichMatrix==0 .and. preconditioner_field_term_xi_option==1) then
+             if ((whichMatrix==0 .or. whichMatrix==4) .and. preconditioner_field_term_xi_option==1) then
                 ! Keep only the part that is diagonal in xi.
                 Legendre_projection_to_use = 0
                 do ixi = 1,Nxi
                    Legendre_projection_to_use(ixi,ixi,:) = levels(level)%Legendre_projection(ixi,ixi,:)
                 end do
-             elseif (whichMatrix==0 .and. preconditioner_field_term_xi_option==2) then
+             elseif ((whichMatrix==0 .or. whichMatrix==4) .and. preconditioner_field_term_xi_option==2) then
                 ! Keep only the part that is tridiagonal in xi.
                 Legendre_projection_to_use = 0
                 do ixi = 1,Nxi ! Handle diagonal
@@ -1054,7 +1054,7 @@
           end if
 
           do iSpeciesB = 1,Nspecies
-             if (whichMatrix==0 .and. preconditioner_species==1) then
+             if ((whichMatrix==0 .or. whichMatrix==4) .and. preconditioner_species==1) then
                 iSpecies_min = iSpeciesB
                 iSpecies_max = iSpeciesB
              else
@@ -1063,7 +1063,7 @@
              end if
              do iSpeciesA = iSpecies_min, iSpecies_max
                 do ix_row = 1,Nx
-                   if (whichMatrix==0.and. preconditioner_x==1) then
+                   if ((whichMatrix==0 .or. whichMatrix==4) .and. preconditioner_x==1) then
                       ix_min = ix_row
                       ix_max = ix_row
                    else
@@ -1077,7 +1077,7 @@
                          ! (These terms are diagonal in xi.)
                          collision_operator_xi_block(ixi,ixi) = CECD(iSpeciesA,iSpeciesB,ix_row,ix_col)
                       end do
-                      if (whichMatrix==0 .or. preconditioner_field_term_xi_option==0) then
+                      if (whichMatrix==0 .or. whichMatrix==4 .or. preconditioner_field_term_xi_option==0) then
                          ! Otherwise the field term will be added by apply_dense_terms.F90
                          do L = 0,NL-1
                             ! Add the terms in the field part involving the Rosenbluth potentials:
@@ -1127,10 +1127,10 @@
           ! Pure pitch-angle scattering collision operator
           ! *********************************************************
 
-          if (whichMatrix==0) then
-             pitch_angle_scattering_operator_to_use => levels(level)%pitch_angle_scattering_operator_preconditioner
-          else
+          if (whichMatrix==1 .or. whichMatrix==2 .or. whichMatrix==3) then
              pitch_angle_scattering_operator_to_use => levels(level)%pitch_angle_scattering_operator
+          else
+             pitch_angle_scattering_operator_to_use => levels(level)%pitch_angle_scattering_operator_preconditioner
           end if
 
           nuDHat = zero
@@ -1627,6 +1627,7 @@
        end if
        call PetscViewerASCIIOpen(MPIComm, trim(filename), viewer, ierr)
        call PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB, ierr)
+       !call PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_DEFAULT, ierr)
 
        call PetscObjectSetName(matrix, "matrix", ierr)
        call MatView(matrix, viewer, ierr)
@@ -1636,7 +1637,7 @@
 
     if (saveMatricesAndVectorsInBinary) then
        write (filename,fmt="(a,i3.3,a,i1,a,i2.2,a)") trim(binaryOutputFilename) // "_iteration_", iterationForMatrixOutput, &
-            "_whichMatrix_",whichMatrix,"_level_",level,".m"
+            "_whichMatrix_",whichMatrix,"_level_",level,".dat"
        if (masterProc) then
           print *,"Saving matrix in binary format: ",trim(filename)
        end if

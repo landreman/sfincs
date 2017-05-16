@@ -112,7 +112,7 @@ module solver
           didNonlinearCalculationConverge = integerToRepresentTrue
        end if
 
-
+       call SNESView(outer_snes, PETSC_VIEWER_STDOUT_WORLD, ierr)
        ! End of RHSMode=1 case, which handles a single linear or nonlinear solve.
 
     case (2,3)

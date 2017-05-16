@@ -422,7 +422,7 @@ module globalVariables
   type (multigrid_level), allocatable, dimension(:), target :: levels
 
   Mat, allocatable, dimension(:) :: multigrid_prolongation_matrices, multigrid_restriction_matrices
-  integer :: smoothing_option = 1
+  integer :: smoothing_option = 0
   integer :: coarsen_option = 1
   integer :: defect_option = 2
   logical :: coarsen_theta = .false.

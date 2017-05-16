@@ -732,7 +732,7 @@
        end do
        xiWeights = dxi_dy * yWeights
        ! Do some validation:
-       if (abs(sum(xiWeights)-2) > 1.0e-2) then
+       if (abs(sum(xiWeights)-2) > 4.0e-2) then
           if (masterProc) then
              print *,"Error! xiWeights do not sum to 2!"
              print *,"xiWeights:",xiWeights

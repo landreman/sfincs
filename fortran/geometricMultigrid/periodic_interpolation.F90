@@ -30,7 +30,12 @@ subroutine periodic_interpolation(N, M, period, y, matrix)
   ! Initialize matrix to 0:
   matrix=0d+0
 
-  if (N<2) stop "Error! Uniform grid x must contain at least 2 points."
+  if (N<1) stop "Error! Uniform grid x must contain at least 1 point."
+  if (N==1) then
+     ! This case occurs when forming the zeta interpolation matrix in axisymmetry.
+     matrix = 1
+     return
+  end if
   if (period<=0) stop "Error! Period must be > 0."
 
   allocate(x(N+1))
