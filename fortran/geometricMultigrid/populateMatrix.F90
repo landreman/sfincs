@@ -75,6 +75,7 @@
     real(prec), dimension(:,:), allocatable :: collision_operator_xi_block
     real(prec), dimension(:,:,:), allocatable :: Legendre_projection_to_use
     real(prec) :: Er_factor
+    Vec :: diagonal_vec
 
     ! For convenience, use some short variable names to refer to quantities on this level:
     integer :: Ntheta, Nzeta, Nxi, matrixSize
@@ -1615,6 +1616,12 @@
             ", mallocs:",NMallocs," (should be 0)"
     end if
 
+!!$    ! Print the matrix diagonal elements:
+!!$    call MatCreateVecs(matrix, PETSC_NULL_OBJECT, diagonal_vec, ierr)
+!!$    call MatGetDiagonal(matrix, diagonal_vec, ierr)
+!!$    call VecView(diagonal_vec, PETSC_VIEWER_STDOUT_WORLD, ierr)
+!!$    call VecDestroy(diagonal_vec, ierr)
+
     ! *******************************************************************************
     ! If requested, save the matrix.
     ! *******************************************************************************
@@ -1626,8 +1633,8 @@
           print *,"Saving matrix in matlab format: ",trim(filename)
        end if
        call PetscViewerASCIIOpen(MPIComm, trim(filename), viewer, ierr)
-       call PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB, ierr)
-       !call PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_DEFAULT, ierr)
+       !call PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB, ierr)
+       call PetscViewerSetFormat(viewer, PETSC_VIEWER_DEFAULT, ierr)
 
        call PetscObjectSetName(matrix, "matrix", ierr)
        call MatView(matrix, viewer, ierr)

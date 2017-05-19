@@ -63,7 +63,7 @@
     izetaMax  => levels(level)%izetaMax
     
     if (masterProc) print "(a,i3,a)"," ---- Initializing grids for multigrid level",level,"----"
-    describe_stencils = (masterProc .and. level==0)
+    describe_stencils = (masterProc .and. level==1)
 
     ! *******************************************************************************
     ! *******************************************************************************

@@ -121,7 +121,7 @@ contains
     case (10)
        print *,"Error! This geometryScheme has not been implemented yet."
 
-    case (11)
+    case (11,12)
        fileUnit = 11
        open(unit=fileUnit, file=equilibriumFile, action="read", status="old", iostat=didFileAccessWork)
        if (didFileAccessWork /= 0) then
@@ -154,40 +154,6 @@ contains
 
        !Switch from a left-handed to right-handed (radial,poloidal,toroidal) system
        psiAHat=psiAHat*(-1)           !toroidal direction sign switch
-
-    case (12)
-       fileUnit = 11
-       open(unit=fileUnit, file=equilibriumFile, action="read", status="old", iostat=didFileAccessWork)
-       if (didFileAccessWork /= 0) then
-          print *,"Unable to open magnetic equilibrium file."
-          stop
-       else
-          do
-             read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
-             ! Skip lines that begin with "CC":
-             if (lineOfFile(1:2) /= "CC") exit
-          end do
-
-          ! Read header line:
-          read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) headerIntegers, headerReals
-          if (didFileAccessWork /= 0) then
-             print *,"Unable to read header from the magnetic equilibrium file ",equilibriumFile
-             stop
-          end if
-
-          NPeriods = headerIntegers(4)
-          psiAHat  = headerReals(1)/2/pi !Convert the flux from Tm^2 to Tm^2/rad
-          aHat     = headerReals(2)      !minor radius in meters
-
-       end if
-
-       close(unit = fileUnit)
-       if (masterProc) then
-          print *,"Successfully opened magnetic equilibrium file ",trim(equilibriumFile),".  Nperiods = ",Nperiods
-       end if
-
-       !Switch from a left-handed to right-handed (radial,poloidal,toroidal) system
-       psiAHat=psiAHat*(-1)           !toroidal direction sign switch    
 
     case default
        print *,"Error! Invalid setting for geometryScheme."
@@ -289,65 +255,76 @@ contains
           end do
        end do
 
-       allocate(levels(level)%spatial_scaling(Ntheta,Nzeta))
+       ! Set up spatial scaling arrays:
+       allocate(levels(level)%spatial_scaling(levels(level)%Ntheta,levels(level)%Nzeta))
        select case (spatial_scaling_option)
        case (1)
+          ! Scale so the factor multiplying df/dzeta is O(1), meaning the matrix elements will be >>1.
+          ! The spatial_scaling array will not be constant.
           if (Nzeta==1) then
              levels(level)%spatial_scaling = abs(levels(level)%BHat / levels(level)%BHat_sup_theta)
           else
              levels(level)%spatial_scaling = abs(levels(level)%BHat / levels(level)%BHat_sup_zeta)
           end if
        case (2)
+          ! Scale so the matrix elements will be O(1) on level 1.
+          ! The spatial_scaling array will not be constant.
           if (Nzeta==1) then
-             levels(level)%spatial_scaling = abs( (levels(level)%theta(2)-levels(level)%theta(1)) * levels(level)%BHat / levels(level)%BHat_sup_theta )
+             levels(level)%spatial_scaling = abs( (levels(1)%theta(2)-levels(1)%theta(1)) * levels(level)%BHat / levels(level)%BHat_sup_theta )
           else
-             levels(level)%spatial_scaling = abs( (levels(level)%zeta(2) - levels(level)%zeta(1)) * levels(level)%BHat / levels(level)%BHat_sub_zeta  )
+             levels(level)%spatial_scaling = abs( (levels(1)%zeta(2) - levels(1)%zeta(1)) * levels(level)%BHat / levels(level)%BHat_sub_zeta  )
           end if
        case (3)
+          ! Scale so the factor multiplying df/dzeta is O(1), meaning the matrix elements will be >>1.
+          ! The spatial_scaling array will be constant.
           if (Nzeta==1) then
              levels(level)%spatial_scaling = abs(levels(level)%BHat / levels(level)%BHat_sup_theta)
           else
              levels(level)%spatial_scaling = abs(levels(level)%BHat / levels(level)%BHat_sup_zeta)
           end if
-          ! Try the level's local Ntheta and Nzeta:
+          ! Replace each array element with the mean:
           levels(level)%spatial_scaling = sum(levels(level)%spatial_scaling)/(levels(level)%Ntheta * levels(level)%Nzeta)
-          stop "Need to decide whether to use the level or fine Ntheta and Nzeta"
        case (4)
+          ! Scale so the matrix elements will be O(1) on level 1.
+          ! The spatial_scaling array will be constant.
           if (Nzeta==1) then
-             levels(level)%spatial_scaling = abs( (levels(level)%theta(2)-levels(level)%theta(1)) * levels(level)%BHat / levels(level)%BHat_sup_theta )
+             levels(level)%spatial_scaling = abs( (levels(1)%theta(2)-levels(1)%theta(1)) * levels(level)%BHat / levels(level)%BHat_sup_theta )
           else
-             levels(level)%spatial_scaling = abs( (levels(level)%zeta(2) - levels(level)%zeta(1)) * levels(level)%BHat / levels(level)%BHat_sub_zeta  )
+             levels(level)%spatial_scaling = abs( (levels(1)%zeta(2) - levels(1)%zeta(1)) * levels(level)%BHat / levels(level)%BHat_sub_zeta  )
           end if
-          ! Try the level's local Ntheta and Nzeta:
+          ! Replace each array element with the mean:
           levels(level)%spatial_scaling = sum(levels(level)%spatial_scaling)/(levels(level)%Ntheta * levels(level)%Nzeta)
-          stop "Need to decide whether to use the level or fine Ntheta and Nzeta"
        case (5)
-          if (Nzeta==1) then
-             levels(level)%spatial_scaling = abs(levels(level)%BHat / levels(level)%BHat_sup_theta)
-          else
-             levels(level)%spatial_scaling = abs(levels(level)%BHat / levels(level)%BHat_sup_zeta)
-          end if
-          ! Try the global Ntheta and Nzeta:
-          levels(level)%spatial_scaling = sum(levels(level)%spatial_scaling)/(Ntheta * Nzeta)
-          stop "Need to decide whether to use the level or fine Ntheta and Nzeta"
-       case (6)
+          ! Scale so the matrix elements will be O(1) on each level.
+          ! The spatial_scaling array will not be constant.
           if (Nzeta==1) then
              levels(level)%spatial_scaling = abs( (levels(level)%theta(2)-levels(level)%theta(1)) * levels(level)%BHat / levels(level)%BHat_sup_theta )
           else
              levels(level)%spatial_scaling = abs( (levels(level)%zeta(2) - levels(level)%zeta(1)) * levels(level)%BHat / levels(level)%BHat_sub_zeta  )
           end if
-          ! Try the global Ntheta and Nzeta:
-          levels(level)%spatial_scaling = sum(levels(level)%spatial_scaling)/(Ntheta * Nzeta)
-          stop "Need to decide whether to use the level or fine Ntheta and Nzeta"
+       case (6)
+          ! Scale so the matrix elements will be O(1) on each level.
+          ! The spatial_scaling array will be constant.
+          if (Nzeta==1) then
+             levels(level)%spatial_scaling = abs( (levels(level)%theta(2)-levels(level)%theta(1)) * levels(level)%BHat / levels(level)%BHat_sup_theta )
+          else
+             levels(level)%spatial_scaling = abs( (levels(level)%zeta(2) - levels(level)%zeta(1)) * levels(level)%BHat / levels(level)%BHat_sub_zeta  )
+          end if
+          ! Replace each array element with the mean:
+          levels(level)%spatial_scaling = sum(levels(level)%spatial_scaling)/(levels(level)%Ntheta * levels(level)%Nzeta)
        case default
           if (masterProc) print *,"Error! Invalid spatial_scaling_option:",spatial_scaling_option
           stop
        end select
 
-!!$    if (masterProc) then
-!!$       print *,"Here comes spatial_scaling:"
-!!$       print *,spatial_scaling
-!!$    end if
+       if (masterProc) then
+          print *,"Here comes spatial_scaling:"
+          do itheta=1,levels(level)%Ntheta
+             !print "(*(f5.2))",levels(level)%spatial_scaling(itheta,:)
+             print "(*(f6.3))",levels(level)%spatial_scaling(itheta,:)
+          end do
+          !print *,spatial_scaling
+       end if
 
     end do
 
@@ -369,8 +346,7 @@ contains
     integer, dimension(4) :: headerIntegers
     real(prec), dimension(3) :: headerReals
     real(prec), dimension(6) :: surfHeader
-    real(prec), dimension(7) :: dataNumbers
-    real(prec), dimension(8) :: data8Numbers
+    real(prec), dimension(8) :: dataNumbers
     integer, dimension(2) :: dataIntegers
     integer :: modeind, numB0s, num_surfaces_read
     logical :: end_of_file, proceed
@@ -649,7 +625,12 @@ contains
                 ! Next flux surface has been reached
                 proceed = .false.
              else
-                read(unit=lineOfFile, fmt=*) dataIntegers, dataNumbers
+                !print *,"lineOfFile:",lineOfFile
+                if (geometryScheme==11) then
+                   read(unit=lineOfFile, fmt=*) dataIntegers, dataNumbers(1:4)
+                else
+                   read(unit=lineOfFile, fmt=*) dataIntegers, dataNumbers
+                end if
                 if (dataIntegers(1) == 0 .and. dataIntegers(2) == 0) then
                    if (geometryScheme==11) then
                       B0_surfaces(1) = dataNumbers(4)
@@ -677,17 +658,17 @@ contains
                       modeind = modeind + 1
                       modes_l(modeind,1) = dataIntegers(1)
                       modes_n(modeind,1) = dataIntegers(2)
-                      modes_R(modeind,1) = data8Numbers(1) !Cosinus component
-                      modes_Z(modeind,1) = data8Numbers(4) !Sinus component
-                      modes_delta_zeta(modeind,1)= data8Numbers(6) !Sinus component
-                      modes_B(modeind,1) = data8Numbers(7) !Cosinus component
+                      modes_R(modeind,1) = dataNumbers(1) !Cosinus component
+                      modes_Z(modeind,1) = dataNumbers(4) !Sinus component
+                      modes_delta_zeta(modeind,1)= dataNumbers(6) !Sinus component
+                      modes_B(modeind,1) = dataNumbers(7) !Cosinus component
                       modeind = modeind + 1
                       modes_l(modeind,1) = dataIntegers(1)
                       modes_n(modeind,1) = dataIntegers(2)
-                      modes_R(modeind,1) = data8Numbers(2) !Sinus component
-                      modes_Z(modeind,1) = data8Numbers(3) !Cosinus component
-                      modes_delta_zeta(modeind,1)= data8Numbers(5) !Cosinus component
-                      modes_B(modeind,1) = data8Numbers(8) !Sinus component
+                      modes_R(modeind,1) = dataNumbers(2) !Sinus component
+                      modes_Z(modeind,1) = dataNumbers(3) !Cosinus component
+                      modes_delta_zeta(modeind,1)= dataNumbers(5) !Cosinus component
+                      modes_B(modeind,1) = dataNumbers(8) !Sinus component
                       modes_parity(modeind,1) = .false.
                    end if
                 end if
@@ -802,19 +783,21 @@ contains
           do iln = 1,num_modes(isurf)
              l = modes_l(iln,isurf)
              n = modes_n(iln,isurf)
-             include_ln = .false.
-             if ((abs(n)<=int(Nzeta/2.0)).and.(abs(l)<=int(Ntheta/2.0))) include_ln = .true.
-             if ((.not. modes_parity(iln,isurf)) .and. (l==0 .or. real(abs(l))==Ntheta/2.0)) then
-                if (l==0 .or. abs(real(n))==Nzeta/2.0 ) include_ln=.false.
-             end if
-             if (Nzeta==1) include_ln = .true.
-             if (level==1 .and. masterProc) then
-                if (include_ln) then
-                   print *,"Including the mode with l=",l," n=",n," isurf=",isurf
-                else
-                   print *,"NOT including the mode with l=",l," n=",n," isurf=",isurf
-                end if
-             end if
+             include_ln = .true.
+             ! The lines below cause problems with multigrid since they exclude many modes on the coarse meshes.
+!!$             include_ln = .false.
+!!$             if ((abs(n)<=int(Nzeta/2.0)).and.(abs(l)<=int(Ntheta/2.0))) include_ln = .true.
+!!$             if ((.not. modes_parity(iln,isurf)) .and. (l==0 .or. real(abs(l))==Ntheta/2.0)) then
+!!$                if (l==0 .or. abs(real(n))==Nzeta/2.0 ) include_ln=.false.
+!!$             end if
+!!$             if (Nzeta==1) include_ln = .true.
+!!$             if (level==1 .and. masterProc) then
+!!$                if (include_ln) then
+!!$                   print *,"Including the mode with l=",l," n=",n," isurf=",isurf
+!!$                else
+!!$                   print *,"NOT including the mode with l=",l," n=",n," isurf=",isurf
+!!$                end if
+!!$             end if
              if (include_ln) then
                 do itheta = 1,levels(level)%Ntheta
                    do izeta = 1,levels(level)%Nzeta
@@ -1441,11 +1424,11 @@ contains
        levels(level)%dBHat_sup_theta_dpsiHat = 0
        levels(level)%dBHat_sup_zeta_dpsiHat = 0
 
-       deallocate(vmec_dBHatdpsiHat)
-       deallocate(vmec_dBHat_sub_theta_dpsiHat)
-       deallocate(vmec_dBHat_sub_zeta_dpsiHat)
-
     end do
+
+    deallocate(vmec_dBHatdpsiHat)
+    deallocate(vmec_dBHat_sub_theta_dpsiHat)
+    deallocate(vmec_dBHat_sub_zeta_dpsiHat)
 
     if (masterProc) print *,"Successfully set geometry using VMEC file ",trim(equilibriumFile)
 
@@ -1497,31 +1480,30 @@ contains
        ! accurate on a uniform periodic grid, so a fine grid is not required.)
        GHat = dot_product(levels(1)%thetaWeights, matmul(levels(1)%BHat_sub_zeta,  levels(1)%zetaWeights)) / (4*pi*pi)
        IHat = dot_product(levels(1)%thetaWeights, matmul(levels(1)%BHat_sub_theta, levels(1)%zetaWeights)) / (4*pi*pi)
+    end if
 
-       if (RHSMode==3) then
-          ! Monoenergetic coefficient computation.
-          ! Overwrite nu_n and dPhiHatd* using nuPrime and EStar.
+    if (RHSMode==3) then
+       ! Monoenergetic coefficient computation.
+       ! Overwrite nu_n and dPhiHatd* using nuPrime and EStar.
 
-          ! 20170331 MJL: The absolute value below is needed to ensure the matrix remains diagonally dominant if GHat<0. If we use RHSMode=3 for a non-stellarator-symmetric plasma, the coefficients may not be independent of sgn(nu), so some thought should be given to the signs.
-          nu_n = abs(nuPrime * B0OverBBar / (GHat + iota * IHat))
-          dPhiHatdpsiHat = 2 / (gamma * Delta) * EStar * iota * B0OverBBar / GHat
+       ! 20170331 MJL: The absolute value below is needed to ensure the matrix remains diagonally dominant if GHat<0. If we use RHSMode=3 for a non-stellarator-symmetric plasma, the coefficients may not be independent of sgn(nu), so some thought should be given to the signs.
+       nu_n = abs(nuPrime * B0OverBBar / (GHat + iota * IHat))
+       dPhiHatdpsiHat = 2 / (gamma * Delta) * EStar * iota * B0OverBBar / GHat
+    end if
+
+    if (masterProc) then
+       print *,"---- Geometry parameters: ----"
+       print *,"Geometry scheme = ", geometryScheme
+       print *,"psiAHat (Normalized toroidal flux at the last closed flux surface) = ", psiAHat
+       print *,"aHat (Radius of the last closed flux surface in units of RHat) = ", aHat
+       if (geometryScheme==1) then
+          print *,"epsilon_t = ", epsilon_t
+          print *,"epsilon_h = ", epsilon_h
+          print *,"epsilon_antisymm = ", epsilon_antisymm
        end if
-
-       if (masterProc) then
-          print *,"---- Geometry parameters: ----"
-          print *,"Geometry scheme = ", geometryScheme
-          print *,"psiAHat (Normalized toroidal flux at the last closed flux surface) = ", psiAHat
-          print *,"aHat (Radius of the last closed flux surface in units of RHat) = ", aHat
-          if (geometryScheme==1) then
-             print *,"epsilon_t = ", epsilon_t
-             print *,"epsilon_h = ", epsilon_h
-             print *,"epsilon_antisymm = ", epsilon_antisymm
-          end if
-          print *,"GHat (Boozer component multiplying grad zeta) = ", GHat
-          print *,"IHat (Boozer component multiplying grad theta) = ", IHat
-          print *,"iota (Rotational transform) = ", iota
-       end if
-
+       print *,"GHat (Boozer component multiplying grad zeta) = ", GHat
+       print *,"IHat (Boozer component multiplying grad theta) = ", IHat
+       print *,"iota (Rotational transform) = ", iota
     end if
 
   end subroutine compute_B_integrals
