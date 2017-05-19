@@ -116,6 +116,19 @@ for directory in directories:
         print "Run in directory "+directory+" does not appear to have finished."
         continue
 
+    ##Section added by AM 2017-05 to check for nonlinear convergence##
+    Check_integerToRepresentTrue = (f["integerToRepresentTrue"][()])
+    Check_includePhi1 = (f["includePhi1"][()] == Check_integerToRepresentTrue)
+    if Check_includePhi1 :
+        try:
+            if (f["didNonlinearCalculationConverge"][()] != Check_integerToRepresentTrue):
+                print "The nonlinear solver in directory "+directory+" does not appear to have converged." 
+                continue
+        except KeyError:
+            print "The nonlinear solver in directory "+directory+" does not appear to have finished."
+            continue
+    ##################################################################
+
     print "Processing directory "+directory
 
     # The expression [()] converts from an h5py dataset to a numpy ndarray:
