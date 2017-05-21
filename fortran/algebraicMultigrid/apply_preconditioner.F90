@@ -150,10 +150,13 @@
 
              ! Set up the KSP for applying (c b)^{-1}:
              call KSPCreate(MPIComm, constraints_times_sources_KSP, ierr)
+             call KSPAppendOptionsPrefix(constraints_times_sources_KSP, 'constraints_times_sources_', ierr)
              call KSPSetType(constraints_times_sources_KSP, KSPPREONLY, ierr)
              call KSPGetPC(constraints_times_sources_KSP, constraints_times_sources_PC, ierr)
-             call PCSetType(constraints_times_sources_PC, PCLU, ierr)
+             !call PCSetType(constraints_times_sources_PC, PCLU, ierr)
+             call PCSetType(constraints_times_sources_PC, PCREDUNDANT, ierr)
              call KSPSetOperators(constraints_times_sources_KSP, constraints_times_sources_Mat, constraints_times_sources_Mat, ierr)
+             call KSPSetFromOptions(constraints_times_sources_KSP, ierr)
           end if
 
           if (verbose) then

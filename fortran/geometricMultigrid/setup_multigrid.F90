@@ -106,7 +106,7 @@
     call KSPGetPC(outer_KSP, outer_preconditioner, ierr)
     call PCSetType(outer_preconditioner, PCSHELL, ierr)
     call PCShellSetApply(outer_preconditioner, apply_preconditioner, ierr)
-    call KSPSetType(outer_KSP, KSPGMRES, ierr)   ! 20170503 Should this be FGMRES?
+    call KSPSetType(outer_KSP, KSPFGMRES, ierr)   ! 20170503 Should this be FGMRES or GMRES?
     call KSPGMRESSetRestart(outer_KSP, 2000, ierr)
 
     call KSPCreate(MPIComm, inner_ksp, ierr)
