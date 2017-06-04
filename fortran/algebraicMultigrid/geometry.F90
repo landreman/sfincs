@@ -105,7 +105,7 @@ contains
     case (10)
        print *,"Error! This geometryScheme has not been implemented yet."
 
-    case (11)
+    case (11,12)
        fileUnit = 11
        open(unit=fileUnit, file=equilibriumFile, action="read", status="old", iostat=didFileAccessWork)
        if (didFileAccessWork /= 0) then
@@ -138,40 +138,6 @@ contains
 
        !Switch from a left-handed to right-handed (radial,poloidal,toroidal) system
        psiAHat=psiAHat*(-1)           !toroidal direction sign switch
-
-    case (12)
-       fileUnit = 11
-       open(unit=fileUnit, file=equilibriumFile, action="read", status="old", iostat=didFileAccessWork)
-       if (didFileAccessWork /= 0) then
-          print *,"Unable to open magnetic equilibrium file."
-          stop
-       else
-          do
-             read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
-             ! Skip lines that begin with "CC":
-             if (lineOfFile(1:2) /= "CC") exit
-          end do
-
-          ! Read header line:
-          read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) headerIntegers, headerReals
-          if (didFileAccessWork /= 0) then
-             print *,"Unable to read header from the magnetic equilibrium file ",equilibriumFile
-             stop
-          end if
-
-          NPeriods = headerIntegers(4)
-          psiAHat  = headerReals(1)/2/pi !Convert the flux from Tm^2 to Tm^2/rad
-          aHat     = headerReals(2)      !minor radius in meters
-
-       end if
-
-       close(unit = fileUnit)
-       if (masterProc) then
-          print *,"Successfully opened magnetic equilibrium file ",trim(equilibriumFile),".  Nperiods = ",Nperiods
-       end if
-
-       !Switch from a left-handed to right-handed (radial,poloidal,toroidal) system
-       psiAHat=psiAHat*(-1)           !toroidal direction sign switch    
 
     case default
        print *,"Error! Invalid setting for geometryScheme."
@@ -210,7 +176,7 @@ contains
     implicit none
 
     integer :: itheta,izeta
-    real(prec) :: sqrt_g_11, BHat_sub_theta11, BHat_sub_zeta11
+    real(prec) :: sqrt_g_11
 
     ! Using the selected radial coordinate, set input quantities for the other radial coordinates:
     call setInputRadialCoordinateWish()
@@ -244,8 +210,6 @@ contains
 
     ! Validate geometry arrays:
     sqrt_g_11 = sqrt_g(1,1)
-    BHat_sub_theta11 = BHat_sub_theta(1,1)
-    BHat_sub_zeta11 = BHat_sub_zeta(1,1)
     do itheta=1,Ntheta
        do izeta=1,Nzeta
           if (BHat(itheta,izeta) <= 0) then

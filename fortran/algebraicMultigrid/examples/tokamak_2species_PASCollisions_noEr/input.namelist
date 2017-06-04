@@ -96,9 +96,9 @@
   Nzeta = 1
 !ss NzetaMinFactor = 0.8
 !ss NzetaMaxFactor = 2
-!ss NzetaNumRuns = 5
+!ss NzetaNumRuns = 0
 
-  Nxi = 31
+  Nxi = 40
 !ss NxiMinFactor = 0.8
 !ss NxiMaxFactor = 2
 !ss NxiNumRuns = 6
@@ -106,7 +106,7 @@
   Nx = 8
 !ss NxMinFactor = 0.8
 !ss NxMaxFactor = 2
-!ss NxNumRuns = 3
+!ss NxNumRuns = 30
 
   solverTolerance = 1d-6
 !ss solverToleranceMinFactor = 0.1

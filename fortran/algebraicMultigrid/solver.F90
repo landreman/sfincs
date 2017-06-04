@@ -39,7 +39,7 @@ module solver
     PetscReal :: atol, rtol, stol
     integer :: maxit, maxf
     PetscInt :: VecLocalSize
-    IS, dimension(:), allocatable :: ISs
+!    IS, dimension(:), allocatable :: ISs ! Moved to globalVariables for high order AMG
     integer :: IS_index, IS_array_index, ix, ispecies, ixi, itheta, izeta, num_fieldsplits, j
     integer, dimension(:), allocatable :: IS_array
     KSP, dimension(:), allocatable :: sub_ksps

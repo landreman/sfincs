@@ -170,17 +170,20 @@ module globalVariables
   integer :: preconditioner_pitch_angle_scattering_option=2
   integer :: preconditioner_field_term_xi_option = 1 ! Should be 1 or 2 eventually.
   logical :: reusePreconditioner=.true.
+  real(prec) :: preconditioner_theta_blend=0, preconditioner_zeta_blend=0, preconditioner_xi_blend=0
 
   integer :: constraintScheme=-1
 
   integer :: PETSCPreallocationStrategy=1
   integer :: Nxi_for_x_option = 0
   integer :: x_scaling_option = 1
+  integer :: f_scaling_option = 1
   integer :: spatial_scaling_option = 3
   integer :: constraint_scaling_option = 1
   logical :: fieldsplit = .false.
   integer :: null_space_option=0
   PetscReal :: gamg_threshold = 0.2
+  real(prec) :: preconditioner_collision_multiplier = 1
 
   ! ********************************************************
   !
@@ -213,7 +216,7 @@ module globalVariables
   integer, parameter :: COORDINATE_SYSTEM_VMEC = 2
   integer :: coordinateSystem = COORDINATE_SYSTEM_UNINITIALIZED
 
-  real(prec), dimension(:,:), allocatable :: BHat, dBHatdtheta, dBHatdzeta, dBHatdpsiHat, sqrt_g, spatial_scaling, x_scaling
+  real(prec), dimension(:,:), allocatable :: BHat, dBHatdtheta, dBHatdzeta, dBHatdpsiHat, sqrt_g, spatial_scaling, x_scaling, f_scaling
   real(prec), dimension(:,:), allocatable :: BHat_sub_psi, dBHat_sub_psi_dtheta, dBHat_sub_psi_dzeta
   real(prec), dimension(:,:), allocatable :: BHat_sub_theta, dBHat_sub_theta_dzeta, dBHat_sub_theta_dpsiHat
   real(prec), dimension(:,:), allocatable :: BHat_sub_zeta, dBHat_sub_zeta_dtheta, dBHat_sub_zeta_dpsiHat
@@ -365,6 +368,7 @@ module globalVariables
   Mat :: Mat_for_Jacobian, Mat_for_preconditioner
   KSP :: inner_KSP
   PC :: inner_preconditioner
+  IS, dimension(:), allocatable :: ISs
 
   ! ********************************************************
   !

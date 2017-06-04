@@ -12,7 +12,7 @@
     use globalVariables, only: masterProc, firstMatrixCreation, reusePreconditioner, &
          Mat_for_Jacobian, fieldsplit, Nspecies, Nx, null_space_option, &
          Mat_for_preconditioner, inner_preconditioner, inner_KSP, &
-         myRank, preconditioning_option
+         myRank, preconditioning_option, ISs
 
     implicit none
 
@@ -28,6 +28,11 @@
     integer :: j, num_fieldsplits, level, N_levels
     integer :: firstRowThisProcOwns, lastRowThisProcOwns, num_rows, num_columns
     PC :: gamg_pc
+    Mat :: Amat, Pmat, restriction_matrix, restriction_matrix_transpose, interpolation_matrix, residual_matrix, last_matrix
+    integer :: N_rows, N_cols
+    integer :: index_of_min, index_of_max
+    Vec :: diagonal_vec
+    PetscReal :: diagonal_min, diagonal_max
 
     if (masterProc) then
        print *,"evaluateJacobian called."
@@ -61,6 +66,13 @@
           call MatGetOwnershipRange(sub_Pmat, firstRowThisProcOwns, lastRowThisProcOwns, ierr)
           call MatGetSize(sub_Pmat, num_rows, num_columns, ierr)
           print "(a,i2,a,i3,a,i5,a,i7,a,i7)","Fieldsplit ",j,": Proc",myRank," owns indices",firstRowThisProcOwns," to",lastRowThisProcOwns-1," of",num_rows
+          ! Print info about the max and min values along the diagonal, to verify the matrix scaling makes sense.
+          call MatCreateVecs(sub_Pmat, diagonal_vec, PETSC_NULL_OBJECT, ierr)
+          call MatGetDiagonal(sub_Pmat, diagonal_vec, ierr)
+          call VecMin(diagonal_vec, index_of_min, diagonal_min, ierr)
+          call VecMax(diagonal_vec, index_of_max, diagonal_max, ierr)
+          if (masterProc) print "(a,i2,a,f11.3,a,i4,a,f11.3,a,i4)"," Fieldsplit ",j,": min=",diagonal_min," at index ",index_of_min,", max=",diagonal_max," at index ",index_of_max
+          call VecDestroy(diagonal_vec, ierr)
        end do
     end if
 
@@ -110,7 +122,42 @@
              call PCMGGetSmoother(gamg_pc, level, Richardson_ksp, ierr)
              call KSPSetType(Richardson_ksp, KSPRICHARDSON, ierr)
           end do
+
+          ! The following lines are my method for AMG evaluating the residual using Amat rather than Pmat.
+!!$          !call KSPGetOperators(sub_ksps(j), Amat, Pmat, ierr)
+!!$          !last_matrix = Pmat
+!!$          call MatGetSubMatrix(Mat_for_Jacobian, ISs(j), ISs(j), MAT_INITIAL_MATRIX, last_matrix, ierr)
+!!$          !call MatGetSubMatrix(Mat_for_preconditioner, ISs(j), ISs(j), MAT_INITIAL_MATRIX, last_matrix, ierr)
+!!$          ! Level 0 is the coarse level
+!!$          do level = N_levels-2,0,-1
+!!$             if (masterProc) print *,"Setting residual matrix for level",level
+!!$             ! The restriction matrix between level i and i-1 is indexed by i.
+!!$             call PCMGGetRestriction(gamg_pc, level+1, restriction_matrix, ierr)
+!!$             print *,"BBB"
+!!$             !call MatTranspose(restriction_matrix,MAT_INITIAL_MATRIX,restriction_matrix,ierr) ! Could also use MatCreateTranspose?
+!!$             !call MatCreateTranspose(restriction_matrix, restriction_matrix_transpose, ierr)
+!!$             !call MatDuplicate(restriction_matrix, MAT_COPY_VALUES, restriction_matrix_transpose, ierr)
+!!$             call MatTranspose(restriction_matrix, MAT_INITIAL_MATRIX, restriction_matrix_transpose, ierr)
+!!$             call MatGetSize(restriction_matrix_transpose, N_rows, N_cols, ierr)
+!!$             print *,"Restriction_matrix_transpose is ",N_rows,"x",N_cols
+!!$             call PCMGGetInterpolation(gamg_pc, level+1, interpolation_matrix, ierr)
+!!$             print *,"CCC"
+!!$             call MatGetSize(last_matrix, N_rows, N_cols, ierr)
+!!$             print *,"last_matrix is ",N_rows,"x",N_cols
+!!$             call MatGetSize(interpolation_matrix, N_rows, N_cols, ierr)
+!!$             print *,"Interpolation matrix is ",N_rows,"x",N_cols
+!!$             !call MatMatMult(Amat,interpolation_matrix,MAT_INITIAL_MATRIX,PETSC_DEFAULT_REAL,temp_matrix,ierr) ! temp_matrix = last_matrix * interpolation_matrix
+!!$             print *,"DDD"
+!!$             !call MatMatMult(restriction_matrix,temp_matrix,MAT_INITIAL_MATRIX,PETSC_DEFAULT_REAL,Amat, ierr) ! last_matrix = restriction_matrix * temp_matrix
+!!$             call MatMatMatMult(restriction_matrix_transpose, last_matrix, interpolation_matrix, MAT_INITIAL_MATRIX, PETSC_DEFAULT_REAL, residual_matrix, ierr)
+!!$             call MatGetSize(residual_matrix, N_rows, N_cols, ierr)
+!!$             print *,"Residual matrix is ",N_rows,"x",N_cols
+!!$             call PCMGSetResidual(gamg_pc, level, PCMGResidualDefault, residual_matrix, ierr)
+!!$             last_matrix = residual_matrix
+!!$          end do
        end do
+
+
     end if
 
 !!$    call SNESGetKSP(mysnes, myksp, ierr)

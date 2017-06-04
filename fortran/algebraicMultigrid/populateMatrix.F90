@@ -31,7 +31,7 @@
 
     PetscErrorCode :: ierr
     PetscScalar :: scalar
-    real(prec) :: Z, nHat, THat, mHat, sqrtTHat, sqrtMHat, speciesFactor, speciesFactor2, v_s
+    real(prec) :: Z, nHat, THat, mHat, sqrtTHat, sqrtMHat, speciesFactor, speciesFactor2, v_s, collision_multiplier
     real(prec) :: T32m, factor, spatial_factor, LFactor, temp, temp1, temp2, xDotFactor, xDotFactor2, stuffToAdd
     real(prec) :: factor1, factor2, factorJ1, factorJ2, factorJ3, factorJ4, factorJ5  !!Added by AM 2016-03
     real(prec), dimension(:), allocatable :: xb, expxb2
@@ -1077,8 +1077,10 @@
 
           if (whichMatrix==0) then
              pitch_angle_scattering_operator_to_use => pitch_angle_scattering_operator_preconditioner
+             collision_multiplier = preconditioner_collision_multiplier
           else
              pitch_angle_scattering_operator_to_use => pitch_angle_scattering_operator
+             collision_multiplier = one
           end if
 
           nuDHat = zero
@@ -1116,7 +1118,7 @@
                 do itheta=ithetaMin,ithetaMax
                    do izeta=izetaMin,izetaMax
                       !factor = -nu_n*BHat(itheta,izeta)*sqrt(mHats(ispeciesA)/THats(ispeciesA))/abs(DHat(itheta,izeta))*nuDHat(iSpeciesA,ix)
-                      factor = -nu_n*spatial_scaling(itheta,izeta)*x_scaling(ix,iSpeciesA)*nuDHat(iSpeciesA,ix)
+                      factor = -collision_multiplier*nu_n*spatial_scaling(itheta,izeta)*x_scaling(ix,iSpeciesA)*nuDHat(iSpeciesA,ix)
                       do ixi_row = 1,Nxi
                          rowIndex=getIndex(iSpeciesA,ix,ixi_row,itheta,izeta,BLOCK_F)
                          do ixi_col = 1,Nxi

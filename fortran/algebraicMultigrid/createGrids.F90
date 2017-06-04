@@ -29,9 +29,10 @@
     real(prec), dimension(:), allocatable :: x_subset, xWeights_subset
     real(prec), dimension(:,:), allocatable :: ddx_subset, d2dx2_subset
     real(prec) :: temp, Delta_zeta, v_s
-    real(prec), dimension(:), allocatable :: xi_to_Legendre
+    real(prec), dimension(:), allocatable :: xi_to_Legendre, temp_array
     real(prec), dimension(:,:), allocatable :: d2dy2, ddy, ddy_plus, ddy_minus
     real(prec), dimension(:), allocatable :: y, y_dummy, yWeights_dummy, yWeights, dxi_dy, d2xi_dy2
+    real(prec) :: temp_plus, temp_minus
 
     DM :: myDM
     integer, parameter :: bufferLength = 200
@@ -396,17 +397,25 @@
     end if
 
     if (preconditioner_theta_derivative_option<0) then
+       !temp_plus = maxval(abs(ddtheta_plus_preconditioner))
+       !temp_minus = maxval(abs(ddtheta_minus_preconditioner))
        if (masterProc) then
-          print *,"   But only the diagonal is kept."
+          !print *,"   But only the diagonal is kept."
+          !print *,"   But the diagonal is shifted to maintain diagonal dominance."
+          print *,"    But blending with the main operator: factor=",preconditioner_theta_blend
        end if
-       do j=1,Ntheta
-          do k=1,Ntheta
-             if (j .ne. k) then
-                ddtheta_plus_preconditioner(j,k) = 0
-                ddtheta_minus_preconditioner(j,k) = 0
-             end if
-          end do
-       end do
+       ddtheta_plus_preconditioner  = (1-preconditioner_theta_blend)*ddtheta_plus_preconditioner  + preconditioner_theta_blend*ddtheta_plus
+       ddtheta_minus_preconditioner = (1-preconditioner_theta_blend)*ddtheta_minus_preconditioner + preconditioner_theta_blend*ddtheta_minus
+!!$       do j=1,Ntheta
+!          do k=1,Ntheta
+!             if (j .ne. k) then
+!                ddtheta_plus_preconditioner(j,k) = 0
+!                ddtheta_minus_preconditioner(j,k) = 0
+!             end if
+!          end do
+!!$          ddtheta_plus_preconditioner(j,j) = temp_plus
+!!$          ddtheta_minus_preconditioner(j,j) = -temp_minus
+!!$       end do
     end if
 
 
@@ -638,17 +647,25 @@
        end if
 
        if (preconditioner_zeta_derivative_option<0) then
+          !temp_plus = maxval(abs(ddzeta_plus_preconditioner))
+          !temp_minus = maxval(abs(ddzeta_minus_preconditioner))
           if (masterProc) then
-             print *,"   But only the diagonal is kept."
+             !print *,"   But only the diagonal is kept."
+             !print *,"   But the diagonal is shifted to maintain diagonal dominance."
+             print *,"   But blending with the main matrix: factor=",preconditioner_zeta_blend
           end if
-          do j=1,Nzeta
-             do k=1,Nzeta
-                if (j .ne. k) then
-                   ddzeta_plus_preconditioner(j,k) = 0
-                   ddzeta_minus_preconditioner(j,k) = 0
-                end if
-             end do
-          end do
+          ddzeta_plus_preconditioner  = (1-preconditioner_zeta_blend)*ddzeta_plus_preconditioner  + preconditioner_zeta_blend*ddzeta_plus
+          ddzeta_minus_preconditioner = (1-preconditioner_zeta_blend)*ddzeta_minus_preconditioner + preconditioner_zeta_blend*ddzeta_minus
+!!$          do j=1,Nzeta
+!!$! !!$             do k=1,Nzeta
+!!$! !!$                if (j .ne. k) then
+!!$! !!$                   ddzeta_plus_preconditioner(j,k) = 0
+!!$! !!$                   ddzeta_minus_preconditioner(j,k) = 0
+!!$! !!$                end if
+!!$! !!$             end do
+!!$             ddzeta_plus_preconditioner(j,j) = temp_plus
+!!$             ddzeta_minus_preconditioner(j,j) = -temp_minus
+!!$          end do
        end if
        
        zetaWeights = zetaWeights * Nperiods
@@ -1043,16 +1060,30 @@
        
        if (preconditioner_xi_derivative_option<0) then
           if (masterProc) then
-             print *,"   But only the diagonal is kept."
+             !print *,"   But only the diagonal is kept."
+             !print *,"   But the diagonal is shifted to maintain diagonal dominance."
+             print *,"   But blending with the main matrix: factor=",preconditioner_xi_blend
           end if
-          do j=1,Nxi
-             do k=1,Nxi
-                if (j .ne. k) then
-                   ddxi_plus_preconditioner(j,k) = 0
-                   ddxi_minus_preconditioner(j,k) = 0
-                end if
-             end do
-          end do
+          ddxi_plus_preconditioner  = (1-preconditioner_xi_blend)*ddxi_plus_preconditioner  + preconditioner_xi_blend*ddxi_plus
+          ddxi_minus_preconditioner = (1-preconditioner_xi_blend)*ddxi_minus_preconditioner + preconditioner_xi_blend*ddxi_minus
+!!$          do j=1,Nxi
+!!$             do k=1,Nxi
+!!$                if (j .ne. k) then
+!!$                   ddxi_plus_preconditioner(j,k) = 0
+!!$                   ddxi_minus_preconditioner(j,k) = 0
+!!$                end if
+!!$             end do
+!!$          end do
+
+!!$          allocate(temp_array(Nxi))
+!!$          do j=1,Nxi
+!!$             temp_array(j) = max(maxval(abs(ddxi_plus_preconditioner(j,:))), maxval(abs(ddxi_plus_preconditioner(:,j))))
+!!$          end do
+!!$          do j=1,Nxi
+!!$             ddxi_plus_preconditioner(j,j) = temp_array(j)
+!!$             ddxi_minus_preconditioner(j,j) = -temp_array(j)
+!!$          end do
+!!$          deallocate(temp_array)
        end if
     end if
 
@@ -1747,8 +1778,29 @@
           x_scaling(:,ispecies) = 1 / (x * v_s)
        case (2)
           x_scaling(:,ispecies) = 1 / v_s
+       case (3)
+          x_scaling(:,ispecies) = 1 / (x * v_s * expx2)
+       case (4)
+          x_scaling(:,ispecies) = 1 / (v_s * expx2)
        case default
           if (masterProc) print *,"Error! Invalid x_scaling_option:",x_scaling_option
+          stop
+       end select
+    end do
+
+    allocate(f_scaling(Nx,Nspecies))
+    do ispecies = 1,Nspecies
+       select case (f_scaling_option)
+       case (1)
+          f_scaling(:,ispecies) = nHats(ispecies)
+       case (2)
+          f_scaling(:,ispecies) = Zs(ispecies) / sqrt(THats(ispecies)*mHats(ispecies))
+       case (3)
+          f_scaling(:,ispecies) = 1
+       case (4)
+          f_scaling(:,ispecies) = Zs(ispecies) / sqrt(THats(ispecies)*mHats(ispecies))
+       case default
+          if (masterProc) print *,"Error! Invalid f_scaling_option:",f_scaling_option
           stop
        end select
     end do
@@ -1904,6 +1956,68 @@
        allocate(transportMatrix(transportMatrixSize, transportMatrixSize))
        transportMatrix = 0
     end select
+
+    if (masterProc) then
+       print *,"Here comes ddtheta_plus:"
+       do j=1,Ntheta
+          print "(*(f6.1))",ddtheta_plus(j,:)
+       end do
+       print *,"Here comes ddtheta_minus:"
+       do j=1,Ntheta
+          print "(*(f6.1))",ddtheta_minus(j,:)
+       end do
+       print *,"Here comes ddtheta_plus_preconditioner:"
+       do j=1,Ntheta
+          print "(*(f6.1))",ddtheta_plus_preconditioner(j,:)
+       end do
+       print *,"Here comes ddtheta_minus_preconditioner:"
+       do j=1,Ntheta
+          print "(*(f6.1))",ddtheta_minus_preconditioner(j,:)
+       end do
+
+       print *,"Here comes ddzeta_plus:"
+       do j=1,Nzeta
+          print "(*(f6.1))",ddzeta_plus(j,:)
+       end do
+       print *,"Here comes ddzeta_minus:"
+       do j=1,Nzeta
+          print "(*(f6.1))",ddzeta_minus(j,:)
+       end do
+       print *,"Here comes ddzeta_plus_preconditioner:"
+       do j=1,Nzeta
+          print "(*(f6.1))",ddzeta_plus_preconditioner(j,:)
+       end do
+       print *,"Here comes ddzeta_minus_preconditioner:"
+       do j=1,Nzeta
+          print "(*(f6.1))",ddzeta_minus_preconditioner(j,:)
+       end do
+
+       print *,"Here comes ddxi_plus:"
+       do j=1,Nxi
+          print "(*(f6.1))",ddxi_plus(j,:)
+       end do
+       print *,"Here comes ddxi_minus:"
+       do j=1,Nxi
+          print "(*(f6.1))",ddxi_minus(j,:)
+       end do
+       print *,"Here comes ddxi_plus_preconditioner:"
+       do j=1,Nxi
+          print "(*(f6.1))",ddxi_plus_preconditioner(j,:)
+       end do
+       print *,"Here comes ddxi_minus_preconditioner:"
+       do j=1,Nxi
+          print "(*(f6.1))",ddxi_minus_preconditioner(j,:)
+       end do
+
+       print *,"Here comes pitch_angle_scattering_operator:"
+       do j=1,Nxi
+          print "(*(f6.1))",pitch_angle_scattering_operator(j,:)
+       end do
+       print *,"Here comes pitch_angle_scattering_operator_preconditioner:"
+       do j=1,Nxi
+          print "(*(f6.1))",pitch_angle_scattering_operator_preconditioner(j,:)
+       end do
+    end if
 
     if (masterProc) then
        print *,"------------------------------------------------------"
