@@ -72,9 +72,8 @@
 /
 
 &physicsParameters
-  Delta = 4.5694d-3
-  gamma = 1.0d+0
-  nu_n = 8.4774d-3
+  old_output_normalizations=t
+  ln_Lambda = 17.3
 
   Er = 0.0d+0
 
@@ -108,7 +107,7 @@
 !ss NxMaxFactor = 2
 !ss NxNumRuns = 30
 
-  solverTolerance = 1d-6
+  solverTolerance = 1d-5
 !ss solverToleranceMinFactor = 0.1
 !ss solverToleranceMaxFactor = 10
 !ss solverToleranceNumRuns = 3
@@ -116,9 +115,14 @@
 /
 
 &otherNumericalParameters
+  f_scaling_option=4
+  x_scaling_option=1
+  constraint_scaling_option=3
+  spatial_scaling_option=2
 /
 
 &preconditionerOptions
+preconditioning_option=5
 /
 
 &export_f

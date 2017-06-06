@@ -92,10 +92,10 @@
 !xi_derivative_option=4
 !pitch_angle_scattering_option=2
 
-null_space_option = 0
+!null_space_option = 0
 
-spatial_scaling_option = 3
-constraint_scaling_option=1
+!spatial_scaling_option = 3
+!constraint_scaling_option=1
 
 ! x_scaling_option=2
 /

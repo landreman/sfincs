@@ -93,7 +93,8 @@ constraintScheme=0
 !ss solverToleranceMinFactor = 0.1
 !ss solverToleranceMaxFactor = 10
 !ss solverToleranceNumRuns = 3
-!NL=0
+
+NL=0
 /
 
 &otherNumericalParameters
@@ -104,7 +105,7 @@ constraintScheme=0
   ! Since the matrix size is so small for this example, we can afford to make the preconditioner matrix
   ! the same as the real system matrix.
 !  preconditioner_species = 0
-!  preconditioner_x = 0
+  preconditioner_x = 0
 !  preconditioner_xi = 0
 /
 

@@ -98,8 +98,8 @@ contains
     ! Set defaults for array parameters:
     Zs(1) = one
     mHats(1) = one
-    nHats(1) = one
-    THats(1) = one
+    nHats(1) = 1.0d+20
+    THats(1) = 1.0d+3
     dNHatdpsiHats(1) = zero
     dTHatdpsiHats(1) = zero
     dNHatdpsiNs(1) = zero

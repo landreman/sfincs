@@ -1,0 +1,90 @@
+! Input file for SFINCS version 3.
+! See the user manual for documentation of the parameters in this file.
+!----------------------------------------------------------------------
+
+!ss scanType = 1
+
+!   Settings specific to scanType = 3:
+!ss scanVariable = EStar
+!ss scanVariableMin = 1e-4
+!ss scanVariableMax = 1e-1
+!ss scanVariableN = 4
+!ss scanVariableScale = log
+
+&general
+  RHSMode = 3  ! Monoenergetic coefficients
+/
+
+&geometryParameters
+  geometryScheme = 1
+  epsilon_t = -0.07053d+0
+  epsilon_h = 0.05067d+0
+  iota = 0.4542d+0
+  GHat = 3.7481d+0
+  IHat = 0d+0
+  helicity_l = 2
+  helicity_n = 10
+  B0OverBBar = 1
+/
+
+&speciesParameters
+  ! No need to specify any parameters in this namelist, since we are computing monoenergetic transport coefficients.
+/
+
+&physicsParameters
+  ! No need to specify Delta, alpha, nu_n, or Er, since we are computing monoenergetic transport coefficients.
+
+  ! Compared to the parameter nu from the monoenergetic codes,
+  ! SFINCS's nuPrime = nu / 0.836028 = nu * 1.196132
+  nuPrime = 1.196132d-3
+  EStar = 0.0d+0
+
+  collisionOperator = 1
+  includeXDotTerm = .false.
+  includeElectricFieldTermInXiDot = .false.
+  ExB_option = 2
+  includePhi1 = .false.
+/
+
+&resolutionParameters
+  Ntheta = 27
+!ss NthetaMinFactor = 1
+!ss NthetaMaxFactor = 2
+!ss NthetaNumRuns = 10
+
+  Nzeta = 29
+!ss NzetaMinFactor = 1
+!ss NzetaMaxFactor = 2
+!ss NzetaNumRuns = 10
+
+  Nxi = 70
+!ss NxiMinFactor = 1
+!ss NxiMaxFactor = 2
+!ss NxiNumRuns = 10
+  
+  Nx = 1
+!ss NxMinFactor = 1
+!ss NxMaxFactor = 2
+!ss NxNumRuns = 0
+
+  solverTolerance = 1d-5
+!ss solverToleranceMinFactor = 0.1
+!ss solverToleranceMaxFactor = 10
+!ss solverToleranceNumRuns = 0
+
+/
+
+&otherNumericalParameters
+!theta_derivative_option=8
+
+!zeta_derivative_option=4
+!xi_derivative_option=4
+!pitch_angle_scattering_option=2
+/
+
+&preconditionerOptions
+preconditioning_option=5
+/
+
+&export_f
+/
