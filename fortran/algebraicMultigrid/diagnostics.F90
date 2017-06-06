@@ -202,7 +202,7 @@
     Vec :: solutionWithDeltaFOnProc0, solutionWithFullFOnProc0, f0OnProc0
     PetscScalar, pointer :: solutionWithFullFArray(:), solutionWithDeltaFArray(:), f0Array(:)
 
-    real(prec) :: THat, mHat, sqrtTHat, sqrtMHat, nHat
+    real(prec) :: THat, mHat, nHat
     real(prec), dimension(:), allocatable :: B2
     integer :: i, j, ix, ixi, ispecies, itheta, izeta, L, index
     real(prec) :: densityFactor, flowFactor, pressureFactor
@@ -227,6 +227,7 @@
     PetscViewer :: viewer
     character(len=200) :: filename
     KSP :: myKSP
+    real(prec) :: nBar, TBar, vBar, mBar, sqrtMHat, sqrtTHat
 
     if (masterProc) then
        print *,"Computing diagnostics."
@@ -340,17 +341,6 @@
        heatFlux_vm_psiHat_vs_x=0
        FSABFlow_vs_x=0
 
-       densityIntegralWeights = x*x
-       flowIntegralWeights = x*x*x
-       pressureIntegralWeights = x*x*x*x
-       particleFluxIntegralWeights_vm = x*x*x*x
-       particleFluxIntegralWeights_vE = x*x
-       momentumFluxIntegralWeights_vm = x*x*x*x*x
-       momentumFluxIntegralWeights_vE = x*x*x
-       heatFluxIntegralWeights_vm = x*x*x*x*x*x
-       heatFluxIntegralWeights_vE = x*x*x*x
-       NTVIntegralWeights = x*x*x*x 
-
        ! Convert the PETSc vectors into normal Fortran arrays:
        call VecGetArrayF90(solutionWithFullFOnProc0, solutionWithFullFArray, ierr)
        call VecGetArrayF90(solutionWithDeltaFOnProc0, solutionWithDeltaFArray, ierr)
@@ -388,15 +378,28 @@
           THat = THats(ispecies)
           mHat = mHats(ispecies)
           nHat = nHats(ispecies)
-          sqrtTHat = sqrt(THat)
-          sqrtMHat = sqrt(mHat)
+
+          densityIntegralWeights = x*x * f_scaling(:,ispecies)
+          flowIntegralWeights = x*x*x * f_scaling(:,ispecies)
+          pressureIntegralWeights = x*x*x*x * f_scaling(:,ispecies)
+          particleFluxIntegralWeights_vm = x*x*x*x * f_scaling(:,ispecies)
+          particleFluxIntegralWeights_vE = x*x * f_scaling(:,ispecies)
+          momentumFluxIntegralWeights_vm = x*x*x*x*x * f_scaling(:,ispecies)
+          momentumFluxIntegralWeights_vE = x*x*x * f_scaling(:,ispecies)
+          heatFluxIntegralWeights_vm = x*x*x*x*x*x * f_scaling(:,ispecies)
+          heatFluxIntegralWeights_vE = x*x*x*x * f_scaling(:,ispecies)
+          NTVIntegralWeights = x*x*x*x * f_scaling(:,ispecies)
 
           !densityFactor = 4*pi*THat*sqrtTHat/(mHat*sqrtMHat)
           !flowFactor = 4*pi*THat*THat/(three*mHat*mHat)
           !pressureFactor = 8*pi*THat*THat*sqrtTHat/(three*mHat*sqrtMHat)
-          densityFactor = 2*nHat/sqrtpi
-          flowFactor = 2*nHat*sqrtTHat/(sqrtMHat*sqrtpi)
-          pressureFactor = 4*nHat*THat/(three*sqrtpi)
+!!$          densityFactor = 2*nHat/sqrtpi
+!!$          flowFactor = 2*nHat*sqrtTHat/(sqrtMHat*sqrtpi)
+!!$          pressureFactor = 4*nHat*THat/(three*sqrtpi)
+
+          densityFactor  = 2*pi*(thermal_speeds(ispecies)**3)
+          flowFactor     = 2*pi*(thermal_speeds(ispecies)**4)
+          pressureFactor = 2*pi*(thermal_speeds(ispecies)**5) * (mHat*proton_mass/3)
 
 !!$          particleFluxFactor_vm = pi*Delta*THat*THat*sqrtTHat/(Zs(ispecies)*VPrimeHat*mHat*sqrtMHat)
 !!$          particleFluxFactor_vE = 2*gamma*pi*Delta*THat*sqrtTHat/(VPrimeHat*mHat*sqrtMHat)
@@ -404,18 +407,27 @@
 !!$          momentumFluxFactor_vE = 2*gamma*pi*Delta*THat*THat/(VPrimeHat*mHat)
 !!$          heatFluxFactor_vm = pi*Delta*THat*THat*THat*sqrtTHat/(2*Zs(ispecies)*VPrimeHat*mHat*sqrtMHat)
 !!$          heatFluxFactor_vE = 2*gamma*pi*Delta*THat*THat*sqrtTHat/(2*VPrimeHat*mHat*sqrtMHat)
-          particleFluxFactor_vm = nHat*Delta*THat/(Zs(ispecies)*VPrimeHat*sqrtpi)
+
+!!$          particleFluxFactor_vm = nHat*Delta*THat/(Zs(ispecies)*VPrimeHat*sqrtpi)
+!!$          particleFluxFactor_vE = nHat*gamma*Delta/(VPrimeHat*sqrtpi)
+!!$          momentumFluxFactor_vm = nHat*Delta*THat*THat*THat/(Zs(ispecies)*VPrimeHat*mHat*sqrtpi)
+!!$          momentumFluxFactor_vE = nHat*2*gamma*Delta*THat*THat/(VPrimeHat*mHat*sqrtpi)
+!!$          heatFluxFactor_vm = nHat*Delta*THat*THat/(2*Zs(ispecies)*VPrimeHat*sqrtpi)
+!!$          heatFluxFactor_vE = nHat*gamma*Delta*THat/(2*VPrimeHat*sqrtpi)
+
+          particleFluxFactor_vm = 2*pi*(thermal_speeds(ispecies)**5) * (proton_mass*mHat)/(2*Zs(ispecies)*electron_charge) / vPrimeHat
           particleFluxFactor_vE = nHat*gamma*Delta/(VPrimeHat*sqrtpi)
           momentumFluxFactor_vm = nHat*Delta*THat*THat*THat/(Zs(ispecies)*VPrimeHat*mHat*sqrtpi)
           momentumFluxFactor_vE = nHat*2*gamma*Delta*THat*THat/(VPrimeHat*mHat*sqrtpi)
-          heatFluxFactor_vm = nHat*Delta*THat*THat/(2*Zs(ispecies)*VPrimeHat*sqrtpi)
+          heatFluxFactor_vm = 2*pi*(thermal_speeds(ispecies)**5) * (proton_mass*mHat)/(2*Zs(ispecies)*electron_charge) * (electron_charge*THat) / vPrimeHat
           heatFluxFactor_vE = nHat*gamma*Delta*THat/(2*VPrimeHat*sqrtpi)
 
           ! I haven't looked at how the NTV should be computed in the new units.
           ! Here is the way it was done in the multispecies linear version:
           !NTVFactor = 4*pi*THat*THat*sqrtTHat/(mHat*sqrtMHat*VPrimeHat*(GHat+iota*IHat))
           ! Here is my guess at how it should be done in this version:
-          NTVFactor = 4*pi*THat*THat*sqrtTHat/(mHat*sqrtMHat*VPrimeHat)
+          !NTVFactor = 4*pi*THat*THat*sqrtTHat/(mHat*sqrtMHat*VPrimeHat)
+          NTVFactor=0
 
           do itheta=1,Ntheta
              do izeta=1,Nzeta
@@ -653,15 +665,16 @@
 
           end do
 
-          jHat = jHat + Zs(ispecies)*flow(ispecies,:,:)
+          jHat = jHat + electron_charge*Zs(ispecies)*flow(ispecies,:,:)
 
           !!totalDensity(ispecies,:,:) = nHats(ispecies) + densityPerturbation(ispecies,:,:) !!Commented by AM 2016-06
           !!totalPressure(ispecies,:,:) = nHats(ispecies)*THats(ispecies) + pressurePerturbation(ispecies,:,:) !!Commented by AM 2016-06
-          totalDensity(ispecies,:,:) = nHats(ispecies)*exp(-Zs(ispecies)*gamma*Phi1Hat(:,:)/THats(ispecies)) + densityPerturbation(ispecies,:,:) !!Added by AM 2016-06
-          totalPressure(ispecies,:,:) = nHats(ispecies)*exp(-Zs(ispecies)*gamma*Phi1Hat(:,:)/THats(ispecies))*THats(ispecies) + pressurePerturbation(ispecies,:,:) !!Added by AM 2016-06
+          totalDensity(ispecies,:,:) = nHats(ispecies)*exp(-Zs(ispecies)*gamma*Phi1Hat(:,:)/THats(ispecies)) + densityPerturbation(ispecies,:,:) !! This line needs to be changed
+          totalPressure(ispecies,:,:) = nHats(ispecies)*exp(-Zs(ispecies)*gamma*Phi1Hat(:,:)/THats(ispecies))*THats(ispecies) + pressurePerturbation(ispecies,:,:) !! This line needs to be updated
           velocityUsingFSADensity(ispecies,:,:) = flow(ispecies,:,:) / nHats(ispecies)
           velocityUsingTotalDensity(ispecies,:,:) = flow(ispecies,:,:) / totalDensity(ispecies,:,:)
-          MachUsingFSAThermalSpeed(ispecies,:,:) = velocityUsingFSADensity(ispecies,:,:) * sqrtMHat/sqrtTHat
+          !MachUsingFSAThermalSpeed(ispecies,:,:) = velocityUsingFSADensity(ispecies,:,:) * sqrtMHat/sqrtTHat
+          MachUsingFSAThermalSpeed(ispecies,:,:) = velocityUsingFSADensity(ispecies,:,:) / thermal_speeds(ispecies)
 
        end do
 
@@ -740,7 +753,7 @@
        FSABFlow = FSABFlow / VPrimeHat
        FSABFlow_vs_x = FSABFlow_vs_x / VPrimeHat
        FSAPressurePerturbation = FSAPressurePerturbation / VPrimeHat
-       FSABjHat = dot_product(Zs(1:Nspecies), FSABFlow)
+       FSABjHat = electron_charge*dot_product(Zs(1:Nspecies), FSABFlow)
        FSABjHatOverB0 = FSABjHat / B0OverBBar
        FSABjHatOverRootFSAB2 = FSABjHat / sqrt(FSABHat2)
 
@@ -884,6 +897,90 @@
        call VecRestoreArrayF90(solutionWithDeltaFOnProc0, solutionWithDeltaFArray, ierr)
        call VecRestoreArrayF90(f0OnProc0, f0Array, ierr)
        !!call VecRestoreArrayF90(expPhi1, expPhi1Array, ierr) !!Added by AM 2016-06
+
+       if (old_output_normalizations) then
+          nBar = 1.0d+20
+          vBar = sqrt(2*1000*electron_charge/proton_mass)
+          TBar = 1000*electron_charge
+          mBar = proton_mass
+
+          densityPerturbation = densityPerturbation / nBar
+          totalDensity = totalDensity / nBar
+          FSAdensityPerturbation = FSAdensityPerturbation / nBar
+
+          flow = flow / (nBar*vBar)
+          velocityUsingFSADensity = velocityUsingFSADensity / vBar
+          FSABFlow = FSABFlow / (nBar*vBar)
+          FSABVelocityUsingFSADensity = FSABVelocityUsingFSADensity / vBar
+          FSABVelocityUsingFSADensityOverB0 = FSABVelocityUsingFSADensityOverB0 / vBar
+          FSABVelocityUsingFSADensityOverRootFSAB2 = FSABVelocityUsingFSADensityOverRootFSAB2 / vBar
+
+          jHat = jHat / (electron_charge * nBar * vBar)
+          FSABjHat = FSABjHat / (electron_charge * nBar * vBar)
+          FSABjHatOverB0 = FSABjHatOverB0 / (electron_charge * nBar * vBar)
+          FSABjHatOverRootFSAB2 = FSABjHatOverRootFSAB2 / (electron_charge * nBar * vBar)
+
+          pressurePerturbation = pressurePerturbation / (nBar*TBar)
+          totalPressure = totalPressure / (nBar*TBar)
+          FSApressurePerturbation = FSApressurePerturbation / (nBar*TBar)
+
+          particleFluxBeforeSurfaceIntegral_vm = particleFluxBeforeSurfaceIntegral_vm / (nBar*vBar)
+          particleFlux_vm_psiHat = particleFlux_vm_psiHat / (nBar*vBar)
+          particleFlux_vm_psiN   = particleFlux_vm_psiN   / (nBar*vBar)
+          particleFlux_vm_rHat   = particleFlux_vm_rHat   / (nBar*vBar)
+          particleFlux_vm_rN     = particleFlux_vm_rN     / (nBar*vBar)
+          particleFlux_vm0_psiHat = particleFlux_vm0_psiHat / (nBar*vBar)
+          particleFlux_vm0_psiN   = particleFlux_vm0_psiN   / (nBar*vBar)
+          particleFlux_vm0_rHat   = particleFlux_vm0_rHat   / (nBar*vBar)
+          particleFlux_vm0_rN     = particleFlux_vm0_rN     / (nBar*vBar)
+          particleFlux_vE_psiHat = particleFlux_vE_psiHat / (nBar*vBar)
+          particleFlux_vE_psiN   = particleFlux_vE_psiN   / (nBar*vBar)
+          particleFlux_vE_rHat   = particleFlux_vE_rHat   / (nBar*vBar)
+          particleFlux_vE_rN     = particleFlux_vE_rN     / (nBar*vBar)
+          particleFlux_vE0_psiHat = particleFlux_vE0_psiHat / (nBar*vBar)
+          particleFlux_vE0_psiN   = particleFlux_vE0_psiN   / (nBar*vBar)
+          particleFlux_vE0_rHat   = particleFlux_vE0_rHat   / (nBar*vBar)
+          particleFlux_vE0_rN     = particleFlux_vE0_rN     / (nBar*vBar)
+          particleFlux_vd_psiHat = particleFlux_vd_psiHat / (nBar*vBar)
+          particleFlux_vd_psiN   = particleFlux_vd_psiN   / (nBar*vBar)
+          particleFlux_vd_rHat   = particleFlux_vd_rHat   / (nBar*vBar)
+          particleFlux_vd_rN     = particleFlux_vd_rN     / (nBar*vBar)
+          particleFlux_vd1_psiHat = particleFlux_vd1_psiHat / (nBar*vBar)
+          particleFlux_vd1_psiN   = particleFlux_vd1_psiN   / (nBar*vBar)
+          particleFlux_vd1_rHat   = particleFlux_vd1_rHat   / (nBar*vBar)
+          particleFlux_vd1_rN     = particleFlux_vd1_rN     / (nBar*vBar)
+
+          heatFluxBeforeSurfaceIntegral_vm = heatFluxBeforeSurfaceIntegral_vm / (nBar*mBar*vBar*vBar*vBar)
+          heatFlux_vm_psiHat = heatFlux_vm_psiHat / (nBar*mBar*vBar*vBar*vBar)
+          heatFlux_vm_psiN   = heatFlux_vm_psiN   / (nBar*mBar*vBar*vBar*vBar)
+          heatFlux_vm_rHat   = heatFlux_vm_rHat   / (nBar*mBar*vBar*vBar*vBar)
+          heatFlux_vm_rN     = heatFlux_vm_rN     / (nBar*mBar*vBar*vBar*vBar)
+          heatFlux_vm0_psiHat = heatFlux_vm0_psiHat / (nBar*mBar*vBar*vBar*vBar)
+          heatFlux_vm0_psiN   = heatFlux_vm0_psiN   / (nBar*mBar*vBar*vBar*vBar)
+          heatFlux_vm0_rHat   = heatFlux_vm0_rHat   / (nBar*mBar*vBar*vBar*vBar)
+          heatFlux_vm0_rN     = heatFlux_vm0_rN     / (nBar*mBar*vBar*vBar*vBar)
+          heatFlux_vE_psiHat = heatFlux_vE_psiHat / (nBar*mBar*vBar*vBar*vBar)
+          heatFlux_vE_psiN   = heatFlux_vE_psiN   / (nBar*mBar*vBar*vBar*vBar)
+          heatFlux_vE_rHat   = heatFlux_vE_rHat   / (nBar*mBar*vBar*vBar*vBar)
+          heatFlux_vE_rN     = heatFlux_vE_rN     / (nBar*mBar*vBar*vBar*vBar)
+          heatFlux_vE0_psiHat = heatFlux_vE0_psiHat / (nBar*mBar*vBar*vBar*vBar)
+          heatFlux_vE0_psiN   = heatFlux_vE0_psiN   / (nBar*mBar*vBar*vBar*vBar)
+          heatFlux_vE0_rHat   = heatFlux_vE0_rHat   / (nBar*mBar*vBar*vBar*vBar)
+          heatFlux_vE0_rN     = heatFlux_vE0_rN     / (nBar*mBar*vBar*vBar*vBar)
+          heatFlux_vd_psiHat = heatFlux_vd_psiHat / (nBar*mBar*vBar*vBar*vBar)
+          heatFlux_vd_psiN   = heatFlux_vd_psiN   / (nBar*mBar*vBar*vBar*vBar)
+          heatFlux_vd_rHat   = heatFlux_vd_rHat   / (nBar*mBar*vBar*vBar*vBar)
+          heatFlux_vd_rN     = heatFlux_vd_rN     / (nBar*mBar*vBar*vBar*vBar)
+          heatFlux_vd1_psiHat = heatFlux_vd1_psiHat / (nBar*mBar*vBar*vBar*vBar)
+          heatFlux_vd1_psiN   = heatFlux_vd1_psiN   / (nBar*mBar*vBar*vBar*vBar)
+          heatFlux_vd1_rHat   = heatFlux_vd1_rHat   / (nBar*mBar*vBar*vBar*vBar)
+          heatFlux_vd1_rN     = heatFlux_vd1_rN     / (nBar*mBar*vBar*vBar*vBar)
+
+
+          if (masterProc) print *,"Using old (version3) normalizations for output quantities."
+       else
+          if (masterProc) print *,"Using SI units for output quantities."
+       end if
 
        do ispecies=1,Nspecies
           if (Nspecies>1) then

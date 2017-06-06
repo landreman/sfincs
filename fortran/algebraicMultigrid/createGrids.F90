@@ -19,7 +19,7 @@
     implicit none
 
     PetscErrorCode :: ierr
-    integer :: i, j, k, itheta, izeta, ispecies, scheme, L
+    integer :: i, j, k, itheta, izeta, ispecies, ispecies_a, ispecies_b, ix, scheme, L
     real(prec), dimension(:,:), allocatable :: d2dtheta2, d2dzeta2, ddxi, d2dxi2
     real(prec), dimension(:), allocatable :: xWeightsPotentials
 
@@ -83,6 +83,19 @@
        end if
     end if
 
+    allocate(thermal_speeds(Nspecies))
+    do ispecies=1,Nspecies
+       thermal_speeds(ispecies) = sqrt(2*THats(ispecies)*electron_charge/(proton_mass*mHats(ispecies)))
+    end do
+
+    allocate(collision_frequencies(Nspecies,Nspecies))
+    do ispecies_a = 1,Nspecies
+       do ispecies_b = 1,Nspecies
+          collision_frequencies(ispecies_a,ispecies_b) = 4 * sqrt(2*pi) / 3 &
+               * nHats(ispecies_b) * ((Zs(ispecies_a)**2) * (Zs(ispecies_b)**2) * (electron_charge ** 4) * ln_Lambda &
+               / (((4*pi*epsilon_0)**2) * ((electron_charge * THats(ispecies_a))**(1.5d+0)) * sqrt(proton_mass*mHats(ispecies_a))))
+       end do
+    end do
 
     ! *******************************************************************************
     ! *******************************************************************************
@@ -1730,6 +1743,81 @@
        print *,"iota (Rotational transform) = ", iota
     end if
 
+    allocate(f_scaling(Nx,Nspecies))
+    do ispecies = 1,Nspecies
+       select case (f_scaling_option)
+       case (1)
+          ! Expected magnitude of the leading-order Maxwellian, without the exponential.
+          f_scaling(:,ispecies) = nHats(ispecies) / (pi*sqrtpi*(thermal_speeds(ispecies)**3))
+       case (2)
+          ! rho* times the leading-order Maxwellian, without the exponential.
+          f_scaling(:,ispecies) = sqrt(2 * mHats(ispecies) * proton_mass * THats(ispecies) * electron_charge) &
+               / (Zs(ispecies) * electron_charge * sqrt(FSABHat2) * aHat) &
+               * nHats(ispecies) / (pi*sqrtpi*(thermal_speeds(ispecies)**3))
+       case (3)
+          ! Expected magnitude of the leading-order Maxwellian, with the exponential.
+          f_scaling(:,ispecies) = expx2 * nHats(ispecies) / (pi*sqrtpi*(thermal_speeds(ispecies)**3))
+       case (4)
+          ! rho* times the leading-order Maxwellian, with the exponential.
+          f_scaling(:,ispecies) = expx2 * sqrt(2 * mHats(ispecies) * proton_mass * THats(ispecies) * electron_charge) &
+               / (Zs(ispecies) * electron_charge * sqrt(FSABHat2) * aHat) &
+               * nHats(ispecies) / (pi*sqrtpi*(thermal_speeds(ispecies)**3))
+       case default
+          if (masterProc) print *,"Error! Invalid f_scaling_option:",f_scaling_option
+          stop
+       end select
+    end do
+    if (masterProc) then
+       print "(a,i2,a)","f_scaling_option =",f_scaling_option,". Here comes f_scaling:"
+       do ix=1,Nx
+          print "(*(es10.2))",f_scaling(ix,:)
+       end do
+    end if
+
+    allocate(x_scaling(Nx,Nspecies))
+    do ispecies = 1,Nspecies
+       !v_s = sqrt(2*THats(ispecies)/mHats(ispecies)) ! Once I switch to SI units, include the 2 here.
+       !v_s = sqrt(THats(ispecies)/mHats(ispecies))    ! But while using the old units, v_s is measured in units of vBar, so there is no 2.
+
+       select case (x_scaling_option)
+       case (1)
+          ! without the exponential, without the x.
+          x_scaling(:,ispecies) = 1 / thermal_speeds(ispecies)
+       case (2)
+          ! without the exponential, with the x.
+          x_scaling(:,ispecies) = 1 / (thermal_speeds(ispecies) * x)
+       case (3)
+          ! with the exponential, without the x.
+          x_scaling(:,ispecies) = 1 / (thermal_speeds(ispecies) * expx2)
+       case (4)
+          ! with the exponential, with the x.
+          x_scaling(:,ispecies) = 1 / (thermal_speeds(ispecies) * expx2 * x)
+       case default
+          if (masterProc) print *,"Error! Invalid x_scaling_option:",x_scaling_option
+          stop
+       end select
+
+!!$       select case (x_scaling_option)
+!!$       case (1)
+!!$          x_scaling(:,ispecies) = 1 / (x * v_s)
+!!$       case (2)
+!!$          x_scaling(:,ispecies) = 1 / v_s
+!!$       case (3)
+!!$          x_scaling(:,ispecies) = 1 / (x * v_s * expx2)
+!!$       case (4)
+!!$          x_scaling(:,ispecies) = 1 / (v_s * expx2)
+!!$       case default
+!!$          if (masterProc) print *,"Error! Invalid x_scaling_option:",x_scaling_option
+!!$          stop
+!!$       end select
+    end do
+    if (masterProc) then
+       print "(a,i2,a)","x_scaling_option =",x_scaling_option,". Here comes x_scaling:"
+       do ix=1,Nx
+          print "(*(es10.2))",x_scaling(ix,:)
+       end do
+    end if
+
     allocate(spatial_scaling(Ntheta,Nzeta))
     select case (spatial_scaling_option)
     case (1)
@@ -1763,47 +1851,12 @@
        stop
     end select
 
-!!$    if (masterProc) then
-!!$       print *,"Here comes spatial_scaling:"
-!!$       print *,spatial_scaling
-!!$    end if
-
-    allocate(x_scaling(Nx,Nspecies))
-    do ispecies = 1,Nspecies
-       !v_s = sqrt(2*THats(ispecies)/mHats(ispecies)) ! Once I switch to SI units, include the 2 here.
-       v_s = sqrt(THats(ispecies)/mHats(ispecies))    ! But while using the old units, v_s is measured in units of vBar, so there is no 2.
-
-       select case (x_scaling_option)
-       case (1)
-          x_scaling(:,ispecies) = 1 / (x * v_s)
-       case (2)
-          x_scaling(:,ispecies) = 1 / v_s
-       case (3)
-          x_scaling(:,ispecies) = 1 / (x * v_s * expx2)
-       case (4)
-          x_scaling(:,ispecies) = 1 / (v_s * expx2)
-       case default
-          if (masterProc) print *,"Error! Invalid x_scaling_option:",x_scaling_option
-          stop
-       end select
-    end do
-
-    allocate(f_scaling(Nx,Nspecies))
-    do ispecies = 1,Nspecies
-       select case (f_scaling_option)
-       case (1)
-          f_scaling(:,ispecies) = nHats(ispecies)
-       case (2)
-          f_scaling(:,ispecies) = Zs(ispecies) / sqrt(THats(ispecies)*mHats(ispecies))
-       case (3)
-          f_scaling(:,ispecies) = 1
-       case (4)
-          f_scaling(:,ispecies) = Zs(ispecies) / sqrt(THats(ispecies)*mHats(ispecies))
-       case default
-          if (masterProc) print *,"Error! Invalid f_scaling_option:",f_scaling_option
-          stop
-       end select
-    end do
+    if (masterProc) then
+       print "(a,i2,a)","spatial_scaling_option =",spatial_scaling_option,". Here comes spatial_scaling:"
+       do itheta=1,Ntheta
+          print "(*(f5.2))",spatial_scaling(itheta,:)
+       end do
+    end if
 
     ! *********************************************************
     ! Allocate some arrays that will be used later for output quantities:

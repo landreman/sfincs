@@ -11,6 +11,7 @@ module globalVariables
 #include <petsc/finclude/petsckspdef.h>
 #endif
 
+  
   character(len=50), parameter :: inputFilename = "input.namelist"
 
   integer, parameter :: integerToRepresentTrue  =  1
@@ -21,6 +22,13 @@ module globalVariables
 
   real(prec), parameter :: pi = 3.14159265358979d+0
   real(prec), parameter :: sqrtpi = 1.77245385090552d+0
+  real(prec), parameter :: electron_charge = 1.60217662d-19
+  real(prec), parameter :: proton_mass = 1.6726219d-27
+  real(prec), parameter :: epsilon_0 = 8.85418782d-12
+  logical :: old_output_normalizations = .false.
+
+  real(prec), dimension(:), allocatable :: thermal_speeds
+  real(prec), dimension(:,:), allocatable :: collision_frequencies
 
   ! ********************************************************
   ! ********************************************************
@@ -120,8 +128,9 @@ module globalVariables
 
   integer :: quasineutralityOption = 1
 
-  real(prec) :: ln_Lambda = 16
-  !!!!!!!!!!!!!!!!!!!!!!!
+  integer :: ln_Lambda_option = 0
+  !  0 : specified value
+  real(prec) :: ln_Lambda = 16.0
 
   ! ********************************************************
   ! ********************************************************

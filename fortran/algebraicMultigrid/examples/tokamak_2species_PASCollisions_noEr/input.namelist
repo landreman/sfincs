@@ -51,10 +51,10 @@
 
   Zs = 1 -1      
   mHats = 1 0.000545509d+0
-  nHats = 1.0d+0 1.0d+0
-  THats = 1.0d+0 1.0d+0
-  dNHatdrHats = -0.5d+0 -0.5d+0
-  dTHatdrHats = -2.0d+0 -2.0d+0
+  nHats = 1.0d+20 1.0d+20
+  THats = 1.0d+3 1.0d+3
+  dNHatdrHats = -0.5d+20 -0.5d+20
+  dTHatdrHats = -2.0d+3 -2.0d+3
 
 !  Zs =  -1      
 !  mHats =  0.000545509d+0

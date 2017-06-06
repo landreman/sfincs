@@ -47,7 +47,7 @@ contains
          dPhiHatdpsiHat, dPhiHatdpsiN, dPhiHatdrHat, dPhiHatdrN, Er, &
          includeTemperatureEquilibrationTerm, includePhi1, &
          nuPrime, EStar, magneticDriftScheme, includePhi1InKineticEquation, &
-         quasineutralityOption
+         quasineutralityOption, old_output_normalizations, ln_Lambda
 
     namelist / resolutionParameters / &
          Ntheta, &

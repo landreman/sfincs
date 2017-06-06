@@ -71,7 +71,7 @@
           call MatGetDiagonal(sub_Pmat, diagonal_vec, ierr)
           call VecMin(diagonal_vec, index_of_min, diagonal_min, ierr)
           call VecMax(diagonal_vec, index_of_max, diagonal_max, ierr)
-          if (masterProc) print "(a,i2,a,f11.3,a,i4,a,f11.3,a,i4)"," Fieldsplit ",j,": min=",diagonal_min," at index ",index_of_min,", max=",diagonal_max," at index ",index_of_max
+          if (masterProc) print "(a,i2,a,es11.3,a,i4,a,es11.3,a,i4)"," Fieldsplit ",j,": min=",diagonal_min," at index ",index_of_min,", max=",diagonal_max," at index ",index_of_max
           call VecDestroy(diagonal_vec, ierr)
        end do
     end if

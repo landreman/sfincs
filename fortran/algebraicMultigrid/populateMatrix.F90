@@ -1,7 +1,3 @@
-! For compilers that do not include the error function erf(x), the line
-! below should be un-commented:
-!#define USE_GSL_ERF
-  
 #include "PETScVersions.F90"
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
 #include <finclude/petscmatdef.h>
@@ -48,7 +44,7 @@
     real(prec), dimension(:,:), allocatable :: potentialsToFInterpolationMatrix
     real(prec), dimension(:,:,:,:), allocatable :: CECD
     real(prec) :: xPartOfSource1, xPartOfSource2, geometricFactor1, geometricFactor2, geometricFactor3
-    real(prec), dimension(:,:), allocatable ::  nuDHat
+    real(prec), dimension(:,:), allocatable ::  nu_D
     real(prec), dimension(:), allocatable :: erfs, Psi_Chandra
     PetscLogDouble :: time1, time2, time3, time4
     real(prec), dimension(:,:), pointer :: ddtheta_to_use, ddzeta_to_use, ddxi_to_use, pitch_angle_scattering_operator_to_use, ddx_to_use
@@ -72,13 +68,10 @@
     integer :: iSpecies_min, iSpecies_max, ix_min, ix_max
     real(prec), dimension(:,:), allocatable :: collision_operator_xi_block
     real(prec), dimension(:,:,:), allocatable :: Legendre_projection_to_use
-    real(prec) :: Er_factor
 
     ! *******************************************************************************
     ! Do a few sundry initialization tasks:
     ! *******************************************************************************
-
-    Er_factor = Delta * gamma / 2 ! When I switch to SI units, I can replace Er_factor with 1
 
     call PetscTime(time3, ierr)
 
@@ -199,7 +192,7 @@
     allocate(expxb2(Nx))
     allocate(erfs(Nx))
     allocate(Psi_Chandra(Nx))
-    allocate(nuDHat(Nspecies, Nx))
+    allocate(nu_D(Nspecies, Nx))
     allocate(fToFInterpolationMatrix(Nx,Nx))
     allocate(potentialsToFInterpolationMatrix(Nx, NxPotentials))
     allocate(CECD(Nspecies, Nspecies, Nx, Nx))
@@ -219,9 +212,9 @@
        THat = THats(ispecies)
        mHat = mHats(ispecies)
        Z = Zs(ispecies)
-       sqrtTHat = sqrt(THat)
-       sqrtMHat = sqrt(mHat)
-       v_s = sqrt(THat/mHat) ! Using the version3 normalizations, there is no 2 here. But when I move to SI units, add a 2 inside the sqrt.
+!!$       sqrtTHat = sqrt(THat)
+!!$       sqrtMHat = sqrt(mHat)
+!!$       v_s = sqrt(THat/mHat) ! Using the version3 normalizations, there is no 2 here. But when I move to SI units, add a 2 inside the sqrt.
 
        ! *********************************************************
        ! Add the d/dzeta term:
@@ -233,13 +226,13 @@
                 do ix = 1,Nx
                    do ixi = 1,Nxi_for_x(ix)
                       ! Next line is the parallel streaming term:
-                      factor = v_s * x(ix) * xi(ixi) * BHat_sup_zeta(itheta,izeta_row) / BHat(itheta,izeta_row)
+                      factor = thermal_speeds(ispecies) * x(ix) * xi(ixi) * BHat_sup_zeta(itheta,izeta_row) / BHat(itheta,izeta_row)
                       ! Add the ExB term:
                       select case (ExB_option)
                       case (1)
-                         factor = factor - BHat_sub_theta(itheta,izeta_row)/(sqrt_g(itheta,izeta_row)*BHat(itheta,izeta_row)*BHat(itheta,izeta_row))*dPhiHatdpsiHat*Er_factor
+                         factor = factor - BHat_sub_theta(itheta,izeta_row)/(sqrt_g(itheta,izeta_row)*BHat(itheta,izeta_row)*BHat(itheta,izeta_row))*dPhiHatdpsiHat
                       case (2)
-                         factor = factor - BHat_sub_theta(itheta,izeta_row)/(sqrt_g(itheta,izeta_row)*FSABHat2)*dPhiHatdpsiHat*Er_factor
+                         factor = factor - BHat_sub_theta(itheta,izeta_row)/(sqrt_g(itheta,izeta_row)*FSABHat2)*dPhiHatdpsiHat
                       end select
                       factor = factor * spatial_scaling(itheta,izeta_row) * x_scaling(ix,ispecies)
 
@@ -284,13 +277,13 @@
                 do ix = 1,Nx
                    do ixi = 1,Nxi_for_x(ix)
                       ! Next line is the parallel streaming term:
-                      factor = v_s * x(ix) * xi(ixi) * BHat_sup_theta(itheta_row,izeta) / BHat(itheta_row,izeta)
+                      factor = thermal_speeds(ispecies) * x(ix) * xi(ixi) * BHat_sup_theta(itheta_row,izeta) / BHat(itheta_row,izeta)
                       ! Add the ExB term:
                       select case (ExB_option)
                       case (1)
-                         factor = factor + BHat_sub_zeta(itheta_row,izeta)/(sqrt_g(itheta_row,izeta)*BHat(itheta_row,izeta)*BHat(itheta_row,izeta))*dPhiHatdpsiHat*Er_factor
+                         factor = factor + BHat_sub_zeta(itheta_row,izeta)/(sqrt_g(itheta_row,izeta)*BHat(itheta_row,izeta)*BHat(itheta_row,izeta))*dPhiHatdpsiHat
                       case (2)
-                         factor = factor + BHat_sub_zeta(itheta_row,izeta)/(sqrt_g(itheta_row,izeta)*FSABHat2)*dPhiHatdpsiHat*Er_factor
+                         factor = factor + BHat_sub_zeta(itheta_row,izeta)/(sqrt_g(itheta_row,izeta)*FSABHat2)*dPhiHatdpsiHat
                       end select
                       factor = factor * spatial_scaling(itheta_row,izeta) * x_scaling(ix,ispecies)
 
@@ -336,11 +329,11 @@
                 do ix = 1,Nx
                    do ixi_row = 1,Nxi_for_x(ix)
                       ! The next line is the standard mirror term:
-                      factor = - v_s*x(ix)*(1-xi(ixi_row)*xi(ixi_row))/(2*BHat(itheta,izeta)*BHat(itheta,izeta)) &
+                      factor = - thermal_speeds(ispecies)*x(ix)*(1-xi(ixi_row)*xi(ixi_row))/(2*BHat(itheta,izeta)*BHat(itheta,izeta)) &
                            * (BHat_sup_theta(itheta,izeta)*dBHatdtheta(itheta,izeta) + BHat_sup_zeta(itheta,izeta)*dBHatdzeta(itheta,izeta))
                       if (includeElectricFieldTermInXiDot) then
                          factor = factor + xi(ixi_row)*(1-xi(ixi_row)*xi(ixi_row))/(2*sqrt_g(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)) &
-                              * (BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))*dPhiHatdpsiHat*Er_factor
+                              * (BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))*dPhiHatdpsiHat
                       end if
                       factor = factor * spatial_scaling(itheta,izeta) * x_scaling(ix,ispecies)
 
@@ -383,10 +376,11 @@
           do izeta = izetaMin,izetaMax
              do itheta = ithetaMin,ithetaMax
                 spatial_factor = spatial_scaling(itheta,izeta)*dPhiHatdpsiHat/(2*sqrt_g(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)) &
-                     * (BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))*Er_factor
+                     * (BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))
                 do ix_row = 1,Nx
                    do ixi = 1,Nxi
-                      factor = spatial_factor * x_scaling(ix_row,ispecies) * x(ix_row) * (1 + xi(ixi)*xi(ixi))
+                      factor = spatial_factor * x_scaling(ix_row,ispecies) / f_scaling(ix_row,ispecies) &
+                           * x(ix_row) * (1 + xi(ixi)*xi(ixi))
                       if (whichMatrix>0) then
                          ! Not preconditioner
                          ddx_to_use => ddx
@@ -398,7 +392,7 @@
                       do ix_col = 1,Nx
                          colIndex = getIndex(ispecies, ix_col, ixi, itheta, izeta, BLOCK_F)
                          call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                              factor * ddx_to_use(ix_row,ix_col), ADD_VALUES, ierr)
+                              factor * ddx_to_use(ix_row,ix_col) * f_scaling(ix_col, ispecies), ADD_VALUES, ierr)
                       end do
                    end do
                 end do
@@ -845,7 +839,7 @@
           ddx_to_use => ddx
           d2dx2_to_use = d2dx2
           
-          nuDHat = zero
+          nu_D = zero
           CECD = zero
           ! Before adding the collision operator, we must loop over both species
           ! to build several terms in the operator.
@@ -859,11 +853,7 @@
                 do ix=1,Nx
                    ! erf is vectorized in gfortran but not pathscale
                    temp1 = xb(ix)
-#ifdef USE_GSL_ERF
-                   call erf(temp1, temp2)
-#else
                    temp2 = erf(temp1)
-#endif
                    erfs(ix) = temp2
                 end do
                 ! The subtraction in the next line causes a loss of some digits at small x. Is there a better method?
@@ -872,7 +862,7 @@
                 T32m = THats(iSpeciesA) * sqrt(THats(iSpeciesA)*mHats(ispeciesA))
                 
                 ! Build the pitch-angle scattering frequency:
-                nuDHat(iSpeciesA, :) =  nuDHat(iSpeciesA, :) &
+                nu_D(iSpeciesA, :) =  nu_D(iSpeciesA, :) &
                      + (three*sqrtpi/four) / T32m &
                      * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
                      * nHats(iSpeciesB)*(erfs - Psi_Chandra)/(x*x*x)
@@ -1036,7 +1026,7 @@
                       if (iSpeciesA==iSpeciesB .and. ix_row==ix_col) then
                          ! Add pitch angle scattering:
                          ! (This operator is usually tri-diagonal or penta-diagonal in xi.)
-                         collision_operator_xi_block = collision_operator_xi_block + pitch_angle_scattering_operator_to_use * nuDHat(iSpeciesA,ix_row)
+                         collision_operator_xi_block = collision_operator_xi_block + pitch_angle_scattering_operator_to_use * nu_D(iSpeciesA,ix_row)
                       end if
 
                       do itheta = ithetaMin,ithetaMax
@@ -1083,7 +1073,7 @@
              collision_multiplier = one
           end if
 
-          nuDHat = zero
+          nu_D = zero
           ! row is species A, column is species B
           do iSpeciesA = 1,Nspecies
              do iSpeciesB = 1,Nspecies
@@ -1094,31 +1084,27 @@
                 do ix=1,Nx
                    ! erf is vectorized in gfortran but not pathscale
                    temp1 = xb(ix)
-#ifdef USE_GSL_ERF
-                   call erf(temp1, temp2)
-#else
                    temp2 = erf(temp1)
-#endif
                    erfs(ix) = temp2
                 end do
                 ! The subtraction in the next line causes a loss of some digits at small x. Is there a better method?
                 Psi_Chandra = (erfs - 2/sqrtpi * xb * expxb2) / (2*xb*xb)
                 
-                T32m = THats(iSpeciesA) * sqrt(THats(iSpeciesA)*mHats(ispeciesA))
-                
                 ! Build the pitch-angle scattering frequency:
-                nuDHat(iSpeciesA, :) =  nuDHat(iSpeciesA, :) &
-                     + (three*sqrtpi/four) / T32m &
-                     * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
-                     * nHats(iSpeciesB)*(erfs - Psi_Chandra)/(x*x*x)
+                nu_D(iSpeciesA, :) =  nu_D(iSpeciesA, :) &
+                     + nHats(iSpeciesB)*Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
+                     * electron_charge*electron_charge*electron_charge*electron_charge*ln_Lambda &
+                     / (4*pi*epsilon_0*epsilon_0*proton_mass*proton_mass*mHats(ispeciesA)*mHats(ispeciesA) &
+                     * thermal_speeds(ispeciesA)*thermal_speeds(ispeciesA)*thermal_speeds(ispeciesA)) &
+                     * (erfs - Psi_Chandra)/(x*x*x)
                 
              end do
-
+             print *,"Here comes nu_D:"
+             print *,nu_D
              do ix=ixMin,Nx
                 do itheta=ithetaMin,ithetaMax
                    do izeta=izetaMin,izetaMax
-                      !factor = -nu_n*BHat(itheta,izeta)*sqrt(mHats(ispeciesA)/THats(ispeciesA))/abs(DHat(itheta,izeta))*nuDHat(iSpeciesA,ix)
-                      factor = -collision_multiplier*nu_n*spatial_scaling(itheta,izeta)*x_scaling(ix,iSpeciesA)*nuDHat(iSpeciesA,ix)
+                      factor = -collision_multiplier*spatial_scaling(itheta,izeta)*x_scaling(ix,iSpeciesA)*nu_D(iSpeciesA,ix)
                       do ixi_row = 1,Nxi
                          rowIndex=getIndex(iSpeciesA,ix,ixi_row,itheta,izeta,BLOCK_F)
                          do ixi_col = 1,Nxi

@@ -22,7 +22,7 @@
     PetscScalar :: scalar
     real(prec) :: x_part, factor, x_part_2, species_factor
     integer :: ix, ixi, L, itheta, izeta, ispecies, index
-    real(prec) :: THat, mHat, sqrtTHat, sqrtmHat, dfMdx
+    real(prec) :: THat, mHat, nHat, dfMdx
     Mat :: residualMatrix
     real(prec) :: dPhiHatdpsiHatToUseInRHS
     PetscReal :: norm
@@ -100,12 +100,11 @@
     do ispecies = 1,Nspecies
        THat = THats(ispecies)
        mHat = mHats(ispecies)
-       sqrtTHat = sqrt(THat)
-       sqrtMHat = sqrt(mHat)
+       nHat = nHats(ispecies)
        
        do ix=ixMin,Nx
           x_part = x2(ix)*exp(-x2(ix))*( dnHatdpsiHats(ispecies)/nHats(ispecies) &
-               + gamma*Zs(ispecies)/THats(ispecies)*dPhiHatdpsiHatToUseInRHS &
+               + Zs(ispecies)/THats(ispecies)*dPhiHatdpsiHatToUseInRHS &
                + (x2(ix) - three/two)*dTHatdpsiHats(ispecies)/THats(ispecies))
 
           if (includePhi1 .and. includePhi1InKineticEquation) then
@@ -116,24 +115,25 @@
              do izeta = izetaMin,izetaMax                
                 if (includePhi1 .and. includePhi1InKineticEquation) then !!Added by AM 2016-03
                    stop "This part not yet ready for theta_finiteDiffXi"
-                   factor = -spatial_scaling(itheta,izeta)*Delta*nHats(ispecies)*mHat*sqrtMHat &
-                        /(2*Zs(ispecies)*(BHat(itheta,izeta)**3)*sqrtTHat) &
-                        *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
-                        - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
-                        !!                     * DHat(itheta,izeta) * x_part !!Commented by AM 2016-02
-                        / sqrt_g(itheta,izeta) * (x_part + x_part_2*Zs(ispecies)*gamma*Phi1Hat(itheta,izeta))  & !!Added by AM 2016-02
-                        * exp(-Zs(ispecies)*gamma*Phi1Hat(itheta,izeta)/THats(ispecies)) !!Added by AM 2016-02
+!!$                   factor = -spatial_scaling(itheta,izeta)*Delta*nHats(ispecies)*mHat*sqrtMHat &
+!!$                        /(2*Zs(ispecies)*(BHat(itheta,izeta)**3)*sqrtTHat) &
+!!$                        *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
+!!$                        - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
+!!$                        !!                     * DHat(itheta,izeta) * x_part !!Commented by AM 2016-02
+!!$                        / sqrt_g(itheta,izeta) * (x_part + x_part_2*Zs(ispecies)*gamma*Phi1Hat(itheta,izeta))  & !!Added by AM 2016-02
+!!$                        * exp(-Zs(ispecies)*gamma*Phi1Hat(itheta,izeta)/THats(ispecies)) !!Added by AM 2016-02
                 else
 !!$                   factor = Delta*nHats(ispecies)*mHat*sqrtMHat &
 !!$                        /(2*pi*sqrtpi*Zs(ispecies)*(BHat(itheta,izeta)**3)*sqrtTHat) &
 !!$                        *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
 !!$                        - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
 !!$                        * DHat(itheta,izeta) * x_part
-                   factor = -Delta*THat &
-                        /(2*Zs(ispecies)*BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)*sqrt_g(itheta,izeta)) &
+                   factor = -nHat*THat &
+                        /(pi*sqrtpi*thermal_speeds(ispecies)*thermal_speeds(ispecies)*thermal_speeds(ispecies)*Zs(ispecies) &
+                        *BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)*sqrt_g(itheta,izeta)) &
                         *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
                         - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
-                        * x_part * spatial_scaling(itheta,izeta) * x_scaling(ix,ispecies)
+                        * x_part * spatial_scaling(itheta,izeta) * x_scaling(ix,ispecies) / f_scaling(ix,ispecies)
                 end if 
                 
                 do ixi = 1,Nxi_for_x(ix)
@@ -214,13 +214,12 @@
 
     ! Add the inductive electric field term:
     do ispecies = 1,Nspecies
-       species_factor = sqrt(THats(ispecies)/mHats(ispecies))
        do ix=ixMin,Nx
           do itheta=ithetaMin,ithetaMax
              do izeta = izetaMin,izetaMax
-                factor = -species_factor*gamma*Zs(ispecies)*x(ix)*exp(-x2(ix))*EParallelHat &
-                     *BHat(itheta,izeta)/(THats(ispecies)*FSABHat2) &
-                     * spatial_scaling(itheta,izeta) * x_scaling(ix,ispecies)
+                factor = -nHats(ispecies)*Zs(ispecies)*x(ix)*exp(-x2(ix))*EParallelHat * BHat(itheta,izeta) &
+                     / (pi*sqrtpi*thermal_speeds(ispecies)*thermal_speeds(ispecies)*THats(ispecies)*FSABHat2) &
+                     * spatial_scaling(itheta,izeta) * x_scaling(ix,ispecies) / f_scaling(ix,ispecies)
                 do ixi = 1,Nxi
                    index = getIndex(ispecies, ix, ixi, itheta, izeta, BLOCK_F)
                    scalar = factor * xi(ixi)
