@@ -1784,7 +1784,7 @@
                         * expxb2(ix)
                    
                 end do
-                
+                !CECD=0 ! For debugging
              end do
           end do
           

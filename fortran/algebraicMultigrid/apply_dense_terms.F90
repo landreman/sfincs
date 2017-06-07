@@ -77,7 +77,8 @@
                 do iSpeciesA = 1,Nspecies
                    do ix_row = 1,Nx
                       xi_vector_out = 0
-                      factor = -nu_n*spatial_scaling(itheta,izeta)*x_scaling(ix_row,iSpeciesA)
+                      !factor = -nu_n*spatial_scaling(itheta,izeta)*x_scaling(ix_row,iSpeciesA)
+                      factor = -spatial_scaling(itheta,izeta)*x_scaling(ix_row,iSpeciesA)
                       do L = 0,NL-1
                          !call dgemv('n',Nxi,Nxi,species_factor(iSpeciesA)*factor* RosenbluthPotentialTerms(iSpeciesA,iSpeciesB,L+1,ix_row,ix_col),&
 #if defined(PETSC_USE_REAL_SINGLE)

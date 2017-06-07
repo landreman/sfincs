@@ -160,10 +160,10 @@
 
     end if
 
-    call SNESGetKSP(mysnes, myksp, ierr)
-    call KSPGetOperators(myksp, sub_Amat, sub_Pmat, ierr)
-    print *,"Here comes main Pmat:"
-    call MatView(sub_Pmat,PETSC_VIEWER_STDOUT_WORLD,ierr)
+!!$    call SNESGetKSP(mysnes, myksp, ierr)
+!!$    call KSPGetOperators(myksp, sub_Amat, sub_Pmat, ierr)
+!!$    print *,"Here comes main Pmat:"
+!!$    call MatView(sub_Pmat,PETSC_VIEWER_STDOUT_WORLD,ierr)
 
   end subroutine evaluateJacobian
 

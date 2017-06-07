@@ -926,8 +926,8 @@
                 !     * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / T32m
                 
                 ! alpha_finiteDiffXi normalization
-                speciesFactor = 3 * nHats(iSpeciesB)  * sqrt(mHats(iSpeciesB)/THats(iSpeciesB)) &
-                     * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / (THats(iSpeciesB)*mHats(iSpeciesA))
+                !speciesFactor = 3 * nHats(iSpeciesB)  * sqrt(mHats(iSpeciesB)/THats(iSpeciesB)) &
+                !     * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / (THats(iSpeciesB)*mHats(iSpeciesA))
 
                 ! algebraicMultigrid SI normalization
                 speciesFactor = collision_frequency * 4/sqrtpi * nHats(ispeciesA)/nHats(ispeciesB) * mHats(iSpeciesA)/mHats(iSpeciesB)
@@ -941,7 +941,8 @@
                 do ix=1,Nx
                    CECD(iSpeciesA, iSpeciesB, ix, :) = CECD(iSpeciesA, iSpeciesB, ix, :) &
                         + speciesFactor * expx2(ix) * fToFInterpolationMatrix(ix, :) &
-                        * f_scaling(ix,iSpeciesB) / f_scaling(:,iSpeciesA)
+                        * f_scaling(:,iSpeciesB) / f_scaling(ix,iSpeciesA)
+                   !* f_scaling(ix,iSpeciesB) / f_scaling(:,iSpeciesA)
                 end do
                 
                 ! Done adding CD. Now add energy scattering (CE).
@@ -972,7 +973,7 @@
                         !* expxb2(ix)
                    
                 end do
-                
+                !CECD=0 ! For debugging!
              end do
           end do          
 

@@ -32,8 +32,6 @@
 /
 
 &physicsParameters
-  ! No need to specify Delta, alpha, nu_n, or Er, since we are computing monoenergetic transport coefficients.
-
   ! Compared to the parameter nu from the monoenergetic codes,
   ! SFINCS's nuPrime = nu / 0.836028 = nu * 1.196132
   nuPrime = 1.196132d-3

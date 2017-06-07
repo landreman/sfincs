@@ -1521,12 +1521,6 @@
        stop
     end select
 
-    if ((xGridScheme==5 .or. xGridScheme==6) .and. (RHSMode .ne. 3)) then
-       allocate(RosenbluthPotentialTerms(Nspecies,Nspecies,NL,Nx,Nx))
-       call computeRosenbluthPotentialResponse(Nx, x, xWeights, Nspecies, mHats, THats, nHats, Zs, NL, &
-         RosenbluthPotentialTerms,.false.)
-    end if
-
 !    if (masterProc) then
     if (.false.) then
        print *,"xGridScheme:",xGridScheme
@@ -1856,6 +1850,16 @@
        do itheta=1,Ntheta
           print "(*(f5.2))",spatial_scaling(itheta,:)
        end do
+    end if
+
+    ! *********************************************************
+    ! Compute Rosenbluth potential response matrices
+    ! *********************************************************
+
+    if ((xGridScheme==5 .or. xGridScheme==6) .and. (RHSMode .ne. 3)) then
+       allocate(RosenbluthPotentialTerms(Nspecies,Nspecies,NL,Nx,Nx))
+       !call computeRosenbluthPotentialResponse(Nx, x, xWeights, Nspecies, mHats, THats, nHats, Zs, NL, f_scaling, RosenbluthPotentialTerms,.false.)
+       call computeRosenbluthPotentialResponse()
     end if
 
     ! *********************************************************

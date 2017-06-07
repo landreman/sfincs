@@ -28,6 +28,7 @@
 
 &physicsParameters
   old_output_normalizations=T
+  ln_Lambda = 16.97
 
   Er = -1.7d+3
 !  Er = 0

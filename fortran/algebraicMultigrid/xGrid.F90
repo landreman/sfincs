@@ -237,18 +237,23 @@
 
     ! ---------------------------------------------------------------
 
-    subroutine computeRosenbluthPotentialResponse(Nx, x, xWeights, Nspecies, mHats, THats, nHats, Zs, NL, &
-         RosenbluthPotentialTerms,verbose)
+!    subroutine computeRosenbluthPotentialResponse(Nx, x, xWeights, Nspecies, mHats, THats, nHats, Zs, f_scaling, NL, &
+!         RosenbluthPotentialTerms,verbose)
+    subroutine computeRosenbluthPotentialResponse()
+
+      use globalVariables, only: Nx, x, xWeights, Nspecies, mHats, THats, nHats, Zs, f_scaling, NL, RosenbluthPotentialTerms, &
+           electron_charge, epsilon_0, proton_mass, ln_Lambda, thermal_speeds, pi, sqrtpi
 
       ! This subroutine is the other major routine in this module.
       ! Here, we compute matrices which, when multiplied by a vector of distribution-function
       ! values on the x grid, yields the Rosenbluth potentials (or derivatives thereof)
       ! on the x grid. The source and destination x grids may "belong" to different species.
       
-      logical, intent(in) :: verbose
-      integer, intent(in) :: Nx, Nspecies, NL
-      real(prec), dimension(:), intent(in) :: x, xWeights, mHats, THats, nHats, Zs
-      PetscScalar, dimension(:,:,:,:,:), intent(out) :: RosenbluthPotentialTerms
+      logical, parameter :: verbose = .false.
+!!$      integer, intent(in) :: Nx, Nspecies, NL
+!!$      real(prec), dimension(:), intent(in) :: x, xWeights, mHats, THats, nHats, Zs
+!!$      real(prec), dimension(:,:), intent(in) :: f_scaling
+!!$      PetscScalar, dimension(:,:,:,:,:), intent(out) :: RosenbluthPotentialTerms
       ! Order of indicies in the Rosenbluth response matrices:
       ! (species_row, species_col, L, x_row, x_col)
 
@@ -256,12 +261,11 @@
       real(prec), dimension(:,:), allocatable :: tempMatrix_H
       real(prec), dimension(:,:), allocatable :: tempMatrix_dHdxb
       real(prec), dimension(:,:), allocatable :: tempMatrix_d2Gdxb2
-      real(prec), dimension(:,:), allocatable :: tempMatrix_combined
+      real(prec), dimension(:,:), allocatable :: tempMatrix_combined, tempMatrix_multiplied
       real(prec), dimension(:), allocatable :: expx2
       integer :: i, L, iSpeciesA, iSpeciesB, ix, imode
-      real(prec) :: alpha, speciesFactor, speciesFactor2, xb
+      real(prec) :: alpha, speciesFactor, speciesFactor2, xb, Gamma
       real(prec) :: I_2pL, I_4pL, I_1mL, I_3mL
-      real(prec), parameter :: pi = 3.14159265358979d+0
       real(prec), parameter :: one = 1., two = 2.
 
       ! Variables needed by quadpack:
@@ -293,6 +297,7 @@
       allocate(tempMatrix_dHdxb(Nx,Nx))
       allocate(tempMatrix_d2Gdxb2(Nx,Nx))
       allocate(tempMatrix_combined(Nx,Nx))
+      allocate(tempMatrix_multiplied(Nx,Nx))
 
       allocate(expx2(Nx))
       expx2=exp(-x*x)
@@ -334,10 +339,17 @@
                !     * THats(iSpeciesB)*mHats(iSpeciesA)/(THats(iSpeciesA)*mHats(iSpeciesB))
 
                ! Alpha_finiteDiffXi normalization:
-               speciesFactor2 = 3/(2*pi)*nHats(iSpeciesB) &
-                    * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
-                    * sqrt(mHats(iSpeciesB)/THats(ispeciesB)) &
-                    / (THats(iSpeciesA)*mHats(iSpeciesA))
+               !speciesFactor2 = 3/(2*pi)*nHats(iSpeciesB) &
+               !     * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
+               !     * sqrt(mHats(iSpeciesB)/THats(ispeciesB)) &
+               !     / (THats(iSpeciesA)*mHats(iSpeciesA))
+
+               ! algebraicMultigrid SI units normalization:
+               Gamma = Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
+                     * electron_charge*electron_charge*electron_charge*electron_charge*ln_Lambda &
+                     / (4*pi*epsilon_0*epsilon_0*proton_mass*proton_mass*mHats(ispeciesA)*mHats(ispeciesA))
+               speciesFactor2 = Gamma * 2 * nHats(iSpeciesA) / (pi*sqrtpi * (thermal_speeds(ispeciesA)**5)) &
+                    * (thermal_speeds(iSpeciesB)*thermal_speeds(iSpeciesB))
 
                do ix = 1,Nx
                   xb =  x(ix) * speciesFactor
@@ -463,12 +475,15 @@
                        + x(i)*x(i) * tempMatrix_d2Gdxb2(i,:))
                end do
 
-               RosenbluthPotentialTerms(iSpeciesA, iSpeciesB, L+1, :, :) = matmul(tempMatrix_combined, collocation2modal)
+               tempMatrix_multiplied = matmul(tempMatrix_combined, collocation2modal)
+               do ix = 1,Nx
+                  RosenbluthPotentialTerms(iSpeciesA, iSpeciesB, L+1, ix, :) = tempMatrix_multiplied(ix,:) * f_scaling(:,iSpeciesB) / f_scaling(ix,iSpeciesA)
+               end do
 
                if (verbose) then
                   print *,"For iSpeciesA=",iSpeciesA,",iSpeciesB=",iSpeciesB,",L=",L
                   print *,"RosenbluthPotentialTerms="
-                  do ix=1,NX
+                  do ix=1,Nx
                      print *,RosenbluthPotentialTerms(iSpeciesA,iSpeciesB,L+1,ix,:)
                   end do
                end if
@@ -480,6 +495,7 @@
       deallocate(tempMatrix_dHdxb)
       deallocate(tempMatrix_d2Gdxb2)
       deallocate(tempMatrix_combined)
+      deallocate(tempMatrix_multiplied)
       deallocate(collocation2modal)
 
     end subroutine computeRosenbluthPotentialResponse
