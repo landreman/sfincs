@@ -161,6 +161,9 @@
              call VecView(input_Vec, PETSC_VIEWER_STDOUT_WORLD, ierr)
           end if
 
+          ! For the rest of this this subroutine, it is critical to call VecDestroy on all Vecs that are created!
+          ! Otherwise a huge amount of unnecessary memory will be allocated, far greater than the memory used by the rest of the program.
+
           ! Compute the part of the solution in the DKE rows (x) arising from s:
           ! x = b (c b)^{-1} s
           call VecGetSubVector(input_Vec, IS_source_constraint, s_Vec, ierr) ! Extract s from the global input_Vec.
@@ -219,6 +222,7 @@
           print *,myRank,'NNNN'
           call KSPGetConvergedReason(inner_KSP, reason, ierr)
           if (reason <= 0 .and. masterProc) print *,"WARNING: inner KSP failed with reason",reason
+          call VecDestroy(temp_Vec_1, ierr)
           call MatCreateVecs(constraints_times_sources_Mat, PETSC_NULL_OBJECT, temp_Vec_2, ierr) ! Create temp_Vec_2 of the appropriate size.
           call MatMult(constraints_Mat, ainv_times_stuff_Vec, temp_Vec_2, ierr) ! Form c*a^{-1}*....
           call MatCreateVecs(constraints_times_sources_Mat, PETSC_NULL_OBJECT, temp_Vec_1, ierr) ! Create temp_Vec_1 of the appropriate size.
@@ -232,6 +236,7 @@
           call VecDuplicate(input_Vec, temp_Vec_1, ierr) ! Create temp_Vec_1 of the appropriate size.
           call VecWAXPY(temp_Vec_1, -one, temp_Vec_2, ainv_times_stuff_Vec, ierr) ! Now temp_Vec_1 holds (I - b (c b)^{-1} c) a^{-1} ....
           call VecDestroy(temp_Vec_2, ierr)
+          call VecDestroy(ainv_times_stuff_Vec, ierr)
           call VecAXPY(output_Vec, one, temp_Vec_1, ierr) ! Add the result to the term in output_Vec we computed previously.
           call VecDestroy(temp_Vec_1, ierr)
 

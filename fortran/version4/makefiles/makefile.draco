@@ -20,6 +20,9 @@
 # To use the plotting routines in utils/ you also need to load the following modules:
 # module load anaconda
 
+PETSC_DIR=/u/mlan/petsc-3.7.5
+PETSC_ARCH=20170408-01-hypreWithOpenMP
+
 # These next 2 includes set FC, FLINKER, and PETSC_LIB:
 # For PETSc version 3.6.0 and later, use the following 2 lines:
 include ${PETSC_DIR}/lib/petsc/conf/variables
@@ -29,7 +32,7 @@ include ${PETSC_DIR}/lib/petsc/conf/rules
 #include ${PETSC_DIR}/conf/rules
 
 # Any other flags for compiling, such as -I include flags:
-EXTRA_COMPILE_FLAGS = -I${HDF5_HOME}/include -I${PETSC_DIR}/include -I${NETCDF_HOME}/include
+EXTRA_COMPILE_FLAGS = -I${HDF5_HOME}/include -I${PETSC_DIR}/include -I${PETSC_DIR}/${PETSC_ARCH}/include -I${NETCDF_HOME}/include
 # The cray compiler needs -I. or else it cannot find PETSCVersions.F90
 
 # Any other flags for linking, such as -l library flags:
