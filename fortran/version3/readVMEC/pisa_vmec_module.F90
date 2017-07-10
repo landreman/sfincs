@@ -291,6 +291,7 @@ type vmec_eqdata
  real(DP), dimension(:), pointer :: iotas =>NULL()  !<  half mesh: iota
  real(DP), dimension(:), pointer :: mass =>NULL()   !<  half mesh: mass-profile
  real(DP), dimension(:), pointer :: pres =>NULL()   !<  half mesh: pressure
+ real(DP), dimension(:), pointer :: presf =>NULL()   !<  full mesh: pressure !MJL 20170104
  real(DP), dimension(:), pointer :: phips =>NULL()  !<  half mesh: dPhi/ds
  real(DP), dimension(:), pointer :: buco =>NULL()   !<  half mesh: toroidal current
  real(DP), dimension(:), pointer :: bvco =>NULL()   !<  half mesh: poloidal current
@@ -1531,6 +1532,7 @@ real(DP), dimension(:), pointer :: p_to_iotaf => NULL() !MJL 20150129
 real(DP), dimension(:), pointer :: p_to_iotas => NULL()
 real(DP), dimension(:), pointer :: p_to_mass => NULL()
 real(DP), dimension(:), pointer :: p_to_pres => NULL()
+real(DP), dimension(:), pointer :: p_to_presf => NULL() !MJL 20170104
 real(DP), dimension(:), pointer :: p_to_phips => NULL()
 real(DP), dimension(:), pointer :: p_to_buco => NULL()
 real(DP), dimension(:), pointer :: p_to_bvco => NULL()
@@ -1571,7 +1573,7 @@ nit   = indata%nit/100 + 1
 gam   = indata%gam
 iasym = 0          ! old fort.8 data are always stellarator symmetric
 
-allocate(p_to_iotas(ns), p_to_mass(ns), p_to_pres(ns), p_to_phips(ns), &
+allocate(p_to_iotas(ns), p_to_mass(ns), p_to_pres(ns), p_to_presf(ns), p_to_phips(ns), & !MJL 20170104
          p_to_buco(ns), p_to_bvco(ns), p_to_phi(ns), p_to_vp(ns), &
          p_to_jcuru(ns), p_to_jcurv(ns), p_to_specw(ns))
 allocate(p_to_rmnc (-ntor:ntor,0:mpol-1,ns)   , p_to_zmns (-ntor:ntor,0:mpol-1,ns), &
@@ -1584,6 +1586,7 @@ allocate(p_to_rmnc (-ntor:ntor,0:mpol-1,ns)   , p_to_zmns (-ntor:ntor,0:mpol-1,n
 p_to_iotas  = 0.0_DP
 p_to_mass   = 0.0_DP
 p_to_pres   = 0.0_DP
+p_to_presf  = 0.0_DP !MJL 20170104
 p_to_phips  = 0.0_DP
 p_to_buco   = 0.0_DP
 p_to_bvco   = 0.0_DP
@@ -1608,6 +1611,7 @@ p_to_bsupvmnc = 0.0_DP
 p_to_iotas  = indata%iotas
 p_to_mass   = indata%mass
 p_to_pres   = indata%pres
+p_to_presf  = indata%pres ! MJL 20170104  fort8data does not have presf, so for now pass pres as a hack.
 p_to_phips  = indata%phips
 p_to_buco   = indata%bpco
 p_to_bvco   = indata%bzco
@@ -1633,7 +1637,7 @@ p_to_bsupvmnc = indata%bsupv
 
 outdata = vmec_eqdata(mpol,ntor,ns,nfp,mnmax,itfsq,nit,iasym,gam, &
                    0_dp, p_to_iotaf, &  !MJL 20150129    fort8_data does not have Aminor_p
-                   p_to_iotas,p_to_mass,p_to_pres, &
+                   p_to_iotas,p_to_mass,p_to_pres, p_to_presf, & !MJL 20170104
                    p_to_phips,p_to_buco,p_to_bvco,p_to_phi,p_to_vp, &
                    p_to_jcuru, p_to_jcurv, p_to_specw, &
                    p_to_rmnc,p_to_rmns,p_to_zmns,p_to_zmnc,p_to_lmns,p_to_lmnc, &
@@ -1655,6 +1659,7 @@ real(DP), dimension(:), pointer :: p_to_iotaf => NULL() !MJL 20150192
 real(DP), dimension(:), pointer :: p_to_iotas => NULL()
 real(DP), dimension(:), pointer :: p_to_mass => NULL()
 real(DP), dimension(:), pointer :: p_to_pres => NULL()
+real(DP), dimension(:), pointer :: p_to_presf => NULL() !MJL 20170104
 real(DP), dimension(:), pointer :: p_to_phips => NULL()
 real(DP), dimension(:), pointer :: p_to_buco => NULL()
 real(DP), dimension(:), pointer :: p_to_bvco => NULL()
@@ -1697,7 +1702,7 @@ Aminor_p   = indata%Aminor_p !MJL 20150129
 iasym = indata%iasym
 
 ! Allocate and initialize the profile data
-allocate(p_to_iotas(ns), p_to_mass(ns), p_to_pres(ns), p_to_phips(ns), &
+allocate(p_to_iotas(ns), p_to_mass(ns), p_to_pres(ns), p_to_presf(ns), p_to_phips(ns), &
          p_to_iotaf(ns), & !MJL 20150129
          p_to_buco(ns), p_to_bvco(ns), p_to_phi(ns), p_to_vp(ns), &
          p_to_jcuru(ns), p_to_jcurv(ns), p_to_specw(ns))
@@ -1705,6 +1710,7 @@ p_to_iotaf  = 0.0_DP !MJL 20150129
 p_to_iotas  = 0.0_DP
 p_to_mass   = 0.0_DP
 p_to_pres   = 0.0_DP
+p_to_presf  = 0.0_DP !MJL 20170104
 p_to_phips  = 0.0_DP
 p_to_buco   = 0.0_DP
 p_to_bvco   = 0.0_DP
@@ -1753,6 +1759,7 @@ p_to_iotaf  = indata%iotaf !MJL 20150129
 p_to_iotas  = indata%iotas
 p_to_mass   = indata%mass
 p_to_pres   = indata%pres
+p_to_presf  = indata%presf !MJL 20170104
 p_to_phips  = indata%phip
 p_to_buco   = indata%buco
 p_to_bvco   = indata%bvco
@@ -1796,7 +1803,7 @@ endif
 
 outdata = vmec_eqdata(mpol,ntor,ns,nfp,mnmax,itfsq,nit,iasym,gam, &
                    Aminor_p, p_to_iotaf, &  !MJL 20150129
-                   p_to_iotas,p_to_mass,p_to_pres, &
+                   p_to_iotas,p_to_mass,p_to_pres, p_to_presf, & !MJL 20170104
                    p_to_phips,p_to_buco,p_to_bvco,p_to_phi,p_to_vp, &
                    p_to_jcuru, p_to_jcurv, p_to_specw, &
                    p_to_rmnc,p_to_rmns,p_to_zmns,p_to_zmnc,p_to_lmns,p_to_lmnc, &
@@ -1818,6 +1825,7 @@ real(DP), dimension(:), pointer :: p_to_iotaf => NULL() !MJL 20150129
 real(DP), dimension(:), pointer :: p_to_iotas => NULL()
 real(DP), dimension(:), pointer :: p_to_mass => NULL()
 real(DP), dimension(:), pointer :: p_to_pres => NULL()
+real(DP), dimension(:), pointer :: p_to_presf => NULL() !MJL 20170104
 real(DP), dimension(:), pointer :: p_to_phips => NULL()
 real(DP), dimension(:), pointer :: p_to_buco => NULL()
 real(DP), dimension(:), pointer :: p_to_bvco => NULL()
@@ -1861,7 +1869,7 @@ gam   = indata%gam
 Aminor_p = indata%Aminor_p  !MJL 20150129
 
 ! Allocate and initialize the profile data
-allocate(p_to_iotas(ns), p_to_mass(ns), p_to_pres(ns), p_to_phips(ns), &
+allocate(p_to_iotas(ns), p_to_mass(ns), p_to_pres(ns), p_to_presf(ns), p_to_phips(ns), &
          p_to_iotaf(ns), &  !MJL 20150129
          p_to_buco(ns), p_to_bvco(ns), p_to_phi(ns), p_to_vp(ns), &
          p_to_jcuru(ns), p_to_jcurv(ns), p_to_specw(ns),stat=ialloc)
@@ -1870,6 +1878,7 @@ p_to_iotaf  = 0.0_DP !MJL 20150129
 p_to_iotas  = 0.0_DP
 p_to_mass   = 0.0_DP
 p_to_pres   = 0.0_DP
+p_to_presf  = 0.0_DP !MJL 20170104
 p_to_phips  = 0.0_DP
 p_to_buco   = 0.0_DP
 p_to_bvco   = 0.0_DP
@@ -1923,6 +1932,7 @@ p_to_iotaf  = indata%iotaf !MJL 20150129
 p_to_iotas  = indata%iotas
 p_to_mass   = indata%mass
 p_to_pres   = indata%pres
+p_to_presf  = indata%presf !MJL 20170104
 p_to_phips  = indata%phips
 p_to_buco   = indata%buco
 p_to_bvco   = indata%bvco
@@ -1998,7 +2008,7 @@ endif
 
 outdata = vmec_eqdata(mpol,ntor,ns,nfp,mnmax,itfsq,nit,iasym,gam, &
                    Aminor_p, p_to_iotaf, &  !MJL 20150129
-                   p_to_iotas,p_to_mass,p_to_pres, &
+                   p_to_iotas,p_to_mass,p_to_pres, p_to_presf, & !MJL 20170104
                    p_to_phips,p_to_buco,p_to_bvco,p_to_phi,p_to_vp, &
                    p_to_jcuru, p_to_jcurv, p_to_specw, &
                    p_to_rmnc,p_to_rmns,p_to_zmns,p_to_zmnc,p_to_lmns,p_to_lmnc, &

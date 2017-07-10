@@ -11,20 +11,14 @@ desiredTolerance = 0.001
 
 numFailures = 0
 
-numFailures += shouldBe("transportMatrix[0,0;;;]", -0.0113502, desiredTolerance)
-numFailures += shouldBe("transportMatrix[0,1;;;]",  -0.0414953, desiredTolerance)
-numFailures += shouldBe("transportMatrix[0,2;;;]",  0.0276516, desiredTolerance)
-numFailures += shouldBe("transportMatrix[1,0;;;]",   -0.041501, desiredTolerance)
-numFailures += shouldBe("transportMatrix[1,1;;;]",   -0.314625, desiredTolerance)
-
-#numFailures += shouldBe("transportMatrix[1,2;;;]",   -0.0239723, desiredTolerance) # Value for Nxi_for_x_option=0
-numFailures += shouldBe("transportMatrix[1,2;;;]",   -0.0238869, desiredTolerance)
-
-numFailures += shouldBe("transportMatrix[2,0;;;]",   0.0276755, desiredTolerance)
-
-#numFailures += shouldBe("transportMatrix[2,1;;;]",   -0.0238248, desiredTolerance) # Value for Nxi_for_x_option=0
-numFailures += shouldBe("transportMatrix[2,1;;;]",   -0.0237431, desiredTolerance)
-
-numFailures += shouldBe("transportMatrix[2,2;;;]",   25.9315, desiredTolerance)
+numFailures += shouldBe("transportMatrix[0,0;;;]", -0.0114476, desiredTolerance)
+numFailures += shouldBe("transportMatrix[0,1;;;]", -0.04203, desiredTolerance)
+numFailures += shouldBe("transportMatrix[0,2;;;]",  0.027763, desiredTolerance)
+numFailures += shouldBe("transportMatrix[1,0;;;]", -0.0420358, desiredTolerance)
+numFailures += shouldBe("transportMatrix[1,1;;;]", -0.31792, desiredTolerance)
+numFailures += shouldBe("transportMatrix[1,2;;;]", -0.0226085, desiredTolerance)
+numFailures += shouldBe("transportMatrix[2,0;;;]", 0.0277744, desiredTolerance)
+numFailures += shouldBe("transportMatrix[2,1;;;]", -0.0225649, desiredTolerance)
+numFailures += shouldBe("transportMatrix[2,2;;;]", 25.7517, desiredTolerance)
 
 exit(numFailures > 0)

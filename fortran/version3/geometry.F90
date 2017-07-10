@@ -43,7 +43,7 @@ contains
 
     implicit none
 
-    integer :: fileUnit, didFileAccessWork
+    integer :: fileUnit, didFileAccessWork, Turkin_sign
     character(len=200) :: lineOfFile
     integer, dimension(4) :: headerIntegers
     PetscScalar, dimension(3) :: headerReals
@@ -119,10 +119,18 @@ contains
           print *,"Unable to open magnetic equilibrium file."
           stop
        else
+          Turkin_sign = 1
           do
              read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
              ! Skip lines that begin with "CC":
-             if (lineOfFile(1:2) /= "CC") exit
+             if (lineOfFile(1:2) /= "CC") then
+                exit
+             else
+                if (index(lineOfFile,"CStconfig")>0) then
+                   Turkin_sign = -1 ! This file was saved by Yuriy Turkin.
+                                    ! He has then changed a sign, which I here change back to Joachim Geiger's convention
+                end if                
+             end if
           end do
 
           ! Read header line:
@@ -144,7 +152,7 @@ contains
        end if
 
        !Switch from a left-handed to right-handed (radial,poloidal,toroidal) system
-       psiAHat=psiAHat*(-1)           !toroidal direction sign switch
+       psiAHat=psiAHat*(-1)*Turkin_sign           !toroidal direction sign switch, and possibly Yuriy Turkin's sign
 
     case (12)
        fileUnit = 11
@@ -548,11 +556,15 @@ contains
        else
           do
              read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
+             !print *,lineOfFile
              if (lineOfFile(1:2) /= "CC") exit
           end do
 
           ! Read header line:
           read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) headerIntegers, headerReals
+          !print *,'headerIntegers, headerReals='
+          !print *,headerIntegers
+          !print *,headerReals
           if (didFileAccessWork /= 0) then
              print *,"Unable to read header from the magnetic equilibrium file ",equilibriumFile
              stop
@@ -596,6 +608,8 @@ contains
 
           ! Skip a line
           read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
+          !print *,'s line='
+          !print *,lineOfFile
 
           do 
              if ((rN_new .ge. rN_wish) .or. end_of_file) exit
@@ -616,10 +630,17 @@ contains
              pPrimeHat_old = pPrimeHat_new
              numB0s = 0
 
-             ! Skip a line:
-             read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
+             if (.not.(index(lineOfFile,"[A]") > 0)) then !units were not on this line, so skip next
+                ! Skip a line:
+                read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
+                !print *,'skip unit [A] line='
+                !print *,lineOfFile
+             end if
+
              ! Read the header for the magnetic surface:
              read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) surfHeader
+             !print *,'surfHeader='
+             !print *,surfHeader
 
              rN_new = sqrt(surfHeader(1))       ! r/a = sqrt(psi/psi_a)
              iota_new = surfHeader(2)
@@ -634,6 +655,10 @@ contains
              read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
              proceed = .true.
              modeind = 0
+             !print *,'s line='
+             !print *,lineOfFile
+
+
              do
                 if (.not. proceed) exit
 
@@ -644,9 +669,15 @@ contains
                 else if (index(lineOfFile,"s") > 0) then
                    ! Next flux surface has been reached
                    proceed = .false.
+                   !print *,'s line='
+                   !print *,lineOfFile
                 else
-                   read(unit=lineOfFile, fmt=*) dataIntegers, dataNumbers
-                   if (dataIntegers(1) == 0 .and. dataIntegers(2) == 0) then
+                  read(unit=lineOfFile, fmt=*) dataIntegers, dataNumbers
+                  !print *,'dataIntegers='
+                  !print *,dataIntegers
+                  !print *,'dataNumbers='
+                  !print *,dataNumbers
+                  if (dataIntegers(1) == 0 .and. dataIntegers(2) == 0) then
                       B0_new = dataNumbers(4)
                       R0_new = dataNumbers(1)
                       numB0s = numB0s + 1
@@ -1981,10 +2012,15 @@ contains
     PetscScalar :: vmecRadialWeight_half(2)
     PetscScalar, dimension(:), allocatable :: dr2, psiN_full, psiN_half
     PetscScalar, dimension(:), allocatable :: vmec_dBHatdpsiHat, vmec_dBHat_sub_theta_dpsiHat, vmec_dBHat_sub_zeta_dpsiHat
+    PetscScalar, dimension(:), allocatable :: vmec_dRdpsiHat, vmec_dZdpsiHat, vmec_dpdpsiHat
     integer :: i, j, index, isurf, itheta, izeta, m, n
     PetscScalar :: min_dr2, angle, sin_angle, cos_angle, b, b00, temp, dphi, dpsi
     integer :: numSymmetricModesIncluded, numAntisymmetricModesIncluded
     PetscScalar :: scaleFactor
+    PetscScalar, dimension(:,:), allocatable :: R, dRdtheta, dRdzeta, dRdpsiHat, dZdtheta, dZdzeta, dZdpsiHat
+    PetscScalar, dimension(:,:), allocatable :: dXdtheta, dXdzeta, dXdpsiHat, dYdtheta, dYdzeta, dYdpsiHat
+    PetscScalar, dimension(:,:), allocatable :: g_sub_theta_theta, g_sub_theta_zeta, g_sub_zeta_zeta, g_sub_psi_theta, g_sub_psi_zeta
+
 
     ! This subroutine is written so that only psiN_wish is used, not the other *_wish quantities.
 
@@ -1995,6 +2031,32 @@ contains
     allocate(vmec_dBHatdpsiHat(vmec%ns))
     allocate(vmec_dBHat_sub_theta_dpsiHat(vmec%ns))
     allocate(vmec_dBHat_sub_zeta_dpsiHat(vmec%ns))
+    allocate(vmec_dRdpsiHat(vmec%ns))
+    allocate(vmec_dZdpsiHat(vmec%ns))
+    allocate(vmec_dpdpsiHat(vmec%ns))
+
+    allocate(R(Ntheta,Nzeta))
+    allocate(dRdtheta(Ntheta,Nzeta))
+    allocate(dRdzeta(Ntheta,Nzeta))
+    allocate(dRdpsiHat(Ntheta,Nzeta))
+
+    allocate(dXdtheta(Ntheta,Nzeta))
+    allocate(dXdzeta(Ntheta,Nzeta))
+    allocate(dXdpsiHat(Ntheta,Nzeta))
+
+    allocate(dYdtheta(Ntheta,Nzeta))
+    allocate(dYdzeta(Ntheta,Nzeta))
+    allocate(dYdpsiHat(Ntheta,Nzeta))
+
+    allocate(dZdtheta(Ntheta,Nzeta))
+    allocate(dZdzeta(Ntheta,Nzeta))
+    allocate(dZdpsiHat(Ntheta,Nzeta))
+
+    allocate(g_sub_theta_theta(Ntheta,Nzeta))
+    allocate(g_sub_theta_zeta(Ntheta,Nzeta))
+    allocate(g_sub_zeta_zeta(Ntheta,Nzeta))
+    allocate(g_sub_psi_theta(Ntheta,Nzeta))
+    allocate(g_sub_psi_zeta(Ntheta,Nzeta))
 
     ! --------------------------------------------------------------------------------
     ! Do some sanity checking to ensure the VMEC arrays have some expected properties.
@@ -2205,6 +2267,13 @@ contains
     iota = vmec%iotas(vmecRadialIndex_half(1)) * vmecRadialWeight_half(1) &
          + vmec%iotas(vmecRadialIndex_half(2)) * vmecRadialWeight_half(2)
 
+    dpsi = vmec%phi(2)/(2*pi)
+    vmec_dpdpsiHat = 0
+    vmec_dpdpsiHat(2:vmec%ns) = (vmec%presf(2:vmec%ns) - vmec%presf(1:vmec%ns-1)) / dpsi
+    pPrimeHat = (4*pi*1.0d-7) * ( &
+         vmec_dpdpsiHat(vmecRadialIndex_half(1)) * vmecRadialWeight_half(1) &
+         + vmec_dpdpsiHat(vmecRadialIndex_half(2)) * vmecRadialWeight_half(2))
+
     BHat = zero
     DHat = zero
     dBHatdtheta = zero
@@ -2269,6 +2338,9 @@ contains
              ! Evaluate the radial derivatives we will need:
              dpsi = vmec%phi(2)/(2*pi)  ! Doesn't need to be in the loops, but here for convenience.
 
+             ! B, B_sub_theta, and B_sub_zeta are on the half mesh, so their radial derivatives are on the full mesh.
+             ! R and Z are on the full mesh, so their radial derivatives are on the half mesh.
+
              vmec_dBHatdpsiHat(2:vmec%ns-1) = (vmec%bmnc(n,m,3:vmec%ns) - vmec%bmnc(n,m,2:vmec%ns-1)) / dpsi
              ! Simplistic "extrapolation" at the endpoints:
              vmec_dBHatdpsiHat(1) = vmec_dBHatdpsiHat(2)
@@ -2281,6 +2353,12 @@ contains
              vmec_dBHat_sub_zeta_dpsiHat(2:vmec%ns-1) = (vmec%bsubvmnc(n,m,3:vmec%ns) - vmec%bsubvmnc(n,m,2:vmec%ns-1)) / dpsi
              vmec_dBHat_sub_zeta_dpsiHat(1) = vmec_dBHat_sub_zeta_dpsiHat(2)
              vmec_dBHat_sub_zeta_dpsiHat(vmec%ns) = vmec_dBHat_sub_zeta_dpsiHat(vmec%ns-1)
+
+             vmec_dRdpsiHat(2:vmec%ns) = (vmec%rmnc(n,m,2:vmec%ns) - vmec%rmnc(n,m,1:vmec%ns-1)) / dpsi
+             vmec_dRdpsiHat(1) = 0
+
+             vmec_dZdpsiHat(2:vmec%ns) = (vmec%zmns(n,m,2:vmec%ns) - vmec%zmns(n,m,1:vmec%ns-1)) / dpsi
+             vmec_dZdpsiHat(1) = 0
 
              ! End of evaluating radial derivatives.
              
@@ -2337,27 +2415,6 @@ contains
                       ! Handle B sub psi.
                       ! Unlike the other components of B, this one is on the full mesh.
                       ! Notice B_psi = B_s * (d s / d psi), and (d s / d psi) = 1 / psiAHat
-!!$                      print *,"UUU"
-!!$                      print *,"itheta=",itheta
-!!$                      print *,"izeta=",izeta
-!!$                      print *,"temp=",temp
-!!$                      print *,"size(BHat_sub_psi,1)",size(BHat_sub_psi,1)
-!!$                      print *,"size(BHat_sub_psi,2)",size(BHat_sub_psi,2)
-!!$                      print *,"size(vmec%bsubsmns,1)",size(vmec%bsubsmns,1)
-!!$                      print *,"size(vmec%bsubsmns,2)",size(vmec%bsubsmns,2)
-!!$                      print *,"size(vmec%bsubsmns,3)",size(vmec%bsubsmns,3)
-!!$                      print *,"size(vmec%bsubsmnc,1)",size(vmec%bsubsmnc,1)
-!!$                      print *,"size(vmec%bsubsmnc,2)",size(vmec%bsubsmnc,2)
-!!$                      print *,"size(vmec%bsubsmnc,3)",size(vmec%bsubsmnc,3)
-!!$                      print *,"size(vmec%bsubumnc,1)",size(vmec%bsubumnc,1)
-!!$                      print *,"size(vmec%bsubumnc,2)",size(vmec%bsubumnc,2)
-!!$                      print *,"size(vmec%bsubumnc,3)",size(vmec%bsubumnc,3)
-!!$                      print *,"size(vmec%bmnc,1)",size(vmec%bmnc,1)
-!!$                      print *,"size(vmec%bmnc,2)",size(vmec%bmnc,2)
-!!$                      print *,"size(vmec%bmnc,3)",size(vmec%bmnc,3)
-!!$                      print *,"BHat_sub_psi(itheta,izeta)=",BHat_sub_psi(itheta,izeta)
-!!$                      print *,"isurf=",isurf
-!!$                      print *,"vmecRadialIndex_full(isurf)",vmecRadialIndex_full(isurf)
                       temp = vmec%bsubsmns(n,m,vmecRadialIndex_full(isurf)) / psiAHat * vmecRadialWeight_full(isurf)
                       temp = temp*scaleFactor
                       BHat_sub_psi(itheta,izeta) = BHat_sub_psi(itheta,izeta) + temp * sin_angle
@@ -2382,6 +2439,32 @@ contains
                       temp = temp*scaleFactor
                       dBHat_sub_zeta_dpsiHat(itheta,izeta) = dBHat_sub_zeta_dpsiHat(itheta,izeta) + temp * cos_angle
 
+                      ! Handle R, which is on the full mesh
+                      temp = vmec%rmnc(n,m,vmecRadialIndex_full(isurf)) * vmecRadialWeight_full(isurf)
+                      temp = temp*scaleFactor
+                      R(itheta,izeta) = R(itheta,izeta) + temp * cos_angle
+                      dRdtheta(itheta,izeta) = dRdtheta(itheta,izeta) - temp * m * sin_angle
+                      dRdzeta(itheta,izeta)  = dRdzeta(itheta,izeta)  + temp * n * Nperiods * sin_angle
+
+                      ! Handle Z, which is on the full mesh
+                      temp = vmec%zmns(n,m,vmecRadialIndex_full(isurf)) * vmecRadialWeight_full(isurf)
+                      temp = temp*scaleFactor
+                      !Z(itheta,izeta) = Z(itheta,izeta) + temp * sin_angle  ! We don't actually need Z itself, only derivatives of Z.
+                      dZdtheta(itheta,izeta) = dZdtheta(itheta,izeta) + temp * m * cos_angle
+                      dZdzeta(itheta,izeta)  = dZdzeta(itheta,izeta)  - temp * n * Nperiods * cos_angle
+
+                      ! Handle dRdpsiHat.
+                      ! Since R is on the full mesh, its radial derivative is on the half mesh.
+                      temp = vmec_dRdpsiHat(vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
+                      temp = temp*scaleFactor
+                      dRdpsiHat(itheta,izeta) = dRdpsiHat(itheta,izeta) + temp * cos_angle
+
+                      ! Handle dZdpsiHat.
+                      ! Since Z is on the full mesh, its radial derivative is on the half mesh.
+                      temp = vmec_dZdpsiHat(vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
+                      temp = temp*scaleFactor
+                      dZdpsiHat(itheta,izeta) = dZdpsiHat(itheta,izeta) + temp * sin_angle
+
                    end do
                 end do
              end do
@@ -2393,7 +2476,7 @@ contains
 
           ! -----------------------------------------------------
           ! Now consider the stellarator-asymmetric terms.
-          ! NOTE: This functionality has not been tested!!!
+          ! NOTE: This functionality has not been tested as thoroughly !!!
           ! -----------------------------------------------------
 
           if (vmec%iasym > 0) then
@@ -2415,6 +2498,9 @@ contains
                 ! Evaluate the radial derivatives we will need:
                 dpsi = vmec%phi(2)/(2*pi)  ! Doesn't need to be in the loops, but here for convenience.
 
+                ! B, B_sub_theta, and B_sub_zeta are on the half mesh, so their radial derivatives are on the full mesh.
+                ! R and Z are on the full mesh, so their radial derivatives are on the half mesh.
+
                 vmec_dBHatdpsiHat(2:vmec%ns-1) = (vmec%bmns(n,m,3:vmec%ns) - vmec%bmns(n,m,2:vmec%ns-1)) / dpsi
                 ! Simplistic "extrapolation" at the endpoints:
                 vmec_dBHatdpsiHat(1) = vmec_dBHatdpsiHat(2)
@@ -2427,6 +2513,12 @@ contains
                 vmec_dBHat_sub_zeta_dpsiHat(2:vmec%ns-1) = (vmec%bsubvmns(n,m,3:vmec%ns) - vmec%bsubvmns(n,m,2:vmec%ns-1)) / dpsi
                 vmec_dBHat_sub_zeta_dpsiHat(1) = vmec_dBHat_sub_zeta_dpsiHat(2)
                 vmec_dBHat_sub_zeta_dpsiHat(vmec%ns) = vmec_dBHat_sub_zeta_dpsiHat(vmec%ns-1)
+
+                vmec_dRdpsiHat(2:vmec%ns) = (vmec%rmns(n,m,2:vmec%ns) - vmec%rmns(n,m,1:vmec%ns-1)) / dpsi
+                vmec_dRdpsiHat(1) = 0
+
+                vmec_dZdpsiHat(2:vmec%ns) = (vmec%zmnc(n,m,2:vmec%ns) - vmec%zmnc(n,m,1:vmec%ns-1)) / dpsi
+                vmec_dZdpsiHat(1) = 0
 
                 ! End of evaluating radial derivatives.
 
@@ -2505,6 +2597,32 @@ contains
                          temp = temp*scaleFactor
                          dBHat_sub_zeta_dpsiHat(itheta,izeta) = dBHat_sub_zeta_dpsiHat(itheta,izeta) + temp * sin_angle
 
+                         ! Handle R, which is on the full mesh
+                         temp = vmec%rmns(n,m,vmecRadialIndex_full(isurf)) * vmecRadialWeight_full(isurf)
+                         temp = temp*scaleFactor
+                         R(itheta,izeta) = R(itheta,izeta) + temp * sin_angle
+                         dRdtheta(itheta,izeta) = dRdtheta(itheta,izeta) + temp * m * cos_angle
+                         dRdzeta(itheta,izeta)  = dRdzeta(itheta,izeta)  - temp * n * Nperiods * cos_angle
+
+                         ! Handle Z, which is on the full mesh
+                         temp = vmec%zmnc(n,m,vmecRadialIndex_full(isurf)) * vmecRadialWeight_full(isurf)
+                         temp = temp*scaleFactor
+                         ! Z(itheta,izeta) = Z(itheta,izeta) + temp * cos_angle   ! We don't actually need Z itself, only derivatives of Z.
+                         dZdtheta(itheta,izeta) = dZdtheta(itheta,izeta) - temp * m * sin_angle
+                         dZdzeta(itheta,izeta)  = dZdzeta(itheta,izeta)  + temp * n * Nperiods * sin_angle
+
+                         ! Handle dRdpsiHat.
+                         ! Since R is on the full mesh, its radial derivative is on the half mesh.
+                         temp = vmec_dRdpsiHat(vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
+                         temp = temp*scaleFactor
+                         dRdpsiHat(itheta,izeta) = dRdpsiHat(itheta,izeta) + temp * sin_angle
+                         
+                         ! Handle dZdpsiHat.
+                         ! Since Z is on the full mesh, its radial derivative is on the half mesh.
+                         temp = vmec_dZdpsiHat(vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
+                         temp = temp*scaleFactor
+                         dZdpsiHat(itheta,izeta) = dZdpsiHat(itheta,izeta) + temp * cos_angle
+
                       end do
                    end do
                 end do
@@ -2529,6 +2647,32 @@ contains
     ! Convert Jacobian to inverse Jacobian:
     DHat = one / DHat
 
+    do izeta = 1,Nzeta
+       cos_angle = cos(zeta(izeta))
+       sin_angle = sin(zeta(izeta))
+
+       ! X = R * cos(zeta)
+       dXdtheta(:,izeta) = dRdtheta(:,izeta) * cos_angle
+       dXdzeta(:,izeta) = dRdzeta(:,izeta) * cos_angle - R(:,izeta) * sin_angle
+       dXdpsiHat(:,izeta) = dRdpsiHat(:,izeta) * cos_angle
+
+       ! Y = R * sin(zeta)
+       dYdtheta(:,izeta) = dRdtheta(:,izeta) * sin_angle
+       dYdzeta(:,izeta) = dRdzeta(:,izeta) * sin_angle + R(:,izeta) * cos_angle
+       dYdpsiHat(:,izeta) = dRdpsiHat(:,izeta) * sin_angle
+    end do
+
+    g_sub_theta_theta = dXdtheta*dXdtheta  + dYdtheta*dYdtheta  + dZdtheta*dZdtheta
+    g_sub_theta_zeta  = dXdtheta*dXdzeta   + dYdtheta*dYdzeta   + dZdtheta*dZdzeta
+    g_sub_zeta_zeta   = dXdzeta *dXdzeta   + dYdzeta *dYdzeta   + dZdzeta *dZdzeta
+    g_sub_psi_theta   = dXdpsiHat*dXdtheta + dYdpsiHat*dYdtheta + dZdpsiHat*dZdtheta
+    g_sub_psi_zeta    = dXdpsiHat*dXdzeta  + dYdpsiHat*dYdzeta  + dZdpsiHat*dZdzeta
+
+    gradpsidotgradB_overgpsipsi = dBHatdpsiHat &
+         + ((g_sub_theta_zeta*g_sub_psi_zeta-g_sub_psi_theta*g_sub_zeta_zeta)*dBHatdtheta &
+         + (g_sub_psi_theta*g_sub_theta_zeta-g_sub_theta_theta*g_sub_psi_zeta)*dBHatdzeta) &
+         / (g_sub_theta_theta*g_sub_zeta_zeta - g_sub_theta_zeta*g_sub_theta_zeta)
+
     ! These next lines should be replaced eventually with a proper calculation:
     dBHat_sup_theta_dpsiHat = 0
     dBHat_sup_zeta_dpsiHat = 0
@@ -2538,6 +2682,15 @@ contains
     deallocate(vmec_dBHatdpsiHat)
     deallocate(vmec_dBHat_sub_theta_dpsiHat)
     deallocate(vmec_dBHat_sub_zeta_dpsiHat)
+    deallocate(vmec_dRdpsiHat)
+    deallocate(vmec_dZdpsiHat)
+    deallocate(vmec_dpdpsiHat)
+    deallocate(R,dRdtheta,dRdzeta,dRdpsiHat)
+    deallocate(dXdtheta,dXdzeta,dXdpsiHat)
+    deallocate(dYdtheta,dYdzeta,dYdpsiHat)
+    deallocate(dZdtheta,dZdzeta,dZdpsiHat)
+    deallocate(g_sub_theta_theta,g_sub_theta_zeta,g_sub_zeta_zeta,g_sub_psi_theta,g_sub_psi_zeta)
+
 
     rN = sqrt(psiN)
 

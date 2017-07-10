@@ -137,13 +137,16 @@ forceOddNalphaAndNzeta = true;
 % otherNumericalParameters namelist
 % *************************************************************************
 
-global alphaDerivativeScheme zetaDerivativeScheme alpha_interpolation_stencil xGridScheme xGrid_k
+global streaming_theta_derivative_option streaming_zeta_derivative_option ExB_alpha_derivative_option ExB_zeta_derivative_option
+global alpha_interpolation_stencil xGridScheme xGrid_k
 global xPotentialsGridScheme useIterativeLinearSolver
 global GMRES_restart GMRES_maxIterations
 global nonlinearTolerance maxNumNonlinearIterations
 
-alphaDerivativeScheme = 2;
-zetaDerivativeScheme = 2;
+streaming_theta_derivative_option = 8;
+streaming_zeta_derivative_option  = 8;
+ExB_alpha_derivative_option = 8;
+ExB_zeta_derivative_option  = 8;
 alpha_interpolation_stencil = 4;
 xGridScheme = 5;
 xGrid_k = 0;
@@ -160,18 +163,22 @@ maxNumNonlinearIterations = 10;
 % *************************************************************************
 
 global preconditioner_species preconditioner_x preconditioner_x_min_L
-global preconditioner_alpha preconditioner_alpha_min_L preconditioner_zeta preconditioner_zeta_min_L
+global preconditioner_streaming_theta_derivative_option preconditioner_streaming_zeta_derivative_option 
+global preconditioner_ExB_alpha_derivative_option preconditioner_ExB_zeta_derivative_option
+global preconditioner_alpha_min_L  preconditioner_zeta_min_L
 global preconditioner_xi reusePreconditioner preconditioner_alpha_interpolation_stencil
 
 preconditioner_species = 1;
 preconditioner_x = 1;
 preconditioner_x_min_L = 0;
-preconditioner_alpha = 2;
+preconditioner_streaming_theta_derivative_option = 4;
+preconditioner_streaming_zeta_derivative_option  = 4;
+preconditioner_ExB_alpha_derivative_option = 4;
+preconditioner_ExB_zeta_derivative_option  = 4;
 preconditioner_alpha_min_L = 0;
 preconditioner_alpha_interpolation_stencil = 2;
-preconditioner_zeta = 1;
 preconditioner_zeta_min_L = 0;
-preconditioner_xi = 1;
+preconditioner_xi = 0;
 reusePreconditioner = true;
 
 % *************************************************************************

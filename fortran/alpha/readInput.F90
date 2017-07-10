@@ -60,15 +60,19 @@ contains
          NxPotentialsPerVth
 
     namelist / otherNumericalParameters /  &
-         useIterativeLinearSolver, alphaDerivativeScheme, zetaDerivativeScheme, &
-         ExBDerivativeSchemeAlpha, ExBDerivativeSchemeZeta, &
+         useIterativeLinearSolver, streaming_theta_derivative_option, streaming_zeta_derivative_option, &
+         ExB_alpha_derivative_option, ExB_zeta_derivative_option, &
          xDotDerivativeScheme, xGridScheme, whichParallelSolverToFactorPreconditioner, &
          PETSCPreallocationStrategy, xPotentialsGridScheme, xGrid_k, magneticDriftDerivativeScheme, &
          Nxi_for_x_option, alpha_interpolation_stencil
 
-    namelist / preconditionerOptions / preconditioner_x, preconditioner_x_min_L, preconditioner_zeta, &
-         preconditioner_alpha, preconditioner_xi, preconditioner_species, reusePreconditioner, &
-         preconditioner_alpha_min_L, preconditioner_zeta_min_L, preconditioner_magnetic_drifts_max_L, &
+    namelist / preconditionerOptions / preconditioner_x, preconditioner_x_min_L, &
+         preconditioner_streaming_theta_derivative_option, preconditioner_streaming_zeta_derivative_option, &
+         preconditioner_ExB_alpha_derivative_option, preconditioner_ExB_zeta_derivative_option, &
+         preconditioner_streaming_theta_min_L, preconditioner_streaming_zeta_min_L, &
+         preconditioner_ExB_alpha_min_L, preconditioner_ExB_zeta_min_L, &
+         preconditioner_xi, preconditioner_species, reusePreconditioner, &
+         preconditioner_magnetic_drifts_max_L, &
          preconditioner_alpha_interpolation_stencil
 
 !!$    namelist / export_f / export_full_f, export_delta_f, export_f_theta, export_f_zeta, export_f_x, export_f_xi, &
