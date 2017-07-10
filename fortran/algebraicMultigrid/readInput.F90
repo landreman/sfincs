@@ -162,6 +162,11 @@ contains
           print *,"Successfully read parameters from physicsParameters namelist in ", trim(filename), "."
        end if
 
+       ! The default value of f_scaling_option is 1 for Fokker-Planck collisions but is 3 for pitch-angle-scattering collisions
+       if (collisionOperator==1) f_scaling_option = 3
+       ! The default value of x_scaling_option is 1 for Fokker-Planck collisions but is 2 for pitch-angle-scattering collisions
+       if (collisionOperator==1) x_scaling_option = 2
+
        read(fileUnit, nml=resolutionParameters, iostat=didFileAccessWork)
        if (didFileAccessWork /= 0) then
           print *,"Proc ",myRank,": Error!  I was able to open the file ", trim(filename), &

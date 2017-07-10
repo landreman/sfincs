@@ -19,7 +19,7 @@
     implicit none
 
     PetscErrorCode :: ierr
-    integer :: i, j, k, itheta, izeta, ispecies, ispecies_a, ispecies_b, ix, scheme, L
+    integer :: i, j, k, itheta, izeta, ispecies, ispecies_a, ispecies_b, ix, ixi, scheme, L
     real(prec), dimension(:,:), allocatable :: d2dtheta2, d2dzeta2, ddxi, d2dxi2
     real(prec), dimension(:), allocatable :: xWeightsPotentials
 
@@ -44,6 +44,13 @@
     integer :: derivative_option_plus, derivative_option_minus, derivative_option, quadrature_option
 
     real(prec) :: nonuniform_xi_a = 0.7, nonuniform_xi_b = 0.3 ! b=1-a
+
+    ! Variables needed by LAPACK:                                                                                  
+    character :: JOBZ
+    integer :: INFO, LDA, LDU, LDVT, LWORK, M, N, num_Legendres_to_orthogonalize, iflag
+    real(prec), dimension(:,:), allocatable :: U, VT, A
+    real(prec), dimension(:), allocatable :: WORK, singular_values
+    integer, dimension(:), allocatable :: IWORK
 
     ! *******************************************************************************
     ! Do a few sundry initialization tasks:
@@ -1594,6 +1601,53 @@
        do L = 1, NL-2
           Legendre_polynomials(:,L+1+1) = ((2*L+1)*xi*Legendre_polynomials(:,L+1) - L*Legendre_polynomials(:,L-1+1)) / (L+one)
        end do
+
+       if (xi_quadrature_option<0) then
+          num_Legendres_to_orthogonalize = NL
+          if (num_Legendres_to_orthogonalize>Nxi) stop "Error! num_Legendres_to_orthogonalize>Nxi"
+          JOBZ='S' ! Compute only the first min(M,N) singular vectors
+          M = Nxi
+          N = num_Legendres_to_orthogonalize
+          LDA = M
+          LDU = M
+          LDVT = N
+          ! This next formula comes from the LAPACK documentation at the end of the file.
+          LWORK = max( 3*min(M,N) + max(max(M,N),7*min(M,N)), &
+               3*min(M,N) + max(max(M,N),5*min(M,N)*min(M,N)+4*min(M,N)), &
+               min(M,N)*(6+4*min(M,N))+max(M,N))
+          allocate(WORK(LWORK),stat=iflag)
+          allocate(IWORK(8*min(M,N)),stat=iflag)
+          allocate(singular_values(num_Legendres_to_orthogonalize))
+          ! Matrix is destroyed by LAPACK, so make a copy:
+          allocate(A(M,N),stat=iflag)
+          A = Legendre_polynomials(:,1:num_Legendres_to_orthogonalize)
+          allocate(U(M,M),stat=iflag)
+          allocate(VT(N,N),stat=iflag)
+          ! Call LAPACK to do the SVD:
+          call DGESDD(JOBZ, M, N, A, LDA, singular_values, U, LDU, VT, LDVT, WORK, LWORK, IWORK, INFO)
+          
+          if (INFO==0) then
+             print *,"SVD (DGESDD) successful."
+             print *,"Singular values:",singular_values
+          else if (INFO>0) then
+             print *,"Error in SVD (DGESDD): Did not converge."
+             stop
+          else
+             print *,"Error in SVD (DGESDD): Argument",INFO," was invalid."
+             stop
+          end if
+          do ixi = 1,Nxi
+             ! U^T(1:N, 1:Nxi) = U(1:Nxi, 1:N)
+             ! V(1, 1:N) = VT(1:N, 1)
+             xiWeights(ixi) = 2*dot_product(VT(1:num_Legendres_to_orthogonalize, 1) / singular_values, U(ixi,1:num_Legendres_to_orthogonalize)) 
+          end do
+          print *,"xiWeights:"
+          print *,xiWeights
+          print *,"sum(xiWeights):",sum(xiWeights)
+          print *,"sum(xiWeights*xi*xi) (should be 2/3):",sum(xi*xi*xiWeights)
+          print *,"sum(xiWeights*xi*xi*xi*xi) (should be 2/5):",sum(xi*xi*xi*xi*xiWeights)
+
+       end if
 
 !!$       print *,'Here come Legendre polynomials:'
 !!$       do k=1,Nxi

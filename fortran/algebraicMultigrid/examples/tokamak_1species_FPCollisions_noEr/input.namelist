@@ -95,7 +95,8 @@ NL=4
 /
 
 &otherNumericalParameters
-f_scaling_option=4
+!f_scaling_option=4
+xi_quadrature_option=-1
 /
 
 &preconditionerOptions

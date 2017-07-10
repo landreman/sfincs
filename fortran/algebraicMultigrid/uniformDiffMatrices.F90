@@ -191,7 +191,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, option, quadrature_option, x, weig
   select case (option)
   case (2, 3, 12, 13, 14, 15, 16, 32, 42, 52, 62, 82, 92, 102, 112, 122, 123, 132, 133)
      ! Grid is aperiodic
-     select case (quadrature_option)
+     select case (abs(quadrature_option)) ! abs is so negative values will invoke the pseudoinverse method instead.
      case (0)
         ! Standard trapezoid rule
         weights(1)=dx/2

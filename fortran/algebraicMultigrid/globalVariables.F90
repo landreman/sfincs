@@ -185,7 +185,7 @@ module globalVariables
 
   integer :: PETSCPreallocationStrategy=1
   integer :: Nxi_for_x_option = 0
-  integer :: f_scaling_option = 4
+  integer :: f_scaling_option = 1
   integer :: x_scaling_option = 1
   integer :: spatial_scaling_option = 4 ! 3 also works well
   integer :: constraint_scaling_option = 2

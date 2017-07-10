@@ -94,10 +94,10 @@
 &otherNumericalParameters
 !null_space_option=0
 
-!f_scaling_option=3
-!x_scaling_option=1
-!constraint_scaling_option=1
-
+!f_scaling_option=1
+!x_scaling_option=3
+!constraint_scaling_option=2
+!spatial_scaling_option=2
 /
 
 &preconditionerOptions
