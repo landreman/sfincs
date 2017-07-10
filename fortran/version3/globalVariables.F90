@@ -77,6 +77,7 @@ module globalVariables
   PetscScalar, dimension(maxNumSpecies) :: dNHatdpsiNs,   dTHatdpsiNs
   PetscScalar, dimension(maxNumSpecies) :: dNHatdrHats,   dTHatdrHats
   PetscScalar, dimension(maxNumSpecies) :: dNHatdrNs,     dTHatdrNs
+  PetscScalar, dimension(maxNumSpecies) :: EParallelHatSpec = 0 !!Added by HS 2017-02
 
   !!Added by AM 2016-02!!
   PetscScalar :: adiabaticZ = -1.0, adiabaticMHat = 5.446170214d-4, adiabaticNHat = 1.0, adiabaticTHat = 1.0
