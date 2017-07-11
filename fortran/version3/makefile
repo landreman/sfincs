@@ -51,14 +51,14 @@ endif
 
 include makefile.depend
 
-# Export variables that will be used in the quadpack subdirectory or for "make test":
+# Export variables that will be used in the readVMEC subdirectory or for "make test":
 export
 
 %.o: %.F90
 	$(FC) $(EXTRA_COMPILE_FLAGS) -IreadVMEC -c $<
 
-quadpack/quadpack.a:
-	$(MAKE) -C quadpack
+%.o: %.f
+	$(FC) $(EXTRA_COMPILE_FLAGS) -c $<
 
 readVMEC/readVMEC.a:
 	$(MAKE) -C readVMEC
@@ -69,7 +69,6 @@ $(TARGET): $(OBJ_FILES)
 # Since the sometimes-included PETSc makefile uses a double-colon to define clean, we must do the same here:
 clean::
 	rm -f *.o *.mod *.a *.dat *~ $(TARGET) sfincsMatrices.m sfincsOutput.h5
-	cd quadpack; rm -f *.o *.a
 	cd readVMEC; rm -f *.o *.a
 
 test_make:

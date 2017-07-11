@@ -3,8 +3,13 @@
 # Cori is a system at NERSC (Lawrence Berkeley National Laboratory).
 #
 # You must use the following modules:
-#   module load cray-petsc cray-netcdf-hdf5parallel/4.4.0 cray-hdf5-parallel
-# These options worked on 2017-01-13.
+#   module load cray-petsc cray-netcdf-hdf5parallel/4.4.0 cray-hdf5-parallel/1.8.16
+# These options worked on 2017-07-10. If you compile instead with cray-hdf5-parallel/1.10.0, the
+# code compiles and links fine, but there is an error when running:
+#   HDF5-DIAG: Error detected in HDF5 (1.10.0) MPI-process 0:
+#   #000: H5F.c line 491 in H5Fcreate(): unable to create file
+#   major: File accessibilty
+#   minor: Unable to open file
 #
 # Also, to use sfincsPlot and sfincsScanPlot, you need the following modules:
 #   module load python

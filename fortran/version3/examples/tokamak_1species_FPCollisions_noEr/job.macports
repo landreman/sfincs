@@ -1,2 +1,4 @@
 #!/bin/bash
-../../sfincs -ksp_view
+../../sfincs -ksp_view -mat_mumps_cntl_1 1e-3
+
+# The -mat_mumps_cntl_1 1e-3 flag causes the problem to be solved with higher accuracy, at the cost of higher probability of a mumps workarray-too-small error.
