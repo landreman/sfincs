@@ -111,6 +111,8 @@ contains
           do i = 1,numProcs-1
              ! Ping each proc 1 at a time by sending a dummy value:
              call MPI_SEND(dummy,1,MPI_INT,i,tag,MPIComm,ierr)
+             ! Wait for a value to be returned before continuing.
+             call MPI_RECV(dummy,1,MPI_INT,i,MPI_ANY_TAG,MPIComm,status,ierr)
           end do
        else
           ! First, wait for the dummy message from proc 0:
@@ -124,6 +126,8 @@ contains
              print *, 'Error reading wout file:',equilibriumFile
              stop
           end if
+          ! Send a value back to proc 0 to tell it to continue.
+          call MPI_SEND(dummy,1,MPI_INT,0,tag,MPIComm,ierr)
        end if
 
        NPeriods = nfp

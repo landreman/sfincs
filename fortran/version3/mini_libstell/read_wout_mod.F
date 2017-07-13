@@ -719,13 +719,20 @@ C-----------------------------------------------
             READ (iunit, *, iostat=istat(12), err=1000)
      1      (extcur(i),i=1,nextcur)
          END IF
-         !SAL 11/30/11 - To make DIAGNO v2 work with old files.
-         IF ((version_ .ge. (6.90-eps_w)) .and.
-     1       (version_ .le. (6.90+eps_w))) THEN
-            lcurr = .true.
-         ELSE
-            READ (iunit, *, iostat=istat(13)) lcurr
-         END IF
+         ! MJL 20170713: J Geiger's pisa_vmec_module ALWAYS reads in curlabel, whereas
+         ! the version of read_wout_mod.F I received from Sam Lazerson does this only for version 6.90,
+         ! otherwise reading in a logical lcurr to decide whether or not to read in curlabel. Sam's method
+         ! does not work for at least one vmec v8.00 file, so I'll switch to Geiger's method:
+         lcurr = .true.
+         ! Sam Lazerson's code follows:
+!         !SAL 11/30/11 - To make DIAGNO v2 work with old files.
+!         IF ((version_ .ge. (6.90-eps_w)) .and.
+!     1       (version_ .le. (6.90+eps_w))) THEN
+!            lcurr = .true.
+!         ELSE
+!            READ (iunit, *, iostat=istat(13)) lcurr
+!         END IF
+         ! End of MJL edits 20170713
          !READ (iunit, *, iostat=istat(13)) lcurr
          IF (lcurr) READ (iunit, *, iostat=istat(13), err=1000)
      1      (curlabel(i),i=1,nextcur)
