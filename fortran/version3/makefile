@@ -39,6 +39,8 @@ endif
 
 TARGET = sfincs
 
+LIBSTELL_DIR=mini_libstell
+
 .PHONY: all clean test retest
 
 all: $(TARGET)
@@ -51,25 +53,25 @@ endif
 
 include makefile.depend
 
-# Export variables that will be used in the readVMEC subdirectory or for "make test":
+# Export variables that will be used in the mini_libstell subdirectory or for "make test":
 export
 
 %.o: %.F90
-	$(FC) $(EXTRA_COMPILE_FLAGS) -IreadVMEC -c $<
+	$(FC) $(EXTRA_COMPILE_FLAGS) -I $(LIBSTELL_DIR) -c $<
 
 %.o: %.f
 	$(FC) $(EXTRA_COMPILE_FLAGS) -c $<
 
-readVMEC/readVMEC.a:
-	$(MAKE) -C readVMEC
+$(LIBSTELL_DIR)/mini_libstell.a:
+	$(MAKE) -C mini_libstell
 
 $(TARGET): $(OBJ_FILES)
 	$(FLINKER) -o $(TARGET) $(OBJ_FILES) $(EXTRA_LINK_FLAGS) $(PETSC_LIB)
 
 # Since the sometimes-included PETSc makefile uses a double-colon to define clean, we must do the same here:
 clean::
-	rm -f *.o *.mod *.a *.dat *~ $(TARGET) sfincsMatrices.m sfincsOutput.h5
-	cd readVMEC; rm -f *.o *.a
+	rm -f *.o *.mod *.MOD *.a *.dat *~ $(TARGET) sfincsMatrices.m sfincsOutput.h5
+	cd mini_libstell; rm -f *.o *.mod *.MOD *.a
 
 test_make:
 	@echo SFINCS_SYSTEM is $(SFINCS_SYSTEM)

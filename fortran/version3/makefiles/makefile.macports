@@ -27,7 +27,7 @@ include ${PETSC_DIR}/lib/petsc/conf/variables
 include ${PETSC_DIR}/lib/petsc/conf/rules
 
 # Any other flags for compiling, such as -I include flags:
-EXTRA_COMPILE_FLAGS = -I${PETSC_DIR}/include -I/opt/local/include -ffree-line-length-none
+EXTRA_COMPILE_FLAGS = -I${PETSC_DIR}/include -I/opt/local/include -ffree-line-length-none -g -O0
 # /opt/local/include is where macports puts the include files for hdf5 and netcdf.
 
 # Any other flags for linking, such as -l library flags:

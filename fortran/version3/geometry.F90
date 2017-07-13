@@ -14,7 +14,9 @@ module geometry
   use globalVariables
   use radialCoordinates
   use petscsysdef
-  use readVMEC
+  use read_wout_mod, only: read_wout_file, Aminor, phi, nfp, ns, xm, xn, xm_nyq, xn_nyq, mpol, ntor, mnmax, mnmax_nyq, lasym, presf, phip, iotas, &
+       bmnc, bmns, gmnc, gmns, bsubumnc, bsubumns, bsubvmnc, bsubvmns, bsubsmnc, bsubsmns, bsupumnc, bsupumns, bsupvmnc, bsupvmns, &
+       rmnc, rmns, zmnc, zmns
 
   implicit none
 
@@ -43,10 +45,12 @@ contains
 
     implicit none
 
-    integer :: fileUnit, didFileAccessWork, Turkin_sign
+    integer :: fileUnit, didFileAccessWork, Turkin_sign, ierr, iopen
     character(len=200) :: lineOfFile
     integer, dimension(4) :: headerIntegers
     PetscScalar, dimension(3) :: headerReals
+    integer :: tag, dummy(1), i
+    integer :: status(MPI_STATUS_SIZE)
 
     select case (geometryScheme)
     case (1)
@@ -88,26 +92,56 @@ contains
           print *,"Since geometryScheme=4, we will ignore the *_wish parameters and use the flux surface rN = 0.5."
        end if
 
-    case (5,7)
-       ! Read VMEC file, defining the effective minor radius aHat to be VMEC's Aminor_p
-       ! geometryScheme=7 is a hack for testing NEMEC_compute_missing_fields.f90
-       call read_VMEC(equilibriumfile,geometryScheme==7)
-       NPeriods = vmec%nfp
-       psiAHat = vmec%phi(vmec%ns)/(2*pi)
-       aHat = vmec%Aminor_p
+    case (5)
+       ! Read VMEC file, defining the effective minor radius aHat to be the quantity called Aminor_p in vmec's wout file, which is called just Aminor in read_wout_mod.F.
+       ! Libstell does not allow multiple procs to open an ASCII wout file simultaneously, so have each proc read it 1 at a time.
+       if (masterProc) then
+          call read_wout_file(equilibriumfile, ierr, iopen)
+          if (iopen .ne. 0) then
+             print *, 'Error opening wout file:',equilibriumFile
+             stop
+          end if
+          if (ierr .ne. 0) then
+             print *, 'Error reading wout file:',equilibriumFile
+             stop
+          end if
 
-    case (6)
-       ! Read Erika Strumberger's NEMEC format used at IPP.
-       call read_NEMEC(equilibriumFile)
-       NPeriods = vmec%nfp
-       psiAHat = vmec%phi(vmec%ns)/(2*pi)
-       ! Aminor_p is not set in this format, so we must specify a value in the input namelist.
-       if (aHat-0.5585d+0 < 1e-4 .and. masterProc) then
-          print *,"###############################################################################################"
-          print *,"WARNING: It appears you have not explicitly set aHat to a value other than the default."
-          print *,"This is probably wrong. For geometryScheme=6, aHat is not set using the NEMEC equilibrium file."
-          print *,"###############################################################################################"
+          tag=0
+          dummy=0
+          do i = 1,numProcs-1
+             ! Ping each proc 1 at a time by sending a dummy value:
+             call MPI_SEND(dummy,1,MPI_INT,i,tag,MPIComm,ierr)
+          end do
+       else
+          ! First, wait for the dummy message from proc 0:
+          call MPI_RECV(dummy,1,MPI_INT,0,MPI_ANY_TAG,MPIComm,status,ierr)
+          call read_wout_file(equilibriumfile, ierr, iopen)
+          if (iopen .ne. 0) then
+             print *, 'Error opening wout file:',equilibriumFile
+             stop
+          end if
+          if (ierr .ne. 0) then
+             print *, 'Error reading wout file:',equilibriumFile
+             stop
+          end if
        end if
+
+       NPeriods = nfp
+       psiAHat = phi(ns)/(2*pi)
+       aHat = Aminor
+
+!!$    case (6)
+!!$       ! Read Erika Strumberger's NEMEC format used at IPP.
+!!$       call read_NEMEC(equilibriumFile)
+!!$       NPeriods = vmec%nfp
+!!$       psiAHat = vmec%phi(vmec%ns)/(2*pi)
+!!$       ! Aminor_p is not set in this format, so we must specify a value in the input namelist.
+!!$       if (aHat-0.5585d+0 < 1e-4 .and. masterProc) then
+!!$          print *,"###############################################################################################"
+!!$          print *,"WARNING: It appears you have not explicitly set aHat to a value other than the default."
+!!$          print *,"This is probably wrong. For geometryScheme=6, aHat is not set using the NEMEC equilibrium file."
+!!$          print *,"###############################################################################################"
+!!$       end if
 
     case (10)
        print *,"Error! This geometryScheme has not been implemented yet."
@@ -2013,13 +2047,14 @@ contains
     PetscScalar, dimension(:), allocatable :: dr2, psiN_full, psiN_half
     PetscScalar, dimension(:), allocatable :: vmec_dBHatdpsiHat, vmec_dBHat_sub_theta_dpsiHat, vmec_dBHat_sub_zeta_dpsiHat
     PetscScalar, dimension(:), allocatable :: vmec_dRdpsiHat, vmec_dZdpsiHat, vmec_dpdpsiHat
-    integer :: i, j, index, isurf, itheta, izeta, m, n
+    integer :: i, j, index, isurf, itheta, izeta, m, n, imn, imn_nyq
     PetscScalar :: min_dr2, angle, sin_angle, cos_angle, b, b00, temp, dphi, dpsi
     integer :: numSymmetricModesIncluded, numAntisymmetricModesIncluded
     PetscScalar :: scaleFactor
     PetscScalar, dimension(:,:), allocatable :: R, dRdtheta, dRdzeta, dRdpsiHat, dZdtheta, dZdzeta, dZdpsiHat
     PetscScalar, dimension(:,:), allocatable :: dXdtheta, dXdzeta, dXdpsiHat, dYdtheta, dYdzeta, dYdpsiHat
     PetscScalar, dimension(:,:), allocatable :: g_sub_theta_theta, g_sub_theta_zeta, g_sub_zeta_zeta, g_sub_psi_theta, g_sub_psi_zeta
+    logical :: non_Nyquist_mode_available, found_imn
 
 
     ! This subroutine is written so that only psiN_wish is used, not the other *_wish quantities.
@@ -2028,12 +2063,12 @@ contains
        print *,"Reading VMEC geometry from file ",trim(equilibriumFile)
     end if
 
-    allocate(vmec_dBHatdpsiHat(vmec%ns))
-    allocate(vmec_dBHat_sub_theta_dpsiHat(vmec%ns))
-    allocate(vmec_dBHat_sub_zeta_dpsiHat(vmec%ns))
-    allocate(vmec_dRdpsiHat(vmec%ns))
-    allocate(vmec_dZdpsiHat(vmec%ns))
-    allocate(vmec_dpdpsiHat(vmec%ns))
+    allocate(vmec_dBHatdpsiHat(ns))
+    allocate(vmec_dBHat_sub_theta_dpsiHat(ns))
+    allocate(vmec_dBHat_sub_zeta_dpsiHat(ns))
+    allocate(vmec_dRdpsiHat(ns))
+    allocate(vmec_dZdpsiHat(ns))
+    allocate(vmec_dpdpsiHat(ns))
 
     allocate(R(Ntheta,Nzeta))
     allocate(dRdtheta(Ntheta,Nzeta))
@@ -2058,20 +2093,33 @@ contains
     allocate(g_sub_psi_theta(Ntheta,Nzeta))
     allocate(g_sub_psi_zeta(Ntheta,Nzeta))
 
+    ! There is a bug in libstell read_wout_file for ASCII-format wout files, in which the xm_nyq and xn_nyq arrays are sometimes
+    ! not populated. The next few lines here provide a workaround:
+    if (maxval(abs(xm_nyq)) < 1 .and. maxval(abs(xn_nyq)) < 1) then
+       if (mnmax_nyq == mnmax) then
+          if (masterProc) print *,"xm_nyq and xn_nyq arrays are not populated in the wout file. Using xm and xn instead."
+          xm_nyq = xm
+          xn_nyq = xn
+       else
+          if (masterProc) print *,"Error! xm_nyq and xn_nyq arrays are not populated in the wout file, and mnmax_nyq != mnmax."
+          stop
+       end if
+    end if
+
     ! --------------------------------------------------------------------------------
     ! Do some sanity checking to ensure the VMEC arrays have some expected properties.
     ! --------------------------------------------------------------------------------
 
-    if (abs(vmec%phi(1)) > 1d-14) then
+    if (abs(phi(1)) > 1d-14) then
        if (masterProc) then
           print *,"Error! VMEC phi array does not begin with 0."
        end if
        stop
     end if
 
-    dphi = vmec%phi(2) - vmec%phi(1)
-    do j=3,vmec%ns
-       if (abs(vmec%phi(j)-vmec%phi(j-1)-dphi) > 1d-11) then
+    dphi = phi(2) - phi(1)
+    do j=3,ns
+       if (abs(phi(j)-phi(j-1)-dphi) > 1d-11) then
           if (masterProc) then
              print *,"Error! VMEC phi array is not uniformly spaced."
           end if
@@ -2079,9 +2127,10 @@ contains
        end if
     end do
 
+    ! The variable called 'phips' in the wout file is called just 'phip' in read_wout_mod.F.
     ! phips is on the half-mesh, so skip first point.
-    do j=2,vmec%ns
-       if (abs(vmec%phips(j)+vmec%phi(vmec%ns)/(2*pi)) > 1d-11) then
+    do j=2,ns
+       if (abs(phip(j)+phi(ns)/(2*pi)) > 1d-11) then
           if (masterProc) then
              print *,"Error! VMEC phips array is not constant and equal to -phi(ns)/(2*pi)."
           end if
@@ -2089,16 +2138,22 @@ contains
        end if
     end do
 
+    ! The first mode in the m and n arrays should be m=n=0:
+    if (xm(1) .ne. 0) stop "First element of xm in the wout file should be 0."
+    if (xn(1) .ne. 0) stop "First element of xn in the wout file should be 0."
+    if (xm_nyq(1) .ne. 0) stop "First element of xm_nyq in the wout file should be 0."
+    if (xn_nyq(1) .ne. 0) stop "First element of xn_nyq in the wout file should be 0."
+
     ! --------------------------------------------------------------------------------
     ! End of sanity checks.
     ! --------------------------------------------------------------------------------
 
-    allocate(psiN_full(vmec%ns))
-    psiN_full = vmec%phi / (2*pi*psiAHat)
+    allocate(psiN_full(ns))
+    psiN_full = phi / (2*pi*psiAHat)
 
     ! Build an array of the half grid
-    allocate(psiN_half(vmec%ns-1))
-    do i = 1,vmec%ns-1
+    allocate(psiN_half(ns-1))
+    do i = 1,ns-1
        psiN_half(i) = (psiN_full(i) + psiN_full(i+1))/two
     end do
 
@@ -2121,13 +2176,13 @@ contains
        ! Use nearest value of the VMEC half grid
 
        ! Compute differences
-       allocate(dr2(vmec%ns-1))
+       allocate(dr2(ns-1))
        dr2 = (psiN_half - psiN_wish) ** 2
 
        index = 1
        min_dr2 = dr2(1)
        ! Find the index of minimum error:
-       do j=2,vmec%ns-1
+       do j=2,ns-1
           if (dr2(j)<min_dr2) then
              index = j
              min_dr2 = dr2(j)
@@ -2141,13 +2196,13 @@ contains
        ! Use nearest value of the VMEC full grid
 
        ! Compute differences
-       allocate(dr2(vmec%ns))
+       allocate(dr2(ns))
        dr2 = (psiN_full - psiN_wish) ** 2
 
        index = 1
        min_dr2 = dr2(1)
        ! Find the index of minimum error:
-       do j=2,vmec%ns
+       do j=2,ns
           if (dr2(j)<min_dr2) then
              index = j
              min_dr2 = dr2(j)
@@ -2177,7 +2232,7 @@ contains
     ! For any VMEC quantity Q on the half grid, the value used in SFINCS will be
     !  Q_sfincs = Q(vmecRadialIndex_half(1))*vmecRadialWeight_half(1) + Q(vmecRadialIndex_half(2))*vmecRadialWeight_half(2)
 
-    ! In VMEC, quantities on the half grid have the same number of array elements (vmec%ns) as quantities on the full grid,
+    ! In VMEC, quantities on the half grid have the same number of array elements (ns) as quantities on the full grid,
     ! but the first array element is 0.
 
 
@@ -2194,15 +2249,15 @@ contains
        end if
        stop
     elseif (psiN==1) then
-       vmecRadialIndex_full(1) = vmec%ns-1
-       vmecRadialIndex_full(2) = vmec%ns
+       vmecRadialIndex_full(1) = ns-1
+       vmecRadialIndex_full(2) = ns
        vmecRadialWeight_full(1) = zero
     else
        ! psiN is >= 0 and <1
        ! This is the most common case.
-       vmecRadialIndex_full(1) = floor(psiN*(vmec%ns-1))+1
+       vmecRadialIndex_full(1) = floor(psiN*(ns-1))+1
        vmecRadialIndex_full(2) = vmecRadialIndex_full(1) + 1
-       vmecRadialWeight_full(1) = vmecRadialIndex_full(1) - psiN*(vmec%ns-one)
+       vmecRadialWeight_full(1) = vmecRadialIndex_full(1) - psiN*(ns-one)
     end if
     vmecRadialWeight_full(2) = one - vmecRadialWeight_full(1)
     
@@ -2217,31 +2272,31 @@ contains
        vmecRadialIndex_half(2) = 3
        vmecRadialWeight_half(1) = (psiN_half(2) - psiN) / (psiN_half(2) - psiN_half(1))
 
-    elseif (psiN > psiN_half(vmec%ns-1)) then
+    elseif (psiN > psiN_half(ns-1)) then
        if (masterProc) then
           print *,"Warning: extrapolating beyond the end of VMEC's half grid."
           print *,"(Extrapolating towards the last closed flux surface.)"
        end if
-       vmecRadialIndex_half(1) = vmec%ns-1
-       vmecRadialIndex_half(2) = vmec%ns
-       vmecRadialWeight_half(1) = (psiN_half(vmec%ns-1) - psiN) &
-            / (psiN_half(vmec%ns-1) - psiN_half(vmec%ns-2))
+       vmecRadialIndex_half(1) = ns-1
+       vmecRadialIndex_half(2) = ns
+       vmecRadialWeight_half(1) = (psiN_half(ns-1) - psiN) &
+            / (psiN_half(ns-1) - psiN_half(ns-2))
 
-    elseif (psiN == psiN_half(vmec%ns-1)) then
+    elseif (psiN == psiN_half(ns-1)) then
        ! We are exactly at the last point of the half grid
-       vmecRadialIndex_half(1) = vmec%ns-1
-       vmecRadialIndex_half(2) = vmec%ns
+       vmecRadialIndex_half(1) = ns-1
+       vmecRadialIndex_half(2) = ns
        vmecRadialWeight_half(1) = zero
     else
        ! psiN is inside the half grid.
        ! This is the most common case.
-       vmecRadialIndex_half(1) = floor(psiN*(vmec%ns-1) + 0.5d+0)+1
+       vmecRadialIndex_half(1) = floor(psiN*(ns-1) + 0.5d+0)+1
        if (vmecRadialIndex_half(1) < 2) then
           ! This can occur sometimes due to roundoff error.
           vmecRadialIndex_half(1) = 2
        end if
        vmecRadialIndex_half(2) = vmecRadialIndex_half(1) + 1
-       vmecRadialWeight_half(1) = vmecRadialIndex_half(1) - psiN*(vmec%ns-one) - (0.5d+0)
+       vmecRadialWeight_half(1) = vmecRadialIndex_half(1) - psiN*(ns-one) - (0.5d+0)
     end if
     vmecRadialWeight_half(2) = one-vmecRadialWeight_half(1)
 
@@ -2251,25 +2306,25 @@ contains
 !!$       print *,"vmecRadialIndex_half:",vmecRadialIndex_half
 !!$       print *,"vmecRadialWeight_half:",vmecRadialWeight_half
        if (abs(vmecRadialWeight_half(1)) < 1e-14) then
-          print "(a,i3,a,i3,a)"," Using radial index ",vmecRadialIndex_half(2)," of ",vmec%ns," from vmec's half mesh."
+          print "(a,i3,a,i3,a)"," Using radial index ",vmecRadialIndex_half(2)," of ",ns," from vmec's half mesh."
        elseif (abs(vmecRadialWeight_half(2)) < 1e-14) then
-          print "(a,i3,a,i3,a)"," Using radial index ",vmecRadialIndex_half(1)," of ",vmec%ns," from vmec's half mesh."
+          print "(a,i3,a,i3,a)"," Using radial index ",vmecRadialIndex_half(1)," of ",ns," from vmec's half mesh."
        else
           print "(a,i3,a,i3,a,i3,a)", " Interpolating using radial indices ",vmecRadialIndex_half(1)," and ",vmecRadialIndex_half(2),&
-               " of ",vmec%ns," from vmec's half mesh."
+               " of ",ns," from vmec's half mesh."
           print "(a,f17.14,a,f17.14)", " Weights for half mesh = ",vmecRadialWeight_half(1)," and ",vmecRadialWeight_half(2)
           print "(a,i3,a,i3,a,i3,a)", " Interpolating using radial indices ",vmecRadialIndex_full(1)," and ",vmecRadialIndex_full(2),&
-               " of ",vmec%ns," from vmec's full mesh."
+               " of ",ns," from vmec's full mesh."
           print "(a,f17.14,a,f17.14)", " Weights for full mesh = ",vmecRadialWeight_full(1)," and ",vmecRadialWeight_full(2)
        end if
     end if
 
-    iota = vmec%iotas(vmecRadialIndex_half(1)) * vmecRadialWeight_half(1) &
-         + vmec%iotas(vmecRadialIndex_half(2)) * vmecRadialWeight_half(2)
+    iota = iotas(vmecRadialIndex_half(1)) * vmecRadialWeight_half(1) &
+         + iotas(vmecRadialIndex_half(2)) * vmecRadialWeight_half(2)
 
-    dpsi = vmec%phi(2)/(2*pi)
+    dpsi = phi(2)/(2*pi)
     vmec_dpdpsiHat = 0
-    vmec_dpdpsiHat(2:vmec%ns) = (vmec%presf(2:vmec%ns) - vmec%presf(1:vmec%ns-1)) / dpsi
+    vmec_dpdpsiHat(2:ns) = (presf(2:ns) - presf(1:ns-1)) / dpsi
     pPrimeHat = (4*pi*1.0d-7) * ( &
          vmec_dpdpsiHat(vmecRadialIndex_half(1)) * vmecRadialWeight_half(1) &
          + vmec_dpdpsiHat(vmecRadialIndex_half(2)) * vmecRadialWeight_half(2))
@@ -2296,11 +2351,9 @@ contains
     BHat_sup_zeta = zero
 
     ! First, get the (m=0,n=0) component of |B|, which will be used for testing whether
-    ! other harmonics of |B| are large enough to include.
-    m = 0
-    n = 0
-    b00 = vmec%bmnc(n,m,vmecRadialIndex_half(1)) * vmecRadialWeight_half(1) &
-               + vmec%bmnc(n,m,vmecRadialIndex_half(2)) * vmecRadialWeight_half(2)
+    ! other harmonics of |B| are large enough to include. Note that bmnc(1,:) represents the m=n=0 component.
+    b00 = bmnc(1,vmecRadialIndex_half(1)) * vmecRadialWeight_half(1) &
+               + bmnc(1,vmecRadialIndex_half(2)) * vmecRadialWeight_half(2)
 
     ! --------------------------------------------------------------------------------
     ! At last, we are now ready to
@@ -2315,139 +2368,170 @@ contains
     ! if and only if that (m,n) mode of |B| (normalized to B00) is > min_Bmn_to_load.
     ! I.e., the size of a |B| harmonic controls not only whether that Fourier mode of |B|
     ! is included, but also whether that Fourier mode of the other fields like B sub u is included.
-    do n = -vmec%ntor, vmec%ntor
-       do m = 0, vmec%mpol-1
-          ! -----------------------------------------------------
-          ! First, consider just the stellarator-symmetric terms:
-          ! -----------------------------------------------------
+    do imn_nyq = 1, mnmax_nyq ! All the quantities we need except R and Z use the _nyq mode numbers.
+       m = xm_nyq(imn_nyq)
+       n = xn_nyq(imn_nyq)/nfp
+
+       if (abs(m) >= mpol .or. abs(n) > ntor) then
+          if (VMEC_Nyquist_option==1) then 
+             !if (masterProc) print *,"Skipping m=",m,"n=",n," b/c Nyquist."
+             cycle
+          end if
+
+          non_Nyquist_mode_available = .false.
+       else
+          non_Nyquist_mode_available = .true.
+          ! Find the imn in the non-Nyquist arrays that corresponds to the same m and n.
+          found_imn = .false.
+          do imn = 1,mnmax
+             if (xm(imn)==m .and. xn(imn)==n*nfp) then
+                found_imn = .true.
+                exit
+             end if
+          end do
+          if ((xm(imn) .ne. m) .or. (xn(imn) .ne. n*nfp)) stop "Something went wrong!"
+          if (.not. found_imn) stop "Error! imn could not be found matching the given imn_nyq."
+       end if
+
+       ! -----------------------------------------------------
+       ! First, consider just the stellarator-symmetric terms:
+       ! -----------------------------------------------------
+       
+       b = bmnc(imn_nyq,vmecRadialIndex_half(1)) * vmecRadialWeight_half(1) &
+            + bmnc(imn_nyq,vmecRadialIndex_half(2)) * vmecRadialWeight_half(2)
+       
+       ! Set scaleFactor to rippleScale for non-axisymmetric or non-quasisymmetric modes
+       scaleFactor = setScaleFactor(n,m)
+       b = b*scaleFactor
 	
-          b = vmec%bmnc(n,m,vmecRadialIndex_half(1)) * vmecRadialWeight_half(1) &
-               + vmec%bmnc(n,m,vmecRadialIndex_half(2)) * vmecRadialWeight_half(2)
-          
-          ! Set scaleFactor to rippleScale for non-axisymmetric or non-quasisymmetric modes
-          scaleFactor = setScaleFactor(n,m)
-          b = b*scaleFactor
-	
-          if (abs(b/b00) >= min_Bmn_to_load) then
-             ! This (m,n) mode is sufficiently large to include.
-             !if (masterProc) then
-             !   print *,"Including mode with m = ",m,", n = ",n
-             !end if
-             numSymmetricModesIncluded = numSymmetricModesIncluded + 1
+       if (abs(b/b00) >= min_Bmn_to_load) then
+          ! This (m,n) mode is sufficiently large to include.
+          !if (masterProc) then
+          !   print *,"Including mode with m = ",m,", n = ",n
+          !end if
+          numSymmetricModesIncluded = numSymmetricModesIncluded + 1
 
-             ! Evaluate the radial derivatives we will need:
-             dpsi = vmec%phi(2)/(2*pi)  ! Doesn't need to be in the loops, but here for convenience.
+          ! Evaluate the radial derivatives we will need:
+          dpsi = phi(2)/(2*pi)  ! Doesn't need to be in the loops, but here for convenience.
 
-             ! B, B_sub_theta, and B_sub_zeta are on the half mesh, so their radial derivatives are on the full mesh.
-             ! R and Z are on the full mesh, so their radial derivatives are on the half mesh.
+          ! B, B_sub_theta, and B_sub_zeta are on the half mesh, so their radial derivatives are on the full mesh.
+          ! R and Z are on the full mesh, so their radial derivatives are on the half mesh.
 
-             vmec_dBHatdpsiHat(2:vmec%ns-1) = (vmec%bmnc(n,m,3:vmec%ns) - vmec%bmnc(n,m,2:vmec%ns-1)) / dpsi
-             ! Simplistic "extrapolation" at the endpoints:
-             vmec_dBHatdpsiHat(1) = vmec_dBHatdpsiHat(2)
-             vmec_dBHatdpsiHat(vmec%ns) = vmec_dBHatdpsiHat(vmec%ns-1)
+          vmec_dBHatdpsiHat(2:ns-1) = (bmnc(imn_nyq,3:ns) - bmnc(imn_nyq,2:ns-1)) / dpsi
+          ! Simplistic "extrapolation" at the endpoints:
+          vmec_dBHatdpsiHat(1) = vmec_dBHatdpsiHat(2)
+          vmec_dBHatdpsiHat(ns) = vmec_dBHatdpsiHat(ns-1)
 
-             vmec_dBHat_sub_theta_dpsiHat(2:vmec%ns-1) = (vmec%bsubumnc(n,m,3:vmec%ns) - vmec%bsubumnc(n,m,2:vmec%ns-1)) / dpsi
-             vmec_dBHat_sub_theta_dpsiHat(1) = vmec_dBHat_sub_theta_dpsiHat(2)
-             vmec_dBHat_sub_theta_dpsiHat(vmec%ns) = vmec_dBHat_sub_theta_dpsiHat(vmec%ns-1)
+          vmec_dBHat_sub_theta_dpsiHat(2:ns-1) = (bsubumnc(imn_nyq,3:ns) - bsubumnc(imn_nyq,2:ns-1)) / dpsi
+          vmec_dBHat_sub_theta_dpsiHat(1) = vmec_dBHat_sub_theta_dpsiHat(2)
+          vmec_dBHat_sub_theta_dpsiHat(ns) = vmec_dBHat_sub_theta_dpsiHat(ns-1)
 
-             vmec_dBHat_sub_zeta_dpsiHat(2:vmec%ns-1) = (vmec%bsubvmnc(n,m,3:vmec%ns) - vmec%bsubvmnc(n,m,2:vmec%ns-1)) / dpsi
-             vmec_dBHat_sub_zeta_dpsiHat(1) = vmec_dBHat_sub_zeta_dpsiHat(2)
-             vmec_dBHat_sub_zeta_dpsiHat(vmec%ns) = vmec_dBHat_sub_zeta_dpsiHat(vmec%ns-1)
+          vmec_dBHat_sub_zeta_dpsiHat(2:ns-1) = (bsubvmnc(imn_nyq,3:ns) - bsubvmnc(imn_nyq,2:ns-1)) / dpsi
+          vmec_dBHat_sub_zeta_dpsiHat(1) = vmec_dBHat_sub_zeta_dpsiHat(2)
+          vmec_dBHat_sub_zeta_dpsiHat(ns) = vmec_dBHat_sub_zeta_dpsiHat(ns-1)
 
-             vmec_dRdpsiHat(2:vmec%ns) = (vmec%rmnc(n,m,2:vmec%ns) - vmec%rmnc(n,m,1:vmec%ns-1)) / dpsi
+          if (non_Nyquist_mode_available) then
+             vmec_dRdpsiHat(2:ns) = (rmnc(imn,2:ns) - rmnc(imn,1:ns-1)) / dpsi
              vmec_dRdpsiHat(1) = 0
 
-             vmec_dZdpsiHat(2:vmec%ns) = (vmec%zmns(n,m,2:vmec%ns) - vmec%zmns(n,m,1:vmec%ns-1)) / dpsi
+             vmec_dZdpsiHat(2:ns) = (zmns(imn,2:ns) - zmns(imn,1:ns-1)) / dpsi
              vmec_dZdpsiHat(1) = 0
+          else
+             vmec_dRdpsiHat = 0
+             vmec_dZdpsiHat = 0
+          end if
 
-             ! End of evaluating radial derivatives.
+          ! End of evaluating radial derivatives.
              
-             do itheta = 1,Ntheta
-                do izeta = 1,Nzeta
-                   angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-                   cos_angle = cos(angle)
-                   sin_angle = sin(angle)
+          do itheta = 1,Ntheta
+             do izeta = 1,Nzeta
+                angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+                cos_angle = cos(angle)
+                sin_angle = sin(angle)
+                
+                BHat(itheta,izeta) = BHat(itheta,izeta) + b * cos_angle
+                
+                dbHatdtheta(itheta,izeta) = dBHatdtheta(itheta,izeta) - m * b * sin_angle
+                
+                dbHatdzeta(itheta,izeta) = dBHatdzeta(itheta,izeta) + n * NPeriods * b * sin_angle
+                
+                do isurf = 1,2
+                   ! Handle Jacobian:
+                   ! SFINCS's DHat is the INVERSE Jacobian of the (psiHat, theta, zeta) coordinates.
+                   ! VMEC's gmnc and gmns are the Jacobian of the (psiN, theta, zeta) coordinates.
+                   ! Because one uses psiHat and the other uses psiN, we need a factor of psiAHat for conversion.
+                   ! We will also set DHat = 1 / DHat at the end of this loop.
+                   temp = gmnc(imn_nyq,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf) / (psiAHat)
+                   temp = temp*scaleFactor
+                   DHat(itheta,izeta) = DHat(itheta,izeta) + temp * cos_angle
 
-                   BHat(itheta,izeta) = BHat(itheta,izeta) + b * cos_angle
+                   ! Handle B sup theta:
+                   ! Note that VMEC's bsupumnc and bsupumns are exactly the same as SFINCS's BHat_sup_theta, with no conversion factors of 2pi needed.
+                   temp = bsupumnc(imn_nyq,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
+                   temp = temp*scaleFactor
+                   BHat_sup_theta(itheta,izeta) = BHat_sup_theta(itheta,izeta) + temp * cos_angle
+                   dBHat_sup_theta_dzeta(itheta,izeta) = dBHat_sup_theta_dzeta(itheta,izeta) + n * NPeriods * temp * sin_angle
 
-                   dbHatdtheta(itheta,izeta) = dBHatdtheta(itheta,izeta) - m * b * sin_angle
+                   ! Handle B sup zeta:
+                   ! Note that VMEC's bsupvmnc and bsupvmns are exactly the same as SFINCS's BHat_sup_zeta, with no conversion factors of 2pi or Nperiods needed.
+                   temp = bsupvmnc(imn_nyq,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
+                   temp = temp*scaleFactor
+                   BHat_sup_zeta(itheta,izeta) = BHat_sup_zeta(itheta,izeta) + temp * cos_angle
+                   dBHat_sup_zeta_dtheta(itheta,izeta) = dBHat_sup_zeta_dtheta(itheta,izeta) - m * temp * sin_angle
 
-                   dbHatdzeta(itheta,izeta) = dBHatdzeta(itheta,izeta) + n * NPeriods * b * sin_angle
+                   ! Handle B sub theta:
+                   ! Note that VMEC's bsubumnc and bsubumns are exactly the same as SFINCS's BHat_sub_theta, with no conversion factors of 2pi needed.
+                   temp = bsubumnc(imn_nyq,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
+                   temp = temp*scaleFactor
+                   BHat_sub_theta(itheta,izeta) = BHat_sub_theta(itheta,izeta) + temp * cos_angle
+                   dBHat_sub_theta_dzeta(itheta,izeta) = dBHat_sub_theta_dzeta(itheta,izeta) + n * NPeriods * temp * sin_angle
 
-                   do isurf = 1,2
-                      ! Handle Jacobian:
-                      ! SFINCS's DHat is the INVERSE Jacobian of the (psiHat, theta, zeta) coordinates.
-                      ! VMEC's gmnc and gmns are the Jacobian of the (psiN, theta, zeta) coordinates.
-                      ! Because one uses psiHat and the other uses psiN, we need a factor of psiAHat for conversion.
-                      ! We will also set DHat = 1 / DHat at the end of this loop.
-                      temp = vmec%gmnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf) / (psiAHat)
-                      temp = temp*scaleFactor
-                      DHat(itheta,izeta) = DHat(itheta,izeta) + temp * cos_angle
+                   ! Handle B sub zeta:
+                   ! Note that VMEC's bsubvmnc and bsubvmns are exactly the same as SFINCS's BHat_sub_zeta, with no conversion factors of 2pi needed.
+                   temp = bsubvmnc(imn_nyq,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
+                   temp = temp*scaleFactor
+                   BHat_sub_zeta(itheta,izeta) = BHat_sub_zeta(itheta,izeta) + temp * cos_angle
+                   dBHat_sub_zeta_dtheta(itheta,izeta) = dBHat_sub_zeta_dtheta(itheta,izeta) - m * temp * sin_angle
 
-                      ! Handle B sup theta:
-                      ! Note that VMEC's bsupumnc and bsupumns are exactly the same as SFINCS's BHat_sup_theta, with no conversion factors of 2pi needed.
-                      temp = vmec%bsupumnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
-                      temp = temp*scaleFactor
-                      BHat_sup_theta(itheta,izeta) = BHat_sup_theta(itheta,izeta) + temp * cos_angle
-                      dBHat_sup_theta_dzeta(itheta,izeta) = dBHat_sup_theta_dzeta(itheta,izeta) + n * NPeriods * temp * sin_angle
+                   ! Handle B sub psi.
+                   ! Unlike the other components of B, this one is on the full mesh.
+                   ! Notice B_psi = B_s * (d s / d psi), and (d s / d psi) = 1 / psiAHat
+                   temp = bsubsmns(imn_nyq,vmecRadialIndex_full(isurf)) / psiAHat * vmecRadialWeight_full(isurf)
+                   temp = temp*scaleFactor
+                   BHat_sub_psi(itheta,izeta) = BHat_sub_psi(itheta,izeta) + temp * sin_angle
+                   dBHat_sub_psi_dtheta(itheta,izeta) = dBHat_sub_psi_dtheta(itheta,izeta) + m * temp * cos_angle
+                   dBHat_sub_psi_dzeta(itheta,izeta)  = dBHat_sub_psi_dzeta(itheta,izeta) - n * NPeriods * temp * cos_angle
 
-                      ! Handle B sup zeta:
-                      ! Note that VMEC's bsupvmnc and bsupvmns are exactly the same as SFINCS's BHat_sup_zeta, with no conversion factors of 2pi or Nperiods needed.
-                      temp = vmec%bsupvmnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
-                      temp = temp*scaleFactor
-                      BHat_sup_zeta(itheta,izeta) = BHat_sup_zeta(itheta,izeta) + temp * cos_angle
-                      dBHat_sup_zeta_dtheta(itheta,izeta) = dBHat_sup_zeta_dtheta(itheta,izeta) - m * temp * sin_angle
+                   ! Handle dBHatdpsiHat.
+                   ! Since bmnc is on the half mesh, its radial derivative is on the full mesh.
+                   temp = vmec_dBHatdpsiHat(vmecRadialIndex_full(isurf)) * vmecRadialWeight_full(isurf)
+                   temp = temp*scaleFactor
+                   dBHatdpsiHat(itheta,izeta) = dBHatdpsiHat(itheta,izeta) + temp * cos_angle
 
-                      ! Handle B sub theta:
-                      ! Note that VMEC's bsubumnc and bsubumns are exactly the same as SFINCS's BHat_sub_theta, with no conversion factors of 2pi needed.
-                      temp = vmec%bsubumnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
-                      temp = temp*scaleFactor
-                      BHat_sub_theta(itheta,izeta) = BHat_sub_theta(itheta,izeta) + temp * cos_angle
-                      dBHat_sub_theta_dzeta(itheta,izeta) = dBHat_sub_theta_dzeta(itheta,izeta) + n * NPeriods * temp * sin_angle
+                   ! Handle dBHat_sub_theta_dpsiHat.
+                   ! Since bsubumnc is on the half mesh, its radial derivative is on the full mesh.
+                   temp = vmec_dBHat_sub_theta_dpsiHat(vmecRadialIndex_full(isurf)) * vmecRadialWeight_full(isurf)
+                   temp = temp*scaleFactor
+                   dBHat_sub_theta_dpsiHat(itheta,izeta) = dBHat_sub_theta_dpsiHat(itheta,izeta) + temp * cos_angle
 
-                      ! Handle B sub zeta:
-                      ! Note that VMEC's bsubvmnc and bsubvmns are exactly the same as SFINCS's BHat_sub_zeta, with no conversion factors of 2pi needed.
-                      temp = vmec%bsubvmnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
-                      temp = temp*scaleFactor
-                      BHat_sub_zeta(itheta,izeta) = BHat_sub_zeta(itheta,izeta) + temp * cos_angle
-                      dBHat_sub_zeta_dtheta(itheta,izeta) = dBHat_sub_zeta_dtheta(itheta,izeta) - m * temp * sin_angle
+                   ! Handle dBHat_sub_zeta_dpsiHat.
+                   ! Since bsubvmnc is on the half mesh, its radial derivative is on the full mesh.
+                   temp = vmec_dBHat_sub_zeta_dpsiHat(vmecRadialIndex_full(isurf)) * vmecRadialWeight_full(isurf)
+                   temp = temp*scaleFactor
+                   dBHat_sub_zeta_dpsiHat(itheta,izeta) = dBHat_sub_zeta_dpsiHat(itheta,izeta) + temp * cos_angle
 
-                      ! Handle B sub psi.
-                      ! Unlike the other components of B, this one is on the full mesh.
-                      ! Notice B_psi = B_s * (d s / d psi), and (d s / d psi) = 1 / psiAHat
-                      temp = vmec%bsubsmns(n,m,vmecRadialIndex_full(isurf)) / psiAHat * vmecRadialWeight_full(isurf)
-                      temp = temp*scaleFactor
-                      BHat_sub_psi(itheta,izeta) = BHat_sub_psi(itheta,izeta) + temp * sin_angle
-                      dBHat_sub_psi_dtheta(itheta,izeta) = dBHat_sub_psi_dtheta(itheta,izeta) + m * temp * cos_angle
-                      dBHat_sub_psi_dzeta(itheta,izeta)  = dBHat_sub_psi_dzeta(itheta,izeta) - n * NPeriods * temp * cos_angle
-
-                      ! Handle dBHatdpsiHat.
-                      ! Since bmnc is on the half mesh, its radial derivative is on the full mesh.
-                      temp = vmec_dBHatdpsiHat(vmecRadialIndex_full(isurf)) * vmecRadialWeight_full(isurf)
-                      temp = temp*scaleFactor
-                      dBHatdpsiHat(itheta,izeta) = dBHatdpsiHat(itheta,izeta) + temp * cos_angle
-
-                      ! Handle dBHat_sub_theta_dpsiHat.
-                      ! Since bsubumnc is on the half mesh, its radial derivative is on the full mesh.
-                      temp = vmec_dBHat_sub_theta_dpsiHat(vmecRadialIndex_full(isurf)) * vmecRadialWeight_full(isurf)
-                      temp = temp*scaleFactor
-                      dBHat_sub_theta_dpsiHat(itheta,izeta) = dBHat_sub_theta_dpsiHat(itheta,izeta) + temp * cos_angle
-
-                      ! Handle dBHat_sub_zeta_dpsiHat.
-                      ! Since bsubvmnc is on the half mesh, its radial derivative is on the full mesh.
-                      temp = vmec_dBHat_sub_zeta_dpsiHat(vmecRadialIndex_full(isurf)) * vmecRadialWeight_full(isurf)
-                      temp = temp*scaleFactor
-                      dBHat_sub_zeta_dpsiHat(itheta,izeta) = dBHat_sub_zeta_dpsiHat(itheta,izeta) + temp * cos_angle
+                   ! Handle arrays that use xm and xn instead of xm_nyq and xn_nyq.
+                   if (non_Nyquist_mode_available) then
 
                       ! Handle R, which is on the full mesh
-                      temp = vmec%rmnc(n,m,vmecRadialIndex_full(isurf)) * vmecRadialWeight_full(isurf)
+                      temp = rmnc(imn,vmecRadialIndex_full(isurf)) * vmecRadialWeight_full(isurf)
                       temp = temp*scaleFactor
                       R(itheta,izeta) = R(itheta,izeta) + temp * cos_angle
                       dRdtheta(itheta,izeta) = dRdtheta(itheta,izeta) - temp * m * sin_angle
                       dRdzeta(itheta,izeta)  = dRdzeta(itheta,izeta)  + temp * n * Nperiods * sin_angle
 
                       ! Handle Z, which is on the full mesh
-                      temp = vmec%zmns(n,m,vmecRadialIndex_full(isurf)) * vmecRadialWeight_full(isurf)
+                      temp = zmns(imn,vmecRadialIndex_full(isurf)) * vmecRadialWeight_full(isurf)
                       temp = temp*scaleFactor
                       !Z(itheta,izeta) = Z(itheta,izeta) + temp * sin_angle  ! We don't actually need Z itself, only derivatives of Z.
                       dZdtheta(itheta,izeta) = dZdtheta(itheta,izeta) + temp * m * cos_angle
@@ -2465,147 +2549,156 @@ contains
                       temp = temp*scaleFactor
                       dZdpsiHat(itheta,izeta) = dZdpsiHat(itheta,izeta) + temp * sin_angle
 
-                   end do
+                   end if
                 end do
              end do
-          else
+          end do
+       else
+          !if (masterProc) then
+          !   print *,"NOT including mode with m = ",m,", n = ",n
+          !end if
+       end if
+
+       ! -----------------------------------------------------
+       ! Now consider the stellarator-asymmetric terms.
+       ! NOTE: This functionality has not been tested as thoroughly !!!
+       ! -----------------------------------------------------
+
+       if (lasym) then
+
+          b = bmns(imn_nyq,vmecRadialIndex_half(1)) * vmecRadialWeight_half(1) &
+               + bmns(imn_nyq,vmecRadialIndex_half(2)) * vmecRadialWeight_half(2)
+
+          ! Set scaleFactor to rippleScale for non-axisymmetric or non-quasisymmetric modes
+          scaleFactor = setScaleFactor(n,m)
+          b = b*scaleFactor
+          
+          if (abs(b/b00) >= min_Bmn_to_load) then
+             ! This (m,n) mode is sufficiently large to include.
              !if (masterProc) then
-             !   print *,"NOT including mode with m = ",m,", n = ",n
+             !   print *,"Including stellarator-asymmetric mode with m = ",m,", n = ",n
              !end if
-          end if
-
-          ! -----------------------------------------------------
-          ! Now consider the stellarator-asymmetric terms.
-          ! NOTE: This functionality has not been tested as thoroughly !!!
-          ! -----------------------------------------------------
-
-          if (vmec%iasym > 0) then
-
-             b = vmec%bmns(n,m,vmecRadialIndex_half(1)) * vmecRadialWeight_half(1) &
-                  + vmec%bmns(n,m,vmecRadialIndex_half(2)) * vmecRadialWeight_half(2)
-
-             ! Set scaleFactor to rippleScale for non-axisymmetric or non-quasisymmetric modes
-             scaleFactor = setScaleFactor(n,m)
-             b = b*scaleFactor
+             numAntisymmetricModesIncluded = numAntisymmetricModesIncluded + 1
              
-             if (abs(b/b00) >= min_Bmn_to_load) then
-                ! This (m,n) mode is sufficiently large to include.
-                !if (masterProc) then
-                !   print *,"Including stellarator-asymmetric mode with m = ",m,", n = ",n
-                !end if
-                numAntisymmetricModesIncluded = numAntisymmetricModesIncluded + 1
-
-                ! Evaluate the radial derivatives we will need:
-                dpsi = vmec%phi(2)/(2*pi)  ! Doesn't need to be in the loops, but here for convenience.
-
-                ! B, B_sub_theta, and B_sub_zeta are on the half mesh, so their radial derivatives are on the full mesh.
-                ! R and Z are on the full mesh, so their radial derivatives are on the half mesh.
-
-                vmec_dBHatdpsiHat(2:vmec%ns-1) = (vmec%bmns(n,m,3:vmec%ns) - vmec%bmns(n,m,2:vmec%ns-1)) / dpsi
-                ! Simplistic "extrapolation" at the endpoints:
-                vmec_dBHatdpsiHat(1) = vmec_dBHatdpsiHat(2)
-                vmec_dBHatdpsiHat(vmec%ns) = vmec_dBHatdpsiHat(vmec%ns-1)
-
-                vmec_dBHat_sub_theta_dpsiHat(2:vmec%ns-1) = (vmec%bsubumns(n,m,3:vmec%ns) - vmec%bsubumns(n,m,2:vmec%ns-1)) / dpsi
-                vmec_dBHat_sub_theta_dpsiHat(1) = vmec_dBHat_sub_theta_dpsiHat(2)
-                vmec_dBHat_sub_theta_dpsiHat(vmec%ns) = vmec_dBHat_sub_theta_dpsiHat(vmec%ns-1)
-
-                vmec_dBHat_sub_zeta_dpsiHat(2:vmec%ns-1) = (vmec%bsubvmns(n,m,3:vmec%ns) - vmec%bsubvmns(n,m,2:vmec%ns-1)) / dpsi
-                vmec_dBHat_sub_zeta_dpsiHat(1) = vmec_dBHat_sub_zeta_dpsiHat(2)
-                vmec_dBHat_sub_zeta_dpsiHat(vmec%ns) = vmec_dBHat_sub_zeta_dpsiHat(vmec%ns-1)
-
-                vmec_dRdpsiHat(2:vmec%ns) = (vmec%rmns(n,m,2:vmec%ns) - vmec%rmns(n,m,1:vmec%ns-1)) / dpsi
+             ! Evaluate the radial derivatives we will need:
+             dpsi = phi(2)/(2*pi)  ! Doesn't need to be in the loops, but here for convenience.
+             
+             ! B, B_sub_theta, and B_sub_zeta are on the half mesh, so their radial derivatives are on the full mesh.
+             ! R and Z are on the full mesh, so their radial derivatives are on the half mesh.
+             
+             vmec_dBHatdpsiHat(2:ns-1) = (bmns(imn_nyq,3:ns) - bmns(imn_nyq,2:ns-1)) / dpsi
+             ! Simplistic "extrapolation" at the endpoints:
+             vmec_dBHatdpsiHat(1) = vmec_dBHatdpsiHat(2)
+             vmec_dBHatdpsiHat(ns) = vmec_dBHatdpsiHat(ns-1)
+             
+             vmec_dBHat_sub_theta_dpsiHat(2:ns-1) = (bsubumns(imn_nyq,3:ns) - bsubumns(imn_nyq,2:ns-1)) / dpsi
+             vmec_dBHat_sub_theta_dpsiHat(1) = vmec_dBHat_sub_theta_dpsiHat(2)
+             vmec_dBHat_sub_theta_dpsiHat(ns) = vmec_dBHat_sub_theta_dpsiHat(ns-1)
+             
+             vmec_dBHat_sub_zeta_dpsiHat(2:ns-1) = (bsubvmns(imn_nyq,3:ns) - bsubvmns(imn_nyq,2:ns-1)) / dpsi
+             vmec_dBHat_sub_zeta_dpsiHat(1) = vmec_dBHat_sub_zeta_dpsiHat(2)
+             vmec_dBHat_sub_zeta_dpsiHat(ns) = vmec_dBHat_sub_zeta_dpsiHat(ns-1)
+             
+             if (non_Nyquist_mode_available) then
+                vmec_dRdpsiHat(2:ns) = (rmns(imn,2:ns) - rmns(imn,1:ns-1)) / dpsi
                 vmec_dRdpsiHat(1) = 0
-
-                vmec_dZdpsiHat(2:vmec%ns) = (vmec%zmnc(n,m,2:vmec%ns) - vmec%zmnc(n,m,1:vmec%ns-1)) / dpsi
+             
+                vmec_dZdpsiHat(2:ns) = (zmnc(imn,2:ns) - zmnc(imn,1:ns-1)) / dpsi
                 vmec_dZdpsiHat(1) = 0
-
-                ! End of evaluating radial derivatives.
-
-                do itheta = 1,Ntheta
-                   do izeta = 1,Nzeta
-                      angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-                      cos_angle = cos(angle)
-                      sin_angle = sin(angle)
+             else
+                vmec_dRdpsiHat = 0
+                vmec_dZdpsiHat = 0
+             end if
+             
+             ! End of evaluating radial derivatives.
+             
+             do itheta = 1,Ntheta
+                do izeta = 1,Nzeta
+                   angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+                   cos_angle = cos(angle)
+                   sin_angle = sin(angle)
                       
-                      BHat(itheta,izeta) = BHat(itheta,izeta) + b * sin_angle
-                      dbHatdtheta(itheta,izeta) = dBHatdtheta(itheta,izeta) + m * b * cos_angle
-                      dbHatdzeta(itheta,izeta) = dBHatdzeta(itheta,izeta) - n * NPeriods * b * cos_angle
+                   BHat(itheta,izeta) = BHat(itheta,izeta) + b * sin_angle
+                   dbHatdtheta(itheta,izeta) = dBHatdtheta(itheta,izeta) + m * b * cos_angle
+                   dbHatdzeta(itheta,izeta) = dBHatdzeta(itheta,izeta) - n * NPeriods * b * cos_angle
+                   
+                   do isurf = 1,2
+                      ! Handle Jacobian:
+                      ! SFINCS's DHat is the INVERSE Jacobian of the (psiHat, theta, zeta) coordinates.
+                      ! VMEC's gmnc and gmns are the Jacobian of the (psiN, theta, zeta) coordinates.
+                      ! Because one uses psiHat and the other uses psiN, we need a factor of psiAHat for conversion.
+                      ! We will also set DHat = 1 / DHat at the end of this loop.
+                      temp = gmns(imn_nyq,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf) / (psiAHat)
+                      temp = temp*scaleFactor
+                      DHat(itheta,izeta) = DHat(itheta,izeta) + temp * sin_angle
+                         
+                      ! Handle B sup theta:
+                      ! Note that VMEC's bsupumnc and bsupumns are exactly the same as SFINCS's BHat_sup_theta, with no conversion factors of 2pi needed.
+                      temp = bsupumns(imn_nyq,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
+                      temp = temp*scaleFactor	
+                      BHat_sup_theta(itheta,izeta) = BHat_sup_theta(itheta,izeta) + temp * sin_angle
+                      dBHat_sup_theta_dzeta(itheta,izeta) = dBHat_sup_theta_dzeta(itheta,izeta) - n * NPeriods * temp * cos_angle
                       
-                      do isurf = 1,2
-                         ! Handle Jacobian:
-                         ! SFINCS's DHat is the INVERSE Jacobian of the (psiHat, theta, zeta) coordinates.
-                         ! VMEC's gmnc and gmns are the Jacobian of the (psiN, theta, zeta) coordinates.
-                         ! Because one uses psiHat and the other uses psiN, we need a factor of psiAHat for conversion.
-                         ! We will also set DHat = 1 / DHat at the end of this loop.
-                         temp = vmec%gmns(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf) / (psiAHat)
-                         temp = temp*scaleFactor
-                         DHat(itheta,izeta) = DHat(itheta,izeta) + temp * sin_angle
-                         
-                         ! Handle B sup theta:
-                         ! Note that VMEC's bsupumnc and bsupumns are exactly the same as SFINCS's BHat_sup_theta, with no conversion factors of 2pi needed.
-                         temp = vmec%bsupumns(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
-                         temp = temp*scaleFactor	
-                         BHat_sup_theta(itheta,izeta) = BHat_sup_theta(itheta,izeta) + temp * sin_angle
-                         dBHat_sup_theta_dzeta(itheta,izeta) = dBHat_sup_theta_dzeta(itheta,izeta) - n * NPeriods * temp * cos_angle
-                         
-                         ! Handle B sup zeta:
-                         ! Note that VMEC's bsupvmnc and bsupvmns are exactly the same as SFINCS's BHat_sup_zeta, with no conversion factors of 2pi or Nperiods needed.
-                         temp = vmec%bsupvmns(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
-                         temp = temp*scaleFactor
-                         BHat_sup_zeta(itheta,izeta) = BHat_sup_zeta(itheta,izeta) + temp * sin_angle
-                         dBHat_sup_zeta_dtheta(itheta,izeta) = dBHat_sup_zeta_dtheta(itheta,izeta) + m * temp * cos_angle
-                         
-                         ! Handle B sub theta:
-                         ! Note that VMEC's bsubumnc and bsubumns are exactly the same as SFINCS's BHat_sub_theta, with no conversion factors of 2pi needed.
-                         temp = vmec%bsubumns(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
-                         temp = temp*scaleFactor
-                         BHat_sub_theta(itheta,izeta) = BHat_sub_theta(itheta,izeta) + temp * sin_angle
-                         dBHat_sub_theta_dzeta(itheta,izeta) = dBHat_sub_theta_dzeta(itheta,izeta) - n * NPeriods * temp * cos_angle
-                         
-                         ! Handle B sub zeta:
-                         ! Note that VMEC's bsubvmnc and bsubvmns are exactly the same as SFINCS's BHat_sub_zeta, with no conversion factors of 2pi needed.
-                         temp = vmec%bsubvmns(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
-                         temp = temp*scaleFactor
-                         BHat_sub_zeta(itheta,izeta) = BHat_sub_zeta(itheta,izeta) + temp * sin_angle
-                         dBHat_sub_zeta_dtheta(itheta,izeta) = dBHat_sub_zeta_dtheta(itheta,izeta) + m * temp * cos_angle
-
-                         ! Handle B sub psi.
-                         ! Unlike the other components of B, this one is on the full mesh.
-                         ! Notice B_psi = B_s * (d s / d psi), and (d s / d psi) = 1 / psiAHat
-                         temp = vmec%bsubsmnc(n,m,vmecRadialIndex_full(isurf)) / psiAHat * vmecRadialWeight_full(isurf)
-                         temp = temp*scaleFactor
-                         BHat_sub_psi(itheta,izeta) = BHat_sub_psi(itheta,izeta) + temp * cos_angle
-                         dBHat_sub_psi_dtheta(itheta,izeta) = dBHat_sub_psi_dtheta(itheta,izeta) - m * temp * sin_angle
-                         dBHat_sub_psi_dzeta(itheta,izeta)  = dBHat_sub_psi_dzeta(itheta,izeta) + n * NPeriods * temp * sin_angle
-
-                         ! Handle dBHatdpsiHat.
-                         ! Since bmns is on the half mesh, its radial derivative is on the full mesh.
-                         temp = vmec_dBHatdpsiHat(vmecRadialIndex_full(isurf)) * vmecRadialWeight_full(isurf)
-                         temp = temp*scaleFactor
-                         dBHatdpsiHat(itheta,izeta) = dBHatdpsiHat(itheta,izeta) + temp * sin_angle
-
-                         ! Handle dBHat_sub_theta_dpsiHat.
-                         ! Since bsubumns is on the half mesh, its radial derivative is on the full mesh.
-                         temp = vmec_dBHat_sub_theta_dpsiHat(vmecRadialIndex_full(isurf)) * vmecRadialWeight_full(isurf)
-                         temp = temp*scaleFactor
-                         dBHat_sub_theta_dpsiHat(itheta,izeta) = dBHat_sub_theta_dpsiHat(itheta,izeta) + temp * sin_angle
-
-                         ! Handle dBHat_sub_zeta_dpsiHat.
-                         ! Since bsubvmns is on the half mesh, its radial derivative is on the full mesh.
-                         temp = vmec_dBHat_sub_zeta_dpsiHat(vmecRadialIndex_full(isurf)) * vmecRadialWeight_full(isurf)
-                         temp = temp*scaleFactor
-                         dBHat_sub_zeta_dpsiHat(itheta,izeta) = dBHat_sub_zeta_dpsiHat(itheta,izeta) + temp * sin_angle
+                      ! Handle B sup zeta:
+                      ! Note that VMEC's bsupvmnc and bsupvmns are exactly the same as SFINCS's BHat_sup_zeta, with no conversion factors of 2pi or Nperiods needed.
+                      temp = bsupvmns(imn_nyq,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
+                      temp = temp*scaleFactor
+                      BHat_sup_zeta(itheta,izeta) = BHat_sup_zeta(itheta,izeta) + temp * sin_angle
+                      dBHat_sup_zeta_dtheta(itheta,izeta) = dBHat_sup_zeta_dtheta(itheta,izeta) + m * temp * cos_angle
+                      
+                      ! Handle B sub theta:
+                      ! Note that VMEC's bsubumnc and bsubumns are exactly the same as SFINCS's BHat_sub_theta, with no conversion factors of 2pi needed.
+                      temp = bsubumns(imn_nyq,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
+                      temp = temp*scaleFactor
+                      BHat_sub_theta(itheta,izeta) = BHat_sub_theta(itheta,izeta) + temp * sin_angle
+                      dBHat_sub_theta_dzeta(itheta,izeta) = dBHat_sub_theta_dzeta(itheta,izeta) - n * NPeriods * temp * cos_angle
+                      
+                      ! Handle B sub zeta:
+                      ! Note that VMEC's bsubvmnc and bsubvmns are exactly the same as SFINCS's BHat_sub_zeta, with no conversion factors of 2pi needed.
+                      temp = bsubvmns(imn_nyq,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
+                      temp = temp*scaleFactor
+                      BHat_sub_zeta(itheta,izeta) = BHat_sub_zeta(itheta,izeta) + temp * sin_angle
+                      dBHat_sub_zeta_dtheta(itheta,izeta) = dBHat_sub_zeta_dtheta(itheta,izeta) + m * temp * cos_angle
+                      
+                      ! Handle B sub psi.
+                      ! Unlike the other components of B, this one is on the full mesh.
+                      ! Notice B_psi = B_s * (d s / d psi), and (d s / d psi) = 1 / psiAHat
+                      temp = bsubsmnc(imn_nyq,vmecRadialIndex_full(isurf)) / psiAHat * vmecRadialWeight_full(isurf)
+                      temp = temp*scaleFactor
+                      BHat_sub_psi(itheta,izeta) = BHat_sub_psi(itheta,izeta) + temp * cos_angle
+                      dBHat_sub_psi_dtheta(itheta,izeta) = dBHat_sub_psi_dtheta(itheta,izeta) - m * temp * sin_angle
+                      dBHat_sub_psi_dzeta(itheta,izeta)  = dBHat_sub_psi_dzeta(itheta,izeta) + n * NPeriods * temp * sin_angle
+                      
+                      ! Handle dBHatdpsiHat.
+                      ! Since bmns is on the half mesh, its radial derivative is on the full mesh.
+                      temp = vmec_dBHatdpsiHat(vmecRadialIndex_full(isurf)) * vmecRadialWeight_full(isurf)
+                      temp = temp*scaleFactor
+                      dBHatdpsiHat(itheta,izeta) = dBHatdpsiHat(itheta,izeta) + temp * sin_angle
+                      
+                      ! Handle dBHat_sub_theta_dpsiHat.
+                      ! Since bsubumns is on the half mesh, its radial derivative is on the full mesh.
+                      temp = vmec_dBHat_sub_theta_dpsiHat(vmecRadialIndex_full(isurf)) * vmecRadialWeight_full(isurf)
+                      temp = temp*scaleFactor
+                      dBHat_sub_theta_dpsiHat(itheta,izeta) = dBHat_sub_theta_dpsiHat(itheta,izeta) + temp * sin_angle
+                      
+                      ! Handle dBHat_sub_zeta_dpsiHat.
+                      ! Since bsubvmns is on the half mesh, its radial derivative is on the full mesh.
+                      temp = vmec_dBHat_sub_zeta_dpsiHat(vmecRadialIndex_full(isurf)) * vmecRadialWeight_full(isurf)
+                      temp = temp*scaleFactor
+                      dBHat_sub_zeta_dpsiHat(itheta,izeta) = dBHat_sub_zeta_dpsiHat(itheta,izeta) + temp * sin_angle
+                      
+                      ! Handle arrays that use xm and xn instead of xm_nyq and xn_nyq.
+                      if (non_Nyquist_mode_available) then
 
                          ! Handle R, which is on the full mesh
-                         temp = vmec%rmns(n,m,vmecRadialIndex_full(isurf)) * vmecRadialWeight_full(isurf)
+                         temp = rmns(imn,vmecRadialIndex_full(isurf)) * vmecRadialWeight_full(isurf)
                          temp = temp*scaleFactor
                          R(itheta,izeta) = R(itheta,izeta) + temp * sin_angle
                          dRdtheta(itheta,izeta) = dRdtheta(itheta,izeta) + temp * m * cos_angle
                          dRdzeta(itheta,izeta)  = dRdzeta(itheta,izeta)  - temp * n * Nperiods * cos_angle
 
                          ! Handle Z, which is on the full mesh
-                         temp = vmec%zmnc(n,m,vmecRadialIndex_full(isurf)) * vmecRadialWeight_full(isurf)
+                         temp = zmnc(imn,vmecRadialIndex_full(isurf)) * vmecRadialWeight_full(isurf)
                          temp = temp*scaleFactor
                          ! Z(itheta,izeta) = Z(itheta,izeta) + temp * cos_angle   ! We don't actually need Z itself, only derivatives of Z.
                          dZdtheta(itheta,izeta) = dZdtheta(itheta,izeta) - temp * m * sin_angle
@@ -2622,23 +2715,22 @@ contains
                          temp = vmec_dZdpsiHat(vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
                          temp = temp*scaleFactor
                          dZdpsiHat(itheta,izeta) = dZdpsiHat(itheta,izeta) + temp * cos_angle
-
-                      end do
+                      end if
                    end do
                 end do
-             else
-                !if (masterProc) then
-                !   print *,"NOT including mode with m = ",m,", n = ",n
-                !end if
-             end if
+             end do
+          else
+             !if (masterProc) then
+             !   print *,"NOT including mode with m = ",m,", n = ",n
+             !end if
           end if
-       end do
+       end if
     end do
 
     if (masterProc) then
-       print "(a,i4,a,i4,a)"," Including ",numSymmetricModesIncluded," of ",(2*vmec%ntor+1)*vmec%mpol," stellarator-symmetric modes from the VMEC file."
-       if (vmec%iasym > 0) then
-          print "(a,i4,a,i4,a)"," Including ",numAntisymmetricModesIncluded," of ",(2*vmec%ntor+1)*vmec%mpol," stellarator-antisymmetric modes from the VMEC file."
+       print "(a,i4,a,i4,a)"," Including ",numSymmetricModesIncluded," of ",(2*ntor+1)*mpol," stellarator-symmetric modes from the VMEC file."
+       if (lasym) then
+          print "(a,i4,a,i4,a)"," Including ",numAntisymmetricModesIncluded," of ",(2*ntor+1)*mpol," stellarator-antisymmetric modes from the VMEC file."
        else
           print *,"Equilibrium is stellarator-symmetric."
        end if

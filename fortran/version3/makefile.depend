@@ -5,7 +5,7 @@ OBJ_FILES = ChebyshevGrid.o ChebyshevInterpolationMatrix.o \
 	  globalVariables.o indices.o polynomialDiffMatrices.o polynomialInterpolationMatrix.o \
 	  populateMatrix.o preallocateMatrix.o quadpack.o radialCoordinates.o readInput.o sfincs.o solver.o sparsify.o \
 	  uniformDiffMatrices.o uniformInterpolationMatrix.o validateInput.o writeHDF5Output.o xGrid.o \
-	  readVMEC/readVMEC.a
+	  mini_libstell/mini_libstell.a
 
 # Dependencies:
 ChebyshevGrid.o: 
@@ -15,7 +15,7 @@ diagnostics.o: globalVariables.o indices.o writeHDF5Output.o
 evaluateJacobian.o: globalVariables.o
 evaluateResidual.o: globalVariables.o indices.o
 export_f.o: globalVariables.o xGrid.o
-geometry.o: globalVariables.o radialCoordinates.o readVMEC/readVMEC.a
+geometry.o: globalVariables.o radialCoordinates.o mini_libstell/mini_libstell.a
 indices.o: globalVariables.o
 polynomialDiffMatrices.o: xGrid.o
 polynomialInterpolationMatrix.o: 

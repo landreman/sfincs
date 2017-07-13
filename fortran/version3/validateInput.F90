@@ -214,6 +214,11 @@ subroutine validateInput()
      print *,line
   end if
 
+  if (VMEC_Nyquist_option < 1 .or. VMEC_Nyquist_option > 2) then
+     if (masterProc) print *,"Error! VMEC_Nyquist_option must be either 1 or 2."
+     stop
+  end if
+
   ! species namelist:
 
   flag = .false.
