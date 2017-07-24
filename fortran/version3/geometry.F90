@@ -95,6 +95,15 @@ contains
        NPeriods = vmec%nfp
        psiAHat = vmec%phi(vmec%ns)/(2*pi)
        aHat = vmec%Aminor_p
+       ! Check that sensitivity is computed with stellarator symmetry
+       if (sensitivityOption > 1) then
+          if (vmec%iasym > 0) then
+            if (masterProc) then
+              print *,"Error! sensitivityOption>0 must be used with VMEC geometry."
+            endif
+            stop
+          endif
+       endif
 
     case (6)
        ! Read Erika Strumberger's NEMEC format used at IPP.

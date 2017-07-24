@@ -35,7 +35,8 @@ subroutine validateInput()
      stop
   end if
   
-  !!if (RHSMode == 2 .and. nonlinear) then !!Commented by AM 2016-02
+  !!if (RHSMode == 2 .and. nonlinear) then
+ !!Commented by AM 2016-02
   if (RHSMode == 2 .and. includePhi1) then !!Added by AM 2016-02
      if (masterProc) then
         print *,"Error! RHSMode cannot be 2 for a nonlinear calculation."
@@ -61,19 +62,23 @@ subroutine validateInput()
         Nxi_for_x_option=0
      end if
 
-     !!if (nonlinear) then !!Commented by AM 2016-02
+     !!if (nonlinear) then
+ !!Commented by AM 2016-02
      if (includePhi1) then !!Added by AM 2016-02
         if (masterProc) then
            print *,line
            print *,line
-!!           print *,"**   WARNING: You asked for RHSMode=3 (monoenergetic transport matrix) with nonlinear = .true., which is incompatble." !!Commented by AM 2016-02
-!!           print *,"**            Setting nonlinear = .false." !!Commented by AM 2016-02
+!!           print *,"**   WARNING: You asked for RHSMode=3 (monoenergetic transport matrix) with nonlinear = .true., which is incompatble."
+ !!Commented by AM 2016-02
+!!           print *,"**            Setting nonlinear = .false."
+ !!Commented by AM 2016-02
            print *,"**   WARNING: You asked for RHSMode=3 (monoenergetic transport matrix) with includePhi1 = .true., which is incompatble." !!Added by AM 2016-02
            print *,"**            Setting includePhi1 = .false." !!Added by AM 2016-02
            print *,line
            print *,line
         end if
-!!        nonlinear = .false. !!Commented by AM 2016-02
+!!        nonlinear = .false.
+ !!Commented by AM 2016-02
         includePhi1 = .false. !!Added by AM 2016-02
      end if
 
@@ -443,9 +448,12 @@ subroutine validateInput()
 !!$!!  if (includeRadialExBDrive .and. (.not. includePhi1)) then !!Commented by AM 2016-03
 !!$  if (includePhi1InKineticEquation .and. (.not. includePhi1)) then !!Added by AM 2016-03
 !!$     if (masterProc) then
-!!$!!        print *,"Error! You requested a calculation including the radial ExB drive term" !!Commented by AM 2016-03
-!!$!!        print *,"(includeRadialExBDrive=.true.) but you set includePhi1=.false." !!Commented by AM 2016-03
-!!$!!        print *,"These options are inconsistent since the radial ExB drive term involves Phi1." !!Commented by AM 2016-03
+!!$!!        print *,"Error! You requested a calculation including the radial ExB drive term"
+ !!Commented by AM 2016-03
+!!$!!        print *,"(includeRadialExBDrive=.true.) but you set includePhi1=.false."
+ !!Commented by AM 2016-03
+!!$!!        print *,"These options are inconsistent since the radial ExB drive term involves Phi1."
+ !!Commented by AM 2016-03
 !!$        print *,"Error! You requested a calculation including Phi1 in the kinetic equation" !!Added by AM 2016-03
 !!$        print *,"(includePhi1InKineticEquation=.true.) but you set includePhi1=.false." !!Added by AM 2016-03
 !!$        print *,"These options are inconsistent." !!Added by AM 2016-03
@@ -472,7 +480,8 @@ subroutine validateInput()
         if (masterProc) then
            print *,"Error! magneticDriftScheme 4 has only been implemented for geometryScheme 11 and 12."
         end if
-        stop        
+        stop
+        
      end if
   end if
 
@@ -481,7 +490,8 @@ subroutine validateInput()
         if (masterProc) then
            print *,"Error! magneticDriftSchemes 5 and 6 have only been implemented for geometryScheme 5, 11, and 12."
         end if
-        stop        
+        stop
+        
      end if
   end if
 
@@ -1112,6 +1122,25 @@ subroutine validateInput()
         print *,"Error! preconditioner_xi cannot be more than 1."
      end if
      stop
+  end if
+
+  ! sensitivityOptions Namelist
+  if (sensitivityOption>0) then
+    ! Check for linear solve
+    if (includePhi1) then
+      if (masterProc) then
+        print *,"Error! sensitivityOption>0 cannot be used with Phi1."
+      endif
+      stop
+    endif
+    ! Check for VMEC input
+    if (geometryScheme /= 5) then
+        if (masterProc) then
+          print *,"Error! sensitivityOption>0 must be used with VMEC geometry."
+        endif
+        stop
+    end if
+    ! Check for stellarator symmetry is performed in geometry.f90
   end if
   
 end subroutine validateInput

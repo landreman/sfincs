@@ -2114,6 +2114,36 @@ used, in which case fewer than {\ttfamily Nradius} radii may be used.}
 {Only when \parlink{inputRadialCoordinate} = 3 and \sfincsScan~is run with \parlink{scanType} = 4 or 5.}
 {Minimum value of \parlink{rN} to use in the scan.}
 
+\section{The \texttt{sensitivityOptions} namelist}
+
+\param{sensitivityOption}
+{integer}
+{0}
+{When {\ttfamily geometryScheme == 5} and {\ttfamily includePhi1 == .false.}}. \\
+{\ttfamily sensitivityOption} == 0: No sensitivity output computed. \\
+{\ttfamily sensitivityOption} == 1: Sensitivity computed for VMEC harmonics using adjoint equation. The quantities of interest for sensitivity computations are specified by {\ttfamily AdjointRHSOption} and {\ttfamily AdjointRHSSpeciesOption}. \\
+
+\myhrule
+
+\param{AdjointRHSOption}
+{integer}
+{0}
+{When {\ttfamily geometryScheme == 5} and {\ttfamily sensitivityOption == 1}} \\
+{\ttfamily AdjointRHSOption == 0}: Sensitivity is computed for bootstrap current, particle flux, and heat flux. \\
+{\ttfamily AdjointRHSOption == 1}: Sensitivity is computed for just bootstrap current. \\
+{\ttfamily AdjointRHSOption == 2}: Sensitivity is computed for just particle flux. \\
+{\ttfamily AdjointRHSOption == 3}: Sensitivity is computed for just heat flux. 
+
+\myhrule
+
+\param{AdjointRHSSpeciesOption}
+{integer}
+{-1}
+{When {\ttfamily geometryScheme == 5} and {\ttfamily sensitivityOption == 1} and {\ttfamily AdjointRHSOption /= 0}} \\
+{\ttfamily AdjointRHSSpeciesOption == -1}: Sensitivity computed for output quantities specified by {\ttfamily AdjointRHSOption} for all species. \\
+{\ttfamily AdjointRHSSpeciesOption >= 0}: Sensitivity computed for output quantities specified by {\ttfamily AdjointRHSOption} for species {\ttfamily AdjointRHSSpeciesOption}. \\
+
+\myhrule
 
 \section{\PETSc~commands}
 

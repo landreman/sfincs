@@ -48,7 +48,8 @@ contains
 
     namelist / physicsParameters / Delta, alpha, nu_n, EParallelHat, EParallelHatSpec, & !!EParallelHatSpec added by HM 2017-02
          collisionOperator, constraintScheme, includeXDotTerm, &
-!!         includeElectricFieldTermInXiDot, useDKESExBDrift, include_fDivVE_term, nonlinear, & !!Commented by AM 2016-02
+!!         includeElectricFieldTermInXiDot, useDKESExBDrift, include_fDivVE_term, nonlinear, &
+ !!Commented by AM 2016-02
          includeElectricFieldTermInXiDot, useDKESExBDrift, include_fDivVE_term, & !!Added by AM 2016-02
          dPhiHatdpsiHat, dPhiHatdpsiN, dPhiHatdrHat, dPhiHatdrN, Er, &
          includeTemperatureEquilibrationTerm, includePhi1, &
@@ -84,6 +85,9 @@ contains
     namelist / export_f / export_full_f, export_delta_f, export_f_theta, export_f_zeta, export_f_x, export_f_xi, &
          export_f_theta_option, export_f_zeta_option, export_f_xi_option, export_f_x_option
 
+    namelist / sensitivityOptions / sensitivityOption, adjointRHSOption, &
+      adjointRHSSpeciesOption
+
     Zs = speciesNotInitialized
     mHats = speciesNotInitialized
     nHats = speciesNotInitialized
@@ -96,7 +100,8 @@ contains
     dTHatdrHats = speciesNotInitialized
     dNHatdrNs = speciesNotInitialized
     dTHatdrNs = speciesNotInitialized
-	
+
+	
 
     export_f_theta = speciesNotInitialized
     export_f_zeta = speciesNotInitialized
