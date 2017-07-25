@@ -16,7 +16,7 @@
 
     integer :: ix, L, itheta, izeta, ispecies, index
     integer :: ixMin
-    PetscScalar :: THat, mHat, sqrtTHat, sqrtmHat
+    PetscScalar :: THat, mHat, sqrtTHat, sqrtmHat, xPartOfRHS, dFactordLambda
     PetscErrorCode :: ierr
 
     if (pointAtX0) then
@@ -25,7 +25,6 @@
       ixMin = 1
     end if
 
-    x2 = x*x
     do ispecies = 1, Nspecies
       THat = THats(ispecies)
       mHat = mHats(ispecies)
@@ -89,20 +88,18 @@
 
             L = 0
             index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-            call VecSetValue(rhs, index, (4/three)*dFactordLambda, INSERT_VALUES, ierr)
+            call VecSetValue(dRHSdLambda, index, (4/three)*dFactordLambda, INSERT_VALUES, ierr)
 
             L = 2
             index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-            call VecSetValue(rhs, index, (two/three)*dFactordLambda, INSERT_VALUES, ierr)
+            call VecSetValue(dRHSdLambda, index, (two/three)*dFactordLambda, INSERT_VALUES, ierr)
 
           enddo
         enddo
       enddo
     enddo
 
-    ! Done inserting values.
-    ! Finally, assemble the RHS vector:
-    call VecAssemblyBegin(rhs, ierr)
-    call VecAssemblyEnd(rhs, ierr)
+    call VecAssemblyBegin(dRHSdLambda, ierr)
+    call VecAssemblyEnd(dRHSdLambda, ierr)
 
   end subroutine populatedRHSdLambda
