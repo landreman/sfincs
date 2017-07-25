@@ -2022,7 +2022,7 @@ contains
     PetscScalar, dimension(:), allocatable :: dr2, psiN_full, psiN_half
     PetscScalar, dimension(:), allocatable :: vmec_dBHatdpsiHat, vmec_dBHat_sub_theta_dpsiHat, vmec_dBHat_sub_zeta_dpsiHat
     PetscScalar, dimension(:), allocatable :: vmec_dRdpsiHat, vmec_dZdpsiHat, vmec_dpdpsiHat
-    integer :: i, j, index, isurf, itheta, izeta, m, n
+    integer :: i, j, index, isurf, itheta, izeta, m, n, imn
     PetscScalar :: min_dr2, angle, sin_angle, cos_angle, b, b00, temp, dphi, dpsi
     integer :: numSymmetricModesIncluded, numAntisymmetricModesIncluded
     PetscScalar :: scaleFactor
@@ -2655,6 +2655,48 @@ contains
 
     ! Convert Jacobian to inverse Jacobian:
     DHat = one / DHat
+
+    if (sensitivityOption > 0) then
+
+      allocate(dBHatdFourier(Ntheta,Nzeta,numSymmetricModesIncluded))
+      allocate(dBHatdthetadFourier(Ntheta,Nzeta,numSymmetricModesIncluded))
+      allocate(dBHatdzetadFourier(Ntheta,Nzeta,numSymmetricModesIncluded))
+      allocate(dBHat_sub_thetadFourier(Ntheta,Nzeta,numSymmetricModesIncluded))
+      allocate(dBHat_sub_zetadFourier(Ntheta,Nzeta,numSymmetricModesIncluded))
+      allocate(dBHat_sup_thetadFourier(Ntheta,Nzeta,numSymmetricModesIncluded))
+      allocate(dBHat_sup_zetadFourier(Ntheta,Nzeta,numSymmetricModesIncluded))
+      allocate(dDHatdFourier(Ntheta,Nzeta,numSymmetricModesIncluded))
+      allocate(ns(numSymmetricModesIncluded))
+      allocate(ms(numSymmetricModesIncluded))
+
+      imn = 1
+      do n = -vmec%ntor, vmec%ntor
+        do m = 0, vmec%mpol-1
+          b = vmec%bmnc(n,m,vmecRadialIndex_half(1)) * vmecRadialWeight_half(1) &
+            + vmec%bmnc(n,m,vmecRadialIndex_half(2)) * vmecRadialWeight_half(2)
+          if (abs(b/b00) >= min_Bmn_to_load) then
+
+            do itheta = 1, Ntheta
+              do izeta = 1, Nzeta
+                angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+                cos_angle = cos(angle)
+                sin_angle = sin(angle)
+                dBHatdFourier(itheta,izeta,imn) = cos_angle
+                dBHat_sub_thetadFourier(itheta,izeta,imn) = cos_angle
+                dBHat_sub_zetadFourier(itheta,izeta,imn) = cos_angle
+                dBHat_sup_thetadFourier(itheta,izeta,imn) = cos_angle
+                dBHat_sup_zetadFourier(itheta,izeta,imn) = cos_angle
+                dBHatdthetadFourier(itheta,izeta,imn) = - m*sin_angle
+                dBHatdzetadFourier(itheta,izeta,imn) = n*sin_angle
+                dDHatdFourier(itheta,izeta,imn) = - DHat(itheta,izeta)*DHat(itheta,izeta)*cos_angle
+              enddo
+            enddo
+            imn = imn + 1
+
+          endif
+        enddo
+      enddo
+    endif
 
     do izeta = 1,Nzeta
        cos_angle = cos(zeta(izeta))

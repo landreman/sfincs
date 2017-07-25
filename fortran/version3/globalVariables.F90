@@ -372,6 +372,16 @@ module globalVariables
 
   Vec :: f0
 
+  ! ********************************************************
+  !
+  !  Variables related to sensitivity:
+  !
+  ! ********************************************************
+
+  PetscScalar, dimension(:,:,:), allocatable :: dBHatdFourier, dBHatdthetadFourier, &
+    dBHatdzetadFourier, dBHat_sub_thetadFourier, dBHat_sub_zetadFourier, &
+    dBHat_sup_thetadFourier, dBHat_sup_zetadFourier, dDHatdFourier
+  integer, dimension(:), allocatable :: ns, ms
 
   ! ********************************************************
   !
@@ -386,6 +396,8 @@ module globalVariables
   integer :: ithetaMin, ithetaMax, localNtheta
   integer :: izetaMin, izetaMax, localNzeta
   logical :: procThatHandlesConstraints
+
+
 
 end module globalVariables
 
