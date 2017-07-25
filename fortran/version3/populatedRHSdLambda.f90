@@ -84,7 +84,7 @@
                   *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
                   - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta)) &
                   * dDHatdFourier(itheta,izeta,whichMode) * xPartOfRHS
-              end select
+            end select
 
             L = 0
             index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
