@@ -131,7 +131,7 @@ contains
 
     use export_f
     use xGrid, only: xGrid_k
-    
+
     implicit none
 
     integer(HID_T) :: dsetID
@@ -998,8 +998,11 @@ contains
     integer(HID_T) :: dspaceIDForInputNamelist
     integer(HID_T) :: dtypeID_inputNamelist
     integer(HID_T) :: dsetID
+    logical :: debug
 
+    debug = .true.
 
+    if(debug) then
 
     filename = inputFilename
 
@@ -1013,7 +1016,7 @@ contains
        print *, "Error opening input file ", trim(filename)
        stop
     end if
-    
+
     ! Determine how large the input.namelist file is:
     fileSize = 0
     numRecords = 0
@@ -1030,15 +1033,15 @@ contains
           fileSize = fileSize + 1
        end if
     end do
-    
+
     ! For each record, we add a newline:
     fileSize = fileSize + numRecords
-    
+
     if (fileSize > maxInputFileSize) then
        print *,"WARNING: Input file is very large, so only the beginning of it will be stored in the HDF5 output file."
        fileSize = maxInputFileSize
     end if
-    
+
     rewind(unit=fileUnit)
     filePosition = 1
     do iFileLine = 1,numRecords
@@ -1050,8 +1053,10 @@ contains
           exit
        end if
     end do
-    
+
     close(unit = fileUnit)
+
+     end if
 
     ! Done reading the file. Now begin the HDF5 commands.
 
@@ -1059,7 +1064,7 @@ contains
     call h5tcopy_f(H5T_FORTRAN_S1, dtypeID_inputNamelist, HDF5Error)
     fileSizeCopy = fileSize  ! This line explicitly converts to the necessary type.
     call h5tset_size_f(dtypeID_inputNamelist, fileSizeCopy, HDF5Error)
-    
+
     rank = 1
     call h5screate_simple_f(rank, dimForScalar, dspaceIDForInputNamelist, HDF5Error)
 
@@ -1086,9 +1091,9 @@ contains
     character(len=*) :: description
 
     call h5dcreate_f(HDF5FileID, arrayName, H5T_NATIVE_INTEGER, dspaceIDForScalar, dsetID, HDF5Error)
-    
+
     call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, data, dimForScalar, HDF5Error)
-    
+
     call h5ltset_attribute_string_f(HDF5FileID, arrayName, attribute_name, description, HDF5Error)
 
     call h5dclose_f(dsetID, HDF5Error)
@@ -1109,9 +1114,9 @@ contains
     character(len=*) :: description
 
     call h5dcreate_f(HDF5FileID, arrayName, H5T_NATIVE_INTEGER, dspaceID, dsetID, HDF5Error)
-    
+
     call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, data, dims, HDF5Error)
-    
+
     call h5ltset_attribute_string_f(HDF5FileID, arrayName, attribute_name, description, HDF5Error)
 
     call h5dclose_f(dsetID, HDF5Error)
@@ -1130,9 +1135,9 @@ contains
     character(len=*) :: description
 
     call h5dcreate_f(HDF5FileID, arrayName, H5T_NATIVE_DOUBLE, dspaceIDForScalar, dsetID, HDF5Error)
-    
+
     call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, data, dimForScalar, HDF5Error)
-    
+
     call h5ltset_attribute_string_f(HDF5FileID, arrayName, attribute_name, description, HDF5Error)
 
     call h5dclose_f(dsetID, HDF5Error)
@@ -1153,9 +1158,9 @@ contains
     PetscScalar, dimension(*) :: data
 
     call h5dcreate_f(HDF5FileID, arrayName, H5T_NATIVE_DOUBLE, dspaceID, dsetID, HDF5Error)
-    
+
     call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, data, dims, HDF5Error)
-    
+
     if (dspaceID == dspaceIDForSpecies) then
        call h5dsset_label_f(dsetID, 1, "species", HDF5Error)
     elseif (dspaceID == dspaceIDForTheta) then
@@ -1197,7 +1202,7 @@ contains
     character(len=100) :: label
 
     call h5dcreate_f(HDF5FileID, arrayName, H5T_NATIVE_DOUBLE, dspaceID, dsetID, HDF5Error)
-    
+
     call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, data, dims, HDF5Error)
 
     if (dspaceID == dspaceIDForThetaZeta) then
@@ -1208,7 +1213,7 @@ contains
     else
        print *,"WARNING: PROGRAM SHOULD NOT GET HERE. (writeHDF5Doubles2)"
     end if
-    
+
     call h5ltset_attribute_string_f(HDF5FileID, arrayName, attribute_name, description, HDF5Error)
 
     call h5dclose_f(dsetID, HDF5Error)
@@ -1253,7 +1258,7 @@ contains
 !!$    else
 !!$       print *,"WARNING: PROGRAM SHOULD NOT GET HERE. (writeHDF5Doubles5)"
 !!$    end if
-!!$    
+!!$
 !!$    call h5ltset_attribute_string_f(HDF5FileID, arrayName, attribute_name, description, HDF5Error)
 !!$
 !!$    call h5dclose_f(dsetID, HDF5Error)
@@ -1273,14 +1278,14 @@ contains
     integer :: temp
 
     call h5dcreate_f(HDF5FileID, arrayName, H5T_NATIVE_INTEGER, dspaceIDForScalar, dsetID, HDF5Error)
-    
+
     if (data) then
        temp = integerToRepresentTrue
     else
        temp = integerToRepresentFalse
     end if
     call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, temp, dimForScalar, HDF5Error)
-    
+
     call h5ltset_attribute_string_f(HDF5FileID, arrayName, attribute_name, description, HDF5Error)
 
     call h5dclose_f(dsetID, HDF5Error)
@@ -1645,4 +1650,3 @@ contains
   end subroutine writeHDF5ExtensibleField6
 
 end module writeHDF5Output
-

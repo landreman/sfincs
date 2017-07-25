@@ -27,14 +27,14 @@ subroutine validateInput()
      end if
      stop
   end if
-  
+
   if (RHSMode>3) then
      if (masterProc) then
         print *,"Error! RHSMode must be no more than 3."
      end if
      stop
   end if
-  
+
   !!if (RHSMode == 2 .and. nonlinear) then !!Commented by AM 2016-02
   if (RHSMode == 2 .and. includePhi1) then !!Added by AM 2016-02
      if (masterProc) then
@@ -42,7 +42,7 @@ subroutine validateInput()
      end if
      stop
   end if
-  
+
   if (RHSMode == 2 .and. Nspecies>1) then
      if (masterProc) then
         print *,"Error! The transport matrix is presently only available in SFINCS for a 1-species calculation."
@@ -54,7 +54,7 @@ subroutine validateInput()
      ! Computing monoenergetic transport coefficients.
      ! Make sure the code is configured to use the DKES form of the kinetic equation.
 
-     if (Nxi_for_x_option .ne. 0) then 
+     if (Nxi_for_x_option .ne. 0) then
         if (masterProc) then
            print *,"Setting Nxi_for_x_option=0, since RHSMode=3."
         end if
@@ -192,7 +192,7 @@ subroutine validateInput()
 
   end if
 
-  
+
   if (saveMatlabOutput .and. Nspecies*Ntheta*Nzeta*Nxi*Nx > 5000 .and. masterProc) then
      print *,line
      print *,line
@@ -317,7 +317,7 @@ subroutine validateInput()
         print *,line
      end if
 
- 
+
   end if
   !!!!!!!!!!!!!!!!!!!!!!!
 
@@ -329,11 +329,12 @@ subroutine validateInput()
      maxSingleChargeDensity = max(abs(maxSingleChargeDensity), abs(nHats(ispecies)*Zs(ispecies))) !!Added by AM 2016-03
      !!Added by AM 2016-02!!
      if (quasineutralityOption == 2 .and. includePhi1) then
+
         exit !!If running with EUTERPE equations we only use the first kinetic species in quasi-neutrality.
      end if
      !!!!!!!!!!!!!!!!!!!!!!!
   end do
- 
+
 
   !!!!!!!!!!!!!!!!!!!!!!!
   !!Added by AM 2015-11!!
@@ -341,6 +342,8 @@ subroutine validateInput()
      chargeDensity = chargeDensity + adiabaticNHat*adiabaticZ
      maxSingleChargeDensity = max(abs(maxSingleChargeDensity), abs(adiabaticNHat*adiabaticZ))
   end if
+
+
 
 !!  if (includePhi1 .and. (abs(chargeDensity) >1d-15)) then
   if (includePhi1 .and. (abs(chargeDensity)/maxSingleChargeDensity >1d-4)) then
@@ -355,7 +358,7 @@ subroutine validateInput()
         end if
      end if
      stop
-  end if 
+  end if
 
 !!  if (abs(chargeDensity) > 1d-15 .and. (Nspecies > 1 .or. withAdiabatic) .and. masterProc) then
   if (abs(chargeDensity)/maxSingleChargeDensity > 1d-4 .and. (Nspecies > 1 .or. withAdiabatic) .and. masterProc) then
@@ -472,7 +475,7 @@ subroutine validateInput()
         if (masterProc) then
            print *,"Error! magneticDriftScheme 4 and 5 have only been implemented for geometryScheme 11 and 12."
         end if
-        stop        
+        stop
      end if
   end if
 
@@ -517,26 +520,26 @@ subroutine validateInput()
      print *,line
   end if
 
-  if ((.not. withAdiabatic) .and. includePhi1 .and. quasineutralityOption == 1 .and. (Nspecies < 2)) then 
+  if ((.not. withAdiabatic) .and. includePhi1 .and. quasineutralityOption == 1 .and. (Nspecies < 2)) then
       if (masterProc) then
         print *,"Error! In a nonlinear run (includePhi1 = .true.) you must use at least two species, to be able to fulfill quasi-neutrality."
       end if
       stop
-  end if 
+  end if
 
-  if ((.not. withAdiabatic) .and. includePhi1 .and. quasineutralityOption == 2) then 
+  if ((.not. withAdiabatic) .and. includePhi1 .and. quasineutralityOption == 2) then
       if (masterProc) then
         print *,"Error! If running with EUTERPE quasi-neutrality equations (quasineutralityOption = 2) in a nonlinear run (includePhi1 = .true.) you must use an adiabatic species (withAdiabatic = .true.)."
       end if
       stop
-  end if 
+  end if
 
-!!$  if ((Nspecies .ne. 1) .and. includePhi1 .and. quasineutralityOption == 2) then 
+!!$  if ((Nspecies .ne. 1) .and. includePhi1 .and. quasineutralityOption == 2) then
 !!$      if (masterProc) then
 !!$        print *,"Error! If running with EUTERPE quasi-neutrality equations (quasineutralityOption = 2) in a nonlinear run (includePhi1 = .true.) you must use ONE kinetic species only."
 !!$      end if
 !!$      stop
-!!$  end if 
+!!$  end if
 
   !!!!!!!!!!!!!!!!!!!!!!!
 
@@ -774,14 +777,14 @@ subroutine validateInput()
      end if
      stop
   end if
-  
+
   if (thetaDerivativeScheme>2) then
      if (masterProc) then
         print *,"Error! thetaDerivativeScheme cannot be more than 2."
      end if
      stop
   end if
-  
+
   if (thetaDerivativeScheme == 0 .and. masterProc) then
      print *,line
      print *,line
@@ -807,14 +810,14 @@ subroutine validateInput()
      end if
      stop
   end if
-  
+
   if (zetaDerivativeScheme>2) then
      if (masterProc) then
         print *,"Error! zetaDerivativeScheme cannot be more than 2."
      end if
      stop
   end if
-  
+
   if (zetaDerivativeScheme == 0 .and. masterProc) then
      print *,line
      print *,line
@@ -840,28 +843,28 @@ subroutine validateInput()
      end if
      stop
   end if
-  
+
   if (ExBDerivativeSchemeTheta>3) then
      if (masterProc) then
         print *,"Error! ExBDerivativeSchemeTheta cannot be more than 3."
      end if
      stop
   end if
-  
+
   if (ExBDerivativeSchemeZeta<0) then
      if (masterProc) then
         print *,"Error! ExBDerivativeSchemeZeta cannot be less than 0."
      end if
      stop
   end if
-  
+
   if (ExBDerivativeSchemeZeta>3) then
      if (masterProc) then
         print *,"Error! ExBDerivativeSchemeZeta cannot be more than 3."
      end if
      stop
   end if
-  
+
   if (ExBDerivativeSchemeTheta>0 .and. preconditioner_theta>0) then
      if (masterProc) then
         print *,"Error! The implementation of ExBDerivativeSchemeTheta>0 does not presently allow"
@@ -869,7 +872,7 @@ subroutine validateInput()
      end if
      stop
   end if
-  
+
   if (ExBDerivativeSchemeZeta>0 .and. preconditioner_zeta>0) then
      if (masterProc) then
         print *,"Error! The implementation of ExBDerivativeSchemeZeta>0 does not presently allow"
@@ -877,21 +880,21 @@ subroutine validateInput()
      end if
      stop
   end if
-  
+
   if (magneticDriftDerivativeScheme<-3) then
      if (masterProc) then
         print *,"Error! magneticDriftDerivativeScheme cannot be less than -3."
      end if
      stop
   end if
-  
+
   if (magneticDriftDerivativeScheme>3) then
      if (masterProc) then
         print *,"Error! magneticDriftDerivativeScheme cannot be more than 3."
      end if
      stop
   end if
-  
+
   if (magneticDriftDerivativeScheme>0 .and. preconditioner_theta>0) then
      if (masterProc) then
         print *,"Error! The implementation of magneticDriftDerivativeScheme>0 does not presently allow"
@@ -899,7 +902,7 @@ subroutine validateInput()
      end if
      stop
   end if
-  
+
   if (magneticDriftDerivativeScheme>0 .and. preconditioner_zeta>0) then
      if (masterProc) then
         print *,"Error! The implementation of magneticDriftDerivativeScheme>0 does not presently allow"
@@ -907,63 +910,63 @@ subroutine validateInput()
      end if
      stop
   end if
-  
+
   if (xDotDerivativeScheme<-2) then
      if (masterProc) then
         print *,"Error! xGridScheme cannot be less than -2."
      end if
      stop
   end if
-  
+
   if (xDotDerivativeScheme>10) then
      if (masterProc) then
         print *,"Error! xDotDerivativeScheme cannot be more than 10."
      end if
      stop
   end if
-  
+
   if (xDotDerivativeScheme>0 .and. (xGridScheme .ne. 3 .and. xGridScheme .ne. 4)) then
      if (masterProc) then
         print *,"Error! If xDotDerivativeScheme is >0, then xGridScheme must be either 3 or 4."
      end if
      stop
   end if
-  
+
   if (xGridScheme<1) then
      if (masterProc) then
         print *,"Error! xGridScheme cannot be less than 1."
      end if
      stop
   end if
-  
+
   if (xGridScheme>8) then
      if (masterProc) then
         print *,"Error! xGridScheme cannot be more than 8."
      end if
      stop
   end if
-  
+
   if (xPotentialsGridScheme<1) then
      if (masterProc) then
         print *,"Error! xPotentialsGridScheme cannot be less than 1."
      end if
      stop
   end if
-  
+
   if (xPotentialsGridScheme>4) then
      if (masterProc) then
         print *,"Error! xPotentialsGridScheme cannot be more than 4."
      end if
      stop
   end if
-  
+
   if ((xPotentialsGridScheme==3 .or. xPotentialsGridScheme==4) .and. (xGridScheme .ne. 3 .and. xGridScheme .ne. 4)) then
      if (masterProc) then
         print *,"Error! When xPotentialsGridScheme is 3 or 4, xGridScheme must be 3 or 4."
      end if
      stop
   end if
-  
+
   if ((xGridScheme==2 .or. xGridScheme==6) .and. (xGrid_k .ne. 0)) then
      if (masterProc) then
         print *,line
@@ -984,28 +987,28 @@ subroutine validateInput()
      end if
      stop
   end if
-  
+
   if (preconditioner_species>1) then
      if (masterProc) then
         print *,"Error! preconditioner_species should not be more than 1."
      end if
      stop
   end if
-  
+
   if (preconditioner_x<0) then
      if (masterProc) then
         print *,"Error! preconditioner_x should not be less than 0."
      end if
      stop
   end if
-  
+
   if (preconditioner_x>4) then
      if (masterProc) then
         print *,"Error! preconditioner_x should not be more than 4."
      end if
      stop
   end if
-  
+
   if (preconditioner_x .ne. 1 .and. masterProc) then
      print *,line
      print *,line
@@ -1020,7 +1023,7 @@ subroutine validateInput()
      end if
      stop
   end if
-  
+
   if (preconditioner_x_min_L > 2 .and. masterProc) then
      print *,line
      print *,line
@@ -1035,14 +1038,14 @@ subroutine validateInput()
      end if
      stop
   end if
-  
+
   if (preconditioner_theta>3) then
      if (masterProc) then
         print *,"Error! preconditioner_theta cannot be more than 3."
      end if
      stop
   end if
-  
+
   if (RHSMode .ne. 3 .and. (preconditioner_theta==1 .or. preconditioner_theta==2) .and. masterProc) then
      print *,line
      print *,line
@@ -1059,14 +1062,14 @@ subroutine validateInput()
      end if
      stop
   end if
-  
+
   if (preconditioner_zeta>3) then
      if (masterProc) then
         print *,"Error! preconditioner_zeta cannot be more than 3."
      end if
      stop
   end if
-  
+
   if (RHSMode .ne. 3 .and. preconditioner_zeta>0 .and. masterProc) then
      print *,line
      print *,line
@@ -1083,27 +1086,26 @@ subroutine validateInput()
      end if
      stop
   end if
-  
+
   if (preconditioner_zeta_min_L<0) then
      if (masterProc) then
         print *,"Error! preconditioner_zeta_min_L should not be less than 0."
      end if
      stop
   end if
-  
+
   if (preconditioner_xi<0) then
      if (masterProc) then
         print *,"Error! preconditioner_xi cannot be less than 0."
      end if
      stop
   end if
-  
+
   if (preconditioner_xi>1) then
      if (masterProc) then
         print *,"Error! preconditioner_xi cannot be more than 1."
      end if
      stop
   end if
-  
-end subroutine validateInput
 
+end subroutine validateInput

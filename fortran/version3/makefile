@@ -31,11 +31,12 @@ USE_NETCDF ?= X
 ifndef SFINCS_SYSTEM
 $(error You must set the environment variable SFINCS_SYSTEM to select which makefile to use. For example, to use makefiles/makefile.edison, set SFINCS_SYSTEM=edison. To set this environment variable, use the export or setenv command, depending on your shell)
 endif
-
+#$(info before makefile)
 SYSTEM_MAKEFILE = makefiles/makefile.$(SFINCS_SYSTEM)
 ifeq ($(wildcard $(SYSTEM_MAKEFILE)),)
 $(error Based on the environment variable SFINCS_SYSTEM, make is trying to include the file $(SYSTEM_MAKEFILE), but this file does not exist)
 endif
+#$(info makefile is being used)
 
 TARGET = sfincs
 
@@ -49,13 +50,15 @@ ifdef USE_NETCDF
 	EXTRA_COMPILE_FLAGS += -DUSE_NETCDF
 endif
 
+
+#$(info PETSC_LIB_DIR is [${PETSC_CC_INCLUDES}])
 include makefile.depend
 
 # Export variables that will be used in the quadpack subdirectory or for "make test":
 export
 
 %.o: %.F90
-	$(FC) $(EXTRA_COMPILE_FLAGS) -IreadVMEC -c $<
+	$(FC) $(PETSC_FC_INCLUDES) $(EXTRA_COMPILE_FLAGS) $(EXTRA_LINK_FLAGS) -IreadVMEC -c $<
 
 quadpack/quadpack.a:
 	$(MAKE) -C quadpack
@@ -69,7 +72,7 @@ lib$(TARGET).a: $(OBJ_FILES)
 #	ranlib $@
 
 $(TARGET): $(TARGET).o lib$(TARGET).a
-	$(FLINKER) -o $(TARGET) $(TARGET).o lib$(TARGET).a $(EXTRA_LINK_FLAGS) $(PETSC_LIB)
+	$(FLINKER) -o $(TARGET) $(TARGET).o lib$(TARGET).a  $(PETSC_FC_INCLUDES)  $(PETSC_LIB) $(EXTRA_LINK_FLAGS)
 
 # Since the sometimes-included PETSc makefile uses a double-colon to define clean, we must do the same here:
 clean::

@@ -62,7 +62,7 @@
   includeXDotTerm = .true.
   includeElectricFieldTermInXiDot = .true.
   useDKESExBDrift = .false.
-  includePhi1 = .false.
+  includePhi1 = .true.
 /
 
 &resolutionParameters

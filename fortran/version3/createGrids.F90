@@ -515,14 +515,14 @@
        case (2)
           ! All zeta coupling is dropped in the preconditioner:
           ddzeta_preconditioner = zero
-          
+
        case (3)
           ! Replace d/dzeta by the identity matrix:
           ddzeta_preconditioner = zero
           do izeta=1,Nzeta
              ddzeta_preconditioner(izeta,izeta)=one
           end do
-          
+
        case default
           if (masterProc) then
              print *,"Error! Invalid setting for preconditioner_zeta."
@@ -842,7 +842,7 @@
        ! Where trajectories are going into the domain (ddx_xDot_minus), use the standard ddx, in which the first ghost point is set to 0.
        ! Where trajectories are leaving the domain (ddx_xDot_plus), use scheme=12 without setting any ghost points to 0.
        ddx_xDot_minus = ddx
-       
+
        allocate(x_subset(Nx))
        allocate(xWeights_subset(Nx))
        allocate(d2dx2_subset(Nx,Nx))
@@ -855,7 +855,7 @@
     case (10)
        ! Same as case 9, but switching plus and minus. This should be backwards.
        ddx_xDot_plus = ddx
-       
+
        allocate(x_subset(Nx))
        allocate(xWeights_subset(Nx))
        allocate(d2dx2_subset(Nx,Nx))
@@ -1038,7 +1038,7 @@
     ! *******************************************************************************
     ! Set the number of Legendre modes used for each value of x
     ! *******************************************************************************
-    
+
     allocate(Nxi_for_x(Nx))
 
     if (masterProc) print *,"Nxi_for_x_option:",Nxi_for_x_option
@@ -1125,7 +1125,7 @@
     allocate(dBHat_sup_zeta_dtheta(Ntheta,Nzeta))
 
     allocate(gradpsidotgradB_overgpsipsi(Ntheta,Nzeta))
-    
+
     allocate(NTVKernel(Ntheta,Nzeta))
 
     call computeBHat()
@@ -1221,7 +1221,7 @@
     allocate(heatFlux_withoutPhi1_rHat(Nspecies))
     allocate(heatFlux_withoutPhi1_rN(Nspecies))
 
-    allocate(NTV(Nspecies)) 
+    allocate(NTV(Nspecies))
 
     allocate(densityPerturbation(Nspecies,Ntheta,Nzeta))
     allocate(totalDensity(Nspecies,Ntheta,Nzeta))
@@ -1245,7 +1245,7 @@
     allocate(heatFluxBeforeSurfaceIntegral_vm(Nspecies,Ntheta,Nzeta))
     allocate(heatFluxBeforeSurfaceIntegral_vE0(Nspecies,Ntheta,Nzeta))
     allocate(heatFluxBeforeSurfaceIntegral_vE(Nspecies,Ntheta,Nzeta))
-    allocate(NTVBeforeSurfaceIntegral(Nspecies,Ntheta,Nzeta)) 
+    allocate(NTVBeforeSurfaceIntegral(Nspecies,Ntheta,Nzeta))
 
     allocate(particleFlux_vm_psiHat_vs_x(Nspecies,Nx))
     allocate(heatFlux_vm_psiHat_vs_x(Nspecies,Nx))

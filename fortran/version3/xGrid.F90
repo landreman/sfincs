@@ -17,7 +17,7 @@
   ! application.
   !
   ! The makeXGrid subroutine calls LAPACK, which is
-  ! automatically included in any program that is linked to the PETSc 
+  ! automatically included in any program that is linked to the PETSc
   ! libraries.
   !
   ! The makeXGrid subroutine also calls QUADPACK for numerical
@@ -73,7 +73,7 @@
     PetscScalar, allocatable :: a(:), b(:), c(:)
     integer :: j, integrationPower
     PetscScalar, public :: xGrid_k = 0
-    public :: makeXGrid, computeRosenbluthPotentialResponse
+    public :: makeXGrid, computeRosenbluthPotentialResponse,a,b,c
 
   contains
 
@@ -251,6 +251,7 @@
          end do
       end if
 
+
     end subroutine makeXGrid
 
     ! ---------------------------------------------------------------
@@ -262,7 +263,7 @@
       ! Here, we compute matrices which, when multiplied by a vector of distribution-function
       ! values on the x grid, yields the Rosenbluth potentials (or derivatives thereof)
       ! on the x grid. The source and destination x grids may "belong" to different species.
-      
+
       logical, intent(in) :: verbose
       integer, intent(in) :: Nx, Nspecies, NL
       PetscScalar, dimension(:), intent(in) :: x, xWeights, mHats, THats, nHats, Zs
@@ -299,7 +300,7 @@
             collocation2modal(j,i) = xWeights(i) * (x(i)**xGrid_k) * evaluatePolynomial(x(i)) / c(j)
          end do
       end do
-      
+
       if (verbose) then
          print *,"collocation2modal:"
          do ix=1,Nx
@@ -559,4 +560,3 @@
     end function integrandWithPower
 
   end module xGrid
-

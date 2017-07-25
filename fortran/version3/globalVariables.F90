@@ -36,6 +36,16 @@ module globalVariables
   integer :: RHSMode = 1, whichRHS
   logical :: isAParallelDirectSolverInstalled
 
+  !********************************************************
+  !********************************************************
+  !
+  ! used only when using sfincs in GS2
+  !
+  !********************************************************
+  !********************************************************
+
+   logical :: in_GS2 = .false.
+
   ! ********************************************************
   ! ********************************************************
   !
@@ -365,7 +375,7 @@ module globalVariables
   ! ********************************************************
 
   MPI_Comm :: MPIComm
-  integer :: numProcs, myRank 
+  integer :: numProcs, myRank
   logical :: masterProc
 
   integer :: ithetaMin, ithetaMax, localNtheta
@@ -373,4 +383,3 @@ module globalVariables
   logical :: procThatHandlesConstraints
 
 end module globalVariables
-

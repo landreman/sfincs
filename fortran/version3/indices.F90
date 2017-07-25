@@ -1,7 +1,7 @@
   ! *********************************************************
   ! For constraintScheme==0,
   ! *********************************************************
-  
+
   ! Order of the rows of the matrix and of the RHS:
   ! --------------------------------
   ! for iSpecies = 1:Nspecies
@@ -14,7 +14,7 @@
   !   for izeta = 1:Nzeta
   !     Enforce quasineutrality
   ! Force <\tilde{\phi}> = 0
-  
+
   ! Order of the vector of unknowns & of columns in the matrix:
   ! --------------------------------
   ! for iSpecies = 1:Nspecies
@@ -29,11 +29,11 @@
   ! lambda
 
 
-  
+
   ! *********************************************************
   ! For constraintScheme==1, 3, or 4:
   ! *********************************************************
-  
+
   ! Order of the rows of the matrix and of the RHS:
   ! --------------------------------
   ! for iSpecies = 1:Nspecies
@@ -49,8 +49,8 @@
   ! for iSpecies = 1:Nspecies
   !   Force <n_1> = 0
   !   Force <p_1> = 0
-  
-  
+
+
   ! Order of the vector of unknowns & of columns in the matrix:
   ! --------------------------------
   ! for iSpecies = 1:Nspecies
@@ -132,7 +132,8 @@
     integer, parameter :: BLOCK_F_CONSTRAINT        = 9995
 
     integer, private :: DKE_size
-    integer, private, dimension(:), allocatable :: first_index_for_x
+  !  integer, private, dimension(:), allocatable :: first_index_for_x
+    integer, public, dimension(:), allocatable :: first_index_for_x
 
   contains
 
@@ -140,7 +141,7 @@
 
       ! This function takes as inputs "local" indices in the species, x, xi, theta, and zeta grids,
       ! and returns the "global" index, i.e. the row or column of the master matrix.
-      
+
       ! The input "local" indices (i_x, i_xi, etc) are 1-based, since small matrices are stored in Fortran.
       ! the output "global" index is 0-based, since PETSc uses 0-based indexing.
 
@@ -203,7 +204,7 @@
          print *,"Error: i_zeta > Nzeta"
          stop
       end if
-      
+
       if (whichBlock==BLOCK_QN .and. (.not. includePhi1)) then
          if (masterProc) then
             print *,"Error! whichBlock==BLOCK_QN but includePhi1=.false."
@@ -350,6 +351,8 @@
       if (masterProc) then
          print *,"The matrix is ",matrixSize,"x",matrixSize," elements."
       end if
+
+
 
     end subroutine computeMatrixSize
 
