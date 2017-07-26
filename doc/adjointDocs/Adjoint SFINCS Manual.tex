@@ -1,0 +1,76 @@
+\documentclass[11pt]{amsart}
+\usepackage{geometry}                
+\geometry{letterpaper}                   
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{epstopdf}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{placeins}
+\usepackage{setspace}
+\onehalfspacing
+\usepackage{fullpage}
+\usepackage{commath}
+\usepackage{bm}
+\usepackage{breqn}
+\usepackage{bm}
+\usepackage{mathrsfs}
+% My definitions
+\def\bhat{\ensuremath{\mathbf{\hat{b}}}}
+\def\vpar{\ensuremath{v_{||}}}
+\def\vperp{\ensuremath{v_{\perp}}}
+\newcommand{\partder}[2]{\dfrac{\partial #1}{\partial #2}} % partial der.
+\newcommand{\der}[2]{\dfrac{d #1}{d #2}} % partial der.
+\DeclareMathOperator{\sign}{sign}
+\DeclareMathOperator{\Res}{Res}
+% Definitions for code snipets
+\usepackage{listings}
+\usepackage{color}
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+\lstset{frame=tb,
+  language=Matlab,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
+\begin{document}
+\author{Elizabeth Paul}
+\date{July 25th, 2017}
+\title{Manual for Adjoint SFINCS}
+\maketitle
+
+\section{Input Arguments}
+As described in the \texttt{SFINCSUserManual}, the sensitivity will be computed when \texttt{sensitivityOption > 1}. There is also a flag to determine the desired fluxes to compute sensitivity of, \texttt{adjointRHSOption}, and for which species the sensitivity of the fluxes will be computed, \texttt{adjointRHSSpeciesOption}. Adjoint SFINCS must also be run with the following input parameters. 
+\begin{itemize}
+\item \texttt{geometryScheme == 5} (must also be stellarator symmetric)
+\item \texttt{includePhi1 == .false.}
+\item \texttt{EParallelHat == 0}
+\item \texttt{useDKESExBDrift == .false.} 
+\item \texttt{magneticDriftScheme == 0}
+%\item \texttt{force0RadialCurrentInEquilibrium = .true.}
+\item \texttt{includeXDotTerm == .true.} 
+\item \texttt{constraintScheme == 1}
+\item \texttt{collisionOperator == 0}
+\end{itemize}
+
+\section{Computing Geometrical Factors}
+We need to compute the derivatives of the components of $\bm{B}$ $\left( \hat{B}, \hat{B}^{\theta}, \hat{B}^{\zeta}, \hat{B}_{\theta}, \hat{B}_{\zeta}, \hat{D}, \partder{\hat{B}}{\theta}, \partder{\hat{B}}{\zeta} \right)$, with respect to their Fourier components ($\hat{B}_{m,n}$, $\hat{B}_{m,n}^{\theta}$, $\hat{B}_{m,n}^{\zeta}$, $\hat{B}^{m,n}_{\theta}$, $\hat{B}^{m,n}_{\zeta}$, $\hat{g}_{m,n}$). The arrays \texttt{dBHatdFourier}, \texttt{dBHat_sub_thetadFourier}, \texttt{dBHat_sub_zetadFourier}, \texttt{dBHat_sup_thetadFourier}, \texttt{dBHat_sup_zetadFourier}, \texttt{dDHatdFourier}, \texttt{dBHatdthetadFourier}, and \texttt{dBHatdzetadFourier} contain these derivatives. These arrays are allocated and populated in \texttt{computeBHat_VMEC}. I also allocate and populate arrays \texttt{ns} and \texttt{ms} which keep track of which modes are kept in the Fourier spectrum. 
+
+
+\section{Computing Inner Products}
+The subroutines \texttt{populatedMatrixdLambda} and \texttt{populatedRHSdLambda} populate $\partder{\mathbb{L}}{\lambda}$ and $\partder{\mathbb{S}}{\lambda}$ for a given Fourier component ($\hat{B}, \hat{B}^{\theta}, \hat{B}^{\zeta}, \hat{B}_{\theta}, \hat{B}_{\zeta}, \hat{D}$) and mode number. These will be called by a subroutine which performs an inner product. 
+
+\end{document}  

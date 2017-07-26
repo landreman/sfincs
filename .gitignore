@@ -20,3 +20,5 @@ sfincsBinary*
 .DS_Store
 sfincsJob*
 slurm-*
+*.log
+
