@@ -178,14 +178,14 @@
               case (1) ! BHat_sup_theta
                 dZetaPartOfTermdLambda(izeta,:) = 0
               case (2) ! BHat_sup_zeta
-                dZetaPartOfTermdLambda(itheta,:) = sqrtTHat/sqrtMHat * ddzeta(izeta,:) &
+                dZetaPartOfTermdLambda(izeta,:) = sqrtTHat/sqrtMHat * ddzeta(izeta,:) &
                   * dBHat_sup_zetadFourier(itheta,izeta,whichMode)/ BHat(itheta,izeta)
               case (3) ! BHat_sub_theta
-                dThetaPartOfTermdLambda(itheta,:) = 0
+                dZetaPartOfTermdLambda(izeta,:) = 0
               case (4) ! BHat_sub_zeta
-                dThetaPartOfTermdLambda(itheta,:) = 0
+                dZetaPartOfTermdLambda(izeta,:) = 0
               case (5) ! DHat
-                dThetaPartOfTermdLambda(itheta,:) = 0
+                dZetaPartOfTermdLambda(izeta,:) = 0
             end select
 
           end do
@@ -341,19 +341,19 @@
                 stop
               case (0) ! BHat
                 dZetaPartOfTermdLambda(izeta,:) = -2 * ddzetaToUse(izeta,:) &
-                * dBHatdFourier(itheta,izeta) / (BHat(itheta,izeta) ** 3) &
+                * dBHatdFourier(itheta,izeta,whichMode) / (BHat(itheta,izeta) ** 3) &
                 * DHat(itheta,izeta) * BHat_sub_theta(itheta,izeta)
               case (1) ! BHat_sup_theta
                 dZetaPartOfTermdLambda(izeta,:) = 0
               case (2) ! BHat_sup_zeta
-                dZetaPartOfTermdLambda(itheta,:) = 0
+                dZetaPartOfTermdLambda(izeta,:) = 0
               case (3) ! BHat_sub_theta
-                dZetaPartOfTermdLambda(itheta,:) = ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2) &
+                dZetaPartOfTermdLambda(izeta,:) = ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2) &
                   * DHat(itheta,izeta) * dBHat_sub_thetadFourier(itheta,izeta,whichMode)
               case (4) ! BHat_sub_zeta
-                dZetaPartOfTermdLambda(itheta,:) = 0
+                dZetaPartOfTermdLambda(izeta,:) = 0
               case (5) ! DHat
-                dZetaPartOfTermdLambda(itheta,:) = ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2) &
+                dZetaPartOfTermdLambda(izeta,:) = ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2) &
                   * dDHatdFourier(itheta,izeta,whichMode) * BHat_sub_theta(itheta,izeta)
             end select
 
