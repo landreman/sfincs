@@ -73,4 +73,8 @@ We need to compute the derivatives of the components of $\bm{B}$ $\left( \hat{B}
 \section{Computing Inner Products}
 The subroutines \texttt{populatedMatrixdLambda} and \texttt{populatedRHSdLambda} populate $\partder{\mathbb{L}}{\lambda}$ and $\partder{\mathbb{S}}{\lambda}$ for a given Fourier component ($\hat{B}, \hat{B}^{\theta}, \hat{B}^{\zeta}, \hat{B}_{\theta}, \hat{B}_{\zeta}, \hat{D}$) and mode number. These will be called by a subroutine which performs an inner product. 
 
+\section{Constructing Adjoint Matrices}
+
+\texttt{populateMatrix} has been modified so that the adjoint matrix preconditioner and Jacobian can be evaluated using \texttt{whichMatrix = 4} (adjoint Jacobian) or \texttt{whichMatrix = 5}. 
+
 \end{document}  

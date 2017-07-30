@@ -103,9 +103,15 @@
        ! This matrix is quite similar to the Jacobian matrix (whichMatrix=1), since most terms in the system of equations are linear.
        ! However there are a few differences related to the nonlinear terms.
        whichMatrixName = "residual f1"
+    case (4)
+       whichMatrixName = "adjoint Jacobian preconditioner"
+       ! The preconditioner for the matrix that is used for the adjoint solve for sensitivity computations
+    case (5)
+       whichMatrixName = "adjoint Jacobian"
+       ! The matrix that is used for the adjoint solve for sensitivity computations
     case default
        if (masterProc) then
-          print *,"Error! whichMatrix must be 0, 1, 2, or 3."
+          print *,"Error! whichMatrix must be 0, 1, 2, 3, 4, or 5."
        end if
        stop
     end select
@@ -124,7 +130,7 @@
     ! (unlike mumps or superlu_dist), then if we're using this solver
     ! add some values to the diagonals of the preconditioner.  By trial-and-error, I found it works
     ! best to shift the diagonal of the quasineutrality and constraint blocks but not for the kinetic-equation block.
-    if ((.not. isAParallelDirectSolverInstalled) .and. masterProc .and. whichMatrix==0) then
+    if ((.not. isAParallelDirectSolverInstalled) .and. masterProc .and. ((whichMatrix==0) .or. (whichMatrix == 5))) then
        print *,"Since PETSc's built-in solver is being used instead of superlu_dist or mumps, and this"
        print *,"   fragile solver often gives spurious error messages about zero pivots, the diagonal"
        print *,"   of the preconditioner is being shifted."
@@ -164,7 +170,8 @@
        end if
     end if
 
-!!    useStateVec = (nonlinear .and. (whichMatrix==0 .or. whichMatrix==1)) !!Commented by AM 2016-02
+!!    useStateVec = (nonlinear .and. (whichMatrix==0 .or. whichMatrix==1))
+ !!Commented by AM 2016-02
     useStateVec = (includePhi1 .and. (whichMatrix==0 .or. whichMatrix==1)) !!Added by AM 2016-02
     if (useStateVec) then
        ! We need delta f to evaluate the Jacobian, so send a copy to every proc:
@@ -175,7 +182,8 @@
     end if
 
     ! In nonlinear runs, the Jacobian and residual require Phi1:
-    !!if (nonlinear .and. (whichMatrix .ne. 2)) then !!Commented by AM 2016-02
+    !!if (nonlinear .and. (whichMatrix .ne. 2)) then
+ !!Commented by AM 2016-02
     if (includePhi1 .and. (whichMatrix .ne. 2)) then !!Added by AM 2016-02
        call extractPhi1(stateVec)
     end if
@@ -249,7 +257,7 @@
           allocate(colIndices(Ntheta))
           do L=0,(Nxi-1)
 
-             if (whichMatrix>0 .or. L < preconditioner_theta_min_L) then
+             if ((whichMatrix>0 .and. (whichMatrix .ne. 5)) .or. L < preconditioner_theta_min_L) then
                 ddthetaToUse = ddtheta
              else
                 ddthetaToUse = ddtheta_preconditioner
@@ -257,11 +265,17 @@
 
              do izeta=izetaMin,izetaMax
                 do itheta=1,Ntheta
-                   thetaPartOfTerm(itheta,:) = BHat_sup_theta(itheta,izeta) &
+                  if ((whichMatrix==4) .or. (whichMatrix==5)) then
+                    thetaPartOfTerm(itheta,:) = -BHat_sup_theta(itheta,izeta) &
                         * sqrtTHat/sqrtMHat * ddthetaToUse(itheta,:) &
                         / BHat(itheta,izeta)
+                  else
+                    thetaPartOfTerm(itheta,:) = BHat_sup_theta(itheta,izeta) &
+                      * sqrtTHat/sqrtMHat * ddthetaToUse(itheta,:) &
+                      / BHat(itheta,izeta)
+                  end if
                 end do
-                
+
                 ! PETSc uses the opposite convention to Fortran:
                 thetaPartOfTerm = transpose(thetaPartOfTerm)
                 localThetaPartOfTerm = thetaPartOfTerm(:,ithetaMin:ithetaMax)
@@ -315,7 +329,7 @@
           allocate(colIndices(Nzeta))
           do L=0,(Nxi-1)
 
-             if (whichMatrix>0 .or. L < preconditioner_zeta_min_L) then
+             if (((whichMatrix > 0) .and. (whichMatrix .ne. 5)) .or. L < preconditioner_zeta_min_L) then
                 ddzetaToUse = ddzeta
              else
                 ddzetaToUse = ddzeta_preconditioner
@@ -323,8 +337,13 @@
 
              do itheta=ithetaMin, ithetaMax
                 do izeta=1,Nzeta
-                   zetaPartOfTerm(izeta,:) = sqrtTHat/sqrtMHat * BHat_sup_zeta(itheta,izeta) &
+                   if ((whichMatrix == 4) .or (whichMatrix == 5)) then
+                      zetaPartOfTerm(izeta,:) = -sqrtTHat/sqrtMHat * BHat_sup_zeta(itheta,izeta) &
                         * ddzetaToUse(izeta,:) / BHat(itheta,izeta)
+                   else
+                      zetaPartOfTerm(izeta,:) = sqrtTHat/sqrtMHat * BHat_sup_zeta(itheta,izeta) &
+                        * ddzetaToUse(izeta,:) / BHat(itheta,izeta)
+                   end if
                 end do
                 
                 ! PETSc uses the opposite convention to Fortran:
@@ -382,7 +401,7 @@
           do L=0,(Nxi-1)
 
              if (ExBDerivativeSchemeTheta==0) then
-                if (whichMatrix>0 .or. L < preconditioner_theta_min_L) then
+                if (((whichMatrix>0) .and (whichMatrix .ne. 5)) .or. L < preconditioner_theta_min_L) then
                    ddthetaToUse = ddtheta
                 else
                    ddthetaToUse = ddtheta_preconditioner
@@ -405,8 +424,13 @@
                    end do
                 else
                    do itheta=1,Ntheta
-                      thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2) &
-                           * DHat(itheta,izeta) * BHat_sub_zeta(itheta,izeta)
+                      if ((whichMatrix == 4) .or. (whichMatrix == 5)) then
+                        thetaPartOfTerm(itheta,:) = -ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2) &
+                             * DHat(itheta,izeta) * BHat_sub_zeta(itheta,izeta)
+                      else
+                        thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2) &
+                             * DHat(itheta,izeta) * BHat_sub_zeta(itheta,izeta)
+                      end if
                    end do
                 end if
                 
@@ -447,7 +471,7 @@
           do L=0,(Nxi-1)
 
              if (ExBDerivativeSchemeZeta==0) then
-                if (whichMatrix>0 .or. L < preconditioner_zeta_min_L) then
+                if (((whichMatrix>0) .and. (whichMatrix .ne. 5)) .or. L < preconditioner_zeta_min_L) then
                    ddzetaToUse = ddzeta
                 else
                    ddzetaToUse = ddzeta_preconditioner
@@ -470,8 +494,13 @@
                    end do
                 else
                    do izeta=1,Nzeta
-                      zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2) &
-                           * DHat(itheta,izeta) * BHat_sub_theta(itheta,izeta)
+                      if ((whichMatrix==4) .or. (whichMatrix==5)) then
+                        zetaPartOfTerm(izeta,:) = -ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2) &
+                             * DHat(itheta,izeta) * BHat_sub_theta(itheta,izeta)
+                      else
+                        zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2) &
+                               * DHat(itheta,izeta) * BHat_sub_theta(itheta,izeta)
+                      end if
                    end do
                 end if
                 
@@ -520,7 +549,8 @@
                    case (1,2)
                       geometricFactor1 = (BHat_sub_zeta(ithetaRow,izeta)*dBHatdpsiHat(ithetaRow,izeta) &
                       - BHat_sub_psi(ithetaRow,izeta)*dBHatdzeta(ithetaRow,izeta))
-                     
+
+                     
                       geometricFactor2 = 2.0 * BHat(ithetaRow,izeta) &
                       * (dBHat_sub_psi_dzeta(ithetaRow,izeta) - dBHat_sub_zeta_dpsiHat(ithetaRow,izeta))
                    case (3,4)
@@ -625,7 +655,7 @@
        izeta = -1  ! So izeta is not used in place of izetaRow or izetaCol by mistake.
        ithetaRow = -1 ! So ithetaRow is not used in place of itheta by mistake.
        ithetaCol = -1 ! So ithetaCol is not used in place of itheta by mistake.
-       if ((whichMatrix .ne. 2) .and. (magneticDriftScheme>0)) then
+       if ((whichMatrix .ne. 2) .and. (magneticDriftScheme>0) .and. (whichMarix .ne. 4)) then
           if (whichMatrix==0) then
              maxL = min(preconditioner_magnetic_drifts_max_L,Nxi-1)
           else
@@ -763,9 +793,15 @@
        if (whichMatrix .ne. 2) then
           do itheta=ithetaMin,ithetaMax
              do izeta=izetaMin,izetaMax
-                factor = -sqrtTHat/(2*sqrtMHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
-                     * (BHat_sup_theta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
-                     + BHat_sup_zeta(itheta,izeta) * dBHatdzeta(itheta,izeta))
+                if ((whichMatrix == 4) .or. (whichMatrix == 5)) then
+                  factor = sqrtTHat/(2*sqrtMHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
+                       * (BHat_sup_theta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
+                       + BHat_sup_zeta(itheta,izeta) * dBHatdzeta(itheta,izeta))
+                else
+                  factor = -sqrtTHat/(2*sqrtMHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
+                       * (BHat_sup_theta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
+                       + BHat_sup_zeta(itheta,izeta) * dBHatdzeta(itheta,izeta))
+                end if
                 
                 do ix=ixMin,Nx
                    do L=0,(Nxi_for_x(ix)-1)
@@ -799,9 +835,13 @@
        if (includeElectricFieldTermInXiDot .and. (whichMatrix .ne. 2)) then
           do itheta=ithetaMin,ithetaMax
              do izeta=izetaMin,izetaMax
-
-                temp = BHat_sub_zeta(itheta,izeta) * dBHatdtheta(itheta,izeta) &
-                     - BHat_sub_theta(itheta,izeta) * dBHatdzeta(itheta,izeta)
+                if ((whichMatrix == 4) .or. (whichMatrix == 5)) then
+                  temp = -(BHat_sub_zeta(itheta,izeta) * dBHatdtheta(itheta,izeta) &
+                       - BHat_sub_theta(itheta,izeta) * dBHatdzeta(itheta,izeta))
+                else
+                  temp = (BHat_sub_zeta(itheta,izeta) * dBHatdtheta(itheta,izeta) &
+                        - BHat_sub_theta(itheta,izeta) * dBHatdzeta(itheta,izeta))
+                end if
 
                 if (.not. force0RadialCurrentInEquilibrium) then
                    temp = temp - 2 * BHat(itheta,izeta) &
@@ -821,7 +861,7 @@
 
                       ! Drop the off-by-2 diagonal terms in L if this is the preconditioner
                       ! and preconditioner_xi = 1:
-                      if (whichMatrix .ne. 0 .or. preconditioner_xi==0) then
+                      if (((whichMatrix .ne. 0) .and. (whichMatrix .ne. 5)) .or. preconditioner_xi==0) then
 
                          if (L<Nxi_for_x(ix)-2) then
                             ! Super-super-diagonal-in-L term:
@@ -923,7 +963,11 @@
           allocate(rowIndices(Nx))
           allocate(colIndices(Nx))
           !factor = alpha*Delta/(4*psiAHat)*dPhiHatdpsiN
-          factor = -alpha*Delta*dPhiHatdpsiHat/4
+          if ((whichMatrix == 4) .or. (whichMatrix == 5)) then
+            factor = alpha*Delta*dPhiHatdpsiHat/4
+          else
+            factor = -alpha*Delta*dPhiHatdpsiHat/4
+          end if
 
           do L=0,(Nxi-1)
              if (L>0 .and. pointAtX0) then
@@ -933,7 +977,7 @@
              end if
 
              ! Upwind in x
-             if (whichMatrix==0 .and. L >= preconditioner_x_min_L) then
+             if (((whichMatrix==0) .or. (whichMatrix==5)) .and. L >= preconditioner_x_min_L) then
                 ddxToUse_plus = ddx_xDot_preconditioner_plus
                 ddxToUse_minus = ddx_xDot_preconditioner_minus
              else
@@ -995,7 +1039,7 @@
 
                    ! Drop the off-by-2 diagonal terms in L if this is the preconditioner
                    ! and preconditioner_xi = 1:
-                   if (whichMatrix>0 .or. preconditioner_xi==0) then
+                   if (((whichMatrix>0) .and. (whichMatrix .ne. 5)) .or. preconditioner_xi==0) then
 
                       ! Term that is super-super-diagonal in L:
                       if (L<(Nxi-2)) then
@@ -1413,7 +1457,8 @@
        ! However, we need not add elements which are 0 due to ddtheta=0 as opposed to because Phi1=0, since such elements will remain 0 at every iteration of SNES.
 
        !if (nonlinear .and. (whichMatrix .ne. 2)) then
-       !!if (nonlinear .and. (whichMatrix == 1 .or. whichMatrix == 3 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Commented by AM 2016-02
+       !!if (nonlinear .and. (whichMatrix == 1 .or. whichMatrix == 3 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then
+ !!Commented by AM 2016-02
        !if (.false.) then
        if (includePhi1 .and. includePhi1InKineticEquation .and. (whichMatrix == 1 .or. whichMatrix == 3 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Added by AM 2016-02
 
@@ -1499,7 +1544,8 @@
        ! in the first iteration (due to delta f = 0). The reason is that PETSc will re-use the pattern of nonzeros from the first iteration in subsequent iterations.
        ! However, we need not add elements which are 0 due to ddtheta=0 as opposed to because delta f = 0, since such elements will remain 0 at every iteration of SNES.
 
-       !!if (nonlinear .and. (whichMatrix==1 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Commented by AM 2016-02
+       !!if (nonlinear .and. (whichMatrix==1 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then
+ !!Commented by AM 2016-02
        
        ! This next line should be replaced with the line after!!!
        !if (.false.) then
@@ -1817,7 +1863,8 @@
 
              do iSpeciesB = 1,Nspecies
                 do iSpeciesA = 1,Nspecies
-                   if (iSpeciesA==iSpeciesB .or. whichMatrix>0 .or. preconditioner_species==0) then
+                   if (iSpeciesA==iSpeciesB .or. ((whichMatrix>0 .and. (whichMatrix .ne. 5)) &
+                      .or. preconditioner_species==0) then
                       
                       speciesFactor = sqrt(THats(iSpeciesA)*mHats(iSpeciesB) &
                            / (THats(iSpeciesB) * mHats(iSpeciesA)))
@@ -1894,7 +1941,7 @@
                          CHat = M11;
                       end if
                       
-                      if (whichMatrix==0 .and. L >= preconditioner_x_min_L) then
+                      if (((whichMatrix==0) .or. (whichMatrix==5)) .and. L >= preconditioner_x_min_L) then
                          ! We're making the preconditioner, so simplify the x part of the matrix if desired.
                          select case (preconditioner_x)
                          case (0)
@@ -2072,7 +2119,7 @@
 
        ! For L=0 mode, impose regularity (df/dx=0) at x=0:
        L=0
-       if (whichMatrix==0 .and. L >= preconditioner_x_min_L) then
+       if ((whichMatrix==0 .or. whichMatrix==5) .and. L >= preconditioner_x_min_L) then
           ddxToUse = ddx_preconditioner
        else
           ddxToUse = ddx
@@ -2114,8 +2161,13 @@
              select case (constraintScheme)
              case (1)
                 ! Constant and quadratic terms:
-                xPartOfSource1 = (         -x2(ix) + 5/two) * exp(-x2(ix)) / (pi*sqrtpi) ! Provides particles but no heat
-                xPartOfSource2 = (two/three*x2(ix) -     1) * exp(-x2(ix)) / (pi*sqrtpi) ! Provides heat but no particles
+                if (whichMatrix == 4 .or. whichMatrix == 5) then
+                  xPartOfSource1 = -(         -x2(ix) + 5/two) * exp(-x2(ix)) / (pi*sqrtpi) ! Provides particles but no heat
+                  xPartOfSource2 = -(two/three*x2(ix) -     1) * exp(-x2(ix)) / (pi*sqrtpi) ! Provides heat but no particles
+                else
+                  xPartOfSource1 = (         -x2(ix) + 5/two) * exp(-x2(ix)) / (pi*sqrtpi) ! Provides particles but no heat
+                  xPartOfSource2 = (two/three*x2(ix) -     1) * exp(-x2(ix)) / (pi*sqrtpi) ! Provides heat but no particles
+                end if
                 ! Definition prior to 2016-01-07, which differs just in the overall constant:
                 !xPartOfSource1 = (x2(ix)-5/two)*exp(-x2(ix)) ! Provides particles but no heat
                 !xPartOfSource2 = (x2(ix)-3/two)*exp(-x2(ix)) ! Provides heat but no particles
@@ -2253,8 +2305,10 @@
 
              ! Add the charge density of the kinetic species (the part of the residual/Jacobian related to f1):
              do ispecies = 1,Nspecies
-                !!speciesFactor = Zs(ispecies)*THats(ispecies)/mHats(ispecies) & !!Commented by AM 2016-02
-                !!     * sqrt(THats(ispecies)/mHats(ispecies)) !!Commented by AM 2016-02
+                !!speciesFactor = Zs(ispecies)*THats(ispecies)/mHats(ispecies) &
+ !!Commented by AM 2016-02
+                !!     * sqrt(THats(ispecies)/mHats(ispecies))
+ !!Commented by AM 2016-02
                 speciesFactor = four*pi*Zs(ispecies)*THats(ispecies)/mHats(ispecies) & !!Added by AM 2016-02 !!The factor 4pi comes from velocity integration over xi.
                      * sqrt(THats(ispecies)/mHats(ispecies)) !!Added by AM 2016-02
 
@@ -2419,7 +2473,8 @@
              do izeta = izetaMin,izetaMax
                 index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
                 call VecSetValue(f0, index, &
-                !!     factor, INSERT_VALUES, ierr) !!Commented by AM 2016-06
+                !!     factor, INSERT_VALUES, ierr)
+ !!Commented by AM 2016-06
                      exp(-Zs(ispecies)*alpha*Phi1Hat(itheta,izeta)/THats(ispecies))*factor, INSERT_VALUES, ierr) !!Added by AM 2016-06
              end do
           end do
