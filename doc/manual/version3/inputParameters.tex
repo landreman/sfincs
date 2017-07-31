@@ -33,7 +33,11 @@ The default values are usually best for the parameters in this namelist.
 
 {\ttfamily RHSMode} = 2: Solve for 3 right-hand sides to get the 3$\times$3 transport matrix. Presently implemented only for 1 species.\\
 
-{\ttfamily RHSMode} = 3: Solve for the 2$\times$2 monoenergetic transport coefficients. When this option is chosen, \Nx~is set to 1 and only 1 species is used.
+{\ttfamily RHSMode} = 3: Solve for the 2$\times$2 monoenergetic transport coefficients. When this option is chosen, \Nx~is set to 1 and only 1 species is used. \\
+
+{\ttfamily RHSMode} = 4: Solve the adjoint equation at constant $E_r$. This must be used with {\ttfamily geometryScheme == 5}, stellarator symmetric geometry, {\ttfamily includePhi1 = .false.}, {\ttfamily EParallelHat == 0}, {\ttfamily useDKESExBDrift == .false.}, {\ttfamily magneticDriftScheme == 0}, {\ttfamily includeXDotTerm == .true.}, {\ttfamily constraintScheme == 1}, and {\ttfamily collisionOperator == 0}. \\
+
+{\ttfamily RHSMode} = 5: Solve the adjoint equation at the ambipolar $E_r$. The same input parameters must be used as those detailed for {\ttfamily RHSMode == 4}. 
 }
 
 \myhrule
@@ -2116,34 +2120,43 @@ used, in which case fewer than {\ttfamily Nradius} radii may be used.}
 
 \section{The \texttt{sensitivityOptions} namelist}
 
-\param{sensitivityOption}
-{integer}
+\param{adjointBootstrapOption}
+{Boolean}
+{{\ttfamily .false. }}
+{When {\ttfamily RHSMode == 4} or {\ttfamily RHSMode == 5}. }
+{If this parameter is {\ttfamily .true.}, the sensitivity of the bootstrap current will be computed.}
+
+\myhrule
+
+\param{adjointRadialCurrentOption}
+{Boolean}
+{{\ttfamily .false. }}
+{When {\ttfamily RHSMode == 4} or {\ttfamily RHSMode == 5}. }
+{If this parameter is {\ttfamily .true.}, the sensitivity of the radial current will be computed.}
+
+\myhrule
+
+\param{adjointTotalHeatFluxOption}
+{Boolean}
+{{\ttfamily .false. }}
+{When {\ttfamily RHSMode == 4} or {\ttfamily RHSMode == 5}. }
+{If this parameter is {\ttfamily .true.}, the sensitivity of the species-summed heat flux will be computed.}
+
+\myhrule
+
+\param{adjointHeatFluxOption}
+{1D array of booleans}
 {0}
-{When {\ttfamily geometryScheme == 5} and {\ttfamily includePhi1 == .false.}}. \\
-{\ttfamily sensitivityOption} == 0: No sensitivity output computed. \\
-{\ttfamily sensitivityOption} == 1: Sensitivity computed for VMEC harmonics using adjoint equation. The quantities of interest for sensitivity computations are specified by {\ttfamily AdjointRHSOption} and {\ttfamily AdjointRHSSpeciesOption}. \\
+{When {\ttfamily RHSMode == 4} or {\ttfamily RHSMode == 5}} 
+{This array is of the same length of {\ttfamily nHats} and other species parameters. If parameter is {\ttfamily .true.}, the sensitivity of the heat flux will be computed for this species.}
 
 \myhrule
 
-\param{AdjointRHSOption}
-{integer}
+\param{adjointParticleFluxOption}
+{1D array of booleans}
 {0}
-{When {\ttfamily geometryScheme == 5} and {\ttfamily sensitivityOption == 1}} \\
-{\ttfamily AdjointRHSOption == 0}: Sensitivity is computed for bootstrap current, particle flux, and heat flux. \\
-{\ttfamily AdjointRHSOption == 1}: Sensitivity is computed for just bootstrap current. \\
-{\ttfamily AdjointRHSOption == 2}: Sensitivity is computed for just particle flux. \\
-{\ttfamily AdjointRHSOption == 3}: Sensitivity is computed for just heat flux. 
-
-\myhrule
-
-\param{AdjointRHSSpeciesOption}
-{integer}
-{-1}
-{When {\ttfamily geometryScheme == 5} and {\ttfamily sensitivityOption == 1} and {\ttfamily AdjointRHSOption /= 0}} \\
-{\ttfamily AdjointRHSSpeciesOption == -1}: Sensitivity computed for output quantities specified by {\ttfamily AdjointRHSOption} for all species. \\
-{\ttfamily AdjointRHSSpeciesOption >= 0}: Sensitivity computed for output quantities specified by {\ttfamily AdjointRHSOption} for species {\ttfamily AdjointRHSSpeciesOption}. \\
-
-\myhrule
+{When {\ttfamily RHSMode == 4} or {\ttfamily RHSMode == 5}}
+{This array is of the same length of {\ttfamily nHats} and other species parameters. If parameter is {\ttfamily .true.}, the sensitivity of the particle flux will be computed for this species.}
 
 \section{\PETSc~commands}
 

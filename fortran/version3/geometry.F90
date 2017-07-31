@@ -96,10 +96,10 @@ contains
        psiAHat = vmec%phi(vmec%ns)/(2*pi)
        aHat = vmec%Aminor_p
        ! Check that sensitivity is computed with stellarator symmetry
-       if (sensitivityOption > 1) then
+       if (RHSMode>3) then
           if (vmec%iasym > 0) then
             if (masterProc) then
-              print *,"Error! sensitivityOption>0 must be used with VMEC geometry."
+              print *,"Error! RHSMode>3 must be used with VMEC geometry."
             endif
             stop
           endif
@@ -2656,7 +2656,7 @@ contains
     ! Convert Jacobian to inverse Jacobian:
     DHat = one / DHat
 
-    if (sensitivityOption > 0) then
+    if (RHSMode>3) then
 
       allocate(dBHatdFourier(Ntheta,Nzeta,numSymmetricModesIncluded))
       allocate(dBHatdthetadFourier(Ntheta,Nzeta,numSymmetricModesIncluded))

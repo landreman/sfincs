@@ -28,9 +28,9 @@ subroutine validateInput()
      stop
   end if
   
-  if (RHSMode>3) then
+  if (RHSMode>5) then
      if (masterProc) then
-        print *,"Error! RHSMode must be no more than 3."
+        print *,"Error! RHSMode must be no more than 5."
      end if
      stop
   end if
@@ -1124,23 +1124,73 @@ subroutine validateInput()
      stop
   end if
 
-  ! sensitivityOptions Namelist
-  if (sensitivityOption>0) then
+  ! Validate adjoint inputs
+  if (RHSMode>3) then
     ! Check for linear solve
     if (includePhi1) then
       if (masterProc) then
-        print *,"Error! sensitivityOption>0 cannot be used with Phi1."
+        print *,"Error! RHSMode>3 cannot be used with Phi1."
       endif
       stop
     endif
     ! Check for VMEC input
-    if (geometryScheme /= 5) then
-        if (masterProc) then
-          print *,"Error! sensitivityOption>0 must be used with VMEC geometry."
-        endif
-        stop
-    end if
     ! Check for stellarator symmetry is performed in geometry.f90
+    if (geometryScheme /= 5) then
+      if (masterProc) then
+        print *,"Error! RHSMode>3 must be used with VMEC geometry."
+      endif
+      stop
+    end if
+    ! Check there is no inductive E
+    if (EParallelHat /= 0) then
+      if (masterProc) then
+        print *,"Error! RHSMode>3 cannot be used with inductive electric field."
+      end if
+      stop
+    end if
+    ! Check that DKES ExB drift is not used
+    if (useDKESExBDrift) then
+      if (masterProc) then
+        print *,"Error! RHSMode>3 cannot be used with DKES ExB drift."
+      end if
+      stop
+    end if
+    ! Check that tangential magnetic drifts are not used
+    if (magneticDriftScheme == 0) then
+      if (masterProc) then
+        print *,"Error! RHSMode>3 cannot be used with tangential magnetic drifts."
+      end if
+      stop
+    end if
+    ! Check that XDotTerm is retained
+    if (includeXDotTerm .eqv. .true.) then
+      if (masterProc) then
+        print *,"Error! RHSMode>3 must be used with XDotTerm = .true.."
+      end if
+      stop
+    end if
+    ! Check constraintScheme
+    if (constraintScheme /= 1) then
+      if (masterProc) then
+        print *,"Error! RHSMode>3 must be used with constraintScheme=1."
+      end if
+      stop
+    end if
+    ! Check collision operator
+    if (collisionOperator /= 0) then
+      if (masterProc) then
+        print *,"Error! RHSMode>3 must be used with collisionOperator=0."
+      end if
+      stop
+    end if
+    ! Check that adjoint rhs is specified in input parameters 
+    if ((adjointBootstrapOption .and. adjointRadialCurrentOption .and. adjointTotalHeatFluxOption &
+      .and. any(adjointHeatFluxOption) .and. any(adjointParticleFluxOption)) .eqv. .false.) then
+      if (masterProc) then
+        print *,"Error! RHSMode>3 must be used with specification of adjoint solve to be performed."
+      end if
+      stop
+    end if
   end if
   
 end subroutine validateInput

@@ -19,6 +19,7 @@ contains
     integer :: NDNHatdpsiNs,   NDTHatdpsiNs
     integer :: NDNHatdrHats,   NDTHatdrHats
     integer :: NDNHatdrNs,     NDTHatdrNs
+    !logical, dimension(maxNumSpecies) :: adjointHeatFluxOptionCopy, adjointParticleFluxOptionCopy
 
     namelist / general / saveMatlabOutput, MatlabOutputFilename, &
          outputFilename, solveSystem, RHSMode, &
@@ -85,8 +86,8 @@ contains
     namelist / export_f / export_full_f, export_delta_f, export_f_theta, export_f_zeta, export_f_x, export_f_xi, &
          export_f_theta_option, export_f_zeta_option, export_f_xi_option, export_f_x_option
 
-    namelist / sensitivityOptions / sensitivityOption, adjointRHSOption, &
-      adjointRHSSpeciesOption
+    namelist / sensitivityOptions / adjointBootstrapOption, adjointRadialCurrentOption, &
+      adjointTotalHeatFluxOption, adjointHeatFluxOption, adjointParticleFluxOption
 
     Zs = speciesNotInitialized
     mHats = speciesNotInitialized
@@ -165,6 +166,8 @@ contains
           print *,"Successfully read parameters from speciesParameters namelist in ", trim(filename), "."
        end if
 
+
+
        read(fileUnit, nml=physicsParameters, iostat=didFileAccessWork)
        if (didFileAccessWork /= 0) then
           print *,"Proc ",myRank,": Error!  I was able to open the file ", trim(filename), &
@@ -217,8 +220,6 @@ contains
           print *,"Successfully read parameters from export_f namelist in ", trim(filename), "."
        end if
     end if
-
-    close(unit = fileUnit)
 
     ! Validate species parameters                                                                                                                                                                            
 
@@ -426,6 +427,25 @@ contains
     end select
 
     Nspecies = NZs
+
+    ! We have to wait until we know Nspecies to read adjoint namelist
+     if (RHSMode>3) then
+       allocate(adjointHeatFluxOption(Nspecies))
+       allocate(adjointParticleFluxOption(NSpecies))
+       adjointHeatFluxOption = .false.
+       adjointParticleFluxOption = .false.
+       read(fileUnit, nml=sensitivityOptions, iostat=didFileAccessWork)
+       if (didFileAccessWork /= 0) then
+          print *,"Proc ",myRank,": Error!  I was able to open the file ", trim(filename), &
+               " but not read data from the sensitivityOptions namelist in it."
+          stop
+       end if
+       if (masterProc) then
+          print *,"Successfully read parameters from sensitivityOptions namelist in ", trim(filename), "."
+       end if
+     end if
+
+    close(unit = fileUnit)
 
 
     ! ----------------------------------------------------------------

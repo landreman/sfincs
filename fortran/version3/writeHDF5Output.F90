@@ -49,6 +49,10 @@ module writeHDF5Output
   integer(HID_T) :: dspaceIDForExport_f_xi
   integer(HID_T) :: dspaceIDForExport_f_x
 
+  ! Dimensions for adjoint array
+  integer(HSIZE_T), dimension(1) :: dimForAdjoint
+  integer(HID_T) :: dspaceIDForAdjoint
+
   ! Dimension arrays related to arrays that expand with each iteration:
   integer(HSIZE_T), dimension(1) :: dimForIteration
   integer(HSIZE_T), dimension(1) :: maxDimForIteration
@@ -99,6 +103,7 @@ module writeHDF5Output
      module procedure writeHDF5Doubles
      module procedure writeHDF5Doubles2
      module procedure writeHDF5Boolean
+     module procedure writeHDF5Booleans
   end interface writeHDF5Field
 
   interface writeHDF5ExtensibleField
@@ -324,6 +329,15 @@ contains
        call writeHDF5Field("dnHatdrHat", dnHatdrHats, dspaceIDForSpecies, dimForSpecies, "")
        call writeHDF5Field("dnHatdrN", dnHatdrNs, dspaceIDForSpecies, dimForSpecies, "")
 
+      ! Write output related to sensitivityOptions namelist
+      if (RHSMode>3) then
+        call writeHDF5Field("adjointHeatFluxOption", adjointHeatFluxOption, dspaceIDForAdjoint, dimForAdjoint, "")
+        call writeHDF5Field("adjointParticleFluxOption", adjointParticleFluxOption, dspaceIDForAdjoint, dimForAdjoint, "")
+        call writeHDF5Field("adjointBootstrapOption", adjointBootstrapOption, "")
+        call writeHDF5Field("adjointRadialCurrentOption", adjointRadialCurrentOption, "")
+        call writeHDF5Field("adjointTotalHeatFluxOption", adjointTotalHeatFluxOption, "")
+      endif
+
        call writeHDF5Field("includeTemperatureEquilibrationTerm", includeTemperatureEquilibrationTerm, &
             "Include the inhomogeneous term associated with the collision operator acting on the Maxwellians C[f_M, f_M]? " //&
             "This term is nonzero only when the Fokker-Planck operator is used with unequal temperatures. "// boolDescription)
@@ -383,12 +397,7 @@ contains
           call writeHDF5Field("export_f_x", export_f_x, dspaceIDForExport_f_x, dimForExport_f_x, &
                "Values of normalized speed x for which the distribution functions delta f or full f are saved")
 
-        ! Write output related to sensitivityOptions namelist
-        if (sensitivityOption > 0) then
-          call writeHDF5Field("sensitivityOption", sensitivityOption, "")
-          call writeHDF5Field("adjointRHSOption", adjointRHSOption, "")
-          call writeHDF5Field("adjointRHSSpeciesOption", adjointRHSOption, "")
-        endif
+
 
        end if
 
@@ -1289,6 +1298,7 @@ contains
     else
        temp = integerToRepresentFalse
     end if
+
     call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, temp, dimForScalar, HDF5Error)
     
     call h5ltset_attribute_string_f(HDF5FileID, arrayName, attribute_name, description, HDF5Error)
@@ -1296,6 +1306,45 @@ contains
     call h5dclose_f(dsetID, HDF5Error)
 
   end subroutine writeHDF5Boolean
+
+  ! -----------------------------------------------------------------------------------
+
+  subroutine writeHDF5Booleans(arrayName, data, dspaceID, dims, description)
+
+    implicit none
+
+    integer(HID_T) :: dspaceID
+    integer(HSIZE_T), dimension(*) :: dims
+    integer :: i
+
+    character(len=*) :: arrayName
+    integer(HID_T) :: dsetID
+    logical, dimension(:) :: data
+    character(len=*) :: description
+    integer, allocatable, dimension(:) :: temp
+
+    if (dspaceID == dspaceIDForSpecies) then
+      allocate(temp(Nspecies))
+      do i = 1, Nspecies
+        if (data(i)) then
+          temp(i) = integerToRepresentTrue
+        else
+          temp(i) = integerToRepresentFalse
+        end if
+      end do
+    else
+      print *,"WARNING: PROGRAM SHOULD NOT GET HERE. (writeHDF5Booleans)"
+    end if
+
+    call h5dcreate_f(HDF5FileID, arrayName, H5T_NATIVE_INTEGER, dspaceID, dsetID, HDF5Error)
+
+    call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, temp, dims, HDF5Error)
+    
+    call h5ltset_attribute_string_f(HDF5FileID, arrayName, attribute_name, description, HDF5Error)
+
+    call h5dclose_f(dsetID, HDF5Error)
+
+  end subroutine writeHDF5Booleans
 
   ! -----------------------------------------------------------------------------------
 

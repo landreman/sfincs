@@ -40,18 +40,6 @@ module globalVariables
   ! ********************************************************
   ! ********************************************************
   !
-  ! Sensitivity options:
-  !
-  ! ********************************************************
-  ! ********************************************************
-
-  integer :: sensitivityOption = 0
-  integer :: adjointRHSOption = 0
-  integer :: adjointRHSSpeciesOption = -1
-
-  ! ********************************************************
-  ! ********************************************************
-  !
   ! Geometry input parameters:
   !
   ! ********************************************************
@@ -97,6 +85,18 @@ module globalVariables
   logical :: withAdiabatic = .false.
   !!!!!!!!!!!!!!!!!!!!!!!
 
+  ! ********************************************************
+  ! ********************************************************
+  !
+  ! Sensitivity options:
+  !
+  ! ********************************************************
+  ! ********************************************************
+
+  logical :: adjointBootstrapOption = .false.
+  logical :: adjointRadialCurrentOption = .false.
+  logical :: adjointTotalHeatFluxOption = .false.
+  logical, dimension(:), allocatable :: adjointHeatFluxOption, adjointParticleFluxOption
 
   ! ********************************************************
   ! ********************************************************

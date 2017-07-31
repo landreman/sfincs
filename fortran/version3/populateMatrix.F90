@@ -104,11 +104,13 @@
        ! However there are a few differences related to the nonlinear terms.
        whichMatrixName = "residual f1"
     case (4)
+      whichMatrixName = "adjoint Jacobian"
+      ! The matrix that is used for the adjoint solve for sensitivity computations
+      ! This is the same matrix used to evaluate the residual for the adjoint solve
+    case (5)
        whichMatrixName = "adjoint Jacobian preconditioner"
        ! The preconditioner for the matrix that is used for the adjoint solve for sensitivity computations
-    case (5)
-       whichMatrixName = "adjoint Jacobian"
-       ! The matrix that is used for the adjoint solve for sensitivity computations
+
     case default
        if (masterProc) then
           print *,"Error! whichMatrix must be 0, 1, 2, 3, 4, or 5."
@@ -337,7 +339,7 @@
 
              do itheta=ithetaMin, ithetaMax
                 do izeta=1,Nzeta
-                   if ((whichMatrix == 4) .or (whichMatrix == 5)) then
+                   if (whichMatrix == 4 .or. whichMatrix == 5) then
                       zetaPartOfTerm(izeta,:) = -sqrtTHat/sqrtMHat * BHat_sup_zeta(itheta,izeta) &
                         * ddzetaToUse(izeta,:) / BHat(itheta,izeta)
                    else
@@ -401,7 +403,7 @@
           do L=0,(Nxi-1)
 
              if (ExBDerivativeSchemeTheta==0) then
-                if (((whichMatrix>0) .and (whichMatrix .ne. 5)) .or. L < preconditioner_theta_min_L) then
+                if ((whichMatrix>0 .and. whichMatrix .ne. 5) .or. L < preconditioner_theta_min_L) then
                    ddthetaToUse = ddtheta
                 else
                    ddthetaToUse = ddtheta_preconditioner
@@ -655,7 +657,7 @@
        izeta = -1  ! So izeta is not used in place of izetaRow or izetaCol by mistake.
        ithetaRow = -1 ! So ithetaRow is not used in place of itheta by mistake.
        ithetaCol = -1 ! So ithetaCol is not used in place of itheta by mistake.
-       if ((whichMatrix .ne. 2) .and. (magneticDriftScheme>0) .and. (whichMarix .ne. 4)) then
+       if ((whichMatrix .ne. 2) .and. (magneticDriftScheme>0) .and. (whichMatrix .ne. 4)) then
           if (whichMatrix==0) then
              maxL = min(preconditioner_magnetic_drifts_max_L,Nxi-1)
           else
@@ -1863,7 +1865,7 @@
 
              do iSpeciesB = 1,Nspecies
                 do iSpeciesA = 1,Nspecies
-                   if (iSpeciesA==iSpeciesB .or. ((whichMatrix>0 .and. (whichMatrix .ne. 5)) &
+                   if (iSpeciesA==iSpeciesB .or. ((whichMatrix>0) .and. (whichMatrix .ne. 5)) &
                       .or. preconditioner_species==0) then
                       
                       speciesFactor = sqrt(THats(iSpeciesA)*mHats(iSpeciesB) &
