@@ -1163,14 +1163,14 @@ subroutine validateInput()
       stop
     end if
     ! Check that XDotTerm is retained
-    if (includeXDotTerm .eqv. .true.) then
+    if (includeXDotTerm .eqv. .false.) then
       if (masterProc) then
         print *,"Error! RHSMode>3 must be used with XDotTerm = .true.."
       end if
       stop
     end if
     ! Check constraintScheme
-    if (constraintScheme /= 1) then
+    if (constraintScheme /= -1) then
       if (masterProc) then
         print *,"Error! RHSMode>3 must be used with constraintScheme=1."
       end if
@@ -1184,8 +1184,8 @@ subroutine validateInput()
       stop
     end if
     ! Check that adjoint rhs is specified in input parameters 
-    if ((adjointBootstrapOption .and. adjointRadialCurrentOption .and. adjointTotalHeatFluxOption &
-      .and. any(adjointHeatFluxOption) .and. any(adjointParticleFluxOption)) .eqv. .false.) then
+    if ((adjointBootstrapOption .or. adjointRadialCurrentOption .or. adjointTotalHeatFluxOption &
+      .or. any(adjointHeatFluxOption) .or. any(adjointParticleFluxOption)) .eqv. .false.) then
       if (masterProc) then
         print *,"Error! RHSMode>3 must be used with specification of adjoint solve to be performed."
       end if
