@@ -19,8 +19,8 @@ module solver
     implicit none
 
     PetscErrorCode :: ierr
-    Vec :: solutionVec, residualVec, summedSolutionVec
-    Mat :: matrix, preconditionerMatrix
+    Vec :: solutionVec, residualVec
+    Mat :: matrix, preconditionerMatrix, adjointMatrix, adjointPreconditionerMatrix
     SNES :: mysnes
     KSP :: KSPInstance
     PC :: preconditionerContext
@@ -34,7 +34,9 @@ module solver
     PetscInt :: mumps_which_cntl
     PetscReal :: mumps_value
     PetscReal :: atol, rtol, stol
-    integer :: maxit, maxf, ispecies, whichAdjointRHS
+    integer :: maxit, maxf, ispecies, whichAdjointRHS, whichAdjointSpecies
+    Vec :: adjointSolutionVec, summedSolutionVec, adjointRHSVec
+    logical :: summedAdjointSolveComplete
 
 !!Following three lines added by AM 2016-07-06
 #if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR > 6))
@@ -50,12 +52,6 @@ module solver
 
     call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, solutionVec, ierr)
     call VecDuplicate(solutionVec, residualVec, ierr)
-
-    ! Allocate summedSolutionVec if needed
-    if (adjointRadialCurrentOption .or. adjointTotalHeatFluxOption .or. &
-      adjointBootstrapOption) then
-      call VecDuplicate(solutionVec, summedSolutionVec, ierr)
-    end if
 
     call VecDuplicate(solutionVec, f0, ierr)
     call init_f0()
@@ -463,18 +459,48 @@ module solver
     ! This is where all the adjoint solves happen
     if (RHSMode>3) then
 
-      ! Build the adjoint jacobian matrix - the same matrix is used for each RHS
-      call populateMatrix(matrix,4,dummyVec)
+      ! Allocate adjointSolutionVec
+      !call VecDuplicate(solutionVec, adjointSolutionVec, ierr)
+      call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointSolutionVec, ierr)
+      call VecSet(adjointSolutionVec, zero, ierr)
+
+      ! Allocate summedSolutionVec if needed
+      if (adjointRadialCurrentOption .or. adjointTotalHeatFluxOption .or. &
+        adjointBootstrapOption) then
+        !call VecDuplicate(solutionVec,  summedSolutionVec)
+        call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, summedSolutionVec, ierr)
+        call VecSet(summedSolutionVec, zero, ierr)
+      end if
+
+      ! Allocate adjointRHSVec
+      call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointRHSVec, ierr)
+      call VecSet(adjointRHSVec, zero, ierr)
+
+      ! Allocate and populate the adjoint matrix - the same matrix is used for each RHS
+      call preallocateMatrix(adjointMatrix, 1) ! the whichMatrix argument doesn't matter here
+      call populateMatrix(adjointMatrix,4,dummyVec) ! dummyVec is not initialized - not needed for linear solve
+      call preallocateMatrix(adjointPreconditionerMatrix, 1)
+      call populateMatrix(adjointPreconditionerMatrix,5,dummyVec)
+
+      if (masterProc) then
+         print *,"Finished allocating adjoint Vecs and matrices."
+      end if
 
       do whichAdjointRHS=1,3
+        summedAdjointSolveComplete = .false.
+        whichAdjointSpecies = -1
 
-        ! clear summedSolutionVec if it is allocated
-        if (adjointRadialCurrentOption .or. adjointTotalHeatFluxOption .or. &
-              adjointBootstrapOption) then
-          call VecSet(summedSolutionVec, zero, ierr)
+        ! If we don't need species contributions to summed flux, just do one solve for this whichAdjointRHS
+        if ((any(adjointParticleFluxOption) .or. any(adjointHeatFluxOption)) .eqv. .false.) then
+          whichAdjointSpecies = 0
         end if
 
         do ispecies=1,Nspecies
+
+          if (masterProc) then
+            print *,"ispecies = ", ispecies, ", whichAdjointRHS = ", whichAdjointRHS
+          end if
+
           select case (whichAdjointRHS)
             case (1) ! particle flux
               if (.not. (adjointRadialCurrentOption .or. adjointParticleFluxOption(ispecies))) then
@@ -490,24 +516,26 @@ module solver
               end if
           end select
 
-          print *,"################################################################"
-          print "(a,i1,a,i1)"," Solving adjoint system with adjoint RHS ",whichAdjointRHS," and species ",ispecies
-          print *,"################################################################"
+          ! If we've already done adjoint solve for summed RHS, continue to next whichAdjointRHS
+          if (whichAdjointSpecies == 0 .and. summedAdjointSolveComplete) then
+            cycle
+          ! Otherwise, we do solve for this species
+          else if (whichAdjointSpecies /= 0) then
+            whichAdjointSpecies = ispecies
+          end if
 
-          ! clear solutionVec
-          call VecSet(solutionVec, zero, ierr)
+          print *,"################################################################"
+          print "(a,i1,a,i1)"," Solving adjoint system with adjoint RHS ",whichAdjointRHS," and species ",whichAdjointSpecies
+          print *,"################################################################"
 
           if (useIterativeLinearSolver) then
 
-            ! Build the adjoint preconditioner:
-            call populateMatrix(preconditionerMatrix,5,dummyVec)
-
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
             ! Syntax for PETSc versions up through 3.4
-            call KSPSetOperators(KSPInstance, matrix, preconditionerMatrix, SAME_PRECONDITIONER, ierr)
+            call KSPSetOperators(KSPInstance, adjointMatrix, adjointPreconditionerMatrix, SAME_PRECONDITIONER, ierr)
 #else
             ! Syntax for PETSc version 3.5 and later
-            call KSPSetOperators(KSPInstance, matrix, preconditionerMatrix, ierr)
+            call KSPSetOperators(KSPInstance, adjointMatrix, adjointPreconditionerMatrix, ierr)
             call KSPSetReusePreconditioner(KSPInstance, PETSC_TRUE, ierr)
             call PCSetReusePreconditioner(preconditionerContext, PETSC_TRUE, ierr)
 #endif
@@ -516,10 +544,10 @@ module solver
             ! Direct solver, so no preconditioner needed.
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
             ! Syntax for PETSc versions up through 3.4
-            call KSPSetOperators(KSPInstance, matrix, matrix, SAME_PRECONDITIONER, ierr)
+            call KSPSetOperators(KSPInstance, adjointMatrix, adjointMatrix, SAME_PRECONDITIONER, ierr)
 #else
             ! Syntax for PETSc version 3.5 and later
-            call KSPSetOperators(KSPInstance, matrix, matrix, ierr)
+            call KSPSetOperators(KSPInstance, adjointMatrix, adjointMatrix, ierr)
             call KSPSetReusePreconditioner(KSPInstance, PETSC_TRUE, ierr)
             call PCSetReusePreconditioner(preconditionerContext, PETSC_TRUE, ierr)
 #endif
@@ -527,7 +555,7 @@ module solver
           end if
 
           ! Construct RHS vec
-          call populateAdjointRHS(residualVec, whichAdjointRHS, ispecies)
+          call populateAdjointRHS(adjointRHSVec, whichAdjointRHS, whichAdjointSpecies)
 
           if (masterProc) then
              print *,"Beginning the main solve.  This could take a while ..."
@@ -536,7 +564,7 @@ module solver
           call PetscTime(time1, ierr)
           if (solveSystem) then
              ! All the magic happens in this next line!
-             call KSPSolve(KSPInstance,residualVec, solutionVec, ierr)
+             call KSPSolve(KSPInstance,adjointRHSVec,adjointSolutionVec, ierr)
           end if
 
           call PetscTime(time2, ierr)
@@ -554,19 +582,25 @@ module solver
               end if
               if (adjointRadialCurrentOption) then
                 ! Scale particle flux by Z for radial current
-                summedSolutionVec = summedSolutionVec + Zs(ispecies)*solutionVec
+                summedSolutionVec = summedSolutionVec + Zs(ispecies)*adjointSolutionVec
               end if
             case (2) ! heat flux
               if (adjointHeatFluxOption(ispecies)) then
                 ! call diagnostics for species adjoint f here
               end if
               if (adjointTotalHeatFluxOption) then
-                summedSolutionVec = summedSolutionVec + solutionVec
+                summedSolutionVec = summedSolutionVec + adjointSolutionVec
               end if
             case (3) ! bootstrap current
               ! If we get to this point, summedSolutionVec must be computed
-              summedSolutionVec = summedSolutionVec + solutionVec
+              summedSolutionVec = summedSolutionVec + adjointSolutionVec
           end select
+
+          if (whichAdjointSpecies == 0) then
+            summedAdjointSolveComplete = .true.
+          end if
+          ! Clear adjointSolutionVec
+          call VecSet(adjointSolutionVec, zero, ierr)
 
         end do
 
@@ -575,14 +609,20 @@ module solver
           case (1) ! particle flux
             if (adjointRadialCurrentOption) then
               ! compute diagnostics for summed vector here
+              ! clear summedSolutionVec if it is allocated
+              call VecSet(summedSolutionVec, zero, ierr)
             end if
           case (2) ! heat flux
             if (adjointTotalHeatFluxOption) then
               ! compute diagnostics for summed vector here
+              ! clear summedSolutionVec if it is allocated
+              call VecSet(summedSolutionVec, zero, ierr)
             end if
           case (3) ! bootstrap current
             if (adjointBootstrapOption) then
               ! compute diagnostics for summed vector here
+              ! clear summedSolutionVec if it is allocated
+              call VecSet(summedSolutionVec, zero, ierr)
             end if
         end select
 

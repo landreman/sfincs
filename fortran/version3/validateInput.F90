@@ -1130,6 +1130,7 @@ subroutine validateInput()
       if (masterProc) then
         print *,"Error! RHSMode=5 not yet implemented."
       endif
+      stop
     end if
     ! Check for linear solve
     if (includePhi1) then
