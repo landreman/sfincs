@@ -478,15 +478,15 @@ module solver
           select case (whichAdjointRHS)
             case (1) ! particle flux
               if (.not. (adjointRadialCurrentOption .or. adjointParticleFluxOption(ispecies))) then
-                continue
+                cycle
               end if
             case (2) ! heat flux
               if (.not. (adjointTotalHeatFluxOption .or. adjointHeatFluxOption(ispecies))) then
-                continue
+                cycle
               end if
             case (3) ! bootstrap current
               if (.not. adjointBootstrapOption) then
-                continue
+                cycle
               end if
           end select
 

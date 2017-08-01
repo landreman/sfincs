@@ -1126,6 +1126,11 @@ subroutine validateInput()
 
   ! Validate adjoint inputs
   if (RHSMode>3) then
+    if (RHSMode==5) then
+      if (masterProc) then
+        print *,"Error! RHSMode=5 not yet implemented."
+      endif
+    end if
     ! Check for linear solve
     if (includePhi1) then
       if (masterProc) then
