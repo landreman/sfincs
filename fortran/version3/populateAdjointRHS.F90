@@ -1,16 +1,24 @@
+#include "PETScVersions.F90"
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
+#include <finclude/petscvecdef.h>
+#else
+#include <petsc/finclude/petscvecdef.h>
+#endif
 
-subroutine populateAdjointRHS(rhs, whichRHS, whichSpecies)
+subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies)
 
   use globalVariables
   use indices
+  use petscvec
 
   implicit none
 
   Vec :: rhs
+  integer :: whichAdjointRHS, whichSpecies
+
   PetscErrorCode :: ierr
-  integer :: whichRHS, whichSpecies
-  integer :: ix, L, itheta, izeta, ispecies, index
-  PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, xPartOfRHS, factor
+  integer :: ix, L, itheta, izeta, ispecies, index, ixMin
+  PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, xPartOfRHS, factor, nHat
 
   call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, rhs, ierr)
   call VecSet(rhs, zero, ierr)
@@ -27,7 +35,7 @@ subroutine populateAdjointRHS(rhs, whichRHS, whichSpecies)
   sqrtTHat = sqrt(THat)
   sqrtMHat = sqrt(mHat)
 
-  select case (whichRHS)
+  select case (whichAdjointRHS)
     case (1) ! particle flux
 
       do ix=ixMin,Nx
