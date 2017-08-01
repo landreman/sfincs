@@ -34,7 +34,7 @@ module solver
     PetscInt :: mumps_which_cntl
     PetscReal :: mumps_value
     PetscReal :: atol, rtol, stol
-    integer :: maxit, maxf, ispecies
+    integer :: maxit, maxf, ispecies, whichAdjointRHS
 
 !!Following three lines added by AM 2016-07-06
 #if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR > 6))
@@ -466,7 +466,7 @@ module solver
       ! Build the adjoint jacobian matrix - the same matrix is used for each RHS
       call populateMatrix(matrix,4,dummyVec)
 
-      do whichRHS=1,3
+      do whichAdjointRHS=1,3
 
         ! clear summedSolutionVec if it is allocated
         if (adjointRadialCurrentOption .or. adjointTotalHeatFluxOption .or. &
@@ -475,7 +475,7 @@ module solver
         end if
 
         do ispecies=1,Nspecies
-          select case (whichRHS)
+          select case (whichAdjointRHS)
             case (1) ! particle flux
               if (.not. (adjointRadialCurrentOption .or. adjointParticleFluxOption(ispecies))) then
                 continue
@@ -523,7 +523,7 @@ module solver
           end if
 
           ! Construct RHS vec
-          call populateAdjointRHS(residualVec, whichRHS, ispecies)
+          call populateAdjointRHS(residualVec, whichAdjointRHS, ispecies)
 
           if (masterProc) then
              print *,"Beginning the main solve.  This could take a while ..."
@@ -543,7 +543,7 @@ module solver
 
           call checkIfKSPConverged(KSPInstance)
 
-          select case (whichRHS)
+          select case (whichAdjointRHS)
             case (1) ! particle flux
               if (adjointParticleFluxOption(ispecies)) then
                 ! call diagnostics for species adjoint f here
@@ -567,7 +567,7 @@ module solver
         end do
 
         ! Done with required adjoint solves. Now compute diagnostics
-        select case (whichRHS)
+        select case (whichAdjointRHS)
           case (1) ! particle flux
             if (adjointRadialCurrentOption) then
               ! compute diagnostics for summed vector here
