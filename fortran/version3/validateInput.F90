@@ -1156,7 +1156,7 @@ subroutine validateInput()
       stop
     end if
     ! Check that tangential magnetic drifts are not used
-    if (magneticDriftScheme == 0) then
+    if (magneticDriftScheme > 0) then
       if (masterProc) then
         print *,"Error! RHSMode>3 cannot be used with tangential magnetic drifts."
       end if
