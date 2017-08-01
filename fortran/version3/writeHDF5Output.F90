@@ -49,10 +49,6 @@ module writeHDF5Output
   integer(HID_T) :: dspaceIDForExport_f_xi
   integer(HID_T) :: dspaceIDForExport_f_x
 
-  ! Dimensions for adjoint array
-  integer(HSIZE_T), dimension(1) :: dimForAdjoint
-  integer(HID_T) :: dspaceIDForAdjoint
-
   ! Dimension arrays related to arrays that expand with each iteration:
   integer(HSIZE_T), dimension(1) :: dimForIteration
   integer(HSIZE_T), dimension(1) :: maxDimForIteration
@@ -331,8 +327,8 @@ contains
 
       ! Write output related to sensitivityOptions namelist
       if (RHSMode>3) then
-        call writeHDF5Field("adjointHeatFluxOption", adjointHeatFluxOption, dspaceIDForAdjoint, dimForAdjoint, "")
-        call writeHDF5Field("adjointParticleFluxOption", adjointParticleFluxOption, dspaceIDForAdjoint, dimForAdjoint, "")
+        call writeHDF5Field("adjointHeatFluxOption", adjointHeatFluxOption, dspaceIDForSpecies, dimForSpecies, "")
+        call writeHDF5Field("adjointParticleFluxOption", adjointParticleFluxOption, dspaceIDForSpecies,  dimForSpecies, "")
         call writeHDF5Field("adjointBootstrapOption", adjointBootstrapOption, "")
         call writeHDF5Field("adjointRadialCurrentOption", adjointRadialCurrentOption, "")
         call writeHDF5Field("adjointTotalHeatFluxOption", adjointTotalHeatFluxOption, "")

@@ -490,6 +490,10 @@ module solver
               end if
           end select
 
+          print *,"################################################################"
+          print "(a,i1,a,i1)"," Solving adjoint system with adjoint RHS ",whichAdjointRHS," and species ",ispecies
+          print *,"################################################################"
+
           ! clear solutionVec
           call VecSet(solutionVec, zero, ierr)
 

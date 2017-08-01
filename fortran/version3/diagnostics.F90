@@ -926,7 +926,7 @@
           print *,"lambda: ", lambda
        end if
 
-       if (rhsMode > 1) then
+       if (RHSMode>1 .and. RHSMode<4) then
           print *,"Transport matrix:"
           do i=1,transportMatrixSize
              print *,"   ", transportMatrix(i,:)
@@ -957,7 +957,7 @@
 
     ! updateOutputFile should be called by all procs since it contains MPI_Barrier
     ! (in order to be sure the HDF5 file is safely closed before moving on to the next computation.)
-    if (RHSMode >1 .and. whichRHS==transportMatrixSize) then
+    if (RHSMode>1 .and. RHSMode<4 .and. whichRHS==transportMatrixSize) then
        call updateOutputFile(iterationNum, .true.)
     else
        call updateOutputFile(iterationNum, .false.)
