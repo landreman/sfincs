@@ -21,4 +21,4 @@ sfincsBinary*
 sfincsJob*
 slurm-*
 *.log
-
+fortran/version3/testAdjointDir/*

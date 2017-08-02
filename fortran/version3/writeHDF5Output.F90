@@ -332,6 +332,8 @@ contains
         call writeHDF5Field("adjointBootstrapOption", adjointBootstrapOption, "")
         call writeHDF5Field("adjointRadialCurrentOption", adjointRadialCurrentOption, "")
         call writeHDF5Field("adjointTotalHeatFluxOption", adjointTotalHeatFluxOption, "")
+        call writeHDF5Field("nMaxAdjoint", nMaxAdjoint, "")
+        call writeHDF5Field("mMaxAdjoint", mMaxAdjoint, "")
       endif
 
        call writeHDF5Field("includeTemperatureEquilibrationTerm", includeTemperatureEquilibrationTerm, &

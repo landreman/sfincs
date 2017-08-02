@@ -1,3 +1,10 @@
+#include "PETScVersions.F90"
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
+#include <finclude/petscvecdef.h>
+#else
+#include <petsc/finclude/petscvecdef.h>
+#endif
+
 ! See evaluateResidual.f90 (where rhs is constructed). Much of the code has been copied
 
 ! dRHSdLambda is a Vec which should be allocated by the calling subroutine
@@ -6,6 +13,7 @@
 
   subroutine populatedRHSdLambda(dRHSdLambda, whichLambda, whichMode)
 
+    use petscvec
     use globalVariables
     use indices
 
@@ -18,6 +26,8 @@
     integer :: ixMin
     PetscScalar :: THat, mHat, sqrtTHat, sqrtmHat, xPartOfRHS, dFactordLambda
     PetscErrorCode :: ierr
+
+    call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, dRHSdLambda, ierr)
 
     if (pointAtX0) then
       ixMin = 2
@@ -34,18 +44,18 @@
       do ix=ixMin,Nx
       !xPartOfRHS is independent of BHat
         xPartOfRHS = x2(ix)*exp(-x2(ix))*( dnHatdpsiHats(ispecies)/nHats(ispecies) &
-          + alpha*Zs(ispecies)/THats(ispecies)*dPhiHatdpsiHatToUseInRHS &
+          + alpha*Zs(ispecies)/THats(ispecies)*dPhiHatdpsiHat &
           + (x2(ix) - three/two)*dTHatdpsiHats(ispecies)/THats(ispecies))
 
         do itheta = ithetaMin,ithetaMax
           do izeta = izetaMin,izetaMax
             select case(whichLambda)
-              case (-1) ! Er
+              case (0) ! Er
                 if (masterProc) then
                   print *,"Error! Er sensitivity not yet implemented."
                 end if
                 stop
-              case (0) ! BHat
+              case (1) ! BHat
                 ! dBHatdBmn = cos(m*theta - n N_p zeta)
                 dFactordLambda = &
                   ! Term from BHat**(-3)
@@ -64,21 +74,21 @@
                   /(2*pi*sqrtpi*Zs(ispecies)*(BHat(itheta,izeta)**4)*sqrtTHat) &
                   *BHat_sub_theta(itheta,izeta)* DHat(itheta,izeta) * xPartOfRHS &
                   * dBHatdzetadFourier(itheta,izeta,whichMode)
-              case (1) ! BHat_sup_theta
+              case (2) ! BHat_sup_theta
                 dFactordLambda = 0
-              case (2) ! BHat_sup_zeta
+              case (3) ! BHat_sup_zeta
                 dFactordLambda = 0
-              case (3) ! BHat_sub_theta
+              case (4) ! BHat_sub_theta
                 dFactordLambda = -Delta*nHats(ispecies)*mHat*sqrtMHat &
                   /(2*pi*sqrtpi*Zs(ispecies)*(BHat(itheta,izeta)**3)*sqrtTHat) &
                   * dBHatdzeta(itheta,izeta)*dBHat_sub_thetadFourier(itheta,izeta,whichMode) &
                   * DHat(itheta,izeta)*xPartOfRHS
-              case (4) ! BHat_sup_zeta
+              case (5) ! BHat_sup_zeta
                 dFactordLambda = Delta*nHats(ispecies)*mHat*sqrtMHat &
                   /(2*pi*sqrtpi*Zs(ispecies)*(BHat(itheta,izeta)**3)*sqrtTHat) &
                   * dBHatdtheta(itheta,izeta)*dBHat_sub_zetadFourier(itheta,izeta,whichMode) &
                   * DHat(itheta,izeta)*xPartOfRHS
-              case (5) ! DHat 
+              case (6) ! DHat
                 dFactordLambda = Delta*nHats(ispecies)*mHat*sqrtMHat &
                   /(2*pi*sqrtpi*Zs(ispecies)*(BHat(itheta,izeta)**3)*sqrtTHat) &
                   *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
@@ -99,7 +109,7 @@
       enddo
     enddo
 
-    call VecAssemblyBegin(dRHSdLambda, ierr)
-    call VecAssemblyEnd(dRHSdLambda, ierr)
+!    call VecAssemblyBegin(dRHSdLambda, ierr)
+!    call VecAssemblyEnd(dRHSdLambda, ierr)
 
   end subroutine populatedRHSdLambda

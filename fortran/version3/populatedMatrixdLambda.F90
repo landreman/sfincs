@@ -7,7 +7,7 @@
 #include <petsc/finclude/petscmatdef.h>
 #endif
 
-  subroutine populatdMatrixdLambda(dMatrixdLambda, whichLambda, whichMode)
+  subroutine populatedMatrixdLambda(dMatrixdLambda, whichLambda, whichMode)
 
     use petscmat
     use globalVariables
@@ -27,8 +27,9 @@
     PetscScalar :: Z, nHat, THat, mHat, sqrtTHat, sqrtMHat, factor
     PetscScalar, dimension(:,:), allocatable :: ddthetaToUse, ddzetaToUse, ddxToUse, ddxToUse_plus, &
       ddxToUse_minus
-    PetscScalar :: factor, temp, xDotFactor, stuffToAdd
-    PetscScalar :: xPartOfXDot, xPartOfXDot_plus, xPartOfXDot_minus
+    PetscScalar :: temp, xDotFactor, stuffToAdd, dFactordLambda, dTempdLambda
+    PetscScalar :: dxDotFactordLambda
+    PetscScalar, dimension(:,:), allocatable :: xPartOfXDot, xPartOfXDot_plus, xPartOfXDot_minus
     integer :: ix_row, ix_col, rowIndex, colIndex, ell
     PetscLogDouble :: time1, time2
     double precision :: myMatInfo(MAT_INFO_SIZE)
@@ -84,27 +85,28 @@
             !   / BHat(itheta,izeta)
 
             select case(whichLambda)
-              case (-1) ! Er
+              case (0) ! Er
                 if (masterProc) then
                   print *,"Error! Er sensitivity not yet implemented."
                 end if
                 stop
-              case (0) ! BHat
+              case (1) ! BHat
                 dThetaPartOfTermdLambda(itheta,:) = - BHat_sup_theta(itheta,izeta) &
                   * sqrtTHat/sqrtMHat * ddtheta(itheta,:) * dBHatdFourier(itheta,izeta,whichMode) &
                   / (BHat(itheta,izeta)*BHat(itheta,izeta))
-              case (1) ! BHat_sup_theta
+              case (2) ! BHat_sup_theta
                 dThetaPartOfTermdLambda(itheta,:) = sqrtTHat/sqrtMHat * ddtheta(itheta,:) &
-                  * dBHat_sup_thetadFourier / BHat(itheta,izeta)
-              case (2) ! BHat_sup_zeta
+                  * dBHat_sup_thetadFourier(itheta,izeta,whichMode) / BHat(itheta,izeta)
+              case (3) ! BHat_sup_zeta
                 dThetaPartOfTermdLambda(itheta,:) = 0
-              case (3) ! BHat_sub_theta
+              case (4) ! BHat_sub_theta
                 dThetaPartOfTermdLambda(itheta,:) = 0
-              case (4) ! BHat_sub_zeta
+              case (5) ! BHat_sub_zeta
                 dThetaPartOfTermdLambda(itheta,:) = 0
-              case (5) ! DHat
+              case (6) ! DHat
                 dThetaPartOfTermdLambda(itheta,:) = 0
             end select
+          end do
 
             ! PETSc uses the opposite convention to Fortran:
             dThetaPartOfTermdLambda = transpose(dThetaPartOfTermdLambda)
@@ -166,28 +168,27 @@
             !  * ddzetaToUse(izeta,:) / BHat(itheta,izeta)
 
             select case(whichLambda)
-              case (-1) ! Er
+              case (0) ! Er
                 if (masterProc) then
                   print *,"Error! Er sensitivity not yet implemented."
                 end if
                 stop
-              case (0) ! BHat
+              case (1) ! BHat
                 dZetaPartOfTermdLambda(izeta,:) = - BHat_sup_zeta(itheta,izeta) &
                   * sqrtTHat/sqrtMHat * ddzeta(izeta,:) * dBHatdFourier(itheta,izeta,whichMode) &
                   / (BHat(itheta,izeta)*BHat(itheta,izeta))
-              case (1) ! BHat_sup_theta
+              case (2) ! BHat_sup_theta
                 dZetaPartOfTermdLambda(izeta,:) = 0
-              case (2) ! BHat_sup_zeta
+              case (3) ! BHat_sup_zeta
                 dZetaPartOfTermdLambda(izeta,:) = sqrtTHat/sqrtMHat * ddzeta(izeta,:) &
                   * dBHat_sup_zetadFourier(itheta,izeta,whichMode)/ BHat(itheta,izeta)
-              case (3) ! BHat_sub_theta
+              case (4) ! BHat_sub_theta
                 dZetaPartOfTermdLambda(izeta,:) = 0
-              case (4) ! BHat_sub_zeta
+              case (5) ! BHat_sub_zeta
                 dZetaPartOfTermdLambda(izeta,:) = 0
-              case (5) ! DHat
+              case (6) ! DHat
                 dZetaPartOfTermdLambda(izeta,:) = 0
             end select
-
           end do
 
           ! PETSc uses the opposite convention to Fortran:
@@ -217,7 +218,7 @@
                    colIndices(izeta)=getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F)
                 end do
                 
-                call MatSetValuesSparse(matrix, localNzeta, rowIndices, Nzeta, colIndices, &
+                call MatSetValuesSparse(dMatrixdLambda, localNzeta, rowIndices, Nzeta, colIndices, &
                      L/(2*L-one)*x(ix)*localdZetaPartOfTermdLambda, ADD_VALUES, ierr)
              end if
 
@@ -234,8 +235,8 @@
       ! *********************************************************
 
       factor = alpha*Delta/two*dPhiHatdpsiHat
-      allocate(dThetaPartOfTerm(Ntheta,Ntheta))
-      allocate(localdThetaPartOfTerm(Ntheta,localNtheta))
+      allocate(dThetaPartOfTermdLambda(Ntheta,Ntheta))
+      allocate(localdThetaPartOfTermdLambda(Ntheta,localNtheta))
       allocate(rowIndices(localNtheta))
       allocate(colIndices(Ntheta))
 
@@ -258,25 +259,25 @@
             !thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2) &
               !* DHat(itheta,izeta) * BHat_sub_zeta(itheta,izeta)
             select case(whichLambda)
-              case (-1) ! Er
+              case (0) ! Er
                 if (masterProc) then
                   print *,"Error! Er sensitivity not yet implemented."
                 end if
                 stop
-              case (0) ! BHat
+              case (1) ! BHat
                 dThetaPartOfTermdLambda(itheta,:) = - 2 * ddthetaToUse(itheta,:) &
                   * dBHatdFourier(itheta,izeta,whichMode) / (BHat(itheta,izeta) ** 3) &
                   * DHat(itheta,izeta) * BHat_sub_zeta(itheta,izeta)
-              case (1) ! BHat_sup_theta
+              case (2) ! BHat_sup_theta
                 dThetaPartOfTermdLambda(itheta,:) = 0
-              case (2) ! BHat_sup_zeta
+              case (3) ! BHat_sup_zeta
                 dThetaPartOfTermdLambda(itheta,:) = 0
-              case (3) ! BHat_sub_theta
+              case (4) ! BHat_sub_theta
                 dThetaPartOfTermdLambda(itheta,:) = 0
-              case (4) ! BHat_sub_zeta
+              case (5) ! BHat_sub_zeta
                 dThetaPartOfTermdLambda(itheta,:) = ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2) &
                   * DHat(itheta,izeta) * dBHat_sub_zetadFourier(itheta,izeta,whichMode)
-              case (5) ! DHat
+              case (6) ! DHat
                 dThetaPartOfTermdLambda(itheta,:) = ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2) &
                   * dDHatdFourier(itheta,izeta,whichMode) * BHat_sub_zeta(itheta,izeta)
             end select
@@ -334,25 +335,25 @@
             !  zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2) &
             !       * DHat(itheta,izeta) * BHat_sub_theta(itheta,izeta)
             select case(whichLambda)
-              case (-1) ! Er
+              case (0) ! Er
                 if (masterProc) then
                   print *,"Error! Er sensitivity not yet implemented."
                 end if
                 stop
-              case (0) ! BHat
+              case (1) ! BHat
                 dZetaPartOfTermdLambda(izeta,:) = -2 * ddzetaToUse(izeta,:) &
                 * dBHatdFourier(itheta,izeta,whichMode) / (BHat(itheta,izeta) ** 3) &
                 * DHat(itheta,izeta) * BHat_sub_theta(itheta,izeta)
-              case (1) ! BHat_sup_theta
+              case (2) ! BHat_sup_theta
                 dZetaPartOfTermdLambda(izeta,:) = 0
-              case (2) ! BHat_sup_zeta
+              case (3) ! BHat_sup_zeta
                 dZetaPartOfTermdLambda(izeta,:) = 0
-              case (3) ! BHat_sub_theta
+              case (4) ! BHat_sub_theta
                 dZetaPartOfTermdLambda(izeta,:) = ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2) &
                   * DHat(itheta,izeta) * dBHat_sub_thetadFourier(itheta,izeta,whichMode)
-              case (4) ! BHat_sub_zeta
+              case (5) ! BHat_sub_zeta
                 dZetaPartOfTermdLambda(izeta,:) = 0
-              case (5) ! DHat
+              case (6) ! DHat
                 dZetaPartOfTermdLambda(izeta,:) = ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2) &
                   * dDHatdFourier(itheta,izeta,whichMode) * BHat_sub_theta(itheta,izeta)
             end select
@@ -392,15 +393,14 @@
             !     * (BHat_sup_theta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
             !     + BHat_sup_zeta(itheta,izeta) * dBHatdzeta(itheta,izeta))
             select case(whichLambda)
-              case (-1) ! Er
+              case (0) ! Er
                 if (masterProc) then
                   print *,"Error! Er sensitivity not yet implemented."
                 end if
                 stop
-              case (0) ! BHat
-                dFactordLambda = &
-                  ! Term from 1/(BHat**2)
-                  sqrtTHat/(sqrtMHat*(BHat(itheta,izeta)**3)) &
+              case (1) ! BHat
+                ! Term from 1/(BHat**2)
+                dFactordLambda = sqrtTHat/(sqrtMHat*(BHat(itheta,izeta)**3)) &
                   * dBHatdFourier(itheta,izeta,whichMode) &
                   * (BHat_sup_theta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
                   + BHat_sup_zeta(itheta,izeta) * dBHatdzeta(itheta,izeta)) &
@@ -409,18 +409,18 @@
                   * BHat_sup_theta(itheta,izeta)*dBhatdthetadFourier(itheta,izeta,whichMode) &
                   ! Term from dBHatdzeta 
                   -sqrtTHat/(2*sqrtMHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
-                  * BHat_sup_zeta(itheta,izeta)*dBhatdzetadFourier(itheta,izeta,whichMode) &
-              case (1) ! BHat_sup_theta
+                  * BHat_sup_zeta(itheta,izeta)*dBhatdzetadFourier(itheta,izeta,whichMode)
+              case (2) ! BHat_sup_theta
                 dFactordLambda = -sqrtTHat/(2*sqrtMHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
                   * (dBHat_sup_thetadFourier(itheta,izeta,whichMode)*dBHatdtheta(itheta,izeta))
-              case (2) ! BHat_sup_zeta
+              case (3) ! BHat_sup_zeta
                 dFactordLambda = -sqrtTHat/(2*sqrtMHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
                   * (dBHat_sup_zetadFourier(itheta,izeta,whichMode)*dBHatdzeta(itheta,izeta))
-              case (3) ! BHat_sub_theta
+              case (4) ! BHat_sub_theta
                 dFactordLambda = 0
-              case (4) ! BHat_sub_zeta
+              case (5) ! BHat_sub_zeta
                 dFactordLambda = 0
-              case (5) ! DHat
+              case (6) ! DHat
                 dFactordLambda = 0
             end select
             
@@ -463,12 +463,12 @@
                !   * DHat(itheta,izeta) * temp
 
               select case(whichLambda)
-                case (-1) ! Er
+                case (0) ! Er
                   if (masterProc) then
                     print *,"Error! Er sensitivity not yet implemented."
                   end if
                   stop
-                case (0) ! BHat
+                case (1) ! BHat
                   dTempdLambda = BHat_sub_zeta(itheta,izeta) * dBHatdthetadFourier(itheta,izeta,whichMode) &
                     - BHat_sub_theta(itheta,izeta) * dBHatdzetadFourier(itheta,izeta,whichMode)
                   dFactordLambda = &
@@ -478,19 +478,19 @@
                     ! Term from dBHatdtheta and dBHatdzeta
                     + alpha*Delta*dPhiHatdpsiHat/(4*(BHat(itheta,izeta)**3)) &
                     * DHat(itheta,izeta) * dTempdLambda
-                case (1) ! BHat_sup_theta
+                case (2) ! BHat_sup_theta
                   dFactordLambda = 0
-                case (2) ! BHat_sup_zeta
+                case (3) ! BHat_sup_zeta
                   dFactordLambda = 0
-                case (3) ! BHat_sub_theta
-                  dTempdLambda = - dBHat_sub_thetadLambda(itheta,izeta,whichMode) * dBHatdzeta(itheta,izeta)
+                case (4) ! BHat_sub_theta
+                  dTempdLambda = - dBHat_sub_thetadFourier(itheta,izeta,whichMode) * dBHatdzeta(itheta,izeta)
                   dFactordLambda = alpha*Delta*dPhiHatdpsiHat/(4*(BHat(itheta,izeta)**3)) &
                     * DHat(itheta,izeta) * dTempdLambda
-                case (4) ! BHat_sub_zeta
-                  dTempdLambda = dBHat_sub_zetadLambda(itheta,izeta,whichMode) * dBHatdtheta(itheta,izeta)
+                case (5) ! BHat_sub_zeta
+                  dTempdLambda = dBHat_sub_zetadFourier(itheta,izeta,whichMode) * dBHatdtheta(itheta,izeta)
                   dFactordLambda = alpha*Delta*dPhiHatdpsiHat/(4*(BHat(itheta,izeta)**3)) &
                     * DHat(itheta,izeta) * dTempdLambda
-                case (5) ! DHat
+                case (6) ! DHat
                   dFactordLambda = alpha*Delta*dPhiHatdpsiHat/(4*(BHat(itheta,izeta)**3)) &
                   * dDHatdFourier(itheta,izeta,whichMode) * temp
               end select
@@ -566,35 +566,35 @@
              end if
 
               select case(whichLambda)
-                case (-1) ! Er
+                case (0) ! Er
                   if (masterProc) then
                     print *,"Error! Er sensitivity not yet implemented."
                   end if
                   stop
-                case (0) ! BHat
+                case (1) ! BHat
                   dXDotFactordLambda = &
                     ! Term from 1/(BHat**3)
                     -3*factor*DHat(itheta,izeta)*dBHatdFourier(itheta,izeta,whichMode) &
                     /(BHat(itheta,izeta)**4) &
                     * (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) &
-                    - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))
+                    - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta)) &
                     ! Term from dBHatdzeta
                     + factor*DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
-                    * BHat_sub_theta(itheta,izeta)*dBHatdzetadFourier(itheta,izeta,whichMode)
+                    * BHat_sub_theta(itheta,izeta)*dBHatdzetadFourier(itheta,izeta,whichMode) &
                     ! Term from dBHatdtheta
                     - factor*Dhat(itheta,izeta)/(BHat(itheta,izeta)**3) &
                     * Bhat_sub_zeta(itheta,izeta)*dBHatdthetadFourier(itheta,izeta,whichMode)
-                case (1) ! BHat_sup_theta
+                case (2) ! BHat_sup_theta
                   dXDotFactordLambda = 0
-                case (2) ! BHat_sup_zeta
+                case (3) ! BHat_sup_zeta
                   dXDotFactordLambda = 0
-                case (3) ! BHat_sub_theta
-                  dXDotFactordLambda = factor*DHat/(BHat(itheta,izeta)**3) &
+                case (4) ! BHat_sub_theta
+                  dXDotFactordLambda = factor*DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
                     * dBHat_sub_thetadFourier(itheta,izeta,whichMode)*dBHatdzeta(itheta,izeta)
-                case (4) ! BHat_sub_zeta
-                  dXDotFactordLambda = -factor*DHat/(BHat(itheta,izeta)**3) &
+                case (5) ! BHat_sub_zeta
+                  dXDotFactordLambda = -factor*DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
                     * dBHat_sub_zetadFourier(itheta,izeta,whichMode)*dBHatdtheta(itheta,izeta)
-                case (5) ! DHat
+                case (6) ! DHat
                   dXDotFactordLambda = factor*dDHatdFourier(itheta,izeta,whichMode)/(BHat(itheta,izeta)**3) &
                     *(BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) &
                     - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))
@@ -625,7 +625,7 @@
                     colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F)
                     !do ix_row=ixMin,Nx
                     do ix_row=max(ixMin,min_x_for_L(L)),Nx
-                       call MatSetValueSparse(matrix, rowIndices(ix_row), colIndex, &
+                       call MatSetValueSparse(dMatrixdLambda, rowIndices(ix_row), colIndex, &
                             stuffToAdd*xPartOfXDot(ix_row,ix_col), ADD_VALUES, ierr)
                     end do
                  end do
@@ -638,7 +638,7 @@
                  do ix_col=max(ixMinCol,min_x_for_L(ell)),Nx
                     colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F)
                     do ix_row=max(ixMin,min_x_for_L(L)),Nx
-                       call MatSetValueSparse(matrix, rowIndices(ix_row), colIndex, &
+                       call MatSetValueSparse(dMatrixdLambda, rowIndices(ix_row), colIndex, &
                             stuffToAdd*xPartOfXDot(ix_row,ix_col), ADD_VALUES, ierr)
                     end do
                  end do
@@ -712,7 +712,7 @@
     call PetscTime(time1, ierr)
 
 
-    call MatGetInfo(matrix, MAT_GLOBAL_SUM, myMatInfo, ierr)
+    call MatGetInfo(dMatrixdLambda, MAT_GLOBAL_SUM, myMatInfo, ierr)
     NNZ = nint(myMatInfo(MAT_INFO_NZ_USED))
     NNZAllocated = nint(myMatInfo(MAT_INFO_NZ_ALLOCATED))
     NMallocs = nint(myMatInfo(MAT_INFO_MALLOCS))

@@ -87,7 +87,8 @@ contains
          export_f_theta_option, export_f_zeta_option, export_f_xi_option, export_f_x_option
 
     namelist / sensitivityOptions / adjointBootstrapOption, adjointRadialCurrentOption, &
-      adjointTotalHeatFluxOption, adjointHeatFluxOption, adjointParticleFluxOption
+      adjointTotalHeatFluxOption, adjointHeatFluxOption, adjointParticleFluxOption, &
+      nMaxAdjoint, mMaxAdjoint
 
     Zs = speciesNotInitialized
     mHats = speciesNotInitialized

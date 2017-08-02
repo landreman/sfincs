@@ -2658,6 +2658,7 @@ contains
 
     if (RHSMode>3) then
 
+      ! maybe put in dMatrixdLambda or dRHSdLambda
       allocate(dBHatdFourier(Ntheta,Nzeta,numSymmetricModesIncluded))
       allocate(dBHatdthetadFourier(Ntheta,Nzeta,numSymmetricModesIncluded))
       allocate(dBHatdzetadFourier(Ntheta,Nzeta,numSymmetricModesIncluded))
