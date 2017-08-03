@@ -125,6 +125,25 @@ module adjointDiagnostics
       integer :: whichLambda, whichMode
       PetscScalar :: result
 
+      ! Allocate appropriate sensitivity array
+      if (whichSpecies == 0) then
+        select case (whichAdjointRHS)
+          case (1) ! Particle flux
+            allocate(dRadialCurrentdLambda(NLambdas,NModesAdjoint))
+          case (2) ! Heat Flux
+            allocate(dTotalHeatFluxdLambda(NLambdas,NModesAdjoint))
+          case (3) ! Bootstrap
+            allocate(dBootstrapdLambda(NLambdas,NModesAdjoint))
+        end select
+      else
+        select case (whichAdjointRHS)
+          case (1) ! Particle flux
+            allocate(dParticleFluxdLambda(NSpecies,NLambdas,NModesAdjoint))
+          case (2) ! Heat Flux
+            allocate(dHeatFluxdLambda(NSpecies,NLambdas,NModesAdjoint))
+        end select
+      end if
+
       if (masterProc) then
         print *,"Computing adjoint diagnostics for RHS ", whichAdjointRHS, " and species ", whichSpecies
       end if
@@ -145,7 +164,7 @@ module adjointDiagnostics
       ! Loop over lambda's and perform inner product
       ! rethink this for Er
       do whichLambda=1,6
-        do whichMode=1,numModesAdjoint
+        do whichMode=1,NModesAdjoint
 
           ! Call function to perform (dLdlambdaf - dSdlambda), which calls populatedMatrixdLambda and populatedRHSdLambda
           call evaluateAdjointResidual(forwardSolution,adjointResidual,whichLambda,whichMode)
@@ -161,15 +180,23 @@ module adjointDiagnostics
             call innerProduct(adjointSolutionArray,adjointResidualArray,result)
 
             ! Save to appropriate sensitivity array
-            select case (whichAdjointRHS)
-
-              case (1) ! Particle flux
-                ! dParticleFluxdLambda(whichLambda,whichMode) = result
-              case (2) ! Heat Flux
-
-              case (3) ! Bootstrap
-
-            end select
+            if (whichSpecies == 0) then
+              select case (whichAdjointRHS)
+                case (1) ! Particle flux
+                  dRadialCurrentdLambda(whichLambda,whichMode) = result
+                case (2) ! Heat Flux
+                  dTotalHeatFluxdLambda(whichLambda,whichMode) = result
+                case (3) ! Bootstrap
+                  dBootstrapdLambda(whichLambda,whichMode) = result
+              end select
+            else
+              select case (whichAdjointRHS)
+                case (1) ! Particle flux
+                  dParticleFluxdLambda(whichSpecies,whichLambda,whichMode) = result
+                case (2) ! Heat Flux
+                  dHeatFluxdLambda(whichSpecies,whichLambda,whichMode) = result
+              end select
+            end if
 
           end if
 

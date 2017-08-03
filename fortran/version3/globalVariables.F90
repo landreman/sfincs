@@ -379,7 +379,9 @@ module globalVariables
   ! ********************************************************
 
   integer, dimension(:), allocatable :: ns, ms
-  integer :: nMaxAdjoint, mMaxAdjoint, numModesAdjoint
+  integer :: nMaxAdjoint, mMaxAdjoint, NModesAdjoint, NLambdas
+  PetscScalar, dimension(:,:), allocatable :: dRadialCurrentdLambda,dTotalHeatFluxdLambda,dBootstrapdLambda
+  PetscScalar, dimension(:,:,:), allocatable :: dParticleFluxdLambda, dHeatFluxdLambda
 
   ! ********************************************************
   !

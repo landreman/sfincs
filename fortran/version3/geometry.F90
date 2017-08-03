@@ -47,6 +47,7 @@ contains
     character(len=200) :: lineOfFile
     integer, dimension(4) :: headerIntegers
     PetscScalar, dimension(3) :: headerReals
+    integer :: im, jn, imn
 
     select case (geometryScheme)
     case (1)
@@ -204,11 +205,27 @@ contains
 
     if (RHSMode>3) then
       ! m = 0 : n goes from 0 to nMaxAdjoint
-      numModesAdjoint = (nMaxAdjoint+1)
+      NModesAdjoint = (nMaxAdjoint+1)
       ! m > 0 : n goes from -nMaxAdjoint to nMaxAdjoint
-      numModesAdjoint = numModesAdjoint + (mMaxAdjoint)*(nMaxAdjoint*2 + 1)
-      allocate(ns(numModesAdjoint))
-      allocate(ms(numModesAdjoint))
+      NModesAdjoint = NModesAdjoint + (mMaxAdjoint)*(nMaxAdjoint*2 + 1)
+      allocate(ns(NModesAdjoint))
+      allocate(ms(NModesAdjoint))
+
+      ! Now initialize ms and ns, starting with m = 0
+      imn = 1
+      do jn=0,nMaxAdjoint
+        ms(imn) = 0
+        ns(imn) = jn
+        imn = imn+1
+      end do
+      ! Now m>0 modes
+      do im = 1,mMaxAdjoint
+        do jn=-nMaxAdjoint, nMaxAdjoint
+          ms(imn) = im
+          ns(imn) = jn
+          imn = imn+1
+        end do
+      end do
     end if
 
   end subroutine initializeGeometry
