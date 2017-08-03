@@ -122,7 +122,7 @@ module adjointDiagnostics
       integer :: whichAdjointRHS, whichSpecies
       Vec :: adjointSolutionOnProc0, adjointResidualOnProc0
       PetscScalar, pointer :: adjointResidualArray(:), adjointSolutionArray(:)
-      integer :: numAdjointModes, whichLambda, whichMode
+      integer :: whichLambda, whichMode
       PetscScalar :: result
 
       if (masterProc) then
@@ -141,17 +141,11 @@ module adjointDiagnostics
         call VecGetArrayF90(adjointSolutionOnProc0, adjointSolutionArray, ierr)
       end if
 
-      ! m = 0 : n goes from 0 to nMaxAdjoint
-      ! n goes from -nMaxAdjoint to nMaxAdjoint
-      ! m goes from 0 to mMaxAdjoint
-      numAdjointModes = (nMaxAdjoint+1) ! m = 0
-      numAdjointModes = numAdjointModes + (mMaxAdjoint)*(nMaxAdjoint*2 + 1) ! m > 0
-
       ! Same inner product is formed regardless of whichAdjointMatrix and whichSpecies
       ! Loop over lambda's and perform inner product
       ! rethink this for Er
       do whichLambda=1,6
-        do whichMode=1,numAdjointModes
+        do whichMode=1,numModesAdjoint
 
           ! Call function to perform (dLdlambdaf - dSdlambda), which calls populatedMatrixdLambda and populatedRHSdLambda
           call evaluateAdjointResidual(forwardSolution,adjointResidual,whichLambda,whichMode)

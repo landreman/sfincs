@@ -34,6 +34,8 @@
     PetscLogDouble :: time1, time2
     double precision :: myMatInfo(MAT_INFO_SIZE)
     integer :: NNZ, NNZAllocated, NMallocs
+    PetscScalar :: dBHatdLambda, dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dBHat_sup_thetadLambda
+    PetscScalar :: dBHat_sup_zetadLambda, dBHatdthetadLambda, dBHatdzetadLambda, dDHatdLambda
 
     ! Sometimes PETSc complains if any of the diagonal elements are not set.
     ! Therefore, set the entire diagonal to 0 to be safe.
@@ -91,12 +93,15 @@
                 end if
                 stop
               case (1) ! BHat
+                ! Right now this uses VMEC convention
+                dBHatdLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
                 dThetaPartOfTermdLambda(itheta,:) = - BHat_sup_theta(itheta,izeta) &
-                  * sqrtTHat/sqrtMHat * ddtheta(itheta,:) * dBHatdFourier(itheta,izeta,whichMode) &
+                  * sqrtTHat/sqrtMHat * ddtheta(itheta,:) * dBHatdLambda &
                   / (BHat(itheta,izeta)*BHat(itheta,izeta))
               case (2) ! BHat_sup_theta
+                dBHat_sup_thetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
                 dThetaPartOfTermdLambda(itheta,:) = sqrtTHat/sqrtMHat * ddtheta(itheta,:) &
-                  * dBHat_sup_thetadFourier(itheta,izeta,whichMode) / BHat(itheta,izeta)
+                  * dBHat_sup_thetadLambda / BHat(itheta,izeta)
               case (3) ! BHat_sup_zeta
                 dThetaPartOfTermdLambda(itheta,:) = 0
               case (4) ! BHat_sub_theta
@@ -174,14 +179,16 @@
                 end if
                 stop
               case (1) ! BHat
+                dBHatdLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
                 dZetaPartOfTermdLambda(izeta,:) = - BHat_sup_zeta(itheta,izeta) &
-                  * sqrtTHat/sqrtMHat * ddzeta(izeta,:) * dBHatdFourier(itheta,izeta,whichMode) &
+                  * sqrtTHat/sqrtMHat * ddzeta(izeta,:) * dBHatdLambda &
                   / (BHat(itheta,izeta)*BHat(itheta,izeta))
               case (2) ! BHat_sup_theta
                 dZetaPartOfTermdLambda(izeta,:) = 0
               case (3) ! BHat_sup_zeta
+                dBHat_sup_zetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
                 dZetaPartOfTermdLambda(izeta,:) = sqrtTHat/sqrtMHat * ddzeta(izeta,:) &
-                  * dBHat_sup_zetadFourier(itheta,izeta,whichMode)/ BHat(itheta,izeta)
+                  * dBHat_sup_zetadLambda / BHat(itheta,izeta)
               case (4) ! BHat_sub_theta
                 dZetaPartOfTermdLambda(izeta,:) = 0
               case (5) ! BHat_sub_zeta
@@ -265,8 +272,9 @@
                 end if
                 stop
               case (1) ! BHat
+                dBHatdLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
                 dThetaPartOfTermdLambda(itheta,:) = - 2 * ddthetaToUse(itheta,:) &
-                  * dBHatdFourier(itheta,izeta,whichMode) / (BHat(itheta,izeta) ** 3) &
+                  * dBHatdLambda / (BHat(itheta,izeta) ** 3) &
                   * DHat(itheta,izeta) * BHat_sub_zeta(itheta,izeta)
               case (2) ! BHat_sup_theta
                 dThetaPartOfTermdLambda(itheta,:) = 0
@@ -275,11 +283,13 @@
               case (4) ! BHat_sub_theta
                 dThetaPartOfTermdLambda(itheta,:) = 0
               case (5) ! BHat_sub_zeta
+                dBHat_sup_zetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
                 dThetaPartOfTermdLambda(itheta,:) = ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2) &
-                  * DHat(itheta,izeta) * dBHat_sub_zetadFourier(itheta,izeta,whichMode)
+                  * DHat(itheta,izeta) * dBHat_sup_zetadLambda
               case (6) ! DHat
+                dDHatdLambda = -DHat(itheta,izeta)*DHat(itheta,izeta)*cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
                 dThetaPartOfTermdLambda(itheta,:) = ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2) &
-                  * dDHatdFourier(itheta,izeta,whichMode) * BHat_sub_zeta(itheta,izeta)
+                  * dDHatdLambda * BHat_sub_zeta(itheta,izeta)
             end select
 
            end do
@@ -341,21 +351,24 @@
                 end if
                 stop
               case (1) ! BHat
+                dBHatdLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode))
                 dZetaPartOfTermdLambda(izeta,:) = -2 * ddzetaToUse(izeta,:) &
-                * dBHatdFourier(itheta,izeta,whichMode) / (BHat(itheta,izeta) ** 3) &
+                * dBHatdLambda / (BHat(itheta,izeta) ** 3) &
                 * DHat(itheta,izeta) * BHat_sub_theta(itheta,izeta)
               case (2) ! BHat_sup_theta
                 dZetaPartOfTermdLambda(izeta,:) = 0
               case (3) ! BHat_sup_zeta
                 dZetaPartOfTermdLambda(izeta,:) = 0
               case (4) ! BHat_sub_theta
+                dBHat_sub_thetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
                 dZetaPartOfTermdLambda(izeta,:) = ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2) &
-                  * DHat(itheta,izeta) * dBHat_sub_thetadFourier(itheta,izeta,whichMode)
+                  * DHat(itheta,izeta) * dBHat_sub_thetadLambda
               case (5) ! BHat_sub_zeta
                 dZetaPartOfTermdLambda(izeta,:) = 0
               case (6) ! DHat
+                dDHatdLambda = -DHat(itheta,izeta)*DHat(itheta,izeta)*cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
                 dZetaPartOfTermdLambda(izeta,:) = ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2) &
-                  * dDHatdFourier(itheta,izeta,whichMode) * BHat_sub_theta(itheta,izeta)
+                  * dDHatdLambda * BHat_sub_theta(itheta,izeta)
             end select
 
            end do
@@ -399,23 +412,28 @@
                 end if
                 stop
               case (1) ! BHat
+                dBHatdLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+                dBHatdthetadLambda = -ms(whichMode)*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+                dBHatdzetadLambda = ns(whichMode)*Nperiods*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
                 ! Term from 1/(BHat**2)
                 dFactordLambda = sqrtTHat/(sqrtMHat*(BHat(itheta,izeta)**3)) &
-                  * dBHatdFourier(itheta,izeta,whichMode) &
+                  * dBHatdLambda &
                   * (BHat_sup_theta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
                   + BHat_sup_zeta(itheta,izeta) * dBHatdzeta(itheta,izeta)) &
                   ! Term from dBHatdtheta
                   -sqrtTHat/(2*sqrtMHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
-                  * BHat_sup_theta(itheta,izeta)*dBhatdthetadFourier(itheta,izeta,whichMode) &
+                  * BHat_sup_theta(itheta,izeta)*dBhatdthetadLambda &
                   ! Term from dBHatdzeta 
                   -sqrtTHat/(2*sqrtMHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
-                  * BHat_sup_zeta(itheta,izeta)*dBhatdzetadFourier(itheta,izeta,whichMode)
+                  * BHat_sup_zeta(itheta,izeta)*dBhatdzetadLambda
               case (2) ! BHat_sup_theta
+                dBHat_sup_thetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
                 dFactordLambda = -sqrtTHat/(2*sqrtMHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
-                  * (dBHat_sup_thetadFourier(itheta,izeta,whichMode)*dBHatdtheta(itheta,izeta))
+                  * (dBHat_sup_thetadLambda*dBHatdtheta(itheta,izeta))
               case (3) ! BHat_sup_zeta
+                dBHat_sup_zetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
                 dFactordLambda = -sqrtTHat/(2*sqrtMHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
-                  * (dBHat_sup_zetadFourier(itheta,izeta,whichMode)*dBHatdzeta(itheta,izeta))
+                  * (dBHat_sup_zetadLambda*dBHatdzeta(itheta,izeta))
               case (4) ! BHat_sub_theta
                 dFactordLambda = 0
               case (5) ! BHat_sub_zeta
@@ -469,12 +487,15 @@
                   end if
                   stop
                 case (1) ! BHat
-                  dTempdLambda = BHat_sub_zeta(itheta,izeta) * dBHatdthetadFourier(itheta,izeta,whichMode) &
-                    - BHat_sub_theta(itheta,izeta) * dBHatdzetadFourier(itheta,izeta,whichMode)
+                  dBHatdthetadLambda = -ms(whichMode)*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+                  dBHatdzetadLambda = ns(whichMode)*Nperiods*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+                  dBHatdLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+                  dTempdLambda = BHat_sub_zeta(itheta,izeta) * dBHatdthetadLambda &
+                    - BHat_sub_theta(itheta,izeta) * dBHatdzetadLambda
                   dFactordLambda = &
                     ! Term from 1/(BHat**3)
                     -3*alpha*Delta*dPhiHatdpsiHat/(4*(BHat(itheta,izeta)**4)) &
-                    * DHat(itheta,izeta) * temp * dBHatdFourier(itheta,izeta,whichMode) &
+                    * DHat(itheta,izeta) * temp * dBHatdLambda &
                     ! Term from dBHatdtheta and dBHatdzeta
                     + alpha*Delta*dPhiHatdpsiHat/(4*(BHat(itheta,izeta)**3)) &
                     * DHat(itheta,izeta) * dTempdLambda
@@ -483,16 +504,19 @@
                 case (3) ! BHat_sup_zeta
                   dFactordLambda = 0
                 case (4) ! BHat_sub_theta
-                  dTempdLambda = - dBHat_sub_thetadFourier(itheta,izeta,whichMode) * dBHatdzeta(itheta,izeta)
+                  dBHat_sup_thetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+                  dTempdLambda = - dBHat_sub_thetadLambda * dBHatdzeta(itheta,izeta)
                   dFactordLambda = alpha*Delta*dPhiHatdpsiHat/(4*(BHat(itheta,izeta)**3)) &
                     * DHat(itheta,izeta) * dTempdLambda
                 case (5) ! BHat_sub_zeta
-                  dTempdLambda = dBHat_sub_zetadFourier(itheta,izeta,whichMode) * dBHatdtheta(itheta,izeta)
+                  dBHat_sup_zetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+                  dTempdLambda = dBHat_sub_zetadLambda * dBHatdtheta(itheta,izeta)
                   dFactordLambda = alpha*Delta*dPhiHatdpsiHat/(4*(BHat(itheta,izeta)**3)) &
                     * DHat(itheta,izeta) * dTempdLambda
                 case (6) ! DHat
+                  dDHatdLambda = -DHat(itheta,izeta)*DHat(itheta,izeta)*cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
                   dFactordLambda = alpha*Delta*dPhiHatdpsiHat/(4*(BHat(itheta,izeta)**3)) &
-                  * dDHatdFourier(itheta,izeta,whichMode) * temp
+                  * dDHatdLambda * temp
               end select
 
                 do ix=ixMin,Nx
@@ -572,30 +596,36 @@
                   end if
                   stop
                 case (1) ! BHat
+                  dBHatdLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+                  dBHatdzetadLambda = ns(whichMode)*Nperiods*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+                  dBHatdthetadLambda = -ms(whichMode)*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
                   dXDotFactordLambda = &
                     ! Term from 1/(BHat**3)
-                    -3*factor*DHat(itheta,izeta)*dBHatdFourier(itheta,izeta,whichMode) &
+                    -3*factor*DHat(itheta,izeta)*dBHatdLambda &
                     /(BHat(itheta,izeta)**4) &
                     * (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) &
                     - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta)) &
                     ! Term from dBHatdzeta
                     + factor*DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
-                    * BHat_sub_theta(itheta,izeta)*dBHatdzetadFourier(itheta,izeta,whichMode) &
+                    * BHat_sub_theta(itheta,izeta)*dBHatdzetadLambda &
                     ! Term from dBHatdtheta
                     - factor*Dhat(itheta,izeta)/(BHat(itheta,izeta)**3) &
-                    * Bhat_sub_zeta(itheta,izeta)*dBHatdthetadFourier(itheta,izeta,whichMode)
+                    * Bhat_sub_zeta(itheta,izeta)*dBHatdthetadLambda
                 case (2) ! BHat_sup_theta
                   dXDotFactordLambda = 0
                 case (3) ! BHat_sup_zeta
                   dXDotFactordLambda = 0
                 case (4) ! BHat_sub_theta
+                  dBHat_sub_thetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
                   dXDotFactordLambda = factor*DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
-                    * dBHat_sub_thetadFourier(itheta,izeta,whichMode)*dBHatdzeta(itheta,izeta)
+                    * dBHat_sub_thetadLambda*dBHatdzeta(itheta,izeta)
                 case (5) ! BHat_sub_zeta
+                  dBHat_sub_zetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
                   dXDotFactordLambda = -factor*DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
-                    * dBHat_sub_zetadFourier(itheta,izeta,whichMode)*dBHatdtheta(itheta,izeta)
+                    * dBHat_sub_zetadLambda*dBHatdtheta(itheta,izeta)
                 case (6) ! DHat
-                  dXDotFactordLambda = factor*dDHatdFourier(itheta,izeta,whichMode)/(BHat(itheta,izeta)**3) &
+                  dDHatdLambda = -DHat(itheta,izeta)*DHat(itheta,izeta)*cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+                  dXDotFactordLambda = factor*dDHatdLambda/(BHat(itheta,izeta)**3) &
                     *(BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) &
                     - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))
               end select
@@ -669,8 +699,9 @@
             !factor = thetaWeights(itheta)*zetaWeights(izeta)/DHat(itheta,izeta)
             dFactordLambda = 0
             if (whichLambda == 5) then
+              dDHatdLambda = - DHat(itheta,izeta)*DHat(itheta,izeta)*cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
               dFactordLambda = -thetaWeights(itheta)*zetaWeights(izeta) &
-                *dDHatdFourier(itheta,izeta,whichMode)/(DHat(itheta,izeta)**2)
+                *dDHatdLambda/(DHat(itheta,izeta)**2)
             end if
 
             do ix=1,Nx

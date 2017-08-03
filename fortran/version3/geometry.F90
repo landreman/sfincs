@@ -202,6 +202,15 @@ contains
        stop
     end select
 
+    if (RHSMode>3) then
+      ! m = 0 : n goes from 0 to nMaxAdjoint
+      numModesAdjoint = (nMaxAdjoint+1)
+      ! m > 0 : n goes from -nMaxAdjoint to nMaxAdjoint
+      numModesAdjoint = numModesAdjoint + (mMaxAdjoint)*(nMaxAdjoint*2 + 1)
+      allocate(ns(numModesAdjoint))
+      allocate(ms(numModesAdjoint))
+    end if
+
   end subroutine initializeGeometry
 
   ! -----------------------------------------------------------------------------------
@@ -2655,49 +2664,6 @@ contains
 
     ! Convert Jacobian to inverse Jacobian:
     DHat = one / DHat
-
-    if (RHSMode>3) then
-
-      ! maybe put in dMatrixdLambda or dRHSdLambda
-      allocate(dBHatdFourier(Ntheta,Nzeta,numSymmetricModesIncluded))
-      allocate(dBHatdthetadFourier(Ntheta,Nzeta,numSymmetricModesIncluded))
-      allocate(dBHatdzetadFourier(Ntheta,Nzeta,numSymmetricModesIncluded))
-      allocate(dBHat_sub_thetadFourier(Ntheta,Nzeta,numSymmetricModesIncluded))
-      allocate(dBHat_sub_zetadFourier(Ntheta,Nzeta,numSymmetricModesIncluded))
-      allocate(dBHat_sup_thetadFourier(Ntheta,Nzeta,numSymmetricModesIncluded))
-      allocate(dBHat_sup_zetadFourier(Ntheta,Nzeta,numSymmetricModesIncluded))
-      allocate(dDHatdFourier(Ntheta,Nzeta,numSymmetricModesIncluded))
-      allocate(ns(numSymmetricModesIncluded))
-      allocate(ms(numSymmetricModesIncluded))
-
-      imn = 1
-      do n = -vmec%ntor, vmec%ntor
-        do m = 0, vmec%mpol-1
-          b = vmec%bmnc(n,m,vmecRadialIndex_half(1)) * vmecRadialWeight_half(1) &
-            + vmec%bmnc(n,m,vmecRadialIndex_half(2)) * vmecRadialWeight_half(2)
-          if (abs(b/b00) >= min_Bmn_to_load) then
-
-            do itheta = 1, Ntheta
-              do izeta = 1, Nzeta
-                angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-                cos_angle = cos(angle)
-                sin_angle = sin(angle)
-                dBHatdFourier(itheta,izeta,imn) = cos_angle
-                dBHat_sub_thetadFourier(itheta,izeta,imn) = cos_angle
-                dBHat_sub_zetadFourier(itheta,izeta,imn) = cos_angle
-                dBHat_sup_thetadFourier(itheta,izeta,imn) = cos_angle
-                dBHat_sup_zetadFourier(itheta,izeta,imn) = cos_angle
-                dBHatdthetadFourier(itheta,izeta,imn) = - m*sin_angle
-                dBHatdzetadFourier(itheta,izeta,imn) = n*sin_angle
-                dDHatdFourier(itheta,izeta,imn) = - DHat(itheta,izeta)*DHat(itheta,izeta)*cos_angle
-              enddo
-            enddo
-            imn = imn + 1
-
-          endif
-        enddo
-      enddo
-    endif
 
     do izeta = 1,Nzeta
        cos_angle = cos(zeta(izeta))

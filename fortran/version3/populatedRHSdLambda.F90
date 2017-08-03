@@ -26,6 +26,8 @@
     integer :: ixMin
     PetscScalar :: THat, mHat, sqrtTHat, sqrtmHat, xPartOfRHS, dFactordLambda
     PetscErrorCode :: ierr
+    PetscScalar :: dBHatdLambda, dBHatdthetadLambda, dBHatdzetadLambda, dDHatdLambda
+    PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda
 
     call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, dRHSdLambda, ierr)
 
@@ -47,6 +49,12 @@
           + alpha*Zs(ispecies)/THats(ispecies)*dPhiHatdpsiHat &
           + (x2(ix) - three/two)*dTHatdpsiHats(ispecies)/THats(ispecies))
 
+!       factor = Delta*nHats(ispecies)*mHat*sqrtMHat &
+!            /(2*pi*sqrtpi*Zs(ispecies)*(BHat(itheta,izeta)**3)*sqrtTHat) &
+!            *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
+!            - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
+!            * DHat(itheta,izeta) * xPartOfRHS
+
         do itheta = ithetaMin,ithetaMax
           do izeta = izetaMin,izetaMax
             select case(whichLambda)
@@ -56,44 +64,49 @@
                 end if
                 stop
               case (1) ! BHat
-                ! dBHatdBmn = cos(m*theta - n N_p zeta)
+                dBHatdLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+                dBHatdthetadLambda = -ms(whichMode)*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+                dBHatdzetadLambda = ns(whichMode)*Nperiods*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
                 dFactordLambda = &
                   ! Term from BHat**(-3)
                   -3*Delta*nHats(ispecies)*mHat*sqrtMHat &
                   /(2*pi*sqrtpi*Zs(ispecies)*(BHat(itheta,izeta)**4)*sqrtTHat) &
                   *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
                   - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
-                  * DHat(itheta,izeta) * xPartOfRHS * dBHatdFourier(itheta,izeta,whichMode) &
+                  * DHat(itheta,izeta) * xPartOfRHS * dBHatdLambda &
                   ! Term from dBHatdtheta
                   + Delta*nHats(ispecies)*mHat*sqrtMHat &
                   /(2*pi*sqrtpi*Zs(ispecies)*(BHat(itheta,izeta)**4)*sqrtTHat) &
                   *BHat_sub_zeta(itheta,izeta)* DHat(itheta,izeta) * xPartOfRHS &
-                  * dBHatdthetadFourier(itheta,izeta,whichMode) &
+                  * dBHatdthetadLambda &
                   ! Term from dBHatdzeta
                   - Delta*nHats(ispecies)*mHat*sqrtMHat &
                   /(2*pi*sqrtpi*Zs(ispecies)*(BHat(itheta,izeta)**4)*sqrtTHat) &
                   *BHat_sub_theta(itheta,izeta)* DHat(itheta,izeta) * xPartOfRHS &
-                  * dBHatdzetadFourier(itheta,izeta,whichMode)
+                  * dBHatdzetadLambda
               case (2) ! BHat_sup_theta
                 dFactordLambda = 0
               case (3) ! BHat_sup_zeta
                 dFactordLambda = 0
               case (4) ! BHat_sub_theta
+                dBHat_sub_thetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
                 dFactordLambda = -Delta*nHats(ispecies)*mHat*sqrtMHat &
                   /(2*pi*sqrtpi*Zs(ispecies)*(BHat(itheta,izeta)**3)*sqrtTHat) &
-                  * dBHatdzeta(itheta,izeta)*dBHat_sub_thetadFourier(itheta,izeta,whichMode) &
+                  * dBHatdzeta(itheta,izeta)*dBHat_sub_thetadLambda &
                   * DHat(itheta,izeta)*xPartOfRHS
-              case (5) ! BHat_sup_zeta
+              case (5) ! BHat_sub_zeta
+                dBHat_sub_zetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
                 dFactordLambda = Delta*nHats(ispecies)*mHat*sqrtMHat &
                   /(2*pi*sqrtpi*Zs(ispecies)*(BHat(itheta,izeta)**3)*sqrtTHat) &
-                  * dBHatdtheta(itheta,izeta)*dBHat_sub_zetadFourier(itheta,izeta,whichMode) &
+                  * dBHatdtheta(itheta,izeta)*dBHat_sub_zetadLambda &
                   * DHat(itheta,izeta)*xPartOfRHS
               case (6) ! DHat
+                dDHatdLambda = - DHat(itheta,izeta)*DHat(itheta,izeta)*cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
                 dFactordLambda = Delta*nHats(ispecies)*mHat*sqrtMHat &
                   /(2*pi*sqrtpi*Zs(ispecies)*(BHat(itheta,izeta)**3)*sqrtTHat) &
                   *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
                   - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta)) &
-                  * dDHatdFourier(itheta,izeta,whichMode) * xPartOfRHS
+                  * dDHatdLambda * xPartOfRHS
             end select
 
             L = 0
@@ -109,7 +122,7 @@
       enddo
     enddo
 
-!    call VecAssemblyBegin(dRHSdLambda, ierr)
-!    call VecAssemblyEnd(dRHSdLambda, ierr)
+    call VecAssemblyBegin(dRHSdLambda, ierr)
+    call VecAssemblyEnd(dRHSdLambda, ierr)
 
   end subroutine populatedRHSdLambda

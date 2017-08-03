@@ -378,11 +378,8 @@ module globalVariables
   !
   ! ********************************************************
 
-  PetscScalar, dimension(:,:,:), allocatable :: dBHatdFourier, dBHatdthetadFourier, &
-    dBHatdzetadFourier, dBHat_sub_thetadFourier, dBHat_sub_zetadFourier, &
-    dBHat_sup_thetadFourier, dBHat_sup_zetadFourier, dDHatdFourier
   integer, dimension(:), allocatable :: ns, ms
-  integer :: nMaxAdjoint, mMaxAdjoint
+  integer :: nMaxAdjoint, mMaxAdjoint, numModesAdjoint
 
   ! ********************************************************
   !
