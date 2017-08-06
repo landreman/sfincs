@@ -558,8 +558,7 @@
 
                    pressureAnisotropy(ispecies,itheta,izeta) = pressureAnisotropy(ispecies,itheta,izeta) &
                         + pressureFactor*(-three/5)* &
-			xWeights(ix)*pressureIntegralWeights(ix)*solutionWithDeltaFArray(index)
-
+                        xWeights(ix)*pressureIntegralWeights(ix)*solutionWithDeltaFArray(index)
                    particleFlux_vm_psiHat_vs_x(ispecies,ix) &
                         = particleFlux_vm_psiHat_vs_x(ispecies,ix) &
                         + (factor+factor2) * (four/15) * particleFluxFactor_vm &

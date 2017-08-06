@@ -52,7 +52,6 @@ module adjointDiagnostics
 
       implicit none
 
-      !PetscScalar, pointer :: deltaF(:), deltaG(:)
       PetscScalar, dimension(:) :: deltaF, deltaG
       PetscScalar :: result
       PetscScalar :: innerProductFactor
@@ -91,7 +90,7 @@ module adjointDiagnostics
                 index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
                 ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
 
-                result = result + thetazetaIntegralFactor(itheta,izeta)*xIntegralFactor(ix)*((2*L+1)/2) &
+                result = result + thetazetaIntegralFactor(itheta,izeta)*xIntegralFactor(ix)*(2/(2*L+1)) &
                       *deltaF(index)*deltaG(index)/VPrimeHat
 
               end do
@@ -106,6 +105,287 @@ module adjointDiagnostics
 
     end subroutine
 
+    ! This subroutine evaluates the term in the sensitivity derivative of the fluxes 
+    ! which arise due to the sensitivity of the inner product and the integrating factor,
+    ! not f1 itself, hence this is not called with the adjoint variable
+    subroutine heatFluxSensitivityInnerProduct(result, deltaF, whichSpecies, whichLambda, whichMode)
+
+    use globalVariables
+    use indices
+
+    implicit none
+
+    PetscScalar :: result
+    PetscScalar, dimension(:) :: deltaF
+    integer :: whichSpecies, whichLambda, whichMode, minSpecies, maxSpecies, itheta, izeta, L, ix, index, ispecies
+    PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, dBHatdThetadLambda, dBHatdZetadLambda
+    PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dinvDHatdLambda, factor
+    PetscScalar, dimension(:), allocatable :: xIntegralFactor
+    PetscScalar :: dBHatdLambda, dVPrimeHatdLambda
+
+    result = 0
+
+    allocate(xIntegralFactor(Nx))
+
+    if (whichSpecies == 0) then
+      minSpecies = 0
+      maxSpecies = NSpecies
+    else
+      minSpecies = whichSpecies
+      maxSpecies = whichSpecies
+    end if
+
+    do ispecies = minSpecies,maxSpecies
+      THat = THats(ispecies)
+      mHat = mHats(ispecies)
+      sqrtTHat = sqrt(THats(ispecies))
+      sqrtmHat = sqrt(mHats(ispecies))
+
+      ! This is everything independent of geometry
+      xIntegralFactor = x*x*x*x*x*x*pi*THat*THat*THat*sqrtTHat*Delta/(2*mHat*sqrtmHat*Zs(ispecies))
+
+      do itheta=1,Ntheta
+        do izeta=1,Nzeta
+
+          select case (whichLambda)
+            case (0) ! Er
+              if (masterProc) then
+                print *,"Error! Er sensitivity not yet implemented."
+              end if
+              stop
+            case (1) ! BHat
+              dBHatdThetadLambda = -ms(whichMode)*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+              dBHatdZetadLambda = ns(whichMode)*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+              dBHatdLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+              factor = (BHat_sub_theta(itheta,izeta)*dBHatdZetadLambda - BHat_sub_zeta(itheta,izeta)*dBHatdThetadLambda)/(VPrimeHat*BHat(itheta,izeta)**3) - 3*(BHat_sub_theta(itheta,izeta)*dBHatdZeta(itheta,izeta) - &
+                BHat_sub_zeta(itheta,izeta)*dBHatdTheta(itheta,izeta))*dBHatdLambda/(BHat(itheta,izeta)**4)
+            case (2) ! BHat_sup_theta
+              factor = 0
+            case (3) ! BHat_sup_zeta
+              factor = 0
+            case (4) ! BHat_sub_theta
+              dBHat_sub_thetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+              factor = dBHatdzeta(itheta,izeta)*dBHat_sub_thetadLambda/(VPrimeHat*BHat(itheta,izeta)**3)
+            case (5) ! BHat_sub_zeta
+              dBHat_sub_zetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+              factor = -dBHatdtheta(itheta,izeta)*dBHat_sub_zetadLambda/(VPrimeHat*BHat(itheta,izeta)**3)
+            case (6) ! DHat
+              if (ns(whichMode)==0 .and. ns(whichMode)==0) then
+                dVPrimeHatdLambda = 4*pi*pi
+                factor = - (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda/ &
+                  (VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
+              end if
+          end select
+
+          do ix=1,Nx
+
+              L = 0
+              index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+              ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
+              result = result + &
+                (8/3)*factor*xWeights(ix)*deltaF(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)*ddrN2ddpsiHat
+
+              L = 2
+              index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+              ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
+              result = result + &
+                (4/15)*factor*xWeights(ix)*deltaF(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)*ddrN2ddpsiHat
+
+            end do
+          end do
+        end do
+      end do
+
+    end subroutine
+
+    ! This subroutine evaluates the term in the sensitivity derivative of the fluxes 
+    ! which arise due to the sensitivity of the inner product and the integrating factor,
+    ! not f1 itself, hence this is not called with the adjoint variable
+    subroutine particleFluxSensitivityInnerProduct(result, deltaF, whichSpecies, whichLambda, whichMode)
+
+    use globalVariables
+    use indices
+
+    implicit none
+
+    PetscScalar :: result
+    PetscScalar, dimension(:) :: deltaF
+    integer :: whichSpecies, whichLambda, whichMode, minSpecies, maxSpecies, itheta, izeta, L, ix, index, ispecies
+    PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, dBHatdThetadLambda, dBHatdZetadLambda
+    PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dinvDHatdLambda, factor, dRootFSAB2dLambda
+    PetscScalar, dimension(:), allocatable :: xIntegralFactor
+    PetscScalar :: dBHatdLambda, dVPrimeHatdLambda
+
+    result = 0
+
+    allocate(xIntegralFactor(Nx))
+
+    if (whichSpecies == 0) then
+      minSpecies = 0
+      maxSpecies = NSpecies
+    else
+      minSpecies = whichSpecies
+      maxSpecies = whichSpecies
+    end if
+
+    do ispecies = minSpecies,maxSpecies
+      THat = THats(ispecies)
+      mHat = mHats(ispecies)
+      sqrtTHat = sqrt(THats(ispecies))
+      sqrtmHat = sqrt(mHats(ispecies))
+
+      xIntegralFactor = x*x*x*x*THat*THat*sqrtTHat*pi*Delta/(mHat*sqrtmHat*Zs(ispecies))
+
+      do itheta=1,Ntheta
+        do izeta=1,Nzeta
+
+          select case (whichLambda)
+            case (0) ! Er
+              if (masterProc) then
+                print *,"Error! Er sensitivity not yet implemented."
+              end if
+              stop
+            case (1) ! BHat
+              dBHatdThetadLambda = -ms(whichMode)*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+              dBHatdZetadLambda = ns(whichMode)*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+              dBHatdLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+              factor = (BHat_sub_theta(itheta,izeta)*dBHatdZetadLambda - BHat_sub_zeta(itheta,izeta)*dBHatdThetadLambda)/(VPrimeHat*BHat(itheta,izeta)**3) - 3*(BHat_sub_theta(itheta,izeta)*dBHatdZeta(itheta,izeta) &
+                - BHat_sub_zeta(itheta,izeta)*dBHatdTheta(itheta,izeta))*dBHatdLambda/(VPrimeHat*BHat(itheta,izeta)**3)
+            case (2) ! BHat_sup_theta
+              factor = 0
+            case (3) ! BHat_sup_zeta
+              factor = 0
+            case (4) ! BHat_sub_theta
+              dBHat_sub_thetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+              factor = dBHatdzeta(itheta,izeta)*dBHat_sub_thetadLambda/(VPrimeHat*BHat(itheta,izeta)**3)
+            case (5) ! BHat_sub_zeta
+              dBHat_sub_zetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+              factor = -dBHatdtheta(itheta,izeta)*dBHat_sub_zetadLambda/(VPrimeHat*BHat(itheta,izeta)**3)
+            case (6) ! DHat
+              if (ms(whichMode)==0 .and. ns(whichMode)== 0) then
+                dVPrimeHatdLambda = 4*pi*pi
+                factor = - (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda &
+                    /(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
+              end if
+          end select
+
+          ! Summed quantity is weighted by charge
+          if (whichSpecies == 0) then
+            factor = factor*Zs(ispecies)
+          end if
+
+          do ix=1,Nx
+
+              L = 0
+              index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+              ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
+              result = result + &
+                (8/3)*factor*xWeights(ix)*deltaF(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)*ddrN2ddpsiHat
+
+              L = 2
+              index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+              ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
+              result = result + &
+                (4/15)*factor*xWeights(ix)*deltaF(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)*ddrN2ddpsiHat
+
+            end do
+          end do
+        end do
+      end do
+    end subroutine
+
+    ! This subroutine evaluates the term in the sensitivity derivative of the fluxes 
+    ! which arise due to the sensitivity of the inner product and the integrating factor,
+    ! not f1 itself, hence this is not called with the adjoint variable
+    subroutine bootstrapSensitivityInnerProduct(result, deltaF, whichSpecies, whichLambda, whichMode)
+
+    use globalVariables
+    use indices
+
+    implicit none
+
+    PetscScalar :: result
+    PetscScalar, dimension(:) :: deltaF
+    integer :: whichSpecies, whichLambda, whichMode, minSpecies, maxSpecies, itheta, izeta, L, ix, index, ispecies
+    PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, dBHatdThetadLambda, dBHatdZetadLambda
+    PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dinvDHatdLambda, factor, dVPrimeHatdLambda
+    PetscScalar, dimension(:), allocatable :: xIntegralFactor
+    PetscScalar :: dBHatdLambda, dRootFSAB2dLambda, nHat, rootFSAB2
+
+    rootFSAB2 = sqrt(FSABHat2)
+
+    result = 0
+
+   if (whichLambda==1) then
+      do itheta=1,Ntheta
+        do izeta=1,Nzeta
+          dRootFSAB2dLambda = dRootFSAB2dLambda + (thetaWeights(itheta)*zetaWeights(izeta)*BHat(itheta,izeta)*cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta)))/(DHat(itheta,izeta)*VPrimeHat*RootFSAB2)
+        end do
+      end do
+    end if
+
+    if (whichLambda==6) then
+      do itheta=1,Ntheta
+        do izeta=1,Nzeta
+          dRootFSAB2dLambda = dRootFSAB2dLambda + 0.5*thetaWeights(itheta)*zetaWeights(izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)*cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))/(VPrimeHat*RootFSAB2)
+        end do
+      end do
+    end if
+
+    allocate(xIntegralFactor(Nx))
+
+    do ispecies = 0,Nspecies
+      THat = THats(ispecies)
+      mHat = mHats(ispecies)
+      sqrtTHat = sqrt(THats(ispecies))
+      sqrtmHat = sqrt(mHats(ispecies))
+      nHat = nHats(ispecies)
+
+      xIntegralFactor = x*x*x*THat*THat*2*pi*Zs(ispecies)/(mHat*mHat*nHat)
+
+      do itheta=1,Ntheta
+        do izeta=1,Nzeta
+
+          select case (whichLambda)
+            case (0) ! Er
+              if (masterProc) then
+                print *,"Error! Er sensitivity not yet implemented."
+              end if
+              stop
+            case (1) ! BHat
+              dBHatdLambda = cos(ms(whichMode)*theta(itheta)- ns(whichMode)*Nperiods*zeta(izeta))
+              factor = dBHatdLambda/(DHat(itheta,izeta)*VPrimeHat*rootFSAB2) - 0.5*BHat(itheta,izeta)*dRootFSAB2dLambda/(DHat(itheta,izeta)*rootFSAB2*FSABHat2*VPrimeHat)
+            case (2) ! BHat_sup_theta
+              factor = 0
+            case (3) ! BHat_sup_zeta
+              factor = 0
+            case (4) ! BHat_sub_theta
+              factor = 0
+            case (5) ! BHat_sub_zeta
+              factor = 0
+            case (6) ! DHat
+              dinvDHatdLambda = cos(ms(whichMode)*theta(itheta)- ns(whichMode)*Nperiods*zeta(izeta))
+              factor = BHat(itheta,izeta)*dinvDHatdLambda/(VPrimeHat*RootFSAB2) &
+                - BHat(itheta,izeta)*dRootFSAB2dLambda/(DHat(itheta,izeta)*VPrimeHat*FSABHat2)
+              if (ms(whichMode)==0 .and. ns(whichMode)==0) then
+                dVPrimeHatdLambda = (4*pi*pi)
+                factor = factor - BHat(itheta,izeta)*dVPrimeHatdLambda/(VPrimeHat*VPrimeHat*RootFSAB2)
+              end if
+          end select
+
+          do ix=1,Nx
+
+              L = 1
+              index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+              ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
+              result = result + &
+                (4/3)*factor*xWeights(ix)*deltaF(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
+
+            end do
+          end do
+        end do
+      end do
+    end subroutine
 
     subroutine evaluateDiagnostics(forwardSolution, adjointSolution, whichAdjointRHS, whichSpecies)
 
@@ -117,15 +397,15 @@ module adjointDiagnostics
       implicit none
 
       PetscErrorCode :: ierr
-      Vec :: forwardSolution, adjointSolution, adjointResidual
+      Vec :: forwardSolution, adjointSolution, adjointResidual, adjointRHSVec
       VecScatter :: VecScatterContext
       integer :: whichAdjointRHS, whichSpecies
-      Vec :: adjointSolutionOnProc0, adjointResidualOnProc0
-      PetscScalar, pointer :: adjointResidualArray(:), adjointSolutionArray(:)
+      Vec :: adjointSolutionOnProc0, adjointResidualOnProc0, forwardSolutionOnProc0
+      PetscScalar, pointer :: adjointResidualArray(:), adjointSolutionArray(:), forwardSolutionArray(:)
       integer :: whichLambda, whichMode
-      PetscScalar :: result
+      PetscScalar :: innerProductResult, sensitivityResult
 
-      ! Allocate appropriate sensitivity array
+      ! Allocate appropriate sensitivity arrays and populateAdjointRHS for inner product
       if (whichSpecies == 0) then
         select case (whichAdjointRHS)
           case (1) ! Particle flux
@@ -152,12 +432,18 @@ module adjointDiagnostics
       call VecScatterCreateToZero(adjointSolution, VecScatterContext, adjointSolutionOnProc0, ierr)
       ! Create adjointResidualOnProc0 of same type
       call VecDuplicate(adjointSolutionOnProc0, adjointResidualOnProc0, ierr)
+      ! Create forwardSolution of same type
+      call VecDuplicate(adjointSolutionOnProc0, forwardSolutionOnProc0, ierr)
       ! Send the adjointSolution to the master process:
       call VecScatterBegin(VecScatterContext, adjointSolution, adjointSolutionOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
       call VecScatterEnd(VecScatterContext, adjointSolution, adjointSolutionOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
+      ! Send forwardSolution to master proc
+      call VecScatterBegin(VecScatterContext, forwardSolution, forwardSolutionOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
+      call VecScatterEnd(VecScatterContext, forwardSolution, forwardSolutionOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
       if (masterProc) then
         ! Convert the PETSc vector into a normal Fortran array
         call VecGetArrayF90(adjointSolutionOnProc0, adjointSolutionArray, ierr)
+        call VecGetARrayF90(forwardSolutionOnProc0, forwardSolutionArray, ierr)
       end if
 
       ! Same inner product is formed regardless of whichAdjointMatrix and whichSpecies
@@ -177,24 +463,29 @@ module adjointDiagnostics
             ! Convert the PETSc vector into a normal Fortran array
             call VecGetArrayF90(adjointResidualOnProc0, adjointResidualArray, ierr)
 
-            call innerProduct(adjointSolutionArray,adjointResidualArray,result)
+            call innerProduct(adjointSolutionArray,adjointResidualArray,innerProductResult)
 
             ! Save to appropriate sensitivity array
             if (whichSpecies == 0) then
               select case (whichAdjointRHS)
                 case (1) ! Particle flux
-                  dRadialCurrentdLambda(whichLambda,whichMode) = result
+                  call particleFluxSensitivityInnerProduct(sensitivityResult, forwardSolutionArray, whichSpecies, whichLambda, whichMode)
+                  dRadialCurrentdLambda(whichLambda,whichMode) = innerProductResult + sensitivityResult
                 case (2) ! Heat Flux
-                  dTotalHeatFluxdLambda(whichLambda,whichMode) = result
+                  call heatFluxSensitivityInnerProduct(sensitivityResult, forwardSolutionArray, whichSpecies, whichLambda, whichMode)
+                  dTotalHeatFluxdLambda(whichLambda,whichMode) = innerProductResult + sensitivityResult
                 case (3) ! Bootstrap
-                  dBootstrapdLambda(whichLambda,whichMode) = result
+                  call bootstrapSensitivityInnerProduct(sensitivityResult, forwardSolutionArray, whichSpecies, whichLambda, whichMode)
+                  dBootstrapdLambda(whichLambda,whichMode) = innerProductResult + sensitivityResult
               end select
             else
               select case (whichAdjointRHS)
                 case (1) ! Particle flux
-                  dParticleFluxdLambda(whichSpecies,whichLambda,whichMode) = result
+                  call particleFluxSensitivityInnerProduct(sensitivityResult, forwardSolutionArray, whichSpecies, whichLambda, whichMode)
+                  dParticleFluxdLambda(whichSpecies,whichLambda,whichMode) = innerProductResult
                 case (2) ! Heat Flux
-                  dHeatFluxdLambda(whichSpecies,whichLambda,whichMode) = result
+                  call heatFluxSensitivityInnerProduct(sensitivityResult, forwardSolutionArray, whichSpecies, whichLambda, whichMode)
+                  dHeatFluxdLambda(whichSpecies,whichLambda,whichMode) = innerProductResult
               end select
             end if
 

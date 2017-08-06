@@ -36,6 +36,8 @@ module writeHDF5Output
   integer(HSIZE_T), dimension(1) :: dimForExport_f_zeta
   integer(HSIZE_T), dimension(1) :: dimForExport_f_xi
   integer(HSIZE_T), dimension(1) :: dimForExport_f_x
+  integer(HSIZE_T), dimension(2) :: dimForLambdasModes
+  integer(HSIZE_T), dimension(3) :: dimForSpeciesLambdasModes
 
   integer(HID_T) :: dspaceIDForScalar
   integer(HID_T) :: dspaceIDForSpecies
@@ -48,6 +50,8 @@ module writeHDF5Output
   integer(HID_T) :: dspaceIDForExport_f_zeta
   integer(HID_T) :: dspaceIDForExport_f_xi
   integer(HID_T) :: dspaceIDForExport_f_x
+  integer(HID_T) :: dspaceIDForLambdasModes
+  integer(HID_T) :: dspaceIDForSpeciesLambdasModes
 
   ! Dimension arrays related to arrays that expand with each iteration:
   integer(HSIZE_T), dimension(1) :: dimForIteration
@@ -98,6 +102,7 @@ module writeHDF5Output
      module procedure writeHDF5Double
      module procedure writeHDF5Doubles
      module procedure writeHDF5Doubles2
+     module procedure writeHDF5Doubles3
      module procedure writeHDF5Boolean
      module procedure writeHDF5Booleans
   end interface writeHDF5Field
@@ -334,6 +339,21 @@ contains
         call writeHDF5Field("adjointTotalHeatFluxOption", adjointTotalHeatFluxOption, "")
         call writeHDF5Field("nMaxAdjoint", nMaxAdjoint, "")
         call writeHDF5Field("mMaxAdjoint", mMaxAdjoint, "")
+        if (any(adjointHeatFluxOption)) then
+          call writeHDF5Field("dHeatFluxdLambda", dHeatFluxdLambda,dspaceIDForSpeciesLambdasModes, dimForSpeciesLambdasModes,"")
+        end if
+        if (any(adjointParticleFluxOption)) then
+          call writeHDF5Field("dParticleFluxdLambda", dParticleFluxdLambda,dspaceIDForSpeciesLambdasModes, dimForSpeciesLambdasModes,"")
+        end if
+        if (adjointTotalHeatFluxOption) then
+          call writeHDF5Field("dTotalHeatFluxdLambda", dTotalHeatFluxdLambda, dspaceIDForLambdasModes, dimForLambdasModes,"")
+        end if
+        if (adjointRadialCurrentOption) then
+          call writeHDF5Field("dRadialCurrentdLambda", dRadialCurrentdLambda, dspaceIDForLambdasModes, dimForLambdasModes,"")
+        end if
+        if (adjointBootstrapOption) then
+          call writeHDF5Field("dBootstrapdLambda", dBootstrapdLambda, dspaceIDForLambdasModes, dimForLambdasModes,"")
+        end if
       endif
 
        call writeHDF5Field("includeTemperatureEquilibrationTerm", includeTemperatureEquilibrationTerm, &
@@ -775,6 +795,17 @@ contains
     dimForThetaZeta(1) = Ntheta
     dimForThetaZeta(2) = Nzeta
     call h5screate_simple_f(rank, dimForThetaZeta, dspaceIDForThetaZeta, HDF5Error)
+
+    ! Sensitivity arrays
+    dimForLambdasModes(1) = NLambdas
+    dimForLambdasModes(2) = NModesAdjoint
+    call h5screate_simple_f(rank, dimForLambdasModes, dspaceIDForLambdasModes, HDF5Error)
+
+    rank = 3
+    dimForSpeciesLambdasModes(1) = NSpecies
+    dimForSpeciesLambdasModes(2) = NLambdas
+    dimForSpeciesLambdasModes(3) = NModesAdjoint
+    call h5screate_simple_f(rank, dimForSpeciesLambdasModes, dspaceIDForSpeciesLambdasModes, HDF5Error)
 
     rank = 5
     dimForExport_f(1) = Nspecies
@@ -1220,6 +1251,9 @@ contains
     if (dspaceID == dspaceIDForThetaZeta) then
        call h5dsset_label_f(dsetID, 1, "zeta", HDF5Error)
        call h5dsset_label_f(dsetID, 2, "theta", HDF5Error)
+    elseif (dspaceID == dspaceIDForLambdasModes) then
+       call h5dsset_label_f(dsetID, 1, "NLambdas", HDF5Error)
+       call h5dsset_label_f(dsetID, 2, "NModesAdjoint", HDF5Error)
     elseif (dspaceID == dspaceIDForTransportMatrix) then
        ! No labels applied in this case.
     else
@@ -1231,6 +1265,38 @@ contains
     call h5dclose_f(dsetID, HDF5Error)
 
   end subroutine writeHDF5Doubles2
+
+  ! -----------------------------------------------------------------------------------
+
+  subroutine writeHDF5Doubles3(arrayName, data, dspaceID, dims, description)
+
+    implicit none
+
+    character(len=*) :: arrayName
+    integer(HID_T) :: dsetID
+    integer(HID_T) :: dspaceID
+    integer(HSIZE_T), dimension(*) :: dims
+    PetscScalar, dimension(:,:,:) :: data
+    character(len=*) :: description
+    character(len=100) :: label
+
+    call h5dcreate_f(HDF5FileID, arrayName, H5T_NATIVE_DOUBLE, dspaceID, dsetID, HDF5Error)
+    
+    call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, data, dims, HDF5Error)
+
+    if (dspaceID == dspaceIDForLambdasModes) then
+       call h5dsset_label_f(dsetID, 1, "NSpecies", HDF5Error)
+       call h5dsset_label_f(dsetID, 2, "NLambdas", HDF5Error)
+       call h5dsset_label_f(dsetID, 3, "NModesAdjoint", HDF5Error)
+    else
+       print *,"WARNING: PROGRAM SHOULD NOT GET HERE. (writeHDF5Doubles3)"
+    end if
+    
+    call h5ltset_attribute_string_f(HDF5FileID, arrayName, attribute_name, description, HDF5Error)
+
+    call h5dclose_f(dsetID, HDF5Error)
+
+  end subroutine writeHDF5Doubles3
 
   ! -----------------------------------------------------------------------------------
 
@@ -1306,6 +1372,7 @@ contains
   end subroutine writeHDF5Boolean
 
   ! -----------------------------------------------------------------------------------
+  ! This is used for writing adjointHeatFluxOption or adjointParticleFluxOption
 
   subroutine writeHDF5Booleans(arrayName, data, dspaceID, dims, description)
 
@@ -1330,6 +1397,7 @@ contains
           temp(i) = integerToRepresentFalse
         end if
       end do
+      call h5dsset_label_f(dsetID, 1, "NSpecies", HDF5Error)
     else
       print *,"WARNING: PROGRAM SHOULD NOT GET HERE. (writeHDF5Booleans)"
     end if

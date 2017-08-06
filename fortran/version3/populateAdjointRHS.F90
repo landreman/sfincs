@@ -59,7 +59,7 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies)
              do izeta = izetaMin,izetaMax
                 factor = xPartOfRHS/(BHat(itheta,izeta)**3)*(BHat_sub_theta(itheta,izeta) &
                   *dBHatdzeta(itheta,izeta) - BHat_sub_zeta(itheta,izeta)* &
-                  dBHatdtheta(itheta,izeta))
+                  dBHatdtheta(itheta,izeta))*ddrN2ddpsiHat
                 ! For species summed radial current, weighted by Zs
                 if (whichSpecies == 0) then
                   factor = factor*Zs(ispecies)
@@ -95,7 +95,7 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies)
              do izeta = izetaMin,izetaMax
                 factor = xPartOfRHS/(BHat(itheta,izeta)**3)*(BHat_sub_theta(itheta,izeta) &
                   *dBHatdzeta(itheta,izeta) - BHat_sub_zeta(itheta,izeta)* &
-                  dBHatdtheta(itheta,izeta))
+                  dBHatdtheta(itheta,izeta))*ddrN2ddpsiHat
                 ! factor is the samed for species-summed heat flux
 
                 L = 0

@@ -382,6 +382,9 @@ module globalVariables
   integer :: nMaxAdjoint, mMaxAdjoint, NModesAdjoint, NLambdas
   PetscScalar, dimension(:,:), allocatable :: dRadialCurrentdLambda,dTotalHeatFluxdLambda,dBootstrapdLambda
   PetscScalar, dimension(:,:,:), allocatable :: dParticleFluxdLambda, dHeatFluxdLambda
+  !! The following are for testing innerProduct()
+!  PetscScalar, dimension(:), allocatable :: heatFluxWithInnerProduct
+!  PetscScalar, dimension(:), allocatable ::
 
   ! ********************************************************
   !
