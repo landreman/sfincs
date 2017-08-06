@@ -18,7 +18,7 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies)
 
   PetscErrorCode :: ierr
   integer :: ix, L, itheta, izeta, ispecies, index, ixMin
-  PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, xPartOfRHS, factor, nHat
+  PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, xPartOfRHS, factor, nHat, ZHat, sqrtFSAB2
 
   ! Validate input
   if (whichAdjointRHS<1 .or. whichAdjointRHS>3 .or. whichSpecies<0 .or. whichSpecies>Nspecies) then
@@ -46,15 +46,18 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies)
     case (1) ! particle flux
 
     do ispecies=1,Nspecies
+      ! For whichSpecies == 0, RHS corresponds to radial current - species summed weighted by Zs
       if (whichSpecies == ispecies .or. whichSpecies == 0) then
         THat = THats(ispecies)
         mHat = mHats(ispecies)
         nHat = nHats(ispecies)
         sqrtTHat = sqrt(THat)
         sqrtMHat = sqrt(mHat)
+        ZHat = Zs(ispecies)
+
         do ix=ixMin,Nx
           xPartOfRHS = exp(-x2(ix))*nHat*mHat*sqrtMHat*Delta*x2(ix)/ &
-            (pi*sqrtpi*THat*sqrtTHat*Zs(ispecies))
+            (pi*sqrtpi*THat*sqrtTHat*ZHat)
           do itheta = ithetaMin,ithetaMax
              do izeta = izetaMin,izetaMax
                 factor = xPartOfRHS/(BHat(itheta,izeta)**3)*(BHat_sub_theta(itheta,izeta) &
@@ -62,7 +65,7 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies)
                   dBHatdtheta(itheta,izeta))*ddrN2ddpsiHat
                 ! For species summed radial current, weighted by Zs
                 if (whichSpecies == 0) then
-                  factor = factor*Zs(ispecies)
+                  factor = factor*ZHat
                 end if
 
                 L = 0
@@ -82,15 +85,18 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies)
     case (2) ! heat flux
 
     do ispecies=1,Nspecies
+      ! For whichSpecies==0, RHS corresponds to total heat flux - species summed
       if (whichSpecies == ispecies .or. whichSpecies == 0) then
         THat = THats(ispecies)
         mHat = mHats(ispecies)
         nHat = nHats(ispecies)
         sqrtTHat = sqrt(THat)
         sqrtMHat = sqrt(mHat)
+        ZHat = Zs(ispecies)
+
         do ix=ixMin,Nx
           xPartOfRHS = exp(-x2(ix))*nHat*mHat*sqrtMHat*Delta*x2(ix)*x2(ix)/ &
-            (2*pi*sqrtpi*sqrtTHat*Zs(ispecies))
+            (2*pi*sqrtpi*sqrtTHat*ZHat)
           do itheta = ithetaMin,ithetaMax
              do izeta = izetaMin,izetaMax
                 factor = xPartOfRHS/(BHat(itheta,izeta)**3)*(BHat_sub_theta(itheta,izeta) &
@@ -114,16 +120,18 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies)
 
     case (3) ! radial current of species
       ! This should only occur with whichSpecies == 0
+      sqrtFSAB2 = sqrt(FSABHat2)
       do ispecies=1,Nspecies
         THat = THats(ispecies)
         mHat = mHats(ispecies)
         nHat = nHats(ispecies)
         sqrtTHat = sqrt(THat)
         sqrtMHat = sqrt(mHat)
+        ZHat = Zs(ispecies)
 
         do ix=ixMin,Nx
-          xPartOfRHS = exp(-x2(ix))*2*Zs(ispecies)*nHat*mHat*sqrtMHat*x(ix)/ &
-            (pi*sqrtpi*THat*THat*sqrtTHat*sqrt(FSABHat2))
+          xPartOfRHS = exp(-x2(ix))*2*ZHat*nHat*mHat*x(ix)/ &
+            (pi*sqrtpi*THat*THat*sqrtFSAB2)
           do itheta = ithetaMin,ithetaMax
              do izeta = izetaMin,izetaMax
                 factor = xPartOfRHS*BHat(itheta,izeta)
