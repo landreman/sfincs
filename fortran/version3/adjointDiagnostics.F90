@@ -142,7 +142,7 @@ module adjointDiagnostics
       sqrtmHat = sqrt(mHats(ispecies))
 
       ! This is everything independent of geometry
-      xIntegralFactor = x*x*x*x*x*x*pi*THat*THat*THat*sqrtTHat*Delta/(2*mHat*sqrtmHat*Zs(ispecies))
+      xIntegralFactor = x*x*x*x*x*x*pi*THat*THat*THat*sqrtTHat*Delta/(2*mHat*sqrtmHat*Zs(ispecies))*ddrN2ddpsiHat
 
       do itheta=1,Ntheta
         do izeta=1,Nzeta
@@ -155,7 +155,7 @@ module adjointDiagnostics
               stop
             case (1) ! BHat
               dBHatdThetadLambda = -ms(whichMode)*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-              dBHatdZetadLambda = ns(whichMode)*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+              dBHatdZetadLambda = ns(whichMode)*Nperiods*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
               dBHatdLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
               factor = (BHat_sub_theta(itheta,izeta)*dBHatdZetadLambda - BHat_sub_zeta(itheta,izeta)*dBHatdThetadLambda)/(VPrimeHat*BHat(itheta,izeta)**3) - 3*(BHat_sub_theta(itheta,izeta)*dBHatdZeta(itheta,izeta) - &
                 BHat_sub_zeta(itheta,izeta)*dBHatdTheta(itheta,izeta))*dBHatdLambda/(BHat(itheta,izeta)**4)
@@ -183,13 +183,13 @@ module adjointDiagnostics
               index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
               ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
               result = result + &
-                (8/3)*factor*xWeights(ix)*deltaF(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)*ddrN2ddpsiHat
+                (8/3)*factor*xWeights(ix)*deltaF(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
 
               L = 2
               index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
               ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
               result = result + &
-                (4/15)*factor*xWeights(ix)*deltaF(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)*ddrN2ddpsiHat
+                (4/15)*factor*xWeights(ix)*deltaF(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
 
             end do
           end do
@@ -234,7 +234,7 @@ module adjointDiagnostics
       sqrtTHat = sqrt(THats(ispecies))
       sqrtmHat = sqrt(mHats(ispecies))
 
-      xIntegralFactor = x*x*x*x*THat*THat*sqrtTHat*pi*Delta/(mHat*sqrtmHat*Zs(ispecies))
+      xIntegralFactor = x*x*x*x*THat*THat*sqrtTHat*pi*Delta/(mHat*sqrtmHat*Zs(ispecies))*ddrN2ddpsiHat
 
       do itheta=1,Ntheta
         do izeta=1,Nzeta
@@ -247,10 +247,10 @@ module adjointDiagnostics
               stop
             case (1) ! BHat
               dBHatdThetadLambda = -ms(whichMode)*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-              dBHatdZetadLambda = ns(whichMode)*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+              dBHatdZetadLambda = ns(whichMode)*Nperiods*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
               dBHatdLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
               factor = (BHat_sub_theta(itheta,izeta)*dBHatdZetadLambda - BHat_sub_zeta(itheta,izeta)*dBHatdThetadLambda)/(VPrimeHat*BHat(itheta,izeta)**3) - 3*(BHat_sub_theta(itheta,izeta)*dBHatdZeta(itheta,izeta) &
-                - BHat_sub_zeta(itheta,izeta)*dBHatdTheta(itheta,izeta))*dBHatdLambda/(VPrimeHat*BHat(itheta,izeta)**3)
+                - BHat_sub_zeta(itheta,izeta)*dBHatdTheta(itheta,izeta))*dBHatdLambda/(VPrimeHat*BHat(itheta,izeta)**4)
             case (2) ! BHat_sup_theta
               factor = 0
             case (3) ! BHat_sup_zeta
@@ -280,13 +280,13 @@ module adjointDiagnostics
               index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
               ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
               result = result + &
-                (8/3)*factor*xWeights(ix)*deltaF(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)*ddrN2ddpsiHat
+                (8/3)*factor*xWeights(ix)*deltaF(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
 
               L = 2
               index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
               ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
               result = result + &
-                (4/15)*factor*xWeights(ix)*deltaF(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)*ddrN2ddpsiHat
+                (4/15)*factor*xWeights(ix)*deltaF(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
 
             end do
           end do
@@ -310,7 +310,7 @@ module adjointDiagnostics
     PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, dBHatdThetadLambda, dBHatdZetadLambda
     PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dinvDHatdLambda, factor, dVPrimeHatdLambda
     PetscScalar, dimension(:), allocatable :: xIntegralFactor
-    PetscScalar :: dBHatdLambda, dRootFSAB2dLambda, nHat, rootFSAB2
+    PetscScalar :: dBHatdLambda, dFSAB2dLambda, nHat, rootFSAB2
 
     rootFSAB2 = sqrt(FSABHat2)
 
@@ -319,7 +319,7 @@ module adjointDiagnostics
    if (whichLambda==1) then
       do itheta=1,Ntheta
         do izeta=1,Nzeta
-          dRootFSAB2dLambda = dRootFSAB2dLambda + (thetaWeights(itheta)*zetaWeights(izeta)*BHat(itheta,izeta)*cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta)))/(DHat(itheta,izeta)*VPrimeHat*RootFSAB2)
+          dFSAB2dLambda = dRootFSAB2dLambda + 2*(thetaWeights(itheta)*zetaWeights(izeta)*BHat(itheta,izeta)*cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta)))/(DHat(itheta,izeta)*VPrimeHat)
         end do
       end do
     end if
@@ -327,7 +327,7 @@ module adjointDiagnostics
     if (whichLambda==6) then
       do itheta=1,Ntheta
         do izeta=1,Nzeta
-          dRootFSAB2dLambda = dRootFSAB2dLambda + 0.5*thetaWeights(itheta)*zetaWeights(izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)*cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))/(VPrimeHat*RootFSAB2)
+          dFSAB2dLambda = dRootFSAB2dLambda + thetaWeights(itheta)*zetaWeights(izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)*cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))/(VPrimeHat)
         end do
       end do
     end if
@@ -366,7 +366,7 @@ module adjointDiagnostics
             case (6) ! DHat
               dinvDHatdLambda = cos(ms(whichMode)*theta(itheta)- ns(whichMode)*Nperiods*zeta(izeta))
               factor = BHat(itheta,izeta)*dinvDHatdLambda/(VPrimeHat*RootFSAB2) &
-                - BHat(itheta,izeta)*dRootFSAB2dLambda/(DHat(itheta,izeta)*VPrimeHat*FSABHat2)
+                - 0.5*BHat(itheta,izeta)*dFSAB2dLambda/(DHat(itheta,izeta)*VPrimeHat*FSABHat2*RootFSAB2)
               if (ms(whichMode)==0 .and. ns(whichMode)==0) then
                 dVPrimeHatdLambda = (4*pi*pi)
                 factor = factor - BHat(itheta,izeta)*dVPrimeHatdLambda/(VPrimeHat*VPrimeHat*RootFSAB2)

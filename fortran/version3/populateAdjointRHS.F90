@@ -118,7 +118,7 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies)
         end if
       end do
 
-    case (3) ! radial current of species
+    case (3) ! Bootstrap Current
       ! This should only occur with whichSpecies == 0
       sqrtFSAB2 = sqrt(FSABHat2)
       do ispecies=1,Nspecies
