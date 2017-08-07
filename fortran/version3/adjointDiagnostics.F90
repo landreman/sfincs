@@ -99,7 +99,7 @@ module adjointDiagnostics
         end do
 
         ! Now add terms which sum over sources
-        result = result + sourcesF(ispecies,1)*sourcesG(ispecies,1) + sourcesF(ispecies,2)*sourcesG(ispecies,2)
+        result = result + (THat/2)*(sourcesF(ispecies,1)*sourcesG(ispecies,1) + sourcesF(ispecies,2)*sourcesG(ispecies,2))
 
       end do
 
@@ -319,7 +319,7 @@ module adjointDiagnostics
    if (whichLambda==1) then
       do itheta=1,Ntheta
         do izeta=1,Nzeta
-          dFSAB2dLambda = dRootFSAB2dLambda + 2*(thetaWeights(itheta)*zetaWeights(izeta)*BHat(itheta,izeta)*cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta)))/(DHat(itheta,izeta)*VPrimeHat)
+          dFSAB2dLambda = dFSAB2dLambda + 2*(thetaWeights(itheta)*zetaWeights(izeta)*BHat(itheta,izeta)*cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta)))/(DHat(itheta,izeta)*VPrimeHat)
         end do
       end do
     end if
@@ -327,7 +327,7 @@ module adjointDiagnostics
     if (whichLambda==6) then
       do itheta=1,Ntheta
         do izeta=1,Nzeta
-          dFSAB2dLambda = dRootFSAB2dLambda + thetaWeights(itheta)*zetaWeights(izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)*cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))/(VPrimeHat)
+          dFSAB2dLambda = dFSAB2dLambda + thetaWeights(itheta)*zetaWeights(izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)*cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))/(VPrimeHat)
         end do
       end do
     end if
@@ -354,7 +354,7 @@ module adjointDiagnostics
               stop
             case (1) ! BHat
               dBHatdLambda = cos(ms(whichMode)*theta(itheta)- ns(whichMode)*Nperiods*zeta(izeta))
-              factor = dBHatdLambda/(DHat(itheta,izeta)*VPrimeHat*rootFSAB2) - 0.5*BHat(itheta,izeta)*dRootFSAB2dLambda/(DHat(itheta,izeta)*rootFSAB2*FSABHat2*VPrimeHat)
+              factor = dBHatdLambda/(DHat(itheta,izeta)*VPrimeHat*rootFSAB2) - 0.5*BHat(itheta,izeta)*dFSAB2dLambda/(DHat(itheta,izeta)*rootFSAB2*FSABHat2*VPrimeHat)
             case (2) ! BHat_sup_theta
               factor = 0
             case (3) ! BHat_sup_zeta
