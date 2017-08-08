@@ -2158,6 +2158,25 @@ used, in which case fewer than {\ttfamily Nradius} radii may be used.}
 {When {\ttfamily RHSMode == 4} or {\ttfamily RHSMode == 5}}
 {This array is of the same length of {\ttfamily nHats} and other species parameters. If parameter is {\ttfamily .true.}, the sensitivity of the particle flux will be computed for this species.}
 
+\myhrule
+
+
+\param{nMaxAdjoint}
+{integer}
+{0}
+{When {\ttfamily RHSMode == 4} or {\ttfamily RHSMode == 5}}
+{Sensitivity of Fourier harmonics of $\bm{B}$ will be computed for $\abs{n} \leq $ \texttt{nMaxAdjoint}.}
+
+\myhrule
+
+\param{mMaxAdjoint}
+{integer}
+{0}
+{When {\ttfamily RHSMode == 4} or {\ttfamily RHSMode == 5}}
+{Sensitivity of Fourier harmonics of $\bm{B}$ will be computed for $m \leq$ \texttt{mMaxAdjoint}.}
+
+\myhrule
+
 \section{\PETSc~commands}
 
 Command-line flags can be used to modify the behavior of any \PETSc~application, including \sfincs.

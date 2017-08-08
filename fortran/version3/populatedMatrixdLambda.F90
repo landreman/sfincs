@@ -487,7 +487,7 @@
                     ! Term from 1/(BHat**3)
                     -3*DHat(itheta,izeta)*temp*dBHatdLambda/(BHat(itheta,izeta)**4) &
                     ! Term from dBHatdtheta and dBHatdzeta
-                    + DHat(itheta,izeta) * dTempdLambda/(BHat(itheta,izeta)**3) 
+                    + DHat(itheta,izeta) * dTempdLambda/(BHat(itheta,izeta)**3)
                 case (2) ! BHat_sup_theta
                   geometricFactor = 0
                 case (3) ! BHat_sup_zeta

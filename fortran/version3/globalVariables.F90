@@ -96,6 +96,7 @@ module globalVariables
   logical :: adjointBootstrapOption = .false.
   logical :: adjointRadialCurrentOption = .false.
   logical :: adjointTotalHeatFluxOption = .false.
+  ! These are initialized to .false. in readInput
   logical, dimension(:), allocatable :: adjointHeatFluxOption, adjointParticleFluxOption
 
   ! ********************************************************
@@ -379,7 +380,8 @@ module globalVariables
   ! ********************************************************
 
   integer, dimension(:), allocatable :: ns, ms
-  integer :: nMaxAdjoint, mMaxAdjoint, NModesAdjoint, NLambdas
+  integer :: nMaxAdjoint = 0, mMaxAdjoint = 0
+  integer :: NModesAdjoint = 0, NLambdas = 6
   PetscScalar, dimension(:,:), allocatable :: dRadialCurrentdLambda,dTotalHeatFluxdLambda,dBootstrapdLambda
   PetscScalar, dimension(:,:,:), allocatable :: dParticleFluxdLambda, dHeatFluxdLambda
   !! The following are for testing innerProduct()
