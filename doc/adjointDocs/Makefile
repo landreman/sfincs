@@ -1,4 +1,4 @@
-TARGET = Adjoint\ SFINCS\ Manual
+TARGET = Adjoint\ SFINCS\ Implementation\ Notes
 
 .PHONY: all
 
