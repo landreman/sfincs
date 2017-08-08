@@ -20,15 +20,14 @@
     Mat :: dMatrixdLambda
     integer :: whichLambda, whichMode
     integer :: i, ixMin, ixMax, L, ispecies, izeta, itheta, ix, ixMinCol
-    PetscScalar, dimension(:,:), allocatable :: dThetaPartOfTermdLambda, localdThetaPartOfTermdLambda, &
-      dZetaPartOfTermdLambda, localdZetaPartOfTermdLambda
+    PetscScalar, dimension(:,:), allocatable :: thetaPartOfTerm, localThetaPartOfTerm, &
+      zetaPartOfTerm, localZetaPartOfTerm
     integer, dimension(:), allocatable :: rowIndices, colIndices
     PetscErrorCode :: ierr
     PetscScalar :: Z, nHat, THat, mHat, sqrtTHat, sqrtMHat, factor
     PetscScalar, dimension(:,:), allocatable :: ddthetaToUse, ddzetaToUse, ddxToUse, ddxToUse_plus, &
       ddxToUse_minus
-    PetscScalar :: temp, xDotFactor, stuffToAdd, dFactordLambda, dTempdLambda
-    PetscScalar :: dxDotFactordLambda
+    PetscScalar :: temp, xDotFactor, stuffToAdd, dTempdLambda
     PetscScalar, dimension(:,:), allocatable :: xPartOfXDot, xPartOfXDot_plus, xPartOfXDot_minus
     integer :: ix_row, ix_col, rowIndex, colIndex, ell
     PetscLogDouble :: time1, time2
@@ -36,6 +35,7 @@
     integer :: NNZ, NNZAllocated, NMallocs
     PetscScalar :: dBHatdLambda, dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dBHat_sup_thetadLambda
     PetscScalar :: dBHat_sup_zetadLambda, dBHatdthetadLambda, dBHatdzetadLambda, dDHatdLambda
+    PetscScalar :: geometricFactor
 
     ! Sometimes PETSc complains if any of the diagonal elements are not set.
     ! Therefore, set the entire diagonal to 0 to be safe.
@@ -73,8 +73,8 @@
       ! Add the sensitivity of the streaming d/dtheta term:
       ! *********************************************************
 
-      allocate(dThetaPartOfTermdLambda(Ntheta,Ntheta))
-      allocate(dThetaPartOfTermdLambda(Ntheta,localNtheta))
+      allocate(thetaPartOfTerm(Ntheta,Ntheta))
+      allocate(localThetaPartOfTerm(Ntheta,localNtheta))
       allocate(rowIndices(localNtheta))
       allocate(colIndices(Ntheta))
 
@@ -94,27 +94,25 @@
                 stop
               case (1) ! BHat
                 dBHatdLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                dThetaPartOfTermdLambda(itheta,:) = - BHat_sup_theta(itheta,izeta) &
-                  * sqrtTHat/sqrtMHat * ddtheta(itheta,:) * dBHatdLambda &
-                  / (BHat(itheta,izeta)*BHat(itheta,izeta))
+                geometricFactor = - BHat_sup_theta(itheta,izeta)*dBHatdLambda/(BHat(itheta,izeta)**2)
               case (2) ! BHat_sup_theta
                 dBHat_sup_thetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                dThetaPartOfTermdLambda(itheta,:) = sqrtTHat/sqrtMHat * ddtheta(itheta,:) &
-                  * dBHat_sup_thetadLambda / BHat(itheta,izeta)
+                geometricFactor = dBHat_sup_thetadLambda/BHat(itheta,izeta)
               case (3) ! BHat_sup_zeta
-                dThetaPartOfTermdLambda(itheta,:) = 0
+                geometricFactor = 0
               case (4) ! BHat_sub_theta
-                dThetaPartOfTermdLambda(itheta,:) = 0
+                geometricFactor = 0
               case (5) ! BHat_sub_zeta
-                dThetaPartOfTermdLambda(itheta,:) = 0
+                geometricFactor = 0
               case (6) ! DHat
-                dThetaPartOfTermdLambda(itheta,:) = 0
+                geometricFactor = 0
             end select
+            thetaPartOfTerm(itheta,:) = sqrtTHat/sqrtMHat * ddthetaToUse(itheta,:) * geometricFactor
           end do
 
             ! PETSc uses the opposite convention to Fortran:
-            dThetaPartOfTermdLambda = transpose(dThetaPartOfTermdLambda)
-            localdThetaPartOfTermdLambda = dThetaPartOfTermdLambda(:,ithetaMin:ithetaMax)
+            thetaPartOfTerm = transpose(thetaPartOfTerm)
+            localThetaPartOfTerm = thetaPartOfTerm(:,ithetaMin:ithetaMax)
 
             !do ix=ixMin,Nx
             do ix=max(ixMin,min_x_for_L(L)),Nx
@@ -131,7 +129,7 @@
                 end do
 
                 call MatSetValuesSparse(dMatrixdLambda, localNtheta, rowIndices, Ntheta, colIndices, &
-                  (L+1)/(2*L+three)*x(ix)*localdThetaPartOfTermdLambda, ADD_VALUES, ierr)
+                  (L+1)/(2*L+three)*x(ix)*localThetaPartOfTerm, ADD_VALUES, ierr)
               end if
 
               ! Sub-diagonal-in-L term
@@ -142,7 +140,7 @@
                 end do
 
                 call MatSetValuesSparse(dMatrixdLambda, localNtheta, rowIndices, Ntheta, colIndices, &
-                  L/(2*L-one)*x(ix)*dThetaPartOfTermdLambda, ADD_VALUES, ierr)
+                  L/(2*L-one)*x(ix)*localThetaPartOfTerm, ADD_VALUES, ierr)
               end if
 
             end do
@@ -152,15 +150,15 @@
 
       deallocate(rowIndices)
       deallocate(colIndices)
-      deallocate(dThetaPartOfTermdLambda)
-      deallocate(localdThetaPartOfTermdLambda)
+      deallocate(thetaPartOfTerm)
+      deallocate(localThetaPartOfTerm)
 
       ! *********************************************************
       ! Add the sensitivity of the streaming d/dzeta term:
       ! *********************************************************
 
-      allocate(dZetaPartOfTermdLambda(Nzeta,Nzeta))
-      allocate(localdZetaPartOfTermdLambda(Nzeta,localNzeta))
+      allocate(zetaPartOfTerm(Nzeta,Nzeta))
+      allocate(localZetaPartOfTerm(Nzeta,localNzeta))
       allocate(rowIndices(localNzeta))
       allocate(colIndices(Nzeta))
 
@@ -179,27 +177,25 @@
                 stop
               case (1) ! BHat
                 dBHatdLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                dZetaPartOfTermdLambda(izeta,:) = - BHat_sup_zeta(itheta,izeta) &
-                  * sqrtTHat/sqrtMHat * ddzeta(izeta,:) * dBHatdLambda &
-                  / (BHat(itheta,izeta)*BHat(itheta,izeta))
+                geometricFactor = -BHat_sup_zeta(itheta,izeta)*dBHatdLambda/(BHat(itheta,izeta)**2)
               case (2) ! BHat_sup_theta
-                dZetaPartOfTermdLambda(izeta,:) = 0
+                geometricFactor = 0
               case (3) ! BHat_sup_zeta
                 dBHat_sup_zetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                dZetaPartOfTermdLambda(izeta,:) = sqrtTHat/sqrtMHat * ddzeta(izeta,:) &
-                  * dBHat_sup_zetadLambda / BHat(itheta,izeta)
+                geometricFactor = dBHat_sup_zetadLambda/BHat(itheta,izeta)
               case (4) ! BHat_sub_theta
-                dZetaPartOfTermdLambda(izeta,:) = 0
+                geometricFactor = 0
               case (5) ! BHat_sub_zeta
-                dZetaPartOfTermdLambda(izeta,:) = 0
+                geometricFactor = 0
               case (6) ! DHat
-                dZetaPartOfTermdLambda(izeta,:) = 0
+                geometricFactor = 0
             end select
+            zetaPartOfTerm(izeta,:) = (sqrtTHat/sqrtMHat)*ddzeta(izeta,:)*geometricFactor
           end do
 
           ! PETSc uses the opposite convention to Fortran:
-          dZetaPartOfTermdLambda = transpose(dZetaPartOfTermdLambda)
-          localdZetaPartOfTermdLambda = dZetaPartOfTermdLambda(:,izetaMin:izetaMax)
+          zetaPartOfTerm = transpose(zetaPartOfTerm)
+          localZetaPartOfTerm = zetaPartOfTerm(:,izetaMin:izetaMax)
 
           do ix=max(ixMin,min_x_for_L(L)),Nx
              do izeta = 1,localNzeta
@@ -214,7 +210,7 @@
                 end do
                 
                 call MatSetValuesSparse(dMatrixdLambda, localNzeta, rowIndices, Nzeta, colIndices, &
-                     (L+1)/(2*L+three)*x(ix)*localdZetaPartOfTermdLambda, ADD_VALUES, ierr)
+                     (L+1)/(2*L+three)*x(ix)*localZetaPartOfTerm, ADD_VALUES, ierr)
              end if
              
              ! Sub-diagonal-in-L term
@@ -225,7 +221,7 @@
                 end do
                 
                 call MatSetValuesSparse(dMatrixdLambda, localNzeta, rowIndices, Nzeta, colIndices, &
-                     L/(2*L-one)*x(ix)*localdZetaPartOfTermdLambda, ADD_VALUES, ierr)
+                     L/(2*L-one)*x(ix)*localZetaPartOfTerm, ADD_VALUES, ierr)
              end if
 
             end do
@@ -233,16 +229,16 @@
         end do
         deallocate(rowIndices)
         deallocate(colIndices)
-        deallocate(dZetaPartOfTermdLambda)
-        deallocate(localdZetaPartOfTermdLambda)
+        deallocate(zetaPartOfTerm)
+        deallocate(localZetaPartOfTerm)
 
       ! *********************************************************
       ! Add the sensitivity of the ExB d/dtheta term:
       ! *********************************************************
 
       factor = alpha*Delta/two*dPhiHatdpsiHat
-      allocate(dThetaPartOfTermdLambda(Ntheta,Ntheta))
-      allocate(localdThetaPartOfTermdLambda(Ntheta,localNtheta))
+      allocate(thetaPartOfTerm(Ntheta,Ntheta))
+      allocate(localThetaPartOfTerm(Ntheta,localNtheta))
       allocate(rowIndices(localNtheta))
       allocate(colIndices(Ntheta))
 
@@ -262,7 +258,8 @@
 
          do izeta=izetaMin,izetaMax
            do itheta=1,Ntheta
-            !thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2) &
+
+            !thetaPartOfTerm(itheta,:) = 1 / (BHat(itheta,izeta) ** 2) &
               !* DHat(itheta,izeta) * BHat_sub_zeta(itheta,izeta)
             select case(whichLambda)
               case (0) ! Er
@@ -272,30 +269,28 @@
                 stop
               case (1) ! BHat
                 dBHatdLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                dThetaPartOfTermdLambda(itheta,:) = - 2 * ddthetaToUse(itheta,:) &
-                  * dBHatdLambda / (BHat(itheta,izeta) ** 3) &
-                  * DHat(itheta,izeta) * BHat_sub_zeta(itheta,izeta)
+                geometricFactor = -2*dBHatdLambda/(BHat(itheta,izeta) ** 3) &
+                  *DHat(itheta,izeta)*BHat_sub_zeta(itheta,izeta)
               case (2) ! BHat_sup_theta
-                dThetaPartOfTermdLambda(itheta,:) = 0
+                geometricFactor = 0
               case (3) ! BHat_sup_zeta
-                dThetaPartOfTermdLambda(itheta,:) = 0
+                geometricFactor = 0
               case (4) ! BHat_sub_theta
-                dThetaPartOfTermdLambda(itheta,:) = 0
+                geometricFactor = 0
               case (5) ! BHat_sub_zeta
                 dBHat_sup_zetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                dThetaPartOfTermdLambda(itheta,:) = ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2) &
-                  * DHat(itheta,izeta) * dBHat_sup_zetadLambda
+                geometricFactor = DHat(itheta,izeta) * dBHat_sup_zetadLambda/ (BHat(itheta,izeta) ** 2)
               case (6) ! DHat
                 dDHatdLambda = -DHat(itheta,izeta)*DHat(itheta,izeta)*cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                dThetaPartOfTermdLambda(itheta,:) = ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2) &
-                  * dDHatdLambda * BHat_sub_zeta(itheta,izeta)
+                geometricFactor = dDHatdLambda * BHat_sub_zeta(itheta,izeta)/ (BHat(itheta,izeta) ** 2)
             end select
+              thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:)*geometricFactor
 
            end do
 
             ! PETSc uses the opposite convention to Fortran:
-            dThetaPartOfTermdLambda = transpose(dThetaPartOfTermdLambda)
-            localdThetaPartOfTermdLambda = dThetaPartOfTermdLambda(:,ithetaMin:ithetaMax)
+            thetaPartOfTerm = transpose(thetaPartOfTerm)
+            localThetaPartOfTerm = thetaPartOfTerm(:,ithetaMin:ithetaMax)
             
             !do ix=ixMin,Nx
             do ix=max(ixMin,min_x_for_L(L)),Nx
@@ -307,22 +302,22 @@
                end do
                
                call MatSetValuesSparse(dMatrixdLambda, localNtheta, rowIndices, Ntheta, colIndices, &
-                    localdThetaPartOfTermdLambda, ADD_VALUES, ierr)
+                    localThetaPartOfTerm, ADD_VALUES, ierr)
             end do
          end do
       end do
       deallocate(rowIndices)
       deallocate(colIndices)
-      deallocate(dThetaPartOfTermdLambda)
-      deallocate(localdThetaPartOfTermdLambda)
+      deallocate(thetaPartOfTerm)
+      deallocate(localThetaPartOfTerm)
 
      ! *********************************************************
      ! Add the sensitivity of the ExB d/dzeta term:
      ! *********************************************************
 
       factor = -alpha*Delta/two*dPhiHatdpsiHat
-      allocate(dZetaPartOfTermdLambda(Nzeta,Nzeta))
-      allocate(localdZetaPartOfTermdLambda(Nzeta,localNzeta))
+      allocate(zetaPartOfTerm(Nzeta,Nzeta))
+      allocate(localZetaPartOfTerm(Nzeta,localNzeta))
       allocate(rowIndices(localNzeta))
       allocate(colIndices(Nzeta))
       do L=0,(Nxi-1)
@@ -351,30 +346,28 @@
                 stop
               case (1) ! BHat
                 dBHatdLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode))
-                dZetaPartOfTermdLambda(izeta,:) = -2 * ddzetaToUse(izeta,:) &
-                * dBHatdLambda / (BHat(itheta,izeta) ** 3) &
-                * DHat(itheta,izeta) * BHat_sub_theta(itheta,izeta)
+                geometricFactor = -2*dBHatdLambda*DHat(itheta,izeta)*BHat_sub_theta(itheta,izeta) &
+                  /(BHat(itheta,izeta) ** 3)
               case (2) ! BHat_sup_theta
-                dZetaPartOfTermdLambda(izeta,:) = 0
+                geometricFactor = 0
               case (3) ! BHat_sup_zeta
-                dZetaPartOfTermdLambda(izeta,:) = 0
+                geometricFactor = 0
               case (4) ! BHat_sub_theta
                 dBHat_sub_thetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                dZetaPartOfTermdLambda(izeta,:) = ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2) &
-                  * DHat(itheta,izeta) * dBHat_sub_thetadLambda
+                geometricFactor = DHat(itheta,izeta)*dBHat_sub_thetadLambda/(BHat(itheta,izeta) ** 2)
               case (5) ! BHat_sub_zeta
-                dZetaPartOfTermdLambda(izeta,:) = 0
+                geometricFactor = 0
               case (6) ! DHat
                 dDHatdLambda = -DHat(itheta,izeta)*DHat(itheta,izeta)*cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                dZetaPartOfTermdLambda(izeta,:) = ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2) &
+                geometricFactor = 1 / (BHat(itheta,izeta) ** 2) &
                   * dDHatdLambda * BHat_sub_theta(itheta,izeta)
             end select
-
+            zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:)*geometricFactor
            end do
 
             ! PETSc uses the opposite convention to Fortran:
-            dZetaPartOfTermdLambda = transpose(dZetaPartOfTermdLambda)
-            localdZetaPartOfTermdLambda = dZetaPartOfTermdLambda(:,izetaMin:izetaMax)
+            zetaPartOfTerm = transpose(zetaPartOfTerm)
+            localZetaPartOfTerm = zetaPartOfTerm(:,izetaMin:izetaMax)
             
             !do ix=ixMin,Nx
             do ix=max(ixMin,min_x_for_L(L)),Nx
@@ -386,14 +379,14 @@
                end do
                
                call MatSetValuesSparse(dMatrixdLambda, localNzeta, rowIndices, Nzeta, colIndices, &
-                    localdZetaPartOfTermdLambda, ADD_VALUES, ierr)
+                    localZetaPartOfTerm, ADD_VALUES, ierr)
             end do
          end do
       end do
       deallocate(rowIndices)
       deallocate(colIndices)
-      deallocate(dZetaPartOfTermdLambda)
-      deallocate(localdZetaPartOfTermdLambda)
+      deallocate(zetaPartOfTerm)
+      deallocate(localZetaPartOfTerm)
 
        ! *********************************************************
        ! Add the sensitivity of the standard mirror term:
@@ -415,31 +408,31 @@
                 dBHatdthetadLambda = -ms(whichMode)*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
                 dBHatdzetadLambda = ns(whichMode)*Nperiods*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
                 ! Term from 1/(BHat**2)
-                dFactordLambda = sqrtTHat/(sqrtMHat*(BHat(itheta,izeta)**3)) &
-                  * dBHatdLambda &
+                geometricFactor = -2*dBHatdLambda/(BHat(itheta,izeta)**3) &
                   * (BHat_sup_theta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
-                  + BHat_sup_zeta(itheta,izeta) * dBHatdzeta(itheta,izeta)) &
+                  + BHat_sup_zeta(itheta,izeta)*dBHatdzeta(itheta,izeta)) &
                   ! Term from dBHatdtheta
-                  -sqrtTHat/(2*sqrtMHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
+                  + 1/(BHat(itheta,izeta)*BHat(itheta,izeta)) &
                   * (BHat_sup_theta(itheta,izeta)*dBhatdthetadLambda &
                   ! Term from dBHatdzeta 
                   + BHat_sup_zeta(itheta,izeta)*dBhatdzetadLambda)
               case (2) ! BHat_sup_theta
                 dBHat_sup_thetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                dFactordLambda = -sqrtTHat/(2*sqrtMHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
+                geometricFactor = 1/(BHat(itheta,izeta)*BHat(itheta,izeta)) &
                   * (dBHat_sup_thetadLambda*dBHatdtheta(itheta,izeta))
               case (3) ! BHat_sup_zeta
                 dBHat_sup_zetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                dFactordLambda = -sqrtTHat/(2*sqrtMHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
+                geometricFactor = 1/(BHat(itheta,izeta)*BHat(itheta,izeta)) &
                   * (dBHat_sup_zetadLambda*dBHatdzeta(itheta,izeta))
               case (4) ! BHat_sub_theta
-                dFactordLambda = 0
+                geometricFactor = 0
               case (5) ! BHat_sub_zeta
-                dFactordLambda = 0
+                geometricFactor = 0
               case (6) ! DHat
-                dFactordLambda = 0
+                geometricFactor = 0
             end select
-            
+            factor = (-sqrtTHat/(2*sqrtMHat))*geometricFactor
+
             do ix=ixMin,Nx
                do L=0,(Nxi_for_x(ix)-1)
                   rowIndex=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
@@ -449,7 +442,7 @@
                      ell = L+1
                      colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
                      call MatSetValueSparse(dMatrixdLambda, rowIndex, colIndex, &
-                          (L+1)*(L+2)/(2*L+three)*x(ix)*dFactordLambda, ADD_VALUES, ierr)
+                          (L+1)*(L+2)/(2*L+three)*x(ix)*factor, ADD_VALUES, ierr)
                   end if
                   
                   if (L>0) then
@@ -457,7 +450,7 @@
                      ell = L-1
                      colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
                      call MatSetValueSparse(dMatrixdLambda, rowIndex, colIndex, &
-                          -L*(L-1)/(2*L-one)*x(ix)*dFactordLambda, ADD_VALUES, ierr)
+                          -L*(L-1)/(2*L-one)*x(ix)*factor, ADD_VALUES, ierr)
                   end if
                end do
             end do
@@ -490,32 +483,28 @@
                   dBHatdLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
                   dTempdLambda = BHat_sub_zeta(itheta,izeta) * dBHatdthetadLambda &
                     - BHat_sub_theta(itheta,izeta) * dBHatdzetadLambda
-                  dFactordLambda = &
+                  geometricFactor = &
                     ! Term from 1/(BHat**3)
-                    -3*alpha*Delta*dPhiHatdpsiHat/(4*(BHat(itheta,izeta)**4)) &
-                    * DHat(itheta,izeta) * temp * dBHatdLambda &
+                    -3*DHat(itheta,izeta)*temp*dBHatdLambda/(BHat(itheta,izeta)**4) &
                     ! Term from dBHatdtheta and dBHatdzeta
-                    + alpha*Delta*dPhiHatdpsiHat/(4*(BHat(itheta,izeta)**3)) &
-                    * DHat(itheta,izeta) * dTempdLambda
+                    + DHat(itheta,izeta) * dTempdLambda/(BHat(itheta,izeta)**3) 
                 case (2) ! BHat_sup_theta
-                  dFactordLambda = 0
+                  geometricFactor = 0
                 case (3) ! BHat_sup_zeta
-                  dFactordLambda = 0
+                  geometricFactor = 0
                 case (4) ! BHat_sub_theta
                   dBHat_sup_thetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
                   dTempdLambda = - dBHat_sub_thetadLambda * dBHatdzeta(itheta,izeta)
-                  dFactordLambda = alpha*Delta*dPhiHatdpsiHat/(4*(BHat(itheta,izeta)**3)) &
-                    * DHat(itheta,izeta) * dTempdLambda
+                  geometricFactor = DHat(itheta,izeta)*dTempdLambda/(BHat(itheta,izeta)**3)
                 case (5) ! BHat_sub_zeta
                   dBHat_sup_zetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
                   dTempdLambda = dBHat_sub_zetadLambda * dBHatdtheta(itheta,izeta)
-                  dFactordLambda = alpha*Delta*dPhiHatdpsiHat/(4*(BHat(itheta,izeta)**3)) &
-                    * DHat(itheta,izeta) * dTempdLambda
+                  geometricFactor = DHat(itheta,izeta)*dTempdLambda/(BHat(itheta,izeta)**3)
                 case (6) ! DHat
                   dDHatdLambda = -DHat(itheta,izeta)*DHat(itheta,izeta)*cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                  dFactordLambda = alpha*Delta*dPhiHatdpsiHat/(4*(BHat(itheta,izeta)**3)) &
-                  * dDHatdLambda * temp
+                  geometricFactor = dDHatdLambda*temp/(BHat(itheta,izeta)**3)
               end select
+              factor = (alpha*Delta*dPhiHatdpsiHat/4)*geometricFactor
 
                 do ix=ixMin,Nx
                    do L=0,(Nxi_for_x(ix)-1)
@@ -523,14 +512,14 @@
 
                       ! Diagonal-in-L term
                       call MatSetValueSparse(dMatrixdLambda, rowIndex, rowIndex, &
-                           (L+1)*L/((2*L-one)*(2*L+three))*dFactordLambda, ADD_VALUES, ierr)
+                           (L+1)*L/((2*L-one)*(2*L+three))*factor, ADD_VALUES, ierr)
 
                        if (L<Nxi_for_x(ix)-2) then
                           ! Super-super-diagonal-in-L term:
                           ell = L+2
                           colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
                           call MatSetValueSparse(dMatrixdLambda, rowIndex, colIndex, &
-                               (L+3)*(L+2)*(L+1)/((two*L+5)*(2*L+three))*dFactordLambda, ADD_VALUES, ierr)
+                               (L+3)*(L+2)*(L+1)/((two*L+5)*(2*L+three))*factor, ADD_VALUES, ierr)
                        end if
 
                        if (L>1) then
@@ -538,7 +527,7 @@
                           ell = L-2
                           colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
                           call MatSetValueSparse(dMatrixdLambda, rowIndex, colIndex, &
-                               -L*(L-1)*(L-2)/((2*L-3)*(2*L-one))*dFactordLambda, ADD_VALUES, ierr)
+                               -L*(L-1)*(L-2)/((2*L-3)*(2*L-one))*factor, ADD_VALUES, ierr)
                        end if
                    end do
                 end do
@@ -576,9 +565,9 @@
        do itheta=ithetaMin,ithetaMax
           do izeta=izetaMin,izetaMax
 
-             xDotFactor = factor*DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
-                  * (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) &
-                  - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))
+!             xDotFactor = factor*DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
+!                  * (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) &
+!                  - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))
 
              ! Should use same upwinding direction as matrix
              if (xDotFactor>0) then
@@ -597,9 +586,9 @@
                   dBHatdLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
                   dBHatdzetadLambda = ns(whichMode)*Nperiods*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
                   dBHatdthetadLambda = -ms(whichMode)*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                  dXDotFactordLambda = &
+                  geometricFactor = &
                     ! Term from 1/(BHat**3)
-                    -3*factor*DHat(itheta,izeta)*dBHatdLambda &
+                    -3*DHat(itheta,izeta)*dBHatdLambda &
                     /(BHat(itheta,izeta)**4) &
                     * (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) &
                     - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta)) &
@@ -610,20 +599,20 @@
                     - factor*Dhat(itheta,izeta)/(BHat(itheta,izeta)**3) &
                     * Bhat_sub_zeta(itheta,izeta)*dBHatdthetadLambda
                 case (2) ! BHat_sup_theta
-                  dXDotFactordLambda = 0
+                  geometricFactor = 0
                 case (3) ! BHat_sup_zeta
-                  dXDotFactordLambda = 0
+                  geometricFactor = 0
                 case (4) ! BHat_sub_theta
                   dBHat_sub_thetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                  dXDotFactordLambda = factor*DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
+                  geometricFactor = DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
                     * dBHat_sub_thetadLambda*dBHatdzeta(itheta,izeta)
                 case (5) ! BHat_sub_zeta
                   dBHat_sub_zetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                  dXDotFactordLambda = -factor*DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
+                  geometricFactor = -DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
                     * dBHat_sub_zetadLambda*dBHatdtheta(itheta,izeta)
                 case (6) ! DHat
                   dDHatdLambda = -DHat(itheta,izeta)*DHat(itheta,izeta)*cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                  dXDotFactordLambda = factor*dDHatdLambda/(BHat(itheta,izeta)**3) &
+                  geometricFactor = dDHatdLambda/(BHat(itheta,izeta)**3) &
                     *(BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) &
                     - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))
               end select
@@ -635,7 +624,7 @@
 
              ! Term that is diagonal in L:
              colIndices = rowIndices
-             stuffToAdd = two*(3*L*L+3*L-2)/((two*L+3)*(2*L-1))*dXDotFactordLambda
+             stuffToAdd = two*(3*L*L+3*L-2)/((two*L+3)*(2*L-1))*factor*geometricFactor
              do ix_col=max(ixMinCol,min_x_for_L(L)),Nx
                 do ix_row=max(ixMin,min_x_for_L(L)),Nx
                    call MatSetValueSparse(dMatrixdLambda, rowIndices(ix_row), colIndices(ix_col), &
@@ -647,7 +636,7 @@
               ! Term that is super-super-diagonal in L:
               if (L<(Nxi-2)) then
                  ell = L + 2
-                 stuffToAdd = (L+1)*(L+2)/((two*L+5)*(2*L+3))*(dXDotFactordLambda)
+                 stuffToAdd = (L+1)*(L+2)/((two*L+5)*(2*L+3))*factor*geometricFactor
                  !do ix_col=ixMinCol,Nx
                  do ix_col=max(ixMinCol,min_x_for_L(ell)),Nx
                     colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F)
@@ -662,7 +651,7 @@
               ! Term that is sub-sub-diagonal in L:
               if (L>1) then
                  ell = L - 2
-                 stuffToAdd = L*(L-1)/((two*L-3)*(2*L-1))*(dXDotFactordLambda)
+                 stuffToAdd = L*(L-1)/((two*L-3)*(2*L-1))*factor*geometricFactor
                  do ix_col=max(ixMinCol,min_x_for_L(ell)),Nx
                     colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F)
                     do ix_row=max(ixMin,min_x_for_L(L)),Nx
@@ -695,12 +684,12 @@
       do itheta=1,Ntheta
          do izeta=1,Nzeta
             !factor = thetaWeights(itheta)*zetaWeights(izeta)/DHat(itheta,izeta)
-            dFactordLambda = 0
+            geometricFactor = 0
             if (whichLambda == 5) then
               dDHatdLambda = - DHat(itheta,izeta)*DHat(itheta,izeta)*cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-              dFactordLambda = -thetaWeights(itheta)*zetaWeights(izeta) &
-                *dDHatdLambda/(DHat(itheta,izeta)**2)
+              geometricFactor = -dDHatdLambda/(DHat(itheta,izeta)**2)
             end if
+            factor = thetaWeights(itheta)*zetaWeights(izeta)*geometricFactor
 
             do ix=1,Nx
                do ispecies=1,Nspecies
@@ -708,11 +697,11 @@
 
                   rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)
                   call MatSetValueSparse(dMatrixdLambda, rowIndex, colIndex, &
-                       x2(ix)*xWeights(ix)*dFactordLambda, ADD_VALUES, ierr)
+                       x2(ix)*xWeights(ix)*factor, ADD_VALUES, ierr)
 
                   rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)
                   call MatSetValueSparse(dMatrixdLambda, rowIndex, colIndex, &
-                       x2(ix)*x2(ix)*xWeights(ix)*dFactordLambda, ADD_VALUES, ierr)
+                       x2(ix)*x2(ix)*xWeights(ix)*factor, ADD_VALUES, ierr)
                end do
             end do
 
