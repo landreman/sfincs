@@ -1,0 +1,408 @@
+\documentclass[11pt]{amsart}
+\usepackage{geometry}                
+\geometry{letterpaper}                   
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{epstopdf}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{placeins}
+\usepackage{setspace}
+\onehalfspacing
+\usepackage{fullpage}
+\usepackage{commath}
+\usepackage{bm}
+\usepackage{breqn}
+\usepackage{bm}
+\usepackage{mathrsfs}
+% My definitions
+\def\bhat{\ensuremath{\mathbf{\hat{b}}}}
+\def\vpar{\ensuremath{v_{||}}}
+\def\vperp{\ensuremath{v_{\perp}}}
+\newcommand{\partder}[2]{\dfrac{\partial #1}{\partial #2}} % partial der.
+\newcommand{\der}[2]{\dfrac{d #1}{d #2}} % partial der.
+\DeclareMathOperator{\sign}{sign}
+\DeclareMathOperator{\Res}{Res}
+% Definitions for code snipets
+\usepackage{listings}
+\usepackage{color}
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+\lstset{frame=tb,
+  language=Matlab,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
+\begin{document}
+
+\title{Adjoint SFINCS Implementation Notes}
+\author{Elizabeth Paul}
+\date{August 7th, 2017}
+
+\maketitle
+
+\section{Input Parameters and Requirements}
+
+The adjoint sensitivity part of SFINCS is controlled with the \texttt{RHSMode} flag. 
+\begin{itemize}
+\item \texttt{RHSMode == 4}: Sensitivity is computed at constant $E_r$
+\item \texttt{RHSMode == 5}: Sensitivity is computed at the ambipolar $E_r$ (not yet implemented)
+\end{itemize} 
+If \texttt{RHSMode > 3}, then input is read from the \texttt{sensitivityOptions} namelist with the following inputs.
+\begin{itemize}
+\item \texttt{adjointBootstrapOption} (Boolean): if \texttt{.true.}, sensitivity of bootstrap current is computed for desired Fourier components of $\bm{B}$. 
+\item \texttt{adjointRadialCurrentOption} (Boolean): If \texttt{.true.}, sensitivity of radial current is computed for desired Fourier components of $\bm{B}$. 
+\item \texttt{adjointTotalHeatFluxOption} (Boolean): If \texttt{.true.}, sensitivity of total heat flux is computed for desired Fourier components of $\bm{B}$. 
+\item \texttt{adjointHeatFluxOption} (1D array of Booleans of length \texttt{Nspecies}): If \texttt{.true.}, sensitivity of heat flux is computed for desired Fourier components of $\bm{B}$ for this species. 
+\item \texttt{adjointParticleFluxOption} (1D array of Booleans of length \texttt{Nspecies}): If \texttt{.true.}, sensitivity of particle flux is computed for desired Fourier components of $\bm{B}$ for this species. 
+\item \texttt{nMaxAdjoint} (integer): Sensitivity will be computed for $\abs{n} \leq$ \texttt{nMaxAdjoint}.
+\item \texttt{mMaxAdjoint} (integer): Sensitivity will be computed for $m \leq$ \texttt{mMaxAdjoint}.
+\end{itemize}
+The following input options must be used concurrently with adjoint SFINCS.
+\begin{itemize}
+\item \texttt{includePhi1 == .false.} 
+\item \texttt{geometryScheme == 5} 
+\item \texttt{EParallelHat == 0}
+\item \texttt{useDKESExBDrift == .false.}
+\item \texttt{magneticDriftScheme == 0}
+\item \texttt{includeXDotTerm == .true.}
+\item \texttt{constraintScheme == -1}
+\item \texttt{collisionOperator == 0}
+\end{itemize}
+At the moment VMEC geometry with stellarator symmetry is assumed. Adjoint SFINCS must also be used with the same $\hat{T}$ for all species so that the collision operator is self-adjoint. 
+
+\section{Adjoint Output}
+If sensitivity computation is requested in the input file, the following output arrays will be in the HDF5 output file.
+\begin{itemize}
+\item \texttt{dRadialCurrentdLambda} (dim. \texttt{NLambdas}, \texttt{NModes})
+\item \texttt{dTotalHeatFluxdLambda} (dim. \texttt{NLambdas}, \texttt{NModes})
+\item \texttt{dBootstrapdLambda} (dim. \texttt{NLambdas}, \texttt{NModes})
+\item \texttt{dParticleFluxdLambda} (dim. \texttt{NSpecies}, \texttt{NLambdas}, \texttt{NModes})
+\item \texttt{dHeatFluxdLambda} (dim. \texttt{NSpecies}, \texttt{NLambdas}, \texttt{NModes})
+\item \texttt{ns} (dim. \texttt{NModes}): Harmonic $n$ for mode.
+\item \texttt{ms} (dim. \texttt{NModes}): Harmonic $m$ for mode. 
+\end{itemize}
+With VMEC geometry assumed, \texttt{NLambdas==6}, and \texttt{whichLambda} corresponds to the following components of $\bm{B}$.
+\begin{itemize}
+\item \texttt{whichLambda == 1}: $\hat{B}_{mn}$
+\item \texttt{whichLambda == 2}: $\hat{B}^{\theta}_{mn}$ 
+\item \texttt{whichLambda == 3}: $\hat{B}^{\zeta}_{mn}$
+\item \texttt{whichLambda == 4}: $\hat{B}_{\theta}^{mn}$
+\item \texttt{whichLambda == 5}: $\hat{B}_{\zeta}^{mn}$
+\item \texttt{whichLambda == 6}: $\hat{g}_{mn}$
+\end{itemize}
+Note that $\hat{B}_{\psi}$ does not appear in the kinetic equation when we do not include the tangential magnetic drifts. 
+
+\section{Magnetic Geometry Conventions}
+
+I've assumed the following VMEC magnetic geometry conventions in the sensitivity calculations.
+\begin{gather}
+\hat{B} = \sum_{mn} \hat{B}_{mn} \cos(m \theta - n N_p \zeta) \\
+\hat{B}^{\theta} = \sum_{mn} \hat{B}^{\theta}_{mn} \cos(m \theta - n N_p \zeta) \\
+\hat{B}^{\zeta} = \sum_{mn} \hat{B}^{\zeta}_{mn} \cos(m \theta - n N_p \zeta) \\ 
+\hat{B}_{\theta} = \sum_{mn} \hat{B}_{\theta}^{mn} \cos(m \theta - n N_p \zeta) \\
+\hat{B}_{\zeta} = \sum_{mn} \hat{B}_{\zeta}^{mn} \cos(m \theta - n N_p \zeta) \\
+\frac{1}{\hat{D}} = \sum_{mn} \hat{g}_{mn} \cos(m \theta - n N_p \zeta)
+\end{gather}
+Here $N_p$ is the number of periods (\texttt{nfp} as specified in the VMEC wout). 
+
+\section{Adjoint Equation with Sources \& Constraints}
+
+The kinetic equation in SFINCS takes the following form. I will not include the inductive electric field term. 
+\begin{dmath}
+\hat{K}_s\{\theta\} \partder{\hat{f}_{s1}}{\theta} + \hat{K}_s\{\zeta\} \partder{\hat{f}_{s1}}{\zeta} + \hat{K}_s \{x_s\} \partder{\hat{f}_{s1}}{x_s} + \hat{K}_s \{\xi\} \partder{\hat{f}_{s1}}{\xi} + \hat{K}_s\{\hat{\psi}\} \partder{\hat{f}_{Ms}}{\hat{\psi}} - \hat{C}_{ls} \{ \hat{f}_{s1} \} - \hat{S}_{s1} \hat{f}_{Ms} - \hat{S}_{s2} \hat{f}_{Ms} x_s^2  = 0
+\label{DKE}
+\end{dmath}
+\iffalse
+Here things are normalized in the following way. 
+\begin{gather}
+\hat{K}_s \{ ... \} = \frac{\bar{R}}{\bar{v}} = K_s \{ ...\} \\
+\hat{C}_s \{ \hat{f}_s \} = \frac{1}{\bar{\nu}} C_s \{ \hat{f}_s \} \\
+\hat{S}_{sj} = \frac{\bar{R}}{\bar{v}} S_{sj} \\
+f_s = \frac{\bar{n}}{\bar{v}^3} \hat{f}_s \\
+\hat{\psi} = \frac{\psi}{\bar{B} \bar{R}^2}
+\end{gather}
+\fi
+We solve equation \ref{DKE} in addition to two constraints.
+\begin{gather}
+\left\langle \int d^3 v \, \hat{f}_{s1} \right\rangle_{\psi} = 0 \\
+\left\langle \int d^3 v \, \hat{f}_{s1} x_s^2 \right \rangle_{\psi} = 0 
+\end{gather}
+I will write this set of 3 equations in terms of a linear operator $\mathbb{L}^s$ and the state $\hat{F}_s$, which includes the two sources.
+\begin{gather}
+\mathbb{L}^s \hat{F}_s =
+\begin{bmatrix}
+\mathbb{L}_0^s & - \hat{f}_{Ms} & - \hat{f}_{Ms} x_s^2  \\
+\mathbb{L}_1^s & 0 & 0 \\
+\mathbb{L}_2^s & 0 & 0 
+\end{bmatrix}
+\begin{bmatrix}
+\hat{f}_{s1} \\
+\hat{S}_{s1} \\
+\hat{S}_{s2}
+\end{bmatrix} = \begin{bmatrix}
+\mathbb{S}^s_0 \\
+0 \\
+0
+\end{bmatrix} = \mathbb{S}^s \label{matrixEquation}
+\end{gather}
+Here $\mathbb{L}_0^s, \mathbb{S}_0^s, \mathbb{L}_1^s$, and $\mathbb{L}_2^s$ are given as follows.
+\begin{gather}
+\mathbb{L}_0^s = 
+\hat{K}_s\{\theta\} \partder{}{\theta} + \hat{K}_s\{\zeta\} \partder{}{\zeta} + \hat{K}_s \{x_s\} \partder{}{x_s} + \hat{K}_s \{\xi\} \partder{}{\xi} - \hat{C}_{ls}  \\
+\mathbb{S}^s_0 = - \hat{K}_s\{\hat{\psi}\} \partder{\hat{f}_{Ms}}{\hat{\psi}} \\
+\mathbb{L}_1^s \hat{f}_{1s} =  \left \langle \int d^3 v \, \hat{f}_{s1} \right \rangle_{\psi} \\
+\mathbb{L}_2^s \hat{f}_{1s} =  \left \langle \int d^3 v \, \hat{f}_{s1} x_s^2 \right \rangle_{\psi} 
+\end{gather}
+
+And we define the inner product as follows.
+\begin{gather}
+\langle \hat{F}, \hat{G} \rangle = \sum_s \langle \hat{F}_s, \hat{G}_s \rangle \\
+\langle \hat{F}_s, \hat{G}_s \rangle = \left \langle \int d^3 v \, \frac{\hat{T}_s}{2 \hat{f}_{Ms}} \hat{f}_{s1} \hat{g}_{s1} \right \rangle_{\psi} + \frac{\hat{T}_s}{2} \hat{S}_{s1}^f \hat{S}_{s1}^g + \frac{\hat{T}_s}{2} \hat{S}_{s2}^f \hat{S}_{s2}^g
+\end{gather}
+I'll use this definition to find a form for $(\mathbb{L}^s)^{\dagger}$.
+\begin{gather}
+\langle \hat{F}_s, \mathbb{L}^s \hat{G}_s \rangle = \left \langle \int d^3 v \, \frac{\hat{T}_s}{2 \hat{f}_{Ms}} \hat{f}_{s1} \left( \mathbb{L}_0^s \hat{g}_{s1} - \hat{f}_{Ms} \hat{S}_{s1}^g - \hat{f}_{Ms} x_s^2 \hat{S}_{s2}^g \right) \right \rangle_{\psi} + \frac{\hat{T}_s}{2} \hat{S}_{s1}^f \mathbb{L}_1^s \hat{g}_{s1} + \frac{\hat{T}_s}{2} \hat{S}_{s2}^f \mathbb{L}_2^s \hat{g}_{s1} 
+\end{gather}
+I'll using the definitions of $\mathbb{L}_1^s$ and $\mathbb{L}_s^2$ to rewrite the first term.
+\begin{gather}
+\langle (\mathbb{L}^s)^{\dagger} \hat{F}_s,  \hat{G}_s \rangle = \left \langle \int d^3 v \, \frac{\hat{T}_s}{2 \hat{f}_{Ms}} (\mathbb{L}_0^s)^{\dagger} \hat{f}_{s1} \hat{g}_{s1} \right \rangle_{\psi} - \frac{\hat{T}_s}{2} \mathbb{L}_1^s \hat{f}_{s1} \hat{S}_{s1}^g - \frac{\hat{T}_s}{2} \mathbb{L}_2^s \hat{f}_{s1} \hat{S}_{s2}^g + \frac{\hat{T}_s}{2} \hat{S}_{s1}^f \mathbb{L}_1^s \hat{g}_{s1}  + \frac{\hat{T}_s}{2} \hat{S}_{s2}^f \mathbb{L}_2^s \hat{g}_{s1}
+\end{gather}
+So, we can write the adjoint operator in the following form.
+\begin{gather}
+(\mathbb{L}^s)^{\dagger} = 
+\begin{bmatrix}
+(\mathbb{L}_0^s)^{\dagger} & \hat{f}_{Ms} & \hat{f}_{Ms} x_s^2 \\
+- \mathbb{L}_1^s & 0 & 0 \\
+- \mathbb{L}_2^s & 0 & 0 
+\end{bmatrix}
+\end{gather}
+Where $(\mathbb{L}_0^s)^{\dagger}$ is the following.
+\begin{gather}
+(\mathbb{L}_0^s)^{\dagger} = - \left( \hat{K}_s\{\theta\} \partder{}{\theta} + \hat{K}_s\{\zeta\} \partder{}{\zeta} + \hat{K}_s \{x_s\} \partder{}{x} + \hat{K}_s \{\xi\} \partder{}{\xi}\right) + \hat{C}_{ls}
+\end{gather}
+
+\section{Adjoint Equations}
+We will be interested in computing the sensitivity of the particle flux and heat flux for a single species, defined below. 
+\begin{gather}
+\hat{\Gamma}_{s} = \left \langle \int d^3 v \, \hat{f}_{s1} \bm{v}_{ms} \cdot \nabla \hat{r} \right \rangle_{\psi} \\
+\hat{Q}_{s} = \left \langle \int d^3 v \, \hat{f}_{s1} \frac{\hat{T}_s x_s^2 }{2} \bm{v}_{ms} \cdot \nabla \hat{r} \right \rangle_{\psi} 
+\end{gather}
+We are also interest in computing the sensitivity of species-summed quantities: the radial current, total heat flux, and bootstrap current. 
+\begin{gather}
+\hat{J}^r = \sum_s Z_s \Gamma_{s} \\
+\hat{Q} = \sum_s \hat{Q}_s \\
+\hat{J}^{bs} = \sum_s Z_s \frac{\left \langle \hat{B} \int d^3 v \, \hat{f}_{s1} \sqrt{\frac{\hat{T}_s}{\hat{m}_s}}x_s \xi \right \rangle_{\psi} }{\langle \hat{B}^2 \rangle_{\psi}^{1/2}} = \sum_s \tilde{J}^{bs}_s
+\end{gather}
+I want to write each of these moments in terms of the inner product defined in the previous section.  
+\begin{gather}
+\hat{\Gamma}_{s} = \left \langle \tilde{\Gamma}_{s}, \hat{F}_s \right \rangle \\
+\hat{Q}_s = \left \langle \tilde{Q}_s, \hat{F}_s \right \rangle \\
+\hat{J}^r = \left \langle \tilde{J}^r, \hat{F} \right \rangle = \sum_s Z_s \left \langle \tilde{\Gamma}_{s}, \hat{F}_s \right \rangle \\
+\hat{Q} = \left \langle \tilde{Q}, \hat{F} \right \rangle = \sum_s \left \langle \tilde{Q}_s, \hat{F}_s \right \rangle \\
+\hat{J}^{bs} = \left \langle \tilde{J}^{bs}, \hat{F} \right \rangle = \sum_s \left \langle \tilde{J}^{bs}_s, \hat{F}_s \right \rangle
+\end{gather}
+Here $\tilde{\Gamma}_{s}$, $\tilde{Q}_s$, and $\tilde{J}^{bs}_s$ are given as follows.
+\begin{gather}
+\tilde{\Gamma}_{s} = \begin{bmatrix}
+\hat{f}_{Ms} \frac{2}{\hat{T}_s} \bm{v}_{ms} \cdot \nabla \hat{r} \\ 
+0 \\
+0
+\end{bmatrix} \\
+\tilde{Q}_{s} = \begin{bmatrix}
+\hat{f}_{Ms} x_s^2 \bm{v}_{ms} \cdot \nabla \hat{r}  \\
+0 \\
+0
+\end{bmatrix} \\
+\tilde{J}^{bs}_s = \begin{bmatrix}
+Z_s \hat{f}_{M s} \frac{2}{\hat{T}_s} \sqrt{\frac{\hat{T}_s}{\hat{m}_s}} x_s \xi \frac{\hat{B}}{\langle \hat{B}^2 \rangle_{\psi}^{1/2}} \\
+0 \\
+0
+\end{bmatrix}
+\end{gather}
+Note that none of the desired moments depend on the sources, so the last two elements vanish. We will need to solve the adjoint equation for each of the RHS's corresponding to the desired moments.
+\begin{gather}
+\mathbb{L}^{\dagger} \mathcal{F}^{\Gamma_{s}} = \tilde{\Gamma}_{s} \\
+\mathbb{L}^{\dagger} \mathcal{F}^{Q_s} = \tilde{Q}_s \\
+\mathbb{L}^{\dagger} \mathcal{F}^{J^r} = \tilde{J}^r \\
+\mathbb{L}^{\dagger} \mathcal{F}^{Q} = \tilde{Q} \\
+\mathbb{L}^{\dagger} \mathcal{F}^{J^{bs}} = \tilde{J}^{bs}
+\end{gather}
+The adjoint solves take place after the forward solve in \texttt{solver.F90}. The adjoint matrix is populated with a call to \texttt{populateMatrix} with argument \texttt{whichMatrix == 4}, and the adjoint preconditioner is populated with \texttt{whichMatrix == 5}. Here the sign of the collisionless terms are flipped from that of the forward matrix. 
+
+\subsection{Explicit Form of RHS in SFINCS Coordinates}
+The RHS quantities need to be discretized in Legendre polynomials, $P_L(\xi)$, in the same way that the LHS is, by applying the following operation. 
+\begin{gather}
+\frac{2L+1}{2} \int_{-1}^1 d \xi \, P_L(\xi) ( ... )
+\end{gather}
+Here the distribution function is expanded in polynomials.
+\begin{gather}
+\hat{f}_{s1} = \sum_l P_l(\xi) \hat{f}_{s1,l}
+\end{gather}
+The explicit forms for the discretized adjoint RHS's are given below.
+\begin{gather}
+\tilde{\Gamma}^0_{s,L} = \left[ \frac{\hat{n}_s \hat{m}_s^{3/2} \Delta x_s^2 \hat{D}}{\hat{T}_s^{3/2} \pi^{3/2} Z_s \hat{B}^3 } e^{-x_s^2} \left( \hat{B}_{\theta} \partder{\hat{B}}{\zeta} - \hat{B}_{\zeta} \partder{\hat{B}}{\theta} \right) \right] \partder{ \nabla \hat{r}}{\nabla \hat{\psi}} \left[ \frac{4}{3} \delta_{L,0} + \frac{2}{3} \delta_{L,2} \right] \\
+\tilde{Q}^0_{s,L} =  \left[ \frac{\hat{n}_s \Delta \hat{m}_s^{3/2} x_s^4 \hat{D}}{2 \hat{T}_s^{1/2} \pi^{3/2} Z_s \hat{B}^3 } e^{-x_s^2} \left( \hat{B}_{\theta} \partder{\hat{B}}{\zeta} - \hat{B}_{\zeta} \partder{\hat{B}}{\theta} \right) \right] \partder{ \nabla \hat{r}}{\nabla \hat{\psi}} \left[ \frac{4}{3} \delta_{L,0} + \frac{2}{3} \delta_{L,2} \right] \\
+\tilde{J}_{s,L}^{bs,0} =  \frac{2 Z_s x_s \hat{m}_s \hat{n}_s} {\pi^{3/2} \hat{T}_s^{2}} e^{-x_s^2}\frac{\hat{B}}{\langle \hat{B}^2 \rangle_{\psi}^{1/2}} \delta_{L,1}
+\end{gather}
+The 0 superscript indicates that these quantities correspond to the RHS of the first equation of the matrix equation in equation \ref{matrixEquation}. The subroutine \texttt{populateAdjointRHS} populates the RHS corresponding to \texttt{whichSpecies} and \texttt{whichAdjointRHS}. When \texttt{whichSpecies == 0}, this subroutine populates the RHS corresponding to the species-summed quantity, otherwise it indicates the species for the desired RHS. The parameter \texttt{whichAdjointRHS} indicates the desired moment: particle flux (1), heat flux (2), or bootstrap current (3). 
+
+\section{Sensitivity \& Inner Products}
+We can use the resulting adjoint variables to compute the sensitivity of the moments with respect to a parameter $\lambda$.
+\begin{gather}
+\label{sensitivityfirst}
+\partder{\hat{\Gamma}_{s}}{\lambda} = \partder{\hat{\Gamma}_{s}}{\lambda} \bigg \rvert_{\hat{F}} + \left \langle \mathcal{F}^{\Gamma_{s}}, \partder{\mathbb{S}}{\lambda} - \partder{\mathbb{L}}{\lambda} \hat{F} \right \rangle \\
+\partder{\hat{Q}_s}{\lambda} = \partder{\hat{Q}_s}{\lambda} \bigg \rvert_{\hat{F}} + \left \langle \mathcal{F}^{Q_s}, \partder{\mathbb{S}}{\lambda} - \partder{\mathbb{L}}{\lambda} \hat{F} \right \rangle \\
+\partder{\hat{J}^r}{\lambda} = \partder{\hat{J}^r}{\lambda} \bigg \rvert_{\hat{F}} + \left \langle \mathcal{F}^{J^r}, \partder{\mathbb{S}}{\lambda} - \partder{\mathbb{L}}{\lambda} \hat{F} \right \rangle \\
+\partder{\hat{Q}}{\lambda} = \partder{\hat{Q}}{\lambda} \bigg \rvert_{\hat{F}} + \left \langle \mathcal{F}^Q, \partder{\mathbb{S}}{\lambda} - \partder{\mathbb{L}}{\lambda} \hat{F} \right \rangle \\
+\partder{\hat{J}^{bs}}{\lambda} = \partder{\hat{J}^{bs}}{\lambda} \bigg \rvert_{\hat{F}} + \left \langle \mathcal{F}^{J^{bs}}, \partder{\mathbb{S}}{\lambda} - \partder{\mathbb{L}}{\lambda} \hat{F} \right \rangle
+\label{sensitivitylast}
+\end{gather}
+The subroutine \texttt{evaluateDiagnostics} in \texttt{adjointDiagnostics.F90} computes the sensitivity as in equations \ref{sensitivityfirst}-\ref{sensitivitylast}. The LHS's of the above expressions correspond to the output arrays \texttt{dParticleFluxdLambda}, \texttt{dHeatFluxdLambda}, \texttt{dRadialCurrentdLambda}, \texttt{dTotalHeatFluxdLambda}, and \texttt{dBootstrapCurrentdLambda}, respectively. After each adjoint solve, the corresponding diagnostics are computed with the adjoint solution and the forward solution.
+
+\section{Explicit Sensitivity of Moments}
+The first term of equations \ref{sensitivityfirst}-\ref{sensitivitylast}, which contains the explicit dependence of the moments on geometry, is computed in the subroutines \texttt{heatFluxSensitivity}, \texttt{particleFluxSensitivity}, and \texttt{bootstrapSensitivity}. I'll show the forms for these sensitivity derivatives below.
+
+\subsection{Explicit Heat Flux Sensitivity}
+In the following expressions, the subscript of $\hat{f}_{s1,l}$ corresponds to the Legendre polynomial discretization.
+\begin{dmath}
+\partder{\hat{Q}_s}{\hat{B}_{mn}}  \bigg \rvert_{\hat{F}_s} = \frac{\hat{T}_s^{7/2} \pi \Delta}{2 V' \hat{m}_s^{3/2} \hat{Z}_s} \partder{ \nabla \hat{r}}{\nabla \hat{\psi}} \int_0^{2\pi} d \theta \int_0^{2\pi} d \zeta \int_0^{\infty} \, x_s^6 \left( \frac{8}{3} \hat{f}_{s1,0}  + \frac{4}{15} \hat{f}_{s1,2}  \right) \\\left[ \frac{-3}{\hat{B}^4} \partder{\hat{B}}{\hat{B}_{mn}} \left( \hat{B}_{\theta} \partder{\hat{B}}{\zeta} - \hat{B}_{\zeta} \partder{\hat{B}}{\theta} \right) + \frac{1}{\hat{B}^3}\left( \hat{B}_{\theta} \partder{(\partial \hat{B}/\partial \zeta)}{\hat{B}_{mn}} - \hat{B}_{\zeta} \partder{(\partial \hat{B}/\partial \theta)}{\hat{B}_{mn}} \right) \right]
+\end{dmath}
+\begin{dmath}
+\partder{\hat{Q}_s}{\hat{B}_{\theta}^{mn}} \bigg \rvert_{\hat{F}_s} = \frac{\hat{T}_s^{7/2} \pi \Delta}{2 V' \hat{m}_s^{3/2} \hat{Z}_s} \partder{ \nabla \hat{r}}{\nabla \hat{\psi}} \int_0^{2\pi} d \theta \int_0^{2\pi} d \zeta \int_0^{\infty} \, x_s^6 \left( \frac{8}{3} \hat{f}_{s1,0}  + \frac{4}{15} \hat{f}_{s1,2}  \right) \left[ \frac{1}{\hat{B}^3} \left( \partder{\hat{B}_{\theta}}{\hat{B}_{\theta}^{mn}} \partder{\hat{B}}{\zeta}\right) \right] 
+\end{dmath}
+\begin{dmath}
+\partder{\hat{Q}_s}{\hat{B}_{\zeta}^{mn}}  \bigg \rvert_{\hat{F}_s} = \frac{\hat{T}_s^{7/2} \pi \Delta}{2 V' \hat{m}_s^{3/2} \hat{Z}_s} \partder{ \nabla \hat{r}}{\nabla \hat{\psi}} \int_0^{2\pi} d \theta \int_0^{2\pi} d \zeta \int_0^{\infty} \, x_s^6 \left(\frac{8}{3} \hat{f}_{s1,0}  + \frac{4}{15} \hat{f}_{s1,2}  \right) \left[ - \frac{1}{\hat{B}^3} \left( \partder{\hat{B}_{\zeta}}{\hat{B}_{\zeta}^{mn}} \partder{\hat{B}}{\theta} \right) \right] 
+\end{dmath}
+\begin{dmath}
+\partder{\hat{Q}_s}{\hat{g}_{00}}  \bigg \rvert_{\hat{F}_s} = -\frac{\hat{T}_s^{7/2} \pi \Delta}{2 (V')^2 \hat{m}_s^{3/2} \hat{Z}_s} \partder{V'}{\hat{g}_{00}} \int_0^{2\pi} d \theta \int_0^{2\pi} d \zeta \int_0^{\infty} \, x_s^6 \left(\frac{8}{3} \hat{f}_{s1,0}  + \frac{4}{15} \hat{f}_{s1,2}  \right)  \left[ \frac{1}{ \hat{B}^3 } \left( \hat{B}_{\theta} \partder{\hat{B}}{\zeta} - \hat{B}_{\zeta} \partder{\hat{B}}{\theta} \right) \right] \partder{ \nabla \hat{r}}{\nabla \hat{\psi}}
+\end{dmath}
+
+\subsection{Explicit Particle Flux Sensitivity}
+\begin{dmath}
+\partder{\hat{\Gamma}_s}{\hat{B}_{mn}}  \bigg \rvert_{\hat{F}_s} = \frac{\hat{T}_s^{5/2} \pi \Delta}{\hat{m}_s^{3/2} \hat{Z}_s} \partder{ \nabla \hat{r}}{\nabla \hat{\psi}} \int_0^{2\pi} d \theta \int_0^{2\pi} d \zeta \int_0^{\infty} \, x_s^4 \left(\frac{8}{3} \hat{f}_{s1,0}  + \frac{4}{15} \hat{f}_{s1,2}  \right) \\ \frac{1}{V'} \left[ -3 \frac{1}{\hat{B}^4} \partder{\hat{B}}{\hat{B}_{mn}} \left( \hat{B}_{\theta} \partder{\hat{B}}{\zeta} - \hat{B}_{\zeta} \partder{\hat{B}}{\theta} \right) + \frac{1}{\hat{B}^3} \left( \hat{B}_{\theta} \partder{(\partial \hat{B}/\partial \zeta)}{\hat{B}_{mn}} - \hat{B}_{\zeta} \partder{(\partial \hat{B}/\partial \theta)}{\hat{B}_{mn}} \right) \right]
+\end{dmath}
+\begin{dmath}
+\partder{\hat{\Gamma}_s}{\hat{B}_{\theta}^{mn}}  \bigg \rvert_{\hat{F}_s} = \frac{\hat{T}_s^{5/2} \pi \Delta}{\hat{m}_s^{3/2} \hat{Z}_s} \partder{ \nabla \hat{r}}{\nabla \hat{\psi}} \int_0^{2\pi} d \theta \int_0^{2\pi} d \zeta \int_0^{\infty} \, x_s^4  \left(\frac{8}{3} \hat{f}_{s1,0}  + \frac{4}{15} \hat{f}_{s1,2}  \right) \frac{1}{V'} \left[ \frac{1}{\hat{B}^3} \left( \partder{\hat{B}_{\theta}}{\hat{B}_{\theta}^{mn}} \partder{\hat{B}}{\zeta} \right) \right]
+\end{dmath}
+\begin{dmath}
+\partder{\hat{\Gamma}_s}{\hat{B}_{\zeta}^{mn}} \bigg \rvert_{\hat{F}_s} = \frac{\hat{T}_s^{5/2} \pi \Delta}{\hat{m}_s^{3/2} \hat{Z}_s} \partder{ \nabla \hat{r}}{\nabla \hat{\psi}} \int_0^{2\pi} d \theta \int_0^{2\pi} d \zeta \int_0^{\infty} \, x_s^4  \left(\frac{8}{3} \hat{f}_{s1,0}  + \frac{4}{15} \hat{f}_{s1,2}  \right) \frac{1}{V'} \left[ -\frac{1}{\hat{B}^3} \partder{\hat{B}_{\zeta}}{\hat{B}_{\zeta}^{mn}} \partder{\hat{B}}{\theta} \right]
+\end{dmath}
+\begin{dmath}
+\partder{\hat{\Gamma}_s}{\hat{g}_{00}} \bigg \rvert_{\hat{F}_s}= - \frac{\hat{T}_s^{5/2} \pi \Delta}{\hat{m}_s^{3/2} \hat{Z}_s} \partder{ \nabla \hat{r}}{\nabla \hat{\psi}}\int_0^{2\pi} d \theta \int_0^{2\pi} d \zeta \int_0^{\infty} \, x_s^4 \left(\frac{8}{3} \hat{f}_{s1,0}  + \frac{4}{15} \hat{f}_{s1,2}  \right)  \left[ \frac{1}{ \hat{B}^3 (V')^2 } \partder{V'}{\hat{g}_{00}}  \left( \hat{B}_{\theta} \partder{\hat{B}}{\zeta} - \hat{B}_{\zeta} \partder{\hat{B}}{\theta} \right) \right] 
+\end{dmath}
+
+\subsection{Explicit Bootstrap Sensitivity}
+\begin{dmath}
+\partder{\hat{J}_s^{bs}}{\hat{B}_{mn}} \bigg \rvert_{\hat{F}_s} =  \frac{2\pi Z_s \hat{T}_s^2 }{\hat{m}_s^2 \hat{n}_s} \int_0^{2\pi} d \theta \int_0^{2\pi} d \zeta \int_0^{\infty} d x_s \, x_s^3 \left[\frac{2}{3} \hat{f}_{s1,1} \right] \left[ \frac{1}{\langle \hat{B}^2 \rangle_{\psi}^{1/2}} \partder{\hat{B}}{\hat{B}_{mn}} \frac{1}{V' \hat{D}} - \frac{1}{2} \frac{ \hat{B}}{ \langle \hat{B}^2 \rangle_{\psi}^{3/2}} \partder{\langle \hat{B}^2 \rangle_{\psi}}{\hat{B}_{mn}} \frac{1}{V' \hat{D}} \right]
+\end{dmath}
+\begin{dmath}
+\partder{\hat{J}_s^{bs}}{\hat{g}_{mn}} \bigg \rvert_{\hat{F}_s} = \frac{2\pi Z_s \hat{T}_s^2 }{\hat{m}_s^2 \hat{n}_s} \int_0^{2\pi} d \theta \int_0^{2\pi} d \zeta \int_0^{\infty} d x_s \, x_s^3 \left[\frac{2}{3} \hat{f}_{s1,1}\right] \left[ -\frac{\hat{B}}{\langle \hat{B}^2 \rangle_{\psi}^{1/2}}\frac{1}{(V')^2} \partder{V'}{\hat{g}_{00}} \delta_{m0} \delta_{n0} \frac{1}{\hat{D}} + \frac{\hat{B}}{\langle \hat{B}^2 \rangle_{\psi}^{1/2}} \partder{(1/\hat{D})}{\hat{g}_{mn}} \frac{1}{V'} - \frac{1}{2} \frac{\hat{B}}{\langle \hat{B}^2 \rangle_{\psi}^{3/2}} \partder{\langle \hat{B}^2 \rangle_{\psi}}{\hat{g}_{mn}} \frac{1}{V' \hat{D}} \right]
+\end{dmath}
+
+\section{Evaluation of `Adjoint Residual'}
+For the second term of the sensitivity derivatives in equations \ref{sensitivityfirst}-\ref{sensitivitylast}, we need to evaluate expressions of the following form.
+\begin{gather}
+\partder{\mathbb{S}}{\lambda} - \partder{\mathbb{L}}{\lambda} \hat{F}
+\end{gather}
+For lack of a better term, I'm calling this the `adjoint residual,' which is computed with a call to \texttt{evaluateAdjointResidual}. In \texttt{evaluateDiagnostics} in \texttt{adjointDiagnostics}, there is a call to the \texttt{innerProduct} subroutine to compute the inner product between the adjoint solution and the adjoint residual. The matrix $\partder{\mathbb{L}}{\lambda}$ is computed with a call to \texttt{populatedMatrixdLambda}, and $\partder{\mathbb{S}}{\lambda}$ is computed with \texttt{populatedRHSdLambda}. I will write the explicit forms of these below.
+
+\subsection{Explicit Sensitivity of $\mathbb{L}$}
+I will evaluate the sensitivity of each of the trajectory coefficients as given in equation \ref{DKE}. After discretization, the linear operator can be written in the following form.
+\begin{gather}
+\frac{2L+1}{2} \int_{-1}^1 d \xi \, P_L(\xi) (\mathbb{L}_0^s \hat{f}_{s1}) = \sum_l (M_{s,L,l} \hat{f}_{s,l})  \\
+M_{s,L,l} = \dot{\theta}_{s,L,l} \partder{}{\theta} + \dot{\zeta}_{s,L,l} \partder{}{\zeta} + M_{s,L,l}^{(\zeta)} + \dot{x}_{s,L,l} \partder{}{x_s} - \nu_n \hat{C}_{s,L} \delta_{L,l}
+\end{gather}
+Neither of the source terms will depend on geometry or $E_r$. However, both of the constraint equations will depend on $\hat{D}$. 
+The expression for the trajectory coefficients are given in the SFINCS technical documentation. The collision operator will not depend on the geometry parameters or $E_r$.
+
+\subsubsection{Explicit Sensitivity of $\dot{\theta}_{s,L,l}$}
+\begin{gather}
+\partder{\dot{\theta}_{s,L,l}}{\hat{B}_{mn}} = \sqrt{\frac{\hat{T}_s}{\hat{m}_s}} x_s \left( \frac{L+1}{2L+3} \delta_{L+1,l} + \frac{L}{2L-1} \delta_{L-1,l} \right) \left[ -\frac{\hat{B}^{\theta}}{\hat{B}^2} \partder{\hat{B}}{\hat{B}_{mn}} \right] + \frac{\alpha \Delta}{2} \partder{\hat{\Phi}}{\hat{\psi}} \delta_{L,l} \left[ -2 \frac{ \hat{D} \hat{B}_{\zeta}}{\hat{B}^3} \partder{\hat{B}}{\hat{B}_{mn}} \right] \\
+\partder{\dot{\theta}_{s,L,l}}{\hat{B}^{\theta}_{mn}} = \sqrt{\frac{\hat{T}_s}{\hat{m}_s}} x_s \left( \frac{L+1}{2L+3} \delta_{L+1,l} + \frac{L}{2L-1} \delta_{L-1,l} \right) \left[ \frac{1}{\hat{B}} \partder{\hat{B}^{\theta}}{\hat{B}^{\theta}_{mn}} \right] \\
+\partder{\dot{\theta}_{s,L,l}}{\hat{B}_{\zeta}^{mn}} =  \frac{\alpha \Delta}{2} \partder{\hat{\Phi}}{\hat{\psi}} \delta_{L,l} \left[ \frac{\hat{D}}{\hat{B}^2} \partder{\hat{B}_{\zeta}}{\hat{B}_{\zeta}^{mn}} \right] \\
+\partder{\dot{\theta}_{s,L,l}}{\hat{g}_{mn}} = \frac{\alpha \Delta}{2} \partder{\hat{\Phi}}{\hat{\psi}} \delta_{L,l} \left[ \frac{\hat{B}_{\zeta}}{\hat{B}^2} \partder{\hat{D}}{\hat{g}_{mn}} \right] \\
+\end{gather}
+
+\subsubsection{Explicit Sensitivity of $\dot{\zeta}_{s,L,l}$}
+\begin{gather}
+\partder{\dot{\zeta}_{s,L,l}}{\hat{B}_{mn}} = \sqrt{\frac{\hat{T}_s}{\hat{m}_s} } x_s \left( \frac{L+1}{2L+3} \delta_{L+1,l} + \frac{L}{2L-1} \delta_{L-1,l} \right) \left[ - \frac{\hat{B}^{\zeta}}{\hat{B}^2} \partder{\hat{B}}{\hat{B}_{mn}} \right] - \frac{\alpha \Delta}{2} \partder{\hat{\Phi}}{\hat{\psi}} \delta_{L,l} \left[ -2 \frac{\hat{D} \hat{B}_{\theta}}{\hat{B}^3} \partder{\hat{B}}{\hat{B}_{mn}} \right] \\
+\partder{\dot{\zeta}_{s,L,l}}{\hat{B}^{\zeta}_{mn}} = \sqrt{\frac{\hat{T}_s}{\hat{m}_s} } x_s \left( \frac{L+1}{2L+3} \delta_{L+1,l} + \frac{L}{2L-1} \delta_{L-1,l} \right) \left[ \frac{1}{\hat{B}} \partder{\hat{B}^{\zeta}}{\hat{B}^{\zeta}_{mn}} \right] \\
+\partder{\dot{\zeta}_{s,L,l}}{\hat{B}_{\theta}^{mn}} = - \frac{\alpha \Delta}{2} \partder{\hat{\Phi}}{\hat{\psi}} \delta_{L,l} \left[ \frac{\hat{D}}{\hat{B}^2} \partder{\hat{B}_{\theta}}{\hat{B}_{\theta}^{mn}} \right] \\
+\partder{\dot{\zeta}_{s,L,l}}{\hat{g}_{mn}} = - \frac{\alpha \Delta}{2} \partder{\hat{\Phi}}{\hat{\psi}} \delta_{L,l} \left[ \frac{\hat{B}_{\theta}}{\hat{B}^2} \partder{\hat{D}}{\hat{g}_{mn}} \right]
+\end{gather}
+
+\subsubsection{Explicit Sensitivity of $\dot{x}_{s,L,l}$}
+\begin{dmath}
+\partder{\dot{x}_{s,L,l}}{\hat{B}_{mn}} = - \left( \frac{\Delta x_s^3 }{4 Z_s} \partder{\hat{T}_s}{\hat{\psi}} + \frac{ \alpha \Delta x_s}{4} \partder{\hat{\Phi}}{\hat{\psi}} \right) \left[ \frac{2(3L^2 + 3 L - 2)}{(2L+3)(2L-1)} \delta_{L,l} + \frac{L-1}{2L-3} \frac{L}{2L-1} \delta_{L-2,l} + \frac{L+2}{2L+5} \frac{L+1}{2L+3} \delta_{L+2,l} \right] \left[ -3 \frac{ \hat{D}}{\hat{B}^4} \partder{\hat{B}}{\hat{B}_{mn}} \left( \hat{B}_{\theta} \partder{\hat{B}}{\zeta} - \hat{B}_{\zeta} \partder{\hat{B}}{\theta} \right) + \frac{\hat{D}}{\hat{B}^3} \left( \hat{B}_{\theta} \partder{ (\partial \hat{B}/\partial \zeta)}{\hat{B}_{mn}} - \hat{B}_{\zeta} \partder{(\partial \hat{B}/\partial \theta)}{\hat{B}_{mn}} \right) \right]
+\end{dmath}
+\begin{dmath}
+\partder{\dot{x}_{s,L,l}}{\hat{B}_{\theta}^{mn}} = - \left( \frac{\Delta x_s^3 }{4 Z_s} \partder{\hat{T}_s}{\hat{\psi}} + \frac{ \alpha \Delta x_s}{4} \partder{\hat{\Phi}}{\hat{\psi}} \right) \left[ \frac{2(3L^2 + 3 L - 2)}{(2L+3)(2L-1)} \delta_{L,l} + \frac{L-1}{2L-3} \frac{L}{2L-1} \delta_{L-2,l} + \frac{L+2}{2L+5} \frac{L+1}{2L+3} \delta_{L+2,l} \right] \left[ \frac{\hat{D}}{\hat{B}^3} \partder{\hat{B}}{\zeta} \partder{\hat{B}_{\theta}}{\hat{B}_{\theta}^{mn}} \right] 
+\end{dmath}
+\begin{dmath}
+\partder{\dot{x}_{s,L,l}}{\hat{B}_{\zeta}^{mn}} = - \left( \frac{\Delta x_s^3 }{4 Z_s} \partder{\hat{T}_s}{\hat{\psi}} + \frac{ \alpha \Delta x_s}{4} \partder{\hat{\Phi}}{\hat{\psi}} \right) \left[ \frac{2(3L^2 + 3 L - 2)}{(2L+3)(2L-1)} \delta_{L,l} + \frac{L-1}{2L-3} \frac{L}{2L-1} \delta_{L-2,l} + \frac{L+2}{2L+5} \frac{L+1}{2L+3} \delta_{L+2,l} \right] \left[ -\frac{\hat{D}}{\hat{B}^3} \partder{\hat{B}}{\theta} \partder{\hat{B}_{\zeta}}{\hat{B}_{\zeta}^{mn}} \right]
+\end{dmath}
+\begin{dmath}
+\partder{\dot{x}_{s,L,l}}{\hat{g}^{mn}} = -\left( \frac{\Delta x_s^3 }{4 Z_s} \partder{\hat{T}_s}{\hat{\psi}} + \frac{ \alpha \Delta x_s}{4} \partder{\hat{\Phi}}{\hat{\psi}} \right) \left[ \frac{2(3L^2 + 3 L - 2)}{(2L+3)(2L-1)} \delta_{L,l} + \frac{L-1}{2L-3} \frac{L}{2L-1} \delta_{L-2,l} + \frac{L+2}{2L+5} \frac{L+1}{2L+3} \delta_{L+2,l} \right] \left[ \partder{\hat{D}}{\hat{g}_{mn}} \frac{1}{\hat{B}^3} \left( \hat{B}_{\theta} \partder{\hat{B}}{\zeta} - \hat{B}_{\zeta} \partder{\hat{B}}{\theta} \right) \right]
+\end{dmath}
+
+\subsubsection{Explicit Sensitivity of $M_{s,L,l}^{(\xi)}$}
+\begin{dmath}
+\partder{M_{s,L,l}^{(\xi)}}{\hat{B}_{mn}} = - \sqrt{\frac{\hat{T}_s}{\hat{m}_s}} \frac{x_s}{2} \left[ \frac{(L+1)(L+2)}{2L+3} \delta_{L+1,l} -  \frac{(L-1)L}{2L-1} \delta_{L-1,l} \right] \left[ -2 \frac{1}{\hat{B}^3} \partder{\hat{B}}{\hat{B}_{mn}}\left( \hat{B}^{\theta} \partder{\hat{B}}{\theta} + \hat{B}^{\zeta} \partder{\hat{B}}{\zeta} \right) + \frac{1}{\hat{B}^2} \left( \hat{B}^{\theta} \partder{(\partial \hat{B}/\partial \theta)}{\hat{B}_{mn}} + \hat{B}^{\zeta} \partder{(\partial \hat{B}/\partial \zeta)}{\hat{B}_{mn}} \right) \right] + \frac{\alpha \Delta}{4} \partder{\hat{\Phi}}{\hat{\psi}} \left[ \frac{(L+1)L}{(2L-1)(2L+3)} \delta_{L,l} + \frac{(L+3)(L+2)(L+1)}{(2L+5)(2L+3)} \delta_{L+2,l} - \frac{L(L-1)(L-2)}{(2L-3)(2L-1)} \delta_{L-2,l} \right] \\ \left[ -3 \frac{\hat{D}}{\hat{B}^4} \partder{\hat{B}}{\hat{B}_{mn}} \left( \hat{B}_{\zeta} \partder{\hat{B}}{\theta} - \hat{B}_{\theta} \partder{\hat{B}}{\zeta} \right) + \frac{\hat{D}}{\hat{B}^3} \left( \hat{B}_{\zeta} \partder{(\partial \hat{B}/\partial \theta)}{\hat{B}_{mn}} - \hat{B}_{\theta} \partder{(\partial \hat{B}/\partial \zeta)}{\hat{B}_{mn}} \right) \right]
+\end{dmath}
+\begin{dmath}
+\partder{M_{s,L,l}^{(\xi)}}{\hat{B}^{\theta}_{mn}} = - \sqrt{\frac{\hat{T}_s}{\hat{m}_s}} \frac{x_s}{2} \left[ \frac{(L+1)(L+2)}{2L+3} \delta_{L+1,l} -  \frac{(L-1)L}{2L-1} \delta_{L-1,l} \right] \left[ \frac{1}{\hat{B}^2} \partder{\hat{B}}{\theta} \partder{\hat{B}^{\theta}}{\hat{B}^{\theta}_{mn}} \right] 
+\end{dmath}
+\begin{dmath}
+\partder{M_{s,L,l}^{(\xi)}}{\hat{B}^{\zeta}_{mn}} = \sqrt{\frac{\hat{T}_s}{\hat{m}_s}} \frac{x_s}{2} \left[ \frac{(L+1)(L+2)}{2L+3} \delta_{L+1,l} -  \frac{(L-1)L}{2L-1} \delta_{L-1,l} \right] \left[ \frac{1}{\hat{B}^2} \partder{\hat{B}}{\zeta} \partder{\hat{B}^{\zeta}}{\hat{B}^{\zeta}_{mn}} \right] 
+\end{dmath}
+\begin{dmath}
+\partder{M_{s,L,l}^{(\xi)}}{\hat{B}_{\theta}^{mn}} = - \frac{\alpha \Delta}{4} \partder{\hat{\Phi}}{\hat{\psi}} \left[ \frac{(L+1)L}{(2L-1)(2L+3)} \delta_{L,l} + \frac{(L+3)(L+2)(L+1)}{(2L+5)(2L+3)} \delta_{L+2,l} - \frac{L(L-1)(L-2)}{(2L-3)(2L-1)} \delta_{L-2,l} \right] \left[ \frac{\hat{D}}{\hat{B}^3} \partder{\hat{B}}{\zeta} \partder{\hat{B}_{\theta}}{\hat{B}_{\theta}^{mn}} \right]
+\end{dmath}
+\begin{dmath}
+\partder{M_{s,L,l}^{(\xi)}}{\hat{B}_{\zeta}^{mn}} = \frac{\alpha \Delta}{4} \partder{\hat{\Phi}}{\hat{\psi}} \left[ \frac{(L+1)L}{(2L-1)(2L+3)} \delta_{L,l} + \frac{(L+3)(L+2)(L+1)}{(2L+5)(2L+3)} \delta_{L+2,l} - \frac{L(L-1)(L-2)}{(2L-3)(2L-1)} \delta_{L-2,l} \right] \left[ \frac{\hat{D}}{\hat{B}^3} \partder{\hat{B}}{\theta} \partder{\hat{B}_{\zeta}}{\hat{B}_{\zeta}^{mn}} \right]
+\end{dmath}
+\begin{dmath}
+\partder{M_{s,L,l}^{(\xi)}}{\hat{g}_{mn}} = \frac{\alpha \Delta}{4} \partder{\hat{\Phi}}{\hat{\psi}} \left[ \frac{(L+1)L}{(2L-1)(2L+3)} \delta_{L,l} + \frac{(L+3)(L+2)(L+1)}{(2L+5)(2L+3)} \delta_{L+2,l} - \frac{L(L-1)(L-2)}{(2L-3)(2L-1)} \delta_{L-2,l} \right] \left[ \frac{1}{\hat{B}^3} \partder{\hat{D}}{\hat{g}_{mn}}\left( \hat{B}_{\zeta} \partder{\hat{B}}{\theta} - \hat{B}_{\theta} \partder{\hat{B}}{\zeta} \right) \right]
+\end{dmath}
+
+\subsubsection{Explicit Sensitivity of Constraint Equations}
+The form of the two constraint equations are given below. 
+\begin{gather}
+\mathbb{L}_1^s \hat{f}_{s1} = \int_0^{2\pi} d \theta \int_0^{2\pi} d \zeta \int_0^{\infty} d x_s \, x_s^2 \hat{f}_{s1,0} \frac{1}{\hat{D}} \\
+\mathbb{L}_1^s \hat{f}_{s1} = \int_0^{2\pi} d \theta \int_0^{2\pi} d \zeta \int_0^{\infty} d x_s \, x_s^4 \hat{f}_{s1,0} \frac{1}{\hat{D}} 
+\end{gather}
+Both $\mathbb{L}_1^s$ and $\mathbb{L}_2^s$ depend explicitly on $\hat{g}_{mn}$.
+\begin{gather}
+\partder{\mathbb{L}_1^s \hat{f}_{s1,0}}{\hat{g}_{mn}} \bigg \rvert_{\hat{F}} = \int_0^{2\pi} d \theta \int_0^{2\pi} d \zeta \int_0^{\infty} d x_s \, x_s^2 \hat{f}_{s1,0} \partder{1/\hat{D}}{\hat{g}_{mn}} \\
+\partder{\mathbb{L}_2^s \hat{f}_{s1,0}}{\hat{g}_{mn}} \bigg \rvert_{\hat{F}} = \int_0^{2\pi} d \theta \int_0^{2\pi} d \zeta \int_0^{\infty} dx_s \, x_s^4\hat{f}_{s1,0} \partder{1/\hat{D}}{\hat{g}_{mn}}
+\end{gather}
+
+\subsection{Explicit Sensitivity of $\mathbb{S}$}
+The RHS of the kinetic equation, $\mathbb{S}_0^s$, is discretized in the following way. 
+\begin{gather}
+\frac{2L+1}{2} \int_{-1}^1 d\xi \, \mathbb{S}_0^s = - \dot{\hat{\psi}}_{s,L} \partder{\hat{f}_{Ms}}{\hat{\psi}}
+\end{gather}
+Here $\hat{\psi}_{s,L}$ depends explicitly on geometry.
+\begin{gather}
+\partder{\dot{\hat{\psi}}_{s,L}}{\hat{B}_{mn}} = \frac{\Delta \hat{T}_s x_s^2}{2 Z_s} \left( \frac{4}{3} \delta_{L,0} + \frac{2}{3} \delta_{L,2} \right) \left[ -3 \frac{\hat{D}}{\hat{B}^4} \partder{\hat{B}}{\hat{B}_{mn}} \left( \hat{B}_{\theta} \partder{\hat{B}}{\zeta} - \hat{B}_{\zeta} \partder{\hat{B}}{\theta} \right) + \frac{\hat{D}}{\hat{B}^3} \left( \hat{B}_{\theta} \partder{(\partial \hat{B}/\partial \zeta)}{\hat{B}_{mn}} - \hat{B}_{\zeta} \partder{(\partial \hat{B}/\partial \theta)}{\hat{B}_{mn}} \right) \right] \\
+\partder{\dot{\hat{\psi}}_{s,L}}{\hat{B}_{\theta}^{mn}} = \frac{\Delta \hat{T}_s x_s^2}{2 Z_s} \left( \frac{4}{3} \delta_{L,0} + \frac{2}{3} \delta_{L,2} \right) \left[ \frac{\hat{D}}{\hat{B}^3} \partder{\hat{B}_{\theta}}{\hat{B}_{\theta}^{mn}} \partder{\hat{B}}{\zeta} \right] \\
+\partder{\dot{\hat{\psi}}_{s,L}}{\hat{B}_{\zeta}^{mn}} = -\frac{\Delta \hat{T}_s x_s^2}{2 Z_s} \left( \frac{4}{3} \delta_{L,0} + \frac{2}{3} \delta_{L,2} \right) \left[ \frac{\hat{D}}{\hat{B}^3} \partder{\hat{B}_{\zeta}}{\hat{B}_{\zeta}^{mn}} \partder{\hat{B}}{\theta}\right] \\
+\partder{\dot{\hat{\psi}}_{s,L}}{\hat{g}_{mn}} = \frac{\Delta \hat{T}_s x_s^2}{2 Z_s} \left( \frac{4}{3} \delta_{L,0} + \frac{2}{3} \delta_{L,2} \right) \left[ \frac{1}{\hat{B}^3} \left( \partder{\hat{B}}{\zeta} - \hat{B}_{\zeta} \partder{\hat{B}}{\theta} \right) \partder{\hat{D}}{\hat{g}_{mn}} \right]
+\end{gather}
+
+
+\end{document}  
