@@ -45,12 +45,12 @@
 
       do ix=ixMin,Nx
       !xPartOfRHS is independent of BHat
-        xPartOfRHS = x2(ix)*exp(-x2(ix))*( dnHatdpsiHats(ispecies)/nHats(ispecies) &
+        xPartOfRHS = (x2(ix)*exp(-x2(ix))*( dnHatdpsiHats(ispecies)/nHats(ispecies) &
           + alpha*Zs(ispecies)/THats(ispecies)*dPhiHatdpsiHat &
-          + (x2(ix) - three/two)*dTHatdpsiHats(ispecies)/THats(ispecies))
+          + (x2(ix) - three/two)*dTHatdpsiHats(ispecies)/THats(ispecies))) &
+          *(Delta*nHats(ispecies)*mHat*sqrtMHat/(2*pi*sqrtpi*Zs(ispecies)*sqrtTHat))
 
-!       factor = Delta*nHats(ispecies)*mHat*sqrtMHat &
-!            /(2*pi*sqrtpi*Zs(ispecies)*(BHat(itheta,izeta)**3)*sqrtTHat) &
+!       factor = 1/(BHat(itheta,izeta)**3) &
 !            *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
 !            - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
 !            * DHat(itheta,izeta) * xPartOfRHS
@@ -67,55 +67,42 @@
                 dBHatdLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
                 dBHatdthetadLambda = -ms(whichMode)*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
                 dBHatdzetadLambda = ns(whichMode)*Nperiods*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                dFactordLambda = &
-                  ! Term from BHat**(-3)
-                  -3*Delta*nHats(ispecies)*mHat*sqrtMHat &
-                  /(2*pi*sqrtpi*Zs(ispecies)*(BHat(itheta,izeta)**4)*sqrtTHat) &
+                dFactordLambda = -3/(BHat(itheta,izeta)**4) & ! Term from BHat**(-3)
                   *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
                   - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
-                  * DHat(itheta,izeta) * xPartOfRHS * dBHatdLambda &
+                  * DHat(itheta,izeta)*dBHatdLambda &
                   ! Term from dBHatdtheta
-                  + Delta*nHats(ispecies)*mHat*sqrtMHat &
-                  /(2*pi*sqrtpi*Zs(ispecies)*(BHat(itheta,izeta)**4)*sqrtTHat) &
-                  *BHat_sub_zeta(itheta,izeta)* DHat(itheta,izeta) * xPartOfRHS &
-                  * dBHatdthetadLambda &
+                  + DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
+                  *(BHat_sub_zeta(itheta,izeta)*dBHatdthetadLambda &
                   ! Term from dBHatdzeta
-                  - Delta*nHats(ispecies)*mHat*sqrtMHat &
-                  /(2*pi*sqrtpi*Zs(ispecies)*(BHat(itheta,izeta)**4)*sqrtTHat) &
-                  *BHat_sub_theta(itheta,izeta)* DHat(itheta,izeta) * xPartOfRHS &
-                  * dBHatdzetadLambda
+                  - BHat_sub_theta(itheta,izeta)*dBHatdzetadLambda)
               case (2) ! BHat_sup_theta
                 dFactordLambda = 0
               case (3) ! BHat_sup_zeta
                 dFactordLambda = 0
               case (4) ! BHat_sub_theta
                 dBHat_sub_thetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                dFactordLambda = -Delta*nHats(ispecies)*mHat*sqrtMHat &
-                  /(2*pi*sqrtpi*Zs(ispecies)*(BHat(itheta,izeta)**3)*sqrtTHat) &
-                  * dBHatdzeta(itheta,izeta)*dBHat_sub_thetadLambda &
-                  * DHat(itheta,izeta)*xPartOfRHS
+                dFactordLambda = -DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
+                  *dBHatdzeta(itheta,izeta)*dBHat_sub_thetadLambda
               case (5) ! BHat_sub_zeta
                 dBHat_sub_zetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                dFactordLambda = Delta*nHats(ispecies)*mHat*sqrtMHat &
-                  /(2*pi*sqrtpi*Zs(ispecies)*(BHat(itheta,izeta)**3)*sqrtTHat) &
-                  * dBHatdtheta(itheta,izeta)*dBHat_sub_zetadLambda &
-                  * DHat(itheta,izeta)*xPartOfRHS
+                dFactordLambda = DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
+                  * dBHatdtheta(itheta,izeta)*dBHat_sub_zetadLambda
               case (6) ! DHat
-                dDHatdLambda = - DHat(itheta,izeta)*DHat(itheta,izeta)*cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                dFactordLambda = Delta*nHats(ispecies)*mHat*sqrtMHat &
-                  /(2*pi*sqrtpi*Zs(ispecies)*(BHat(itheta,izeta)**3)*sqrtTHat) &
+                dDHatdLambda = -DHat(itheta,izeta)*DHat(itheta,izeta)*cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+                dFactordLambda = 1/(BHat(itheta,izeta)**3) &
                   *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
                   - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta)) &
-                  * dDHatdLambda * xPartOfRHS
+                  * dDHatdLambda
             end select
 
             L = 0
             index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-            call VecSetValue(dRHSdLambda, index, (4/three)*dFactordLambda, INSERT_VALUES, ierr)
+            call VecSetValue(dRHSdLambda, index, (4/three)*dFactordLambda*xPartOfRHS, INSERT_VALUES, ierr)
 
             L = 2
             index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-            call VecSetValue(dRHSdLambda, index, (two/three)*dFactordLambda, INSERT_VALUES, ierr)
+            call VecSetValue(dRHSdLambda, index, (two/three)*dFactordLambda*xPartOfRHS, INSERT_VALUES, ierr)
 
           enddo
         enddo

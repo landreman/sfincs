@@ -108,7 +108,7 @@ module adjointDiagnostics
     ! This subroutine evaluates the term in the sensitivity derivative of the fluxes 
     ! which arise due to the sensitivity of the inner product and the integrating factor,
     ! not f1 itself, hence this is not called with the adjoint variable
-    subroutine heatFluxSensitivityInnerProduct(result, deltaF, whichSpecies, whichLambda, whichMode)
+    subroutine heatFluxSensitivity(result, deltaF, whichSpecies, whichLambda, whichMode)
 
     use globalVariables
     use indices
@@ -128,7 +128,7 @@ module adjointDiagnostics
     allocate(xIntegralFactor(Nx))
 
     if (whichSpecies == 0) then
-      minSpecies = 0
+      minSpecies = 1
       maxSpecies = NSpecies
     else
       minSpecies = whichSpecies
@@ -201,7 +201,7 @@ module adjointDiagnostics
     ! This subroutine evaluates the term in the sensitivity derivative of the fluxes 
     ! which arise due to the sensitivity of the inner product and the integrating factor,
     ! not f1 itself, hence this is not called with the adjoint variable
-    subroutine particleFluxSensitivityInnerProduct(result, deltaF, whichSpecies, whichLambda, whichMode)
+    subroutine particleFluxSensitivity(result, deltaF, whichSpecies, whichLambda, whichMode)
 
     use globalVariables
     use indices
@@ -212,7 +212,7 @@ module adjointDiagnostics
     PetscScalar, dimension(:) :: deltaF
     integer :: whichSpecies, whichLambda, whichMode, minSpecies, maxSpecies, itheta, izeta, L, ix, index, ispecies
     PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, dBHatdThetadLambda, dBHatdZetadLambda
-    PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dinvDHatdLambda, factor, dRootFSAB2dLambda
+    PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dinvDHatdLambda, factor
     PetscScalar, dimension(:), allocatable :: xIntegralFactor
     PetscScalar :: dBHatdLambda, dVPrimeHatdLambda
 
@@ -221,7 +221,7 @@ module adjointDiagnostics
     allocate(xIntegralFactor(Nx))
 
     if (whichSpecies == 0) then
-      minSpecies = 0
+      minSpecies = 1
       maxSpecies = NSpecies
     else
       minSpecies = whichSpecies
@@ -262,7 +262,7 @@ module adjointDiagnostics
               dBHat_sub_zetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
               factor = -dBHatdtheta(itheta,izeta)*dBHat_sub_zetadLambda/(VPrimeHat*BHat(itheta,izeta)**3)
             case (6) ! DHat
-              if (ms(whichMode)==0 .and. ns(whichMode)== 0) then
+              if (ms(whichMode)==0 .and. ns(whichMode)==0) then
                 dVPrimeHatdLambda = 4*pi*pi
                 factor = - (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda &
                     /(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
@@ -297,7 +297,7 @@ module adjointDiagnostics
     ! This subroutine evaluates the term in the sensitivity derivative of the fluxes 
     ! which arise due to the sensitivity of the inner product and the integrating factor,
     ! not f1 itself, hence this is not called with the adjoint variable
-    subroutine bootstrapSensitivityInnerProduct(result, deltaF, whichSpecies, whichLambda, whichMode)
+    subroutine bootstrapSensitivity(result, deltaF, whichSpecies, whichLambda, whichMode)
 
     use globalVariables
     use indices
@@ -310,9 +310,9 @@ module adjointDiagnostics
     PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, dBHatdThetadLambda, dBHatdZetadLambda
     PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dinvDHatdLambda, factor, dVPrimeHatdLambda
     PetscScalar, dimension(:), allocatable :: xIntegralFactor
-    PetscScalar :: dBHatdLambda, dFSAB2dLambda, nHat, rootFSAB2
+    PetscScalar :: dBHatdLambda, dFSAB2dLambda, nHat, sqrtFSAB2
 
-    rootFSAB2 = sqrt(FSABHat2)
+    sqrtFSAB2 = sqrt(FSABHat2)
 
     result = 0
 
@@ -334,7 +334,7 @@ module adjointDiagnostics
 
     allocate(xIntegralFactor(Nx))
 
-    do ispecies = 0,Nspecies
+    do ispecies = 1,Nspecies
       THat = THats(ispecies)
       mHat = mHats(ispecies)
       sqrtTHat = sqrt(THats(ispecies))
@@ -354,7 +354,7 @@ module adjointDiagnostics
               stop
             case (1) ! BHat
               dBHatdLambda = cos(ms(whichMode)*theta(itheta)- ns(whichMode)*Nperiods*zeta(izeta))
-              factor = dBHatdLambda/(DHat(itheta,izeta)*VPrimeHat*rootFSAB2) - 0.5*BHat(itheta,izeta)*dFSAB2dLambda/(DHat(itheta,izeta)*rootFSAB2*FSABHat2*VPrimeHat)
+              factor = dBHatdLambda/(DHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) - 0.5*BHat(itheta,izeta)*dFSAB2dLambda/(DHat(itheta,izeta)*sqrtFSAB2*FSABHat2*VPrimeHat)
             case (2) ! BHat_sup_theta
               factor = 0
             case (3) ! BHat_sup_zeta
@@ -365,11 +365,11 @@ module adjointDiagnostics
               factor = 0
             case (6) ! DHat
               dinvDHatdLambda = cos(ms(whichMode)*theta(itheta)- ns(whichMode)*Nperiods*zeta(izeta))
-              factor = BHat(itheta,izeta)*dinvDHatdLambda/(VPrimeHat*RootFSAB2) &
-                - 0.5*BHat(itheta,izeta)*dFSAB2dLambda/(DHat(itheta,izeta)*VPrimeHat*FSABHat2*RootFSAB2)
+              factor = BHat(itheta,izeta)*dinvDHatdLambda/(VPrimeHat*sqrtFSAB2) &
+                - 0.5*BHat(itheta,izeta)*dFSAB2dLambda/(DHat(itheta,izeta)*VPrimeHat*FSABHat2*sqrtFSAB2)
               if (ms(whichMode)==0 .and. ns(whichMode)==0) then
                 dVPrimeHatdLambda = (4*pi*pi)
-                factor = factor - BHat(itheta,izeta)*dVPrimeHatdLambda/(VPrimeHat*VPrimeHat*RootFSAB2)
+                factor = factor - BHat(itheta,izeta)*dVPrimeHatdLambda/(VPrimeHat*VPrimeHat*sqrtFSAB2)
               end if
           end select
 
@@ -469,22 +469,22 @@ module adjointDiagnostics
             if (whichSpecies == 0) then
               select case (whichAdjointRHS)
                 case (1) ! Particle flux
-                  call particleFluxSensitivityInnerProduct(sensitivityResult, forwardSolutionArray, whichSpecies, whichLambda, whichMode)
+                  call particleFluxSensitivity(sensitivityResult, forwardSolutionArray, whichSpecies, whichLambda, whichMode)
                   dRadialCurrentdLambda(whichLambda,whichMode) = innerProductResult + sensitivityResult
                 case (2) ! Heat Flux
-                  call heatFluxSensitivityInnerProduct(sensitivityResult, forwardSolutionArray, whichSpecies, whichLambda, whichMode)
+                  call heatFluxSensitivity(sensitivityResult, forwardSolutionArray, whichSpecies, whichLambda, whichMode)
                   dTotalHeatFluxdLambda(whichLambda,whichMode) = innerProductResult + sensitivityResult
                 case (3) ! Bootstrap
-                  call bootstrapSensitivityInnerProduct(sensitivityResult, forwardSolutionArray, whichSpecies, whichLambda, whichMode)
+                  call bootstrapSensitivity(sensitivityResult, forwardSolutionArray, whichSpecies, whichLambda, whichMode)
                   dBootstrapdLambda(whichLambda,whichMode) = innerProductResult + sensitivityResult
               end select
             else
               select case (whichAdjointRHS)
                 case (1) ! Particle flux
-                  call particleFluxSensitivityInnerProduct(sensitivityResult, forwardSolutionArray, whichSpecies, whichLambda, whichMode)
+                  call particleFluxSensitivity(sensitivityResult, forwardSolutionArray, whichSpecies, whichLambda, whichMode)
                   dParticleFluxdLambda(whichSpecies,whichLambda,whichMode) = innerProductResult
                 case (2) ! Heat Flux
-                  call heatFluxSensitivityInnerProduct(sensitivityResult, forwardSolutionArray, whichSpecies, whichLambda, whichMode)
+                  call heatFluxSensitivity(sensitivityResult, forwardSolutionArray, whichSpecies, whichLambda, whichMode)
                   dHeatFluxdLambda(whichSpecies,whichLambda,whichMode) = innerProductResult
               end select
             end if

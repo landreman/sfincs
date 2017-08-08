@@ -93,7 +93,6 @@
                 end if
                 stop
               case (1) ! BHat
-                ! Right now this uses VMEC convention
                 dBHatdLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
                 dThetaPartOfTermdLambda(itheta,:) = - BHat_sup_theta(itheta,izeta) &
                   * sqrtTHat/sqrtMHat * ddtheta(itheta,:) * dBHatdLambda &
@@ -422,10 +421,9 @@
                   + BHat_sup_zeta(itheta,izeta) * dBHatdzeta(itheta,izeta)) &
                   ! Term from dBHatdtheta
                   -sqrtTHat/(2*sqrtMHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
-                  * BHat_sup_theta(itheta,izeta)*dBhatdthetadLambda &
+                  * (BHat_sup_theta(itheta,izeta)*dBhatdthetadLambda &
                   ! Term from dBHatdzeta 
-                  -sqrtTHat/(2*sqrtMHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
-                  * BHat_sup_zeta(itheta,izeta)*dBhatdzetadLambda
+                  + BHat_sup_zeta(itheta,izeta)*dBhatdzetadLambda)
               case (2) ! BHat_sup_theta
                 dBHat_sup_thetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
                 dFactordLambda = -sqrtTHat/(2*sqrtMHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
