@@ -2802,7 +2802,8 @@ contains
     PetscScalar :: rN_old,  rN_new, B0_old, B0_new, bcdata00L, bcdata00H
     PetscScalar :: DeltapsiHat !, diotadpsiHat moved to global variables 2016-09-15 HS
     PetscScalar :: RadialWeight = 1.0 ! weight of closest surface with rN<=rN_wish
-    PetscScalar :: bcdat_NPeriods, bcdat_psiAHat, bcdat_aHat, bcdat_iota 
+    integer :: bcdat_NPeriods
+    PetscScalar :: bcdat_psiAHat, bcdat_aHat, bcdat_iota 
     PetscScalar :: bcdat_GHat, bcdat_IHat, bcdata00
     ! For the BHarmonics_parity array, 
     ! true indicates the contribution to B(theta,zeta) has the form
@@ -2855,7 +2856,7 @@ contains
        print *,"Loading bcdat files is only compatible with geometryScheme 11 and 12!"
        stop
     end if
-    if ((bcdat_NPeriods /= NPeriods) .or. (bcdat_psiAHat /= psiAHat) .or. (bcdat_aHat /= aHat)) then
+    if (bcdat_NPeriods /= NPeriods) then !.or. (bcdat_psiAHat /= psiAHat) .or. (bcdat_aHat /= aHat)) then
        print *,"The bcdat file header is inconsistent with the bc file header!"
        print *,"bcdat: NPeriods = ", bcdat_NPeriods
        print *,"bc   : NPeriods = ", NPeriods
