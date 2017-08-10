@@ -2827,8 +2827,8 @@ contains
     end do
 
     ! Read the text line " Stellarator symmetry of bc and bcdat ... "
-    read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
-    print *, lineOfFile
+    ! read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
+    !print *, lineOfFile
     ! Read stellarator symmetry flags:
     read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) bcStelSym,dataStelSym
     if (didFileAccessWork /= 0) then
