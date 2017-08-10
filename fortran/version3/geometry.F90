@@ -2856,7 +2856,13 @@ contains
        stop
     end if
     if ((bcdat_NPeriods /= NPeriods) .or. (bcdat_psiAHat /= psiAHat) .or. (bcdat_aHat /= aHat)) then
-      print *,"The bcdat file header is inconsistent with the bc file header!"
+       print *,"The bcdat file header is inconsistent with the bc file header!"
+       print *,"bcdat: NPeriods = ", bcdat_NPeriods
+       print *,"bc   : NPeriods = ", NPeriods
+       print *,"bcdat: psiAHat = ", bcdat_psiAHat
+       print *,"bc   : psiAHat = ", psiAHat
+       print *,"bcdat: aHat    = ", bcdat_NPeriods
+       print *,"bc   : aHat    = ", aHat 
        stop
     end if
     
