@@ -1169,6 +1169,7 @@
     allocate(gradpsidotgradB_overgpsipsi(Ntheta,Nzeta))
     
     allocate(NTVKernel(Ntheta,Nzeta))
+    allocate(bcdata(Ntheta,Nzeta))
 
 
     call computeBHat()

@@ -30,7 +30,7 @@ contains
          equilibriumFile, min_Bmn_to_load, &
          psiAHat, inputRadialCoordinate, inputRadialCoordinateForGradients, aHat, &
          psiHat_wish, psiN_wish, rHat_wish, rN_wish, &
-         VMECRadialOption, rippleScale
+         VMECRadialOption, rippleScale, EParallelHatSpec_bcdatFile
 
     namelist / speciesParameters / mHats, Zs, nHats, THats, &
          dNHatdpsiHats, dTHatdpsiHats, &

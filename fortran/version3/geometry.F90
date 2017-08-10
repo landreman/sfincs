@@ -2766,5 +2766,595 @@ contains
     end if
   end function setScaleFactor
 
+  ! ---------------------------------------------------------------------------------------
+          
+  subroutine load_bcdat_file
+
+    implicit none
+
+    integer :: itheta, izeta, NHarmonics, NHarmonicsL, NHarmonicsH, i, m, n
+    integer, dimension(:), allocatable :: BHarmonics_l, BHarmonics_n
+    integer, dimension(:), allocatable :: BHarmonics_lL, BHarmonics_nL, BHarmonics_lH, BHarmonics_nH
+    PetscScalar, dimension(:), allocatable :: BHarmonics_amplitudes
+    PetscScalar, dimension(:), allocatable :: BHarmonics_amplitudesL, BHarmonics_amplitudesH
+    logical, dimension(:), allocatable :: BHarmonics_parity
+    logical, dimension(:), allocatable :: BHarmonics_parityL, BHarmonics_parityH
+    PetscScalar, dimension(:,:), allocatable :: bcdataL
+    PetscScalar, dimension(:,:), allocatable :: bcdataH
+
+    character(len=200) :: bcdatFile
+    integer :: fileUnit, didFileAccessWork
+    character(len=200) :: lineOfFile
+    integer, dimension(4) :: headerIntegers
+    PetscScalar, dimension(3) :: headerReals
+    PetscScalar :: bcStelSym, dataStelSym
+    PetscScalar, dimension(6) :: surfHeader
+    PetscScalar :: dataNumbers
+    PetscScalar, dimension(2) :: data2Numbers
+    integer, dimension(2) :: dataIntegers
+    integer :: no_of_modes_old, no_of_modes_new, modeind, numB0s, startn, stopn
+    PetscScalar :: iota_old, iota_new, GHat_old, GHat_new, IHat_old, IHat_new
+    PetscScalar :: pPrimeHat_old, pPrimeHat_new, invFSA_BHat2
+    logical :: end_of_file, proceed, include_mn, nearbyRadiiGiven, nonStelSym
+    integer, parameter :: max_no_of_modes = 10000
+    integer, dimension(max_no_of_modes) :: modesm_old, modesm_new, modesn_old, modesn_new
+    PetscScalar, dimension(max_no_of_modes) :: modesb_old, modesb_new
+    PetscScalar :: rN_old,  rN_new, B0_old, B0_new, bcdata00L, bcdata00H
+    PetscScalar :: DeltapsiHat !, diotadpsiHat moved to global variables 2016-09-15 HS
+    PetscScalar :: RadialWeight = 1.0 ! weight of closest surface with rN<=rN_wish
+    PetscScalar :: bcdat_NPeriods, bcdat_psiAHat, bcdat_aHat, bcdat_iota 
+    PetscScalar :: bcdat_GHat, bcdat_IHat, bcdata00
+    ! For the BHarmonics_parity array, 
+    ! true indicates the contribution to B(theta,zeta) has the form
+    ! cos(l * theta - n * zeta)
+    ! while false indicates the contribution to B(theta,zeta) has the form
+    ! sin(l * theta - n * zeta)
+
+    !nearbyRadiiGiven = .false. !Will be the case for all geometrySchemes except 11 and 12
+
+    bcdatFile=EParallelHatSpec_bcdatFile !I am only using load_bcdat_file for this purpose, but it could be generalised.
+    
+    fileUnit = 11
+    open(unit=fileUnit, file=bcdatFile, action="read", status="old", iostat=didFileAccessWork)
+    if (didFileAccessWork /= 0) then
+       print *,"Unable to open the bcdat file ",bcdatFile
+       stop
+    end if
+    do
+       read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
+       !print *,lineOfFile
+       if (lineOfFile(1:2) /= "CC") exit
+    end do
+
+    ! Read stellarator symmetry flags:
+    read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) bcStelSym,dataStelSym
+
+    ! Read the text line " m0b  n0b nsurf nper flux/[Tm^2]  ... "
+    read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
+    ! Read header line:
+    read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) headerIntegers, headerReals
+    !print *,'headerIntegers, headerReals='
+    !print *,headerIntegers
+    !print *,headerReals
+    if (didFileAccessWork /= 0) then
+       print *,"Unable to read header from the bcdat file ",bcdatFile
+       stop
+    end if
+    bcdat_NPeriods = headerIntegers(4)
+    bcdat_psiAHat  = headerReals(1)/2/pi !Convert the flux from Tm^2 to Tm^2/rad
+    bcdat_aHat     = headerReals(2)      !minor radius in meters
+
+    if ((geometryScheme /= 11) .and. (geometryScheme /= 12)) then
+       print *,"Loading bcdat files is only compatible with geometryScheme 11 and 12!"
+       stop
+    end if
+    if ((bcdat_NPeriods /= NPeriods) .or. (bcdat_psiAHat /= psiAHat) .or. (bcdat_aHat /= aHat)) then
+      print *,"The bcdat file header is inconsistent with the bc file header!"
+       stop
+    end if
+    
+    end_of_file = .false.
+
+    rN_old = 0
+    no_of_modes_old = 0
+    modesm_old = 0
+    modesn_old = 0
+    modesb_old = 0
+    modesR_old = 0
+    modesZ_old = 0
+    modesDz_old = 0
+    iota_old = 0
+    GHat_old = 0
+    IHat_old = 0
+    B0_old = 0
+    pPrimeHat_old = 0
+
+    rN_new = 0
+    no_of_modes_new = 0
+    modesm_new = 0
+    modesn_new = 0
+    modesb_new = 0
+    modesR_new = 0
+    modesZ_new = 0
+    modesDz_new = 0
+    iota_new = 0
+    GHat_new = 0
+    IHat_new = 0
+    B0_new = 0
+    pPrimeHat_new = 0
+    
+    select case (dataStelSym)
+    case (1)! Read a bcdat file with stellarator symmetric data
+
+       ! Skip a line
+       read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
+       !print *,'s line='
+       !print *,lineOfFile
+
+       do 
+          if ((rN_new .ge. rN_wish) .or. end_of_file) exit
+
+          rN_old = rN_new
+          no_of_modes_old = no_of_modes_new
+          modesm_old = modesm_new
+          modesn_old = modesn_new
+          modesb_old = modesb_new
+          iota_old = iota_new
+          GHat_old = GHat_new
+          IHat_old = IHat_new
+          B0_old = B0_new
+          pPrimeHat_old = pPrimeHat_new
+          numB0s = 0
+
+          if (.not.(index(lineOfFile,"[A]") > 0)) then !units were not on this line, so skip next
+             ! Skip a line:
+             read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
+             !print *,'skip unit [A] line='
+             !print *,lineOfFile
+          end if
+
+          ! Read the header for the magnetic surface:
+          read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) surfHeader
+          !print *,'surfHeader='
+          !print *,surfHeader
+
+          rN_new = sqrt(surfHeader(1))       ! r/a = sqrt(psi/psi_a)
+          iota_new = surfHeader(2)
+          ! Note that G and I have a minus sign in the following two lines
+          ! because Ampere's law comes with a minus sign in the left-handed
+          ! (r,pol,tor) system.
+          GHat_new = -surfHeader(3)*NPeriods/2/pi*(4*pi*1d-7) !Tesla*meter
+          IHat_new = -surfHeader(4)/2/pi*(4*pi*1d-7)          !Tesla*meter
+          pPrimeHat_new = surfheader(5)/psiAHat*(4*pi*1e-7)   ! dpdpsi=pPrimeHat/mu_0
+
+          ! Skip units line:
+          read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
+          proceed = .true.
+          modeind = 0
+          !print *,'s line='
+          !print *,lineOfFile
+
+
+          do
+             if (.not. proceed) exit
+
+             read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
+             if (didFileAccessWork /= 0) then
+                proceed = .false.
+                end_of_file = .true.
+             else if (index(lineOfFile,"s") > 0) then
+                ! Next flux surface has been reached
+                proceed = .false.
+                !print *,'s line='
+                !print *,lineOfFile
+             else
+                read(unit=lineOfFile, fmt=*) dataIntegers, dataNumbers
+                !print *,'dataIntegers='
+                !print *,dataIntegers
+                !print *,'dataNumbers='
+                !print *,dataNumbers
+                if (dataIntegers(1) == 0 .and. dataIntegers(2) == 0) then
+                   B0_new = dataNumbers
+                   numB0s = numB0s + 1
+                else !!! if (abs(dataNumbers) > min_bcdata_to_load) then
+                   modeind = modeind + 1
+                   if (modeind > max_no_of_modes) then
+                      print *,"The value of max_no_of_modes in geometry.F90 was insufficient."
+                      print *,"Increase this value and recompile."
+                      stop
+                   end if
+                   modesm_new(modeind) = dataIntegers(1)
+                   modesn_new(modeind) = dataIntegers(2)
+                   modesb_new(modeind) = dataNumbers
+                end if
+             end if
+          end do
+          if (numB0s == 0) then
+             print *,"Warning: no (0,0) mode found in bcdat file ",bcdatFile
+          else if (numB0s > 1) then
+             print *,"Error: more than 1 (0,0) mode found in bcdat file ",bcdatFile
+          end if
+          no_of_modes_new = modeind
+       end do
+
+       
+       close(unit = fileUnit)
+       if (masterProc) then
+          print *,"Successfully read data from bcdat file ",trim(bcdatFile)
+       end if
+
+       DeltapsiHat = psiAHat * (rN_new*rN_new-rN_old*rN_old)
+       nearbyRadiiGiven = .true.
+
+
+       if (VMECRadialOption == 1) then !Choose the nearest flux surface available
+          if (abs(rN_old - rN_wish) < abs(rN_new - rN_wish)) then
+             RadialWeight = 1.0
+             rN = rN_old
+          else
+             RadialWeight = 0.0
+             rN = rN_new
+          end if
+       else !Linear interpolation in s=rN^2
+          RadialWeight = (rN_new*rN_new-rN_wish*rN_wish) / (rN_new*rN_new-rN_old*rN_old)
+          rN   = rN_wish
+       end if
+       bcdat_iota = iota_old*RadialWeight+iota_new*(1.0-RadialWeight)
+       bcdat_GHat = GHat_old*RadialWeight+GHat_new*(1.0-RadialWeight)
+       bcdat_IHat = IHat_old*RadialWeight+IHat_new*(1.0-RadialWeight)
+       bcdata00 = B0_old*RadialWeight+B0_new*(1.0-RadialWeight)
+       pPrimeHat = pPrimeHat_old*RadialWeight+pPrimeHat_new*(1.0-RadialWeight)
+
+       bcdata00L=B0_old
+       bcdata00H=B0_new
+       NHarmonicsL = no_of_modes_old
+       NHarmonicsH = no_of_modes_new
+       allocate(BHarmonics_lL(NHarmonicsL))
+       allocate(BHarmonics_nL(NHarmonicsL))
+       allocate(BHarmonics_amplitudesL(NHarmonicsL))
+       allocate(BHarmonics_parityL(NHarmonicsL))
+       allocate(BHarmonics_lH(NHarmonicsH))
+       allocate(BHarmonics_nH(NHarmonicsH))
+       allocate(BHarmonics_amplitudesH(NHarmonicsH))
+       allocate(BHarmonics_parityH(NHarmonicsH))
+       BHarmonics_lL = modesm_old(1:NHarmonicsL)
+       BHarmonics_nL = modesn_old(1:NHarmonicsL)
+       BHarmonics_amplitudesL = modesb_old(1:NHarmonicsL)
+       BHarmonics_lH = modesm_new(1:NHarmonicsH)
+       BHarmonics_nH = modesn_new(1:NHarmonicsH)
+       BHarmonics_amplitudesH = modesb_new(1:NHarmonicsH)
+       BHarmonics_parityL = .true.
+       BHarmonics_parityH = .true.
+
+
+       if (GHat*psiAHat>0) then
+          !Note that GHat and psiAHat already have the opposite sign to the corresponding quantities in the .bc file
+          !Therefore, the flip is performed if they have the same sign here.
+          !print *,"This is a stellarator symmetric file from Joachim Geiger. It will now be turned 180 degrees around a horizontal axis <=> flip the sign of G and I, so that it matches the sign of its total toroidal flux."
+          bcdat_GHat    =-bcdat_GHat
+          GHat_new=-GHat_new
+          GHat_old=-GHat_old
+          bcdat_IHat    =-bcdat_IHat
+          IHat_new=-IHat_new
+          IHat_old=-IHat_old
+       end if
+
+       if (.not. nearbyRadiiGiven) then
+          BHarmonics_n=BHarmonics_n*(-1) !toroidal direction sign switch
+       else
+          BHarmonics_nL=BHarmonics_nL*(-1) !toroidal direction sign switch
+          BHarmonics_nH=BHarmonics_nH*(-1) !toroidal direction sign switch
+       end if
+
+       !Here I may implement to double-check whether bcdat_GHat=GHat, bcdat_IHat=IHat, bcdat_iota=iota ...
+       !Not implemented yet
+
+
+    case (0)! Read a bcdat file with NON-stellarator-symmetric data
+
+       ! Skip a line
+       read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
+
+       do 
+          if ((rN_new .ge. rN_wish) .or. end_of_file) exit
+
+          rN_old = rN_new
+          no_of_modes_old = no_of_modes_new
+          modesm_old = modesm_new
+          modesn_old = modesn_new
+          modesb_old = modesb_new
+          modesR_old = modesR_new
+          modesZ_old = modesZ_new
+          modesDz_old = modesDz_new
+          iota_old = iota_new
+          GHat_old = GHat_new
+          IHat_old = IHat_new
+          B0_old = B0_new
+          pPrimeHat_old = pPrimeHat_new
+          numB0s = 0
+
+          ! Skip a line:
+          read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
+          ! Read the header for the magnetic surface:
+          read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) surfHeader
+
+          rN_new = sqrt(surfHeader(1))       ! r/a = sqrt(psi/psi_a)
+          iota_new = surfHeader(2)
+          ! Note that G and I has a minus sign in the following two lines
+          ! because Ampere's law comes with a minus sign in the left-handed
+          ! (r,pol,tor) system.
+          GHat_new = -surfHeader(3)*NPeriods/2/pi*(4*pi*1d-7) !Tesla*meter
+          IHat_new = -surfHeader(4)/2/pi*(4*pi*1d-7)          !Tesla*meter
+          pPrimeHat_new = surfheader(5)/psiAHat*(4*pi*1e-7)   ! dpdpsi=pPrimeHat/mu_0
+
+          ! Skip units line:
+          read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
+          proceed = .true.
+          modeind = 0
+          do
+             if (.not. proceed) exit
+
+             read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
+             if (didFileAccessWork /= 0) then
+                proceed = .false.
+                end_of_file = .true.
+             else if (index(lineOfFile,"s") > 0) then
+                ! Next flux surface has been reached
+                proceed = .false.
+             else
+                read(unit=lineOfFile, fmt=*) dataIntegers, data2Numbers
+                if (dataIntegers(1) == 0 .and. dataIntegers(2) == 0) then
+                   B0_new = data2Numbers(1)
+                   numB0s = numB0s + 1
+                else !!!!if (abs(data2Numbers(1)) > min_bcdata_to_load) then
+                   if (modeind + 2 > max_no_of_modes) then
+                      print *,"The value of max_no_of_modes in geometry.F90 was insufficient."
+                      print *,"Increase this value and recompile."
+                      stop
+                   end if
+                   modeind = modeind + 1
+                   modesm_new(modeind) = dataIntegers(1)
+                   modesn_new(modeind) = dataIntegers(2)
+                   modesb_new(modeind) = data2Numbers(1) !Cosinus component
+                   modeind = modeind + 1
+                   modesm_new(modeind) = dataIntegers(1)
+                   modesn_new(modeind) = dataIntegers(2)
+                   modesb_new(modeind) = data2Numbers(2) !Sinus component
+                end if
+             end if
+          end do
+          if (numB0s == 0) then
+             print *,"Warning: no (0,0) mode found in the bcdat file ",bcdatFile
+          else if (numB0s > 1) then
+             print *,"Error: more than 1 (0,0) mode found in the bcdat file ",bcdatFile
+          end if
+          no_of_modes_new = modeind
+       end do
+       
+       close(unit = fileUnit)
+       if (masterProc) then
+          print *,"Successfully read data from bcdat file ",trim(bcdatFile)
+       end if
+
+       DeltapsiHat = psiAHat * (rN_new*rN_new-rN_old*rN_old)
+       nearbyRadiiGiven = .true.
+
+       if (VMECRadialOption == 1) then !Choose the nearest flux surface available
+          if (abs(rN_old - rN_wish) < abs(rN_new - rN_wish)) then
+             RadialWeight = 1.0
+             rN = rN_old
+          else
+             RadialWeight = 0.0
+             rN = rN_new
+          end if
+       else !Linear interpolation in s=rN^2
+          RadialWeight = (rN_new*rN_new-rN_wish*rN_wish) / (rN_new*rN_new-rN_old*rN_old)
+          rN   = rN_wish
+       end if
+       bcdat_iota = iota_old*RadialWeight+iota_new*(1.0-RadialWeight)
+       bcdat_GHat = GHat_old*RadialWeight+GHat_new*(1.0-RadialWeight)
+       bcdat_IHat = IHat_old*RadialWeight+IHat_new*(1.0-RadialWeight)
+       bcdata00 = B0_old*RadialWeight+B0_new*(1.0-RadialWeight)
+       pPrimeHat = pPrimeHat_old*RadialWeight+pPrimeHat_new*(1.0-RadialWeight)
+       
+       bcdata00L=B0_old
+       bcdata00H=B0_new
+       NHarmonicsL = no_of_modes_old
+       NHarmonicsH = no_of_modes_new
+       allocate(BHarmonics_lL(NHarmonicsL))
+       allocate(BHarmonics_nL(NHarmonicsL))
+       allocate(BHarmonics_amplitudesL(NHarmonicsL))
+       allocate(BHarmonics_parityL(NHarmonicsL))
+       allocate(BHarmonics_lH(NHarmonicsH))
+       allocate(BHarmonics_nH(NHarmonicsH))
+       allocate(BHarmonics_amplitudesH(NHarmonicsH))
+       allocate(BHarmonics_parityH(NHarmonicsH))
+       BHarmonics_lL = modesm_old(1:NHarmonicsL)
+       BHarmonics_nL = modesn_old(1:NHarmonicsL)
+       BHarmonics_amplitudesL = modesb_old(1:NHarmonicsL)
+       BHarmonics_lH = modesm_new(1:NHarmonicsH)
+       BHarmonics_nH = modesn_new(1:NHarmonicsH)
+       BHarmonics_amplitudesH = modesb_new(1:NHarmonicsH)
+       do i = 0, NHarmonicsL/2-1
+          BHarmonics_parityL(2*i+1)=.true.
+          BHarmonics_parityL(2*i+2)=.false.
+       end do
+       do i = 0, NHarmonicsH/2-1
+          BHarmonics_parityH(2*i+1)=.true.
+          BHarmonics_parityH(2*i+2)=.false.
+       end do
+
+       !Switch from a left-handed to right-handed (radial,poloidal,toroidal) system
+       !(The toroidal direction sign switch psiAHat=psiAHat*(-1) was already made in the initializeGeometry routine)
+       bcdat_GHat     = bcdat_GHat*(-1)                   !toroidal direction sign switch
+       GHat_new = GHat_new*(-1)               !toroidal direction sign switch
+       GHat_old = GHat_old*(-1)               !toroidal direction sign switch
+       bcdat_iota     = bcdat_iota*(-1)                   !toroidal direction sign switch
+       iota_new = iota_new*(-1)               !toroidal direction sign switch
+       iota_old = iota_old*(-1)               !toroidal direction sign switch
+       if (.not. nearbyRadiiGiven) then
+          BHarmonics_n=BHarmonics_n*(-1) !toroidal direction sign switch
+       else
+          BHarmonics_nL=BHarmonics_nL*(-1) !toroidal direction sign switch
+          BHarmonics_nH=BHarmonics_nH*(-1) !toroidal direction sign switch
+       end if
+
+       !Here I may implement to double-check whether bcdat_GHat=GHat, bcdat_IHat=IHat, bcdat_iota=iota ...
+       !Not implemented yet
+
+    case default
+       print *,"Error! Invalid symmetry flag in bcdat file!"
+       stop
+    end select
+
+    if (.not. nearbyRadiiGiven) then
+       ! Initialize arrays:
+       bcdata = bcdata00 ! This includes the (0,0) component.
+       
+       do i = 1, NHarmonics
+          if (BHarmonics_parity(i)) then   ! The cosine components of bcdata
+             include_mn = .false.
+             if ((abs(BHarmonics_n(i))<=int(Nzeta/2.0)).and.(BHarmonics_l(i)<=int(Nzeta/2.0))) then
+                include_mn = .true.
+             end if
+             if (Nzeta==1) then
+                include_mn = .true.
+             end if
+             if (include_mn) then
+                do itheta = 1,Ntheta
+                   bcdata(itheta,:) = bcdata(itheta,:) + BHarmonics_amplitudes(i) * &
+                        cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                end do
+             end if
+          else  ! The sine components of bcdata
+             include_mn=.false.
+             if ((abs(BHarmonics_n(i))<=int(Nzeta/2.0)).and.(BHarmonics_l(i)<=int(Nzeta/2.0))) then
+                include_mn=.true.
+             end if
+             if (BHarmonics_l(i)==0 .or. real(BHarmonics_l(i))==Ntheta/2.0) then
+                if (BHarmonics_n(i)==0 .or. abs(real(BHarmonics_n(i)))==Nzeta/2.0 ) then
+                   include_mn=.false.
+                end if
+             end if
+             if (Nzeta==1) then
+                include_mn = .true.
+             end if
+             if (include_mn) then
+                do itheta = 1,Ntheta
+                   bcdata(itheta,:) = bcdata(itheta,:) + BHarmonics_amplitudes(i) * &
+                        sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                end do
+             end if
+          end if
+       end do
+    else !Two nearby radii L and H are given 
+       allocate(bcdataL(Ntheta,Nzeta))
+
+       bcdataL = bcdata00L ! This includes the (0,0) component.
+       
+       do i = 1, NHarmonicsL
+          if (BHarmonics_parityL(i)) then   ! The cosine components of bcdata
+             include_mn = .false.
+             if ((abs(BHarmonics_nL(i))<=int(Nzeta/2.0)).and.(BHarmonics_lL(i)<=int(Ntheta/2.0))) then
+                include_mn = .true.
+             end if
+             if (Nzeta==1) then
+                include_mn = .true.
+             end if
+             if (include_mn) then
+                do itheta = 1,Ntheta
+                   bcdataL(itheta,:) = bcdataL(itheta,:) + BHarmonics_amplitudesL(i) * &
+                        cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+                end do
+             end if
+          else  ! The sine components of bcdata
+             include_mn=.false.
+             if ((abs(BHarmonics_nL(i))<=int(Nzeta/2.0)).and.(BHarmonics_lL(i)<=int(Ntheta/2.0))) then
+                include_mn=.true.
+             end if
+             if (BHarmonics_lL(i)==0 .or. real(BHarmonics_lL(i))==Ntheta/2.0) then
+                if (BHarmonics_nL(i)==0 .or. abs(real(BHarmonics_nL(i)))==Nzeta/2.0 ) then
+                   include_mn=.false.
+                end if
+             end if
+             if (Nzeta==1) then
+                include_mn = .true.
+             end if
+             if (include_mn) then
+                do itheta = 1,Ntheta
+                   bcdataL(itheta,:) = bcdataL(itheta,:) + BHarmonics_amplitudesL(i) * &
+                        sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+                end do
+             end if
+          end if
+       end do
+       allocate(bcdataH(Ntheta,Nzeta))
+
+       bcdataH = bcdata00H ! This includes the (0,0) component.
+
+       do i = 1, NHarmonicsH
+          if (BHarmonics_parityH(i)) then   ! The cosine components of bcdata
+             include_mn = .false.
+             if ((abs(BHarmonics_nH(i))<=int(Nzeta/2.0)).and.(BHarmonics_lH(i)<=int(Ntheta/2.0))) then
+                include_mn = .true.
+             end if
+             if (Nzeta==1) then
+                include_mn = .true.
+             end if
+             if (include_mn) then
+                do itheta = 1,Ntheta
+                   bcdataH(itheta,:) = bcdataH(itheta,:) + BHarmonics_amplitudesH(i) * &
+                        cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+                end do
+             end if
+          else  ! The sine components of bcdata
+             include_mn=.false.
+             if ((abs(BHarmonics_nH(i))<=int(Nzeta/2.0)).and.(BHarmonics_lH(i)<=int(Ntheta/2.0))) then
+                include_mn=.true.
+             end if
+             if (BHarmonics_lH(i)==0 .or. real(BHarmonics_lH(i))==Ntheta/2.0) then
+                if (BHarmonics_nH(i)==0 .or. abs(real(BHarmonics_nH(i)))==Nzeta/2.0 ) then
+                   include_mn=.false.
+                end if
+             end if
+             if (Nzeta==1) then
+                include_mn = .true.
+             end if
+             if (include_mn) then
+                do itheta = 1,Ntheta
+                   bcdataH(itheta,:) = bcdataH(itheta,:) + BHarmonics_amplitudesH(i) * &
+                        sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+                end do
+             end if
+          end if
+       end do
+       do itheta = 1,Ntheta
+          bcdata(itheta,:) = bcdataL(itheta,:)*RadialWeight + bcdataH(itheta,:)*(1.0-RadialWeight)
+       end do      
+
+    end if
+
+    if (.not. nearbyRadiiGiven) then
+       deallocate(BHarmonics_l)
+       deallocate(BHarmonics_n)
+       deallocate(BHarmonics_amplitudes)
+       deallocate(BHarmonics_parity)
+    else
+       deallocate(BHarmonics_lL)
+       deallocate(BHarmonics_nL)
+       deallocate(BHarmonics_amplitudesL)
+       deallocate(BHarmonics_parityL)
+       deallocate(BHarmonics_lH)
+       deallocate(BHarmonics_nH)
+       deallocate(BHarmonics_amplitudesH)
+       deallocate(BHarmonics_parityH)
+    end if
+
+
+  end subroutine load_bcdat_file
+
+  ! -----------------------------------------------------------------------------------------
+
+  
 end module geometry
 
