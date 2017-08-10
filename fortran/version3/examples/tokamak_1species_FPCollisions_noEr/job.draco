@@ -22,4 +22,6 @@ export OMP_PLACES=cores
 # Wall clock limit:
 #SBATCH --time=00:10:00
 
-srun ../../sfincs -ksp_view
+srun ../../sfincs -ksp_view -mat_mumps_cntl_1 1e-3
+
+# The -mat_mumps_cntl_1 1e-3 flag causes the problem to be solved with higher accuracy, at the cost of higher probability of a mumps workarray-too-small error.
