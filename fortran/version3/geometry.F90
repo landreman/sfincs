@@ -2828,8 +2828,13 @@ contains
 
     ! Read the text line " Stellarator symmetry of bc and bcdat ... "
     read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
+    print *, lineOfFile
     ! Read stellarator symmetry flags:
     read(unit=fileUnit, iostat=didFileAccessWork, fmt=*) bcStelSym,dataStelSym
+    if (didFileAccessWork /= 0) then
+       print *,"Unable to read StelSym header from the bcdat file ",bcdatFile
+       stop
+    end if
 
     ! Read the text line " m0b  n0b nsurf nper flux/[Tm^2]  ... "
     read(unit=fileUnit, fmt="(a)", iostat=didFileAccessWork) lineOfFile
