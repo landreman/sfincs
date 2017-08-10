@@ -2787,7 +2787,7 @@ contains
     character(len=200) :: lineOfFile
     integer, dimension(4) :: headerIntegers
     PetscScalar, dimension(3) :: headerReals
-    PetscScalar :: bcStelSym, dataStelSym
+    integer :: bcStelSym, dataStelSym
     PetscScalar, dimension(6) :: surfHeader
     PetscScalar :: dataNumbers
     PetscScalar, dimension(2) :: data2Numbers
@@ -2860,9 +2860,6 @@ contains
     modesm_old = 0
     modesn_old = 0
     modesb_old = 0
-    modesR_old = 0
-    modesZ_old = 0
-    modesDz_old = 0
     iota_old = 0
     GHat_old = 0
     IHat_old = 0
@@ -2874,9 +2871,6 @@ contains
     modesm_new = 0
     modesn_new = 0
     modesb_new = 0
-    modesR_new = 0
-    modesZ_new = 0
-    modesDz_new = 0
     iota_new = 0
     GHat_new = 0
     IHat_new = 0
@@ -3063,9 +3057,6 @@ contains
           modesm_old = modesm_new
           modesn_old = modesn_new
           modesb_old = modesb_new
-          modesR_old = modesR_new
-          modesZ_old = modesZ_new
-          modesDz_old = modesDz_new
           iota_old = iota_new
           GHat_old = GHat_new
           IHat_old = IHat_new
