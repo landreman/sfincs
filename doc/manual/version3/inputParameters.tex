@@ -404,6 +404,28 @@ I'm not sure why you would want this, but the feature is implemented for complet
 
 \myhrule
 
+\param{VMEC\_Nyquist\_option}
+{integer}
+{1}
+{Only when \parlink{geometryScheme} == 5.}
+{In VMEC, some quantities are known at poloidal and toroidal mode numbers given by the arrays {\ttfamily xm} and
+{\ttfamily xn}, whereas other quantities are known at a larger range of mode numbers {\ttfamily xm\_nyq} and {\ttfamily xn\_nyq}.
+The sfincs parameter {\ttfamily VMEC\_Nyquist\_option}
+controls whether or not to include mode numbers that exist in the {\ttfamily xm\_nyq} and {\ttfamily xn\_nyq}
+arrays but not in the {\ttfamily xm} and {\ttfamily xn} arrays.
+This this parameter only affects high-frequency components of the magnetic field, results of sfincs
+should not be very sensitive to this parameter.
+\\
+
+{\ttfamily VMEC\_Nyquist\_option}=1: Only include poloidal and toroidal mode numbers that exist
+in the {\ttfamily xm} and {\ttfamily xn} arrays.  This option was always used prior to July 2017.\\
+
+{\ttfamily VMEC\_Nyquist\_option}=2: Also include the larger poloidal and toroidal mode numbers that exist
+in the {\ttfamily xm\_nyq} and {\ttfamily xn\_nyq} arrays, where available.
+}
+
+\myhrule
+
 \param{min\_Bmn\_to\_load}
 {real}
 {0.0}

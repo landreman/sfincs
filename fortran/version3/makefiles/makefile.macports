@@ -26,6 +26,17 @@ PETSC_DIR=/opt/local/lib/petsc
 include ${PETSC_DIR}/lib/petsc/conf/variables
 include ${PETSC_DIR}/lib/petsc/conf/rules
 
+# The variable LIBSTELL_DIR should either be "mini_libstell", if you use this reduced version of libstell                                              
+# that comes packaged with SFINCS, or else it should point to a directory containing libstell .mod files
+# elsewhere on your system.
+LIBSTELL_DIR=mini_libstell
+#LIBSTELL_DIR=/Users/mattland/stellopt/LIBSTELL/Release
+
+# The variable LIBSTELL_FOR_SFINCS should either be "mini_libstell/mini_libstell.a", if you use this reduced version of libstell
+# that comes packaged with SFINCS, or else it should point to a libstell.a library elsewhere on your system.
+LIBSTELL_FOR_SFINCS=mini_libstell/mini_libstell.a
+#LIBSTELL_FOR_SFINCS=/Users/mattland/stellopt/LIBSTELL/Release/libstell.a
+
 # Any other flags for compiling, such as -I include flags:
 EXTRA_COMPILE_FLAGS = -I${PETSC_DIR}/include -I/opt/local/include -ffree-line-length-none
 # /opt/local/include is where macports puts the include files for hdf5 and netcdf.

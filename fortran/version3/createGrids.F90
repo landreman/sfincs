@@ -1169,7 +1169,7 @@
     allocate(gradpsidotgradB_overgpsipsi(Ntheta,Nzeta))
     
     allocate(NTVKernel(Ntheta,Nzeta))
-
+    allocate(bcdata(Ntheta,Nzeta))
 
     call computeBHat()
 
@@ -1192,6 +1192,11 @@
        print *,"GHat (Boozer component multiplying grad zeta) = ", GHat
        print *,"IHat (Boozer component multiplying grad theta) = ", IHat
        print *,"iota (Rotational transform) = ", iota
+    end if
+
+    ! Optionally load additional Fourier file with data
+    if (((geometryScheme == 11) .or. (geometryScheme == 12)).and. .not.(trim(EParallelHatSpec_bcdatFile)=="")) then
+       call load_bcdat_file()
     end if
 
     ! *********************************************************
