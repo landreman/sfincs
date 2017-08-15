@@ -76,6 +76,7 @@
 !ss NzetaMaxFactor = 2
 !ss NzetaNumRuns = 5
 
+!  Nxi = 19
   Nxi = 31
 !ss NxiMinFactor = 0.8
 !ss NxiMaxFactor = 2
@@ -97,7 +98,7 @@
 &otherNumericalParameters
 !theta_derivative_option=4
 !xi_derivative_option=4
-!pitch_angle_scattering_option=2
+!pitch_angle_scattering_option=4
 
 null_space_option=0
 ! 0 = no null space attached
@@ -115,6 +116,8 @@ null_space_option=0
   ! the same as the real system matrix.
 !  preconditioner_species = 0
 !  preconditioner_x = 0
+
+!preconditioner_pitch_angle_scattering_option=4
 preconditioning_option=5
 ! 1 = no fieldsplit, LU
 ! 2 = fieldsplit, GAMG

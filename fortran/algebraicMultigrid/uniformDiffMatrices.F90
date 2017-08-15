@@ -929,7 +929,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, option, quadrature_option, x, weig
      d2dx2(2,1) = -2/dx2
 
   case (32)
-     ddx(1,1) = 1/dx
+     !ddx(1,1) = 1/dx
 
   case (40,41)
      ddx(N,1) = 1/dx
@@ -943,7 +943,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, option, quadrature_option, x, weig
      d2dx2(N-1,N) = -2/dx2
 
   case (42)
-     ddx(N,N) = -1/dx
+     !ddx(N,N) = -1/dx
 
   case (50,51)
      ddx(1,1) = (1.5d+0)/(dx)
@@ -1018,10 +1018,17 @@ subroutine uniformDiffMatrices(N, xMin, xMax, option, quadrature_option, x, weig
 !!$     ddx(N,N-1) = -2/dx
 !!$     ddx(N,N-2) = 1/(2*dx)
 
-     ddx(N,N)   =  5/(6*dx)
-     ddx(N,N-1) = -3/(2*dx)
-     ddx(N,N-2) =  1/(2*dx)
-     ddx(N,N-3) = -1/(12*dx)
+     ! The following 4lines were used prior to 20170722. I'm not confident they were ever correct!
+     !ddx(N,N)   =  5/(6*dx)
+     !ddx(N,N-1) = -3/(2*dx)
+     !ddx(N,N-2) =  1/(2*dx)
+     !ddx(N,N-3) = -1/(12*dx)
+     ! The next 5 lines were added on 20170722 as a replacement for the 4 lines above.
+     ddx(N,N)= 25/(12*dx)
+     ddx(N,N-1)= -4/(dx)
+     ddx(N,N-2)=3/dx
+     ddx(N,N-3)=-4/(3*dx)
+     ddx(N,N-4)=1/(4*dx)
 
 !!$     do i = 2,N
 !!$        ddx(N,i) =  ddx(N-1,i-1)
@@ -1031,9 +1038,22 @@ subroutine uniformDiffMatrices(N, xMin, xMax, option, quadrature_option, x, weig
      ddx(N-1,N-1) = -1/dx
      ddx(N-1,N)   =  1/dx
 
-     ddx(1,1) = -(1.5d+0)/dx
-     ddx(1,2) = 2/dx
-     ddx(1,3) = -1/(2*dx)
+     ! The following 4 lines were missing before 2017-07-22 !!
+     ddx(N-2,N-3) = -1/(3*dx)
+     ddx(N-2,N-2) = -1/(2*dx)
+     ddx(N-2,N-1) =  1/(dx)
+     ddx(N-2,N-0) = -1/(6*dx)
+
+     ! The next 3 lines were used prior to 20170722:
+     !ddx(1,1) = -(1.5d+0)/dx
+     !ddx(1,2) = 2/dx
+     !ddx(1,3) = -1/(2*dx)
+     ! The next 5 lines were added on 20170722, as a replacement for the 3 lines above:
+     ddx(1,1)= -25/(12*dx)
+     ddx(1,2)= 4/(dx)
+     ddx(1,3)=-3/dx
+     ddx(1,4)=4/(3*dx)
+     ddx(1,5)=-1/(4*dx)
 
   case (120,121,130,131)
      ! Handled previously

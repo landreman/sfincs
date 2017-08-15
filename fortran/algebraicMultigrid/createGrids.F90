@@ -30,9 +30,9 @@
     real(prec), dimension(:,:), allocatable :: ddx_subset, d2dx2_subset
     real(prec) :: temp, Delta_zeta, v_s
     real(prec), dimension(:), allocatable :: xi_to_Legendre, temp_array
-    real(prec), dimension(:,:), allocatable :: d2dy2, ddy, ddy_plus, ddy_minus
+    real(prec), dimension(:,:), allocatable :: d2dy2, ddy, ddy_plus, ddy_minus, d2dy2_dummy, ddy_dummy
     real(prec), dimension(:), allocatable :: y, y_dummy, yWeights_dummy, yWeights, dxi_dy, d2xi_dy2
-    real(prec) :: temp_plus, temp_minus
+    real(prec) :: temp_plus, temp_minus, factor
 
     DM :: myDM
     integer, parameter :: bufferLength = 200
@@ -41,7 +41,7 @@
     integer :: tag, dummy(1)
     integer :: status(MPI_STATUS_SIZE)
     logical :: call_uniform_diff_matrices
-    integer :: derivative_option_plus, derivative_option_minus, derivative_option, quadrature_option
+    integer :: derivative_option_plus, derivative_option_minus, derivative_option, derivative_option_diffusion, quadrature_option
 
     real(prec) :: nonuniform_xi_a = 0.7, nonuniform_xi_b = 0.3 ! b=1-a
 
@@ -721,8 +721,10 @@
     allocate(yWeights_dummy(Nxi))
     allocate(ddy(Nxi,Nxi))
     allocate(d2dy2(Nxi,Nxi))
+    allocate(d2dy2_dummy(Nxi,Nxi))
     allocate(ddy_plus(Nxi,Nxi))
     allocate(ddy_minus(Nxi,Nxi))
+    allocate(ddy_dummy(Nxi,Nxi))
 
     if (pitch_angle_scattering_option==1 .or. xi_derivative_option==1) then
        if (masterProc) then
@@ -791,7 +793,6 @@
        ! Handle d/dxi for the pitch angle scattering operator in the main matrix.
        ! *******************************************************************************
        
-       
        select case (pitch_angle_scattering_option)
           
        case (2)
@@ -799,14 +800,80 @@
              print *,"Pitch angle scattering operator discretized using centered finite differences:"
              print *,"   1 point on either side."
           end if
-          derivative_option = 2
+          derivative_option_plus = 2
+          derivative_option_minus = 2
+          derivative_option_diffusion = 2
           
        case (3)
           if (masterProc) then
              print *,"Pitch angle scattering operator discretized using centered finite differences:"
              print *,"   2 points on either side."
           end if
-          derivative_option = 12
+          derivative_option_plus = 12
+          derivative_option_minus = 12
+          derivative_option_diffusion = 12
+          
+       case (4)
+          if (masterProc) then
+             print *,"Pitch angle scattering operator discretized using upwinded finite differences:"
+             print *,"   0 points on one side, 1 point on the other side."
+             print *,"   Diffusion term uses centered differences with 1 point on either side."
+          end if
+          derivative_option_plus  = 32
+          derivative_option_minus = 42
+          derivative_option_diffusion = 2
+          
+       case (5)
+          if (masterProc) then
+             print *,"Pitch angle scattering operator discretized using upwinded finite differences:"
+             print *,"   0 points on one side, 2 points on the other side."
+             print *,"   Diffusion term uses centered differences with 2 points on either side."
+          end if
+          derivative_option_plus  = 52
+          derivative_option_minus = 62
+          derivative_option_diffusion = 12
+          
+       case (6)
+          if (masterProc) then
+             print *,"Pitch angle scattering operator discretized using upwinded finite differences:"
+             print *,"   1 point on one side, 2 points on the other side."
+             print *,"   Diffusion term uses centered differences with 2 points on either side."
+          end if
+          derivative_option_plus  = 82
+          derivative_option_minus = 92
+          derivative_option_diffusion = 12
+          
+       case (7)
+          if (masterProc) then
+             print *,"Pitch angle scattering operator discretized using upwinded finite differences:"
+             print *,"   1 point on one side, 3 points on the other side."
+             print *,"   Diffusion term uses centered differences with 2 points on either side."
+          end if
+          derivative_option_plus  = 102
+          derivative_option_minus = 112
+          derivative_option_diffusion = 12
+          
+       case (8)
+          if (masterProc) then
+             print *,"Pitch angle scattering operator discretized using upwinded finite differences:"
+             print *,"   2 point on one side, 3 points on the other side."
+             print *,"   High accuracy at the domain ends, though upwinding breaks down there."
+             print *,"   Diffusion term uses centered differences with 2 points on either side."
+          end if
+          derivative_option_plus  = 122
+          derivative_option_minus = 132
+          derivative_option_diffusion = 12
+          
+       case (9)
+          if (masterProc) then
+             print *,"Pitch angle scattering operator discretized using upwinded finite differences:"
+             print *,"   2 point on one side, 3 points on the other side."
+             print *,"   Upwinding all the way to the domain ends, meaning lower accuracy there."
+             print *,"   Diffusion term uses centered differences with 2 points on either side."
+          end if
+          derivative_option_plus  = 123
+          derivative_option_minus = 133
+          derivative_option_diffusion = 12
           
        case default
           if (masterProc) then
@@ -815,12 +882,20 @@
           stop
        end select
        
-       call uniformDiffMatrices(Nxi, -one, one, derivative_option, xi_quadrature_option, y_dummy, yWeights_dummy, ddy, d2dy2)
+       call uniformDiffMatrices(Nxi, -one, one, derivative_option_plus,      xi_quadrature_option, y_dummy, yWeights_dummy, ddy_plus, d2dy2_dummy)
+       call uniformDiffMatrices(Nxi, -one, one, derivative_option_minus,     xi_quadrature_option, y_dummy, yWeights_dummy, ddy_minus, d2dy2_dummy)
+       call uniformDiffMatrices(Nxi, -one, one, derivative_option_diffusion, xi_quadrature_option, y_dummy, yWeights_dummy, ddy_dummy, d2dy2)
        do j=1,Nxi
           !pitch_angle_scattering_operator(j,:) = (1/two)*(1-xi(j)*xi(j))*d2dxi2(j,:) - xi(j)*ddxi(j,:)
-          pitch_angle_scattering_operator(j,:) = (1/two)*(1-xi(j)*xi(j))/(dxi_dy(j)*dxi_dy(j)) &
-               *(d2dy2(j,:) - d2xi_dy2(j)/dxi_dy(j)*ddy(j,:)) &
-               - xi(j)/dxi_dy(j)*ddy(j,:)
+          !pitch_angle_scattering_operator(j,:) = (1/two)*(1-xi(j)*xi(j))/(dxi_dy(j)*dxi_dy(j)) &
+          !     *(d2dy2(j,:) - d2xi_dy2(j)/dxi_dy(j)*ddy(j,:)) &
+          !     - xi(j)/dxi_dy(j)*ddy(j,:)
+          factor = -(1/two)*(1-xi(j)*xi(j))/(dxi_dy(j)*dxi_dy(j))*d2xi_dy2(j)/dxi_dy(j) - xi(j)/dxi_dy(j)
+          if (factor<0) then
+             pitch_angle_scattering_operator(j,:) = (1/two)*(1-xi(j)*xi(j))/(dxi_dy(j)*dxi_dy(j))*d2dy2(j,:) + factor*ddy_plus(j,:)
+          else
+             pitch_angle_scattering_operator(j,:) = (1/two)*(1-xi(j)*xi(j))/(dxi_dy(j)*dxi_dy(j))*d2dy2(j,:) + factor*ddy_minus(j,:)
+          end if
        end do
 
        ! *******************************************************************************
@@ -833,7 +908,8 @@
           if (masterProc) then
              print *,"Pitch angle scattering operator is dropped in the preconditioner."
           end if
-          ddy = 0
+          ddy_plus = 0
+          ddy_minus = 0
           d2dy2 = 0
           call_uniform_diff_matrices = .false.
           
@@ -849,15 +925,81 @@
              print *,"Preconditioner pitch angle scattering operator is discretized using centered finite differences:"
              print *,"   1 point on either side."
           end if
-          derivative_option = 2
+          derivative_option_plus = 2
+          derivative_option_minus = 2
+          derivative_option_diffusion = 2
           
        case (3)
           if (masterProc) then
              print *,"Preconditioner pitch angle scattering operator is discretized using centered finite differences:"
              print *,"   2 points on either side."
           end if
-          derivative_option = 12
+          derivative_option_plus = 12
+          derivative_option_minus = 12
+          derivative_option_diffusion = 12
           
+       case (4)
+          if (masterProc) then
+             print *,"Preconditioner pitch angle scattering operator discretized using upwinded finite differences:"
+             print *,"   0 points on one side, 1 point on the other side."
+             print *,"   Diffusion term uses centered differences with 1 point on either side."
+          end if
+          derivative_option_plus  = 32
+          derivative_option_minus = 42
+          derivative_option_diffusion = 2
+          
+       case (5)
+          if (masterProc) then
+             print *,"Preconditioner pitch angle scattering operator discretized using upwinded finite differences:"
+             print *,"   0 points on one side, 2 points on the other side."
+             print *,"   Diffusion term uses centered differences with 2 points on either side."
+          end if
+          derivative_option_plus  = 52
+          derivative_option_minus = 62
+          derivative_option_diffusion = 12
+          
+       case (6)
+          if (masterProc) then
+             print *,"Preconditioner pitch angle scattering operator discretized using upwinded finite differences:"
+             print *,"   1 point on one side, 2 points on the other side."
+             print *,"   Diffusion term uses centered differences with 2 points on either side."
+          end if
+          derivative_option_plus  = 82
+          derivative_option_minus = 92
+          derivative_option_diffusion = 12
+          
+       case (7)
+          if (masterProc) then
+             print *,"Preconditioner pitch angle scattering operator discretized using upwinded finite differences:"
+             print *,"   1 point on one side, 3 points on the other side."
+             print *,"   Diffusion term uses centered differences with 2 points on either side."
+          end if
+          derivative_option_plus  = 102
+          derivative_option_minus = 112
+          derivative_option_diffusion = 12
+          
+       case (8)
+          if (masterProc) then
+             print *,"Preconditioner pitch angle scattering operator discretized using upwinded finite differences:"
+             print *,"   2 point on one side, 3 points on the other side."
+             print *,"   High accuracy at the domain ends, though upwinding breaks down there."
+             print *,"   Diffusion term uses centered differences with 2 points on either side."
+          end if
+          derivative_option_plus  = 122
+          derivative_option_minus = 132
+          derivative_option_diffusion = 12
+          
+       case (9)
+          if (masterProc) then
+             print *,"Preconditioner pitch angle scattering operator discretized using upwinded finite differences:"
+             print *,"   2 point on one side, 3 points on the other side."
+             print *,"   Upwinding all the way to the domain ends, meaning lower accuracy there."
+             print *,"   Diffusion term uses centered differences with 2 points on either side."
+          end if
+          derivative_option_plus  = 123
+          derivative_option_minus = 133
+          derivative_option_diffusion = 12
+
        case default
           if (masterProc) then
              print *,"Error! Invalid setting for preconditioner_pitch_angle_scattering_option:",preconditioner_pitch_angle_scattering_option
@@ -866,13 +1008,22 @@
        end select
 
        if (call_uniform_diff_matrices) then
-          call uniformDiffMatrices(Nxi, -one, one, derivative_option, xi_quadrature_option, y_dummy, yWeights_dummy, ddy, d2dy2)
+          !call uniformDiffMatrices(Nxi, -one, one, derivative_option, xi_quadrature_option, y_dummy, yWeights_dummy, ddy, d2dy2)
+          call uniformDiffMatrices(Nxi, -one, one, derivative_option_plus,      xi_quadrature_option, y_dummy, yWeights_dummy, ddy_plus, d2dy2_dummy)
+          call uniformDiffMatrices(Nxi, -one, one, derivative_option_minus,     xi_quadrature_option, y_dummy, yWeights_dummy, ddy_minus, d2dy2_dummy)
+          call uniformDiffMatrices(Nxi, -one, one, derivative_option_diffusion, xi_quadrature_option, y_dummy, yWeights_dummy, ddy_dummy, d2dy2)
        end if
        do j=1,Nxi
           !pitch_angle_scattering_operator_preconditioner(j,:) = (1/two)*(1-xi(j)*xi(j))*d2dxi2(j,:) - xi(j)*ddxi(j,:)
-          pitch_angle_scattering_operator_preconditioner(j,:) = (1/two)*(1-xi(j)*xi(j))/(dxi_dy(j)*dxi_dy(j)) &
-               *(d2dy2(j,:) - d2xi_dy2(j)/dxi_dy(j)*ddy(j,:)) &
-               - xi(j)/dxi_dy(j)*ddy(j,:)
+          !pitch_angle_scattering_operator_preconditioner(j,:) = (1/two)*(1-xi(j)*xi(j))/(dxi_dy(j)*dxi_dy(j)) &
+          !     *(d2dy2(j,:) - d2xi_dy2(j)/dxi_dy(j)*ddy(j,:)) &
+          !     - xi(j)/dxi_dy(j)*ddy(j,:)
+          factor = -(1/two)*(1-xi(j)*xi(j))/(dxi_dy(j)*dxi_dy(j))*d2xi_dy2(j)/dxi_dy(j) - xi(j)/dxi_dy(j)
+          if (factor<0) then
+             pitch_angle_scattering_operator_preconditioner(j,:) = (1/two)*(1-xi(j)*xi(j))/(dxi_dy(j)*dxi_dy(j))*d2dy2(j,:) + factor*ddy_plus(j,:)
+          else
+             pitch_angle_scattering_operator_preconditioner(j,:) = (1/two)*(1-xi(j)*xi(j))/(dxi_dy(j)*dxi_dy(j))*d2dy2(j,:) + factor*ddy_minus(j,:)
+          end if
        end do
        
        if (preconditioner_pitch_angle_scattering_option<0) then
@@ -1109,7 +1260,18 @@
 
     ! The following arrays will not be needed:
     deallocate(d2dxi2,ddxi)
-    deallocate(d2dy2,ddy,y_dummy,yWeights_dummy,yWeights,ddy_plus,ddy_minus,y)
+    deallocate(d2dy2,d2dy2_dummy,ddy,y_dummy,yWeights_dummy,yWeights,ddy_plus,ddy_minus,ddy_dummy,y)
+
+    if (masterProc) then
+       print *,"pitch_angle_scattering_operator:"
+       do j=1,Nxi
+          print "(*(f7.2))",pitch_angle_scattering_operator(j,:)
+       end do
+       print *,"pitch_angle_scattering_operator_preconditioner:"
+       do j=1,Nxi
+          print "(*(f7.2))",pitch_angle_scattering_operator_preconditioner(j,:)
+       end do
+    end if
 
     ! *******************************************************************************
     ! Build x grids, integration weights, and differentiation matrices.
