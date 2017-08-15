@@ -37,11 +37,9 @@ ifeq ($(wildcard $(SYSTEM_MAKEFILE)),)
 $(error Based on the environment variable SFINCS_SYSTEM, make is trying to include the file $(SYSTEM_MAKEFILE), but this file does not exist)
 endif
 
-TARGET = sfincs
-
 .PHONY: all clean test retest
 
-all: $(TARGET)
+all: sfincs
 
 include $(SYSTEM_MAKEFILE)
 
@@ -51,30 +49,31 @@ endif
 
 include makefile.depend
 
-# Export variables that will be used in the readVMEC subdirectory or for "make test":
+# Export variables that will be used in the mini_libstell subdirectory or for "make test":
 export
 
 %.o: %.F90
-	$(FC) $(EXTRA_COMPILE_FLAGS) -IreadVMEC -c $<
+	$(FC) $(EXTRA_COMPILE_FLAGS) -I $(LIBSTELL_DIR) -c $<
 
 %.o: %.f
 	$(FC) $(EXTRA_COMPILE_FLAGS) -c $<
 
-readVMEC/readVMEC.a:
-	$(MAKE) -C readVMEC
+mini_libstell/mini_libstell.a:
+	$(MAKE) -C mini_libstell
 
 # Automatic variables like $@ are documented here: http://www.gnu.org/software/make/manual/make.html#Automatic-Variables
-lib$(TARGET).a: $(OBJ_FILES)
-	ar rcs $@ $(OBJ_FILES) readVMEC/*.o
+libsfincs.a: $(OBJ_FILES)
+	ar rcs $@ $(OBJ_FILES)
+#	ar rcs $@ $(OBJ_FILES) mini_libstell/*.o
 #	ranlib $@
 
-$(TARGET): $(TARGET).o lib$(TARGET).a
-	$(FLINKER) -o $(TARGET) $(TARGET).o lib$(TARGET).a $(EXTRA_LINK_FLAGS) $(PETSC_LIB)
+sfincs: sfincs.o libsfincs.a
+	$(FLINKER) -o sfincs sfincs.o libsfincs.a $(LIBSTELL_FOR_SFINCS) $(EXTRA_LINK_FLAGS) $(PETSC_LIB)
 
-# Since the sometimes-included PETSc makefile uses a double-colon to define clean, we must do the same here:
+# Since the sometimes-included PETSc makefile uses a double-colon to define "clean", we must do the same here:
 clean::
-	rm -f *.o *.mod *.a *.dat *~ $(TARGET) sfincsMatrices.m sfincsOutput.h5
-	cd readVMEC; rm -f *.o *.a
+	rm -f *.o *.mod *.MOD *.a *.dat *~ sfincs sfincsMatrices.m sfincsOutput.h5
+	cd mini_libstell; rm -f *.o *.mod *.MOD *.a
 
 test_make:
 	@echo SFINCS_SYSTEM is $(SFINCS_SYSTEM)
@@ -91,11 +90,12 @@ test_make:
 	@echo EXTRA_COMPILE_FLAGS is $(EXTRA_COMPILE_FLAGS)
 	@echo EXTRA_LINK_FLAGS is $(EXTRA_LINK_FLAGS)
 	@echo PETSC_LIB is $(PETSC_LIB)
-	@echo TARGET is $(TARGET)
 	@echo OBJ_FILES is $(OBJ_FILES)
+	@echo LIBSTELL_DIR is $(LIBSTELL_DIR)
+	@echo LIBSTELL_FOR_SFINCS is $(LIBSTELL_FOR_SFINCS)
 
-test: $(TARGET)
+test: sfincs
 	@echo "Beginning functional tests." && cd examples && export SFINCS_RETEST=no && ./runExamples.py
 
-retest: $(TARGET)
+retest: sfincs
 	@echo "Testing sfincsOutput.h5 for examples without re-running then." && cd examples && export SFINCS_RETEST=yes && ./runExamples.py
