@@ -283,7 +283,6 @@ contains
           end if
        end do
     end do
-    
   end subroutine computeBHat
 
   ! ---------------------------------------------------------------------------------------
@@ -1058,24 +1057,24 @@ contains
        dBHatdzeta = 0
 
        !I do not Bother to calculate Sugama's drift for geometryScheme=1,2,3,4.
-       !RHat = 0 
-       !dRHatdtheta      = 0
-       !dRHatdzeta       = 0
-       !d2RHatdtheta2    = 0
-       !d2RHatdzeta2     = 0
-       !d2RHatdthetadzeta= 0
-       !ZHatL = 0 
-       !dZHatdtheta      = 0
-       !dZHatdzeta       = 0
-       !d2ZHatdtheta2    = 0
-       !d2ZHatdzeta2     = 0
-       !d2ZHatdthetadzeta= 0
-       !DzL = 0 
-       !dDzdtheta      = 0
-       !dDzdzeta       = 0
-       !d2Dzdtheta2    = 0
-       !d2Dzdzeta2     = 0
-       !d2Dzdthetadzeta= 0
+!!$       RHat = 0 
+!!$       dRHatdtheta      = 0
+!!$       dRHatdzeta       = 0
+!!$       d2RHatdtheta2    = 0
+!!$       d2RHatdzeta2     = 0
+!!$       d2RHatdthetadzeta= 0
+!!$       ZHatL = 0 
+!!$       dZHatdtheta      = 0
+!!$       dZHatdzeta       = 0
+!!$       d2ZHatdtheta2    = 0
+!!$       d2ZHatdzeta2     = 0
+!!$       d2ZHatdthetadzeta= 0
+!!$       DzL = 0 
+!!$       dDzdtheta      = 0
+!!$       dDzdzeta       = 0
+!!$       d2Dzdtheta2    = 0
+!!$       d2Dzdzeta2     = 0
+!!$       d2Dzdthetadzeta= 0
 
        
        do i = 1, NHarmonics
@@ -2747,6 +2746,21 @@ contains
        GHat = dot_product(thetaWeights, matmul(BHat_sub_zeta,  zetaWeights)) / (4*pi*pi)
        IHat = dot_product(thetaWeights, matmul(BHat_sub_theta, zetaWeights)) / (4*pi*pi)
 
+    end if
+
+    if (masterProc) then
+       print *,"---- Geometry parameters: ----"
+       print *,"Geometry scheme = ", geometryScheme
+       print *,"psiAHat (Normalized toroidal flux at the last closed flux surface) = ", psiAHat
+       print *,"aHat (Radius of the last closed flux surface in units of RHat) = ", aHat
+       if (geometryScheme==1) then
+          print *,"epsilon_t = ", epsilon_t
+          print *,"epsilon_h = ", epsilon_h
+          print *,"epsilon_antisymm = ", epsilon_antisymm
+       end if
+       print *,"GHat (Boozer component multiplying grad zeta) = ", GHat
+       print *,"IHat (Boozer component multiplying grad theta) = ", IHat
+       print *,"iota (Rotational transform) = ", iota
     end if
 
   end subroutine computeBIntegrals

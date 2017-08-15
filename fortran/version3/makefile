@@ -63,8 +63,13 @@ export
 readVMEC/readVMEC.a:
 	$(MAKE) -C readVMEC
 
-$(TARGET): $(OBJ_FILES)
-	$(FLINKER) -o $(TARGET) $(OBJ_FILES) $(EXTRA_LINK_FLAGS) $(PETSC_LIB)
+# Automatic variables like $@ are documented here: http://www.gnu.org/software/make/manual/make.html#Automatic-Variables
+lib$(TARGET).a: $(OBJ_FILES)
+	ar rcs $@ $(OBJ_FILES) quadpack/*.o readVMEC/*.o
+#	ranlib $@
+
+$(TARGET): $(TARGET).o lib$(TARGET).a
+	$(FLINKER) -o $(TARGET) $(TARGET).o lib$(TARGET).a $(EXTRA_LINK_FLAGS) $(PETSC_LIB)
 
 # Since the sometimes-included PETSc makefile uses a double-colon to define clean, we must do the same here:
 clean::
