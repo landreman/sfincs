@@ -222,23 +222,39 @@
 
     ! Add the inductive electric field term:
     L=1
-    do ispecies = 1,Nspecies
-       do ix=ixMin,Nx
-          !factor = alpha*Zs(ispecies)*x(ix)*exp(-x2(ix))*EParallelHatToUse*(GHat+iota*IHat)&
-          !     *nHats(ispecies)*mHats(ispecies)/(pi*sqrtpi*THats(ispecies)*THats(ispecies)*FSABHat2)
-          factor = alpha*Zs(ispecies)*x(ix)*exp(-x2(ix))*(EParallelHat+EParallelHatSpec(ispecies)) & !!EParallelHatSpec added 2017-02/HS
-               *nHats(ispecies)*mHats(ispecies)/(pi*sqrtpi*THats(ispecies)*THats(ispecies)*FSABHat2)
-          do itheta=ithetaMin,ithetaMax
-             do izeta = izetaMin,izetaMax
-                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                call VecSetValue(rhs, index, &
-                     factor * BHat(itheta,izeta), INSERT_VALUES, ierr)
-                     !factor/BHat(itheta,izeta), INSERT_VALUES, ierr)
+    if (trim(EParallelHatSpec_bcdatFile)=="") then !This is the normal case
+       do ispecies = 1,Nspecies
+          do ix=ixMin,Nx
+             factor = alpha*Zs(ispecies)*x(ix)*exp(-x2(ix))*(EParallelHat+EParallelHatSpec(ispecies)) & !!EParallelHatSpec added 2017-02/HS
+                  *nHats(ispecies)*mHats(ispecies)/(pi*sqrtpi*THats(ispecies)*THats(ispecies)*FSABHat2)
+             do itheta=ithetaMin,ithetaMax
+                do izeta = izetaMin,izetaMax
+                   index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+                   call VecSetValue(rhs, index, &
+                        factor * BHat(itheta,izeta), INSERT_VALUES, ierr)
+                   !factor/BHat(itheta,izeta), INSERT_VALUES, ierr)
+                end do
              end do
           end do
        end do
-    end do
-
+    else !This is a very specialized case, added 2017-08/HS
+      do ispecies = 1,Nspecies
+          do ix=ixMin,Nx
+             factor = alpha*Zs(ispecies)*x(ix)*exp(-x2(ix)) & 
+                  *nHats(ispecies)*mHats(ispecies)/(pi*sqrtpi*THats(ispecies)*THats(ispecies)*FSABHat2)
+             do itheta=ithetaMin,ithetaMax
+                do izeta = izetaMin,izetaMax
+                   index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+                   call VecSetValue(rhs, index, &
+                        factor * (EParallelHat+EParallelHatSpec(ispecies)*bcdata(itheta,izeta)) &
+                        *BHat(itheta,izeta), INSERT_VALUES, ierr)
+                   !factor/BHat(itheta,izeta), INSERT_VALUES, ierr)
+                end do
+             end do
+          end do
+       end do 
+    end if
+    
     ! Done inserting values.
     ! Finally, assemble the RHS vector:
     call VecAssemblyBegin(rhs, ierr)

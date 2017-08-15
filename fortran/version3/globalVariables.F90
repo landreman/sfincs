@@ -50,6 +50,7 @@ module globalVariables
   PetscScalar :: epsilon_t = -0.07053d+0, epsilon_h = 0.05067d+0, epsilon_antisymm = 0.0
   integer :: NPeriods = 0, helicity_l = 2, helicity_n = 10, helicity_antisymm_l = 1, helicity_antisymm_n = 0
   character(len=200) :: equilibriumFile = ""
+  character(len=200) :: EParallelHatSpec_bcdatFile = ""
   PetscScalar :: min_Bmn_to_load = 0.0, dGdpHat, aHat = 0.5585d+0
   PetscScalar :: psiHat_wish = -1, psiN_wish = 0.25, rHat_wish = -1, rN_wish = 0.5
   PetscScalar :: psiHat, psiN, rHat, rN
@@ -218,7 +219,7 @@ module globalVariables
   PetscScalar, dimension(:,:), allocatable :: BHat_sup_theta, dBHat_sup_theta_dzeta, dBHat_sup_theta_dpsiHat
   PetscScalar, dimension(:,:), allocatable :: BHat_sup_zeta, dBHat_sup_zeta_dtheta, dBHat_sup_zeta_dpsiHat
   PetscScalar, dimension(:,:), allocatable :: BDotCurlB, uHat, gradpsidotgradB_overgpsipsi
-  PetscScalar, dimension(:,:), allocatable :: sources, jHat, Phi1Hat, dPhi1Hatdtheta, dPhi1Hatdzeta
+  PetscScalar, dimension(:,:), allocatable :: sources, jHat, Phi1Hat, dPhi1Hatdtheta, dPhi1Hatdzeta, bcdata
   PetscScalar, dimension(:,:,:), allocatable :: densityPerturbation, totalDensity
   PetscScalar, dimension(:,:,:), allocatable :: pressurePerturbation, totalPressure, pressureAnisotropy
   PetscScalar, dimension(:,:,:), allocatable :: flow, velocityUsingFSADensity, velocityUsingTotalDensity

@@ -65,7 +65,7 @@ readVMEC/readVMEC.a:
 
 # Automatic variables like $@ are documented here: http://www.gnu.org/software/make/manual/make.html#Automatic-Variables
 lib$(TARGET).a: $(OBJ_FILES)
-	ar rcs $@ $(OBJ_FILES) quadpack/*.o readVMEC/*.o
+	ar rcs $@ $(OBJ_FILES) readVMEC/*.o
 #	ranlib $@
 
 $(TARGET): $(TARGET).o lib$(TARGET).a
