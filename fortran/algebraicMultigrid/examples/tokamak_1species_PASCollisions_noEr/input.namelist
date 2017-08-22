@@ -44,16 +44,15 @@
 &speciesParameters
   Zs = 1
   mHats = 1
-  nHats = 1.0d+0
-  THats = 0.5d+0
-  dNHatdrHats = -6.0d+0
-  dTHatdrHats = -3.0d+0
+  nHats = 1.0d+20
+  THats = 0.5d+3
+  dNHatdrHats = -6.0d+20
+  dTHatdrHats = -3.0d+3
 /
 
 &physicsParameters
-  Delta = 4.5694d-3
-  alpha = 1.0d+0
-  nu_n = 8.4774d-3
+  old_output_normalizations=T
+  ln_Lambda = 17.3
 
   Er = 0.0d+0
 
@@ -61,7 +60,7 @@
 
   includeXDotTerm = .true.
   includeElectricFieldTermInXiDot = .true.
-  useDKESExBDrift = .false.
+  ExB_option = 1
 
   includePhi1 = .false.
 /
@@ -81,9 +80,9 @@
 !ss NxiMinFactor = 0.8
 !ss NxiMaxFactor = 2
 !ss NxiNumRuns = 6
- 
-!Nx=1 
+  
   Nx = 8
+!  Nx = 1
 !ss NxMinFactor = 0.8
 !ss NxMaxFactor = 2
 !ss NxNumRuns = 3
@@ -96,14 +95,31 @@
 /
 
 &otherNumericalParameters
+!theta_derivative_option=4
+!xi_derivative_option=4
+!pitch_angle_scattering_option=2
+
+null_space_option=0
+! 0 = no null space attached
+! 1 = null space attached
+! 2 = near null space attached
+
+!spatial_scaling_option=4
+!constraint_scaling_option=1
+
+!x_scaling_option=2
 /
 
 &preconditionerOptions
   ! Since the matrix size is so small for this example, we can afford to make the preconditioner matrix
   ! the same as the real system matrix.
-  preconditioner_species = 0
-  preconditioner_x = 0
-  preconditioner_xi = 0
+!  preconditioner_species = 0
+!  preconditioner_x = 0
+preconditioning_option=1
+! 1 = no fieldsplit, LU
+! 2 = fieldsplit, GAMG
+! 3 = fieldsplit, Hypre
+! 4 = fieldsplit, LU
 /
 
 &export_f
