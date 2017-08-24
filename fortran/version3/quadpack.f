@@ -1,4 +1,4 @@
-      DOUBLE PRECISION FUNCTION D1MACH(I)
+      DOUBLE PRECISION FUNCTION SFINCS_D1MACH(I)
 
 c  Double-precision machine constants (see R1MACH for documentation).
 
@@ -28,13 +28,13 @@ c      EXTERNAL  ERRMSG
 
       IF( I.EQ.1 )  THEN
 c         D1MACH = 2.3D-308
-        D1MACH = TINY(1.D0)
+        SFINCS_D1MACH = TINY(1.D0)
       ELSE IF( I.EQ.2 )  THEN  
 c         D1MACH = 1.7D+308
-        D1MACH = HUGE(1.D0)
+        SFINCS_D1MACH = HUGE(1.D0)
       ELSE IF( I.EQ.4 )  THEN  
 c         D1MACH = 2.3D-16
-        D1MACH = EPSILON(1.D0)
+        SFINCS_D1MACH = EPSILON(1.D0)
       ELSE
          print *,"Error! Bad input to d1mach"
          print *,"I=",I
@@ -43,7 +43,8 @@ c         D1MACH = 2.3D-16
 
       RETURN
       END
-      subroutine dqage(f,a,b,epsabs,epsrel,key,limit,result,abserr,
+      subroutine sfincs_dqage
+     * (f,a,b,epsabs,epsrel,key,limit,result,abserr,
      *   neval,ier,alist,blist,rlist,elist,iord,last)
 c***begin prologue  dqage
 c***date written   800101   (yymmdd)
@@ -191,7 +192,8 @@ c                    dqk41,dqk51,dqk61,dqpsrt
 c***end prologue  dqage
 c
       double precision a,abserr,alist,area,area1,area12,area2,a1,a2,b,
-     *  blist,b1,b2,dabs,defabs,defab1,defab2,dmax1,d1mach,elist,epmach,
+     *  blist,b1,b2,dabs,defabs,defab1,defab2,dmax1,sfincs_d1mach,
+     *  elist,epmach,
      *  epsabs,epsrel,errbnd,errmax,error1,error2,erro12,errsum,f,
      *  resabs,result,rlist,uflow
       integer ier,iord,iroff1,iroff2,k,key,keyf,last,limit,maxerr,neval,
@@ -231,8 +233,8 @@ c           epmach  is the largest relative spacing.
 c           uflow  is the smallest positive magnitude.
 c
 c***first executable statement  dqage
-      epmach = d1mach(4)
-      uflow = d1mach(1)
+      epmach = sfincs_d1mach(4)
+      uflow = sfincs_d1mach(1)
 c
 c           test on validity of parameters
 c           ------------------------------
@@ -258,12 +260,12 @@ c
       if(key.le.0) keyf = 1
       if(key.ge.7) keyf = 6
       neval = 0
-      if(keyf.eq.1) call dqk15(f,a,b,result,abserr,defabs,resabs)
-      if(keyf.eq.2) call dqk21(f,a,b,result,abserr,defabs,resabs)
-      if(keyf.eq.3) call dqk31(f,a,b,result,abserr,defabs,resabs)
-      if(keyf.eq.4) call dqk41(f,a,b,result,abserr,defabs,resabs)
-      if(keyf.eq.5) call dqk51(f,a,b,result,abserr,defabs,resabs)
-      if(keyf.eq.6) call dqk61(f,a,b,result,abserr,defabs,resabs)
+      if(keyf.eq.1) call sfincs_dqk15(f,a,b,result,abserr,defabs,resabs)
+      if(keyf.eq.2) call sfincs_dqk21(f,a,b,result,abserr,defabs,resabs)
+      if(keyf.eq.3) call sfincs_dqk31(f,a,b,result,abserr,defabs,resabs)
+      if(keyf.eq.4) call sfincs_dqk41(f,a,b,result,abserr,defabs,resabs)
+      if(keyf.eq.5) call sfincs_dqk51(f,a,b,result,abserr,defabs,resabs)
+      if(keyf.eq.6) call sfincs_dqk61(f,a,b,result,abserr,defabs,resabs)
       last = 1
       rlist(1) = result
       elist(1) = abserr
@@ -300,18 +302,30 @@ c
         b1 = 0.5d+00*(alist(maxerr)+blist(maxerr))
         a2 = b1
         b2 = blist(maxerr)
-        if(keyf.eq.1) call dqk15(f,a1,b1,area1,error1,resabs,defab1)
-        if(keyf.eq.2) call dqk21(f,a1,b1,area1,error1,resabs,defab1)
-        if(keyf.eq.3) call dqk31(f,a1,b1,area1,error1,resabs,defab1)
-        if(keyf.eq.4) call dqk41(f,a1,b1,area1,error1,resabs,defab1)
-        if(keyf.eq.5) call dqk51(f,a1,b1,area1,error1,resabs,defab1)
-        if(keyf.eq.6) call dqk61(f,a1,b1,area1,error1,resabs,defab1)
-        if(keyf.eq.1) call dqk15(f,a2,b2,area2,error2,resabs,defab2)
-        if(keyf.eq.2) call dqk21(f,a2,b2,area2,error2,resabs,defab2)
-        if(keyf.eq.3) call dqk31(f,a2,b2,area2,error2,resabs,defab2)
-        if(keyf.eq.4) call dqk41(f,a2,b2,area2,error2,resabs,defab2)
-        if(keyf.eq.5) call dqk51(f,a2,b2,area2,error2,resabs,defab2)
-        if(keyf.eq.6) call dqk61(f,a2,b2,area2,error2,resabs,defab2)
+        if(keyf.eq.1) 
+     1      call sfincs_dqk15(f,a1,b1,area1,error1,resabs,defab1)
+        if(keyf.eq.2) 
+     1      call sfincs_dqk21(f,a1,b1,area1,error1,resabs,defab1)
+        if(keyf.eq.3) 
+     1      call sfincs_dqk31(f,a1,b1,area1,error1,resabs,defab1)
+        if(keyf.eq.4) 
+     1      call sfincs_dqk41(f,a1,b1,area1,error1,resabs,defab1)
+        if(keyf.eq.5) 
+     1      call sfincs_dqk51(f,a1,b1,area1,error1,resabs,defab1)
+        if(keyf.eq.6) 
+     1      call sfincs_dqk61(f,a1,b1,area1,error1,resabs,defab1)
+        if(keyf.eq.1) 
+     1      call sfincs_dqk15(f,a2,b2,area2,error2,resabs,defab2)
+        if(keyf.eq.2) 
+     1      call sfincs_dqk21(f,a2,b2,area2,error2,resabs,defab2)
+        if(keyf.eq.3) 
+     1      call sfincs_dqk31(f,a2,b2,area2,error2,resabs,defab2)
+        if(keyf.eq.4) 
+     1      call sfincs_dqk41(f,a2,b2,area2,error2,resabs,defab2)
+        if(keyf.eq.5) 
+     1      call sfincs_dqk51(f,a2,b2,area2,error2,resabs,defab2)
+        if(keyf.eq.6) 
+     1      call sfincs_dqk61(f,a2,b2,area2,error2,resabs,defab2)
 c
 c           improve previous approximations to integral
 c           and error and test for accuracy.
@@ -366,7 +380,7 @@ c           call subroutine dqpsrt to maintain the descending ordering
 c           in the list of error estimates and select the subinterval
 c           with the largest error estimate (to be bisected next).
 c
-   20   call dqpsrt(limit,last,maxerr,errmax,elist,iord,nrmax)
+   20   call sfincs_dqpsrt(limit,last,maxerr,errmax,elist,iord,nrmax)
 c ***jump out of do-loop
         if(ier.ne.0.or.errsum.le.errbnd) go to 40
    30 continue
@@ -383,7 +397,8 @@ c
       if(keyf.eq.1) neval = 30*neval+15
   999 return
       end
-      subroutine dqagi(f,bound,inf,epsabs,epsrel,result,abserr,neval,
+      subroutine sfincs_dqagi
+     * (f,bound,inf,epsabs,epsrel,result,abserr,neval,
      *   ier,limit,lenw,last,iwork,work)
 c***begin prologue  dqagi
 c***date written   800101   (yymmdd)
@@ -564,7 +579,7 @@ c
       l2 = limit+l1
       l3 = limit+l2
 c
-      call dqagie(f,bound,inf,epsabs,epsrel,limit,result,abserr,
+      call sfincs_dqagie(f,bound,inf,epsabs,epsrel,limit,result,abserr,
      *  neval,ier,work(1),work(l1),work(l2),work(l3),iwork,last)
 c
 c         call error handler if necessary.
@@ -578,7 +593,8 @@ c
       end if
       return
       end
-      subroutine dqagie(f,bound,inf,epsabs,epsrel,limit,result,abserr,
+      subroutine sfincs_dqagie
+     *   (f,bound,inf,epsabs,epsrel,limit,result,abserr,
      *   neval,ier,alist,blist,rlist,elist,iord,last)
 c***begin prologue  dqagie
 c***date written   800101   (yymmdd)
@@ -729,7 +745,8 @@ c***routines called  d1mach,dqelg,dqk15i,dqpsrt
 c***end prologue  dqagie
       double precision abseps,abserr,alist,area,area1,area12,area2,a1,
      *  a2,blist,boun,bound,b1,b2,correc,dabs,defabs,defab1,defab2,
-     *  dmax1,dres,d1mach,elist,epmach,epsabs,epsrel,erlarg,erlast,
+     *  dmax1,dres,sfincs_d1mach,
+     *  elist,epmach,epsabs,epsrel,erlarg,erlast,
      *  errbnd,errmax,error1,error2,erro12,errsum,ertest,f,oflow,resabs,
      *  reseps,result,res3la,rlist,rlist2,small,uflow
       integer id,ier,ierro,inf,iord,iroff1,iroff2,iroff3,jupbnd,k,ksgn,
@@ -795,7 +812,7 @@ c           uflow is the smallest positive magnitude.
 c           oflow is the largest positive magnitude.
 c
 c***first executable statement  dqagie
-       epmach = d1mach(4)
+       epmach = sfincs_d1mach(4)
 c
 c           test on validity of parameters
 c           -----------------------------
@@ -825,7 +842,7 @@ c           i2 = integral of f over (0,+infinity).
 c
       boun = bound
       if(inf.eq.2) boun = 0.0d+00
-      call dqk15i(f,boun,inf,0.0d+00,0.1d+01,result,abserr,
+      call sfincs_dqk15i(f,boun,inf,0.0d+00,0.1d+01,result,abserr,
      *  defabs,resabs)
 c
 c           test on accuracy
@@ -844,8 +861,8 @@ c
 c           initialization
 c           --------------
 c
-      uflow = d1mach(1)
-      oflow = d1mach(2)
+      uflow = sfincs_d1mach(1)
+      oflow = sfincs_d1mach(2)
       rlist2(1) = result
       errmax = abserr
       maxerr = 1
@@ -877,8 +894,8 @@ c
         a2 = b1
         b2 = blist(maxerr)
         erlast = errmax
-        call dqk15i(f,boun,inf,a1,b1,area1,error1,resabs,defab1)
-        call dqk15i(f,boun,inf,a2,b2,area2,error2,resabs,defab2)
+        call sfincs_dqk15i(f,boun,inf,a1,b1,area1,error1,resabs,defab1)
+        call sfincs_dqk15i(f,boun,inf,a2,b2,area2,error2,resabs,defab2)
 c
 c           improve previous approximations to integral
 c           and error and test for accuracy.
@@ -934,7 +951,7 @@ c           call subroutine dqpsrt to maintain the descending ordering
 c           in the list of error estimates and select the subinterval
 c           with nrmax-th largest error estimate (to be bisected next).
 c
-   30   call dqpsrt(limit,last,maxerr,errmax,elist,iord,nrmax)
+   30   call sfincs_dqpsrt(limit,last,maxerr,errmax,elist,iord,nrmax)
         if(errsum.le.errbnd) go to 115
         if(ier.ne.0) go to 100
         if(last.eq.2) go to 80
@@ -969,7 +986,7 @@ c           perform extrapolation.
 c
    60   numrl2 = numrl2+1
         rlist2(numrl2) = area
-        call dqelg(numrl2,rlist2,reseps,abseps,res3la,nres)
+        call sfincs_dqelg(numrl2,rlist2,reseps,abseps,res3la,nres)
         ktmin = ktmin+1
         if(ktmin.gt.5.and.abserr.lt.0.1d-02*errsum) ier = 5
         if(abseps.ge.abserr) go to 70
@@ -1030,7 +1047,7 @@ c
       if(ier.gt.2) ier=ier-1
   999 return
       end
-      subroutine dqelg(n,epstab,result,abserr,res3la,nres)
+      subroutine sfincs_dqelg(n,epstab,result,abserr,res3la,nres)
 c***begin prologue  dqelg
 c***refer to  dqagie,dqagoe,dqagpe,dqagse
 c***routines called  d1mach
@@ -1080,7 +1097,8 @@ c                       (should be zero at first call)
 c
 c***end prologue  dqelg
 c
-      double precision abserr,dabs,delta1,delta2,delta3,dmax1,d1mach,
+      double precision abserr,dabs,delta1,delta2,delta3,dmax1,
+     *  sfincs_d1mach,
      *  epmach,epsinf,epstab,error,err1,err2,err3,e0,e1,e1abs,e2,e3,
      *  oflow,res,result,res3la,ss,tol1,tol2,tol3
       integer i,ib,ib2,ie,indx,k1,k2,k3,limexp,n,newelm,nres,num
@@ -1111,8 +1129,8 @@ c           table can contain. if this number is reached, the upper
 c           diagonal of the epsilon table is deleted.
 c
 c***first executable statement  dqelg
-      epmach = d1mach(4)
-      oflow = d1mach(2)
+      epmach = sfincs_d1mach(4)
+      oflow = sfincs_d1mach(2)
       nres = nres+1
       abserr = oflow
       result = epstab(n)
@@ -1214,7 +1232,7 @@ c
   100 abserr = dmax1(abserr,0.5d+01*epmach*dabs(result))
       return
       end
-      subroutine dqk15(f,a,b,result,abserr,resabs,resasc)
+      subroutine sfincs_dqk15(f,a,b,result,abserr,resabs,resasc)
 c***begin prologue  dqk15
 c***date written   800101   (yymmdd)
 c***revision date  830518   (yymmdd)
@@ -1267,7 +1285,8 @@ c***routines called  d1mach
 c***end prologue  dqk15
 c
       double precision a,absc,abserr,b,centr,dabs,dhlgth,dmax1,dmin1,
-     *  d1mach,epmach,f,fc,fsum,fval1,fval2,fv1,fv2,hlgth,resabs,resasc,
+     *  sfincs_d1mach,
+     *  epmach,f,fc,fsum,fval1,fval2,fv1,fv2,hlgth,resabs,resasc,
      *  resg,resk,reskh,result,uflow,wg,wgk,xgk
       integer j,jtw,jtwm1
       external f
@@ -1336,8 +1355,8 @@ c           epmach is the largest relative spacing.
 c           uflow is the smallest positive magnitude.
 c
 c***first executable statement  dqk15
-      epmach = d1mach(4)
-      uflow = d1mach(1)
+      epmach = sfincs_d1mach(4)
+      uflow = sfincs_d1mach(1)
 c
       centr = 0.5d+00*(a+b)
       hlgth = 0.5d+00*(b-a)
@@ -1388,7 +1407,8 @@ c
      *  ((epmach*0.5d+02)*resabs,abserr)
       return
       end
-      subroutine dqk15i(f,boun,inf,a,b,result,abserr,resabs,resasc)
+      subroutine sfincs_dqk15i
+     1    (f,boun,inf,a,b,result,abserr,resabs,resasc)
 c***begin prologue  dqk15i
 c***date written   800101   (yymmdd)
 c***revision date  830518   (yymmdd)
@@ -1460,7 +1480,8 @@ c***routines called  d1mach
 c***end prologue  dqk15i
 c
       double precision a,absc,absc1,absc2,abserr,b,boun,centr,dabs,dinf,
-     *  dmax1,dmin1,d1mach,epmach,f,fc,fsum,fval1,fval2,fv1,fv2,hlgth,
+     *  dmax1,dmin1,sfincs_d1mach,
+     *  epmach,f,fc,fsum,fval1,fval2,fv1,fv2,hlgth,
      *  resabs,resasc,resg,resk,reskh,result,tabsc1,tabsc2,uflow,wg,wgk,
      *  xgk
       integer inf,j
@@ -1532,8 +1553,8 @@ c           epmach is the largest relative spacing.
 c           uflow is the smallest positive magnitude.
 c
 c***first executable statement  dqk15i
-      epmach = d1mach(4)
-      uflow = d1mach(1)
+      epmach = sfincs_d1mach(4)
+      uflow = sfincs_d1mach(1)
       dinf = min0(1,inf)
 c
       centr = 0.5d+00*(a+b)
@@ -1583,7 +1604,7 @@ c
      * ((epmach*0.5d+02)*resabs,abserr)
       return
       end
-      subroutine dqk21(f,a,b,result,abserr,resabs,resasc)
+      subroutine sfincs_dqk21(f,a,b,result,abserr,resabs,resasc)
 c***begin prologue  dqk21
 c***date written   800101   (yymmdd)
 c***revision date  830518   (yymmdd)
@@ -1636,7 +1657,8 @@ c***routines called  d1mach
 c***end prologue  dqk21
 c
       double precision a,absc,abserr,b,centr,dabs,dhlgth,dmax1,dmin1,
-     *  d1mach,epmach,f,fc,fsum,fval1,fval2,fv1,fv2,hlgth,resabs,resasc,
+     *  sfincs_d1mach,
+     *  epmach,f,fc,fsum,fval1,fval2,fv1,fv2,hlgth,resabs,resasc,
      *  resg,resk,reskh,result,uflow,wg,wgk,xgk
       integer j,jtw,jtwm1
       external f
@@ -1713,8 +1735,8 @@ c           epmach is the largest relative spacing.
 c           uflow is the smallest positive magnitude.
 c
 c***first executable statement  dqk21
-      epmach = d1mach(4)
-      uflow = d1mach(1)
+      epmach = sfincs_d1mach(4)
+      uflow = sfincs_d1mach(1)
 c
       centr = 0.5d+00*(a+b)
       hlgth = 0.5d+00*(b-a)
@@ -1765,7 +1787,7 @@ c
      *  ((epmach*0.5d+02)*resabs,abserr)
       return
       end
-      subroutine dqk31(f,a,b,result,abserr,resabs,resasc)
+      subroutine sfincs_dqk31(f,a,b,result,abserr,resabs,resasc)
 c***begin prologue  dqk31
 c***date written   800101   (yymmdd)
 c***revision date  830518   (yymmdd)
@@ -1818,7 +1840,8 @@ c***references  (none)
 c***routines called  d1mach
 c***end prologue  dqk31
       double precision a,absc,abserr,b,centr,dabs,dhlgth,dmax1,dmin1,
-     *  d1mach,epmach,f,fc,fsum,fval1,fval2,fv1,fv2,hlgth,resabs,resasc,
+     *  sfincs_d1mach,
+     *  epmach,f,fc,fsum,fval1,fval2,fv1,fv2,hlgth,resabs,resasc,
      *  resg,resk,reskh,result,uflow,wg,wgk,xgk
       integer j,jtw,jtwm1
       external f
@@ -1904,8 +1927,8 @@ c           ---------------------------
 c           epmach is the largest relative spacing.
 c           uflow is the smallest positive magnitude.
 c***first executable statement  dqk31
-      epmach = d1mach(4)
-      uflow = d1mach(1)
+      epmach = sfincs_d1mach(4)
+      uflow = sfincs_d1mach(1)
 c
       centr = 0.5d+00*(a+b)
       hlgth = 0.5d+00*(b-a)
@@ -1956,7 +1979,7 @@ c
      *  ((epmach*0.5d+02)*resabs,abserr)
       return
       end
-      subroutine dqk41(f,a,b,result,abserr,resabs,resasc)
+      subroutine sfincs_dqk41(f,a,b,result,abserr,resabs,resasc)
 c***begin prologue  dqk41
 c***date written   800101   (yymmdd)
 c***revision date  830518   (yymmdd)
@@ -2010,7 +2033,8 @@ c***routines called  d1mach
 c***end prologue  dqk41
 c
       double precision a,absc,abserr,b,centr,dabs,dhlgth,dmax1,dmin1,
-     *  d1mach,epmach,f,fc,fsum,fval1,fval2,fv1,fv2,hlgth,resabs,resasc,
+     *  sfincs_d1mach,
+     *  epmach,f,fc,fsum,fval1,fval2,fv1,fv2,hlgth,resabs,resasc,
      *  resg,resk,reskh,result,uflow,wg,wgk,xgk
       integer j,jtw,jtwm1
       external f
@@ -2111,8 +2135,8 @@ c           epmach is the largest relative spacing.
 c           uflow is the smallest positive magnitude.
 c
 c***first executable statement  dqk41
-      epmach = d1mach(4)
-      uflow = d1mach(1)
+      epmach = sfincs_d1mach(4)
+      uflow = sfincs_d1mach(1)
 c
       centr = 0.5d+00*(a+b)
       hlgth = 0.5d+00*(b-a)
@@ -2163,7 +2187,7 @@ c
      *  ((epmach*0.5d+02)*resabs,abserr)
       return
       end
-      subroutine dqk51(f,a,b,result,abserr,resabs,resasc)
+      subroutine sfincs_dqk51(f,a,b,result,abserr,resabs,resasc)
 c***begin prologue  dqk51
 c***date written   800101   (yymmdd)
 c***revision date  830518   (yymmdd)
@@ -2216,7 +2240,8 @@ c***routines called  d1mach
 c***end prologue  dqk51
 c
       double precision a,absc,abserr,b,centr,dabs,dhlgth,dmax1,dmin1,
-     *  d1mach,epmach,f,fc,fsum,fval1,fval2,fv1,fv2,hlgth,resabs,resasc,
+     *  sfincs_d1mach,
+     *  epmach,f,fc,fsum,fval1,fval2,fv1,fv2,hlgth,resabs,resasc,
      *  resg,resk,reskh,result,uflow,wg,wgk,xgk
       integer j,jtw,jtwm1
       external f
@@ -2331,8 +2356,8 @@ c           epmach is the largest relative spacing.
 c           uflow is the smallest positive magnitude.
 c
 c***first executable statement  dqk51
-      epmach = d1mach(4)
-      uflow = d1mach(1)
+      epmach = sfincs_d1mach(4)
+      uflow = sfincs_d1mach(1)
 c
       centr = 0.5d+00*(a+b)
       hlgth = 0.5d+00*(b-a)
@@ -2383,7 +2408,7 @@ c
      *  ((epmach*0.5d+02)*resabs,abserr)
       return
       end
-      subroutine dqk61(f,a,b,result,abserr,resabs,resasc)
+      subroutine sfincs_dqk61(f,a,b,result,abserr,resabs,resasc)
 c***begin prologue  dqk61
 c***date written   800101   (yymmdd)
 c***revision date  830518   (yymmdd)
@@ -2437,7 +2462,8 @@ c***routines called  d1mach
 c***end prologue  dqk61
 c
       double precision a,dabsc,abserr,b,centr,dabs,dhlgth,dmax1,dmin1,
-     *  d1mach,epmach,f,fc,fsum,fval1,fval2,fv1,fv2,hlgth,resabs,resasc,
+     *  sfincs_d1mach,
+     *  epmach,f,fc,fsum,fval1,fval2,fv1,fv2,hlgth,resabs,resasc,
      *  resg,resk,reskh,result,uflow,wg,wgk,xgk
       integer j,jtw,jtwm1
       external f
@@ -2561,8 +2587,8 @@ c
 c           epmach is the largest relative spacing.
 c           uflow is the smallest positive magnitude.
 c
-      epmach = d1mach(4)
-      uflow = d1mach(1)
+      epmach = sfincs_d1mach(4)
+      uflow = sfincs_d1mach(1)
 c
       centr = 0.5d+00*(b+a)
       hlgth = 0.5d+00*(b-a)
@@ -2614,7 +2640,7 @@ c***first executable statement  dqk61
      *  ((epmach*0.5d+02)*resabs,abserr)
       return
       end
-      subroutine dqpsrt(limit,last,maxerr,ermax,elist,iord,nrmax)
+      subroutine sfincs_dqpsrt(limit,last,maxerr,ermax,elist,iord,nrmax)
 c***begin prologue  dqpsrt
 c***refer to  dqage,dqagie,dqagpe,dqawse
 c***routines called  (none)
@@ -2743,7 +2769,8 @@ c
       ermax = elist(maxerr)
       return
       end
-      subroutine qage(f,a,b,epsabs,epsrel,key,limit,result,abserr,
+      subroutine sfincs_qage
+     *   (f,a,b,epsabs,epsrel,key,limit,result,abserr,
      *   neval,ier,alist,blist,rlist,elist,iord,last)
 c***begin prologue  qage
 c***date written   800101   (yymmdd)
@@ -2890,7 +2917,7 @@ c***routines called  qk15,qk21,qk31,qk41,qk51,qk61,qpsrt,r1mach
 c***end prologue  qage
 c
       real a,abserr,alist,area,area1,area12,area2,a1,a2,b,blist,
-     *  b1,b2,defabs,defab1,defab2,r1mach,elist,epmach,
+     *  b1,b2,defabs,defab1,defab2,sfincs_r1mach,elist,epmach,
      *  epsabs,epsrel,errbnd,errmax,error1,error2,erro12,errsum,f,
      *  resabs,result,rlist,uflow
       integer ier,iord,iroff1,iroff2,k,key,keyf,last,
@@ -2930,8 +2957,8 @@ c           epmach  is the largest relative spacing.
 c           uflow  is the smallest positive magnitude.
 c
 c***first executable statement  qage
-      epmach = r1mach(4)
-      uflow = r1mach(1)
+      epmach = sfincs_r1mach(4)
+      uflow = sfincs_r1mach(1)
 c
 c           test on validity of parameters
 c           ------------------------------
@@ -2957,12 +2984,12 @@ c
       if(key.le.0) keyf = 1
       if(key.ge.7) keyf = 6
       neval = 0
-      if(keyf.eq.1) call qk15(f,a,b,result,abserr,defabs,resabs)
-      if(keyf.eq.2) call qk21(f,a,b,result,abserr,defabs,resabs)
-      if(keyf.eq.3) call qk31(f,a,b,result,abserr,defabs,resabs)
-      if(keyf.eq.4) call qk41(f,a,b,result,abserr,defabs,resabs)
-      if(keyf.eq.5) call qk51(f,a,b,result,abserr,defabs,resabs)
-      if(keyf.eq.6) call qk61(f,a,b,result,abserr,defabs,resabs)
+      if(keyf.eq.1) call sfincs_qk15(f,a,b,result,abserr,defabs,resabs)
+      if(keyf.eq.2) call sfincs_qk21(f,a,b,result,abserr,defabs,resabs)
+      if(keyf.eq.3) call sfincs_qk31(f,a,b,result,abserr,defabs,resabs)
+      if(keyf.eq.4) call sfincs_qk41(f,a,b,result,abserr,defabs,resabs)
+      if(keyf.eq.5) call sfincs_qk51(f,a,b,result,abserr,defabs,resabs)
+      if(keyf.eq.6) call sfincs_qk61(f,a,b,result,abserr,defabs,resabs)
       last = 1
       rlist(1) = result
       elist(1) = abserr
@@ -3000,18 +3027,30 @@ c
         b1 = 0.5e+00*(alist(maxerr)+blist(maxerr))
         a2 = b1
         b2 = blist(maxerr)
-        if(keyf.eq.1) call qk15(f,a1,b1,area1,error1,resabs,defab1)
-        if(keyf.eq.2) call qk21(f,a1,b1,area1,error1,resabs,defab1)
-        if(keyf.eq.3) call qk31(f,a1,b1,area1,error1,resabs,defab1)
-        if(keyf.eq.4) call qk41(f,a1,b1,area1,error1,resabs,defab1)
-        if(keyf.eq.5) call qk51(f,a1,b1,area1,error1,resabs,defab1)
-        if(keyf.eq.6) call qk61(f,a1,b1,area1,error1,resabs,defab1)
-        if(keyf.eq.1) call qk15(f,a2,b2,area2,error2,resabs,defab2)
-        if(keyf.eq.2) call qk21(f,a2,b2,area2,error2,resabs,defab2)
-        if(keyf.eq.3) call qk31(f,a2,b2,area2,error2,resabs,defab2)
-        if(keyf.eq.4) call qk41(f,a2,b2,area2,error2,resabs,defab2)
-        if(keyf.eq.5) call qk51(f,a2,b2,area2,error2,resabs,defab2)
-        if(keyf.eq.6) call qk61(f,a2,b2,area2,error2,resabs,defab2)
+        if(keyf.eq.1) 
+     1      call sfincs_qk15(f,a1,b1,area1,error1,resabs,defab1)
+        if(keyf.eq.2) 
+     1      call sfincs_qk21(f,a1,b1,area1,error1,resabs,defab1)
+        if(keyf.eq.3) 
+     1      call sfincs_qk31(f,a1,b1,area1,error1,resabs,defab1)
+        if(keyf.eq.4) 
+     1      call sfincs_qk41(f,a1,b1,area1,error1,resabs,defab1)
+        if(keyf.eq.5) 
+     1      call sfincs_qk51(f,a1,b1,area1,error1,resabs,defab1)
+        if(keyf.eq.6) 
+     1      call sfincs_qk61(f,a1,b1,area1,error1,resabs,defab1)
+        if(keyf.eq.1) 
+     1      call sfincs_qk15(f,a2,b2,area2,error2,resabs,defab2)
+        if(keyf.eq.2) 
+     1      call sfincs_qk21(f,a2,b2,area2,error2,resabs,defab2)
+        if(keyf.eq.3) 
+     1      call sfincs_qk31(f,a2,b2,area2,error2,resabs,defab2)
+        if(keyf.eq.4) 
+     1      call sfincs_qk41(f,a2,b2,area2,error2,resabs,defab2)
+        if(keyf.eq.5) 
+     1      call sfincs_qk51(f,a2,b2,area2,error2,resabs,defab2)
+        if(keyf.eq.6) 
+     1      call sfincs_qk61(f,a2,b2,area2,error2,resabs,defab2)
 c
 c           improve previous approximations to integral
 c           and error and test for accuracy.
@@ -3068,7 +3107,7 @@ c           in the list of error estimates and select the
 c           subinterval with the largest error estimate (to be
 c           bisected next).
 c
-   20   call qpsrt(limit,last,maxerr,errmax,elist,iord,nrmax)
+   20   call sfincs_qpsrt(limit,last,maxerr,errmax,elist,iord,nrmax)
 c ***jump out of do-loop
         if(ier.ne.0.or.errsum.le.errbnd) go to 40
    30 continue
@@ -3085,7 +3124,8 @@ c
       if(keyf.eq.1) neval = 30*neval+15
   999 return
       end
-      subroutine qagie(f,bound,inf,epsabs,epsrel,limit,result,abserr,
+      subroutine sfincs_qagie
+     *   (f,bound,inf,epsabs,epsrel,limit,result,abserr,
      *   neval,ier,alist,blist,rlist,elist,iord,last)
 c***begin prologue  qagie
 c***date written   800101   (yymmdd)
@@ -3237,7 +3277,7 @@ c***end prologue  qagie
 c
       real abseps,abserr,alist,area,area1,area12,area2,a1,
      *  a2,blist,boun,bound,b1,b2,correc,defabs,defab1,defab2,
-     *  dres,r1mach,elist,epmach,epsabs,epsrel,erlarg,erlast,
+     *  dres,sfincs_r1mach,elist,epmach,epsabs,epsrel,erlarg,erlast,
      *  errbnd,errmax,error1,error2,erro12,errsum,ertest,f,oflow,resabs,
      *  reseps,result,res3la,rlist,rlist2,small,uflow
       integer id,ier,ierro,inf,iord,iroff1,iroff2,iroff3,jupbnd,k,ksgn,
@@ -3302,7 +3342,7 @@ c           epmach is the largest relative spacing.
 c           uflow is the smallest positive magnitude.
 c           oflow is the largest positive magnitude.
 c
-       epmach = r1mach(4)
+       epmach = sfincs_r1mach(4)
 c
 c           test on validity of parameters
 c           -----------------------------
@@ -3333,7 +3373,7 @@ c           i2 = integral of f over (0,+infinity).
 c
       boun = bound
       if(inf.eq.2) boun = 0.0e+00
-      call qk15i(f,boun,inf,0.0e+00,0.1e+01,result,abserr,
+      call sfincs_qk15i(f,boun,inf,0.0e+00,0.1e+01,result,abserr,
      *  defabs,resabs)
 c
 c           test on accuracy
@@ -3353,8 +3393,8 @@ c
 c           initialization
 c           --------------
 c
-      uflow = r1mach(1)
-      oflow = r1mach(2)
+      uflow = sfincs_r1mach(1)
+      oflow = sfincs_r1mach(2)
       rlist2(1) = result
       errmax = abserr
       maxerr = 1
@@ -3387,8 +3427,8 @@ c
         a2 = b1
         b2 = blist(maxerr)
         erlast = errmax
-        call qk15i(f,boun,inf,a1,b1,area1,error1,resabs,defab1)
-        call qk15i(f,boun,inf,a2,b2,area2,error2,resabs,defab2)
+        call sfincs_qk15i(f,boun,inf,a1,b1,area1,error1,resabs,defab1)
+        call sfincs_qk15i(f,boun,inf,a2,b2,area2,error2,resabs,defab2)
 c
 c           improve previous approximations to integral
 c           and error and test for accuracy.
@@ -3446,7 +3486,7 @@ c           in the list of error estimates and select the
 c           subinterval with nrmax-th largest error estimate (to be
 c           bisected next).
 c
-   30   call qpsrt(limit,last,maxerr,errmax,elist,iord,nrmax)
+   30   call sfincs_qpsrt(limit,last,maxerr,errmax,elist,iord,nrmax)
         if(errsum.le.errbnd) go to 115
         if(ier.ne.0) go to 100
         if(last.eq.2) go to 80
@@ -3482,7 +3522,7 @@ c           perform extrapolation.
 c
    60   numrl2 = numrl2+1
         rlist2(numrl2) = area
-        call qelg(numrl2,rlist2,reseps,abseps,res3la,nres)
+        call sfincs_qelg(numrl2,rlist2,reseps,abseps,res3la,nres)
         ktmin = ktmin+1
         if(ktmin.gt.5.and.abserr.lt.0.1e-02*errsum) ier = 5
         if(abseps.ge.abserr) go to 70
@@ -3543,7 +3583,7 @@ c
       if(ier.gt.2) ier=ier-1
   999 return
       end
-      subroutine qelg(n,epstab,result,abserr,res3la,nres)
+      subroutine sfincs_qelg(n,epstab,result,abserr,res3la,nres)
 c***begin prologue  qelg
 c***refer to  qagie,qagoe,qagpe,qagse
 c***routines called  r1mach
@@ -3593,7 +3633,7 @@ c                       (should be zero at first call)
 c
 c***end prologue  qelg
 c
-      real abserr,delta1,delta2,delta3,r1mach,
+      real abserr,delta1,delta2,delta3,sfincs_r1mach,
      *  epmach,epsinf,epstab,error,err1,err2,err3,e0,e1,e1abs,e2,e3,
      *  oflow,res,result,res3la,ss,tol1,tol2,tol3
       integer i,ib,ib2,ie,indx,k1,k2,k3,limexp,n,newelm,nres,num
@@ -3624,8 +3664,8 @@ c           table can contain. if this number is reached, the upper
 c           diagonal of the epsilon table is deleted.
 c
 c***first executable statement  qelg
-      epmach = r1mach(4)
-      oflow = r1mach(2)
+      epmach = sfincs_r1mach(4)
+      oflow = sfincs_r1mach(2)
       nres = nres+1
       abserr = oflow
       result = epstab(n)
@@ -3727,7 +3767,7 @@ c
   100 abserr = amax1(abserr,0.5e+01*epmach*abs(result))
       return
       end
-      subroutine qk15(f,a,b,result,abserr,resabs,resasc)
+      subroutine sfincs_qk15(f,a,b,result,abserr,resabs,resasc)
 c***begin prologue  qk15
 c***date written   800101   (yymmdd)
 c***revision date  830518   (yymmdd)
@@ -3780,7 +3820,8 @@ c***routines called  r1mach
 c***end prologue  qk15
 c
       real a,absc,abserr,b,centr,dhlgth,epmach,f,fc,fsum,fval1,fval2,
-     *  fv1,fv2,hlgth,resabs,resasc,resg,resk,reskh,result,r1mach,uflow,
+     *  fv1,fv2,hlgth,resabs,resasc,resg,resk,reskh,result,
+     *  sfincs_r1mach,uflow,
      *  wg,wgk,xgk
       integer j,jtw,jtwm1
       external f
@@ -3835,8 +3876,8 @@ c           epmach is the largest relative spacing.
 c           uflow is the smallest positive magnitude.
 c
 c***first executable statement  qk15
-      epmach = r1mach(4)
-      uflow = r1mach(1)
+      epmach = sfincs_r1mach(4)
+      uflow = sfincs_r1mach(1)
 c
       centr = 0.5e+00*(a+b)
       hlgth = 0.5e+00*(b-a)
@@ -3888,7 +3929,8 @@ c
      *  ((epmach*0.5e+02)*resabs,abserr)
       return
       end
-      subroutine qk15i(f,boun,inf,a,b,result,abserr,resabs,resasc)
+      subroutine sfincs_qk15i
+     1    (f,boun,inf,a,b,result,abserr,resabs,resasc)
 c***begin prologue  qk15i
 c***date written   800101   (yymmdd)
 c***revision date  830518   (yymmdd)
@@ -3960,7 +4002,7 @@ c***routines called  r1mach
 c***end prologue  qk15i
 c
       real a,absc,absc1,absc2,abserr,b,boun,centr,
-     *  dinf,r1mach,epmach,f,fc,fsum,fval1,fval2,fv1,
+     *  dinf,sfincs_r1mach,epmach,f,fc,fsum,fval1,fval2,fv1,
      *  fv2,hlgth,resabs,resasc,resg,resk,reskh,result,tabsc1,tabsc2,
      *  uflow,wg,wgk,xgk
       integer inf,j,min0
@@ -4025,8 +4067,8 @@ c           epmach is the largest relative spacing.
 c           uflow is the smallest positive magnitude.
 c
 c***first executable statement  qk15i
-      epmach = r1mach(4)
-      uflow = r1mach(1)
+      epmach = sfincs_r1mach(4)
+      uflow = sfincs_r1mach(1)
       dinf = min0(1,inf)
 c
       centr = 0.5e+00*(a+b)
@@ -4076,7 +4118,7 @@ c
      * ((epmach*0.5e+02)*resabs,abserr)
       return
       end
-      subroutine qk21(f,a,b,result,abserr,resabs,resasc)
+      subroutine sfincs_qk21(f,a,b,result,abserr,resabs,resasc)
 c***begin prologue  qk21
 c***date written   800101   (yymmdd)
 c***revision date  830518   (yymmdd)
@@ -4129,7 +4171,8 @@ c***routines called  r1mach
 c***end prologue  qk21
 c
       real a,absc,abserr,b,centr,dhlgth,epmach,f,fc,fsum,fval1,fval2,
-     *  fv1,fv2,hlgth,resabs,resg,resk,reskh,result,r1mach,uflow,wg,wgk,
+     *  fv1,fv2,hlgth,resabs,resg,resk,reskh,result,sfincs_r1mach,
+     * uflow,wg,wgk,
      *  xgk
       integer j,jtw,jtwm1
       external f
@@ -4194,8 +4237,8 @@ c           epmach is the largest relative spacing.
 c           uflow is the smallest positive magnitude.
 c
 c***first executable statement  qk21
-      epmach = r1mach(4)
-      uflow = r1mach(1)
+      epmach = sfincs_r1mach(4)
+      uflow = sfincs_r1mach(1)
 c
       centr = 0.5e+00*(a+b)
       hlgth = 0.5e+00*(b-a)
@@ -4247,7 +4290,7 @@ c
      *  ((epmach*0.5e+02)*resabs,abserr)
       return
       end
-      subroutine qk31(f,a,b,result,abserr,resabs,resasc)
+      subroutine sfincs_qk31(f,a,b,result,abserr,resabs,resasc)
 c***begin prologue  qk31
 c***date written   800101   (yymmdd)
 c***revision date  830518   (yymmdd)
@@ -4300,7 +4343,8 @@ c***references  (none)
 c***routines called  r1mach
 c***end prologue  qk31
       real a,absc,abserr,b,centr,dhlgth,epmach,f,fc,fsum,fval1,fval2,
-     *  fv1,fv2,hlgth,resabs,resasc,resg,resk,reskh,result,r1mach,uflow,
+     *  fv1,fv2,hlgth,resabs,resasc,resg,resk,reskh,result,
+     *  sfincs_r1mach,uflow,
      *  wg,wgk,xgk
       integer j,jtw,jtwm1
       external f
@@ -4367,8 +4411,8 @@ c           epmach is the largest relative spacing.
 c           uflow is the smallest positive magnitude.
 c
 c***first executable statement  qk31
-      epmach = r1mach(4)
-      uflow = r1mach(1)
+      epmach = sfincs_r1mach(4)
+      uflow = sfincs_r1mach(1)
 c
       centr = 0.5e+00*(a+b)
       hlgth = 0.5e+00*(b-a)
@@ -4420,7 +4464,7 @@ c
      *  ((epmach*0.5e+02)*resabs,abserr)
       return
       end
-      subroutine qk41(f,a,b,result,abserr,resabs,resasc)
+      subroutine sfincs_qk41(f,a,b,result,abserr,resabs,resasc)
 c***begin prologue  qk41
 c***date written   800101   (yymmdd)
 c***revision date  830518   (yymmdd)
@@ -4475,7 +4519,7 @@ c***end prologue  qk41
 c
       real a,absc,abserr,b,centr,dhlgth,epmach,f,fc,fsum,fval1,fval2,
      *  fv1,fv2,hlgth,resabs,
-     *  resasc,resg,resk,reskh,result,r1mach,uflow,
+     *  resasc,resg,resk,reskh,result,sfincs_r1mach,uflow,
      *  wg,wgk,xgk
       integer j,jtw,jtwm1
       external f
@@ -4551,8 +4595,8 @@ c           epmach is the largest relative spacing.
 c           uflow is the smallest positive magnitude.
 c
 c***first executable statement  qk41
-      epmach = r1mach(4)
-      uflow = r1mach(1)
+      epmach = sfincs_r1mach(4)
+      uflow = sfincs_r1mach(1)
 c
       centr = 0.5e+00*(a+b)
       hlgth = 0.5e+00*(b-a)
@@ -4604,7 +4648,7 @@ c
      *  ((epmach*0.5e+02)*resabs,abserr)
       return
       end
-      subroutine qk51(f,a,b,result,abserr,resabs,resasc)
+      subroutine sfincs_qk51(f,a,b,result,abserr,resabs,resasc)
 c***begin prologue  qk51
 c***date written   800101   (yymmdd)
 c***revision date  830518   (yymmdd)
@@ -4657,7 +4701,8 @@ c***routines called  r1mach
 c***end prologue  qk51
 c
       real a,absc,abserr,b,centr,dhlgth,epmach,f,fc,fsum,fval1,fval2,
-     *  fv1,fv2,hlgth,resabs,resasc,resg,resk,reskh,result,r1mach,uflow,
+     *  fv1,fv2,hlgth,resabs,resasc,resg,resk,reskh,result,
+     *  sfincs_r1mach,uflow,
      *  wg,wgk,xgk
       integer j,jtw,jtwm1
       external f
@@ -4742,8 +4787,8 @@ c           epmach is the largest relative spacing.
 c           uflow is the smallest positive magnitude.
 c
 c***first executable statement  qk51
-      epmach = r1mach(4)
-      uflow = r1mach(1)
+      epmach = sfincs_r1mach(4)
+      uflow = sfincs_r1mach(1)
 c
       centr = 0.5e+00*(a+b)
       hlgth = 0.5e+00*(b-a)
@@ -4795,7 +4840,7 @@ c
      *  ((epmach*0.5e+02)*resabs,abserr)
       return
       end
-      subroutine qk61(f,a,b,result,abserr,resabs,resasc)
+      subroutine sfincs_qk61(f,a,b,result,abserr,resabs,resasc)
 c***begin prologue  qk61
 c***date written   800101   (yymmdd)
 c***revision date  830518   (yymmdd)
@@ -4849,7 +4894,8 @@ c***routines called  r1mach
 c***end prologue  qk61
 c
       real a,absc,abserr,b,centr,dhlgth,epmach,f,fc,fsum,fval1,fval2,
-     *  fv1,fv2,hlgth,resabs,resasc,resg,resk,reskh,result,r1mach,uflow,
+     *  fv1,fv2,hlgth,resabs,resasc,resg,resk,reskh,result,
+     *  sfincs_r1mach,uflow,
      *  wg,wgk,xgk
       integer j,jtw,jtwm1
       external f
@@ -4944,8 +4990,8 @@ c           epmach is the largest relative spacing.
 c           uflow is the smallest positive magnitude.
 c
 c***first executable statement  qk61
-      epmach = r1mach(4)
-      uflow = r1mach(1)
+      epmach = sfincs_r1mach(4)
+      uflow = sfincs_r1mach(1)
 c
       centr = 0.5e+00*(b+a)
       hlgth = 0.5e+00*(b-a)
@@ -4997,7 +5043,7 @@ c
      *  ((epmach*0.5e+02)*resabs,abserr)
       return
       end
-      subroutine qpsrt(limit,last,maxerr,ermax,elist,iord,nrmax)
+      subroutine sfincs_qpsrt(limit,last,maxerr,ermax,elist,iord,nrmax)
 c***begin prologue  qpsrt
 c***refer to  qage,qagie,qagpe,qagse,qawce,qawse,qawoe
 c***routines called  (none)
@@ -5133,7 +5179,7 @@ c
       ermax = elist(maxerr)
       return
       end
-      REAL FUNCTION R1MACH(I)
+      REAL FUNCTION SFINCS_R1MACH(I)
 
 c        Single-precision machine constants
 
@@ -5194,13 +5240,13 @@ c      EXTERNAL  ERRMSG
 
       IF( I.EQ.1 )  THEN
 c         R1MACH = 1.2E-38
-        R1MACH = TINY(1.0)
+        SFINCS_R1MACH = TINY(1.0)
       ELSE IF( I.EQ.2 )  THEN  
 c         R1MACH = 3.4E+38
-        R1MACH = HUGE(1.0)
+        SFINCS_R1MACH = HUGE(1.0)
       ELSE IF( I.EQ.4 )  THEN  
 c         R1MACH = 1.2E-07
-        R1MACH = EPSILON(1.0)
+        SFINCS_R1MACH = EPSILON(1.0)
       ELSE
 c         CALL ERRMSG( 'R1MACH--argument incorrect', .TRUE.)
          print *,"Error! Invalid input to r1mach"
