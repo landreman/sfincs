@@ -12,7 +12,7 @@ module sfincs_main
 
   contains
 
-  subroutine init_sfincs
+  subroutine init_sfincs(MPI_comm_to_use)
     
     use globalVariables
     use readInput
@@ -20,17 +20,19 @@ module sfincs_main
     
     implicit none
     
+    !MPI_COMM :: MPI_comm_to_use
+    integer :: MPI_comm_to_use
     PetscErrorCode ierr
     PetscLogDouble :: startTime, time1
     
+    PETSC_COMM_WORLD = MPI_comm_to_use
+    MPIComm = PETSC_COMM_WORLD
     call PetscInitialize(PETSC_NULL_CHARACTER, ierr)
     
     call MPI_COMM_SIZE(PETSC_COMM_WORLD, numProcs, ierr)
     call MPI_COMM_RANK(PETSC_COMM_WORLD, myRank, ierr)
     masterProc = (myRank==0)
     
-    ! In the future, if we want to divide the processors into sub-communicators, this next line would change:
-    MPIComm = PETSC_COMM_WORLD
     
     if (masterProc) then
        print *,"****************************************************************************"
