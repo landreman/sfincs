@@ -576,7 +576,7 @@ else:
         ax.text(0.5,0.99,topString,horizontalalignment='center',verticalalignment='top')
 
     ###############################################
-    # Plot various outputs vs x for iteration 1
+    # Plot various outputs vs x
     ###############################################
 
     x = f['x'][()]

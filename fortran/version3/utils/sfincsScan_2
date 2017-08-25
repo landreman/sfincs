@@ -41,7 +41,6 @@ print "Here are the "+str(len(generalErs))+" values we will use for this quantit
 print generalErs
 
 directories = [varName+"{:.4g}".format(generalEr) for generalEr in generalErs]
-
 generalErs_copy = list(generalErs)
 directories_copy = list(directories)
 
