@@ -12,17 +12,21 @@ program sfincs
 
   call MPI_INIT(ierr)
 
-  call init_sfincs(MPI_COMM_WORLD)
+  call sfincs_init(MPI_COMM_WORLD)
 
   ! To override any parameters in the input namelist, do it here.
   ! Here is an example:
   !Ntheta=17
 
-  call prepare_sfincs()
+  call sfincs_prepare()
 
   ! To alter sfincs internal arrays like BHat and JHat, do it here.
 
-  call run_sfincs()
+  call sfincs_run()
+
+  ! This next subroutine deallocates all the arrays.
+  ! It is not necessary unless you call sfincs multiple times within a single executable.
+  call sfincs_finalize()
 
   call MPI_FINALIZE(ierr)
 

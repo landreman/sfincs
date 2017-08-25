@@ -9,7 +9,7 @@ module globalVariables
 #include <petsc/finclude/petscvecdef.h>
 #endif
 
-  character(len=50), parameter :: inputFilename = "input.namelist"
+  character(len=200) :: inputFilename = "input.namelist"
 
   integer, parameter :: integerToRepresentTrue  =  1
   integer, parameter :: integerToRepresentFalse = -1

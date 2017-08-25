@@ -353,4 +353,12 @@
 
     end subroutine computeMatrixSize
 
+    ! ------------------------------------------------
+
+    subroutine indices_finalize()
+
+      if(allocated(first_index_for_x)) deallocate(first_index_for_x)
+
+    end subroutine indices_finalize
+
   end module indices

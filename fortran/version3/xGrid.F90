@@ -73,7 +73,7 @@
     PetscScalar, allocatable :: a(:), b(:), c(:)
     integer :: j, integrationPower
     PetscScalar, public :: xGrid_k = 0
-    public :: makeXGrid, computeRosenbluthPotentialResponse
+    public :: makeXGrid, computeRosenbluthPotentialResponse, xGrid_finalize
 
   contains
 
@@ -557,6 +557,14 @@
       ! Note that x**xGrid_k should not be included in the next line!
       integrandWithPower = (x**integrationPower)*p*exp(-x*x)
     end function integrandWithPower
+
+    ! ---------------------------------------------------------------
+
+    subroutine xGrid_finalize()
+
+      if(allocated(a)) deallocate(a,b,c)
+
+    end subroutine xGrid_finalize
 
   end module xGrid
 

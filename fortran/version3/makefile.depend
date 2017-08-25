@@ -3,7 +3,7 @@
 OBJ_FILES = ChebyshevGrid.o ChebyshevInterpolationMatrix.o \
 	  createGrids.o diagnostics.o evaluateJacobian.o evaluateResidual.o export_f.o geometry.o \
 	  globalVariables.o indices.o polynomialDiffMatrices.o polynomialInterpolationMatrix.o \
-	  populateMatrix.o preallocateMatrix.o quadpack.o radialCoordinates.o readInput.o sfincs_main.o solver.o sparsify.o \
+	  populateMatrix.o preallocateMatrix.o quadpack.o radialCoordinates.o readInput.o sfincs_finalize.o sfincs_main.o solver.o sparsify.o \
 	  uniformDiffMatrices.o uniformInterpolationMatrix.o validateInput.o writeHDF5Output.o xGrid.o
 
 # Dependencies:
@@ -24,6 +24,7 @@ quadpack.o:
 radialCoordinates.o: globalVariables.o
 readInput.o: export_f.o globalVariables.o xGrid.o
 sfincs.o: sfincs_main.o
+sfincs_finalize.o: export_f.o indices.o globalVariables.o xGrid.o
 sfincs_main.o: geometry.o globalVariables.o writeHDF5Output.o readInput.o solver.o radialCoordinates.o
 solver.o: globalVariables.o
 sparsify.o:

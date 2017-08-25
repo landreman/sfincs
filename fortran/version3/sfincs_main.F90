@@ -12,7 +12,7 @@ module sfincs_main
 
   contains
 
-  subroutine init_sfincs(MPI_comm_to_use)
+  subroutine sfincs_init(MPI_comm_to_use)
     
     use globalVariables
     use readInput
@@ -55,11 +55,11 @@ module sfincs_main
     
     call readNamelistInput()
 
-  end subroutine init_sfincs
+  end subroutine sfincs_init
 
   ! -----------------------------------------------------------------------------------
 
-  subroutine prepare_sfincs
+  subroutine sfincs_prepare
 
     use globalVariables
     use writeHDF5Output
@@ -116,11 +116,11 @@ module sfincs_main
     ! the magnetic field and its derivatives on the spatial grid.
     call createGrids()
 
-  end subroutine prepare_sfincs
+  end subroutine sfincs_prepare
 
   ! -----------------------------------------------------------------------------------
 
-  subroutine run_sfincs
+  subroutine sfincs_run
 
     use globalVariables
     use geometry
@@ -162,6 +162,6 @@ module sfincs_main
     end if
     
 
-  end subroutine run_sfincs
+  end subroutine sfincs_run
 
 end module sfincs_main
