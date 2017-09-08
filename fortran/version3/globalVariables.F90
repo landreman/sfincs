@@ -113,6 +113,7 @@ module globalVariables
   logical :: include_fDivVE_term = .false.
   logical :: includeTemperatureEquilibrationTerm = .false.
   logical :: includePhi1 = .false.
+  logical :: poloidalVariationInCollisionOperator = .false.
 !!  logical :: includeRadialExBDrive = .false. !!Commented by AM 2016-02
   logical :: includePhi1InKineticEquation = .true. !!Added by AM 2016-03
 

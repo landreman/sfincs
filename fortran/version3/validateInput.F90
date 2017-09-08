@@ -531,6 +531,18 @@ subroutine validateInput()
      print *,line
   end if
 
+  
+  if (poloidalVariationInCollisionOperator .and. (.not. includePhi1InKineticEquation) .and. masterProc) then
+     print *,line
+     print *,line
+     print *,"**   WARNING: You are including Phi1 in the collision operator"
+     print *,"**            but not in the other parts of the kinetic equation."
+     print *,"**            This is likely to be inconsistent."
+     print *,line
+     print *,line
+  end if
+
+
   if ((.not. withAdiabatic) .and. includePhi1 .and. quasineutralityOption == 1 .and. (Nspecies < 2)) then 
       if (masterProc) then
         print *,"Error! In a nonlinear run (includePhi1 = .true.) you must use at least two species, to be able to fulfill quasi-neutrality."

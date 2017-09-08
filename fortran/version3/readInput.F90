@@ -51,7 +51,7 @@ contains
 !!         includeElectricFieldTermInXiDot, useDKESExBDrift, include_fDivVE_term, nonlinear, & !!Commented by AM 2016-02
          includeElectricFieldTermInXiDot, useDKESExBDrift, include_fDivVE_term, & !!Added by AM 2016-02
          dPhiHatdpsiHat, dPhiHatdpsiN, dPhiHatdrHat, dPhiHatdrN, Er, &
-         includeTemperatureEquilibrationTerm, includePhi1, &
+         includeTemperatureEquilibrationTerm, includePhi1, poloidalVariationInCollisionOperator &
          !!Commented by AM 2016-02!!
          !!nuPrime, EStar, magneticDriftScheme, includeRadialExBDrive
 	 !!!!!!!!!!!!!!!!!!!!!!!!!!!
