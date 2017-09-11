@@ -38,6 +38,7 @@
   includeElectricFieldTermInXiDot = .true.
   useDKESExBDrift = .false.
   includePhi1 = .false.
+  poloidalVariationInCollisionOperator = .false.
 /
 
 &resolutionParameters
