@@ -12,7 +12,7 @@ module sfincs_main
 
   contains
 
-  subroutine init_sfincs
+  subroutine sfincs_init(MPI_comm_to_use)
     
     use globalVariables
     use readInput
@@ -20,17 +20,19 @@ module sfincs_main
     
     implicit none
     
+    !MPI_COMM :: MPI_comm_to_use
+    integer :: MPI_comm_to_use
     PetscErrorCode ierr
     PetscLogDouble :: startTime, time1
     
+    PETSC_COMM_WORLD = MPI_comm_to_use
+    MPIComm = PETSC_COMM_WORLD
     call PetscInitialize(PETSC_NULL_CHARACTER, ierr)
     
     call MPI_COMM_SIZE(PETSC_COMM_WORLD, numProcs, ierr)
     call MPI_COMM_RANK(PETSC_COMM_WORLD, myRank, ierr)
     masterProc = (myRank==0)
     
-    ! In the future, if we want to divide the processors into sub-communicators, this next line would change:
-    MPIComm = PETSC_COMM_WORLD
     
     if (masterProc) then
        print *,"****************************************************************************"
@@ -53,11 +55,11 @@ module sfincs_main
     
     call readNamelistInput()
 
-  end subroutine init_sfincs
+  end subroutine sfincs_init
 
   ! -----------------------------------------------------------------------------------
 
-  subroutine prepare_sfincs
+  subroutine sfincs_prepare
 
     use globalVariables
     use writeHDF5Output
@@ -117,11 +119,11 @@ module sfincs_main
     ! the magnetic field and its derivatives on the spatial grid.
     call createGrids()
 
-  end subroutine prepare_sfincs
+  end subroutine sfincs_prepare
 
   ! -----------------------------------------------------------------------------------
 
-  subroutine run_sfincs
+  subroutine sfincs_run
 
     use globalVariables
     use geometry
@@ -163,6 +165,6 @@ module sfincs_main
     end if
     
 
-  end subroutine run_sfincs
+  end subroutine sfincs_run
 
 end module sfincs_main
