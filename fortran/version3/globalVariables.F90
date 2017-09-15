@@ -84,6 +84,10 @@ module globalVariables
   !!Added by AM 2016-02!!
   PetscScalar :: adiabaticZ = -1.0, adiabaticMHat = 5.446170214d-4, adiabaticNHat = 1.0, adiabaticTHat = 1.0
   logical :: withAdiabatic = .false.
+
+  !!Added by HM 2017-09!!
+  PetscScalar :: NBIspecZ = 1.0,  NBIspecNHat = 0.0
+  logical :: withNBIspec = .false.
   !!!!!!!!!!!!!!!!!!!!!!!
 
 
@@ -344,7 +348,7 @@ module globalVariables
   PetscScalar, dimension(:,:), allocatable :: FSABFlow_vs_x
 
   PetscScalar, dimension(:), allocatable :: NTV
-  PetscScalar :: VPrimeHat, FSABHat2, FSABjHat, FSABjHatOverB0, FSABjHatOverRootFSAB2
+  PetscScalar :: VPrimeHat, FSABHat2, FSABHat, FSABjHat, FSABjHatOverB0, FSABjHatOverRootFSAB2
   PetscScalar :: lambda
 
   PetscScalar :: ddpsiN2ddpsiHat, ddrHat2ddpsiHat, ddrN2ddpsiHat

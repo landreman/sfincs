@@ -326,6 +326,25 @@ subroutine validateInput()
   end if
   !!!!!!!!!!!!!!!!!!!!!!!
 
+  !!!!!!!!!!!!!!!!!!!!!!!
+  !!Added by HS 2017-09!!
+  if (withNBIspec) then
+     if (NBIspecZ == 0) then
+     	if (masterProc) then
+           print *,"Error! Charge NBIspecZ cannot be zero."
+        end if
+        stop
+     end if
+     if (NBIspecNHat < 0) then
+     	if (masterProc) then
+     	   print *,"Error! Density NBIspecNHat cannot be negative."
+	end if
+	stop
+     end if
+     
+  end if
+  !!!!!!!!!!!!!!!!!!!!!!!
+
   ! Ensure charge neutrality.
   chargeDensity = zero
   maxSingleChargeDensity = 1d-11 !!Added by AM 2016-03
@@ -345,6 +364,13 @@ subroutine validateInput()
   if (withAdiabatic) then
      chargeDensity = chargeDensity + adiabaticNHat*adiabaticZ
      maxSingleChargeDensity = max(abs(maxSingleChargeDensity), abs(adiabaticNHat*adiabaticZ))
+  end if
+
+  !!!!!!!!!!!!!!!!!!!!!!!
+  !!Added by HS 2017-09!!
+  if (withNBIspec) then
+     chargeDensity = chargeDensity + NBIspecNHat*NBIspecZ
+     maxSingleChargeDensity = max(abs(maxSingleChargeDensity), abs(NBIspecNHat*NBIspecZ))
   end if
 
 !!  if (includePhi1 .and. (abs(chargeDensity) >1d-15)) then

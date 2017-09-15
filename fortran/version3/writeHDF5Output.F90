@@ -302,6 +302,14 @@ contains
        end if
        !!!!!!!!!!!!!!!!!!!!!!!
 
+       !!Added by HS 2017-09!!
+       call writeHDF5Field("withNBIspec", withNBIspec, "Is an NBI species included in the quasineutrality equation? " // boolDescription)
+       if (withNBIspec) then
+       	  call writeHDF5Field("NBIspecZ", NBIspecZ, "Charge of NBI species, in units of the unit charge e (which is usually the proton charge.)")
+	  call writeHDF5Field("NBIspecNHat", NBIspecNHat, "Flux surface averaged density of the NBI species, in units of nBar.")
+       end if
+       !!!!!!!!!!!!!!!!!!!!!!!
+
        !!Added by AM 2016-02!!
        if (includePhi1) then
           call writeHDF5Field("quasineutralityOption", quasineutralityOption, "")

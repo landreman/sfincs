@@ -43,8 +43,11 @@ contains
 	 dNHatdrNs,     dTHatdrNs, &
 	 adiabaticZ, adiabaticMHat, &
 	 adiabaticNHat, adiabaticTHat, &
-	 withAdiabatic
+	 withAdiabatic, &
 	 !!!!!!!!!!!!!!!!!!!!!!!  
+	 !!Added by HS 2017-09!!
+         NBIspecZ, NBIspecNHat, withNBIspec
+
 
     namelist / physicsParameters / Delta, alpha, nu_n, EParallelHat, EParallelHatSpec, & !!EParallelHatSpec added by HM 2017-02
          collisionOperator, constraintScheme, includeXDotTerm, &

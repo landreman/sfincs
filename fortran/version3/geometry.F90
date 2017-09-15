@@ -2807,15 +2807,19 @@ contains
 
     VPrimeHat = 0
     FSABHat2 = 0
+    FSABHat = 0
     do itheta=1,Ntheta
        do izeta=1,Nzeta
           VPrimeHat = VPrimeHat + thetaWeights(itheta) * zetaWeights(izeta) / DHat(itheta,izeta)
           FSABHat2 = FSABHat2 + thetaWeights(itheta) * zetaWeights(izeta) &
                * BHat(itheta,izeta) * BHat(itheta,izeta) / DHat(itheta,izeta)
+          FSABHat  = FSABHat + thetaWeights(itheta) * zetaWeights(izeta) &
+               * BHat(itheta,izeta) / DHat(itheta,izeta)
        end do
     end do
 
     FSABHat2 = FSABHat2 / VPrimeHat
+    FSABHat  = FSABHat  / VPrimeHat
 
     if (coordinateSystem .ne. COORDINATE_SYSTEM_BOOZER) then
        ! Compute B0, the (m=0,n=0) Boozer harmonic.
