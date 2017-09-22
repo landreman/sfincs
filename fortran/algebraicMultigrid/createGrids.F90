@@ -283,10 +283,18 @@
     case (8)
        if (masterProc) then
           print *,"d/dtheta derivatives discretized using upwinded finite differences:"
-          print *,"   2 point on one side, 3 points on the other side."
+          print *,"   2 points on one side, 3 points on the other side."
        end if
        derivative_option_plus  = 120
        derivative_option_minus = 130
+
+    case (11)
+       if (masterProc) then
+          print *,"d/dtheta derivatives discretized using Fromm scheme (upwinding):"
+          print *,"   1 point on one side, 2 points on the other side."
+       end if
+       derivative_option_plus  = 140
+       derivative_option_minus = 150
 
     case (10)
        if (masterProc) then
@@ -405,6 +413,14 @@
        end if
        derivative_option_plus  = 120
        derivative_option_minus = 130
+
+    case (11)
+       if (masterProc) then
+          print *,"Preconditioner d/dtheta derivatives discretized using Fromm scheme (upwinding):"
+          print *,"   1 point on one side, 2 points on the other side."
+       end if
+       derivative_option_plus  = 140
+       derivative_option_minus = 150
 
     case default
        if (masterProc) then
@@ -544,6 +560,14 @@
           derivative_option_plus  = 120
           derivative_option_minus = 130
           
+       case (11)
+          if (masterProc) then
+             print *,"d/dzeta derivatives discretized using Fromm scheme (upwinding):"
+             print *,"   1 point on one side, 2 points on the other side."
+          end if
+          derivative_option_plus  = 140
+          derivative_option_minus = 150
+
        case (10)
           if (masterProc) then
              print *,"d/dzeta derivatives discretized using partially upwinded finite differences:"
@@ -654,6 +678,14 @@
           derivative_option_plus  = 120
           derivative_option_minus = 130
           
+       case (11)
+          if (masterProc) then
+             print *,"Preconditioner d/dzeta derivatives discretized using Fromm scheme (upwinding):"
+             print *,"   1 point on one side, 2 points on the other side."
+          end if
+          derivative_option_plus  = 140
+          derivative_option_minus = 150
+
        case default
           if (masterProc) then
              print *,"Error! Invalid setting for zeta_derivative_option:",zeta_derivative_option

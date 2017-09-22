@@ -111,6 +111,8 @@ subroutine uniformDiffMatrices(N, xMin, xMax, option, quadrature_option, x, weig
   ! 132 = Same as 130, but aperiodic, with grid points at both xMin and xMax.
   ! 133 = Same as 132, but the first and last rows all are strictly upwinded
   !       so the diagonal is everywhere negative, except for the last row.
+  ! 140 = Fromm scheme, upwinding to the left. Periodic.
+  ! 150 = Fromm scheme, upwinding to the right. Periodic.
   !
   ! Options for quadrature_option:
   ! 0 = Standard trapezoid rule: half weight at the first and last grid points.
@@ -169,10 +171,10 @@ subroutine uniformDiffMatrices(N, xMin, xMax, option, quadrature_option, x, weig
   case (2, 3, 12, 13, 14, 15, 16, 32, 42, 52, 62, 82, 92, 102, 112, 122, 123, 132, 133)
      ! Include points at both xMin and xMax:
      x = [( (xMax-xMin)*i/(N-1)+xMin, i=0,N-1 )]
-  case (0,10,20,30,40,50,60,80,90,100,110,120,130)
+  case (0,10,20,30,40,50,60,80,90,100,110,120,130,140,150)
      ! Include a point at xMin but not xMax:
      x = [( (xMax-xMin)*i/(N)+xMin, i=0,N-1 )]
-  case (1,11,21,31,41,51,61,81,91,101,111,121,131)
+  case (1,11,21,31,41,51,61,81,91,101,111,121,131,141,151)
      ! Include a point at xMax but not xMin:
      x = [( (xMax-xMin)*i/(N)+xMin, i=1,N )]
   case default
@@ -571,6 +573,42 @@ subroutine uniformDiffMatrices(N, xMin, xMax, option, quadrature_option, x, weig
         ddx(i,modulo(i+1,N)+1) = -1/(4*dx)
         ddx(i,modulo(i+2,N)+1) =  1/(30*dx)
 
+     end do
+
+  case (140,141)
+     ! Fromm scheme4 point stencil (upwinding, with 1 point on 1 side, and 2 points on the other side.)
+
+     if (N<5) then
+        print *,"Error! N must be at least 5 for 4 point stencil"
+        stop
+     end if
+     do i=1,N
+        ddx(i,modulo(i,N)+1)   =  1/(4*dx)
+        ddx(i,i)               =  3/(4*dx)
+        ddx(i,modulo(i-2,N)+1) = -5/(4*dx)
+        ddx(i,modulo(i-3,N)+1) =  1/(4*dx)
+
+        d2dx2(i,modulo(i,N)+1)   =  1/(dx2)
+        d2dx2(i,i)               = -2/(dx2)
+        d2dx2(i,modulo(i-2,N)+1) =  1/(dx2)
+     end do
+
+  case (150,151)
+     ! Fromm scheme: 4 point stencil (upwinding, with 1 point on 1 side, and 2 points on the other side.)
+
+     if (N<5) then
+        print *,"Error! N must be at least 5 for 4 point stencil"
+        stop
+     end if
+     do i=1,N
+        ddx(i,modulo(i-2,N)+1) = -1/(4*dx)
+        ddx(i,i)               = -3/(4*dx)
+        ddx(i,modulo(i,N)+1)   =  5/(4*dx)
+        ddx(i,modulo(i+1,N)+1) = -1/(4*dx)
+
+        d2dx2(i,modulo(i,N)+1)   =  1/(dx2)
+        d2dx2(i,i)               = -2/(dx2)
+        d2dx2(i,modulo(i-2,N)+1) =  1/(dx2)
      end do
 
   end select
@@ -1055,7 +1093,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, option, quadrature_option, x, weig
      ddx(1,4)=4/(3*dx)
      ddx(1,5)=-1/(4*dx)
 
-  case (120,121,130,131)
+  case (120,121,130,131,140,141,150,151)
      ! Handled previously
 
   case (122)
