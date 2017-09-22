@@ -46,7 +46,7 @@ contains
 	 withAdiabatic
 	 !!!!!!!!!!!!!!!!!!!!!!!  
 
-    namelist / physicsParameters / Delta, alpha, nu_n, EParallelHat, &
+    namelist / physicsParameters / Delta, alpha, nu_n, EParallelHat, EParallelHatSpec, & !!EParallelHatSpec added by HM 2017-02
          collisionOperator, constraintScheme, includeXDotTerm, &
 !!         includeElectricFieldTermInXiDot, useDKESExBDrift, include_fDivVE_term, nonlinear, & !!Commented by AM 2016-02
          includeElectricFieldTermInXiDot, useDKESExBDrift, include_fDivVE_term, & !!Added by AM 2016-02

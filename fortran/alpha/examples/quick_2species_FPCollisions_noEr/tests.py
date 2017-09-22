@@ -12,15 +12,15 @@ desiredTolerance = 0.001
 numFailures = 0
 
 # Check the first species:
-numFailures += shouldBe("FSABFlow[0,0;;;]", -9.459196929759253E-004, desiredTolerance)
-numFailures += shouldBe("particleFlux_vm_psiHat[0,0;;;]", -8.827673309080052E-009, desiredTolerance)
-numFailures += shouldBe("heatFlux_vm_psiHat[0,0;;;]", -8.418539619831971E-009, desiredTolerance)
+numFailures += shouldBe("FSABFlow[0,0;;;]", -0.0134817, desiredTolerance)
+numFailures += shouldBe("particleFlux_vm_psiHat[0,0;;;]", -1.36021e-08, desiredTolerance)
+numFailures += shouldBe("heatFlux_vm_psiHat[0,0;;;]", -3.38547e-08, desiredTolerance)
 
 # Check the second species:
-numFailures += shouldBe("FSABFlow[1,0;;;]", -1.202828424761789E-005, desiredTolerance)
-numFailures += shouldBe("particleFlux_vm_psiHat[1,0;;;]", 9.012860128087754E-011, desiredTolerance)
-numFailures += shouldBe("heatFlux_vm_psiHat[1,0;;;]", 2.007511670631882E-011, desiredTolerance)
+numFailures += shouldBe("FSABFlow[1,0;;;]", -0.000166248, desiredTolerance)
+numFailures += shouldBe("particleFlux_vm_psiHat[1,0;;;]", 1.03276e-09, desiredTolerance)
+numFailures += shouldBe("heatFlux_vm_psiHat[1,0;;;]", 2.9169e-10, desiredTolerance)
 
-numFailures += shouldBe("FSABjHat[0;;;]", -1.018089398461633E-003, desiredTolerance)
+numFailures += shouldBe("FSABjHat[0;;;]", -0.0144792, desiredTolerance)
 
 exit(numFailures > 0)

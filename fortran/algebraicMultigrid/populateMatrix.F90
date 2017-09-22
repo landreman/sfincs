@@ -50,7 +50,7 @@
     real(prec), dimension(:,:), pointer :: ddtheta_to_use, ddzeta_to_use, ddxi_to_use, pitch_angle_scattering_operator_to_use, ddx_to_use
     double precision :: myMatInfo(MAT_INFO_SIZE)
     integer :: NNZ, NNZAllocated, NMallocs
-    real(prec) :: dfMdx
+    real(prec) :: dfMdx, collision_frequency
     character(len=200) :: whichMatrixName, filename
     PetscViewer :: viewer
     integer :: itheta_row, itheta_col, izeta_row, izeta_col, ixMin, ixMinCol
@@ -234,7 +234,7 @@
                       case (2)
                          factor = factor - BHat_sub_theta(itheta,izeta_row)/(sqrt_g(itheta,izeta_row)*FSABHat2)*dPhiHatdpsiHat
                       end select
-                      factor = factor * spatial_scaling(itheta,izeta_row) * x_scaling(ix,ispecies)
+                      factor = factor * spatial_scaling(itheta,izeta_row) * x_scaling(ix,ispecies) * xi_scaling(ixi)
 
                       if (whichMatrix>0) then
                          ! Not preconditioner
@@ -285,7 +285,7 @@
                       case (2)
                          factor = factor + BHat_sub_zeta(itheta_row,izeta)/(sqrt_g(itheta_row,izeta)*FSABHat2)*dPhiHatdpsiHat
                       end select
-                      factor = factor * spatial_scaling(itheta_row,izeta) * x_scaling(ix,ispecies)
+                      factor = factor * spatial_scaling(itheta_row,izeta) * x_scaling(ix,ispecies) * xi_scaling(ixi)
 
                       if (whichMatrix>0) then
                          ! Not preconditioner
@@ -335,7 +335,7 @@
                          factor = factor + xi(ixi_row)*(1-xi(ixi_row)*xi(ixi_row))/(2*sqrt_g(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)) &
                               * (BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))*dPhiHatdpsiHat
                       end if
-                      factor = factor * spatial_scaling(itheta,izeta) * x_scaling(ix,ispecies)
+                      factor = factor * spatial_scaling(itheta,izeta) * x_scaling(ix,ispecies) * xi_scaling(ixi_row)
 
                       if (whichMatrix>0) then
                          ! Not preconditioner
@@ -379,7 +379,7 @@
                      * (BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))
                 do ix_row = 1,Nx
                    do ixi = 1,Nxi
-                      factor = spatial_factor * x_scaling(ix_row,ispecies) / f_scaling(ix_row,ispecies) &
+                      factor = spatial_factor * x_scaling(ix_row,ispecies) * xi_scaling(ixi) / f_scaling(ix_row,ispecies) &
                            * x(ix_row) * (1 + xi(ixi)*xi(ixi))
                       if (whichMatrix>0) then
                          ! Not preconditioner
@@ -859,13 +859,23 @@
                 ! The subtraction in the next line causes a loss of some digits at small x. Is there a better method?
                 Psi_Chandra = (erfs - 2/sqrtpi * xb * expxb2) / (2*xb*xb)
                 
-                T32m = THats(iSpeciesA) * sqrt(THats(iSpeciesA)*mHats(ispeciesA))
-                
-                ! Build the pitch-angle scattering frequency:
-                nu_D(iSpeciesA, :) =  nu_D(iSpeciesA, :) &
-                     + (three*sqrtpi/four) / T32m &
-                     * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
-                     * nHats(iSpeciesB)*(erfs - Psi_Chandra)/(x*x*x)
+!!$                T32m = THats(iSpeciesA) * sqrt(THats(iSpeciesA)*mHats(ispeciesA))
+!!$                
+!!$                ! Build the pitch-angle scattering frequency:
+!!$                nu_D(iSpeciesA, :) =  nu_D(iSpeciesA, :) &
+!!$                     + (three*sqrtpi/four) / T32m &
+!!$                     * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
+!!$                     * nHats(iSpeciesB)*(erfs - Psi_Chandra)/(x*x*x)
+
+                ! collision_frequency corresponds to Gamma * nb / (v_a^3), equivalently to the collision frequency in eq (3.48) of Helander & Sigmar.
+                collision_frequency = nHats(iSpeciesB)*Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
+                     * electron_charge*electron_charge*electron_charge*electron_charge*ln_Lambda &
+                     / (4*pi*epsilon_0*epsilon_0*proton_mass*proton_mass*mHats(ispeciesA)*mHats(ispeciesA) &
+                     * thermal_speeds(ispeciesA)*thermal_speeds(ispeciesA)*thermal_speeds(ispeciesA))
+
+                ! Build the pitch-angle scattering frequency. The formula on the next line corresponds
+                ! to eq (3.45) and (3.48) in Helander & Sigmar.
+                nu_D(iSpeciesA, :) =  nu_D(iSpeciesA, :)  + collision_frequency * (erfs - Psi_Chandra)/(x*x*x)
                 
                 ! Given a vector of function values on the species-B grid, multiply the vector
                 ! by this interpolation matrix to obtain its values on the species-A grid:
@@ -916,46 +926,57 @@
                 !     * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / T32m
                 
                 ! alpha_finiteDiffXi normalization
-                speciesFactor = 3 * nHats(iSpeciesB)  * sqrt(mHats(iSpeciesB)/THats(iSpeciesB)) &
-                     * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / (THats(iSpeciesB)*mHats(iSpeciesA))
+                !speciesFactor = 3 * nHats(iSpeciesB)  * sqrt(mHats(iSpeciesB)/THats(iSpeciesB)) &
+                !     * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / (THats(iSpeciesB)*mHats(iSpeciesA))
+
+                ! algebraicMultigrid SI normalization
+                speciesFactor = collision_frequency * 4/sqrtpi * nHats(ispeciesA)/nHats(ispeciesB) * mHats(iSpeciesA)/mHats(iSpeciesB)
                 
                 ! WRONG normalization
                 !speciesFactor = 3 * nHats(iSpeciesB) * nHats(ispeciesB) * sqrt(mHats(iSpeciesA) * mHats(iSpeciesB)) &
                 !     * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
                 !     / (THats(iSpeciesA)*THats(iSpeciesB)*sqrt(THats(iSpeciesA)*THats(iSpeciesB)))
-                
+
+! 20170606 Temporarily turn off CD for code development:                
                 do ix=1,Nx
                    CECD(iSpeciesA, iSpeciesB, ix, :) = CECD(iSpeciesA, iSpeciesB, ix, :) &
-                        + speciesFactor * expx2(ix) * fToFInterpolationMatrix(ix, :)
+                        + speciesFactor * expx2(ix) * fToFInterpolationMatrix(ix, :) &
+                        * f_scaling(:,iSpeciesB) / f_scaling(ix,iSpeciesA)
+                   !* f_scaling(ix,iSpeciesB) / f_scaling(:,iSpeciesA)
                 end do
                 
                 ! Done adding CD. Now add energy scattering (CE).
                 ! Unlike CD, CE is diagonal in the species index.
                 
-                speciesFactor = 3*sqrtpi/four * nHats(iSpeciesB)  &
-                     * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / T32m
-                
+                !speciesFactor = 3*sqrtpi/four * nHats(iSpeciesB)  &
+                !     * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / T32m
+
                 do ix=1,Nx
                    !Now add the d2dx2 and ddx terms in CE:
                    !CE is diagonal in the species indices, so use iSpeciesA for both indices in CECD:
                    CECD(iSpeciesA, iSpeciesA, ix, :) = CECD(iSpeciesA, iSpeciesA, ix, :) &
-                        + speciesFactor * (Psi_Chandra(ix)/x(ix)*d2dx2_to_use(ix,:) &
+                        + collision_frequency * (Psi_Chandra(ix)/x(ix)*d2dx2_to_use(ix,:) &
                         + (-2*THats(iSpeciesA)*mHats(iSpeciesB)/(THats(iSpeciesB)*mHats(iSpeciesA)) &
                         * Psi_Chandra(ix)*(1-mHats(iSpeciesA)/mHats(iSpeciesB)) &
-                        + (erfs(ix)-Psi_Chandra(ix))/x2(ix)) * ddx_to_use(ix,:))
+                        + (erfs(ix)-Psi_Chandra(ix))/x2(ix)) * ddx_to_use(ix,:)) &
+                        * f_scaling(:,iSpeciesA)/f_scaling(ix,iSpeciesA)
                    
                    ! Lastly, add the part of CE for which f is not differentiated:
                    ! CE is diagonal in the species indices, so use iSpeciesA for both indices in CECD:
                    CECD(iSpeciesA, iSpeciesA, ix, ix) = CECD(iSpeciesA, iSpeciesA, ix, ix) &
-                        + speciesFactor *4/sqrtpi*THats(iSpeciesA)/THats(iSpeciesB) &
-                        *sqrt(THats(iSpeciesA)*mHats(iSpeciesB)/(THats(iSpeciesB)*mHats(iSpeciesA))) &
+                        + collision_frequency * 4/sqrtpi*mHats(iSpeciesA)/mHats(iSpeciesB) &
+                        * ((thermal_speeds(iSpeciesA)/thermal_speeds(iSpeciesB)) ** 3) &
                         * expxb2(ix)
+                   ! No factor of f_scaling is needed in this last term since it is diagonal in x and species.
+                        !+ speciesFactor *4/sqrtpi*THats(iSpeciesA)/THats(iSpeciesB) &
+                        !*sqrt(THats(iSpeciesA)*mHats(iSpeciesB)/(THats(iSpeciesB)*mHats(iSpeciesA))) &
+                        !* expxb2(ix)
                    
                 end do
-                
+                !CECD=0 ! For debugging!
              end do
           end do          
-          
+
           ! *****************************************************************
           ! Now we are ready to add the collision operator to the main matrix.
           ! *****************************************************************
@@ -1009,30 +1030,33 @@
                       ix_max = Nx
                    end if
                    do ix_col = ix_min, ix_max
-                      collision_operator_xi_block = 0
+                      if (iSpeciesA==iSpeciesB .and. ix_row==ix_col) then
+                         ! Add pitch angle scattering:
+                         ! (This operator is usually tri-diagonal or penta-diagonal in xi.)
+                         collision_operator_xi_block = pitch_angle_scattering_operator_to_use * nu_D(iSpeciesA,ix_row)
+                      else
+                         collision_operator_xi_block = 0
+                      end if
+
+                      ! Add energy scattering, plus the part of the field term that does not depend on the Rosenbluth potentials:
+                      ! (These terms are diagonal in xi.)
                       do ixi = 1,Nxi
-                         ! Add energy scattering, plus the part of the field term that does not depend on the Rosenbluth potentials:
-                         ! (These terms are diagonal in xi.)
-                         collision_operator_xi_block(ixi,ixi) = CECD(iSpeciesA,iSpeciesB,ix_row,ix_col)
+                         collision_operator_xi_block(ixi,ixi) = collision_operator_xi_block(ixi,ixi) + CECD(iSpeciesA,iSpeciesB,ix_row,ix_col) * xi_scaling(ixi)
                       end do
+
                       if (whichMatrix==0 .or. preconditioner_field_term_xi_option==0) then
                          ! Otherwise the field term will be added by apply_dense_terms.F90
                          do L = 0,NL-1
                             ! Add the terms in the field part involving the Rosenbluth potentials:
                             ! (These terms are generally dense in xi.)
-                            collision_operator_xi_block = collision_operator_xi_block + Legendre_projection_to_use(:,:,L+1) * RosenbluthPotentialTerms(iSpeciesA,iSpeciesB,L+1,ix_row,ix_col)
+                            collision_operator_xi_block = collision_operator_xi_block &
+                                 + Legendre_projection_to_use(:,:,L+1) * RosenbluthPotentialTerms(iSpeciesA,iSpeciesB,L+1,ix_row,ix_col)
                          end do
-                      end if
-                      if (iSpeciesA==iSpeciesB .and. ix_row==ix_col) then
-                         ! Add pitch angle scattering:
-                         ! (This operator is usually tri-diagonal or penta-diagonal in xi.)
-                         collision_operator_xi_block = collision_operator_xi_block + pitch_angle_scattering_operator_to_use * nu_D(iSpeciesA,ix_row)
                       end if
 
                       do itheta = ithetaMin,ithetaMax
                          do izeta = izetaMin,izetaMax
-                            !factor = -nu_n*BHat(itheta,izeta)*sqrt(mHats(ispeciesA)/THats(ispeciesA))/abs(DHat(itheta,izeta))
-                            factor = -nu_n*spatial_scaling(itheta,izeta)*x_scaling(ix_row,iSpeciesA)
+                            factor = -spatial_scaling(itheta,izeta)*x_scaling(ix_row,iSpeciesA)
                             do ixi_col = 1,Nxi
                                colIndex = getIndex(iSpeciesB,ix_col,ixi_col,itheta,izeta,BLOCK_F)
                                do ixi_row = 1,Nxi
@@ -1090,7 +1114,8 @@
                 ! The subtraction in the next line causes a loss of some digits at small x. Is there a better method?
                 Psi_Chandra = (erfs - 2/sqrtpi * xb * expxb2) / (2*xb*xb)
                 
-                ! Build the pitch-angle scattering frequency:
+                ! Build the pitch-angle scattering frequency. The formula on the next line corresponds
+                ! to eq (3.45) and (3.48) in Helander & Sigmar.
                 nu_D(iSpeciesA, :) =  nu_D(iSpeciesA, :) &
                      + nHats(iSpeciesB)*Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
                      * electron_charge*electron_charge*electron_charge*electron_charge*ln_Lambda &
@@ -1217,10 +1242,9 @@
              end select
              temp = Ntheta*Nzeta/sum(spatial_scaling)
              do ispecies = 1,Nspecies
-                speciesFactor = sqrt(THats(ispecies)/mHats(ispecies)) ! Include 2 when I move to SI units?
                 do itheta = ithetaMin,ithetaMax
                    do izeta = izetaMin,izetaMax
-                      factor = spatial_scaling(itheta,izeta) * temp * x_scaling(ix,ispecies) * speciesFactor ! This quantity is scaled so it should be O(1)
+                      factor = spatial_scaling(itheta,izeta) * temp ! This quantity is scaled so it should be O(1)
                       do ixi = 1,Nxi_for_x(ix)
                          rowIndex = getIndex(ispecies, ix, ixi, itheta, izeta, BLOCK_F)
                          
@@ -1239,11 +1263,10 @@
           ! Add a source (which is constant on the flux surface and independent of xi) at each x.
           temp = Ntheta*Nzeta/sum(spatial_scaling)
           do ispecies = 1,Nspecies
-             speciesFactor = sqrt(THats(ispecies)/mHats(ispecies)) ! Include 2 when I move to SI units?
              do itheta = ithetaMin,ithetaMax
                 do izeta = izetaMin,izetaMax
                    do ix = ixMin,Nx
-                      scalar = spatial_scaling(itheta,izeta) * temp * x_scaling(ix,ispecies) * speciesFactor ! This quantity is scaled so it should be O(1) 
+                      scalar = spatial_scaling(itheta,izeta) * temp ! This quantity is scaled so it should be O(1) 
                       do ixi = 1,Nxi_for_x(ix)
                          rowIndex = getIndex(ispecies, ix, ixi, itheta, izeta, BLOCK_F)
                          colIndex = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)

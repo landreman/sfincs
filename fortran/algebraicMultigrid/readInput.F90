@@ -65,7 +65,8 @@ contains
          xi_quadrature_option, xGridScheme, whichParallelSolverToFactorPreconditioner, &
          PETSCPreallocationStrategy, xPotentialsGridScheme, xGrid_k,  &
          Nxi_for_x_option, theta_upwinding_factor, zeta_upwinding_factor, &
-         null_space_option, spatial_scaling_option, constraint_scaling_option, x_scaling_option, f_scaling_option, fieldsplit_parallelization_option
+         null_space_option, spatial_scaling_option, constraint_scaling_option, xi_scaling_option, &
+         x_scaling_option, f_scaling_option, fieldsplit_parallelization_option
 
     namelist / preconditionerOptions / preconditioner_x, preconditioner_zeta_derivative_option, &
          preconditioner_theta_derivative_option, preconditioner_xi_derivative_option, preconditioner_species, reusePreconditioner, &
@@ -98,8 +99,8 @@ contains
     ! Set defaults for array parameters:
     Zs(1) = one
     mHats(1) = one
-    nHats(1) = one
-    THats(1) = one
+    nHats(1) = 1.0d+20
+    THats(1) = 1.0d+3
     dNHatdpsiHats(1) = zero
     dTHatdpsiHats(1) = zero
     dNHatdpsiNs(1) = zero
@@ -161,6 +162,11 @@ contains
        if (masterProc) then
           print *,"Successfully read parameters from physicsParameters namelist in ", trim(filename), "."
        end if
+
+       ! The default value of f_scaling_option is 1 for Fokker-Planck collisions but is 3 for pitch-angle-scattering collisions
+       if (collisionOperator==1) f_scaling_option = 3
+       ! The default value of x_scaling_option is 1 for Fokker-Planck collisions but is 2 for pitch-angle-scattering collisions
+       if (collisionOperator==1) x_scaling_option = 2
 
        read(fileUnit, nml=resolutionParameters, iostat=didFileAccessWork)
        if (didFileAccessWork /= 0) then

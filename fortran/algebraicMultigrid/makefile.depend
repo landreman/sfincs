@@ -35,4 +35,4 @@ uniformDiffMatrices.o: kinds.o
 uniformInterpolationMatrix.o: kinds.o
 validateInput.o: globalVariables.o kinds.o xGrid.o
 writeHDF5Output.o: globalVariables.o kinds.o xGrid.o # export_f.o
-xGrid.o: kinds.o
+xGrid.o: globalVariables.o kinds.o

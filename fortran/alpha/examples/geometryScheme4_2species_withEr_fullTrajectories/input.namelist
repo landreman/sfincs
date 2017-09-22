@@ -39,7 +39,8 @@
 !ss NalphaMaxFactor = 2.5
 !ss NalphaNumRuns = 15
 
-  Nzeta = 23
+!  Nzeta = 19
+  Nzeta = 25
 !ss NzetaMinFactor = 0.6
 !ss NzetaMaxFactor = 2.5
 !ss NzetaNumRuns = 15
@@ -61,9 +62,11 @@
 /
 
 &otherNumericalParameters
+ExB_alpha_derivative_option=3
 /
 
 &preconditionerOptions
+preconditioner_ExB_alpha_derivative_option = 0
 /
 
 &export_f

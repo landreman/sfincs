@@ -120,6 +120,19 @@ for directory in directories:
         print "Run in directory "+directory+" does not appear to have finished."
         continue
 
+    ##Section added by AM 2017-05 to check for nonlinear convergence##
+    Check_integerToRepresentTrue = (f["integerToRepresentTrue"][()])
+    Check_includePhi1 = (f["includePhi1"][()] == Check_integerToRepresentTrue)
+    if Check_includePhi1 :
+        try:
+            if (f["didNonlinearCalculationConverge"][()] != Check_integerToRepresentTrue):
+                print "The nonlinear solver in directory "+directory+" does not appear to have converged." 
+                continue
+        except KeyError:
+            print "The nonlinear solver in directory "+directory+" does not appear to have finished."
+            continue
+    ##################################################################
+
     print "Processing directory "+directory
 
     # The expression [()] converts from an h5py dataset to a numpy ndarray:
@@ -318,7 +331,13 @@ if doAmbipolaritySolve:
          # Note: For interpolation it does not work well to use scipy's "interp1d" function, since this tends to give
          # large overshoots for the typical data we get in an Er scan (with sharp structure near Er=0).
          if whichInterpolator==0:
-             interpolator = PchipInterpolator(Ers_sorted, radialCurrents_sorted)
+             ##Added a try/except because PchipInterpolator seem to raise an error if there are only two points in the interpolation data ##AM 2016-12
+             try: ##Added by AM 2016-12
+                 interpolator = PchipInterpolator(Ers_sorted, radialCurrents_sorted)
+             except: ##Added by AM 2016-12 
+                 from scipy.interpolate import interp1d ##Added by AM 2016-12
+                 whichInterpolator = 1 ##Added by AM 2016-12
+                 interpolator = interp1d(Ers_sorted, radialCurrents_sorted) ##Added by AM 2016-12
          else:
              interpolator = interp1d(Ers_sorted, radialCurrents_sorted)
          # In the next line, 500 is arbitrary, and could be replaced by another large integer.

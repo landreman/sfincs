@@ -516,20 +516,26 @@
 
              do izeta = izetaMin, izetaMax                
                 do ithetaRow = ithetaMin, ithetaMax
-                   if ((magneticDriftScheme==3) .or. (magneticDriftScheme==4)) then
-                      geometricFactor1 = 0.0
-                      geometricFactor2 = 0.0
-                   else if (magneticDriftScheme==5) then
-                      geometricFactor1 = GHat * gradpsidotgradB_overgpsipsi(ithetaRow,izeta)
-                      !geometricFactor2 = GHat * 2.0 * pPrimeHat / BHat(ithetaRow,izeta) !unregularized
-                      geometricFactor2 = - 2.0 * geometricFactor1
-                   else
+                   select case (magneticDriftScheme)
+                   case (1,2)
                       geometricFactor1 = (BHat_sub_zeta(ithetaRow,izeta)*dBHatdpsiHat(ithetaRow,izeta) &
                       - BHat_sub_psi(ithetaRow,izeta)*dBHatdzeta(ithetaRow,izeta))
                      
                       geometricFactor2 = 2.0 * BHat(ithetaRow,izeta) &
                       * (dBHat_sub_psi_dzeta(ithetaRow,izeta) - dBHat_sub_zeta_dpsiHat(ithetaRow,izeta))
-                   end if
+                   case (3,4)
+                      geometricFactor1 = 0.0
+                      geometricFactor2 = 0.0
+                   case (5)
+                      geometricFactor1 = BHat_sub_zeta(ithetaRow,izeta) * gradpsidotgradB_overgpsipsi(ithetaRow,izeta)
+                      geometricFactor2 = - 2.0 * geometricFactor1
+                   case (6)
+                      geometricFactor1 = BHat_sub_zeta(ithetaRow,izeta) * gradpsidotgradB_overgpsipsi(ithetaRow,izeta)
+                      geometricFactor2 = BHat_sub_zeta(ithetaRow,izeta) * 2.0 * pPrimeHat / BHat(ithetaRow,izeta) !unregularized
+                   case default
+                      stop "Invalid magneticDriftScheme in d/dtheta term"
+                   end select
+
                    if (magneticDriftScheme==2) then
                       geometricFactor3 = BDotCurlB(ithetaRow,izeta)*BHat_sup_theta(ithetaRow,izeta) &
                            /(BHat(ithetaRow,izeta)*DHat(ithetaRow,izeta))
@@ -630,7 +636,14 @@
              do itheta = ithetaMin, ithetaMax                
                 do izetaRow = izetaMin, izetaMax
 
-                   if (magneticDriftScheme==3) then
+                   select case (magneticDriftScheme)
+                   case (1,2)
+                      geometricFactor1 = (BHat_sub_psi(itheta,izetaRow)*dBHatdtheta(itheta,izetaRow) &
+                           - BHat_sub_theta(itheta,izetaRow)*dBHatdpsiHat(itheta,izetaRow))
+                      
+                      geometricFactor2 = 2.0 * BHat(itheta,izetaRow) &
+                           * (dBHat_sub_theta_dpsiHat(itheta,izetaRow) - dBHat_sub_psi_dtheta(itheta,izetaRow))
+                   case (3) 
                       geometricFactor1 = &
                            (BHat_sub_psi(itheta,izetaRow)* &
                            (dBHatdtheta(itheta,izetaRow) + dBHatdzeta(itheta,izetaRow)/iota)&
@@ -640,7 +653,7 @@
                       geometricFactor2 = 2.0 * BHat(itheta,izetaRow) &
                            * (dBHat_sub_theta_dpsiHat(itheta,izetaRow) + dBHat_sub_zeta_dpsiHat(itheta,izetaRow)/iota &
                            - (dBHat_sub_psi_dtheta(itheta,izetaRow)+dBHat_sub_psi_dtheta(itheta,izetaRow)/iota))
-                   else if (magneticDriftScheme==4) then
+                   case (4)
                       geometricFactor1 = &
                            (BHat_sub_psi(itheta,izetaRow)* &
                            (dBHatdtheta(itheta,izetaRow) + dBHatdzeta(itheta,izetaRow)/iota)&
@@ -651,17 +664,16 @@
                            * (dBHat_sub_theta_dpsiHat(itheta,izetaRow) + dBHat_sub_zeta_dpsiHat(itheta,izetaRow)/iota  &
                            - diotadpsiHat / (iota*iota) * BHat_sub_zeta(itheta,izetaRow) &
                            - (dBHat_sub_psi_dtheta(itheta,izetaRow)+dBHat_sub_psi_dtheta(itheta,izetaRow)/iota))
-                   else if (magneticDriftScheme==5) then
-                      geometricFactor1 = -IHat * gradpsidotgradB_overgpsipsi(ithetaRow,izeta)
-                      !geometricFactor2 = -IHat * 2.0 * pPrimeHat / BHat(ithetaRow,izeta) !unregularized
+                   case (5)
+                      geometricFactor1 = -BHat_sub_theta(itheta,izetaRow) * gradpsidotgradB_overgpsipsi(itheta,izetaRow)
                       geometricFactor2 = - 2.0 * geometricFactor1
-                   else
-                      geometricFactor1 = (BHat_sub_psi(itheta,izetaRow)*dBHatdtheta(itheta,izetaRow) &
-                           - BHat_sub_theta(itheta,izetaRow)*dBHatdpsiHat(itheta,izetaRow))
-                      
-                      geometricFactor2 = 2.0 * BHat(itheta,izetaRow) &
-                           * (dBHat_sub_theta_dpsiHat(itheta,izetaRow) - dBHat_sub_psi_dtheta(itheta,izetaRow))
-                   end if
+                   case (6)
+                      geometricFactor1 = -BHat_sub_theta(itheta,izetaRow) * gradpsidotgradB_overgpsipsi(itheta,izetaRow)
+                      geometricFactor2 = -BHat_sub_theta(itheta,izetaRow) * 2.0 * pPrimeHat / BHat(itheta,izetaRow) !unregularized
+                   case default
+                      stop "Invalid magneticDriftScheme in d/dzeta term"
+                   end select
+
                    if (magneticDriftScheme==2) then
                       geometricFactor3 = BDotCurlB(itheta,izetaRow)*BHat_sup_zeta(itheta,izetaRow) &
                            /(BHat(itheta,izetaRow)*DHat(itheta,izetaRow))
@@ -840,20 +852,23 @@
        if ((magneticDriftScheme>0) .and. (whichMatrix .ne. 2)) then
           do itheta=ithetaMin,ithetaMax
              do izeta=izetaMin,izetaMax
-                if ((magneticDriftScheme==3) .or. (magneticDriftScheme==4)) then
-                   temp = 0
-                else if (magneticDriftScheme==5) then !Sugama's function alpha is set to (1-xi^2)/(1+xi^2) for the normal curvature terms
-                   temp = - (  BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
-                             - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta)) &
-                          / BHat(itheta,izeta) * gradpsidotgradB_overgpsipsi(itheta,izeta)
-                else
+                select case (magneticDriftScheme)
+                case (1,2)
                    temp = (dBHat_sub_psi_dzeta(itheta,izeta) - dBHat_sub_zeta_dpsiHat(itheta,izeta)) * dBHatdtheta(itheta,izeta) &
                         + (dBHat_sub_theta_dpsiHat(itheta,izeta) - dBHat_sub_psi_dtheta(itheta,izeta)) * dBHatdzeta(itheta,izeta)
                    
                    if (.not. force0RadialCurrentInEquilibrium) then
                       temp = temp + (dBHat_sub_zeta_dtheta(itheta,izeta) - dBHat_sub_theta_dzeta(itheta,izeta)) * dBHatdpsiHat(itheta,izeta)
                    end if
-                end if
+                case (3,4)
+                   temp = 0
+                case (5,6)
+                   temp = - (  BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
+                             - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta)) &
+                          / BHat(itheta,izeta) * gradpsidotgradB_overgpsipsi(itheta,izeta)
+                case default
+                   stop "Invalid magneticDriftScheme in d/dxi term"
+                end select
 
                 do ix=ixMin,Nx
                    factor = -Delta*DHat(itheta,izeta)*THat*x(ix)*x(ix)/(2*Z*(BHat(itheta,izeta)**3)) * temp
@@ -1784,7 +1799,7 @@
                         * expxb2(ix)
                    
                 end do
-                
+                !CECD=0 ! For debugging
              end do
           end do
           

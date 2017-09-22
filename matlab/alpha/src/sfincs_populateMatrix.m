@@ -98,17 +98,9 @@ interpolationMatrix_left = sfincs_periodicInterpolation(theta_left, theta_right,
 theta_right = alpha + iota * zetaMax;
 interpolationMatrix_right = sfincs_periodicInterpolation(theta_left, theta_right, 2*pi, stencil);
 
-if zetaDerivativeScheme==1
-    izetas_left = 1;
-    izetas_right = Nzeta;
-    izeta_shift = Nzeta-2;
-elseif zetaDerivativeScheme==2
-    izetas_left = [1,2];
-    izetas_right = [Nzeta-1,Nzeta];
-    izeta_shift = Nzeta-4;
-else
-    error('Should not get here')
-end
+izetas_left = 1:buffer_zeta_points_on_each_side;
+izetas_right = (Nzeta-buffer_zeta_points_on_each_side+1):Nzeta;
+izeta_shift = Nzeta-2*buffer_zeta_points_on_each_side;
 for ispecies = 1:Nspecies
     for ix = 1:Nx
         for ixi = 1:Nxi
@@ -143,6 +135,77 @@ for ispecies = 1:Nspecies
     sqrtT = sqrt(THat);
     sqrtm = sqrt(mHat);
     
+    
+    % -----------------------------------------
+    % Add d/dzeta terms:
+    % -----------------------------------------
+    
+    if whichMatrix ~= 2
+        streamingTermSpatialPart = sqrtT/sqrtm*BHat_sup_zeta./BHat;
+        for L=0:(Nxi-1)
+            if whichMatrix==0 && L >= preconditioner_zeta_min_L
+                ddzeta_sum_to_use = streaming_ddzeta_sum_preconditioner;
+                ddzeta_difference_to_use = streaming_ddzeta_difference_preconditioner;
+            else
+                ddzeta_sum_to_use = streaming_ddzeta_sum;
+                ddzeta_difference_to_use = streaming_ddzeta_difference;
+            end
+                        
+            for ialpha = 1:Nalpha
+                streaming_term_sum = diag(streamingTermSpatialPart(ialpha,:))*ddzeta_sum_to_use;
+                streaming_term_difference = diag(streamingTermSpatialPart(ialpha,:))*ddzeta_difference_to_use;
+                
+                streaming_term_sum = streaming_term_sum(zeta_to_impose_DKE,:);
+                streaming_term_difference = streaming_term_difference(zeta_to_impose_DKE,:);
+                
+                for ix = ixMin:Nx
+                    rowIndices = sfincs_indices(ispecies, ix, L+1, ialpha, zeta_to_impose_DKE, BLOCK_F, indexVars);
+
+                    % Diagonal in L
+                    colIndices = sfincs_indices(ispecies, ix, L+1, ialpha, 1:Nzeta, BLOCK_F, indexVars);
+                    addSparseBlock(rowIndices, colIndices, ExBTerm + nonlinearTerm ...
+                        + x2(ix)*(magneticDriftTerm1*2*(3*L*L+3*L-2)+magneticDriftTerm2*(2*L*L+2*L-1))/((2*L+3)*(2*L-1))...
+                        + x2(ix)*magneticDriftTerm3*(-2)*L*(L+1)/((2*L+3)*(2*L-1)))
+    
+                    % Super-diagonal in L
+                    ell = L + 1;
+                    if (ell <= Nxi-1)
+                        colIndices = sfincs_indices(ispecies, ix, ell+1, ialpha, 1:Nzeta, BLOCK_F, indexVars);
+                        addSparseBlock(rowIndices, colIndices, streamingTerm*x(ix)*(L+1)/(2*L+3))
+                    end
+                    
+                    % Sub-diagonal in L
+                    ell = L - 1;
+                    if (ell >= 0)
+                        colIndices = sfincs_indices(ispecies, ix, ell+1, ialpha, 1:Nzeta, BLOCK_F, indexVars);
+                        addSparseBlock(rowIndices, colIndices, streamingTerm*x(ix)*L/(2*L-1))
+                    end
+                    
+                    if whichMatrix>0 || (preconditioner_xi==0)
+                        % Super-super-diagonal in L
+                        ell = L + 2;
+                        if (ell <= Nxi-1)
+                            colIndices = sfincs_indices(ispecies, ix, ell+1, ialpha, 1:Nzeta, BLOCK_F, indexVars);
+                            addSparseBlock(rowIndices, colIndices, ...
+                                x2(ix)*(magneticDriftTerm1+magneticDriftTerm2)*(L+2)*(L+1)/((2*L+5)*(2*L+3))...
+                                + x2(ix)*magneticDriftTerm3*(-3)*(L+2)*(L+1)/((2*L+5)*(2*L+3)))
+                        end
+                        
+                        % Sub-sub-diagonal in L
+                        ell = L - 2;
+                        if (ell >= 0)
+                            colIndices = sfincs_indices(ispecies, ix, ell+1, ialpha, 1:Nzeta, BLOCK_F, indexVars);
+                            addSparseBlock(rowIndices, colIndices, ...
+                                x2(ix)*(magneticDriftTerm1+magneticDriftTerm2)*(L-1)*L/((2*L-3)*(2*L-1))...
+                                + x2(ix)*magneticDriftTerm3*(-3)*(L-1)*L/((2*L-3)*(2*L-1)))
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    %{
     % -----------------------------------------
     % Add d/dalpha terms:
     % -----------------------------------------
@@ -336,6 +399,7 @@ for ispecies = 1:Nspecies
             end
         end
     end
+    %}
         
     
     % -----------------------------------------

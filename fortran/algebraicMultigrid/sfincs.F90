@@ -111,11 +111,15 @@ program sfincs
 
   if (RHSMode==3) then
      ! Monoenergetic coefficient computation.
-     ! Overwrite nu_n and dPhiHatd* using nuPrime and EStar.
+     ! Overwrite nu_n and dPhiHatd* using nuPrime and EStar, defined using eq (41)-(42) from the SFINCS paper.
 
      ! 20170331 MJL: The absolute value below is needed to ensure the matrix remains diagonally dominant if GHat<0. If we use RHSMode=3 for a non-stellarator-symmetric plasma, the coefficients may not be independent of sgn(nu), so some thought should be given to the signs.
-     nu_n = abs(nuPrime * B0OverBBar / (GHat + iota * IHat))
-     dPhiHatdpsiHat = 2 / (gamma * Delta) * EStar * iota * B0OverBBar / GHat
+     !nu_n = abs(nuPrime * B0OverBBar / (GHat + iota * IHat))
+     !dPhiHatdpsiHat = 2 / (gamma * Delta) * EStar * iota * B0OverBBar / GHat
+     
+     ! Set the density to acheive the desired collisionality, using the fact that the collision frequency is linearly proportional to density:
+     nHats(1) = nHats(1) * abs(nuPrime / ((GHat+iota*IHat)*collision_frequencies(1,1)/(thermal_speeds(1)*B0OverBBar)))
+     dPhiHatdpsiHat = EStar * iota * thermal_speeds(1) * B0OverBBar / GHat
   end if
 
   ! For input quantities that depend on the radial coordinate, pick out the values for the selected

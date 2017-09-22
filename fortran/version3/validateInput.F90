@@ -460,17 +460,26 @@ subroutine validateInput()
      stop
   end if
 
-  if (magneticDriftScheme>5) then
+  if (magneticDriftScheme>6) then
      if (masterProc) then
-        print *,"Error! magneticDriftScheme must be <= 5."
+        print *,"Error! magneticDriftScheme must be <= 6."
      end if
      stop
   end if
 
-  if (magneticDriftScheme>3) then
+  if (magneticDriftScheme == 4) then
      if (.not.( (geometryScheme == 11) .or. (geometryScheme == 12) )) then
         if (masterProc) then
-           print *,"Error! magneticDriftScheme 4 and 5 have only been implemented for geometryScheme 11 and 12."
+           print *,"Error! magneticDriftScheme 4 has only been implemented for geometryScheme 11 and 12."
+        end if
+        stop        
+     end if
+  end if
+
+  if (magneticDriftScheme == 5 .or. magneticDriftScheme == 6) then
+     if (.not.( (geometryScheme == 11) .or. (geometryScheme == 12) .or. (geometryScheme == 5) )) then
+        if (masterProc) then
+           print *,"Error! magneticDriftSchemes 5 and 6 have only been implemented for geometryScheme 5, 11, and 12."
         end if
         stop        
      end if
@@ -915,16 +924,16 @@ subroutine validateInput()
      stop
   end if
   
-  if (xDotDerivativeScheme>10) then
+  if (xDotDerivativeScheme>11) then
      if (masterProc) then
-        print *,"Error! xDotDerivativeScheme cannot be more than 10."
+        print *,"Error! xDotDerivativeScheme cannot be more than 11."
      end if
      stop
   end if
   
-  if (xDotDerivativeScheme>0 .and. (xGridScheme .ne. 3 .and. xGridScheme .ne. 4)) then
+  if (xDotDerivativeScheme>0 .and. xDotDerivativeScheme .ne. 11 .and. (xGridScheme .ne. 3 .and. xGridScheme .ne. 4)) then
      if (masterProc) then
-        print *,"Error! If xDotDerivativeScheme is >0, then xGridScheme must be either 3 or 4."
+        print *,"Error! If xDotDerivativeScheme is >0 and not 11, then xGridScheme must be either 3 or 4."
      end if
      stop
   end if

@@ -554,13 +554,13 @@ module solver
              ! Energy-integrated transport matrix
              select case (whichRHS)
              case (1)
-                dnHatdpsiHats = 1
+                dnHatdpsiHats = nHats(1)/psiAHat ! A reasonable magnitude for the gradient
                 dTHatdpsiHats = 0
                 EParallelHat = 0
              case (2)
                 ! The next 2 lines ensure (1/n)*dn/dpsi + (3/2)*dT/dpsi = 0 while dT/dpsi is nonzero.
-                dnHatdpsiHats = (3/two)*nHats(1)*THats(1)
-                dTHatdpsiHats = 1
+                dnHatdpsiHats = (3/two)*nHats(1)/psiAHat
+                dTHatdpsiHats = THats(1)/psiAHat
                 EParallelHat = 0
              case (3)
                 dnHatdpsiHats = 0
@@ -572,7 +572,7 @@ module solver
              ! Monoenergetic transport matrix
              select case (whichRHS)
              case (1)
-                dnHatdpsiHats = 1
+                dnHatdpsiHats = nHats(1)/psiAHat ! A reasonable magnitude for the gradient
                 dTHatdpsiHats = 0
                 EParallelHat = 0
              case (2)

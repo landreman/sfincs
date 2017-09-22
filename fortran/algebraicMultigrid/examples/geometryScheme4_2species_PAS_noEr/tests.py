@@ -12,13 +12,13 @@ desiredTolerance = 0.001
 numFailures = 0
 
 # Species 1
-numFailures += shouldBe("FSABFlow[0,0;;;]", 0.00149144, desiredTolerance)
-numFailures += shouldBe("particleFlux_vm_psiHat[0,0;;;]", -1.02092e-07, desiredTolerance)
-numFailures += shouldBe("heatFlux_vm_psiHat[0,0;;;]",  -3.02817e-07, desiredTolerance)
+numFailures += shouldBe("FSABFlow[0,0;;;]", 0.00163061, desiredTolerance)
+numFailures += shouldBe("particleFlux_vm_psiHat[0,0;;;]", -1.45143e-07, desiredTolerance)
+numFailures += shouldBe("heatFlux_vm_psiHat[0,0;;;]",  -3.85562e-07, desiredTolerance)
 
 # Species 2
-numFailures += shouldBe("FSABFlow[1,0;;;]", -1.13719e-05, desiredTolerance)
-numFailures += shouldBe("particleFlux_vm_psiHat[1,0;;;]",  -3.53396e-09, desiredTolerance)
-numFailures += shouldBe("heatFlux_vm_psiHat[1,0;;;]",  -8.21706e-09, desiredTolerance)
+numFailures += shouldBe("FSABFlow[1,0;;;]", -0.000208742, desiredTolerance)
+numFailures += shouldBe("particleFlux_vm_psiHat[1,0;;;]",  -2.68622e-09, desiredTolerance)
+numFailures += shouldBe("heatFlux_vm_psiHat[1,0;;;]",  -7.01907e-09, desiredTolerance)
 
 exit(numFailures > 0)

@@ -87,7 +87,7 @@ else:
 originalDirectory = os.getcwd()
 
 # Get a list of the subdirectories:                                                                        
-directories = filter(os.path.isdir, os.listdir("."))
+directories = sorted(filter(os.path.isdir, os.listdir(".")))
 
 isThisTheFirstRadius = True
 for directory in directories:
@@ -204,6 +204,7 @@ for iQuantity in range(numQuantities):
    xscales.append('linear') 
    yscales.append('linear') 
 
+   linespec='.-'
    plt.plot(xdata[iQuantity],ydata[iQuantity],linespec)
    plt.xscale(xscales[iQuantity])
    plt.yscale(yscales[iQuantity])

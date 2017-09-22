@@ -35,7 +35,10 @@ def readRunspec(therunspecFilename):
     def numberatend(strng):
         thenumb=0
         if strng[-2]=="_":
-            thenumb=int(strng[-1])
+            try: #Added by AM 2017-01
+                thenumb=int(strng[-1])
+            except: #Added by AM 2017-01
+                thenumb=0 #Added by AM 2017-01
         return thenumb
 
     if not os.path.isfile(therunspecFilename):
@@ -56,6 +59,9 @@ def readRunspec(therunspecFilename):
     runparams=[[0 for j in range(noElems)] for i in range(len(datalines))]
     for datalineind in range(len(datalines)):
         thesplittedstring=datalines[datalineind].split()
+        if not len(thesplittedstring)==noElems:
+            print "Error! In the runspec file, the number of variable names does not match the number of variables!"
+            exit(1)
         for parind in range(noElems):
            thestring=thesplittedstring[parind]
            thestring=thestring.replace('d','e').replace('D','e')

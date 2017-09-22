@@ -127,7 +127,7 @@
 
   subroutine extractPhi1(myVec)
 
-    use globalVariables, only: Phi1Hat, dPhi1Hatdalpha, dPhi1Hatdzeta, MPIComm, masterProc, ddalpha, ddzeta, Nalpha, Nzeta
+    use globalVariables, only: Phi1Hat, dPhi1Hatdalpha, dPhi1Hatdzeta, MPIComm, masterProc, ExB_ddalpha_plus, ExB_ddzeta_plus, Nalpha, Nzeta
     use globalVariables, only: includePhi1, zero
     use indices
     use petscvec
@@ -170,8 +170,8 @@
        ! Send Phi1Hat from the masterProc to all procs:
        call MPI_Bcast(Phi1Hat, Nalpha*Nzeta, MPI_DOUBLE_PRECISION, 0, MPIComm, ierr)
 
-       dPhi1Hatdalpha = matmul(ddalpha,Phi1Hat)
-       dPhi1Hatdzeta = transpose(matmul(ddzeta,transpose(Phi1Hat)))
+       dPhi1Hatdalpha = matmul(ExB_ddalpha_plus,Phi1Hat)
+       dPhi1Hatdzeta = transpose(matmul(ExB_ddzeta_plus,transpose(Phi1Hat)))
 
     else
        ! We are not including Phi_1 in the calculation

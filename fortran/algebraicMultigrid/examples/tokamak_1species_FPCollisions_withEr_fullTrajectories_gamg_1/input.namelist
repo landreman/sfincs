@@ -44,18 +44,17 @@
 &speciesParameters
   Zs = 1
   mHats = 1
-  nHats = 1.0d+0
-  THats = 0.5d+0
-  dNHatdrHats = -6.0d+0
-  dTHatdrHats = -3.0d+0
+  nHats = 1.0d+20
+  THats = 0.5d+3
+  dNHatdrHats = -6.0d+20
+  dTHatdrHats = -3.0d+3
 /
 
 &physicsParameters
-  Delta = 4.5694d-3
-  gamma = 1.0d+0
-  nu_n = 8.4774d-3
+  old_output_normalizations=T
+  ln_Lambda=17.3
 
-  Er = -30.0d+0
+  Er = -30.0d+3
 
   collisionOperator = 0
 
@@ -93,7 +92,12 @@
 /
 
 &otherNumericalParameters
-null_space_option=0
+!null_space_option=0
+
+!f_scaling_option=1
+!x_scaling_option=3
+!constraint_scaling_option=2
+!spatial_scaling_option=2
 /
 
 &preconditionerOptions

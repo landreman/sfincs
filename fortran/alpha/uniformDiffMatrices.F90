@@ -5,7 +5,7 @@
 #include <petsc/finclude/petscsysdef.h>
 #endif
 
-subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
+subroutine uniformDiffMatrices(N, xMin, xMax, option, quadrature_option, x, weights, ddx, d2dx2)
   ! Finite difference and spectral differentiation matrices and integration
   ! weights for a uniform grid.
   !
@@ -16,29 +16,30 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
   !   N = number of grid points.
   !   xMin = minimum value in the domain.
   !   xMax = maximum value in the domain.
-  !   scheme = switch for controlling order of accuracy for differentiation
+  !   option = switch for controlling order of accuracy for differentiation
   !            and handling of endpoints.
+  !   quadrature_option = switch for controlling the quadrature weights in a non-periodic domain.
   !
-  ! Options for scheme:
+  ! Options for option:
   ! 0 =  The domain [xMin, xMax] is assumed to be periodic. A 3-point stencil
   !      is used everywhere. A grid point will be placed at xMin but not 
   !      xMax.
-  ! 1 =  Same as scheme=0, except a grid point will be placed at xMax but not
+  ! 1 =  Same as option=0, except a grid point will be placed at xMax but not
   !      xMin.
   ! 2 =  The domain [xMin, xMax] is assumed to be non-periodic. A 3-point 
   !      stencil is used everywhere.  The first and last row of the
   !      differentiation matrices will use one-sided differences, so they
   !      will each have a non-tridiagonal element.
-  ! 3 =  The same as scheme=2, except that the first differentiation matrix
+  ! 3 =  The same as option=2, except that the first differentiation matrix
   !      will use a 2-point 1-sided stencil for the first and last elements
   !      so the matrix is strictly tri-diagonal.  The 2nd derivative matrix
   !      is the same as for option 2, since it is not possible to compute 
   !      the 2nd derivative with only a 2-point stencil.
   ! 10 = The domain [xMin, xMax] is assumed to be periodic. A 5-point stencil
   !      is used everywhere. A grid point will be placed at xMin but not 
-  !      xMax.  This option is like scheme=0 but more accurate.
-  ! 11 = Same as scheme=10, except a grid point will be placed at xMax but
-  !      not xMin.  This option is like scheme=1 but more accurate.
+  !      xMax.  This option is like option=0 but more accurate.
+  ! 11 = Same as option=10, except a grid point will be placed at xMax but
+  !      not xMin.  This option is like option=1 but more accurate.
   ! 12 = The domain [xMin, xMax] is assumed to be non-periodic. A 5-point 
   !      stencil is used everywhere.  The first two and last two rows of 
   !      the differentiation matrices will then each have non-pentadiagonal 
@@ -48,10 +49,13 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
   !      stencils are used for the 2nd and penultimate rows of the 
   !      differentiation matrices.  With this option, both differentiation 
   !      matrices are strictly penta-diagonal.
+  ! 14 = Similar to 12 and 13, except the first 2 rows are changed so there is never downwinding.
+  ! 15 = Similar to 12 and 13, except the last 2 rows are changed so there is never upwinding.
+  ! 16 = Similar to 12 and 13, except the first and last 2 rows are changed so there is never upwinding.
   ! 20 = The domain [xMin, xMax] is assumed to be periodic. Spectral
   !      differentiation matrices are returned. A grid point will be placed 
   !      at xMin but not xMax.
-  ! 21 = Same as scheme=20, except a grid point will be placed at xMax but not
+  ! 21 = Same as option=20, except a grid point will be placed at xMax but not
   !      xMin.
   ! 30 = Periodic with a grid point at xMin but not xMax.  Upwinding to the
   !      left. A 2-point stencil is used for the first derivative and a 
@@ -80,7 +84,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
   !      2-point stencil.
   ! 80 = Periodic with a grid point at xMin but not xMax.  The first derivative is upwinded to the
   !      left. A stencil is used with 1 point on 1 side and 2 points on the
-  !      other side. The second derivative is the same as in scheme 0.
+  !      other side. The second derivative is the same as in option 0.
   ! 81 = Same as 80 but with a grid point at xMax and not xMin.
   ! 82 = Like 80 but not periodic, with a grid point at both xMin and xMax.
   !      The top row of D is zero.
@@ -108,8 +112,14 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
   !       Stencil has 2 points on 1 side, 3 points on the other side
   ! 131 = Same as 130, but with no grid point at xMin and with a grid point at xMax.
   ! 132 = Same as 130, but aperiodic, with grid points at both xMin and xMax.
-  
   !
+  ! Options for quadrature_option:
+  ! 0 = Standard trapezoid rule: half weight at the first and last grid points.
+  ! 1 = Numerical Recipes page 160 eq 4.1.12, also http://mathworld.wolfram.com/Newton-CotesFormulas.html eq (36). Error is O(h^3).
+  ! 2 = http://mathworld.wolfram.com/Newton-CotesFormulas.html eq (37).
+  ! 3 = Numerical recipes page 160 eq 4.1.14. Error is O(h^4).
+  ! If the domain is periodic, quadrature_option is ignored and the quadrature weights will all be equal.
+ 
   ! Outputs:
   !   x = column vector with the grid points.
   !   weights = column vector with the weights for integration using the trapezoid rule.
@@ -118,7 +128,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
 
   implicit none
 
-  integer, intent(in) :: N, scheme
+  integer, intent(in) :: N, option, quadrature_option
   PetscScalar, intent(in) :: xMin, xMax
   PetscScalar, intent(out), dimension(N) :: x, weights
   PetscScalar, intent(out), dimension(N,N) :: ddx, d2dx2
@@ -154,8 +164,8 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
   ! Set gridpoints
   ! ***************************************************************
 
-  select case (scheme)
-  case (2, 3, 12, 13, 32, 42, 52, 62, 82, 92, 102, 112, 122, 132)
+  select case (option)
+  case (2, 3, 12, 13, 14, 15, 16, 32, 42, 52, 62, 82, 92, 102, 112, 122, 132)
      ! Include points at both xMin and xMax:
      x = [( (xMax-xMin)*i/(N-1)+xMin, i=0,N-1 )]
   case (0,10,20,30,40,50,60,80,90,100,110,120,130)
@@ -165,7 +175,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
      ! Include a point at xMax but not xMin:
      x = [( (xMax-xMin)*i/(N)+xMin, i=1,N )]
   case default
-     print *,"Error! Invalid value for scheme"
+     print *,"Error! Invalid value for option in uniformDiffMatrices, location 1:", option
      stop
   end select
 
@@ -177,11 +187,35 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
   ! ***************************************************************
 
   weights=dx
-  select case (scheme)
-  case (2, 3, 12, 13, 32, 42, 52, 62, 82, 92, 102, 112, 122, 132)
+  select case (option)
+  case (2, 3, 12, 13, 14, 15, 16, 32, 42, 52, 62, 82, 92, 102, 112, 122, 132)
      ! Grid is aperiodic
-     weights(1)=weights(1)/2
-     weights(N)=weights(N)/2
+     select case (quadrature_option)
+     case (0)
+        ! Standard trapezoid rule
+        weights(1)=dx/2
+        weights(N)=dx/2
+     case (1)
+        weights(1)   = (dx*5)/12
+        weights(N)   = (dx*5)/12
+        weights(2)   = (dx*13)/12
+        weights(N-1) = (dx*13)/12
+     case (2)
+        weights(1)   = (dx*2)/5
+        weights(N)   = (dx*2)/5
+        weights(2)   = (dx*11)/10
+        weights(N-1) = (dx*11)/10
+     case (3)
+        weights(1)   = (dx*3)/8
+        weights(N)   = (dx*3)/8
+        weights(2)   = (dx*7)/6
+        weights(N-1) = (dx*7)/6
+        weights(3)   = (dx*23)/24
+        weights(N-2) = (dx*23)/24
+     case default
+        print *,"Error! Unrecognized quadrature_option:",quadrature_option
+        stop
+     end select
   end select
 
   ! ***************************************************************
@@ -191,7 +225,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
   ddx=0d+0
   d2dx2=0d+0
 
-  select case (scheme)
+  select case (option)
   case (0,1,2,3)
      ! 2nd order (3 point stencil):
      if (N<3) then
@@ -207,7 +241,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
         d2dx2(i,i-1)=1/(dx2)
      end do
 
-  case (10,11,12,13)
+  case (10,11,12,13, 14, 15, 16)
      ! 4th order (5 point stencil):
      if (N<5) then
         print *,"Error! N must be at least 5 for the 5-point stencil methods"
@@ -230,7 +264,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
      ! 2-point stencil for D and 3-point stencil for DD,
      ! upwinding to the left.
      if (N<3) then
-        print *,"Error! N must be at least 3 for this scheme."
+        print *,"Error! N must be at least 3 for this option."
         stop
      end if
      do i=2,N
@@ -247,7 +281,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
      ! 2-point stencil for D and 3-point stencil for DD,
      ! upwinding to the right.
      if (N<3) then
-        print *,"Error! N must be at least 3 for this scheme."
+        print *,"Error! N must be at least 3 for this option."
         stop
      end if
      do i=1,N-1
@@ -264,7 +298,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
      ! 3-point stencil for both D and DD,
      ! upwinding to the left.
      if (N<3) then
-        print *,"Error! N must be at least 3 for this scheme."
+        print *,"Error! N must be at least 3 for this option."
         stop
      end if
      do i=3,N
@@ -281,7 +315,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
      ! 3-point stencil for both D and DD,
      ! upwinding to the right.
      if (N<3) then
-        print *,"Error! N must be at least 3 for this scheme."
+        print *,"Error! N must be at least 3 for this option."
         stop
      end if
      do i=1,N-2
@@ -449,7 +483,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
      ! upwinding, with 1 point on 1 side, and 3 points on the other side.
 
      if (N<5) then
-        print *,"Error! N must be at least 5 for scheme 100,101"
+        print *,"Error! N must be at least 5 for option 100,101"
         stop
      end if
      do i=1,N
@@ -464,7 +498,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
      ! upwinding, with 1 point on 1 side, and 3 points on the other side.
 
      if (N<5) then
-        print *,"Error! N must be at least 5 for scheme 102"
+        print *,"Error! N must be at least 5 for option 102"
         stop
      end if
      do i=4,N-1
@@ -479,7 +513,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
      ! upwinding, with 1 point on 1 side, and 2 points on the other side.
 
      if (N<5) then
-        print *,"Error! N must be at least 5 for scheme 110,111"
+        print *,"Error! N must be at least 5 for option 110,111"
         stop
      end if
      do i=1,N
@@ -494,7 +528,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
      ! upwinding, with 1 point on 1 side, and 2 points on the other side.
 
      if (N<5) then
-        print *,"Error! N must be at least 5 for scheme 112"
+        print *,"Error! N must be at least 5 for option 112"
         stop
      end if
      do i=2,N-3
@@ -505,11 +539,11 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
         ddx(i,i+3) =  1/(12*dx)
      end do
 
-  case (120,121)
+  case (120,121,122)
      ! upwinding, with 2 points on 1 side, and 3 points on the other side.
 
      if (N<5) then
-        print *,"Error! N must be at least 5 for scheme 120,121"
+        print *,"Error! N must be at least 5 for option 120,121,122"
         stop
      end if
      do i=1,N
@@ -521,14 +555,11 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
         ddx(i,modulo(i-4,N)+1) = -1/(30*dx)
      end do
 
-!  case (122)
-     ! Not implemented yet!
-
-  case (130,131)
+  case (130,131,132)
      ! upwinding, with 2 points on 1 side, and 3 points on the other side.
 
      if (N<5) then
-        print *,"Error! N must be at least 5 for scheme 130,131"
+        print *,"Error! N must be at least 5 for option 130,131,132"
         stop
      end if
      do i=1,N
@@ -541,17 +572,13 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
 
      end do
 
-!  case (132)
-     ! Not implemented yet!
-
-
   end select
 
   ! ***************************************************************
   ! Handle endpoints of grid in differentiation matrices
   ! ***************************************************************
 
-  select case (scheme)
+  select case (option)
   case (0,1)
      ddx(1,N) = -1/(2*dx)
      ddx(1,2) = 1/(2*dx)
@@ -588,7 +615,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
      ! Aperiodic.
      ! 2-point stencil for the first and last rows of the first
      ! differentiation matrix, so the matrix is strictly tri-diagonal.
-     ! The 2nd derivative matrix is the same as for scheme=0 (i.e. not
+     ! The 2nd derivative matrix is the same as for option=0 (i.e. not
      ! strictly tri-diagonal) since it is not possible to approximate
      ! the 2nd derivative with a 2-point stencil.
 
@@ -761,6 +788,132 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
      d2dx2(N-1,N-2)=1/(dx2)
      d2dx2(N-1,N-3)=0
 
+  case (14)
+     ! 5 point stencil, aperiodic:
+
+     ! Leave 1st row 0: there is no way to avoid upwinding.
+
+     ! For 2nd row, use centered differences:
+     ddx(2,1)= -1/(2*dx)
+     ddx(2,3)=  1/(2*dx)
+
+     ddx(N,N)= 25/(12*dx)
+     ddx(N,N-1)= -4/(dx)
+     ddx(N,N-2)=3/dx
+     ddx(N,N-3)=-4/(3*dx)
+     ddx(N,N-4)=1/(4*dx)
+
+     ddx(N-1,N)= 1/(4*dx)
+     ddx(N-1,N-1)= 5/(6*dx)
+     ddx(N-1,N-2)=-3/(2*dx)
+     ddx(N-1,N-3)=1/(2*dx)
+     ddx(N-1,N-4)=-1/(12*dx)
+
+
+     d2dx2(1,1)=35/(12*dx2)
+     d2dx2(1,2)=-26/(3*dx2)
+     d2dx2(1,3)=19/(2*dx2)
+     d2dx2(1,4)=-14/(3*dx2)
+     d2dx2(1,5)=11/(12*dx2)
+
+     d2dx2(2,1)=11/(12*dx2)
+     d2dx2(2,2)=-5/(3*dx2)
+     d2dx2(2,3)=1/(2*dx2)
+     d2dx2(2,4)=1/(3*dx2)
+     d2dx2(2,5)=-1/(12*dx2)
+
+     d2dx2(N,N)=35/(12*dx2)
+     d2dx2(N,N-1)=-26/(3*dx2)
+     d2dx2(N,N-2)=19/(2*dx2)
+     d2dx2(N,N-3)=-14/(3*dx2)
+     d2dx2(N,N-4)=11/(12*dx2)
+
+     d2dx2(N-1,N-0)=11/(12*dx2)
+     d2dx2(N-1,N-1)=-5/(3*dx2)
+     d2dx2(N-1,N-2)=1/(2*dx2)
+     d2dx2(N-1,N-3)=1/(3*dx2)
+     d2dx2(N-1,N-4)=-1/(12*dx2)
+
+  case (15)
+     ! 5 point stencil, aperiodic:
+
+     ddx(1,1)= -25/(12*dx)
+     ddx(1,2)= 4/(dx)
+     ddx(1,3)=-3/dx
+     ddx(1,4)=4/(3*dx)
+     ddx(1,5)=-1/(4*dx)
+
+     ddx(2,1)= -1/(4*dx)
+     ddx(2,2)= -5/(6*dx)
+     ddx(2,3)=3/(2*dx)
+     ddx(2,4)=-1/(2*dx)
+     ddx(2,5)=1/(12*dx)
+
+     ! Penultimate row: use centered differences:
+     ddx(N-1,N)   =  1/(2*dx)
+     ddx(N-1,N-2) = -1/(2*dx)
+
+     ! Leave last row of ddx 0: there is no way to avoid upwinding.
+
+     d2dx2(1,1)=35/(12*dx2)
+     d2dx2(1,2)=-26/(3*dx2)
+     d2dx2(1,3)=19/(2*dx2)
+     d2dx2(1,4)=-14/(3*dx2)
+     d2dx2(1,5)=11/(12*dx2)
+
+     d2dx2(2,1)=11/(12*dx2)
+     d2dx2(2,2)=-5/(3*dx2)
+     d2dx2(2,3)=1/(2*dx2)
+     d2dx2(2,4)=1/(3*dx2)
+     d2dx2(2,5)=-1/(12*dx2)
+
+     d2dx2(N,N)=35/(12*dx2)
+     d2dx2(N,N-1)=-26/(3*dx2)
+     d2dx2(N,N-2)=19/(2*dx2)
+     d2dx2(N,N-3)=-14/(3*dx2)
+     d2dx2(N,N-4)=11/(12*dx2)
+
+     d2dx2(N-1,N-0)=11/(12*dx2)
+     d2dx2(N-1,N-1)=-5/(3*dx2)
+     d2dx2(N-1,N-2)=1/(2*dx2)
+     d2dx2(N-1,N-3)=1/(3*dx2)
+     d2dx2(N-1,N-4)=-1/(12*dx2)
+
+  case (16)
+     ! 5 point stencil, aperiodic:
+
+
+     ddx(2,1)= -1/(2*dx)
+     ddx(2,3)=  1/(2*dx)
+
+     ddx(N-1,N)  = 1/(2*dx)
+     ddx(N-1,N-2)=-1/(2*dx)
+
+
+     d2dx2(1,1)=35/(12*dx2)
+     d2dx2(1,2)=-26/(3*dx2)
+     d2dx2(1,3)=19/(2*dx2)
+     d2dx2(1,4)=-14/(3*dx2)
+     d2dx2(1,5)=11/(12*dx2)
+
+     d2dx2(2,1)=11/(12*dx2)
+     d2dx2(2,2)=-5/(3*dx2)
+     d2dx2(2,3)=1/(2*dx2)
+     d2dx2(2,4)=1/(3*dx2)
+     d2dx2(2,5)=-1/(12*dx2)
+
+     d2dx2(N,N)=35/(12*dx2)
+     d2dx2(N,N-1)=-26/(3*dx2)
+     d2dx2(N,N-2)=19/(2*dx2)
+     d2dx2(N,N-3)=-14/(3*dx2)
+     d2dx2(N,N-4)=11/(12*dx2)
+
+     d2dx2(N-1,N-0)=11/(12*dx2)
+     d2dx2(N-1,N-1)=-5/(3*dx2)
+     d2dx2(N-1,N-2)=1/(2*dx2)
+     d2dx2(N-1,N-3)=1/(3*dx2)
+     d2dx2(N-1,N-4)=-1/(12*dx2)
+
   case (20,21)
      ! Nothing to be done here
 
@@ -775,7 +928,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
      d2dx2(2,1) = -2/dx2
 
   case (32)
-     ! Nothing to be done here
+     ddx(1,1) = 1/dx
 
   case (40,41)
      ddx(N,1) = 1/dx
@@ -789,7 +942,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
      d2dx2(N-1,N) = -2/dx2
 
   case (42)
-     ! Nothing to be done here
+     ddx(N,N) = -1/dx
 
   case (50,51)
      ddx(1,1) = (1.5d+0)/(dx)
@@ -884,8 +1037,24 @@ subroutine uniformDiffMatrices(N, xMin, xMax, scheme, x, weights, ddx, d2dx2)
   case (120,121,130,131)
      ! Handled previously
 
+  case (122)
+     ddx(N,1:2)=0
+     ddx(N-1,1)=0
+     
+     ddx(1,(N-2):N)=0
+     ddx(2,(N-1):N)=0
+     ddx(3,N)=0
+
+  case (132)
+     ddx(1:2,N)=0
+     ddx(1,N-1)=0
+            
+     ddx((N-2):N,1)=0
+     ddx((N-1):N,2)=0
+     ddx(N,3)=0
+
   case default
-     print *,"Error! Invalid value for scheme."
+     print *,"Error! Invalid value for option in uniformDiffMatrices, location 2:", option
      stop
   end select
 

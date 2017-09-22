@@ -2,9 +2,11 @@ function sfincs_createGrids()
 
 global Nalpha Nzeta Nx Nxi NL NxPotentialsPerVth xMax solverTolerance xGrid_k
 global constraintScheme collisionOperator NPeriods pointAtX0
-global alphaDerivativeScheme zetaDerivativeScheme forceOddNalphaAndNzeta
-global alpha ddalpha alphaWeights ddalpha_preconditioner preconditioner_alpha
-global zeta ddzeta zetaWeights ddzeta_preconditioner preconditioner_zeta
+global forceOddNalphaAndNzeta
+global streaming_theta_derivative_option preconditioner_streaming_theta_derivative_option
+global alpha streaming_ddtheta_sum streaming_ddtheta_difference streaming_ddtheta_sum_preconditioner streaming_ddtheta_difference_preconditioner alphaWeights
+global streaming_zeta_derivative_option preconditioner_streaming_zeta_derivative_option
+global zeta streaming_ddzeta_sum streaming_ddzeta_difference streaming_ddzeta_sum_preconditioner streaming_ddzeta_difference_preconditioner zetaWeights
 global x xWeights ddx d2dx2 ddx_preconditioner xGridScheme xPotentialsGridScheme
 global alpha2D zeta2D RHSMode preconditioner_x xMaxPotentials
 global xInterpolationScheme xPotentialsInterpolationScheme NxPotentials
@@ -72,34 +74,102 @@ sfincs_computeMatrixSize()
 % Generate abscissae, quadrature weights, and derivative matrix for alpha grid.
 % *************************************************************************
 
-switch alphaDerivativeScheme
-    case 0
-        % Spectral uniform
-        scheme = 20;
-    case 1
-        % Uniform periodic finite differences with 3-point stencil
-        scheme = 0;
+switch streaming_theta_derivative_option
     case 2
-        % Uniform periodic finite differences with 5-point stencil
-        scheme = 10;
+        fprintf('Streaming d/dtheta discretized using centered differences: 1 point on each side.\n')
+        derivative_option_plus = 2;
+        derivative_option_minus = derivative_option_plus;
+    case 3
+        fprintf('Streaming d/dtheta discretized using centered differences: 2 points on each side.\n')
+        derivative_option_plus = 12;
+        derivative_option_minus = derivative_option_plus;
+    case 4
+        fprintf('Streaming d/dtheta discretized using upwinded differences: 0 points on one side, 1 point on the other.\n')
+        derivative_option_plus  = 32;
+        derivative_option_minus = 42;
+    case 5
+        fprintf('Streaming d/dtheta discretized using upwinded differences: 0 points on one side, 2 points on the other.\n')
+        derivative_option_plus  = 52;
+        derivative_option_minus = 62;
+    case 6
+        fprintf('Streaming d/dtheta discretized using upwinded differences: 1 point on one side, 2 points on the other.\n')
+        derivative_option_plus  = 82;
+        derivative_option_minus = 92;
+    case 7
+        fprintf('Streaming d/dtheta discretized using upwinded differences: 1 point on one side, 3 points on the other.\n')
+        derivative_option_plus  = 102;
+        derivative_option_minus = 112;
+    case 8
+        fprintf('Streaming d/dtheta discretized using upwinded differences: 2 points on one side, 3 points on the other.\n')
+        derivative_option_plus  = 122;
+        derivative_option_minus = 132;
     otherwise
-        error('Error! Invalid alphaDerivativeScheme')
+        error('Invalid streaming_theta_derivative_option: %d',streaming_theta_derivative_option)
 end
-[alpha, alphaWeights, ddalpha, ~] = sfincs_uniformDiffMatrices(Nalpha, 0, 2*pi, scheme);
+quadrature_option = 0;
+[alpha, alphaWeights, streaming_ddtheta_plus, ~] = sfincs_uniformDiffMatrices(Nalpha, 0, 2*pi, derivative_option_plus,  quadrature_option);
+[~, ~, streaming_ddtheta_minus, ~] = sfincs_uniformDiffMatrices(Nalpha, 0, 2*pi, derivative_option_minus, quadrature_option);
 
-switch preconditioner_alpha
+streaming_ddtheta_sum        = 0.5*(streaming_ddtheta_plus+streaming_ddtheta_minus);
+streaming_ddtheta_difference = 0.5*(streaming_ddtheta_plus-streaming_ddtheta_minus);
+
+call_uniform_diff_matrices = true;
+switch abs(preconditioner_streaming_theta_derivative_option)
     case 0
-        ddalpha_preconditioner = ddalpha;
-    case 1
-        % Uniform periodic finite differences with 3-point stencil
-        scheme = 0;
-        [~, ~, ddalpha_preconditioner, ~] = sfincs_uniformDiffMatrices(Nalpha, 0, 2*pi, scheme);
+        fprintf('Streaming d/dtheta term is completely dropped in the preconditioner.\n')
+        call_uniform_diff_matrices = false;
+    case 100
+        fprintf('Streaming d/dtheta term is the same in the preconditioner.\n')
+        call_uniform_diff_matrices = false;
+        streaming_ddtheta_plus_preconditioner = streaming_ddtheta_plus;
+        streaming_ddtheta_minus_preconditioner = streaming_ddtheta_minus;
     case 2
-        ddalpha_preconditioner = zeros(size(ddalpha));
+        fprintf('Preconditioner streaming d/dtheta discretized using centered differences: 1 point on each side.\n')
+        derivative_option_plus = 2;
+        derivative_option_minus = derivative_option_plus;
+    case 3
+        fprintf('Preconditioner streaming d/dtheta discretized using centered differences: 2 points on each side.\n')
+        derivative_option_plus = 12;
+        derivative_option_minus = derivative_option_plus;
+    case 4
+        fprintf('Preconditioner streaming d/dtheta discretized using upwinded differences: 0 points on one side, 1 point on the other.\n')
+        derivative_option_plus  = 32;
+        derivative_option_minus = 42;
+    case 5
+        fprintf('Preconditioner streaming d/dtheta discretized using upwinded differences: 0 points on one side, 2 points on the other.\n')
+        derivative_option_plus  = 52;
+        derivative_option_minus = 62;
+    case 6
+        fprintf('Preconditioner streaming d/dtheta discretized using upwinded differences: 1 point on one side, 2 points on the other.\n')
+        derivative_option_plus  = 82;
+        derivative_option_minus = 92;
+    case 7
+        fprintf('Preconditioner streaming d/dtheta discretized using upwinded differences: 1 point on one side, 3 points on the other.\n')
+        derivative_option_plus  = 102;
+        derivative_option_minus = 112;
+    case 8
+        fprintf('Preconditioner streaming d/dtheta discretized using upwinded differences: 2 points on one side, 3 points on the other.\n')
+        derivative_option_plus  = 122;
+        derivative_option_minus = 132;
     otherwise
-        error('Invalid preconditioner_alpha')
+        error('Invalid preconditioner_streaming_theta_derivative_option: %d',preconditioner_streaming_theta_derivative_option)
 end
-    
+if call_uniform_diff_matrices
+    quadrature_option = 0;
+    [~, ~, streaming_ddtheta_plus_preconditioner, ~]  = sfincs_uniformDiffMatrices(Nalpha, 0, 2*pi, derivative_option_plus, quadrature_option);
+    [~, ~, streaming_ddtheta_minus_preconditioner, ~] = sfincs_uniformDiffMatrices(Nalpha, 0, 2*pi, derivative_option_minus, quadrature_option);
+end
+
+if discretizationParameters.theta_derivative_option<0
+    fprintf('  But only the diagonal is kept.\n')
+    streaming_ddtheta_plus_preconditioner = diag(diag(streaming_ddtheta_plus_preconditioner));
+    streaming_ddtheta_minus_preconditioner = diag(diag(streaming_ddtheta_minus_preconditioner));
+end
+
+streaming_ddtheta_sum_preconditioner        = 0.5*(streaming_ddtheta_plus_preconditioner+streaming_ddtheta_minus_preconditioner);
+streaming_ddtheta_difference_preconditioner = 0.5*(streaming_ddtheta_plus_preconditioner-streaming_ddtheta_minus_preconditioner);
+
+
 
 
 % *************************************************************************
@@ -110,57 +180,131 @@ zetaMax = 2*pi/NPeriods;
 if Nzeta==1
     zeta=0;
     zetaWeights=2*pi;
-    ddzeta=0;
-    ddzeta_preconditioner=0;
+    buffer_zeta_points_on_each_side = 0;
+    streaming_ddzeta_sum=0;
+    streaming_ddzeta_difference=0;
+    streaming_ddzeta_sum_preconditioner=0;
+    streaming_ddzeta_difference_preconditioner=0;
 else
     
-    switch zetaDerivativeScheme
-        case 1
-            zeta_stencil_size=3;
-            zeta_to_impose_DKE = 2:(Nzeta-1);
-            Delta_zeta = (2*pi)/(NPeriods*(Nzeta-2));
-            zeta_scheme=2;
-            [zeta, ~, ddzeta, ~] = sfincs_uniformDiffMatrices(Nzeta, -Delta_zeta, zetaMax, zeta_scheme);
-            assert(abs(zeta(2)-zeta(1)-Delta_zeta)<1e-12)
-            zetaWeights=ones(size(zeta));
-            zetaWeights(1)  =0;
-            zetaWeights(end)=0;
-            zetaWeights = zetaWeights * Delta_zeta * NPeriods;
+    switch streaming_zeta_derivative_option
         case 2
-            zeta_stencil_size=5;
-            zeta_to_impose_DKE = 3:(Nzeta-2);
-            Delta_zeta = (2*pi)/(NPeriods*(Nzeta-4));
-            zeta_scheme=12;
-            [zeta, ~, ddzeta, ~] = sfincs_uniformDiffMatrices(Nzeta, -2*Delta_zeta, zetaMax+Delta_zeta, zeta_scheme);
-            assert(abs(zeta(2)-zeta(1)-Delta_zeta)<1e-12)
-            zetaWeights=ones(size(zeta));
-            zetaWeights(1:2)      =0;
-            zetaWeights(end-1:end)=0;
-            zetaWeights = zetaWeights * Delta_zeta * NPeriods;
+            fprintf('Streaming d/dzeta discretized using centered differences: 1 point on each side.\n')
+            derivative_option_plus = 2;
+            derivative_option_minus = derivative_option_plus;
+            buffer_zeta_points_on_each_side = 1;
+        case 3
+            fprintf('Streaming d/dzeta discretized using centered differences: 2 points on each side.\n')
+            derivative_option_plus = 12;
+            derivative_option_minus = derivative_option_plus;
+            buffer_zeta_points_on_each_side = 2;
+        case 4
+            fprintf('Streaming d/dzeta discretized using upwinded differences: 0 points on one side, 1 point on the other.\n')
+            derivative_option_plus  = 32;
+            derivative_option_minus = 42;
+            buffer_zeta_points_on_each_side = 1;
+        case 5
+            fprintf('Streaming d/dzeta discretized using upwinded differences: 0 points on one side, 2 points on the other.\n')
+            derivative_option_plus  = 52;
+            derivative_option_minus = 62;
+            buffer_zeta_points_on_each_side = 2;
+        case 6
+            fprintf('Streaming d/dzeta discretized using upwinded differences: 1 point on one side, 2 points on the other.\n')
+            derivative_option_plus  = 82;
+            derivative_option_minus = 92;
+            buffer_zeta_points_on_each_side = 2;
+        case 7
+            fprintf('Streaming d/dzeta discretized using upwinded differences: 1 point on one side, 3 points on the other.\n')
+            derivative_option_plus  = 102;
+            derivative_option_minus = 112;
+            buffer_zeta_points_on_each_side = 3;
+        case 8
+            fprintf('Streaming d/dzeta discretized using upwinded differences: 2 points on one side, 3 points on the other.\n')
+            derivative_option_plus  = 122;
+            derivative_option_minus = 132;
+            buffer_zeta_points_on_each_side = 3;
         otherwise
-            error('Invalid zetaDerivativeScheme')
+            error('Invalid streaming_zeta_derivative_option: %d',streaming_zeta_derivative_option)
     end
-
+    Delta_zeta = (2*pi)/(NPeriods*(Nzeta-2*buffer_zeta_points_on_each_side));
+    quadrature_option = 0;
+    [zeta, ~, streaming_ddzeta_plus, ~]  = sfincs_uniformDiffMatrices(Nzeta, ...
+        -buffer_zeta_points_on_each_side*Delta_zeta, zetaMax+(buffer_zeta_points_on_each_side-1)*Delta_zeta, derivative_option_plus, quadrature_option);
+    [~   , ~, streaming_ddzeta_minus, ~] = sfincs_uniformDiffMatrices(Nzeta, ...
+        -buffer_zeta_points_on_each_side*Delta_zeta, zetaMax+(buffer_zeta_points_on_each_side-1)*Delta_zeta, derivative_option_minus, quadrature_option);
+    assert(abs(zeta(2)-zeta(1)-Delta_zeta)<1e-12)
     
+    streaming_ddzeta_sum        = 0.5*(streaming_ddzeta_plus+streaming_ddzeta_minus);
+    streaming_ddzeta_difference = 0.5*(streaming_ddzeta_plus-streaming_ddzeta_minus);
     
-   
-    
-    switch preconditioner_zeta
+    call_uniform_diff_matrices = true;
+    switch abs(preconditioner_streaming_zeta_derivative_option)
         case 0
-            ddzeta_preconditioner = ddzeta;
-        case 1
-            % Uniform periodic finite differences with 3-point stencil
-            if zetaDerivativeScheme==1
-                ddzeta_preconditioner = ddzeta;
-            else
-                zeta_scheme = 2;
-                [~, ~, ddzeta_preconditioner, ~] = sfincs_uniformDiffMatrices(Nzeta, -2*Delta_zeta, zetaMax+Delta_zeta, zeta_scheme);
-            end
+            fprintf('Streaming d/dzeta term is completely dropped in the preconditioner.\n')
+            call_uniform_diff_matrices = false;
+        case 100
+            fprintf('Streaming d/dzeta term is the same in the preconditioner.\n')
+            call_uniform_diff_matrices = false;
+            streaming_ddzeta_plus_preconditioner = streaming_ddzeta_plus;
+            streaming_ddzeta_minus_preconditioner = streaming_ddzeta_minus;
         case 2
-            ddzeta_preconditioner = zeros(size(ddzeta));
+            fprintf('Preconditioner streaming d/dzeta discretized using centered differences: 1 point on each side.\n')
+            derivative_option_plus = 2;
+            derivative_option_minus = derivative_option_plus;
+        case 3
+            fprintf('Preconditioner streaming d/dzeta discretized using centered differences: 2 points on each side.\n')
+            derivative_option_plus = 12;
+            derivative_option_minus = derivative_option_plus;
+        case 4
+            fprintf('Preconditioner streaming d/dzeta discretized using upwinded differences: 0 points on one side, 1 point on the other.\n')
+            derivative_option_plus  = 32;
+            derivative_option_minus = 42;
+        case 5
+            fprintf('Preconditioner streaming d/dzeta discretized using upwinded differences: 0 points on one side, 2 points on the other.\n')
+            derivative_option_plus  = 52;
+            derivative_option_minus = 62;
+        case 6
+            fprintf('Preconditioner streaming d/dzeta discretized using upwinded differences: 1 point on one side, 2 points on the other.\n')
+            derivative_option_plus  = 82;
+            derivative_option_minus = 92;
+        case 7
+            fprintf('Preconditioner streaming d/dzeta discretized using upwinded differences: 1 point on one side, 3 points on the other.\n')
+            derivative_option_plus  = 102;
+            derivative_option_minus = 112;
+        case 8
+            fprintf('Preconditioner streaming d/dzeta discretized using upwinded differences: 2 points on one side, 3 points on the other.\n')
+            derivative_option_plus  = 122;
+            derivative_option_minus = 132;
         otherwise
-            error('Invalid preconditioner_zeta')
+            error('Invalid preconditioner_streaming_zeta_derivative_option: %d',preconditioner_streaming_zeta_derivative_option)
     end
+    if call_uniform_diff_matrices
+        quadrature_option = 0;
+        [~, ~, streaming_ddzeta_plus_preconditioner, ~]  = sfincs_uniformDiffMatrices(Nzeta, ...
+            -buffer_zeta_points_on_each_side*Delta_zeta, zetaMax+(buffer_zeta_points_on_each_side-1)*Delta_zeta, derivative_option_plus, quadrature_option);
+        [~, ~, streaming_ddzeta_minus_preconditioner, ~] = sfincs_uniformDiffMatrices(Nzeta, ...
+            -buffer_zeta_points_on_each_side*Delta_zeta, zetaMax+(buffer_zeta_points_on_each_side-1)*Delta_zeta, derivative_option_minus, quadrature_option);
+    end
+    
+    if discretizationParameters.zeta_derivative_option<0
+        fprintf('  But only the diagonal is kept.\n')
+        streaming_ddzeta_plus_preconditioner = diag(diag(streaming_ddzeta_plus_preconditioner));
+        streaming_ddzeta_minus_preconditioner = diag(diag(streaming_ddzeta_minus_preconditioner));
+    end
+    
+    streaming_ddzeta_sum_preconditioner        = 0.5*(streaming_ddzeta_plus_preconditioner+streaming_ddzeta_minus_preconditioner);
+    streaming_ddzeta_difference_preconditioner = 0.5*(streaming_ddzeta_plus_preconditioner-streaming_ddzeta_minus_preconditioner);
+    
+    
+    
+    zetaWeights=ones(size(zeta));
+    zetaWeights(1:buffer_zeta_points_on_each_side)         = 0;
+    zetaWeights(end-buffer_zeta_points_on_each_side+1:end) = 0;
+    zetaWeights = zetaWeights * Delta * geometryParameters.Nperiods;
+    assert(abs(sum(zetaWeights)-2*pi) < 1e-12)
+    
+    zeta_to_impose_DKE = (buffer_zeta_points_on_each_side+1):(Nzeta-buffer_zeta_points_on_each_side);
+
 end
 
 % *************************************************************************

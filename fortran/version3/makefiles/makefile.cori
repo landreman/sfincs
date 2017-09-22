@@ -3,14 +3,11 @@
 # Cori is a system at NERSC (Lawrence Berkeley National Laboratory).
 #
 # You must use the following modules:
-#   module swap PrgEnv-intel PrgEnv-cray
-#   module load cray-petsc cray-netcdf cray-hdf5
-# These options worked on 2015-12-13.
-# There is some problem with HDF5 using the default Intel compiler, hence we
-# swap to the Cray compiler.
+#   module load cray-petsc cray-netcdf-hdf5parallel/4.4.0 cray-hdf5-parallel
+# These options worked on 2017-01-13.
 #
 # Also, to use sfincsPlot and sfincsScanPlot, you need the following modules:
-#   module load python numpy matplotlib h5py
+#   module load python
 # You might want to add the above line to your ~/.bashrc.ext file
 
 # Set command for fortran compiler:
