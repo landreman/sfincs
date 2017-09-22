@@ -924,6 +924,14 @@
           derivative_option_plus  = 120
           derivative_option_minus = 130
           
+       case (1011)
+          if (masterProc) then
+             print *,"d/dxi derivatives discretized using Fromm scheme (upwinding):"
+             print *,"   1 point on one side, 2 points on the other side."
+          end if
+          derivative_option_plus  = 140
+          derivative_option_minus = 150
+
        case default
           if (masterProc) then
              print *,"Error! Invalid setting for xi_derivative_option:",xi_derivative_option
@@ -1018,6 +1026,14 @@
           derivative_option_plus  = 120
           derivative_option_minus = 130
           
+       case (1011)
+          if (masterProc) then
+             print *,"Preconditioner d/dxi derivatives discretized using Fromm scheme (upwinding):"
+             print *,"   1 point on one side, 2 points on the other side."
+          end if
+          derivative_option_plus  = 140
+          derivative_option_minus = 150
+
        case default
           if (masterProc) then
              print *,"Error! Invalid setting for xi_derivative_option:",xi_derivative_option
