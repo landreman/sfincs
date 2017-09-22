@@ -42,6 +42,9 @@
     integer :: status(MPI_STATUS_SIZE)
     logical :: call_uniform_diff_matrices
     integer :: derivative_option_plus, derivative_option_minus, derivative_option, derivative_option_diffusion, quadrature_option
+    real(prec) :: dalpha
+    real(prec), dimension(:), allocatable :: alpha, alpha_dummy, alphaWeights_dummy
+    real(prec), dimension(:,:), allocatable :: ddalpha, ddalpha_extended, d2dalpha2, d2dalpha2_extended, ddalpha_dummy, d2dalpha2_dummy
 
     real(prec) :: nonuniform_xi_a = 0.7, nonuniform_xi_b = 0.3 ! b=1-a
 
@@ -746,6 +749,377 @@
           pitch_angle_scattering_operator(j,:) = (1/two)*(1-xi(j)*xi(j))*d2dxi2(j,:) - xi(j)*ddxi(j,:)
        end do
        pitch_angle_scattering_operator_preconditioner = pitch_angle_scattering_operator
+
+
+!*********************************************************************************************
+!*********************************************************************************************
+!*********************************************************************************************
+!*********************************************************************************************
+!*********************************************************************************************
+! Beginning of new xi grid
+!*********************************************************************************************
+!*********************************************************************************************
+!*********************************************************************************************
+!*********************************************************************************************
+!*********************************************************************************************
+
+    elseif (xi_derivative_option >= 1000 .and. xi_derivative_option < 2000) then
+       ! Uniform grid in alpha, where xi = -cos(alpha), and f is treated as an odd periodic function in alpha with period 2pi.
+       ! Grid points are spaced on the 'half mesh' so there is no point at xi = +/- 1.
+
+       if (preconditioner_xi_derivative_option < 1000 .or. preconditioner_xi_derivative_option >= 2000) &
+            stop "Incompatible xi_derivative_option and xi_derivative_option_preconditioner"
+       if (pitch_angle_scattering_option < 1000 .or. pitch_angle_scattering_option >= 2000) &
+            stop "Incompatible xi_derivative_option and pitch_angle_scattering_option"
+       if (preconditioner_pitch_angle_scattering_option < 1000 .or. preconditioner_pitch_angle_scattering_option >= 2000) &
+            stop "Incompatible xi_derivative_option and preconditioner_pitch_angle_scattering_option"
+
+       ! Initialize the alpha and xi grids:
+       allocate(alpha(Nxi*2))
+       alpha = [( (ixi - one)*pi/Nxi, ixi = 1,2*Nxi )]
+       ! Shift by half a grid point:
+       dalpha = alpha(2) - alpha(1)
+       alpha = alpha + dalpha/2
+       xi = -cos(alpha(1:Nxi))
+       if (masterProc) print *,"alpha:",alpha
+       if (masterProc) print *,"xi:",xi
+
+       ! Initialize shifted Clenshaw-Curtis weights:
+       xiWeights = dalpha*2/pi ! a_0 term
+       do k = 1,(Nxi/2) ! Integer division rounds down.
+          xiWeights = xiWeights + dalpha*2/pi*2/(1-4*k*k)*cos(2*k*alpha(1:Nxi)) ! a_{2k} term
+       end do
+       if (masterProc) print *,"xiWeights:",xiWeights
+
+       ! Do some validation:
+       if (masterProc) print *,"sum(xiWeights):",sum(xiWeights)
+       if (abs(sum(xiWeights)-2) > 1.0e-12) then
+          if (masterProc) then
+             print *,"Error! xiWeights do not sum to 2!"
+             print *,"xiWeights:",xiWeights
+             print *,"Sum is",sum(xiWeights)
+          end if
+          stop
+       end if
+       if (masterProc) print *,"sum(xiWeights*xi):",sum(xiWeights*xi)
+       if (abs(sum(xiWeights*xi)-0) > 1.0e-12) then
+          if (masterProc) then
+             print *,"Error! xiWeights*xi does not sum to 0!"
+             print *,"xi:",xi
+             print *,"xiWeights:",xiWeights
+             print *,"Sum is",sum(xiWeights*xi)
+          end if
+          stop
+       end if
+       if (masterProc) print *,"sum(xiWeights*xi*xi):",sum(xiWeights*xi*xi)
+       if (abs(sum(xiWeights*xi*xi)-two/3) > 1.0e-12) then
+          if (masterProc) then
+             print *,"Error! xiWeights*xi*xi do not sum to 2/3!"
+             print *,"xiWeights:",xiWeights
+             print *,"Sum is",sum(xiWeights)
+          end if
+          stop
+       end if
+
+       allocate(ddalpha(Nxi,Nxi))
+       allocate(ddalpha_extended(Nxi*2, Nxi*2))
+       allocate(d2dalpha2(Nxi,Nxi))
+       allocate(d2dalpha2_extended(Nxi*2, Nxi*2))
+       allocate(alpha_dummy(Nxi*2))
+       allocate(alphaWeights_dummy(Nxi*2))
+       allocate(ddalpha_dummy(Nxi*2, Nxi*2))
+       allocate(d2dalpha2_dummy(Nxi*2, Nxi*2))
+
+       ! *******************************************************************************
+       ! Handle d/dxi for the mirror term and pitch angle scattering in the main matrix.
+       ! *******************************************************************************
+       
+       select case (xi_derivative_option)
+          
+       case (1002)
+          if (masterProc) then
+             print *,"d/dxi derivatives discretized using centered finite differences:"
+             print *,"   1 point on either side."
+          end if
+          derivative_option_plus = 0
+          derivative_option_minus = derivative_option_plus
+          
+       case (1003)
+          if (masterProc) then
+             print *,"d/dxi derivatives discretized using centered finite differences:"
+             print *,"   2 points on either side."
+          end if
+          derivative_option_plus  = 10
+          derivative_option_minus = derivative_option_plus
+          
+       case (1004)
+          if (masterProc) then
+             print *,"d/dxi derivatives discretized using upwinded finite differences:"
+             print *,"   0 points on one side, 1 point on the other side."
+          end if
+          derivative_option_plus  = 30
+          derivative_option_minus = 40
+          
+       case (1005)
+          if (masterProc) then
+             print *,"d/dxi derivatives discretized using upwinded finite differences:"
+             print *,"   0 points on one side, 2 points on the other side."
+          end if
+          derivative_option_plus  = 50
+          derivative_option_minus = 60
+          
+       case (1006)
+          if (masterProc) then
+             print *,"d/dxi derivatives discretized using upwinded finite differences:"
+             print *,"   1 point on one side, 2 points on the other side."
+          end if
+          derivative_option_plus  = 80
+          derivative_option_minus = 90
+          
+       case (1007)
+          if (masterProc) then
+             print *,"d/dxi derivatives discretized using upwinded finite differences:"
+             print *,"   1 point on one side, 3 points on the other side."
+          end if
+          derivative_option_plus  = 100
+          derivative_option_minus = 110
+          
+       case (1008)
+          if (masterProc) then
+             print *,"d/dxi derivatives discretized using upwinded finite differences:"
+             print *,"   2 point on one side, 3 points on the other side."
+          end if
+          derivative_option_plus  = 120
+          derivative_option_minus = 130
+          
+       case default
+          if (masterProc) then
+             print *,"Error! Invalid setting for xi_derivative_option:",xi_derivative_option
+          end if
+          stop
+       end select
+
+       if (masterProc) print *,"   Uniform grid in alpha, using the HALF mesh."
+
+       call uniformDiffMatrices(Nxi*2, zero, 2*pi, derivative_option_plus,  xi_quadrature_option, alpha_dummy, alphaWeights_dummy, ddalpha_extended, d2dalpha2_dummy)
+       ! Evaluate boundary terms by extending the alpha domain beyond [0,pi], using f(-alpha) = f(alpha) and f(pi + alpha0) = f(pi - alpha0):
+       ddalpha = ddalpha_extended(1:Nxi, 1:Nxi) + ddalpha_extended(1:Nxi, (2*Nxi):(Nxi+1):(-1))
+       do ixi = 1,Nxi
+          ddxi_plus(ixi,:) = ddalpha(ixi,:) / sin(alpha(ixi))
+       end do
+
+       call uniformDiffMatrices(Nxi*2, zero, 2*pi, derivative_option_minus, xi_quadrature_option, alpha_dummy, alphaWeights_dummy, ddalpha_extended, d2dalpha2_dummy)
+       ! Evaluate boundary terms by extending the alpha domain beyond [0,pi], using f(-alpha) = f(alpha) and f(pi + alpha0) = f(pi - alpha0):
+       ddalpha = ddalpha_extended(1:Nxi, 1:Nxi) + ddalpha_extended(1:Nxi, (2*Nxi):(Nxi+1):(-1))
+       do ixi = 1,Nxi
+          ddxi_minus(ixi,:) = ddalpha(ixi,:) / sin(alpha(ixi))
+       end do
+
+       ! *******************************************************************************
+       ! Handle d/dxi for the mirror term and pitch angle scattering in the preconditioner matrix.
+       ! *******************************************************************************
+
+       call_uniform_diff_matrices = .true.
+       select case (abs(preconditioner_xi_derivative_option))
+
+       case (1100)
+          if (masterProc) then
+             print *,"d/dxi matrices are the same in the preconditioner."
+          end if
+          ddxi_plus_preconditioner  = ddxi_plus
+          ddxi_minus_preconditioner = ddxi_minus
+          call_uniform_diff_matrices = .false.
+          
+       case (1002)
+          if (masterProc) then
+             print *,"Preconditioner d/dxi derivatives discretized using centered finite differences:"
+             print *,"   1 point on either side."
+          end if
+          derivative_option_plus = 0
+          derivative_option_minus = derivative_option_plus
+          
+       case (1003)
+          if (masterProc) then
+             print *,"Preconditioner d/dxi derivatives discretized using centered finite differences:"
+             print *,"   2 points on either side."
+          end if
+          derivative_option_plus  = 10
+          derivative_option_minus = derivative_option_plus
+          
+       case (1004)
+          if (masterProc) then
+             print *,"Preconditioner d/dxi derivatives discretized using upwinded finite differences:"
+             print *,"   0 points on one side, 1 point on the other side."
+          end if
+          derivative_option_plus  = 30
+          derivative_option_minus = 40
+          
+       case (1005)
+          if (masterProc) then
+             print *,"Preconditioner d/dxi derivatives discretized using upwinded finite differences:"
+             print *,"   0 points on one side, 2 points on the other side."
+          end if
+          derivative_option_plus  = 50
+          derivative_option_minus = 60
+          
+       case (1006)
+          if (masterProc) then
+             print *,"Preconditioner d/dxi derivatives discretized using upwinded finite differences:"
+             print *,"   1 point on one side, 2 points on the other side."
+          end if
+          derivative_option_plus  = 80
+          derivative_option_minus = 90
+          
+       case (1007)
+          if (masterProc) then
+             print *,"Preconditioner d/dxi derivatives discretized using upwinded finite differences:"
+             print *,"   1 point on one side, 3 points on the other side."
+          end if
+          derivative_option_plus  = 100
+          derivative_option_minus = 110
+          
+       case (1008)
+          if (masterProc) then
+             print *,"Preconditioner d/dxi derivatives discretized using upwinded finite differences:"
+             print *,"   2 point on one side, 3 points on the other side."
+          end if
+          derivative_option_plus  = 120
+          derivative_option_minus = 130
+          
+       case default
+          if (masterProc) then
+             print *,"Error! Invalid setting for xi_derivative_option:",xi_derivative_option
+          end if
+          stop
+       end select
+       
+       if (masterProc) print *,"   Uniform grid in alpha, using the HALF mesh."
+
+       if (call_uniform_diff_matrices) then
+          call uniformDiffMatrices(Nxi*2, zero, 2*pi, derivative_option_plus,  xi_quadrature_option, alpha_dummy, alphaWeights_dummy, ddalpha_extended, d2dalpha2_dummy)
+          ! Evaluate boundary terms by extending the alpha domain beyond [0,pi], using f(-alpha) = f(alpha) and f(pi + alpha0) = f(pi - alpha0):
+          ddalpha = ddalpha_extended(1:Nxi, 1:Nxi) + ddalpha_extended(1:Nxi, (2*Nxi):(Nxi+1):(-1))
+          do ixi = 1,Nxi
+             ddxi_plus_preconditioner(ixi,:) = ddalpha(ixi,:) / sin(alpha(ixi))
+          end do
+
+          call uniformDiffMatrices(Nxi*2, zero, 2*pi, derivative_option_minus, xi_quadrature_option, alpha_dummy, alphaWeights_dummy, ddalpha_extended, d2dalpha2_dummy)
+          ! Evaluate boundary terms by extending the alpha domain beyond [0,pi], using f(-alpha) = f(alpha) and f(pi + alpha0) = f(pi - alpha0):
+          ddalpha = ddalpha_extended(1:Nxi, 1:Nxi) + ddalpha_extended(1:Nxi, (2*Nxi):(Nxi+1):(-1))
+          do ixi = 1,Nxi
+             ddxi_minus_preconditioner(ixi,:) = ddalpha(ixi,:) / sin(alpha(ixi))
+          end do
+       end if
+
+
+       ! *******************************************************************************
+       ! Handle d^2/dxi^2 for the pitch angle scattering operator in the main matrix.
+       ! *******************************************************************************
+
+       select case (pitch_angle_scattering_option)
+          
+       case (1002)
+          if (masterProc) then
+             print *,"Pitch angle scattering operator discretized using centered finite differences:"
+             print *,"   1 point on either side."
+          end if
+          derivative_option_diffusion = 0
+          
+       case (1003)
+          if (masterProc) then
+             print *,"Pitch angle scattering operator discretized using centered finite differences:"
+             print *,"   2 points on either side."
+          end if
+          derivative_option_diffusion = 10
+          
+       case default
+          if (masterProc) then
+             print *,"Error! Invalid setting for pitch_angle_scattering_option:",pitch_angle_scattering_option
+          end if
+          stop
+       end select
+       
+       if (masterProc) print *,"   Uniform grid in alpha, using the HALF mesh."
+
+       call uniformDiffMatrices(Nxi*2, zero, 2*pi, derivative_option_diffusion,  xi_quadrature_option, alpha_dummy, alphaWeights_dummy, ddalpha_dummy, d2dalpha2_extended)
+       ! Evaluate boundary terms by extending the alpha domain beyond [0,pi], using f(-alpha) = f(alpha) and f(pi + alpha0) = f(pi - alpha0):
+       d2dalpha2 = d2dalpha2_extended(1:Nxi, 1:Nxi) + d2dalpha2_extended(1:Nxi, (2*Nxi):(Nxi+1):(-1))
+
+       ! Now use the fact that pitch_angle_scattering = (1/2)*(d2f/dalpha2) - (xi/2)*(df/dxi)
+       do j = 1,Nxi
+          if (xi(j)>0) then
+             pitch_angle_scattering_operator(j,:) = d2dalpha2(j,:)/two - (xi(j)/2)*ddxi_plus(j,:)
+          else
+             pitch_angle_scattering_operator(j,:) = d2dalpha2(j,:)/two - (xi(j)/2)*ddxi_minus(j,:)
+          end if
+       end do
+
+       ! *******************************************************************************
+       ! Handle d^2/dxi^2 for the pitch angle scattering operator in the preconditioner matrix.
+       ! *******************************************************************************
+       
+       call_uniform_diff_matrices = .true.
+       select case (abs(preconditioner_pitch_angle_scattering_option))
+
+       case (1100)
+          if (masterProc) then
+             print *,"Pitch angle scattering operator is the same in the preconditioner."
+          end if
+          ! d2dalpha2 will be carried over from the previous section then.
+          call_uniform_diff_matrices = .false.
+          
+       case (1002)
+          if (masterProc) then
+             print *,"Preconditioner pitch angle scattering operator is discretized using centered finite differences:"
+             print *,"   1 point on either side."
+          end if
+          derivative_option_diffusion = 0
+          
+       case (1003)
+          if (masterProc) then
+             print *,"Preconditioner pitch angle scattering operator is discretized using centered finite differences:"
+             print *,"   2 points on either side."
+          end if
+          derivative_option_diffusion = 10
+          
+       case default
+          if (masterProc) then
+             print *,"Error! Invalid setting for preconditioner_pitch_angle_scattering_option:",preconditioner_pitch_angle_scattering_option
+          end if
+          stop
+       end select
+
+       if (masterProc) print *,"   Uniform grid in alpha, using the HALF mesh."
+
+       if (call_uniform_diff_matrices) then
+          call uniformDiffMatrices(Nxi*2, zero, 2*pi, derivative_option_diffusion,  xi_quadrature_option, alpha_dummy, alphaWeights_dummy, ddalpha_dummy, d2dalpha2_extended)
+          ! Evaluate boundary terms by extending the alpha domain beyond [0,pi], using f(-alpha) = f(alpha) and f(pi + alpha0) = f(pi - alpha0):
+          d2dalpha2 = d2dalpha2_extended(1:Nxi, 1:Nxi) + d2dalpha2_extended(1:Nxi, (2*Nxi):(Nxi+1):(-1))
+       end if
+       ! Now use the fact that pitch_angle_scattering = (1/2)*(d2f/dalpha2) - (xi/2)*(df/dxi)
+       do j = 1,Nxi
+          if (xi(j)>0) then
+             pitch_angle_scattering_operator_preconditioner(j,:) = d2dalpha2(j,:)/two - (xi(j)/2)*ddxi_plus_preconditioner(j,:)
+          else
+             pitch_angle_scattering_operator_preconditioner(j,:) = d2dalpha2(j,:)/two - (xi(j)/2)*ddxi_minus_preconditioner(j,:)
+          end if
+       end do
+ 
+
+       deallocate(alpha_dummy, alphaWeights_dummy, ddalpha_dummy, d2dalpha2_dummy)
+       deallocate(alpha, ddalpha, ddalpha_extended, d2dalpha2, d2dalpha2_extended)
+
+!*********************************************************************************************
+!*********************************************************************************************
+!*********************************************************************************************
+!*********************************************************************************************
+!*********************************************************************************************
+! End of new xi grid
+!*********************************************************************************************
+!*********************************************************************************************
+!*********************************************************************************************
+!*********************************************************************************************
+!*********************************************************************************************
 
     else
 
@@ -2067,6 +2441,36 @@
           print "(*(f5.2))",spatial_scaling(itheta,:)
        end do
     end if
+
+    allocate(xi_scaling(Nxi))
+    select case (xi_scaling_option)
+    case (0)
+       xi_scaling = 1
+    case (1)
+       xi_scaling = sqrt(1 - xi*xi)
+       ! Set end points exactly in case the line above yields a tiny nonzero value due to roundoff error.
+       !xi_scaling(1) = 0
+       !xi_scaling(Nxi) = 0
+    case default
+       if (masterProc) print *,"Error! Invalid setting for xi_scaling_option:",xi_scaling_option
+       stop
+    end select
+    if (masterProc) print *,"xi_scaling:",xi_scaling
+
+    do ixi = 1,Nxi
+       pitch_angle_scattering_operator(ixi,:) = xi_scaling(ixi) * pitch_angle_scattering_operator(ixi,:)
+       pitch_angle_scattering_operator_preconditioner(ixi,:) = xi_scaling(ixi) * pitch_angle_scattering_operator_preconditioner(ixi,:)
+       do j = 1,NL
+          Legendre_projection(ixi,:,j) = xi_scaling(ixi) * Legendre_projection(ixi,:,j)
+       end do
+    end do
+!!$    if (xi_scaling_option==1) then
+!!$       ! Fix up the first and last rows of pitch_angle_scattering_operator.
+!!$       ! Recall pitch angle scattering is defined as xi_scaling * (1/2) d/dxi [(1-xi^2) df/dxi] = xi_scaling * (1/2)(1/sin(alpha)) d/dalpha [sin(alpha) df/dalpha]
+!!$       ! so at the boundaries, if xi_scaling = sin(alpha), then pitch angle scattering = (1/2) cos(alpha) df/dalpha.
+!!$       pitch_angle_scattering_operator(  1,:) = -(1/two) * ddalpha_plus(   1,:)
+!!$       pitch_angle_scattering_operator(Nxi,:) =  (1/two) * ddalpha_minus(Nxi,:)
+!!$    end if
 
     ! *********************************************************
     ! Compute Rosenbluth potential response matrices

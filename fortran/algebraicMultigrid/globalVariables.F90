@@ -187,6 +187,7 @@ module globalVariables
   integer :: Nxi_for_x_option = 0
   integer :: f_scaling_option = 1
   integer :: x_scaling_option = 1
+  integer :: xi_scaling_option = 0
   integer :: spatial_scaling_option = 4 ! 3 also works well
   integer :: constraint_scaling_option = 2
   logical :: fieldsplit = .false.
@@ -225,6 +226,7 @@ module globalVariables
   integer, parameter :: COORDINATE_SYSTEM_VMEC = 2
   integer :: coordinateSystem = COORDINATE_SYSTEM_UNINITIALIZED
 
+  real(prec), dimension(:), allocatable :: xi_scaling
   real(prec), dimension(:,:), allocatable :: BHat, dBHatdtheta, dBHatdzeta, dBHatdpsiHat, sqrt_g, spatial_scaling, x_scaling, f_scaling
   real(prec), dimension(:,:), allocatable :: BHat_sub_psi, dBHat_sub_psi_dtheta, dBHat_sub_psi_dzeta
   real(prec), dimension(:,:), allocatable :: BHat_sub_theta, dBHat_sub_theta_dzeta, dBHat_sub_theta_dpsiHat

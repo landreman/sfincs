@@ -234,7 +234,7 @@
                       case (2)
                          factor = factor - BHat_sub_theta(itheta,izeta_row)/(sqrt_g(itheta,izeta_row)*FSABHat2)*dPhiHatdpsiHat
                       end select
-                      factor = factor * spatial_scaling(itheta,izeta_row) * x_scaling(ix,ispecies)
+                      factor = factor * spatial_scaling(itheta,izeta_row) * x_scaling(ix,ispecies) * xi_scaling(ixi)
 
                       if (whichMatrix>0) then
                          ! Not preconditioner
@@ -285,7 +285,7 @@
                       case (2)
                          factor = factor + BHat_sub_zeta(itheta_row,izeta)/(sqrt_g(itheta_row,izeta)*FSABHat2)*dPhiHatdpsiHat
                       end select
-                      factor = factor * spatial_scaling(itheta_row,izeta) * x_scaling(ix,ispecies)
+                      factor = factor * spatial_scaling(itheta_row,izeta) * x_scaling(ix,ispecies) * xi_scaling(ixi)
 
                       if (whichMatrix>0) then
                          ! Not preconditioner
@@ -335,7 +335,7 @@
                          factor = factor + xi(ixi_row)*(1-xi(ixi_row)*xi(ixi_row))/(2*sqrt_g(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)) &
                               * (BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))*dPhiHatdpsiHat
                       end if
-                      factor = factor * spatial_scaling(itheta,izeta) * x_scaling(ix,ispecies)
+                      factor = factor * spatial_scaling(itheta,izeta) * x_scaling(ix,ispecies) * xi_scaling(ixi_row)
 
                       if (whichMatrix>0) then
                          ! Not preconditioner
@@ -379,7 +379,7 @@
                      * (BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))
                 do ix_row = 1,Nx
                    do ixi = 1,Nxi
-                      factor = spatial_factor * x_scaling(ix_row,ispecies) / f_scaling(ix_row,ispecies) &
+                      factor = spatial_factor * x_scaling(ix_row,ispecies) * xi_scaling(ixi) / f_scaling(ix_row,ispecies) &
                            * x(ix_row) * (1 + xi(ixi)*xi(ixi))
                       if (whichMatrix>0) then
                          ! Not preconditioner
@@ -1041,7 +1041,7 @@
                       ! Add energy scattering, plus the part of the field term that does not depend on the Rosenbluth potentials:
                       ! (These terms are diagonal in xi.)
                       do ixi = 1,Nxi
-                         collision_operator_xi_block(ixi,ixi) = collision_operator_xi_block(ixi,ixi) + CECD(iSpeciesA,iSpeciesB,ix_row,ix_col)
+                         collision_operator_xi_block(ixi,ixi) = collision_operator_xi_block(ixi,ixi) + CECD(iSpeciesA,iSpeciesB,ix_row,ix_col) * xi_scaling(ixi)
                       end do
 
                       if (whichMatrix==0 .or. preconditioner_field_term_xi_option==0) then
@@ -1049,7 +1049,8 @@
                          do L = 0,NL-1
                             ! Add the terms in the field part involving the Rosenbluth potentials:
                             ! (These terms are generally dense in xi.)
-                            collision_operator_xi_block = collision_operator_xi_block + Legendre_projection_to_use(:,:,L+1) * RosenbluthPotentialTerms(iSpeciesA,iSpeciesB,L+1,ix_row,ix_col)
+                            collision_operator_xi_block = collision_operator_xi_block &
+                                 + Legendre_projection_to_use(:,:,L+1) * RosenbluthPotentialTerms(iSpeciesA,iSpeciesB,L+1,ix_row,ix_col)
                          end do
                       end if
 

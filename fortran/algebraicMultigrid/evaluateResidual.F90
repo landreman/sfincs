@@ -138,7 +138,7 @@
                 
                 do ixi = 1,Nxi_for_x(ix)
                    index = getIndex(ispecies, ix, ixi, itheta, izeta, BLOCK_F)
-                   scalar = (1+xi(ixi)*xi(ixi))*factor
+                   scalar = (1+xi(ixi)*xi(ixi)) * factor * xi_scaling(ixi)
                    call VecSetValue(inhomogeneous_terms, index, scalar, ADD_VALUES, ierr)
                 end do
              end do
@@ -222,7 +222,7 @@
                      * spatial_scaling(itheta,izeta) * x_scaling(ix,ispecies) / f_scaling(ix,ispecies)
                 do ixi = 1,Nxi
                    index = getIndex(ispecies, ix, ixi, itheta, izeta, BLOCK_F)
-                   scalar = factor * xi(ixi)
+                   scalar = factor * xi(ixi) * xi_scaling(ixi)
                    call VecSetValue(inhomogeneous_terms, index, scalar, ADD_VALUES, ierr)
                 end do
              end do
