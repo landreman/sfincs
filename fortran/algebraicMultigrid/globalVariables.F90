@@ -195,6 +195,7 @@ module globalVariables
   integer :: null_space_option=0
   PetscReal :: gamg_threshold = 0.2
   real(prec) :: preconditioner_collision_multiplier = 1
+  real(prec) :: krook = 0
 
   ! ********************************************************
   !
