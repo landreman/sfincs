@@ -143,6 +143,8 @@ elif scanVariable == "xmax":
 elif scanVariable == "solvertolerance":
     print resolutionWarning
     mustBeInteger = False
+elif scanVariable == "upwinding_factor":
+    mustBeInteger = False
 elif scanVariable == "theta_upwinding_factor":
     mustBeInteger = False
 elif scanVariable == "zeta_upwinding_factor":
@@ -179,6 +181,14 @@ elif scanVariable == "preconditioner_zeta":
 elif scanVariable == "preconditioner_zeta_min_l":
     mustBeInteger = True
 elif scanVariable == "preconditioner_xi":
+    mustBeInteger = True
+elif scanVariable == "constraint_scaling_option":
+    mustBeInteger = True
+elif scanVariable == "spatial_scaling_option":
+    mustBeInteger = True
+elif scanVariable == "x_scaling_option":
+    mustBeInteger = True
+elif scanVariable == "xi_scaling_option":
     mustBeInteger = True
 elif scanVariable == "export_f_theta_option":
     print warningText

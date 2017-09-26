@@ -147,6 +147,7 @@ module globalVariables
   integer :: xi_quadrature_option = 3
   real(prec) :: theta_upwinding_factor = 0.2
   real(prec) :: zeta_upwinding_factor = 0.0
+  real(prec) :: upwinding_factor = 0.0
 
   !integer :: xDotDerivativeScheme = 0
 
