@@ -64,7 +64,7 @@ contains
          xi_derivative_option, pitch_angle_scattering_option, &
          xi_quadrature_option, xGridScheme, whichParallelSolverToFactorPreconditioner, &
          PETSCPreallocationStrategy, xPotentialsGridScheme, xGrid_k,  &
-         Nxi_for_x_option, theta_upwinding_factor, zeta_upwinding_factor, &
+         Nxi_for_x_option, theta_upwinding_factor, zeta_upwinding_factor, upwinding_factor, &
          null_space_option, spatial_scaling_option, constraint_scaling_option, xi_scaling_option, &
          x_scaling_option, f_scaling_option, fieldsplit_parallelization_option
 

@@ -30,7 +30,7 @@
     real(prec), dimension(:,:), allocatable :: ddx_subset, d2dx2_subset
     real(prec) :: temp, Delta_zeta, v_s
     real(prec), dimension(:), allocatable :: xi_to_Legendre, temp_array
-    real(prec), dimension(:,:), allocatable :: d2dy2, ddy, ddy_plus, ddy_minus, d2dy2_dummy, ddy_dummy
+    real(prec), dimension(:,:), allocatable :: d2dy2, ddy, ddy_plus, ddy_minus, d2dy2_dummy, ddy_dummy, temp_matrix
     real(prec), dimension(:), allocatable :: y, y_dummy, yWeights_dummy, yWeights, dxi_dy, d2xi_dy2
     real(prec) :: temp_plus, temp_minus, factor
 
@@ -212,6 +212,7 @@
 
     allocate(theta(Ntheta))
     allocate(thetaWeights(Ntheta))
+    allocate(temp_matrix(Ntheta,Ntheta))
     allocate(ddtheta_plus(Ntheta,Ntheta))
     allocate(ddtheta_minus(Ntheta,Ntheta))
     allocate(ddtheta_plus_preconditioner(Ntheta,Ntheta))
@@ -315,6 +316,20 @@
        call uniformDiffMatrices(Ntheta, zero, two*pi, derivative_option_minus, quadrature_option, theta, thetaWeights, ddtheta_minus, d2dtheta2)
        ddtheta_plus  = (1-theta_upwinding_factor) * ddtheta_plus  + theta_upwinding_factor * ddtheta_plus_preconditioner
        ddtheta_minus = (1-theta_upwinding_factor) * ddtheta_minus + theta_upwinding_factor * ddtheta_minus_preconditioner
+
+    case (12)
+       if (masterProc) then
+          print *,"d/dtheta derivatives discretized using 3rd order upwinded finite differences:"
+          print *,"   2 points on either side."
+          print *,"   upwinding factor:",upwinding_factor
+       end if
+
+       call_uniform_diff_matrices = .false.
+       quadrature_option = 0
+       derivative_option_plus  = 160
+       call uniformDiffMatrices(Ntheta, zero, two*pi, derivative_option_plus,  quadrature_option, theta, thetaWeights, temp_matrix,  d2dtheta2)
+       ddtheta_plus  = temp_matrix + upwinding_factor * d2dtheta2
+       ddtheta_minus = temp_matrix - upwinding_factor * d2dtheta2
 
     case default
        if (masterProc) then
@@ -422,6 +437,20 @@
        derivative_option_plus  = 140
        derivative_option_minus = 150
 
+    case (12)
+       if (masterProc) then
+          print *,"d/dtheta derivatives discretized using 3rd order upwinded finite differences:"
+          print *,"   2 points on either side."
+          print *,"   upwinding factor:",upwinding_factor
+       end if
+
+       call_uniform_diff_matrices = .false.
+       quadrature_option = 0
+       derivative_option_plus  = 160
+       call uniformDiffMatrices(Ntheta, zero, two*pi, derivative_option_plus,  quadrature_option, theta, thetaWeights, temp_matrix,  d2dtheta2)
+       ddtheta_plus_preconditioner  = temp_matrix + upwinding_factor * d2dtheta2
+       ddtheta_minus_preconditioner = temp_matrix - upwinding_factor * d2dtheta2
+
     case default
        if (masterProc) then
           print *,"Error! Invalid setting for preconditioner_theta_derivative_option:",preconditioner_theta_derivative_option
@@ -459,7 +488,7 @@
 
 
     ! The following arrays will not be needed:
-    deallocate(d2dtheta2)
+    deallocate(d2dtheta2, temp_matrix)
 
 
     ! *******************************************************************************
@@ -474,6 +503,7 @@
 
     allocate(zeta(Nzeta))
     allocate(zetaWeights(Nzeta))
+    allocate(temp_matrix(Nzeta,Nzeta))
     allocate(ddzeta_plus(Nzeta,Nzeta))
     allocate(ddzeta_minus(Nzeta,Nzeta))
     allocate(ddzeta_plus_preconditioner(Nzeta,Nzeta))
@@ -587,6 +617,20 @@
           ddzeta_plus  = (1-zeta_upwinding_factor) * ddzeta_plus  + zeta_upwinding_factor * ddzeta_plus_preconditioner
           ddzeta_minus = (1-zeta_upwinding_factor) * ddzeta_minus + zeta_upwinding_factor * ddzeta_minus_preconditioner
 
+       case (12)
+          if (masterProc) then
+             print *,"d/dzeta derivatives discretized using 3rd order upwinded finite differences:"
+             print *,"   2 points on either side."
+             print *,"   upwinding factor:",upwinding_factor
+          end if
+          
+          call_uniform_diff_matrices = .false.
+          quadrature_option = 0
+          derivative_option_plus  = 160
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, derivative_option_plus,  quadrature_option, zeta, zetaWeights, temp_matrix,  d2dzeta2)
+          ddzeta_plus  = temp_matrix + upwinding_factor * d2dzeta2
+          ddzeta_minus = temp_matrix - upwinding_factor * d2dzeta2
+
        case default
           if (masterProc) then
              print *,"Error! Invalid setting for zeta_derivative_option:",zeta_derivative_option
@@ -686,6 +730,20 @@
           derivative_option_plus  = 140
           derivative_option_minus = 150
 
+       case (12)
+          if (masterProc) then
+             print *,"Preconditioner d/dzeta derivatives discretized using 3rd order upwinded finite differences:"
+             print *,"   2 points on either side."
+             print *,"   upwinding factor:",upwinding_factor
+          end if
+          
+          call_uniform_diff_matrices = .false.
+          quadrature_option = 0
+          derivative_option_plus  = 160
+          call uniformDiffMatrices(Nzeta, zero, zetaMax, derivative_option_plus,  quadrature_option, zeta, zetaWeights, temp_matrix,  d2dzeta2)
+          ddzeta_plus_preconditioner  = temp_matrix + upwinding_factor * d2dzeta2
+          ddzeta_minus_preconditioner = temp_matrix - upwinding_factor * d2dzeta2
+
        case default
           if (masterProc) then
              print *,"Error! Invalid setting for zeta_derivative_option:",zeta_derivative_option
@@ -727,7 +785,7 @@
     end if
 
     ! The following arrays will not be needed:
-    deallocate(d2dzeta2)
+    deallocate(d2dzeta2, temp_matrix)
 
     ! *******************************************************************************
     ! *******************************************************************************
@@ -739,6 +797,7 @@
 
     allocate(xi(Nxi))
     allocate(xiWeights(Nxi))
+    allocate(temp_matrix(Nxi,Nxi))
     allocate(ddxi_plus(Nxi,Nxi))
     allocate(ddxi_minus(Nxi,Nxi))
     allocate(ddxi_plus_preconditioner(Nxi,Nxi))
@@ -865,7 +924,8 @@
        ! *******************************************************************************
        ! Handle d/dxi for the mirror term and pitch angle scattering in the main matrix.
        ! *******************************************************************************
-       
+
+       call_uniform_diff_matrices = .true.
        select case (xi_derivative_option)
           
        case (1002)
@@ -932,6 +992,29 @@
           derivative_option_plus  = 140
           derivative_option_minus = 150
 
+       case (1012)
+          if (masterProc) then
+             print *,"d/dxi derivatives discretized using 3rd order upwinded finite differences:"
+             print *,"   2 points on either side."
+             print *,"   upwinding factor:",upwinding_factor
+          end if
+          
+          call_uniform_diff_matrices = .false.
+          quadrature_option = 0
+          derivative_option_plus  = 160
+          call uniformDiffMatrices(Nxi*2, zero, two*pi, derivative_option_plus,  quadrature_option, alpha_dummy, alphaWeights_dummy, ddalpha_dummy,  d2dalpha2_dummy)
+          ddalpha_extended = ddalpha_dummy + upwinding_factor * d2dalpha2_dummy
+          ddalpha = ddalpha_extended(1:Nxi, 1:Nxi) + ddalpha_extended(1:Nxi, (2*Nxi):(Nxi+1):(-1))
+          do ixi = 1,Nxi
+             ddxi_plus(ixi,:) = ddalpha(ixi,:) / sin(alpha(ixi))
+          end do
+
+          ddalpha_extended = ddalpha_dummy - upwinding_factor * d2dalpha2_dummy
+          ddalpha = ddalpha_extended(1:Nxi, 1:Nxi) + ddalpha_extended(1:Nxi, (2*Nxi):(Nxi+1):(-1))
+          do ixi = 1,Nxi
+             ddxi_minus(ixi,:) = ddalpha(ixi,:) / sin(alpha(ixi))
+          end do
+
        case default
           if (masterProc) then
              print *,"Error! Invalid setting for xi_derivative_option:",xi_derivative_option
@@ -941,19 +1024,21 @@
 
        if (masterProc) print *,"   Uniform grid in alpha, using the HALF mesh."
 
-       call uniformDiffMatrices(Nxi*2, zero, 2*pi, derivative_option_plus,  xi_quadrature_option, alpha_dummy, alphaWeights_dummy, ddalpha_extended, d2dalpha2_dummy)
-       ! Evaluate boundary terms by extending the alpha domain beyond [0,pi], using f(-alpha) = f(alpha) and f(pi + alpha0) = f(pi - alpha0):
-       ddalpha = ddalpha_extended(1:Nxi, 1:Nxi) + ddalpha_extended(1:Nxi, (2*Nxi):(Nxi+1):(-1))
-       do ixi = 1,Nxi
-          ddxi_plus(ixi,:) = ddalpha(ixi,:) / sin(alpha(ixi))
-       end do
-
-       call uniformDiffMatrices(Nxi*2, zero, 2*pi, derivative_option_minus, xi_quadrature_option, alpha_dummy, alphaWeights_dummy, ddalpha_extended, d2dalpha2_dummy)
-       ! Evaluate boundary terms by extending the alpha domain beyond [0,pi], using f(-alpha) = f(alpha) and f(pi + alpha0) = f(pi - alpha0):
-       ddalpha = ddalpha_extended(1:Nxi, 1:Nxi) + ddalpha_extended(1:Nxi, (2*Nxi):(Nxi+1):(-1))
-       do ixi = 1,Nxi
-          ddxi_minus(ixi,:) = ddalpha(ixi,:) / sin(alpha(ixi))
-       end do
+       if (call_uniform_diff_matrices) then
+          call uniformDiffMatrices(Nxi*2, zero, 2*pi, derivative_option_plus,  xi_quadrature_option, alpha_dummy, alphaWeights_dummy, ddalpha_extended, d2dalpha2_dummy)
+          ! Evaluate boundary terms by extending the alpha domain beyond [0,pi], using f(-alpha) = f(alpha) and f(pi + alpha0) = f(pi - alpha0):
+          ddalpha = ddalpha_extended(1:Nxi, 1:Nxi) + ddalpha_extended(1:Nxi, (2*Nxi):(Nxi+1):(-1))
+          do ixi = 1,Nxi
+             ddxi_plus(ixi,:) = ddalpha(ixi,:) / sin(alpha(ixi))
+          end do
+          
+          call uniformDiffMatrices(Nxi*2, zero, 2*pi, derivative_option_minus, xi_quadrature_option, alpha_dummy, alphaWeights_dummy, ddalpha_extended, d2dalpha2_dummy)
+          ! Evaluate boundary terms by extending the alpha domain beyond [0,pi], using f(-alpha) = f(alpha) and f(pi + alpha0) = f(pi - alpha0):
+          ddalpha = ddalpha_extended(1:Nxi, 1:Nxi) + ddalpha_extended(1:Nxi, (2*Nxi):(Nxi+1):(-1))
+          do ixi = 1,Nxi
+             ddxi_minus(ixi,:) = ddalpha(ixi,:) / sin(alpha(ixi))
+          end do
+       end if
 
        ! *******************************************************************************
        ! Handle d/dxi for the mirror term and pitch angle scattering in the preconditioner matrix.
@@ -1034,9 +1119,32 @@
           derivative_option_plus  = 140
           derivative_option_minus = 150
 
+       case (1012)
+          if (masterProc) then
+             print *,"Preconditioner d/dxi derivatives discretized using 3rd order upwinded finite differences:"
+             print *,"   2 points on either side."
+             print *,"   upwinding factor:",upwinding_factor
+          end if
+          
+          call_uniform_diff_matrices = .false.
+          quadrature_option = 0
+          derivative_option_plus  = 160
+          call uniformDiffMatrices(Nxi*2, zero, two*pi, derivative_option_plus,  quadrature_option, alpha_dummy, alphaWeights_dummy, ddalpha_dummy,  d2dalpha2_dummy)
+          ddalpha_extended = ddalpha_dummy + upwinding_factor * d2dalpha2_dummy
+          ddalpha = ddalpha_extended(1:Nxi, 1:Nxi) + ddalpha_extended(1:Nxi, (2*Nxi):(Nxi+1):(-1))
+          do ixi = 1,Nxi
+             ddxi_plus_preconditioner(ixi,:) = ddalpha(ixi,:) / sin(alpha(ixi))
+          end do
+
+          ddalpha_extended = ddalpha_dummy - upwinding_factor * d2dalpha2_dummy
+          ddalpha = ddalpha_extended(1:Nxi, 1:Nxi) + ddalpha_extended(1:Nxi, (2*Nxi):(Nxi+1):(-1))
+          do ixi = 1,Nxi
+             ddxi_minus_preconditioner(ixi,:) = ddalpha(ixi,:) / sin(alpha(ixi))
+          end do
+
        case default
           if (masterProc) then
-             print *,"Error! Invalid setting for xi_derivative_option:",xi_derivative_option
+             print *,"Error! Invalid setting for preconditioner_xi_derivative_option:",preconditioner_xi_derivative_option
           end if
           stop
        end select
@@ -1637,7 +1745,7 @@
           
        case default
           if (masterProc) then
-             print *,"Error! Invalid setting for xi_derivative_option:",xi_derivative_option
+             print *,"Error! Invalid setting for preconditioner_xi_derivative_option:",preconditioner_xi_derivative_option
           end if
           stop
        end select
@@ -1681,7 +1789,7 @@
     end if
 
     ! The following arrays will not be needed:
-    deallocate(d2dxi2,ddxi)
+    deallocate(d2dxi2,ddxi,temp_matrix)
     deallocate(d2dy2,d2dy2_dummy,ddy,y_dummy,yWeights_dummy,yWeights,ddy_plus,ddy_minus,ddy_dummy,y)
 
     if (masterProc) then
