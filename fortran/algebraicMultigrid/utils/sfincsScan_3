@@ -163,6 +163,10 @@ elif scanVariable == "magneticdriftderivativescheme":
     mustBeInteger = True
 elif scanVariable == "whichparallelsolvertofactorpreconditioner":
     mustBeInteger = True
+elif scanVariable == "gamg_threshold":
+    mustBeInteger = False
+elif scanVariable == "boomeramg_threshold":
+    mustBeInteger = False
 elif scanVariable == "petscpreallocationstrategy":
     print warningText
     mustBeInteger = True

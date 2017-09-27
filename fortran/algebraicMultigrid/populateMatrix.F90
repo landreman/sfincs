@@ -1249,10 +1249,10 @@
                          rowIndex = getIndex(ispecies, ix, ixi, itheta, izeta, BLOCK_F)
                          
                          colIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)
-                         call MatSetValueSparse(matrix, rowIndex, colIndex, factor*xPartOfSource1, ADD_VALUES, ierr)
+                         call MatSetValueSparse(matrix, rowIndex, colIndex, factor*xPartOfSource1 * xi_scaling(ixi), ADD_VALUES, ierr)
                          
                          colIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)
-                         call MatSetValueSparse(matrix, rowIndex, colIndex, factor*xPartOfSource2, ADD_VALUES, ierr)
+                         call MatSetValueSparse(matrix, rowIndex, colIndex, factor*xPartOfSource2 * xi_scaling(ixi), ADD_VALUES, ierr)
                       end do
                    end do
                 end do
@@ -1270,7 +1270,7 @@
                       do ixi = 1,Nxi_for_x(ix)
                          rowIndex = getIndex(ispecies, ix, ixi, itheta, izeta, BLOCK_F)
                          colIndex = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)
-                         call MatSetValue(matrix, rowIndex, colIndex, scalar, ADD_VALUES, ierr)
+                         call MatSetValue(matrix, rowIndex, colIndex, scalar * xi_scaling(ixi), ADD_VALUES, ierr)
                       end do
                    end do
                 end do

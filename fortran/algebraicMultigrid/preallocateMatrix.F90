@@ -12,7 +12,8 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   use globalVariables, only: Nx, Nxi, Ntheta, Nzeta, Nspecies, matrixSize, includePhi1, &
        constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, & 
        includePhi1InKineticEquation, quasineutralityOption, collisionOperator, &
-       ddtheta_plus, ddtheta_minus, ddzeta_plus, ddzeta_minus, ddxi_plus, ddxi_minus, pitch_angle_scattering_operator, &
+       ddtheta_plus, ddtheta_plus_preconditioner, ddzeta_plus, ddzeta_plus_preconditioner, &
+       ddxi_plus, ddxi_plus_preconditioner, pitch_angle_scattering_operator, pitch_angle_scattering_operator_preconditioner, &
        preconditioner_field_term_xi_option
   use indices
 
@@ -67,10 +68,10 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   tempInt1 = 2 & ! particle and heat sources
        + Nx ! xdot
   ! Below, the 1 is subtracted because we already counted the diagonal, above.
-  tempInt1 = tempInt1 + max(max_nnz_per_row(Ntheta,ddtheta_plus), max_nnz_per_row(Ntheta,ddtheta_minus)) - 1
-  tempInt1 = tempInt1 + max(max_nnz_per_row(Nzeta,ddzeta_plus), max_nnz_per_row(Nzeta,ddzeta_minus)) - 1
+  tempInt1 = tempInt1 + max(max_nnz_per_row(Ntheta,ddtheta_plus), max_nnz_per_row(Ntheta,ddtheta_plus_preconditioner)) - 1
+  tempInt1 = tempInt1 + max(max_nnz_per_row(Nzeta,ddzeta_plus), max_nnz_per_row(Nzeta,ddzeta_plus_preconditioner)) - 1
   tempInt1 = tempInt1 + max(max_nnz_per_row(Nxi,ddxi_plus+100*pitch_angle_scattering_operator), &
-       max_nnz_per_row(Nxi,ddxi_minus+100*pitch_angle_scattering_operator)) - 1
+       max_nnz_per_row(Nxi,ddxi_plus_preconditioner+100*pitch_angle_scattering_operator_preconditioner)) - 1
   ! I need to add the nonzeros for the Fokker-Planck operator.
   if (masterProc) then
      print *,"nnz per row for ddtheta_plus:",max_nnz_per_row(Ntheta,ddtheta_plus)

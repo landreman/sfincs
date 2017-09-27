@@ -116,6 +116,9 @@ subroutine uniformDiffMatrices(N, xMin, xMax, option, quadrature_option, x, weig
   ! 160 = Return the 4th order ddx stencil (2 points on either side), and instead of returning d2dx2,
   !       return (dx)^3 * the d^4/dx^4 stencil of the same size in 'd2dx2'. This option is useful for making
   !       3rd order stencils with varying levels of upwinding.
+  ! 170 = Return the 6th order ddx stencil (3 points on either side), and instead of returning d2dx2,
+  !       return (dx)^5 * the d^4/dx^6 stencil of the same size in 'd2dx2'. This option is useful for making
+  !       5th order stencils with varying levels of upwinding.
   !
   ! Options for quadrature_option:
   ! 0 = Standard trapezoid rule: half weight at the first and last grid points.
@@ -174,10 +177,10 @@ subroutine uniformDiffMatrices(N, xMin, xMax, option, quadrature_option, x, weig
   case (2, 3, 12, 13, 14, 15, 16, 32, 42, 52, 62, 82, 92, 102, 112, 122, 123, 132, 133)
      ! Include points at both xMin and xMax:
      x = [( (xMax-xMin)*i/(N-1)+xMin, i=0,N-1 )]
-  case (0,10,20,30,40,50,60,80,90,100,110,120,130,140,150,160)
+  case (0,10,20,30,40,50,60,80,90,100,110,120,130,140,150,160,170)
      ! Include a point at xMin but not xMax:
      x = [( (xMax-xMin)*i/(N)+xMin, i=0,N-1 )]
-  case (1,11,21,31,41,51,61,81,91,101,111,121,131,141,151,161)
+  case (1,11,21,31,41,51,61,81,91,101,111,121,131,141,151,161,171)
      ! Include a point at xMax but not xMin:
      x = [( (xMax-xMin)*i/(N)+xMin, i=1,N )]
   case default
@@ -633,6 +636,31 @@ subroutine uniformDiffMatrices(N, xMin, xMax, option, quadrature_option, x, weig
         d2dx2(i,i)               =  6/dx
         d2dx2(i,modulo(i-2,N)+1) = -4/(dx)
         d2dx2(i,modulo(i-3,N)+1) =  1/(dx)
+     end do
+
+  case (170,171)
+     ! Stencils with 3 points on either side. Return the usual centered ddx, but instead of returning d2dx2, return (dx)^5*d^6/dx^6.
+
+     if (N<5) then
+        print *,"Error! N must be at least 7 for option 170,171"
+        stop
+     end if
+     do i=1,N
+        ddx(i,modulo(i+2,N)+1) =  1/(60*dx)
+        ddx(i,modulo(i+1,N)+1) = -3/(20*dx)
+        ddx(i,modulo(i+0,N)+1) =  3/(4*dx)
+        ddx(i,i)               =  0
+        ddx(i,modulo(i-2,N)+1) = -3/(4*dx)
+        ddx(i,modulo(i-3,N)+1) =  3/(20*dx)
+        ddx(i,modulo(i-4,N)+1) = -1/(60*dx)
+
+        d2dx2(i,modulo(i+2,N)+1) =  1/(dx)
+        d2dx2(i,modulo(i+1,N)+1) = -6/(dx)
+        d2dx2(i,modulo(i+0,N)+1) = 15/(dx)
+        d2dx2(i,i)               = -20/dx
+        d2dx2(i,modulo(i-2,N)+1) = 15/(dx)
+        d2dx2(i,modulo(i-3,N)+1) = -6/(dx)
+        d2dx2(i,modulo(i-4,N)+1) =  1/(dx)
      end do
 
   end select
@@ -1117,7 +1145,7 @@ subroutine uniformDiffMatrices(N, xMin, xMax, option, quadrature_option, x, weig
      ddx(1,4)=4/(3*dx)
      ddx(1,5)=-1/(4*dx)
 
-  case (120,121,130,131,140,141,150,151,160,161)
+  case (120,121,130,131,140,141,150,151,160,161,170,171)
      ! Handled previously
 
   case (122)

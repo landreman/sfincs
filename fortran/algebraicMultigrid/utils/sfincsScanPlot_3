@@ -270,7 +270,8 @@ for iQuantity in range(numQuantities):
       # Use log scale for fluxes
       #ydata.append(outputs_array[:,iQuantity])
       ydata.append(abs(outputs_array[:,iQuantity]))
-      yscales.append('log')
+      #yscales.append('log')
+      yscales.append('linear')
    
    xlabels.append(scanVariable)
    ylabels.append(yAxisLabels[iQuantity])

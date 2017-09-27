@@ -50,6 +50,7 @@ module solver
 #if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR > 6))
     PetscViewerAndFormat vf 
 #endif
+    character(len=200) :: options_string
 
     external apply_Jacobian
     external apply_preconditioner
@@ -173,6 +174,11 @@ module solver
           ! This next line seems necessary to get gamg to work with >1 proc. A command PCGAMGSetSymGraph exists, but it doesn't
           ! seem to work, probably for the same reason as nsmooths.
           call PetscOptionsInsertString(PETSC_NULL_OBJECT,"-inner_fieldsplit_f_pc_gamg_sym_graph 1", ierr)
+       else if (preconditioning_option==3 .or. preconditioning_option==6) then
+          !call PetscOptionsInsertString(PETSC_NULL_OBJECT,"-inner_fieldsplit_f_pc_hypre_boomeramg_print_statistics", ierr)
+          write (options_string, fmt="(a,es)") "-inner_fieldsplit_f_pc_hypre_boomeramg_strong_threshold ",boomeramg_threshold
+          if (masterProc) print *,"options_string:",options_string
+          call PetscOptionsInsertString(PETSC_NULL_OBJECT,options_string, ierr)
        end if
 
        allocate(ISs(Nx*Nspecies+1))

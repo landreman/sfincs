@@ -219,6 +219,10 @@
           call VecDestroy(temp_Vec_2, ierr)
           call VecDuplicate(input_Vec, ainv_times_stuff_Vec, ierr) ! Create ainv_times_stuff_Vec of the appropriate size. 
           print *,myRank,'MMMMM'
+          if (verbose) then
+             if (masterProc) print *,"Here is the RHS for the big solve, temp_Vec_1:"
+             call VecView(temp_Vec_1, PETSC_VIEWER_STDOUT_WORLD, ierr)
+          end if
           ! VVVVVVV  Next comes the big solve, involving multigrid. VVVVVVVVV
           call KSPSolve(inner_KSP, temp_Vec_1, ainv_times_stuff_Vec, ierr)
           ! ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -226,6 +230,10 @@
           call KSPGetConvergedReason(inner_KSP, reason, ierr)
           if (reason <= 0 .and. masterProc) print *,"WARNING: inner KSP failed with reason",reason
           call VecDestroy(temp_Vec_1, ierr)
+          if (verbose) then
+             if (masterProc) print *,"Here is the solution of the big solve, ainv_times_stuff_Vec:"
+             call VecView(ainv_times_stuff_Vec, PETSC_VIEWER_STDOUT_WORLD, ierr)
+          end if
           call MatCreateVecs(constraints_times_sources_Mat, PETSC_NULL_OBJECT, temp_Vec_2, ierr) ! Create temp_Vec_2 of the appropriate size.
           call MatMult(constraints_Mat, ainv_times_stuff_Vec, temp_Vec_2, ierr) ! Form c*a^{-1}*....
           call MatCreateVecs(constraints_times_sources_Mat, PETSC_NULL_OBJECT, temp_Vec_1, ierr) ! Create temp_Vec_1 of the appropriate size.
@@ -255,12 +263,17 @@
           call KSPSolve(constraints_times_sources_KSP, c_times_r_Vec, y_Vec, ierr) ! Apply (c b)^{-1}
           call KSPGetConvergedReason(constraints_times_sources_KSP, reason, ierr)
           if (reason <= 0 .and. masterProc) print *,"WARNING: constraints_times_sources_KSP failed (call 4) with reason",reason
+          if (verbose) then
+             if (masterProc) print *,"Here is the final y_Vec:"
+             call VecView(y_Vec, PETSC_VIEWER_STDOUT_WORLD,ierr)
+          end if
           call VecRestoreSubVector(output_Vec, IS_source_constraint, y_Vec, ierr)
           call VecDestroy(c_times_r_Vec, ierr)
 
           if (verbose) then
              if (masterProc) print *,"Here is the final output_Vec:"
              call VecView(output_Vec, PETSC_VIEWER_STDOUT_WORLD,ierr)
+             if (masterProc) print *,"End of final output_Vec:"
           end if
 
        case default
