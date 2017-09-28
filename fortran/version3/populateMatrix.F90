@@ -33,7 +33,7 @@
     PetscScalar :: Z, nHat, THat, mHat, sqrtTHat, sqrtMHat, speciesFactor, speciesFactor2
     PetscScalar :: T32m, factor, LFactor, temp, temp1, temp2, xDotFactor, xDotFactor2, stuffToAdd
     PetscScalar :: factor1, factor2, factorJ1, factorJ2, factorJ3, factorJ4, factorJ5  !!Added by AM 2016-03
-    PetscScalar, dimension(:), allocatable :: xb, expxb2, fM,f1b, CHatTimesf ! ############################ modified by Aylwin
+    PetscScalar, dimension(:), allocatable :: xb, expxb2, fM,f1b, CHatTimesf !! fM,f1b, CHatTimesf Added by AI (2017-09) 
     PetscScalar, dimension(:,:), allocatable :: thetaPartOfTerm, localThetaPartOfTerm
     PetscScalar, dimension(:,:), allocatable :: xPartOfXDot_plus, xPartOfXDot_minus, xPartOfXDot
     PetscScalar, dimension(:,:), allocatable :: ddxToUse_plus, ddxToUse_minus
@@ -59,7 +59,7 @@
     PetscScalar, dimension(:,:), allocatable :: tempMatrix, tempMatrix2, extrapMatrix
     double precision :: myMatInfo(MAT_INFO_SIZE)
     integer :: NNZ, NNZAllocated, NMallocs
-    PetscScalar :: CHat_element, dfMdx, Tempfactor ! ################################################ added TempFactor, AI
+    PetscScalar :: CHat_element, dfMdx, preFactor !! preFactor Added by AI (2017-09) 
     character(len=200) :: whichMatrixName, filename
     PetscViewer :: viewer
     integer :: ithetaRow, ithetaCol, izetaRow, izetaCol, ixMin, ixMinCol
@@ -1636,9 +1636,9 @@
           allocate(tempMatrix(Nx, NxPotentials))
           allocate(tempMatrix2(NxPotentials, NxPotentials))
           allocate(extrapMatrix(Nx, NxPotentials))
-          allocate(CHatTimesf(Nx)) ! ############################## Added by Aylwin
-          allocate(fM(Nx)) ! ######################################## Added by Aylwin
-          allocate(f1b(Nx)) ! ######################################## Added by Aylwin
+          allocate(CHatTimesf(Nx)) !! Added by AI (2017-09) 
+          allocate(fM(Nx)) !! Added by AI (2017-09) 
+          allocate(f1b(Nx)) !! Added by AI (2017-09) 
           
           ! For future possible preconditioners, I might want the change the following 2 lines.
           ddxToUse = ddx
@@ -1973,20 +1973,24 @@
                       
                       ! At this point, CHat contains the collision operator normalized by
                       ! \bar{nu}, (the collision frequency at the reference mass, density, and temperature.)
+
                       
+                      ! ************************************************************************************
+                      ! This section has been modified by AI (2017-09) in order to include poloidal density variation
+                      ! in the collision operator. Poloidal density variation is included by setting 
+                      ! poloidalVariationInCollisionOperator = .true.
+                      ! See the documentation at
+                      ! https://github.com/landreman/sfincs/blob/poloidalVariationInCollisionOperator/doc/PoloidalVariationInCollisionOperator_code.pdf
+                      ! ************************************************************************************
 
                       do itheta=ithetaMin,ithetaMax 
                          do izeta=izetaMin,izetaMax
- ! ####################### Modified by AI (factor in front of residual terms) (this whole section)
-                            Tempfactor = 1.0 ! reset factor
-
-                            ! Add the residual and the dC/df1 terms
-                               if (poloidalVariationInCollisionOperator) then 
-                                  Tempfactor = exp(-Zs(iSpeciesA)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesA)) ! this corresponds to modification of n    
-                               end if ! end poloidal. part
- ! The temperature equilibration part is already implemented since f0 which we multiply with in residual vec, already contains the extra factors.
-
- ! ####################### Modified by AI (factor in front of residual terms) (this whole section)
+                            preFactor = 1.0 ! Initiate the preFactor used to multiply CHat before saving into the Main matrix
+                            if (poloidalVariationInCollisionOperator) then 
+                               preFactor = exp(-Zs(iSpeciesA)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesA))   
+                            end if
+                               ! The temperature equilibration part is already implemented since f0 which we multiply with in residual vec, 
+                               ! already contains the extra factors.
 
                             !do ix_row=ixMin,Nx
                             do ix_row=max(ixMin,min_x_for_L(L)),Nx
@@ -1995,45 +1999,64 @@
                                do ix_col = max(ixMinCol,min_x_for_L(L)),Nx
                                   colIndex=getIndex(iSpeciesB,ix_col,L+1,itheta,izeta,BLOCK_F)
                                   call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                                       -nu_n*Tempfactor*CHat(ix_row,ix_col), ADD_VALUES, ierr)
+                                       -nu_n*preFactor*CHat(ix_row,ix_col), ADD_VALUES, ierr) ! Multiply CHat with preFactor before saving
                                end do
                             end do
+                         
+                            ! The temperature equilibration part is already implemented since f0, which we multiply with in evaluateResidual.F90
+                            ! vec, already contains the extra factors.
 
- ! ####################### Modified by AI (include dC/dPhi1Hat terms) (this whole section) 
-                            if (poloidalVariationInCollisionOperator .and. (whichMatrix == 1 .or. whichMatrix == 0)) then ! add the dC/dPhi1 terms in the Jacobian
-                               do ix= max(ixMin,min_x_for_L(L)),Nx ! generate distribution function, to multiply CHat with (not from 1 since problem with getIndex)
+                            ! ************************************************************************************
+                            !  Calculate dC/dPhi_1 contribution to the Jacobian
+                            !  Added by AI (2017-09) 
+                            ! ************************************************************************************
+
+                            if (poloidalVariationInCollisionOperator .and. (whichMatrix == 1 .or. whichMatrix == 0)) then
+                               ! generate distribution function which is used later to multiply with CHat
+                               do ix= max(ixMin,min_x_for_L(L)),Nx
+                                  ! Generate f1b from state vector
+                                  index = getIndex(iSpeciesB,ix,L+1,itheta,izeta,BLOCK_F) ! f1b from statevector
+                                  f1b(ix) = stateArray(index + 1)
+                                  ! If includeTemperatureEquilibrationTerm = .true., also generate the Maxwellian for species B
                                   if (includeTemperatureEquilibrationTerm) then
-                                     fM(ix) = expxb2(ix)*nhats(iSpeciesB)*mhats(iSpeciesB)*sqrt(mhats(iSpeciesB))/(pi*sqrtpi*Thats(iSpeciesB)*sqrt(Thats(iSpeciesB))) ! Maxwellian
-                                  else ! If not temperature equilibration term
-                                     index = getIndex(iSpeciesB,ix,L+1,itheta,izeta,BLOCK_F) ! f1b from statevector
-                                     f1b(ix) = stateArray(index + 1)
-                                     end if
+                                     fM(ix) = expxb2(ix)*nhats(iSpeciesB)*mhats(iSpeciesB)*sqrt(mhats(iSpeciesB)) &
+                                     /(pi*sqrtpi*Thats(iSpeciesB)*sqrt(Thats(iSpeciesB)))
+                                  end if
                                end do
 
+                               ! Save into the main matrix
                                do ix_row=max(ixMin,min_x_for_L(L)),Nx
                                   rowIndex=getIndex(iSpeciesA,ix_row,L+1,itheta,izeta,BLOCK_F)
                                   do ix_col = max(ixMinCol,min_x_for_L(L)),Nx
+                                     ! Get column index for the d/dPhi1 terms
                                      colIndex=getIndex(1,1,1,itheta,izeta,BLOCK_QN)
-                                     CHatTimesf = matmul(CHat,f1b) ! multiply whole block with f1b
-                                     Tempfactor = -Zs(iSpeciesA)*alpha/Thats(iSpeciesA)*exp(-Zs(iSpeciesA)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesA)) ! Get factor accounting for the derivative
+                                     ! multiply the collision operator with f1b
+                                     CHatTimesf = matmul(CHat,f1b)
+                                     ! Get the correct preFactor
+                                     preFactor = -Zs(iSpeciesA)*alpha/Thats(iSpeciesA)*exp(-Zs(iSpeciesA) &
+                                     *alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesA))
+                                     ! Save into the main matrix, note that here we only use ix_col since CHatTimesf is now a vector
+                                     call MatSetValue(matrix, rowIndex, colIndex, & 
+                                          -nu_n*preFactor*CHatTimesf(ix_col), ADD_VALUES, ierr) 
+                                     ! need to use MatSetValue, otherwise petsc gives error
 
-                                     call MatSetValue(matrix, rowIndex, colIndex, & ! Save "normal terms"
-                                          -nu_n*Tempfactor*CHatTimesf(ix_col), ADD_VALUES, ierr) ! need to use MatSetValue, otherwise petsc gives error
+                                     ! If includeTemperatureEquilibrationTerm = .true. then add a an additional term
+                                     ! to the main matrix
 
-                                     if (includeTemperatureEquilibrationTerm) then ! if desired, add the temperature equilibration term
-                                        Tempfactor = (-Zs(iSpeciesA)*alpha/Thats(iSpeciesA) -Zs(iSpeciesB)*alpha/Thats(iSpeciesB)) & 
-                                                        *exp(-Zs(iSpeciesA)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesA)-Zs(iSpeciesB)& 
-                                                        *alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesB)) 
-                                        CHatTimesf = matmul(CHat,fM) ! multiply whole block with fM
-
-                                        call MatSetValue(matrix, rowIndex, colIndex, & ! Save "tempEq. terms"
-                                               -nu_n*Tempfactor*CHatTimesf(ix_col), ADD_VALUES, ierr)
-                                     end if ! end tempEq. part
+                                     if (includeTemperatureEquilibrationTerm) then
+                                        ! Get the correct preFactor
+                                        preFactor = (-Zs(iSpeciesA)*alpha/Thats(iSpeciesA) -Zs(iSpeciesB)*alpha/Thats(iSpeciesB)) & 
+                                        *exp(-Zs(iSpeciesA)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesA)-Zs(iSpeciesB) & 
+                                        *alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesB)) 
+                                        ! multiply the collision operator with fM
+                                        CHatTimesf = matmul(CHat,fM)
+                                        ! Save into the main matrix, note that here we only use ix_col since CHatTimesf is now a vector
+                                        call MatSetValue(matrix, rowIndex, colIndex, &
+                                               -nu_n*preFactor*CHatTimesf(ix_col), ADD_VALUES, ierr)
+                                     end if 
                                   end do
                                end do
-                            end if !# end poloidal. part
-
- ! ####################### Modified by AI (include dC/dPhi1Hat terms) (this whole section)
+                            end if 
                          end do
                       end do
                       
@@ -2045,9 +2068,9 @@
           deallocate(tempMatrix)
           deallocate(tempMatrix2)
           deallocate(extrapMatrix)
-          deallocate(CHatTimesf) ! ############################## Added by Aylwin
-          deallocate(fM) ! ######################################## Added by Aylwin
-          deallocate(f1b) ! ######################################## Added by Aylwin
+          deallocate(CHatTimesf) !! Added by AI (2017-09) 
+          deallocate(fM) !! Added by AI (2017-09) 
+          deallocate(f1b) !! Added by AI (2017-09) 
           
           ! *******************************************************************************
           ! *******************************************************************************
