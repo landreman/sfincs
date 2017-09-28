@@ -33,7 +33,7 @@
     PetscScalar :: Z, nHat, THat, mHat, sqrtTHat, sqrtMHat, speciesFactor, speciesFactor2
     PetscScalar :: T32m, factor, LFactor, temp, temp1, temp2, xDotFactor, xDotFactor2, stuffToAdd
     PetscScalar :: factor1, factor2, factorJ1, factorJ2, factorJ3, factorJ4, factorJ5  !!Added by AM 2016-03
-    PetscScalar, dimension(:), allocatable :: xb, expxb2
+    PetscScalar, dimension(:), allocatable :: xb, expxb2, fM,f1b, CHatTimesf ! ############################ modified by Aylwin
     PetscScalar, dimension(:,:), allocatable :: thetaPartOfTerm, localThetaPartOfTerm
     PetscScalar, dimension(:,:), allocatable :: xPartOfXDot_plus, xPartOfXDot_minus, xPartOfXDot
     PetscScalar, dimension(:,:), allocatable :: ddxToUse_plus, ddxToUse_minus
@@ -59,7 +59,7 @@
     PetscScalar, dimension(:,:), allocatable :: tempMatrix, tempMatrix2, extrapMatrix
     double precision :: myMatInfo(MAT_INFO_SIZE)
     integer :: NNZ, NNZAllocated, NMallocs
-    PetscScalar :: CHat_element, dfMdx
+    PetscScalar :: CHat_element, dfMdx, Tempfactor ! ################################################ added TempFactor, AI
     character(len=200) :: whichMatrixName, filename
     PetscViewer :: viewer
     integer :: ithetaRow, ithetaCol, izetaRow, izetaCol, ixMin, ixMinCol
@@ -164,7 +164,8 @@
        end if
     end if
 
-!!    useStateVec = (nonlinear .and. (whichMatrix==0 .or. whichMatrix==1)) !!Commented by AM 2016-02
+!!    useStateVec = (nonlinear .and. (whichMatrix==0 .or. whichMatrix==1))
+ !!Commented by AM 2016-02
     useStateVec = (includePhi1 .and. (whichMatrix==0 .or. whichMatrix==1)) !!Added by AM 2016-02
     if (useStateVec) then
        ! We need delta f to evaluate the Jacobian, so send a copy to every proc:
@@ -175,7 +176,8 @@
     end if
 
     ! In nonlinear runs, the Jacobian and residual require Phi1:
-    !!if (nonlinear .and. (whichMatrix .ne. 2)) then !!Commented by AM 2016-02
+    !!if (nonlinear .and. (whichMatrix .ne. 2)) then
+ !!Commented by AM 2016-02
     if (includePhi1 .and. (whichMatrix .ne. 2)) then !!Added by AM 2016-02
        call extractPhi1(stateVec)
     end if
@@ -520,7 +522,8 @@
                    case (1,2,7,8)
                       geometricFactor1 = (BHat_sub_zeta(ithetaRow,izeta)*dBHatdpsiHat(ithetaRow,izeta) &
                       - BHat_sub_psi(ithetaRow,izeta)*dBHatdzeta(ithetaRow,izeta))
-                     
+
+                     
                       geometricFactor2 = 2.0 * BHat(ithetaRow,izeta) &
                       * (dBHat_sub_psi_dzeta(ithetaRow,izeta) - dBHat_sub_zeta_dpsiHat(ithetaRow,izeta))
                    case (3,4)
@@ -535,7 +538,8 @@
                    case (9)
                       geometricFactor1 = (BHat_sub_zeta(ithetaRow,izeta)*dBHatdpsiHat(ithetaRow,izeta) &
                       - BHat_sub_psi(ithetaRow,izeta)*dBHatdzeta(ithetaRow,izeta))
-                     
+
+                     
                       geometricFactor2 = 2.0 * BHat(ithetaRow,izeta) &
                       * (dBHat_sub_psi_dzeta(ithetaRow,izeta) - dBHat_sub_zeta_dpsiHat(ithetaRow,izeta) &
                       + diotadpsiHat*GHat*BHat_sup_theta(itheta,izetaRow)/(DHat(itheta,izetaRow)*iota*iota) )
@@ -1430,7 +1434,8 @@
        ! However, we need not add elements which are 0 due to ddtheta=0 as opposed to because Phi1=0, since such elements will remain 0 at every iteration of SNES.
 
        !if (nonlinear .and. (whichMatrix .ne. 2)) then
-       !!if (nonlinear .and. (whichMatrix == 1 .or. whichMatrix == 3 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Commented by AM 2016-02
+       !!if (nonlinear .and. (whichMatrix == 1 .or. whichMatrix == 3 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then
+ !!Commented by AM 2016-02
        !if (.false.) then
        if (includePhi1 .and. includePhi1InKineticEquation .and. (whichMatrix == 1 .or. whichMatrix == 3 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Added by AM 2016-02
 
@@ -1516,7 +1521,8 @@
        ! in the first iteration (due to delta f = 0). The reason is that PETSc will re-use the pattern of nonzeros from the first iteration in subsequent iterations.
        ! However, we need not add elements which are 0 due to ddtheta=0 as opposed to because delta f = 0, since such elements will remain 0 at every iteration of SNES.
 
-       !!if (nonlinear .and. (whichMatrix==1 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Commented by AM 2016-02
+       !!if (nonlinear .and. (whichMatrix==1 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then
+ !!Commented by AM 2016-02
        
        ! This next line should be replaced with the line after!!!
        !if (.false.) then
@@ -1630,6 +1636,9 @@
           allocate(tempMatrix(Nx, NxPotentials))
           allocate(tempMatrix2(NxPotentials, NxPotentials))
           allocate(extrapMatrix(Nx, NxPotentials))
+          allocate(CHatTimesf(Nx)) ! ############################## Added by Aylwin
+          allocate(fM(Nx)) ! ######################################## Added by Aylwin
+          allocate(f1b(Nx)) ! ######################################## Added by Aylwin
           
           ! For future possible preconditioners, I might want the change the following 2 lines.
           ddxToUse = ddx
@@ -1965,8 +1974,20 @@
                       ! At this point, CHat contains the collision operator normalized by
                       ! \bar{nu}, (the collision frequency at the reference mass, density, and temperature.)
                       
-                      do itheta=ithetaMin,ithetaMax
+
+                      do itheta=ithetaMin,ithetaMax 
                          do izeta=izetaMin,izetaMax
+ ! ####################### Modified by AI (factor in front of residual terms) (this whole section)
+                            Tempfactor = 1.0 ! reset factor
+
+                            ! Add the residual and the dC/df1 terms
+                               if (poloidalVariationInCollisionOperator) then 
+                                  Tempfactor = exp(-Zs(iSpeciesA)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesA)) ! this corresponds to modification of n    
+                               end if ! end poloidal. part
+ ! The temperature equilibration part is already implemented since f0 which we multiply with in residual vec, already contains the extra factors.
+
+ ! ####################### Modified by AI (factor in front of residual terms) (this whole section)
+
                             !do ix_row=ixMin,Nx
                             do ix_row=max(ixMin,min_x_for_L(L)),Nx
                                rowIndex=getIndex(iSpeciesA,ix_row,L+1,itheta,izeta,BLOCK_F)
@@ -1974,9 +1995,45 @@
                                do ix_col = max(ixMinCol,min_x_for_L(L)),Nx
                                   colIndex=getIndex(iSpeciesB,ix_col,L+1,itheta,izeta,BLOCK_F)
                                   call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                                       -nu_n*CHat(ix_row,ix_col), ADD_VALUES, ierr)
+                                       -nu_n*Tempfactor*CHat(ix_row,ix_col), ADD_VALUES, ierr)
                                end do
                             end do
+
+ ! ####################### Modified by AI (include dC/dPhi1Hat terms) (this whole section) 
+                            if (poloidalVariationInCollisionOperator .and. (whichMatrix == 1 .or. whichMatrix == 0)) then ! add the dC/dPhi1 terms in the Jacobian
+                               do ix= max(ixMin,min_x_for_L(L)),Nx ! generate distribution function, to multiply CHat with (not from 1 since problem with getIndex)
+                                  if (includeTemperatureEquilibrationTerm) then
+                                     fM(ix) = expxb2(ix)*nhats(iSpeciesB)*mhats(iSpeciesB)*sqrt(mhats(iSpeciesB))/(pi*sqrtpi*Thats(iSpeciesB)*sqrt(Thats(iSpeciesB))) ! Maxwellian
+                                  else ! If not temperature equilibration term
+                                     index = getIndex(iSpeciesB,ix,L+1,itheta,izeta,BLOCK_F) ! f1b from statevector
+                                     f1b(ix) = stateArray(index + 1)
+                                     end if
+                               end do
+
+                               do ix_row=max(ixMin,min_x_for_L(L)),Nx
+                                  rowIndex=getIndex(iSpeciesA,ix_row,L+1,itheta,izeta,BLOCK_F)
+                                  do ix_col = max(ixMinCol,min_x_for_L(L)),Nx
+                                     colIndex=getIndex(1,1,1,itheta,izeta,BLOCK_QN)
+                                     CHatTimesf = matmul(CHat,f1b) ! multiply whole block with f1b
+                                     Tempfactor = -Zs(iSpeciesA)*alpha/Thats(iSpeciesA)*exp(-Zs(iSpeciesA)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesA)) ! Get factor accounting for the derivative
+
+                                     call MatSetValue(matrix, rowIndex, colIndex, & ! Save "normal terms"
+                                          -nu_n*Tempfactor*CHatTimesf(ix_col), ADD_VALUES, ierr) ! need to use MatSetValue, otherwise petsc gives error
+
+                                     if (includeTemperatureEquilibrationTerm) then ! if desired, add the temperature equilibration term
+                                        Tempfactor = (-Zs(iSpeciesA)*alpha/Thats(iSpeciesA) -Zs(iSpeciesB)*alpha/Thats(iSpeciesB)) & 
+                                                        *exp(-Zs(iSpeciesA)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesA)-Zs(iSpeciesB)& 
+                                                        *alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesB)) 
+                                        CHatTimesf = matmul(CHat,fM) ! multiply whole block with fM
+
+                                        call MatSetValue(matrix, rowIndex, colIndex, & ! Save "tempEq. terms"
+                                               -nu_n*Tempfactor*CHatTimesf(ix_col), ADD_VALUES, ierr)
+                                     end if ! end tempEq. part
+                                  end do
+                               end do
+                            end if !# end poloidal. part
+
+ ! ####################### Modified by AI (include dC/dPhi1Hat terms) (this whole section)
                          end do
                       end do
                       
@@ -1988,6 +2045,9 @@
           deallocate(tempMatrix)
           deallocate(tempMatrix2)
           deallocate(extrapMatrix)
+          deallocate(CHatTimesf) ! ############################## Added by Aylwin
+          deallocate(fM) ! ######################################## Added by Aylwin
+          deallocate(f1b) ! ######################################## Added by Aylwin
           
           ! *******************************************************************************
           ! *******************************************************************************
@@ -2270,8 +2330,10 @@
 
              ! Add the charge density of the kinetic species (the part of the residual/Jacobian related to f1):
              do ispecies = 1,Nspecies
-                !!speciesFactor = Zs(ispecies)*THats(ispecies)/mHats(ispecies) & !!Commented by AM 2016-02
-                !!     * sqrt(THats(ispecies)/mHats(ispecies)) !!Commented by AM 2016-02
+                !!speciesFactor = Zs(ispecies)*THats(ispecies)/mHats(ispecies) &
+ !!Commented by AM 2016-02
+                !!     * sqrt(THats(ispecies)/mHats(ispecies))
+ !!Commented by AM 2016-02
                 speciesFactor = four*pi*Zs(ispecies)*THats(ispecies)/mHats(ispecies) & !!Added by AM 2016-02 !!The factor 4pi comes from velocity integration over xi.
                      * sqrt(THats(ispecies)/mHats(ispecies)) !!Added by AM 2016-02
 
@@ -2436,7 +2498,8 @@
              do izeta = izetaMin,izetaMax
                 index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
                 call VecSetValue(f0, index, &
-                !!     factor, INSERT_VALUES, ierr) !!Commented by AM 2016-06
+                !!     factor, INSERT_VALUES, ierr)
+ !!Commented by AM 2016-06
                      exp(-Zs(ispecies)*alpha*Phi1Hat(itheta,izeta)/THats(ispecies))*factor, INSERT_VALUES, ierr) !!Added by AM 2016-06
              end do
           end do
