@@ -1986,7 +1986,7 @@
                       do itheta=ithetaMin,ithetaMax 
                          do izeta=izetaMin,izetaMax
                             preFactor = 1.0 ! Initiate the preFactor used to multiply CHat before saving into the Main matrix
-                            if (poloidalVariationInCollisionOperator) then 
+                            if (poloidalVariationInCollisionOperator .and. includePhi1 .and. includePhi1InKineticEquation) then 
                                preFactor = exp(-Zs(iSpeciesA)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesA))   
                             end if
                                ! The temperature equilibration part is already implemented since f0 which we multiply with in residual vec, 
@@ -2007,13 +2007,13 @@
                             ! vec, already contains the extra factors.
 
                             ! ************************************************************************************
-                            !  Calculate dC/dPhi_1 contribution to the Jacobian
+                            !  Calculate d(collision op.) / d Phi1 contribution to the Jacobian
                             !  Added by AI (2017-09) 
                             ! ************************************************************************************
 
-                            if (poloidalVariationInCollisionOperator .and. (whichMatrix == 1 .or. whichMatrix == 0)) then
+                            if (poloidalVariationInCollisionOperator .and. includePhi1 .and. includePhi1InKineticEquation .and. (whichMatrix == 1 .or. (whichMatrix == 0 .and. .not. reusePreconditioner))) then
                                ! generate distribution function which is used later to multiply with CHat
-                               do ix= max(ixMin,min_x_for_L(L)),Nx
+                               do ix= max(ixMinCol,min_x_for_L(L)),Nx
                                   ! Generate f1b from state vector
                                   index = getIndex(iSpeciesB,ix,L+1,itheta,izeta,BLOCK_F) ! f1b from statevector
                                   f1b(ix) = stateArray(index + 1)
@@ -2037,7 +2037,7 @@
                                      *alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesA))
                                      ! Save into the main matrix, note that here we only use ix_col since CHatTimesf is now a vector
                                      call MatSetValue(matrix, rowIndex, colIndex, & 
-                                          -nu_n*preFactor*CHatTimesf(ix_col), ADD_VALUES, ierr) 
+                                          -nu_n*preFactor*CHatTimesf(ix_row), ADD_VALUES, ierr) 
                                      ! need to use MatSetValue, otherwise petsc gives error
 
                                      ! If includeTemperatureEquilibrationTerm = .true. then add a an additional term
@@ -2052,7 +2052,7 @@
                                         CHatTimesf = matmul(CHat,fM)
                                         ! Save into the main matrix, note that here we only use ix_col since CHatTimesf is now a vector
                                         call MatSetValue(matrix, rowIndex, colIndex, &
-                                               -nu_n*preFactor*CHatTimesf(ix_col), ADD_VALUES, ierr)
+                                               -nu_n*preFactor*CHatTimesf(ix_row), ADD_VALUES, ierr)
                                      end if 
                                   end do
                                end do
