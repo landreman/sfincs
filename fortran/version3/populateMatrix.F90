@@ -2019,8 +2019,8 @@
                                   f1b(ix) = stateArray(index + 1)
                                   ! If includeTemperatureEquilibrationTerm = .true., also generate the Maxwellian for species B
                                   if (includeTemperatureEquilibrationTerm) then
-                                     fM(ix) = expxb2(ix)*nhats(iSpeciesB)*mhats(iSpeciesB)*sqrt(mhats(iSpeciesB)) &
-                                     /(pi*sqrtpi*Thats(iSpeciesB)*sqrt(Thats(iSpeciesB)))
+                                     fM(ix) = sqrt(mhats(iSpeciesB)/Thats(iSpeciesB))*mhats(iSpeciesB)/Thats(iSpeciesB) & 
+                                      *nhats(iSpeciesB)/(pi*sqrtpi)*expx2(ix)
                                   end if
                                end do
 
@@ -2042,14 +2042,13 @@
 
                                      ! If includeTemperatureEquilibrationTerm = .true. then add a an additional term
                                      ! to the main matrix
-
-                                     if (includeTemperatureEquilibrationTerm) then
+                                     if (includeTemperatureEquilibrationTerm .and. L == 0) then
                                         ! Get the correct preFactor
+                                        CHatTimesf = matmul(CHat,fM)
                                         preFactor = (-Zs(iSpeciesA)*alpha/Thats(iSpeciesA) -Zs(iSpeciesB)*alpha/Thats(iSpeciesB)) & 
                                         *exp(-Zs(iSpeciesA)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesA)-Zs(iSpeciesB) & 
                                         *alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesB)) 
                                         ! multiply the collision operator with fM
-                                        CHatTimesf = matmul(CHat,fM)
                                         ! Save into the main matrix, note that here we only use ix_col since CHatTimesf is now a vector
                                         call MatSetValue(matrix, rowIndex, colIndex, &
                                                -nu_n*preFactor*CHatTimesf(ix_row), ADD_VALUES, ierr)
@@ -2531,5 +2530,6 @@
 
     call VecAssemblyBegin(f0, ierr)
     call VecAssemblyEnd(f0, ierr)
+   
 
   end subroutine init_f0
