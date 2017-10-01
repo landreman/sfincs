@@ -469,43 +469,43 @@
        if (masterProc) then
           print *,"Preconditioner d/dtheta derivatives discretized using 1st order upwinded finite differences:"
           print *,"   1 point on either side."
-          print *,"   upwinding factor:",upwinding_factor
+          print *,"   upwinding factor:",preconditioner_upwinding_factor
        end if
 
        call_uniform_diff_matrices = .false.
        quadrature_option = 0
        derivative_option_plus  = 0
        call uniformDiffMatrices(Ntheta, zero, two*pi, derivative_option_plus,  quadrature_option, theta, thetaWeights, temp_matrix,  d2dtheta2)
-       ddtheta_plus_preconditioner  = temp_matrix - upwinding_factor * d2dtheta2 * (theta(2) - theta(1))
-       ddtheta_minus_preconditioner = temp_matrix + upwinding_factor * d2dtheta2 * (theta(2) - theta(1))
+       ddtheta_plus_preconditioner  = temp_matrix - preconditioner_upwinding_factor * d2dtheta2 * (theta(2) - theta(1))
+       ddtheta_minus_preconditioner = temp_matrix + preconditioner_upwinding_factor * d2dtheta2 * (theta(2) - theta(1))
 
     case (13)
        if (masterProc) then
           print *,"Preconditioner d/dtheta derivatives discretized using 3rd order upwinded finite differences:"
           print *,"   2 points on either side."
-          print *,"   upwinding factor:",upwinding_factor
+          print *,"   upwinding factor:",preconditioner_upwinding_factor
        end if
 
        call_uniform_diff_matrices = .false.
        quadrature_option = 0
        derivative_option_plus  = 160
        call uniformDiffMatrices(Ntheta, zero, two*pi, derivative_option_plus,  quadrature_option, theta, thetaWeights, temp_matrix,  d2dtheta2)
-       ddtheta_plus_preconditioner  = temp_matrix + upwinding_factor * d2dtheta2
-       ddtheta_minus_preconditioner = temp_matrix - upwinding_factor * d2dtheta2
+       ddtheta_plus_preconditioner  = temp_matrix + preconditioner_upwinding_factor * d2dtheta2
+       ddtheta_minus_preconditioner = temp_matrix - preconditioner_upwinding_factor * d2dtheta2
 
     case (14)
        if (masterProc) then
           print *,"Preconditioner d/dtheta derivatives discretized using 5th order upwinded finite differences:"
           print *,"   3 points on either side."
-          print *,"   upwinding factor:",upwinding_factor
+          print *,"   upwinding factor:",preconditioner_upwinding_factor
        end if
 
        call_uniform_diff_matrices = .false.
        quadrature_option = 0
        derivative_option_plus  = 170
        call uniformDiffMatrices(Ntheta, zero, two*pi, derivative_option_plus,  quadrature_option, theta, thetaWeights, temp_matrix,  d2dtheta2)
-       ddtheta_plus_preconditioner  = temp_matrix - upwinding_factor * d2dtheta2
-       ddtheta_minus_preconditioner = temp_matrix + upwinding_factor * d2dtheta2
+       ddtheta_plus_preconditioner  = temp_matrix - preconditioner_upwinding_factor * d2dtheta2
+       ddtheta_minus_preconditioner = temp_matrix + preconditioner_upwinding_factor * d2dtheta2
 
     case default
        if (masterProc) then
@@ -520,27 +520,17 @@
        call uniformDiffMatrices(Ntheta, zero, two*pi, derivative_option_minus, quadrature_option, theta, thetaWeights, ddtheta_minus_preconditioner, d2dtheta2)
     end if
 
-    if (preconditioner_theta_derivative_option<0) then
-       !temp_plus = maxval(abs(ddtheta_plus_preconditioner))
-       !temp_minus = maxval(abs(ddtheta_minus_preconditioner))
-       if (masterProc) then
-          !print *,"   But only the diagonal is kept."
-          !print *,"   But the diagonal is shifted to maintain diagonal dominance."
-          print *,"    But blending with the main operator: factor=",preconditioner_theta_blend
-       end if
-       ddtheta_plus_preconditioner  = (1-preconditioner_theta_blend)*ddtheta_plus_preconditioner  + preconditioner_theta_blend*ddtheta_plus
-       ddtheta_minus_preconditioner = (1-preconditioner_theta_blend)*ddtheta_minus_preconditioner + preconditioner_theta_blend*ddtheta_minus
-!!$       do j=1,Ntheta
-!          do k=1,Ntheta
-!             if (j .ne. k) then
-!                ddtheta_plus_preconditioner(j,k) = 0
-!                ddtheta_minus_preconditioner(j,k) = 0
-!             end if
-!          end do
-!!$          ddtheta_plus_preconditioner(j,j) = temp_plus
-!!$          ddtheta_minus_preconditioner(j,j) = -temp_minus
-!!$       end do
-    end if
+!!$    if (preconditioner_theta_derivative_option<0) then
+!!$       !temp_plus = maxval(abs(ddtheta_plus_preconditioner))
+!!$       !temp_minus = maxval(abs(ddtheta_minus_preconditioner))
+!!$       if (masterProc) then
+!!$          !print *,"   But only the diagonal is kept."
+!!$          !print *,"   But the diagonal is shifted to maintain diagonal dominance."
+!!$          print *,"    But blending with the main operator: factor=",preconditioner_theta_blend
+!!$       end if
+    ddtheta_plus_preconditioner  = (1-preconditioner_blend)*ddtheta_plus_preconditioner  + preconditioner_blend*ddtheta_plus
+    ddtheta_minus_preconditioner = (1-preconditioner_blend)*ddtheta_minus_preconditioner + preconditioner_blend*ddtheta_minus
+!!$    end if
 
 
     ! The following arrays will not be needed:
@@ -818,43 +808,43 @@
           if (masterProc) then
              print *,"Preconditioner d/dzeta derivatives discretized using 1st order upwinded finite differences:"
              print *,"   1 point on either side."
-             print *,"   upwinding factor:",upwinding_factor
+             print *,"   upwinding factor:",preconditioner_upwinding_factor
           end if
           
           call_uniform_diff_matrices = .false.
           quadrature_option = 0
           derivative_option_plus  = 0
           call uniformDiffMatrices(Nzeta, zero, zetaMax, derivative_option_plus,  quadrature_option, zeta, zetaWeights, temp_matrix,  d2dzeta2)
-          ddzeta_plus_preconditioner  = temp_matrix - upwinding_factor * d2dzeta2 * (zeta(2) - zeta(1))
-          ddzeta_minus_preconditioner = temp_matrix + upwinding_factor * d2dzeta2 * (zeta(2) - zeta(1))
+          ddzeta_plus_preconditioner  = temp_matrix - preconditioner_upwinding_factor * d2dzeta2 * (zeta(2) - zeta(1))
+          ddzeta_minus_preconditioner = temp_matrix + preconditioner_upwinding_factor * d2dzeta2 * (zeta(2) - zeta(1))
 
        case (13)
           if (masterProc) then
              print *,"Preconditioner d/dzeta derivatives discretized using 3rd order upwinded finite differences:"
              print *,"   2 points on either side."
-             print *,"   upwinding factor:",upwinding_factor
+             print *,"   upwinding factor:",preconditioner_upwinding_factor
           end if
           
           call_uniform_diff_matrices = .false.
           quadrature_option = 0
           derivative_option_plus  = 160
           call uniformDiffMatrices(Nzeta, zero, zetaMax, derivative_option_plus,  quadrature_option, zeta, zetaWeights, temp_matrix,  d2dzeta2)
-          ddzeta_plus_preconditioner  = temp_matrix + upwinding_factor * d2dzeta2
-          ddzeta_minus_preconditioner = temp_matrix - upwinding_factor * d2dzeta2
+          ddzeta_plus_preconditioner  = temp_matrix + preconditioner_upwinding_factor * d2dzeta2
+          ddzeta_minus_preconditioner = temp_matrix - preconditioner_upwinding_factor * d2dzeta2
 
        case (14)
           if (masterProc) then
              print *,"Preconditioner d/dzeta derivatives discretized using 5th order upwinded finite differences:"
              print *,"   3 points on either side."
-             print *,"   upwinding factor:",upwinding_factor
+             print *,"   upwinding factor:",preconditioner_upwinding_factor
           end if
           
           call_uniform_diff_matrices = .false.
           quadrature_option = 0
           derivative_option_plus  = 170
           call uniformDiffMatrices(Nzeta, zero, zetaMax, derivative_option_plus,  quadrature_option, zeta, zetaWeights, temp_matrix,  d2dzeta2)
-          ddzeta_plus_preconditioner  = temp_matrix - upwinding_factor * d2dzeta2
-          ddzeta_minus_preconditioner = temp_matrix + upwinding_factor * d2dzeta2
+          ddzeta_plus_preconditioner  = temp_matrix - preconditioner_upwinding_factor * d2dzeta2
+          ddzeta_minus_preconditioner = temp_matrix + preconditioner_upwinding_factor * d2dzeta2
 
        case default
           if (masterProc) then
@@ -871,27 +861,17 @@
                derivative_option_minus, quadrature_option, zeta, zetaWeights, ddzeta_minus_preconditioner, d2dzeta2)
        end if
 
-       if (preconditioner_zeta_derivative_option<0) then
-          !temp_plus = maxval(abs(ddzeta_plus_preconditioner))
-          !temp_minus = maxval(abs(ddzeta_minus_preconditioner))
-          if (masterProc) then
-             !print *,"   But only the diagonal is kept."
-             !print *,"   But the diagonal is shifted to maintain diagonal dominance."
-             print *,"   But blending with the main matrix: factor=",preconditioner_zeta_blend
-          end if
-          ddzeta_plus_preconditioner  = (1-preconditioner_zeta_blend)*ddzeta_plus_preconditioner  + preconditioner_zeta_blend*ddzeta_plus
-          ddzeta_minus_preconditioner = (1-preconditioner_zeta_blend)*ddzeta_minus_preconditioner + preconditioner_zeta_blend*ddzeta_minus
-!!$          do j=1,Nzeta
-!!$! !!$             do k=1,Nzeta
-!!$! !!$                if (j .ne. k) then
-!!$! !!$                   ddzeta_plus_preconditioner(j,k) = 0
-!!$! !!$                   ddzeta_minus_preconditioner(j,k) = 0
-!!$! !!$                end if
-!!$! !!$             end do
-!!$             ddzeta_plus_preconditioner(j,j) = temp_plus
-!!$             ddzeta_minus_preconditioner(j,j) = -temp_minus
-!!$          end do
-       end if
+!!$       if (preconditioner_zeta_derivative_option<0) then
+!!$          !temp_plus = maxval(abs(ddzeta_plus_preconditioner))
+!!$          !temp_minus = maxval(abs(ddzeta_minus_preconditioner))
+!!$          if (masterProc) then
+!!$             !print *,"   But only the diagonal is kept."
+!!$             !print *,"   But the diagonal is shifted to maintain diagonal dominance."
+!!$             print *,"   But blending with the main matrix: factor=",preconditioner_zeta_blend
+!!$          end if
+       ddzeta_plus_preconditioner  = (1-preconditioner_blend)*ddzeta_plus_preconditioner  + preconditioner_blend*ddzeta_plus
+       ddzeta_minus_preconditioner = (1-preconditioner_blend)*ddzeta_minus_preconditioner + preconditioner_blend*ddzeta_minus
+!!$       end if
        
        zetaWeights = zetaWeights * Nperiods
     end if
@@ -1281,20 +1261,20 @@
           if (masterProc) then
              print *,"Preconditioner d/dxi derivatives discretized using 1st order upwinded finite differences:"
              print *,"   1 point on either side."
-             print *,"   upwinding factor:",upwinding_factor
+             print *,"   upwinding factor:",preconditioner_upwinding_factor
           end if
           
           call_uniform_diff_matrices = .false.
           quadrature_option = 0
           derivative_option_plus  = 0
           call uniformDiffMatrices(Nxi*2, zero, two*pi, derivative_option_plus,  quadrature_option, alpha_dummy, alphaWeights_dummy, ddalpha_dummy,  d2dalpha2_dummy)
-          ddalpha_extended = ddalpha_dummy - upwinding_factor * d2dalpha2_dummy * (alpha_dummy(2) - alpha_dummy(1))
+          ddalpha_extended = ddalpha_dummy - preconditioner_upwinding_factor * d2dalpha2_dummy * (alpha_dummy(2) - alpha_dummy(1))
           ddalpha = ddalpha_extended(1:Nxi, 1:Nxi) + ddalpha_extended(1:Nxi, (2*Nxi):(Nxi+1):(-1))
           do ixi = 1,Nxi
              ddxi_plus_preconditioner(ixi,:) = ddalpha(ixi,:) / sin(alpha(ixi))
           end do
 
-          ddalpha_extended = ddalpha_dummy + upwinding_factor * d2dalpha2_dummy * (alpha_dummy(2) - alpha_dummy(1))
+          ddalpha_extended = ddalpha_dummy + preconditioner_upwinding_factor * d2dalpha2_dummy * (alpha_dummy(2) - alpha_dummy(1))
           ddalpha = ddalpha_extended(1:Nxi, 1:Nxi) + ddalpha_extended(1:Nxi, (2*Nxi):(Nxi+1):(-1))
           do ixi = 1,Nxi
              ddxi_minus_preconditioner(ixi,:) = ddalpha(ixi,:) / sin(alpha(ixi))
@@ -1304,20 +1284,20 @@
           if (masterProc) then
              print *,"Preconditioner d/dxi derivatives discretized using 3rd order upwinded finite differences:"
              print *,"   2 points on either side."
-             print *,"   upwinding factor:",upwinding_factor
+             print *,"   upwinding factor:",preconditioner_upwinding_factor
           end if
           
           call_uniform_diff_matrices = .false.
           quadrature_option = 0
           derivative_option_plus  = 160
           call uniformDiffMatrices(Nxi*2, zero, two*pi, derivative_option_plus,  quadrature_option, alpha_dummy, alphaWeights_dummy, ddalpha_dummy,  d2dalpha2_dummy)
-          ddalpha_extended = ddalpha_dummy + upwinding_factor * d2dalpha2_dummy
+          ddalpha_extended = ddalpha_dummy + preconditioner_upwinding_factor * d2dalpha2_dummy
           ddalpha = ddalpha_extended(1:Nxi, 1:Nxi) + ddalpha_extended(1:Nxi, (2*Nxi):(Nxi+1):(-1))
           do ixi = 1,Nxi
              ddxi_plus_preconditioner(ixi,:) = ddalpha(ixi,:) / sin(alpha(ixi))
           end do
 
-          ddalpha_extended = ddalpha_dummy - upwinding_factor * d2dalpha2_dummy
+          ddalpha_extended = ddalpha_dummy - preconditioner_upwinding_factor * d2dalpha2_dummy
           ddalpha = ddalpha_extended(1:Nxi, 1:Nxi) + ddalpha_extended(1:Nxi, (2*Nxi):(Nxi+1):(-1))
           do ixi = 1,Nxi
              ddxi_minus_preconditioner(ixi,:) = ddalpha(ixi,:) / sin(alpha(ixi))
@@ -1327,20 +1307,20 @@
           if (masterProc) then
              print *,"Preconditioner d/dxi derivatives discretized using 5th order upwinded finite differences:"
              print *,"   3 points on either side."
-             print *,"   upwinding factor:",upwinding_factor
+             print *,"   upwinding factor:",preconditioner_upwinding_factor
           end if
           
           call_uniform_diff_matrices = .false.
           quadrature_option = 0
           derivative_option_plus  = 170
           call uniformDiffMatrices(Nxi*2, zero, two*pi, derivative_option_plus,  quadrature_option, alpha_dummy, alphaWeights_dummy, ddalpha_dummy,  d2dalpha2_dummy)
-          ddalpha_extended = ddalpha_dummy - upwinding_factor * d2dalpha2_dummy
+          ddalpha_extended = ddalpha_dummy - preconditioner_upwinding_factor * d2dalpha2_dummy
           ddalpha = ddalpha_extended(1:Nxi, 1:Nxi) + ddalpha_extended(1:Nxi, (2*Nxi):(Nxi+1):(-1))
           do ixi = 1,Nxi
              ddxi_plus_preconditioner(ixi,:) = ddalpha(ixi,:) / sin(alpha(ixi))
           end do
 
-          ddalpha_extended = ddalpha_dummy + upwinding_factor * d2dalpha2_dummy
+          ddalpha_extended = ddalpha_dummy + preconditioner_upwinding_factor * d2dalpha2_dummy
           ddalpha = ddalpha_extended(1:Nxi, 1:Nxi) + ddalpha_extended(1:Nxi, (2*Nxi):(Nxi+1):(-1))
           do ixi = 1,Nxi
              ddxi_minus_preconditioner(ixi,:) = ddalpha(ixi,:) / sin(alpha(ixi))
@@ -1963,34 +1943,16 @@
           end do
        end if
        
-       if (preconditioner_xi_derivative_option<0) then
-          if (masterProc) then
-             !print *,"   But only the diagonal is kept."
-             !print *,"   But the diagonal is shifted to maintain diagonal dominance."
-             print *,"   But blending with the main matrix: factor=",preconditioner_xi_blend
-          end if
-          ddxi_plus_preconditioner  = (1-preconditioner_xi_blend)*ddxi_plus_preconditioner  + preconditioner_xi_blend*ddxi_plus
-          ddxi_minus_preconditioner = (1-preconditioner_xi_blend)*ddxi_minus_preconditioner + preconditioner_xi_blend*ddxi_minus
-!!$          do j=1,Nxi
-!!$             do k=1,Nxi
-!!$                if (j .ne. k) then
-!!$                   ddxi_plus_preconditioner(j,k) = 0
-!!$                   ddxi_minus_preconditioner(j,k) = 0
-!!$                end if
-!!$             end do
-!!$          end do
-
-!!$          allocate(temp_array(Nxi))
-!!$          do j=1,Nxi
-!!$             temp_array(j) = max(maxval(abs(ddxi_plus_preconditioner(j,:))), maxval(abs(ddxi_plus_preconditioner(:,j))))
-!!$          end do
-!!$          do j=1,Nxi
-!!$             ddxi_plus_preconditioner(j,j) = temp_array(j)
-!!$             ddxi_minus_preconditioner(j,j) = -temp_array(j)
-!!$          end do
-!!$          deallocate(temp_array)
-       end if
     end if
+
+!!$    if (masterProc) then
+!!$             !print *,"   But only the diagonal is kept."
+!!$             !print *,"   But the diagonal is shifted to maintain diagonal dominance."
+!!$             print *,"   But blending with the main matrix: factor=",preconditioner_xi_blend
+!!$          end if
+    ddxi_plus_preconditioner  = (1-preconditioner_blend)*ddxi_plus_preconditioner  + preconditioner_blend*ddxi_plus
+    ddxi_minus_preconditioner = (1-preconditioner_blend)*ddxi_minus_preconditioner + preconditioner_blend*ddxi_minus
+!!$       end if
 
     ! The following arrays will not be needed:
     deallocate(d2dxi2,ddxi,temp_matrix)

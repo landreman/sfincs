@@ -109,6 +109,8 @@ elif scanVariable == "dphihatdrn":
     mustBeInteger = False
 elif scanVariable == "nu_n":
     mustBeInteger = False
+elif scanVariable == "krook":
+    mustBeInteger = False
 elif scanVariable == "nuprime":
     mustBeInteger = False
 elif scanVariable == "estar":
@@ -148,6 +150,8 @@ elif scanVariable == "upwinding_factor":
 elif scanVariable == "theta_upwinding_factor":
     mustBeInteger = False
 elif scanVariable == "zeta_upwinding_factor":
+    mustBeInteger = False
+elif scanVariable == "preconditioner_blend":
     mustBeInteger = False
 elif scanVariable == "preconditioner_theta_upwinding_factor":
     mustBeInteger = False

@@ -64,7 +64,7 @@ contains
          xi_derivative_option, pitch_angle_scattering_option, &
          xi_quadrature_option, xGridScheme, whichParallelSolverToFactorPreconditioner, &
          PETSCPreallocationStrategy, xPotentialsGridScheme, xGrid_k,  &
-         Nxi_for_x_option, theta_upwinding_factor, zeta_upwinding_factor, upwinding_factor, &
+         Nxi_for_x_option, theta_upwinding_factor, zeta_upwinding_factor, upwinding_factor,  &
          null_space_option, spatial_scaling_option, constraint_scaling_option, xi_scaling_option, &
          x_scaling_option, f_scaling_option, fieldsplit_parallelization_option, krook, &
          gamg_threshold, boomeramg_threshold
@@ -73,7 +73,7 @@ contains
          preconditioner_theta_derivative_option, preconditioner_xi_derivative_option, preconditioner_species, reusePreconditioner, &
          preconditioner_pitch_angle_scattering_option, &
          preconditioner_field_term_xi_option, preconditioning_option, preconditioner_collision_multiplier, &
-         preconditioner_theta_blend, preconditioner_zeta_blend, preconditioner_xi_blend
+         preconditioner_blend, preconditioner_upwinding_factor
 
 !!$    namelist / export_f / export_full_f, export_delta_f, export_f_theta, export_f_zeta, export_f_x, export_f_xi, &
 !!$         export_f_theta_option, export_f_zeta_option, export_f_xi_option, export_f_x_option
