@@ -144,7 +144,7 @@ module solver
 
        ! End of steps used for direct LU factorization of the preconditioner.
 
-    case (2,3,4,5,6,7)
+    case (2,3,4,5,6,7,8,9)
        ! Fieldsplit
        fieldsplit = .true.
        if (masterProc) then
@@ -154,6 +154,8 @@ module solver
              print *,"  Using PETSc's GAMG (algebraic multigrid) on the blocks for the kinetic equation."
           case (3,6)
              print *,"  Using Hypre BoomerAMG (algebraic multigrid) on the blocks for the kinetic equation."
+          case (8,9)
+             print *,"  Using ML (algebraic multigrid) on the blocks for the kinetic equation."
           case (4,7)
              print *,"  Using LU factorization on the blocks for the kinetic equation."
           case default
@@ -176,7 +178,7 @@ module solver
           call PetscOptionsInsertString(PETSC_NULL_OBJECT,"-inner_fieldsplit_f_pc_gamg_sym_graph 1", ierr)
        else if (preconditioning_option==3 .or. preconditioning_option==6) then
           !call PetscOptionsInsertString(PETSC_NULL_OBJECT,"-inner_fieldsplit_f_pc_hypre_boomeramg_print_statistics", ierr)
-          write (options_string, fmt="(a,es)") "-inner_fieldsplit_f_pc_hypre_boomeramg_strong_threshold ",boomeramg_threshold
+          write (options_string, fmt="(a,es20.13)") "-inner_fieldsplit_f_pc_hypre_boomeramg_strong_threshold ",boomeramg_threshold
           if (masterProc) print *,"options_string:",options_string
           call PetscOptionsInsertString(PETSC_NULL_OBJECT,options_string, ierr)
        end if
@@ -292,6 +294,8 @@ module solver
              call PCGAMGSetThreshold(sub_preconditioner, gamg_threshold, ierr)
           case (3,6)
              call PCSetType(sub_preconditioner, PCHYPRE, ierr)
+          case (8,9)
+             call PCSetType(sub_preconditioner, PCML, ierr)
           case (4,7)
              call PCSetType(sub_preconditioner, PCLU, ierr)
              if (isAParallelDirectSolverInstalled) then

@@ -39,7 +39,7 @@
     call PetscLogEventBegin(event,ierr)
 
     select case (preconditioning_option)
-       case (1,2,3,4)
+       case (1,2,3,4,8)
           if (masterProc) print *,"apply_preconditioner called. Only applying inner_KSP."
           !print *,"Here comes KSPView on inner_KSP:"
           !call KSPView(inner_KSP, PETSC_VIEWER_STDOUT_WORLD,ierr)
@@ -62,7 +62,7 @@
              print *,"WARNING: inner KSP failed with reason",reason
           end if
 
-       case (5,6,7)
+       case (5,6,7,9)
           if (masterProc) print *,"apply_preconditioner called. Handling sources/constraints."
           
           ! We will solve the block system

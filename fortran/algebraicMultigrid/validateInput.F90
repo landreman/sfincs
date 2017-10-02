@@ -850,12 +850,28 @@ subroutine validateInput()
   if (masterProc) print *,"Hypre detected."
 #else
   if (masterProc) print *,"Hypre not detected."
-  if (preconditioning_option==6) then
+  if (preconditioning_option==3 .or. preconditioning_option==6) then
      preconditioning_option=5
      print *,line
      print *,line
-     print *,"** WARNING: Hypre preconditioner was requested (preconditioning_option=6),"
+     print *,"** WARNING: Hypre preconditioner was requested (preconditioning_option=3 or 6),"
      print *,"** but Hypre is not available in this PETSc library. Switching to the GAMG"
+     print *,"** preconditioner (preconditioning_option=5)."
+     print *,line
+     print *,line
+  end if
+#endif
+  
+#ifdef PETSC_HAVE_ML
+  if (masterProc) print *,"ML detected."
+#else
+  if (masterProc) print *,"ML not detected."
+  if (preconditioning_option==8 .or. preconditioning_option==9) then
+     preconditioning_option=5
+     print *,line
+     print *,line
+     print *,"** WARNING: ML preconditioner was requested (preconditioning_option=8 or 9),"
+     print *,"** but ML is not available in this PETSc library. Switching to the GAMG"
      print *,"** preconditioner (preconditioning_option=5)."
      print *,line
      print *,line
