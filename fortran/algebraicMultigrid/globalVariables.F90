@@ -193,7 +193,9 @@ module globalVariables
   integer :: spatial_scaling_option = 4 ! 3 also works well
   integer :: constraint_scaling_option = 2
   logical :: fieldsplit = .false.
-  integer :: null_space_option=0
+  logical :: attach_null_space = .false.
+  logical :: attach_transpose_null_space = .false.
+  logical :: attach_near_null_space = .false.
   PetscReal :: gamg_threshold = 0.2
   PetscReal :: boomeramg_threshold = 0.25
   real(prec) :: preconditioner_collision_multiplier = 1
@@ -384,6 +386,7 @@ module globalVariables
   KSP :: inner_KSP
   PC :: inner_preconditioner
   IS, dimension(:), allocatable :: ISs
+  Vec, dimension(1) :: transpose_null_vecs
 
   ! ********************************************************
   !

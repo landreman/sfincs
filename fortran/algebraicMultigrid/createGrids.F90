@@ -2961,6 +2961,27 @@
        transportMatrix = 0
     end select
 
+    ! *********************************************************
+    ! Create vec for the transpose null space, in case it will be used.
+    ! *********************************************************
+
+    call VecCreateMPI(PETSC_COMM_WORLD, PETSC_DECIDE, Ntheta*Nzeta*Nxi, transpose_null_vecs(1), ierr)
+
+    do itheta = ithetaMin, ithetaMax
+       do izeta = izetaMin, izetaMax
+          do ixi = 1,Nxi
+             j = getIndex(1,1,ixi,itheta,izeta,BLOCK_F)
+             call VecSetValue(transpose_null_vecs(1), j, &
+                  xiWeights(ixi)*sqrt_g(itheta,izeta)/(xi_scaling(ixi)*spatial_scaling(itheta,izeta)), INSERT_VALUES, ierr)
+          end do
+       end do
+    end do
+    call VecAssemblyBegin(transpose_null_vecs(1), ierr)
+    call VecAssemblyEnd(  transpose_null_vecs(1), ierr)
+
+    ! *********************************************************
+    ! *********************************************************
+
     if (masterProc) then
        print *,"Here comes ddtheta_plus:"
        do j=1,Ntheta

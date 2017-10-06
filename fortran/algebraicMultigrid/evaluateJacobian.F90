@@ -10,9 +10,9 @@
 
     use petscsnes
     use globalVariables, only: masterProc, firstMatrixCreation, reusePreconditioner, &
-         Mat_for_Jacobian, fieldsplit, Nspecies, Nx, null_space_option, &
+         Mat_for_Jacobian, fieldsplit, Nspecies, Nx, attach_null_space, attach_transpose_null_space, attach_near_null_space, &
          Mat_for_preconditioner, inner_preconditioner, inner_KSP, &
-         myRank, preconditioning_option, ISs
+         myRank, preconditioning_option, ISs, transpose_null_vecs
 
     implicit none
 
@@ -23,7 +23,7 @@
     integer :: userContext(*)
     KSP :: myksp, Richardson_ksp
     KSP, dimension(:), allocatable :: sub_ksps
-    Mat :: sub_Amat, sub_Pmat
+    Mat :: sub_Amat, sub_Pmat, sub_Pmat_transpose
     MatNullSpace :: nullspace
     integer :: j, num_fieldsplits, level, N_levels
     integer :: firstRowThisProcOwns, lastRowThisProcOwns, num_rows, num_columns
@@ -33,6 +33,8 @@
     integer :: index_of_min, index_of_max
     Vec :: diagonal_vec
     PetscReal :: diagonal_min, diagonal_max
+    logical :: null_space_test
+    PetscViewer :: viewer
 
     if (masterProc) then
        print *,"evaluateJacobian called."
@@ -56,11 +58,13 @@
     firstMatrixCreation = .false.
 
     if (fieldsplit) then
+       call KSPSetFromOptions(inner_KSP, ierr) 
        call KSPSetUp(inner_KSP, ierr) 
+       if (allocated(sub_ksps)) deallocate(sub_ksps)
        allocate(sub_ksps(Nspecies*Nx+1))
        !call PCFieldSplitGetSubKSP(preconditionerContext, num_fieldsplits, sub_ksps, ierr)
        call PCFieldSplitGetSubKSP(inner_preconditioner, num_fieldsplits, sub_ksps, ierr)
-       do j = 1,Nspecies*Nx+1
+       do j = 1,num_fieldsplits ! Nspecies*Nx+1
           call KSPGetOperators(sub_ksps(j), sub_Amat, sub_Pmat, ierr)
           print *,"Does sub_Amat==sub_Pmat?",sub_Amat==sub_Pmat
           call MatGetOwnershipRange(sub_Pmat, firstRowThisProcOwns, lastRowThisProcOwns, ierr)
@@ -76,36 +80,106 @@
        end do
     end if
 
-    if (fieldsplit .and. null_space_option>0) then
-       if (null_space_option==1 .and. masterProc) print *,"Adding null space"
-       if (null_space_option==2 .and. masterProc) print *,"Adding NEAR null space"
-!!$       call SNESGetKSP(mysnes, myksp, ierr)
-!!$       call KSPSetUp(myksp, ierr)
-!!$       call KSPGetPC(myksp, preconditionerContext, ierr)
+!!$    if (fieldsplit .and. null_space_option>0) then
+!!$       if (null_space_option==1 .and. masterProc) print *,"Adding null space"
+!!$       if (null_space_option==2 .and. masterProc) print *,"Adding NEAR null space"
+!!$       call MatNullSpaceCreate(PETSC_COMM_WORLD,PETSC_TRUE,0,0,nullspace,ierr)
+!!$       do j = 1,Nspecies*Nx
+!!$          select case (null_space_option)
+!!$          case (1)
+!!$             call MatSetNullSpace(sub_Pmat,nullspace,ierr)
+!!$          case (2)
+!!$             call MatSetNearNullSpace(sub_Pmat,nullspace,ierr)
+!!$          case default
+!!$             print *,"Invalid null_space_option:",null_space_option
+!!$             stop
+!!$          end select
+!!$          !print *,"Here comes the Pmat for fieldsplit",j-1
+!!$          !call MatView(sub_Pmat,PETSC_VIEWER_STDOUT_WORLD,ierr)
+!!$       end do
+!!$       call MatNullSpaceDestroy(nullspace,ierr)
+!!$       ! The next lines are temporary:
+!!$       j = Nspecies*Nx+1
+!!$       call KSPGetOperators(sub_ksps(j), sub_Amat, sub_Pmat, ierr)
+!!$       print *,"Does sub_Amat==sub_Pmat?",sub_Amat==sub_Pmat
+!!$       print *,"Here comes the Pmat for fieldsplit",j-1
+!!$       call MatView(sub_Pmat,PETSC_VIEWER_STDOUT_WORLD,ierr)
+!!$       deallocate(sub_ksps)
+!!$    else
+!!$       if (masterProc) print *,"NOT adding null space"
+!!$    end if
+
+    if (fieldsplit .and. attach_null_space) then
+       if (masterProc) print *,"Adding null space"
        call MatNullSpaceCreate(PETSC_COMM_WORLD,PETSC_TRUE,0,0,nullspace,ierr)
        do j = 1,Nspecies*Nx
-          select case (null_space_option)
-          case (1)
-             call MatSetNullSpace(sub_Pmat,nullspace,ierr)
-          case (2)
-             call MatSetNearNullSpace(sub_Pmat,nullspace,ierr)
-          case default
-             print *,"Invalid null_space_option:",null_space_option
-             stop
-          end select
-          !print *,"Here comes the Pmat for fieldsplit",j-1
-          !call MatView(sub_Pmat,PETSC_VIEWER_STDOUT_WORLD,ierr)
+          call KSPGetOperators(sub_ksps(j), sub_Amat, sub_Pmat, ierr)
+          call MatNullSpaceTest(nullspace,sub_Pmat,null_space_test,ierr)
+          if (masterProc) print *,"Null space test:",null_space_test
+          call MatSetNullSpace(sub_Pmat,nullspace,ierr)
        end do
        call MatNullSpaceDestroy(nullspace,ierr)
-       ! The next lines are temporary:
-       j = Nspecies*Nx+1
-       call KSPGetOperators(sub_ksps(j), sub_Amat, sub_Pmat, ierr)
-       print *,"Does sub_Amat==sub_Pmat?",sub_Amat==sub_Pmat
-       print *,"Here comes the Pmat for fieldsplit",j-1
-       call MatView(sub_Pmat,PETSC_VIEWER_STDOUT_WORLD,ierr)
-       deallocate(sub_ksps)
     else
        if (masterProc) print *,"NOT adding null space"
+    end if
+
+    if (fieldsplit .and. attach_transpose_null_space) then
+       if (masterProc) print *,"Adding transpose null space"
+       call MatNullSpaceCreate(PETSC_COMM_WORLD,PETSC_FALSE,1,transpose_null_vecs,nullspace,ierr)
+       do j = 1,Nspecies*Nx
+          call KSPGetOperators(sub_ksps(j), sub_Amat, sub_Pmat, ierr)
+          call MatCreateTranspose(sub_Pmat, sub_Pmat_transpose, ierr)
+          call MatNullSpaceTest(nullspace,sub_Pmat_transpose,null_space_test,ierr)
+          if (masterProc) print *,"Transpose null space test:",null_space_test
+          call MatDestroy(sub_Pmat_transpose, ierr)
+          call MatSetTransposeNullSpace(sub_Pmat,nullspace,ierr)
+       end do
+       call MatNullSpaceDestroy(nullspace,ierr)
+    else
+       if (masterProc) print *,"NOT adding transpose null space"
+    end if
+
+    if (fieldsplit .and. attach_near_null_space) then
+       if (masterProc) print *,"Adding near null space"
+       call MatNullSpaceCreate(PETSC_COMM_WORLD,PETSC_TRUE,0,0,nullspace,ierr)
+       do j = 1,Nspecies*Nx
+          call KSPGetOperators(sub_ksps(j), sub_Amat, sub_Pmat, ierr)
+          call MatNullSpaceTest(nullspace,sub_Pmat,null_space_test,ierr)
+          if (masterProc) print *,"Near null space test:",null_space_test
+          call MatSetNearNullSpace(sub_Pmat,nullspace,ierr)
+       end do
+       call MatNullSpaceDestroy(nullspace,ierr)
+    else
+       if (masterProc) print *,"NOT adding near null space"
+    end if
+
+    ! The next lines are temporary, for debugging:
+    if (fieldsplit .and. (attach_null_space .or. attach_transpose_null_space .or. attach_near_null_space)) then
+!!$       do j = 1,Nspecies*Nx+1
+!!$          call KSPGetOperators(sub_ksps(j), sub_Amat, sub_Pmat, ierr)
+!!$          print *,"Does sub_Amat==sub_Pmat?",sub_Amat==sub_Pmat
+!!$          print *,"Here comes the Pmat for fieldsplit",j-1
+!!$          call MatView(sub_Pmat,PETSC_VIEWER_STDOUT_WORLD,ierr)
+!!$       end do
+       j=1
+       call KSPGetOperators(sub_ksps(j), sub_Amat, sub_Pmat, ierr)
+
+       call PetscViewerASCIIOpen(PETSC_COMM_WORLD, 'sub_Pmat.dat', viewer, ierr)
+       call PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_INFO_DETAIL, ierr)
+       call MatView(sub_Pmat,viewer,ierr)
+       call PetscViewerDestroy(viewer, ierr)
+
+       call PetscViewerASCIIOpen(PETSC_COMM_WORLD, 'sub_Pmat.m', viewer, ierr)
+       call PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB, ierr)
+       call PetscObjectSetName(sub_Pmat, "matrix", ierr)
+       call MatView(sub_Pmat,viewer,ierr)
+       call PetscViewerDestroy(viewer, ierr)
+
+       call PetscViewerASCIIOpen(PETSC_COMM_WORLD, 'transpose_null_vec.m', viewer, ierr)
+       call PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB, ierr)
+       call PetscObjectSetName(transpose_null_vecs(1), "t", ierr)
+       call VecView(transpose_null_vecs(1),viewer,ierr)
+       call PetscViewerDestroy(viewer, ierr)
     end if
 
 
@@ -116,11 +190,14 @@
        do j = 1,Nspecies*Nx
           call KSPSetUp(sub_ksps(j), ierr)
           call KSPGetPC(sub_ksps(j), gamg_pc, ierr)
+          !call PCMGSetCycleType(gamg_pc, PC_MG_CYCLE_W, ierr)
           call PCMGGetLevels(gamg_pc, N_levels, ierr)
           if (masterProc) print *,"N_levels=",N_levels
           do level = 1,N_levels-1 ! Level 0 is the coarse level, and we don't want to change the KSP for that level.
              call PCMGGetSmoother(gamg_pc, level, Richardson_ksp, ierr)
              call KSPSetType(Richardson_ksp, KSPRICHARDSON, ierr)
+             !call KSPSetType(Richardson_ksp, KSPGMRES, ierr)
+             !call KSPRichardsonSetSelfScale(Richardson_ksp, PETSC_TRUE, ierr) ! Experimental!
           end do
 
           ! The following lines are my method for AMG evaluating the residual using Amat rather than Pmat.
