@@ -68,7 +68,7 @@ contains
          attach_null_space, attach_transpose_null_space, attach_near_null_space, &
          spatial_scaling_option, constraint_scaling_option, xi_scaling_option, &
          x_scaling_option, f_scaling_option, fieldsplit_parallelization_option, krook, &
-         gamg_threshold, boomeramg_threshold
+         gamg_threshold, boomeramg_threshold, boomeramg_relax_weight
 
     namelist / preconditionerOptions / preconditioner_x, preconditioner_zeta_derivative_option, &
          preconditioner_theta_derivative_option, preconditioner_xi_derivative_option, preconditioner_species, reusePreconditioner, &

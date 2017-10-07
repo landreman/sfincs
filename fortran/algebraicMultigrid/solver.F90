@@ -179,7 +179,9 @@ module solver
        else if (preconditioning_option==3 .or. preconditioning_option==6) then
           !call PetscOptionsInsertString(PETSC_NULL_OBJECT,"-inner_fieldsplit_f_pc_hypre_boomeramg_print_statistics", ierr)
           write (options_string, fmt="(a,es20.13)") "-inner_fieldsplit_f_pc_hypre_boomeramg_strong_threshold ",boomeramg_threshold
-          if (masterProc) print *,"options_string:",options_string
+          call PetscOptionsInsertString(PETSC_NULL_OBJECT,options_string, ierr)
+
+          write (options_string, fmt="(a,es20.13)") "-inner_fieldsplit_f_pc_hypre_boomeramg_relax_weight_all ",boomeramg_relax_weight
           call PetscOptionsInsertString(PETSC_NULL_OBJECT,options_string, ierr)
        end if
 
