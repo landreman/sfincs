@@ -197,8 +197,12 @@ module globalVariables
   logical :: attach_transpose_null_space = .false.
   logical :: attach_near_null_space = .false.
   PetscReal :: gamg_threshold = 0.2
-  PetscReal :: boomeramg_threshold = 0.25
-  PetscReal :: boomeramg_relax_weight = 1
+  real(prec) :: boomeramg_threshold = 0.15
+  real(prec) :: ml_threshold = 0.5
+  real(prec) :: boomeramg_relax_weight = -1
+  real(prec) :: boomeramg_outer_relax_weight = -1
+  integer :: boomeramg_P_max = -1
+  real(prec) :: boomeramg_truncfactor = -1
   real(prec) :: preconditioner_collision_multiplier = 1
   real(prec) :: krook = 0
 

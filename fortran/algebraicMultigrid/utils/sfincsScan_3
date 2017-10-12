@@ -147,6 +147,8 @@ elif scanVariable == "solvertolerance":
     mustBeInteger = False
 elif scanVariable == "upwinding_factor":
     mustBeInteger = False
+elif scanVariable == "preconditioner_upwinding_factor":
+    mustBeInteger = False
 elif scanVariable == "theta_upwinding_factor":
     mustBeInteger = False
 elif scanVariable == "zeta_upwinding_factor":
@@ -169,9 +171,17 @@ elif scanVariable == "whichparallelsolvertofactorpreconditioner":
     mustBeInteger = True
 elif scanVariable == "gamg_threshold":
     mustBeInteger = False
+elif scanVariable == "ml_threshold":
+    mustBeInteger = False
 elif scanVariable == "boomeramg_threshold":
     mustBeInteger = False
 elif scanVariable == "boomeramg_relax_weight":
+    mustBeInteger = False
+elif scanVariable == "boomeramg_outer_relax_weight":
+    mustBeInteger = False
+elif scanVariable == "boomeramg_p_max":
+    mustBeInteger = True
+elif scanVariable == "boomeramg_truncfactor":
     mustBeInteger = False
 elif scanVariable == "petscpreallocationstrategy":
     print warningText
