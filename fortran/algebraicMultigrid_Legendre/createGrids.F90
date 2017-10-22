@@ -523,10 +523,10 @@
     ddtheta_minus_preconditioner = (1-preconditioner_blend)*ddtheta_minus_preconditioner + preconditioner_blend*ddtheta_minus
 !!$    end if
 
-    ddtheta_sum = ddtheta_plus + ddtheta_minus
-    ddtheta_difference = ddtheta_plus - ddtheta_minus
-    ddtheta_sum_preconditioner = ddtheta_plus_preconditioner + ddtheta_minus_preconditioner
-    ddtheta_difference_preconditioner = ddtheta_plus_preconditioner - ddtheta_minus_preconditioner
+    ddtheta_sum = (ddtheta_plus + ddtheta_minus)/2
+    ddtheta_difference = (ddtheta_plus - ddtheta_minus)/2
+    ddtheta_sum_preconditioner = (ddtheta_plus_preconditioner + ddtheta_minus_preconditioner)/2
+    ddtheta_difference_preconditioner = (ddtheta_plus_preconditioner - ddtheta_minus_preconditioner)/2
 
     ! The following arrays will not be needed:
     deallocate(d2dtheta2, temp_matrix)
@@ -875,10 +875,10 @@
        zetaWeights = zetaWeights * Nperiods
     end if
 
-    ddzeta_sum = ddzeta_plus + ddzeta_minus
-    ddzeta_difference = ddzeta_plus - ddzeta_minus
-    ddzeta_sum_preconditioner = ddzeta_plus_preconditioner + ddzeta_minus_preconditioner
-    ddzeta_difference_preconditioner = ddzeta_plus_preconditioner - ddzeta_minus_preconditioner
+    ddzeta_sum = (ddzeta_plus + ddzeta_minus)/2
+    ddzeta_difference = (ddzeta_plus - ddzeta_minus)/2
+    ddzeta_sum_preconditioner = (ddzeta_plus_preconditioner + ddzeta_minus_preconditioner)/2
+    ddzeta_difference_preconditioner = (ddzeta_plus_preconditioner - ddzeta_minus_preconditioner)/2
 
     ! The following arrays will not be needed:
     deallocate(d2dzeta2, temp_matrix)

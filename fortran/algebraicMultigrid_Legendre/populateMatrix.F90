@@ -27,7 +27,7 @@
 
     PetscErrorCode :: ierr
     PetscScalar :: scalar
-    real(prec) :: Z, nHat, THat, mHat, sqrtTHat, sqrtMHat, speciesFactor, speciesFactor2, v_s, collision_multiplier
+    real(prec) :: Z, nHat, THat, mHat, sqrtTHat, sqrtMHat, speciesFactor, speciesFactor2, v_s
     real(prec) :: T32m, factor, spatial_factor, L_factor, temp, temp1, temp2, xDotFactor, xDotFactor2, stuffToAdd
     real(prec) :: factor1, factor2, factorJ1, factorJ2, factorJ3, factorJ4, factorJ5  !!Added by AM 2016-03
     real(prec), dimension(:), allocatable :: xb, expxb2
@@ -384,7 +384,7 @@
                       case (2)
                          factor = - BHat_sub_theta(itheta,izeta_row)/(sqrt_g(itheta,izeta_row)*FSABHat2)*dPhiHatdpsiHat
                       end select
-                      factor = factor * spatial_scaling(itheta,izeta_row) * x_scaling(ix,ispecies) * L_scaling(L+1) * L_scaling(L+1)
+                      factor = factor * spatial_scaling(itheta,izeta_row) * x_scaling(ix,ispecies) * L_scaling(L+1) * L_scaling(L+1) * 2/(2*L+one)
 
                       if (whichMatrix>0) then
                          ! Not preconditioner
@@ -432,7 +432,7 @@
                       case (2)
                          factor = BHat_sub_zeta(itheta_row,izeta)/(sqrt_g(itheta_row,izeta)*FSABHat2)*dPhiHatdpsiHat
                       end select
-                      factor = factor * spatial_scaling(itheta_row,izeta) * x_scaling(ix,ispecies) * L_scaling(L+1) * L_scaling(L+1)
+                      factor = factor * spatial_scaling(itheta_row,izeta) * x_scaling(ix,ispecies) * L_scaling(L+1) * L_scaling(L+1) * 2/(2*L+one)
 
                       if (whichMatrix>0) then
                          ! Not preconditioner
@@ -482,7 +482,7 @@
                       rowIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
 
                       ! Super-diagonal term
-                      if (L < Nxi-1) then
+                      if (L < Nxi_for_x(ix)-1) then
                          ell = L + 1
                          L_factor = L_scaling(ell+1) * 2/(2*L+one) * (L+1)*(L+2)/(two*L+3)
                          colIndex = getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F)
@@ -1309,11 +1309,11 @@
              do ix=ixMin,Nx
                 do itheta=ithetaMin,ithetaMax
                    do izeta=izetaMin,izetaMax
-                      factor = collision_multiplier*spatial_scaling(itheta,izeta)*x_scaling(ix,iSpeciesA)*nu_D(iSpeciesA,ix)
-                      do L = 0,Nxi-1
+                      factor = spatial_scaling(itheta,izeta)*x_scaling(ix,iSpeciesA)*nu_D(iSpeciesA,ix)
+                      do L = 1,Nxi_for_x(ix)-1
                          index = getIndex(iSpeciesA,ix,L+1,itheta,izeta,BLOCK_F)
                          call MatSetValueSparse(matrix, index, index, &
-                              factor*L*(L+1)*L_scaling(L+1)*L_scaling(L+1), ADD_VALUES, ierr)
+                              factor/2*L*(L+1)*2/(2*L+one)*L_scaling(L+1)*L_scaling(L+1), ADD_VALUES, ierr)
                       end do
                    end do
                 end do
@@ -1506,6 +1506,7 @@
           ! at each value of x:
 
           L = 0
+          temp = Ntheta*Nzeta/sum(sqrt_g)
           do itheta = 1,Ntheta
              do izeta = 1,Nzeta
                 ! The matrix elements must be proportional to sqrt_g,

@@ -72,8 +72,7 @@ contains
 
     namelist / preconditionerOptions / preconditioner_x, preconditioner_zeta_derivative_option, &
          preconditioner_theta_derivative_option, preconditioner_species, reusePreconditioner, &
-         preconditioning_option, preconditioner_collision_multiplier, &
-         preconditioner_blend, preconditioner_upwinding_factor
+         preconditioning_option, preconditioner_blend, preconditioner_upwinding_factor
 
 !!$    namelist / export_f / export_full_f, export_delta_f, export_f_theta, export_f_zeta, export_f_x, export_f_xi, &
 !!$         export_f_theta_option, export_f_zeta_option, export_f_xi_option, export_f_x_option
