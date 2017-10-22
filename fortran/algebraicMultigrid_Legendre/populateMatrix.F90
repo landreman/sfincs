@@ -243,7 +243,7 @@
                          L_factor = L_scaling(ell+1) * 2/(2*L+one) * (2*L*L+2*L-one)/((2*L+3)*(2*L-one))
                          colIndex = getIndex(ispecies, ix, ell+1, itheta, izeta_col, BLOCK_F)
                          call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                              factor * L_factor * ddzeta_difference_to_use(izeta_row,izeta_col), ADD_VALUES, ierr)
+                              abs(factor) * L_factor * ddzeta_difference_to_use(izeta_row,izeta_col), ADD_VALUES, ierr)
 
                          ! Super-diagonal-in-L term
                          if (L < Nxi-1) then
@@ -269,7 +269,7 @@
                             L_factor = L_scaling(ell+1) * 2/(2*L+one) * (L+two)*(L+one)/((two*L+5)*(two*L+3))
                             colIndex = getIndex(ispecies, ix, ell+1, itheta, izeta_col, BLOCK_F)
                             call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                                 factor * L_factor * ddzeta_difference_to_use(izeta_row,izeta_col), ADD_VALUES, ierr)
+                                 abs(factor) * L_factor * ddzeta_difference_to_use(izeta_row,izeta_col), ADD_VALUES, ierr)
                          end if
 
                          ! Sub-sub-diagonal-in-L term
@@ -278,7 +278,7 @@
                             L_factor = L_scaling(ell+1) * 2/(2*L+one) * (L-one)*L/((two*L-3)*(two*L-one))
                             colIndex = getIndex(ispecies, ix, ell+1, itheta, izeta_col, BLOCK_F)
                             call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                                 factor * L_factor * ddzeta_difference_to_use(izeta_row,izeta_col), ADD_VALUES, ierr)
+                                 abs(factor) * L_factor * ddzeta_difference_to_use(izeta_row,izeta_col), ADD_VALUES, ierr)
                          end if
                       end do
                    end do
@@ -321,7 +321,7 @@
                          L_factor = L_scaling(ell+1) * 2/(2*L+one) * (2*L*L+2*L-one)/((2*L+3)*(2*L-one))
                          colIndex = getIndex(ispecies, ix, ell+1, itheta_col, izeta, BLOCK_F)
                          call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                              factor * L_factor * ddtheta_difference_to_use(itheta_row,itheta_col), ADD_VALUES, ierr)
+                              abs(factor) * L_factor * ddtheta_difference_to_use(itheta_row,itheta_col), ADD_VALUES, ierr)
 
                          ! Super-diagonal-in-L term
                          if (L < Nxi-1) then
@@ -347,7 +347,7 @@
                             L_factor = L_scaling(ell+1) * 2/(2*L+one) * (L+two)*(L+one)/((two*L+5)*(two*L+3))
                             colIndex = getIndex(ispecies, ix, ell+1, itheta_col, izeta, BLOCK_F)
                             call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                                 factor * L_factor * ddtheta_difference_to_use(itheta_row,itheta_col), ADD_VALUES, ierr)
+                                 abs(factor) * L_factor * ddtheta_difference_to_use(itheta_row,itheta_col), ADD_VALUES, ierr)
                          end if
 
                          ! Sub-sub-diagonal-in-L term
@@ -356,7 +356,7 @@
                             L_factor = L_scaling(ell+1) * 2/(2*L+one) * (L-one)*L/((two*L-3)*(two*L-one))
                             colIndex = getIndex(ispecies, ix, ell+1, itheta_col, izeta, BLOCK_F)
                             call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                                 factor * L_factor * ddtheta_difference_to_use(itheta_row,itheta_col), ADD_VALUES, ierr)
+                                 abs(factor) * L_factor * ddtheta_difference_to_use(itheta_row,itheta_col), ADD_VALUES, ierr)
                          end if
                       end do
                    end do

@@ -154,7 +154,8 @@
     end if
 
     ! The next lines are temporary, for debugging:
-    if (fieldsplit .and. (attach_null_space .or. attach_transpose_null_space .or. attach_near_null_space)) then
+!    if (fieldsplit .and. (attach_null_space .or. attach_transpose_null_space .or. attach_near_null_space)) then
+    if (.false.) then
 !!$       do j = 1,Nspecies*Nx+1
 !!$          call KSPGetOperators(sub_ksps(j), sub_Amat, sub_Pmat, ierr)
 !!$          print *,"Does sub_Amat==sub_Pmat?",sub_Amat==sub_Pmat
