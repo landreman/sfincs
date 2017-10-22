@@ -11,13 +11,14 @@ import h5py
 import numpy
 import inspect, math, os
 import sys
+from timeit import default_timer as timer
 
+from scipy.interpolate import interp1d
 try:
     # Older versions of scipy do not have this interpolation routine
     from scipy.interpolate import PchipInterpolator
     whichInterpolator = 0
 except:
-    from scipy.interpolate import interp1d
     whichInterpolator = 1
 
 from scipy.optimize import brentq
@@ -46,7 +47,10 @@ import matplotlib.pyplot as plt
 #######################
 
 # Load some other required subroutines:
+startTime = timer()
 execfile(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_common")
+endTime = timer()
+print "Time for execfile:",endTime-startTime
 
 numRuns = 0
 Ers = []
@@ -186,6 +190,8 @@ for directory in directories:
     heatFlux_vm = f["heatFlux_vm_rHat"][()]
     elapsedTime = f["elapsed time (s)"][()]
     sources = f["sources"][()]
+    nHats = f["nHats"][()]
+    THats = f["THats"][()]
     atLeastOneDirectorySucceeded = True
     if RHSMode>1:
        transportMatrix = f["transportMatrix"][()]
@@ -312,6 +318,10 @@ numQuantities = len(yAxisLabels)
 # Solve for the ambipolar E_r
 # ***************************************************
 
+# The PchipInterpolator routine seems to return an error when there are only 2 elements to the input array.
+if len(Ers_sorted)<3:
+    whichInterpolator = 1
+
 ambipolaritySolveSucceeded = False
 if doAmbipolaritySolve:
    if max(radialCurrents)>0 and min(radialCurrents)<0:
@@ -344,7 +354,20 @@ if doAmbipolaritySolve:
             if value:
                roots.append(brentq(interpolator,Er_fine[index],Er_fine[index+1]))
          # Convert standard array to numpy array:
-         roots = numpy.array(roots)
+         roots = numpy.sort(numpy.array(roots))
+
+         # Classify roots as ion, unstable, or electron root:
+         if len(roots)==1:
+             if roots[0]*conversionFactorToEr>0:
+                 root_types=['electron']
+             else:
+                 root_types=['ion']
+         elif len(roots)==3:
+             root_types=['ion','unstable','electron']
+         else:
+             # If the number of roots is not 1 or 3, then flag the case as complicated:
+             root_types=['unknown']*len(roots)
+
          print "Roots found for the radial derivative of the electrostatic potential, for various radial coordinates:"
          print "d PhiHat / d psiHat = ",roots * conversionFactorToddpsiHat
          print "d PhiHat / d psiN   = ",roots * conversionFactorToddpsiN
@@ -352,6 +375,7 @@ if doAmbipolaritySolve:
          print "d PhiHat / d rN     = ",roots * conversionFactorToddrN
          print "Er                  = ",roots * conversionFactorToEr
 
+         print "Root types:",root_types
          # Interpolate the other results onto the ambipolar Er(s):
          print "**** Output quantities at these ambipolar E_r value(s) ****"
          outputs_ambipolar = []
@@ -379,7 +403,7 @@ else:
 # Now make the plot
 # ***************************************************
 
-fig = plt.figure()
+fig = plt.figure(figsize=(16,8.5))
 fig.patch.set_facecolor('white')
 
 numCols = math.ceil(math.sqrt(numQuantities*1.0))
@@ -426,7 +450,7 @@ scanType=2
 data = {'scanType':scanType, 'numQuantities':numQuantities, 'numRows':numRows,'numCols':numCols,
         'xdata':xdata, 'ydata':ydata, 'xlabels':xlabels, 'ylabels':ylabels,
         'xscales':xscales, 'yscales':yscales, 'ymins':ymins, 'ymaxs':ymaxs,
-        'linespec':linespec}
+        'linespec':linespec, 'nHats':nHats, 'THats':THats}
 outputFile = open('sfincsScan.dat','wb')
 # pickle.dump(scanType,outputFile)
 # pickle.dump(numQuantities,outputFile)
@@ -453,7 +477,7 @@ except:
 
 if ambipolaritySolveSucceeded:
    # Save info which may be used by sfincsScanPlot_5 (radial scan):
-   data.update({'roots':roots, 'outputs_ambipolar':outputs_ambipolar, 'radius_wish':radius_wish, 'radius_actual':radius_actual})
+   data.update({'roots':roots, 'outputs_ambipolar':outputs_ambipolar, 'radius_wish':radius_wish, 'radius_actual':radius_actual, 'root_types':root_types, 'nHats':nHats, 'THats':THats})
    outputFile = open(filename,'wb')
    pickle.dump(data,outputFile)
    outputFile.close()

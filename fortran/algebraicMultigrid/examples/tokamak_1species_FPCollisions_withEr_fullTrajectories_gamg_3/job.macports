@@ -1,0 +1,2 @@
+#!/bin/bash
+mpiexec -n 7 ../../sfincs

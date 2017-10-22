@@ -1,0 +1,142 @@
+! Input file for SFINCS version 3.
+! See the user manual for documentation of the parameters in this file.
+!----------------------------------------------------------------------
+
+!ss scanType = 1
+
+! Settings specific to scanType = 2:
+!ss NErs = 5
+!ss ErMin = -1.0d+0
+!ss ErMax =  1.0d+0
+
+! Settings specific to scanType = 3:
+!ss scanVariable = iota
+!ss scanVariableMin = 1.01
+!ss scanVariableMax = 2.01
+!ss scanVariableN = 5
+!ss scanVariableScale = linear
+
+
+&general
+  RHSMode = 1
+!  saveMatricesAndVectorsInBinary = .true.
+/
+
+&geometryParameters
+
+  inputRadialCoordinate = 3    ! rN
+  rN_wish = 0.3
+
+  geometryScheme = 1
+  B0OverBBar = 1.0d+0
+  GHat = 1.0d+0
+  IHat = 0.0d+0
+  iota = 1.31d+0
+  epsilon_t = 0.1d+0
+  epsilon_h = 0.0d+0
+  helicity_l = 1
+  helicity_n = 1
+
+  psiAHat = 0.045d+0
+  aHat = 0.1
+/
+
+&speciesParameters
+!  Zs = 1
+!  mHats = 1
+!  nHats = 1.0d+0
+!  THats = 0.5d+0
+!  dNHatdrHats = -6.0d+0
+!  dTHatdrHats = -3.0d+0
+
+  Zs = 1 -1      
+  mHats = 1 0.000545509d+0
+  nHats = 1.0d+0 1.0d+0
+  THats = 1.0d+0 1.0d+0
+  dNHatdrHats = -0.5d+0 -0.5d+0
+  dTHatdrHats = -2.0d+0 -2.0d+0
+
+!  Zs =  -1      
+!  mHats =  0.000545509d+0
+!  nHats =  1.0d+0
+!  THats =  1.0d+0
+!  dNHatdrHats =  -0.5d+0
+!  dTHatdrHats =  -2.0d+0
+
+!  Zs =  1      
+!  mHats =  1.0d+0
+!  nHats =  1.0d+0
+!  THats =  1.0d+0
+!  dNHatdrHats =  0.0
+!  dTHatdrHats =  -2.0
+/
+
+&physicsParameters
+  Delta = 4.5694d-3
+  alpha = 1.0d+0
+  nu_n = 8.4774d-3
+
+  Er = -30.0d+0
+
+  collisionOperator = 1
+
+  includeXDotTerm = .true.
+  includeElectricFieldTermInXiDot = .true.
+  useDKESExBDrift = .false.
+
+  includePhi1 = .false.
+/
+
+&resolutionParameters
+  Ntheta = 21
+!ss NthetaMinFactor = 0.7
+!ss NthetaMaxFactor = 2
+!ss NthetaNumRuns = 5
+
+  Nzeta = 1
+!ss NzetaMinFactor = 0.8
+!ss NzetaMaxFactor = 2
+!ss NzetaNumRuns = 0
+
+  Nxi = 40
+!ss NxiMinFactor = 0.8
+!ss NxiMaxFactor = 2
+!ss NxiNumRuns = 6
+  
+  Nx = 8
+!ss NxMinFactor = 0.8
+!ss NxMaxFactor = 2
+!ss NxNumRuns = 30
+
+  solverTolerance = 1d-6
+!ss solverToleranceMinFactor = 0.1
+!ss solverToleranceMaxFactor = 10
+!ss solverToleranceNumRuns = 3
+
+/
+
+&otherNumericalParameters
+/
+
+&preconditionerOptions
+  ! Since the matrix size is so small for this example, we can afford to make the preconditioner matrix
+  ! the same as the real system matrix.
+  preconditioner_species = 0
+  preconditioner_x = 0
+  preconditioner_xi = 0
+/
+
+&export_f
+  export_full_f = .true.
+  export_delta_f = .true.
+
+  export_f_theta_option = 1
+  export_f_zeta_option = 1
+  export_f_theta = 0
+  export_f_zeta = 0
+  export_f_xi_option = 0
+  export_f_xi = -1 -0.9 -0.8 -0.7 -0.6 -0.5 -0.4 -0.3 -0.2 -0.1 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1
+  export_f_x_option = 2
+  export_f_x = 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2 2.1 2.2 2.3 2.4 2.5
+
+/

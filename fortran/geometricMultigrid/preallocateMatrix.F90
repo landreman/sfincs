@@ -1,0 +1,246 @@
+#include "PETScVersions.F90"
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
+#include <finclude/petscmatdef.h>
+#else
+#include <petsc/finclude/petscmatdef.h>
+#endif
+
+subroutine preallocateMatrix(matrix, whichMatrix, level)
+
+  use kinds
+  use petscmat
+  use globalVariables, only: levels, Nx, Nspecies, includePhi1, &
+       constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, & 
+       includePhi1InKineticEquation, quasineutralityOption, collisionOperator, &
+       preconditioner_field_term_xi_option
+  use indices
+
+  implicit none
+
+  integer, intent(in) :: whichMatrix, level
+  Mat :: matrix
+  integer :: predictedNNZForEachRowOfPreconditioner, predictedNNZForEachRowOfTotalMatrix
+  integer, dimension(:), allocatable :: predictedNNZsForEachRow, predictedNNZsForEachRowDiagonal
+  PetscErrorCode :: ierr
+  integer :: tempInt1, i, itheta, izeta, ispecies, ix, index
+  integer :: firstRowThisProcOwns, lastRowThisProcOwns, numLocalRows
+  integer :: Ntheta, Nzeta, Nxi, matrixSize
+
+  if (masterProc) print "(a,i2,a,i3,a)"," Beginning preallocation for whichMatrix =",whichMatrix," at level",level,"."
+
+  Ntheta = levels(level)%Ntheta
+  Nzeta  = levels(level)%Nzeta
+  Nxi    = levels(level)%Nxi
+  matrixSize = levels(level)%matrixSize
+  
+  !predictedNNZForEachRowOfTotalMatrix = 4*(3*Nx + 5*3 + 5*3 + 5 + Nx)
+  !predictedNNZForEachRowOfTotalMatrix = 4*(3*Nx + 5*3 + 5*3 + 5 + Nx + Ntheta*Nzeta)
+  tempInt1 = Nspecies*Nx + 5*3 + 5*3 + 5 + 3*Nx + 2 + Nx*Ntheta*Nzeta
+  if (tempInt1 > matrixSize) then
+     tempInt1 = matrixSize
+  end if
+  predictedNNZForEachRowOfTotalMatrix = tempInt1
+
+  ! In principle, we do not need to preallocate as many nonzeros in the preconditioner.
+  ! But for simplicity, just use the same estimate for now.
+  predictedNNZForEachRowOfPreconditioner = predictedNNZForEachRowOfTotalMatrix
+  
+  allocate(predictedNNZsForEachRow(matrixSize))
+  allocate(predictedNNZsForEachRowDiagonal(matrixSize))
+
+  tempInt1 = 2 & ! particle and heat sources
+       + Nx ! xdot
+  ! Below, the 1 is subtracted because we already counted the diagonal, above.
+  tempInt1 = tempInt1 + max(max_nnz_per_row(Ntheta,levels(level)%ddtheta_plus), max_nnz_per_row(Ntheta,levels(level)%ddtheta_minus)) - 1
+  tempInt1 = tempInt1 + max(max_nnz_per_row(Nzeta,levels(level)%ddzeta_plus), max_nnz_per_row(Nzeta,levels(level)%ddzeta_minus)) - 1
+  tempInt1 = tempInt1 + max(max_nnz_per_row(Nxi,levels(level)%ddxi_plus+100*levels(level)%pitch_angle_scattering_operator), &
+       max_nnz_per_row(Nxi,levels(level)%ddxi_minus+100*levels(level)%pitch_angle_scattering_operator)) - 1
+  ! I need to add the nonzeros for the Fokker-Planck operator.
+  if (masterProc) then
+     print *,"nnz per row for ddtheta_plus:",max_nnz_per_row(Ntheta,levels(level)%ddtheta_plus)
+     print *,"nnz per row for ddzeta_plus: ",max_nnz_per_row(Nzeta,levels(level)%ddzeta_plus)
+     print *,"nnz per row for ddxi_plus:   ",max_nnz_per_row(Nxi,levels(level)%ddxi_plus)
+  end if
+  if (collisionOperator==0) then
+     ! Eventually, add a test so these terms are only added if preconditioner_x=0.
+     select case (preconditioner_field_term_xi_option)
+     case (0)
+        tempInt1 = tempInt1 + Nspecies*Nx*Nxi - 1
+     case (1)
+        tempInt1 = tempInt1 + Nspecies*Nx - 1
+     case (2)
+        tempInt1 = tempInt1 + Nspecies*Nx*3 - 1
+     case default
+        print *,"Error! Invalid preconditioner_field_term_xi_option:",preconditioner_field_term_xi_option
+     end select
+  end if
+
+  if (includePhi1InKineticEquation .and. includePhi1) then !!Added by AM 2016-03
+     tempInt1 = tempInt1 &
+       + 4 &               ! d Phi_1 / d theta term at L=0
+       + 4                 ! d Phi_1 / d zeta term at L=0
+     tempInt1 = tempInt1 + 1 !!Added by AM 2016-04, for row = BLOCK_F, col = BLOCK_QN)
+     tempInt1 = tempInt1 + 2*Nx -2 ! Nonlinear term is dense in x with ell = L +/- 1, which we have not yet counted. Subtract 2 for the diagonal we already counted.
+  end if
+  ! Note: we do not need extra nonzeros for the d/dxi terms or for the diagonal, since these have already been accounted for in the ddx and ddtheta parts.
+  if (tempInt1 > matrixSize) then
+     tempInt1 = matrixSize
+  end if
+  predictedNNZsForEachRow = tempInt1
+  
+  select case (constraintScheme)
+  case (0)
+  case (1, 3, 4)
+     ! The rows for the constraints have more nonzeros:
+     do ispecies=1,Nspecies
+        index = getIndex(level,ispecies,1,1,1,1,BLOCK_DENSITY_CONSTRAINT)
+        predictedNNZsForEachRow(index+1) = Ntheta*Nzeta*Nxi*Nx + 1 ! +1 for diagonal
+        index = getIndex(level,ispecies,1,1,1,1,BLOCK_PRESSURE_CONSTRAINT)
+        predictedNNZsForEachRow(index+1) = Ntheta*Nzeta*Nxi*Nx + 1 ! +1 for diagonal
+     end do
+  case (2)
+     ! The rows for the constraints have more nonzeros:
+     do ispecies=1,Nspecies
+        do ix = 1, Nx
+           index = getIndex(level,ispecies,ix,1,1,1,BLOCK_F_CONSTRAINT)
+           predictedNNZsForEachRow(index+1) = Ntheta*Nzeta*Nxi + 1 ! +1 for diagonal
+        end do
+     end do
+  case default
+  end select
+  
+  if (includePhi1) then
+     ! Set rows for the quasineutrality condition:
+     do itheta=1,Ntheta
+        do izeta=1,Nzeta
+           index = getIndex(level,1,1,1,itheta,izeta,BLOCK_QN)
+
+           !!Added by AM 2016-03!!
+           if (quasineutralityOption == 1) then
+           !!!!!!!!!!!!!!!!!!!!!!!
+              ! Add 1 because we are indexing a Fortran array instead of a PETSc matrix:
+              predictedNNZsForEachRow(index+1) = Nx*Nxi*Nspecies &  ! Integrals over f to get the density
+                   + 1 &          ! lambda
+                   + 1            ! Diagonal entry
+              
+           !!Added by AM 2016-03!!
+           else
+              ! Add 1 because we are indexing a Fortran array instead of a PETSc matrix:
+              predictedNNZsForEachRow(index+1) = Nx*Nxi*1 &  ! Integrals over f to get the density (only 1 kinetic species for EUTERPE equations)
+                   + 1 &          ! lambda
+                   + 1            ! Diagonal entry
+           end if
+           !!!!!!!!!!!!!!!!!!!!!!!
+        end do
+     end do
+     ! Set row for lambda constraint:
+     index = getIndex(level,1,1,1,1,1,BLOCK_PHI1_CONSTRAINT)
+     predictedNNZsForEachRow(index+1) = Ntheta*Nzeta + 1 ! <Phi_1>, plus 1 for diagonal.
+  end if
+  predictedNNZsForEachRowDiagonal = predictedNNZsForEachRow
+  
+  
+  ! Allocate the main global matrix:
+  select case (PETSCPreallocationStrategy)
+  case (0)
+     ! 0 = Old method with high estimated number-of-nonzeros.
+     ! This method is simpler and works consistently but uses unnecessary memory.
+     if (whichMatrix==0) then
+        call MatCreateAIJ(MPIComm, PETSC_DECIDE, PETSC_DECIDE, matrixSize, matrixSize, &
+             predictedNNZForEachRowOfPreconditioner, PETSC_NULL_INTEGER, &
+             predictedNNZForEachRowOfPreconditioner, PETSC_NULL_INTEGER, &
+             matrix, ierr)
+     else
+        call MatCreateAIJ(MPIComm, PETSC_DECIDE, PETSC_DECIDE, matrixSize, matrixSize, &
+             predictedNNZForEachRowOfTotalMatrix, PETSC_NULL_INTEGER, &
+             predictedNNZForEachRowOfTotalMatrix, PETSC_NULL_INTEGER, &
+             matrix, ierr)
+     end if
+     
+  case (1)
+     ! 1 = New method with lower, more precise estimated number-of-nonzeros.
+     ! This method is more complicated, but it should use much less memory.
+     
+     call MatCreate(MPIComm, matrix, ierr)
+     !call MatSetType(matrix, MATMPIAIJ, ierr)
+     call MatSetType(matrix, MATAIJ, ierr)
+     
+     numLocalRows = PETSC_DECIDE
+     call PetscSplitOwnership(MPIComm, numLocalRows, matrixSize, ierr)
+     
+     call MatSetSizes(matrix, numLocalRows, numLocalRows, PETSC_DETERMINE, PETSC_DETERMINE, ierr)
+     
+     ! We first pre-allocate assuming number-of-nonzeros = 0, because due to a quirk in PETSc,
+     ! MatGetOwnershipRange only works after MatXXXSetPreallocation is called:
+     if (numProcs == 1) then
+        call MatSeqAIJSetPreallocation(matrix, 0, PETSC_NULL_INTEGER, ierr)
+     else
+        call MatMPIAIJSetPreallocation(matrix, 0, PETSC_NULL_INTEGER, 0, PETSC_NULL_INTEGER, ierr)
+     end if
+     
+     call MatGetOwnershipRange(matrix, firstRowThisProcOwns, lastRowThisProcOwns, ierr)
+     !print *,"I am proc ",myRank," and I own rows ",firstRowThisProcOwns," to ",lastRowThisProcOwns-1
+     
+     ! To avoid a PETSc error message, the predicted nnz for each row of the diagonal blocks must be no greater than the # of columns this proc owns:
+     ! But we must not lower the predicted nnz for the off-diagonal blocks, because then the total predicted nnz for the row
+     ! would be too low.
+     tempInt1 = lastRowThisProcOwns - firstRowThisProcOwns
+     do i=firstRowThisProcOwns+1,lastRowThisProcOwns
+        if (predictedNNZsForEachRowDiagonal(i) > tempInt1) then
+           predictedNNZsForEachRowDiagonal(i) = tempInt1
+        end if
+     end do
+     
+     ! Now, set the real estimated number-of-nonzeros:
+     if (numProcs == 1) then
+        call MatSeqAIJSetPreallocation(matrix, 0, predictedNNZsForEachRow(firstRowThisProcOwns+1:lastRowThisProcOwns), ierr)
+     else
+        call MatMPIAIJSetPreallocation(matrix, &
+             0, predictedNNZsForEachRowDiagonal(firstRowThisProcOwns+1:lastRowThisProcOwns), &
+             0, predictedNNZsForEachRow(firstRowThisProcOwns+1:lastRowThisProcOwns), ierr)
+     end if
+     
+  case default
+     print *,"Error! Invalid setting for PETSCPreallocationStrategy."
+     stop
+  end select
+  
+!!$  if (whichMatrix==0 .and. masterProc) then
+!!$     print *,"Here comes predictedNNZsForEachRow:"
+!!$     print *,predictedNNZsForEachRow
+!!$     print *,"Here comes predictedNNZsForEachRowDiagonal:"
+!!$     print *,predictedNNZsForEachRowDiagonal
+!!$  end if
+
+  ! If any mallocs are required during matrix assembly, do not generate an error:
+!!$  call MatSetOption(matrix, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE, ierr)
+  
+  !if (masterProc) then
+  !   print *,"Done with preallocation for whichMatrix = ",whichMatrix
+  !end if
+
+contains
+
+  function max_nnz_per_row(N, matrix)
+    ! This function intentionally always includes a nonzero for the diagonal, even if the diagonal element is 0!
+    implicit none
+    
+    integer :: N, max_nnz_per_row
+    real(prec), dimension(N,N) :: matrix
+    integer :: row, col, counter
+    
+    max_nnz_per_row = 0
+    do row = 1,N
+       counter = 0
+       do col = 1,N
+          if (abs(matrix(row,col))>1e-12 .or. (row==col)) counter = counter+1
+       end do
+       max_nnz_per_row = max(counter,max_nnz_per_row)
+    end do
+    
+  end function max_nnz_per_row
+
+end subroutine preallocateMatrix
+
+! -----------------------------------------------------
+

@@ -44,6 +44,7 @@ EXTRA_COMPILE_FLAGS = -I${PETSC_DIR}/include -I/opt/local/include -ffree-line-le
 # Any other flags for linking, such as -l library flags:
 EXTRA_LINK_FLAGS = -L/opt/local/lib -lhdf5_fortran -lhdf5 -lhdf5_hl -lhdf5hl_fortran  -lnetcdf -lnetcdff
 #EXTRA_LINK_FLAGS = -L/opt/local/lib -lnetcdff  -lnetcdf -lhdf5hl_fortran -lhdf5_fortran
+#EXTRA_LINK_FLAGS = -L/opt/local/lib -lnetcdff  -lnetcdf -lhdf5hl_fortran -lhdf5_fortran -lhdf5 -lhdf5_hl
 # /opt/local/lib is where macports puts the libraries for hdf5 and netcdf.
 
 # The next parameters are used only for running and testing selected examples using "make test".

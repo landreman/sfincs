@@ -1,0 +1,49 @@
+# -*- mode: makefile -*-
+#
+# This makefile is used for a mac laptop or desktop computer in which
+# SFINCS's dependencies (PETSc, mumps, hdf5, netcdf) have been installed
+# using the macport package management system.
+
+# As of 2016-03-30, the following macports packages worked:
+# sudo port install petsc +gcc5 +mumps +parmetis
+# sudo port select --set mpi mpich-gcc5-fortran
+# sudo port install hdf5 +fortran +gcc5
+# sudo port install netcdf +gcc5 -dap
+# sudo port install netcdf-fortran +gcc5
+
+# To install the various python packages used by sfincsScanPlot,
+# the following worked on 2016-03-30:
+# sudo port install py27-h5py +gcc5
+# sudo port select --set python python27
+# sudo port select --set python2 python27
+# sudo port select --set cython cython27
+# sudo port install py27-scipy +gcc5
+# sudo port install py27-matplotlib
+
+#PETSC_DIR=/opt/local/lib/petsc
+
+PETSC_DIR=/Users/mattland/petsc/petsc-3.7.5
+PETSC_ARCH=20170406-16
+#PETSC_ARCH=20170410-01-singlePrecision_soNoHypre
+
+# The next 2 lines work for PETSc version 3.6.0 and later:
+include ${PETSC_DIR}/lib/petsc/conf/variables
+include ${PETSC_DIR}/lib/petsc/conf/rules
+
+# Any other flags for compiling, such as -I include flags:
+#EXTRA_COMPILE_FLAGS = -I${PETSC_DIR}/include -I/opt/local/include -ffree-line-length-none -O0 -g
+EXTRA_COMPILE_FLAGS = -I${PETSC_DIR}/include -I${PETSC_DIR}/${PETSC_ARCH}/include -I/opt/local/include -ffree-line-length-none -Wunused -g -O0
+# /opt/local/include is where macports puts the include files for hdf5 and netcdf.
+
+# Any other flags for linking, such as -l library flags:
+EXTRA_LINK_FLAGS = -L/opt/local/lib -lnetcdff  -lnetcdf -lhdf5hl_fortran -lhdf5_fortran -lhdf5 -lhdf5_hl
+# /opt/local/lib is where macports puts the libraries for hdf5 and netcdf.
+
+# The next parameters are used only for running and testing selected examples using "make test".
+
+# For "make test", are runs submitted using a batch system (such as PBS)?  
+# The value of this variable must be "yes" or "no".
+SFINCS_IS_A_BATCH_SYSTEM_USED=no
+
+# This next line matters only if a batch system is used:
+SFINCS_COMMAND_TO_SUBMIT_JOB=

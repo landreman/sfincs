@@ -1,0 +1,36 @@
+# -*- mode: makefile -*-
+
+OBJ_FILES = apply_dense_terms.o ChebyshevGrid.o ChebyshevInterpolationMatrix.o \
+	  createGrids.o diagnostics.o evaluateJacobian.o evaluateResidual.o geometry.o \
+	  globalVariables.o indices.o periodicInterpolation.o polynomialDiffMatrices.o polynomialInterpolationMatrix.o \
+	  populateMatrix.o preallocateMatrix.o radialCoordinates.o rank_mod.o readInput.o sfincs.o solver.o sparsify.o \
+	  uniformDiffMatrices.o uniformInterpolationMatrix.o validateInput.o writeHDF5Output.o xGrid.o \
+	  quadpack/quadpack.a readVMEC/readVMEC.a
+
+# Dependencies:
+apply_dense_terms.o: globalVariables.o indices.o
+ChebyshevGrid.o: 
+ChebyshevInterpolationMatrix.o: 
+createGrids.o: globalVariables.o polynomialDiffMatrices.o xGrid.o geometry.o indices.o # export_f.o
+diagnostics.o: globalVariables.o indices.o writeHDF5Output.o
+evaluateJacobian.o: globalVariables.o
+evaluateResidual.o: globalVariables.o indices.o
+#export_f.o: globalVariables.o xGrid.o
+geometry.o: globalVariables.o radialCoordinates.o readVMEC/readVMEC.a
+indices.o: globalVariables.o
+periodicInterpolation.o: rank_mod.o
+polynomialDiffMatrices.o: xGrid.o
+polynomialInterpolationMatrix.o: 
+populateMatrix.o: globalVariables.o sparsify.o indices.o xGrid.o
+preallocateMatrix.o: indices.o globalVariables.o
+radialCoordinates.o: globalVariables.o
+rank_mod.o:
+readInput.o: globalVariables.o xGrid.o # export_f.o
+sfincs.o: geometry.o globalVariables.o writeHDF5Output.o readInput.o solver.o radialCoordinates.o
+solver.o: globalVariables.o
+sparsify.o:
+uniformDiffMatrices.o: 
+uniformInterpolationMatrix.o: 
+validateInput.o: globalVariables.o xGrid.o
+writeHDF5Output.o: globalVariables.o xGrid.o # export_f.o
+xGrid.o:
