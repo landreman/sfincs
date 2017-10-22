@@ -1,0 +1,33 @@
+# -*- mode: makefile -*-
+#
+# This makefile is used for a computer running a flavor of ubuntu 16.04,
+# with 1 to a few processors, and with no job management system. 
+#
+# Install required packages (not necessarily complete):
+# libpetsc3.6.2-dev libnetcdf-dev libnetcdff-dev libhdf5-dev hdf5-helpers
+
+# These next 2 includes set FC, FLINKER, and PETSC_LIB:
+#
+# If both petsc-real and petsc-complex are installed, you may need uncomment
+# and modify the next line in order to use the correct petsc.
+#PETSC_DIR = /usr/lib/petscdir/3.6.2/x86_64-linux-gnu-real
+include ${PETSC_DIR}/lib/petsc/conf/petscvariables
+include ${PETSC_DIR}/lib/petsc/conf/petscrules
+FLINKER = mpif90
+
+# Any other flags for compiling, such as -I include flags:
+EXTRA_COMPILE_FLAGS = -I${PETSC_DIR}/include -I/usr/include -I/usr/include/hdf5/openmpi -ffree-line-length-none
+
+# Any other flags for linking, such as -l library flags:
+EXTRA_LINK_FLAGS = -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi -lnetcdff -lnetcdf -lhdf5hl_fortran -lhdf5_fortran 
+
+# The next parameters are used only for running and testing selected examples using "make test".
+
+# For "make test", are runs submitted using a batch system (such as PBS)?  
+# The value of this variable must be "yes" or "no".
+SFINCS_IS_A_BATCH_SYSTEM_USED=no
+
+# This next line matters only if a batch system is used:
+SFINCS_COMMAND_TO_SUBMIT_JOB=
+
+SFINCS_SYSTEM=laptop
