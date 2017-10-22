@@ -216,7 +216,7 @@
        ! *********************************************************
        ! Add the d/dzeta streaming term:
        ! *********************************************************
-       
+
        if ((whichMatrix .ne. 2) .and. (Nzeta > 1)) then
           do izeta_row = izetaMin,izetaMax
              do itheta = ithetaMin,ithetaMax
@@ -264,7 +264,7 @@
                          end if
 
                          ! Super-super-diagonal-in-L term
-                         if (L < Nxi-1) then
+                         if (L < Nxi-2) then
                             ell = L + 2
                             L_factor = L_scaling(ell+1) * 2/(2*L+one) * (L+two)*(L+one)/((two*L+5)*(two*L+3))
                             colIndex = getIndex(ispecies, ix, ell+1, itheta, izeta_col, BLOCK_F)
@@ -372,19 +372,19 @@
        ! *********************************************************
        ! Add the d/dzeta ExB term:
        ! *********************************************************
-       
+
        if ((whichMatrix .ne. 2) .and. (Nzeta > 1)) then
           do izeta_row = izetaMin,izetaMax
              do itheta = ithetaMin,ithetaMax
                 do ix = 1,Nx
-                   do ixi = 1,Nxi_for_x(ix)
+                   do L = 0, Nxi_for_x(ix)-1
                       select case (ExB_option)
                       case (1)
                          factor = - BHat_sub_theta(itheta,izeta_row)/(sqrt_g(itheta,izeta_row)*BHat(itheta,izeta_row)*BHat(itheta,izeta_row))*dPhiHatdpsiHat
                       case (2)
                          factor = - BHat_sub_theta(itheta,izeta_row)/(sqrt_g(itheta,izeta_row)*FSABHat2)*dPhiHatdpsiHat
                       end select
-                      factor = factor * spatial_scaling(itheta,izeta_row) * x_scaling(ix,ispecies) * L_scaling(ixi) * L_scaling(ixi)
+                      factor = factor * spatial_scaling(itheta,izeta_row) * x_scaling(ix,ispecies) * L_scaling(L+1) * L_scaling(L+1)
 
                       if (whichMatrix>0) then
                          ! Not preconditioner
@@ -401,9 +401,9 @@
                             ddzeta_to_use => ddzeta_minus_preconditioner
                          end if
                       end if
-                      rowIndex = getIndex(ispecies, ix, ixi, itheta, izeta_row, BLOCK_F)
+                      rowIndex = getIndex(ispecies, ix, L+1, itheta, izeta_row, BLOCK_F)
                       do izeta_col = 1,Nzeta
-                         colIndex = getIndex(ispecies, ix, ixi, itheta, izeta_col, BLOCK_F)
+                         colIndex = getIndex(ispecies, ix, L+1, itheta, izeta_col, BLOCK_F)
                          call MatSetValueSparse(matrix, rowIndex, colIndex, &
                               factor * ddzeta_to_use(izeta_row,izeta_col), ADD_VALUES, ierr)
                       end do
@@ -425,14 +425,14 @@
           do izeta = izetaMin,izetaMax
              do itheta_row = ithetaMin,ithetaMax
                 do ix = 1,Nx
-                   do ixi = 1,Nxi_for_x(ix)
+                   do L = 0, Nxi_for_x(ix)-1
                       select case (ExB_option)
                       case (1)
                          factor = BHat_sub_zeta(itheta_row,izeta)/(sqrt_g(itheta_row,izeta)*BHat(itheta_row,izeta)*BHat(itheta_row,izeta))*dPhiHatdpsiHat
                       case (2)
                          factor = BHat_sub_zeta(itheta_row,izeta)/(sqrt_g(itheta_row,izeta)*FSABHat2)*dPhiHatdpsiHat
                       end select
-                      factor = factor * spatial_scaling(itheta_row,izeta) * x_scaling(ix,ispecies) * L_scaling(ixi) * L_scaling(ixi)
+                      factor = factor * spatial_scaling(itheta_row,izeta) * x_scaling(ix,ispecies) * L_scaling(L+1) * L_scaling(L+1)
 
                       if (whichMatrix>0) then
                          ! Not preconditioner
@@ -450,9 +450,9 @@
                          end if
                       end if
 
-                      rowIndex = getIndex(ispecies, ix, ixi, itheta_row, izeta, BLOCK_F)
+                      rowIndex = getIndex(ispecies, ix, L+1, itheta_row, izeta, BLOCK_F)
                       do itheta_col = 1,Ntheta
-                         colIndex = getIndex(ispecies, ix, ixi, itheta_col, izeta, BLOCK_F)
+                         colIndex = getIndex(ispecies, ix, L+1, itheta_col, izeta, BLOCK_F)
                          call MatSetValueSparse(matrix, rowIndex, colIndex, &
                               factor * ddtheta_to_use(itheta_row,itheta_col), ADD_VALUES, ierr)
                       end do

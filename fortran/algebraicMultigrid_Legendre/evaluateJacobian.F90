@@ -51,7 +51,7 @@
        call populateMatrix(Mat_for_preconditioner, 0, stateVec)
     end if
     if (firstMatrixCreation) then
-       call preallocateMatrix(Mat_for_Jacobian, 1)
+       !call preallocateMatrix(Mat_for_Jacobian, 1)
        call populateMatrix(Mat_for_Jacobian, 1, stateVec)
     end if
 
