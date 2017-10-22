@@ -181,7 +181,24 @@ module solver
           write (options_string, fmt="(a,es20.13)") "-inner_fieldsplit_f_pc_hypre_boomeramg_strong_threshold ",boomeramg_threshold
           call PetscOptionsInsertString(PETSC_NULL_OBJECT,options_string, ierr)
 
-          write (options_string, fmt="(a,es20.13)") "-inner_fieldsplit_f_pc_hypre_boomeramg_relax_weight_all ",boomeramg_relax_weight
+          if (boomeramg_relax_weight >= 0) then
+             write (options_string, fmt="(a,es20.13)") "-inner_fieldsplit_f_pc_hypre_boomeramg_relax_weight_all ",boomeramg_relax_weight
+             call PetscOptionsInsertString(PETSC_NULL_OBJECT,options_string, ierr)
+          end if
+          if (boomeramg_outer_relax_weight >= 0) then
+             write (options_string, fmt="(a,es20.13)") "-inner_fieldsplit_f_pc_hypre_boomeramg_outer_relax_weight_all ",boomeramg_outer_relax_weight
+             call PetscOptionsInsertString(PETSC_NULL_OBJECT,options_string, ierr)
+          end if
+          if (boomeramg_truncfactor >= 0) then
+             write (options_string, fmt="(a,es20.13)") "-inner_fieldsplit_f_pc_hypre_boomeramg_truncfactor ",boomeramg_truncfactor
+             call PetscOptionsInsertString(PETSC_NULL_OBJECT,options_string, ierr)
+          end if
+          if (boomeramg_P_max >= 0) then
+             write (options_string, fmt="(a,i10)") "-inner_fieldsplit_f_pc_hypre_boomeramg_P_max ",boomeramg_P_max
+             call PetscOptionsInsertString(PETSC_NULL_OBJECT,options_string, ierr)
+          end if
+       elseif (preconditioning_option==8 .or. preconditioning_option==9) then
+          write (options_string, fmt="(a,es20.13)") "-inner_fieldsplit_f_pc_ml_Threshold ",ml_threshold
           call PetscOptionsInsertString(PETSC_NULL_OBJECT,options_string, ierr)
        end if
 
