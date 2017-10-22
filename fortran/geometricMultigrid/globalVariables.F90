@@ -138,6 +138,8 @@ module globalVariables
   integer :: xi_quadrature_option = 3
   real(prec) :: theta_upwinding_factor = 0.2
   real(prec) :: zeta_upwinding_factor = 0.0
+  real(prec) :: upwinding_factor = 0.0
+  real(prec) :: preconditioner_upwinding_factor = 0.0
 
   !integer :: xDotDerivativeScheme = 0
 
@@ -170,6 +172,7 @@ module globalVariables
   integer :: preconditioner_pitch_angle_scattering_option=2
   integer :: preconditioner_field_term_xi_option = 1 ! Should be 1 or 2 eventually.
   logical :: reusePreconditioner=.true.
+  real(prec) :: preconditioner_blend=0
 
   integer :: constraintScheme=-1
 
