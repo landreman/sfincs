@@ -296,7 +296,8 @@ else:
             #yAxisLabels.append("heatFlux vd_rHat (species "+str(i)+")")
             #yAxisLabels.append("heatFlux withoutPhi1_rHat (species "+str(i)+")")
             yAxisLabels.append("heatFlux rHat (species "+str(i)+")")
-         yAxisLabels.append("FSABjHatOverRootFSAB2")
+##         yAxisLabels.append("FSABjHatOverRootFSAB2") ##Commented by AM 2017-11
+         yAxisLabels.append("FSABjHat") ##Added by AM 2017-11
          yAxisLabels.append(radialCurrentLabel)
         
       else:
