@@ -1960,7 +1960,8 @@
 
     ! Shift the diagonal of pitch-angle-scattering in the preconditioner, if desired
     do j = 1,Nxi
-       pitch_angle_scattering_operator_preconditioner(j,j) = pitch_angle_scattering_operator_preconditioner(j,j) - krook
+       pitch_angle_scattering_operator_preconditioner(j,j) = pitch_angle_scattering_operator_preconditioner(j,j) - Krook
+       pitch_angle_scattering_operator(j,j) = pitch_angle_scattering_operator(j,j) - Krook
     end do
 
     if (masterProc) then

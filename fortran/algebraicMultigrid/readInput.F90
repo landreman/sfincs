@@ -47,7 +47,7 @@ contains
          dPhiHatdpsiHat, dPhiHatdpsiN, dPhiHatdrHat, dPhiHatdrN, Er, &
          includeTemperatureEquilibrationTerm, includePhi1, &
          nuPrime, EStar, magneticDriftScheme, includePhi1InKineticEquation, &
-         quasineutralityOption, old_output_normalizations, ln_Lambda
+         quasineutralityOption, old_output_normalizations, ln_Lambda, Krook
 
     namelist / resolutionParameters / &
          Ntheta, &
@@ -67,7 +67,7 @@ contains
          Nxi_for_x_option, theta_upwinding_factor, zeta_upwinding_factor, upwinding_factor,  &
          attach_null_space, attach_transpose_null_space, attach_near_null_space, &
          spatial_scaling_option, constraint_scaling_option, xi_scaling_option, &
-         x_scaling_option, f_scaling_option, fieldsplit_parallelization_option, krook, &
+         x_scaling_option, f_scaling_option, fieldsplit_parallelization_option, &
          gamg_threshold, ml_threshold, boomeramg_threshold, boomeramg_relax_weight, boomeramg_outer_relax_weight, &
          boomeramg_P_max, boomeramg_truncfactor
 

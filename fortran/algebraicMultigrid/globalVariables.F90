@@ -204,7 +204,7 @@ module globalVariables
   integer :: boomeramg_P_max = -1
   real(prec) :: boomeramg_truncfactor = -1
   real(prec) :: preconditioner_collision_multiplier = 1
-  real(prec) :: krook = 0
+  real(prec) :: Krook = 0
 
   ! ********************************************************
   !

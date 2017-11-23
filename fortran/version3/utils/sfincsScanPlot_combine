@@ -49,8 +49,9 @@ for whichFile in range(1,len(sys.argv)):
 
         os.chdir(sys.argv[whichFile])
         directories.append(os.getcwd())
+        this_script = os.path.abspath(__file__)
         # The "1" below is just an arbitrary command-line argument, which suppresses plotting:
-        submitCommand = "sfincsScanPlot noplot"
+        submitCommand = this_script[:-8] + " noplot"
         subprocess.call(submitCommand.split(" "))
         os.chdir(originalDirectory)
 

@@ -1844,7 +1844,7 @@
                       M11 = CECD(iSpeciesA, iSpeciesB,:,:)
                       if (iSpeciesA == iSpeciesB) then
                          do i=1,Nx
-                            M11(i,i) = M11(i,i) + (-oneHalf*nuDHat(iSpeciesA,i)*L*(L+1))
+                            M11(i,i) = M11(i,i) + (-oneHalf*nuDHat(iSpeciesA,i)*(L*(L+1) + Krook*2))
                          end do
                       end if
                       
@@ -2034,8 +2034,8 @@
              
              do ix=ixMin,Nx
                 !do L=1, Nxi-1
-                do L=1, Nxi_for_x(ix)-1
-                   CHat_element = -oneHalf*nuDHat(iSpeciesA,ix)*L*(L+1)
+                do L=0, Nxi_for_x(ix)-1
+                   CHat_element = -oneHalf*nuDHat(iSpeciesA,ix)*(L*(L+1) + Krook*2)
                    
                    ! At this point, CHat contains the collision operator normalized by
                    ! \bar{nu}, (the collision frequency at the reference mass, density, and temperature.)
@@ -2060,7 +2060,7 @@
           
        end select
     end if
-
+    
     ! *******************************************************************************
     ! *******************************************************************************
     !

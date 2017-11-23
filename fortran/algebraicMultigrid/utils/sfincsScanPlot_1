@@ -146,7 +146,10 @@ for directory in directories:
     #elapsedTime = f["elapsed time (s)"][()]
     number_of_KSP_iterations = f["number_of_KSP_iterations"][()]
     time_for_iteration = f["time_for_iteration"][()]
-    sources = f["sources"][()]
+    try:
+       sources = f["sources"][()]
+    except:
+       sources = numpy.array([0,0])
     radCurr_vm = 0
     radCurr_vd = 0
 

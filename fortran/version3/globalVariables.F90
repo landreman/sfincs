@@ -124,9 +124,9 @@ module globalVariables
 
   integer :: magneticDriftScheme = 0
 
-  !!Added by AM 2016-02!!
   integer :: quasineutralityOption = 1
-  !!!!!!!!!!!!!!!!!!!!!!!
+
+  PetscScalar :: Krook = 0
 
   ! ********************************************************
   ! ********************************************************
