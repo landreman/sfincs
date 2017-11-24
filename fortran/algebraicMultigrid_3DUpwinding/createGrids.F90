@@ -1,0 +1,1486 @@
+#include "PETScVersions.F90"
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
+#include <finclude/petscdmdadef.h>
+#else
+#include <petsc/finclude/petscdmdadef.h>
+#endif
+
+  subroutine createGrids()
+
+    use kinds
+    use globalVariables
+    use polynomialDiffMatrices
+    use xGrid
+    use petscdmda
+    use geometry
+    use indices
+    !use export_f
+
+    implicit none
+
+    PetscErrorCode :: ierr
+    integer :: i, j, k, itheta, izeta, ispecies, ispecies_a, ispecies_b, ix, ixi, scheme, L
+    real(prec), dimension(:,:), allocatable :: d2dtheta2, d2dzeta2, ddxi, d2dxi2
+    real(prec), dimension(:), allocatable :: xWeightsPotentials
+
+    real(prec), dimension(:), allocatable :: xWeights_plus1
+    real(prec), dimension(:,:), allocatable :: ddx_plus1, d2dx2_plus1
+    real(prec), dimension(:,:), allocatable :: interpolateXToXPotentials_plus1, extrapMatrix
+    real(prec), dimension(:), allocatable :: x_subset, xWeights_subset
+    real(prec), dimension(:,:), allocatable :: ddx_subset, d2dx2_subset
+    real(prec) :: temp, Delta_zeta, v_s
+    real(prec), dimension(:), allocatable :: xi_to_Legendre, temp_array
+    real(prec), dimension(:,:), allocatable :: d2dy2, ddy, ddy_plus, ddy_minus, d2dy2_dummy, ddy_dummy, temp_matrix
+    real(prec), dimension(:), allocatable :: y, y_dummy, yWeights_dummy, yWeights, dxi_dy, d2xi_dy2
+    real(prec) :: temp_plus, temp_minus, factor
+
+    DM :: myDM
+    integer, parameter :: bufferLength = 200
+    character(len=bufferLength) :: procAssignments
+
+    integer :: tag, dummy(1)
+    integer :: status(MPI_STATUS_SIZE)
+    logical :: call_uniform_diff_matrices
+    integer :: derivative_option_plus, derivative_option_minus, derivative_option, derivative_option_diffusion, quadrature_option
+    real(prec), dimension(:), allocatable :: alpha, alpha_dummy, alphaWeights_dummy
+    real(prec), dimension(:,:), allocatable :: ddalpha, ddalpha_extended, d2dalpha2, d2dalpha2_extended, ddalpha_dummy, d2dalpha2_dummy
+
+    real(prec) :: nonuniform_xi_a = 0.7, nonuniform_xi_b = 0.3 ! b=1-a
+
+    ! Variables needed by LAPACK:                                                                                  
+    character :: JOBZ
+    integer :: INFO, LDA, LDU, LDVT, LWORK, M, N, num_Legendres_to_orthogonalize, iflag
+    real(prec), dimension(:,:), allocatable :: U, VT, A
+    real(prec), dimension(:), allocatable :: WORK, singular_values
+    integer, dimension(:), allocatable :: IWORK
+
+    ! *******************************************************************************
+    ! Do a few sundry initialization tasks:
+    ! *******************************************************************************
+
+    if (constraintScheme < 0) then
+       if (collisionOperator == 0) then
+          constraintScheme = 1
+       else
+          constraintScheme = 2
+       end if
+    end if
+
+    if (mod(Ntheta, 2) == 0) then
+       Ntheta = Ntheta + 1
+    end if
+    if (mod(Nzeta, 2) == 0) then
+       Nzeta = Nzeta + 1
+    end if
+
+    if (masterProc) then
+       print *,"---- Numerical parameters: ----"
+       print *,"Ntheta             = ", Ntheta
+       print *,"Nzeta              = ", Nzeta
+       print *,"Nxi                = ", Nxi
+       print *,"NL                 = ", NL
+       print *,"Nx                 = ", Nx
+       if (xGridScheme<5) then
+          print *,"NxPotentialsPerVth = ", NxPotentialsPerVth
+          print *,"xMax               = ",xMax
+       end if
+       print *,"solverTolerance    = ",solverTolerance
+       if (useIterativeLinearSolver) then
+          print *,"For solving large linear systems, an iterative Krylov solver will be used."
+       else
+          print *,"For solving large linear systems, a direct solver will be used."
+       end if
+    end if
+
+    allocate(thermal_speeds(Nspecies))
+    do ispecies=1,Nspecies
+       thermal_speeds(ispecies) = sqrt(2*THats(ispecies)*electron_charge/(proton_mass*mHats(ispecies)))
+    end do
+
+    allocate(collision_frequencies(Nspecies,Nspecies))
+    do ispecies_a = 1,Nspecies
+       do ispecies_b = 1,Nspecies
+          collision_frequencies(ispecies_a,ispecies_b) = 4 * sqrt(2*pi) / 3 &
+               * nHats(ispecies_b) * ((Zs(ispecies_a)**2) * (Zs(ispecies_b)**2) * (electron_charge ** 4) * ln_Lambda &
+               / (((4*pi*epsilon_0)**2) * ((electron_charge * THats(ispecies_a))**(1.5d+0)) * sqrt(proton_mass*mHats(ispecies_a))))
+       end do
+    end do
+
+    ! *******************************************************************************
+    ! *******************************************************************************
+    !
+    ! Set up ranges of indices owned by each processor.
+    !
+    ! *******************************************************************************
+    ! *******************************************************************************
+
+    ! Each processor is responsible for building the rows of the matrix and rhs corresponding
+    ! to its ithetaMin:ithetaMax and izetaMin:izetaMax, and each processor is resposible for all columns of the matrix.
+
+    ! In principle we could distribute in both theta and zeta at the same time.
+    ! However, this would lead to negligible increase in speed, since the bottleneck is
+    ! not matrix construction but rather the solve, which is parallelized in a completely different
+    ! way (determined internally by superlu_dist or mumps.)
+    if (Ntheta > Nzeta) then
+       ! Distribute in theta but not in zeta
+
+       ! Assign a range of theta indices to each processor.
+       ! This is done by creating a PETSc DM that is not actually used for anything else.
+       call DMDACreate1d(MPIComm, DM_BOUNDARY_NONE, Ntheta, 1, 0, PETSC_NULL_INTEGER, myDM, ierr)
+
+       call DMDAGetCorners(myDM, ithetaMin, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, &
+            localNtheta, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr)
+
+       call DMDestroy(myDM, ierr)
+
+       izetaMin = 0
+       izetaMax = Nzeta-1
+       localNzeta = Nzeta
+    else
+       ! Distribute in zeta but not in theta
+
+       ! Assign a range of zeta indices to each processor.
+       ! This is done by creating a PETSc DM that is not actually used for anything else.
+       call DMDACreate1d(MPIComm, DM_BOUNDARY_NONE, Nzeta, 1, 0, PETSC_NULL_INTEGER, myDM, ierr)
+
+       call DMDAGetCorners(myDM, izetaMin, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, &
+            localNzeta, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr)
+
+       call DMDestroy(myDM, ierr)
+       ithetaMin = 0
+       ithetaMax = Ntheta-1
+       localNtheta = Ntheta
+    end if
+
+    ! Below is some code that breaks up the theta and zeta ranges at the same time.
+    ! I'm commented it out because PETSc kept giving an error when the number of
+    ! procs was large compared to Ntheta and Nzeta.
+!!$    ! Assign a range of theta and zeta indices to each processor.
+!!$    ! This is done by creating a PETSc DM that is not actually used for anything else.
+!!$    call DMDACreate2d(PETSC_COMM_WORLD, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX, &
+!!$         Ntheta, Nzeta, PETSC_DECIDE, PETSC_DECIDE, 1, 0, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, myDM, ierr)
+!!$
+!!$    call DMDAGetCorners(myDM, ithetaMin, izetaMin, PETSC_NULL_INTEGER, &
+!!$         localNtheta, localNzeta, PETSC_NULL_INTEGER, ierr)
+!!$
+!!$    call DMDestroy(myDM, ierr)
+
+    ! Switch to 1-based indices:
+    ithetaMin = ithetaMin + 1
+    ithetaMax = ithetaMin+localNtheta-1
+    izetaMin = izetaMin + 1
+    izetaMax = izetaMin+localNzeta-1
+
+    procThatHandlesConstraints = masterProc
+
+    write (procAssignments,fmt="(a,i4,a,i3,a,i3,a,i3,a,i3,a)") "Processor ",myRank," owns theta indices ",ithetaMin," to ",ithetaMax,&
+         " and zeta indices ",izetaMin," to ",izetaMax
+
+!    call PetscSynchronizedPrintf(MPIComm, procAssignments, ierr)
+!    call PetscSynchronizedFlush(MPIComm, ierr)
+
+    ! PETSc's synchronized printing functions seem buggy, so here I've implemented my own version:
+    dummy = 0
+    tag = 0
+    if (masterProc) then
+       print *,trim(procAssignments)
+       do i = 1,numProcs-1
+          ! To avoid a disordered flood of messages to the masterProc,
+          ! ping each proc 1 at a time by sending a dummy value:
+          call MPI_SEND(dummy,1,MPI_INT,i,tag,MPIComm,ierr)
+          ! Now receive the message from proc i:
+          call MPI_RECV(procAssignments,bufferLength,MPI_CHAR,i,MPI_ANY_TAG,MPIComm,status,ierr)
+          print *,trim(procAssignments)
+       end do
+    else
+       ! First, wait for the dummy message from proc 0:
+       call MPI_RECV(dummy,1,MPI_INT,0,MPI_ANY_TAG,MPIComm,status,ierr)
+       ! Now send the message to proc 0:
+       call MPI_SEND(procAssignments,bufferLength,MPI_CHAR,0,tag,MPIComm,ierr)
+    end if
+
+
+    ! *******************************************************************************
+    ! *******************************************************************************
+    !
+    ! Build stencils for derivatives:
+    !
+    ! *******************************************************************************
+    ! *******************************************************************************
+
+    if (masterProc) print *,"Stencil for first derivatives:"
+    call set_first_derivative_stencil(first_derivative_option, first_derivative_stencil)
+    if (masterProc) print *,"Stencil for first derivatives in preconditioner:"
+    call set_first_derivative_stencil(preconditioner_first_derivative_option, first_derivative_stencil_preconditioner)
+    if (masterProc) print *,"Stencil for second derivatives:"
+    call set_second_derivative_stencil(second_derivative_option, second_derivative_stencil)
+    if (masterProc) print *,"Stencil for second derivatives in preconditioner:"
+    call set_second_derivative_stencil(preconditioner_second_derivative_option, second_derivative_stencil_preconditioner)
+
+    ! *******************************************************************************
+    ! *******************************************************************************
+    !
+    ! Build grids and integration weights
+    !
+    ! *******************************************************************************
+    ! *******************************************************************************
+
+    allocate(theta(Ntheta))
+    allocate(zeta(Nzeta))
+
+    zetaMax = 2*pi/NPeriods
+    theta = [( (2*pi*j)/Ntheta, j=0, Ntheta-1 )]
+    zeta = [( (zetaMax*j)/Nzeta, j=0, Nzeta-1 )]
+
+    dtheta = theta(2) - theta(1)
+    dzeta = zeta(2) - zeta(1)
+
+    theta_weight = dtheta
+    zeta_weight = dzeta * NPeriods
+
+    ! *******************************************************************************
+    ! *******************************************************************************
+    !
+    ! Build xi grids, integration weights, and differentiation matrices.
+    !
+    ! *******************************************************************************
+    ! *******************************************************************************
+
+    allocate(xi(Nxi))
+    allocate(xi_weights(Nxi))
+
+    ! Initialize the alpha and xi grids:
+    allocate(alpha(Nxi*2))
+    alpha = [( (ixi - one)*pi/Nxi, ixi = 1,2*Nxi )]
+    ! Shift by half a grid point:
+    dalpha = alpha(2) - alpha(1)
+    alpha = alpha + dalpha/2
+    xi = -cos(alpha(1:Nxi))
+    sin_alpha = sin(alpha)
+    if (masterProc) print *,"alpha:",alpha
+    if (masterProc) print *,"xi:",xi
+
+    ! Initialize shifted Clenshaw-Curtis weights:
+    xi_weights = dalpha*2/pi ! a_0 term
+    do k = 1,(Nxi/2) ! Integer division rounds down.
+       xi_weights = xi_weights + dalpha*2/pi*2/(1-4*k*k)*cos(2*k*alpha(1:Nxi)) ! a_{2k} term
+    end do
+    if (masterProc) print *,"xi_weights:",xi_weights
+
+    ! Do some validation:
+    if (masterProc) print *,"sum(xi_weights):",sum(xi_weights)
+    if (abs(sum(xi_weights)-2) > 1.0e-12) then
+       if (masterProc) then
+          print *,"Error! xi_weights do not sum to 2!"
+          print *,"xi_weights:",xi_weights
+          print *,"Sum is",sum(xi_weights)
+       end if
+       stop
+    end if
+    if (masterProc) print *,"sum(xi_weights*xi):",sum(xi_weights*xi)
+    if (abs(sum(xi_weights*xi)-0) > 1.0e-12) then
+       if (masterProc) then
+          print *,"Error! xi_weights*xi does not sum to 0!"
+          print *,"xi:",xi
+          print *,"xi_weights:",xi_weights
+          print *,"Sum is",sum(xi_weights*xi)
+       end if
+       stop
+    end if
+    if (masterProc) print *,"sum(xi_weights*xi*xi):",sum(xi_weights*xi*xi)
+    if (abs(sum(xi_weights*xi*xi)-two/3) > 1.0e-12) then
+       if (masterProc) then
+          print *,"Error! xi_weights*xi*xi do not sum to 2/3!"
+          print *,"xi_weights:",xi_weights
+          print *,"Sum is",sum(xi_weights)
+       end if
+       stop
+    end if
+
+    deallocate(alpha)
+
+    ! *******************************************************************************
+    ! Build x grids, integration weights, and differentiation matrices.
+    ! Also build interpolation matrices to map functions from one x grid to the other.
+    ! *******************************************************************************
+
+    select case (xGridScheme)
+    case (1,2,5,6,7,8)
+       ! For these values of xGridScheme, xInterpolationScheme does not matter.
+       xInterpolationScheme = -1
+    case (3)
+       xInterpolationScheme = 1
+    case (4)
+       xInterpolationScheme = 2
+    case default
+       print *,"Error! Invalid setting for xGridScheme."
+       stop
+    end select
+
+    select case (xPotentialsGridScheme)
+    case (1)
+       xPotentialsInterpolationScheme = 1
+    case (2)
+       xPotentialsInterpolationScheme = 2
+    case (3)
+       xPotentialsInterpolationScheme = 1
+    case (4)
+       xPotentialsInterpolationScheme = 2
+    case default
+       if (masterProc) then
+          print *,"Error! Invalid setting for xPotentialsGridScheme."
+       end if
+       stop
+    end select
+
+    allocate(x(Nx))
+    allocate(xWeights(Nx))
+    ! The next few arrays/matrices are used only when there is a point at x=0.
+    allocate(x_plus1(Nx+1))
+    allocate(xWeights_plus1(Nx+1))
+    allocate(ddx_plus1(Nx+1,Nx+1))
+    allocate(d2dx2_plus1(Nx+1,Nx+1))
+    x_plus1 = -1 ! so we know its value if it is not set otherwise.
+
+    if (RHSMode .ne. 3) then
+       select case (xGridScheme)
+       case (1,5)
+          pointAtX0 = .false.
+          call makeXGrid(Nx, x, xWeights, .false.)
+          xWeights = xWeights / (exp(-x*x)*(x**xGrid_k))
+
+       case (2,6)
+          pointAtX0 = .true.
+          call makeXGrid(Nx, x, xWeights, .true.)
+          xWeights = xWeights / (exp(-x*x)*(x**xGrid_k))
+
+       case (3,4)
+          pointAtX0 = .true.
+
+          scheme = 12
+          call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+          x_plus1(1)=0 ! For some reason it usually comes out to be 2d-314
+          x = x_plus1(1:Nx)
+          xWeights = xWeights_plus1(1:Nx)
+
+       case (7)
+          pointAtX0 = .true.
+          call ChebyshevGrid(Nx+1, zero, xMax, x_plus1, xWeights_plus1, ddx_plus1)
+          x_plus1(1)=0 ! Make sure this is exact.
+          x = x_plus1(1:Nx)
+          xWeights = xWeights_plus1(1:Nx)
+
+          d2dx2_plus1 = matmul(ddx_plus1,ddx_plus1)
+
+       case (8)
+          pointAtX0 = .true.
+          deallocate(ddx_plus1)
+          allocate(ddx_plus1(Nx,Nx))
+          call ChebyshevGrid(Nx, zero, xMax, x, xWeights, ddx_plus1)
+          x(1)=0 ! Make sure this is exact.
+
+       case default
+          print *,"Error! Invalid xGridScheme."
+          stop
+       end select
+
+    else
+       ! Monoenergetic transport matrix calculation.
+       x = one
+       xWeights = exp(one)
+
+       ! For monoenergetic calculations, we do not want to impose any regularity condition at the first (and only) x index:
+       pointAtX0 = .false.
+    end if
+
+    xMaxNotTooSmall = max(x(Nx), xMax)
+    allocate(x2(Nx))
+    x2=x*x
+    allocate(expx2(Nx))
+    expx2 = exp(-x*x)
+
+
+    allocate(ddx(Nx,Nx))
+    allocate(d2dx2(Nx,Nx))
+    allocate(ddx_preconditioner(Nx,Nx))
+    if (RHSMode .ne. 3) then
+
+       select case (xGridScheme)
+       case (1,2,5,6)
+          call makeXPolynomialDiffMatrices(x,ddx,d2dx2)
+
+       case (3,4,7)
+          ddx = ddx_plus1(1:Nx, 1:Nx)
+          d2dx2 = d2dx2_plus1(1:Nx, 1:Nx)
+
+       case (8)
+          ddx = ddx_plus1
+          d2dx2 = matmul(ddx,ddx)
+
+       end select
+
+       if (xPotentialsGridScheme==3 .or. xPotentialsGridScheme==4) then
+          ! The potentials have an explicit grid point at xMax, whereas the distribution function does not (since f=0 there.)
+          NxPotentials = Nx+1
+       else
+          NxPotentials = ceiling(xMaxNotTooSmall*NxPotentialsPerVth)
+       end if
+    else
+       ! Monoenergetic transport matrix calculation.
+       ddx = zero
+       d2dx2 = zero
+       NxPotentials = 1
+    end if
+
+!!$    ! To allow for upwinding in the xDot term associated with Er, set up some other differentiation matrices:
+!!$    allocate(ddx_xDot_plus(Nx,Nx))
+!!$    allocate(ddx_xDot_preconditioner_plus(Nx,Nx))
+!!$    allocate(ddx_xDot_minus(Nx,Nx))
+!!$    allocate(ddx_xDot_preconditioner_minus(Nx,Nx))
+!!$
+!!$    select case (xDotDerivativeScheme)
+!!$    case (-2)
+!!$       ddx_xDot_plus = zero
+!!$       ddx_xDot_minus = zero
+!!$       allocate(x_subset(Nx-1))
+!!$       allocate(ddx_subset(Nx-1,Nx-1))
+!!$       allocate(d2dx2_subset(Nx-1,Nx-1))
+!!$
+!!$       x_subset = x(1:Nx-1)
+!!$       call makeXPolynomialDiffMatrices(x_subset,ddx_subset,d2dx2_subset)
+!!$       ddx_xDot_plus(1:Nx-1,1:Nx-1) = ddx_subset
+!!$
+!!$       x_subset = x(2:Nx)
+!!$       call makeXPolynomialDiffMatrices(x_subset,ddx_subset,d2dx2_subset)
+!!$       ddx_xDot_minus(2:Nx,2:Nx) = ddx_subset
+!!$
+!!$       deallocate(x_subset,ddx_subset,d2dx2_subset)
+!!$
+!!$    case (-1)
+!!$       ddx_xDot_plus = zero
+!!$       ddx_xDot_minus = zero
+!!$       do i=i,Nx
+!!$          allocate(x_subset(i))
+!!$          allocate(ddx_subset(i,i))
+!!$          allocate(d2dx2_subset(i,i))
+!!$
+!!$          x_subset = x(1:i)
+!!$          call makeXPolynomialDiffMatrices(x_subset,ddx_subset,d2dx2_subset)
+!!$          ddx_xDot_plus(i,1:i) = ddx_subset(i,:)
+!!$
+!!$          x_subset = x(Nx-i+1:Nx)
+!!$          call makeXPolynomialDiffMatrices(x_subset,ddx_subset,d2dx2_subset)
+!!$          ddx_xDot_minus(Nx-i+1,Nx-i+1:Nx) = ddx_subset(1,:)
+!!$
+!!$          deallocate(x_subset,ddx_subset,d2dx2_subset)
+!!$       end do
+!!$
+!!$    case (0)
+!!$       ddx_xDot_plus = ddx
+!!$       ddx_xDot_minus = ddx
+!!$
+!!$    case (1)
+!!$       scheme = 32
+!!$       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+!!$       ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
+!!$
+!!$       scheme = 42
+!!$       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+!!$       ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
+!!$
+!!$    case (2)
+!!$       scheme = 52
+!!$       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+!!$       ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
+!!$
+!!$       scheme = 62
+!!$       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+!!$       ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
+!!$
+!!$    case (3)
+!!$       scheme = 52
+!!$       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+!!$       ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
+!!$
+!!$       scheme = 62
+!!$       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+!!$       ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
+!!$       do i = 2,Nx
+!!$          ddx_xDot_minus(Nx,i) =  ddx_xDot_minus(Nx-1,i-1)
+!!$       end do
+!!$
+!!$    case (4)
+!!$       scheme = 82
+!!$       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+!!$       ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
+!!$
+!!$       scheme = 92
+!!$       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+!!$       ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
+!!$
+!!$    case (5)
+!!$       scheme = 82
+!!$       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+!!$       ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
+!!$       ! I'm not sure whether these next lines are good or not
+!!$       do i = 1,Nx
+!!$          ddx_xDot_plus(2,i) =  ddx(2,i)
+!!$       end do
+!!$
+!!$       scheme = 92
+!!$       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+!!$       ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
+!!$       do i = 2,Nx
+!!$          ddx_xDot_minus(Nx,i) =  ddx_xDot_minus(Nx-1,i-1)
+!!$       end do
+!!$
+!!$    case (6)
+!!$       do i=1,Nx
+!!$          do j=1,Nx
+!!$             ddx_xDot_plus(i,j) = expx2(i) * ddx(i,j) / expx2(j)
+!!$             if (i==j) then
+!!$                ddx_xDot_plus(i,j) = ddx_xDot_plus(i,j) - 2*x(i)
+!!$             end if
+!!$             ddx_xDot_minus(i,j) = ddx_xDot_plus(i,j)
+!!$          end do
+!!$       end do
+!!$
+!!$    case (7)
+!!$
+!!$       scheme = 82
+!!$       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+!!$       ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
+!!$!       ! I'm not sure whether these next lines are good or not
+!!$!       do i = 1,Nx
+!!$!          ddx_xDot_plus(2,i) =  ddx(2,i)
+!!$!       end do
+!!$
+!!$       scheme = 92
+!!$       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+!!$       ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
+!!$       do i = 2,Nx
+!!$          ddx_xDot_minus(Nx,i) =  ddx_xDot_minus(Nx-1,i-1)
+!!$       end do
+!!$
+!!$       do i=1,Nx
+!!$          do j=1,Nx
+!!$             ddx_xDot_plus(i,j) = expx2(i) * ddx_xDot_plus(i,j) / expx2(j)
+!!$             ddx_xDot_minus(i,j) = expx2(i) * ddx_xDot_minus(i,j) / expx2(j)
+!!$             if (i==j) then
+!!$                ddx_xDot_plus(i,j) = ddx_xDot_plus(i,j) - 2*x(i)
+!!$                ddx_xDot_minus(i,j) = ddx_xDot_minus(i,j) - 2*x(i)
+!!$             end if
+!!$          end do
+!!$       end do
+!!$
+!!$    case (8)
+!!$       scheme = 102
+!!$       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+!!$       ddx_xDot_plus = ddx_plus1(1:Nx,1:Nx)
+!!$
+!!$       scheme = 112
+!!$       call uniformDiffMatrices(Nx+1, zero, xMax, scheme, x_plus1, xWeights_plus1, ddx_plus1, d2dx2_plus1)
+!!$       ddx_xDot_minus = ddx_plus1(1:Nx,1:Nx)
+!!$       do i = 3,Nx
+!!$          ddx_xDot_minus(Nx,i)     =  ddx_xDot_minus(Nx-2,i-2)
+!!$          ddx_xDot_minus(Nx-1,i) =  ddx_xDot_minus(Nx-2,i-1)
+!!$       end do
+!!$
+!!$    case (9)
+!!$       ! Where trajectories are going into the domain (ddx_xDot_minus), use the standard ddx, in which the first ghost point is set to 0.
+!!$       ! Where trajectories are leaving the domain (ddx_xDot_plus), use scheme=12 without setting any ghost points to 0.
+!!$       ddx_xDot_minus = ddx
+!!$       
+!!$       allocate(x_subset(Nx))
+!!$       allocate(xWeights_subset(Nx))
+!!$       allocate(d2dx2_subset(Nx,Nx))
+!!$
+!!$       scheme = 12
+!!$       call uniformDiffMatrices(Nx, zero, x(Nx), scheme, x_subset, x_subset, ddx_xDot_plus, d2dx2_subset)
+!!$
+!!$       deallocate(x_subset,xWeights_subset,d2dx2_subset)
+!!$
+!!$    case (10)
+!!$       ! Same as case 9, but switching plus and minus. This should be backwards.
+!!$       ddx_xDot_plus = ddx
+!!$       
+!!$       allocate(x_subset(Nx))
+!!$       allocate(xWeights_subset(Nx))
+!!$       allocate(d2dx2_subset(Nx,Nx))
+!!$
+!!$       scheme = 12
+!!$       call uniformDiffMatrices(Nx, zero, x(Nx), scheme, x_subset, x_subset, ddx_xDot_minus, d2dx2_subset)
+!!$
+!!$       deallocate(x_subset,xWeights_subset,d2dx2_subset)
+!!$
+!!$    case default
+!!$       print *,"Error!  Invalid xDotDerivativeScheme"
+!!$       stop
+!!$    end select
+
+    allocate(xPotentials(NxPotentials))
+    allocate(xWeightsPotentials(NxPotentials))
+    allocate(ddxPotentials(NxPotentials, NxPotentials))
+    allocate(d2dx2Potentials(NxPotentials, NxPotentials))
+    if (RHSMode .ne. 3) then
+       quadrature_option = 0
+       call uniformDiffMatrices(NxPotentials, zero, xMaxNotTooSmall, 12, quadrature_option, xPotentials, &
+            xWeightsPotentials, ddxPotentials, d2dx2Potentials)
+    else
+       xPotentials = 0
+       xWeightsPotentials = 0
+       ddxPotentials = 0
+       d2dx2Potentials = 0
+    end if
+    maxxPotentials = xPotentials(NxPotentials)
+
+    deallocate(xWeightsPotentials)
+
+    ! Create matrix to interpolate from the distribution-function grid to the Rosenbluth-potential grid:
+    allocate(interpolateXToXPotentials(NxPotentials, Nx))
+    if (RHSMode .ne. 3) then
+       select case (xGridScheme)
+       case (1,2,5,6)
+          call polynomialInterpolationMatrix(Nx, NxPotentials, x, xPotentials, &
+               expx2*(x**xGrid_k), exp(-xPotentials*xPotentials)*(xPotentials**xGrid_k), interpolateXToXPotentials)
+       case (3,4)
+          allocate(extrapMatrix(NxPotentials, Nx+1))
+          allocate(interpolateXToXPotentials_plus1(NxPotentials, Nx+1))
+          call interpolationMatrix(Nx+1, NxPotentials, x_plus1, xPotentials, &
+               xInterpolationScheme, interpolateXToXPotentials_plus1, extrapMatrix)
+          interpolateXToXPotentials = interpolateXToXPotentials_plus1(:,1:Nx)
+          deallocate(extrapMatrix)
+          deallocate(interpolateXToXPotentials_plus1)
+       case (7)
+          allocate(interpolateXToXPotentials_plus1(NxPotentials, Nx+1))
+          call ChebyshevInterpolationMatrix(Nx+1, NxPotentials, x_plus1, xPotentials, interpolateXToXPotentials_plus1)
+          interpolateXToXPotentials = interpolateXToXPotentials_plus1(:,1:Nx)
+          deallocate(interpolateXToXPotentials_plus1)
+       case (8)
+          call ChebyshevInterpolationMatrix(Nx, NxPotentials, x, xPotentials, interpolateXToXPotentials)
+       end select
+    else
+       interpolateXToXPotentials = zero
+    end if
+
+    ddx_preconditioner = 0
+    !ddx_xDot_preconditioner_plus = 0
+    !ddx_xDot_preconditioner_minus = 0
+    select case (preconditioner_x)
+    case (0)
+       ! No simplification in x:
+       ddx_preconditioner = ddx
+       !ddx_xDot_preconditioner_plus = ddx_xDot_plus
+       !ddx_xDot_preconditioner_minus = ddx_xDot_minus
+    case (1)
+       ! Keep only diagonal terms in x:
+       do i=1,Nx
+          ddx_preconditioner(i,i) = ddx(i,i)
+          !ddx_xDot_preconditioner_plus(i,i) = ddx_xDot_plus(i,i)
+          !ddx_xDot_preconditioner_minus(i,i) = ddx_xDot_minus(i,i)
+       end do
+    case (2)
+       ! Keep only upper-triangular terms in x:
+       do i=1,Nx
+          do j=i,Nx
+             ddx_preconditioner(i,j) = ddx(i,j)
+             !ddx_xDot_preconditioner_plus(i,j) = ddx_xDot_plus(i,j)
+             !ddx_xDot_preconditioner_minus(i,j) = ddx_xDot_minus(i,j)
+          end do
+       end do
+    case (3)
+       ! Keep only tridiagonal terms in x:
+       do i=1,Nx
+          do j=1,Nx
+             if (abs(i-j) <= 1) then
+                ddx_preconditioner(i,j) = ddx(i,j)
+                !ddx_xDot_preconditioner_plus(i,j) = ddx_xDot_plus(i,j)
+                !ddx_xDot_preconditioner_minus(i,j) = ddx_xDot_minus(i,j)
+             end if
+          end do
+       end do
+    case (4)
+       ! Keep only diagonal and super-diagonal in x:
+       do i=1,Nx
+          ddx_preconditioner(i,i) = ddx(i,i)
+          !ddx_xDot_preconditioner_plus(i,i) = ddx_xDot_plus(i,i)
+          !ddx_xDot_preconditioner_minus(i,i) = ddx_xDot_minus(i,i)
+       end do
+       do i=1,(Nx-1)
+          ddx_preconditioner(i,i+1) = ddx(i,i+1)
+          !ddx_xDot_preconditioner_plus(i,i+1) = ddx_xDot_plus(i,i+1)
+          !ddx_xDot_preconditioner_minus(i,i+1) = ddx_xDot_minus(i,i+1)
+       end do
+    case default
+       print *,"Error! Invalid preconditioner_x"
+       stop
+    end select
+
+!    if (masterProc) then
+    if (.false.) then
+       print *,"xGridScheme:",xGridScheme
+       print *,"xInterpolationScheme:",xInterpolationScheme
+       print *,"xPotentialsGridScheme:",xPotentialsGridScheme
+       print *,"xPotentialsInterpolationScheme:",xPotentialsInterpolationScheme
+       print *,"NxPotentials:",NxPotentials
+       print *,"x:"
+       print *,x
+       print *,"xWeights:"
+       print *,xWeights
+       print *,"ddx:"
+       do i=1,Nx
+          print *,ddx(i,:)
+       end do
+!!$       print *,"ddx_xDot_plus:"
+!!$       do i=1,Nx
+!!$          print *,ddx_xDot_plus(i,:)
+!!$       end do
+!!$       print *,"ddx_xDot_minus:"
+!!$       do i=1,Nx
+!!$          print *,ddx_xDot_minus(i,:)
+!!$       end do
+       print *,"ddx_preconditioner:"
+       do i=1,Nx
+          print *,ddx_preconditioner(i,:)
+       end do
+!!$       print *,"ddx_xDot_preconditioner_plus:"
+!!$       do i=1,Nx
+!!$          print *,ddx_xDot_preconditioner_plus(i,:)
+!!$       end do
+!!$       print *,"ddx_xDot_preconditioner_minus:"
+!!$       do i=1,Nx
+!!$          print *,ddx_xDot_preconditioner_minus(i,:)
+!!$       end do
+!!$       print *,"d2dx2:"
+!!$       do i=1,Nx
+!!$          print *,d2dx2(i,:)
+!!$       end do
+!!$       print *,"xPotentials:"
+!!$       print *,xPotentials
+!!$       if (NxPotentials < 20) then
+!!$          print *,"ddxPotentials:"
+!!$          do i=1,NxPotentials
+!!$             print *,ddxPotentials(i,:)
+!!$          end do
+!!$          print *,"d2dx2Potentials:"
+!!$          do i=1,NxPotentials
+!!$             print *,d2dx2Potentials(i,:)
+!!$          end do
+!!$       end if
+!!$       print *,"interpolateXToXPotentials:"
+!!$       do i=1,NxPotentials
+!!$          print *,interpolateXToXPotentials(i,:)
+!!$       end do
+    end if
+
+    deallocate(xWeights_plus1)
+    deallocate(ddx_plus1)
+    deallocate(d2dx2_plus1)
+
+    
+    ! *******************************************************************************
+    ! Compute the Legendre polynomials recursively
+    ! *******************************************************************************
+    
+    if (NL>0) then
+       allocate(Legendre_polynomials(Nxi,NL))
+       Legendre_polynomials = 1 ! This line takes care of the L=0 polynomial.
+       if (NL>1) Legendre_polynomials(:,2) = xi
+       do L = 1, NL-2
+          Legendre_polynomials(:,L+1+1) = ((2*L+1)*xi*Legendre_polynomials(:,L+1) - L*Legendre_polynomials(:,L-1+1)) / (L+one)
+       end do
+
+       if (.false.) then
+       !if (xi_quadrature_option<0) then
+          num_Legendres_to_orthogonalize = NL
+          if (num_Legendres_to_orthogonalize>Nxi) stop "Error! num_Legendres_to_orthogonalize>Nxi"
+          JOBZ='S' ! Compute only the first min(M,N) singular vectors
+          M = Nxi
+          N = num_Legendres_to_orthogonalize
+          LDA = M
+          LDU = M
+          LDVT = N
+          ! This next formula comes from the LAPACK documentation at the end of the file.
+          LWORK = max( 3*min(M,N) + max(max(M,N),7*min(M,N)), &
+               3*min(M,N) + max(max(M,N),5*min(M,N)*min(M,N)+4*min(M,N)), &
+               min(M,N)*(6+4*min(M,N))+max(M,N))
+          allocate(WORK(LWORK),stat=iflag)
+          allocate(IWORK(8*min(M,N)),stat=iflag)
+          allocate(singular_values(num_Legendres_to_orthogonalize))
+          ! Matrix is destroyed by LAPACK, so make a copy:
+          allocate(A(M,N),stat=iflag)
+          A = Legendre_polynomials(:,1:num_Legendres_to_orthogonalize)
+          allocate(U(M,M),stat=iflag)
+          allocate(VT(N,N),stat=iflag)
+          ! Call LAPACK to do the SVD:
+          call DGESDD(JOBZ, M, N, A, LDA, singular_values, U, LDU, VT, LDVT, WORK, LWORK, IWORK, INFO)
+          
+          if (INFO==0) then
+             print *,"SVD (DGESDD) successful."
+             print *,"Singular values:",singular_values
+          else if (INFO>0) then
+             print *,"Error in SVD (DGESDD): Did not converge."
+             stop
+          else
+             print *,"Error in SVD (DGESDD): Argument",INFO," was invalid."
+             stop
+          end if
+          do ixi = 1,Nxi
+             ! U^T(1:N, 1:Nxi) = U(1:Nxi, 1:N)
+             ! V(1, 1:N) = VT(1:N, 1)
+             xi_weights(ixi) = 2*dot_product(VT(1:num_Legendres_to_orthogonalize, 1) / singular_values, U(ixi,1:num_Legendres_to_orthogonalize)) 
+          end do
+          print *,"xi_weights:"
+          print *,xi_weights
+          print *,"sum(xi_weights):",sum(xi_weights)
+          print *,"sum(xi_weights*xi*xi) (should be 2/3):",sum(xi*xi*xi_weights)
+          print *,"sum(xi_weights*xi*xi*xi*xi) (should be 2/5):",sum(xi*xi*xi*xi*xi_weights)
+
+       end if
+
+!!$       print *,'Here come Legendre polynomials:'
+!!$       do k=1,Nxi
+!!$          print *,Legendre_polynomials(k,:)
+!!$       end do
+!!$       print *,"xi_weights:"
+!!$       print *,xi_weights
+
+       allocate(Legendre_projection(Nxi,Nxi,NL))
+       allocate(xi_to_Legendre(Nxi))
+       do j=1,NL
+          L = j-1
+          xi_to_Legendre = (2*L+one)/2*Legendre_polynomials(:,j) * xi_weights
+          !print *,"For L=",L,", here is xi_to_Legendre:"
+          !print *,xi_to_Legendre
+          do k=1,Nxi
+             Legendre_projection(k,:,j) = xi_to_Legendre * Legendre_polynomials(k,j)
+          end do
+          !print *,"For L=",L,", here is the Legendre projection matrix:"
+          !do k=1,Nxi
+          !   print *,Legendre_projection(k,:,j)
+          !end do
+       end do
+       deallocate(xi_to_Legendre)
+    end if
+
+    ! *******************************************************************************
+    ! Set the number of Legendre modes used for each value of x
+    ! *******************************************************************************
+    
+    allocate(Nxi_for_x(Nx))
+
+    if (masterProc) print *,"Nxi_for_x_option:",Nxi_for_x_option
+    select case (Nxi_for_x_option)
+    case (0)
+       Nxi_for_x = Nxi
+    case (1)
+       do j=1,Nx
+          ! Linear ramp from 0.1*Nxi to Nxi as x increases from 0 to 2:
+          temp = Nxi*(0.1 + 0.9*x(j)/2)
+          ! Always keep at least 3 Legendre modes, for the sake of diagnostics.
+          ! Always keep at least NL Legendre modes, to simplify the collision operator loops.
+          ! Above the threshold value of x, keep exactly Nxi Legendre modes.
+          Nxi_for_x(j) = max(3,NL,min(int(temp),Nxi))
+       end do
+    case (2)
+       do j=1,Nx
+          ! Quadratic ramp from 0.1*Nxi to Nxi as x increases from 0 to 2:
+          temp = Nxi*(0.1 + 0.9*( (x(j)/2)**2) )
+          ! Always keep at least 3 Legendre modes, for the sake of diagnostics.
+          ! Always keep at least NL Legendre modes, to simplify the collision operator loops.
+          ! Above the threshold value of x, keep exactly Nxi Legendre modes.
+          Nxi_for_x(j) = max(3,NL,min(int(temp),Nxi))
+       end do
+    case default
+       if (masterProc) print *,"Error! Invalid Nxi_for_x_option"
+       stop
+    end select
+
+    allocate(min_x_for_L(0:(Nxi-1)))
+    min_x_for_L=1
+    do j=1,Nx
+       min_x_for_L(Nxi_for_x(j):) = j+1
+    end do
+
+    if (masterProc) then
+       print *,"x:",x
+       print *,"Nxi for each x:",Nxi_for_x
+       print *,"min_x_for_L:",min_x_for_L
+    end if
+
+    call computeMatrixSize()
+
+    ! *******************************************************************************
+
+!!$    if (export_full_f .or. export_delta_f) then
+!!$       call setup_grids_for_export_f()
+!!$    end if
+
+    ! *******************************************************************************
+    ! *******************************************************************************
+    !
+    ! Evaluate the magnetic field (and its derivatives) on the (theta, zeta) grid.
+    !
+    ! *******************************************************************************
+    ! *******************************************************************************
+
+    allocate(sqrt_g(Ntheta,Nzeta))
+
+    allocate(BHat(Ntheta,Nzeta))
+    allocate(BDotCurlB(Ntheta,Nzeta))
+    allocate(uHat(Ntheta,Nzeta))
+    allocate(dBHatdtheta(Ntheta,Nzeta))
+    allocate(dBHatdzeta(Ntheta,Nzeta))
+    allocate(dBHatdpsiHat(Ntheta,Nzeta))
+
+    allocate(BHat_sub_psi(Ntheta,Nzeta))
+    allocate(dBHat_sub_psi_dtheta(Ntheta,Nzeta))
+    allocate(dBHat_sub_psi_dzeta(Ntheta,Nzeta))
+
+    allocate(BHat_sub_theta(Ntheta,Nzeta))
+    allocate(dBHat_sub_theta_dpsiHat(Ntheta,Nzeta))
+    allocate(dBHat_sub_theta_dzeta(Ntheta,Nzeta))
+
+    allocate(BHat_sub_zeta(Ntheta,Nzeta))
+    allocate(dBHat_sub_zeta_dpsiHat(Ntheta,Nzeta))
+    allocate(dBHat_sub_zeta_dtheta(Ntheta,Nzeta))
+
+    allocate(BHat_sup_theta(Ntheta,Nzeta))
+    allocate(dBHat_sup_theta_dpsiHat(Ntheta,Nzeta))
+    allocate(dBHat_sup_theta_dzeta(Ntheta,Nzeta))
+
+    allocate(BHat_sup_zeta(Ntheta,Nzeta))
+    allocate(dBHat_sup_zeta_dpsiHat(Ntheta,Nzeta))
+    allocate(dBHat_sup_zeta_dtheta(Ntheta,Nzeta))
+
+    allocate(gradpsidotgradB_overgpsipsi(Ntheta,Nzeta))
+    
+    allocate(NTVKernel(Ntheta,Nzeta))
+
+    call computeBHat()
+
+    ! *********************************************************
+    ! Compute a few quantities related to the magnetic field:
+    ! *********************************************************
+
+    call computeBIntegrals()
+
+    if (masterProc) then
+       print *,"---- Geometry parameters: ----"
+       print *,"Geometry scheme = ", geometryScheme
+       print *,"psiAHat (Normalized toroidal flux at the last closed flux surface) = ", psiAHat
+       print *,"aHat (Radius of the last closed flux surface in units of RHat) = ", aHat
+       if (geometryScheme==1) then
+          print *,"epsilon_t = ", epsilon_t
+          print *,"epsilon_h = ", epsilon_h
+          print *,"epsilon_antisymm = ", epsilon_antisymm
+       end if
+       print *,"GHat (Boozer component multiplying grad zeta) = ", GHat
+       print *,"IHat (Boozer component multiplying grad theta) = ", IHat
+       print *,"iota (Rotational transform) = ", iota
+    end if
+
+    allocate(f_scaling(Nx,Nspecies))
+    do ispecies = 1,Nspecies
+       select case (f_scaling_option)
+       case (1)
+          ! Expected magnitude of the leading-order Maxwellian, without the exponential.
+          f_scaling(:,ispecies) = nHats(ispecies) / (pi*sqrtpi*(thermal_speeds(ispecies)**3))
+       case (2)
+          ! rho* times the leading-order Maxwellian, without the exponential.
+          f_scaling(:,ispecies) = sqrt(2 * mHats(ispecies) * proton_mass * THats(ispecies) * electron_charge) &
+               / (Zs(ispecies) * electron_charge * sqrt(FSABHat2) * aHat) &
+               * nHats(ispecies) / (pi*sqrtpi*(thermal_speeds(ispecies)**3))
+       case (3)
+          ! Expected magnitude of the leading-order Maxwellian, with the exponential.
+          f_scaling(:,ispecies) = expx2 * nHats(ispecies) / (pi*sqrtpi*(thermal_speeds(ispecies)**3))
+       case (4)
+          ! rho* times the leading-order Maxwellian, with the exponential.
+          f_scaling(:,ispecies) = expx2 * sqrt(2 * mHats(ispecies) * proton_mass * THats(ispecies) * electron_charge) &
+               / (Zs(ispecies) * electron_charge * sqrt(FSABHat2) * aHat) &
+               * nHats(ispecies) / (pi*sqrtpi*(thermal_speeds(ispecies)**3))
+       case default
+          if (masterProc) print *,"Error! Invalid f_scaling_option:",f_scaling_option
+          stop
+       end select
+    end do
+    if (masterProc) then
+       print "(a,i2,a)","f_scaling_option =",f_scaling_option,". Here comes f_scaling:"
+       do ix=1,Nx
+          print "(*(es10.2))",f_scaling(ix,:)
+       end do
+    end if
+
+    allocate(x_scaling(Nx,Nspecies))
+    do ispecies = 1,Nspecies
+       !v_s = sqrt(2*THats(ispecies)/mHats(ispecies)) ! Once I switch to SI units, include the 2 here.
+       !v_s = sqrt(THats(ispecies)/mHats(ispecies))    ! But while using the old units, v_s is measured in units of vBar, so there is no 2.
+
+       select case (x_scaling_option)
+       case (1)
+          ! without the exponential, without the x.
+          x_scaling(:,ispecies) = 1 / thermal_speeds(ispecies)
+       case (2)
+          ! without the exponential, with the x.
+          x_scaling(:,ispecies) = 1 / (thermal_speeds(ispecies) * x)
+       case (3)
+          ! with the exponential, without the x.
+          x_scaling(:,ispecies) = 1 / (thermal_speeds(ispecies) * expx2)
+       case (4)
+          ! with the exponential, with the x.
+          x_scaling(:,ispecies) = 1 / (thermal_speeds(ispecies) * expx2 * x)
+       case default
+          if (masterProc) print *,"Error! Invalid x_scaling_option:",x_scaling_option
+          stop
+       end select
+
+!!$       select case (x_scaling_option)
+!!$       case (1)
+!!$          x_scaling(:,ispecies) = 1 / (x * v_s)
+!!$       case (2)
+!!$          x_scaling(:,ispecies) = 1 / v_s
+!!$       case (3)
+!!$          x_scaling(:,ispecies) = 1 / (x * v_s * expx2)
+!!$       case (4)
+!!$          x_scaling(:,ispecies) = 1 / (v_s * expx2)
+!!$       case default
+!!$          if (masterProc) print *,"Error! Invalid x_scaling_option:",x_scaling_option
+!!$          stop
+!!$       end select
+    end do
+    if (masterProc) then
+       print "(a,i2,a)","x_scaling_option =",x_scaling_option,". Here comes x_scaling:"
+       do ix=1,Nx
+          print "(*(es10.2))",x_scaling(ix,:)
+       end do
+    end if
+
+    allocate(spatial_scaling(Ntheta,Nzeta))
+    select case (spatial_scaling_option)
+    case (1)
+       if (Nzeta==1) then
+          spatial_scaling = abs(BHat / BHat_sup_theta)
+       else
+          spatial_scaling = abs(BHat / BHat_sup_zeta)
+       end if
+    case (2)
+       if (Nzeta==1) then
+          spatial_scaling = abs( (theta(2)-theta(1)) * BHat / BHat_sup_theta )
+       else
+          spatial_scaling = abs( (zeta(2) - zeta(1)) * BHat / BHat_sub_zeta  )
+       end if
+    case (3)
+       if (Nzeta==1) then
+          spatial_scaling = abs(BHat / BHat_sup_theta)
+       else
+          spatial_scaling = abs(BHat / BHat_sup_zeta)
+       end if
+       spatial_scaling = sum(spatial_scaling)/(Ntheta*Nzeta)
+    case (4)
+       if (Nzeta==1) then
+          spatial_scaling = abs( (theta(2)-theta(1)) * BHat / BHat_sup_theta )
+       else
+          spatial_scaling = abs( (zeta(2) - zeta(1)) * BHat / BHat_sub_zeta  )
+       end if
+       spatial_scaling = sum(spatial_scaling)/(Ntheta*Nzeta)
+    case default
+       if (masterProc) print *,"Error! Invalid spatial_scaling_option:",spatial_scaling_option
+       stop
+    end select
+
+    if (masterProc) then
+       print "(a,i2,a)","spatial_scaling_option =",spatial_scaling_option,". Here comes spatial_scaling:"
+       do itheta=1,Ntheta
+          print "(*(f5.2))",spatial_scaling(itheta,:)
+       end do
+    end if
+
+    allocate(xi_scaling(Nxi))
+    select case (xi_scaling_option)
+    case (0)
+       xi_scaling = 1
+    case (1)
+       xi_scaling = sqrt(1 - xi*xi)
+       ! Set end points exactly in case the line above yields a tiny nonzero value due to roundoff error.
+       !xi_scaling(1) = 0
+       !xi_scaling(Nxi) = 0
+    case default
+       if (masterProc) print *,"Error! Invalid setting for xi_scaling_option:",xi_scaling_option
+       stop
+    end select
+    if (masterProc) print *,"xi_scaling:",xi_scaling
+
+    do ixi = 1,Nxi
+       !pitch_angle_scattering_operator(ixi,:) = xi_scaling(ixi) * pitch_angle_scattering_operator(ixi,:)
+       !pitch_angle_scattering_operator_preconditioner(ixi,:) = xi_scaling(ixi) * pitch_angle_scattering_operator_preconditioner(ixi,:)
+       do j = 1,NL
+          Legendre_projection(ixi,:,j) = xi_scaling(ixi) * Legendre_projection(ixi,:,j)
+       end do
+    end do
+!!$    if (xi_scaling_option==1) then
+!!$       ! Fix up the first and last rows of pitch_angle_scattering_operator.
+!!$       ! Recall pitch angle scattering is defined as xi_scaling * (1/2) d/dxi [(1-xi^2) df/dxi] = xi_scaling * (1/2)(1/sin(alpha)) d/dalpha [sin(alpha) df/dalpha]
+!!$       ! so at the boundaries, if xi_scaling = sin(alpha), then pitch angle scattering = (1/2) cos(alpha) df/dalpha.
+!!$       pitch_angle_scattering_operator(  1,:) = -(1/two) * ddalpha_plus(   1,:)
+!!$       pitch_angle_scattering_operator(Nxi,:) =  (1/two) * ddalpha_minus(Nxi,:)
+!!$    end if
+
+    ! *********************************************************
+    ! Compute Rosenbluth potential response matrices
+    ! *********************************************************
+
+    if ((xGridScheme==5 .or. xGridScheme==6) .and. (RHSMode .ne. 3)) then
+       allocate(RosenbluthPotentialTerms(Nspecies,Nspecies,NL,Nx,Nx))
+       !call computeRosenbluthPotentialResponse(Nx, x, xWeights, Nspecies, mHats, THats, nHats, Zs, NL, f_scaling, RosenbluthPotentialTerms,.false.)
+       call computeRosenbluthPotentialResponse()
+    end if
+
+    ! *********************************************************
+    ! Allocate some arrays that will be used later for output quantities:
+    ! *********************************************************
+
+    allocate(FSADensityPerturbation(Nspecies))
+    allocate(FSABFlow(Nspecies))
+    allocate(FSABVelocityUsingFSADensity(Nspecies))
+    allocate(FSABVelocityUsingFSADensityOverB0(Nspecies))
+    allocate(FSABVelocityUsingFSADensityOverRootFSAB2(Nspecies))
+    allocate(FSAPressurePerturbation(Nspecies))
+
+    allocate(particleFlux_vm0_psiHat(Nspecies))
+    allocate(particleFlux_vm_psiHat(Nspecies))
+    allocate(particleFlux_vE0_psiHat(Nspecies))
+    allocate(particleFlux_vE_psiHat(Nspecies))
+    allocate(particleFlux_vd1_psiHat(Nspecies))
+    allocate(particleFlux_vd_psiHat(Nspecies))
+    allocate(particleFlux_vm0_psiN(Nspecies))
+    allocate(particleFlux_vm_psiN(Nspecies))
+    allocate(particleFlux_vE0_psiN(Nspecies))
+    allocate(particleFlux_vE_psiN(Nspecies))
+    allocate(particleFlux_vd1_psiN(Nspecies))
+    allocate(particleFlux_vd_psiN(Nspecies))
+    allocate(particleFlux_vm0_rHat(Nspecies))
+    allocate(particleFlux_vm_rHat(Nspecies))
+    allocate(particleFlux_vE0_rHat(Nspecies))
+    allocate(particleFlux_vE_rHat(Nspecies))
+    allocate(particleFlux_vd1_rHat(Nspecies))
+    allocate(particleFlux_vd_rHat(Nspecies))
+    allocate(particleFlux_vm0_rN(Nspecies))
+    allocate(particleFlux_vm_rN(Nspecies))
+    allocate(particleFlux_vE0_rN(Nspecies))
+    allocate(particleFlux_vE_rN(Nspecies))
+    allocate(particleFlux_vd1_rN(Nspecies))
+    allocate(particleFlux_vd_rN(Nspecies))
+
+    allocate(momentumFlux_vm0_psiHat(Nspecies))
+    allocate(momentumFlux_vm_psiHat(Nspecies))
+    allocate(momentumFlux_vE0_psiHat(Nspecies))
+    allocate(momentumFlux_vE_psiHat(Nspecies))
+    allocate(momentumFlux_vd1_psiHat(Nspecies))
+    allocate(momentumFlux_vd_psiHat(Nspecies))
+    allocate(momentumFlux_vm0_psiN(Nspecies))
+    allocate(momentumFlux_vm_psiN(Nspecies))
+    allocate(momentumFlux_vE0_psiN(Nspecies))
+    allocate(momentumFlux_vE_psiN(Nspecies))
+    allocate(momentumFlux_vd1_psiN(Nspecies))
+    allocate(momentumFlux_vd_psiN(Nspecies))
+    allocate(momentumFlux_vm0_rHat(Nspecies))
+    allocate(momentumFlux_vm_rHat(Nspecies))
+    allocate(momentumFlux_vE0_rHat(Nspecies))
+    allocate(momentumFlux_vE_rHat(Nspecies))
+    allocate(momentumFlux_vd1_rHat(Nspecies))
+    allocate(momentumFlux_vd_rHat(Nspecies))
+    allocate(momentumFlux_vm0_rN(Nspecies))
+    allocate(momentumFlux_vm_rN(Nspecies))
+    allocate(momentumFlux_vE0_rN(Nspecies))
+    allocate(momentumFlux_vE_rN(Nspecies))
+    allocate(momentumFlux_vd1_rN(Nspecies))
+    allocate(momentumFlux_vd_rN(Nspecies))
+
+    allocate(heatFlux_vm0_psiHat(Nspecies))
+    allocate(heatFlux_vm_psiHat(Nspecies))
+    allocate(heatFlux_vE0_psiHat(Nspecies))
+    allocate(heatFlux_vE_psiHat(Nspecies))
+    allocate(heatFlux_vd1_psiHat(Nspecies))
+    allocate(heatFlux_vd_psiHat(Nspecies))
+    allocate(heatFlux_vm0_psiN(Nspecies))
+    allocate(heatFlux_vm_psiN(Nspecies))
+    allocate(heatFlux_vE0_psiN(Nspecies))
+    allocate(heatFlux_vE_psiN(Nspecies))
+    allocate(heatFlux_vd1_psiN(Nspecies))
+    allocate(heatFlux_vd_psiN(Nspecies))
+    allocate(heatFlux_vm0_rHat(Nspecies))
+    allocate(heatFlux_vm_rHat(Nspecies))
+    allocate(heatFlux_vE0_rHat(Nspecies))
+    allocate(heatFlux_vE_rHat(Nspecies))
+    allocate(heatFlux_vd1_rHat(Nspecies))
+    allocate(heatFlux_vd_rHat(Nspecies))
+    allocate(heatFlux_vm0_rN(Nspecies))
+    allocate(heatFlux_vm_rN(Nspecies))
+    allocate(heatFlux_vE0_rN(Nspecies))
+    allocate(heatFlux_vE_rN(Nspecies))
+    allocate(heatFlux_vd1_rN(Nspecies))
+    allocate(heatFlux_vd_rN(Nspecies))
+
+    allocate(heatFlux_withoutPhi1_psiHat(Nspecies))
+    allocate(heatFlux_withoutPhi1_psiN(Nspecies))
+    allocate(heatFlux_withoutPhi1_rHat(Nspecies))
+    allocate(heatFlux_withoutPhi1_rN(Nspecies))
+
+    allocate(NTV(Nspecies)) 
+
+    allocate(densityPerturbation(Nspecies,Ntheta,Nzeta))
+    allocate(totalDensity(Nspecies,Ntheta,Nzeta))
+    allocate(flow(Nspecies,Ntheta,Nzeta))
+    allocate(velocityUsingFSADensity(Nspecies,Ntheta,Nzeta))
+    allocate(velocityUsingTotalDensity(Nspecies,Ntheta,Nzeta))
+    allocate(MachUsingFSAThermalSpeed(Nspecies,Ntheta,Nzeta))
+    allocate(pressurePerturbation(Nspecies,Ntheta,Nzeta))
+    allocate(pressureAnisotropy(Nspecies,Ntheta,Nzeta))
+    allocate(totalPressure(Nspecies,Ntheta,Nzeta))
+
+    allocate(particleFluxBeforeSurfaceIntegral_vm0(Nspecies,Ntheta,Nzeta))
+    allocate(particleFluxBeforeSurfaceIntegral_vm(Nspecies,Ntheta,Nzeta))
+    allocate(particleFluxBeforeSurfaceIntegral_vE0(Nspecies,Ntheta,Nzeta))
+    allocate(particleFluxBeforeSurfaceIntegral_vE(Nspecies,Ntheta,Nzeta))
+    allocate(momentumFluxBeforeSurfaceIntegral_vm0(Nspecies,Ntheta,Nzeta))
+    allocate(momentumFluxBeforeSurfaceIntegral_vm(Nspecies,Ntheta,Nzeta))
+    allocate(momentumFluxBeforeSurfaceIntegral_vE0(Nspecies,Ntheta,Nzeta))
+    allocate(momentumFluxBeforeSurfaceIntegral_vE(Nspecies,Ntheta,Nzeta))
+    allocate(heatFluxBeforeSurfaceIntegral_vm0(Nspecies,Ntheta,Nzeta))
+    allocate(heatFluxBeforeSurfaceIntegral_vm(Nspecies,Ntheta,Nzeta))
+    allocate(heatFluxBeforeSurfaceIntegral_vE0(Nspecies,Ntheta,Nzeta))
+    allocate(heatFluxBeforeSurfaceIntegral_vE(Nspecies,Ntheta,Nzeta))
+    allocate(NTVBeforeSurfaceIntegral(Nspecies,Ntheta,Nzeta)) 
+
+    allocate(particleFlux_vm_psiHat_vs_x(Nspecies,Nx))
+    allocate(heatFlux_vm_psiHat_vs_x(Nspecies,Nx))
+    allocate(FSABFlow_vs_x(Nspecies,Nx))
+
+    allocate(jHat(Ntheta,Nzeta))
+    allocate(Phi1Hat(Ntheta,Nzeta))
+    allocate(dPhi1Hatdtheta(Ntheta,Nzeta))
+    allocate(dPhi1Hatdzeta(Ntheta,Nzeta))
+    Phi1Hat = zero
+    dPhi1Hatdtheta = zero
+    dPhi1Hatdzeta = zero
+
+    select case (constraintScheme)
+    case (0)
+       ! No allocation needed in this case.
+    case (1,3,4)
+       allocate(sources(Nspecies,2))
+    case (2)
+       allocate(sources(Nspecies,Nx))
+    case default
+       print *,"Error! Invalid setting for constraintScheme."
+       stop
+    end select
+
+    select case (RHSMode)
+    case (2)
+       transportMatrixSize = 3
+       allocate(transportMatrix(transportMatrixSize, transportMatrixSize))
+       transportMatrix = 0
+    case (3)
+       transportMatrixSize = 2
+       allocate(transportMatrix(transportMatrixSize, transportMatrixSize))
+       transportMatrix = 0
+    end select
+
+    ! *********************************************************
+    ! Create vec for the transpose null space, in case it will be used.
+    ! *********************************************************
+
+    call VecCreateMPI(PETSC_COMM_WORLD, PETSC_DECIDE, Ntheta*Nzeta*Nxi, transpose_null_vecs(1), ierr)
+
+    do itheta = ithetaMin, ithetaMax
+       do izeta = izetaMin, izetaMax
+          do ixi = 1,Nxi
+             j = getIndex(1,1,ixi,itheta,izeta,BLOCK_F)
+             call VecSetValue(transpose_null_vecs(1), j, &
+                  xi_weights(ixi)*sqrt_g(itheta,izeta)/(xi_scaling(ixi)*spatial_scaling(itheta,izeta)), INSERT_VALUES, ierr)
+          end do
+       end do
+    end do
+    call VecAssemblyBegin(transpose_null_vecs(1), ierr)
+    call VecAssemblyEnd(  transpose_null_vecs(1), ierr)
+
+    ! *********************************************************
+    ! *********************************************************
+
+    if (masterProc) then
+       print *,"Here comes first_derivative_stencil:"
+       print "(*(f9.3))",first_derivative_stencil
+       print *,"Here comes first_derivative_stencil_preconditioner:"
+       print "(*(f9.3))",first_derivative_stencil_preconditioner
+       print *,"Here comes second_derivative_stencil:"
+       print "(*(f9.3))",second_derivative_stencil
+       print *,"Here comes second_derivative_stencil_preconditioner:"
+       print "(*(f9.3))",second_derivative_stencil_preconditioner
+    end if
+
+    if (masterProc) then
+       print *,"------------------------------------------------------"
+       print *,"Done creating grids."
+    end if
+
+  contains
+
+    function compute_xi_from_y(yy)
+      implicit none
+      real(prec), intent(in) :: yy
+      real(prec) :: compute_xi_from_y
+      
+      compute_xi_from_y = nonuniform_xi_a * yy + nonuniform_xi_b * (yy ** 5)
+    end function compute_xi_from_y
+    
+    function compute_dxi_dy(yy)
+      implicit none
+      real(prec), intent(in) :: yy
+      real(prec) :: compute_dxi_dy
+      
+      compute_dxi_dy = nonuniform_xi_a + 5*nonuniform_xi_b * (yy ** 4)
+    end function compute_dxi_dy
+    
+    function compute_d2xi_dy2(yy)
+      implicit none
+      real(prec), intent(in) :: yy
+      real(prec) :: compute_d2xi_dy2
+      
+      compute_d2xi_dy2 = 20*nonuniform_xi_b * (yy ** 3)
+    end function compute_d2xi_dy2
+    
+  end subroutine createGrids
+
+  ! ----------------------------------------------------------------------------------
+
+  subroutine set_first_derivative_stencil(first_derivative_option, first_derivative_stencil)
+
+    use kinds
+    use globalVariables, only: stencil_width, upwinding_factor, masterProc
+
+    implicit none
+
+    integer, intent(in) :: first_derivative_option
+    real(prec), dimension(-stencil_width:stencil_width) :: first_derivative_stencil
+
+    first_derivative_stencil = 0
+    select case (first_derivative_option)
+    case (101)
+       first_derivative_stencil( 0) =  1
+       first_derivative_stencil(-1) = -1
+       if (masterProc) print *,"  1st order (1 point on 1 side, 0 points on the other, upwinded)"
+    case (102)
+       first_derivative_stencil( 1) =  0.5d+0 - upwinding_factor
+       first_derivative_stencil( 0) =  2 * upwinding_factor
+       first_derivative_stencil(-1) = -0.5d+0 - upwinding_factor
+       if (masterProc) print *,"  1st order (1 point on either side)"
+       if (masterProc) print *,"  Upwinding factor:",upwinding_factor
+    case (201)
+       first_derivative_stencil( 1) =  0.5d+0
+       first_derivative_stencil( 0) =  0
+       first_derivative_stencil(-1) = -0.5d+0
+       if (masterProc) print *,"  2nd order (1 point on either side, centered)"
+    case (202)
+       first_derivative_stencil( 0) =  3 / (2.0d+0)
+       first_derivative_stencil(-1) = -2
+       first_derivative_stencil(-2) = 0.5d+0
+       if (masterProc) print *,"  2nd order (2 points on 1 side, 0 points on the other, upwinded)"
+    case (203)
+       first_derivative_stencil( 1) =  0.25d+0
+       first_derivative_stencil( 0) =  0.75d+0
+       first_derivative_stencil(-1) = -1.25d+0
+       first_derivative_stencil(-2) =  0.25d+0
+       if (masterProc) print *,"  2nd order (Fromm: 2 points on 1 side, 1 point on the other, upwinded)"
+    case (301)
+       first_derivative_stencil( 1) =  1 / (3.0d+0)
+       first_derivative_stencil( 0) =  0.5d+0
+       first_derivative_stencil(-1) = -1
+       first_derivative_stencil(-2) =  1 / (6.0d+0)
+       if (masterProc) print *,"  3rd order (2 points on 1 side, 1 point on the other, upwinded)"
+    case (302)
+       first_derivative_stencil( 2) = -1 / (12.0d+0) + upwinding_factor
+       first_derivative_stencil( 1) =  2 / (3.0d+0) - 4 * upwinding_factor
+       first_derivative_stencil( 0) =  6 * upwinding_factor
+       first_derivative_stencil(-1) = -2 / (3.0d+0) - 4 * upwinding_factor
+       first_derivative_stencil(-2) =  1 / (12.0d+0) + upwinding_factor
+       if (masterProc) print *,"  3rd order (2 points on either side)"
+       if (masterProc) print *,"  Upwinding factor:",upwinding_factor
+    case (401)
+       first_derivative_stencil( 2) = -1 / (12.0d+0)
+       first_derivative_stencil( 1) =  2 / (3.0d+0)
+       first_derivative_stencil( 0) =  0
+       first_derivative_stencil(-1) = -2 / (3.0d+0)
+       first_derivative_stencil(-2) =  1 / (12.0d+0)
+       if (masterProc) print *,"  4th order (2 points on either side, centered)"
+    case (402)
+       first_derivative_stencil( 1) =  1 / (4.0d+0)
+       first_derivative_stencil( 0) =  5 / (6.0d+0)
+       first_derivative_stencil(-1) = -3 / (2.0d+0)
+       first_derivative_stencil(-2) =  1 / (2.0d+0)
+       first_derivative_stencil(-3) = -1 / (12.0d+0)
+       if (masterProc) print *,"  4th order (3 points on 1 side, 1 point on the other, upwinded)"
+    case (501)
+       first_derivative_stencil( 2) = -1 / (20.0d+0)
+       first_derivative_stencil( 1) =  1 / (2.0d+0)
+       first_derivative_stencil( 0) =  1 / (3.0d+0)
+       first_derivative_stencil(-1) = -1
+       first_derivative_stencil(-2) =  1 / (4.0d+0)
+       first_derivative_stencil(-3) = -1 / (30.0d+0)
+       if (masterProc) print *,"  5th order (3 points on 1 side, 2 points on the other, upwinded)"
+    case (502)
+       first_derivative_stencil( 3) =  1 / (60.0d+0) - upwinding_factor
+       first_derivative_stencil( 2) = -3 / (20.0d+0) + 6 * upwinding_factor
+       first_derivative_stencil( 1) =  3 / (4.0d+0) - 15 * upwinding_factor
+       first_derivative_stencil( 0) =  20 * upwinding_factor
+       first_derivative_stencil(-1) = -3 / (4.0d+0) - 15 * upwinding_factor
+       first_derivative_stencil(-2) =  3 / (20.0d+0) + 6 * upwinding_factor
+       first_derivative_stencil(-3) = -1 / (60.0d+0) - upwinding_factor
+       if (masterProc) print *,"  5th order (3 points on either side)"
+       if (masterProc) print *,"  Upwinding factor:",upwinding_factor
+    case (601)
+       first_derivative_stencil( 3) =  1 / (60.0d+0)
+       first_derivative_stencil( 2) = -3 / (20.0d+0)
+       first_derivative_stencil( 1) =  3 / (4.0d+0)
+       first_derivative_stencil( 0) =  0
+       first_derivative_stencil(-1) = -3 / (4.0d+0)
+       first_derivative_stencil(-2) =  3 / (20.0d+0)
+       first_derivative_stencil(-3) = -1 / (60.0d+0)
+       if (masterProc) print *,"  6th order (3 points on either side, centered)"
+    case default
+       stop "Invalid first_derivative_option."
+    end select
+
+  end subroutine set_first_derivative_stencil
+
+  ! ----------------------------------------------------------------------------------
+
+  subroutine set_second_derivative_stencil(second_derivative_option, second_derivative_stencil)
+
+    use kinds
+    use globalVariables, only: stencil_width, masterProc
+
+    implicit none
+
+    integer, intent(in) :: second_derivative_option
+    real(prec), dimension(-stencil_width:stencil_width) :: second_derivative_stencil
+
+    second_derivative_stencil = 0
+    select case (second_derivative_option)
+    case (2)
+       second_derivative_stencil( 1) =  1
+       second_derivative_stencil( 0) = -2
+       second_derivative_stencil(-1) =  1
+       if (masterProc) print *,"  2nd order (1 point on either side)"
+    case (4)
+       second_derivative_stencil( 2) = -1 / (12.0d+0)
+       second_derivative_stencil( 1) =  4 / (3.0d+0)
+       second_derivative_stencil( 0) = -5 / (2.0d+0)
+       second_derivative_stencil(-1) =  4 / (3.0d+0)
+       second_derivative_stencil(-2) = -1 / (12.0d+0)
+       if (masterProc) print *,"  4th order (2 points on either side)"
+    case default
+       stop "Invalid second_derivative_option."
+    end select
+
+  end subroutine set_second_derivative_stencil
