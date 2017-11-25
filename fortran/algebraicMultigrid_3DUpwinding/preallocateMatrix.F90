@@ -71,10 +71,11 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   !tempInt1 = tempInt1 + max(max_nnz_per_row(Nzeta,ddzeta_plus), max_nnz_per_row(Nzeta,ddzeta_plus_preconditioner)) - 1
   !tempInt1 = tempInt1 + max(max_nnz_per_row(Nxi,ddxi_plus+100*pitch_angle_scattering_operator), &
   !     max_nnz_per_row(Nxi,ddxi_plus_preconditioner+100*pitch_angle_scattering_operator_preconditioner)) - 1
-  tempInt1 = tempInt1 + max(nnz_in_stencil(first_derivative_stencil), nnz_in_stencil(first_derivative_stencil_preconditioner)) - 1 ! Theta
-  tempInt1 = tempInt1 + max(nnz_in_stencil(first_derivative_stencil), nnz_in_stencil(first_derivative_stencil_preconditioner)) - 1 ! Zeta
-  tempInt1 = tempInt1 + max(nnz_in_stencil(first_derivative_stencil + 100 * second_derivative_stencil), &
-       nnz_in_stencil(first_derivative_stencil_preconditioner + 100 * second_derivative_stencil_preconditioner)) - 1 ! Xi
+  do i = 1, 3 ! Add nonzeros for each of the three derivative directions:
+     tempInt1 = tempInt1 + max(nnz_in_stencil(first_derivative_stencil), nnz_in_stencil(first_derivative_stencil_preconditioner)) - 1
+  end do
+  ! Add nonzeros for the 2nd derivative in xi, which might not have been one of the 3 derivative directions above:
+  tempInt1 = tempInt1 + max(nnz_in_stencil(second_derivative_stencil), nnz_in_stencil(second_derivative_stencil_preconditioner)) - 1
   ! I need to add the nonzeros for the Fokker-Planck operator.
   if (masterProc) then
      print *,"nnz for first_derivative_stencil:",nnz_in_stencil(first_derivative_stencil)

@@ -334,7 +334,7 @@
                       if (abs_v_theta_over_dtheta > abs_v_zeta_over_dzeta .and. abs_v_theta_over_dtheta > abs_v_alpha_over_dalpha) then
                          ! theta derivative dominates
                          if (abs_v_theta_over_dtheta > abs_v_zeta_over_dzeta + abs_v_alpha_over_dalpha) then
-                            print *,"rowIndex=",rowIndex," case theta 1"
+                            print "(a,3(i4.4,a),i8.8,a)", "itheta_row=",itheta_row," izeta_row=",izeta_row," ixi_row=",ixi_row," rowIndex=",rowIndex," case theta 1"
                             theta_increment(1) = 1
                             zeta_increment(1)  = 0
                             alpha_increment(1) = 0
@@ -343,7 +343,7 @@
                             derivative_magnitude(2) = abs_v_zeta_over_dzeta
                             derivative_magnitude(3) = abs_v_alpha_over_dalpha
                          else
-                            print *,"rowIndex=",rowIndex," case theta 2"
+                            print "(a,3(i4.4,a),i8.8,a)", "itheta_row=",itheta_row," izeta_row=",izeta_row," ixi_row=",ixi_row," rowIndex=",rowIndex," case theta 2"
                             theta_increment(1) = 1
                             zeta_increment(1)  = 1
                             alpha_increment(1) = 1
@@ -362,7 +362,7 @@
                       elseif (abs_v_zeta_over_dzeta > abs_v_theta_over_dtheta .and. abs_v_zeta_over_dzeta > abs_v_alpha_over_dalpha) then
                          ! zeta derivative dominates
                          if (abs_v_zeta_over_dzeta > abs_v_theta_over_dtheta + abs_v_alpha_over_dalpha) then
-                            print *,"rowIndex=",rowIndex," case zeta 1"
+                            print "(a,3(i4.4,a),i8.8,a)", "itheta_row=",itheta_row," izeta_row=",izeta_row," ixi_row=",ixi_row," rowIndex=",rowIndex," case zeta 1"
                             theta_increment(1) = 0
                             zeta_increment(1)  = 1
                             alpha_increment(1) = 0
@@ -371,7 +371,7 @@
                             derivative_magnitude(2) = abs_v_theta_over_dtheta
                             derivative_magnitude(3) = abs_v_alpha_over_dalpha
                          else
-                            print *,"rowIndex=",rowIndex," case zeta 2"
+                            print "(a,3(i4.4,a),i8.8,a)", "itheta_row=",itheta_row," izeta_row=",izeta_row," ixi_row=",ixi_row," rowIndex=",rowIndex," case zeta 2"
                             theta_increment(1) = 1
                             zeta_increment(1)  = 1
                             alpha_increment(1) = 1
@@ -390,7 +390,7 @@
                       else
                          ! alpha derivative dominates
                          if (abs_v_alpha_over_dalpha > abs_v_theta_over_dtheta + abs_v_zeta_over_dzeta) then
-                            print *,"rowIndex=",rowIndex," case alpha 1"
+                            print "(a,3(i4.4,a),i8.8,a)", "itheta_row=",itheta_row," izeta_row=",izeta_row," ixi_row=",ixi_row," rowIndex=",rowIndex," case alpha 1"
                             theta_increment(1) = 0
                             zeta_increment(1)  = 0
                             alpha_increment(1) = 1
@@ -399,7 +399,7 @@
                             derivative_magnitude(2) = abs_v_theta_over_dtheta
                             derivative_magnitude(3) = abs_v_zeta_over_dzeta
                          else
-                            print *,"rowIndex=",rowIndex," case alpha 2"
+                            print "(a,3(i4.4,a),i8.8,a)", "itheta_row=",itheta_row," izeta_row=",izeta_row," ixi_row=",ixi_row," rowIndex=",rowIndex," case alpha 2"
                             theta_increment(1) = 1
                             zeta_increment(1)  = 1
                             alpha_increment(1) = 1

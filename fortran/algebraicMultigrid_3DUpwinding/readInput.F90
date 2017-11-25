@@ -63,7 +63,7 @@ contains
          useIterativeLinearSolver, first_derivative_option, second_derivative_option, &
          xGridScheme, whichParallelSolverToFactorPreconditioner, &
          PETSCPreallocationStrategy, xPotentialsGridScheme, xGrid_k,  &
-         Nxi_for_x_option, upwinding_factor,  &
+         Nxi_for_x_option, upwinding_factor,  upwinding_option, &
          attach_null_space, attach_transpose_null_space, attach_near_null_space, &
          spatial_scaling_option, constraint_scaling_option, xi_scaling_option, &
          x_scaling_option, f_scaling_option, fieldsplit_parallelization_option, krook, &
