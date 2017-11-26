@@ -13,6 +13,7 @@
 
 &general
   RHSMode = 3  ! Monoenergetic coefficients
+  saveMatricesAndVectorsInBinary=T
 /
 
 &geometryParameters
@@ -51,7 +52,8 @@
 !ss NzetaMaxFactor = 2
 !ss NzetaNumRuns = 10
 
-  Nxi = 15
+  Nxi = 24
+!  Nxi = 15
 !ss NxiMinFactor = 1
 !ss NxiMaxFactor = 2
 !ss NxiNumRuns = 10
@@ -69,14 +71,19 @@
 /
 
 &otherNumericalParameters
-!theta_derivative_option=3
-!zeta_derivative_option=4
-!xi_derivative_option=4
-!pitch_angle_scattering_option=2
+theta_derivative_option=8
+zeta_derivative_option=8
+xi_derivative_option=1008
+pitch_angle_scattering_option=1003
 /
 
 &preconditionerOptions
 preconditioning_option=1
+
+preconditioner_theta_derivative_option=8
+preconditioner_zeta_derivative_option=4
+preconditioner_xi_derivative_option=1004
+preconditioner_pitch_angle_scattering_option=1002
 /
 
 &export_f

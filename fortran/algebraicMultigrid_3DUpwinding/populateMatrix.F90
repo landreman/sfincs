@@ -64,7 +64,7 @@
     real(prec) :: dPhiHatdpsiHatToUseInRHS, xPartOfRHS, xPartOfRHS2 !!Added by AM 2016-03
     real(prec), dimension(:,:), allocatable :: theta_interpolation_matrix
     integer :: zeta_shift, zeta_pad_size
-    integer :: stencil_index, sign, izeta_interpolation
+    integer :: stencil_index, sign, izeta_interpolation, num_terms
     integer :: iSpecies_min, iSpecies_max, ix_min, ix_max
     real(prec), dimension(:,:), allocatable :: collision_operator_xi_block
     real(prec), dimension(:,:,:), allocatable :: Legendre_projection_to_use
@@ -314,7 +314,9 @@
 
                    select case (upwinding_option)
                    case (0)
-                      print *,"rowIndex=",rowIndex," tensor product derivatives"
+                      num_terms = 3
+
+                      !print *,"rowIndex=",rowIndex," tensor product derivatives"
                       theta_increment(1) = 1
                       zeta_increment(1) = 0
                       alpha_increment(1) = 0
@@ -331,6 +333,8 @@
                       derivative_magnitude(3) = abs_v_alpha_over_dalpha
 
                    case (1)
+                      num_terms = 3
+
                       if (abs_v_theta_over_dtheta > abs_v_zeta_over_dzeta .and. abs_v_theta_over_dtheta > abs_v_alpha_over_dalpha) then
                          ! theta derivative dominates
                          if (abs_v_theta_over_dtheta > abs_v_zeta_over_dzeta + abs_v_alpha_over_dalpha) then
@@ -416,6 +420,7 @@
                          zeta_increment(3)  = 1
                          alpha_increment(3) = 1
                       end if
+
                    case default
                       stop "Error! Invalid upwinding_option"
                    end select

@@ -209,9 +209,10 @@
     ! *******************************************************************************
 
     if (masterProc) print *,"Stencil for first derivatives:"
-    call set_first_derivative_stencil(first_derivative_option, first_derivative_stencil)
+    call set_first_derivative_stencil(first_derivative_option, first_derivative_stencil, overshoot)
     if (masterProc) print *,"Stencil for first derivatives in preconditioner:"
-    call set_first_derivative_stencil(preconditioner_first_derivative_option, first_derivative_stencil_preconditioner)
+    if (sync_overshoot) preconditioner_overshoot = overshoot
+    call set_first_derivative_stencil(preconditioner_first_derivative_option, first_derivative_stencil_preconditioner, preconditioner_overshoot)
     if (masterProc) print *,"Stencil for second derivatives:"
     call set_second_derivative_stencil(second_derivative_option, second_derivative_stencil)
     if (masterProc) print *,"Stencil for second derivatives in preconditioner:"
@@ -1354,7 +1355,7 @@
 
   ! ----------------------------------------------------------------------------------
 
-  subroutine set_first_derivative_stencil(first_derivative_option, first_derivative_stencil)
+  subroutine set_first_derivative_stencil(first_derivative_option, first_derivative_stencil, overshoot)
 
     use kinds
     use globalVariables, only: stencil_width, upwinding_factor, masterProc
@@ -1363,6 +1364,7 @@
 
     integer, intent(in) :: first_derivative_option
     real(prec), dimension(-stencil_width:stencil_width) :: first_derivative_stencil
+    real(prec), intent(in) :: overshoot
 
     first_derivative_stencil = 0
     select case (first_derivative_option)
@@ -1450,6 +1452,9 @@
     case default
        stop "Invalid first_derivative_option."
     end select
+
+    print *,"  Overshoot = ",overshoot
+    first_derivative_stencil = first_derivative_stencil * (1 + overshoot) + overshoot * first_derivative_stencil(stencil_width:-stencil_width:-1)
 
   end subroutine set_first_derivative_stencil
 

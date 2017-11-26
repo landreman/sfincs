@@ -155,6 +155,10 @@ elif scanVariable == "zeta_upwinding_factor":
     mustBeInteger = False
 elif scanVariable == "preconditioner_blend":
     mustBeInteger = False
+elif scanVariable == "overshoot":
+    mustBeInteger = False
+elif scanVariable == "preconditioner_overshoot":
+    mustBeInteger = False
 elif scanVariable == "preconditioner_theta_upwinding_factor":
     mustBeInteger = False
 elif scanVariable == "xgridscheme":

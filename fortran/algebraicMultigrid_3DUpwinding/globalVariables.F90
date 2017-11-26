@@ -196,6 +196,9 @@ module globalVariables
   real(prec) :: boomeramg_truncfactor = -1
   real(prec) :: preconditioner_collision_multiplier = 1
   real(prec) :: krook = 0
+  real(prec) :: overshoot = 0
+  real(prec) :: preconditioner_overshoot = 0
+  logical :: sync_overshoot = .false.
 
   ! ********************************************************
   !
