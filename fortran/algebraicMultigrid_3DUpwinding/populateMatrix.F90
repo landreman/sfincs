@@ -511,13 +511,13 @@
                    case default
                       stop "Error! Invalid upwinding_option"
                    end select
-                   do j=1,num_terms ! Sanity test
-                      if (derivative_magnitude(j)<0) then
-                         print *,"Error! derivative_magnitude(",j,") is <0!"
-                         print *,"itheta_row=",itheta_row," izeta_row=",izeta_row," ixi_row=",ixi_row
-                         stop
-                      end if
-                   end do
+!!$                   do j=1,num_terms ! Sanity test
+!!$                      if (derivative_magnitude(j)<0) then
+!!$                         print *,"Error! derivative_magnitude(",j,") is <0!"
+!!$                         print *,"itheta_row=",itheta_row," izeta_row=",izeta_row," ixi_row=",ixi_row
+!!$                         stop
+!!$                      end if
+!!$                   end do
                    do j=1,num_terms
                       do stencil_index = -stencil_width, stencil_width
                          itheta_col = itheta_row + theta_increment(j)*stencil_index
