@@ -2423,7 +2423,7 @@
                          ! Since we now should use f0, which has a Phi1Hat dependence we get
                          !  d(collision op.*f0) / d Phi1 = CHatJ*f0 + CHat*(d f0 / d Phi1)
                          
-                         CHatTimesf = matmul(CHatJ + CHat*(-Zs(iSpeciesB)*alpha/Thats(iSpeciesB))&
+                         CHatTimesf = matmul((CHatJ + CHat*(-Zs(iSpeciesB)*alpha/Thats(iSpeciesB)))&
                          *exp(-Zs(iSpeciesB)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesB)),fM)
                                   
                          ! Save into the main matrix
