@@ -145,6 +145,10 @@ elif scanVariable == "xmax":
 elif scanVariable == "solvertolerance":
     print resolutionWarning
     mustBeInteger = False
+elif scanVariable == "stencil_factor_edge":
+    mustBeInteger = False
+elif scanVariable == "stencil_factor_vertex":
+    mustBeInteger = False
 elif scanVariable == "upwinding_factor":
     mustBeInteger = False
 elif scanVariable == "preconditioner_upwinding_factor":

@@ -218,6 +218,11 @@
     if (masterProc) print *,"Stencil for second derivatives in preconditioner:"
     call set_second_derivative_stencil(preconditioner_second_derivative_option, second_derivative_stencil_preconditioner)
 
+    stencil_factor_face = 1 - 4 * stencil_factor_edge - 4 * stencil_factor_vertex
+    if (stencil_factor_face   < 0) stop "Error! stencil_factor_face <0"
+    if (stencil_factor_edge   < 0) stop "Error! stencil_factor_edge <0"
+    if (stencil_factor_vertex < 0) stop "Error! stencil_factor_vertex <0"
+
     ! *******************************************************************************
     ! *******************************************************************************
     !
@@ -1453,7 +1458,7 @@
        stop "Invalid first_derivative_option."
     end select
 
-    print *,"  Overshoot = ",overshoot
+    if (masterProc) print *,"  Overshoot = ",overshoot
     first_derivative_stencil = first_derivative_stencil * (1 + overshoot) + overshoot * first_derivative_stencil(stencil_width:-stencil_width:-1)
 
   end subroutine set_first_derivative_stencil

@@ -144,6 +144,9 @@ module globalVariables
   integer :: second_derivative_option = 4
   integer :: upwinding_option = 0
   real(prec) :: upwinding_factor = 0
+  real(prec) :: stencil_factor_face = 1
+  real(prec) :: stencil_factor_edge = 0
+  real(prec) :: stencil_factor_vertex = 0
 
   integer :: xPotentialsGridScheme = 2, xPotentialsInterpolationScheme
   integer :: xGridScheme = 5, xInterpolationScheme

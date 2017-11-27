@@ -68,7 +68,7 @@ contains
          spatial_scaling_option, constraint_scaling_option, xi_scaling_option, &
          x_scaling_option, f_scaling_option, fieldsplit_parallelization_option, krook, &
          gamg_threshold, ml_threshold, boomeramg_threshold, boomeramg_relax_weight, boomeramg_outer_relax_weight, &
-         boomeramg_P_max, boomeramg_truncfactor, overshoot, sync_overshoot
+         boomeramg_P_max, boomeramg_truncfactor, overshoot, sync_overshoot, stencil_factor_edge, stencil_factor_vertex
 
     namelist / preconditionerOptions / preconditioner_x, preconditioner_first_derivative_option, &
          preconditioner_second_derivative_option, preconditioner_species, reusePreconditioner, &

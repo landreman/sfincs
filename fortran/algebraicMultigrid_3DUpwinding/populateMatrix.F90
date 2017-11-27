@@ -65,13 +65,33 @@
     real(prec), dimension(:,:), allocatable :: theta_interpolation_matrix
     integer :: zeta_shift, zeta_pad_size
     integer :: stencil_index, sign, izeta_interpolation, num_terms
-    integer :: iSpecies_min, iSpecies_max, ix_min, ix_max
+    integer :: iSpecies_min, iSpecies_max, ix_min, ix_max, sign_factor
     real(prec), dimension(:,:), allocatable :: collision_operator_xi_block
     real(prec), dimension(:,:,:), allocatable :: Legendre_projection_to_use
     real(prec), dimension(-stencil_width:stencil_width) :: first_derivative_stencil_to_use, second_derivative_stencil_to_use
-    integer, dimension(3) :: theta_increment, zeta_increment, alpha_increment
-    real(prec), dimension(3) :: derivative_magnitude
-    real(prec) :: theta_dot, zeta_dot, alpha_dot, abs_v_theta_over_dtheta, abs_v_zeta_over_dzeta, abs_v_alpha_over_dalpha
+    integer, dimension(13) :: theta_increment, zeta_increment, alpha_increment
+    real(prec), dimension(13) :: derivative_magnitude
+    real(prec) :: theta_dot, zeta_dot, alpha_dot
+    real(prec) :: v_theta_over_dtheta, v_zeta_over_dzeta, v_alpha_over_dalpha
+    real(prec) :: abs_v_theta_over_dtheta, abs_v_zeta_over_dzeta, abs_v_alpha_over_dalpha
+    real(prec), dimension(13) :: direction_products
+    real(prec), parameter :: sqrt2 = 1.41421356237310d+0, sqrt3 = 1.73205080756888d+0
+    real(prec), dimension(13), parameter :: direction_norms = (/ 1.0d+0, 1.0d+0, 1.0d+0, sqrt2, sqrt2, sqrt2, sqrt2, sqrt2, sqrt2, sqrt3, sqrt3, sqrt3, sqrt3 /)
+    integer, dimension(13, 3), parameter :: directions = reshape( (/ &
+         0, 0, 1, &
+         0, 1, 0, &
+         1, 0, 0, &
+         0, 1, 1, &
+         0, 1,-1, &
+         1, 0, 1, &
+         1, 0,-1, &
+         1, 1, 0, &
+         1,-1, 0, &
+         1, 1, 1, &
+         1, 1,-1, &
+         1,-1, 1, &
+         1,-1,-1  /), shape(directions), order=(/2,1/) )
+    logical, dimension(13) :: mask, mask2
 
     ! *******************************************************************************
     ! Do a few sundry initialization tasks:
@@ -308,9 +328,13 @@
 !!$                   abs_v_zeta_over_dzeta   = abs( zeta_dot / dzeta )
 !!$                   abs_v_alpha_over_dalpha = abs(alpha_dot / dalpha)
 
-                   abs_v_theta_over_dtheta = abs(theta_dot * spatial_scaling(itheta_row,izeta_row) * x_scaling(ix,ispecies) * xi_scaling(ixi_row) / dtheta)
-                   abs_v_zeta_over_dzeta   = abs( zeta_dot * spatial_scaling(itheta_row,izeta_row) * x_scaling(ix,ispecies) * xi_scaling(ixi_row) / dzeta )
-                   abs_v_alpha_over_dalpha = abs(alpha_dot * spatial_scaling(itheta_row,izeta_row) * x_scaling(ix,ispecies) * xi_scaling(ixi_row) / dalpha)
+                   v_theta_over_dtheta = theta_dot * spatial_scaling(itheta_row,izeta_row) * x_scaling(ix,ispecies) * xi_scaling(ixi_row) / dtheta
+                   v_zeta_over_dzeta   =  zeta_dot * spatial_scaling(itheta_row,izeta_row) * x_scaling(ix,ispecies) * xi_scaling(ixi_row) / dzeta 
+                   v_alpha_over_dalpha = alpha_dot * spatial_scaling(itheta_row,izeta_row) * x_scaling(ix,ispecies) * xi_scaling(ixi_row) / dalpha
+
+                   abs_v_theta_over_dtheta = abs(v_theta_over_dtheta)
+                   abs_v_zeta_over_dzeta   = abs(v_zeta_over_dzeta)
+                   abs_v_alpha_over_dalpha = abs(v_alpha_over_dalpha)
 
                    select case (upwinding_option)
                    case (0)
@@ -331,6 +355,10 @@
                       zeta_increment(3) = 0
                       alpha_increment(3) = 1
                       derivative_magnitude(3) = abs_v_alpha_over_dalpha
+
+                      if (theta_dot<0) theta_increment = -theta_increment
+                      if ( zeta_dot<0)  zeta_increment =  -zeta_increment
+                      if (alpha_dot<0) alpha_increment = -alpha_increment
 
                    case (1)
                       num_terms = 3
@@ -421,20 +449,76 @@
                          alpha_increment(3) = 1
                       end if
 
+                      if (theta_dot<0) theta_increment = -theta_increment
+                      if ( zeta_dot<0)  zeta_increment =  -zeta_increment
+                      if (alpha_dot<0) alpha_increment = -alpha_increment
+
+!!$                   case (2)
+!!$                      num_terms = 3
+!!$                      do j = 1, 13
+!!$                         direction_products(j) = v_theta_over_dtheta * directions(j,1) + v_zeta_over_dzeta * directions(j,2) + v_alpha_over_dalpha * directions(j,3)
+!!$                      end do
+!!$                      direction_products = direction_products / direction_norms
+!!$                      ! Find the direction that most closely matches v:
+!!$                      index = maxloc(abs(direction_products))
+!!$                      if (index<1) stop "Error! Index<1"
+!!$                      theta_increment(1) = sign(directions(index,1), direction_products(index))
+!!$                      zeta_increment(1)  = sign(directions(index,2), direction_products(index))
+!!$                      alpha_increment(1) = sign(directions(index,3), direction_products(index))
+!!$
+!!$                      ! Find the direction orthogonal to the first vector with the strongest coupling:
+!!$                      mask = (directions(:,1) * directions(index,1) + directions(:,2) * directions(index,2) + directions(:,3) * directions(index,3)) == 0
+!!$                      if (count(mask)<1) stop "Error! count(mask)<1"
+!!$                      index2 = maxloc(abs(direction_products), mask)
+!!$                      if (index2<1) stop "Error! Index2<1"
+!!$                      theta_increment(2) = sign(directions(index2,1), direction_products(index2))
+!!$                      zeta_increment(2)  = sign(directions(index2,2), direction_products(index2))
+!!$                      alpha_increment(2) = sign(directions(index2,3), direction_products(index2))
+!!$                      
+!!$                      ! Find a direction orthogonal to the first 2 vectors:
+!!$                      mask2 = (directions(:,1) * directions(index2,1) + directions(:,2) * directions(index2,2) + directions(:,3) * directions(index2,3)) == 0
+!!$                      if (count(mask .and. mask2) .ne. 1) then
+!!$                         print *,"Error! count(mask .and. mask2) .ne. 1"
+!!$                         print *,"mask:  ",mask
+!!$                         print *,"mask2: ",mask2
+!!$                         stop
+!!$                      end if
+!!$                      index = maxloc(abs(direction_products),mask .and. mask2)
+!!$                      theta_increment(3) = sign(directions(index,1), direction_products(index))
+!!$                      zeta_increment(3)  = sign(directions(index,2), direction_products(index))
+!!$                      alpha_increment(3) = sign(directions(index,3), direction_products(index))
+!!$                      
+!!$                      ! Need to set derivative_magnitude's here. I should be able to use orthogonality to avoid doing a solve.
+
+                   case (3)
+                      num_terms = 13
+                      if (masterProc) print "(3(a,f6.3))", "stencil_factor_face:",stencil_factor_face," stencil_factor_edge:",stencil_factor_edge," stencil_factor_vertex:",stencil_factor_vertex
+                      do j = 1, 13
+                         factor = v_theta_over_dtheta * directions(j,1) + v_zeta_over_dzeta * directions(j,2) + v_alpha_over_dalpha * directions(j,3)
+                         sign_factor = sign(one, factor)
+                         theta_increment(j) = directions(j,1) * sign_factor
+                         zeta_increment(j)  = directions(j,2) * sign_factor
+                         alpha_increment(j) = directions(j,3) * sign_factor
+                         if (j <= 3) then
+                            derivative_magnitude(j) = stencil_factor_face * abs(factor)
+                         elseif (j <= 9) then
+                            derivative_magnitude(j) = stencil_factor_edge * abs(factor)
+                         else
+                            derivative_magnitude(j) = stencil_factor_vertex * abs(factor)
+                         end if
+                      end do
+
                    case default
                       stop "Error! Invalid upwinding_option"
                    end select
-                   do j=1,3 ! Sanity test
+                   do j=1,num_terms ! Sanity test
                       if (derivative_magnitude(j)<0) then
                          print *,"Error! derivative_magnitude(",j,") is <0!"
                          print *,"itheta_row=",itheta_row," izeta_row=",izeta_row," ixi_row=",ixi_row
                          stop
                       end if
                    end do
-                   if (theta_dot<0) theta_increment = -theta_increment
-                   if ( zeta_dot<0)  zeta_increment =  -zeta_increment
-                   if (alpha_dot<0) alpha_increment = -alpha_increment
-                   do j=1,3
+                   do j=1,num_terms
                       do stencil_index = -stencil_width, stencil_width
                          itheta_col = itheta_row + theta_increment(j)*stencil_index
                          izeta_col  =  izeta_row +  zeta_increment(j)*stencil_index

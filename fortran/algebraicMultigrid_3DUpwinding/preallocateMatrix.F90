@@ -13,7 +13,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
        constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, & 
        includePhi1InKineticEquation, quasineutralityOption, collisionOperator, &
        preconditioner_field_term_xi_option, first_derivative_stencil, first_derivative_stencil_preconditioner, &
-       second_derivative_stencil, second_derivative_stencil_preconditioner, stencil_width
+       second_derivative_stencil, second_derivative_stencil_preconditioner, stencil_width, upwinding_option
   use indices
 
   implicit none
@@ -23,7 +23,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   integer :: predictedNNZForEachRowOfPreconditioner, predictedNNZForEachRowOfTotalMatrix
   integer, dimension(:), allocatable :: predictedNNZsForEachRow, predictedNNZsForEachRowDiagonal
   PetscErrorCode :: ierr
-  integer :: tempInt1, i, itheta, izeta, ispecies, ix, index
+  integer :: tempInt1, i, itheta, izeta, ispecies, ix, index, num_terms
   integer :: firstRowThisProcOwns, lastRowThisProcOwns, numLocalRows
 
   if (masterProc) then
@@ -71,7 +71,9 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   !tempInt1 = tempInt1 + max(max_nnz_per_row(Nzeta,ddzeta_plus), max_nnz_per_row(Nzeta,ddzeta_plus_preconditioner)) - 1
   !tempInt1 = tempInt1 + max(max_nnz_per_row(Nxi,ddxi_plus+100*pitch_angle_scattering_operator), &
   !     max_nnz_per_row(Nxi,ddxi_plus_preconditioner+100*pitch_angle_scattering_operator_preconditioner)) - 1
-  do i = 1, 3 ! Add nonzeros for each of the three derivative directions:
+  num_terms = 3
+  if (upwinding_option == 3) num_terms = 13
+  do i = 1, num_terms ! Add nonzeros for each of the three derivative directions:
      tempInt1 = tempInt1 + max(nnz_in_stencil(first_derivative_stencil), nnz_in_stencil(first_derivative_stencil_preconditioner)) - 1
   end do
   ! Add nonzeros for the 2nd derivative in xi, which might not have been one of the 3 derivative directions above:
