@@ -1729,17 +1729,39 @@
           M22BackslashM21s(L+1,:,:) = M22BackslashM21
        end do
 
-       if (.not. poloidalVariationInCollisionOperator) then   !! Added by AI (2017-09)     
+       if (poloidalVariationInCollisionOperator .and. includePhi1 .and. includePhi1InKineticEquation) then   !! Added by AI (2017-09), Do with poloidal density variation
+          ! if this is false, proceed to original code     
           
-          nuDHat = zero
-          CECD = zero
+          ! ************************************************************************************
+          ! This section has been added by AI (2017-09) in order to include poloidal density variation
+          ! in the collision operator. Poloidal density variation is included by setting 
+          ! poloidalVariationInCollisionOperator = .true. Note that this section replaces
+          ! the original block when poloidalVariationInCollisionOperator = .true.
+          ! See the documentation at
+          ! https://github.com/landreman/sfincs/blob/poloidalVariationInCollisionOperator/doc/PoloidalVariationInCollisionOperator_code.pdf
+          ! ************************************************************************************
+    
+          ! Allocate matrices
+          allocate(CHatTimesf(Nx)) 
+          allocate(fM(Nx)) 
+          allocate(f1b(Nx))  
+     
+          ! Initiate matrices (same as in the original, except that these terms are now
+          ! theta, zeta dependent)                             
+          nuDHatpol = zero
+          CECDpol = zero 
+          CECDpolJ = zero
+          nuDHatpolJ = zero
+    
+    
           ! Before adding the collision operator, we must loop over both species
           ! to build several terms in the operator.
           ! row is species a, column is species b
+       
           do iSpeciesA = 1,Nspecies
              do iSpeciesB = 1,Nspecies
                 speciesFactor = sqrt(THats(iSpeciesA)*mHats(iSpeciesB) &
-                     / (THats(iSpeciesB) * mHats(iSpeciesA)))
+                / (THats(iSpeciesB) * mHats(iSpeciesA)))
                 xb =  x * speciesFactor
                 expxb2 = exp(-xb*xb)
                 do ix=1,Nx
@@ -1753,37 +1775,457 @@
                    erfs(ix) = temp2
                 end do
                 Psi_Chandra = (erfs - 2/sqrtpi * xb * expxb2) / (2*xb*xb)
-                
+             
                 T32m = THats(iSpeciesA) * sqrt(THats(iSpeciesA)*mHats(ispeciesA))
-                
-                ! Build the pitch-angle scattering frequency:
-                nuDHat(iSpeciesA, :) =  nuDHat(iSpeciesA, :) &
-                     + (three*sqrtpi/four) / T32m &
-                     * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
-                     * nHats(iSpeciesB)*(erfs - Psi_Chandra)/(x*x*x)
-                
+                             
                 ! Given a vector of function values on the species-B grid, multiply the vector
                 ! by this interpolation matrix to obtain its values on the species-A grid:
                 if (iSpeciesA /= iSpeciesB) then
                    select case (xGridScheme)
                    case (1,2,5,6)
-                      call polynomialInterpolationMatrix(Nx, Nx, x, xb, expx2*(x**xGrid_k), &
-                           expxb2*(xb**xGrid_k), fToFInterpolationMatrix)
+                   call polynomialInterpolationMatrix(Nx, Nx, x, xb, expx2*(x**xGrid_k), &
+                   expxb2*(xb**xGrid_k), fToFInterpolationMatrix)
                    case (3,4)
-                      allocate(tempExtrapMatrix(Nx, Nx+1))
-                      allocate(fToFInterpolationMatrix_plus1(Nx, Nx+1))
-                      call interpolationMatrix(Nx+1, Nx, x_plus1, xb, &
-                           xInterpolationScheme, fToFInterpolationMatrix_plus1, tempExtrapMatrix)
-                      fToFInterpolationMatrix = fToFInterpolationMatrix_plus1(:,1:Nx)
-                      deallocate(tempExtrapMatrix)
-                      deallocate(fToFInterpolationMatrix_plus1)
+                   allocate(tempExtrapMatrix(Nx, Nx+1))
+                   allocate(fToFInterpolationMatrix_plus1(Nx, Nx+1))
+                   call interpolationMatrix(Nx+1, Nx, x_plus1, xb, &
+                   xInterpolationScheme, fToFInterpolationMatrix_plus1, tempExtrapMatrix)
+                   fToFInterpolationMatrix = fToFInterpolationMatrix_plus1(:,1:Nx)
+                   deallocate(tempExtrapMatrix)
+                   deallocate(fToFInterpolationMatrix_plus1)
                    case (7)
-                      allocate(fToFInterpolationMatrix_plus1(Nx, Nx+1))
-                      call ChebyshevInterpolationMatrix(Nx+1, Nx, x_plus1, xb, fToFInterpolationMatrix_plus1)
-                      fToFInterpolationMatrix = fToFInterpolationMatrix_plus1(:,1:Nx)
-                      deallocate(fToFInterpolationMatrix_plus1)
+                   allocate(fToFInterpolationMatrix_plus1(Nx, Nx+1))
+                   call ChebyshevInterpolationMatrix(Nx+1, Nx, x_plus1, xb, fToFInterpolationMatrix_plus1)
+                   fToFInterpolationMatrix = fToFInterpolationMatrix_plus1(:,1:Nx)
+                   deallocate(fToFInterpolationMatrix_plus1)
                    case (8)
-                      call ChebyshevInterpolationMatrix(Nx, Nx, x, xb, fToFInterpolationMatrix)
+                   call ChebyshevInterpolationMatrix(Nx, Nx, x, xb, fToFInterpolationMatrix)
+                   case default
+                      print *,"Error! Invalid xGridScheme"
+                      stop
+                   end select
+                else
+                   fToFInterpolationMatrix = zero
+                   do i=1,Nx
+                      fToFInterpolationMatrix(i, i) = one
+                   end do
+                end if               
+
+                ! In order to get the correct preFactor and introduce the Phi1Hat dependence
+                ! we need to make a loop over itheta, izeta                                                                
+                do itheta=ithetaMin,ithetaMax
+                   do izeta=izetaMin,izetaMax
+                                                                            
+                      ! Generate preFactor for nHats(iSpeciesA) terms
+                      preFactor =  exp(-Zs(iSpeciesA)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesA))
+                                     
+                      speciesFactor = 3 * nHats(iSpeciesA)*preFactor* mHats(iSpeciesA)/mHats(iSpeciesB) &
+                      * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / T32m
+          
+                      ! Using the resulting interpolation matrix,
+                      ! add CD (the part of the field term independent of Rosenbluth potentials.
+                      ! CD is dense in the species indices.
+          
+                      do ix=1,Nx
+                         CECDpol(iSpeciesA, iSpeciesB, ix, :,itheta,izeta) = CECDpol(iSpeciesA, iSpeciesB, ix, :,itheta,izeta) &
+                         + speciesFactor * expx2(ix) * fToFInterpolationMatrix(ix, :)
+                      end do ! Should be the same if we put outside loop and use (iSpeciesA, iSpeciesB, ix, :,:,:)
+                  
+                      ! Generate preFactor for nHats(iSpeciesB) terms
+                      preFactor =  exp(-Zs(iSpeciesB)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesB))
+                  
+                      ! Build the pitch-angle scattering frequency:
+                      nuDHatpol(iSpeciesA, :,itheta,izeta) =  nuDHatpol(iSpeciesA, :,itheta,izeta) &
+                      + (three*sqrtpi/four) / T32m &
+                      * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
+                      * nHats(iSpeciesB)*preFactor*(erfs - Psi_Chandra)/(x*x*x)
+                                   
+                      speciesFactor = 3*sqrtpi/four * nHats(iSpeciesB)* preFactor  &
+                      * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / T32m
+                      
+                      do ix=1,Nx
+                         !Now add the d2dx2 and ddx terms in CE:
+                         !CE is diagonal in the species indices, so use iSpeciesA for both indices in CECD:
+                         CECDpol(iSpeciesA, iSpeciesA, ix, :,itheta,izeta) = CECDpol(iSpeciesA, iSpeciesA, ix, :,itheta,izeta) &
+                         + speciesFactor * (Psi_Chandra(ix)/x(ix)*d2dx2ToUse(ix,:) &
+                         + (-2*THats(iSpeciesA)*mHats(iSpeciesB)/(THats(iSpeciesB)*mHats(iSpeciesA)) &
+                         * Psi_Chandra(ix)*(1-mHats(iSpeciesA)/mHats(iSpeciesB)) &
+                         + (erfs(ix)-Psi_Chandra(ix))/x2(ix)) * ddxToUse(ix,:))
+             
+                         ! Lastly, add the part of CE for which f is not differentiated:
+                         ! CE is diagonal in the species indices, so use iSpeciesA for both indices in CECD:
+                         CECDpol(iSpeciesA, iSpeciesA, ix, ix,itheta,izeta) = CECDpol(iSpeciesA, iSpeciesA, ix, ix,itheta,izeta) &
+                         + speciesFactor *4/sqrtpi*THats(iSpeciesA)/THats(iSpeciesB) &
+                         *sqrt(THats(iSpeciesA)*mHats(iSpeciesB)/(THats(iSpeciesB)*mHats(iSpeciesA))) &
+                         * expxb2(ix)
+                      end do ! ix
+          
+                      ! If we are calculating the Jacobian, we need to redo the same, but using a different preFactor                              
+                      if (whichMatrix == 1 .or. whichMatrix == 0) then
+                                                                     
+                         ! Generate preFactorJ for nHats(iSpeciesB) terms              
+                         preFactorJ =  (-Zs(iSpeciesA)*alpha/Thats(iSpeciesA)) &
+                         *exp(-Zs(iSpeciesA)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesA))
+                                                           
+                         speciesFactor = 3 * nHats(iSpeciesA)*preFactorJ* mHats(iSpeciesA)/mHats(iSpeciesB) &
+                         * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / T32m
+                        
+                         ! Using the resulting interpolation matrix,
+                         ! add CD (the part of the field term independent of Rosenbluth potentials.
+                         ! CD is dense in the species indices.
+                                           
+                         do ix=1,Nx
+                            CECDpolJ(iSpeciesA, iSpeciesB, ix, :,itheta,izeta) = CECDpolJ(iSpeciesA, iSpeciesB, ix, :,itheta,izeta) &
+                            + speciesFactor * expx2(ix) * fToFInterpolationMatrix(ix, :)
+                         end do
+                  
+                         ! Generate preFactorJ for nHats(iSpeciesB) terms
+                         preFactorJ =  (-Zs(iSpeciesB)*alpha/Thats(iSpeciesB)) &
+                         *exp(-Zs(iSpeciesB)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesB))
+                  
+                         ! Build the pitch-angle scattering frequency:
+                         nuDHatpolJ(iSpeciesA, :,itheta,izeta) =  nuDHatpolJ(iSpeciesA, :,itheta,izeta) &
+                         + (three*sqrtpi/four) / T32m &
+                         * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
+                         * nHats(iSpeciesB)*preFactorJ*(erfs - Psi_Chandra)/(x*x*x)
+                                   
+                         speciesFactor = 3*sqrtpi/four * nHats(iSpeciesB)* preFactor  &
+                         * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / T32m
+                      
+                         do ix=1,Nx
+                            !Now add the d2dx2 and ddx terms in CE:
+                            !CE is diagonal in the species indices, so use iSpeciesA for both indices in CECD:
+                            CECDpolJ(iSpeciesA, iSpeciesA, ix, :,itheta,izeta) = CECDpolJ(iSpeciesA, iSpeciesA, ix, :,itheta,izeta) &
+                            + speciesFactor * (Psi_Chandra(ix)/x(ix)*d2dx2ToUse(ix,:) &
+                            + (-2*THats(iSpeciesA)*mHats(iSpeciesB)/(THats(iSpeciesB)*mHats(iSpeciesA)) &
+                            * Psi_Chandra(ix)*(1-mHats(iSpeciesA)/mHats(iSpeciesB)) &
+                            + (erfs(ix)-Psi_Chandra(ix))/x2(ix)) * ddxToUse(ix,:))
+             
+                            ! Lastly, add the part of CE for which f is not differentiated:
+                            ! CE is diagonal in the species indices, so use iSpeciesA for both indices in CECD:
+                            CECDpolJ(iSpeciesA, iSpeciesA, ix, ix,itheta,izeta) = CECDpolJ(iSpeciesA, iSpeciesA, ix, ix,itheta,izeta) &
+                            + speciesFactor *4/sqrtpi*THats(iSpeciesA)/THats(iSpeciesB) &
+                            *sqrt(THats(iSpeciesA)*mHats(iSpeciesB)/(THats(iSpeciesB)*mHats(iSpeciesA))) &
+                            * expxb2(ix)
+             
+                         end do      ! ix                           
+                      end if ! jacobian part
+                   end do ! izeta
+                end do ! itheta
+             end do ! SpeciesB
+          end do ! Species A
+                            
+       ! *****************************************************************
+       ! Now we are ready to add the collision operator to the main matrix.
+       ! *****************************************************************
+       
+                                      
+          do L=0, Nxi-1
+             if (L>0 .and. pointAtX0) then
+                ixMinCol = 2
+             else
+                ixMinCol = 1
+             end if
+
+             do iSpeciesB = 1,Nspecies
+                do iSpeciesA = 1,Nspecies
+             
+                   if (iSpeciesA==iSpeciesB .or. whichMatrix>0 .or. preconditioner_species==0) then
+                
+                      ! Because of the new theta,zeta dependence, we need to iterate over itheta and izeta
+                      ! already here
+                      do itheta=ithetaMin,ithetaMax 
+                         do izeta=izetaMin,izetaMax
+                      
+                            ! Generate preFactor and preFactorJ for nHats(iSpeciesA) terms
+                            preFactor =  exp(-Zs(iSpeciesA)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesA))
+                            preFactorJ =  (-Zs(iSpeciesA)*alpha/Thats(iSpeciesA)) &
+                            *exp(-Zs(iSpeciesA)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesA))
+                
+                            speciesFactor = sqrt(THats(iSpeciesA)*mHats(iSpeciesB) &
+                            / (THats(iSpeciesB) * mHats(iSpeciesA)))
+                            xb =  x * speciesFactor
+                
+                            ! Build M11
+                            M11 = CECDpol(iSpeciesA, iSpeciesB,:,:,itheta,izeta)
+                            M11J = CECDpolJ(iSpeciesA, iSpeciesB,:,:,itheta,izeta)                     
+                            if (iSpeciesA == iSpeciesB) then
+                               do i=1,Nx
+                                  M11(i,i) = M11(i,i) + (-oneHalf*nuDHatpol(iSpeciesA,i,itheta,izeta)*L*(L+1))
+                                  M11J(i,i) = M11J(i,i) + (-oneHalf*nuDHatpolJ(iSpeciesA,i,itheta,izeta)*L*(L+1))
+                               end do
+                            end if
+                
+                            !   if (.false.) then
+                            if (L < NL) then
+                               ! Add Rosenbluth potential terms.
+
+                               if (xGridScheme==5 .or. xGridScheme==6) then
+                                  ! New scheme for the Rosenbluth potential terms.
+                      
+                                  M11 = M11 + preFactor*RosenbluthPotentialTerms(iSpeciesA,iSpeciesB,L+1,:,:)
+                                  M11J = M11J + preFactorJ*RosenbluthPotentialTerms(iSpeciesA,iSpeciesB,L+1,:,:)
+                      
+                                  CHat = M11
+                                  CHatJ = M11J                           
+
+                               else
+                                  ! Original scheme for the Rosenbluth potential terms.
+
+                                  speciesFactor2 = sqrt(THats(iSpeciesA)*mHats(iSpeciesB) &
+                                  / (THats(iSpeciesB) * mHats(iSpeciesA)))
+                   
+                                  ! Build M13:
+                                  call interpolationMatrix(NxPotentials, Nx, xPotentials, x*speciesFactor2, &
+                                  xPotentialsInterpolationScheme, potentialsToFInterpolationMatrix, extrapMatrix)
+                   
+                                  speciesFactor = 3/(2*pi)*nHats(iSpeciesA) &
+                                  * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
+                                  / (THats(iSpeciesA) * sqrt(THats(iSpeciesA)*mHats(ispeciesA))) &
+                                  * THats(iSpeciesB)*mHats(iSpeciesA)/(THats(iSpeciesA)*mHats(iSpeciesB))
+                   
+                                  tempMatrix = matmul(potentialsToFInterpolationMatrix, d2dx2Potentials)
+                                  do i=1,Nx
+                                     !M13(i, :) = speciesFactor*expx2(i)*x2(i)*tempMatrix(i,:)
+                                     M13(i, :) = speciesFactor*expx2(i) * (x2(i)*tempMatrix(i,:) &
+                                     + THats(ispeciesB)*mHats(ispeciesA)/(THats(ispeciesA)*mHats(ispeciesB)) &
+                                     *(L+1)*(L+2)*(maxxPotentials ** (L+1)) * (xb(i) ** (-L-1))*extrapMatrix(i,:))
+                                  end do
+                   
+                                  temp = 1-mHats(iSpeciesA)/mHats(iSpeciesB)
+                                  do i=1,NxPotentials
+                                     tempMatrix2(i,:) = temp*xPotentials(i)*ddxPotentials(i,:)
+                                     tempMatrix2(i,i) = tempMatrix2(i,i) + one
+                                  end do
+                                  tempMatrix = matmul(potentialsToFInterpolationMatrix, tempMatrix2)
+                                  do i=1,Nx
+                                     !M12(i,:) = -speciesFactor*expx2(i)*tempMatrix(i,:)
+                                     M12(i,:) = -speciesFactor*expx2(i) * ( tempMatrix(i,:) &
+                                     +( -((maxxPotentials/xb(i)) ** (L+1)) &
+                                     * ((L+1)*(1-mHats(ispeciesA)/mHats(ispeciesB)) - 1) &
+                                     -THats(ispeciesB)*mHats(ispeciesA)/(THats(ispeciesA)*mHats(ispeciesB))&
+                                     *((L+1)*(L+2)/(2*L-1) * (maxxPotentials**(L+3))*(xb(i) ** (-L-1)) &
+                                     -L*(L-1)/(2*L-1) * (maxxPotentials ** (L+1))*(xb(i)**(-L+1)))) &
+                                     *extrapMatrix(i,:))
+                                  end do
+                   
+                                  ! Possibly add Dirichlet boundary condition for potentials at x=0:
+                                  if (L /= 0) then
+                                     M12(:,1) = 0
+                                     M13(:,1) = 0
+                                  end if
+                   
+                                  !CHat = M11 -  (M12 - M13 * (M33 \ M32)) * (M22 \ M21);
+                                  CHat = M11 - preFactor*(matmul(M12 - matmul(M13, M33BackslashM32s(L+1,:,:)),&
+                                  M22BackslashM21s(L+1,:,:)))
+                                  CHatJ = M11J - preFactorJ*(matmul(M12 - matmul(M13, M33BackslashM32s(L+1,:,:)),&
+                                  M22BackslashM21s(L+1,:,:)))      
+                               end if
+                            else
+                               CHat = M11; ! This is with preFactors for the residual
+                               CHatJ = M11J; ! This is with the preFactors for the Jacobian
+                            end if
+                
+                            if (whichMatrix==0 .and. L >= preconditioner_x_min_L) then
+                               ! We're making the preconditioner, so simplify the x part of the matrix if desired.
+                               select case (preconditioner_x)
+                               case (0)
+                               ! Do nothing.
+                               case (1)
+                               ! Keep only diagonal in x:
+                               do i=1,Nx
+                                  do j=1,Nx
+                                     if (i /= j) then
+                                        CHat(i,j) = zero   
+                                        CHatJ(i,j) = zero                                                                                
+                                     end if
+                                  end do
+                               end do
+                               case (2)
+                               ! Keep only upper-triangular part:
+                               do i=2,Nx
+                                  do j=1,(i-1)
+                                     CHat(i,j) = zero   
+                                     CHatJ(i,j) = zero 
+                                  end do
+                               end do
+                               case (3,5)
+                               ! Keep only tridiagonal part:
+                               do i=1,Nx
+                                  do j=1,Nx
+                                     if (abs(i-j)>1) then
+                                        CHat(i,j) = zero   
+                                        CHatJ(i,j) = zero                                   
+                                     end if
+                                  end do
+                               end do
+                               case (4)
+                               ! Keep only the diagonal and super-diagonal:
+                               do i=1,Nx
+                                  do j=1,Nx
+                                     if (i /= j .and. j /= (i+1)) then
+                                        CHat(i,j) = zero   
+                                        CHatJ(i,j) = zero                         
+                                     end if
+                                  end do
+                               end do
+                               case default
+                                  print *,"Error! Invalid preconditioner_x"
+                                  stop
+                               end select                      
+                            end if
+                                                    
+                            ! Note: in previous versions I take the transpose of CHat here,
+                            ! but since I have switched to using MatSetValueSparse instead of MatSetValuesSparse,
+                            ! the transpose should no longer be applied here.
+                            !CHat = transpose(CHat)
+          
+                            ! At this point, CHat contains the collision operator normalized by
+                            ! \bar{nu}, (the collision frequency at the reference mass, density, and temperature.)
+       
+                            ! Save the residual, and equivalently, the d(collision op.) / d f1 terms
+
+                            do ix_row=max(ixMin,min_x_for_L(L)),Nx 
+                               rowIndex=getIndex(iSpeciesA,ix_row,L+1,itheta,izeta,BLOCK_F)
+                               do ix_col = max(ixMinCol,min_x_for_L(L)),Nx
+                                  colIndex=getIndex(iSpeciesB,ix_col,L+1,itheta,izeta,BLOCK_F)
+                                  call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                                  -nu_n*CHat(ix_row,ix_col), ADD_VALUES, ierr)
+                               end do ! ix_col
+                            end do ! ix_row
+
+
+                            ! The temperature equilibration part is already implemented since f0, which we multiply with in evaluateResidual.F90
+                            ! vec, already contains the extra exp(Phi1Hat) factor (see subroutine init_f0)
+
+
+                            ! ************************************************************************************
+                            ! Calculate d(collision op.) / d Phi1 contribution to the Jacobian
+                            ! Because of the extra Phi1Hat factors, we need to add more terms when calculating 
+                            ! the Jacobian
+                            ! ************************************************************************************
+                         
+                         
+                            if (whichMatrix == 1 .or. whichMatrix == 0) then ! Jacobian or Preconditioner
+                         
+                               ! First we generate the distribution function which has to be included
+                               ! in the d(collision op.) / d Phi1 terms
+             
+                               do ix= max(ixMinCol,min_x_for_L(L)),Nx
+                                  ! Generate f1b from state vector
+                                  index = getIndex(iSpeciesB,ix,L+1,itheta,izeta,BLOCK_F) 
+                                  f1b(ix) = stateArray(index + 1)
+                
+                                  ! If includeTemperatureEquilibrationTerm = .true., also generate the Maxwellian for species B
+                                  if (includeTemperatureEquilibrationTerm .and. L==0) then
+                                     fM(ix) = sqrt(mhats(iSpeciesB)/Thats(iSpeciesB))*mhats(iSpeciesB)/Thats(iSpeciesB) & 
+                                     *nhats(iSpeciesB)/(pi*sqrtpi)*expxb2(ix)
+                                  end if                                    
+                               end do
+
+                               ! In contrary to the residual, now we need to include the distribution function.
+                               ! Multiply the total collision operator with the distribution function.                       
+                               CHatTimesf = matmul(CHatJ,f1b)
+                        
+                               ! Save into the main matrix
+                               do ix_row=max(ixMin,min_x_for_L(L)),Nx
+                                  rowIndex=getIndex(iSpeciesA,ix_row,L+1,itheta,izeta,BLOCK_F)
+                                  ! Get column index for the d/dPhi1 terms
+                                  colIndex=getIndex(1,1,1,itheta,izeta,BLOCK_QN)
+                                  ! Save into the main matrix, note that here we only use ix_row since CHatTimesf is now a vector
+                                  call MatSetValue(matrix, rowIndex, colIndex, & 
+                                  -nu_n*CHatTimesf(ix_row), ADD_VALUES, ierr) 
+                                  ! need to use MatSetValue, otherwise petsc gives error
+                               end do ! ix_row
+                        
+                               ! If includeTemperatureEquilibrationTerm = .true., we need to add
+                               ! more terms to the Jacobian 
+                               if (includeTemperatureEquilibrationTerm .and. L == 0) then
+                                                          
+                                  ! Since we now should use f0, which has a Phi1Hat dependence we get
+                                  !  d(collision op.*f0) / d Phi1 = CHatJ*f0 + CHat*(d f0 / d Phi1)
+                
+                                  CHatTimesf = matmul((CHatJ + CHat*(-Zs(iSpeciesB)*alpha/Thats(iSpeciesB)))&
+                                  *exp(-Zs(iSpeciesB)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesB)),fM)
+                         
+                                  ! Save into the main matrix
+                                  do ix_row=max(ixMin,min_x_for_L(L)),Nx
+                                     rowIndex=getIndex(iSpeciesA,ix_row,L+1,itheta,izeta,BLOCK_F)
+                                     colIndex=getIndex(1,1,1,itheta,izeta,BLOCK_QN)                                                                                        
+                                     call MatSetValue(matrix, rowIndex, colIndex, &
+                                     -nu_n*CHatTimesf(ix_row), ADD_VALUES, ierr)
+                                  end do !ix_row
+                               end if ! includeTemperatureEquilibrationTerm
+                            end if ! Jacobian part
+                         end do ! izeta
+                      end do !itheta
+                   end if ! whichMatrix > 0, iSpeciesA==iSpeciesB                               
+                end do !iSpeciesA
+             end do !iSpeciesB
+          end do ! L
+
+
+
+          deallocate(CHatTimesf) 
+          deallocate(CECDpol) 
+          deallocate(CECDpolJ)  
+          deallocate(fM)  
+          deallocate(f1b)
+                      
+       else ! original code (without Phi1 variations)
+          nuDHat = zero
+          CECD = zero
+          ! Before adding the collision operator, we must loop over both species
+          ! to build several terms in the operator.
+          ! row is species a, column is species b
+          do iSpeciesA = 1,Nspecies
+             do iSpeciesB = 1,Nspecies
+                speciesFactor = sqrt(THats(iSpeciesA)*mHats(iSpeciesB) &
+                / (THats(iSpeciesB) * mHats(iSpeciesA)))
+                xb =  x * speciesFactor
+                expxb2 = exp(-xb*xb)
+                do ix=1,Nx
+                   ! erf is vectorized in gfortran but not pathscale
+                   temp1 = xb(ix)
+#ifdef USE_GSL_ERF
+                   call erf(temp1, temp2)
+#else
+                   temp2 = erf(temp1)
+#endif
+                   erfs(ix) = temp2
+                end do
+                Psi_Chandra = (erfs - 2/sqrtpi * xb * expxb2) / (2*xb*xb)
+             
+                T32m = THats(iSpeciesA) * sqrt(THats(iSpeciesA)*mHats(ispeciesA))
+             
+                ! Build the pitch-angle scattering frequency:
+                nuDHat(iSpeciesA, :) =  nuDHat(iSpeciesA, :) &
+                + (three*sqrtpi/four) / T32m &
+                * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
+                * nHats(iSpeciesB)*(erfs - Psi_Chandra)/(x*x*x)
+             
+                ! Given a vector of function values on the species-B grid, multiply the vector
+                ! by this interpolation matrix to obtain its values on the species-A grid:
+                if (iSpeciesA /= iSpeciesB) then
+                   select case (xGridScheme)
+                   case (1,2,5,6)
+                   call polynomialInterpolationMatrix(Nx, Nx, x, xb, expx2*(x**xGrid_k), &
+                   expxb2*(xb**xGrid_k), fToFInterpolationMatrix)
+                   case (3,4)
+                   allocate(tempExtrapMatrix(Nx, Nx+1))
+                   allocate(fToFInterpolationMatrix_plus1(Nx, Nx+1))
+                   call interpolationMatrix(Nx+1, Nx, x_plus1, xb, &
+                   xInterpolationScheme, fToFInterpolationMatrix_plus1, tempExtrapMatrix)
+                   fToFInterpolationMatrix = fToFInterpolationMatrix_plus1(:,1:Nx)
+                   deallocate(tempExtrapMatrix)
+                   deallocate(fToFInterpolationMatrix_plus1)
+                   case (7)
+                   allocate(fToFInterpolationMatrix_plus1(Nx, Nx+1))
+                   call ChebyshevInterpolationMatrix(Nx+1, Nx, x_plus1, xb, fToFInterpolationMatrix_plus1)
+                   fToFInterpolationMatrix = fToFInterpolationMatrix_plus1(:,1:Nx)
+                   deallocate(fToFInterpolationMatrix_plus1)
+                   case (8)
+                   call ChebyshevInterpolationMatrix(Nx, Nx, x, xb, fToFInterpolationMatrix)
                    case default
                       print *,"Error! Invalid xGridScheme"
                       stop
@@ -1794,58 +2236,58 @@
                       fToFInterpolationMatrix(i, i) = one
                    end do
                 end if
-                
-!!$                if (masterProc) then
-!!$                   print *,"Here comes fToFInterpolationMatrix for ispeciesA=",iSpeciesA,", iSpeciesB=",iSpeciesB
-!!$                   do ix=1,Nx
-!!$                      print *,fToFInterpolationMatrix(ix,:)
-!!$                   end do
-!!$                end if
+             
+                !!$                if (masterProc) then
+                !!$                   print *,"Here comes fToFInterpolationMatrix for ispeciesA=",iSpeciesA,", iSpeciesB=",iSpeciesB
+                !!$                   do ix=1,Nx
+                !!$                      print *,fToFInterpolationMatrix(ix,:)
+                !!$                   end do
+                !!$                end if
 
                 ! Using the resulting interpolation matrix,
                 ! add CD (the part of the field term independent of Rosenbluth potentials.
                 ! CD is dense in the species indices.
-                
+             
                 speciesFactor = 3 * nHats(iSpeciesA)  * mHats(iSpeciesA)/mHats(iSpeciesB) &
-                     * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / T32m
-                
+                * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / T32m
+             
                 do ix=1,Nx
                    CECD(iSpeciesA, iSpeciesB, ix, :) = CECD(iSpeciesA, iSpeciesB, ix, :) &
-                        + speciesFactor * expx2(ix) * fToFInterpolationMatrix(ix, :)
+                   + speciesFactor * expx2(ix) * fToFInterpolationMatrix(ix, :)
                 end do
-                
+             
                 ! Done adding CD. Now add energy scattering (CE).
                 ! Unlike CD, CE is diagonal in the species index.
-                
+             
                 speciesFactor = 3*sqrtpi/four * nHats(iSpeciesB)  &
-                     * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / T32m
-                
+                * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / T32m
+             
                 do ix=1,Nx
                    !Now add the d2dx2 and ddx terms in CE:
                    !CE is diagonal in the species indices, so use iSpeciesA for both indices in CECD:
                    CECD(iSpeciesA, iSpeciesA, ix, :) = CECD(iSpeciesA, iSpeciesA, ix, :) &
-                        + speciesFactor * (Psi_Chandra(ix)/x(ix)*d2dx2ToUse(ix,:) &
-                        + (-2*THats(iSpeciesA)*mHats(iSpeciesB)/(THats(iSpeciesB)*mHats(iSpeciesA)) &
-                        * Psi_Chandra(ix)*(1-mHats(iSpeciesA)/mHats(iSpeciesB)) &
-                        + (erfs(ix)-Psi_Chandra(ix))/x2(ix)) * ddxToUse(ix,:))
-                   
+                   + speciesFactor * (Psi_Chandra(ix)/x(ix)*d2dx2ToUse(ix,:) &
+                   + (-2*THats(iSpeciesA)*mHats(iSpeciesB)/(THats(iSpeciesB)*mHats(iSpeciesA)) &
+                   * Psi_Chandra(ix)*(1-mHats(iSpeciesA)/mHats(iSpeciesB)) &
+                   + (erfs(ix)-Psi_Chandra(ix))/x2(ix)) * ddxToUse(ix,:))
+                
                    ! Lastly, add the part of CE for which f is not differentiated:
                    ! CE is diagonal in the species indices, so use iSpeciesA for both indices in CECD:
                    CECD(iSpeciesA, iSpeciesA, ix, ix) = CECD(iSpeciesA, iSpeciesA, ix, ix) &
-                        + speciesFactor *4/sqrtpi*THats(iSpeciesA)/THats(iSpeciesB) &
-                        *sqrt(THats(iSpeciesA)*mHats(iSpeciesB)/(THats(iSpeciesB)*mHats(iSpeciesA))) &
-                        * expxb2(ix)
-                   
-                end do
+                   + speciesFactor *4/sqrtpi*THats(iSpeciesA)/THats(iSpeciesB) &
+                   *sqrt(THats(iSpeciesA)*mHats(iSpeciesB)/(THats(iSpeciesB)*mHats(iSpeciesA))) &
+                   * expxb2(ix)
                 
+                end do
+             
              end do
           end do
-          
-          
+       
+       
           ! *****************************************************************
           ! Now we are ready to add the collision operator to the main matrix.
           ! *****************************************************************
-          
+       
           do L=0, Nxi-1
              if (L>0 .and. pointAtX0) then
                 ixMinCol = 2
@@ -1856,11 +2298,11 @@
              do iSpeciesB = 1,Nspecies
                 do iSpeciesA = 1,Nspecies
                    if (iSpeciesA==iSpeciesB .or. whichMatrix>0 .or. preconditioner_species==0) then
-                      
+                   
                       speciesFactor = sqrt(THats(iSpeciesA)*mHats(iSpeciesB) &
-                           / (THats(iSpeciesB) * mHats(iSpeciesA)))
+                      / (THats(iSpeciesB) * mHats(iSpeciesA)))
                       xb =  x * speciesFactor
-                      
+                   
                       ! Build M11
                       M11 = CECD(iSpeciesA, iSpeciesB,:,:)
                       if (iSpeciesA == iSpeciesB) then
@@ -1868,7 +2310,7 @@
                             M11(i,i) = M11(i,i) + (-oneHalf*nuDHat(iSpeciesA,i)*L*(L+1))
                          end do
                       end if
-                      
+                   
                       !   if (.false.) then
                       if (L < NL) then
                          ! Add Rosenbluth potential terms.
@@ -1882,385 +2324,17 @@
                             ! Original scheme for the Rosenbluth potential terms.
 
                             speciesFactor2 = sqrt(THats(iSpeciesA)*mHats(iSpeciesB) &
-                                 / (THats(iSpeciesB) * mHats(iSpeciesA)))
-                         
-                            ! Build M13:
-                            call interpolationMatrix(NxPotentials, Nx, xPotentials, x*speciesFactor2, &
-                                 xPotentialsInterpolationScheme, potentialsToFInterpolationMatrix, extrapMatrix)
-                         
-                            speciesFactor = 3/(2*pi)*nHats(iSpeciesA) &
-                                 * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
-                                 / (THats(iSpeciesA) * sqrt(THats(iSpeciesA)*mHats(ispeciesA))) &
-                                 * THats(iSpeciesB)*mHats(iSpeciesA)/(THats(iSpeciesA)*mHats(iSpeciesB))
-                         
-                            tempMatrix = matmul(potentialsToFInterpolationMatrix, d2dx2Potentials)
-                            do i=1,Nx
-                               !M13(i, :) = speciesFactor*expx2(i)*x2(i)*tempMatrix(i,:)
-                               M13(i, :) = speciesFactor*expx2(i) * (x2(i)*tempMatrix(i,:) &
-                                    + THats(ispeciesB)*mHats(ispeciesA)/(THats(ispeciesA)*mHats(ispeciesB)) &
-                                    *(L+1)*(L+2)*(maxxPotentials ** (L+1)) * (xb(i) ** (-L-1))*extrapMatrix(i,:))
-                            end do
-                         
-                            temp = 1-mHats(iSpeciesA)/mHats(iSpeciesB)
-                            do i=1,NxPotentials
-                               tempMatrix2(i,:) = temp*xPotentials(i)*ddxPotentials(i,:)
-                               tempMatrix2(i,i) = tempMatrix2(i,i) + one
-                            end do
-                            tempMatrix = matmul(potentialsToFInterpolationMatrix, tempMatrix2)
-                            do i=1,Nx
-                               !M12(i,:) = -speciesFactor*expx2(i)*tempMatrix(i,:)
-                               M12(i,:) = -speciesFactor*expx2(i) * ( tempMatrix(i,:) &
-                                    +( -((maxxPotentials/xb(i)) ** (L+1)) &
-                                    * ((L+1)*(1-mHats(ispeciesA)/mHats(ispeciesB)) - 1) &
-                                    -THats(ispeciesB)*mHats(ispeciesA)/(THats(ispeciesA)*mHats(ispeciesB))&
-                                    *((L+1)*(L+2)/(2*L-1) * (maxxPotentials**(L+3))*(xb(i) ** (-L-1)) &
-                                    -L*(L-1)/(2*L-1) * (maxxPotentials ** (L+1))*(xb(i)**(-L+1)))) &
-                                    *extrapMatrix(i,:))
-                            end do
-                         
-                            ! Possibly add Dirichlet boundary condition for potentials at x=0:
-                            if (L /= 0) then
-                               M12(:,1) = 0
-                               M13(:,1) = 0
-                            end if
-                         
-                            !CHat = M11 -  (M12 - M13 * (M33 \ M32)) * (M22 \ M21);
-                            CHat = M11 - matmul(M12 - matmul(M13, M33BackslashM32s(L+1,:,:)),&
-                                 M22BackslashM21s(L+1,:,:))
-                         end if
-                      else
-                         CHat = M11;
-                      end if
-                      
-                      if (whichMatrix==0 .and. L >= preconditioner_x_min_L) then
-                         ! We're making the preconditioner, so simplify the x part of the matrix if desired.
-                         select case (preconditioner_x)
-                         case (0)
-                            ! Do nothing.
-                         case (1)
-                            ! Keep only diagonal in x:
-                            do i=1,Nx
-                               do j=1,Nx
-                                  if (i /= j) then
-                                     CHat(i,j) = zero
-                                  end if
-                               end do
-                            end do
-                         case (2)
-                            ! Keep only upper-triangular part:
-                            do i=2,Nx
-                               do j=1,(i-1)
-                                  CHat(i,j) = zero
-                               end do
-                            end do
-                         case (3,5)
-                            ! Keep only tridiagonal part:
-                            do i=1,Nx
-                               do j=1,Nx
-                                  if (abs(i-j)>1) then
-                                     CHat(i,j) = zero
-                                  end if
-                               end do
-                            end do
-                         case (4)
-                            ! Keep only the diagonal and super-diagonal:
-                            do i=1,Nx
-                               do j=1,Nx
-                                  if (i /= j .and. j /= (i+1)) then
-                                     CHat(i,j) = zero
-                                  end if
-                               end do
-                            end do
-                         case default
-                            print *,"Error! Invalid preconditioner_x"
-                            stop
-                         end select
-                         
-                      end if
-                      
-                      ! Note: in previous versions I take the transpose of CHat here,
-                      ! but since I have switched to using MatSetValueSparse instead of MatSetValuesSparse,
-                      ! the transpose should no longer be applied here.
-                      !CHat = transpose(CHat)
-                      
-                      ! At this point, CHat contains the collision operator normalized by
-                      ! \bar{nu}, (the collision frequency at the reference mass, density, and temperature.)
-                      
-                      do itheta=ithetaMin,ithetaMax
-                         do izeta=izetaMin,izetaMax
-                            !do ix_row=ixMin,Nx
-                            do ix_row=max(ixMin,min_x_for_L(L)),Nx
-                               rowIndex=getIndex(iSpeciesA,ix_row,L+1,itheta,izeta,BLOCK_F)
-                               !do ix_col = ixMinCol,Nx
-                               do ix_col = max(ixMinCol,min_x_for_L(L)),Nx
-                                  colIndex=getIndex(iSpeciesB,ix_col,L+1,itheta,izeta,BLOCK_F)
-                                  call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                                       -nu_n*CHat(ix_row,ix_col), ADD_VALUES, ierr)
-                               end do
-                            end do
-                         end do
-                      end do
-                      
-                   end if
-                end do
-             end do
-          end do
-          
-                      
-    else if (includePhi1 .and. includePhi1InKineticEquation) then! Do with poloidal density variation
-                                     
-       ! ************************************************************************************
-       ! This section has been added by AI (2017-09) in order to include poloidal density variation
-       ! in the collision operator. Poloidal density variation is included by setting 
-       ! poloidalVariationInCollisionOperator = .true. Note that this section replaces
-       ! the original block when poloidalVariationInCollisionOperator = .true.
-       ! See the documentation at
-       ! https://github.com/landreman/sfincs/blob/poloidalVariationInCollisionOperator/doc/PoloidalVariationInCollisionOperator_code.pdf
-       ! ************************************************************************************
-       
-       ! Allocate matrices
-       allocate(CHatTimesf(Nx)) 
-       allocate(fM(Nx)) 
-       allocate(f1b(Nx))  
-        
-       ! Initiate matrices (same as in the original, except that these terms are now
-       ! theta, zeta dependent)                             
-       nuDHatpol = zero
-       CECDpol = zero 
-       CECDpolJ = zero
-       nuDHatpolJ = zero
-       
-       
-       ! Before adding the collision operator, we must loop over both species
-       ! to build several terms in the operator.
-       ! row is species a, column is species b
-          
-       do iSpeciesA = 1,Nspecies
-          do iSpeciesB = 1,Nspecies
-             speciesFactor = sqrt(THats(iSpeciesA)*mHats(iSpeciesB) &
-             / (THats(iSpeciesB) * mHats(iSpeciesA)))
-             xb =  x * speciesFactor
-             expxb2 = exp(-xb*xb)
-             do ix=1,Nx
-                ! erf is vectorized in gfortran but not pathscale
-                temp1 = xb(ix)
-#ifdef USE_GSL_ERF
-                call erf(temp1, temp2)
-#else
-                temp2 = erf(temp1)
-#endif
-                erfs(ix) = temp2
-             end do
-             Psi_Chandra = (erfs - 2/sqrtpi * xb * expxb2) / (2*xb*xb)
-                
-             T32m = THats(iSpeciesA) * sqrt(THats(iSpeciesA)*mHats(ispeciesA))
-                                
-             ! Given a vector of function values on the species-B grid, multiply the vector
-             ! by this interpolation matrix to obtain its values on the species-A grid:
-             if (iSpeciesA /= iSpeciesB) then
-                select case (xGridScheme)
-                case (1,2,5,6)
-                call polynomialInterpolationMatrix(Nx, Nx, x, xb, expx2*(x**xGrid_k), &
-                expxb2*(xb**xGrid_k), fToFInterpolationMatrix)
-                case (3,4)
-                allocate(tempExtrapMatrix(Nx, Nx+1))
-                allocate(fToFInterpolationMatrix_plus1(Nx, Nx+1))
-                call interpolationMatrix(Nx+1, Nx, x_plus1, xb, &
-                xInterpolationScheme, fToFInterpolationMatrix_plus1, tempExtrapMatrix)
-                fToFInterpolationMatrix = fToFInterpolationMatrix_plus1(:,1:Nx)
-                deallocate(tempExtrapMatrix)
-                deallocate(fToFInterpolationMatrix_plus1)
-                case (7)
-                allocate(fToFInterpolationMatrix_plus1(Nx, Nx+1))
-                call ChebyshevInterpolationMatrix(Nx+1, Nx, x_plus1, xb, fToFInterpolationMatrix_plus1)
-                fToFInterpolationMatrix = fToFInterpolationMatrix_plus1(:,1:Nx)
-                deallocate(fToFInterpolationMatrix_plus1)
-                case (8)
-                call ChebyshevInterpolationMatrix(Nx, Nx, x, xb, fToFInterpolationMatrix)
-                case default
-                print *,"Error! Invalid xGridScheme"
-                stop
-             end select
-          else
-             fToFInterpolationMatrix = zero
-             do i=1,Nx
-                fToFInterpolationMatrix(i, i) = one
-             end do
-          end if               
-
-          ! In order to get the correct preFactor and introduce the Phi1Hat dependence
-          ! we need to make a loop over itheta, izeta                                                                
-          do itheta=ithetaMin,ithetaMax
-             do izeta=izetaMin,izetaMax
-                                                                                  
-                ! Generate preFactor for nHats(iSpeciesA) terms
-                preFactor =  exp(-Zs(iSpeciesA)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesA))
-                                           
-                speciesFactor = 3 * nHats(iSpeciesA)*preFactor* mHats(iSpeciesA)/mHats(iSpeciesB) &
-                * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / T32m
-                
-                ! Using the resulting interpolation matrix,
-                ! add CD (the part of the field term independent of Rosenbluth potentials.
-                ! CD is dense in the species indices.
-                
-                do ix=1,Nx
-                   CECDpol(iSpeciesA, iSpeciesB, ix, :,itheta,izeta) = CECDpol(iSpeciesA, iSpeciesB, ix, :,itheta,izeta) &
-                   + speciesFactor * expx2(ix) * fToFInterpolationMatrix(ix, :)
-                end do ! Should be the same if we put outside loop and use (iSpeciesA, iSpeciesB, ix, :,:,:)
-                        
-                ! Generate preFactor for nHats(iSpeciesB) terms
-                preFactor =  exp(-Zs(iSpeciesB)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesB))
-                        
-                ! Build the pitch-angle scattering frequency:
-                nuDHatpol(iSpeciesA, :,itheta,izeta) =  nuDHatpol(iSpeciesA, :,itheta,izeta) &
-                + (three*sqrtpi/four) / T32m &
-                * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
-                * nHats(iSpeciesB)*preFactor*(erfs - Psi_Chandra)/(x*x*x)
-                                         
-                speciesFactor = 3*sqrtpi/four * nHats(iSpeciesB)* preFactor  &
-                * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / T32m
-                            
-                do ix=1,Nx
-                   !Now add the d2dx2 and ddx terms in CE:
-                   !CE is diagonal in the species indices, so use iSpeciesA for both indices in CECD:
-                   CECDpol(iSpeciesA, iSpeciesA, ix, :,itheta,izeta) = CECDpol(iSpeciesA, iSpeciesA, ix, :,itheta,izeta) &
-                   + speciesFactor * (Psi_Chandra(ix)/x(ix)*d2dx2ToUse(ix,:) &
-                   + (-2*THats(iSpeciesA)*mHats(iSpeciesB)/(THats(iSpeciesB)*mHats(iSpeciesA)) &
-                   * Psi_Chandra(ix)*(1-mHats(iSpeciesA)/mHats(iSpeciesB)) &
-                   + (erfs(ix)-Psi_Chandra(ix))/x2(ix)) * ddxToUse(ix,:))
-                   
-                   ! Lastly, add the part of CE for which f is not differentiated:
-                   ! CE is diagonal in the species indices, so use iSpeciesA for both indices in CECD:
-                   CECDpol(iSpeciesA, iSpeciesA, ix, ix,itheta,izeta) = CECDpol(iSpeciesA, iSpeciesA, ix, ix,itheta,izeta) &
-                   + speciesFactor *4/sqrtpi*THats(iSpeciesA)/THats(iSpeciesB) &
-                   *sqrt(THats(iSpeciesA)*mHats(iSpeciesB)/(THats(iSpeciesB)*mHats(iSpeciesA))) &
-                   * expxb2(ix)
-                end do ! ix
-                
-                ! If we are calculating the Jacobian, we need to redo the same, but using a different preFactor                              
-                if (whichMatrix == 1 .or. whichMatrix == 0) then
-                                                                           
-                   ! Generate preFactorJ for nHats(iSpeciesB) terms              
-                   preFactorJ =  (-Zs(iSpeciesA)*alpha/Thats(iSpeciesA)) &
-                   *exp(-Zs(iSpeciesA)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesA))
-                                                                 
-                   speciesFactor = 3 * nHats(iSpeciesA)*preFactorJ* mHats(iSpeciesA)/mHats(iSpeciesB) &
-                   * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / T32m
-                              
-                   ! Using the resulting interpolation matrix,
-                   ! add CD (the part of the field term independent of Rosenbluth potentials.
-                   ! CD is dense in the species indices.
-                                                 
-                   do ix=1,Nx
-                      CECDpolJ(iSpeciesA, iSpeciesB, ix, :,itheta,izeta) = CECDpolJ(iSpeciesA, iSpeciesB, ix, :,itheta,izeta) &
-                      + speciesFactor * expx2(ix) * fToFInterpolationMatrix(ix, :)
-                   end do
-                        
-                   ! Generate preFactorJ for nHats(iSpeciesB) terms
-                   preFactorJ =  (-Zs(iSpeciesB)*alpha/Thats(iSpeciesB)) &
-                   *exp(-Zs(iSpeciesB)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesB))
-                        
-                   ! Build the pitch-angle scattering frequency:
-                   nuDHatpolJ(iSpeciesA, :,itheta,izeta) =  nuDHatpolJ(iSpeciesA, :,itheta,izeta) &
-                   + (three*sqrtpi/four) / T32m &
-                   * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
-                   * nHats(iSpeciesB)*preFactorJ*(erfs - Psi_Chandra)/(x*x*x)
-                                         
-                   speciesFactor = 3*sqrtpi/four * nHats(iSpeciesB)* preFactor  &
-                   * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / T32m
-                            
-                   do ix=1,Nx
-                      !Now add the d2dx2 and ddx terms in CE:
-                      !CE is diagonal in the species indices, so use iSpeciesA for both indices in CECD:
-                      CECDpolJ(iSpeciesA, iSpeciesA, ix, :,itheta,izeta) = CECDpolJ(iSpeciesA, iSpeciesA, ix, :,itheta,izeta) &
-                      + speciesFactor * (Psi_Chandra(ix)/x(ix)*d2dx2ToUse(ix,:) &
-                      + (-2*THats(iSpeciesA)*mHats(iSpeciesB)/(THats(iSpeciesB)*mHats(iSpeciesA)) &
-                      * Psi_Chandra(ix)*(1-mHats(iSpeciesA)/mHats(iSpeciesB)) &
-                      + (erfs(ix)-Psi_Chandra(ix))/x2(ix)) * ddxToUse(ix,:))
-                   
-                      ! Lastly, add the part of CE for which f is not differentiated:
-                      ! CE is diagonal in the species indices, so use iSpeciesA for both indices in CECD:
-                      CECDpolJ(iSpeciesA, iSpeciesA, ix, ix,itheta,izeta) = CECDpolJ(iSpeciesA, iSpeciesA, ix, ix,itheta,izeta) &
-                      + speciesFactor *4/sqrtpi*THats(iSpeciesA)/THats(iSpeciesB) &
-                      *sqrt(THats(iSpeciesA)*mHats(iSpeciesB)/(THats(iSpeciesB)*mHats(iSpeciesA))) &
-                      * expxb2(ix)
-                   
-                   end do      ! ix                           
-                end if ! jacobian part
-             end do ! itheta
-          end do ! izeta
-       end do ! SpeciesA
-    end do ! Species B
-                               
-    ! *****************************************************************
-    ! Now we are ready to add the collision operator to the main matrix.
-    ! *****************************************************************
-          
-                                         
-    do L=0, Nxi-1
-       if (L>0 .and. pointAtX0) then
-          ixMinCol = 2
-       else
-          ixMinCol = 1
-       end if
-
-       do iSpeciesB = 1,Nspecies
-          do iSpeciesA = 1,Nspecies
-                   
-             if (iSpeciesA==iSpeciesB .or. whichMatrix>0 .or. preconditioner_species==0) then
-                      
-                ! Because of the new theta,zeta dependence, we need to iterate over itheta and izeta
-                ! already here
-                do itheta=ithetaMin,ithetaMax 
-                   do izeta=izetaMin,izetaMax
-                            
-                      ! Generate preFactor and preFactorJ for nHats(iSpeciesA) terms
-                      preFactor =  exp(-Zs(iSpeciesA)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesA))
-                      preFactorJ =  (-Zs(iSpeciesA)*alpha/Thats(iSpeciesA)) &
-                      *exp(-Zs(iSpeciesA)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesA))
-                      
-                      speciesFactor = sqrt(THats(iSpeciesA)*mHats(iSpeciesB) &
-                      / (THats(iSpeciesB) * mHats(iSpeciesA)))
-                      xb =  x * speciesFactor
-                      
-                      ! Build M11
-                      M11 = CECDpol(iSpeciesA, iSpeciesB,:,:,itheta,izeta)
-                      M11J = CECDpolJ(iSpeciesA, iSpeciesB,:,:,itheta,izeta)                     
-                      if (iSpeciesA == iSpeciesB) then
-                         do i=1,Nx
-                            M11(i,i) = M11(i,i) + (-oneHalf*nuDHatpol(iSpeciesA,i,itheta,izeta)*L*(L+1))
-                            M11J(i,i) = M11J(i,i) + (-oneHalf*nuDHatpolJ(iSpeciesA,i,itheta,izeta)*L*(L+1))
-                         end do
-                      end if
-                      
-                      !   if (.false.) then
-                      if (L < NL) then
-                         ! Add Rosenbluth potential terms.
-
-                         if (xGridScheme==5 .or. xGridScheme==6) then
-                            ! New scheme for the Rosenbluth potential terms.
-                            
-                            M11 = M11 + preFactor*RosenbluthPotentialTerms(iSpeciesA,iSpeciesB,L+1,:,:)
-                            M11J = M11J + preFactorJ*RosenbluthPotentialTerms(iSpeciesA,iSpeciesB,L+1,:,:)
-                            
-                            CHat = M11
-                            CHatJ = M11J                           
-
-                         else
-                            ! Original scheme for the Rosenbluth potential terms.
-
-                            speciesFactor2 = sqrt(THats(iSpeciesA)*mHats(iSpeciesB) &
                             / (THats(iSpeciesB) * mHats(iSpeciesA)))
-                         
+                      
                             ! Build M13:
                             call interpolationMatrix(NxPotentials, Nx, xPotentials, x*speciesFactor2, &
                             xPotentialsInterpolationScheme, potentialsToFInterpolationMatrix, extrapMatrix)
-                         
+                      
                             speciesFactor = 3/(2*pi)*nHats(iSpeciesA) &
                             * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
                             / (THats(iSpeciesA) * sqrt(THats(iSpeciesA)*mHats(ispeciesA))) &
                             * THats(iSpeciesB)*mHats(iSpeciesA)/(THats(iSpeciesA)*mHats(iSpeciesB))
-                         
+                      
                             tempMatrix = matmul(potentialsToFInterpolationMatrix, d2dx2Potentials)
                             do i=1,Nx
                                !M13(i, :) = speciesFactor*expx2(i)*x2(i)*tempMatrix(i,:)
@@ -2268,7 +2342,7 @@
                                + THats(ispeciesB)*mHats(ispeciesA)/(THats(ispeciesA)*mHats(ispeciesB)) &
                                *(L+1)*(L+2)*(maxxPotentials ** (L+1)) * (xb(i) ** (-L-1))*extrapMatrix(i,:))
                             end do
-                         
+                      
                             temp = 1-mHats(iSpeciesA)/mHats(iSpeciesB)
                             do i=1,NxPotentials
                                tempMatrix2(i,:) = temp*xPotentials(i)*ddxPotentials(i,:)
@@ -2285,24 +2359,21 @@
                                -L*(L-1)/(2*L-1) * (maxxPotentials ** (L+1))*(xb(i)**(-L+1)))) &
                                *extrapMatrix(i,:))
                             end do
-                         
+                      
                             ! Possibly add Dirichlet boundary condition for potentials at x=0:
                             if (L /= 0) then
                                M12(:,1) = 0
                                M13(:,1) = 0
                             end if
-                         
+                      
                             !CHat = M11 -  (M12 - M13 * (M33 \ M32)) * (M22 \ M21);
-                            CHat = M11 - preFactor*(matmul(M12 - matmul(M13, M33BackslashM32s(L+1,:,:)),&
-                            M22BackslashM21s(L+1,:,:)))
-                            CHatJ = M11J - preFactorJ*(matmul(M12 - matmul(M13, M33BackslashM32s(L+1,:,:)),&
-                            M22BackslashM21s(L+1,:,:)))      
+                            CHat = M11 - matmul(M12 - matmul(M13, M33BackslashM32s(L+1,:,:)),&
+                            M22BackslashM21s(L+1,:,:))
                          end if
                       else
-                         CHat = M11; ! This is with preFactors for the residual
-                         CHatJ = M11J; ! This is with the preFactors for the Jacobian
+                         CHat = M11;
                       end if
-                      
+                   
                       if (whichMatrix==0 .and. L >= preconditioner_x_min_L) then
                          ! We're making the preconditioner, so simplify the x part of the matrix if desired.
                          select case (preconditioner_x)
@@ -2313,8 +2384,7 @@
                          do i=1,Nx
                             do j=1,Nx
                                if (i /= j) then
-                                  CHat(i,j) = zero   
-                                  CHatJ(i,j) = zero                                                                                
+                                  CHat(i,j) = zero
                                end if
                             end do
                          end do
@@ -2322,8 +2392,7 @@
                          ! Keep only upper-triangular part:
                          do i=2,Nx
                             do j=1,(i-1)
-                               CHat(i,j) = zero   
-                               CHatJ(i,j) = zero 
+                               CHat(i,j) = zero
                             end do
                          end do
                          case (3,5)
@@ -2331,8 +2400,7 @@
                          do i=1,Nx
                             do j=1,Nx
                                if (abs(i-j)>1) then
-                                  CHat(i,j) = zero   
-                                  CHatJ(i,j) = zero                                   
+                                  CHat(i,j) = zero
                                end if
                             end do
                          end do
@@ -2341,8 +2409,7 @@
                          do i=1,Nx
                             do j=1,Nx
                                if (i /= j .and. j /= (i+1)) then
-                                  CHat(i,j) = zero   
-                                  CHatJ(i,j) = zero                         
+                                  CHat(i,j) = zero
                                end if
                             end do
                          end do
@@ -2352,109 +2419,38 @@
                       end select
                       
                    end if
-                                                             
+                   
                    ! Note: in previous versions I take the transpose of CHat here,
                    ! but since I have switched to using MatSetValueSparse instead of MatSetValuesSparse,
                    ! the transpose should no longer be applied here.
                    !CHat = transpose(CHat)
-                      
+                   
                    ! At this point, CHat contains the collision operator normalized by
                    ! \bar{nu}, (the collision frequency at the reference mass, density, and temperature.)
                    
-                   ! Save the residual, and equivalently, the d(collision op.) / d f1 terms
-
-                   do ix_row=max(ixMin,min_x_for_L(L)),Nx 
-                      rowIndex=getIndex(iSpeciesA,ix_row,L+1,itheta,izeta,BLOCK_F)
-                      do ix_col = max(ixMinCol,min_x_for_L(L)),Nx
-                         colIndex=getIndex(iSpeciesB,ix_col,L+1,itheta,izeta,BLOCK_F)
-                         call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                         -nu_n*CHat(ix_row,ix_col), ADD_VALUES, ierr)
-                      end do ! ix_col
-                   end do ! ix_row
-
-
-                   ! The temperature equilibration part is already implemented since f0, which we multiply with in evaluateResidual.F90
-                   ! vec, already contains the extra exp(Phi1Hat) factor (see subroutine init_f0)
-
-
-                   ! ************************************************************************************
-                   ! Calculate d(collision op.) / d Phi1 contribution to the Jacobian
-                   ! Because of the extra Phi1Hat factors, we need to add more terms when calculating 
-                   ! the Jacobian
-                   ! ************************************************************************************
-                                  
-                                  
-                   if (whichMatrix == 1 .or. whichMatrix == 0) then ! Jacobian or Preconditioner
-                                  
-                      ! First we generate the distribution function which has to be included
-                      ! in the d(collision op.) / d Phi1 terms
-                      
-                      do ix= max(ixMinCol,min_x_for_L(L)),Nx
-                         ! Generate f1b from state vector
-                         index = getIndex(iSpeciesB,ix,L+1,itheta,izeta,BLOCK_F) 
-                         f1b(ix) = stateArray(index + 1)
-                         
-                         ! If includeTemperatureEquilibrationTerm = .true., also generate the Maxwellian for species B
-                         if (includeTemperatureEquilibrationTerm .and. L==0) then
-                            fM(ix) = sqrt(mhats(iSpeciesB)/Thats(iSpeciesB))*mhats(iSpeciesB)/Thats(iSpeciesB) & 
-                            *nhats(iSpeciesB)/(pi*sqrtpi)*expxb2(ix)
-                         end if                                    
-                      end do
-
-                      ! In contrary to the residual, now we need to include the distribution function.
-                      ! Multiply the total collision operator with the distribution function.                       
-                      CHatTimesf = matmul(CHatJ,f1b)
-                                 
-                      ! Save into the main matrix
-                      do ix_row=max(ixMin,min_x_for_L(L)),Nx
-                         rowIndex=getIndex(iSpeciesA,ix_row,L+1,itheta,izeta,BLOCK_F)
-                         ! Get column index for the d/dPhi1 terms
-                         colIndex=getIndex(1,1,1,itheta,izeta,BLOCK_QN)
-                         ! Save into the main matrix, note that here we only use ix_row since CHatTimesf is now a vector
-                         call MatSetValue(matrix, rowIndex, colIndex, & 
-                         -nu_n*CHatTimesf(ix_row), ADD_VALUES, ierr) 
-                         ! need to use MatSetValue, otherwise petsc gives error
-                      end do ! ix_row
-                                 
-                      ! If includeTemperatureEquilibrationTerm = .true., we need to add
-                      ! more terms to the Jacobian 
-                      if (includeTemperatureEquilibrationTerm .and. L == 0) then
-                                                                   
-                         ! Since we now should use f0, which has a Phi1Hat dependence we get
-                         !  d(collision op.*f0) / d Phi1 = CHatJ*f0 + CHat*(d f0 / d Phi1)
-                         
-                         CHatTimesf = matmul((CHatJ + CHat*(-Zs(iSpeciesB)*alpha/Thats(iSpeciesB)))&
-                         *exp(-Zs(iSpeciesB)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesB)),fM)
-                                  
-                         ! Save into the main matrix
+                   do itheta=ithetaMin,ithetaMax
+                      do izeta=izetaMin,izetaMax
+                         !do ix_row=ixMin,Nx
                          do ix_row=max(ixMin,min_x_for_L(L)),Nx
                             rowIndex=getIndex(iSpeciesA,ix_row,L+1,itheta,izeta,BLOCK_F)
-                            colIndex=getIndex(1,1,1,itheta,izeta,BLOCK_QN)                                                                                        
-                            call MatSetValue(matrix, rowIndex, colIndex, &
-                            -nu_n*CHatTimesf(ix_row), ADD_VALUES, ierr)
-                         end do !ix_row
-                      end if ! includeTemperatureEquilibrationTerm
-                   end if ! Jacobian part
-                end do ! izeta
-             end do !itheta
-          end if ! whichMatrix > 0, iSpeciesA==iSpeciesB                               
-       end do !iSpeciesA
-    end do !iSpeciesB
- end do ! L
- 
+                            !do ix_col = ixMinCol,Nx
+                            do ix_col = max(ixMinCol,min_x_for_L(L)),Nx
+                               colIndex=getIndex(iSpeciesB,ix_col,L+1,itheta,izeta,BLOCK_F)
+                               call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                               -nu_n*CHat(ix_row,ix_col), ADD_VALUES, ierr)
+                            end do
+                         end do
+                      end do
+                   end do
+                end if
+                end do
+             end do
+          end do 
+       end if ! poloidal part   
 
-
- deallocate(CHatTimesf) 
- deallocate(CECDpol) 
- deallocate(CECDpolJ)  
- deallocate(fM)  
- deallocate(f1b)
- 
-end if ! poloidal part   
-
-deallocate(tempMatrix)
-deallocate(tempMatrix2)
-deallocate(extrapMatrix)                           
+       deallocate(tempMatrix)
+       deallocate(tempMatrix2)
+       deallocate(extrapMatrix)                           
           
           ! *******************************************************************************
           ! *******************************************************************************
