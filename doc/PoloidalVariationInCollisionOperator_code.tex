@@ -186,17 +186,13 @@ To implement Eq.~\eqref{eq:CollMod} and Eq.~\eqref{eq:Jac1} we need to modify th
 \label{sec:Res}
 In the residual we have to include the extra pre-factor appearing in Eq.~\eqref{eq:CollMod}. Since this factor is species specific, we have to keep track of which species density is appearing in the equations. The pitch-angle scattering and the $\hat C^E_{ab}\left \{f_{a1}\right \}$ parts of the collision operator (see Ref. ~\cite{ref:Coll1}) both uses the density $\texttt{nHats(iSpeciesB)}$ while the other contributions to the total collision operator \texttt{CHat} uses \texttt{nHats(iSpeciesA)} instead. 
 
-Rather than creating many if-statements in the current implementation of the collision operator, for sake of clarity we separate the two implementations with one if-statement directly before the various contributions to the collision operator are calculated. If \texttt{poloidalVariationInCollisionOperator = .false.} the first block is executed, which contains the original code. 
+Rather than creating many if-statements in the current implementation of the collision operator, for sake of clarity we separate the two implementations with one if-statement directly before the various contributions to the collision operator are calculated. If \texttt{Phi1} is included and \texttt{poloidalVariationInCollisionOperator = .true.} the contribution from the collision operator is calculated taking poloidal density variation into account. 
 
 \begin{lstlisting}
-if (.not. poloidalVariationInCollisionOperator) then   !! Added by AI (2017-09).
+ if (poloidalVariationInCollisionOperator .and. includePhi1 .and. includePhi1InKineticEquation) then
 \end{lstlisting}
 
-\noindent Otherwise, if \texttt{poloidalVariationInCollisionOperator = .true.}, \texttt{includePhi1 = .true.} and \texttt{includePhi1InKineticEquation = .true.} we proceed to the new block where poloidal density variation is included.
-
-\begin{lstlisting}
-else if (includePhi1 .and. includePhi1InKineticEquation) then! Do with poloidal density variation
-\end{lstlisting}
+Otherwise the second block is executed, which contains the original code. 
 
 \noindent
 Since we now will have a \texttt{Phi1Hat} dependence in the various terms of the collision operator we will have to iterate over \texttt{itheta} and \texttt{izeta} when calculating the various contributions. Before calculating each term, we define a pre-factor (\texttt{PreFactor}) as is specified in Eq.~\eqref{eq:CollMod}, taking the correct species index into account. 
@@ -401,6 +397,3 @@ For this input, the orderings of various parameters described in Ref.~\cite{ref:
 \end{thebibliography}
 
 \end{document}
-
-% Some notes:
-Basically the structure is the following: the densoty might not always be corresponding to the row index (since we might have cross terms) but the distribution function is ALWAYS the column index, which is SpeciesB, that is why we use  f1b in the end
