@@ -171,7 +171,7 @@ The contribution to the Jacobian are $\delta \hat C_{ab}^{L:f0}/\delta \hat f_{1
 }
 
 \noindent
-Apart from the different pre-factor, the term in Eq.~\eqref{eq:Jac1} differs from term in $\delta \hat C_{ab}^{L:f0}/\delta \hat f_{1s}$ by acting on the first order distribution function $f_{1s}$. For example, in the first case, terms such as $\partial f_{1s}/\partial x_s$ become 
+Apart from the different pre-factor, the term in Eq.~\eqref{eq:Jac1} differs from the term in $\delta \hat C_{ab}^{L:f0}/\delta \hat f_{1s}$ by acting on the first order distribution function $f_{1s}$. For example, in the first case, terms such as $\partial f_{1s}/\partial x_s$ become 
 \eq{
 \frac{\partial}{\partial f_{1s}}\frac{\partial f_{1s}}{\partial x_s} = \frac{\partial}{\partial x_s},
 }
@@ -214,7 +214,7 @@ The rest of this block is the same as in the original code, except that we do th
 In the original version of the code, the temperature equilibration term is calculated in \\ \texttt{evaluateResidual.F90} by using \texttt{whichMatrix = 2} when calling \texttt{PopulateMatrix.F90}. The output is then multiplied with $f_{0s}$. Since the original version of \texttt{SFINCS} already includes $\Phi_1$ in the definition of $f_{0s}$ (in the subroutine \texttt{init\_f0()} inside \texttt{PopulateMatrix.F90}), the same routines as were presented above can be used also if\\ \texttt{includeTemperatureEquilibrationTerm = .true.}. 
 
 \subsection*{Jacobian}
- If the modifications explained in the previous section are implemented, the $\delta C/\delta f_{1s}$ contribution to the Jacobian is at this point already taking the density variations into account. We need to add the calculation of $\delta C/\delta \Phi_1$.
+ If the modifications explained in the previous section are implemented, the $\delta C/\delta f_{1s}$ contribution to the Jacobian is at this point already taking the density variation into account. We need to add the calculation of $\delta C/\delta \Phi_1$.
 
 \subsubsection*{The $\delta C/\delta \Phi_1$ term}
 \label{sec:Jac1}
@@ -307,9 +307,47 @@ Just as before, the   $\delta C/\delta f_1$ terms are the same as in the residua
   \end{lstlisting}
 
 \section*{Current state of the project}
-Presently, the modifications discussed in the previous section have been implemented into the ``poloidalVariationInCollisionOperator'' branch of \texttt{SFINCS}. What remains is to benchmark the output with theoretical predictions, using for example the model described in Ref.~\cite{ref:Fulop}\footnote{Note that in this model the collision operator is not linearised around a poloidally varying zeroth order distribution function (as is done here), but the poloidal variation enters through the perturbed distribution function in the ion-impurity collision operator, when computing the parallel friction force.}. Note that in this case only tokamak cases are considered.
+Presently, the modifications discussed in the previous section have been implemented into the ``poloidalVariationInCollisionOperator'' branch of \texttt{SFINCS}. What remains is to verify that the new implementation is correct. First, we try to make simple tests and compare the output from the new code (with poloidal density variation included in the collision operator), with the original code (without poloidal density variation in the collision operator). This is discussed in the first subsection below. Next, we attempt to benchmark the output from the code with theoretical predictions. This is done in the second subsection. 
+
+Tokamak geometry has been used in all cases considered here.
+
+\subsection*{Tests of new code}
+First, for simple scenarios (such as one species cases, or two species but with low impurity charge, $Z \le 4$), comparison between the new and old version of the code gives exactly the same results. The time it takes to run a simulation is practically the same.  
+
+Next, we try to increase the effect of poloidal density variation in the collision operator, by increasing the impurity charge. For $Z \le 16$ this leads to a much longer computation time, but eventually the solver converges and we get a solution. When attempting to run with $Z = 17$, the nonlinear solver diverges. It is possible to get a solution by using \texttt{reusePreconditioner = .false.} in the input to \texttt{SFINCS} and by changing the relative and absolute tolerances used in the iterations. This can be done by providing the flags \texttt{-ksp\_atol} and \texttt{-snes\_rtol} when running the \texttt{SFINCS} simulation. Example of values that can be used are $1e-8$ for \texttt{-ksp\_atol} and $1.0e-6$ for \texttt{-snes\_rtol}. With these options, the nonlinear solver should eventually converge. Note that the other input parameters, such as geometry, species and resolution parameters, all have a strong impact on whether the solver will converge or not. Typical input parameters used here will be presented in the next subsection, further below. 
+
+Even for these more complicated cases, with high impurity charge, there is still practically no difference between using the new code and the original version. This is demonstrated in Fig.~\ref{fig:0} where the perturbed impurity density is shown for $Z=1$ and $Z=17$ respectively. Both cases have been computed using the new and original version of the code. As is seen in the figure, the output from the old and new version of the code is almost identical. 
+
+\begin{figure}
+ \setlength\figureheight{0.4\textheight}
+ \setlength\figurewidth{0.9\textwidth}
+    \centering
+    \input{figures/outdn.tex}
+    \caption{Normalised perturbed impurity density for impurity charge $Z = 1$ (orange) and $Z = 17$ (violet) respectively. The result is shown for the case when the original code is used (solid lines) and  when the new code is used instead, with poloidal density variation included in the collision operator(dashed line with circles).}
+            \label{fig:0}
+      \end{figure} 
+
+Other cases, when changing for example impurity density, have also been studied. All have the same conclusion that poloidal density variation does not seem to matter in the collision operator, at least when Tokamak geometry is considered. Further work with Stellarators might be more interesting and should be done.
+
+
+%Note that depending on the other input parameters used, the value of the charge   
+%First we test the new version of the code for simple scenarios, such as plasmas with only one species, or with two species but with low impurity charge ($Z \le 6$). For such cases, the new version of the code successfully generates an output which is almost identical to the output from the original code. The time it takes to run a simulation is practically the same. 
+
+%Next, in order to increase the effect of poloidal density variation in the collision operator, we try to increase the impurity charge. Now the code runs much slower (compared to when running the same cases with the original code) and it is much more difficult for the (nonlinear) solver to find a solution, which divereges. It is possible to make the nonlinear solver converge by using specific input. First, set the parameters \texttt{reusePreconditione = .false.} in the input file to \texttt{SFINCS}. Secondly, you should modify the relative and absolute tolerance used in the solver-iterations. This can be done by running \texttt{SFINCS} with the flags \texttt{-ksp\_atol} and \texttt{-snes\_rtol}. Good values are $1e-8$ and $1.0e-6$. By playing around with these input parameters it is eventually possible to make the code converge, although at a significant increased computation time. Still, even at higher charge number is is practically no difference between using the new version of the code and the old. This is demonstrated in Fig.~\ref{fig:0} where we show the perturbed impurity density as a function of poloidal angle, for two cases. One has impurity charge $z = 1$ while the other has $z = 17$. Both cases have been run using the original code and the new implementation, where poloidal density variation has been included.
+
+
+
+
+%Other simulations, for example when increasing the impurity density while maintaining high impurity charge also take time to run, and in the end does not show any particular difference when compared with running the simulation with the original code. This shows that poloidal density varation seems to play a small role in simple Tokamak scenarious. Perhaps, Stellarator cases may be required to observe a bigger difference.
+
+\subsection*{Comparing with model}
+The second approach we take to validate the code, is to benchmark the \texttt{SFINCS} output with theoretical predictions, using for example the model described in Ref.~\cite{ref:Fulop}\footnote{Note that in this model the collision operator is not linearised around a poloidally varying zeroth order distribution function (as is done here), but the poloidal variation enters through the perturbed distribution function in the ion-impurity collision operator, when computing the parallel friction force.}. 
+
+
+%Note that in this case only Tokamak cases are considered.
 
 The first step is to test the model with the output from the original \texttt{SFINCS} code, without including poloidal density variation. By setting the temperature gradient to zero we remove the effect from the collision operator and expect therefore the output from \texttt{SFINCS} to agree reasonably well with the predictions from the model. Example of typical \texttt{SFINCS}-input used to get the best agreement so far is:
+\newpage
  \begin{lstlisting}
  &speciesParameters
  Zs = 1.0, 20.0
@@ -341,7 +379,7 @@ The first step is to test the model with the output from the original \texttt{SF
 /
   \end{lstlisting}
 \noindent
-For this input, the orderings of various parameters described in Ref.~\cite{ref:Fulop} are reasonably satisfied (we have $\Delta\sim 0.3, \delta \sim 0.15, \epsilon \sim 0.1, n_zZ^2/n_i \sim 1.2$ and $\nu^*\sim 0.11$). If we use this input for varying magnetic field strength $B_0$ (as an example) and calculate the sine and cosine parts of the perturbed impurity density, we get Fig.~\ref{fig:1} and Fig.~\ref{fig:2} respectively. Solid lines correspond to the case when \texttt{SFINCS} output is used to calculate the perturbed density while dashed lines correspond to the analytical model. The two outputs show good agreement for the cosine parts while the sine is slightly deviating. Same scan using the new code (where poloidal density variation is included) gives exactly the same result. Some convergence issues appear when using the new implementation with high impurity charge (in this regime for $Z_s > 20$). No poloidal asymmetries have been observed so far, when using input to \texttt{SFINCS} which satisfies the orderings described in  Ref.~\cite{ref:Fulop} (which is required if we want to compare the \texttt{SFINCS} output with the model). 
+For this input, the orderings of various parameters described in Ref.~\cite{ref:Fulop} are reasonably satisfied (we have $\Delta\sim 0.3, \delta \sim 0.15, \epsilon \sim 0.1, n_zZ^2/n_i \sim 1.2$ and $\nu^*\sim 0.11$). If we use this input for varying magnetic field strength $B_0$ (as an example) and calculate the sine and cosine parts of the perturbed impurity density, we get Fig.~\ref{fig:1} and Fig.~\ref{fig:2} respectively. Solid lines correspond to the case when \texttt{SFINCS} output is used to calculate the perturbed density while dashed lines correspond to the analytical model. The two outputs show good agreement for the cosine parts while the sine is slightly deviating. 
 
 \begin{figure}[H]
  \setlength\figureheight{0.3\textheight}
@@ -357,9 +395,23 @@ For this input, the orderings of various parameters described in Ref.~\cite{ref:
  \setlength\figurewidth{0.9\textwidth}
     \centering
         \input{figures/out2.tex}
-       \caption{Cosine part of the perturbed density for a scan in the magnetic field strength $B_0$. Solid line shows result calculated from \texttt{SFINCS} output while the dashed line is the prediction from the model}
+       \caption{Cosine part of the perturbed density for a scan in the magnetic field strength $B_0$. Solid line shows result calculated from \texttt{SFINCS} output while the dashed line is the prediction from the model.}
                   \label{fig:2}
   \end{figure}  
+
+Scans in $\epsilon$ shows a similar result, but a scan in impurity charge and density show more disagreement between model predictions and output from \texttt{SFINCS}. Similar tests using the new version of the code (with nonzero temperature gradients) show the same result. 
+
+It appears to be challenging to get good agreement between the model and \texttt{SFINCS}. A possible explanation is the difficulty to get asymptotic in the various quantities required for the model to be valid, while maintaining a sufficiently large density perturbation to make a meaningful comparison. As mentioned, here we use $\Delta\sim 0.3, \delta \sim 0.15, \epsilon \sim 0.1, n_zZ^2/n_i \sim 1.2$ and $\nu^*\sim 0.11$ which might not be good enough for the theoretical model to be valid. 
+
+Comparison between \texttt{SFINCS} and the model has been done using a series of python scripts available on \href{https://github.com/landreman/sfincs/commit/520091f6b9ed06cf0b7b1caaa7e0fcfc477f906f}{GitHub}. Further work is required and welcome. 
+
+
+
+%Scan in other parameters, such as impurity density or $\epsilon$ show even worse disagreement. 
+
+
+%It seems to be very difficult to get a proper agreement between this model and \texttt{SFINCS} which might be because it is difficult to get asymptotic in the various quantities, such as for example $\epsilon \ll 1$, while maintaining sufficiently large density perturbations. 
+
 
 
 %For vaious scans, the result is a good agreement between the cosine parts of the perturbed density, while the sine part deviates somewhat. Below is an example of input parameters used for a scan in "X". As sen in Fig.
@@ -397,3 +449,6 @@ For this input, the orderings of various parameters described in Ref.~\cite{ref:
 \end{thebibliography}
 
 \end{document}
+
+% Some notes:
+Basically the structure is the following: the densoty might not always be corresponding to the row index (since we might have cross terms) but the distribution function is ALWAYS the column index, which is SpeciesB, that is why we use  f1b in the end
