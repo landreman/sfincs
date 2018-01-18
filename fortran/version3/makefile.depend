@@ -5,10 +5,10 @@ OBJ_FILES = adjointDiagnostics.o ChebyshevGrid.o ChebyshevInterpolationMatrix.o 
 	  globalVariables.o indices.o polynomialDiffMatrices.o polynomialInterpolationMatrix.o populateAdjointRHS.o populatedMatrixdLambda.o populatedRHSdLambda.o \
 	  populateMatrix.o preallocateMatrix.o quadpack.o radialCoordinates.o readInput.o sfincs.o solver.o sparsify.o \
 	  uniformDiffMatrices.o uniformInterpolationMatrix.o validateInput.o writeHDF5Output.o xGrid.o \
-	  readVMEC/readVMEC.a
+	  readVMEC/readVMEC.a testingInnerProduct.o
 
 # Dependencies:
-adjointDiagnostics.o: globalVariables.o writeHDF5Output.o
+adjointDiagnostics.o: globalVariables.o writeHDF5Output.o indices.o
 ChebyshevGrid.o: 
 ChebyshevInterpolationMatrix.o: 
 createGrids.o: globalVariables.o polynomialDiffMatrices.o xGrid.o geometry.o indices.o export_f.o
@@ -20,7 +20,7 @@ geometry.o: globalVariables.o radialCoordinates.o readVMEC/readVMEC.a
 indices.o: globalVariables.o
 polynomialDiffMatrices.o: xGrid.o
 polynomialInterpolationMatrix.o: 
-populatedMatrixdLambda.o: globalVariables.o indices.o
+populatedMatrixdLambda.o: globalVariables.o indices.o sparsify.o
 populatedRHSdLambda.o: globalVariables.o indices.o
 populateMatrix.o: globalVariables.o sparsify.o indices.o xGrid.o
 populateAdjointRHS.o: globalVariables.o indices.o
@@ -31,6 +31,7 @@ readInput.o: export_f.o globalVariables.o xGrid.o
 sfincs.o: geometry.o globalVariables.o writeHDF5Output.o readInput.o solver.o radialCoordinates.o
 solver.o: globalVariables.o populateAdjointRHS.o
 sparsify.o:
+testingInnerProduct.o: globalVariables.o adjointDiagnostics.o
 uniformDiffMatrices.o: 
 uniformInterpolationMatrix.o: 
 validateInput.o: globalVariables.o xGrid.o

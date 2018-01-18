@@ -339,21 +339,22 @@ contains
         call writeHDF5Field("adjointTotalHeatFluxOption", adjointTotalHeatFluxOption, "")
         call writeHDF5Field("nMaxAdjoint", nMaxAdjoint, "")
         call writeHDF5Field("mMaxAdjoint", mMaxAdjoint, "")
-        if (any(adjointHeatFluxOption)) then
-          call writeHDF5Field("dHeatFluxdLambda", dHeatFluxdLambda,dspaceIDForSpeciesLambdasModes, dimForSpeciesLambdasModes,"")
-        end if
-        if (any(adjointParticleFluxOption)) then
-          call writeHDF5Field("dParticleFluxdLambda", dParticleFluxdLambda,dspaceIDForSpeciesLambdasModes, dimForSpeciesLambdasModes,"")
-        end if
-        if (adjointTotalHeatFluxOption) then
-          call writeHDF5Field("dTotalHeatFluxdLambda", dTotalHeatFluxdLambda, dspaceIDForLambdasModes, dimForLambdasModes,"")
-        end if
-        if (adjointRadialCurrentOption) then
-          call writeHDF5Field("dRadialCurrentdLambda", dRadialCurrentdLambda, dspaceIDForLambdasModes, dimForLambdasModes,"")
-        end if
-        if (adjointBootstrapOption) then
-          call writeHDF5Field("dBootstrapdLambda", dBootstrapdLambda, dspaceIDForLambdasModes, dimForLambdasModes,"")
-        end if
+! These things are commented out becasue they change with each iteration
+!        if (any(adjointHeatFluxOption)) then
+!          call writeHDF5Field("dHeatFluxdLambda", dHeatFluxdLambda,dspaceIDForSpeciesLambdasModes, dimForSpeciesLambdasModes,"")
+!        end if
+!        if (any(adjointParticleFluxOption)) then
+!          call writeHDF5Field("dParticleFluxdLambda", dParticleFluxdLambda,dspaceIDForSpeciesLambdasModes, dimForSpeciesLambdasModes,"")
+!        end if
+!        if (adjointTotalHeatFluxOption) then
+!          call writeHDF5Field("dTotalHeatFluxdLambda", dTotalHeatFluxdLambda, dspaceIDForLambdasModes, dimForLambdasModes,"")
+!        end if
+!        if (adjointRadialCurrentOption) then
+!          call writeHDF5Field("dRadialCurrentdLambda", dRadialCurrentdLambda, dspaceIDForLambdasModes, dimForLambdasModes,"")
+!        end if
+!        if (adjointBootstrapOption) then
+!          call writeHDF5Field("dBootstrapdLambda", dBootstrapdLambda, dspaceIDForLambdasModes, dimForLambdasModes,"")
+!        end if
       endif
 
        call writeHDF5Field("includeTemperatureEquilibrationTerm", includeTemperatureEquilibrationTerm, &

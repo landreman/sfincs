@@ -1,3 +1,5 @@
+
+!> File containing global variables.
 module globalVariables
 
   implicit none
@@ -379,7 +381,10 @@ module globalVariables
   !
   ! ********************************************************
 
-  integer, dimension(:), allocatable :: ns, ms
+  !> @var ns Values of n to use for Fourier derivatives.
+  !> @var ms Values of m to sue for Fourier derivatives.
+  integer, dimension(:), allocatable :: ns
+  integer, dimension(:), allocatable :: ms !> Values of n and m to use for Fourier derivatives.
   integer :: nMaxAdjoint = 0, mMaxAdjoint = 0
   integer :: NModesAdjoint = 0, NLambdas = 6
   PetscScalar, dimension(:,:), allocatable :: dRadialCurrentdLambda,dTotalHeatFluxdLambda,dBootstrapdLambda

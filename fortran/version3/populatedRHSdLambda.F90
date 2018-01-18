@@ -5,12 +5,10 @@
 #include <petsc/finclude/petscvecdef.h>
 #endif
 
-! See evaluateResidual.f90 (where rhs is constructed). Much of the code has been copied
-
-! dRHSdLambda is a Vec which should be allocated by the calling subroutine
-! whichLambda corresponds to the component of B that is going to vary
-! whichMode corresponds to the index imn of ns and ms of the desired Fourier mode
-
+  !> Populates \f$\partial \mathbb{S}/\partial \lambda\f$ to compute explicit dependence of integrated quantiteis on geometry. See evaluateResidual.f90 (where \f$\mathbb{S}\f$ is constructed). Much of the code has been copied.
+  !! @param dMatrixdLambda Matrix to be populated. Should be allocated by calling subroutine.
+  !! @param whichLambda Indicates which component of magnetic field derivative is respect to. If = 0 \f$E_r\f$, = 1 \f$\hat{B}\f$, = 2 \f$\hat{B}^{\theta}\f$, = 3 \f$\hat{B}^{\zeta}\f$, = 4 \f$\hat{B}_{\theta}\f$, = 5 \f$\hat{B}_{\zeta}\f$, = 6 \f$\hat{D}\f$
+  !! @param whichMode Indicates index of ms and ns for derivative.
   subroutine populatedRHSdLambda(dRHSdLambda, whichLambda, whichMode)
 
     use petscvec

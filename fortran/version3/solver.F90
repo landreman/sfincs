@@ -9,6 +9,7 @@ module solver
 
   use petscsnesdef
   use globalVariables
+  use adjointDiagnostics
 
   implicit none
 
@@ -43,7 +44,7 @@ module solver
     PetscViewerAndFormat vf !!Added by AM 2016-07-06
 #endif
 
-    external evaluateJacobian, evaluateResidual, diagnosticsMonitor, adjointDiagnostics
+    external evaluateJacobian, evaluateResidual, diagnosticsMonitor
 
     if (masterProc) then
        print *,"Entering main solver loop."
@@ -455,26 +456,36 @@ module solver
        stop
     end select
 
-
-    ! This is where all the adjoint solves happen
+    !> This is where all the adjoint solves happen
     if (RHSMode>3) then
 
-      ! Allocate adjointSolutionVec
+      !> Testing of inner product
+!      whichAdjointRHS = 0 ! FSABFlow
+      !whichAdjointRHS = 1 ! particle flux
+      do whichAdjointRHS=1,3
+        do ispecies = 0,Nspecies
+          call testingInnerProduct(solutionVec,whichAdjointRHS,ispecies)
+        end do
+      end do
+      stop
+
+
+      !> Allocate adjointSolutionVec
       call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointSolutionVec, ierr)
       call VecSet(adjointSolutionVec, zero, ierr)
 
-      ! Allocate summedSolutionVec if needed
+      !> Allocate summedSolutionVec if needed
       if ((all(adjointHeatFluxOption) .and. adjointTotalHeatFluxOption) .or. &
         (all(adjointParticleFluxOption) .and. adjointRadialCurrentOption)) then
         call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, summedSolutionVec, ierr)
         call VecSet(summedSolutionVec, zero, ierr)
       end if
 
-      ! Allocate adjointRHSVec
+      !> Allocate adjointRHSVec
       call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointRHSVec, ierr)
       call VecSet(adjointRHSVec, zero, ierr)
 
-      ! Allocate and populate the adjoint matrix - the same matrix is used for each RHS
+      !> Allocate and populate the adjoint matrix - the same matrix is used for each RHS
       call preallocateMatrix(adjointMatrix, 1) ! the whichMatrix argument doesn't matter here
       call populateMatrix(adjointMatrix,4,dummyVec) ! dummyVec is not initialized - not needed for linear solve
       call preallocateMatrix(adjointPreconditionerMatrix, 0)
@@ -484,10 +495,14 @@ module solver
          print *,"Finished allocating adjoint Vecs and matrices."
       end if
 
-      ! First, we'll compute the species-specific fluxes if needed
+      !> First, we'll compute the species-specific fluxes if needed
+      !> whichAdjointRHS = 1 -> particle flux
+      !> whichAdjointRHS = 2 -> heat flux
+      !> whichAdjointRHS = 3 -> bootstrap
       do whichAdjointRHS=1,2
         useSummedSolutionVec = .false.
 
+        !> useSummedSolutionVec = .true. if all fluxes computed for all species and sensitivity of total flux also computed
         select case (whichAdjointRHS)
           case (1) ! particle flux
             if (all(adjointParticleFluxOption) .and. adjointRadialCurrentOption) then
@@ -510,6 +525,7 @@ module solver
             print *,"ispecies = ", ispecies, ", whichAdjointRHS = ", whichAdjointRHS
           end if
 
+          !> Check if adjoint equation needs to be solve for this species
           select case (whichAdjointRHS)
             case (1) ! particle flux
               if (.not. adjointParticleFluxOption(ispecies)) then
@@ -551,7 +567,7 @@ module solver
 
           end if
 
-          ! Construct RHS vec
+          !> Construct RHS vec
           call populateAdjointRHS(adjointRHSVec, whichAdjointRHS, ispecies)
 
           if (masterProc) then
@@ -571,8 +587,8 @@ module solver
           call PetscTime(time1, ierr)
 
           call checkIfKSPConverged(KSPInstance)
-          ! Compute diagnostics for species-specific fluxes
-          !call adjointDiagnostics(solutionVec, adjointSolutionVec,whichAdjointRHS,ispecies)
+          !> Compute diagnostics for species-specific fluxes
+          call evaluateDiagnostics(solutionVec, adjointSolutionVec,whichAdjointRHS,ispecies)
 
           select case (whichAdjointRHS)
             case (1) ! particle flux
@@ -586,7 +602,7 @@ module solver
               end if
           end select
 
-          ! Done with required adjoint solve and diagnostics. Now clear solutionVec
+          !> Done with required adjoint solve and diagnostics. Now clear solutionVec
           call VecSet(adjointSolutionVec, zero, ierr)
         end do
 
@@ -597,20 +613,24 @@ module solver
 
       end do
 
-      ! Now, we'll compute the sensitivity of the species-summed fluxes if not already computed
+      !> Now, we'll compute the sensitivity of the species-summed fluxes if not already computed
       if (adjointTotalHeatFluxOption .or. adjointBootstrapOption .or. adjointRadialCurrentOption) then
         ispecies = 0 ! 0 denotes summed RHS
 
         do whichAdjointRHS=1,3
           select case(whichAdjointRHS)
             case (1) ! particle flux
-              if (all(adjointParticleFluxOption)) then
+              if (all(adjointParticleFluxOption) .or. adjointRadialCurrentOption .eqv. .false.) then
                 ! species-summed flux computed already
                 cycle
               end if
             case (2) ! heat flux
-              if (all(adjointHeatFluxOption)) then
+              if (all(adjointHeatFluxOption) .or. adjointTotalHeatFluxOption .eqv. .false.) then
                 ! species-summed flux computed already
+                cycle
+              end if
+            case (3) ! bootstrap
+              if (adjointRadialCurrentOption .eqv. .false.) then
                 cycle
               end if
           end select
@@ -667,7 +687,7 @@ module solver
           call checkIfKSPConverged(KSPInstance)
 
           ! compute diagnostics for species-summed fluxes
-          !call adjointDiagnostics(solutionVec, adjointSolutionVec, whichAdjointRHS, ispecies)
+          call evaluateDiagnostics(solutionVec, adjointSolutionVec, whichAdjointRHS, ispecies)
 
           ! Done with required adjoint solve and diagnostics. Now clear solutionVec
           call VecSet(adjointSolutionVec, zero, ierr)

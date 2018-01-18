@@ -1176,9 +1176,9 @@ subroutine validateInput()
       stop
     end if
     ! Check constraintScheme
-    if (constraintScheme /= -1) then
+    if (constraintScheme /= -1 .and. constraintScheme /= 1) then
       if (masterProc) then
-        print *,"Error! RHSMode>3 must be used with constraintScheme=1."
+        print *,"Error! RHSMode>3 must be used with constraintScheme=1 or constraintScheme=-1."
       end if
       stop
     end if

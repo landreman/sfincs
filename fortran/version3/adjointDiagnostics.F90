@@ -14,6 +14,11 @@ module adjointDiagnostics
 
   contains
 
+    !> Compuates \f$ \partial \mathbb{L}/\partial \lambda \hat{F} - \partial \mathbb{S}/\partial \lambda \f$. To compute the derivatives of the moments, this is the quantity that is used in the inner product with the adjoint solution.
+    !! @param forwardSolution Solution to forward equation.
+    !! @param adjointResidual Result of residual.
+    !! @param whichLambda Indicates which component of magnetic field derivative is respect to. If = 0 \f$E_r\f$, = 1 \f$\hat{B}\f$, = 2 \f$\hat{B}^{\theta}\f$, = 3 \f$\hat{B}^{\zeta}\f$, = 4 \f$\hat{B}_{\theta}\f$, = 5 \f$\hat{B}_{\zeta}\f$, = 6 \f$\hat{D}\f$
+    !! @param whichMode Indicates index of ms and ns for derivative.
     subroutine evaluateAdjointResidual(forwardSolution,adjointResidual,whichLambda,whichMode)
 
       use globalVariables
@@ -44,7 +49,10 @@ module adjointDiagnostics
 
     end subroutine
 
-    ! Computes inner product associated with free energy norm for deltaF and deltaG
+    !> Computes inner product associated with free energy norm for deltaF and deltaG
+    !! @param deltaF First quantity in inner product.
+    !! @param deltaG Second quantity in inner product.
+    !! @param result Result of inner product.
     subroutine innerProduct(deltaF, deltaG, result)
 
       use globalVariables
@@ -54,7 +62,6 @@ module adjointDiagnostics
 
       PetscScalar, dimension(:) :: deltaF, deltaG
       PetscScalar :: result
-      PetscScalar :: innerProductFactor
       PetscScalar, dimension(:,:), allocatable :: sourcesF, sourcesG
       integer :: index, ispecies, itheta, izeta, ix, L
       PetscScalar :: THat, mHat, nHat
@@ -74,40 +81,45 @@ module adjointDiagnostics
         sourcesG(ispecies,2) = deltaG(getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)+1)
       end do
 
-      result = 0
+      !> Compute first term in inner product
+      result = zero
       do ispecies = 1,Nspecies
         THat = THats(ispecies)
         mHat = mHats(ispecies)
         nHat = nHats(ispecies)
 
-        xIntegralFactor = x*x*THat*nHat*exp(-x*x)/(mHat*sqrtpi)
-        thetazetaIntegralFactor = 1/DHat
+        xIntegralFactor = ((pi*pi*sqrtpi*THat*THat*THat*THat)/(mHat*mHat*mHat*nHat*VprimeHat))*x*x*exp(x*x)
+        thetazetaIntegralFactor = one/DHat
         do itheta=1,Ntheta
           do izeta=1,Nzeta
             do ix=1,Nx
-              ! The integral over xi turns into a sum over L (with a factor of (2L+1)/2
-              do L=0,(Nxi-1)
+              ! The integral over xi turns into a sum over L (with a factor of 2/(2L+1))
+              do L=0,(Nxi_for_x(ix)-1)
                 index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
-                ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
 
-                result = result + thetazetaIntegralFactor(itheta,izeta)*xIntegralFactor(ix)*(2/(2*L+1)) &
-                      *deltaF(index)*deltaG(index)/VPrimeHat
+                result = result + thetazetaIntegralFactor(itheta,izeta)*xIntegralFactor(ix) &
+                  *(two/(two*real(L)+one))*thetaWeights(itheta)*zetaWeights(izeta) &
+                  *deltaF(index)*deltaG(index)*xWeights(ix)
 
               end do
             end do
           end do
         end do
 
-        ! Now add terms which sum over sources
-        result = result + (THat/2)*(sourcesF(ispecies,1)*sourcesG(ispecies,1) + sourcesF(ispecies,2)*sourcesG(ispecies,2))
-
+      ! Now add terms which sum over sources
+        result = result + (THat/two)*(sourcesF(ispecies,1)*sourcesG(ispecies,1) + sourcesF(ispecies,2)*sourcesG(ispecies,2))
       end do
 
     end subroutine
 
-    ! This subroutine evaluates the term in the sensitivity derivative of the fluxes 
-    ! which arise due to the sensitivity of the inner product and the integrating factor,
-    ! not f1 itself, hence this is not called with the adjoint variable
+    !> Evaluates the term in the sensitivity derivative of the heat flux
+    !! which arise due to the sensitivity of the inner product and the integrating factor,
+    !! not f1 itself, hence this is not called with the adjoint variable
+    !! @param result Output of sensitivity calculation.
+    !! @param deltaF \f$\hat{F}\f$ solution from forward equation.
+    !! @param whichSpecies If = 0, summed over species. If nonzero, indicates species number. In this case should always be 0.
+    !! @param whichLambda Indicates which component of magnetic field derivative is respect to. If = 0 \f$E_r\f$, = 1 \f$\hat{B}\f$, = 2 \f$\hat{B}^{\theta}\f$, = 3 \f$\hat{B}^{\zeta}\f$, = 4 \f$\hat{B}_{\theta}\f$, = 5 \f$\hat{B}_{\zeta}\f$, = 6 \f$\hat{D}\f$
+    !! @param whichMode Indicates index of ms and ns for derivative.
     subroutine heatFluxSensitivity(result, deltaF, whichSpecies, whichLambda, whichMode)
 
     use globalVariables
@@ -198,9 +210,14 @@ module adjointDiagnostics
 
     end subroutine
 
-    ! This subroutine evaluates the term in the sensitivity derivative of the fluxes 
-    ! which arise due to the sensitivity of the inner product and the integrating factor,
-    ! not f1 itself, hence this is not called with the adjoint variable
+    !> Evaluates the term in the sensitivity derivative of the particle fluxes
+    !! which arise due to the sensitivity of the inner product and the integrating factor,
+    !! not f1 itself, hence this is not called with the adjoint variable
+    !! @param result Output of sensitivity calculation.
+    !! @param deltaF \f$\hat{F}\f$ solution from forward equation.
+    !! @param whichSpecies If = 0, summed over species. If nonzero, indicates species number. In this case should always be 0.
+    !! @param whichLambda Indicates which component of magnetic field derivative is respect to. If = 0 \f$E_r\f$, = 1 \f$\hat{B}\f$, = 2 \f$\hat{B}^{\theta}\f$, = 3 \f$\hat{B}^{\zeta}\f$, = 4 \f$\hat{B}_{\theta}\f$, = 5 \f$\hat{B}_{\zeta}\f$, = 6 \f$\hat{D}\f$
+    !! @param whichMode Indicates index of ms and ns for derivative.
     subroutine particleFluxSensitivity(result, deltaF, whichSpecies, whichLambda, whichMode)
 
     use globalVariables
@@ -294,9 +311,14 @@ module adjointDiagnostics
       end do
     end subroutine
 
-    ! This subroutine evaluates the term in the sensitivity derivative of the fluxes 
-    ! which arise due to the sensitivity of the inner product and the integrating factor,
-    ! not f1 itself, hence this is not called with the adjoint variable
+    !> Evaluates the term in the sensitivity derivative of the bootstrap
+    !! which arise due to the sensitivity of the inner product and the integrating factor,
+    !! not \f$\hat{F}\f$ itself, hence this is not called with the adjoint variable
+    !! @param result Output of sensitivity calculation.
+    !! @param deltaF \f$\hat{F}\f$ solution from forward equation.
+    !! @param whichSpecies If = 0, summed over species. If nonzero, indicates species number. In this case should always be 0.
+    !! @param whichLambda Indicates which component of magnetic field derivative is respect to. If = 0 \f$E_r\f$, = 1 \f$\hat{B}\f$, = 2 \f$\hat{B}^{\theta}\f$, = 3 \f$\hat{B}^{\zeta}\f$, = 4 \f$\hat{B}_{\theta}\f$, = 5 \f$\hat{B}_{\zeta}\f$, = 6 \f$\hat{D}\f$
+    !! @param whichMode Indicates index of ms and ns for derivative.
     subroutine bootstrapSensitivity(result, deltaF, whichSpecies, whichLambda, whichMode)
 
     use globalVariables
@@ -387,6 +409,11 @@ module adjointDiagnostics
       end do
     end subroutine
 
+    !> Evaluates derivatives of inner products using the forwardSolution and adjointSolution.
+    !! @param forwardSolution Solution to forward equation.
+    !! @param adjointSolution Solution to adjoint equation.
+    !! @param whichAdjointRHS Indicates which integrated quantity is being differentiated. If = 1 (particle flux), = 2 (heat flux), = 3 (bootstrap current).
+    !! @param whichSpecies Indicates species used for inner product. If = 0, corresponds to a species-summed quantity. If nonzero, indicates number of species.
     subroutine evaluateDiagnostics(forwardSolution, adjointSolution, whichAdjointRHS, whichSpecies)
 
       use globalVariables

@@ -7,6 +7,10 @@
 #include <petsc/finclude/petscmatdef.h>
 #endif
 
+  !> Populates \f$\partial \mathbb{L}/\partial \lambda\f$ to compute explicit dependence of integrated quantiteis on geometry.
+  !! @param dMatrixdLambda Matrix to be populated. Should be allocated by calling subroutine.
+  !! @param whichLambda Indicates which component of magnetic field derivative is respect to. If = 0 \f$E_r\f$, = 1 \f$\hat{B}\f$, = 2 \f$\hat{B}^{\theta}\f$, = 3 \f$\hat{B}^{\zeta}\f$, = 4 \f$\hat{B}_{\theta}\f$, = 5 \f$\hat{B}_{\zeta}\f$, = 6 \f$\hat{D}\f$
+  !! @param whichMode Indicates index of ms and ns for derivative.
   subroutine populatedMatrixdLambda(dMatrixdLambda, whichLambda, whichMode)
 
     use petscmat

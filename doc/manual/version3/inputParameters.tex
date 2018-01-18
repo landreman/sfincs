@@ -35,7 +35,7 @@ The default values are usually best for the parameters in this namelist.
 
 {\ttfamily RHSMode} = 3: Solve for the 2$\times$2 monoenergetic transport coefficients. When this option is chosen, \Nx~is set to 1 and only 1 species is used. \\
 
-{\ttfamily RHSMode} = 4: Solve the adjoint equation at constant $E_r$. This must be used with {\ttfamily geometryScheme == 5}, stellarator symmetric geometry, {\ttfamily includePhi1 = .false.}, {\ttfamily EParallelHat == 0}, {\ttfamily useDKESExBDrift == .false.}, {\ttfamily magneticDriftScheme == 0}, {\ttfamily includeXDotTerm == .true.}, {\ttfamily constraintScheme == 1}, and {\ttfamily collisionOperator == 0}. \\
+{\ttfamily RHSMode} = 4: Solve the adjoint equation at constant $E_r$. This must be used with {\ttfamily geometryScheme == 5}, stellarator symmetric geometry, {\ttfamily includePhi1 = .false.}, {\ttfamily EParallelHat == 0}, {\ttfamily useDKESExBDrift == .false.}, {\ttfamily magneticDriftScheme == 0}, {\ttfamily includeXDotTerm == .true.}, {\ttfamily constraintScheme == 1} of -1, {\ttfamily geometryScheme == 5}, and {\ttfamily collisionOperator == 0}. \\
 
 {\ttfamily RHSMode} = 5: Solve the adjoint equation at the ambipolar $E_r$. The same input parameters must be used as those detailed for {\ttfamily RHSMode == 4}. 
 }
