@@ -134,8 +134,13 @@ module adjointDiagnostics
     PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dinvDHatdLambda, factor
     PetscScalar, dimension(:), allocatable :: xIntegralFactor
     PetscScalar :: dBHatdLambda, dVPrimeHatdLambda
+    integer :: m, n
+    PetscScalar :: cos_angle, sin_angle, angle
 
-    result = 0
+    m = ms(whichMode)
+    n = ns(whichMode)
+
+    result = zero
 
     allocate(xIntegralFactor(Nx))
 
@@ -158,7 +163,9 @@ module adjointDiagnostics
 
       do itheta=1,Ntheta
         do izeta=1,Nzeta
-
+          angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+          cos_angle = cos(angle)
+          sin_angle = sin(angle)
           select case (whichLambda)
             case (0) ! Er
               if (masterProc) then
@@ -166,26 +173,28 @@ module adjointDiagnostics
               end if
               stop
             case (1) ! BHat
-              dBHatdThetadLambda = -ms(whichMode)*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-              dBHatdZetadLambda = ns(whichMode)*Nperiods*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-              dBHatdLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+              dBHatdThetadLambda = -m*sin_angle
+              dBHatdZetadLambda = n*Nperiods*sin_angle
+              dBHatdLambda = cos_angle
               factor = (BHat_sub_theta(itheta,izeta)*dBHatdZetadLambda - BHat_sub_zeta(itheta,izeta)*dBHatdThetadLambda)/(VPrimeHat*BHat(itheta,izeta)**3) - 3*(BHat_sub_theta(itheta,izeta)*dBHatdZeta(itheta,izeta) - &
-                BHat_sub_zeta(itheta,izeta)*dBHatdTheta(itheta,izeta))*dBHatdLambda/(BHat(itheta,izeta)**4)
+                BHat_sub_zeta(itheta,izeta)*dBHatdTheta(itheta,izeta))*dBHatdLambda/(VPrimeHat*BHat(itheta,izeta)**4)
             case (2) ! BHat_sup_theta
               factor = 0
             case (3) ! BHat_sup_zeta
               factor = 0
             case (4) ! BHat_sub_theta
-              dBHat_sub_thetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+              dBHat_sub_thetadLambda = cos_angle
               factor = dBHatdzeta(itheta,izeta)*dBHat_sub_thetadLambda/(VPrimeHat*BHat(itheta,izeta)**3)
             case (5) ! BHat_sub_zeta
-              dBHat_sub_zetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+              dBHat_sub_zetadLambda = cos_angle
               factor = -dBHatdtheta(itheta,izeta)*dBHat_sub_zetadLambda/(VPrimeHat*BHat(itheta,izeta)**3)
             case (6) ! DHat
-              if (ns(whichMode)==0 .and. ns(whichMode)==0) then
-                dVPrimeHatdLambda = 4*pi*pi
+              if (ns(whichMode)==0 .and. ms(whichMode)==0) then
+                dVPrimeHatdLambda = four*pi*pi
                 factor = - (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda/ &
                   (VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
+              else
+                factor = zero
               end if
           end select
 
@@ -195,13 +204,13 @@ module adjointDiagnostics
               index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
               ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
               result = result + &
-                (8/3)*factor*xWeights(ix)*deltaF(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
+                (8/three)*factor*xWeights(ix)*deltaF(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
 
               L = 2
               index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
               ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
               result = result + &
-                (4/15)*factor*xWeights(ix)*deltaF(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
+                (four/15)*factor*xWeights(ix)*deltaF(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
 
             end do
           end do
@@ -232,8 +241,13 @@ module adjointDiagnostics
     PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dinvDHatdLambda, factor
     PetscScalar, dimension(:), allocatable :: xIntegralFactor
     PetscScalar :: dBHatdLambda, dVPrimeHatdLambda
+    integer :: m, n
+    PetscScalar :: angle, cos_angle, sin_angle
 
-    result = 0
+    result = zero
+
+    m = ms(whichMode)
+    n = ns(whichMode)
 
     allocate(xIntegralFactor(Nx))
 
@@ -255,7 +269,9 @@ module adjointDiagnostics
 
       do itheta=1,Ntheta
         do izeta=1,Nzeta
-
+          angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+          cos_angle = cos(angle)
+          sin_angle = sin(angle)
           select case (whichLambda)
             case (0) ! Er
               if (masterProc) then
@@ -263,26 +279,28 @@ module adjointDiagnostics
               end if
               stop
             case (1) ! BHat
-              dBHatdThetadLambda = -ms(whichMode)*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-              dBHatdZetadLambda = ns(whichMode)*Nperiods*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-              dBHatdLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+              dBHatdThetadLambda = -m*sin_angle
+              dBHatdZetadLambda = n*Nperiods*sin_angle
+              dBHatdLambda = cos_angle
               factor = (BHat_sub_theta(itheta,izeta)*dBHatdZetadLambda - BHat_sub_zeta(itheta,izeta)*dBHatdThetadLambda)/(VPrimeHat*BHat(itheta,izeta)**3) - 3*(BHat_sub_theta(itheta,izeta)*dBHatdZeta(itheta,izeta) &
                 - BHat_sub_zeta(itheta,izeta)*dBHatdTheta(itheta,izeta))*dBHatdLambda/(VPrimeHat*BHat(itheta,izeta)**4)
             case (2) ! BHat_sup_theta
-              factor = 0
+              factor = zero
             case (3) ! BHat_sup_zeta
-              factor = 0
+              factor = zero
             case (4) ! BHat_sub_theta
-              dBHat_sub_thetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+              dBHat_sub_thetadLambda = cos_angle
               factor = dBHatdzeta(itheta,izeta)*dBHat_sub_thetadLambda/(VPrimeHat*BHat(itheta,izeta)**3)
             case (5) ! BHat_sub_zeta
-              dBHat_sub_zetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+              dBHat_sub_zetadLambda = cos_angle
               factor = -dBHatdtheta(itheta,izeta)*dBHat_sub_zetadLambda/(VPrimeHat*BHat(itheta,izeta)**3)
             case (6) ! DHat
-              if (ms(whichMode)==0 .and. ns(whichMode)==0) then
-                dVPrimeHatdLambda = 4*pi*pi
+              if (m==0 .and. n==0) then
+                dVPrimeHatdLambda = four*pi*pi
                 factor = - (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda &
-                    /(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
+                    /(VPrimeHat*VPrimeHat*BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta))
+              else
+                factor = zero
               end if
           end select
 
@@ -297,13 +315,13 @@ module adjointDiagnostics
               index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
               ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
               result = result + &
-                (8/3)*factor*xWeights(ix)*deltaF(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
+                (8/three)*factor*xWeights(ix)*deltaF(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
 
               L = 2
               index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
               ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
               result = result + &
-                (4/15)*factor*xWeights(ix)*deltaF(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
+                (four/15)*factor*xWeights(ix)*deltaF(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
 
             end do
           end do
@@ -311,7 +329,7 @@ module adjointDiagnostics
       end do
     end subroutine
 
-    !> Evaluates the term in the sensitivity derivative of the bootstrap
+    !> Evaluates the term in the sensitivity derivative of the parallel flow
     !! which arise due to the sensitivity of the inner product and the integrating factor,
     !! not \f$\hat{F}\f$ itself, hence this is not called with the adjoint variable
     !! @param result Output of sensitivity calculation.
@@ -319,7 +337,7 @@ module adjointDiagnostics
     !! @param whichSpecies If = 0, summed over species. If nonzero, indicates species number. In this case should always be 0.
     !! @param whichLambda Indicates which component of magnetic field derivative is respect to. If = 0 \f$E_r\f$, = 1 \f$\hat{B}\f$, = 2 \f$\hat{B}^{\theta}\f$, = 3 \f$\hat{B}^{\zeta}\f$, = 4 \f$\hat{B}_{\theta}\f$, = 5 \f$\hat{B}_{\zeta}\f$, = 6 \f$\hat{D}\f$
     !! @param whichMode Indicates index of ms and ns for derivative.
-    subroutine bootstrapSensitivity(result, deltaF, whichSpecies, whichLambda, whichMode)
+    subroutine parallelFlowSensitivity(result, deltaF, whichSpecies, whichLambda, whichMode)
 
     use globalVariables
     use indices
@@ -333,15 +351,30 @@ module adjointDiagnostics
     PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dinvDHatdLambda, factor, dVPrimeHatdLambda
     PetscScalar, dimension(:), allocatable :: xIntegralFactor
     PetscScalar :: dBHatdLambda, dFSAB2dLambda, nHat, sqrtFSAB2
+    PetscScalar :: angle, cos_angle, sin_angle
+    integer :: m, n
 
     sqrtFSAB2 = sqrt(FSABHat2)
+    m = ms(whichMode)
+    n = ns(whichMode)
 
-    result = 0
+    if (whichSpecies == 0) then
+      minSpecies = 1
+      maxSpecies = NSpecies
+    else
+      minSpecies = whichSpecies
+      maxSpecies = whichSpecies
+    end if
 
+    result = zero
+    dFSAB2dLambda = zero
    if (whichLambda==1) then
       do itheta=1,Ntheta
         do izeta=1,Nzeta
-          dFSAB2dLambda = dFSAB2dLambda + 2*(thetaWeights(itheta)*zetaWeights(izeta)*BHat(itheta,izeta)*cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta)))/(DHat(itheta,izeta)*VPrimeHat)
+          angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+          cos_angle = cos(angle)
+
+          dFSAB2dLambda = dFSAB2dLambda + two*(thetaWeights(itheta)*zetaWeights(izeta)*BHat(itheta,izeta)*cos_angle)/(DHat(itheta,izeta)*VPrimeHat)
         end do
       end do
     end if
@@ -349,24 +382,36 @@ module adjointDiagnostics
     if (whichLambda==6) then
       do itheta=1,Ntheta
         do izeta=1,Nzeta
-          dFSAB2dLambda = dFSAB2dLambda + thetaWeights(itheta)*zetaWeights(izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)*cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))/(VPrimeHat)
+          angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+          cos_angle = cos(angle)
+
+          dFSAB2dLambda = dFSAB2dLambda + thetaWeights(itheta)*zetaWeights(izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)*cos_angle/(VPrimeHat)
         end do
       end do
+      if (m == zero .and. n == zero) then
+        dVPrimeHatdLambda = (four*pi*pi)
+        dFSAB2dLambda = dFSAB2dLambda - (VPrimeHat*FSABHat2)*dVPrimeHatdLambda/(VPrimeHat*VPrimeHat)
+      end if
     end if
 
     allocate(xIntegralFactor(Nx))
 
-    do ispecies = 1,Nspecies
+    do ispecies = minSpecies,maxSpecies
       THat = THats(ispecies)
       mHat = mHats(ispecies)
       sqrtTHat = sqrt(THats(ispecies))
       sqrtmHat = sqrt(mHats(ispecies))
       nHat = nHats(ispecies)
 
-      xIntegralFactor = x*x*x*THat*THat*2*pi*Zs(ispecies)/(mHat*mHat*nHat)
+      xIntegralFactor = x*x*x*THat*THat*pi/(mHat*mHat*nHat)
+      if (whichSpecies == 0) then
+        xIntegralFactor = xIntegralFactor*Zs(ispecies)
+      end if
 
       do itheta=1,Ntheta
         do izeta=1,Nzeta
+          angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+          cos_angle = cos(angle)
 
           select case (whichLambda)
             case (0) ! Er
@@ -375,7 +420,7 @@ module adjointDiagnostics
               end if
               stop
             case (1) ! BHat
-              dBHatdLambda = cos(ms(whichMode)*theta(itheta)- ns(whichMode)*Nperiods*zeta(izeta))
+              dBHatdLambda = cos_angle
               factor = dBHatdLambda/(DHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) - 0.5*BHat(itheta,izeta)*dFSAB2dLambda/(DHat(itheta,izeta)*sqrtFSAB2*FSABHat2*VPrimeHat)
             case (2) ! BHat_sup_theta
               factor = 0
@@ -386,12 +431,12 @@ module adjointDiagnostics
             case (5) ! BHat_sub_zeta
               factor = 0
             case (6) ! DHat
-              dinvDHatdLambda = cos(ms(whichMode)*theta(itheta)- ns(whichMode)*Nperiods*zeta(izeta))
+              dinvDHatdLambda = cos_angle
               factor = BHat(itheta,izeta)*dinvDHatdLambda/(VPrimeHat*sqrtFSAB2) &
                 - 0.5*BHat(itheta,izeta)*dFSAB2dLambda/(DHat(itheta,izeta)*VPrimeHat*FSABHat2*sqrtFSAB2)
-              if (ms(whichMode)==0 .and. ns(whichMode)==0) then
-                dVPrimeHatdLambda = (4*pi*pi)
-                factor = factor - BHat(itheta,izeta)*dVPrimeHatdLambda/(VPrimeHat*VPrimeHat*sqrtFSAB2)
+              if (m==0 .and. n==0) then
+                dVPrimeHatdLambda = (four*pi*pi)
+                factor = factor - BHat(itheta,izeta)*dVPrimeHatdLambda/(DHat(itheta,izeta)*VPrimeHat*VPrimeHat*sqrtFSAB2)
               end if
           end select
 
@@ -401,7 +446,7 @@ module adjointDiagnostics
               index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
               ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
               result = result + &
-                (4/3)*factor*xWeights(ix)*deltaF(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
+                (four/three)*factor*xWeights(ix)*deltaF(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
 
             end do
           end do
@@ -502,7 +547,7 @@ module adjointDiagnostics
                   call heatFluxSensitivity(sensitivityResult, forwardSolutionArray, whichSpecies, whichLambda, whichMode)
                   dTotalHeatFluxdLambda(whichLambda,whichMode) = innerProductResult + sensitivityResult
                 case (3) ! Bootstrap
-                  call bootstrapSensitivity(sensitivityResult, forwardSolutionArray, whichSpecies, whichLambda, whichMode)
+                  call parallelFlowSensitivity(sensitivityResult, forwardSolutionArray, whichSpecies, whichLambda, whichMode)
                   dBootstrapdLambda(whichLambda,whichMode) = innerProductResult + sensitivityResult
               end select
             else

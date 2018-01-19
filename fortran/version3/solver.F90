@@ -38,6 +38,8 @@ module solver
     integer :: maxit, maxf, ispecies, whichAdjointRHS
     Vec :: adjointSolutionVec, summedSolutionVec, adjointRHSVec
     logical :: useSummedSolutionVec
+    integer :: whichLambda, whichMode, whichSpecies
+    PetscReal :: deltaLambda
 
 !!Following three lines added by AM 2016-07-06
 #if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR > 6))
@@ -459,12 +461,24 @@ module solver
     !> This is where all the adjoint solves happen
     if (RHSMode>3) then
 
-      !> Testing of inner product
-!      whichAdjointRHS = 0 ! FSABFlow
-      !whichAdjointRHS = 1 ! particle flux
+      !> Testing of inner product and adjoint RHS
       do whichAdjointRHS=1,3
         do ispecies = 0,Nspecies
           call testingInnerProduct(solutionVec,whichAdjointRHS,ispecies)
+        end do
+      end do
+
+!      whichMode = 2
+!      whichLambda = 6
+      deltaLambda = 1.d-3
+      do whichMode = 1,NModesAdjoint
+        do whichLambda = 1,NLambdas
+          if (masterProc) then
+            print "(a,i4,a,i4,a)","Benchmarking fluxes for whichMode: ", whichMode, &
+              " and whichLambda: ", whichLambda," -----------------------------"
+            print *,"m = ", ms(whichMode)," and n = ", ns(whichMode)
+          end if
+          call testingDiagnosticSensitivity(solutionVec,whichMode,whichLambda,deltaLambda)
         end do
       end do
       stop
