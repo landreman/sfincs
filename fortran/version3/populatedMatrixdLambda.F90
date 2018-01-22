@@ -40,6 +40,11 @@
     PetscScalar :: dBHatdLambda, dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dBHat_sup_thetadLambda
     PetscScalar :: dBHat_sup_zetadLambda, dBHatdthetadLambda, dBHatdzetadLambda, dDHatdLambda
     PetscScalar :: geometricFactor
+    integer :: m,n
+    PetscScalar :: angle, cos_angle, sin_angle
+
+    m = ms(whichMode)
+    n = ns(whichMode)
 
     ! Sometimes PETSc complains if any of the diagonal elements are not set.
     ! Therefore, set the entire diagonal to 0 to be safe.
@@ -64,6 +69,10 @@
     allocate(ddxToUse_minus(Nx,Nx))
     allocate(ddthetaToUse(Ntheta, Ntheta))
     allocate(ddzetaToUse(Nzeta, Nzeta))
+    allocate(thetaPartOfTerm(Ntheta,Ntheta))
+    allocate(localThetaPartOfTerm(Ntheta,localNtheta))
+    allocate(rowIndices(localNtheta))
+    allocate(colIndices(Ntheta))
 
     do ispecies = 1,Nspecies
       nHat = nHats(ispecies)
@@ -77,14 +86,12 @@
       ! Add the sensitivity of the streaming d/dtheta term:
       ! *********************************************************
 
-      allocate(thetaPartOfTerm(Ntheta,Ntheta))
-      allocate(localThetaPartOfTerm(Ntheta,localNtheta))
-      allocate(rowIndices(localNtheta))
-      allocate(colIndices(Ntheta))
-
       do L=0,(Nxi-1)
         do izeta=izetaMin,izetaMax
           do itheta=1,Ntheta
+            angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+            cos_angle = cos(angle)
+            sin_angle = sin(angle)
 
             !thetaPartOfTerm(itheta,:) = BHat_sup_theta(itheta,izeta) &
             !   * sqrtTHat/sqrtMHat * ddthetaToUse(itheta,:) &
@@ -97,19 +104,19 @@
                 end if
                 stop
               case (1) ! BHat
-                dBHatdLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                geometricFactor = - BHat_sup_theta(itheta,izeta)*dBHatdLambda/(BHat(itheta,izeta)**2)
+                dBHatdLambda = cos_angle
+                geometricFactor = - BHat_sup_theta(itheta,izeta)*dBHatdLambda/(BHat(itheta,izeta)*BHat(itheta,izeta))
               case (2) ! BHat_sup_theta
-                dBHat_sup_thetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+                dBHat_sup_thetadLambda = cos_angle
                 geometricFactor = dBHat_sup_thetadLambda/BHat(itheta,izeta)
               case (3) ! BHat_sup_zeta
-                geometricFactor = 0
+                geometricFactor = zero
               case (4) ! BHat_sub_theta
-                geometricFactor = 0
+                geometricFactor = zero
               case (5) ! BHat_sub_zeta
-                geometricFactor = 0
+                geometricFactor = zero
               case (6) ! DHat
-                geometricFactor = 0
+                geometricFactor = zero
             end select
             thetaPartOfTerm(itheta,:) = sqrtTHat/sqrtMHat * ddthetaToUse(itheta,:) * geometricFactor
           end do
@@ -133,7 +140,7 @@
                 end do
 
                 call MatSetValuesSparse(dMatrixdLambda, localNtheta, rowIndices, Ntheta, colIndices, &
-                  (L+1)/(2*L+three)*x(ix)*localThetaPartOfTerm, ADD_VALUES, ierr)
+                  (L+1)/(two*L+three)*x(ix)*localThetaPartOfTerm, ADD_VALUES, ierr)
               end if
 
               ! Sub-diagonal-in-L term
@@ -144,7 +151,7 @@
                 end do
 
                 call MatSetValuesSparse(dMatrixdLambda, localNtheta, rowIndices, Ntheta, colIndices, &
-                  L/(2*L-one)*x(ix)*localThetaPartOfTerm, ADD_VALUES, ierr)
+                  L/(two*L-one)*x(ix)*localThetaPartOfTerm, ADD_VALUES, ierr)
               end if
 
             end do
@@ -170,6 +177,10 @@
         do itheta=ithetaMin, ithetaMax
 
           do izeta=1,Nzeta
+            angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+            cos_angle = cos(angle)
+            sin_angle = sin(angle)
+
             !zetaPartOfTerm(izeta,:) = sqrtTHat/sqrtMHat * BHat_sup_zeta(itheta,izeta) &
             !  * ddzetaToUse(izeta,:) / BHat(itheta,izeta)
 
@@ -180,19 +191,19 @@
                 end if
                 stop
               case (1) ! BHat
-                dBHatdLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                geometricFactor = -BHat_sup_zeta(itheta,izeta)*dBHatdLambda/(BHat(itheta,izeta)**2)
+                dBHatdLambda = cos_angle
+                geometricFactor = -BHat_sup_zeta(itheta,izeta)*dBHatdLambda/(BHat(itheta,izeta)*BHat(itheta,izeta))
               case (2) ! BHat_sup_theta
-                geometricFactor = 0
+                geometricFactor = zero
               case (3) ! BHat_sup_zeta
-                dBHat_sup_zetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+                dBHat_sup_zetadLambda = cos_angle
                 geometricFactor = dBHat_sup_zetadLambda/BHat(itheta,izeta)
               case (4) ! BHat_sub_theta
-                geometricFactor = 0
+                geometricFactor = zero
               case (5) ! BHat_sub_zeta
-                geometricFactor = 0
+                geometricFactor = zero
               case (6) ! DHat
-                geometricFactor = 0
+                geometricFactor = zero
             end select
             zetaPartOfTerm(izeta,:) = (sqrtTHat/sqrtMHat)*ddzeta(izeta,:)*geometricFactor
           end do
@@ -214,7 +225,7 @@
                 end do
                 
                 call MatSetValuesSparse(dMatrixdLambda, localNzeta, rowIndices, Nzeta, colIndices, &
-                     (L+1)/(2*L+three)*x(ix)*localZetaPartOfTerm, ADD_VALUES, ierr)
+                     (L+1)/(two*L+three)*x(ix)*localZetaPartOfTerm, ADD_VALUES, ierr)
              end if
              
              ! Sub-diagonal-in-L term
@@ -262,6 +273,9 @@
 
          do izeta=izetaMin,izetaMax
            do itheta=1,Ntheta
+            angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+            cos_angle = cos(angle)
+            sin_angle = sin(angle)
 
             !thetaPartOfTerm(itheta,:) = 1 / (BHat(itheta,izeta) ** 2) &
               !* DHat(itheta,izeta) * BHat_sub_zeta(itheta,izeta)
@@ -272,21 +286,21 @@
                 end if
                 stop
               case (1) ! BHat
-                dBHatdLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                geometricFactor = -2*dBHatdLambda/(BHat(itheta,izeta) ** 3) &
+                dBHatdLambda = cos_angle
+                geometricFactor = -two*dBHatdLambda/(BHat(itheta,izeta) ** 3) &
                   *DHat(itheta,izeta)*BHat_sub_zeta(itheta,izeta)
               case (2) ! BHat_sup_theta
-                geometricFactor = 0
+                geometricFactor = zero
               case (3) ! BHat_sup_zeta
-                geometricFactor = 0
+                geometricFactor = zero
               case (4) ! BHat_sub_theta
-                geometricFactor = 0
+                geometricFactor = zero
               case (5) ! BHat_sub_zeta
-                dBHat_sup_zetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                geometricFactor = DHat(itheta,izeta) * dBHat_sup_zetadLambda/ (BHat(itheta,izeta) ** 2)
+                dBHat_sub_zetadLambda = cos_angle
+                geometricFactor = DHat(itheta,izeta) * dBHat_sub_zetadLambda/ (BHat(itheta,izeta)*BHat(itheta,izeta))
               case (6) ! DHat
-                dDHatdLambda = -DHat(itheta,izeta)*DHat(itheta,izeta)*cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                geometricFactor = dDHatdLambda * BHat_sub_zeta(itheta,izeta)/ (BHat(itheta,izeta) ** 2)
+                dDHatdLambda = -DHat(itheta,izeta)*DHat(itheta,izeta)*cos_angle
+                geometricFactor = dDHatdLambda * BHat_sub_zeta(itheta,izeta)/ (BHat(itheta,izeta) * BHat(itheta,izeta))
             end select
               thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:)*geometricFactor
 
@@ -340,6 +354,10 @@
 
          do itheta=ithetaMin, ithetaMax
            do izeta=1,Nzeta
+            angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+            cos_angle = cos(angle)
+            sin_angle = sin(angle)
+
             !  zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2) &
             !       * DHat(itheta,izeta) * BHat_sub_theta(itheta,izeta)
             select case(whichLambda)
@@ -349,21 +367,21 @@
                 end if
                 stop
               case (1) ! BHat
-                dBHatdLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode))
-                geometricFactor = -2*dBHatdLambda*DHat(itheta,izeta)*BHat_sub_theta(itheta,izeta) &
-                  /(BHat(itheta,izeta) ** 3)
+                dBHatdLambda = cos_angle
+                geometricFactor = -two*dBHatdLambda*DHat(itheta,izeta)*BHat_sub_theta(itheta,izeta) &
+                  /(BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta))
               case (2) ! BHat_sup_theta
-                geometricFactor = 0
+                geometricFactor = zero
               case (3) ! BHat_sup_zeta
-                geometricFactor = 0
+                geometricFactor = zero
               case (4) ! BHat_sub_theta
-                dBHat_sub_thetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                geometricFactor = DHat(itheta,izeta)*dBHat_sub_thetadLambda/(BHat(itheta,izeta) ** 2)
+                dBHat_sub_thetadLambda = cos_angle
+                geometricFactor = DHat(itheta,izeta)*dBHat_sub_thetadLambda/(BHat(itheta,izeta) * BHat(itheta,izeta))
               case (5) ! BHat_sub_zeta
-                geometricFactor = 0
+                geometricFactor = zero
               case (6) ! DHat
-                dDHatdLambda = -DHat(itheta,izeta)*DHat(itheta,izeta)*cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                geometricFactor = 1 / (BHat(itheta,izeta) ** 2) &
+                dDHatdLambda = -DHat(itheta,izeta)*DHat(itheta,izeta)*cos_angle
+                geometricFactor = one / (BHat(itheta,izeta) * BHat(itheta,izeta)) &
                   * dDHatdLambda * BHat_sub_theta(itheta,izeta)
             end select
             zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:)*geometricFactor
@@ -398,6 +416,10 @@
 
       do itheta=ithetaMin,ithetaMax
          do izeta=izetaMin,izetaMax
+            angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+            cos_angle = cos(angle)
+            sin_angle = sin(angle)
+
             !factor = -sqrtTHat/(2*sqrtMHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
             !     * (BHat_sup_theta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
             !     + BHat_sup_zeta(itheta,izeta) * dBHatdzeta(itheta,izeta))
@@ -408,34 +430,34 @@
                 end if
                 stop
               case (1) ! BHat
-                dBHatdLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                dBHatdthetadLambda = -ms(whichMode)*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                dBHatdzetadLambda = ns(whichMode)*Nperiods*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+                dBHatdLambda = cos_angle
+                dBHatdthetadLambda = -ms(whichMode)*sin_angle
+                dBHatdzetadLambda = ns(whichMode)*Nperiods*sin_angle
                 ! Term from 1/(BHat**2)
-                geometricFactor = -2*dBHatdLambda/(BHat(itheta,izeta)**3) &
+                geometricFactor = -two*dBHatdLambda/(BHat(itheta,izeta)**3) &
                   * (BHat_sup_theta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
                   + BHat_sup_zeta(itheta,izeta)*dBHatdzeta(itheta,izeta)) &
                   ! Term from dBHatdtheta
-                  + 1/(BHat(itheta,izeta)*BHat(itheta,izeta)) &
+                  + one/(BHat(itheta,izeta)*BHat(itheta,izeta)) &
                   * (BHat_sup_theta(itheta,izeta)*dBhatdthetadLambda &
                   ! Term from dBHatdzeta 
                   + BHat_sup_zeta(itheta,izeta)*dBhatdzetadLambda)
               case (2) ! BHat_sup_theta
-                dBHat_sup_thetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                geometricFactor = 1/(BHat(itheta,izeta)*BHat(itheta,izeta)) &
+                dBHat_sup_thetadLambda = cos_angle
+                geometricFactor = one/(BHat(itheta,izeta)*BHat(itheta,izeta)) &
                   * (dBHat_sup_thetadLambda*dBHatdtheta(itheta,izeta))
               case (3) ! BHat_sup_zeta
-                dBHat_sup_zetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                geometricFactor = 1/(BHat(itheta,izeta)*BHat(itheta,izeta)) &
+                dBHat_sup_zetadLambda = cos_angle
+                geometricFactor = one/(BHat(itheta,izeta)*BHat(itheta,izeta)) &
                   * (dBHat_sup_zetadLambda*dBHatdzeta(itheta,izeta))
               case (4) ! BHat_sub_theta
-                geometricFactor = 0
+                geometricFactor = zero
               case (5) ! BHat_sub_zeta
-                geometricFactor = 0
+                geometricFactor = zero
               case (6) ! DHat
-                geometricFactor = 0
+                geometricFactor = zero
             end select
-            factor = (-sqrtTHat/(2*sqrtMHat))*geometricFactor
+            factor = (-sqrtTHat/(two*sqrtMHat))*geometricFactor
 
             do ix=ixMin,Nx
                do L=0,(Nxi_for_x(ix)-1)
@@ -468,6 +490,9 @@
        if (includeElectricFieldTermInXiDot) then
           do itheta=ithetaMin,ithetaMax
              do izeta=izetaMin,izetaMax
+                angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+                cos_angle = cos(angle)
+                sin_angle = sin(angle)
 
                temp = BHat_sub_zeta(itheta,izeta) * dBHatdtheta(itheta,izeta) &
                      - BHat_sub_theta(itheta,izeta) * dBHatdzeta(itheta,izeta)
@@ -482,33 +507,33 @@
                   end if
                   stop
                 case (1) ! BHat
-                  dBHatdthetadLambda = -ms(whichMode)*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                  dBHatdzetadLambda = ns(whichMode)*Nperiods*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                  dBHatdLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+                  dBHatdthetadLambda = -m*sin_angle
+                  dBHatdzetadLambda = n*Nperiods*sin_angle
+                  dBHatdLambda = cos_angle
                   dTempdLambda = BHat_sub_zeta(itheta,izeta) * dBHatdthetadLambda &
                     - BHat_sub_theta(itheta,izeta) * dBHatdzetadLambda
                   geometricFactor = &
                     ! Term from 1/(BHat**3)
-                    -3*DHat(itheta,izeta)*temp*dBHatdLambda/(BHat(itheta,izeta)**4) &
+                    -three*DHat(itheta,izeta)*temp*dBHatdLambda/(BHat(itheta,izeta)**4) &
                     ! Term from dBHatdtheta and dBHatdzeta
                     + DHat(itheta,izeta) * dTempdLambda/(BHat(itheta,izeta)**3)
                 case (2) ! BHat_sup_theta
-                  geometricFactor = 0
+                  geometricFactor = zero
                 case (3) ! BHat_sup_zeta
-                  geometricFactor = 0
+                  geometricFactor = zero
                 case (4) ! BHat_sub_theta
-                  dBHat_sup_thetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+                  dBHat_sup_thetadLambda = cos_angle
                   dTempdLambda = - dBHat_sub_thetadLambda * dBHatdzeta(itheta,izeta)
                   geometricFactor = DHat(itheta,izeta)*dTempdLambda/(BHat(itheta,izeta)**3)
                 case (5) ! BHat_sub_zeta
-                  dBHat_sup_zetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+                  dBHat_sup_zetadLambda = cos_angle
                   dTempdLambda = dBHat_sub_zetadLambda * dBHatdtheta(itheta,izeta)
                   geometricFactor = DHat(itheta,izeta)*dTempdLambda/(BHat(itheta,izeta)**3)
                 case (6) ! DHat
-                  dDHatdLambda = -DHat(itheta,izeta)*DHat(itheta,izeta)*cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+                  dDHatdLambda = -DHat(itheta,izeta)*DHat(itheta,izeta)*cos_angle
                   geometricFactor = dDHatdLambda*temp/(BHat(itheta,izeta)**3)
               end select
-              factor = (alpha*Delta*dPhiHatdpsiHat/4)*geometricFactor
+              factor = (alpha*Delta*dPhiHatdpsiHat/four)*geometricFactor
 
                 do ix=ixMin,Nx
                    do L=0,(Nxi_for_x(ix)-1)
@@ -568,7 +593,9 @@
 
        do itheta=ithetaMin,ithetaMax
           do izeta=izetaMin,izetaMax
-
+            angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+            cos_angle = cos(angle)
+            sin_angle = sin(angle)
 !             xDotFactor = factor*DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
 !                  * (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) &
 !                  - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))
@@ -587,12 +614,12 @@
                   end if
                   stop
                 case (1) ! BHat
-                  dBHatdLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                  dBHatdzetadLambda = ns(whichMode)*Nperiods*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
-                  dBHatdthetadLambda = -ms(whichMode)*sin(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+                  dBHatdLambda = cos_angle
+                  dBHatdzetadLambda = n*Nperiods*sin_angle
+                  dBHatdthetadLambda = -m*sin_angle
                   geometricFactor = &
                     ! Term from 1/(BHat**3)
-                    -3*DHat(itheta,izeta)*dBHatdLambda &
+                    -three*DHat(itheta,izeta)*dBHatdLambda &
                     /(BHat(itheta,izeta)**4) &
                     * (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) &
                     - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta)) &
@@ -603,19 +630,19 @@
                     - factor*Dhat(itheta,izeta)/(BHat(itheta,izeta)**3) &
                     * Bhat_sub_zeta(itheta,izeta)*dBHatdthetadLambda
                 case (2) ! BHat_sup_theta
-                  geometricFactor = 0
+                  geometricFactor = zero
                 case (3) ! BHat_sup_zeta
-                  geometricFactor = 0
+                  geometricFactor = zero
                 case (4) ! BHat_sub_theta
-                  dBHat_sub_thetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+                  dBHat_sub_thetadLambda = cos_angle
                   geometricFactor = DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
                     * dBHat_sub_thetadLambda*dBHatdzeta(itheta,izeta)
                 case (5) ! BHat_sub_zeta
-                  dBHat_sub_zetadLambda = cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+                  dBHat_sub_zetadLambda = cos_angle
                   geometricFactor = -DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
                     * dBHat_sub_zetadLambda*dBHatdtheta(itheta,izeta)
                 case (6) ! DHat
-                  dDHatdLambda = -DHat(itheta,izeta)*DHat(itheta,izeta)*cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+                  dDHatdLambda = -DHat(itheta,izeta)*DHat(itheta,izeta)*cos_angle
                   geometricFactor = dDHatdLambda/(BHat(itheta,izeta)**3) &
                     *(BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) &
                     - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))
@@ -687,10 +714,13 @@
       L=0
       do itheta=1,Ntheta
          do izeta=1,Nzeta
+            angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+            cos_angle = cos(angle)
+            sin_angle = sin(angle)
             !factor = thetaWeights(itheta)*zetaWeights(izeta)/DHat(itheta,izeta)
             geometricFactor = 0
             if (whichLambda == 5) then
-              dDHatdLambda = - DHat(itheta,izeta)*DHat(itheta,izeta)*cos(ms(whichMode)*theta(itheta)-ns(whichMode)*Nperiods*zeta(izeta))
+              dDHatdLambda = - DHat(itheta,izeta)*DHat(itheta,izeta)*cos_angle
               geometricFactor = -dDHatdLambda/(DHat(itheta,izeta)**2)
             end if
             factor = thetaWeights(itheta)*zetaWeights(izeta)*geometricFactor

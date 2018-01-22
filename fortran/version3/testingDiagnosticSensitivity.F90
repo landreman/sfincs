@@ -12,9 +12,9 @@
 !! and parallelFlowSensitivity.
 !! @param forwardSolution Petsc Vec solution to forward equation. Derivatives
 !! are taken with this solution held constant.
-!! @whichMode Which mode to differentiate with respect to (index of ms and and ns).
-!! @whichLambda Indicates which component of magnetic field derivative is respect to. If = 0 \f$E_r\f$, = 1 \f$\hat{B}\f$, = 2 \f$\hat{B}^{\theta}\f$, = 3 \f$\hat{B}^{\zeta}\f$, = 4 \f$\hat{B}_{\theta}\f$, = 5 \f$\hat{B}_{\zeta}\f$, = 6 \f$\hat{D}\f$
-!! @deltaLambda Finite difference step size.
+!! @param whichMode Which mode to differentiate with respect to (index of ms and and ns).
+!! @param whichLambda Indicates which component of magnetic field derivative is respect to. If = 0 \f$E_r\f$, = 1 \f$\hat{B}\f$, = 2 \f$\hat{B}^{\theta}\f$, = 3 \f$\hat{B}^{\zeta}\f$, = 4 \f$\hat{B}_{\theta}\f$, = 5 \f$\hat{B}_{\zeta}\f$, = 6 \f$\hat{D}\f$
+!! @param deltaLambda Finite difference step size.
 subroutine testingDiagnosticSensitivity(forwardSolution, whichMode, whichLambda, deltaLambda)
 
   use globalVariables
@@ -27,10 +27,7 @@ subroutine testingDiagnosticSensitivity(forwardSolution, whichMode, whichLambda,
   Vec :: forwardSolution, forwardSolutionOnProc0
   integer :: whichMode, whichLambda
   PetscScalar :: deltaLambda
-  PetscScalar, dimension(:,:), allocatable :: deltaBHat, deltaBHat_sup_theta, deltaBHat_sup_zeta, deltaBHat_sub_theta, deltaBHat_sub_zeta, deltaDHat
-  PetscScalar, dimension(:,:), allocatable :: deltadBHatdtheta, deltadBHatdzeta, deltadBHat_sub_zeta_dtheta, deltadBHat_sub_theta_dzeta, deltadBHat_sup_zeta_dtheta, deltadBHat_sup_theta_dzeta
-  integer :: m, n, itheta,izeta, iterationNum, whichSpecies
-  PetscScalar :: angle, cos_angle, sin_angle
+  integer :: iterationNum, whichSpecies
   PetscScalar, dimension(:), allocatable :: particleFluxInit, heatFluxInit, parallelFlowInit
   PetscScalar :: finiteDiffDerivative
   VecScatter :: VecScatterContext
@@ -39,38 +36,9 @@ subroutine testingDiagnosticSensitivity(forwardSolution, whichMode, whichLambda,
   PetscScalar :: percentError
   PetscScalar :: dParticleFluxdLambda_analytic, dHeatFluxdLambda_analytic, dparallelFlowdLambda_analytic
 
-  allocate(deltaBHat(Ntheta,Nzeta))
-  allocate(deltaBHat_sub_theta(Ntheta,Nzeta))
-  allocate(deltaBHat_sub_zeta(Ntheta,Nzeta))
-  allocate(deltaBHat_sup_theta(Ntheta,Nzeta))
-  allocate(deltaBHat_sup_zeta(Ntheta,Nzeta))
-  allocate(deltaDHat(Ntheta,Nzeta))
-  allocate(deltadBHatdtheta(Ntheta,Nzeta))
-  allocate(deltadBHatdzeta(Ntheta,Nzeta))
-  allocate(deltadBHat_sub_theta_dzeta(Ntheta,Nzeta))
-  allocate(deltadBHat_sub_zeta_dtheta(Ntheta,Nzeta))
-  allocate(deltadBHat_sup_theta_dzeta(Ntheta,Nzeta))
-  allocate(deltadBHat_sup_zeta_dtheta(Ntheta,Nzeta))
-
-  deltaBHat = zero
-  deltaBHat_sub_theta = zero
-  deltaBHat_sub_zeta = zero
-  deltaBHat_sup_theta = zero
-  deltaBHat_sup_zeta = zero
-  deltaDHat = zero
-  deltadBHatdtheta = zero
-  deltadBHatdzeta = zero
-  deltadBHat_sub_theta_dzeta = zero
-  deltadBHat_sub_zeta_dtheta = zero
-  deltadBHat_sup_theta_dzeta = zero
-  deltadBHat_sup_zeta_dtheta = zero
-
   allocate(particleFluxInit(Nspecies))
   allocate(heatFluxInit(Nspecies))
   allocate(parallelFlowInit(Nspecies))
-
-  m = ms(whichMode)
-  n = ns(whichMode)
 
   ! Iteration number for computing diagnostics
   iterationNum = 2
@@ -90,115 +58,14 @@ subroutine testingDiagnosticSensitivity(forwardSolution, whichMode, whichLambda,
   heatFluxInit = heatFlux_vm_rN
   parallelFlowInit = FSABVelocityUsingFSADensityOverRootFSAB2
 
-  select case(whichLambda)
-
-  case(1) ! BHat
-    do itheta = 1,Ntheta
-      do izeta = 1,Nzeta
-        angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-        cos_angle = cos(angle)
-        sin_angle = sin(angle)
-        deltaBHat(itheta,izeta) = deltaLambda*cos_angle
-        deltadBHatdtheta(itheta,izeta) = -deltaLambda*m*sin_angle
-        deltadBHatdzeta(itheta,izeta) = deltaLambda*n*Nperiods*sin_angle
-      end do
-    end do
-    BHat = BHat + deltaBHat
-    dBHatdtheta = dBHatdtheta + deltadBHatdtheta
-    dBHatdzeta = dBHatdzeta + deltadBHatdzeta
-
-  case(2) ! BHat_sup_theta
-    do itheta = 1,Ntheta
-      do izeta = 1,Nzeta
-        angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-        cos_angle = cos(angle)
-        sin_angle = sin(angle)
-        deltaBHat_sup_theta(itheta,izeta) = deltaLambda*cos_angle
-        deltadBHat_sup_theta_dzeta(itheta,izeta) = deltaLambda*n*Nperiods*sin_angle
-      end do
-    end do
-    BHat_sup_theta = BHat_sup_theta + deltaBHat_sup_theta
-    dBHat_sup_theta_dzeta = dBHat_sup_theta_dzeta + deltadBHat_sup_theta_dzeta
-
-  case(3) ! BHat_sup_zeta
-    do itheta = 1,Ntheta
-      do izeta = 1,Nzeta
-        angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-        cos_angle = cos(angle)
-        sin_angle = sin(angle)
-        deltaBHat_sup_zeta(itheta,izeta) = deltaLambda*cos_angle
-        deltadBHat_sup_zeta_dtheta(itheta,izeta) = -deltaLambda*m*sin_angle
-      end do
-    end do
-    BHat_sup_zeta = BHat_sup_zeta + deltaBHat_sup_zeta
-    dBHat_sup_zeta_dtheta = dBHat_sup_zeta_dtheta + deltadBHat_sup_zeta_dtheta
-
-  case(4) ! BHat_sub_theta
-    do itheta = 1,Ntheta
-      do izeta = 1,Nzeta
-        angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-        cos_angle = cos(angle)
-        sin_angle = sin(angle)
-        deltaBHat_sub_theta(itheta,izeta) = deltaLambda*cos_angle
-        deltadBHat_sub_theta_dzeta(itheta,izeta) = deltaLambda*n*Nperiods*sin_angle
-      end do
-    end do
-    BHat_sub_theta = BHat_sub_theta + deltaBHat_sub_theta
-    dBHat_sub_theta_dzeta = dBHat_sub_theta_dzeta + deltadBHat_sub_theta_dzeta
-
-  case (5) ! BHat_sub_zeta ! not working
-    do itheta = 1,Ntheta
-      do izeta = 1,Nzeta
-        angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-        cos_angle = cos(angle)
-        sin_angle = sin(angle)
-        deltaBHat_sub_zeta(itheta,izeta) = deltaLambda*cos_angle
-        deltadBHat_sub_zeta_dtheta(itheta,izeta) = -deltaLambda*m*sin_angle
-      end do
-    end do
-    BHat_sub_zeta = BHat_sub_zeta + deltaBHat_sub_zeta
-    dBHat_sub_zeta_dtheta = dBHat_sub_zeta_dtheta + deltadBHat_sub_zeta_dtheta
-
-  case (6) ! DHat
-    do itheta = 1,Ntheta
-      do izeta = 1,Nzeta
-        angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-        cos_angle = cos(angle)
-        deltaDHat(itheta,izeta) = one/(one/DHat(itheta,izeta) + deltaLambda*cos_angle) - DHat(itheta,izeta)
-      end do
-    end do
-    DHat = DHat + deltaDHat
-  end select
-
-  ! Update B integrals
-  call computeBIntegrals()
+  ! Update geometry
+  call updateVMECGeometry(whichMode, whichLambda, deltaLambda)
 
   ! Compute diagnostics with new geometry
   call diagnostics(forwardSolution, iterationNum)
 
   ! Reset geometry to original values
-  select case(whichLambda)
-  case(1) ! BHat
-    BHat = BHat - deltaBHat
-    dBHatdtheta = dBHatdtheta - deltadBHatdtheta
-    dBHatdzeta = dBHatdzeta - deltadBHatdzeta
-  case(2) ! BHat_sup_theta
-    BHat_sup_theta = BHat_sup_theta - deltaBHat_sup_theta
-    dBHat_sup_theta_dzeta = dBHat_sup_theta_dzeta - deltadBHat_sup_theta_dzeta
-  case(3) ! BHat_sup_zeta
-    BHat_sup_zeta = BHat_sup_zeta - deltaBHat_sup_zeta
-    dBHat_sup_zeta_dtheta = dBHat_sup_zeta_dtheta - deltadBHat_sup_zeta_dtheta
-  case(4) ! BHat_sub_theta
-    BHat_sub_theta = BHat_sub_theta - deltaBHat_sub_theta
-    dBHat_sub_theta_dzeta = dBHat_sub_theta_dzeta - deltadBHat_sub_theta_dzeta
-  case (5) ! BHat_sub_zeta
-    BHat_sub_zeta = BHat_sub_zeta - deltaBHat_sub_zeta
-    dBHat_sub_zeta_dtheta = dBHat_sub_zeta_dtheta - deltadBHat_sub_zeta_dtheta
-  case (6) ! DHat
-    DHat = DHat - deltaDHat
-  end select
-  ! Update B integrals
-  call computeBIntegrals()
+  call updateVMECGeometry(whichMode, whichLambda, -deltaLambda)
 
   percentError = zero
   if (masterProc) then

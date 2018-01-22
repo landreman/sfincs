@@ -468,8 +468,6 @@ module solver
         end do
       end do
 
-!      whichMode = 2
-!      whichLambda = 6
       deltaLambda = 1.d-3
       do whichMode = 1,NModesAdjoint
         do whichLambda = 1,NLambdas
@@ -481,8 +479,29 @@ module solver
           call testingDiagnosticSensitivity(solutionVec,whichMode,whichLambda,deltaLambda)
         end do
       end do
-      stop
 
+      do whichMode = 1,NModesAdjoint
+        do whichLambda = 1,NLambdas
+          if (masterProc) then
+            print "(a,i4,a,i4,a)","Benchmarking dRHSdLambda for whichMode: ", whichMode, &
+              " and whichLambda: ", whichLambda," -----------------------------"
+            print *,"m = ", ms(whichMode)," and n = ", ns(whichMode)
+          end if
+          call testingdRHSdLambda(whichMode, whichLambda, deltaLambda)
+        end do
+      end do
+
+      do whichMode = 1,NModesAdjoint
+        do whichLambda = 1,NLambdas
+          if (masterProc) then
+            print "(a,i4,a,i4,a)","Benchmarking dMatrixdLambda for whichMode: ", whichMode, &
+              " and whichLambda: ", whichLambda," -----------------------------"
+            print *,"m = ", ms(whichMode)," and n = ", ns(whichMode)
+          end if
+          call testingdMatrixdLambda(whichMode, whichLambda, deltaLambda)
+        end do
+      end do
+      stop
 
       !> Allocate adjointSolutionVec
       call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointSolutionVec, ierr)
