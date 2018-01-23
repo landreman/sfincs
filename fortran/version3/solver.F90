@@ -468,7 +468,7 @@ module solver
         end do
       end do
 
-      deltaLambda = 1.d-3
+      deltaLambda = 1.d-6
       do whichMode = 1,NModesAdjoint
         do whichLambda = 1,NLambdas
           if (masterProc) then
@@ -498,7 +498,7 @@ module solver
               " and whichLambda: ", whichLambda," -----------------------------"
             print *,"m = ", ms(whichMode)," and n = ", ns(whichMode)
           end if
-          call testingdMatrixdLambda(whichMode, whichLambda, deltaLambda)
+          call testingdMatrixdLambda(solutionVec,whichMode, whichLambda, deltaLambda)
         end do
       end do
       stop

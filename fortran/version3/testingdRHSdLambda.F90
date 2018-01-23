@@ -74,7 +74,7 @@ subroutine testingdRHSdLambda(whichMode, whichLambda, deltaLambda)
   call VecScatterEnd(VecScatterContext, dRHSdLambda, dRHSdLambdaOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
   if (masterProc) then
     ! Convert the PETSc vector into a normal Fortran array
-    call VecGetARrayF90(dRHSdLambdaOnProc0, dRHSdLambdaArray, ierr)
+    call VecGetArrayF90(dRHSdLambdaOnProc0, dRHSdLambdaArray, ierr)
   end if
 
   !> Create a scattering context for dRHSdLambda_analytic

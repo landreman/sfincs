@@ -1168,13 +1168,13 @@ subroutine validateInput()
       end if
       stop
     end if
-    ! Check that XDotTerm is retained
-    if (includeXDotTerm .eqv. .false.) then
-      if (masterProc) then
-        print *,"Error! RHSMode>3 must be used with XDotTerm = .true.."
-      end if
-      stop
-    end if
+!    ! Check that XDotTerm is retained
+!    if (includeXDotTerm .eqv. .false.) then
+!      if (masterProc) then
+!        print *,"Error! RHSMode>3 must be used with XDotTerm = .true.."
+!      end if
+!      stop
+!    end if
     ! Check constraintScheme
     if (constraintScheme /= -1 .and. constraintScheme /= 1) then
       if (masterProc) then

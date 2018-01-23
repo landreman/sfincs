@@ -240,6 +240,7 @@
     ! ************************************************************
     ! ************************************************************
 
+    !do ispecies = 1,Nspecies
     do ispecies = 1,Nspecies
        nHat = nHats(ispecies)
        THat = THats(ispecies)
@@ -412,9 +413,15 @@
                 ! Assume DHat has the same sign everywhere. (Should be true even for VMEC coordinates.)
                 ! Assume BHat_sub_zeta has the same sign everywhere. (True for Boozer but in principle could be violated for VMEC coordinates?)
                 if (factor*DHat(1,1)*BHat_sub_zeta(1,1) > 0) then
-                   ddthetaToUse = ddtheta_ExB_plus
+                  ddthetaToUse = ddtheta_ExB_plus
+                  if (masterProc) then
+                    print *,"using plus."
+                  end if
                 else
-                   ddthetaToUse = ddtheta_ExB_minus
+                  ddthetaToUse = ddtheta_ExB_minus
+                  if (masterProc) then
+                    print *,"using minus."
+                  end if
                 end if
              end if
 
@@ -533,7 +540,7 @@
        ! *********************************************************
        ! Add the magnetic drift d/dtheta term:
        ! *********************************************************
-
+       !if (.false.) then
        itheta = -1  ! So itheta is not used in place of ithetaRow or ithetaCol by mistake.
        izetaRow = -1 ! So izetaRow is not used in place of izeta by mistake.
        izetaCol = -1 ! So izetaCol is not used in place of izeta by mistake.
@@ -846,11 +853,11 @@
                 end if
 
                 if (.not. force0RadialCurrentInEquilibrium) then
-                   temp = temp - 2 * BHat(itheta,izeta) &
+                  temp = temp - 2 * BHat(itheta,izeta) &
                         * (dBHat_sub_zeta_dtheta(itheta,izeta) - dBHat_sub_theta_dzeta(itheta,izeta))
                 end if
 
-                factor = alpha*Delta*dPhiHatdpsiHat/(4*(BHat(itheta,izeta)**3)) &
+                factor = alpha*Delta*dPhiHatdpsiHat/(four*(BHat(itheta,izeta)**3)) &
                      * DHat(itheta,izeta) * temp
                      
                 do ix=ixMin,Nx
@@ -1624,7 +1631,7 @@
           deallocate(tempVector1)
           deallocate(tempVector2)
        end if
-
+   ! end if ! if (false)
     end do ! End of loop over species for the collisionless terms.
 
     ! *********************************************************
@@ -2223,6 +2230,7 @@
     ! *******************************************************************************
     ! Add the density and pressure constraints:
     ! *******************************************************************************
+
 
     if (whichMatrix .ne. 2 .and. procThatHandlesConstraints) then
        select case (constraintScheme)
