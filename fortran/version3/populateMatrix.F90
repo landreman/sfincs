@@ -240,7 +240,6 @@
     ! ************************************************************
     ! ************************************************************
 
-    !do ispecies = 1,Nspecies
     do ispecies = 1,Nspecies
        nHat = nHats(ispecies)
        THat = THats(ispecies)
@@ -2244,7 +2243,11 @@
           L=0
           do itheta=1,Ntheta
              do izeta=1,Nzeta
-                factor = thetaWeights(itheta)*zetaWeights(izeta)/DHat(itheta,izeta)
+                if ((whichMatrix == 4) .or. (whichMatrix == 5)) then
+                  factor = -thetaWeights(itheta)*zetaWeights(izeta)/DHat(itheta,izeta)
+                else
+                  factor = thetaWeights(itheta)*zetaWeights(izeta)/DHat(itheta,izeta)
+                end if
 
                 do ix=1,Nx
                    do ispecies=1,Nspecies

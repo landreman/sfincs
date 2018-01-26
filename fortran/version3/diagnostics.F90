@@ -875,8 +875,8 @@
        call VecRestoreArrayF90(f0OnProc0, f0Array, ierr)
        !!call VecRestoreArrayF90(expPhi1, expPhi1Array, ierr) !!Added by AM 2016-06
 
-       ! Don't print output if being called from testGeometry()
-       if (.not. (RHSMode>3 .and. iterationNum > 1)) then
+       ! Don't print output if being called for testing
+       if (debugAdjoint .eqv. .false.) then
          do ispecies=1,Nspecies
             if (Nspecies>1) then
                print *,"Results for species ",ispecies,":"
@@ -962,7 +962,7 @@
     if (RHSMode>1 .and. RHSMode<4 .and. whichRHS==transportMatrixSize) then
        call updateOutputFile(iterationNum, .true.)
     else
-      if (.not.((RHSMode>3) .and. (iterationNum>1))) then
+      if (debugAdjoint .eqv. .false.) then
         call updateOutputFile(iterationNum, .false.)
       end if
     end if

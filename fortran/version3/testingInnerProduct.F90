@@ -27,9 +27,6 @@ subroutine testingInnerProduct(forwardSolution,whichAdjointRHS,whichSpecies)
   PetscScalar :: result
   PetscScalar :: quantityToCompare
   Vec :: adjointRHSVec
-  VecScatter :: VecScatterContext
-  Vec :: adjointRHSOnProc0, forwardSolutionOnProc0
-  PetscScalar, pointer :: adjointRHSArray(:), forwardSolutionArray(:)
   PetscScalar :: innerProductResult, residual
 
   if (masterProc) then
@@ -46,24 +43,11 @@ subroutine testingInnerProduct(forwardSolution,whichAdjointRHS,whichSpecies)
   end if
   call populateAdjointRHS(adjointRHSVec, whichAdjointRHS, whichSpecies)
 
-  !> Create a scattering context for adjointRHSVec
-  call VecScatterCreateToZero(adjointRHSVec, VecScatterContext, adjointRHSOnProc0, ierr)
-  !> Create forwardSolutionOnProc0 of same type
-  call VecDuplicate(adjointRHSOnProc0, forwardSolutionOnProc0, ierr)
-  !> Send forwardSolution to master proc
-  call VecScatterBegin(VecScatterContext, forwardSolution, forwardSolutionOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
-  call VecScatterEnd(VecScatterContext, forwardSolution, forwardSolutionOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
-  !> Send adjointRHS to master proc
-  call VecScatterBegin(VecScatterContext, adjointRHSVec, adjointRHSOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
-  call VecScatterEnd(VecScatterContext, adjointRHSVec, adjointRHSOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
   if (masterProc) then
-    ! Convert the PETSc vector into a normal Fortran array
-    call VecGetArrayF90(adjointRHSOnProc0, adjointRHSArray, ierr)
-    call VecGetARrayF90(forwardSolutionOnProc0, forwardSolutionArray, ierr)
-    print*, "calling innerProduct"
-    ! Compute inner product
-    call innerProduct(forwardSolutionArray,adjointRHSArray,innerProductResult)
+      print*, "calling innerProduct"
   end if
+  ! Compute inner product
+  call innerProduct(forwardSolution,adjointRHSVec,innerProductResult)
 
   ! Compare with appropriate quantity
   if (masterProc) then

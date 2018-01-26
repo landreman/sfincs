@@ -6,7 +6,7 @@ OBJ_FILES = adjointDiagnostics.o ChebyshevGrid.o ChebyshevInterpolationMatrix.o 
 	  populateMatrix.o preallocateMatrix.o quadpack.o radialCoordinates.o readInput.o sfincs.o solver.o sparsify.o \
 	  uniformDiffMatrices.o uniformInterpolationMatrix.o validateInput.o writeHDF5Output.o xGrid.o \
 	  readVMEC/readVMEC.a testingInnerProduct.o testingDiagnosticSensitivity.o testingdRHSdLambda.o \
-      testingdMatrixdLambda.o updateVMECGeometry.o
+      testingdMatrixdLambda.o updateVMECGeometry.o testingAdjointOperator.o testingAdjointDiagnostics.o
 
 # Dependencies:
 adjointDiagnostics.o: globalVariables.o writeHDF5Output.o indices.o
@@ -36,6 +36,8 @@ testingInnerProduct.o: globalVariables.o adjointDiagnostics.o
 testingDiagnosticSensitivity.o: globalVariables.o adjointDiagnostics.o geometry.o
 testingdRHSdLambda.o: globalVariables.o geometry.o 
 testingdMatrixdLambda.o: globalVariables.o geometry.o
+testingAdjointOperator.o: globalVariables.o
+testingAdjointDiagnostics.o: globalVariables.o solver.o
 updateVMECGeometry.o: globalVariables.o geometry.o
 uniformDiffMatrices.o: 
 uniformInterpolationMatrix.o: 

@@ -14,15 +14,17 @@ module adjointDiagnostics
 
   contains
 
+    
     !> Compuates \f$ \partial \mathbb{L}/\partial \lambda \hat{F} - \partial \mathbb{S}/\partial \lambda \f$. To compute the derivatives of the moments, this is the quantity that is used in the inner product with the adjoint solution.
     !! @param forwardSolution Solution to forward equation.
     !! @param adjointResidual Result of residual.
     !! @param whichLambda Indicates which component of magnetic field derivative is respect to. If = 0 \f$E_r\f$, = 1 \f$\hat{B}\f$, = 2 \f$\hat{B}^{\theta}\f$, = 3 \f$\hat{B}^{\zeta}\f$, = 4 \f$\hat{B}_{\theta}\f$, = 5 \f$\hat{B}_{\zeta}\f$, = 6 \f$\hat{D}\f$
     !! @param whichMode Indicates index of ms and ns for derivative.
-    subroutine evaluateAdjointResidual(forwardSolution,adjointResidual,whichLambda,whichMode)
+    subroutine evaluateAdjointInnerProductFactor(forwardSolution,adjointResidual,whichLambda,whichMode)
 
       use globalVariables
       use petscmat
+      use petscvec
 
       implicit none
 
@@ -36,11 +38,11 @@ module adjointDiagnostics
 
       ! Allocate and populate dMatrixdLambda
       call preallocateMatrix(dMatrixdLambda, 3)
-      !call populatedMatrixdLambda(dMatrixdLambda, whichLambda, whichMode)
+      call populatedMatrixdLambda(dMatrixdLambda, whichLambda, whichMode)
 
       ! Allocate and populate dRHSdLambda
       call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, dRHSdLambda, ierr)
-      !call populatedRHSdLambda(dRHSdLambda, whichLambda, whichMode)
+      call populatedRHSdLambda(dRHSdLambda, whichLambda, whichMode)
 
       ! Multiply dRHSdLambda by -1
       call VecScale(dRHSdLambda, -1.0d+0, ierr)
@@ -57,16 +59,39 @@ module adjointDiagnostics
 
       use globalVariables
       use indices
+      use petscvec
 
       implicit none
 
-      PetscScalar, dimension(:) :: deltaF, deltaG
+      Vec :: deltaF, deltaG
       PetscScalar :: result
+      Vec :: deltaFOnProc0, deltaGOnProc0
+      PetscScalar, pointer :: deltaFArray(:), deltaGArray(:)
       PetscScalar, dimension(:,:), allocatable :: sourcesF, sourcesG
       integer :: index, ispecies, itheta, izeta, ix, L
       PetscScalar :: THat, mHat, nHat
       PetscScalar, dimension(:), allocatable :: xIntegralFactor
       PetscScalar, dimension(:,:), allocatable :: thetazetaIntegralFactor
+      VecScatter :: VecScatterContext
+      PetscErrorCode :: ierr
+
+      ! Scatter deltaF to master proc
+      call VecScatterCreateToZero(deltaF, VecScatterContext, deltaFOnProc0, ierr)
+      call VecScatterBegin(VecScatterContext, deltaF, deltaFOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
+      call VecScatterEnd(VecScatterContext, deltaF, deltaFOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
+      if (masterProc) then
+        ! Convert the PETSc vector into a normal Fortran array
+        call VecGetArrayF90(deltaFOnProc0, deltaFArray, ierr)
+      end if
+
+      ! Scatter deltaG to master proc
+      call VecScatterCreateToZero(deltaG, VecScatterContext, deltaGOnProc0, ierr)
+      call VecScatterBegin(VecScatterContext, deltaG, deltaGOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
+      call VecScatterEnd(VecScatterContext, deltaG, deltaGOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
+      if (masterProc) then
+        ! Convert the PETSc vector into a normal Fortran array
+        call VecGetArrayF90(deltaGOnProc0, deltaGArray, ierr)
+      end if
 
       allocate(sourcesF(Nspecies,2))
       allocate(sourcesG(Nspecies,2))
@@ -75,10 +100,10 @@ module adjointDiagnostics
 
       ! Get sources associated with deltaF and deltaG
       do ispecies = 1,Nspecies
-        sourcesF(ispecies,1) = deltaF(getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)+1)
-        sourcesF(ispecies,2) = deltaF(getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)+1)
-        sourcesG(ispecies,1) = deltaG(getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)+1)
-        sourcesG(ispecies,2) = deltaG(getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)+1)
+        sourcesF(ispecies,1) = deltaFArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)+1)
+        sourcesF(ispecies,2) = deltaFArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)+1)
+        sourcesG(ispecies,1) = deltaGArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)+1)
+        sourcesG(ispecies,2) = deltaGArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)+1)
       end do
 
       !> Compute first term in inner product
@@ -99,7 +124,7 @@ module adjointDiagnostics
 
                 result = result + thetazetaIntegralFactor(itheta,izeta)*xIntegralFactor(ix) &
                   *(two/(two*real(L)+one))*thetaWeights(itheta)*zetaWeights(izeta) &
-                  *deltaF(index)*deltaG(index)*xWeights(ix)
+                  *deltaFArray(index)*deltaGArray(index)*xWeights(ix)
 
               end do
             end do
@@ -120,15 +145,17 @@ module adjointDiagnostics
     !! @param whichSpecies If = 0, summed over species. If nonzero, indicates species number. In this case should always be 0.
     !! @param whichLambda Indicates which component of magnetic field derivative is respect to. If = 0 \f$E_r\f$, = 1 \f$\hat{B}\f$, = 2 \f$\hat{B}^{\theta}\f$, = 3 \f$\hat{B}^{\zeta}\f$, = 4 \f$\hat{B}_{\theta}\f$, = 5 \f$\hat{B}_{\zeta}\f$, = 6 \f$\hat{D}\f$
     !! @param whichMode Indicates index of ms and ns for derivative.
-    subroutine heatFluxSensitivity(result, deltaF, whichSpecies, whichLambda, whichMode)
+    subroutine heatFluxSensitivity(result, forwardSolution, whichSpecies, whichLambda, whichMode)
 
     use globalVariables
     use indices
+    use petscvec
 
     implicit none
 
     PetscScalar :: result
-    PetscScalar, dimension(:) :: deltaF
+    Vec :: forwardSolution, forwardSolutionOnProc0
+    PetscScalar, pointer :: forwardSolutionArray(:)
     integer :: whichSpecies, whichLambda, whichMode, minSpecies, maxSpecies, itheta, izeta, L, ix, index, ispecies
     PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, dBHatdThetadLambda, dBHatdZetadLambda
     PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dinvDHatdLambda, factor
@@ -136,11 +163,22 @@ module adjointDiagnostics
     PetscScalar :: dBHatdLambda, dVPrimeHatdLambda
     integer :: m, n
     PetscScalar :: cos_angle, sin_angle, angle
+    VecScatter :: VecScatterContext
+    PetscErrorCode :: ierr
 
     m = ms(whichMode)
     n = ns(whichMode)
 
     result = zero
+
+    ! Scatter deltaF to master proc
+    call VecScatterCreateToZero(forwardSolution, VecScatterContext, forwardSolutionOnProc0, ierr)
+    call VecScatterBegin(VecScatterContext, forwardSolution, forwardSolutionOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
+    call VecScatterEnd(VecScatterContext, forwardSolution, forwardSolutionOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
+    if (masterProc) then
+      ! Convert the PETSc vector into a normal Fortran array
+      call VecGetArrayF90(forwardSolutionOnProc0, forwardSolutionArray, ierr)
+    end if
 
     allocate(xIntegralFactor(Nx))
 
@@ -204,13 +242,13 @@ module adjointDiagnostics
               index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
               ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
               result = result + &
-                (8/three)*factor*xWeights(ix)*deltaF(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
+                (8/three)*factor*xWeights(ix)*forwardSolutionArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
 
               L = 2
               index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
               ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
               result = result + &
-                (four/15)*factor*xWeights(ix)*deltaF(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
+                (four/15)*factor*xWeights(ix)*forwardSolutionArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
 
             end do
           end do
@@ -231,11 +269,13 @@ module adjointDiagnostics
 
     use globalVariables
     use indices
+    use petscvec
 
     implicit none
 
     PetscScalar :: result
-    PetscScalar, dimension(:) :: deltaF
+    Vec :: deltaF, deltaFOnProc0
+    PetscScalar, pointer :: deltaFArray(:)
     integer :: whichSpecies, whichLambda, whichMode, minSpecies, maxSpecies, itheta, izeta, L, ix, index, ispecies
     PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, dBHatdThetadLambda, dBHatdZetadLambda
     PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dinvDHatdLambda, factor
@@ -243,11 +283,22 @@ module adjointDiagnostics
     PetscScalar :: dBHatdLambda, dVPrimeHatdLambda
     integer :: m, n
     PetscScalar :: angle, cos_angle, sin_angle
+    VecScatter :: VecScatterContext
+    PetscErrorCode :: ierr
 
     result = zero
 
     m = ms(whichMode)
     n = ns(whichMode)
+
+    ! Scatter deltaF to master proc
+    call VecScatterCreateToZero(deltaF, VecScatterContext, deltaFOnProc0, ierr)
+    call VecScatterBegin(VecScatterContext, deltaF, deltaFOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
+    call VecScatterEnd(VecScatterContext, deltaF, deltaFOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
+    if (masterProc) then
+      ! Convert the PETSc vector into a normal Fortran array
+      call VecGetArrayF90(deltaFOnProc0, deltaFArray, ierr)
+    end if
 
     allocate(xIntegralFactor(Nx))
 
@@ -315,13 +366,13 @@ module adjointDiagnostics
               index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
               ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
               result = result + &
-                (8/three)*factor*xWeights(ix)*deltaF(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
+                (8/three)*factor*xWeights(ix)*deltaFArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
 
               L = 2
               index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
               ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
               result = result + &
-                (four/15)*factor*xWeights(ix)*deltaF(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
+                (four/15)*factor*xWeights(ix)*deltaFArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
 
             end do
           end do
@@ -341,22 +392,37 @@ module adjointDiagnostics
 
     use globalVariables
     use indices
+    use petscvec
 
     implicit none
 
     PetscScalar :: result
-    PetscScalar, dimension(:) :: deltaF
-    integer :: whichSpecies, whichLambda, whichMode, minSpecies, maxSpecies, itheta, izeta, L, ix, index, ispecies
+    Vec :: deltaF
+    integer :: whichSpecies, whichLambda, whichMode
+    Vec :: deltaFOnProc0
+    PetscScalar, pointer :: deltaFArray(:)
+    integer :: minSpecies, maxSpecies, itheta, izeta, L, ix, index, ispecies
     PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, dBHatdThetadLambda, dBHatdZetadLambda
     PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dinvDHatdLambda, factor, dVPrimeHatdLambda
     PetscScalar, dimension(:), allocatable :: xIntegralFactor
     PetscScalar :: dBHatdLambda, dFSAB2dLambda, nHat, sqrtFSAB2
     PetscScalar :: angle, cos_angle, sin_angle
     integer :: m, n
+    VecScatter :: VecScatterContext
+    PetscErrorCode :: ierr
 
     sqrtFSAB2 = sqrt(FSABHat2)
     m = ms(whichMode)
     n = ns(whichMode)
+
+    ! Scatter deltaF to master proc
+    call VecScatterCreateToZero(deltaF, VecScatterContext, deltaFOnProc0, ierr)
+    call VecScatterBegin(VecScatterContext, deltaF, deltaFOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
+    call VecScatterEnd(VecScatterContext, deltaF, deltaFOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
+    if (masterProc) then
+      ! Convert the PETSc vector into a normal Fortran array
+      call VecGetArrayF90(deltaFOnProc0, deltaFArray, ierr)
+    end if
 
     if (whichSpecies == 0) then
       minSpecies = 1
@@ -446,7 +512,7 @@ module adjointDiagnostics
               index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
               ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
               result = result + &
-                (four/three)*factor*xWeights(ix)*deltaF(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
+                (four/three)*factor*xWeights(ix)*deltaFArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
 
             end do
           end do
@@ -470,53 +536,17 @@ module adjointDiagnostics
 
       PetscErrorCode :: ierr
       Vec :: forwardSolution, adjointSolution, adjointResidual, adjointRHSVec
-      VecScatter :: VecScatterContext
       integer :: whichAdjointRHS, whichSpecies
-      Vec :: adjointSolutionOnProc0, adjointResidualOnProc0, forwardSolutionOnProc0
-      PetscScalar, pointer :: adjointResidualArray(:), adjointSolutionArray(:), forwardSolutionArray(:)
       integer :: whichLambda, whichMode
       PetscScalar :: innerProductResult, sensitivityResult
-
-      ! Allocate appropriate sensitivity arrays and populateAdjointRHS for inner product
-      if (whichSpecies == 0) then
-        select case (whichAdjointRHS)
-          case (1) ! Particle flux
-            allocate(dRadialCurrentdLambda(NLambdas,NModesAdjoint))
-          case (2) ! Heat Flux
-            allocate(dTotalHeatFluxdLambda(NLambdas,NModesAdjoint))
-          case (3) ! Bootstrap
-            allocate(dBootstrapdLambda(NLambdas,NModesAdjoint))
-        end select
-      else
-        select case (whichAdjointRHS)
-          case (1) ! Particle flux
-            allocate(dParticleFluxdLambda(NSpecies,NLambdas,NModesAdjoint))
-          case (2) ! Heat Flux
-            allocate(dHeatFluxdLambda(NSpecies,NLambdas,NModesAdjoint))
-        end select
-      end if
 
       if (masterProc) then
         print *,"Computing adjoint diagnostics for RHS ", whichAdjointRHS, " and species ", whichSpecies
       end if
 
-      ! Create a scattering context for adjointResidual and adjointSolution
-      call VecScatterCreateToZero(adjointSolution, VecScatterContext, adjointSolutionOnProc0, ierr)
-      ! Create adjointResidualOnProc0 of same type
-      call VecDuplicate(adjointSolutionOnProc0, adjointResidualOnProc0, ierr)
-      ! Create forwardSolution of same type
-      call VecDuplicate(adjointSolutionOnProc0, forwardSolutionOnProc0, ierr)
-      ! Send the adjointSolution to the master process:
-      call VecScatterBegin(VecScatterContext, adjointSolution, adjointSolutionOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
-      call VecScatterEnd(VecScatterContext, adjointSolution, adjointSolutionOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
-      ! Send forwardSolution to master proc
-      call VecScatterBegin(VecScatterContext, forwardSolution, forwardSolutionOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
-      call VecScatterEnd(VecScatterContext, forwardSolution, forwardSolutionOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
-      if (masterProc) then
-        ! Convert the PETSc vector into a normal Fortran array
-        call VecGetArrayF90(adjointSolutionOnProc0, adjointSolutionArray, ierr)
-        call VecGetARrayF90(forwardSolutionOnProc0, forwardSolutionArray, ierr)
-      end if
+      ! Allocate adjointResidual
+      call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointResidual, ierr)
+      call VecSet(adjointResidual, zero, ierr)
 
       ! Same inner product is formed regardless of whichAdjointMatrix and whichSpecies
       ! Loop over lambda's and perform inner product
@@ -525,43 +555,36 @@ module adjointDiagnostics
         do whichMode=1,NModesAdjoint
 
           ! Call function to perform (dLdlambdaf - dSdlambda), which calls populatedMatrixdLambda and populatedRHSdLambda
-          call evaluateAdjointResidual(forwardSolution,adjointResidual,whichLambda,whichMode)
+          call evaluateAdjointInnerProductFactor(forwardSolution,adjointResidual,whichLambda,whichMode)
 
-          ! Send the adjointResidual to the master proc
-          call VecScatterBegin(VecScatterContext, adjointResidual, adjointResidualOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
-          call VecScatterEnd(VecScatterContext, adjointResidual, adjointResidualOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
-
-          if (masterProc) then
-            ! Convert the PETSc vector into a normal Fortran array
-            call VecGetArrayF90(adjointResidualOnProc0, adjointResidualArray, ierr)
-
-            call innerProduct(adjointSolutionArray,adjointResidualArray,innerProductResult)
+            call innerProduct(adjointSolution,adjointResidual,innerProductResult)
 
             ! Save to appropriate sensitivity array
             if (whichSpecies == 0) then
               select case (whichAdjointRHS)
                 case (1) ! Particle flux
-                  call particleFluxSensitivity(sensitivityResult, forwardSolutionArray, whichSpecies, whichLambda, whichMode)
-                  dRadialCurrentdLambda(whichLambda,whichMode) = innerProductResult + sensitivityResult
+                  call particleFluxSensitivity(sensitivityResult, forwardSolution, whichSpecies, whichLambda, whichMode)
+                  dRadialCurrentdLambda(whichLambda,whichMode) = -innerProductResult + sensitivityResult
                 case (2) ! Heat Flux
-                  call heatFluxSensitivity(sensitivityResult, forwardSolutionArray, whichSpecies, whichLambda, whichMode)
-                  dTotalHeatFluxdLambda(whichLambda,whichMode) = innerProductResult + sensitivityResult
+                  call heatFluxSensitivity(sensitivityResult, forwardSolution, whichSpecies, whichLambda, whichMode)
+                  dTotalHeatFluxdLambda(whichLambda,whichMode) = -innerProductResult + sensitivityResult
                 case (3) ! Bootstrap
-                  call parallelFlowSensitivity(sensitivityResult, forwardSolutionArray, whichSpecies, whichLambda, whichMode)
-                  dBootstrapdLambda(whichLambda,whichMode) = innerProductResult + sensitivityResult
+                  call parallelFlowSensitivity(sensitivityResult, forwardSolution, whichSpecies, whichLambda, whichMode)
+                  dBootstrapdLambda(whichLambda,whichMode) = -innerProductResult + sensitivityResult
               end select
             else
               select case (whichAdjointRHS)
                 case (1) ! Particle flux
-                  call particleFluxSensitivity(sensitivityResult, forwardSolutionArray, whichSpecies, whichLambda, whichMode)
-                  dParticleFluxdLambda(whichSpecies,whichLambda,whichMode) = innerProductResult
+                  call particleFluxSensitivity(sensitivityResult, forwardSolution, whichSpecies, whichLambda, whichMode)
+                  dParticleFluxdLambda(whichSpecies,whichLambda,whichMode) = sensitivityResult - innerProductResult
                 case (2) ! Heat Flux
-                  call heatFluxSensitivity(sensitivityResult, forwardSolutionArray, whichSpecies, whichLambda, whichMode)
-                  dHeatFluxdLambda(whichSpecies,whichLambda,whichMode) = innerProductResult
+                  call heatFluxSensitivity(sensitivityResult, forwardSolution, whichSpecies, whichLambda, whichMode)
+                  dHeatFluxdLambda(whichSpecies,whichLambda,whichMode) = sensitivityResult - innerProductResult
+                case (3) ! Parallel Flow
+                  call parallelFlowSensitivity(sensitivityResult, forwardSolution,whichSpecies, whichLambda, whichMode)
+                  dParallelFlowdLambda(whichSpecies,whichLambda,whichMode) = sensitivityResult - innerProductResult
               end select
             end if
-
-          end if
 
         end do
       end do

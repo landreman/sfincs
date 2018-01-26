@@ -1309,7 +1309,14 @@
     allocate(heatFluxBeforeSurfaceIntegral_vm(Nspecies,Ntheta,Nzeta))
     allocate(heatFluxBeforeSurfaceIntegral_vE0(Nspecies,Ntheta,Nzeta))
     allocate(heatFluxBeforeSurfaceIntegral_vE(Nspecies,Ntheta,Nzeta))
-    allocate(NTVBeforeSurfaceIntegral(Nspecies,Ntheta,Nzeta)) 
+    allocate(NTVBeforeSurfaceIntegral(Nspecies,Ntheta,Nzeta))
+
+    allocate(dRadialCurrentdLambda(NLambdas,NModesAdjoint))
+    allocate(dTotalHeatFluxdLambda(NLambdas,NModesAdjoint))
+    allocate(dBootstrapdLambda(NLambdas,NModesAdjoint))
+    allocate(dParticleFluxdLambda(NSpecies,NLambdas,NModesAdjoint))
+    allocate(dHeatFluxdLambda(NSpecies,NLambdas,NModesAdjoint))
+    allocate(dParallelFlowdLambda(Nspecies,NLambdas,NModesAdjoint))
 
     allocate(particleFlux_vm_psiHat_vs_x(Nspecies,Nx))
     allocate(heatFlux_vm_psiHat_vs_x(Nspecies,Nx))

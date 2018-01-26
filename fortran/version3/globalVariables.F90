@@ -95,11 +95,12 @@ module globalVariables
   ! ********************************************************
   ! ********************************************************
 
+  logical :: debugAdjoint = .false.
   logical :: adjointBootstrapOption = .false.
   logical :: adjointRadialCurrentOption = .false.
   logical :: adjointTotalHeatFluxOption = .false.
   ! These are initialized to .false. in readInput
-  logical, dimension(:), allocatable :: adjointHeatFluxOption, adjointParticleFluxOption
+  logical, dimension(:), allocatable :: adjointHeatFluxOption, adjointParticleFluxOption, adjointParallelFlowOption
 
   ! ********************************************************
   ! ********************************************************
@@ -388,7 +389,7 @@ module globalVariables
   integer :: nMaxAdjoint = 0, mMaxAdjoint = 0
   integer :: NModesAdjoint = 0, NLambdas = 6
   PetscScalar, dimension(:,:), allocatable :: dRadialCurrentdLambda,dTotalHeatFluxdLambda,dBootstrapdLambda
-  PetscScalar, dimension(:,:,:), allocatable :: dParticleFluxdLambda, dHeatFluxdLambda
+  PetscScalar, dimension(:,:,:), allocatable :: dParticleFluxdLambda, dHeatFluxdLambda, dParallelFlowdLambda
   !! The following are for testing innerProduct()
 !  PetscScalar, dimension(:), allocatable :: heatFluxWithInnerProduct
 !  PetscScalar, dimension(:), allocatable ::

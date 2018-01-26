@@ -39,7 +39,7 @@ module solver
     Vec :: adjointSolutionVec, summedSolutionVec, adjointRHSVec
     logical :: useSummedSolutionVec
     integer :: whichLambda, whichMode, whichSpecies
-    PetscReal :: deltaLambda
+    PetscReal :: deltaLambda, norm
 
 !!Following three lines added by AM 2016-07-06
 #if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR > 6))
@@ -352,8 +352,10 @@ module solver
 #else
           ! Syntax for PETSc version 3.5 and later
           call KSPSetOperators(KSPInstance, matrix, preconditionerMatrix, ierr)
-          call KSPSetReusePreconditioner(KSPInstance, PETSC_TRUE, ierr)
-          call PCSetReusePreconditioner(preconditionerContext, PETSC_TRUE, ierr)
+          !if (RHSMode < 4) then
+            call KSPSetReusePreconditioner(KSPInstance, PETSC_TRUE, ierr)
+            call PCSetReusePreconditioner(preconditionerContext, PETSC_TRUE, ierr)
+          !end if
 #endif
 
        else
@@ -364,8 +366,10 @@ module solver
 #else
           ! Syntax for PETSc version 3.5 and later
           call KSPSetOperators(KSPInstance, matrix, matrix, ierr)
-          call KSPSetReusePreconditioner(KSPInstance, PETSC_TRUE, ierr)
-          call PCSetReusePreconditioner(preconditionerContext, PETSC_TRUE, ierr)
+          !if (RHSMode < 4) then
+            call KSPSetReusePreconditioner(KSPInstance, PETSC_TRUE, ierr)
+            call PCSetReusePreconditioner(preconditionerContext, PETSC_TRUE, ierr)
+          !end if
 #endif
 
        end if
@@ -461,47 +465,48 @@ module solver
     !> This is where all the adjoint solves happen
     if (RHSMode>3) then
 
-      !> Testing of inner product and adjoint RHS
-      do whichAdjointRHS=1,3
-        do ispecies = 0,Nspecies
-          call testingInnerProduct(solutionVec,whichAdjointRHS,ispecies)
+      if (debugAdjoint) then
+        !> Testing of inner product and adjoint RHS
+        do whichAdjointRHS=1,3
+          do ispecies = 0,Nspecies
+            call testingInnerProduct(solutionVec,whichAdjointRHS,ispecies)
+          end do
         end do
-      end do
 
-      deltaLambda = 1.d-6
-      do whichMode = 1,NModesAdjoint
-        do whichLambda = 1,NLambdas
-          if (masterProc) then
-            print "(a,i4,a,i4,a)","Benchmarking fluxes for whichMode: ", whichMode, &
-              " and whichLambda: ", whichLambda," -----------------------------"
-            print *,"m = ", ms(whichMode)," and n = ", ns(whichMode)
-          end if
-          call testingDiagnosticSensitivity(solutionVec,whichMode,whichLambda,deltaLambda)
+        deltaLambda = 1.d-6
+        do whichMode = 1,NModesAdjoint
+          do whichLambda = 1,NLambdas
+            if (masterProc) then
+              print "(a,i4,a,i4,a)","Benchmarking fluxes for whichMode: ", whichMode, &
+                " and whichLambda: ", whichLambda," -----------------------------"
+              print *,"m = ", ms(whichMode)," and n = ", ns(whichMode)
+            end if
+            call testingDiagnosticSensitivity(solutionVec,whichMode,whichLambda,deltaLambda)
+          end do
         end do
-      end do
 
-      do whichMode = 1,NModesAdjoint
-        do whichLambda = 1,NLambdas
-          if (masterProc) then
-            print "(a,i4,a,i4,a)","Benchmarking dRHSdLambda for whichMode: ", whichMode, &
-              " and whichLambda: ", whichLambda," -----------------------------"
-            print *,"m = ", ms(whichMode)," and n = ", ns(whichMode)
-          end if
-          call testingdRHSdLambda(whichMode, whichLambda, deltaLambda)
+        do whichMode = 1,NModesAdjoint
+          do whichLambda = 1,NLambdas
+            if (masterProc) then
+              print "(a,i4,a,i4,a)","Benchmarking dRHSdLambda for whichMode: ", whichMode, &
+                " and whichLambda: ", whichLambda," -----------------------------"
+              print *,"m = ", ms(whichMode)," and n = ", ns(whichMode)
+            end if
+            call testingdRHSdLambda(whichMode, whichLambda, deltaLambda)
+          end do
         end do
-      end do
 
-      do whichMode = 1,NModesAdjoint
-        do whichLambda = 1,NLambdas
-          if (masterProc) then
-            print "(a,i4,a,i4,a)","Benchmarking dMatrixdLambda for whichMode: ", whichMode, &
-              " and whichLambda: ", whichLambda," -----------------------------"
-            print *,"m = ", ms(whichMode)," and n = ", ns(whichMode)
-          end if
-          call testingdMatrixdLambda(solutionVec,whichMode, whichLambda, deltaLambda)
+        do whichMode = 1,NModesAdjoint
+          do whichLambda = 1,NLambdas
+            if (masterProc) then
+              print "(a,i4,a,i4,a)","Benchmarking dMatrixdLambda for whichMode: ", whichMode, &
+                " and whichLambda: ", whichLambda," -----------------------------"
+              print *,"m = ", ms(whichMode)," and n = ", ns(whichMode)
+            end if
+            call testingdMatrixdLambda(solutionVec,whichMode, whichLambda, deltaLambda)
+          end do
         end do
-      end do
-      stop
+      end if ! debugAdjoint
 
       !> Allocate adjointSolutionVec
       call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointSolutionVec, ierr)
@@ -509,7 +514,8 @@ module solver
 
       !> Allocate summedSolutionVec if needed
       if ((all(adjointHeatFluxOption) .and. adjointTotalHeatFluxOption) .or. &
-        (all(adjointParticleFluxOption) .and. adjointRadialCurrentOption)) then
+        (all(adjointParticleFluxOption) .and. adjointRadialCurrentOption) .or. &
+        (all(adjointParallelFlowOption) .and. adjointBootstrapOption)) then
         call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, summedSolutionVec, ierr)
         call VecSet(summedSolutionVec, zero, ierr)
       end if
@@ -521,18 +527,17 @@ module solver
       !> Allocate and populate the adjoint matrix - the same matrix is used for each RHS
       call preallocateMatrix(adjointMatrix, 1) ! the whichMatrix argument doesn't matter here
       call populateMatrix(adjointMatrix,4,dummyVec) ! dummyVec is not initialized - not needed for linear solve
-      call preallocateMatrix(adjointPreconditionerMatrix, 0)
-      call populateMatrix(adjointPreconditionerMatrix,5,dummyVec)
+      if (useIterativeLinearSolver) then
+        call preallocateMatrix(adjointPreconditionerMatrix, 1)
+        call populateMatrix(adjointPreconditionerMatrix,5,dummyVec)
+      end if
 
       if (masterProc) then
          print *,"Finished allocating adjoint Vecs and matrices."
       end if
 
       !> First, we'll compute the species-specific fluxes if needed
-      !> whichAdjointRHS = 1 -> particle flux
-      !> whichAdjointRHS = 2 -> heat flux
-      !> whichAdjointRHS = 3 -> bootstrap
-      do whichAdjointRHS=1,2
+      do whichAdjointRHS=1,3
         useSummedSolutionVec = .false.
 
         !> useSummedSolutionVec = .true. if all fluxes computed for all species and sensitivity of total flux also computed
@@ -549,6 +554,13 @@ module solver
               useSummedSolutionVec = .true.
             end if
             if (.not. any(adjointHeatFluxOption)) then
+              cycle
+            end if
+          case (3) ! parallel flow
+            if (all(adjointParallelFlowOption) .and. adjointBootstrapOption) then
+              useSummedSolutionVec = .true.
+            end if
+            if (.not. any(adjointParallelFlowOption)) then
               cycle
             end if
         end select
@@ -568,6 +580,10 @@ module solver
               if (.not. adjointHeatFluxOption(ispecies)) then
                 cycle
               end if
+            case (3) ! parallel flow
+              if (.not. adjointParallelFlowOption(ispecies)) then
+                cycle
+              end if
           end select
 
           print *,"################################################################"
@@ -582,8 +598,6 @@ module solver
 #else
             ! Syntax for PETSc version 3.5 and later
             call KSPSetOperators(KSPInstance, adjointMatrix, adjointPreconditionerMatrix, ierr)
-            call KSPSetReusePreconditioner(KSPInstance, PETSC_TRUE, ierr)
-            call PCSetReusePreconditioner(preconditionerContext, PETSC_TRUE, ierr)
 #endif
 
           else
@@ -594,17 +608,16 @@ module solver
 #else
             ! Syntax for PETSc version 3.5 and later
             call KSPSetOperators(KSPInstance, adjointMatrix, adjointMatrix, ierr)
-            call KSPSetReusePreconditioner(KSPInstance, PETSC_TRUE, ierr)
-            call PCSetReusePreconditioner(preconditionerContext, PETSC_TRUE, ierr)
 #endif
 
           end if
 
           !> Construct RHS vec
+          call VecSet(adjointRHSVec, zero, ierr)
           call populateAdjointRHS(adjointRHSVec, whichAdjointRHS, ispecies)
 
           if (masterProc) then
-             print *,"Beginning the main solve.  This could take a while ..."
+             print *,"Beginning the adjoint solve.  This could take a while ..."
           end if
 
           call PetscTime(time1, ierr)
@@ -615,36 +628,45 @@ module solver
 
           call PetscTime(time2, ierr)
           if (masterProc) then
-             print *,"Done with the main solve.  Time to solve: ", time2-time1, " seconds."
+             print *,"Done with the adjoint solve.  Time to solve: ", time2-time1, " seconds."
           end if
           call PetscTime(time1, ierr)
 
           call checkIfKSPConverged(KSPInstance)
+
+          if (debugAdjoint) then
+            call testingAdjointOperator(solutionVec,adjointSolutionVec,residualVec,adjointRHSVec,matrix,adjointMatrix,whichAdjointRHS,ispecies)
+          end if
+
+
           !> Compute diagnostics for species-specific fluxes
-          call evaluateDiagnostics(solutionVec, adjointSolutionVec,whichAdjointRHS,ispecies)
+!          call evaluateDiagnostics(solutionVec, adjointSolutionVec,whichAdjointRHS,ispecies)
 
           select case (whichAdjointRHS)
             case (1) ! particle flux
               if (useSummedSolutionVec) then
-                call VecAXPY(summedSolutionVec,Zs(ispecies),adjointSolutionVec)
+                call VecAXPY(summedSolutionVec,Zs(ispecies),adjointSolutionVec,ierr)
               end if
             case (2) ! heat flux
-                ! call diagnostics for species adjoint f here
               if (useSummedSolutionVec) then
-                call VecAXPY(summedSolutionVec,1,adjointSolutionVec)
+                call VecAXPY(summedSolutionVec,one,adjointSolutionVec,ierr)
+              end if
+            case (3) ! parallel flow
+              if (useSummedSolutionVec) then
+                call VecAXPY(summedSolutionVec,Zs(ispecies),adjointSolutionVec,ierr)
               end if
           end select
 
           !> Done with required adjoint solve and diagnostics. Now clear solutionVec
           call VecSet(adjointSolutionVec, zero, ierr)
-        end do
+        end do ! ispecies
 
         if (useSummedSolutionVec) then
-          ! call evaluateDiagnostics(solutionVec,summedSolutionVec,whichAdjointRHS,0)
+          !call evaluateDiagnostics(solutionVec,summedSolutionVec,whichAdjointRHS,0)
           call VecSet(summedSolutionVec,zero,ierr)
         end if
 
-      end do
+      end do ! whichAdjointRHS
 
       !> Now, we'll compute the sensitivity of the species-summed fluxes if not already computed
       if (adjointTotalHeatFluxOption .or. adjointBootstrapOption .or. adjointRadialCurrentOption) then
@@ -653,17 +675,17 @@ module solver
         do whichAdjointRHS=1,3
           select case(whichAdjointRHS)
             case (1) ! particle flux
-              if (all(adjointParticleFluxOption) .or. adjointRadialCurrentOption .eqv. .false.) then
+              if (all(adjointParticleFluxOption) .or. (adjointRadialCurrentOption .eqv. .false.)) then
                 ! species-summed flux computed already
                 cycle
               end if
             case (2) ! heat flux
-              if (all(adjointHeatFluxOption) .or. adjointTotalHeatFluxOption .eqv. .false.) then
+              if (all(adjointHeatFluxOption) .or. (adjointTotalHeatFluxOption .eqv. .false.)) then
                 ! species-summed flux computed already
                 cycle
               end if
             case (3) ! bootstrap
-              if (adjointRadialCurrentOption .eqv. .false.) then
+              if (all(adjointParallelFlowOption) .or. (adjointBootstrapOption .eqv. .false.)) then
                 cycle
               end if
           end select
@@ -680,8 +702,6 @@ module solver
 #else
             ! Syntax for PETSc version 3.5 and later
             call KSPSetOperators(KSPInstance, adjointMatrix, adjointPreconditionerMatrix, ierr)
-            call KSPSetReusePreconditioner(KSPInstance, PETSC_TRUE, ierr)
-            call PCSetReusePreconditioner(preconditionerContext, PETSC_TRUE, ierr)
 #endif
 
           else
@@ -691,9 +711,7 @@ module solver
             call KSPSetOperators(KSPInstance, adjointMatrix, adjointMatrix, SAME_PRECONDITIONER, ierr)
 #else
             ! Syntax for PETSc version 3.5 and later
-            call KSPSetOperators(KSPInstance, adjointMatrix, adjointMatrix, ierr)
-            call KSPSetReusePreconditioner(KSPInstance, PETSC_TRUE, ierr)
-            call PCSetReusePreconditioner(preconditionerContext, PETSC_TRUE, ierr)
+             call KSPSetOperators(KSPInstance, adjointMatrix, adjointMatrix, ierr)
 #endif
 
           end if
@@ -702,7 +720,7 @@ module solver
           call populateAdjointRHS(adjointRHSVec, whichAdjointRHS, ispecies)
 
           if (masterProc) then
-             print *,"Beginning the main solve.  This could take a while ..."
+             print *,"Beginning the adjoint solve.  This could take a while ..."
           end if
 
           call PetscTime(time1, ierr)
@@ -713,18 +731,22 @@ module solver
 
           call PetscTime(time2, ierr)
           if (masterProc) then
-             print *,"Done with the main solve.  Time to solve: ", time2-time1, " seconds."
+             print *,"Done with the adjoint solve.  Time to solve: ", time2-time1, " seconds."
           end if
           call PetscTime(time1, ierr)
 
           call checkIfKSPConverged(KSPInstance)
 
+          if (debugAdjoint) then
+            call testingAdjointOperator(solutionVec,adjointSolutionVec,residualVec,adjointRHSVec,matrix,adjointMatrix,whichAdjointRHS,ispecies)
+          end if
+
           ! compute diagnostics for species-summed fluxes
-          call evaluateDiagnostics(solutionVec, adjointSolutionVec, whichAdjointRHS, ispecies)
+          !call evaluateDiagnostics(solutionVec, adjointSolutionVec, whichAdjointRHS, ispecies)
 
           ! Done with required adjoint solve and diagnostics. Now clear solutionVec
           call VecSet(adjointSolutionVec, zero, ierr)
-        end do
+        end do ! whichAdjointRHS
       end if
 
       ! Now deallocate things
@@ -824,8 +846,6 @@ module solver
     end if
 
   end subroutine chooseParallelDirectSolver
-
-
 
 end module solver
 

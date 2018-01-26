@@ -88,7 +88,7 @@ contains
 
     namelist / sensitivityOptions / adjointBootstrapOption, adjointRadialCurrentOption, &
       adjointTotalHeatFluxOption, adjointHeatFluxOption, adjointParticleFluxOption, &
-      nMaxAdjoint, mMaxAdjoint
+      nMaxAdjoint, mMaxAdjoint, adjointParallelFlowOption, debugAdjoint
 
     Zs = speciesNotInitialized
     mHats = speciesNotInitialized
@@ -433,8 +433,10 @@ contains
      if (RHSMode>3) then
        allocate(adjointHeatFluxOption(Nspecies))
        allocate(adjointParticleFluxOption(NSpecies))
+       allocate(adjointParallelFlowOption(Nspecies))
        adjointHeatFluxOption = .false.
        adjointParticleFluxOption = .false.
+       adjointParallelFlowOption = .false.
        read(fileUnit, nml=sensitivityOptions, iostat=didFileAccessWork)
        if (didFileAccessWork /= 0) then
           print *,"Proc ",myRank,": Error!  I was able to open the file ", trim(filename), &

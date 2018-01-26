@@ -33,11 +33,6 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies)
     end if
     stop
   end if
-  if (whichAdjointRHS==3 .and. whichSpecies/=0) then
-    if (masterProc) then
-      print *,"Error! Incorrect input to populateAdjointRHS"
-    end if
-  end if
 
   call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, rhs, ierr)
   call VecSet(rhs, zero, ierr)
