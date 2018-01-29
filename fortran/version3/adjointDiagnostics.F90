@@ -74,6 +74,7 @@ module adjointDiagnostics
       PetscScalar, dimension(:,:), allocatable :: thetazetaIntegralFactor
       VecScatter :: VecScatterContext
       PetscErrorCode :: ierr
+      PetscScalar :: speciesResult
 
       ! Scatter deltaF to master proc
       call VecScatterCreateToZero(deltaF, VecScatterContext, deltaFOnProc0, ierr)
@@ -93,47 +94,60 @@ module adjointDiagnostics
         call VecGetArrayF90(deltaGOnProc0, deltaGArray, ierr)
       end if
 
-      allocate(sourcesF(Nspecies,2))
-      allocate(sourcesG(Nspecies,2))
-      allocate(xIntegralFactor(Nx))
-      allocate(thetazetaIntegralFactor(Ntheta,Nzeta))
+      if (masterProc) then
+        allocate(sourcesF(Nspecies,2))
+        allocate(sourcesG(Nspecies,2))
+        allocate(xIntegralFactor(Nx))
+        allocate(thetazetaIntegralFactor(Ntheta,Nzeta))
 
-      ! Get sources associated with deltaF and deltaG
-      do ispecies = 1,Nspecies
-        sourcesF(ispecies,1) = deltaFArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)+1)
-        sourcesF(ispecies,2) = deltaFArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)+1)
-        sourcesG(ispecies,1) = deltaGArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)+1)
-        sourcesG(ispecies,2) = deltaGArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)+1)
-      end do
+        ! Get sources associated with deltaF and deltaG
+        if (constraintScheme == 1) then
+          do ispecies = 1,Nspecies
+            sourcesF(ispecies,1) = deltaFArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)+1)
+            sourcesF(ispecies,2) = deltaFArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)+1)
+            sourcesG(ispecies,1) = deltaGArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)+1)
+            sourcesG(ispecies,2) = deltaGArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)+1)
+          end do
+        end if
 
-      !> Compute first term in inner product
-      result = zero
-      do ispecies = 1,Nspecies
-        THat = THats(ispecies)
-        mHat = mHats(ispecies)
-        nHat = nHats(ispecies)
+        !> Compute first term in inner product
+        result = zero
 
-        xIntegralFactor = ((pi*pi*sqrtpi*THat*THat*THat*THat)/(mHat*mHat*mHat*nHat*VprimeHat))*x*x*exp(x*x)
-        thetazetaIntegralFactor = one/DHat
-        do itheta=1,Ntheta
-          do izeta=1,Nzeta
-            do ix=1,Nx
-              ! The integral over xi turns into a sum over L (with a factor of 2/(2L+1))
-              do L=0,(Nxi_for_x(ix)-1)
-                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+        do ispecies = 1,Nspecies
+          speciesResult = zero
+          THat = THats(ispecies)
+          mHat = mHats(ispecies)
+          nHat = nHats(ispecies)
 
-                result = result + thetazetaIntegralFactor(itheta,izeta)*xIntegralFactor(ix) &
-                  *(two/(two*real(L)+one))*thetaWeights(itheta)*zetaWeights(izeta) &
-                  *deltaFArray(index)*deltaGArray(index)*xWeights(ix)
+          xIntegralFactor = ((pi*pi*sqrtpi*THat*THat*THat*THat)/(mHat*mHat*mHat*nHat*VprimeHat))*x*x*exp(x*x)
+          thetazetaIntegralFactor = one/DHat
+          do itheta=1,Ntheta
+            do izeta=1,Nzeta
+              do ix=1,Nx
+                ! The integral over xi turns into a sum over L (with a factor of 2/(2L+1))
+                do L=0,(Nxi_for_x(ix)-1)
+                  index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
 
+                  speciesResult = speciesResult + thetazetaIntegralFactor(itheta,izeta)*xIntegralFactor(ix) &
+                    *(two/(two*real(L)+one))*thetaWeights(itheta)*zetaWeights(izeta) &
+                    *deltaFArray(index)*deltaGArray(index)*xWeights(ix)
+
+                end do
               end do
             end do
           end do
+          result = result + speciesResult
+!          if (masterProc) then
+!            print *,"speciesResult: ", speciesResult
+!          end if
+!!          if (masterProc) then
+!            print *,"innerProduct term from sources: ", (two*pi*(THat**4)/((mHat**3)*nHat*VPrimeHat))*(sourcesF(ispecies,1)*sourcesG(ispecies,1) + sourcesF(ispecies,2)*sourcesG(ispecies,2))
+!          end if
+          ! Now add terms which sum over sources
+          result = result + (two*pi*(THat**4)/((mHat**3)*nHat*VPrimeHat))*(sourcesF(ispecies,1)*sourcesG(ispecies,1) + sourcesF(ispecies,2)*sourcesG(ispecies,2))
         end do
 
-      ! Now add terms which sum over sources
-        result = result + (THat/two)*(sourcesF(ispecies,1)*sourcesG(ispecies,1) + sourcesF(ispecies,2)*sourcesG(ispecies,2))
-      end do
+    end if ! masterProc
 
     end subroutine
 
@@ -559,6 +573,7 @@ module adjointDiagnostics
 
             call innerProduct(adjointSolution,adjointResidual,innerProductResult)
 
+            innerProductResult = zero
             ! Save to appropriate sensitivity array
             if (whichSpecies == 0) then
               select case (whichAdjointRHS)

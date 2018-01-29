@@ -124,6 +124,7 @@ program sfincs
 !  if (debugAdjoint) then
 !    call testingAdjointDiagnostics()
 !  end if
+!  stop
 
   ! Solve the main system, either linear or nonlinear.
   ! This step takes more time than everything else combined.

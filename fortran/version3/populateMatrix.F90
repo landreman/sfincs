@@ -110,7 +110,8 @@
     case (5)
        whichMatrixName = "adjoint Jacobian preconditioner"
        ! The preconditioner for the matrix that is used for the adjoint solve for sensitivity computations
-
+    case (6)
+        whichMatrixName = "Jacobian (for adjoint testing)"
     case default
        if (masterProc) then
           print *,"Error! whichMatrix must be 0, 1, 2, 3, 4, or 5."
@@ -240,6 +241,7 @@
     ! ************************************************************
     ! ************************************************************
 
+
     do ispecies = 1,Nspecies
        nHat = nHats(ispecies)
        THat = THats(ispecies)
@@ -251,7 +253,6 @@
        ! *********************************************************
        ! Add the streaming d/dtheta term:
        ! *********************************************************
-       
        if (whichMatrix .ne. 2) then
           allocate(thetaPartOfTerm(Ntheta,Ntheta))
           allocate(localThetaPartOfTerm(Ntheta,localNtheta))
@@ -268,6 +269,9 @@
              do izeta=izetaMin,izetaMax
                 do itheta=1,Ntheta
                   if ((whichMatrix==4) .or. (whichMatrix==5)) then
+!                    if (masterProc .and. itheta==1 .and. izeta==izetaMin) then
+!                      print *,"sign flip theta."
+!                    end if
                     thetaPartOfTerm(itheta,:) = -BHat_sup_theta(itheta,izeta) &
                         * sqrtTHat/sqrtMHat * ddthetaToUse(itheta,:) &
                         / BHat(itheta,izeta)
@@ -339,7 +343,10 @@
 
              do itheta=ithetaMin, ithetaMax
                 do izeta=1,Nzeta
-                   if (whichMatrix == 4 .or. whichMatrix == 5) then
+                   if ((whichMatrix == 4) .or. (whichMatrix == 5)) then
+!                      if (masterProc .and. itheta==ithetaMin .and. izeta==1) then
+!                        print *,"sign flip zeta"
+!                      end if
                       zetaPartOfTerm(izeta,:) = -sqrtTHat/sqrtMHat * BHat_sup_zeta(itheta,izeta) &
                         * ddzetaToUse(izeta,:) / BHat(itheta,izeta)
                    else
@@ -393,7 +400,7 @@
        ! *********************************************************
        ! Add the ExB d/dtheta term:
        ! *********************************************************
-
+       if (whichMatrix < 4) then
        if (whichMatrix .ne. 2) then
           factor = alpha*Delta/two*dPhiHatdpsiHat
           allocate(thetaPartOfTerm(Ntheta,Ntheta))
@@ -535,11 +542,10 @@
           deallocate(zetaPartOfTerm)
           deallocate(localZetaPartOfTerm)
        end if
-
        ! *********************************************************
        ! Add the magnetic drift d/dtheta term:
        ! *********************************************************
-       !if (.false.) then
+
        itheta = -1  ! So itheta is not used in place of ithetaRow or ithetaCol by mistake.
        izetaRow = -1 ! So izetaRow is not used in place of izeta by mistake.
        izetaCol = -1 ! So izetaCol is not used in place of izeta by mistake.
@@ -663,7 +669,7 @@
        izeta = -1  ! So izeta is not used in place of izetaRow or izetaCol by mistake.
        ithetaRow = -1 ! So ithetaRow is not used in place of itheta by mistake.
        ithetaCol = -1 ! So ithetaCol is not used in place of itheta by mistake.
-       if ((whichMatrix .ne. 2) .and. (magneticDriftScheme>0) .and. (whichMatrix .ne. 4)) then
+       if ((whichMatrix .ne. 2) .and. (magneticDriftScheme>0)) then
           if (whichMatrix==0) then
              maxL = min(preconditioner_magnetic_drifts_max_L,Nxi-1)
           else
@@ -681,6 +687,11 @@
                       
                       geometricFactor2 = 2.0 * BHat(itheta,izetaRow) &
                            * (dBHat_sub_theta_dpsiHat(itheta,izetaRow) - dBHat_sub_psi_dtheta(itheta,izetaRow))
+
+                      if (whichMatrix == 4 .or. whichMatrix == 5) then
+                        geometricFactor1 = -geometricFactor1
+                        geometricFactor2 = -geometricFactor2
+                      end if
                    case (3) 
                       geometricFactor1 = &
                            (BHat_sub_psi(itheta,izetaRow)* &
@@ -793,7 +804,7 @@
              end do
           end do
        end if
-
+       end if ! whichMatrix < 4
        ! *********************************************************
        ! Add the standard mirror term:
        ! *********************************************************
@@ -802,6 +813,9 @@
           do itheta=ithetaMin,ithetaMax
              do izeta=izetaMin,izetaMax
                 if ((whichMatrix == 4) .or. (whichMatrix == 5)) then
+!                  if (masterProc .and. itheta==ithetaMin .and. izeta==izetaMin) then
+!                    print *,"sign flip mirror"
+!                  end if
                   factor = sqrtTHat/(2*sqrtMHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
                        * (BHat_sup_theta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
                        + BHat_sup_zeta(itheta,izeta) * dBHatdzeta(itheta,izeta))
@@ -839,8 +853,8 @@
        ! *********************************************************
        ! Add the non-standard d/dxi term associated with E_r:
        ! *********************************************************
-
-       if (includeElectricFieldTermInXiDot .and. (whichMatrix .ne. 2)) then
+        if (whichMatrix < 4) then
+        if (includeElectricFieldTermInXiDot .and. (whichMatrix .ne. 2)) then
           do itheta=ithetaMin,ithetaMax
              do izeta=izetaMin,izetaMax
                 if ((whichMatrix == 4) .or. (whichMatrix == 5)) then
@@ -972,9 +986,9 @@
           allocate(colIndices(Nx))
           !factor = alpha*Delta/(4*psiAHat)*dPhiHatdpsiN
           if ((whichMatrix == 4) .or. (whichMatrix == 5)) then
-            factor = alpha*Delta*dPhiHatdpsiHat/4
+            factor = alpha*Delta*dPhiHatdpsiHat/four
           else
-            factor = -alpha*Delta*dPhiHatdpsiHat/4
+            factor = -alpha*Delta*dPhiHatdpsiHat/four
           end if
 
           do L=0,(Nxi-1)
@@ -1630,7 +1644,7 @@
           deallocate(tempVector1)
           deallocate(tempVector2)
        end if
-   ! end if ! if (false)
+    end if ! whichMatrix < 4
     end do ! End of loop over species for the collisionless terms.
 
     ! *********************************************************
@@ -1648,7 +1662,7 @@
 
     ! The collision operator always acts on f1.
     ! The collision operator also acts on f0 if includeTemperatureEquilibrationTerm=.t.
-
+    if (whichMatrix < 4) then
     if (whichMatrix .ne. 2 .or. includeTemperatureEquilibrationTerm) then
 
        select case (collisionOperator)
@@ -1870,7 +1884,8 @@
              end if
 
              do iSpeciesB = 1,Nspecies
-                do iSpeciesA = 1,Nspecies
+                do iSpeciesA = iSpeciesB,iSpeciesB
+                !do iSpeciesA = 1,Nspecies
                    if (iSpeciesA==iSpeciesB .or. ((whichMatrix>0) .and. (whichMatrix .ne. 5)) &
                       .or. preconditioner_species==0) then
                       
@@ -2026,6 +2041,8 @@
           deallocate(tempMatrix)
           deallocate(tempMatrix2)
           deallocate(extrapMatrix)
+
+
           
           ! *******************************************************************************
           ! *******************************************************************************
@@ -2150,6 +2167,7 @@
     ! Add sources:
     ! *******************************************************************************
 
+
     if (whichMatrix .ne. 2) then
        select case (constraintScheme)
        case (0)
@@ -2170,8 +2188,8 @@
              case (1)
                 ! Constant and quadratic terms:
                 if (whichMatrix == 4 .or. whichMatrix == 5) then
-                  xPartOfSource1 = -(         -x2(ix) + 5/two) * exp(-x2(ix)) / (pi*sqrtpi) ! Provides particles but no heat
-                  xPartOfSource2 = -(two/three*x2(ix) -     1) * exp(-x2(ix)) / (pi*sqrtpi) ! Provides heat but no particles
+                  xPartOfSource1 = exp(-x2(ix))/(pi*sqrtpi)
+                  xPartOfSource2 = x2(ix)*exp(-x2(ix))/(pi*sqrtpi)
                 else
                   xPartOfSource1 = (         -x2(ix) + 5/two) * exp(-x2(ix)) / (pi*sqrtpi) ! Provides particles but no heat
                   xPartOfSource2 = (two/three*x2(ix) -     1) * exp(-x2(ix)) / (pi*sqrtpi) ! Provides heat but no particles
@@ -2193,6 +2211,7 @@
              do itheta = ithetaMin,ithetaMax
                 do izeta = izetaMin,izetaMax
                    do ispecies = 1,Nspecies
+
                       rowIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
                       
                       colIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)
@@ -2243,23 +2262,34 @@
           L=0
           do itheta=1,Ntheta
              do izeta=1,Nzeta
-                if ((whichMatrix == 4) .or. (whichMatrix == 5)) then
-                  factor = -thetaWeights(itheta)*zetaWeights(izeta)/DHat(itheta,izeta)
-                else
-                  factor = thetaWeights(itheta)*zetaWeights(izeta)/DHat(itheta,izeta)
-                end if
+
+                factor = thetaWeights(itheta)*zetaWeights(izeta)/DHat(itheta,izeta)
 
                 do ix=1,Nx
                    do ispecies=1,Nspecies
-                      colIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
 
-                      rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)
-                      call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                           x2(ix)*xWeights(ix)*factor, ADD_VALUES, ierr)
+                      if ((whichMatrix == 4) .or. (whichMatrix ==5)) then
+                        colIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
 
-                      rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)
-                      call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                           x2(ix)*x2(ix)*xWeights(ix)*factor, ADD_VALUES, ierr)
+                        rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)
+                        call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                             factor*xWeights(ix)*(x2(ix)*five/two-x2(ix)*x2(ix)), ADD_VALUES, ierr)
+
+                        rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)
+                        call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                             factor*xWeights(ix)*(two/three*x2(ix)*x2(ix)-x2(ix)), ADD_VALUES, ierr)
+                      else
+
+                        colIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+
+                        rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)
+                        call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                             x2(ix)*xWeights(ix)*factor, ADD_VALUES, ierr)
+
+                        rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)
+                        call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                             x2(ix)*x2(ix)*xWeights(ix)*factor, ADD_VALUES, ierr)
+                      end if
                    end do
                 end do
              end do
@@ -2273,7 +2303,6 @@
           do itheta=1,Ntheta
              do izeta=1,Nzeta
                 factor = thetaWeights(itheta)*zetaWeights(izeta)/DHat(itheta,izeta)
-
                 do ix=ixMin,Nx
                    do ispecies = 1,Nspecies
                       colIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
@@ -2305,6 +2334,7 @@
        end select
     end if
 
+    end if !whichMatrix < 4
     ! *******************************************************************************
     ! SECTION MODIFIED BY AM 2016-02/03
     ! Add the quasineutrality equation

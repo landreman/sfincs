@@ -1162,12 +1162,12 @@ subroutine validateInput()
       stop
     end if
     ! Check that tangential magnetic drifts are not used
-    if (magneticDriftScheme > 0) then
-      if (masterProc) then
-        print *,"Error! RHSMode>3 cannot be used with tangential magnetic drifts."
-      end if
-      stop
-    end if
+!    if (magneticDriftScheme > 0) then
+!      if (masterProc) then
+!        print *,"Error! RHSMode>3 cannot be used with tangential magnetic drifts."
+!      end if
+!      stop
+!    end if
 !    ! Check that XDotTerm is retained
 !    if (includeXDotTerm .eqv. .false.) then
 !      if (masterProc) then
@@ -1183,13 +1183,13 @@ subroutine validateInput()
       stop
     end if
     ! Check collision operator
-    if (collisionOperator /= 0) then
-      if (masterProc) then
-        print *,"Error! RHSMode>3 must be used with collisionOperator=0."
-      end if
-      stop
-    end if
-    ! Check that adjoint rhs is specified in input parameters 
+!    if (collisionOperator /= 0) then
+!      if (masterProc) then
+!        print *,"Error! RHSMode>3 must be used with collisionOperator=0."
+!      end if
+!      stop
+!    end if
+    ! Check that adjoint rhs is specified in input parameters
     if ((adjointBootstrapOption .or. adjointRadialCurrentOption .or. adjointTotalHeatFluxOption &
       .or. any(adjointHeatFluxOption) .or. any(adjointParticleFluxOption)) .eqv. .false.) then
       if (masterProc) then

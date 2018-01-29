@@ -466,12 +466,20 @@ module solver
     if (RHSMode>3) then
 
       if (debugAdjoint) then
+
+      do ispecies = 0,Nspecies
+        do whichAdjointRHS = 1,3
+          call testingAdjointOperator(solutionVec,adjointSolutionVec,whichAdjointRHS,ispecies)
+        end do
+      end do
+
         !> Testing of inner product and adjoint RHS
         do whichAdjointRHS=1,3
           do ispecies = 0,Nspecies
             call testingInnerProduct(solutionVec,whichAdjointRHS,ispecies)
           end do
         end do
+        stop
 
         deltaLambda = 1.d-6
         do whichMode = 1,NModesAdjoint
@@ -506,7 +514,7 @@ module solver
             call testingdMatrixdLambda(solutionVec,whichMode, whichLambda, deltaLambda)
           end do
         end do
-      end if ! debugAdjoint
+      end if ! .false.
 
       !> Allocate adjointSolutionVec
       call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointSolutionVec, ierr)
@@ -634,13 +642,17 @@ module solver
 
           call checkIfKSPConverged(KSPInstance)
 
-          if (debugAdjoint) then
-            call testingAdjointOperator(solutionVec,adjointSolutionVec,residualVec,adjointRHSVec,matrix,adjointMatrix,whichAdjointRHS,ispecies)
-          end if
+!          if (debugAdjoint) then
+!            call testingAdjointOperator(solutionVec,adjointSolutionVec,residualVec,adjointRHSVec,matrix,adjointMatrix,whichAdjointRHS,ispecies)
+!          end if
 
-
+!          call VecNorm(adjointSolutionVec,norm,ierr)
+!          if (masterProc) then
+!            print *,"norm: ", norm
+!            stop
+!          end if
           !> Compute diagnostics for species-specific fluxes
-!          call evaluateDiagnostics(solutionVec, adjointSolutionVec,whichAdjointRHS,ispecies)
+          call evaluateDiagnostics(solutionVec, adjointSolutionVec,whichAdjointRHS,ispecies)
 
           select case (whichAdjointRHS)
             case (1) ! particle flux
@@ -662,7 +674,7 @@ module solver
         end do ! ispecies
 
         if (useSummedSolutionVec) then
-          !call evaluateDiagnostics(solutionVec,summedSolutionVec,whichAdjointRHS,0)
+          call evaluateDiagnostics(solutionVec,summedSolutionVec,whichAdjointRHS,0)
           call VecSet(summedSolutionVec,zero,ierr)
         end if
 
@@ -737,12 +749,12 @@ module solver
 
           call checkIfKSPConverged(KSPInstance)
 
-          if (debugAdjoint) then
-            call testingAdjointOperator(solutionVec,adjointSolutionVec,residualVec,adjointRHSVec,matrix,adjointMatrix,whichAdjointRHS,ispecies)
-          end if
+!          if (debugAdjoint) then
+!            call testingAdjointOperator(solutionVec,adjointSolutionVec,residualVec,adjointRHSVec,matrix,adjointMatrix,whichAdjointRHS,ispecies)
+!          end if
 
           ! compute diagnostics for species-summed fluxes
-          !call evaluateDiagnostics(solutionVec, adjointSolutionVec, whichAdjointRHS, ispecies)
+          call evaluateDiagnostics(solutionVec, adjointSolutionVec, whichAdjointRHS, ispecies)
 
           ! Done with required adjoint solve and diagnostics. Now clear solutionVec
           call VecSet(adjointSolutionVec, zero, ierr)
