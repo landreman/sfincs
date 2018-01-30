@@ -28,7 +28,7 @@ subroutine testingAdjointDiagnostics()
 !  Vec :: forwardSolution
   integer :: whichMode, whichLambda
   PetscScalar :: deltaLambda
-  integer :: iterationNum, whichSpecies
+  integer :: iterationNum
   PetscScalar, dimension(:), allocatable :: particleFluxInit, heatFluxInit, parallelFlowInit
   PetscScalar :: finiteDiffDerivative
   VecScatter :: VecScatterContext
@@ -82,20 +82,20 @@ subroutine testingAdjointDiagnostics()
   RHSMode = 1
   call PetscTime(time1, ierr)
   startTime = time1
-  do whichMode = 1, NModesAdjoint
-    do whichLambda = 1, NLambdas
+  do whichMode = 1, 1
+    do whichLambda = 1, 1
       ! Update geometry
       call updateVMECGeometry(whichMode, whichLambda, deltaLambda)
 
-      do ispecies = 0, Nspecies
+      do ispecies = 2, 2
 
         ! Compute solutionVec and diagnostics with new geometry
         call mainSolverLoop()
 
         ! Compute finite difference derivatives
-        dParticleFluxdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (particleFlux_vm_rN(whichSpecies)-particleFluxInit(whichSpecies))/deltaLambda
-        dHeatFluxdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (heatFlux_vm_rN(whichSpecies)-heatFluxInit(whichSpecies))/deltaLambda
-        dParallelFlowdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (FSABVelocityUsingFSADensityOverRootFSAB2(whichSpecies)-parallelFlowInit(whichSpecies))/deltaLambda
+        dParticleFluxdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (particleFlux_vm_rN(iSpecies)-particleFluxInit(iSpecies))/deltaLambda
+        dHeatFluxdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (heatFlux_vm_rN(iSpecies)-heatFluxInit(iSpecies))/deltaLambda
+        dParallelFlowdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (FSABVelocityUsingFSADensityOverRootFSAB2(iSpecies)-parallelFlowInit(iSpecies))/deltaLambda
 
       end do
       ! Reset geometry to original values
@@ -109,9 +109,9 @@ subroutine testingAdjointDiagnostics()
 
   percentError = zero
 
-  do whichMode = 1, NModesAdjoint
-    do whichLambda = 1, NLambdas
-      do ispecies = 0, NSpecies
+  do whichMode = 1, 1
+    do whichLambda = 1, 1
+      do ispecies = 2, 2
         if (masterProc) then
           print "(a,i4,a,i4,a,i4,a)","Benchmarking fluxes for ispecies: ", ispecies," whichLambda: ", whichLambda," whichMode: ",whichMode," -----------------------------"
         do whichQuantity = 1,3
@@ -140,7 +140,7 @@ subroutine testingAdjointDiagnostics()
           else if (abs(analyticResult) < 1.d-12) then
             percentError = zero
           else
-            percentError = 1.d-6
+            percentError = 1.d6
           end if
           if (masterProc) then
             print *,"percent error: ", percentError
