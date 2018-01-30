@@ -34,7 +34,6 @@ subroutine testingAdjointDiagnostics()
   VecScatter :: VecScatterContext
   PetscErrorCode :: ierr
   PetscScalar :: percentError
-  PetscScalar, dimension(:,:,:), allocatable :: dParticleFluxdLambda_finiteDiff, dHeatFluxdLambda_finiteDiff, dParallelFlowdLambda_finitediff
   PetscScalar, dimension(:,:,:), allocatable :: dParticleFluxdLambda_analytic, dHeatFluxdLambda_analytic, dParallelFlowdLambda_analytic
   integer :: ispecies, whichQuantity
   PetscScalar :: analyticResult, finiteDiffResult
@@ -43,10 +42,6 @@ subroutine testingAdjointDiagnostics()
   allocate(particleFluxInit(Nspecies))
   allocate(heatFluxInit(Nspecies))
   allocate(parallelFlowInit(Nspecies))
-
-  allocate(dParticleFluxdLambda_finiteDiff(Nspecies,NLambdas,NModesAdjoint))
-  allocate(dHeatFluxdLambda_finiteDiff(Nspecies,NLambdas,NModesAdjoint))
-  allocate(dParallelFlowdLambda_finiteDiff(Nspecies,NLambdas,NModesAdjoint))
 
   allocate(dParticleFluxdLambda_analytic(Nspecies,NLambdas,NModesAdjoint))
   allocate(dHeatFluxdLambda_analytic(Nspecies,NLambdas,NModesAdjoint))
@@ -87,7 +82,7 @@ subroutine testingAdjointDiagnostics()
       ! Update geometry
       call updateVMECGeometry(whichMode, whichLambda, deltaLambda)
 
-      do ispecies = 2, 2
+      do ispecies = 1, 2
 
         ! Compute solutionVec and diagnostics with new geometry
         call mainSolverLoop()
@@ -111,7 +106,7 @@ subroutine testingAdjointDiagnostics()
 
   do whichMode = 1, 1
     do whichLambda = 1, 1
-      do ispecies = 2, 2
+      do ispecies = 1, 2
         if (masterProc) then
           print "(a,i4,a,i4,a,i4,a)","Benchmarking fluxes for ispecies: ", ispecies," whichLambda: ", whichLambda," whichMode: ",whichMode," -----------------------------"
         do whichQuantity = 1,3
@@ -150,5 +145,7 @@ subroutine testingAdjointDiagnostics()
       end do
     end do
   end do
+
+  call updateOutputFile(1, .false.)
 
 end subroutine testingAdjointDiagnostics

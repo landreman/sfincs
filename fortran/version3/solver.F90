@@ -10,6 +10,7 @@ module solver
   use petscsnesdef
   use globalVariables
   use adjointDiagnostics
+  use writeHDF5Output
 
   implicit none
 
@@ -465,7 +466,7 @@ module solver
     !> This is where all the adjoint solves happen
     if (RHSMode>3) then
 
-      if (.false.) then
+      if (debugAdjoint) then
 
       do ispecies = 0,Nspecies
         do whichAdjointRHS = 1,3
@@ -651,9 +652,10 @@ module solver
 
           call checkIfKSPConverged(KSPInstance)
 
-          if (.false.) then
-            call testingAdjointOperator(solutionVec,adjointSolutionVec,whichAdjointRHS,ispecies)
-          end if
+!          if (debugAdjoint) then
+!            call testingAdjointOperator(solutionVec,adjointSolutionVec,whichAdjointRHS,ispecies)
+!            stop
+!          end if
 
           !> Compute diagnostics for species-specific fluxes
           call evaluateDiagnostics(solutionVec, adjointSolutionVec,whichAdjointRHS,ispecies)
@@ -784,7 +786,10 @@ module solver
         call MatDestroy(adjointMatrix, ierr)
       end if
 
-    end if
+      ! Update HDF5 - this was not done in diagnostics()
+      call updateOutputFile(1, .false.)
+
+    end if ! RHSMode < 4
 
     ! ***********************************************************************
     ! ***********************************************************************

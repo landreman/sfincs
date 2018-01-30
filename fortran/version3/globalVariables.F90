@@ -391,9 +391,8 @@ module globalVariables
   integer :: NModesAdjoint = 0, NLambdas = 6
   PetscScalar, dimension(:,:), allocatable :: dRadialCurrentdLambda,dTotalHeatFluxdLambda,dBootstrapdLambda
   PetscScalar, dimension(:,:,:), allocatable :: dParticleFluxdLambda, dHeatFluxdLambda, dParallelFlowdLambda
-  !! The following are for testing innerProduct()
-!  PetscScalar, dimension(:), allocatable :: heatFluxWithInnerProduct
-!  PetscScalar, dimension(:), allocatable ::
+  PetscScalar, dimension(:,:), allocatable :: dRadialCurrentdLambda_finitediff,dTotalHeatFluxdLambda_finitediff,dBootstrapdLambda_finitediff
+  PetscScalar, dimension(:,:,:), allocatable :: dParticleFluxdLambda_finitediff, dHeatFluxdLambda_finitediff, dParallelFlowdLambda_finitediff
 
   ! ********************************************************
   !

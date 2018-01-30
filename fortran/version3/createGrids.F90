@@ -1311,12 +1311,22 @@
     allocate(heatFluxBeforeSurfaceIntegral_vE(Nspecies,Ntheta,Nzeta))
     allocate(NTVBeforeSurfaceIntegral(Nspecies,Ntheta,Nzeta))
 
-    allocate(dRadialCurrentdLambda(NLambdas,NModesAdjoint))
-    allocate(dTotalHeatFluxdLambda(NLambdas,NModesAdjoint))
-    allocate(dBootstrapdLambda(NLambdas,NModesAdjoint))
-    allocate(dParticleFluxdLambda(NSpecies,NLambdas,NModesAdjoint))
-    allocate(dHeatFluxdLambda(NSpecies,NLambdas,NModesAdjoint))
-    allocate(dParallelFlowdLambda(Nspecies,NLambdas,NModesAdjoint))
+    if (RHSMode > 3) then
+      allocate(dRadialCurrentdLambda(NLambdas,NModesAdjoint))
+      allocate(dTotalHeatFluxdLambda(NLambdas,NModesAdjoint))
+      allocate(dBootstrapdLambda(NLambdas,NModesAdjoint))
+      allocate(dParticleFluxdLambda(NSpecies,NLambdas,NModesAdjoint))
+      allocate(dHeatFluxdLambda(NSpecies,NLambdas,NModesAdjoint))
+      allocate(dParallelFlowdLambda(Nspecies,NLambdas,NModesAdjoint))
+      if (debugAdjoint) then
+        allocate(dRadialCurrentdLambda_finitediff(NLambdas,NModesAdjoint))
+        allocate(dTotalHeatFluxdLambda_finitediff(NLambdas,NModesAdjoint))
+        allocate(dBootstrapdLambda_finitediff(NLambdas,NModesAdjoint))
+        allocate(dParticleFluxdLambda_finitediff(NSpecies,NLambdas,NModesAdjoint))
+        allocate(dHeatFluxdLambda_finitediff(NSpecies,NLambdas,NModesAdjoint))
+        allocate(dParallelFlowdLambda_finitediff(Nspecies,NLambdas,NModesAdjoint))
+      end if
+    end if
 
     allocate(particleFlux_vm_psiHat_vs_x(Nspecies,Nx))
     allocate(heatFlux_vm_psiHat_vs_x(Nspecies,Nx))

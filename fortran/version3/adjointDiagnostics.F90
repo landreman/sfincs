@@ -134,7 +134,10 @@ module adjointDiagnostics
                     speciesResult = speciesResult + thetazetaIntegralFactor(itheta,izeta)*xIntegralFactor(ix) &
                       *(two/(two*real(L)+one))*thetaWeights(itheta)*zetaWeights(izeta) &
                       *deltaFArray(index)*deltaGArray(index)*xWeights(ix)
-
+!                    if (deltaFArray(index)*deltaGArray(index) /= 0 .and. (L>2)) then
+!                      print *,"L = ", L
+!                      print *,"L result = ", deltaFArray(index)*deltaGArray(index)
+!                    end if
                   end do
                 end do
               end do

@@ -38,6 +38,7 @@ module writeHDF5Output
   integer(HSIZE_T), dimension(1) :: dimForExport_f_x
   integer(HSIZE_T), dimension(2) :: dimForLambdasModes
   integer(HSIZE_T), dimension(3) :: dimForSpeciesLambdasModes
+  integer(HSIZE_T), dimension(1) :: dimForNModesAdjoint
 
   integer(HID_T) :: dspaceIDForScalar
   integer(HID_T) :: dspaceIDForSpecies
@@ -52,6 +53,7 @@ module writeHDF5Output
   integer(HID_T) :: dspaceIDForExport_f_x
   integer(HID_T) :: dspaceIDForLambdasModes
   integer(HID_T) :: dspaceIDForSpeciesLambdasModes
+  integer(HID_T) :: dspaceIDForNModesAdjoint
 
   ! Dimension arrays related to arrays that expand with each iteration:
   integer(HSIZE_T), dimension(1) :: dimForIteration
@@ -90,6 +92,12 @@ module writeHDF5Output
   integer(HID_T) :: pForIterationSpeciesThetaZeta
   integer(HID_T) :: dspaceIDForIterationSpeciesThetaZeta
 
+  integer(HSIZE_T), dimension(4) :: dimForIterationSpeciesLambdasNmodes
+  integer(HSIZE_T), dimension(4) :: maxdimForIterationSpeciesLambdasNmodes
+  integer(HSIZE_T), dimension(4) :: dimForIterationSpeciesLambdasNmodesChunk
+  integer(HID_T) :: dspaceIDForIterationSpeciesLambdasNmodes
+  integer(HID_T) :: pForIterationSpeciesLambdasNmodes
+
   integer(HSIZE_T), dimension(6) :: dimForExport_f
   integer(HSIZE_T), dimension(6) :: maxDimForExport_f
   integer(HSIZE_T), dimension(6) :: dimForExport_fChunk
@@ -122,6 +130,7 @@ module writeHDF5Output
   integer, parameter :: ARRAY_ITERATION_SPECIES_SOURCES = 104
   integer, parameter :: ARRAY_EXPORT_F = 105
   integer, parameter :: ARRAY_ITERATION_SPECIES_X = 106
+  integer, parameter :: ARRAY_ITERATION_SPECIES_LAMBDAS_NMODES = 107
 
 contains
 
@@ -334,27 +343,15 @@ contains
       if (RHSMode>3) then
         call writeHDF5Field("adjointHeatFluxOption", adjointHeatFluxOption, dspaceIDForSpecies, dimForSpecies, "")
         call writeHDF5Field("adjointParticleFluxOption", adjointParticleFluxOption, dspaceIDForSpecies,  dimForSpecies, "")
+        call writeHDF5Field("adjointParallelFlowOption", adjointParallelFlowOption,dspaceIDForSpecies, dimForSpecies, "")
+        call writeHDF5Field("discreteAdjointOption", discreteAdjointOption, "")
         call writeHDF5Field("adjointBootstrapOption", adjointBootstrapOption, "")
         call writeHDF5Field("adjointRadialCurrentOption", adjointRadialCurrentOption, "")
         call writeHDF5Field("adjointTotalHeatFluxOption", adjointTotalHeatFluxOption, "")
         call writeHDF5Field("nMaxAdjoint", nMaxAdjoint, "")
         call writeHDF5Field("mMaxAdjoint", mMaxAdjoint, "")
-! These things are commented out becasue they change with each iteration
-!        if (any(adjointHeatFluxOption)) then
-!          call writeHDF5Field("dHeatFluxdLambda", dHeatFluxdLambda,dspaceIDForSpeciesLambdasModes, dimForSpeciesLambdasModes,"")
-!        end if
-!        if (any(adjointParticleFluxOption)) then
-!          call writeHDF5Field("dParticleFluxdLambda", dParticleFluxdLambda,dspaceIDForSpeciesLambdasModes, dimForSpeciesLambdasModes,"")
-!        end if
-!        if (adjointTotalHeatFluxOption) then
-!          call writeHDF5Field("dTotalHeatFluxdLambda", dTotalHeatFluxdLambda, dspaceIDForLambdasModes, dimForLambdasModes,"")
-!        end if
-!        if (adjointRadialCurrentOption) then
-!          call writeHDF5Field("dRadialCurrentdLambda", dRadialCurrentdLambda, dspaceIDForLambdasModes, dimForLambdasModes,"")
-!        end if
-!        if (adjointBootstrapOption) then
-!          call writeHDF5Field("dBootstrapdLambda", dBootstrapdLambda, dspaceIDForLambdasModes, dimForLambdasModes,"")
-!        end if
+        call writeHDF5Field("ns", ns, dspaceIDForNModesAdjoint, dimForNModesAdjoint, "")
+        call writeHDF5Field("ms", ms, dspaceIDForNModesAdjoint, dimForNModesAdjoint, "")
       endif
 
        call writeHDF5Field("includeTemperatureEquilibrationTerm", includeTemperatureEquilibrationTerm, &
@@ -483,6 +480,7 @@ contains
        dimForIterationSpecies(1) = iterationNum
        dimForIterationThetaZeta(1) = iterationNum
        dimForIterationSpeciesThetaZeta(1) = iterationNum
+       dimForIterationSpeciesLambdasNmodes(1) = iterationNum
        dimForIterationSpeciesSources(1) = iterationNum
        dimForIterationSpeciesX(1) = iterationNum
        dimForExport_f(1) = iterationNum
@@ -715,6 +713,34 @@ contains
           call writeHDF5ExtensibleField(iterationNum, "sources", sources, ARRAY_ITERATION_SPECIES_SOURCES, "")
        end if
 
+      if (RHSMode > 3) then
+        if (any(adjointHeatFluxOption)) then
+          call writeHDF5ExtensibleField(iterationNum,"dHeatFluxdLambda", dHeatFluxdLambda,ARRAY_ITERATION_SPECIES_LAMBDAS_NMODES,"")
+        end if
+        if (any(adjointParticleFluxOption)) then
+          call writeHDF5ExtensibleField(iterationNum,"dParticleFluxdLambda", dParticleFluxdLambda,ARRAY_ITERATION_SPECIES_LAMBDAS_NMODES,"")
+        end if
+        if (any(adjointParticleFluxOption)) then
+          call writeHDF5ExtensibleField(iterationNum,"dParallelFlowdLambda", dParallelFlowdLambda,ARRAY_ITERATION_SPECIES_LAMBDAS_NMODES,"")
+        end if
+        if (adjointTotalHeatFluxOption) then
+          call writeHDF5ExtensibleField(iterationNum,"dTotalHeatFluxdLambda", dTotalHeatFluxdLambda,ARRAY_ITERATION_SPECIES_LAMBDAS_NMODES,"")
+        end if
+        if (adjointRadialCurrentOption) then
+          call writeHDF5ExtensibleField(iterationNum,"dRadialCurrentdLambda", dRadialCurrentdLambda,ARRAY_ITERATION_SPECIES_LAMBDAS_NMODES,"")
+        end if
+        if (adjointBootstrapOption) then
+          call writeHDF5ExtensibleField(iterationNum,"dBootstrapdLambda", dBootstrapdLambda,ARRAY_ITERATION_SPECIES_LAMBDAS_NMODES,"")
+        end if
+        if (debugAdjoint) then
+          call writeHDF5ExtensibleField(iterationNum,"dHeatFluxdLambda_finitediff", dHeatFluxdLambda_finitediff,ARRAY_ITERATION_SPECIES_LAMBDAS_NMODES,"")
+          call writeHDF5ExtensibleField(iterationNum,"dParticleFluxdLambda_finitediff", dParticleFluxdLambda_finitediff,ARRAY_ITERATION_SPECIES_LAMBDAS_NMODES,"")
+          call writeHDF5ExtensibleField(iterationNum,"dParallelFlowdLambda_finitediff", dParallelFlowdLambda_finitediff,ARRAY_ITERATION_SPECIES_LAMBDAS_NMODES,"")
+          call writeHDF5ExtensibleField(iterationNum,"dTotalHeatFluxdLambda_finitediff", dTotalHeatFluxdLambda_finitediff,ARRAY_ITERATION_SPECIES_LAMBDAS_NMODES,"")
+          call writeHDF5ExtensibleField(iterationNum,"dRadialCurrentdLambda_finitediff", dRadialCurrentdLambda_finitediff,ARRAY_ITERATION_SPECIES_LAMBDAS_NMODES,"")
+          call writeHDF5ExtensibleField(iterationNum,"dBootstrapdLambda_finitediff", dBootstrapdLambda_finitediff,ARRAY_ITERATION_SPECIES_LAMBDAS_NMODES,"")
+        end if
+      end if
 !!$       ! ----------------------------------
 !!$
 !!$       call h5dcreate_f(HDF5FileID, "didNonlinearCalculationConverge", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
@@ -791,6 +817,9 @@ contains
 
     dimForExport_f_x = N_export_f_x
     call h5screate_simple_f(rank, dimForExport_f_x, dspaceIDForExport_f_x, HDF5Error)
+
+    dimForNModesAdjoint = NModesAdjoint
+    call h5screate_simple_f(rank, dimForNModesAdjoint, dspaceIDForNModesAdjoint, HDF5Error)
 
     rank = 2
     dimForThetaZeta(1) = Ntheta
@@ -926,6 +955,7 @@ contains
     maxDimForIterationSpeciesThetaZeta(1)   = H5S_UNLIMITED_F
     dimForIterationSpeciesThetaZetaChunk(1) = 1
 
+
     dimForIterationSpeciesThetaZeta(2)      = Nspecies
     maxDimForIterationSpeciesThetaZeta(2)   = Nspecies
     dimForIterationSpeciesThetaZetaChunk(2) = Nspecies
@@ -942,6 +972,31 @@ contains
          HDF5Error, maxDimForIterationSpeciesThetaZeta)
     call h5pcreate_f(H5P_DATASET_CREATE_F, pForIterationSpeciesThetaZeta, HDF5Error)
     call h5pset_chunk_f(pForIterationSpeciesThetaZeta, rank, dimForIterationSpeciesThetaZetaChunk, HDF5Error)
+
+  ! -------------------------------------
+
+    rank = 4
+
+    dimForIterationSpeciesLambdasNmodes(1)      = 1
+    maxdimForIterationSpeciesLambdasNmodes(1)   = H5S_UNLIMITED_F
+    dimForIterationSpeciesLambdasNmodesChunk(1) = 1
+
+    dimForIterationSpeciesLambdasNmodes(2)      = Nspecies
+    maxdimForIterationSpeciesLambdasNmodes(2)   = Nspecies
+    dimForIterationSpeciesLambdasNmodesChunk(2) = Nspecies
+
+    dimForIterationSpeciesLambdasNmodes(3)      = NLambdas
+    maxdimForIterationSpeciesLambdasNmodes(3)   = NLambdas
+    dimForIterationSpeciesLambdasNmodesChunk(3) = NLambdas
+
+    dimForIterationSpeciesLambdasNmodes(4)      = NModesAdjoint
+    maxdimForIterationSpeciesLambdasNmodes(4)   = NModesAdjoint
+    dimForIterationSpeciesLambdasNmodesChunk(4) = NModesAdjoint
+
+    call h5screate_simple_f(rank, dimForIterationSpeciesLambdasNmodes, dspaceIDForIterationSpeciesLambdasNmodes, &
+         HDF5Error, maxDimForIterationSpeciesLambdasNmodes)
+    call h5pcreate_f(H5P_DATASET_CREATE_F, pForIterationSpeciesLambdasNmodes, HDF5Error)
+    call h5pset_chunk_f(pForIterationSpeciesLambdasNmodes, rank, dimForIterationSpeciesLambdasNmodesChunk, HDF5Error)
 
     ! -------------------------------------
 
@@ -1017,6 +1072,7 @@ contains
        call h5pclose_f(pForIteration, HDF5Error)
        call h5pclose_f(pForIterationSpecies, HDF5Error)
        call h5pclose_f(pForIterationSpeciesThetaZeta, HDF5Error)
+       call h5pclose_f(pForIterationSpeciesLambdasNmodes, HDF5Error)
        call h5pclose_f(pForIterationThetaZeta, HDF5Error)
        call h5pclose_f(pForIterationSpeciesSources, HDF5Error)
        call h5pclose_f(pForIterationSpeciesX, HDF5Error)
@@ -1651,6 +1707,16 @@ contains
        label1 = "zeta"
        label2 = "theta"
        label3 = "species"
+       label4 = "iteration"
+    case (ARRAY_ITERATION_SPECIES_LAMBDAS_NMODES)
+       originalDspaceID = dspaceIDForIterationSpeciesLambdasNmodes
+       dim = dimForIterationSpeciesLambdasNmodes
+       dimForChunk = dimForIterationSpeciesLambdasNmodesChunk
+       chunkProperties = pForIterationSpeciesLambdasNmodes
+
+       label1 = "species"
+       label2 = "Nlambdas"
+       label3 = "NmodesAdjoint"
        label4 = "iteration"
 
     case default
