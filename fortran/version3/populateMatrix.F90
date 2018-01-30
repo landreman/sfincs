@@ -1662,7 +1662,7 @@
 
     ! The collision operator always acts on f1.
     ! The collision operator also acts on f0 if includeTemperatureEquilibrationTerm=.t.
-    if (whichMatrix < 4) then
+    !if (whichMatrix < 4) then
     if (whichMatrix .ne. 2 .or. includeTemperatureEquilibrationTerm) then
 
        select case (collisionOperator)
@@ -2334,7 +2334,7 @@
        end select
     end if
 
-    end if !whichMatrix < 4
+    !end if !whichMatrix < 4
     ! *******************************************************************************
     ! SECTION MODIFIED BY AM 2016-02/03
     ! Add the quasineutrality equation

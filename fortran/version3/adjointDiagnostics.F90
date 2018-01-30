@@ -197,80 +197,82 @@ module adjointDiagnostics
       call VecGetArrayF90(forwardSolutionOnProc0, forwardSolutionArray, ierr)
     end if
 
-    allocate(xIntegralFactor(Nx))
+    if (masterProc) then
+      allocate(xIntegralFactor(Nx))
 
-    if (whichSpecies == 0) then
-      minSpecies = 1
-      maxSpecies = NSpecies
-    else
-      minSpecies = whichSpecies
-      maxSpecies = whichSpecies
-    end if
+      if (whichSpecies == 0) then
+        minSpecies = 1
+        maxSpecies = NSpecies
+      else
+        minSpecies = whichSpecies
+        maxSpecies = whichSpecies
+      end if
 
-    do ispecies = minSpecies,maxSpecies
-      THat = THats(ispecies)
-      mHat = mHats(ispecies)
-      sqrtTHat = sqrt(THats(ispecies))
-      sqrtmHat = sqrt(mHats(ispecies))
+      do ispecies = minSpecies,maxSpecies
+        THat = THats(ispecies)
+        mHat = mHats(ispecies)
+        sqrtTHat = sqrt(THats(ispecies))
+        sqrtmHat = sqrt(mHats(ispecies))
 
-      ! This is everything independent of geometry
-      xIntegralFactor = x*x*x*x*x*x*pi*THat*THat*THat*sqrtTHat*Delta/(2*mHat*sqrtmHat*Zs(ispecies))*ddrN2ddpsiHat
+        ! This is everything independent of geometry
+        xIntegralFactor = x*x*x*x*x*x*pi*THat*THat*THat*sqrtTHat*Delta/(2*mHat*sqrtmHat*Zs(ispecies))*ddrN2ddpsiHat
 
-      do itheta=1,Ntheta
-        do izeta=1,Nzeta
-          angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-          cos_angle = cos(angle)
-          sin_angle = sin(angle)
-          select case (whichLambda)
-            case (0) ! Er
-              if (masterProc) then
-                print *,"Error! Er sensitivity not yet implemented."
-              end if
-              stop
-            case (1) ! BHat
-              dBHatdThetadLambda = -m*sin_angle
-              dBHatdZetadLambda = n*Nperiods*sin_angle
-              dBHatdLambda = cos_angle
-              factor = (BHat_sub_theta(itheta,izeta)*dBHatdZetadLambda - BHat_sub_zeta(itheta,izeta)*dBHatdThetadLambda)/(VPrimeHat*BHat(itheta,izeta)**3) - 3*(BHat_sub_theta(itheta,izeta)*dBHatdZeta(itheta,izeta) - &
-                BHat_sub_zeta(itheta,izeta)*dBHatdTheta(itheta,izeta))*dBHatdLambda/(VPrimeHat*BHat(itheta,izeta)**4)
-            case (2) ! BHat_sup_theta
-              factor = 0
-            case (3) ! BHat_sup_zeta
-              factor = 0
-            case (4) ! BHat_sub_theta
-              dBHat_sub_thetadLambda = cos_angle
-              factor = dBHatdzeta(itheta,izeta)*dBHat_sub_thetadLambda/(VPrimeHat*BHat(itheta,izeta)**3)
-            case (5) ! BHat_sub_zeta
-              dBHat_sub_zetadLambda = cos_angle
-              factor = -dBHatdtheta(itheta,izeta)*dBHat_sub_zetadLambda/(VPrimeHat*BHat(itheta,izeta)**3)
-            case (6) ! DHat
-              if (ns(whichMode)==0 .and. ms(whichMode)==0) then
-                dVPrimeHatdLambda = four*pi*pi
-                factor = - (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda/ &
-                  (VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
-              else
-                factor = zero
-              end if
-          end select
+        do itheta=1,Ntheta
+          do izeta=1,Nzeta
+            angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+            cos_angle = cos(angle)
+            sin_angle = sin(angle)
+            select case (whichLambda)
+              case (0) ! Er
+                if (masterProc) then
+                  print *,"Error! Er sensitivity not yet implemented."
+                end if
+                stop
+              case (1) ! BHat
+                dBHatdThetadLambda = -m*sin_angle
+                dBHatdZetadLambda = n*Nperiods*sin_angle
+                dBHatdLambda = cos_angle
+                factor = (BHat_sub_theta(itheta,izeta)*dBHatdZetadLambda - BHat_sub_zeta(itheta,izeta)*dBHatdThetadLambda)/(VPrimeHat*BHat(itheta,izeta)**3) - 3*(BHat_sub_theta(itheta,izeta)*dBHatdZeta(itheta,izeta) - &
+                  BHat_sub_zeta(itheta,izeta)*dBHatdTheta(itheta,izeta))*dBHatdLambda/(VPrimeHat*BHat(itheta,izeta)**4)
+              case (2) ! BHat_sup_theta
+                factor = 0
+              case (3) ! BHat_sup_zeta
+                factor = 0
+              case (4) ! BHat_sub_theta
+                dBHat_sub_thetadLambda = cos_angle
+                factor = dBHatdzeta(itheta,izeta)*dBHat_sub_thetadLambda/(VPrimeHat*BHat(itheta,izeta)**3)
+              case (5) ! BHat_sub_zeta
+                dBHat_sub_zetadLambda = cos_angle
+                factor = -dBHatdtheta(itheta,izeta)*dBHat_sub_zetadLambda/(VPrimeHat*BHat(itheta,izeta)**3)
+              case (6) ! DHat
+                if (ns(whichMode)==0 .and. ms(whichMode)==0) then
+                  dVPrimeHatdLambda = four*pi*pi
+                  factor = - (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda/ &
+                    (VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
+                else
+                  factor = zero
+                end if
+            end select
 
-          do ix=1,Nx
+            do ix=1,Nx
 
-              L = 0
-              index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
-              ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
-              result = result + &
-                (8/three)*factor*xWeights(ix)*forwardSolutionArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
+                L = 0
+                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+                ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
+                result = result + &
+                  (8/three)*factor*xWeights(ix)*forwardSolutionArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
 
-              L = 2
-              index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
-              ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
-              result = result + &
-                (four/15)*factor*xWeights(ix)*forwardSolutionArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
+                L = 2
+                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+                ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
+                result = result + &
+                  (four/15)*factor*xWeights(ix)*forwardSolutionArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
 
+              end do
             end do
           end do
         end do
-      end do
+      end if !masterProc
 
     end subroutine
 
@@ -317,84 +319,86 @@ module adjointDiagnostics
       call VecGetArrayF90(deltaFOnProc0, deltaFArray, ierr)
     end if
 
-    allocate(xIntegralFactor(Nx))
+    if (masterProc) then
+      allocate(xIntegralFactor(Nx))
 
-    if (whichSpecies == 0) then
-      minSpecies = 1
-      maxSpecies = NSpecies
-    else
-      minSpecies = whichSpecies
-      maxSpecies = whichSpecies
-    end if
+      if (whichSpecies == 0) then
+        minSpecies = 1
+        maxSpecies = NSpecies
+      else
+        minSpecies = whichSpecies
+        maxSpecies = whichSpecies
+      end if
 
-    do ispecies = minSpecies,maxSpecies
-      THat = THats(ispecies)
-      mHat = mHats(ispecies)
-      sqrtTHat = sqrt(THats(ispecies))
-      sqrtmHat = sqrt(mHats(ispecies))
+      do ispecies = minSpecies,maxSpecies
+        THat = THats(ispecies)
+        mHat = mHats(ispecies)
+        sqrtTHat = sqrt(THats(ispecies))
+        sqrtmHat = sqrt(mHats(ispecies))
 
-      xIntegralFactor = x*x*x*x*THat*THat*sqrtTHat*pi*Delta/(mHat*sqrtmHat*Zs(ispecies))*ddrN2ddpsiHat
+        xIntegralFactor = x*x*x*x*THat*THat*sqrtTHat*pi*Delta/(mHat*sqrtmHat*Zs(ispecies))*ddrN2ddpsiHat
 
-      do itheta=1,Ntheta
-        do izeta=1,Nzeta
-          angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-          cos_angle = cos(angle)
-          sin_angle = sin(angle)
-          select case (whichLambda)
-            case (0) ! Er
-              if (masterProc) then
-                print *,"Error! Er sensitivity not yet implemented."
-              end if
-              stop
-            case (1) ! BHat
-              dBHatdThetadLambda = -m*sin_angle
-              dBHatdZetadLambda = n*Nperiods*sin_angle
-              dBHatdLambda = cos_angle
-              factor = (BHat_sub_theta(itheta,izeta)*dBHatdZetadLambda - BHat_sub_zeta(itheta,izeta)*dBHatdThetadLambda)/(VPrimeHat*BHat(itheta,izeta)**3) - 3*(BHat_sub_theta(itheta,izeta)*dBHatdZeta(itheta,izeta) &
-                - BHat_sub_zeta(itheta,izeta)*dBHatdTheta(itheta,izeta))*dBHatdLambda/(VPrimeHat*BHat(itheta,izeta)**4)
-            case (2) ! BHat_sup_theta
-              factor = zero
-            case (3) ! BHat_sup_zeta
-              factor = zero
-            case (4) ! BHat_sub_theta
-              dBHat_sub_thetadLambda = cos_angle
-              factor = dBHatdzeta(itheta,izeta)*dBHat_sub_thetadLambda/(VPrimeHat*BHat(itheta,izeta)**3)
-            case (5) ! BHat_sub_zeta
-              dBHat_sub_zetadLambda = cos_angle
-              factor = -dBHatdtheta(itheta,izeta)*dBHat_sub_zetadLambda/(VPrimeHat*BHat(itheta,izeta)**3)
-            case (6) ! DHat
-              if (m==0 .and. n==0) then
-                dVPrimeHatdLambda = four*pi*pi
-                factor = - (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda &
-                    /(VPrimeHat*VPrimeHat*BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta))
-              else
+        do itheta=1,Ntheta
+          do izeta=1,Nzeta
+            angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+            cos_angle = cos(angle)
+            sin_angle = sin(angle)
+            select case (whichLambda)
+              case (0) ! Er
+                if (masterProc) then
+                  print *,"Error! Er sensitivity not yet implemented."
+                end if
+                stop
+              case (1) ! BHat
+                dBHatdThetadLambda = -m*sin_angle
+                dBHatdZetadLambda = n*Nperiods*sin_angle
+                dBHatdLambda = cos_angle
+                factor = (BHat_sub_theta(itheta,izeta)*dBHatdZetadLambda - BHat_sub_zeta(itheta,izeta)*dBHatdThetadLambda)/(VPrimeHat*BHat(itheta,izeta)**3) - 3*(BHat_sub_theta(itheta,izeta)*dBHatdZeta(itheta,izeta) &
+                  - BHat_sub_zeta(itheta,izeta)*dBHatdTheta(itheta,izeta))*dBHatdLambda/(VPrimeHat*BHat(itheta,izeta)**4)
+              case (2) ! BHat_sup_theta
                 factor = zero
-              end if
-          end select
+              case (3) ! BHat_sup_zeta
+                factor = zero
+              case (4) ! BHat_sub_theta
+                dBHat_sub_thetadLambda = cos_angle
+                factor = dBHatdzeta(itheta,izeta)*dBHat_sub_thetadLambda/(VPrimeHat*BHat(itheta,izeta)**3)
+              case (5) ! BHat_sub_zeta
+                dBHat_sub_zetadLambda = cos_angle
+                factor = -dBHatdtheta(itheta,izeta)*dBHat_sub_zetadLambda/(VPrimeHat*BHat(itheta,izeta)**3)
+              case (6) ! DHat
+                if (m==0 .and. n==0) then
+                  dVPrimeHatdLambda = four*pi*pi
+                  factor = - (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda &
+                      /(VPrimeHat*VPrimeHat*BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta))
+                else
+                  factor = zero
+                end if
+            end select
 
-          ! Summed quantity is weighted by charge
-          if (whichSpecies == 0) then
-            factor = factor*Zs(ispecies)
-          end if
+            ! Summed quantity is weighted by charge
+            if (whichSpecies == 0) then
+              factor = factor*Zs(ispecies)
+            end if
 
-          do ix=1,Nx
+            do ix=1,Nx
 
-              L = 0
-              index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
-              ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
-              result = result + &
-                (8/three)*factor*xWeights(ix)*deltaFArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
+                L = 0
+                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+                ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
+                result = result + &
+                  (8/three)*factor*xWeights(ix)*deltaFArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
 
-              L = 2
-              index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
-              ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
-              result = result + &
-                (four/15)*factor*xWeights(ix)*deltaFArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
+                L = 2
+                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+                ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
+                result = result + &
+                  (four/15)*factor*xWeights(ix)*deltaFArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
 
+              end do
             end do
           end do
         end do
-      end do
+      end if !masterProc
     end subroutine
 
     !> Evaluates the term in the sensitivity derivative of the parallel flow
@@ -449,92 +453,94 @@ module adjointDiagnostics
       maxSpecies = whichSpecies
     end if
 
-    result = zero
-    dFSAB2dLambda = zero
-   if (whichLambda==1) then
-      do itheta=1,Ntheta
-        do izeta=1,Nzeta
-          angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-          cos_angle = cos(angle)
+    if (masterProc) then
+      result = zero
+      dFSAB2dLambda = zero
+      if (whichLambda==1) then
+        do itheta=1,Ntheta
+          do izeta=1,Nzeta
+            angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+            cos_angle = cos(angle)
 
-          dFSAB2dLambda = dFSAB2dLambda + two*(thetaWeights(itheta)*zetaWeights(izeta)*BHat(itheta,izeta)*cos_angle)/(DHat(itheta,izeta)*VPrimeHat)
+            dFSAB2dLambda = dFSAB2dLambda + two*(thetaWeights(itheta)*zetaWeights(izeta)*BHat(itheta,izeta)*cos_angle)/(DHat(itheta,izeta)*VPrimeHat)
+          end do
         end do
-      end do
-    end if
-
-    if (whichLambda==6) then
-      do itheta=1,Ntheta
-        do izeta=1,Nzeta
-          angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-          cos_angle = cos(angle)
-
-          dFSAB2dLambda = dFSAB2dLambda + thetaWeights(itheta)*zetaWeights(izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)*cos_angle/(VPrimeHat)
-        end do
-      end do
-      if (m == zero .and. n == zero) then
-        dVPrimeHatdLambda = (four*pi*pi)
-        dFSAB2dLambda = dFSAB2dLambda - (VPrimeHat*FSABHat2)*dVPrimeHatdLambda/(VPrimeHat*VPrimeHat)
-      end if
-    end if
-
-    allocate(xIntegralFactor(Nx))
-
-    do ispecies = minSpecies,maxSpecies
-      THat = THats(ispecies)
-      mHat = mHats(ispecies)
-      sqrtTHat = sqrt(THats(ispecies))
-      sqrtmHat = sqrt(mHats(ispecies))
-      nHat = nHats(ispecies)
-
-      xIntegralFactor = x*x*x*THat*THat*pi/(mHat*mHat*nHat)
-      if (whichSpecies == 0) then
-        xIntegralFactor = xIntegralFactor*Zs(ispecies)
       end if
 
-      do itheta=1,Ntheta
-        do izeta=1,Nzeta
-          angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-          cos_angle = cos(angle)
+      if (whichLambda==6) then
+        do itheta=1,Ntheta
+          do izeta=1,Nzeta
+            angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+            cos_angle = cos(angle)
 
-          select case (whichLambda)
-            case (0) ! Er
-              if (masterProc) then
-                print *,"Error! Er sensitivity not yet implemented."
-              end if
-              stop
-            case (1) ! BHat
-              dBHatdLambda = cos_angle
-              factor = dBHatdLambda/(DHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) - 0.5*BHat(itheta,izeta)*dFSAB2dLambda/(DHat(itheta,izeta)*sqrtFSAB2*FSABHat2*VPrimeHat)
-            case (2) ! BHat_sup_theta
-              factor = 0
-            case (3) ! BHat_sup_zeta
-              factor = 0
-            case (4) ! BHat_sub_theta
-              factor = 0
-            case (5) ! BHat_sub_zeta
-              factor = 0
-            case (6) ! DHat
-              dinvDHatdLambda = cos_angle
-              factor = BHat(itheta,izeta)*dinvDHatdLambda/(VPrimeHat*sqrtFSAB2) &
-                - 0.5*BHat(itheta,izeta)*dFSAB2dLambda/(DHat(itheta,izeta)*VPrimeHat*FSABHat2*sqrtFSAB2)
-              if (m==0 .and. n==0) then
-                dVPrimeHatdLambda = (four*pi*pi)
-                factor = factor - BHat(itheta,izeta)*dVPrimeHatdLambda/(DHat(itheta,izeta)*VPrimeHat*VPrimeHat*sqrtFSAB2)
-              end if
-          end select
+            dFSAB2dLambda = dFSAB2dLambda + thetaWeights(itheta)*zetaWeights(izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)*cos_angle/(VPrimeHat)
+          end do
+        end do
+        if (m == zero .and. n == zero) then
+          dVPrimeHatdLambda = (four*pi*pi)
+          dFSAB2dLambda = dFSAB2dLambda - (VPrimeHat*FSABHat2)*dVPrimeHatdLambda/(VPrimeHat*VPrimeHat)
+        end if
+      end if
 
-          do ix=1,Nx
+      allocate(xIntegralFactor(Nx))
 
-              L = 1
-              index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
-              ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
-              result = result + &
-                (four/three)*factor*xWeights(ix)*deltaFArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
+      do ispecies = minSpecies,maxSpecies
+        THat = THats(ispecies)
+        mHat = mHats(ispecies)
+        sqrtTHat = sqrt(THats(ispecies))
+        sqrtmHat = sqrt(mHats(ispecies))
+        nHat = nHats(ispecies)
 
+        xIntegralFactor = x*x*x*THat*THat*pi/(mHat*mHat*nHat)
+        if (whichSpecies == 0) then
+          xIntegralFactor = xIntegralFactor*Zs(ispecies)
+        end if
+
+        do itheta=1,Ntheta
+          do izeta=1,Nzeta
+            angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+            cos_angle = cos(angle)
+
+            select case (whichLambda)
+              case (0) ! Er
+                if (masterProc) then
+                  print *,"Error! Er sensitivity not yet implemented."
+                end if
+                stop
+              case (1) ! BHat
+                dBHatdLambda = cos_angle
+                factor = dBHatdLambda/(DHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) - 0.5*BHat(itheta,izeta)*dFSAB2dLambda/(DHat(itheta,izeta)*sqrtFSAB2*FSABHat2*VPrimeHat)
+              case (2) ! BHat_sup_theta
+                factor = 0
+              case (3) ! BHat_sup_zeta
+                factor = 0
+              case (4) ! BHat_sub_theta
+                factor = 0
+              case (5) ! BHat_sub_zeta
+                factor = 0
+              case (6) ! DHat
+                dinvDHatdLambda = cos_angle
+                factor = BHat(itheta,izeta)*dinvDHatdLambda/(VPrimeHat*sqrtFSAB2) &
+                  - 0.5*BHat(itheta,izeta)*dFSAB2dLambda/(DHat(itheta,izeta)*VPrimeHat*FSABHat2*sqrtFSAB2)
+                if (m==0 .and. n==0) then
+                  dVPrimeHatdLambda = (four*pi*pi)
+                  factor = factor - BHat(itheta,izeta)*dVPrimeHatdLambda/(DHat(itheta,izeta)*VPrimeHat*VPrimeHat*sqrtFSAB2)
+                end if
+            end select
+
+            do ix=1,Nx
+
+                L = 1
+                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+                ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
+                result = result + &
+                  (four/three)*factor*xWeights(ix)*deltaFArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
+
+              end do
             end do
           end do
         end do
-      end do
+      end if !masterProc
     end subroutine
 
     !> Evaluates derivatives of inner products using the forwardSolution and adjointSolution.

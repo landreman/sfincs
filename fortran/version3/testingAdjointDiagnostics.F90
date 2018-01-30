@@ -82,11 +82,12 @@ subroutine testingAdjointDiagnostics()
   RHSMode = 1
   call PetscTime(time1, ierr)
   startTime = time1
-  do whichMode = 1, 1
-    do whichLambda = 1, 1
-      do ispecies = 1, 1
-        ! Update geometry
-        call updateVMECGeometry(whichMode, whichLambda, deltaLambda)
+  do whichMode = 1, NModesAdjoint
+    do whichLambda = 1, NLambdas
+      ! Update geometry
+      call updateVMECGeometry(whichMode, whichLambda, deltaLambda)
+
+      do ispecies = 0, Nspecies
 
         ! Compute solutionVec and diagnostics with new geometry
         call mainSolverLoop()
@@ -96,9 +97,9 @@ subroutine testingAdjointDiagnostics()
         dHeatFluxdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (heatFlux_vm_rN(whichSpecies)-heatFluxInit(whichSpecies))/deltaLambda
         dParallelFlowdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (FSABVelocityUsingFSADensityOverRootFSAB2(whichSpecies)-parallelFlowInit(whichSpecies))/deltaLambda
 
-        ! Reset geometry to original values
-        call updateVMECGeometry(whichMode, whichLambda, -deltaLambda)
       end do
+      ! Reset geometry to original values
+      call updateVMECGeometry(whichMode, whichLambda, -deltaLambda)
     end do
   end do
   call PetscTime(time1, ierr)
@@ -108,9 +109,9 @@ subroutine testingAdjointDiagnostics()
 
   percentError = zero
 
-  do whichMode = 1, 1
-    do whichLambda = 1, 1
-      do ispecies = 1, 1
+  do whichMode = 1, NModesAdjoint
+    do whichLambda = 1, NLambdas
+      do ispecies = 0, NSpecies
         if (masterProc) then
           print "(a,i4,a,i4,a,i4,a)","Benchmarking fluxes for ispecies: ", ispecies," whichLambda: ", whichLambda," whichMode: ",whichMode," -----------------------------"
         do whichQuantity = 1,3
@@ -149,68 +150,5 @@ subroutine testingAdjointDiagnostics()
       end do
     end do
   end do
-!
-!  do whichSpecies = 1,NSpecies
-!    call parallelFlowSensitivity(dparallelFlowdLambda_analytic, forwardSolution, whichSpecies, whichLambda, whichMode)
-!    call heatFluxSensitivity(dHeatFluxdLambda_analytic, forwardSolution, whichSpecies, whichLambda, whichMode)
-!    call particleFluxSensitivity(dParticleFluxdLambda_analytic, forwardSolution, whichSpecies, whichLambda, whichMode)
-!    if (masterProc) then
-!      print "(a,i4,a)","Benchmarking fluxes for ispecies: ", whichSpecies," -----------------------------"
-!    end if
-!    finiteDiffDerivative = (particleFlux_vm_rN(whichSpecies)-particleFluxInit(whichSpecies))/deltaLambda
-!    if (abs(finiteDiffDerivative) < 1e-16 .and. abs(dparticleFluxdLambda_analytic) < 1e-16) then
-!      percentError = zero
-!    else if (abs(finiteDiffDerivative) > 1e-16) then
-!      percentError = 100*abs(dParticleFluxdLambda_analytic-finiteDiffDerivative)/abs(finiteDiffDerivative)
-!    else
-!      percentError = 1e6
-!    end if
-!    if (percentError > 1.0) then
-!      if (masterProc) then
-!        print "(a,es14.7,a)","percent error: ", percentError,"%"
-!        print "(a,es14.7)","dparticleFluxdLambda (finite diff): ", finiteDiffDerivative
-!        print "(a,es14.7)","dparticleFluxdLambda (analytic): ", dParticleFluxdLambda_analytic
-!      end if
-!    end if
-!
-!    finiteDiffDerivative = (heatFlux_vm_rN(whichSpecies)-heatFluxInit(whichSpecies))/deltaLambda
-!    if (abs(finiteDiffDerivative) < 1e-16 .and. abs(dHeatFluxdLambda_analytic) < 1e-16) then
-!      percentError = zero
-!    else if (abs(finiteDiffDerivative) > 1e-16) then
-!      percentError = 100*abs(dHeatFluxdLambda_analytic-finiteDiffDerivative)/abs(finiteDiffDerivative)
-!    else
-!      percentError = 1e6
-!    end if
-!
-!    if (percentError > 1.0 .and. masterProc) then
-!      print "(a,es14.7,a)","percent error: ", percentError,"%"
-!      print "(a,es14.7)","dheatFluxdLambda (finite diff): ", finiteDiffDerivative
-!      print "(a,es14.7)","dheatFluxdLambda (analytic): ", dHeatFluxdLambda_analytic
-!    end if
-!
-!    finiteDiffDerivative = (FSABVelocityUsingFSADensityOverRootFSAB2(whichSpecies)-parallelFlowInit(whichSpecies))/deltaLambda
-!    if (abs(finiteDiffDerivative) < 1e-16 .and. abs(dparallelFlowdLambda_analytic) < 1e-16) then
-!      percentError = zero
-!    else if (abs(finiteDiffDerivative) > 1e-16) then
-!      percentError = 100*abs(dparallelFlowdLambda_analytic-finiteDiffDerivative)/abs(finiteDiffDerivative)
-!    else
-!      percentError = 1e6
-!    end if
-!
-!    if (percentError > 1.0 .and. masterProc) then
-!      print "(a,es14.7,a)","percent error: ", percentError,"%"
-!      print "(a,es14.7)","dparallelFlowdLambda (finite diff): ", finiteDiffDerivative
-!      print "(a,es14.7)","dparallelFlowdLambda (analytic): ", dparallelFlowdLambda_analytic
-!    end if
-!  end do
-!
-!    ! Compute diagnostics with old geometry for testing
-!    call diagnostics(forwardSolution, iterationNum)
-!
-!    do whichSpecies=1,Nspecies
-!      print *,"Delta particleFlux (should be 0): ", particleFlux_vm_rN(whichSpecies)-particleFluxInit(whichSpecies)
-!      print *,"Delta heatFlux (should be 0): ",heatFlux_vm_rN(whichSpecies)-heatFluxInit(whichSpecies)
-!      print *,"Delta parallelFlow (should be 0):",FSABVelocityUsingFSADensityOverRootFSAB2(whichSpecies)-parallelFlowInit(whichSpecies)
-!    end do
 
 end subroutine testingAdjointDiagnostics

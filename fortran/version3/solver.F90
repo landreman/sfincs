@@ -596,9 +596,11 @@ module solver
               end if
           end select
 
-          print *,"################################################################"
-          print "(a,i1,a,i1)"," Solving adjoint system with adjoint RHS ",whichAdjointRHS," and species ",ispecies
-          print *,"################################################################"
+          if (masterProc) then
+            print *,"################################################################"
+            print "(a,i1,a,i1)"," Solving adjoint system with adjoint RHS ",whichAdjointRHS," and species ",ispecies
+            print *,"################################################################"
+          end if
 
           if (discreteAdjointOption .eqv. .false.) then
             if (useIterativeLinearSolver) then
@@ -704,9 +706,11 @@ module solver
               end if
           end select
 
-          print *,"################################################################"
-          print "(a,i1,a,i1)"," Solving adjoint system with adjoint RHS ",whichAdjointRHS," and species ",ispecies
-          print *,"################################################################"
+          if (masterProc) then
+            print *,"################################################################"
+            print "(a,i1,a,i1)"," Solving adjoint system with adjoint RHS ",whichAdjointRHS," and species ",ispecies
+            print *,"################################################################"
+          end if
 
           if (discreteAdjointOption .eqv. .false.) then
             if (useIterativeLinearSolver) then
