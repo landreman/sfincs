@@ -88,7 +88,7 @@ contains
 
     namelist / sensitivityOptions / adjointBootstrapOption, adjointRadialCurrentOption, &
       adjointTotalHeatFluxOption, adjointHeatFluxOption, adjointParticleFluxOption, &
-      nMaxAdjoint, mMaxAdjoint, adjointParallelFlowOption, debugAdjoint
+      nMaxAdjoint, mMaxAdjoint, adjointParallelFlowOption, debugAdjoint, discreteAdjointOption
 
     Zs = speciesNotInitialized
     mHats = speciesNotInitialized

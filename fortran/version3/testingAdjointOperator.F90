@@ -41,13 +41,17 @@ subroutine testingAdjointOperator(forwardSolution,adjointSolution,whichAdjointRH
     print *,"Testing adjoint operator by ensuring that (forwardSolution,matrix*forwardSolution) = (adjointMatrix*forwardSolution,forwardSolution)"
   end if
 
-  ! Populate adjoint operator
-  call preallocateMatrix(adjointMatrix, 1)
-  call populateMatrix(adjointMatrix, 4, dummy)
-
- ! Populate forward operator
+  ! Populate forward operator
   call preallocateMatrix(matrix, 1)
   call populateMatrix(matrix, 6, dummy)
+
+  ! Populate adjoint operator
+  call preallocateMatrix(adjointMatrix, 1)
+  if (discreteAdjointOption) then
+    call MatTranspose(matrix, MAT_INPLACE_MATRIX,adjointMatrix,ierr)
+  else
+    call populateMatrix(adjointMatrix, 4, dummy)
+  end if
 
   ! Create result1 and set to zero
   call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, result1, ierr)

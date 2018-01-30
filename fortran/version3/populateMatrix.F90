@@ -241,7 +241,7 @@
     ! ************************************************************
     ! ************************************************************
 
-
+!    if (whichMatrix < 4) then
     do ispecies = 1,Nspecies
        nHat = nHats(ispecies)
        THat = THats(ispecies)

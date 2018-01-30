@@ -514,7 +514,7 @@ module solver
             call testingdMatrixdLambda(solutionVec,whichMode, whichLambda, deltaLambda)
           end do
         end do
-      end if ! .false.
+      end if
 
       !> Allocate adjointSolutionVec
       call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointSolutionVec, ierr)
@@ -532,10 +532,12 @@ module solver
       call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointRHSVec, ierr)
       call VecSet(adjointRHSVec, zero, ierr)
 
-      !> Allocate and populate the adjoint matrix - the same matrix is used for each RHS
-      call preallocateMatrix(adjointMatrix, 1) ! the whichMatrix argument doesn't matter here
-      call populateMatrix(adjointMatrix,4,dummyVec) ! dummyVec is not initialized - not needed for linear solve
-      if (useIterativeLinearSolver) then
+      if (discreteAdjointOption .eqv. .false.) then
+        !> Allocate and populate the adjoint matrix - the same matrix is used for each RHS
+        call preallocateMatrix(adjointMatrix, 1) ! the whichMatrix argument doesn't matter here
+        call populateMatrix(adjointMatrix,4,dummyVec) ! dummyVec is not initialized - not needed for linear solve
+      end if
+      if (useIterativeLinearSolver .and. (discreteAdjointOption .eqv. .false.)) then
         call preallocateMatrix(adjointPreconditionerMatrix, 1)
         call populateMatrix(adjointPreconditionerMatrix,5,dummyVec)
       end if
@@ -598,7 +600,7 @@ module solver
           print "(a,i1,a,i1)"," Solving adjoint system with adjoint RHS ",whichAdjointRHS," and species ",ispecies
           print *,"################################################################"
 
-          if (useIterativeLinearSolver) then
+          if (useIterativeLinearSolver .and. (discreteAdjointOption .eqv. .false.)) then
 
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
             ! Syntax for PETSc versions up through 3.4
@@ -630,8 +632,11 @@ module solver
 
           call PetscTime(time1, ierr)
           if (solveSystem) then
-             ! All the magic happens in this next line!
-             call KSPSolve(KSPInstance,adjointRHSVec,adjointSolutionVec, ierr)
+            if (discreteAdjointOption .eqv. .false.) then
+              call KSPSolve(KSPInstance,adjointRHSVec,adjointSolutionVec, ierr)
+            else
+              call KSPSolveTranspose(KSPInstance,adjointRHSVec,adjointSolutionVec, ierr)
+            end if
           end if
 
           call PetscTime(time2, ierr)
@@ -706,7 +711,7 @@ module solver
           print "(a,i1,a,i1)"," Solving adjoint system with adjoint RHS ",whichAdjointRHS," and species ",ispecies
           print *,"################################################################"
 
-          if (useIterativeLinearSolver) then
+          if (useIterativeLinearSolver .and. (discreteAdjointOption .eqv. .false.)) then
 
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
             ! Syntax for PETSc versions up through 3.4
@@ -737,8 +742,12 @@ module solver
 
           call PetscTime(time1, ierr)
           if (solveSystem) then
+             if (discreteAdjointOption .eqv. .false.) then
              ! All the magic happens in this next line!
-             call KSPSolve(KSPInstance,adjointRHSVec,adjointSolutionVec, ierr)
+                call KSPSolve(KSPInstance,adjointRHSVec,adjointSolutionVec, ierr)
+             else
+                call KSPSolveTranspose(KSPInstance,adjointRHSVec,adjointSolutionVec, ierr)
+             end if
           end if
 
           call PetscTime(time2, ierr)
@@ -768,7 +777,9 @@ module solver
         call VecDestroy(summedSolutionVec, ierr)
       end if
       call VecDestroy(adjointRHSVec, ierr)
-      call MatDestroy(adjointMatrix, ierr)
+      if (discreteAdjointOption .eqv. .false.) then
+        call MatDestroy(adjointMatrix, ierr)
+      end if 
 
     end if
 

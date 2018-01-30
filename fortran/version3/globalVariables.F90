@@ -101,6 +101,7 @@ module globalVariables
   logical :: adjointTotalHeatFluxOption = .false.
   ! These are initialized to .false. in readInput
   logical, dimension(:), allocatable :: adjointHeatFluxOption, adjointParticleFluxOption, adjointParallelFlowOption
+  logical :: discreteAdjointOption = .true.
 
   ! ********************************************************
   ! ********************************************************
