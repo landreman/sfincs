@@ -121,10 +121,10 @@ program sfincs
   ! at each iteration of the solver (i.e. save all quantities except diagnostics.)
   call initializeOutputFile()
 
-!  if (debugAdjoint) then
-!    call testingAdjointDiagnostics()
-!  end if
-!  stop
+  if (debugAdjoint) then
+    call testingAdjointDiagnostics()
+  end if
+  stop
 
   ! Solve the main system, either linear or nonlinear.
   ! This step takes more time than everything else combined.

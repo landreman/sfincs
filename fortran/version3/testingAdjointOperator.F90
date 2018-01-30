@@ -125,35 +125,24 @@ subroutine testingAdjointOperator(forwardSolution,adjointSolution,whichAdjointRH
   end do
 
   ! ((matrix)^{-1} RHS, adjointRHS) = (RHS, (adjointMatrix)^{-1} adjointRHS)
-!  if (masterProc) then
-!    print *,"Testing adjoint operator by ensuring that (matrix^{-1}RHS, adjointRHS) = (RHS, adjointMatrix^{-1}adjointRHS) "
-!   ! print "(a,i4,a,i4,a)","Using whichAdjointRHS = ", whichAdjointRHS, &
-!    !" and whichSpecies = ", whichSpecies," -----------------------------"
-!  end if
+  if (masterProc) then
+    print *,"Testing adjoint operator by ensuring that (matrix^{-1}RHS, adjointRHS) = (RHS, adjointMatrix^{-1}adjointRHS) "
+  end if
 
-  ! Copy adjointSolution
-!  call VecDuplicate(adjointSolution,adjointSolution1,ierr)
-!  call VecCopy(adjointSolution,adjointSolution1,ierr)
+!   Allocate and populate RHS 
+  call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, RHS, ierr)
+  call VecSet(RHS, zero, ierr)
+  call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, solutionVec, ierr)
+  call VecSet(solutionVec, zero, ierr)
+  call evaluateResidual(mysnes, solutionVec, RHS, userContext, ierr)
+  ! Multiply the residual by (-1):
+  call VecScale(RHS, -1.d+0, ierr)
 
-  ! Allocate and populate RHS 
-  ! residualVec may be overwritte by call to evaluateResidual?
-!  call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, RHS, ierr)
-!  call VecSet(RHS, zero, ierr)
-!  call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, solutionVec, ierr)
-!  call VecSet(solutionVec, zero, ierr)
-!  call evaluateResidual(mysnes, solutionVec, RHS, userContext, ierr)
-!  ! Multiply the residual by (-1):
-!  call VecScale(RHS, -1.d+0, ierr)
-
-  ! Copy RHS
-!  call VecDuplicate(RHS,RHS1,ierr)
-!  call VecCopy(RHS,RHS1,ierr)
-
-!  call innerProduct(adjointSolution,RHS, innerProduct1)
-!  call innerProduct(forwardSolution,adjointRHS, innerProduct2)
-!  if (masterProc) then
-!    print *,"Inner product 1: ", innerProduct1
-!    print *,"Inner product 2: ", innerProduct2
-!  end if
+  call innerProduct(adjointSolution,RHS, innerProduct1)
+  call innerProduct(forwardSolution,adjointRHS, innerProduct2)
+  if (masterProc) then
+    print *,"Inner product 1: ", innerProduct1
+    print *,"Inner product 2: ", innerProduct2
+  end if
 
 end subroutine testingAdjointOperator

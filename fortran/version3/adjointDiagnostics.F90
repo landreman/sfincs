@@ -34,14 +34,13 @@ module adjointDiagnostics
       Vec :: dRHSdLambda
       PetscErrorCode :: ierr
 
-      !external populatedRHSdLambda, populatedMatrixdLambda
-
       ! Allocate and populate dMatrixdLambda
       call preallocateMatrix(dMatrixdLambda, 3)
       call populatedMatrixdLambda(dMatrixdLambda, whichLambda, whichMode)
 
       ! Allocate and populate dRHSdLambda
       call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, dRHSdLambda, ierr)
+      call VecSet(dRHSdLambda,zero,ierr)
       call populatedRHSdLambda(dRHSdLambda, whichLambda, whichMode)
 
       ! Multiply dRHSdLambda by -1
@@ -571,13 +570,12 @@ module adjointDiagnostics
       ! rethink this for Er
       do whichLambda=1,6
         do whichMode=1,NModesAdjoint
-
+          call VecSet(adjointResidual,zero,ierr)
           ! Call function to perform (dLdlambdaf - dSdlambda), which calls populatedMatrixdLambda and populatedRHSdLambda
           call evaluateAdjointInnerProductFactor(forwardSolution,adjointResidual,whichLambda,whichMode)
 
             call innerProduct(adjointSolution,adjointResidual,innerProductResult)
 
-            innerProductResult = zero
             ! Save to appropriate sensitivity array
             if (whichSpecies == 0) then
               select case (whichAdjointRHS)
