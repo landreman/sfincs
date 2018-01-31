@@ -15,7 +15,7 @@
 !! @param whichMode Which mode to differentiate with respect to (index of ms and and ns).
 !! @param whichLambda Indicates which component of magnetic field derivative is respect to. If = 0 \f$E_r\f$, = 1 \f$\hat{B}\f$, = 2 \f$\hat{B}^{\theta}\f$, = 3 \f$\hat{B}^{\zeta}\f$, = 4 \f$\hat{B}_{\theta}\f$, = 5 \f$\hat{B}_{\zeta}\f$, = 6 \f$\hat{D}\f$
 !! @param deltaLambda Finite difference step size.
-subroutine testingDiagnosticSensitivity(forwardSolution, whichMode, whichLambda, deltaLambda)
+subroutine testingDiagnosticSensitivity(forwardSolution, whichMode, whichLambda)
 
   use globalVariables
   use petscvec
@@ -26,7 +26,6 @@ subroutine testingDiagnosticSensitivity(forwardSolution, whichMode, whichLambda,
 
   Vec :: forwardSolution
   integer :: whichMode, whichLambda
-  PetscScalar :: deltaLambda
   integer :: iterationNum, whichSpecies
   PetscScalar, dimension(:), allocatable :: particleFluxInit, heatFluxInit, parallelFlowInit
   PetscScalar :: finiteDiffDerivative
@@ -49,7 +48,7 @@ subroutine testingDiagnosticSensitivity(forwardSolution, whichMode, whichLambda,
   parallelFlowInit = FSABVelocityUsingFSADensityOverRootFSAB2
 
   ! Update geometry
-  call updateVMECGeometry(whichMode, whichLambda, deltaLambda)
+  call updateVMECGeometry(whichMode, whichLambda)
 
   ! Compute diagnostics with new geometry
   call diagnostics(forwardSolution, iterationNum)

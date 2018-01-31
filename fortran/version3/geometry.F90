@@ -212,17 +212,18 @@ contains
       allocate(ms(NModesAdjoint))
 
       ! Now initialize ms and ns, starting with m = 0
+      ! Only include nfp-period modes!!
       imn = 1
       do jn=0,nMaxAdjoint
         ms(imn) = 0
-        ns(imn) = jn
+        ns(imn) = jn*Nperiods
         imn = imn+1
       end do
       ! Now m>0 modes
       do im = 1,mMaxAdjoint
         do jn=-nMaxAdjoint, nMaxAdjoint
           ms(imn) = im
-          ns(imn) = jn
+          ns(imn) = jn*Nperiods
           imn = imn+1
         end do
       end do

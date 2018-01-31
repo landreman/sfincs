@@ -13,7 +13,7 @@
 !! @param whichMode Which mode to differentiate with respect to (index of ms and and ns).
 !! @param whichLambda Indicates which component of magnetic field derivative is respect to. If = 0 \f$E_r\f$, = 1 \f$\hat{B}\f$, = 2 \f$\hat{B}^{\theta}\f$, = 3 \f$\hat{B}^{\zeta}\f$, = 4 \f$\hat{B}_{\theta}\f$, = 5 \f$\hat{B}_{\zeta}\f$, = 6 \f$\hat{D}\f$
 !! @param deltaLambda Finite difference step size.
-subroutine testingdRHSdLambda(whichMode, whichLambda, deltaLambda)
+subroutine testingdRHSdLambda(whichMode, whichLambda)
 
   use globalVariables
   use geometry
@@ -23,7 +23,6 @@ subroutine testingdRHSdLambda(whichMode, whichLambda, deltaLambda)
   implicit none
 
   integer :: whichMode, whichLambda
-  PetscScalar :: deltaLambda
   SNES :: mysnes
   Vec :: stateVec, RHS, dRHSdLambda, dRHSdLambda_analytic, dRHSdLambdaOnProc0, dRHSdLambda_analyticOnProc0
   PetscErrorCode :: ierr
@@ -47,7 +46,7 @@ subroutine testingdRHSdLambda(whichMode, whichLambda, deltaLambda)
   call VecScale(RHS, -1d+0, ierr)
 
   ! Update geometry
-  call updateVMECGeometry(whichMode, whichLambda, deltaLambda)
+  call updateVMECGeometry(whichMode, whichLambda)
 
   ! Compute new RHS
   call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, dRHSdLambda, ierr)

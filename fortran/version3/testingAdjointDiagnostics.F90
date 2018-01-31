@@ -27,7 +27,6 @@ subroutine testingAdjointDiagnostics()
 
 !  Vec :: forwardSolution
   integer :: whichMode, whichLambda
-  PetscScalar :: deltaLambda
   integer :: iterationNum
   PetscScalar, dimension(:), allocatable :: particleFluxInit, heatFluxInit, parallelFlowInit
   PetscScalar :: finiteDiffDerivative
@@ -46,8 +45,6 @@ subroutine testingAdjointDiagnostics()
   allocate(dParticleFluxdLambda_analytic(Nspecies,NLambdas,NModesAdjoint))
   allocate(dHeatFluxdLambda_analytic(Nspecies,NLambdas,NModesAdjoint))
   allocate(dParallelFlowdLambda_analytic(Nspecies,NLambdas,NModesAdjoint))
-
-  deltaLambda = 1.d-4
 
   ! Change settings so adjoint solve occurs - derivatives of all fluxes computed
   RHSMode = 4
@@ -77,22 +74,24 @@ subroutine testingAdjointDiagnostics()
   RHSMode = 1
   call PetscTime(time1, ierr)
   startTime = time1
-  do whichMode = 1, 1
-    do whichLambda = 1, 1
+  do whichMode = 1, NModesAdjoint
+    do whichLambda = 1, NLambdas
       ! Update geometry
       call updateVMECGeometry(whichMode, whichLambda, deltaLambda)
 
-      do ispecies = 1, 2
+      ! Compute solutionVec and diagnostics with new geometry
+      call mainSolverLoop()
 
-        ! Compute solutionVec and diagnostics with new geometry
-        call mainSolverLoop()
+      do ispecies = 1, Nspecies
 
         ! Compute finite difference derivatives
         dParticleFluxdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (particleFlux_vm_rN(iSpecies)-particleFluxInit(iSpecies))/deltaLambda
         dHeatFluxdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (heatFlux_vm_rN(iSpecies)-heatFluxInit(iSpecies))/deltaLambda
         dParallelFlowdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (FSABVelocityUsingFSADensityOverRootFSAB2(iSpecies)-parallelFlowInit(iSpecies))/deltaLambda
-
       end do
+      dTotalHeatFluxdLambda_finiteDiff(whichLambda,whichMode) = (sum(heatFlux_vm_rN)-sum(heatFluxInit))/deltaLambda
+      dRadialCurrentdLambda_finiteDiff(whichLambda,whichMode) = (sum(Zs*particleFlux_vm_rN)-sum(Zs*particleFluxInit))/deltaLambda
+      dBootstrapdLambda_finiteDiff(whichLambda,whichMode) = (sum(Zs*FSABVelocityUsingFSADensityOverRootFSAB2)-sum(Zs*parallelFlowInit))/deltaLambda
       ! Reset geometry to original values
       call updateVMECGeometry(whichMode, whichLambda, -deltaLambda)
     end do
@@ -104,11 +103,16 @@ subroutine testingAdjointDiagnostics()
 
   percentError = zero
 
-  do whichMode = 1, 1
-    do whichLambda = 1, 1
-      do ispecies = 1, 2
+  do whichMode = 1, NModesAdjoint
+    do whichLambda = 1, NLambdas
+      if (masterProc) then
+        print "(a,i4,a,i4,a,i4,a)","Benchmarking species-summed fluxes for ispecies: ", ispecies," whichLambda: ", whichLambda," whichMode: ",whichMode,"-----------------------------"
+      end if
+
+      do ispecies = 1, NSpecies
         if (masterProc) then
-          print "(a,i4,a,i4,a,i4,a)","Benchmarking fluxes for ispecies: ", ispecies," whichLambda: ", whichLambda," whichMode: ",whichMode," -----------------------------"
+          print "(a,i4,a,i4,a,i4,a)","Benchmarking fluxes for ispecies: ", ispecies," whichLambda: ", whichLambda," whichMode: ",whichMode,"-----------------------------"
+        end if
         do whichQuantity = 1,3
           select case(whichQuantity)
             case(1)
@@ -141,7 +145,6 @@ subroutine testingAdjointDiagnostics()
             print *,"percent error: ", percentError
           end if
           end do
-        end if
       end do
     end do
   end do

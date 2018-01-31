@@ -96,6 +96,7 @@ module globalVariables
   ! ********************************************************
 
   logical :: debugAdjoint = .false.
+  PetscScalar :: deltaLambda = 1.d-4
   logical :: adjointBootstrapOption = .false.
   logical :: adjointRadialCurrentOption = .false.
   logical :: adjointTotalHeatFluxOption = .false.

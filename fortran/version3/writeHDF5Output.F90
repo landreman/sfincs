@@ -361,6 +361,7 @@ contains
         call writeHDF5Field("mMaxAdjoint", mMaxAdjoint, "")
         call writeHDF5Field("ns", ns, dspaceIDForNModesAdjoint, dimForNModesAdjoint, "")
         call writeHDF5Field("ms", ms, dspaceIDForNModesAdjoint, dimForNModesAdjoint, "")
+        call writeHDF5Field("NModesAdjoint", NModesAdjoint, "")
       endif
 
        call writeHDF5Field("includeTemperatureEquilibrationTerm", includeTemperatureEquilibrationTerm, &
@@ -746,11 +747,11 @@ contains
           call writeHDF5ExtensibleField(iterationNum,"dHeatFluxdLambda_finitediff", dHeatFluxdLambda_finitediff,ARRAY_ITERATION_SPECIES_LAMBDAS_NMODES,"")
           call writeHDF5ExtensibleField(iterationNum,"dParticleFluxdLambda_finitediff", dParticleFluxdLambda_finitediff,ARRAY_ITERATION_SPECIES_LAMBDAS_NMODES,"")
           call writeHDF5ExtensibleField(iterationNum,"dParallelFlowdLambda_finitediff", dParallelFlowdLambda_finitediff,ARRAY_ITERATION_SPECIES_LAMBDAS_NMODES,"")
-!          call writeHDF5ExtensibleField(iterationNum,"dTotalHeatFluxdLambda_finitediff", dTotalHeatFluxdLambda_finitediff,ARRAY_ITERATION_LAMBDAS_NMODES,"")
-!          call writeHDF5ExtensibleField(iterationNum,"dRadialCurrentdLambda_finitediff", dRadialCurrentdLambda_finitediff,ARRAY_ITERATION_LAMBDAS_NMODES,"")
-!          call writeHDF5ExtensibleField(iterationNum,"dBootstrapdLambda_finitediff", dBootstrapdLambda_finitediff,ARRAY_ITERATION_LAMBDAS_NMODES,"")
+          call writeHDF5ExtensibleField(iterationNum,"dTotalHeatFluxdLambda_finitediff", dTotalHeatFluxdLambda_finitediff,ARRAY_ITERATION_LAMBDAS_NMODES,"")
+          call writeHDF5ExtensibleField(iterationNum,"dRadialCurrentdLambda_finitediff", dRadialCurrentdLambda_finitediff,ARRAY_ITERATION_LAMBDAS_NMODES,"")
+          call writeHDF5ExtensibleField(iterationNum,"dBootstrapdLambda_finitediff", dBootstrapdLambda_finitediff,ARRAY_ITERATION_LAMBDAS_NMODES,"")
         end if
-      end if 
+      end if
 !!$       ! ----------------------------------
 !!$
 !!$       call h5dcreate_f(HDF5FileID, "didNonlinearCalculationConverge", H5T_NATIVE_INTEGER, dspaceIDForScalar, &
