@@ -961,10 +961,11 @@
     ! (in order to be sure the HDF5 file is safely closed before moving on to the next computation.)
     if (RHSMode>1 .and. RHSMode<4 .and. whichRHS==transportMatrixSize) then
        call updateOutputFile(iterationNum, .true.)
-!    else
-!      if (debugAdjoint .eqv. .false.) then
-!        call updateOutputFile(iterationNum, .false.)
-!      end if
+    else
+    ! updateOuptuFile is called from testingAdjointDiagnostics()
+      if (debugAdjoint .eqv. .false.) then
+        call updateOutputFile(iterationNum, .false.)
+      end if
     end if
 
     if (saveMatlabOutput) then

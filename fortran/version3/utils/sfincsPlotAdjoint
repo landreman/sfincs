@@ -1,0 +1,137 @@
+#!/usr/bin/env python
+
+# This python script plots the output of the gradients computed with the adjoint method and finite differencing.
+
+import matplotlib
+import matplotlib.pyplot as plt
+import h5py
+import numpy
+import inspect, os
+import sys
+
+print "This is "+ inspect.getfile(inspect.currentframe())
+
+try:
+    f = h5py.File('sfincsOutput.h5','r')
+except:
+    print "Unable to open sfincsOutput.h5"
+    raise
+
+whichLambda = sys.argv[1]
+
+matplotlib.rcParams.update({'font.size': 8})
+
+debugAdjoint = f['debugAdjoint'][()]
+if (~debugAdjoint):
+  print "This script should only be called if sfincs was run with debugAdjoint = true."
+  exit
+ns = f['ns'][()]
+ms = f['ms'][()]
+dParticleFluxdLambda = f['dParticleFluxdLambda'][()]
+dHeatFluxdLambda = f['dHeatFluxdLambda'][()]
+dParallelFlowdLambda = f['dParallelFlowdLambda'][()]
+# dRadialCurrentdLambda = f['dRadialCurrentdLambda'][()]
+# dTotalHeatFluxdLambda = f['dTotalHeatFluxdLambda'][()]
+# dBootstrapdLambda = f['dBootstrapdLambda'][()]
+# Iteration, lambda, mode
+# dRadialCurrentdLambda_finitediff = f['dRadialCurrentdLambda_finitediff'][()]
+# dTotalHeatFluxdLambda_finitediff = f['dTotalHeatFluxdLambda_finitediff'][()]
+# dBootstrapdLambda_finitediff = f['dBootstrapdLambda_finitediff'][()]
+# Iteration, species, lambda, mode
+dParticleFluxdLambda_finitediff = f['dParticleFluxdLambda_finitediff'][()]
+dHeatFluxdLambda_finitediff = f['dHeatFluxdLambda_finitediff'][()]
+dParallelFlowdLambda_finitediff = f['dParallelFlowdLambda_finitediff'][()]
+
+Nspecies = int(f['Nspecies'][()])
+NModesAdjoint = int(f['NModesAdjoint'][()])
+NLambda = 6
+dLambda = 1.e-4
+
+NspeciesToPlot = Nspecies
+if Nspecies>3:
+  NspeciesToPlot = 3
+
+fig = plt.figure(1)
+fig.patch.set_facecolor('white')
+numRows = NspeciesToPlot
+numCols = 4
+
+iteration = 0
+# Plot finite diff and analytic derivatives
+for ispecies in range(0,NspeciesToPlot):
+  plt.subplot(numRows, numCols, ispecies*numCols+1)
+  plt.scatter(ns,dParticleFluxdLambda[:,whichLambda-1,ispecies,iteration],label='Analytic')
+  plt.scatter(ns,dParticleFluxdLambda_finitediff[:,whichLambda-1,ispecies,iteration],label='Finite diff',c=ms)
+  cb = plt.colorbar()
+  cb.set_label('m')
+  plt.xlabel('n')
+  plt.legend()
+  plt.ylabel('dParticleFluxdBHat')
+
+  plt.subplot(numRows, numCols, ispecies*numCols+2)
+  plt.scatter(ns,dHeatFluxdLambda[:,whichLambda-1,ispecies,iteration],label='Analytic')
+  plt.scatter(ns,dHeatFluxdLambda_finitediff[:,whichLambda-1,ispecies,iteration],label='Finite diff',c=ms)
+  cb = plt.colorbar()
+  cb.set_label('m')
+  plt.legend()
+  plt.xlabel('n')
+  plt.ylabel('dHeatFluxdBHat')
+
+  plt.subplot(numRows, numCols, ispecies*numCols+3)
+  plt.scatter(ns,dParallelFlowdLambda[:,whichLambda-1,ispecies,iteration],label='Analytic',c=ms)
+  plt.scatter(ns,dParallelFlowdLambda_finitediff[:,whichLambda-1,ispecies,iteration],label='Finite diff')
+  cb = plt.colorbar()
+  cb.set_label('m')
+  plt.legend()
+  plt.xlabel('n')
+  plt.ylabel('dParallelFlowdBHat')
+
+
+# Plot percent error
+fig = plt.figure(2)
+fig.patch.set_facecolor('white')
+numRows = NspeciesToPlot
+numCols = 4
+
+for ispecies in range(0,NspeciesToPlot):
+  percentErrorParticleFlux = percentError(dParticleFluxdLambda[:,whichLambda-1,ispecies,iteration],dParticleFluxdLambda_finitediff[:,whichLambda-1,ispecies,iteration],dLambda)
+  plt.subplot(numRows, numCols, ispecies*numCols+1)
+  plt.scatter(ns,percentErrorParticleFlux,c=ms)
+  cb = plt.colorbar()
+  cb.set_label('m')
+  plt.xlabel('n')
+  plt.ylabel('dParticleFluxdBHat percent error')
+
+  percentErrorHeatFlux = percentError(dHeatFluxdLambda[:,whichLambda-1,ispecies,iteration],dHeatFluxdLambda_finitediff[:,whichLambda-1,ispecies,iteration],dLambda)
+  plt.subplot(numRows, numCols, ispecies*numCols+2)
+  plt.scatter(ns,percentErrorHeatFlux,c=ms)
+  cb = plt.colorbar()
+  cb.set_label('m')
+  ax = plt.gca()
+  ax.set_ylable('log')
+  plt.xlabel('n')
+  plt.ylabel('dHeatFluxdBHat percent error')
+
+  percentErrorParallelFlow = percentError(dParallelFlowdLambda[:,whichLambda-1,ispecies,iteration],dParallelFlowdLambda_finitediff[:,whichLambda-1,ispecies,iteration],dLambda)
+  plt.subplot(numRows, numCols, ispecies*numCols+3)
+  plt.scatter(ns,percentErrorParallelFlow,c=ms)
+  cb = plt.colorbar()
+  cb.set_label('m')
+  plt.xlabel('n')
+  plt.ylabel('dParallelFlowdBHat percent error')
+
+plt.show()
+
+def percentError(fluxAnalytic,fluxFiniteDiff,dLambda):
+  
+  result = np.zeros(fluxAnalytic.shape)
+  for iMode in range(0,length(fluxAnalytic)):
+    if (abs(fluxFiniteDiff[iMode]) > 1e-12):
+      result[iMode] = abs(fluxAnalytic[iMode]-fluxFiniteDiff[iMode])/abs(fluxFiniteDiff[iMode])
+    elif (abs(fluxAnalytic[iMode]) < 1e-12):
+      result[iMode] = 0
+    else:
+      result[iMode] = 1e6
+  return result
+
+

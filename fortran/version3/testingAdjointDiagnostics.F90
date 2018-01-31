@@ -146,6 +146,9 @@ subroutine testingAdjointDiagnostics()
     end do
   end do
 
+  ! Change RHSMode so adjoint-related quantities are written to output
+  RHSMode = 4
   call updateOutputFile(1, .false.)
+  call finalizeHDF5()
 
 end subroutine testingAdjointDiagnostics

@@ -466,7 +466,7 @@ module solver
     !> This is where all the adjoint solves happen
     if (RHSMode>3) then
 
-      if (debugAdjoint) then
+      if (.false.) then
 
       do ispecies = 0,Nspecies
         do whichAdjointRHS = 1,3
@@ -787,7 +787,10 @@ module solver
       end if
 
       ! Update HDF5 - this was not done in diagnostics()
-      call updateOutputFile(1, .false.)
+      ! In debug mode, updateOutputFile is called from testingAdjointDiagnostics
+      if (debugAdjoint .eqv. .false.) then
+        call updateOutputFile(1, .false.)
+      end if
 
     end if ! RHSMode < 4
 
