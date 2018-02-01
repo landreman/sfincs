@@ -41,7 +41,7 @@ subroutine testingdMatrixdLambda(forwardSolution,whichMode, whichLambda)
   call populatedMatrixdLambda(dMatrixdLambda_analytic, whichLambda, whichMode)
 
   ! Recompute geometry
-  call updateVMECGeometry(whichMode, whichLambda)
+  call updateVMECGeometry(whichMode, whichLambda,.false.)
 
   ! Populate new matrix
   call preallocateMatrix(newMatrix, 1) ! the whichMatrix argument doesn't matter here
@@ -125,5 +125,8 @@ subroutine testingdMatrixdLambda(forwardSolution,whichMode, whichLambda)
   print *,"Maximum percentError: ", maxval(percentError), "%"
   print *,"resultArray at max: ", resultArray(maxloc(percentError))
   print *,"result_analyticArray at max: ", result_analyticArray(maxloc(percentError))
+
+  ! Recompute geometry
+  call updateVMECGeometry(whichMode, whichLambda,.true.)
 
 end subroutine testingdMatrixdLambda

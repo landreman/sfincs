@@ -13,7 +13,7 @@
 !! @param whichMode Which mode to differentiate with respect to (index of ms and and ns).
 !! @param whichLambda Indicates which component of magnetic field derivative is respect to. If = 0 \f$E_r\f$, = 1 \f$\hat{B}\f$, = 2 \f$\hat{B}^{\theta}\f$, = 3 \f$\hat{B}^{\zeta}\f$, = 4 \f$\hat{B}_{\theta}\f$, = 5 \f$\hat{B}_{\zeta}\f$, = 6 \f$\hat{D}\f$
 !! @param deltaLambda Finite difference step size.
-subroutine updateVMECGeometry(whichMode, whichLambda)
+subroutine updateVMECGeometry(whichMode, whichLambda, reset)
 
   use globalVariables
   use geometry
@@ -24,11 +24,19 @@ subroutine updateVMECGeometry(whichMode, whichLambda)
   integer :: whichMode, whichLambda
   integer :: itheta, izeta, m, n
   PetscScalar :: angle, cos_angle, sin_angle
+  logical :: reset
+  PetscScalar :: sign
 
   PetscScalar, dimension(:,:), allocatable :: deltaBHat, deltadBHatdtheta, deltadBHatdzeta, deltaBHat_sup_theta, deltadBHat_sup_theta_dzeta, deltaBHat_sup_zeta, deltadBHat_sup_zeta_dtheta, deltaBHat_sub_theta, deltadBHat_sub_theta_dzeta, deltaBHat_sub_zeta, deltadBHat_sub_zeta_dtheta, deltaDHat
 
   m = ms(whichMode)
   n = ns(whichMode)
+
+  if (reset) then
+    sign = -one
+  else
+    sign = one
+  end if
 
   allocate(deltaBHat(Ntheta,Nzeta))
   allocate(deltadBHatdtheta(Ntheta,Nzeta))
@@ -50,9 +58,9 @@ subroutine updateVMECGeometry(whichMode, whichLambda)
         angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
         cos_angle = cos(angle)
         sin_angle = sin(angle)
-        deltaBHat(itheta,izeta) = deltaLambda*cos_angle
-        deltadBHatdtheta(itheta,izeta) = -deltaLambda*m*sin_angle
-        deltadBHatdzeta(itheta,izeta) = deltaLambda*n*Nperiods*sin_angle
+        deltaBHat(itheta,izeta) = sign*deltaLambda*cos_angle
+        deltadBHatdtheta(itheta,izeta) = -sign*deltaLambda*m*sin_angle
+        deltadBHatdzeta(itheta,izeta) = sign*deltaLambda*n*Nperiods*sin_angle
       end do
     end do
     BHat = BHat + deltaBHat
@@ -65,8 +73,8 @@ subroutine updateVMECGeometry(whichMode, whichLambda)
         angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
         cos_angle = cos(angle)
         sin_angle = sin(angle)
-        deltaBHat_sup_theta(itheta,izeta) = deltaLambda*cos_angle
-        deltadBHat_sup_theta_dzeta(itheta,izeta) = deltaLambda*n*Nperiods*sin_angle
+        deltaBHat_sup_theta(itheta,izeta) = sign*deltaLambda*cos_angle
+        deltadBHat_sup_theta_dzeta(itheta,izeta) = sign*deltaLambda*n*Nperiods*sin_angle
       end do
     end do
     BHat_sup_theta = BHat_sup_theta + deltaBHat_sup_theta
@@ -78,8 +86,8 @@ subroutine updateVMECGeometry(whichMode, whichLambda)
         angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
         cos_angle = cos(angle)
         sin_angle = sin(angle)
-        deltaBHat_sup_zeta(itheta,izeta) = deltaLambda*cos_angle
-        deltadBHat_sup_zeta_dtheta(itheta,izeta) = -deltaLambda*m*sin_angle
+        deltaBHat_sup_zeta(itheta,izeta) = sign*deltaLambda*cos_angle
+        deltadBHat_sup_zeta_dtheta(itheta,izeta) = -sign*deltaLambda*m*sin_angle
       end do
     end do
     BHat_sup_zeta = BHat_sup_zeta + deltaBHat_sup_zeta
@@ -91,8 +99,8 @@ subroutine updateVMECGeometry(whichMode, whichLambda)
         angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
         cos_angle = cos(angle)
         sin_angle = sin(angle)
-        deltaBHat_sub_theta(itheta,izeta) = deltaLambda*cos_angle
-        deltadBHat_sub_theta_dzeta(itheta,izeta) = deltaLambda*n*Nperiods*sin_angle
+        deltaBHat_sub_theta(itheta,izeta) = sign*deltaLambda*cos_angle
+        deltadBHat_sub_theta_dzeta(itheta,izeta) = sign*deltaLambda*n*Nperiods*sin_angle
       end do
     end do
     BHat_sub_theta = BHat_sub_theta + deltaBHat_sub_theta
@@ -104,8 +112,8 @@ subroutine updateVMECGeometry(whichMode, whichLambda)
         angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
         cos_angle = cos(angle)
         sin_angle = sin(angle)
-        deltaBHat_sub_zeta(itheta,izeta) = deltaLambda*cos_angle
-        deltadBHat_sub_zeta_dtheta(itheta,izeta) = -deltaLambda*m*sin_angle
+        deltaBHat_sub_zeta(itheta,izeta) = sign*deltaLambda*cos_angle
+        deltadBHat_sub_zeta_dtheta(itheta,izeta) = -sign*deltaLambda*m*sin_angle
       end do
     end do
     BHat_sub_zeta = BHat_sub_zeta + deltaBHat_sub_zeta
@@ -116,7 +124,7 @@ subroutine updateVMECGeometry(whichMode, whichLambda)
       do izeta = 1,Nzeta
         angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
         cos_angle = cos(angle)
-        deltaDHat(itheta,izeta) = one/(one/DHat(itheta,izeta) + deltaLambda*cos_angle) - DHat(itheta,izeta)
+        deltaDHat(itheta,izeta) = one/(one/DHat(itheta,izeta) + sign*deltaLambda*cos_angle) - DHat(itheta,izeta)
       end do
     end do
     DHat = DHat + deltaDHat

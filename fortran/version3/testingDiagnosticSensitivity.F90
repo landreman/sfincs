@@ -48,13 +48,13 @@ subroutine testingDiagnosticSensitivity(forwardSolution, whichMode, whichLambda)
   parallelFlowInit = FSABVelocityUsingFSADensityOverRootFSAB2
 
   ! Update geometry
-  call updateVMECGeometry(whichMode, whichLambda)
+  call updateVMECGeometry(whichMode, whichLambda, .false.)
 
   ! Compute diagnostics with new geometry
   call diagnostics(forwardSolution, iterationNum)
 
   ! Reset geometry to original values
-  call updateVMECGeometry(whichMode, whichLambda, -deltaLambda)
+  call updateVMECGeometry(whichMode, whichLambda, .true.)
 
   percentError = zero
 

@@ -725,7 +725,7 @@
 
     end do ! ispecies
     ! *********************************************************************************
-    ! I do not need the collision operator, boundary conditions for f at x=0
+    ! I do not need the collision operator, boundary conditions for f at x=0,
     ! or sources as they are independent of geometry
     ! *********************************************************************************
 

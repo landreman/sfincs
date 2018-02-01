@@ -9,12 +9,8 @@
 !! the particle flux, heat flux, and flow on geometry with
 !! finite difference derivatives. This has been written to test
 !! the subroutines heatFluxSensitivity, particleFluxSensitivity,
-!! and parallelFlowSensitivity.
-!! @param forwardSolution Petsc Vec solution to forward equation. Derivatives
-!! are taken with this solution held constant.
-!! @param whichMode Which mode to differentiate with respect to (index of ms and and ns).
-!! @param whichLambda Indicates which component of magnetic field derivative is respect to. If = 0 \f$E_r\f$, = 1 \f$\hat{B}\f$, = 2 \f$\hat{B}^{\theta}\f$, = 3 \f$\hat{B}^{\zeta}\f$, = 4 \f$\hat{B}_{\theta}\f$, = 5 \f$\hat{B}_{\zeta}\f$, = 6 \f$\hat{D}\f$
-!! @param deltaLambda Finite difference step size.
+!! and parallelFlowSensitivity in addition to the adjoint solves 
+!! performed in solver.F90 and innerProduct.
 subroutine testingAdjointDiagnostics()
 
   use globalVariables
@@ -77,7 +73,7 @@ subroutine testingAdjointDiagnostics()
   do whichMode = 1, NModesAdjoint
     do whichLambda = 1, NLambdas
       ! Update geometry
-      call updateVMECGeometry(whichMode, whichLambda, deltaLambda)
+      call updateVMECGeometry(whichMode, whichLambda, .false.)
 
       ! Compute solutionVec and diagnostics with new geometry
       call mainSolverLoop()
@@ -93,7 +89,7 @@ subroutine testingAdjointDiagnostics()
       dRadialCurrentdLambda_finiteDiff(whichLambda,whichMode) = (sum(Zs*particleFlux_vm_rN)-sum(Zs*particleFluxInit))/deltaLambda
       dBootstrapdLambda_finiteDiff(whichLambda,whichMode) = (sum(Zs*FSABVelocityUsingFSADensityOverRootFSAB2)-sum(Zs*parallelFlowInit))/deltaLambda
       ! Reset geometry to original values
-      call updateVMECGeometry(whichMode, whichLambda, -deltaLambda)
+      call updateVMECGeometry(whichMode, whichLambda, .true.)
     end do
   end do
   call PetscTime(time1, ierr)

@@ -400,7 +400,7 @@
        ! *********************************************************
        ! Add the ExB d/dtheta term:
        ! *********************************************************
-       if (whichMatrix < 4) then
+       !if (whichMatrix < 4) then
        if (whichMatrix .ne. 2) then
           factor = alpha*Delta/two*dPhiHatdpsiHat
           allocate(thetaPartOfTerm(Ntheta,Ntheta))
@@ -804,7 +804,7 @@
              end do
           end do
        end if
-       end if ! whichMatrix < 4
+       !end if ! whichMatrix < 4
        ! *********************************************************
        ! Add the standard mirror term:
        ! *********************************************************
@@ -853,7 +853,7 @@
        ! *********************************************************
        ! Add the non-standard d/dxi term associated with E_r:
        ! *********************************************************
-        if (whichMatrix < 4) then
+        !if (whichMatrix < 4) then
         if (includeElectricFieldTermInXiDot .and. (whichMatrix .ne. 2)) then
           do itheta=ithetaMin,ithetaMax
              do izeta=izetaMin,izetaMax
@@ -1644,7 +1644,7 @@
           deallocate(tempVector1)
           deallocate(tempVector2)
        end if
-    end if ! whichMatrix < 4
+    !end if ! whichMatrix < 4
     end do ! End of loop over species for the collisionless terms.
 
     ! *********************************************************

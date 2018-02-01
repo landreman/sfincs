@@ -40,7 +40,7 @@ module solver
     Vec :: adjointSolutionVec, summedSolutionVec, adjointRHSVec
     logical :: useSummedSolutionVec
     integer :: whichLambda, whichMode, whichSpecies
-    PetscReal :: deltaLambda, norm
+    PetscReal :: norm
 
 !!Following three lines added by AM 2016-07-06
 #if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR > 6))
@@ -482,7 +482,6 @@ module solver
         end do
         stop
 
-        deltaLambda = 1.d-6
         do whichMode = 1,NModesAdjoint
           do whichLambda = 1,NLambdas
             if (masterProc) then
@@ -490,7 +489,7 @@ module solver
                 " and whichLambda: ", whichLambda," -----------------------------"
               print *,"m = ", ms(whichMode)," and n = ", ns(whichMode)
             end if
-            call testingDiagnosticSensitivity(solutionVec,whichMode,whichLambda,deltaLambda)
+            call testingDiagnosticSensitivity(solutionVec,whichMode,whichLambda)
           end do
         end do
 
@@ -501,7 +500,7 @@ module solver
                 " and whichLambda: ", whichLambda," -----------------------------"
               print *,"m = ", ms(whichMode)," and n = ", ns(whichMode)
             end if
-            call testingdRHSdLambda(whichMode, whichLambda, deltaLambda)
+            call testingdRHSdLambda(whichMode, whichLambda)
           end do
         end do
 
@@ -533,6 +532,7 @@ module solver
       call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointRHSVec, ierr)
       call VecSet(adjointRHSVec, zero, ierr)
 
+      ! adjointMatrix is only needed for 'continuous' adjoint approach
       if (discreteAdjointOption .eqv. .false.) then
         !> Allocate and populate the adjoint matrix - the same matrix is used for each RHS
         call preallocateMatrix(adjointMatrix, 1) ! the whichMatrix argument doesn't matter here
@@ -546,6 +546,30 @@ module solver
       if (masterProc) then
          print *,"Finished allocating adjoint Vecs and matrices."
       end if
+
+      if (discreteAdjointOption .eqv. .false.) then
+            if (useIterativeLinearSolver) then
+
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
+              ! Syntax for PETSc versions up through 3.4
+              call KSPSetOperators(KSPInstance, adjointMatrix, adjointPreconditionerMatrix, SAME_PRECONDITIONER, ierr)
+#else
+              ! Syntax for PETSc version 3.5 and later
+              call KSPSetOperators(KSPInstance, adjointMatrix, adjointPreconditionerMatrix, ierr)
+#endif
+
+            else
+              ! Direct solver, so no preconditioner needed.
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
+              ! Syntax for PETSc versions up through 3.4
+              call KSPSetOperators(KSPInstance, adjointMatrix, adjointMatrix, SAME_PRECONDITIONER, ierr)
+#else
+              ! Syntax for PETSc version 3.5 and later
+              call KSPSetOperators(KSPInstance, adjointMatrix, adjointMatrix, ierr)
+#endif
+
+            end if
+          end if
 
       !> First, we'll compute the species-specific fluxes if needed
       do whichAdjointRHS=1,3
@@ -603,30 +627,6 @@ module solver
             print *,"################################################################"
           end if
 
-          if (discreteAdjointOption .eqv. .false.) then
-            if (useIterativeLinearSolver) then
-
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
-              ! Syntax for PETSc versions up through 3.4
-              call KSPSetOperators(KSPInstance, adjointMatrix, adjointPreconditionerMatrix, SAME_PRECONDITIONER, ierr)
-#else
-              ! Syntax for PETSc version 3.5 and later
-              call KSPSetOperators(KSPInstance, adjointMatrix, adjointPreconditionerMatrix, ierr)
-#endif
-
-            else
-              ! Direct solver, so no preconditioner needed.
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
-              ! Syntax for PETSc versions up through 3.4
-              call KSPSetOperators(KSPInstance, adjointMatrix, adjointMatrix, SAME_PRECONDITIONER, ierr)
-#else
-              ! Syntax for PETSc version 3.5 and later
-              call KSPSetOperators(KSPInstance, adjointMatrix, adjointMatrix, ierr)
-#endif
-
-            end if
-          end if
-
           !> Construct RHS vec
           call VecSet(adjointRHSVec, zero, ierr)
           call populateAdjointRHS(adjointRHSVec, whichAdjointRHS, ispecies)
@@ -652,10 +652,10 @@ module solver
 
           call checkIfKSPConverged(KSPInstance)
 
-!          if (debugAdjoint) then
+!!          if (debugAdjoint) then
 !            call testingAdjointOperator(solutionVec,adjointSolutionVec,whichAdjointRHS,ispecies)
 !            stop
-!          end if
+!!          end if
 
           !> Compute diagnostics for species-specific fluxes
           call evaluateDiagnostics(solutionVec, adjointSolutionVec,whichAdjointRHS,ispecies)

@@ -46,7 +46,7 @@ subroutine testingdRHSdLambda(whichMode, whichLambda)
   call VecScale(RHS, -1d+0, ierr)
 
   ! Update geometry
-  call updateVMECGeometry(whichMode, whichLambda)
+  call updateVMECGeometry(whichMode, whichLambda, .false.)
 
   ! Compute new RHS
   call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, dRHSdLambda, ierr)
@@ -107,5 +107,8 @@ subroutine testingdRHSdLambda(whichMode, whichLambda)
 !  print *,"Minimum percentError: ", minval(percentError), "%"
 !  print *,"Maximum dRHSdLambdaArray: ", maxval(dRHSdLambdaArray)
 !  print *,"Maximum dRHSdLambda_analyticArray: ", maxval(dRHSdLambda_analyticArray)
+
+  ! Update geometry
+  call updateVMECGeometry(whichMode, whichLambda, .true.)
 
 end subroutine testingdRHSdLambda
