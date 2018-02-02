@@ -362,6 +362,7 @@ contains
         call writeHDF5Field("ns", ns, dspaceIDForNModesAdjoint, dimForNModesAdjoint, "")
         call writeHDF5Field("ms", ms, dspaceIDForNModesAdjoint, dimForNModesAdjoint, "")
         call writeHDF5Field("NModesAdjoint", NModesAdjoint, "")
+        call writeHDF5Field("deltaLambda", deltaLambda, "")
       endif
 
        call writeHDF5Field("includeTemperatureEquilibrationTerm", includeTemperatureEquilibrationTerm, &
@@ -750,6 +751,13 @@ contains
           call writeHDF5ExtensibleField(iterationNum,"dTotalHeatFluxdLambda_finitediff", dTotalHeatFluxdLambda_finitediff,ARRAY_ITERATION_LAMBDAS_NMODES,"")
           call writeHDF5ExtensibleField(iterationNum,"dRadialCurrentdLambda_finitediff", dRadialCurrentdLambda_finitediff,ARRAY_ITERATION_LAMBDAS_NMODES,"")
           call writeHDF5ExtensibleField(iterationNum,"dBootstrapdLambda_finitediff", dBootstrapdLambda_finitediff,ARRAY_ITERATION_LAMBDAS_NMODES,"")
+          call writeHDF5ExtensibleField(iterationNum,"particleFluxPercentError", particleFluxPercentError,ARRAY_ITERATION_LAMBDAS_NMODES,"")
+          call writeHDF5ExtensibleField(iterationNum,"heatFluxPercentError", heatFluxPercentError,ARRAY_ITERATION_LAMBDAS_NMODES,"")
+          call writeHDF5ExtensibleField(iterationNum,"parallelFlowPercentError", parallelFlowPercentError,ARRAY_ITERATION_LAMBDAS_NMODES,"")
+          call writeHDF5ExtensibleField(iterationNum,"particleFluxPercentError", particleFluxPercentError,ARRAY_ITERATION_LAMBDAS_NMODES,"")
+          call writeHDF5ExtensibleField(iterationNum,"bootstrapPercentError", bootstrapPercentError,ARRAY_ITERATION_LAMBDAS_NMODES,"")
+          call writeHDF5ExtensibleField(iterationNum,"totalHeatFluxPercentError", totalHeatFluxPercentError,ARRAY_ITERATION_LAMBDAS_NMODES,"")
+          call writeHDF5ExtensibleField(iterationNum,"radialCurrentPercentError", radialCurrentPercentError,ARRAY_ITERATION_LAMBDAS_NMODES,"")
         end if
       end if
 !!$       ! ----------------------------------

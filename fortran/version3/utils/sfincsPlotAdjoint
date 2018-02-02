@@ -9,6 +9,8 @@ import numpy as np
 import inspect, os
 import sys
 import matplotlib.ticker as mtick
+from scipy.io import netcdf
+
 
 print "This is "+ inspect.getfile(inspect.currentframe())
 
@@ -18,7 +20,20 @@ except:
     print "Unable to open sfincsOutput.h5"
     raise
 
-def percentError(fluxAnalytic,fluxFiniteDiff,dLambda):
+# Read wout file
+g = netcdf.netcdf_file(sys.argv[2],'r',mmap=False)
+bmnc = g.variables['bmnc'][()][76,:] # radius, mnmode_nyq
+xm = g.variables['xm_nyq'][()]
+xn = g.variables['xn_nyq'][()]
+print xm[70]
+print xn[70]
+print bmnc[70]
+
+plt.figure()
+plt.plot(xm,bmnc)
+plt.show()
+
+def percentError(fluxAnalytic,fluxFiniteDiff):
   
   result = np.zeros(fluxAnalytic.shape)
   for iMode in range(0,len(fluxAnalytic)):
@@ -28,6 +43,7 @@ def percentError(fluxAnalytic,fluxFiniteDiff,dLambda):
       result[iMode] = 0
     else:
       result[iMode] = 1e6
+  result[14] =0
   return result
 
 whichLambda = int(sys.argv[1])
@@ -57,10 +73,15 @@ dParticleFluxdLambda_finitediff = f['dParticleFluxdLambda_finitediff'][()]
 dHeatFluxdLambda_finitediff = f['dHeatFluxdLambda_finitediff'][()]
 dParallelFlowdLambda_finitediff = f['dParallelFlowdLambda_finitediff'][()]
 
+print dParticleFluxdLambda_finitediff.shape
+print dParticleFluxdLambda.shape
+
 Nspecies = int(f['Nspecies'][()])
 NModesAdjoint = int(f['NModesAdjoint'][()])
 NLambda = 6
-dLambda = 1.e-4
+print "NModesAdjoint " + str(NModesAdjoint)
+print ns
+print ms
 
 NspeciesToPlot = Nspecies
 if Nspecies>3:
@@ -120,7 +141,7 @@ for ispecies in range(0,NspeciesToPlot):
   fig = plt.figure()
   fig.patch.set_facecolor('white')
   plt.title('Species = ' + str(ispecies+1) + ' Lambda = ' + str(whichLambda))
-  percentErrorParticleFlux = percentError(dParticleFluxdLambda[:,whichLambda-1,ispecies,iteration],dParticleFluxdLambda_finitediff[:,whichLambda-1,ispecies,iteration],dLambda)
+  percentErrorParticleFlux = percentError(dParticleFluxdLambda[:,whichLambda-1,ispecies,iteration],dParticleFluxdLambda_finitediff[:,whichLambda-1,ispecies,iteration])
   # plt.subplot(numRows, numCols, ispecies*numCols+1)
   plt.scatter(ns,percentErrorParticleFlux,c=ms,vmin=min(ms),vmax=max(ms),s=20,edgecolors='black')
   cb = plt.colorbar()
@@ -135,7 +156,7 @@ for ispecies in range(0,NspeciesToPlot):
   fig = plt.figure()
   fig.patch.set_facecolor('white')
   plt.title('Species = ' + str(ispecies+1) + ' Lambda = ' + str(whichLambda))
-  percentErrorHeatFlux = percentError(dHeatFluxdLambda[:,whichLambda-1,ispecies,iteration],dHeatFluxdLambda_finitediff[:,whichLambda-1,ispecies,iteration],dLambda)
+  percentErrorHeatFlux = percentError(dHeatFluxdLambda[:,whichLambda-1,ispecies,iteration],dHeatFluxdLambda_finitediff[:,whichLambda-1,ispecies,iteration])
   #plt.subplot(numRows, numCols, ispecies*numCols+2)
   plt.scatter(ns,percentErrorHeatFlux,c=ms,vmin=min(ms),vmax=max(ms),s=20,edgecolors='black')
   cb = plt.colorbar()
@@ -150,7 +171,7 @@ for ispecies in range(0,NspeciesToPlot):
   fig = plt.figure()
   fig.patch.set_facecolor('white')
   plt.title('Species = ' + str(ispecies+1) + ' Lambda = ' + str(whichLambda))
-  percentErrorParallelFlow = percentError(dParallelFlowdLambda[:,whichLambda-1,ispecies,iteration],dParallelFlowdLambda_finitediff[:,whichLambda-1,ispecies,iteration],dLambda)
+  percentErrorParallelFlow = percentError(dParallelFlowdLambda[:,whichLambda-1,ispecies,iteration],dParallelFlowdLambda_finitediff[:,whichLambda-1,ispecies,iteration])
   #plt.subplot(numRows, numCols, ispecies*numCols+3)
   plt.scatter(ns,percentErrorParallelFlow,c=ms,vmin=min(ms),vmax=max(ms),s=20,edgecolors='black')
   plt.ylim((0,max(percentErrorParallelFlow)))

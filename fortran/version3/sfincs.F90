@@ -16,6 +16,7 @@ program sfincs
   use solver
   use geometry
   use radialCoordinates
+  use testingAdjointDiagnostics
 
   implicit none
 
@@ -122,7 +123,7 @@ program sfincs
   call initializeOutputFile()
 
   if (debugAdjoint) then
-    call testingAdjointDiagnostics()
+    call compareAdjointDiagnostics()
     stop
   end if
 
