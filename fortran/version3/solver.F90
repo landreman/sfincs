@@ -680,6 +680,7 @@ module solver
         end do ! ispecies
 
         if (useSummedSolutionVec) then
+
           call evaluateDiagnostics(solutionVec,summedSolutionVec,whichAdjointRHS,0)
           call VecSet(summedSolutionVec,zero,ierr)
         end if

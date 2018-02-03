@@ -773,18 +773,18 @@
     ! *******************************************************************************
 
     call PetscTime(time2, ierr)
-    if (masterProc) then
-       print *,"Time to pre-assemble sensitivity of matrix: ", time2-time1, " seconds."
-    end if
+!    if (masterProc) then
+!       print *,"Time to pre-assemble sensitivity of matrix: ", time2-time1, " seconds."
+!    end if
     call PetscTime(time1, ierr)
 
     call MatAssemblyBegin(dMatrixdLambda, MAT_FINAL_ASSEMBLY, ierr)
     call MatAssemblyEnd(dMatrixdLambda, MAT_FINAL_ASSEMBLY, ierr)
 
     call PetscTime(time2, ierr)
-    if (masterProc) then
-       print *,"Time to assemble sensitivity of matrix: ", time2-time1, " seconds."
-    end if
+!    if (masterProc) then
+!       print *,"Time to assemble sensitivity of matrix: ", time2-time1, " seconds."
+!    end if
     call PetscTime(time1, ierr)
 
 
@@ -792,9 +792,9 @@
     NNZ = nint(myMatInfo(MAT_INFO_NZ_USED))
     NNZAllocated = nint(myMatInfo(MAT_INFO_NZ_ALLOCATED))
     NMallocs = nint(myMatInfo(MAT_INFO_MALLOCS))
-    if (masterProc) then
-       print *,"# of nonzeros in sensitivity of matrix:",NNZ, ", allocated:",NNZAllocated, &
-            ", mallocs:",NMallocs," (should be 0)"
-    end if
+!    if (masterProc) then
+!       print *,"# of nonzeros in sensitivity of matrix:",NNZ, ", allocated:",NNZAllocated, &
+!            ", mallocs:",NMallocs," (should be 0)"
+!    end if
 
   end subroutine populatedMatrixdLambda

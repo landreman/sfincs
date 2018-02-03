@@ -58,9 +58,9 @@ subroutine updateVMECGeometry(whichMode, whichLambda, reset)
         angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
         cos_angle = cos(angle)
         sin_angle = sin(angle)
-        deltaBHat(itheta,izeta) = sign*deltaLambda*cos_angle
-        deltadBHatdtheta(itheta,izeta) = -sign*deltaLambda*m*sin_angle
-        deltadBHatdzeta(itheta,izeta) = sign*deltaLambda*n*Nperiods*sin_angle
+        deltaBHat(itheta,izeta) = sign*deltaLambda*bmnc(n+vmec%ntor+1,m+1)*cos_angle
+        deltadBHatdtheta(itheta,izeta) = -sign*deltaLambda*bmnc(n+vmec%ntor+1,m+1)*m*sin_angle
+        deltadBHatdzeta(itheta,izeta) = sign*deltaLambda*bmnc(n+vmec%ntor+1,m+1)*n*Nperiods*sin_angle
       end do
     end do
     BHat = BHat + deltaBHat
@@ -73,8 +73,8 @@ subroutine updateVMECGeometry(whichMode, whichLambda, reset)
         angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
         cos_angle = cos(angle)
         sin_angle = sin(angle)
-        deltaBHat_sup_theta(itheta,izeta) = sign*deltaLambda*cos_angle
-        deltadBHat_sup_theta_dzeta(itheta,izeta) = sign*deltaLambda*n*Nperiods*sin_angle
+        deltaBHat_sup_theta(itheta,izeta) = sign*deltaLambda*bsupthetamnc(n+vmec%ntor+1,m+1)*cos_angle
+        deltadBHat_sup_theta_dzeta(itheta,izeta) = sign*deltaLambda*bsupthetamnc(n+vmec%ntor+1,m+1)*n*Nperiods*sin_angle
       end do
     end do
     BHat_sup_theta = BHat_sup_theta + deltaBHat_sup_theta
@@ -86,8 +86,8 @@ subroutine updateVMECGeometry(whichMode, whichLambda, reset)
         angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
         cos_angle = cos(angle)
         sin_angle = sin(angle)
-        deltaBHat_sup_zeta(itheta,izeta) = sign*deltaLambda*cos_angle
-        deltadBHat_sup_zeta_dtheta(itheta,izeta) = -sign*deltaLambda*m*sin_angle
+        deltaBHat_sup_zeta(itheta,izeta) = sign*deltaLambda*bsupzetamnc(n+vmec%ntor+1,m+1)*cos_angle
+        deltadBHat_sup_zeta_dtheta(itheta,izeta) = -sign*deltaLambda*bsupzetamnc(n+vmec%ntor+1,m+1)*m*sin_angle
       end do
     end do
     BHat_sup_zeta = BHat_sup_zeta + deltaBHat_sup_zeta
@@ -99,8 +99,8 @@ subroutine updateVMECGeometry(whichMode, whichLambda, reset)
         angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
         cos_angle = cos(angle)
         sin_angle = sin(angle)
-        deltaBHat_sub_theta(itheta,izeta) = sign*deltaLambda*cos_angle
-        deltadBHat_sub_theta_dzeta(itheta,izeta) = sign*deltaLambda*n*Nperiods*sin_angle
+        deltaBHat_sub_theta(itheta,izeta) = sign*deltaLambda*bsubthetamnc(n+vmec%ntor+1,m+1)*cos_angle
+        deltadBHat_sub_theta_dzeta(itheta,izeta) = sign*deltaLambda*bsubthetamnc(n+vmec%ntor+1,m+1)*n*Nperiods*sin_angle
       end do
     end do
     BHat_sub_theta = BHat_sub_theta + deltaBHat_sub_theta
@@ -112,8 +112,8 @@ subroutine updateVMECGeometry(whichMode, whichLambda, reset)
         angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
         cos_angle = cos(angle)
         sin_angle = sin(angle)
-        deltaBHat_sub_zeta(itheta,izeta) = sign*deltaLambda*cos_angle
-        deltadBHat_sub_zeta_dtheta(itheta,izeta) = -sign*deltaLambda*m*sin_angle
+        deltaBHat_sub_zeta(itheta,izeta) = sign*deltaLambda*bsubzetamnc(n+vmec%ntor+1,m+1)*cos_angle
+        deltadBHat_sub_zeta_dtheta(itheta,izeta) = -sign*deltaLambda*bsubzetamnc(n+vmec%ntor+1,m+1)*m*sin_angle
       end do
     end do
     BHat_sub_zeta = BHat_sub_zeta + deltaBHat_sub_zeta
@@ -124,7 +124,7 @@ subroutine updateVMECGeometry(whichMode, whichLambda, reset)
       do izeta = 1,Nzeta
         angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
         cos_angle = cos(angle)
-        deltaDHat(itheta,izeta) = one/(one/DHat(itheta,izeta) + sign*deltaLambda*cos_angle) - DHat(itheta,izeta)
+        deltaDHat(itheta,izeta) = one/(one/DHat(itheta,izeta) + sign*deltaLambda*gmnc(n+vmec%ntor+1,m+1)*cos_angle) - DHat(itheta,izeta)
       end do
     end do
     DHat = DHat + deltaDHat

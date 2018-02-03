@@ -23,14 +23,41 @@ except:
 # Read wout file
 g = netcdf.netcdf_file(sys.argv[2],'r',mmap=False)
 bmnc = g.variables['bmnc'][()][76,:] # radius, mnmode_nyq
+bsubumnc = g.variables['bsubumnc'][()][76,:]
+bsubvmnc = g.variables['bsubvmnc'][()][76,:]
+bsupumnc = g.variables['bsupumnc'][()][76,:]
+bsupvmnc = g.variables['bsupvmnc'][()][76,:]
 xm = g.variables['xm_nyq'][()]
 xn = g.variables['xn_nyq'][()]
-print xm[70]
-print xn[70]
-print bmnc[70]
+print xm[0]
+print xn[0]
+print bsupumnc[0]
+print bsubumnc[0]
 
 plt.figure()
-plt.plot(xm,bmnc)
+plt.semilogy(xm,bmnc,linestyle='none',marker='o')
+plt.xlabel('m')
+plt.ylabel('Bmnc')
+
+plt.figure()
+plt.semilogy(xm,bsubumnc,linestyle='none',marker='o')
+plt.xlabel('m')
+plt.ylabel('Bsubumnc')
+
+plt.figure()
+plt.semilogy(xm,bsubvmnc,linestyle='none',marker='o')
+plt.xlabel('m')
+plt.ylabel('Bsubvmnc')
+
+plt.figure()
+plt.semilogy(xm,bsupumnc,linestyle='none',marker='o')
+plt.xlabel('m')
+plt.ylabel('Bsupumnc')
+
+plt.figure()
+plt.semilogy(xm,bsupvmnc,linestyle='none',marker='o')
+plt.xlabel('m')
+plt.ylabel('Bsupvmnc')
 plt.show()
 
 def percentError(fluxAnalytic,fluxFiniteDiff):
@@ -43,7 +70,6 @@ def percentError(fluxAnalytic,fluxFiniteDiff):
       result[iMode] = 0
     else:
       result[iMode] = 1e6
-  result[14] =0
   return result
 
 whichLambda = int(sys.argv[1])
@@ -94,6 +120,7 @@ if Nspecies>3:
 
 iteration = 0
 # Plot finite diff and analytic derivatives
+'''
 for ispecies in range(0,NspeciesToPlot):
   fig = plt.figure()
   fig.patch.set_facecolor('white')
@@ -130,6 +157,7 @@ for ispecies in range(0,NspeciesToPlot):
   plt.legend()
   plt.xlabel('n')
   plt.ylabel('dParallelFlowdBHat')
+'''
 
 # Plot percent error
 # fig = plt.figure(2)
@@ -152,7 +180,7 @@ for ispecies in range(0,NspeciesToPlot):
   #ax.set_yscale('log')
   plt.xlabel('n')
   plt.ylabel('dParticleFluxdBHat percent error')
-
+  
   fig = plt.figure()
   fig.patch.set_facecolor('white')
   plt.title('Species = ' + str(ispecies+1) + ' Lambda = ' + str(whichLambda))
@@ -183,8 +211,29 @@ for ispecies in range(0,NspeciesToPlot):
   plt.xlabel('n')
   plt.ylabel('dParallelFlowdBHat percent error')
 
+  print "iSpecies" + str(ispecies)
+  print "whichLambda" + str(whichLambda)
+  for iMode in range(0, NModesAdjoint):
+    if percentErrorParticleFlux[iMode] > 10:
+      print "m = " + str(ms[iMode])
+      print "n = " + str(ns[iMode])
+      print "percentErrorParticleFlux[iMode]: " + str(percentErrorParticleFlux[iMode])
+      print "analytic: " + str(dParticleFluxdLambda[iMode,whichLambda-1,ispecies,iteration])
+      print "finite diff: " + str(dParticleFluxdLambda_finitediff[iMode,whichLambda-1,ispecies,iteration])
+    if percentErrorHeatFlux[iMode] > 10:
+      print "m = " + str(ms[iMode])
+      print "n = " + str(ns[iMode])
+      print "percentErrorHeatFlux[iMode]: " + str(percentErrorHeatFlux[iMode])
+      print "analytic: " + str(dHeatFluxdLambda[iMode,whichLambda-1,ispecies,iteration])
+      print "finite diff: " + str(dHeatFluxdLambda_finitediff[iMode,whichLambda-1,ispecies,iteration])
+    if percentErrorParallelFlow[iMode] > 10:
+      print "m = " + str(ms[iMode])
+      print "n = " + str(ns[iMode])
+      print "percentErrorParallelFlow[iMode]: " + str(percentErrorParallelFlow[iMode])
+      print "analytic: " + str(dParallelFlowdLambda[iMode,whichLambda-1,ispecies,iteration])
+      print "finite diff: " + str(dParallelFlowdLambda_finitediff[iMode,whichLambda-1,ispecies,iteration])
+
+plt.tight_layout()
 plt.show()
-
-
 
 

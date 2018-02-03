@@ -2094,6 +2094,21 @@ contains
     allocate(g_sub_psi_theta(Ntheta,Nzeta))
     allocate(g_sub_psi_zeta(Ntheta,Nzeta))
 
+    if (debugAdjoint) then
+      allocate(bsubthetamnc(2*vmec%ntor+1,vmec%mpol))
+      allocate(bsubzetamnc(2*vmec%ntor+1,vmec%mpol))
+      allocate(bsupthetamnc(2*vmec%ntor+1,vmec%mpol))
+      allocate(bsupzetamnc(2*vmec%ntor+1,vmec%mpol))
+      allocate(bmnc(2*vmec%ntor+1,vmec%mpol))
+      allocate(gmnc(2*vmec%ntor+1,vmec%mpol))
+      bsubthetamnc = zero
+      bsubzetamnc = zero
+      bsupthetamnc = zero
+      bsupzetamnc = zero
+      bmnc = zero
+      gmnc = zero
+    end if
+
     ! --------------------------------------------------------------------------------
     ! Do some sanity checking to ensure the VMEC arrays have some expected properties.
     ! --------------------------------------------------------------------------------
@@ -2359,7 +2374,10 @@ contains
 	
           b = vmec%bmnc(n,m,vmecRadialIndex_half(1)) * vmecRadialWeight_half(1) &
                + vmec%bmnc(n,m,vmecRadialIndex_half(2)) * vmecRadialWeight_half(2)
-          
+
+          if (debugAdjoint) then
+            bmnc(n+vmec%ntor+1,m+1) = b
+          end if
           ! Set scaleFactor to rippleScale for non-axisymmetric or non-quasisymmetric modes
           scaleFactor = setScaleFactor(n,m)
           b = b*scaleFactor
@@ -2418,7 +2436,12 @@ contains
                       ! We will also set DHat = 1 / DHat at the end of this loop.
                       temp = vmec%gmnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf) / (psiAHat)
                       temp = temp*scaleFactor
+
                       DHat(itheta,izeta) = DHat(itheta,izeta) + temp * cos_angle
+
+                      if (debugAdjoint) then
+                        gmnc(n+vmec%ntor+1,m+1) = temp
+                      end if
 
                       ! Handle B sup theta:
                       ! Note that VMEC's bsupumnc and bsupumns are exactly the same as SFINCS's BHat_sup_theta, with no conversion factors of 2pi needed.
@@ -2427,6 +2450,9 @@ contains
                       BHat_sup_theta(itheta,izeta) = BHat_sup_theta(itheta,izeta) + temp * cos_angle
                       dBHat_sup_theta_dzeta(itheta,izeta) = dBHat_sup_theta_dzeta(itheta,izeta) + n * NPeriods * temp * sin_angle
 
+                      if (debugAdjoint) then
+                        bsupthetamnc(n+vmec%ntor+1,m+1) = temp
+                      end if
                       ! Handle B sup zeta:
                       ! Note that VMEC's bsupvmnc and bsupvmns are exactly the same as SFINCS's BHat_sup_zeta, with no conversion factors of 2pi or Nperiods needed.
                       temp = vmec%bsupvmnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
@@ -2434,6 +2460,9 @@ contains
                       BHat_sup_zeta(itheta,izeta) = BHat_sup_zeta(itheta,izeta) + temp * cos_angle
                       dBHat_sup_zeta_dtheta(itheta,izeta) = dBHat_sup_zeta_dtheta(itheta,izeta) - m * temp * sin_angle
 
+                      if (debugAdjoint) then
+                        bsupzetamnc(n+vmec%ntor+1,m+1) = temp
+                      end if
                       ! Handle B sub theta:
                       ! Note that VMEC's bsubumnc and bsubumns are exactly the same as SFINCS's BHat_sub_theta, with no conversion factors of 2pi needed.
                       temp = vmec%bsubumnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
@@ -2441,6 +2470,9 @@ contains
                       BHat_sub_theta(itheta,izeta) = BHat_sub_theta(itheta,izeta) + temp * cos_angle
                       dBHat_sub_theta_dzeta(itheta,izeta) = dBHat_sub_theta_dzeta(itheta,izeta) + n * NPeriods * temp * sin_angle
 
+                      if (debugAdjoint) then
+                        bsubthetamnc(n+vmec%ntor+1,m+1) = temp
+                      end if
                       ! Handle B sub zeta:
                       ! Note that VMEC's bsubvmnc and bsubvmns are exactly the same as SFINCS's BHat_sub_zeta, with no conversion factors of 2pi needed.
                       temp = vmec%bsubvmnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
@@ -2448,6 +2480,9 @@ contains
                       BHat_sub_zeta(itheta,izeta) = BHat_sub_zeta(itheta,izeta) + temp * cos_angle
                       dBHat_sub_zeta_dtheta(itheta,izeta) = dBHat_sub_zeta_dtheta(itheta,izeta) - m * temp * sin_angle
 
+                      if (debugAdjoint) then
+                        bsubzetamnc(n+vmec%ntor+1,m+1) = temp
+                      end if
                       ! Handle B sub psi.
                       ! Unlike the other components of B, this one is on the full mesh.
                       ! Notice B_psi = B_s * (d s / d psi), and (d s / d psi) = 1 / psiAHat
