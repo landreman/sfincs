@@ -22,4 +22,8 @@ export OMP_PLACES=cores
 # Wall clock limit:
 #SBATCH --time=00:10:00
 
+#/usr/bin/X11/time -v srun ../../sfincs -ksp_view
+#srun /usr/bin/X11/time -v ../../sfincs -ksp_view
+#memusg srun ../../sfincs -ksp_view
+#srun memusg ../../sfincs -ksp_view
 srun ../../sfincs -ksp_view

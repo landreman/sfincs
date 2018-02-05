@@ -104,6 +104,9 @@ module sfincs_main
        if (withAdiabatic) then
           print *,"Run with adiabatic species"
        end if
+       if (withNBIspec) then
+          print *,"Run with NBI species"
+       end if
        
     end if
     

@@ -302,6 +302,14 @@ contains
        end if
        !!!!!!!!!!!!!!!!!!!!!!!
 
+       !!Added by HS 2017-09!!
+       call writeHDF5Field("withNBIspec", withNBIspec, "Is an NBI species included in the quasineutrality equation? " // boolDescription)
+       if (withNBIspec) then
+       	  call writeHDF5Field("NBIspecZ", NBIspecZ, "Charge of NBI species, in units of the unit charge e (which is usually the proton charge.)")
+	  call writeHDF5Field("NBIspecNHat", NBIspecNHat, "Flux surface averaged density of the NBI species, in units of nBar.")
+       end if
+       !!!!!!!!!!!!!!!!!!!!!!!
+
        !!Added by AM 2016-02!!
        if (includePhi1) then
           call writeHDF5Field("quasineutralityOption", quasineutralityOption, "")
@@ -338,7 +346,7 @@ contains
 !!            "Include term $(\vect{v}_{E} \cdot\nabla\psi)f_{Ms} [(1/n_s)(dn_s/d\psi) + (x_s^2-3/2)(1/T_s)(dT_s/d\psi)]$ term? " // boolDescription) !!Commented by AM 2016-03
        call writeHDF5Field("includePhi1InKineticEquation", includePhi1InKineticEquation, & !!Added by AM 2016-03
             "Include terms containing Phi1 in kinetic equation? (Only matters if includePhi1=.true.)" // boolDescription) !!Added by AM 2016-03
-       call writeHDF5Field("poloidalVariationInCollisionOperator", poloidalVariationInCollisionOperator, &
+       call writeHDF5Field("includePhi1InCollisionOperator", includePhi1InCollisionOperator, &
             "Include density variations due to Phi1 in the collision operator " // boolDescription)
        call writeHDF5Field("integerToRepresentTrue", integerToRepresentTrue, &
             "Since HDF5 does not have a Boolean datatype, this integer value is used in this file for Boolean quantities.")

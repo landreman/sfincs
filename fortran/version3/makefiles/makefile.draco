@@ -40,7 +40,7 @@ LIBSTELL_DIR=mini_libstell
 LIBSTELL_FOR_SFINCS=mini_libstell/mini_libstell.a
 
 # Any other flags for compiling, such as -I include flags:
-EXTRA_COMPILE_FLAGS = -I${HDF5_HOME}/include -I${PETSC_DIR}/include -I${NETCDF_HOME}/include
+EXTRA_COMPILE_FLAGS = -I${HDF5_HOME}/include -I${PETSC_DIR}/include -I${PETSC_DIR}/${PETSC_ARCH}/include -I${NETCDF_HOME}/include
 # The cray compiler needs -I. or else it cannot find PETSCVersions.F90
 
 # Any other flags for linking, such as -l library flags:

@@ -24,7 +24,7 @@ nu_n = 8.31565e-3;
 
 global Nalpha Nzeta Nxi Nx
 Nalpha = 13;
-Nzeta = 19;
+Nzeta = 23;
 Nxi = 48;
 Nx = 5;
 

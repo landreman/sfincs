@@ -183,6 +183,12 @@
 
                 factor = factor - adiabaticZ * adiabaticNHat * exp (- adiabaticZ* alpha * Phi1Hat(itheta,izeta) / adiabaticTHat)
              end if
+             
+             ! Added by HS 2017-09
+             if (withNBIspec) then
+                factor = factor - NBIspecZ * NBIspecNHat * BHat(itheta,izeta)/FSABHat
+             end if
+
              call VecSetValue(rhs, index, factor, INSERT_VALUES, ierr)
           end do
        end do

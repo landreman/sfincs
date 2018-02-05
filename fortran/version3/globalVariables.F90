@@ -84,6 +84,10 @@ module globalVariables
   !!Added by AM 2016-02!!
   PetscScalar :: adiabaticZ = -1.0, adiabaticMHat = 5.446170214d-4, adiabaticNHat = 1.0, adiabaticTHat = 1.0
   logical :: withAdiabatic = .false.
+
+  !!Added by HM 2017-09!!
+  PetscScalar :: NBIspecZ = 1.0,  NBIspecNHat = 0.0
+  logical :: withNBIspec = .false.
   !!!!!!!!!!!!!!!!!!!!!!!
 
 
@@ -113,7 +117,7 @@ module globalVariables
   logical :: include_fDivVE_term = .false.
   logical :: includeTemperatureEquilibrationTerm = .false.
   logical :: includePhi1 = .false.
-  logical :: poloidalVariationInCollisionOperator = .false.
+  logical :: includePhi1InCollisionOperator = .false.
 !!  logical :: includeRadialExBDrive = .false. !!Commented by AM 2016-02
   logical :: includePhi1InKineticEquation = .true. !!Added by AM 2016-03
 
@@ -121,9 +125,9 @@ module globalVariables
 
   integer :: magneticDriftScheme = 0
 
-  !!Added by AM 2016-02!!
   integer :: quasineutralityOption = 1
-  !!!!!!!!!!!!!!!!!!!!!!!
+
+  PetscScalar :: Krook = 0
 
   ! ********************************************************
   ! ********************************************************
@@ -345,7 +349,7 @@ module globalVariables
   PetscScalar, dimension(:,:), allocatable :: FSABFlow_vs_x
 
   PetscScalar, dimension(:), allocatable :: NTV
-  PetscScalar :: VPrimeHat, FSABHat2, FSABjHat, FSABjHatOverB0, FSABjHatOverRootFSAB2
+  PetscScalar :: VPrimeHat, FSABHat2, FSABHat, FSABjHat, FSABjHatOverB0, FSABjHatOverRootFSAB2
   PetscScalar :: lambda
 
   PetscScalar :: ddpsiN2ddpsiHat, ddrHat2ddpsiHat, ddrN2ddpsiHat

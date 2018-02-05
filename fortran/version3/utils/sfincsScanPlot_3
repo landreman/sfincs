@@ -138,7 +138,10 @@ for directory in directories:
     particleFlux_vm = f["particleFlux_vm_psiHat"][()]
     heatFlux_vm = f["heatFlux_vm_psiHat"][()]
     elapsedTime = f["elapsed time (s)"][()]
-    sources = f["sources"][()]
+    try:
+       sources = f["sources"][()]
+    except:
+       sources = numpy.array([0,0])
     atLeastOneDirectorySucceeded = True
     if RHSMode>1:
        transportMatrix = f["transportMatrix"][()]
