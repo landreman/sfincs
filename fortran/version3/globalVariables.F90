@@ -397,7 +397,7 @@ module globalVariables
   PetscScalar, dimension(:,:,:), allocatable :: dParticleFluxdLambda_finitediff, dHeatFluxdLambda_finitediff, dParallelFlowdLambda_finitediff
   PetscScalar, dimension(:,:,:), allocatable :: particleFluxPercentError, heatFluxPercentError, parallelFlowPercentError
   PetscScalar, dimension(:,:), allocatable :: radialCurrentPercentError, totalHeatFluxPercentError, bootstrapPercentError
-  PetscScalar, dimension(:,:), allocatable :: bmnc, bsubthetamnc, bsubzetamnc, bsupthetamnc, bsupzetamnc, gmnc
+  PetscScalar, dimension(:), allocatable :: bmnc, bsubthetamnc, bsubzetamnc, bsupthetamnc, bsupzetamnc, gmnc
 
   ! ********************************************************
   !

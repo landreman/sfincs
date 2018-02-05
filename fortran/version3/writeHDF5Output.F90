@@ -363,6 +363,14 @@ contains
         call writeHDF5Field("ms", ms, dspaceIDForNModesAdjoint, dimForNModesAdjoint, "")
         call writeHDF5Field("NModesAdjoint", NModesAdjoint, "")
         call writeHDF5Field("deltaLambda", deltaLambda, "")
+        if (debugAdjoint) then
+          call writeHDF5Field("bmnc", bmnc, dspaceIDForNModesAdjoint, dimForNModesAdjoint, "")
+          call writeHDF5Field("gmnc", gmnc, dspaceIDForNModesAdjoint, dimForNModesAdjoint, "")
+          call writeHDF5Field("bsupthetamnc", bsupthetamnc, dspaceIDForNModesAdjoint, dimForNModesAdjoint, "")
+          call writeHDF5Field("bsupzetamnc", bsupzetamnc, dspaceIDForNModesAdjoint, dimForNModesAdjoint, "")
+          call writeHDF5Field("bsubthetamnc", bsubthetamnc, dspaceIDForNModesAdjoint, dimForNModesAdjoint, "")
+          call writeHDF5Field("bsubzetamnc", bsubzetamnc, dspaceIDForNModesAdjoint, dimForNModesAdjoint, "")
+        end if
       endif
 
        call writeHDF5Field("includeTemperatureEquilibrationTerm", includeTemperatureEquilibrationTerm, &

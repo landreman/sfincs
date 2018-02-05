@@ -47,7 +47,6 @@ contains
     character(len=200) :: lineOfFile
     integer, dimension(4) :: headerIntegers
     PetscScalar, dimension(3) :: headerReals
-    integer :: im, jn, imn
 
     select case (geometryScheme)
     case (1)
@@ -202,32 +201,6 @@ contains
        print *,"Error! Invalid setting for geometryScheme."
        stop
     end select
-
-    if (RHSMode>3) then
-      ! m = 0 : n goes from 0 to nMaxAdjoint
-      NModesAdjoint = (nMaxAdjoint+1)
-      ! m > 0 : n goes from -nMaxAdjoint to nMaxAdjoint
-      NModesAdjoint = NModesAdjoint + (mMaxAdjoint)*(nMaxAdjoint*2 + 1)
-      allocate(ns(NModesAdjoint))
-      allocate(ms(NModesAdjoint))
-
-      ! Now initialize ms and ns, starting with m = 0
-      ! Note that ns is multiplied by Nperiods for VMEC convention
-      imn = 1
-      do jn=0,nMaxAdjoint
-        ms(imn) = 0
-        ns(imn) = jn
-        imn = imn+1
-      end do
-      ! Now m>0 modes
-      do im = 1,mMaxAdjoint
-        do jn=-nMaxAdjoint, nMaxAdjoint
-          ms(imn) = im
-          ns(imn) = jn
-          imn = imn+1
-        end do
-      end do
-    end if
 
   end subroutine initializeGeometry
 
@@ -2056,6 +2029,7 @@ contains
     PetscScalar, dimension(:,:), allocatable :: R, dRdtheta, dRdzeta, dRdpsiHat, dZdtheta, dZdzeta, dZdpsiHat
     PetscScalar, dimension(:,:), allocatable :: dXdtheta, dXdzeta, dXdpsiHat, dYdtheta, dYdzeta, dYdpsiHat
     PetscScalar, dimension(:,:), allocatable :: g_sub_theta_theta, g_sub_theta_zeta, g_sub_zeta_zeta, g_sub_psi_theta, g_sub_psi_zeta
+    integer :: iMode
 
 
     ! This subroutine is written so that only psiN_wish is used, not the other *_wish quantities.
@@ -2095,12 +2069,12 @@ contains
     allocate(g_sub_psi_zeta(Ntheta,Nzeta))
 
     if (debugAdjoint) then
-      allocate(bsubthetamnc(2*vmec%ntor+1,vmec%mpol))
-      allocate(bsubzetamnc(2*vmec%ntor+1,vmec%mpol))
-      allocate(bsupthetamnc(2*vmec%ntor+1,vmec%mpol))
-      allocate(bsupzetamnc(2*vmec%ntor+1,vmec%mpol))
-      allocate(bmnc(2*vmec%ntor+1,vmec%mpol))
-      allocate(gmnc(2*vmec%ntor+1,vmec%mpol))
+      allocate(bsubthetamnc(NModesAdjoint))
+      allocate(bsubzetamnc(NModesAdjoint))
+      allocate(bsupthetamnc(NModesAdjoint))
+      allocate(bsupzetamnc(NModesAdjoint))
+      allocate(bmnc(NModesAdjoint))
+      allocate(gmnc(NModesAdjoint))
       bsubthetamnc = zero
       bsubzetamnc = zero
       bsupthetamnc = zero
@@ -2376,8 +2350,13 @@ contains
                + vmec%bmnc(n,m,vmecRadialIndex_half(2)) * vmecRadialWeight_half(2)
 
           if (debugAdjoint) then
-            bmnc(n+vmec%ntor+1,m+1) = b
+            do iMode = 1,NModesAdjoint
+              if (ms(iMode) == m .and. ns(iMode) == n) then
+                bmnc(iMode) = b
+              end if
+            end do
           end if
+
           ! Set scaleFactor to rippleScale for non-axisymmetric or non-quasisymmetric modes
           scaleFactor = setScaleFactor(n,m)
           b = b*scaleFactor
@@ -2440,7 +2419,11 @@ contains
                       DHat(itheta,izeta) = DHat(itheta,izeta) + temp * cos_angle
 
                       if (debugAdjoint) then
-                        gmnc(n+vmec%ntor+1,m+1) = temp
+                        do iMode = 1,NModesAdjoint
+                          if (ms(iMode) == m .and. ns(iMode) == n) then
+                            gmnc(iMode) = temp
+                          end if
+                        end do
                       end if
 
                       ! Handle B sup theta:
@@ -2451,8 +2434,13 @@ contains
                       dBHat_sup_theta_dzeta(itheta,izeta) = dBHat_sup_theta_dzeta(itheta,izeta) + n * NPeriods * temp * sin_angle
 
                       if (debugAdjoint) then
-                        bsupthetamnc(n+vmec%ntor+1,m+1) = temp
+                        do iMode = 1,NModesAdjoint
+                          if (ms(iMode) == m .and. ns(iMode) == n) then
+                            bsupthetamnc(iMode) = temp
+                          end if
+                        end do
                       end if
+
                       ! Handle B sup zeta:
                       ! Note that VMEC's bsupvmnc and bsupvmns are exactly the same as SFINCS's BHat_sup_zeta, with no conversion factors of 2pi or Nperiods needed.
                       temp = vmec%bsupvmnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
@@ -2461,8 +2449,13 @@ contains
                       dBHat_sup_zeta_dtheta(itheta,izeta) = dBHat_sup_zeta_dtheta(itheta,izeta) - m * temp * sin_angle
 
                       if (debugAdjoint) then
-                        bsupzetamnc(n+vmec%ntor+1,m+1) = temp
+                        do iMode = 1,NModesAdjoint
+                          if (ms(iMode) == m .and. ns(iMode) == n) then
+                            bsupzetamnc(iMode) = temp
+                          end if
+                        end do
                       end if
+
                       ! Handle B sub theta:
                       ! Note that VMEC's bsubumnc and bsubumns are exactly the same as SFINCS's BHat_sub_theta, with no conversion factors of 2pi needed.
                       temp = vmec%bsubumnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
@@ -2471,8 +2464,13 @@ contains
                       dBHat_sub_theta_dzeta(itheta,izeta) = dBHat_sub_theta_dzeta(itheta,izeta) + n * NPeriods * temp * sin_angle
 
                       if (debugAdjoint) then
-                        bsubthetamnc(n+vmec%ntor+1,m+1) = temp
+                        do iMode = 1,NModesAdjoint
+                          if (ms(iMode) == m .and. ns(iMode) == n) then
+                            bsubthetamnc(iMode) = temp
+                          end if
+                        end do
                       end if
+
                       ! Handle B sub zeta:
                       ! Note that VMEC's bsubvmnc and bsubvmns are exactly the same as SFINCS's BHat_sub_zeta, with no conversion factors of 2pi needed.
                       temp = vmec%bsubvmnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
@@ -2481,8 +2479,13 @@ contains
                       dBHat_sub_zeta_dtheta(itheta,izeta) = dBHat_sub_zeta_dtheta(itheta,izeta) - m * temp * sin_angle
 
                       if (debugAdjoint) then
-                        bsubzetamnc(n+vmec%ntor+1,m+1) = temp
+                        do iMode = 1,NModesAdjoint
+                          if (ms(iMode) == m .and. ns(iMode) == n) then
+                            bsubzetamnc(iMode) = temp
+                          end if
+                        end do
                       end if
+
                       ! Handle B sub psi.
                       ! Unlike the other components of B, this one is on the full mesh.
                       ! Notice B_psi = B_s * (d s / d psi), and (d s / d psi) = 1 / psiAHat

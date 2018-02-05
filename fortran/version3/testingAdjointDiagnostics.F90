@@ -11,12 +11,12 @@ module testingAdjointDiagnostics
 
   contains
 
-  function percentError(resultAnalytic,resultFiniteDiff,deltaFactor)
+  function percentError(resultAnalytic,resultFiniteDiff)
 
     implicit none
 
     PetscScalar :: percentError
-    PetscScalar, intent(in) :: resultAnalytic, resultFiniteDiff, deltaFactor
+    PetscScalar, intent(in) :: resultAnalytic, resultFiniteDiff
 
     if (abs(resultFiniteDiff) > 1.d-12) then
       percentError = 100*abs(resultFiniteDiff-resultAnalytic)/abs(resultFiniteDiff)
@@ -24,9 +24,6 @@ module testingAdjointDiagnostics
       percentError = 0
     else
       percentError = 1.d6
-    end if
-    if (abs(deltaFactor) < 1.d-12) then
-      percentError = 0
     end if
 
   end function percentError
@@ -58,7 +55,7 @@ module testingAdjointDiagnostics
     PetscScalar, dimension(:,:), allocatable :: dRadialCurrentdLambda_analytic, dTotalHeatFluxdLambda_analytic, dBootstrapdLambda_analytic
     integer :: ispecies, whichQuantity
     PetscScalar :: analyticResult, finiteDiffResult, deltaFactor
-    PetscLogDouble :: startTime, time1
+    PetscLogDouble :: time1, time2
 
     allocate(particleFluxInit(Nspecies))
     allocate(heatFluxInit(Nspecies))
@@ -86,11 +83,10 @@ module testingAdjointDiagnostics
     adjointRadialCurrentOption = .true.
 
     call PetscTime(time1, ierr)
-    startTime = time1
     call mainSolverLoop()
-    call PetscTime(time1, ierr)
+    call PetscTime(time2, ierr)
     if (masterProc) then
-      print *,"Time for adjoint solve: ", time1-startTime
+      print *,"Time for adjoint solve: ", time2-time1
     end if
 
     ! Get initial values of fluxes
@@ -109,22 +105,21 @@ module testingAdjointDiagnostics
     ! Set RHSMode = 1 so call to solver does not include adjoint solve
     RHSMode = 1
     call PetscTime(time1, ierr)
-    startTime = time1
     do whichMode = 1, NModesAdjoint
       do whichLambda = 1, NLambdas
         select case(whichLambda)
           case(1)
-            deltaFactor = bmnc(ns(whichMode)+vmec%ntor+1,ms(whichMode)+1)
+            deltaFactor = bmnc(whichMode)
           case(2)
-            deltaFactor = bsupthetamnc(ns(whichMode)+vmec%ntor+1,ms(whichMode)+1)
+            deltaFactor = bsupthetamnc(whichMode)
           case(3)
-            deltaFactor = bsupzetamnc(ns(whichMode)+vmec%ntor+1,ms(whichMode)+1)
+            deltaFactor = bsupzetamnc(whichMode)
           case(4)
-            deltaFactor = bsubthetamnc(ns(whichMode)+vmec%ntor+1,ms(whichMode)+1)
+            deltaFactor = bsubthetamnc(whichMode)
           case(5)
-            deltaFactor = bsubzetamnc(ns(whichMode)+vmec%ntor+1,ms(whichMode)+1)
+            deltaFactor = bsubzetamnc(whichMode)
           case(6)
-            deltaFactor = gmnc(ns(whichMode)+vmec%ntor+1,ms(whichMode)+1)
+            deltaFactor = gmnc(whichMode)
         end select
 
         ! Update geometry
@@ -147,38 +142,47 @@ module testingAdjointDiagnostics
         call updateVMECGeometry(whichMode, whichLambda, .true.)
       end do
     end do
-    call PetscTime(time1, ierr)
+    call PetscTime(time2, ierr)
     if (masterProc) then
-      print *,"Time for finite difference: ", time1-startTime
+      print *,"Time for finite difference: ", time2-time1
     end if
 
     do whichMode = 1, NModesAdjoint
       do whichLambda = 1, NLambdas
         select case(whichLambda)
           case(1)
-            deltaFactor = bmnc(ns(whichMode)+vmec%ntor+1,ms(whichMode)+1)
+            deltaFactor = bmnc(whichMode)
           case(2)
-            deltaFactor = bsupthetamnc(ns(whichMode)+vmec%ntor+1,ms(whichMode)+1)
+            deltaFactor = bsupthetamnc(whichMode)
           case(3)
-            deltaFactor = bsupzetamnc(ns(whichMode)+vmec%ntor+1,ms(whichMode)+1)
+            deltaFactor = bsupzetamnc(whichMode)
           case(4)
-            deltaFactor = bsubthetamnc(ns(whichMode)+vmec%ntor+1,ms(whichMode)+1)
+            deltaFactor = bsubthetamnc(whichMode)
           case(5)
-            deltaFactor = bsubzetamnc(ns(whichMode)+vmec%ntor+1,ms(whichMode)+1)
+            deltaFactor = bsubzetamnc(whichMode)
           case(6)
-            deltaFactor = gmnc(ns(whichMode)+vmec%ntor+1,ms(whichMode)+1)
+            deltaFactor = gmnc(whichMode)
         end select
-        radialCurrentPercentError(whichLambda,whichMode) = percentError(dRadialCurrentdLambda_analytic(whichLambda,whichMode),dRadialCurrentdLambda_finitediff(whichLambda,whichMode),deltaFactor)
-        totalHeatFluxPercentError(whichLambda,whichMode) = percentError(dTotalHeatFluxdLambda_analytic(whichLambda,whichMode),dTotalHeatFluxdLambda_finitediff(whichLambda,whichMode),deltaFactor)
-        bootstrapPercentError(whichLambda,whichMode) = percentError(dBootstrapdLambda_analytic(whichLambda, whichMode), dBootstrapdLambda_finitediff(whichLambda,whichMode),deltaFactor)
+        ! If magnitude of fourier mode is nearly zero, don't use for benchmarking tests
+        if (abs(deltaFactor) < 1.d-12) then
+          radialCurrentPercentError(whichLambda,whichMode) = zero
+          totalHeatFluxPercentError(whichLambda,whichMode) = zero
+          bootstrapPercentError(whichLambda,whichMode) = zero
+          particleFluxPercentError(:,whichLambda,whichMode) = zero
+          heatFluxPercentError(:,whichLambda,whichMode) = zero
+          parallelFlowPercentError(:,whichLambda,whichMode) = zero
+        else
+          radialCurrentPercentError(whichLambda,whichMode) = percentError(dRadialCurrentdLambda_analytic(whichLambda,whichMode),dRadialCurrentdLambda_finitediff(whichLambda,whichMode))
+          totalHeatFluxPercentError(whichLambda,whichMode) = percentError(dTotalHeatFluxdLambda_analytic(whichLambda,whichMode),dTotalHeatFluxdLambda_finitediff(whichLambda,whichMode))
+          bootstrapPercentError(whichLambda,whichMode) = percentError(dBootstrapdLambda_analytic(whichLambda, whichMode), dBootstrapdLambda_finitediff(whichLambda,whichMode))
+          do ispecies = 1, NSpecies
+            particleFluxPercentError(ispecies,whichLambda,whichMode) = percentError(dParticleFluxdLambda_analytic(ispecies,whichLambda,whichMode),dParticleFluxdLambda_finitediff(ispecies,whichLambda,whichMode))
 
-        do ispecies = 1, NSpecies
-              particleFluxPercentError(ispecies,whichLambda,whichMode) = percentError(dParticleFluxdLambda_analytic(ispecies,whichLambda,whichMode),dParticleFluxdLambda_finitediff(ispecies,whichLambda,whichMode),deltaFactor)
+            heatFluxPercentError(ispecies,whichLambda,whichMode) = percentError(dHeatFluxdLambda_analytic(ispecies,whichLambda,whichMode),dHeatFluxdLambda_finitediff(ispecies,whichLambda,whichMode))
 
-              heatFluxPercentError(ispecies,whichLambda,whichMode) = percentError(dHeatFluxdLambda_analytic(ispecies,whichLambda,whichMode),dHeatFluxdLambda_finitediff(ispecies,whichLambda,whichMode),deltaFactor)
-
-              parallelFlowPercentError(ispecies,whichLambda,whichMode) = percentError(dParallelFlowdLambda_analytic(ispecies,whichLambda,whichMode),dParallelFlowdLambda_finitediff(ispecies,whichLambda,whichMode),deltaFactor)
-        end do ! ispecies
+            parallelFlowPercentError(ispecies,whichLambda,whichMode) = percentError(dParallelFlowdLambda_analytic(ispecies,whichLambda,whichMode),dParallelFlowdLambda_finitediff(ispecies,whichLambda,whichMode))
+          end do ! ispecies
+        end if
       end do ! whichLambda
     end do ! whichMode
 

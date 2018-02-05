@@ -20,46 +20,6 @@ except:
     print "Unable to open sfincsOutput.h5"
     raise
 
-# Read wout file
-g = netcdf.netcdf_file(sys.argv[2],'r',mmap=False)
-bmnc = g.variables['bmnc'][()][76,:] # radius, mnmode_nyq
-bsubumnc = g.variables['bsubumnc'][()][76,:]
-bsubvmnc = g.variables['bsubvmnc'][()][76,:]
-bsupumnc = g.variables['bsupumnc'][()][76,:]
-bsupvmnc = g.variables['bsupvmnc'][()][76,:]
-xm = g.variables['xm_nyq'][()]
-xn = g.variables['xn_nyq'][()]
-print xm[0]
-print xn[0]
-print bsupumnc[0]
-print bsubumnc[0]
-
-plt.figure()
-plt.semilogy(xm,bmnc,linestyle='none',marker='o')
-plt.xlabel('m')
-plt.ylabel('Bmnc')
-
-plt.figure()
-plt.semilogy(xm,bsubumnc,linestyle='none',marker='o')
-plt.xlabel('m')
-plt.ylabel('Bsubumnc')
-
-plt.figure()
-plt.semilogy(xm,bsubvmnc,linestyle='none',marker='o')
-plt.xlabel('m')
-plt.ylabel('Bsubvmnc')
-
-plt.figure()
-plt.semilogy(xm,bsupumnc,linestyle='none',marker='o')
-plt.xlabel('m')
-plt.ylabel('Bsupumnc')
-
-plt.figure()
-plt.semilogy(xm,bsupvmnc,linestyle='none',marker='o')
-plt.xlabel('m')
-plt.ylabel('Bsupvmnc')
-plt.show()
-
 def percentError(fluxAnalytic,fluxFiniteDiff):
   
   result = np.zeros(fluxAnalytic.shape)
@@ -98,16 +58,19 @@ dParallelFlowdLambda = f['dParallelFlowdLambda'][()]
 dParticleFluxdLambda_finitediff = f['dParticleFluxdLambda_finitediff'][()]
 dHeatFluxdLambda_finitediff = f['dHeatFluxdLambda_finitediff'][()]
 dParallelFlowdLambda_finitediff = f['dParallelFlowdLambda_finitediff'][()]
+particleFluxPercentError = f['particleFluxPercentError'][()]
+heatFluxPercentError = f['heatFluxPercentError'][()]
+parallelFlowPercentError = f['parallelFlowPercentError'][()]
 
-print dParticleFluxdLambda_finitediff.shape
-print dParticleFluxdLambda.shape
+bmnc = f['bmnc'][()]
+bsupthetamnc = f['bsupthetamnc'][()]
+bsupzetamnc = f['bsupzetamnc'][()]
+bsubthetamnc = f['bsubthetamnc'][()]
+bsubzetamnc = f['bsubzetamnc'][()]
 
 Nspecies = int(f['Nspecies'][()])
 NModesAdjoint = int(f['NModesAdjoint'][()])
 NLambda = 6
-print "NModesAdjoint " + str(NModesAdjoint)
-print ns
-print ms
 
 NspeciesToPlot = Nspecies
 if Nspecies>3:
@@ -169,14 +132,14 @@ for ispecies in range(0,NspeciesToPlot):
   fig = plt.figure()
   fig.patch.set_facecolor('white')
   plt.title('Species = ' + str(ispecies+1) + ' Lambda = ' + str(whichLambda))
-  percentErrorParticleFlux = percentError(dParticleFluxdLambda[:,whichLambda-1,ispecies,iteration],dParticleFluxdLambda_finitediff[:,whichLambda-1,ispecies,iteration])
+  # percentErrorParticleFlux = percentError(dParticleFluxdLambda[:,whichLambda-1,ispecies,iteration],dParticleFluxdLambda_finitediff[:,whichLambda-1,ispecies,iteration])
   # plt.subplot(numRows, numCols, ispecies*numCols+1)
-  plt.scatter(ns,percentErrorParticleFlux,c=ms,vmin=min(ms),vmax=max(ms),s=20,edgecolors='black')
+  plt.scatter(ns,particleFluxPercentError[:,whichLambda-1,ispecies,iteration],c=ms,vmin=min(ms),vmax=max(ms),s=20,edgecolors='black')
   cb = plt.colorbar()
   cb.ax.set_title('m')
   ax = plt.gca()
   ax.yaxis.set_major_formatter(yticks)
-  plt.ylim((0,max(percentErrorParticleFlux)))
+  plt.ylim((0,max(particleFluxPercentError[:,whichLambda-1,ispecies,iteration])))
   #ax.set_yscale('log')
   plt.xlabel('n')
   plt.ylabel('dParticleFluxdBHat percent error')
@@ -186,12 +149,12 @@ for ispecies in range(0,NspeciesToPlot):
   plt.title('Species = ' + str(ispecies+1) + ' Lambda = ' + str(whichLambda))
   percentErrorHeatFlux = percentError(dHeatFluxdLambda[:,whichLambda-1,ispecies,iteration],dHeatFluxdLambda_finitediff[:,whichLambda-1,ispecies,iteration])
   #plt.subplot(numRows, numCols, ispecies*numCols+2)
-  plt.scatter(ns,percentErrorHeatFlux,c=ms,vmin=min(ms),vmax=max(ms),s=20,edgecolors='black')
+  plt.scatter(ns,heatFluxPercentError[:,whichLambda-1,ispecies,iteration],c=ms,vmin=min(ms),vmax=max(ms),s=20,edgecolors='black')
   cb = plt.colorbar()
   cb.ax.set_title('m')
   ax = plt.gca()
   ax.yaxis.set_major_formatter(yticks)
-  plt.ylim((0,max(percentErrorHeatFlux)))
+  plt.ylim((0,max(heatFluxPercentError[:,whichLambda-1,ispecies,iteration])))
   #ax.set_yscale('log')
   plt.xlabel('n')
   plt.ylabel('dHeatFluxdBHat percent error')
@@ -201,8 +164,8 @@ for ispecies in range(0,NspeciesToPlot):
   plt.title('Species = ' + str(ispecies+1) + ' Lambda = ' + str(whichLambda))
   percentErrorParallelFlow = percentError(dParallelFlowdLambda[:,whichLambda-1,ispecies,iteration],dParallelFlowdLambda_finitediff[:,whichLambda-1,ispecies,iteration])
   #plt.subplot(numRows, numCols, ispecies*numCols+3)
-  plt.scatter(ns,percentErrorParallelFlow,c=ms,vmin=min(ms),vmax=max(ms),s=20,edgecolors='black')
-  plt.ylim((0,max(percentErrorParallelFlow)))
+  plt.scatter(ns,parallelFlowPercentError[:,whichLambda-1,ispecies,iteration],c=ms,vmin=min(ms),vmax=max(ms),s=20,edgecolors='black')
+  plt.ylim((0,max(parallelFlowPercentError[:,whichLambda-1,ispecies,iteration])))
   cb = plt.colorbar()
   cb.ax.set_title('m')
   ax = plt.gca()
@@ -211,6 +174,18 @@ for ispecies in range(0,NspeciesToPlot):
   plt.xlabel('n')
   plt.ylabel('dParallelFlowdBHat percent error')
 
+  print "iSpecies: " + str(ispecies)
+  print "whichLambda: " + str(whichLambda)
+  print "parallelFlow percent error: " + str(parallelFlowPercentError[:,whichLambda-1,ispecies,iteration])
+  print "heatFlux percent error: " + str(heatFluxPercentError[:,whichLambda-1,ispecies,iteration])
+  print "particleFlux percent error: " + str(particleFluxPercentError[:,whichLambda-1,ispecies,iteration])
+  print "ms: " + str(ms)
+  print "ns: " + str(ns)
+                                          
+                                             
+                                             
+
+'''
   print "iSpecies" + str(ispecies)
   print "whichLambda" + str(whichLambda)
   for iMode in range(0, NModesAdjoint):
@@ -232,6 +207,7 @@ for ispecies in range(0,NspeciesToPlot):
       print "percentErrorParallelFlow[iMode]: " + str(percentErrorParallelFlow[iMode])
       print "analytic: " + str(dParallelFlowdLambda[iMode,whichLambda-1,ispecies,iteration])
       print "finite diff: " + str(dParallelFlowdLambda_finitediff[iMode,whichLambda-1,ispecies,iteration])
+      '''
 
 plt.tight_layout()
 plt.show()

@@ -760,7 +760,6 @@ module solver
           if (masterProc) then
              print *,"Done with the adjoint solve.  Time to solve: ", time2-time1, " seconds."
           end if
-          call PetscTime(time1, ierr)
 
           call checkIfKSPConverged(KSPInstance)
 
@@ -768,8 +767,14 @@ module solver
 !            call testingAdjointOperator(solutionVec,adjointSolutionVec,residualVec,adjointRHSVec,matrix,adjointMatrix,whichAdjointRHS,ispecies)
 !          end if
 
+
+          call PetscTime(time1, ierr)
           ! compute diagnostics for species-summed fluxes
           call evaluateDiagnostics(solutionVec, adjointSolutionVec, whichAdjointRHS, ispecies)
+          call PetscTime(time2, ierr)
+          if (masterProc) then
+            print *,"Done with the adjoint diagnostics.  Time: ", time2-time1, " seconds."
+          end if
 
           ! Done with required adjoint solve and diagnostics. Now clear solutionVec
           call VecSet(adjointSolutionVec, zero, ierr)

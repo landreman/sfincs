@@ -39,6 +39,7 @@
 
     integer :: tag, dummy(1)
     integer :: status(MPI_STATUS_SIZE)
+    integer :: imn, im, jn
 
 
     ! *******************************************************************************
@@ -1170,6 +1171,31 @@
     
     allocate(NTVKernel(Ntheta,Nzeta))
 
+    if (RHSMode > 3) then
+      ! m = 0 : n goes from 0 to nMaxAdjoint
+      NModesAdjoint = (nMaxAdjoint+1)
+      ! m > 0 : n goes from -nMaxAdjoint to nMaxAdjoint
+      NModesAdjoint = NModesAdjoint + (mMaxAdjoint)*(nMaxAdjoint*2 + 1)
+      allocate(ns(NModesAdjoint))
+      allocate(ms(NModesAdjoint))
+
+      ! Now initialize ms and ns, starting with m = 0
+      ! Note that ns is multiplied by Nperiods for VMEC convention
+      imn = 1
+      do jn=0,nMaxAdjoint
+        ms(imn) = 0
+        ns(imn) = jn
+        imn = imn+1
+      end do
+      ! Now m>0 modes
+      do im = 1,mMaxAdjoint
+        do jn=-nMaxAdjoint, nMaxAdjoint
+          ms(imn) = im
+          ns(imn) = jn
+          imn = imn+1
+        end do
+      end do
+    end if
 
     call computeBHat()
 
@@ -1312,6 +1338,7 @@
     allocate(NTVBeforeSurfaceIntegral(Nspecies,Ntheta,Nzeta))
 
     if (RHSMode > 3) then
+
       allocate(dRadialCurrentdLambda(NLambdas,NModesAdjoint))
       allocate(dTotalHeatFluxdLambda(NLambdas,NModesAdjoint))
       allocate(dBootstrapdLambda(NLambdas,NModesAdjoint))
@@ -1325,8 +1352,8 @@
         allocate(dParticleFluxdLambda_finitediff(NSpecies,NLambdas,NModesAdjoint))
         allocate(dHeatFluxdLambda_finitediff(NSpecies,NLambdas,NModesAdjoint))
         allocate(dParallelFlowdLambda_finitediff(Nspecies,NLambdas,NModesAdjoint))
-
       end if
+
     end if
 
     allocate(particleFlux_vm_psiHat_vs_x(Nspecies,Nx))
