@@ -432,6 +432,22 @@ in the {\ttfamily xm\_nyq} and {\ttfamily xn\_nyq} arrays, where available.
 {Only when \parlink{geometryScheme} == 5, 11, or 12.}
 {Filters the magnetic field read from an input file.  Only Fourier modes $(m,n)$ for which $B_{m,n}$ is at least {\ttfamily min\_Bmn\_to\_load} will be included.}
 
+\myhrule
+
+\param{rippleScale}
+{real}
+{1.0}
+{\todo{Only when ?}}
+{\todo{Write description}}
+
+\myhrule
+
+\param{EParallelHatSpec\_bcdatFile}
+{string}
+{``''}
+{\todo{Only when ?}}
+{\todo{Write description}}
+
 
 
 
@@ -588,6 +604,30 @@ will be used.
 {1.0}
 {Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true and \parlink{withAdiabatic} == \true}
 {Temperature of adiabatic species, in units of the reference temperature $\bar{T}$.}
+
+\myhrule
+
+\param{withNBIspec}
+{Boolean}
+{\false}
+{\todo{Whenever ?}}
+{\todo{Write description}}
+
+\myhrule
+
+\param{NBIspecZ}
+{real}
+{1.0}
+{\todo{Whenever \parlink{RHSMode} == 1 and \parlink{withNBIspec} == \true}}
+{\todo{Charge of NBI heated species, in units of the proton charge $e$.}}
+
+\myhrule
+
+\param{NBIspecNHat}
+{real}
+{0.0}
+{\todo{Whenever \parlink{RHSMode} == 1 and \parlink{withNBIspec} == \true}}
+{\todo{Density of NBI heated species, in units of the reference density $\bar{n}$.}}
 
 
 
@@ -874,6 +914,17 @@ If false, and \parlink{includePhi1} = \true, then $\Phi_1$ is only included in t
 
 \myhrule
 
+\param{includePhi1InCollisionOperator}
+{Boolean}
+{\false}
+{Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true and\\ \parlink{includePhi1inKineticEquation} == \true}
+{If true, the terms containing $\Phi_1$ will be included in the collision operator. 
+If false or \parlink{includePhi1inKineticEquation} == \false, and \parlink{includePhi1} = \true, then $\Phi_1$ is not included in the collision operator. 
+The default is false since it remains to show if this effect is important, and the memory and time requirements can increase significantly with this parameter.
+}
+
+\myhrule
+
 \param{quasineutralityOption}
 {integer}
 {1}
@@ -882,7 +933,7 @@ If false, and \parlink{includePhi1} = \true, then $\Phi_1$ is only included in t
 
 {\ttfamily quasineutralityOption} = 1: Full quasineutrality equation. All species (kinetic and adiabatic if applicable) are included in the quasineutrality equation.\\
 
-{\ttfamily quasineutralityOption} = 2: {\ttfamily EUTERPE} quasineutrality. \sfincs~must be run with an adiabatic species, \parlink{withAdiabatic}=\true, and only the adiabatic species and the first kinetic species are included in the quasineutrality equation (their input densities must fulfill quasineutrality). This is the quasineutrality considered in Ref \cite{Regana2013}.
+{\ttfamily quasineutralityOption} = 2: {\ttfamily EUTERPE} quasineutrality. \sfincs~must be run with an adiabatic species, \parlink{withAdiabatic}=\true, and only the adiabatic species and the first kinetic species are included in the quasineutrality equation (their input densities must fulfill quasineutrality). This is the quasineutrality considered in Ref \cite{Regana2017}.
 }
 
 
@@ -978,6 +1029,14 @@ and nearly axisymmetric geometry.\\
 
 
 }
+
+\myhrule
+
+\param{EParallelHatSpec}
+{1D array of reals}
+{0.0}
+{\todo{Whenever \parlink{RHSMode} == 1} ?}
+{\todo{Write description}}
 
 
 
@@ -1378,6 +1437,7 @@ at which point \parlink{Nxi} polynomials will be used. For $x>2$, the number of 
 
 
 \section{The {\ttfamily preconditionerOptions}~namelist}
+\label{sec:preconditionerOptions}
 
 This namelist controls how elements are removed from the ``real'' matrix in order to obtain
 the preconditioner matrix. The default values are usually best, but if you find that there are more than 100 iterations
@@ -1514,7 +1574,7 @@ The default value should be good.}
 \param{reusePreconditioner}
 {Boolean}
 {\true}
-{Only when \parlink{nonlinear} = \true}
+{Only when \parlink{includePhi1} = \true}
 {If true, the nonlinear term will not be included in the preconditioner matrix, meaning the preconditioner matrix is the same
 at every iteration, and so the preconditioner matrix only needs to be $LU$-factorized once.  If false, the preconditioner matrix
 for the Jacobian will be different at each iteration of the Newton solve, so the preconditioner needs to be $LU$-factorized at
@@ -2153,6 +2213,7 @@ used, in which case fewer than {\ttfamily Nradius} radii may be used.}
 
 
 \section{\PETSc~commands}
+\label{sec:PETScCommands}
 
 Command-line flags can be used to modify the behavior of any \PETSc~application, including \sfincs.
 There are hundreds of \PETSc~options, and a list can be obtained by running with the command-line flag

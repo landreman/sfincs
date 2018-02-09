@@ -158,7 +158,8 @@ The models described in \cite{sfincsPaper} are selected as follows:\\
 There is not a significant difference in computational cost between these models.
 
 
-\section{Quasineutrality and variation of the electrostatic potential on the flux surface}
+%\section{Quasineutrality and variation of the electrostatic potential on the flux surface}
+\section{Nonlinear calculations, includePhi1 = {\ttfamily .true.}}
 \label{sec:qn}
 
 One choice you should consider in setting up a computation is whether or not
@@ -168,20 +169,149 @@ neglected in analytical theory and in many codes such as \dkes.  It can be prove
 that including $\Phi_1$ has no effect on the particle or heat fluxes, parallel flows, or bootstrap current
 when $E_r=0$, but generally there can be some difference when $E_r \ne 0$.
 (There is a subtlety in showing that the heat flux is the same with and without $\Phi_1$,
-discussed in the notes 20150325-01 in \path{sfincs/doc/}.)
+discussed in the notes 20150325-01 in \path{sfincs/doc/}.) 
 
 In \sfincs, you can choose whether or not to
-include $\Phi_1$ using the paramter {\ttfamily \hyperlink{includePhi1}{includePhi1}} in the 
+include $\Phi_1$ using the parameter {\ttfamily \hyperlink{includePhi1}{includePhi1}} in the 
 {\ttfamily \hyperref[sec:physicsParameters]{physicsParameters}}
-namelist.  If and only if $\Phi_1$ is included, a quasineutrality equation is solved
+namelist. 
+Furthermore, the parameters \parlink{includePhi1inKineticEquation}, \parlink{includePhi1InCollisionOperator} and \parlink{quasineutralityOption} can be used to control how $\Phi_1$ is included in the system of equations. 
+If and only if $\Phi_1$ is included, a quasineutrality equation is solved
 at each point on the flux surface.  Due to these extra unknowns ($\Phi_1$) and extra equations
 (quasineutrality), the system matrix is slightly larger when \parlink{includePhi1} is \true.
 Specifically, the number of rows and columns are each increased by \Ntheta$\times$\Nzeta$+1$.  This increase is miniscule compared
 to the number of rows and columns associated with the kinetic equation, which depends not only on real space
-but also on velocity space and species.  Thus, there is very little extra computational cost associated
-with \parlink{includePhi1}.  You may wish to set \parlink{includePhi1} = \true~when
+but also on velocity space and species.  
+%Thus, there is very little extra computational cost associated
+%with \parlink{includePhi1}. 
+Thus, there is typically not a substantial increase in memory requirements associated with \parlink{includePhi1} (however, setting the preconditioner option \parlink{reusePreconditioner} = \false~can lead to a significant increase in memory requirements). 
+The time requirements will normally increase when \parlink{includePhi1} is \true~because the system of equations is then nonlinear. 
+The nonlinear equations are solved with a Newton method using the Scalable Nonlinear Equations Solvers (SNES) in \PETSc. SNES internally employs KSP for the solution of its linear systems. 
+Note that for a nonlinear calculation the \sfincs~output file \parlink{outputFileName} will contain the results of each nonlinear iteration in the relevant output parameters. The final result of the calculation is stored in the last position of the arrays. 
+The resolution parameters required for numerical convergence in nonlinear calculations are often similar to the parameters in the corresponding linear calculations (based on experience). 
+A sanity check to control that the nonlinear calculation is not incorrect (however it is not a guarantee for numerical convergence), is to check that the total flux-surface averaged particle flux for the lowest order distribution function $\displaystyle \left\langle \int d^3 v \, f_{s0} \left(\bm{v}_{\mathrm{d} s} + \bm{v}_{E}\right) \cdot \nabla \psi \right\rangle$ of each plasma species $s$ comes out as 0. This can e.g. be done by comparing {\ttfamily particleFlux\_vm0\_psiHat} to {\ttfamily particleFlux\_vE0\_psiHat} in the \sfincs~output file \parlink{outputFileName} and see that they are equal but with opposite sign. 
+
+
+You may wish to set \parlink{includePhi1} = \true~when
 using \sfincs~to model an experiment, and set \parlink{includePhi1} = \false~when
-comparing \sfincs~with analytic theory or with another code that does not include $\Phi_1$.
+comparing \sfincs~with analytic theory or with another code that does not include $\Phi_1$. 
+In Ref~\cite{Mollen2018} there are examples of \sfincs~calculations with \parlink{includePhi1} = \true~for experimental data.
+
+\subsection{\PETSc~commands}
+In this section we summarize experiences with the Scalable Nonlinear Equations Solvers (SNES) in \PETSc, 
+and list some of the command-line flags associated with \PETSc~which can be useful for nonlinear calculations. 
+(See section~\ref{sec:PETScCommands} for general useful options in \sfincs.) 
+
+If the nonlinear solver fails to converge with the default settings, a first useful thing to try is setting \parlink{reusePreconditioner} = \false~in the {\ttfamily \hyperref[sec:preconditionerOptions]{preconditionerOptions}} namelist (note that memory requirements might increase). 
+Secondly, it can be useful to change the SNES linesearch type (see -snes\_linesearch\_type flag below) and to increase the absolute convergence tolerance (see -ksp\_atol flag below) for the KSP iterations and the relative convergence tolerance (see -snes\_rtol flag below) for the SNES iterations. 
+Moreover, note that in each nonlinear iteration the nested linear iterations will start with the current residual. If the calculation progresses towards nonlinear convergence this implies that the starting residual norm in each nonlinear iteration is smaller and smaller. Therefore in a calculation with \parlink{includePhi1} = \true~it is sometimes useful to use a less strict requirement on \parlink{solverTolerance} in the {\ttfamily \hyperref[sec:resolutionParameters]{resolutionParameters}} namelist, since in the last nonlinear iterations the residual will otherwise end up being unnecessarily small causing long run times (this problem is also avoided by appropriate -ksp\_atol and -snes\_rtol flags).\\ 
+Some useful \PETSc~flags taken from Ref~\cite{PETSc2017}:\\
+
+\subsubsection{KSP}
+
+KSP is intended for solving nonsingular linear systems of the form $A x = b$. 
+The residual at iteration $k$ is $r_k \equiv b - A x_k$ and convergence is detected if
+\[
+\left\|r_k\right\|_2 < \mathrm{max} \left(\text{\ttfamily rtol} \cdot \left\|b\right\|_2, \text{\ttfamily atol}\right).
+\]
+Divergence is detected if
+\[
+\left\|r_k\right\|_2 > \text{\ttfamily dtol} \cdot \left\|b\right\|_2.
+\]
+\\
+
+\myhrule
+
+\PETScParam{-ksp\_atol {\normalfont \ttfamily$<$atol$>$}}
+{The absolute convergence tolerance absolute size of the (possibly preconditioned) residual norm in the KSP iterations. 
+The default is {\ttfamily 1e-50}, which in practice implies that absolute convergence will never be fulfilled. 
+Setting this to a value of the order {\ttfamily 1e-10} can be useful in a nonlinear calculation.}
+
+\myhrule
+
+\PETScParam{-ksp\_rtol {\normalfont \ttfamily$<$rtol$>$}}
+{The relative convergence tolerance, relative decrease in the (possibly preconditioned) residual norm in the KSP iterations. 
+The default in \PETSc~is {\ttfamily 1e-5}, 
+but the value in \sfincs~is set by \parlink{solverTolerance} in the {\ttfamily \hyperref[sec:resolutionParameters]{resolutionParameters}} namelist. This can be overwritten by using the flag.}
+
+\myhrule
+
+\PETScParam{-ksp\_divtol {\normalfont \ttfamily$<$dtol$>$}}
+{The divergence tolerance, amount (possibly preconditioned) residual norm can increase before KSP concludes that the method is diverging.
+The default is {\ttfamily 1e5}, which is usually a good setting.}
+
+\myhrule
+
+\PETScParam{-ksp\_max\_it {\normalfont \ttfamily$<$maxits$>$}}
+{Maximum number of iterations to use in KSP. 
+The default is {\ttfamily 1e4}, which is usually a good setting.} 
+
+\subsubsection{SNES}
+
+The SNES class includes methods for solving systems of nonlinear equations of the form $\bm{F} \left(\bm{x}\right) = 0$, 
+where $\bm{F}~:~\Re^n \rightarrow \Re^n$. 
+\PETSc's default method for solving the nonlinear equation is Newton's method. The general
+form of the $n$-dimensional Newton's method for solving the system is 
+\[
+\bm{x}_{k + 1} = \bm{x}_{k} - \bm{J} \left(\bm{x}_{k}\right)^{-1} \bm{F} \left(\bm{x}_{k}\right),~~k = 0, 1, \ldots
+\]
+where $\bm{x}_{0}$ is an initial approximation to the solution and $\bm{J} \left(\bm{x}_{k}\right) = \bm{F}^\prime \left(\bm{x}\right)$, the Jacobian, is nonsingular at each iteration. In practice, the Newton iteration is implemented by the following two
+steps: (Approximately) solve $\bm{J} \left(\bm{x}_{k}\right) \Delta \bm{x}_{k} = - \bm{F} \left(\bm{x}_{k}\right)$,  update $\bm{x}_{k + 1} = \bm{x}_{k} + \Delta \bm{x}_{k}$. 
+In the output it is useful to pay attention to the reason why the SNES iterations have converged/diverged. 
+SNES iterations typically only finish successfully due to one of the following reasons (see SNES flags): {\ttfamily SNES\_CONVERGED\_FNORM\_ABS}, {\ttfamily SNES\_CONVERGED\_FNORM\_RELATIVE},\\ {\ttfamily SNES\_CONVERGED\_SNORM\_RELATIVE}. 
+In the \sfincs~output file \parlink{outputFileName} there is also a flag {\ttfamily didNonlinearCalculationConverge} which specifies if the nonlinear calculation converged.\\
+
+\myhrule
+
+\PETScParam{-snes\_type  {\normalfont \ttfamily$<$type$>$}}
+{SNES includes several Newton-like nonlinear solvers based on line search techniques and trust region methods. A table of \PETSc~nonlinear solvers can be found in Ref~\cite{PETSc2017}. In \sfincs~the (default) method SNESNEWTONLS ({\ttfamily \bfseries -snes\_type} {\normalfont \ttfamily newtonls}) seems to work the best and we have not yet had any success with the other solvers. 
+}
+
+\myhrule
+
+\PETScParam{-snes\_linesearch\_type  {\normalfont \ttfamily$<$type$>$}}
+{This flag is only used when {\ttfamily \bfseries -snes\_type} {\normalfont \ttfamily newtonls}. The different options are {\normalfont \ttfamily basic}, {\normalfont \ttfamily bt}, {\normalfont \ttfamily l2}, {\normalfont \ttfamily cp}, {\normalfont \ttfamily nleqerr}, {\normalfont \ttfamily shell}. 
+The default is {\normalfont \ttfamily bt}, but in \sfincs~the experience is that {\normalfont \ttfamily l2} or {\normalfont \ttfamily cp} can often work better. 
+Depending on the chosen method there are other flags that can be used to control how the search is performed: {\ttfamily \bfseries -snes\_linesearch\_alpha}, {\ttfamily \bfseries -snes\_linesearch\_damping}, {\ttfamily \bfseries -snes\_linesearch\_maxstep}, {\ttfamily \bfseries -snes\_linesearch\_max\_it}, {\ttfamily \bfseries -snes\_linesearch\_minlambda}, {\ttfamily \bfseries -snes\_linesearch\_order}. We have not yet had any success with other values than the default for all these flags. 
+}
+
+\myhrule
+
+\PETScParam{-snes\_atol {\normalfont \ttfamily$<$atol$>$}}
+{The absolute convergence tolerance absolute size of the residual norm in the SNES iterations. 
+The default is {\ttfamily ?}, but usually this flag can be ignored. 
+If $\left\|\bm{F} \left(\bm{x}_{k}\right)\right\|_2 \leq \text{\ttfamily atol}$ then the output flag {\ttfamily SNES\_CONVERGED\_FNORM\_ABS} is specified.}
+
+\myhrule
+
+\PETScParam{-snes\_rtol {\normalfont \ttfamily$<$rtol$>$}}
+{The relative convergence tolerance, relative decrease in the residual norm in the SNES iterations. 
+The default in \PETSc~is {\ttfamily ?}, setting this to {\ttfamily 1e-6} can be a good option. 
+If $\left\|\bm{F} \left(\bm{x}_{k}\right)\right\|_2 \leq \text{\ttfamily rtol} \cdot \left\|\bm{F} \left(\bm{x}_{0}\right)\right\|_2$ then the output flag {\ttfamily SNES\_CONVERGED\_FNORM\_RELATIVE} is specified.}
+
+\myhrule
+
+\PETScParam{-snes\_stol {\normalfont \ttfamily$<$stol$>$}}
+{The convergence tolerance in terms of the norm of the change in the solution between steps in the SNES iterations.
+The default is {\ttfamily ?}, but usually this flag can be ignored. 
+If $\left\|\Delta \bm{x}\right\|_2 \leq \text{\ttfamily stol} \cdot \left\|\bm{x}\right\|_2$ then the output flag {\ttfamily SNES\_CONVERGED\_SNORM\_RELATIVE} is specified.}
+
+\myhrule
+
+\PETScParam{-snes\_max\_it {\normalfont \ttfamily$<$maxit$>$}}
+{The maximum number of iterations before SNES stops. 
+The default is {\ttfamily 50}, which is usually a good setting. (Sometimes convergence is slow in SNES but after more than 50 iterations it is unlikely that convergence will be reached.)} 
+
+\myhrule
+
+\PETScParam{-snes\_view}
+{Dumps detailed information to stdout related to the nonlinear solver.}
+
+\myhrule
+
+\PETScParam{-snes\_linesearch\_monitor}
+{Dumps detailed information to stdout at every iteration of the nonlinear solver to display the iteration's progress when a line search is performed.}
+
 
 \section{Poloidal and toroidal magnetic drifts}
 \label{sec:magneticDrifts}
