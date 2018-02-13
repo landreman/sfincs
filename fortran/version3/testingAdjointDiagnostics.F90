@@ -73,6 +73,13 @@ module testingAdjointDiagnostics
     allocate(bootstrapPercentError(NLambdas,NModesAdjoint))
     allocate(totalHeatFluxPercentError(NLambdas,NModesAdjoint))
 
+    particleFluxPercentError = zero
+    heatFluxPercentError = zero
+    parallelFlowPercentError = zero
+    radialCurrentPercentError = zero
+    bootstrapPercentError = zero
+    totalHeatFluxPercentError = zero
+
     ! Change settings so adjoint solve occurs - derivatives of all fluxes computed
     RHSMode = 4
     adjointParticleFluxOption = .true.
@@ -140,8 +147,8 @@ module testingAdjointDiagnostics
 
         ! Reset geometry to original values
         call updateVMECGeometry(whichMode, whichLambda, .true.)
-      end do
-    end do
+      end do ! whichMode
+    end do ! whichLambda
     call PetscTime(time2, ierr)
     if (masterProc) then
       print *,"Time for finite difference: ", time2-time1
@@ -164,14 +171,7 @@ module testingAdjointDiagnostics
             deltaFactor = gmnc(whichMode)
         end select
         ! If magnitude of fourier mode is nearly zero, don't use for benchmarking tests
-        if (abs(deltaFactor) < 1.d-12) then
-          radialCurrentPercentError(whichLambda,whichMode) = zero
-          totalHeatFluxPercentError(whichLambda,whichMode) = zero
-          bootstrapPercentError(whichLambda,whichMode) = zero
-          particleFluxPercentError(:,whichLambda,whichMode) = zero
-          heatFluxPercentError(:,whichLambda,whichMode) = zero
-          parallelFlowPercentError(:,whichLambda,whichMode) = zero
-        else
+        if (abs(deltaFactor) > 1.d-6) then
           radialCurrentPercentError(whichLambda,whichMode) = percentError(dRadialCurrentdLambda_analytic(whichLambda,whichMode),dRadialCurrentdLambda_finitediff(whichLambda,whichMode))
           totalHeatFluxPercentError(whichLambda,whichMode) = percentError(dTotalHeatFluxdLambda_analytic(whichLambda,whichMode),dTotalHeatFluxdLambda_finitediff(whichLambda,whichMode))
           bootstrapPercentError(whichLambda,whichMode) = percentError(dBootstrapdLambda_analytic(whichLambda, whichMode), dBootstrapdLambda_finitediff(whichLambda,whichMode))

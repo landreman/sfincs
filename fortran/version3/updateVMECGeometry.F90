@@ -25,7 +25,6 @@ subroutine updateVMECGeometry(whichMode, whichLambda, reset)
   integer :: itheta, izeta, m, n
   PetscScalar :: angle, cos_angle, sin_angle
   logical :: reset
-  PetscScalar :: sign
 
   PetscScalar, dimension(:,:), allocatable :: deltaBHat, deltadBHatdtheta, deltadBHatdzeta, deltaBHat_sup_theta, deltadBHat_sup_theta_dzeta, deltaBHat_sup_zeta, deltadBHat_sup_zeta_dtheta, deltaBHat_sub_theta, deltadBHat_sub_theta_dzeta, deltaBHat_sub_zeta, deltadBHat_sub_zeta_dtheta, deltaDHat
 
@@ -33,102 +32,125 @@ subroutine updateVMECGeometry(whichMode, whichLambda, reset)
   n = ns(whichMode)
 
   if (reset) then
-    sign = -one
+    DHat = DHat_init
+    BHat = BHat_init
+    dBHatdtheta = dBHatdtheta_init
+    dBHatdzeta = dBHatdzeta_init
+    BHat_sup_theta = BHat_sup_theta_init
+    dBHat_sup_theta_dzeta = dBHat_sup_theta_dzeta_init
+    BHat_sup_zeta = BHat_sup_zeta_init
+    dBHat_sup_zeta_dtheta = dBHat_sup_zeta_dtheta_init
+    BHat_sub_theta = BHat_sub_theta_init
+    dBHat_sub_theta_dzeta = dBHat_sub_theta_dzeta_init
+    BHat_sub_zeta = BHat_sub_zeta_init
+    dBHat_sub_zeta_dtheta = dBHat_sub_zeta_dtheta_init
   else
-    sign = one
+
+    allocate(deltaBHat(Ntheta,Nzeta))
+    allocate(deltadBHatdtheta(Ntheta,Nzeta))
+    allocate(deltadBHatdzeta(Ntheta,Nzeta))
+    allocate(deltaBHat_sup_theta(Ntheta,Nzeta))
+    allocate(deltadBHat_sup_theta_dzeta(Ntheta,Nzeta))
+    allocate(deltaBHat_sup_zeta(Ntheta,Nzeta))
+    allocate(deltadBHat_sup_zeta_dtheta(Ntheta,Nzeta))
+    allocate(deltaBHat_sub_theta(Ntheta,Nzeta))
+    allocate(deltadBHat_sub_theta_dzeta(Ntheta,Nzeta))
+    allocate(deltaBHat_sub_zeta(Ntheta,Nzeta))
+    allocate(deltadBHat_sub_zeta_dtheta(Ntheta,Nzeta))
+    allocate(deltaDHat(Ntheta,Nzeta))
+
+    select case(whichLambda)
+    case(1) ! BHat
+      do itheta = 1,Ntheta
+        do izeta = 1,Nzeta
+          angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+          cos_angle = cos(angle)
+          sin_angle = sin(angle)
+          deltaBHat(itheta,izeta) = deltaLambda*bmnc(whichMode)*cos_angle
+          deltadBHatdtheta(itheta,izeta) = -deltaLambda*bmnc(whichMode)*m*sin_angle
+          deltadBHatdzeta(itheta,izeta) = deltaLambda*bmnc(whichMode)*n*Nperiods*sin_angle
+        end do
+      end do
+      BHat = BHat + deltaBHat
+      dBHatdtheta = dBHatdtheta + deltadBHatdtheta
+      dBHatdzeta = dBHatdzeta + deltadBHatdzeta
+
+    case(2) ! BHat_sup_theta
+      do itheta = 1,Ntheta
+        do izeta = 1,Nzeta
+          angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+          cos_angle = cos(angle)
+          sin_angle = sin(angle)
+          deltaBHat_sup_theta(itheta,izeta) = deltaLambda*bsupthetamnc(whichMode)*cos_angle
+          deltadBHat_sup_theta_dzeta(itheta,izeta) = deltaLambda*bsupthetamnc(whichMode)*n*Nperiods*sin_angle
+        end do
+      end do
+      BHat_sup_theta = BHat_sup_theta + deltaBHat_sup_theta
+      dBHat_sup_theta_dzeta = dBHat_sup_theta_dzeta + deltadBHat_sup_theta_dzeta
+
+    case(3) ! BHat_sup_zeta
+      do itheta = 1,Ntheta
+        do izeta = 1,Nzeta
+          angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+          cos_angle = cos(angle)
+          sin_angle = sin(angle)
+          deltaBHat_sup_zeta(itheta,izeta) = deltaLambda*bsupzetamnc(whichMode)*cos_angle
+          deltadBHat_sup_zeta_dtheta(itheta,izeta) = -deltaLambda*bsupzetamnc(whichMode)*m*sin_angle
+        end do
+      end do
+      BHat_sup_zeta = BHat_sup_zeta + deltaBHat_sup_zeta
+      dBHat_sup_zeta_dtheta = dBHat_sup_zeta_dtheta + deltadBHat_sup_zeta_dtheta
+
+    case(4) ! BHat_sub_theta
+      do itheta = 1,Ntheta
+        do izeta = 1,Nzeta
+          angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+          cos_angle = cos(angle)
+          sin_angle = sin(angle)
+          deltaBHat_sub_theta(itheta,izeta) = deltaLambda*bsubthetamnc(whichMode)*cos_angle
+          deltadBHat_sub_theta_dzeta(itheta,izeta) = deltaLambda*bsubthetamnc(whichMode)*n*Nperiods*sin_angle
+        end do
+      end do
+      BHat_sub_theta = BHat_sub_theta + deltaBHat_sub_theta
+      dBHat_sub_theta_dzeta = dBHat_sub_theta_dzeta + deltadBHat_sub_theta_dzeta
+
+    case (5) ! BHat_sub_zeta
+      do itheta = 1,Ntheta
+        do izeta = 1,Nzeta
+          angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+          cos_angle = cos(angle)
+          sin_angle = sin(angle)
+          deltaBHat_sub_zeta(itheta,izeta) = deltaLambda*bsubzetamnc(whichMode)*cos_angle
+          deltadBHat_sub_zeta_dtheta(itheta,izeta) = -deltaLambda*bsubzetamnc(whichMode)*m*sin_angle
+        end do
+      end do
+      BHat_sub_zeta = BHat_sub_zeta + deltaBHat_sub_zeta
+      dBHat_sub_zeta_dtheta = dBHat_sub_zeta_dtheta + deltadBHat_sub_zeta_dtheta
+
+    case (6) ! DHat
+      do itheta = 1,Ntheta
+        do izeta = 1,Nzeta
+          angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+          cos_angle = cos(angle)
+          deltaDHat(itheta,izeta) = one/(one/DHat(itheta,izeta) + deltaLambda*gmnc(whichMode)*cos_angle) - DHat(itheta,izeta)
+        end do
+      end do
+      DHat = DHat + deltaDHat
+    end select
+
+    deallocate(deltaBHat)
+    deallocate(deltadBHatdtheta)
+    deallocate(deltadBHatdzeta)
+    deallocate(deltaBHat_sup_theta)
+    deallocate(deltadBHat_sup_theta_dzeta)
+    deallocate(deltaBHat_sup_zeta)
+    deallocate(deltadBHat_sup_zeta_dtheta)
+    deallocate(deltaBHat_sub_theta)
+    deallocate(deltadBHat_sub_theta_dzeta)
+    deallocate(deltaBHat_sub_zeta)
+    deallocate(deltadBHat_sub_zeta_dtheta)
+    deallocate(deltaDHat)
   end if
-
-  allocate(deltaBHat(Ntheta,Nzeta))
-  allocate(deltadBHatdtheta(Ntheta,Nzeta))
-  allocate(deltadBHatdzeta(Ntheta,Nzeta))
-  allocate(deltaBHat_sup_theta(Ntheta,Nzeta))
-  allocate(deltadBHat_sup_theta_dzeta(Ntheta,Nzeta))
-  allocate(deltaBHat_sup_zeta(Ntheta,Nzeta))
-  allocate(deltadBHat_sup_zeta_dtheta(Ntheta,Nzeta))
-  allocate(deltaBHat_sub_theta(Ntheta,Nzeta))
-  allocate(deltadBHat_sub_theta_dzeta(Ntheta,Nzeta))
-  allocate(deltaBHat_sub_zeta(Ntheta,Nzeta))
-  allocate(deltadBHat_sub_zeta_dtheta(Ntheta,Nzeta))
-  allocate(deltaDHat(Ntheta,Nzeta))
-
-  select case(whichLambda)
-  case(1) ! BHat
-    do itheta = 1,Ntheta
-      do izeta = 1,Nzeta
-        angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-        cos_angle = cos(angle)
-        sin_angle = sin(angle)
-        deltaBHat(itheta,izeta) = sign*deltaLambda*bmnc(whichMode)*cos_angle
-        deltadBHatdtheta(itheta,izeta) = -sign*deltaLambda*bmnc(whichMode)*m*sin_angle
-        deltadBHatdzeta(itheta,izeta) = sign*deltaLambda*bmnc(whichMode)*n*Nperiods*sin_angle
-      end do
-    end do
-    BHat = BHat + deltaBHat
-    dBHatdtheta = dBHatdtheta + deltadBHatdtheta
-    dBHatdzeta = dBHatdzeta + deltadBHatdzeta
-
-  case(2) ! BHat_sup_theta
-    do itheta = 1,Ntheta
-      do izeta = 1,Nzeta
-        angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-        cos_angle = cos(angle)
-        sin_angle = sin(angle)
-        deltaBHat_sup_theta(itheta,izeta) = sign*deltaLambda*bsupthetamnc(whichMode)*cos_angle
-        deltadBHat_sup_theta_dzeta(itheta,izeta) = sign*deltaLambda*bsupthetamnc(whichMode)*n*Nperiods*sin_angle
-      end do
-    end do
-    BHat_sup_theta = BHat_sup_theta + deltaBHat_sup_theta
-    dBHat_sup_theta_dzeta = dBHat_sup_theta_dzeta + deltadBHat_sup_theta_dzeta
-
-  case(3) ! BHat_sup_zeta
-    do itheta = 1,Ntheta
-      do izeta = 1,Nzeta
-        angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-        cos_angle = cos(angle)
-        sin_angle = sin(angle)
-        deltaBHat_sup_zeta(itheta,izeta) = sign*deltaLambda*bsupzetamnc(whichMode)*cos_angle
-        deltadBHat_sup_zeta_dtheta(itheta,izeta) = -sign*deltaLambda*bsupzetamnc(whichMode)*m*sin_angle
-      end do
-    end do
-    BHat_sup_zeta = BHat_sup_zeta + deltaBHat_sup_zeta
-    dBHat_sup_zeta_dtheta = dBHat_sup_zeta_dtheta + deltadBHat_sup_zeta_dtheta
-
-  case(4) ! BHat_sub_theta
-    do itheta = 1,Ntheta
-      do izeta = 1,Nzeta
-        angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-        cos_angle = cos(angle)
-        sin_angle = sin(angle)
-        deltaBHat_sub_theta(itheta,izeta) = sign*deltaLambda*bsubthetamnc(whichMode)*cos_angle
-        deltadBHat_sub_theta_dzeta(itheta,izeta) = sign*deltaLambda*bsubthetamnc(whichMode)*n*Nperiods*sin_angle
-      end do
-    end do
-    BHat_sub_theta = BHat_sub_theta + deltaBHat_sub_theta
-    dBHat_sub_theta_dzeta = dBHat_sub_theta_dzeta + deltadBHat_sub_theta_dzeta
-
-  case (5) ! BHat_sub_zeta
-    do itheta = 1,Ntheta
-      do izeta = 1,Nzeta
-        angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-        cos_angle = cos(angle)
-        sin_angle = sin(angle)
-        deltaBHat_sub_zeta(itheta,izeta) = sign*deltaLambda*bsubzetamnc(whichMode)*cos_angle
-        deltadBHat_sub_zeta_dtheta(itheta,izeta) = -sign*deltaLambda*bsubzetamnc(whichMode)*m*sin_angle
-      end do
-    end do
-    BHat_sub_zeta = BHat_sub_zeta + deltaBHat_sub_zeta
-    dBHat_sub_zeta_dtheta = dBHat_sub_zeta_dtheta + deltadBHat_sub_zeta_dtheta
-
-  case (6) ! DHat
-    do itheta = 1,Ntheta
-      do izeta = 1,Nzeta
-        angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-        cos_angle = cos(angle)
-        deltaDHat(itheta,izeta) = one/(one/DHat(itheta,izeta) + sign*deltaLambda*gmnc(whichMode)*cos_angle) - DHat(itheta,izeta)
-      end do
-    end do
-    DHat = DHat + deltaDHat
-  end select
 
   ! Update B integrals
   call computeBIntegrals()

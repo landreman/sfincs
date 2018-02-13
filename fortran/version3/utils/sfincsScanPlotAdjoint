@@ -1,0 +1,142 @@
+#!/usr/bin/env python
+
+#import matplotlib.pyplot as plt
+import matplotlib
+import h5py
+import numpy
+import inspect, math, os
+import pickle
+import sys
+import matplotlib.pyplot as plt
+
+# Load some other required subroutines:
+execfile(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_common")
+
+print "This is "+ inspect.getfile(inspect.currentframe())
+
+originalDirectory = os.getcwd()
+whichLambda = int(sys.argv[1])
+whichMode = int(sys.argv[2])
+whichSpecies = int(sys.argv[3])
+titleString = 'whichLambda = ' + str(whichLambda) + ' , whichMode = ' + str(whichMode) + ' , whichSpecies = ' + str(whichSpecies)
+
+# Get a list of the subdirectories:                                                                        
+directories = filter(os.path.isdir, os.listdir("."))
+
+atLeastOneDirectorySucceeded = False
+dParticleFluxdLambdas = []
+dHeatFluxdLambdas = []
+dParallelFlowdLambdas = []
+particleFluxPercentErrors = []
+heatFluxPercentErrors = []
+parallelFlowPercentErrors = []
+deltaLambdas = []
+
+for directory in directories:
+  thisInputFilename = directory+"/"+inputFilename
+  with open(thisInputFilename, 'r') as f:
+    inputFile = f.readlines()
+  deltaLambda = readVariable("deltaLambda","float", True)
+  deltaLambdas.append(deltaLambda)
+  
+  filename = directory+"/"+outputFilename
+  if not os.path.isfile(filename):
+      print "Directory "+directory+" does not have a "+outputFilename+" file (yet)."
+      continue
+
+  try:
+      f = h5py.File(filename,'r')
+  except IOError:
+      print "Unable to open "+filename+" even though this file exists."
+      continue
+
+  try:
+      # Try reading a field that should definitely be present in the output file for any run that completed.
+      dummy = f["FSABFlow"][()]
+  except:
+      print "Unable to read "+filename+" even though this file exists."
+      continue
+
+  try:
+      finished = f["finished"]
+  except KeyError:
+      print "Run in directory "+directory+" does not appear to have finished."
+      continue
+
+  print "Processing directory "+directory
+
+  Nspecies_new = f["Nspecies"][()]
+  Zs = f["Zs"][()]
+  dParticleFluxdLambda_finitediff = f["dParticleFluxdLambda_finitediff"][()]
+  dHeatFluxdLambda_finitediff = f["dHeatFluxdLambda_finitediff"][()]
+  dParallelFlowdLambda_finitediff = f["dParallelFlowdLambda_finitediff"][()]
+  particleFluxPercentError = f["particleFluxPercentError"][()]
+  heatFluxPercentError = f["heatFluxPercentError"][()]
+  parallelFlowPercentError = f["parallelFlowPercentError"][()]
+
+  iteration = -1
+
+  dParticleFluxdLambdas.append(dParticleFluxdLambda_finitediff[whichMode-1,whichLambda-1,whichSpecies-1,iteration])
+  dHeatFluxdLambdas.append(dHeatFluxdLambda_finitediff[whichMode-1,whichLambda-1,whichSpecies-1,iteration])
+  dParallelFlowdLambdas.append(dParallelFlowdLambda_finitediff[whichMode-1,whichLambda-1,whichSpecies-1,iteration])
+  particleFluxPercentErrors.append(particleFluxPercentError[whichMode-1,whichLambda-1,whichSpecies-1,iteration])
+  heatFluxPercentErrors.append(heatFluxPercentError[whichMode-1,whichLambda-1,whichSpecies-1,iteration])
+  parallelFlowPercentErrors.append(parallelFlowPercentError[whichMode-1,whichLambda-1,whichSpecies-1,iteration])
+
+plt.figure(facecolor='white')
+plt.scatter(deltaLambdas,dParticleFluxdLambdas)
+plt.xlim([1e-7,1e-1])
+plt.ylim([min(dParticleFluxdLambdas)-0.1*(max(dParticleFluxdLambdas)-min(dParticleFluxdLambdas)),max(dParticleFluxdLambdas)+0.1*(max(dParticleFluxdLambdas)-min(dParticleFluxdLambdas))])
+plt.xlabel('deltaLambda')
+plt.xscale('log')
+plt.ylabel('dParticleFluxdLambdas_finitediff')
+plt.title(titleString)
+
+plt.figure(facecolor='white')
+plt.scatter(deltaLambdas,dHeatFluxdLambdas)
+plt.xlim([1e-7,1e-1])
+plt.ylim([min(dHeatFluxdLambdas)-0.1*(max(dHeatFluxdLambdas)-min(dHeatFluxdLambdas)),max(dHeatFluxdLambdas)+0.1*(max(dHeatFluxdLambdas)-min(dHeatFluxdLambdas))])
+plt.xlabel('deltaLambda')
+plt.xscale('log')
+plt.ylabel('dHeatFluxdLambdas_finitediff')
+plt.title(titleString)
+
+plt.figure(facecolor='white')
+plt.scatter(deltaLambdas,dParallelFlowdLambdas)
+plt.xlim([1e-7,1e-1])
+plt.ylim([min(dParallelFlowdLambdas)-0.1*(max(dParallelFlowdLambdas)-min(dParallelFlowdLambdas)),max(dParallelFlowdLambdas)+0.1*(max(dParallelFlowdLambdas)-min(dParallelFlowdLambdas))])
+plt.xlabel('deltaLambda')
+plt.xscale('log')
+plt.ylabel('dParallelFlowdLambdas_finitediff')
+plt.title(titleString)
+
+plt.figure(facecolor='white')
+plt.scatter(deltaLambdas,particleFluxPercentErrors)
+plt.xlim([1e-7,1e-1])
+
+plt.ylim([min(particleFluxPercentErrors)-0.1*(max(particleFluxPercentErrors)-min(particleFluxPercentErrors)),max(particleFluxPercentErrors)+0.1*(max(particleFluxPercentErrors)-min(particleFluxPercentErrors))])
+plt.xscale('log')
+plt.xlabel('deltaLambda')
+plt.ylabel('particleFluxPercentError')
+plt.title(titleString)
+
+plt.figure(facecolor='white')
+plt.scatter(deltaLambdas,heatFluxPercentErrors)
+plt.xlim([1e-7,1e-1])
+
+plt.ylim([min(heatFluxPercentErrors)-0.1*(max(heatFluxPercentErrors)-min(heatFluxPercentErrors)),max(heatFluxPercentErrors)+0.1*(max(heatFluxPercentErrors)-min(heatFluxPercentErrors))])
+plt.xlabel('deltaLambda')
+plt.xscale('log')
+plt.ylabel('heatFluxPercentError')
+plt.title(titleString)
+
+plt.figure(facecolor='white')
+plt.scatter(deltaLambdas,parallelFlowPercentErrors)
+plt.xlim([1e-7,1e-1])
+plt.ylim([min(parallelFlowPercentErrors)-0.1*(max(parallelFlowPercentErrors)-min(parallelFlowPercentErrors)),max(parallelFlowPercentErrors)+0.1*(max(parallelFlowPercentErrors)-min(parallelFlowPercentErrors))])
+plt.xlabel('deltaLambda')
+plt.xscale('log')
+plt.ylabel('parallelFlowPercentError')
+plt.title(titleString)
+
+plt.show()

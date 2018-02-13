@@ -2751,6 +2751,21 @@ contains
     dBHat_sup_theta_dpsiHat = 0
     dBHat_sup_zeta_dpsiHat = 0
 
+    if (debugAdjoint) then 
+      DHat_init = DHat
+      BHat_init = BHat
+      dBHatdtheta_init = dBHatdtheta
+      dBHatdzeta_init = dBHatdzeta
+      BHat_sup_theta_init = BHat_sup_theta
+      dBHat_sup_theta_dzeta_init = dBHat_sup_theta_dzeta
+      BHat_sup_zeta_init = BHat_sup_zeta
+      dBHat_sup_zeta_dtheta_init = dBHat_sup_zeta_dtheta
+      BHat_sub_theta_init = BHat_sub_theta
+      dBHat_sub_theta_dzeta_init = dBHat_sub_theta_dzeta
+      BHat_sub_zeta_init = BHat_sub_zeta
+      dBHat_sub_zeta_dtheta_init = dBHat_sub_zeta_dtheta
+    end if
+
     deallocate(psiN_full)
     deallocate(psiN_half)
     deallocate(vmec_dBHatdpsiHat)

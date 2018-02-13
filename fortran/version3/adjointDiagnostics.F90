@@ -48,6 +48,9 @@ module adjointDiagnostics
       ! Performs adjointResidual = dMatrixdLambda*forwardSolution - dRHSdLambda
       call MatMultAdd(dMatrixdLambda, forwardSolution, dRHSdLambda, adjointResidual, ierr)
 
+      call VecDestroy(dRHSdLambda, ierr)
+      call MatDestroy(dMatrixdLambda, ierr)
+
     end subroutine
 
     !> Computes inner product associated with free energy norm for deltaF and deltaG

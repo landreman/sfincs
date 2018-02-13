@@ -356,7 +356,6 @@ contains
         call writeHDF5Field("adjointRadialCurrentOption", adjointRadialCurrentOption, "")
         call writeHDF5Field("adjointTotalHeatFluxOption", adjointTotalHeatFluxOption, "")
         call writeHDF5Field("debugAdjoint", debugAdjoint, "")
-        call writeHDF5Field("discreteAdjointOption", discreteAdjointOption, "")
         call writeHDF5Field("nMaxAdjoint", nMaxAdjoint, "")
         call writeHDF5Field("mMaxAdjoint", mMaxAdjoint, "")
         call writeHDF5Field("ns", ns, dspaceIDForNModesAdjoint, dimForNModesAdjoint, "")
@@ -1325,6 +1324,8 @@ contains
        ! No labels applied in this case.
     elseif (dspaceID == dspaceIDForExport_f_x) then
        ! No labels applied in this case.
+    elseif (dspaceID == dspaceIDForNModesAdjoint) then
+      ! No labels applied in this case.
     else
        print *,"WARNING: PROGRAM SHOULD NOT GET HERE. (writeHDF5Doubles)"
     end if

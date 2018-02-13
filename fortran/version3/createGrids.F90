@@ -1172,29 +1172,55 @@
     allocate(NTVKernel(Ntheta,Nzeta))
 
     if (RHSMode > 3) then
-      ! m = 0 : n goes from 0 to nMaxAdjoint
-      NModesAdjoint = (nMaxAdjoint+1)
+      ! m = 0 : n goes from nMinAdjoint to nMaxAdjoint
+      if (mMinAdjoint==0) then
+        NModesAdjoint = (nMaxAdjoint-nMinAdjoint)+1
+      end if
       ! m > 0 : n goes from -nMaxAdjoint to nMaxAdjoint
-      NModesAdjoint = NModesAdjoint + (mMaxAdjoint)*(nMaxAdjoint*2 + 1)
+      if (nMinAdjoint==0) then
+        if (mMinAdjoint==0) then
+          NModesAdjoint = NModesAdjoint + (mMaxAdjoint)*(2*nMaxAdjoint + 1)
+        else
+          NModesAdjoint = NModesAdjoint + ((mMaxAdjoint-mMinAdjoint)+1)*(2*nMaxAdjoint+1)
+        end if
+      else
+        if (mMinAdjoint==0) then
+          NModesAdjoint = NModesAdjoint + (mMaxAdjoint)*2*(nMaxAdjoint-nMinAdjoint+1)
+        else
+          NModesAdjoint = NModesAdjoint + ((mMaxAdjoint-mMinAdjoint)+1)*2*(nMaxAdjoint-nMinAdjoint+1)
+        end if
+      end if
       allocate(ns(NModesAdjoint))
       allocate(ms(NModesAdjoint))
 
       ! Now initialize ms and ns, starting with m = 0
       ! Note that ns is multiplied by Nperiods for VMEC convention
       imn = 1
-      do jn=0,nMaxAdjoint
-        ms(imn) = 0
-        ns(imn) = jn
-        imn = imn+1
-      end do
+      if (mMinAdjoint == 0) then
+        do jn=nMinAdjoint,nMaxAdjoint
+          ms(imn) = 0
+          ns(imn) = jn
+          imn = imn+1
+        end do
+      end if
       ! Now m>0 modes
-      do im = 1,mMaxAdjoint
-        do jn=-nMaxAdjoint, nMaxAdjoint
+      do im = max(1,mMinAdjoint),mMaxAdjoint
+        do jn=nMinAdjoint, nMaxAdjoint
           ms(imn) = im
           ns(imn) = jn
           imn = imn+1
         end do
+        do jn=max(1,nMinAdjoint), nMaxAdjoint
+          ms(imn) = im
+          ns(imn) = -jn
+          imn = imn+1
+        end do
       end do
+    end if
+
+   if (masterProc) then
+      print *,"ms: ", ms
+      print *,"ns: ", ns
     end if
 
     call computeBHat()
@@ -1352,6 +1378,23 @@
         allocate(dParticleFluxdLambda_finitediff(NSpecies,NLambdas,NModesAdjoint))
         allocate(dHeatFluxdLambda_finitediff(NSpecies,NLambdas,NModesAdjoint))
         allocate(dParallelFlowdLambda_finitediff(Nspecies,NLambdas,NModesAdjoint))
+!        allocate(DHat_init(Ntheta,Nzeta))
+!        allocate(BHat_init(Ntheta,Nzeta))
+!        allocate(dBHatdtheta_init(Ntheta,Nzeta))
+!        allocate(dBHatdzeta_init(Ntheta,Nzeta))
+!        allocate(BHat_sup_theta_init(Ntheta,Nzeta))
+!        allocate(dBHat_sup_theta_dzeta_init(Ntheta,Nzeta))
+!        allocate(BHat_sup_zeta_init(Ntheta,Nzeta))
+!        allocate(dBHat_sup_zeta_dtheta_init(Ntheta,Nzeta))
+!        allocate(BHat_sub_theta_init(Ntheta,Nzeta))
+!        allocate(dBHat_sub_theta_dzeta_init(Ntheta,Nzeta))
+!        allocate(BHat_sub_zeta_init(Ntheta,Nzeta))
+!        allocate(dBHat_sub_zeta_dtheta_init(Ntheta,Nzeta))
+        dRadialCurrentdLambda_finitediff = zero
+        dTotalHeatFluxdLambda_finitediff = zero
+        dBootstrapdLambda_finitediff = zero
+        dHeatFluxdLambda_finitediff = zero
+        dParallelFlowdLambda_finitediff = zero
       end if
 
     end if

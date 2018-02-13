@@ -88,6 +88,7 @@ contains
 
     namelist / sensitivityOptions / adjointBootstrapOption, adjointRadialCurrentOption, &
       adjointTotalHeatFluxOption, adjointHeatFluxOption, adjointParticleFluxOption, &
+      nMinAdjoint, mMinadjoint, &
       nMaxAdjoint, mMaxAdjoint, adjointParallelFlowOption, debugAdjoint, discreteAdjointOption, deltaLambda
 
     Zs = speciesNotInitialized

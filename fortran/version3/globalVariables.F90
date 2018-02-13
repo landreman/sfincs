@@ -389,6 +389,7 @@ module globalVariables
   integer, dimension(:), allocatable :: ns
   integer, dimension(:), allocatable :: ms !> Values of n and m to use for Fourier derivatives.
   integer :: nMaxAdjoint = 0, mMaxAdjoint = 0
+  integer :: nMinAdjoint = 0, mMinAdjoint = 0
   integer :: NModesAdjoint = 0, NLambdas = 6
   PetscScalar, dimension(:,:), allocatable :: dRadialCurrentdLambda,dTotalHeatFluxdLambda,dBootstrapdLambda
   PetscScalar, dimension(:,:,:), allocatable :: dParticleFluxdLambda, dHeatFluxdLambda, dParallelFlowdLambda
@@ -398,6 +399,7 @@ module globalVariables
   PetscScalar, dimension(:,:,:), allocatable :: particleFluxPercentError, heatFluxPercentError, parallelFlowPercentError
   PetscScalar, dimension(:,:), allocatable :: radialCurrentPercentError, totalHeatFluxPercentError, bootstrapPercentError
   PetscScalar, dimension(:), allocatable :: bmnc, bsubthetamnc, bsubzetamnc, bsupthetamnc, bsupzetamnc, gmnc
+  PetscScalar, dimension(:,:), allocatable :: DHat_init, BHat_init, dBHatdtheta_init, dBHatdzeta_init, BHat_sup_theta_init, dBHat_sup_theta_dzeta_init, BHat_sup_zeta_init, dBHat_sup_zeta_dtheta_init, BHat_sub_theta_init, dBHat_sub_theta_dzeta_init, BHat_sub_zeta_init, dBHat_sub_zeta_dtheta_init
 
   ! ********************************************************
   !

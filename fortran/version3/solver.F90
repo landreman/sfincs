@@ -466,13 +466,13 @@ module solver
     !> This is where all the adjoint solves happen
     if (RHSMode>3) then
 
-      if (.false.) then
+      if (debugAdjoint) then
 
-      do ispecies = 0,Nspecies
-        do whichAdjointRHS = 1,3
-          call testingAdjointOperator(solutionVec,adjointSolutionVec,whichAdjointRHS,ispecies)
+        do ispecies = 0,Nspecies
+          do whichAdjointRHS = 1,3
+            call testingAdjointOperator(solutionVec,adjointSolutionVec,whichAdjointRHS,ispecies)
+          end do
         end do
-      end do
 
         !> Testing of inner product and adjoint RHS
         do whichAdjointRHS=1,3
@@ -480,7 +480,6 @@ module solver
             call testingInnerProduct(solutionVec,whichAdjointRHS,ispecies)
           end do
         end do
-        stop
 
         do whichMode = 1,NModesAdjoint
           do whichLambda = 1,NLambdas
@@ -514,7 +513,7 @@ module solver
             call testingdMatrixdLambda(solutionVec,whichMode, whichLambda, deltaLambda)
           end do
         end do
-      end if !.false.
+      end if
 
       !> Allocate adjointSolutionVec
       call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointSolutionVec, ierr)

@@ -58,6 +58,7 @@ dParallelFlowdLambda = f['dParallelFlowdLambda'][()]
 dParticleFluxdLambda_finitediff = f['dParticleFluxdLambda_finitediff'][()]
 dHeatFluxdLambda_finitediff = f['dHeatFluxdLambda_finitediff'][()]
 dParallelFlowdLambda_finitediff = f['dParallelFlowdLambda_finitediff'][()]
+
 particleFluxPercentError = f['particleFluxPercentError'][()]
 heatFluxPercentError = f['heatFluxPercentError'][()]
 parallelFlowPercentError = f['parallelFlowPercentError'][()]
@@ -67,10 +68,67 @@ bsupthetamnc = f['bsupthetamnc'][()]
 bsupzetamnc = f['bsupzetamnc'][()]
 bsubthetamnc = f['bsubthetamnc'][()]
 bsubzetamnc = f['bsubzetamnc'][()]
+gmnc = f['gmnc'][()]
 
 Nspecies = int(f['Nspecies'][()])
 NModesAdjoint = int(f['NModesAdjoint'][()])
 NLambda = 6
+
+yticks = mtick.FormatStrFormatter('%.3f%%')
+
+plt.figure(facecolor='white')
+plt.scatter(ns,abs(bmnc),c=ms,vmin=min(ms),vmax=max(ms),s=20,edgecolor='black')
+plt.yscale('log')
+cb = plt.colorbar()
+cb.ax.set_title('m')
+plt.ylim((min(bmnc),max(bmnc)))
+plt.xlabel('n')
+plt.ylabel('|bmnc|')
+
+plt.figure(facecolor='white')
+plt.scatter(ns,abs(bsupthetamnc),c=ms,vmin=min(ms),vmax=max(ms),s=20,edgecolor='black')
+plt.yscale('log')
+cb = plt.colorbar()
+cb.ax.set_title('m')
+plt.ylim((min(bsupthetamnc),max(bsupthetamnc)))
+plt.xlabel('n')
+plt.ylabel('|bsupthetamnc|')
+
+plt.figure(facecolor='white')
+plt.scatter(ns,abs(bsupzetamnc),c=ms,vmin=min(ms),vmax=max(ms),s=20,edgecolor='black')
+cb = plt.colorbar()
+plt.yscale('log')
+cb.ax.set_title('m')
+plt.ylim((min(bsupzetamnc),max(bsupzetamnc)))
+plt.xlabel('n')
+plt.ylabel('|bsupzetamnc|')
+
+plt.figure(facecolor='white')
+plt.scatter(ns,abs(bsubthetamnc),c=ms,vmin=min(ms),vmax=max(ms),s=20,edgecolor='black')
+cb = plt.colorbar()
+plt.yscale('log')
+cb.ax.set_title('m')
+plt.ylim((min(bsubthetamnc),max(bsubthetamnc)))
+plt.xlabel('n')
+plt.ylabel('|bsubthetamnc|')
+
+plt.figure(facecolor='white')
+plt.scatter(ns,abs(bsubzetamnc),c=ms,vmin=min(ms),vmax=max(ms),s=20,edgecolor='black')
+cb = plt.colorbar()
+plt.yscale('log')
+cb.ax.set_title('m')
+plt.ylim((min(bsubzetamnc),max(bsubzetamnc)))
+plt.xlabel('n')
+plt.ylabel('|bsubzetamnc|')
+
+plt.figure(facecolor='white')
+plt.scatter(ns,abs(gmnc),c=ms,vmin=min(ms),vmax=max(ms),s=20,edgecolor='black')
+cb = plt.colorbar()
+plt.yscale('log')
+cb.ax.set_title('m')
+plt.ylim((min(gmnc),max(gmnc)))
+plt.xlabel('n')
+plt.ylabel('|gmnc|')
 
 NspeciesToPlot = Nspecies
 if Nspecies>3:
@@ -127,7 +185,6 @@ for ispecies in range(0,NspeciesToPlot):
 # fig.patch.set_facecolor('white')
 # numRows = NspeciesToPlot
 # numCols = 4
-yticks = mtick.FormatStrFormatter('%.3f%%')
 for ispecies in range(0,NspeciesToPlot):
   fig = plt.figure()
   fig.patch.set_facecolor('white')
@@ -177,12 +234,23 @@ for ispecies in range(0,NspeciesToPlot):
   print "iSpecies: " + str(ispecies)
   print "whichLambda: " + str(whichLambda)
   print "parallelFlow percent error: " + str(parallelFlowPercentError[:,whichLambda-1,ispecies,iteration])
+  print "parallelFlow finite diff: " + str(dParallelFlowdLambda_finitediff[:,whichLambda-1,ispecies,iteration])
+  print "parallelFlow analytic: " + str(dParallelFlowdLambda[:,whichLambda-1,ispecies,iteration])
   print "heatFlux percent error: " + str(heatFluxPercentError[:,whichLambda-1,ispecies,iteration])
+  print "heatFlux finite diff: " + str(dHeatFluxdLambda_finitediff[:,whichLambda-1,ispecies,iteration])
+  print "heatFlux analytic: " + str(dHeatFluxdLambda[:,whichLambda-1,ispecies,iteration])
   print "particleFlux percent error: " + str(particleFluxPercentError[:,whichLambda-1,ispecies,iteration])
+  print "particleFlux finite diff: " + str(dParticleFluxdLambda_finitediff[:,whichLambda-1,ispecies,iteration])
+  print "particleFlux: " + str(dParticleFluxdLambda[:,whichLambda-1,ispecies,iteration])
   print "ms: " + str(ms)
   print "ns: " + str(ns)
-                                          
-                                             
+
+print "bmnc: " + str(bmnc)
+print "bsupthetamnc: " + str(bsupthetamnc)
+print "bsupzetamnc: " + str(bsupzetamnc)
+print "bsubthetamnc: " + str(bsubthetamnc)
+print "bsubzetamnc: " + str(bsubzetamnc)
+print "gmnc: " + str(gmnc)
                                              
 
 '''
