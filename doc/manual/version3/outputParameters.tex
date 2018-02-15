@@ -304,10 +304,21 @@ Should be within machine precision of 0.}
 
 \myhrule
 
-\outputparam{delta\_f}
+\outputparamWithUnderscore{delta\_f}
+{delta_f}
 {$M_x \times M_{\xi} \times M_{\zeta} \times M_{\theta} \times \text{\ttfamily Nspecies} \times \text{\ttfamily NIterations}$ matrix of reals}
 {\parlink{export\_delta\_f} == \true.}
-{?}
+{First order distribution function $f_{s1} = f_{s} - f_{s0}$ for each species, normalized by $\bar{n} / \bar{v}^3$. 
+The phase-space grid $\left(M_x, M_{\xi}, M_{\zeta}, M_{\theta}\right)$} is specified by the input parameters in the {\ttfamily \hyperref[sec:exportfParameters]{export\_f}} namelist. 
+
+\myhrule
+
+\outputparamWithUnderscore{full\_f}
+{full_f}
+{$M_x \times M_{\xi} \times M_{\zeta} \times M_{\theta} \times \text{\ttfamily Nspecies} \times \text{\ttfamily NIterations}$ matrix of reals}
+{\parlink{export\_full\_f} == \true.}
+{Full distribution function $f_{s}$ for each species, normalized by $\bar{n} / \bar{v}^3$. 
+The phase-space grid $\left(M_x, M_{\xi}, M_{\zeta}, M_{\theta}\right)$} is specified by the input parameters in the {\ttfamily \hyperref[sec:exportfParameters]{export\_f}} namelist. 
 
 \myhrule
 
