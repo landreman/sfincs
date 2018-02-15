@@ -1,14 +1,333 @@
 \chapter{Output Parameters}
 \label{ch:output}
 
-In this chapter we describe output parameters which are available in the \sfincs~output file \parlink{outputFileName} after a successful \sfincs~run. 
+\newcommand{\outputparam}[4]{{\setlength{\parindent}{0cm} {\ttfamily \bfseries \hypertarget{#1}{#1}}\\{\it Type}: #2\\{\it Available when}: #3\\{\it Meaning}: #4}}
+\newcommand{\outputparamWithUnderscore}[5]{{\setlength{\parindent}{0cm} {\ttfamily \bfseries \hypertarget{#2}{#1}}\\{\it Type}: #3\\{\it Available when}: #4\\{\it Meaning}: #5}}
+\newcommand{\underscoreparlink}[2]{{\ttfamily \hyperlink{#2}{#1}}}
+
+In this chapter we describe output parameters which are available in the \sfincs~output file \parlink{outputFileName} after a %successful 
+\sfincs~run. 
 The output is in the \HDF~format, and the output can be looked at e.g. by using the {\ttfamily h5dump} command on Linux. 
 Note that all parameters in the output file are case-sensitive. 
+Moreover, many of the input parameters in chapter~\ref{ch:input} also exist in the output file and we refrain from repeating them here. 
 
 
-\section{Convergence flags}
+\section{Convergence and test parameters}
 
-\section{Output fluxes and flows}
+\myhrule
+
+\outputparam{finished}
+{integer}
+{\sfincs~has finished.}
+{If this variable exists, then \sfincs~reached the end of all requested computations and exited gracefully. 
+Note that this does not guarantee that a nonlinear calculation (\parlink{includePhi1} == \true) has converged.}
+
+\myhrule
+
+\outputparam{integerToRepresentTrue}
+{integer}
+{Always}
+{Since \HDF~does not have a Boolean datatype, this integer value is used to represent \true.}
+
+\myhrule
+
+\outputparam{integerToRepresentFalse}
+{integer}
+{Always}
+{Since \HDF~does not have a Boolean datatype, this integer value is used to represent \false.}
+
+\myhrule
+
+\outputparam{didNonlinearCalculationConverge}
+{integer}
+{\parlink{RHSMode} == 1, \parlink{solveSystem} == \true, \parlink{includePhi1} == \true and \parlink{finished} available.}
+{If this variable is \true~the nonlinear iteration has converged. Interpret this Boolean data by comparing to \parlink{integerToRepresentTrue}/\parlink{integerToRepresentFalse}.}
+
+\myhrule
+
+\outputparam{lambda}
+{real}
+{\parlink{RHSMode} == 1, \parlink{solveSystem} == \true and \parlink{includePhi1} == \true.}
+{Lagrange multiplier associated with the constraint that $\left\langle \Phi_1\right\rangle = 0$, which is included in the quasineutrality equation. %Should be within machine precision of 0.
+This parameter should come out as negligible in quasineutrality, e.g. its size should be significantly smaller than the maximum charge density of the plasma species $Z_s n_s$.
+\todo{Is this correct?}}
+
+\myhrule
+
+\outputparam{NIterations}
+{integer}
+{\parlink{RHSMode} == 1 and \parlink{solveSystem} == \true.}
+{Number of iterations in the nonlinear calculation. (In a linear calculation this will be 1.)}
+
+\myhrule
+
+
+
+\section{Radial fluxes and flows}
+
+A detailed description of the most important output fluxes and flows are given in the Technical Documentation for \sfincs. 
+Here we give a concise version of some of the quantities. 
+Transforming the dimension of the output quantities into SI units is typically done with the normalizations 
+$\bar{B}$, $\bar{R}$, $\bar{n}$, $\bar{m}$, $\bar{T}$, $\bar{v}$, $\bar{\Phi}$ (see section~\ref{sec:normalizations}). 
+
+\subsubsection{Radial fluxes}
+
+The radial fluxes have the form 
+\[
+\left\langle \bm{X} \cdot \nabla Y \right\rangle
+\]
+where $Y$ is a flux-surface label and $\left< \ldots \right>$ denotes a flux surface average. In \sfincs~there are 4 possible labels: $\hat{\psi}$, $\psi_N$, $\hat{r}$ and $r_N$ (see section~\ref{sec:radialCoordinates}), indicated by the suffix {\ttfamily \_psiHat}, {\ttfamily \_psiN}, {\ttfamily \_rHat} or {\ttfamily \_rN} in the output variable name. 
+Below we will only present the description of the {\ttfamily XXX\_psiHat} variables, but the description of the other variables are readily obtained by noting that 
+all flux-surface labels are dimensionless which implies that the normalization factor will be the same. E.g. when $\displaystyle \left\langle \bm{X} \cdot \nabla \hat{\psi} \right\rangle = \text{\ttfamily NormalizationFactor} \cdot \text{\ttfamily XXX\_psiHat}$ then also $\displaystyle \left\langle \bm{X} \cdot \nabla \hat{r} \right\rangle = \text{\ttfamily NormalizationFactor} \cdot \text{\ttfamily XXX\_rHat}$ applies with the same {\ttfamily NormalizationFactor}. 
+
+For the radial flux of each quantity (particle, momentum and energy), and for each radial coordinate, there is an output quantity associated with the zeroth-order $f_{s0}$ or with the full distribution function $f_s = f_{s0} + f_{s1}$, and there is also a quantity associated with the radial magnetic drift, with the radial $\bm{E} \times \bm{B}$-drift or with the total drift $\bm{v}_{ds} = \bm{v}_{ms} + \bm{v}_{E}$. Here we only present all possible combinations for the particle flux, but the pattern is the same for the momentum and energy flux. 
+
+\myhrule
+
+\outputparamWithUnderscore{particleFlux\_vd\_psiHat}
+{particleFlux_vd_psiHat}
+{$\text{\ttfamily Nspecies} \times \text{\ttfamily NIterations}$ matrix of reals}
+{\parlink{RHSMode} == 1, \parlink{solveSystem} == \true and \parlink{includePhi1} == \true.}
+{$\displaystyle \text{\ttfamily particleFlux\_vd\_psiHat} = \frac{\bar{R}}{\bar{n} \bar{v}} \left\langle \int d^3v f_s \, \bm{v}_{ds} \cdot \nabla \hat{\psi}\right\rangle$ for all plasma species. The final result is in the last index corresponding to the last nonlinear iteration.}
+
+\myhrule
+
+\outputparamWithUnderscore{particleFlux\_vm\_psiHat}
+{particleFlux_vm_psiHat}
+{$\text{\ttfamily Nspecies} \times \text{\ttfamily NIterations}$ matrix of reals}
+{\parlink{RHSMode} == 1 and \parlink{solveSystem} == \true.}
+{$\displaystyle \text{\ttfamily particleFlux\_vm\_psiHat} = \frac{\bar{R}}{\bar{n} \bar{v}} \left\langle \int d^3v f_s \, \bm{v}_{ms} \cdot \nabla \hat{\psi}\right\rangle$ for all plasma species. The final result is in the last index corresponding to the last nonlinear iteration.}
+
+\myhrule
+
+\outputparamWithUnderscore{particleFlux\_vE\_psiHat}
+{particleFlux_vE_psiHat}
+{$\text{\ttfamily Nspecies} \times \text{\ttfamily NIterations}$ matrix of reals}
+{\parlink{RHSMode} == 1, \parlink{solveSystem} == \true and \parlink{includePhi1} == \true.}
+{$\displaystyle \text{\ttfamily particleFlux\_vE\_psiHat} = \frac{\bar{R}}{\bar{n} \bar{v}} \left\langle \int d^3v f_s \, \bm{v}_{E} \cdot \nabla \hat{\psi}\right\rangle$ for all plasma species. The final result is in the last index corresponding to the last nonlinear iteration.}
+
+\myhrule
+
+\outputparamWithUnderscore{particleFlux\_vm0\_psiHat}
+{particleFlux_vm0_psiHat}
+{$\text{\ttfamily Nspecies} \times \text{\ttfamily NIterations}$ matrix of reals}
+{\parlink{RHSMode} == 1 and \parlink{solveSystem} == \true.}
+{$\displaystyle \text{\ttfamily particleFlux\_vm0\_psiHat} = \frac{\bar{R}}{\bar{n} \bar{v}} \left\langle \int d^3v f_{s0} \, \bm{v}_{ms} \cdot \nabla \hat{\psi}\right\rangle$ for all plasma species. The final result is in the last index corresponding to the last nonlinear iteration. This variable should cancel \underscoreparlink{particleFlux\_vE0\_psiHat}{particleFlux_vE0_psiHat} in the last nonlinear iteration since $f_{s0}$ cannot drive radial transport (i.e. in a linear calculations this quantity should be 0 to high precision unless there is a radial current in the magnetic equilibrium).}
+
+\myhrule
+
+\outputparamWithUnderscore{particleFlux\_vE0\_psiHat}
+{particleFlux_vE0_psiHat}
+{$\text{\ttfamily Nspecies} \times \text{\ttfamily NIterations}$ matrix of reals}
+{\parlink{RHSMode} == 1, \parlink{solveSystem} == \true and \parlink{includePhi1} == \true.}
+{$\displaystyle \text{\ttfamily particleFlux\_vE0\_psiHat} = \frac{\bar{R}}{\bar{n} \bar{v}} \left\langle \int d^3v f_{s0} \, \bm{v}_{E} \cdot \nabla \hat{\psi}\right\rangle$ for all plasma species. The final result is in the last index corresponding to the last nonlinear iteration. This variable should cancel \underscoreparlink{particleFlux\_vm0\_psiHat}{particleFlux_vm0_psiHat} in the last nonlinear iteration since $f_{s0}$ cannot drive radial transport.}
+
+\myhrule
+
+\outputparamWithUnderscore{particleFlux\_vd1\_psiHat}
+{particleFlux_vd1_psiHat}
+{$\text{\ttfamily Nspecies} \times \text{\ttfamily NIterations}$ matrix of reals}
+{\parlink{RHSMode} == 1, \parlink{solveSystem} == \true and \parlink{includePhi1} == \true.}
+{$\displaystyle \text{\ttfamily particleFlux\_vd1\_psiHat} = \text{\ttfamily particleFlux\_vm\_psiHat}~+~\text{\ttfamily particleFlux\_vE0\_psiHat}$. The rationale for defining this quantity is that (at least for $E_r = 0$) it gives the particle flux that would be expected if \parlink{includePhi1} == \false.}
+
+\myhrule
+
+\outputparamWithUnderscore{particleFlux\_v\textcolor{magenta}{XN}\_\textcolor{magenta}{Y}}
+{particleFlux_vXN_Y}
+{$\text{\ttfamily Nspecies} \times \text{\ttfamily NIterations}$ matrix of reals}
+{See above for various $\textcolor{magenta}{XN}$.}
+{For different options of $\textcolor{magenta}{XN}$ see output {\ttfamily particleFlux} parameters defined above. 
+For different options of $\textcolor{magenta}{Y}$ see flux-surface labels (section~\ref{sec:radialCoordinates}). 
+$\displaystyle \text{\ttfamily particleFlux\_v\textcolor{magenta}{XN}\_\textcolor{magenta}{Y}} = \frac{\bar{R}}{\bar{n} \bar{v}} \left\langle \int d^3v f_{s\textcolor{magenta}{N}} \, \bm{v}_{\textcolor{magenta}{X}s} \cdot \nabla \textcolor{magenta}{Y}\right\rangle$ for all plasma species. The final result is in the last index corresponding to the last nonlinear iteration.}
+
+\myhrule
+
+%\outputparamWithUnderscore{momentumFlux\_vm\_psiHat}
+%{momentumFluxvmpsiHat}
+%{$\text{\ttfamily Nspecies} \times \text{\ttfamily NIterations}$ matrix of reals}
+%{Always}
+%{$\displaystyle \text{\ttfamily momentumFlux\_vm\_psiHat} = \frac{\bar{R}}{\bar{n} \bar{v}^2 \bar{B} \bar{m}} \left\langle \int d^3v f_s \, B m_s v_{\|} \bm{v}_{ms} \cdot \nabla \hat{\psi}\right\rangle$ for all plasma species. The final result is in the last index corresponding to the last nonlinear iteration.}
+%
+%\myhrule
+
+\outputparamWithUnderscore{momentumFlux\_v\textcolor{magenta}{XN}\_\textcolor{magenta}{Y}}
+{momentumFlux_vXN_Y}
+{$\text{\ttfamily Nspecies} \times \text{\ttfamily NIterations}$ matrix of reals}
+{See above for various $\textcolor{magenta}{XN}$.}
+{For different options of $\textcolor{magenta}{XN}$ see  
+\underscoreparlink{particleFlux\_v\textcolor{magenta}{XN}\_\textcolor{magenta}{Y}}{particleFlux_vXN_Y}.
+For different options of $\textcolor{magenta}{Y}$ see flux-surface labels (section~\ref{sec:radialCoordinates}). 
+$\displaystyle \text{\ttfamily momentumFlux\_v\textcolor{magenta}{XN}\_\textcolor{magenta}{Y}} = \frac{\bar{R}}{\bar{n} \bar{v}^2 \bar{B} \bar{m}} \left\langle \int d^3v f_{s\textcolor{magenta}{N}} \, B m_s v_{\|} \bm{v}_{\textcolor{magenta}{X}s} \cdot \nabla \textcolor{magenta}{Y}\right\rangle$ for all plasma species. The final result is in the last index corresponding to the last nonlinear iteration.}
+
+\myhrule
+
+\outputparamWithUnderscore{heatFlux\_v\textcolor{magenta}{XN}\_\textcolor{magenta}{Y}}
+{heatFlux_vXN_Y}
+{$\text{\ttfamily Nspecies} \times \text{\ttfamily NIterations}$ matrix of reals}
+{See above for various $\textcolor{magenta}{XN}$.}
+{For different options of $\textcolor{magenta}{XN}$ see  
+\underscoreparlink{particleFlux\_v\textcolor{magenta}{XN}\_\textcolor{magenta}{Y}}{particleFlux_vXN_Y}.
+For different options of $\textcolor{magenta}{Y}$ see flux-surface labels (section~\ref{sec:radialCoordinates}). 
+$\displaystyle \text{\ttfamily heatFlux\_v\textcolor{magenta}{XN}\_\textcolor{magenta}{Y}} = \frac{\bar{R}}{\bar{n} \bar{v}^3 \bar{m}} \left\langle \int d^3v f_{s\textcolor{magenta}{N}} \, \frac{m_s v^2}{2} \bm{v}_{\textcolor{magenta}{X}s} \cdot \nabla \textcolor{magenta}{Y}\right\rangle$ for all plasma species. The final result is in the last index corresponding to the last nonlinear iteration.}
+
+\myhrule
+
+\outputparam{flow}
+{$\text{\ttfamily Nzeta} \times \text{\ttfamily Ntheta} \times \text{\ttfamily Nspecies} \times \text{\ttfamily NIterations}$ matrix of reals}
+{\parlink{RHSMode} == 1 and \parlink{solveSystem} == \true.}
+{$\displaystyle \text{\ttfamily flow} =  \frac{1}{\bar{n} \bar{v}} \int d^3v \, v_{\|} f_s$.}
+
+\myhrule
+
+\outputparam{velocityUsingFSADensity}
+{$\text{\ttfamily Nzeta} \times \text{\ttfamily Ntheta} \times \text{\ttfamily Nspecies} \times \text{\ttfamily NIterations}$ matrix of reals}
+{\parlink{RHSMode} == 1 and \parlink{solveSystem} == \true.}
+{{\ttfamily velocityUsingFSADensity} =  \parlink{flow}~/~\parlink{nHats}.}
+
+\myhrule
+
+\outputparam{velocityUsingTotalDensity}
+{$\text{\ttfamily Nzeta} \times \text{\ttfamily Ntheta} \times \text{\ttfamily Nspecies} \times \text{\ttfamily NIterations}$ matrix of reals}
+{\parlink{RHSMode} == 1 and \parlink{solveSystem} == \true.}
+{{\ttfamily velocityUsingTotalDensity} =  \parlink{flow}~/~\parlink{totalDensity}.}
+
+\myhrule
+
+\outputparam{MachUsingFSAThermalSpeed}
+{$\text{\ttfamily Nzeta} \times \text{\ttfamily Ntheta} \times \text{\ttfamily Nspecies} \times \text{\ttfamily NIterations}$ matrix of reals}
+{\parlink{RHSMode} == 1 and \parlink{solveSystem} == \true.}
+{{\ttfamily MachUsingFSAThermalSpeed} =  (\parlink{mHats}~/~\parlink{THats})${}^{1/2}$~$\cdot$~\parlink{flow}~/~\parlink{nHats}.}
+
+\myhrule
+
+\outputparam{FSABFlow}
+{$\text{\ttfamily Nspecies} \times \text{\ttfamily NIterations}$ matrix of reals}
+{\parlink{RHSMode} == 1 and \parlink{solveSystem} == \true.}
+{$\displaystyle \text{\ttfamily FSABFlow} =  \frac{1}{\bar{v} \bar{B} \bar{n}} \left\langle B \int d^3v \, v_{\|} f_s \right\rangle$.}
+
+\myhrule
+
+\outputparam{FSABVelocityUsingFSADensity}
+{$\text{\ttfamily Nspecies} \times \text{\ttfamily NIterations}$ matrix of reals}
+{\parlink{RHSMode} == 1 and \parlink{solveSystem} == \true.}
+{{\ttfamily FSABVelocityUsingFSADensity} =  \parlink{FSABFlow}~/~\parlink{nHats}.}
+
+\myhrule
+
+\outputparam{FSABVelocityUsingFSADensityOverB0}
+{$\text{\ttfamily Nspecies} \times \text{\ttfamily NIterations}$ matrix of reals}
+{\parlink{RHSMode} == 1 and \parlink{solveSystem} == \true.}
+{{\ttfamily FSABVelocityUsingFSADensityOverB0} =  ($\bar{B}$~/~$B_0$)~$\cdot$~\parlink{FSABFlow}~/~\parlink{nHats}.}
+
+\myhrule
+
+\outputparam{FSABVelocityUsingFSADensityOverRootFSAB2}
+{$\text{\ttfamily Nspecies} \times \text{\ttfamily NIterations}$ matrix of reals}
+{\parlink{RHSMode} == 1 and \parlink{solveSystem} == \true.}
+{{\ttfamily FSABVelocityUsingFSADensityOverRootFSAB2} =  (1~/~\parlink{nHats})~$\cdot$~\parlink{FSABFlow}~/~(\parlink{FSABHat2})${}^{1/2}$.}
+
+\myhrule
+
+\outputparam{jHat}
+{$\text{\ttfamily Nzeta} \times \text{\ttfamily Ntheta} \times \text{\ttfamily NIterations}$ matrix of reals}
+{\parlink{RHSMode} == 1 and \parlink{solveSystem} == \true.}
+{$\displaystyle \text{\ttfamily jHat} = \frac{\bm{j} \cdot \bm{b}}{e \bar{n} \bar{v}} = \frac{1}{e \bar{n} \bar{v}} \sum_s Z_s e \int d^3v \, v_{\|} f_s = \sum_s Z_s \cdot \text{\parlink{flow}}_s$.}
+
+\myhrule
+
+\outputparam{FSABjHat}
+{$\text{\ttfamily NIterations}$ array of reals}
+{\parlink{RHSMode} == 1 and \parlink{solveSystem} == \true.}
+{$\displaystyle \text{\ttfamily FSABjHat} =  \sum_s Z_s \cdot \text{\parlink{FSABFlow}}_s$.}
+
+\myhrule
+
+\outputparam{FSABjHatOverB0}
+{$\text{\ttfamily NIterations}$ array of reals}
+{\parlink{RHSMode} == 1 and \parlink{solveSystem} == \true.}
+{$\displaystyle \text{\ttfamily FSABjHatOverB0} =  \frac{\bar{B}}{B_0} \text{\parlink{FSABjHat}}$.}
+
+\myhrule
+
+\outputparam{FSABjHatOverRootFSAB2}
+{$\text{\ttfamily NIterations}$ array of reals}
+{\parlink{RHSMode} == 1 and \parlink{solveSystem} == \true.}
+{$\displaystyle \text{\ttfamily FSABjHatOverRootFSAB2} =  \frac{\bar{\text{\parlink{FSABjHat}}}}{\left(\text{\parlink{FSABHat2}}\right)^{1/2}}$.}
+
+\myhrule
+
+\section{Distributions}
+
+\myhrule
+
+\outputparam{densityPerturbation}
+{$\text{\ttfamily Nzeta} \times \text{\ttfamily Ntheta} \times \text{\ttfamily Nspecies} \times \text{\ttfamily NIterations}$ matrix of reals}
+{\parlink{RHSMode} == 1 and \parlink{solveSystem} == \true.}
+{$\displaystyle \text{\ttfamily densityPerturbation} =  \frac{1}{\bar{n}} \int d^3v f_{s1}$.}
+
+\myhrule
+
+\outputparam{totalDensity}
+{$\text{\ttfamily Nzeta} \times \text{\ttfamily Ntheta} \times \text{\ttfamily Nspecies} \times \text{\ttfamily NIterations}$ matrix of reals}
+{\parlink{RHSMode} == 1 and \parlink{solveSystem} == \true.}
+{{\ttfamily totalDensity} = \parlink{nHats}~+~\parlink{densityPerturbation}.}
+
+\myhrule
+
+\outputparam{FSADensityPerturbation}
+{$\text{\ttfamily Nspecies} \times \text{\ttfamily NIterations}$ matrix of reals}
+{\parlink{RHSMode} == 1 and \parlink{solveSystem} == \true.}
+{$\displaystyle \text{\ttfamily FSADensityPerturbation} =  \frac{1}{\bar{n}} \left\langle \int d^3v f_{s1} \right\rangle$. 
+Should be within machine precision of 0.}
+
+\myhrule
+
+\outputparam{pressurePerturbation}
+{$\text{\ttfamily Nzeta} \times \text{\ttfamily Ntheta} \times \text{\ttfamily Nspecies} \times \text{\ttfamily NIterations}$ matrix of reals}
+{\parlink{RHSMode} == 1 and \parlink{solveSystem} == \true.}
+{$\displaystyle \text{\ttfamily densityPerturbation} =  \frac{1}{\bar{n} \bar{T}} \frac{m_s}{3} \int d^3v \, v^2 f_{s1}$.}
+
+\myhrule
+
+\outputparam{totalPressure}
+{$\text{\ttfamily Nzeta} \times \text{\ttfamily Ntheta} \times \text{\ttfamily Nspecies} \times \text{\ttfamily NIterations}$ matrix of reals}
+{\parlink{RHSMode} == 1 and \parlink{solveSystem} == \true.}
+{{\ttfamily totalPressure} = \parlink{nHats} $\cdot$ \parlink{THats}~+~\parlink{pressurePerturbation}.}
+
+\myhrule
+
+\outputparam{FSAPressurePerturbation}
+{$\text{\ttfamily Nspecies} \times \text{\ttfamily NIterations}$ matrix of reals}
+{\parlink{RHSMode} == 1 and \parlink{solveSystem} == \true.}
+{$\displaystyle \text{\ttfamily FSADensityPerturbation} =  \frac{1}{\bar{n} \bar{T}} \frac{m_s}{3} \left\langle \int d^3v \, v^2 f_{s1} \right\rangle$. 
+Should be within machine precision of 0.}
+
+\myhrule
+
+\outputparam{delta\_f}
+{$M_x \times M_{\xi} \times M_{\zeta} \times M_{\theta} \times \text{\ttfamily Nspecies} \times \text{\ttfamily NIterations}$ matrix of reals}
+{\parlink{export\_delta\_f} == \true.}
+{?}
+
+\myhrule
+
+\section{Miscellaneous}
+
+\myhrule
+
+\outputparam{VPrimeHat}
+{real}
+{Always}
+{$\displaystyle \text{\ttfamily VPrimeHat} =  \int_{0}^{2 \pi} d \theta \int_{0}^{2 \pi} d \zeta \frac{\bar{B}}{\bar{R}} \frac{1}{\nabla \psi \cdot \nabla \theta \times \nabla \zeta}$.}
+
+\myhrule
+
+\outputparam{FSABHat2}
+{real}
+{Always}
+{$\displaystyle \text{\ttfamily FSABHat2} =  \frac{1}{\bar{B}^2} \left\langle B^2 \right\rangle$.}
+
+\myhrule
 
 %The default values are usually best for the parameters in this namelist.
 %
