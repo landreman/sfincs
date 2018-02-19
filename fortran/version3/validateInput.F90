@@ -518,10 +518,11 @@ subroutine validateInput()
 
   if (magneticDriftScheme>0 .and. includePhi1) then
      if (masterProc) then
-        print *,"**   ERROR! Some terms involving Phi1 and the magnetic drifts have not yet been implemented."
+        !!print *,"**   ERROR! Some terms involving Phi1 and the magnetic drifts have not yet been implemented." !!Commented by AM 2018-02 
+        print *,"**   WARNING! Some terms involving Phi1 and the magnetic drifts have not yet been implemented." !!Added by AM 2018-02 
         print *,"**          Hence magneticDriftScheme>0 is incompatible with includePhi1."
      end if
-     stop
+     !!stop !!Commented by AM 2018-02
   end if
 
   if (magneticDriftScheme>0) then
