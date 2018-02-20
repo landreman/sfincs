@@ -104,10 +104,7 @@
 
             select case(whichLambda)
               case (0) ! Er
-                if (masterProc) then
-                  print *,"Error! Er sensitivity not yet implemented."
-                end if
-                stop
+                geometricFactor = zero
               case (1) ! BHat
                 dBHatdLambda = cos_angle
                 geometricFactor = - BHat_sup_theta(itheta,izeta)*dBHatdLambda/(BHat(itheta,izeta)*BHat(itheta,izeta))
@@ -192,10 +189,7 @@
             ! geometricFactor = BHat_sup_zeta/BHat
             select case(whichLambda)
               case (0) ! Er
-                if (masterProc) then
-                  print *,"Error! Er sensitivity not yet implemented."
-                end if
-                stop
+                geometricFactor = zero
               case (1) ! BHat
                 dBHatdLambda = cos_angle
                 geometricFactor = -BHat_sup_zeta(itheta,izeta)*dBHatdLambda/(BHat(itheta,izeta)*BHat(itheta,izeta))
@@ -290,15 +284,15 @@
             cos_angle = cos(angle)
             sin_angle = sin(angle)
 
-            !thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2) &
+          !thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / FSABHat2 &
+          !* DHat(itheta,izeta) * BHat_sub_zeta(itheta,izeta)
+
+          !thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2) &
               !* DHat(itheta,izeta) * BHat_sub_zeta(itheta,izeta)
             !geometricFactor = DHat*BHat_sub_zeta/(BHat*BHat)
             select case(whichLambda)
               case (0) ! Er
-                if (masterProc) then
-                  print *,"Error! Er sensitivity not yet implemented."
-                end if
-                stop
+                geometricFactor = DHat(itheta,izeta)*BHat_sub_zeta(itheta,izeta)/(BHat(itheta,izeta)*BHat(itheta,izeta)*dPhiHatdpsiHat)
               case (1) ! BHat
                 dBHatdLambda = cos_angle
                 geometricFactor = -two*dBHatdLambda/(BHat(itheta,izeta) ** 3) &
@@ -377,10 +371,7 @@
             ! geometricFactor = DHat*BHat_sub_theta/(BHat*BHat)
             select case(whichLambda)
               case (0) ! Er
-                if (masterProc) then
-                  print *,"Error! Er sensitivity not yet implemented."
-                end if
-                stop
+                geometricFactor = DHat(itheta,izeta)*BHat_sub_theta(itheta,izeta)/(BHat(itheta,izeta)*BHat(itheta,izeta)*dPhiHatdpsiHat)
               case (1) ! BHat
                 dBHatdLambda = cos_angle
                 geometricFactor = -two*dBHatdLambda*DHat(itheta,izeta)*BHat_sub_theta(itheta,izeta) &
@@ -442,10 +433,7 @@
             ! + BHat_sup_zeta*dBHatdzeta)
             select case(whichLambda)
               case (0) ! Er
-                if (masterProc) then
-                  print *,"Error! Er sensitivity not yet implemented."
-                end if
-                stop
+                geometricFactor = zero
               case (1) ! BHat
                 dBHatdLambda = cos_angle
                 dBHatdthetadLambda = -m*sin_angle
@@ -521,10 +509,7 @@
 
               select case(whichLambda)
                 case (0) ! Er
-                  if (masterProc) then
-                    print *,"Error! Er sensitivity not yet implemented."
-                  end if
-                  stop
+                  geometricFactor = DHat(itheta,izeta)*temp/(BHat(itheta,izeta)**3*dPhiHatdpsiHat)
                 case (1) ! BHat
                   dBHatdthetadLambda = -m*sin_angle
                   dBHatdzetadLambda = n*Nperiods*sin_angle
@@ -630,10 +615,7 @@
 
                 select case(whichLambda)
                   case (0) ! Er
-                    if (masterProc) then
-                      print *,"Error! Er sensitivity not yet implemented."
-                    end if
-                    stop
+                    geometricFactor = xDotFactor/(factor*dPhiHatdpsiHat)
                   case (1) ! BHat
                     dBHatdLambda = cos_angle
                     dBHatdzetadLambda = n*Nperiods*sin_angle
@@ -724,6 +706,7 @@
     end if
 
     end do ! ispecies
+
     ! *********************************************************************************
     ! I do not need the collision operator, boundary conditions for f at x=0,
     ! or sources as they are independent of geometry
@@ -732,8 +715,6 @@
     ! *******************************************************************************
     ! Add the sensitivity of the density and pressure constraints:
     ! *******************************************************************************
-
-
 
     if (procThatHandlesConstraints) then
       L=0

@@ -56,6 +56,7 @@ module testingAdjointDiagnostics
     integer :: ispecies, whichQuantity
     PetscScalar :: analyticResult, finiteDiffResult, deltaFactor
     PetscLogDouble :: time1, time2
+    logical :: constantJr
 
     allocate(particleFluxInit(Nspecies))
     allocate(heatFluxInit(Nspecies))
@@ -80,17 +81,30 @@ module testingAdjointDiagnostics
     bootstrapPercentError = zero
     totalHeatFluxPercentError = zero
 
+    ! RHSMode will be overwritten later
+    if (RHSMode == 5) then
+      constantJr = .true.
+    else
+      constantJr = .false.
+    end if
+
     ! Change settings so adjoint solve occurs - derivatives of all fluxes computed
-    RHSMode = 4
+    !RHSMode = 4
     adjointParticleFluxOption = .true.
     adjointHeatFluxOption = .true.
     adjointParallelFlowOption = .true.
     adjointBootstrapOption = .true.
     adjointTotalHeatFluxOption = .true.
-    adjointRadialCurrentOption = .true.
+    if (constantJr .eqv. .false.) then
+      adjointRadialCurrentOption = .true.
+    end if
 
     call PetscTime(time1, ierr)
-    call mainSolverLoop()
+    if (constantJr) then
+      call ambipolarSolver()
+    else
+      call mainSolverLoop()
+    end if
     call PetscTime(time2, ierr)
     if (masterProc) then
       print *,"Time for adjoint solve: ", time2-time1
@@ -105,9 +119,11 @@ module testingAdjointDiagnostics
     dParticleFluxdLambda_analytic = dParticleFluxdLambda
     dHeatFluxdLambda_analytic = dHeatFluxdLambda
     dParallelFlowdLambda_analytic = dParallelFlowdLambda
-    dRadialCurrentdLambda_analytic = dRadialCurrentdLambda
     dTotalHeatFluxdLambda_analytic = dTotalHeatFluxdLambda
     dBootstrapdLambda_analytic = dBootstrapdLambda
+    if (constantJr .eqv. .false.) then
+      dRadialCurrentdLambda_analytic = dRadialCurrentdLambda
+    end if
 
     ! Set RHSMode = 1 so call to solver does not include adjoint solve
     RHSMode = 1
@@ -133,7 +149,11 @@ module testingAdjointDiagnostics
         call updateVMECGeometry(whichMode, whichLambda, .false.)
 
         ! Compute solutionVec and diagnostics with new geometry
-        call mainSolverLoop()
+        if (ambipolarSolve) then
+          call ambipolarSolver()
+        else
+          call mainSolverLoop()
+        end if
 
         do ispecies = 1, Nspecies
           ! Compute finite difference derivatives
@@ -142,7 +162,9 @@ module testingAdjointDiagnostics
           dParallelFlowdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (FSABVelocityUsingFSADensityOverRootFSAB2(iSpecies)-parallelFlowInit(iSpecies))/(deltaLambda*deltaFactor)
         end do ! ispecies
         dTotalHeatFluxdLambda_finiteDiff(whichLambda,whichMode) = (sum(heatFlux_vm_rN)-sum(heatFluxInit))/(deltaLambda*deltaFactor)
-        dRadialCurrentdLambda_finiteDiff(whichLambda,whichMode) = (dot_product(Zs(1:Nspecies), particleFlux_vm_rN)-dot_product(Zs(1:Nspecies),particleFluxInit))/(deltaLambda*deltaFactor)
+        if (constantJr .eqv. .false.) then
+          dRadialCurrentdLambda_finiteDiff(whichLambda,whichMode) = (dot_product(Zs(1:Nspecies), particleFlux_vm_rN)-dot_product(Zs(1:Nspecies),particleFluxInit))/(deltaLambda*deltaFactor)
+        end if
         dBootstrapdLambda_finiteDiff(whichLambda,whichMode) = (dot_product(Zs(1:Nspecies),FSABVelocityUsingFSADensityOverRootFSAB2)-dot_product(Zs(1:Nspecies),parallelFlowInit))/(deltaLambda*deltaFactor)
 
         ! Reset geometry to original values
@@ -172,7 +194,9 @@ module testingAdjointDiagnostics
         end select
         ! If magnitude of fourier mode is nearly zero, don't use for benchmarking tests
         if (abs(deltaFactor) > 1.d-6) then
-          radialCurrentPercentError(whichLambda,whichMode) = percentError(dRadialCurrentdLambda_analytic(whichLambda,whichMode),dRadialCurrentdLambda_finitediff(whichLambda,whichMode))
+          if (constantJr .eqv. .false.) then
+            radialCurrentPercentError(whichLambda,whichMode) = percentError(dRadialCurrentdLambda_analytic(whichLambda,whichMode),dRadialCurrentdLambda_finitediff(whichLambda,whichMode))
+          end if
           totalHeatFluxPercentError(whichLambda,whichMode) = percentError(dTotalHeatFluxdLambda_analytic(whichLambda,whichMode),dTotalHeatFluxdLambda_finitediff(whichLambda,whichMode))
           bootstrapPercentError(whichLambda,whichMode) = percentError(dBootstrapdLambda_analytic(whichLambda, whichMode), dBootstrapdLambda_finitediff(whichLambda,whichMode))
           do ispecies = 1, NSpecies
@@ -187,7 +211,11 @@ module testingAdjointDiagnostics
     end do ! whichMode
 
     ! Change RHSMode so adjoint-related quantities are written to output
-    RHSMode = 4
+    if (constantJr) then
+      RHSMode = 5
+    else
+      RHSMode = 4
+    end if
     call updateOutputFile(1, .false.)
     call finalizeHDF5()
 

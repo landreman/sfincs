@@ -37,7 +37,7 @@ module solver
     PetscReal :: mumps_value
     PetscReal :: atol, rtol, stol
     integer :: maxit, maxf, ispecies, whichAdjointRHS
-    Vec :: adjointSolutionVec, summedSolutionVec, adjointRHSVec
+    Vec :: adjointSolutionVec, summedSolutionVec, adjointRHSVec, adjointSolutionJr
     logical :: useSummedSolutionVec
     integer :: whichLambda, whichMode, whichSpecies
     PetscReal :: norm
@@ -464,9 +464,10 @@ module solver
     end select
 
     !> This is where all the adjoint solves happen
-    if (RHSMode>3) then
+    if (RHSMode>3 .and. (ambipolarSolve .eqv. .false.)) then
 
-      if (debugAdjoint) then
+      ! Debugging stuff
+      if (.false.) then
 
         do ispecies = 0,Nspecies
           do whichAdjointRHS = 1,3
@@ -519,6 +520,12 @@ module solver
       call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointSolutionVec, ierr)
       call VecSet(adjointSolutionVec, zero, ierr)
 
+      !> Allocate adjointSolutionVecJr
+      if (RHSMode==5) then
+        call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointSolutionJr, ierr)
+        call VecSet(adjointSolutionJr, zero, ierr)
+      end if
+
       !> Allocate summedSolutionVec if needed
       if ((all(adjointHeatFluxOption) .and. adjointTotalHeatFluxOption) .or. &
         (all(adjointParticleFluxOption) .and. adjointRadialCurrentOption) .or. &
@@ -569,6 +576,42 @@ module solver
 
             end if
           end if
+
+      ! Perform adjoint solve for adjointSolutionJr
+      if (RHSMode==5) then
+        whichAdjointRHS = 1
+        ispecies = 0
+        if (masterProc) then
+          print *,"################################################################"
+          print "(a,i1,a,i1)"," Solving adjoint system with adjoint RHS ",whichAdjointRHS," and species ",ispecies
+          print *,"################################################################"
+        end if
+
+        !> Construct RHS vec
+        call VecSet(adjointRHSVec, zero, ierr)
+        call populateAdjointRHS(adjointRHSVec, whichAdjointRHS, ispecies)
+
+        if (masterProc) then
+           print *,"Beginning the adjoint solve.  This could take a while ..."
+        end if
+
+        call PetscTime(time1, ierr)
+        if (solveSystem) then
+          if (discreteAdjointOption .eqv. .false.) then
+            call KSPSolve(KSPInstance,adjointRHSVec,adjointSolutionJr, ierr)
+          else
+            call KSPSolveTranspose(KSPInstance,adjointRHSVec,adjointSolutionJr, ierr)
+          end if
+        end if
+
+        call PetscTime(time2, ierr)
+        if (masterProc) then
+           print *,"Done with the adjoint solve.  Time to solve: ", time2-time1, " seconds."
+        end if
+        call PetscTime(time1, ierr)
+
+        call checkIfKSPConverged(KSPInstance)
+      end if
 
       !> First, we'll compute the species-specific fluxes if needed
       do whichAdjointRHS=1,3
@@ -657,7 +700,7 @@ module solver
 !!          end if
 
           !> Compute diagnostics for species-specific fluxes
-          call evaluateDiagnostics(solutionVec, adjointSolutionVec,whichAdjointRHS,ispecies)
+          call evaluateDiagnostics(solutionVec, adjointSolutionVec,adjointSolutionJr,whichAdjointRHS,ispecies)
 
           select case (whichAdjointRHS)
             case (1) ! particle flux
@@ -680,7 +723,7 @@ module solver
 
         if (useSummedSolutionVec) then
 
-          call evaluateDiagnostics(solutionVec,summedSolutionVec,whichAdjointRHS,0)
+          call evaluateDiagnostics(solutionVec,summedSolutionVec,adjointSolutionJr,whichAdjointRHS,0)
           call VecSet(summedSolutionVec,zero,ierr)
         end if
 
@@ -688,7 +731,7 @@ module solver
 
       !> Now, we'll compute the sensitivity of the species-summed fluxes if not already computed
       if (adjointTotalHeatFluxOption .or. adjointBootstrapOption .or. adjointRadialCurrentOption) then
-        ispecies = 0 ! 0 denotes summed RHS
+        ispecies = 0 ! 0 denotes species-summed RHS
 
         do whichAdjointRHS=1,3
           select case(whichAdjointRHS)
@@ -769,7 +812,7 @@ module solver
 
           call PetscTime(time1, ierr)
           ! compute diagnostics for species-summed fluxes
-          call evaluateDiagnostics(solutionVec, adjointSolutionVec, whichAdjointRHS, ispecies)
+          call evaluateDiagnostics(solutionVec, adjointSolutionVec, adjointSolutionJr, whichAdjointRHS, ispecies)
           call PetscTime(time2, ierr)
           if (masterProc) then
             print *,"Done with the adjoint diagnostics.  Time: ", time2-time1, " seconds."
@@ -789,6 +832,9 @@ module solver
       call VecDestroy(adjointRHSVec, ierr)
       if (discreteAdjointOption .eqv. .false.) then
         call MatDestroy(adjointMatrix, ierr)
+      end if
+      if (RHSMode==5) then
+        call VecDestroy(adjointSolutionJr,ierr)
       end if
 
       ! Update HDF5 - this was not done in diagnostics()
@@ -816,6 +862,11 @@ module solver
 !!$    if (useIterativeLinearSolver) then
 !!$       call MatDestroy(preconditionerMatrix, ierr)
 !!$    end if
+    if (ambipolarSolve) then
+      call MatDestroy(matrix,ierr)
+      call MatDestroy(preconditionerMatrix,ierr)
+    end if
+
     call SNESDestroy(mysnes,ierr)
 
 

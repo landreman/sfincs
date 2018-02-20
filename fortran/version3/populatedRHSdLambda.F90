@@ -26,7 +26,7 @@
     PetscErrorCode :: ierr
     PetscScalar :: dBHatdLambda, dBHatdthetadLambda, dBHatdzetadLambda, dDHatdLambda
     PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda
-    PetscScalar :: angle, cos_angle, sin_angle
+    PetscScalar :: angle, cos_angle, sin_angle, stuffToAdd, factor
     integer :: m,n
 
     m = ms(whichMode)
@@ -53,10 +53,10 @@
           + (x2(ix) - three/two)*dTHatdpsiHats(ispecies)/THats(ispecies))) &
           *(Delta*nHats(ispecies)*mHat*sqrtMHat/(two*pi*sqrtpi*Zs(ispecies)*sqrtTHat))
 
-!       factor = 1/(BHat(itheta,izeta)**3) &
-!            *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
-!            - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
-!            * DHat(itheta,izeta) * xPartOfRHS
+       factor = 1/(BHat(itheta,izeta)**3) &
+            *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
+            - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
+            * DHat(itheta,izeta) * xPartOfRHS
 
         do itheta = ithetaMin,ithetaMax
           do izeta = izetaMin,izetaMax
@@ -66,10 +66,8 @@
 
             select case(whichLambda)
               case (0) ! Er
-                if (masterProc) then
-                  print *,"Error! Er sensitivity not yet implemented."
-                end if
-                stop
+                stuffToAdd = factor*(x2(ix)*exp(-x2(ix))*( dnHatdpsiHats(ispecies)/nHats(ispecies) &
+                  + alpha*Zs(ispecies)/THats(ispecies)))
               case (1) ! BHat
                 dBHatdLambda = cos_angle
                 dBHatdthetadLambda = -m*sin_angle
@@ -83,33 +81,39 @@
                   *(BHat_sub_zeta(itheta,izeta)*dBHatdthetadLambda &
                   ! Term from dBHatdzeta
                   - BHat_sub_theta(itheta,izeta)*dBHatdzetadLambda)
+                stuffToAdd = dFactordLambda*xPartOfRHS
               case (2) ! BHat_sup_theta
                 dFactordLambda = 0
+                stuffToAdd = dFactordLambda*xPartOfRHS
               case (3) ! BHat_sup_zeta
                 dFactordLambda = 0
+                stuffToAdd = dFactordLambda*xPartOfRHS
               case (4) ! BHat_sub_theta
                 dBHat_sub_thetadLambda = cos_angle
                 dFactordLambda = -DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
                   *dBHatdzeta(itheta,izeta)*dBHat_sub_thetadLambda
+                stuffToAdd = dFactordLambda*xPartOfRHS
               case (5) ! BHat_sub_zeta
                 dBHat_sub_zetadLambda = cos_angle
                 dFactordLambda = DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
                   * dBHatdtheta(itheta,izeta)*dBHat_sub_zetadLambda
+                stuffToAdd = dFactordLambda*xPartOfRHS
               case (6) ! DHat
                 dDHatdLambda = -DHat(itheta,izeta)*DHat(itheta,izeta)*cos_angle
                 dFactordLambda = one/(BHat(itheta,izeta)**3) &
                   *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
                   - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta)) &
                   * dDHatdLambda
+                stuffToAdd = dFactordLambda*xPartOfRHS
             end select
 
             L = 0
             index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-            call VecSetValue(dRHSdLambda, index, (four/three)*dFactordLambda*xPartOfRHS, INSERT_VALUES, ierr)
+            call VecSetValue(dRHSdLambda, index, (four/three)*stuffToAdd, INSERT_VALUES, ierr)
 
             L = 2
             index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-            call VecSetValue(dRHSdLambda, index, (two/three)*dFactordLambda*xPartOfRHS, INSERT_VALUES, ierr)
+            call VecSetValue(dRHSdLambda, index, (two/three)*stuffToAdd, INSERT_VALUES, ierr)
 
           enddo
         enddo

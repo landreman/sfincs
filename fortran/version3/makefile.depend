@@ -6,10 +6,12 @@ OBJ_FILES = adjointDiagnostics.o ChebyshevGrid.o ChebyshevInterpolationMatrix.o 
 	  populateMatrix.o preallocateMatrix.o quadpack.o radialCoordinates.o readInput.o sfincs.o solver.o sparsify.o \
 	  uniformDiffMatrices.o uniformInterpolationMatrix.o validateInput.o writeHDF5Output.o xGrid.o \
 	  readVMEC/readVMEC.a testingInnerProduct.o testingDiagnosticSensitivity.o testingdRHSdLambda.o \
-      testingdMatrixdLambda.o updateVMECGeometry.o testingAdjointOperator.o testingAdjointDiagnostics.o
+      testingdMatrixdLambda.o updateVMECGeometry.o testingAdjointOperator.o testingAdjointDiagnostics.o \
+      ambipolarSolver.o
 
 # Dependencies:
-adjointDiagnostics.o: globalVariables.o writeHDF5Output.o indices.o
+adjointDiagnostics.o: globalVariables.o writeHDF5Output.o indices.o 
+ambipolarSolver.o: globalVariables.o solver.o
 ChebyshevGrid.o: 
 ChebyshevInterpolationMatrix.o: 
 createGrids.o: globalVariables.o polynomialDiffMatrices.o xGrid.o geometry.o indices.o export_f.o
@@ -29,8 +31,8 @@ preallocateMatrix.o: indices.o globalVariables.o
 quadpack.o:
 radialCoordinates.o: globalVariables.o
 readInput.o: export_f.o globalVariables.o xGrid.o
-sfincs.o: geometry.o globalVariables.o writeHDF5Output.o readInput.o solver.o radialCoordinates.o
-solver.o: globalVariables.o populateAdjointRHS.o
+sfincs.o: ambipolarSolver.o geometry.o globalVariables.o writeHDF5Output.o readInput.o solver.o radialCoordinates.o
+solver.o:  globalVariables.o populateAdjointRHS.o
 sparsify.o:
 testingInnerProduct.o: globalVariables.o adjointDiagnostics.o
 testingDiagnosticSensitivity.o: globalVariables.o adjointDiagnostics.o geometry.o

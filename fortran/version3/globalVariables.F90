@@ -37,7 +37,9 @@ module globalVariables
   logical :: solveSystem = .true.
   integer :: RHSMode = 1, whichRHS
   logical :: isAParallelDirectSolverInstalled
-
+  logical :: ambipolarSolve = .false.
+  integer :: NEr = 20
+  PetscScalar :: Er_search_tolerance = 1.d-12
 
   ! ********************************************************
   ! ********************************************************

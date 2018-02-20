@@ -554,7 +554,7 @@ module adjointDiagnostics
     !! @param adjointSolution Solution to adjoint equation.
     !! @param whichAdjointRHS Indicates which integrated quantity is being differentiated. If = 1 (particle flux), = 2 (heat flux), = 3 (bootstrap current).
     !! @param whichSpecies Indicates species used for inner product. If = 0, corresponds to a species-summed quantity. If nonzero, indicates number of species.
-    subroutine evaluateDiagnostics(forwardSolution, adjointSolution, whichAdjointRHS, whichSpecies)
+    subroutine evaluateDiagnostics(forwardSolution, adjointSolution, adjointSolutionJr,whichAdjointRHS, whichSpecies)
 
       use globalVariables
       use indices
@@ -567,7 +567,10 @@ module adjointDiagnostics
       Vec :: forwardSolution, adjointSolution, adjointResidual, adjointRHSVec
       integer :: whichAdjointRHS, whichSpecies
       integer :: whichLambda, whichMode
-      PetscScalar :: innerProductResult, sensitivityResult
+      PetscScalar :: innerProductResult, sensitivityResult, ErTermToAdd
+      Vec :: adjointResidualEr, adjointSolutionJr
+      PetscScalar :: innerProductResultEr1, innerProductResultEr2, innerProductResultEr3
+      PetscScalar :: radialCurrentSensitivity
 
       if (masterProc) then
         print *,"Computing adjoint diagnostics for RHS ", whichAdjointRHS, " and species ", whichSpecies
@@ -576,6 +579,11 @@ module adjointDiagnostics
       ! Allocate adjointResidual
       call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointResidual, ierr)
       call VecSet(adjointResidual, zero, ierr)
+
+      if (RHSMode > 5) then
+        call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointResidualEr, ierr)
+        call VecSet(adjointResidualEr, zero, ierr)
+      end if
 
       ! Same inner product is formed regardless of whichAdjointMatrix and whichSpecies
       ! Loop over lambda's and perform inner product
@@ -586,6 +594,16 @@ module adjointDiagnostics
           ! Call function to perform (dLdlambdaf - dSdlambda), which calls populatedMatrixdLambda and populatedRHSdLambda
           call evaluateAdjointInnerProductFactor(forwardSolution,adjointResidual,whichLambda,whichMode)
 
+          if (RHSMode > 5) then
+            call VecSet(adjointResidualEr,zero,ierr)
+            call evaluateAdjointInnerProductFactor(forwardSolution,adjointResidualEr,0,0)
+            call innerProduct(adjointSolution,adjointResidualEr,innerProductResultEr1)
+            call innerProduct(adjointSolutionJr,adjointResidualEr,innerProductResultEr2)
+            call innerProduct(adjointSolutionJr,adjointResidual,innerProductResultEr3)
+            call particleFluxSensitivity(radialCurrentSensitivity,forwardSolution,0,whichLambda,whichMode)
+            ErTermToAdd = -(innerProductResultEr1/innerProductResultEr2)*(radialCurrentSensitivity-innerProductResultEr3)
+          end if
+
             call innerProduct(adjointSolution,adjointResidual,innerProductResult)
 
             ! Save to appropriate sensitivity array
@@ -594,24 +612,40 @@ module adjointDiagnostics
                 case (1) ! Particle flux
                   call particleFluxSensitivity(sensitivityResult, forwardSolution, whichSpecies, whichLambda, whichMode)
                   dRadialCurrentdLambda(whichLambda,whichMode) = -innerProductResult + sensitivityResult
+
                 case (2) ! Heat Flux
                   call heatFluxSensitivity(sensitivityResult, forwardSolution, whichSpecies, whichLambda, whichMode)
                   dTotalHeatFluxdLambda(whichLambda,whichMode) = -innerProductResult + sensitivityResult
+                  if (RHSMode == 5) then
+                    dTotalHeatFluxdLambda(whichLambda,whichMode) = dTotalHeatFluxdLambda(whichLambda,whichMode) + ErTermToAdd
+                  end if
                 case (3) ! Bootstrap
                   call parallelFlowSensitivity(sensitivityResult, forwardSolution, whichSpecies, whichLambda, whichMode)
                   dBootstrapdLambda(whichLambda,whichMode) = -innerProductResult + sensitivityResult
+                  if (RHSMode == 5) then
+                    dBootstrapdLambda(whichLambda,whichMode) = dBootstrapdLambda(whichLambda,whichMode) + ErTermToAdd
+                  end if
               end select
             else
               select case (whichAdjointRHS)
                 case (1) ! Particle flux
                   call particleFluxSensitivity(sensitivityResult, forwardSolution, whichSpecies, whichLambda, whichMode)
                   dParticleFluxdLambda(whichSpecies,whichLambda,whichMode) = sensitivityResult - innerProductResult
+                  if (RHSMode == 5) then
+                    dParticleFluxdLambda(whichSpecies,whichLambda,whichMode) = dParticleFluxdLambda(whichSpecies,whichLambda,whichMode) + ErTermToAdd
+                  end if
                 case (2) ! Heat Flux
                   call heatFluxSensitivity(sensitivityResult, forwardSolution, whichSpecies, whichLambda, whichMode)
                   dHeatFluxdLambda(whichSpecies,whichLambda,whichMode) = sensitivityResult - innerProductResult
+                  if (RHSMode == 5) then
+                    dParticleFluxdLambda(whichSpecies,whichLambda,whichMode) = dParticleFluxdLambda(whichSpecies,whichLambda,whichMode) + ErTermToAdd
+                  end if
                 case (3) ! Parallel Flow
                   call parallelFlowSensitivity(sensitivityResult, forwardSolution,whichSpecies, whichLambda, whichMode)
                   dParallelFlowdLambda(whichSpecies,whichLambda,whichMode) = sensitivityResult - innerProductResult
+                  if (RHSMode == 5) then
+                    dParallelFlowdLambda(whichSpecies,whichLambda,whichMode) = dParallelFlowdLambda(whichSpecies,whichLambda,whichMode) + ErTermToAdd
+                  end if
               end select
             end if
 

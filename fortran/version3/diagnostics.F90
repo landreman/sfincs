@@ -963,7 +963,7 @@
        call updateOutputFile(iterationNum, .true.)
     else
     ! updateOuptuFile is called from testingAdjointDiagnostics()
-      if (debugAdjoint .eqv. .false.) then
+      if ((debugAdjoint .eqv. .false.) .and. (ambipolarSolve .eqv. .false.)) then
         call updateOutputFile(iterationNum, .false.)
       end if
     end if
