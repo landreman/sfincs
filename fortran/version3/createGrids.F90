@@ -1167,6 +1167,7 @@
     allocate(dBHat_sup_zeta_dtheta(Ntheta,Nzeta))
 
     allocate(gradpsidotgradB_overgpsipsi(Ntheta,Nzeta))
+    allocate(gpsipsi(Ntheta,Nzeta))
     
     allocate(NTVKernel(Ntheta,Nzeta))
     allocate(bcdata(Ntheta,Nzeta))

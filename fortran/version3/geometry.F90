@@ -357,7 +357,7 @@ contains
     PetscScalar, dimension(:,:), allocatable :: geomang, dgeomangdtheta, dgeomangdzeta, d2geomangdtheta2, d2geomangdzeta2, d2geomangdthetadzeta
     PetscScalar, dimension(:,:), allocatable :: dXdtheta, dXdzeta, dYdtheta, dYdzeta
     PetscScalar, dimension(:,:), allocatable :: d2Xdtheta2, d2Xdthetadzeta, d2Xdzeta2, d2Ydtheta2, d2Ydthetadzeta, d2Ydzeta2
-    PetscScalar, dimension(:,:), allocatable :: gradpsiX, gradpsiY, gradpsiZ, gpsipsi, CX, CY, CZ
+    PetscScalar, dimension(:,:), allocatable :: gradpsiX, gradpsiY, gradpsiZ, CX, CY, CZ
     
     integer :: fileUnit, didFileAccessWork
     character(len=200) :: lineOfFile
@@ -1863,7 +1863,7 @@ contains
        allocate(gradpsiX(Ntheta,Nzeta))
        allocate(gradpsiY(Ntheta,Nzeta))
        allocate(gradpsiZ(Ntheta,Nzeta))
-       allocate(gpsipsi(Ntheta,Nzeta))
+       !allocate(gpsipsi(Ntheta,Nzeta)) Has been upgraded to a global variable 2018.02.21/HS
        allocate(CX(Ntheta,Nzeta))
        allocate(CY(Ntheta,Nzeta))
        allocate(CZ(Ntheta,Nzeta))
@@ -1954,7 +1954,7 @@ contains
        deallocate(gradpsiX)
        deallocate(gradpsiY)
        deallocate(gradpsiZ)
-       deallocate(gpsipsi)
+       !deallocate(gpsipsi)
        deallocate(CX)
        deallocate(CY)
        deallocate(CZ)
@@ -2056,7 +2056,7 @@ contains
     PetscScalar :: scaleFactor
     PetscScalar, dimension(:,:), allocatable :: R, dRdtheta, dRdzeta, dRdpsiHat, dZdtheta, dZdzeta, dZdpsiHat
     PetscScalar, dimension(:,:), allocatable :: dXdtheta, dXdzeta, dXdpsiHat, dYdtheta, dYdzeta, dYdpsiHat
-    PetscScalar, dimension(:,:), allocatable :: g_sub_theta_theta, g_sub_theta_zeta, g_sub_zeta_zeta, g_sub_psi_theta, g_sub_psi_zeta
+    PetscScalar, dimension(:,:), allocatable :: g_sub_theta_theta, g_sub_theta_zeta, g_sub_zeta_zeta, g_sub_psi_theta, g_sub_psi_zeta, g_sub_psi_psi
     logical :: non_Nyquist_mode_available, found_imn
 
 
@@ -2095,6 +2095,7 @@ contains
     allocate(g_sub_zeta_zeta(Ntheta,Nzeta))
     allocate(g_sub_psi_theta(Ntheta,Nzeta))
     allocate(g_sub_psi_zeta(Ntheta,Nzeta))
+    allocate(g_sub_psi_psi(Ntheta,Nzeta))
 
     ! There is a bug in libstell read_wout_file for ASCII-format wout files, in which the xm_nyq and xn_nyq arrays are sometimes
     ! not populated. The next few lines here provide a workaround:
@@ -2762,12 +2763,18 @@ contains
     g_sub_zeta_zeta   = dXdzeta *dXdzeta   + dYdzeta *dYdzeta   + dZdzeta *dZdzeta
     g_sub_psi_theta   = dXdpsiHat*dXdtheta + dYdpsiHat*dYdtheta + dZdpsiHat*dZdtheta
     g_sub_psi_zeta    = dXdpsiHat*dXdzeta  + dYdpsiHat*dYdzeta  + dZdpsiHat*dZdzeta
+    g_sub_psi_psi     = dXdpsiHat*dXdpsiHat+ dYdpsiHat*dYdpsiHat+ dZdpsiHat*dZdpsiHat
 
     gradpsidotgradB_overgpsipsi = dBHatdpsiHat &
          + ((g_sub_theta_zeta*g_sub_psi_zeta-g_sub_psi_theta*g_sub_zeta_zeta)*dBHatdtheta &
          + (g_sub_psi_theta*g_sub_theta_zeta-g_sub_theta_theta*g_sub_psi_zeta)*dBHatdzeta) &
          / (g_sub_theta_theta*g_sub_zeta_zeta - g_sub_theta_zeta*g_sub_theta_zeta)
 
+    gpsipsi = 1.0/(g_sub_psi_psi +&
+                     (g_sub_psi_theta*(g_sub_theta_zeta*g_sub_psi_zeta-g_sub_psi_theta*g_sub_zeta_zeta) &
+                      +g_sub_psi_zeta*(g_sub_psi_theta*g_sub_theta_zeta-g_sub_theta_theta*g_sub_psi_zeta)) &
+                     /(g_sub_theta_theta*g_sub_zeta_zeta - g_sub_theta_zeta*g_sub_theta_zeta))
+    
     ! These next lines should be replaced eventually with a proper calculation:
     dBHat_sup_theta_dpsiHat = 0
     dBHat_sup_zeta_dpsiHat = 0
@@ -2784,7 +2791,7 @@ contains
     deallocate(dXdtheta,dXdzeta,dXdpsiHat)
     deallocate(dYdtheta,dYdzeta,dYdpsiHat)
     deallocate(dZdtheta,dZdzeta,dZdpsiHat)
-    deallocate(g_sub_theta_theta,g_sub_theta_zeta,g_sub_zeta_zeta,g_sub_psi_theta,g_sub_psi_zeta)
+    deallocate(g_sub_theta_theta,g_sub_theta_zeta,g_sub_zeta_zeta,g_sub_psi_theta,g_sub_psi_zeta,g_sub_psi_psi)
 
 
     rN = sqrt(psiN)
