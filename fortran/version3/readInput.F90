@@ -23,7 +23,7 @@ contains
 
     namelist / general / saveMatlabOutput, MatlabOutputFilename, &
          outputFilename, solveSystem, RHSMode, &
-         saveMatricesAndVectorsInBinary, binaryOutputFilename, ambipolarSolve, NEr, Er_search_tolerance
+         saveMatricesAndVectorsInBinary, binaryOutputFilename, ambipolarSolve, NEr_ambipolarSolve, Er_search_tolerance, ambipolarSolveOption
 
     namelist / geometryParameters / GHat, IHat, iota, epsilon_t, epsilon_h, &
          helicity_l, helicity_n, B0OverBBar, geometryScheme, &

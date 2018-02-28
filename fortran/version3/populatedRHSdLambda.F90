@@ -29,8 +29,10 @@
     PetscScalar :: angle, cos_angle, sin_angle, stuffToAdd, factor
     integer :: m,n
 
-    m = ms(whichMode)
-    n = ns(whichMode)
+    if (whichLambda > 0) then
+      m = ms(whichMode)
+      n = ns(whichMode)
+    end if
 
     call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, dRHSdLambda, ierr)
 
@@ -66,8 +68,11 @@
 
             select case(whichLambda)
               case (0) ! Er
-                stuffToAdd = factor*(x2(ix)*exp(-x2(ix))*( dnHatdpsiHats(ispecies)/nHats(ispecies) &
-                  + alpha*Zs(ispecies)/THats(ispecies)))
+                stuffToAdd = 1/(BHat(itheta,izeta)**3) &
+                  *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
+                  - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta)) &
+                  * DHat(itheta,izeta)*(x2(ix)*exp(-x2(ix))*(alpha*Zs(ispecies)/THats(ispecies))) &
+                  *(Delta*nHats(ispecies)*mHat*sqrtMHat/(two*pi*sqrtpi*Zs(ispecies)*sqrtTHat))
               case (1) ! BHat
                 dBHatdLambda = cos_angle
                 dBHatdthetadLambda = -m*sin_angle

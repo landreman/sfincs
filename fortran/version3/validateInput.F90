@@ -1130,8 +1130,14 @@ subroutine validateInput()
       if (adjointRadialCurrentOption) then
         if (masterProc) then
           print *,"Error! RHSMode=5 cannot be used with adjointRadialCurrentOption."
-          stop
         end if
+        stop
+      end if
+      if (ambipolarSolve .eqv. .false.) then
+        if (masterProc) then
+          print *,"Error! RHSMode=5 must be used with ambipolarSolve."
+        end if
+        stop
       end if
     end if
     ! Check for linear solve

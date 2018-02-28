@@ -37,9 +37,12 @@ module globalVariables
   logical :: solveSystem = .true.
   integer :: RHSMode = 1, whichRHS
   logical :: isAParallelDirectSolverInstalled
+
+  ! Quantities related to ambipolar solve
   logical :: ambipolarSolve = .false.
-  integer :: NEr = 20
-  PetscScalar :: Er_search_tolerance = 1.d-12
+  integer :: ambipolarSolveOption = 1
+  integer :: NEr_ambipolarSolve = 20
+  PetscScalar :: Er_search_tolerance = 1.d-8
 
   ! ********************************************************
   ! ********************************************************
@@ -104,7 +107,7 @@ module globalVariables
   logical :: adjointTotalHeatFluxOption = .false.
   ! These are initialized to .false. in readInput
   logical, dimension(:), allocatable :: adjointHeatFluxOption, adjointParticleFluxOption, adjointParallelFlowOption
-  logical :: discreteAdjointOption = .true.
+  integer :: discreteAdjointOption = 1
 
   ! ********************************************************
   ! ********************************************************
@@ -389,12 +392,13 @@ module globalVariables
   !> @var ns Values of n to use for Fourier derivatives.
   !> @var ms Values of m to sue for Fourier derivatives.
   integer, dimension(:), allocatable :: ns
-  integer, dimension(:), allocatable :: ms !> Values of n and m to use for Fourier derivatives.
+  integer, dimension(:), allocatable :: ms
   integer :: nMaxAdjoint = 0, mMaxAdjoint = 0
   integer :: nMinAdjoint = 0, mMinAdjoint = 0
   integer :: NModesAdjoint = 0, NLambdas = 6
   PetscScalar, dimension(:,:), allocatable :: dRadialCurrentdLambda,dTotalHeatFluxdLambda,dBootstrapdLambda
   PetscScalar, dimension(:,:,:), allocatable :: dParticleFluxdLambda, dHeatFluxdLambda, dParallelFlowdLambda
+  PetscScalar, dimension(:,:), allocatable :: dPhidPsidLambda
   ! quantities related to finite diff testing
   PetscScalar, dimension(:,:), allocatable :: dRadialCurrentdLambda_finitediff,dTotalHeatFluxdLambda_finitediff,dBootstrapdLambda_finitediff
   PetscScalar, dimension(:,:,:), allocatable :: dParticleFluxdLambda_finitediff, dHeatFluxdLambda_finitediff, dParallelFlowdLambda_finitediff
@@ -402,6 +406,9 @@ module globalVariables
   PetscScalar, dimension(:,:), allocatable :: radialCurrentPercentError, totalHeatFluxPercentError, bootstrapPercentError
   PetscScalar, dimension(:), allocatable :: bmnc, bsubthetamnc, bsubzetamnc, bsupthetamnc, bsupzetamnc, gmnc
   PetscScalar, dimension(:,:), allocatable :: DHat_init, BHat_init, dBHatdtheta_init, dBHatdzeta_init, BHat_sup_theta_init, dBHat_sup_theta_dzeta_init, BHat_sup_zeta_init, dBHat_sup_zeta_dtheta_init, BHat_sub_theta_init, dBHat_sub_theta_dzeta_init, BHat_sub_zeta_init, dBHat_sub_zeta_dtheta_init
+  PetscScalar, dimension(:,:), allocatable :: dPhidPsidLambda_finitediff, dPhidPsiPercentError
+  ! Related to ambipolar solve
+  PetscScalar :: dRadialCurrentdEr
 
   ! ********************************************************
   !
@@ -416,8 +423,6 @@ module globalVariables
   integer :: ithetaMin, ithetaMax, localNtheta
   integer :: izetaMin, izetaMax, localNzeta
   logical :: procThatHandlesConstraints
-
-
 
 end module globalVariables
 

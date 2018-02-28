@@ -463,17 +463,120 @@ module solver
        stop
     end select
 
+
+    ! Initialize things needed for adjoint solve
+    if (RHSMode>3 .or. (ambipolarSolve .and. (ambipolarSolveOption==1))) then
+
+      !> Allocate adjointRHSVec
+      call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointRHSVec, ierr)
+      call VecSet(adjointRHSVec, zero, ierr)
+
+      ! adjointMatrix is only needed for 'continuous' adjoint approach
+      if (discreteAdjointOption == 0) then
+        !> Allocate and populate the adjoint matrix - the same matrix is used for each RHS
+        call preallocateMatrix(adjointMatrix, 1) ! the whichMatrix argument doesn't matter here
+        call populateMatrix(adjointMatrix,4,dummyVec) ! dummyVec is not initialized - not needed for linear solve
+      end if
+      if (useIterativeLinearSolver .and. (discreteAdjointOption == 0)) then
+        call preallocateMatrix(adjointPreconditionerMatrix, 1)
+        call populateMatrix(adjointPreconditionerMatrix,5,dummyVec)
+      end if
+
+      if (masterProc) then
+         print *,"Finished allocating adjoint Vecs and matrices."
+      end if
+
+      if (discreteAdjointOption == 0) then
+            if (useIterativeLinearSolver) then
+
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
+              ! Syntax for PETSc versions up through 3.4
+              call KSPSetOperators(KSPInstance, adjointMatrix, adjointPreconditionerMatrix, SAME_PRECONDITIONER, ierr)
+#else
+              ! Syntax for PETSc version 3.5 and later
+              call KSPSetOperators(KSPInstance, adjointMatrix, adjointPreconditionerMatrix, ierr)
+#endif
+
+            else
+              ! Direct solver, so no preconditioner needed.
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
+              ! Syntax for PETSc versions up through 3.4
+              call KSPSetOperators(KSPInstance, adjointMatrix, adjointMatrix, SAME_PRECONDITIONER, ierr)
+#else
+              ! Syntax for PETSc version 3.5 and later
+              call KSPSetOperators(KSPInstance, adjointMatrix, adjointMatrix, ierr)
+#endif
+
+            end if
+      end if
+
+    end if
+
+    ! Adjoint solve for Newton method
+    if ((ambipolarSolve .and. ambipolarSolveOption == 1) .or. (RHSMode==5)) then
+
+      whichAdjointRHS = 1
+      ispecies = 0
+      if (masterProc) then
+        print *,"################################################################"
+        print "(a,i1,a,i1)"," Solving adjoint system with adjoint RHS ",whichAdjointRHS," and species ",ispecies
+        print *,"################################################################"
+      end if
+
+      !> Construct RHS vec
+      call VecSet(adjointRHSVec, zero, ierr)
+      call populateAdjointRHS(adjointRHSVec, whichAdjointRHS, ispecies)
+
+      !> Construct solution vec
+      call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointSolutionJr, ierr)
+      call VecSet(adjointSolutionJr, zero, ierr)
+
+      if (masterProc) then
+         print *,"Beginning the adjoint solve.  This could take a while ..."
+      end if
+
+      call PetscTime(time1, ierr)
+      if (solveSystem) then
+        if (discreteAdjointOption == 0) then
+          call KSPSolve(KSPInstance,adjointRHSVec,adjointSolutionJr, ierr)
+        else
+          call KSPSolveTranspose(KSPInstance,adjointRHSVec,adjointSolutionJr, ierr)
+        end if
+      end if
+
+      call PetscTime(time2, ierr)
+      if (masterProc) then
+         print *,"Done with the adjoint solve.  Time to solve: ", time2-time1, " seconds."
+      end if
+      call PetscTime(time1, ierr)
+
+      call checkIfKSPConverged(KSPInstance)
+
+      if (ambipolarSolve .and. ambipolarSolveOption == 1) then
+        call computedRadialCurrentdEr(solutionVec,adjointSolutionJr)
+        call VecDestroy(adjointRHSVec, ierr)
+        if (discreteAdjointOption == 0) then
+          call MatDestroy(adjointMatrix, ierr)
+        end if
+        call VecDestroy(adjointSolutionJr,ierr)
+      end if
+
+    end if
+
+
     !> This is where all the adjoint solves happen
+    !> If currently looking for ambipolar solution, don't solve adjoint
     if (RHSMode>3 .and. (ambipolarSolve .eqv. .false.)) then
 
       ! Debugging stuff
-      if (.false.) then
+      if (.true.) then
 
         do ispecies = 0,Nspecies
           do whichAdjointRHS = 1,3
             call testingAdjointOperator(solutionVec,adjointSolutionVec,whichAdjointRHS,ispecies)
           end do
         end do
+        stop
 
         !> Testing of inner product and adjoint RHS
         do whichAdjointRHS=1,3
@@ -514,7 +617,7 @@ module solver
             call testingdMatrixdLambda(solutionVec,whichMode, whichLambda, deltaLambda)
           end do
         end do
-      end if
+      end if ! testing
 
       !> Allocate adjointSolutionVec
       call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointSolutionVec, ierr)
@@ -532,85 +635,6 @@ module solver
         (all(adjointParallelFlowOption) .and. adjointBootstrapOption)) then
         call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, summedSolutionVec, ierr)
         call VecSet(summedSolutionVec, zero, ierr)
-      end if
-
-      !> Allocate adjointRHSVec
-      call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointRHSVec, ierr)
-      call VecSet(adjointRHSVec, zero, ierr)
-
-      ! adjointMatrix is only needed for 'continuous' adjoint approach
-      if (discreteAdjointOption .eqv. .false.) then
-        !> Allocate and populate the adjoint matrix - the same matrix is used for each RHS
-        call preallocateMatrix(adjointMatrix, 1) ! the whichMatrix argument doesn't matter here
-        call populateMatrix(adjointMatrix,4,dummyVec) ! dummyVec is not initialized - not needed for linear solve
-      end if
-      if (useIterativeLinearSolver .and. (discreteAdjointOption .eqv. .false.)) then
-        call preallocateMatrix(adjointPreconditionerMatrix, 1)
-        call populateMatrix(adjointPreconditionerMatrix,5,dummyVec)
-      end if
-
-      if (masterProc) then
-         print *,"Finished allocating adjoint Vecs and matrices."
-      end if
-
-      if (discreteAdjointOption .eqv. .false.) then
-            if (useIterativeLinearSolver) then
-
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
-              ! Syntax for PETSc versions up through 3.4
-              call KSPSetOperators(KSPInstance, adjointMatrix, adjointPreconditionerMatrix, SAME_PRECONDITIONER, ierr)
-#else
-              ! Syntax for PETSc version 3.5 and later
-              call KSPSetOperators(KSPInstance, adjointMatrix, adjointPreconditionerMatrix, ierr)
-#endif
-
-            else
-              ! Direct solver, so no preconditioner needed.
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
-              ! Syntax for PETSc versions up through 3.4
-              call KSPSetOperators(KSPInstance, adjointMatrix, adjointMatrix, SAME_PRECONDITIONER, ierr)
-#else
-              ! Syntax for PETSc version 3.5 and later
-              call KSPSetOperators(KSPInstance, adjointMatrix, adjointMatrix, ierr)
-#endif
-
-            end if
-          end if
-
-      ! Perform adjoint solve for adjointSolutionJr
-      if (RHSMode==5) then
-        whichAdjointRHS = 1
-        ispecies = 0
-        if (masterProc) then
-          print *,"################################################################"
-          print "(a,i1,a,i1)"," Solving adjoint system with adjoint RHS ",whichAdjointRHS," and species ",ispecies
-          print *,"################################################################"
-        end if
-
-        !> Construct RHS vec
-        call VecSet(adjointRHSVec, zero, ierr)
-        call populateAdjointRHS(adjointRHSVec, whichAdjointRHS, ispecies)
-
-        if (masterProc) then
-           print *,"Beginning the adjoint solve.  This could take a while ..."
-        end if
-
-        call PetscTime(time1, ierr)
-        if (solveSystem) then
-          if (discreteAdjointOption .eqv. .false.) then
-            call KSPSolve(KSPInstance,adjointRHSVec,adjointSolutionJr, ierr)
-          else
-            call KSPSolveTranspose(KSPInstance,adjointRHSVec,adjointSolutionJr, ierr)
-          end if
-        end if
-
-        call PetscTime(time2, ierr)
-        if (masterProc) then
-           print *,"Done with the adjoint solve.  Time to solve: ", time2-time1, " seconds."
-        end if
-        call PetscTime(time1, ierr)
-
-        call checkIfKSPConverged(KSPInstance)
       end if
 
       !> First, we'll compute the species-specific fluxes if needed
@@ -647,7 +671,7 @@ module solver
             print *,"ispecies = ", ispecies, ", whichAdjointRHS = ", whichAdjointRHS
           end if
 
-          !> Check if adjoint equation needs to be solve for this species
+          !> Check if adjoint equation needs to be solved for this species
           select case (whichAdjointRHS)
             case (1) ! particle flux
               if (.not. adjointParticleFluxOption(ispecies)) then
@@ -679,7 +703,7 @@ module solver
 
           call PetscTime(time1, ierr)
           if (solveSystem) then
-            if (discreteAdjointOption .eqv. .false.) then
+            if (discreteAdjointOption == 0) then
               call KSPSolve(KSPInstance,adjointRHSVec,adjointSolutionVec, ierr)
             else
               call KSPSolveTranspose(KSPInstance,adjointRHSVec,adjointSolutionVec, ierr)
@@ -736,7 +760,7 @@ module solver
         do whichAdjointRHS=1,3
           select case(whichAdjointRHS)
             case (1) ! particle flux
-              if (all(adjointParticleFluxOption) .or. (adjointRadialCurrentOption .eqv. .false.)) then
+              if (all(adjointParticleFluxOption) .or. (adjointRadialCurrentOption .eqv. .false.) .or. (RHSMode==5)) then
                 ! species-summed flux computed already
                 cycle
               end if
@@ -757,30 +781,6 @@ module solver
             print *,"################################################################"
           end if
 
-          if (discreteAdjointOption .eqv. .false.) then
-            if (useIterativeLinearSolver) then
-
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
-              ! Syntax for PETSc versions up through 3.4
-              call KSPSetOperators(KSPInstance, adjointMatrix, adjointPreconditionerMatrix, SAME_PRECONDITIONER, ierr)
-#else
-              ! Syntax for PETSc version 3.5 and later
-              call KSPSetOperators(KSPInstance, adjointMatrix, adjointPreconditionerMatrix, ierr)
-#endif
-
-            else
-              ! Direct solver, so no preconditioner needed.
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
-              ! Syntax for PETSc versions up through 3.4
-              call KSPSetOperators(KSPInstance, adjointMatrix, adjointMatrix, SAME_PRECONDITIONER, ierr)
-#else
-              ! Syntax for PETSc version 3.5 and later
-               call KSPSetOperators(KSPInstance, adjointMatrix, adjointMatrix, ierr)
-#endif
-
-            end if
-          end if
-
           ! Construct RHS vec
           call populateAdjointRHS(adjointRHSVec, whichAdjointRHS, ispecies)
 
@@ -790,7 +790,7 @@ module solver
 
           call PetscTime(time1, ierr)
           if (solveSystem) then
-             if (discreteAdjointOption .eqv. .false.) then
+             if (discreteAdjointOption == 0) then
              ! All the magic happens in this next line!
                 call KSPSolve(KSPInstance,adjointRHSVec,adjointSolutionVec, ierr)
              else
@@ -830,7 +830,7 @@ module solver
         call VecDestroy(summedSolutionVec, ierr)
       end if
       call VecDestroy(adjointRHSVec, ierr)
-      if (discreteAdjointOption .eqv. .false.) then
+      if (discreteAdjointOption == 0) then
         call MatDestroy(adjointMatrix, ierr)
       end if
       if (RHSMode==5) then

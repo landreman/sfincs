@@ -39,12 +39,14 @@
     integer :: NNZ, NNZAllocated, NMallocs
     PetscScalar :: dBHatdLambda, dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dBHat_sup_thetadLambda
     PetscScalar :: dBHat_sup_zetadLambda, dBHatdthetadLambda, dBHatdzetadLambda, dDHatdLambda
-    PetscScalar :: geometricFactor
+    PetscScalar :: geometricFactor, dFSABHat2dBmn, dFSABHat2dDmn, dVPrimeHatdDmn
     integer :: m,n
     PetscScalar :: angle, cos_angle, sin_angle
 
-    m = ms(whichMode)
-    n = ns(whichMode)
+    if (whichLambda > 0) then
+      m = ms(whichMode)
+      n = ns(whichMode)
+    end if
 
     ! Sometimes PETSc complains if any of the diagonal elements are not set.
     ! Therefore, set the entire diagonal to 0 to be safe.
@@ -58,6 +60,24 @@
       ixMin = 2
     else
       ixMin = 1
+    end if
+
+    if (useDKESExBDrift) then
+      dFSABHat2dBmn = zero
+      dFSABHat2dDmn = zero
+      do itheta=1,Ntheta
+        do izeta=1,Nzeta
+          angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+          cos_angle = cos(angle)
+          dFSABHat2dBmn = dFSABHat2dBmn + 2*thetaWeights(itheta) * zetaWeights(izeta) &
+          * BHat(itheta,izeta) * cos_angle / DHat(itheta,izeta)
+          dFSABHat2dDmn = dFSABHat2dDmn + thetaWeights(itheta) * zetaWeights(izeta) &
+            * (BHat(itheta,izeta)**2)*cos_angle
+          dVPrimeHatdDmn = dVPrimeHatdDmn + thetaWeights(itheta) * zetaWeights(izeta) * cos_angle
+        end do
+      end do
+      dFSABHat2dBmn = dFSABHat2dBmn/VPrimeHat
+      dFSABHat2dDmn = dFSABHat2dDmn/VPrimeHat - FSABHat2*dVPrimeHatdDmn/VPrimeHat
     end if
 
     ! *********************************************************
@@ -252,7 +272,7 @@
       ! Add the sensitivity of the ExB d/dtheta term:
       ! *********************************************************
 
-      factor = alpha*Delta/two*dPhiHatdpsiHat
+
       allocate(thetaPartOfTerm(Ntheta,Ntheta))
       allocate(localThetaPartOfTerm(Ntheta,localNtheta))
       allocate(rowIndices(localNtheta))
@@ -267,14 +287,8 @@
             ! Assume BHat_sub_zeta has the same sign everywhere. (True for Boozer but in principle could be violated for VMEC coordinates?)
             if (factor*DHat(1,1)*BHat_sub_zeta(1,1) > 0) then
                ddthetaToUse = ddtheta_ExB_plus
-              if (masterProc) then
-                print *,"using plus."
-              end if
             else
                ddthetaToUse = ddtheta_ExB_minus
-              if (masterProc) then
-                print *,"using minus."
-              end if
             end if
          end if
 
@@ -292,30 +306,56 @@
             !geometricFactor = DHat*BHat_sub_zeta/(BHat*BHat)
             select case(whichLambda)
               case (0) ! Er
-                geometricFactor = DHat(itheta,izeta)*BHat_sub_zeta(itheta,izeta)/(BHat(itheta,izeta)*BHat(itheta,izeta)*dPhiHatdpsiHat)
+                if (useDKESExBDrift) then
+                  geometricFactor = DHat(itheta,izeta)*BHat_sub_zeta(itheta,izeta)/(FSABHat2)
+                else
+                  geometricFactor = DHat(itheta,izeta)*BHat_sub_zeta(itheta,izeta)/(BHat(itheta,izeta)*BHat(itheta,izeta))
+                end if
+                factor = alpha*Delta/two
+
               case (1) ! BHat
-                dBHatdLambda = cos_angle
-                geometricFactor = -two*dBHatdLambda/(BHat(itheta,izeta) ** 3) &
-                  *DHat(itheta,izeta)*BHat_sub_zeta(itheta,izeta)
+                if (useDKESExBDrift) then
+                  geometricFactor = -DHat(itheta,izeta)*BHat_sub_zeta(itheta,izeta) &
+                    * dFSABHat2dBmn/(FSABHat2**2)
+                else
+                  dBHatdLambda = cos_angle
+                  geometricFactor = -two*dBHatdLambda/(BHat(itheta,izeta) ** 3) &
+                    *DHat(itheta,izeta)*BHat_sub_zeta(itheta,izeta)
+                end if
+                factor = alpha*Delta/two*dPhiHatdpsiHat
               case (2) ! BHat_sup_theta
                 geometricFactor = zero
+                factor = alpha*Delta/two*dPhiHatdpsiHat
               case (3) ! BHat_sup_zeta
                 geometricFactor = zero
+                factor = alpha*Delta/two*dPhiHatdpsiHat
               case (4) ! BHat_sub_theta
                 geometricFactor = zero
+                factor = alpha*Delta/two*dPhiHatdpsiHat
               case (5) ! BHat_sub_zeta
                 dBHat_sub_zetadLambda = cos_angle
-                geometricFactor = DHat(itheta,izeta) * dBHat_sub_zetadLambda/ (BHat(itheta,izeta)*BHat(itheta,izeta))
+                if (useDKESExBDrift) then
+                  geometricFactor = DHat(itheta,izeta) * dBHat_sub_zetadLambda/FSABHat2
+                else
+                  geometricFactor = DHat(itheta,izeta) * dBHat_sub_zetadLambda/ (BHat(itheta,izeta)*BHat(itheta,izeta))
+                end if
+                factor = alpha*Delta/two*dPhiHatdpsiHat
               case (6) ! DHat
                 dDHatdLambda = -DHat(itheta,izeta)*DHat(itheta,izeta)*cos_angle
-                geometricFactor = dDHatdLambda * BHat_sub_zeta(itheta,izeta)/ (BHat(itheta,izeta) * BHat(itheta,izeta))
+                if (useDKESExBDrift) then
+                  geometricFactor = dDHatdLambda*BHat_sub_zeta(itheta,izeta)/FSABHat2 &
+                  - DHat(itheta,izeta)*BHat_sub_zeta(itheta,izeta)*dFSABHat2dDmn/(FSABHat2**2)
+                else
+                  geometricFactor = dDHatdLambda * BHat_sub_zeta(itheta,izeta)/ (BHat(itheta,izeta) * BHat(itheta,izeta))
+                end if
+                factor = alpha*Delta/two*dPhiHatdpsiHat
             end select
-              thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:)*geometricFactor
+              thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:)*geometricFactor*factor
 
            end do ! itheta
 
             ! PETSc uses the opposite convention to Fortran:
-            thetaPartOfTerm = transpose(thetaPartOfTerm*factor)
+            thetaPartOfTerm = transpose(thetaPartOfTerm)
             localThetaPartOfTerm = thetaPartOfTerm(:,ithetaMin:ithetaMax)
             
             !do ix=ixMin,Nx
@@ -341,7 +381,7 @@
      ! Add the sensitivity of the ExB d/dzeta term:
      ! *********************************************************
 
-      factor = -alpha*Delta/two*dPhiHatdpsiHat
+
       allocate(zetaPartOfTerm(Nzeta,Nzeta))
       allocate(localZetaPartOfTerm(Nzeta,localNzeta))
       allocate(rowIndices(localNzeta))
@@ -371,30 +411,56 @@
             ! geometricFactor = DHat*BHat_sub_theta/(BHat*BHat)
             select case(whichLambda)
               case (0) ! Er
-                geometricFactor = DHat(itheta,izeta)*BHat_sub_theta(itheta,izeta)/(BHat(itheta,izeta)*BHat(itheta,izeta)*dPhiHatdpsiHat)
+                if (useDKESExBDrift) then
+                  geometricFactor = DHat(itheta,izeta)*BHat_sub_theta(itheta,izeta)/FSABHat2
+                else
+                  geometricFactor = DHat(itheta,izeta)*BHat_sub_theta(itheta,izeta)/(BHat(itheta,izeta)*BHat(itheta,izeta))
+                end if
+                factor = -alpha*Delta/two
               case (1) ! BHat
                 dBHatdLambda = cos_angle
-                geometricFactor = -two*dBHatdLambda*DHat(itheta,izeta)*BHat_sub_theta(itheta,izeta) &
-                  /(BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta))
+                if (useDKESExBDrift) then
+                  geometricFactor = -DHat(itheta,izeta)*BHat_sub_theta(itheta,izeta) &
+                    *dFSABHat2dBmn/(FSABHat2**2)
+                else
+                  geometricFactor = -two*dBHatdLambda*DHat(itheta,izeta)*BHat_sub_theta(itheta,izeta) &
+                    /(BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta))
+                end if
+                factor = -alpha*Delta/two*dPhiHatdpsiHat
               case (2) ! BHat_sup_theta
                 geometricFactor = zero
+                factor = -alpha*Delta/two*dPhiHatdpsiHat
               case (3) ! BHat_sup_zeta
                 geometricFactor = zero
+                factor = -alpha*Delta/two*dPhiHatdpsiHat
               case (4) ! BHat_sub_theta
                 dBHat_sub_thetadLambda = cos_angle
-                geometricFactor = DHat(itheta,izeta)*dBHat_sub_thetadLambda/(BHat(itheta,izeta) * BHat(itheta,izeta))
+                if (useDKESExBDrift) then
+                  geometricFactor = DHat(itheta,izeta)*dBHat_sub_thetadLambda/FSABHat2
+                else
+                  geometricFactor = DHat(itheta,izeta)*dBHat_sub_thetadLambda/(BHat(itheta,izeta) * BHat(itheta,izeta))
+                end if
+                factor = -alpha*Delta/two*dPhiHatdpsiHat
               case (5) ! BHat_sub_zeta
                 geometricFactor = zero
+                factor = -alpha*Delta/two*dPhiHatdpsiHat
               case (6) ! DHat
                 dDHatdLambda = -DHat(itheta,izeta)*DHat(itheta,izeta)*cos_angle
-                geometricFactor = one / (BHat(itheta,izeta) * BHat(itheta,izeta)) &
-                  * dDHatdLambda * BHat_sub_theta(itheta,izeta)
+                if (useDKESExBDrift) then
+                  geometricFactor = dDHatdLambda*BHat_sub_theta(itheta,izeta)/FSABHat2 &
+                    - DHat(itheta,izeta)*BHat_sub_theta(itheta,izeta)*dFSABHat2dDmn &
+                    /(FSABHat2**2)
+                else
+                  geometricFactor = one / (BHat(itheta,izeta) * BHat(itheta,izeta)) &
+                    * dDHatdLambda * BHat_sub_theta(itheta,izeta)
+                end if
+                factor = -alpha*Delta/two*dPhiHatdpsiHat
             end select
-            zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:)*geometricFactor
+            zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:)*geometricFactor*factor
            end do
 
             ! PETSc uses the opposite convention to Fortran:
-            zetaPartOfTerm = transpose(zetaPartOfTerm*factor)
+            zetaPartOfTerm = transpose(zetaPartOfTerm)
             localZetaPartOfTerm = zetaPartOfTerm(:,izetaMin:izetaMax)
             
             !do ix=ixMin,Nx
@@ -509,7 +575,8 @@
 
               select case(whichLambda)
                 case (0) ! Er
-                  geometricFactor = DHat(itheta,izeta)*temp/(BHat(itheta,izeta)**3*dPhiHatdpsiHat)
+                  geometricFactor = DHat(itheta,izeta)*temp/(BHat(itheta,izeta)**3)
+                  factor = (alpha*Delta/four)*geometricFactor
                 case (1) ! BHat
                   dBHatdthetadLambda = -m*sin_angle
                   dBHatdzetadLambda = n*Nperiods*sin_angle
@@ -521,23 +588,29 @@
                     -three*DHat(itheta,izeta)*temp*dBHatdLambda/(BHat(itheta,izeta)**4) &
                     ! Term from dBHatdtheta and dBHatdzeta
                     + DHat(itheta,izeta) * dTempdLambda/(BHat(itheta,izeta)**3)
+                  factor = (alpha*Delta*dPhiHatdpsiHat/four)*geometricFactor
                 case (2) ! BHat_sup_theta
                   geometricFactor = zero
+                  factor = (alpha*Delta*dPhiHatdpsiHat/four)*geometricFactor
                 case (3) ! BHat_sup_zeta
                   geometricFactor = zero
+                  factor = (alpha*Delta*dPhiHatdpsiHat/four)*geometricFactor
                 case (4) ! BHat_sub_theta
                   dBHat_sub_thetadLambda = cos_angle
                   dTempdLambda = - dBHat_sub_thetadLambda * dBHatdzeta(itheta,izeta)
                   geometricFactor = DHat(itheta,izeta)*dTempdLambda/(BHat(itheta,izeta)**3)
+                  factor = (alpha*Delta*dPhiHatdpsiHat/four)*geometricFactor
                 case (5) ! BHat_sub_zeta
                   dBHat_sub_zetadLambda = cos_angle
                   dTempdLambda = dBHat_sub_zetadLambda * dBHatdtheta(itheta,izeta)
                   geometricFactor = DHat(itheta,izeta)*dTempdLambda/(BHat(itheta,izeta)**3)
+                  factor = (alpha*Delta*dPhiHatdpsiHat/four)*geometricFactor
                 case (6) ! DHat
                   dDHatdLambda = -DHat(itheta,izeta)*DHat(itheta,izeta)*cos_angle
                   geometricFactor = dDHatdLambda*temp/(BHat(itheta,izeta)**3)
+                  factor = (alpha*Delta*dPhiHatdpsiHat/four)*geometricFactor
               end select
-              factor = (alpha*Delta*dPhiHatdpsiHat/four)*geometricFactor
+
 
                 do ix=ixMin,Nx
                    do L=0,(Nxi_for_x(ix)-1)
@@ -579,7 +652,7 @@
       allocate(xPartOfXDot_minus(Nx,Nx))
       allocate(rowIndices(Nx))
       allocate(colIndices(Nx))
-      factor = -alpha*Delta*dPhiHatdpsiHat/four
+
 
       do L=0,(Nxi-1)
          if (L>0 .and. pointAtX0) then
@@ -612,10 +685,12 @@
                else
                   xPartOfXDot = xPartOfXDot_minus
                end if
-
                 select case(whichLambda)
                   case (0) ! Er
-                    geometricFactor = xDotFactor/(factor*dPhiHatdpsiHat)
+                    factor = -alpha*Delta/four
+                    geometricFactor = DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
+                      * (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) &
+                      - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))
                   case (1) ! BHat
                     dBHatdLambda = cos_angle
                     dBHatdzetadLambda = n*Nperiods*sin_angle
@@ -632,23 +707,29 @@
                       ! Term from dBHatdtheta
                       - Dhat(itheta,izeta)/(BHat(itheta,izeta)**3) &
                       * Bhat_sub_zeta(itheta,izeta)*dBHatdthetadLambda
+                    factor = -alpha*Delta*dPhiHatdPsiHat/four
                   case (2) ! BHat_sup_theta
                     geometricFactor = zero
+                    factor = -alpha*Delta*dPhiHatdPsiHat/four
                   case (3) ! BHat_sup_zeta
                     geometricFactor = zero
+                    factor = -alpha*Delta*dPhiHatdPsiHat/four
                   case (4) ! BHat_sub_theta
                     dBHat_sub_thetadLambda = cos_angle
                     geometricFactor = DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
                       * dBHat_sub_thetadLambda*dBHatdzeta(itheta,izeta)
+                    factor = -alpha*Delta*dPhiHatdPsiHat/four
                   case (5) ! BHat_sub_zeta
                     dBHat_sub_zetadLambda = cos_angle
                     geometricFactor = -DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
                       * dBHat_sub_zetadLambda*dBHatdtheta(itheta,izeta)
+                    factor = -alpha*Delta*dPhiHatdPsiHat/four
                   case (6) ! DHat
                     dDHatdLambda = -DHat(itheta,izeta)*DHat(itheta,izeta)*cos_angle
                     geometricFactor = dDHatdLambda/(BHat(itheta,izeta)**3) &
                       *(BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) &
                       - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))
+                    factor = -alpha*Delta*dPhiHatdPsiHat/four
                 end select
 
                rowIndices = -1

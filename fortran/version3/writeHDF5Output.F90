@@ -751,6 +751,9 @@ contains
         if (adjointBootstrapOption .or. debugAdjoint) then
           call writeHDF5ExtensibleField(iterationNum,"dBootstrapdLambda", dBootstrapdLambda,ARRAY_ITERATION_LAMBDAS_NMODES,"")
         end if
+        if (RHSMode==5) then
+          call writeHDF5ExtensibleField(iterationNum,"dPhidPsidLambda", dPhidPsidLambda,ARRAY_ITERATION_LAMBDAS_NMODES,"")
+        end if
         if (debugAdjoint) then
           call writeHDF5ExtensibleField(iterationNum,"dHeatFluxdLambda_finitediff", dHeatFluxdLambda_finitediff,ARRAY_ITERATION_SPECIES_LAMBDAS_NMODES,"")
           call writeHDF5ExtensibleField(iterationNum,"dParticleFluxdLambda_finitediff", dParticleFluxdLambda_finitediff,ARRAY_ITERATION_SPECIES_LAMBDAS_NMODES,"")
@@ -764,6 +767,10 @@ contains
           call writeHDF5ExtensibleField(iterationNum,"bootstrapPercentError", bootstrapPercentError,ARRAY_ITERATION_LAMBDAS_NMODES,"")
           call writeHDF5ExtensibleField(iterationNum,"totalHeatFluxPercentError", totalHeatFluxPercentError,ARRAY_ITERATION_LAMBDAS_NMODES,"")
           call writeHDF5ExtensibleField(iterationNum,"radialCurrentPercentError", radialCurrentPercentError,ARRAY_ITERATION_LAMBDAS_NMODES,"")
+          if (RHSMode==5) then
+            call writeHDF5ExtensibleField(iterationNum,"dPhidPsiPercentError", dPhidPsiPercentError,ARRAY_ITERATION_LAMBDAS_NMODES,"")
+            call writeHDF5ExtensibleField(iterationNum,"dPhidPsidLambda_finitediff", dPhidPsidLambda_finitediff,ARRAY_ITERATION_LAMBDAS_NMODES,"")
+          end if
         end if
       end if
 !!$       ! ----------------------------------

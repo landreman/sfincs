@@ -41,6 +41,7 @@ module testingAdjointDiagnostics
     use adjointDiagnostics
     use geometry
     use solver
+    use ambipolarSolver
 
     implicit none
 
@@ -48,11 +49,12 @@ module testingAdjointDiagnostics
     integer :: whichMode, whichLambda
     integer :: iterationNum
     PetscScalar, dimension(:), allocatable :: particleFluxInit, heatFluxInit, parallelFlowInit
+    PetscScalar :: dPhidPsiInit
     PetscScalar :: finiteDiffDerivative
     VecScatter :: VecScatterContext
     PetscErrorCode :: ierr
     PetscScalar, dimension(:,:,:), allocatable :: dParticleFluxdLambda_analytic, dHeatFluxdLambda_analytic, dParallelFlowdLambda_analytic
-    PetscScalar, dimension(:,:), allocatable :: dRadialCurrentdLambda_analytic, dTotalHeatFluxdLambda_analytic, dBootstrapdLambda_analytic
+    PetscScalar, dimension(:,:), allocatable :: dRadialCurrentdLambda_analytic, dTotalHeatFluxdLambda_analytic, dBootstrapdLambda_analytic, dPhidPsidLambda_analytic
     integer :: ispecies, whichQuantity
     PetscScalar :: analyticResult, finiteDiffResult, deltaFactor
     PetscLogDouble :: time1, time2
@@ -66,20 +68,11 @@ module testingAdjointDiagnostics
     allocate(dHeatFluxdLambda_analytic(Nspecies,NLambdas,NModesAdjoint))
     allocate(dParallelFlowdLambda_analytic(Nspecies,NLambdas,NModesAdjoint))
 
-    allocate(particleFluxPercentError(Nspecies,NLambdas,NModesAdjoint))
-    allocate(heatFluxPercentError(Nspecies,NLambdas,NModesAdjoint))
-    allocate(parallelFlowPercentError(Nspecies,NLambdas,NModesAdjoint))
-
-    allocate(radialCurrentPercentError(NLambdas,NModesAdjoint))
-    allocate(bootstrapPercentError(NLambdas,NModesAdjoint))
-    allocate(totalHeatFluxPercentError(NLambdas,NModesAdjoint))
-
-    particleFluxPercentError = zero
-    heatFluxPercentError = zero
-    parallelFlowPercentError = zero
-    radialCurrentPercentError = zero
-    bootstrapPercentError = zero
-    totalHeatFluxPercentError = zero
+    if (RHSMode==5) then
+      allocate(dPhidPsidLambda_analytic(NLambdas,NModesAdjoint))
+      allocate(dPhidPsiPercentError(NLambdas,NModesAdjoint))
+      dPhidPsiPercentError = zero
+    end if
 
     ! RHSMode will be overwritten later
     if (RHSMode == 5) then
@@ -101,7 +94,7 @@ module testingAdjointDiagnostics
 
     call PetscTime(time1, ierr)
     if (constantJr) then
-      call ambipolarSolver()
+      call mainAmbipolarSolver()
     else
       call mainSolverLoop()
     end if
@@ -123,6 +116,13 @@ module testingAdjointDiagnostics
     dBootstrapdLambda_analytic = dBootstrapdLambda
     if (constantJr .eqv. .false.) then
       dRadialCurrentdLambda_analytic = dRadialCurrentdLambda
+    end if
+    if (constantJr) then
+      dPhidPsidLambda_analytic = dPhidPsidLambda
+      dPhidPsiInit = dPhiHatdPsiHat
+      if (masterProc) then
+        print *,"dPhidPsi_init: ", dPhiHatdPsiHat
+      end if
     end if
 
     ! Set RHSMode = 1 so call to solver does not include adjoint solve
@@ -150,9 +150,16 @@ module testingAdjointDiagnostics
 
         ! Compute solutionVec and diagnostics with new geometry
         if (ambipolarSolve) then
-          call ambipolarSolver()
+          call mainAmbipolarSolver()
         else
           call mainSolverLoop()
+        end if
+
+        if (constantJr) then
+          dPhidPsidLambda_finitediff(whichLambda,whichMode) = (dPhiHatdPsiHat-dPhidPsiInit)/(deltaLambda*deltaFactor)
+          if (masterProc) then
+            print *,"dPhidPsi: ", dPhiHatdPsiHat
+          end if
         end if
 
         do ispecies = 1, Nspecies
@@ -196,6 +203,9 @@ module testingAdjointDiagnostics
         if (abs(deltaFactor) > 1.d-6) then
           if (constantJr .eqv. .false.) then
             radialCurrentPercentError(whichLambda,whichMode) = percentError(dRadialCurrentdLambda_analytic(whichLambda,whichMode),dRadialCurrentdLambda_finitediff(whichLambda,whichMode))
+          end if
+          if (constantJr) then
+            dPhidPsiPercentError(whichLambda,whichMode) = percentError(dPhidPsidLambda_analytic(whichLambda,whichMode),dPhidPsidLambda_finitediff(whichLambda,whichMode))
           end if
           totalHeatFluxPercentError(whichLambda,whichMode) = percentError(dTotalHeatFluxdLambda_analytic(whichLambda,whichMode),dTotalHeatFluxdLambda_finitediff(whichLambda,whichMode))
           bootstrapPercentError(whichLambda,whichMode) = percentError(dBootstrapdLambda_analytic(whichLambda, whichMode), dBootstrapdLambda_finitediff(whichLambda,whichMode))

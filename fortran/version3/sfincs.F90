@@ -17,6 +17,7 @@ program sfincs
   use geometry
   use radialCoordinates
   use testingAdjointDiagnostics
+  use ambipolarSolver
 
   implicit none
 
@@ -122,6 +123,8 @@ program sfincs
   ! at each iteration of the solver (i.e. save all quantities except diagnostics.)
   call initializeOutputFile()
 
+  !call testingNewtonSolve()
+
   if (debugAdjoint) then
     call compareAdjointDiagnostics()
     stop
@@ -130,7 +133,7 @@ program sfincs
   ! Solve the main system, either linear or nonlinear.
   ! This step takes more time than everything else combined.
   if (ambipolarSolve) then
-    call ambipolarSolver()
+    call mainAmbipolarSolver()
   else
     call mainSolverLoop()
   end if

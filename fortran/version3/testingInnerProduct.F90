@@ -73,9 +73,7 @@ subroutine testingInnerProduct(forwardSolution,whichAdjointRHS,whichSpecies)
       end if
     case(3) ! Bootstrap
       if (whichSpecies == 0) then ! Bootstrap
-        do ispecies=1,Nspecies
-          quantityToCompare = quantityToCompare + FSABVelocityUsingFSADensityOverRootFSAB2(ispecies)*Zs(ispecies)
-        end do
+        quantityToCompare = sum(FSABVelocityUsingFSADensityOverRootFSAB2(1:Nspecies)*Zs(1:Nspecies))
       else
          quantityToCompare = FSABVelocityUsingFSADensityOverRootFSAB2(whichSpecies)
       end if

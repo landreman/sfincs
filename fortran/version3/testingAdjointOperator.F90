@@ -47,7 +47,7 @@ subroutine testingAdjointOperator(forwardSolution,adjointSolution,whichAdjointRH
 
   ! Populate adjoint operator
   call preallocateMatrix(adjointMatrix, 1)
-  if (discreteAdjointOption) then
+  if (discreteAdjointOption == 1) then
     call MatTranspose(matrix, MAT_INPLACE_MATRIX,adjointMatrix,ierr)
   else
     call populateMatrix(adjointMatrix, 4, dummy)
@@ -125,6 +125,7 @@ subroutine testingAdjointOperator(forwardSolution,adjointSolution,whichAdjointRH
   end do
 
   ! ((matrix)^{-1} RHS, adjointRHS) = (RHS, (adjointMatrix)^{-1} adjointRHS)
+  if (.false.) then
   if (masterProc) then
     print *,"Testing adjoint operator by ensuring that (matrix^{-1}RHS, adjointRHS) = (RHS, adjointMatrix^{-1}adjointRHS) "
   end if
@@ -143,6 +144,7 @@ subroutine testingAdjointOperator(forwardSolution,adjointSolution,whichAdjointRH
   if (masterProc) then
     print *,"Inner product 1: ", innerProduct1
     print *,"Inner product 2: ", innerProduct2
+  end if
   end if
 
 end subroutine testingAdjointOperator

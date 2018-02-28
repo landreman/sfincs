@@ -3,7 +3,7 @@
 #import matplotlib.pyplot as plt
 import matplotlib
 import h5py
-import numpy
+import numpy as np
 import inspect, math, os
 import pickle
 import sys
@@ -31,6 +31,9 @@ particleFluxPercentErrors = []
 heatFluxPercentErrors = []
 parallelFlowPercentErrors = []
 deltaLambdas = []
+dPhidPsiPercentErrors = []
+totalHeatFluxPercentErrors = []
+bootstrapPercentErrors = []
 
 for directory in directories:
   thisInputFilename = directory+"/"+inputFilename
@@ -65,6 +68,7 @@ for directory in directories:
 
   print "Processing directory "+directory
 
+  RHSMode = f["RHSMode"][()]
   Nspecies_new = f["Nspecies"][()]
   Zs = f["Zs"][()]
   dParticleFluxdLambda_finitediff = f["dParticleFluxdLambda_finitediff"][()]
@@ -73,6 +77,11 @@ for directory in directories:
   particleFluxPercentError = f["particleFluxPercentError"][()]
   heatFluxPercentError = f["heatFluxPercentError"][()]
   parallelFlowPercentError = f["parallelFlowPercentError"][()]
+  totalHeatFluxPercentError = f["totalHeatFluxPercentError"][()]
+  bootstrapPercentError = f["bootstrapPercentError"][()]
+
+  if (RHSMode==5):
+    dPhidPsiPercentError = f["dPhidPsiPercentError"][()]
 
   iteration = -1
 
@@ -82,7 +91,32 @@ for directory in directories:
   particleFluxPercentErrors.append(particleFluxPercentError[whichMode-1,whichLambda-1,whichSpecies-1,iteration])
   heatFluxPercentErrors.append(heatFluxPercentError[whichMode-1,whichLambda-1,whichSpecies-1,iteration])
   parallelFlowPercentErrors.append(parallelFlowPercentError[whichMode-1,whichLambda-1,whichSpecies-1,iteration])
+  totalHeatFluxPercentErrors.append(totalHeatFluxPercentError[whichMode-1,whichLambda-1,iteration])
+  bootstrapPercentErrors.append(bootstrapPercentError[whichMode-1,whichLambda-1,iteration])
+  if (RHSMode==5):
+    dPhidPsiPercentErrors.append(dPhidPsiPercentError[whichMode-1,whichLambda-1,iteration])
 
+particleFluxPercentErrors = np.array(particleFluxPercentErrors)
+heatFluxPercentErrors = np.array(particleFluxPercentErrors)
+parallelFlowPercentErrors = np.array(parallelFlowPercentErrors)
+deltaLambdas = np.array(deltaLambdas)
+if (RHSMode==5):
+  dPhidPsiPercentErrors = np.array(dPhidPsiPercentErrors)
+bootstrapPercentErrors = np.array(bootstrapPercentErrors)
+totalHeatFluxPercentErrors = np.array(totalHeatFluxPercentErrors)
+
+# Sort in ascending deltaLambdas
+ind = np.argsort(deltaLambdas)
+particleFluxPercentErrors = particleFluxPercentErrors[ind]
+heatFluxPercentErrors = heatFluxPercentErrors[ind]
+parallelFlowPercentErrors = parallelFlowPercentErrors[ind]
+deltaLambdas = deltaLambdas[ind]
+if (RHSMode==5):
+  dPhidPsiPercentErrors = dPhidPsiPercentErrors[ind]
+bootstrapPercentErrors = bootstrapPercentErrors[ind]
+totalHeatFluxPercentErrors = totalHeatFluxPercentErrors[ind]
+
+'''
 plt.figure(facecolor='white')
 plt.plot(deltaLambdas,dParticleFluxdLambdas,marker='o')
 plt.xlim([1e-7,1e-1])
@@ -109,32 +143,55 @@ plt.xlabel('deltaLambda')
 plt.xscale('log')
 plt.ylabel('dParallelFlowdLambdas_finitediff')
 plt.title(titleString)
+'''
 
 plt.figure(facecolor='white')
-plt.plot(deltaLambdas,particleFluxPercentErrors,marker='o')
-plt.xlim([1e-7,1e-1])
-plt.ylim([min(particleFluxPercentErrors)-0.1*(max(particleFluxPercentErrors)-min(particleFluxPercentErrors)),max(particleFluxPercentErrors)+0.1*(max(particleFluxPercentErrors)-min(particleFluxPercentErrors))])
+plt.plot(deltaLambdas[np.where((particleFluxPercentErrors > 0))],particleFluxPercentErrors[np.where((particleFluxPercentErrors > 0))],marker='o')
+plt.yscale('log')
 plt.xscale('log')
 plt.xlabel('deltaLambda')
 plt.ylabel('particleFluxPercentError')
 plt.title(titleString)
 
 plt.figure(facecolor='white')
-plt.plot(deltaLambdas,heatFluxPercentErrors,marker='o')
-plt.xlim([1e-7,1e-1])
-plt.ylim([min(heatFluxPercentErrors)-0.1*(max(heatFluxPercentErrors)-min(heatFluxPercentErrors)),max(heatFluxPercentErrors)+0.1*(max(heatFluxPercentErrors)-min(heatFluxPercentErrors))])
-plt.xlabel('deltaLambda')
+plt.plot(deltaLambdas[np.where((heatFluxPercentErrors > 0))],heatFluxPercentErrors[np.where((heatFluxPercentErrors > 0))],marker='o')
+plt.yscale('log')
+plt.xlabel('deltaLambda',fontsize=16)
 plt.xscale('log')
-plt.ylabel('heatFluxPercentError')
+plt.ylabel('heatFluxPercentError',fontsize=16)
 plt.title(titleString)
 
 plt.figure(facecolor='white')
-plt.plot(deltaLambdas,parallelFlowPercentErrors,marker='o')
-plt.xlim([1e-7,1e-1])
-plt.ylim([min(parallelFlowPercentErrors)-0.1*(max(parallelFlowPercentErrors)-min(parallelFlowPercentErrors)),max(parallelFlowPercentErrors)+0.1*(max(parallelFlowPercentErrors)-min(parallelFlowPercentErrors))])
+plt.plot(deltaLambdas[np.where((parallelFlowPercentErrors > 0))],parallelFlowPercentErrors[np.where((parallelFlowPercentErrors > 0))],marker='o')
+plt.yscale('log')
 plt.xlabel('$\Delta \lambda$ (finite difference step size)',fontsize=16)
 plt.xscale('log')
 plt.ylabel('Parallel Flow Gradient Percent Error',fontsize=16)
-#plt.title(titleString)
+plt.title(titleString)
+
+plt.figure(facecolor='white')
+plt.plot(deltaLambdas[np.where((totalHeatFluxPercentErrors > 0))],totalHeatFluxPercentErrors[np.where((totalHeatFluxPercentErrors > 0))],marker='o')
+plt.yscale('log')
+plt.xlabel('$\Delta \lambda$ (finite difference step size)',fontsize=16)
+plt.xscale('log')
+plt.ylabel('totalHeatFlux Gradient Percent Error',fontsize=16)
+plt.title(titleString)
+
+plt.figure(facecolor='white')
+plt.plot(deltaLambdas[np.where((bootstrapPercentErrors > 0))],bootstrapPercentErrors[np.where((bootstrapPercentErrors > 0))],marker='o')
+plt.yscale('log')
+plt.xlabel('$\Delta \lambda$ (finite difference step size)',fontsize=16)
+plt.xscale('log')
+plt.ylabel('bootstrap Gradient Percent Error',fontsize=16)
+plt.title(titleString)
+
+if (RHSMode==5):
+  plt.figure(facecolor='white')
+  plt.plot(deltaLambdas[np.where((dPhidPsiPercentErrors > 0))],dPhidPsiPercentErrors[np.where((dPhidPsiPercentErrors > 0))],marker='o')
+  plt.yscale('log')
+  plt.xlabel('$\Delta \lambda$ (finite difference step size)',fontsize=16)
+  plt.xscale('log')
+  plt.ylabel('dPhidPsi Gradient Percent Error',fontsize=16)
+  plt.title(titleString)
 
 plt.show()

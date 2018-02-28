@@ -1378,25 +1378,34 @@
         allocate(dParticleFluxdLambda_finitediff(NSpecies,NLambdas,NModesAdjoint))
         allocate(dHeatFluxdLambda_finitediff(NSpecies,NLambdas,NModesAdjoint))
         allocate(dParallelFlowdLambda_finitediff(Nspecies,NLambdas,NModesAdjoint))
-!        allocate(DHat_init(Ntheta,Nzeta))
-!        allocate(BHat_init(Ntheta,Nzeta))
-!        allocate(dBHatdtheta_init(Ntheta,Nzeta))
-!        allocate(dBHatdzeta_init(Ntheta,Nzeta))
-!        allocate(BHat_sup_theta_init(Ntheta,Nzeta))
-!        allocate(dBHat_sup_theta_dzeta_init(Ntheta,Nzeta))
-!        allocate(BHat_sup_zeta_init(Ntheta,Nzeta))
-!        allocate(dBHat_sup_zeta_dtheta_init(Ntheta,Nzeta))
-!        allocate(BHat_sub_theta_init(Ntheta,Nzeta))
-!        allocate(dBHat_sub_theta_dzeta_init(Ntheta,Nzeta))
-!        allocate(BHat_sub_zeta_init(Ntheta,Nzeta))
-!        allocate(dBHat_sub_zeta_dtheta_init(Ntheta,Nzeta))
+
+        allocate(particleFluxPercentError(Nspecies,NLambdas,NModesAdjoint))
+        allocate(heatFluxPercentError(Nspecies,NLambdas,NModesAdjoint))
+        allocate(parallelFlowPercentError(Nspecies,NLambdas,NModesAdjoint))
+
+        allocate(radialCurrentPercentError(NLambdas,NModesAdjoint))
+        allocate(bootstrapPercentError(NLambdas,NModesAdjoint))
+        allocate(totalHeatFluxPercentError(NLambdas,NModesAdjoint))
+
+        particleFluxPercentError = zero
+        heatFluxPercentError = zero
+        parallelFlowPercentError = zero
+        radialCurrentPercentError = zero
+        bootstrapPercentError = zero
+        totalHeatFluxPercentError = zero
+
         dRadialCurrentdLambda_finitediff = zero
         dTotalHeatFluxdLambda_finitediff = zero
         dBootstrapdLambda_finitediff = zero
         dHeatFluxdLambda_finitediff = zero
         dParallelFlowdLambda_finitediff = zero
+        if (RHSMode==5) then
+          allocate(dPhidPsidLambda_finitediff(NLambdas,NModesAdjoint))
+        end if
       end if
-
+      if (RHSMode==5) then
+        allocate(dPhidPsidLambda(NLambdas,NModesAdjoint))
+      end if
     end if
 
     allocate(particleFlux_vm_psiHat_vs_x(Nspecies,Nx))

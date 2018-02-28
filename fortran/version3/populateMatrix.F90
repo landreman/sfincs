@@ -70,10 +70,16 @@
     PetscScalar, dimension(:,:), allocatable :: nonlinearTerm_Lp1, nonlinearTerm_Lm1
     PetscScalar, dimension(:), allocatable :: tempVector1, tempVector2
     PetscScalar, dimension(:,:), allocatable :: tempExtrapMatrix, fToFInterpolationMatrix_plus1
+    PetscScalar :: adjointFactor
 
 
     PetscScalar :: dPhiHatdpsiHatToUseInRHS, xPartOfRHS, xPartOfRHS2 !!Added by AM 2016-03
 
+    if (whichMatrix==4 .or. whichMatrix==5) then
+      adjointFactor = -one
+    else
+      adjointFactor = one
+    end if
     ! *******************************************************************************
     ! Do a few sundry initialization tasks:
     ! *******************************************************************************
@@ -268,18 +274,9 @@
 
              do izeta=izetaMin,izetaMax
                 do itheta=1,Ntheta
-                  if ((whichMatrix==4) .or. (whichMatrix==5)) then
-!                    if (masterProc .and. itheta==1 .and. izeta==izetaMin) then
-!                      print *,"sign flip theta."
-!                    end if
-                    thetaPartOfTerm(itheta,:) = -BHat_sup_theta(itheta,izeta) &
-                        * sqrtTHat/sqrtMHat * ddthetaToUse(itheta,:) &
-                        / BHat(itheta,izeta)
-                  else
-                    thetaPartOfTerm(itheta,:) = BHat_sup_theta(itheta,izeta) &
-                      * sqrtTHat/sqrtMHat * ddthetaToUse(itheta,:) &
-                      / BHat(itheta,izeta)
-                  end if
+                  thetaPartOfTerm(itheta,:) = adjointFactor*BHat_sup_theta(itheta,izeta) &
+                    * sqrtTHat/sqrtMHat * ddthetaToUse(itheta,:) &
+                    / BHat(itheta,izeta)
                 end do
 
                 ! PETSc uses the opposite convention to Fortran:
@@ -343,16 +340,8 @@
 
              do itheta=ithetaMin, ithetaMax
                 do izeta=1,Nzeta
-                   if ((whichMatrix == 4) .or. (whichMatrix == 5)) then
-!                      if (masterProc .and. itheta==ithetaMin .and. izeta==1) then
-!                        print *,"sign flip zeta"
-!                      end if
-                      zetaPartOfTerm(izeta,:) = -sqrtTHat/sqrtMHat * BHat_sup_zeta(itheta,izeta) &
-                        * ddzetaToUse(izeta,:) / BHat(itheta,izeta)
-                   else
-                      zetaPartOfTerm(izeta,:) = sqrtTHat/sqrtMHat * BHat_sup_zeta(itheta,izeta) &
-                        * ddzetaToUse(izeta,:) / BHat(itheta,izeta)
-                   end if
+                    zetaPartOfTerm(izeta,:) = adjointFactor*sqrtTHat/sqrtMHat * BHat_sup_zeta(itheta,izeta) &
+                      * ddzetaToUse(izeta,:) / BHat(itheta,izeta)
                 end do
                 
                 ! PETSc uses the opposite convention to Fortran:
@@ -420,32 +409,21 @@
                 ! Assume BHat_sub_zeta has the same sign everywhere. (True for Boozer but in principle could be violated for VMEC coordinates?)
                 if (factor*DHat(1,1)*BHat_sub_zeta(1,1) > 0) then
                   ddthetaToUse = ddtheta_ExB_plus
-                  if (masterProc) then
-                    print *,"using plus."
-                  end if
                 else
                   ddthetaToUse = ddtheta_ExB_minus
-                  if (masterProc) then
-                    print *,"using minus."
-                  end if
                 end if
              end if
 
              do izeta=izetaMin,izetaMax
                 if (useDKESExBDrift) then
                    do itheta=1,Ntheta
-                      thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / FSABHat2 &
+                      thetaPartOfTerm(itheta,:) = adjointFactor*ddthetaToUse(itheta,:) / FSABHat2 &
                            * DHat(itheta,izeta) * BHat_sub_zeta(itheta,izeta)
                    end do
                 else
                    do itheta=1,Ntheta
-                      if ((whichMatrix == 4) .or. (whichMatrix == 5)) then
-                        thetaPartOfTerm(itheta,:) = -ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2) &
-                             * DHat(itheta,izeta) * BHat_sub_zeta(itheta,izeta)
-                      else
-                        thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2) &
-                             * DHat(itheta,izeta) * BHat_sub_zeta(itheta,izeta)
-                      end if
+                      thetaPartOfTerm(itheta,:) = adjointFactor*ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2) &
+                           * DHat(itheta,izeta) * BHat_sub_zeta(itheta,izeta)
                    end do
                 end if
                 
@@ -504,18 +482,13 @@
              do itheta=ithetaMin, ithetaMax
                 if (useDKESExBDrift) then
                    do izeta=1,Nzeta
-                      zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / FSABHat2 &
+                      zetaPartOfTerm(izeta,:) = adjointFactor*ddzetaToUse(izeta,:) / FSABHat2 &
                            * DHat(itheta,izeta) * BHat_sub_theta(itheta,izeta)
                    end do
                 else
                    do izeta=1,Nzeta
-                      if ((whichMatrix==4) .or. (whichMatrix==5)) then
-                        zetaPartOfTerm(izeta,:) = -ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2) &
-                             * DHat(itheta,izeta) * BHat_sub_theta(itheta,izeta)
-                      else
-                        zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2) &
-                               * DHat(itheta,izeta) * BHat_sub_theta(itheta,izeta)
-                      end if
+                      zetaPartOfTerm(izeta,:) = adjointFactor*ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2) &
+                           * DHat(itheta,izeta) * BHat_sub_theta(itheta,izeta)
                    end do
                 end if
                 
@@ -812,19 +785,10 @@
        if (whichMatrix .ne. 2) then
           do itheta=ithetaMin,ithetaMax
              do izeta=izetaMin,izetaMax
-                if ((whichMatrix == 4) .or. (whichMatrix == 5)) then
-!                  if (masterProc .and. itheta==ithetaMin .and. izeta==izetaMin) then
-!                    print *,"sign flip mirror"
-!                  end if
-                  factor = sqrtTHat/(2*sqrtMHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
-                       * (BHat_sup_theta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
-                       + BHat_sup_zeta(itheta,izeta) * dBHatdzeta(itheta,izeta))
-                else
-                  factor = -sqrtTHat/(2*sqrtMHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
-                       * (BHat_sup_theta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
-                       + BHat_sup_zeta(itheta,izeta) * dBHatdzeta(itheta,izeta))
-                end if
-                
+                factor = -adjointFactor*sqrtTHat/(2*sqrtMHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
+                   * (BHat_sup_theta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
+                   + BHat_sup_zeta(itheta,izeta) * dBHatdzeta(itheta,izeta))
+
                 do ix=ixMin,Nx
                    do L=0,(Nxi_for_x(ix)-1)
                       rowIndex=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
@@ -857,13 +821,8 @@
         if (includeElectricFieldTermInXiDot .and. (whichMatrix .ne. 2)) then
           do itheta=ithetaMin,ithetaMax
              do izeta=izetaMin,izetaMax
-                if ((whichMatrix == 4) .or. (whichMatrix == 5)) then
-                  temp = -(BHat_sub_zeta(itheta,izeta) * dBHatdtheta(itheta,izeta) &
-                       - BHat_sub_theta(itheta,izeta) * dBHatdzeta(itheta,izeta))
-                else
-                  temp = (BHat_sub_zeta(itheta,izeta) * dBHatdtheta(itheta,izeta) &
+                  temp = adjointFactor*(BHat_sub_zeta(itheta,izeta) * dBHatdtheta(itheta,izeta) &
                         - BHat_sub_theta(itheta,izeta) * dBHatdzeta(itheta,izeta))
-                end if
 
                 if (.not. force0RadialCurrentInEquilibrium) then
                   temp = temp - 2 * BHat(itheta,izeta) &
@@ -985,11 +944,7 @@
           allocate(rowIndices(Nx))
           allocate(colIndices(Nx))
           !factor = alpha*Delta/(4*psiAHat)*dPhiHatdpsiN
-          if ((whichMatrix == 4) .or. (whichMatrix == 5)) then
-            factor = alpha*Delta*dPhiHatdpsiHat/four
-          else
-            factor = -alpha*Delta*dPhiHatdpsiHat/four
-          end if
+          factor = -adjointFactor*alpha*Delta*dPhiHatdpsiHat/four
 
           do L=0,(Nxi-1)
              if (L>0 .and. pointAtX0) then

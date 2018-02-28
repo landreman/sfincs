@@ -14,6 +14,29 @@ module adjointDiagnostics
 
   contains
 
+    subroutine computedRadialCurrentdEr(solutionVec,adjointSolutionJr)
+
+      use globalVariables
+      use petscvec
+
+      Vec :: solutionVec, adjointSolutionJr, adjointResidualEr
+      PetscErrorCode :: ierr
+      PetscScalar :: innerProductResult
+
+      call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointResidualEr, ierr)
+      call VecSet(adjointResidualEr,zero,ierr)
+      ! compute (dLdEr f - dSdEr)
+      call evaluateAdjointInnerProductFactor(solutionVec,adjointResidualEr,0,0)
+      call innerProduct(adjointSolutionJr,adjointResidualEr,innerProductResult)
+
+      ! dPhiHatdpsiHat = ddrHat2ddpsiHat * (-Er)
+      ! dPhiHatdpsiHatdEr = -ddrHat2ddpsiHat
+      dRadialCurrentdEr = innerProductResult*ddrHat2ddpsiHat
+
+      call VecDestroy(adjointResidualEr,ierr)
+
+    end subroutine computedRadialCurrentdEr
+
     
     !> Compuates \f$ \partial \mathbb{L}/\partial \lambda \hat{F} - \partial \mathbb{S}/\partial \lambda \f$. To compute the derivatives of the moments, this is the quantity that is used in the inner product with the adjoint solution.
     !! @param forwardSolution Solution to forward equation.
@@ -78,86 +101,79 @@ module adjointDiagnostics
       PetscErrorCode :: ierr
       PetscScalar :: speciesResult
 
-      if (discreteAdjointOption) then
-        call VecDot(deltaF, deltaG, result, ierr)
-      else
-
-        ! Scatter deltaF to master proc
-        call VecScatterCreateToZero(deltaF, VecScatterContext, deltaFOnProc0, ierr)
-        call VecScatterBegin(VecScatterContext, deltaF, deltaFOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
-        call VecScatterEnd(VecScatterContext, deltaF, deltaFOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
-        if (masterProc) then
-          ! Convert the PETSc vector into a normal Fortran array
-          call VecGetArrayF90(deltaFOnProc0, deltaFArray, ierr)
-        end if
-
-        ! Scatter deltaG to master proc
-        call VecScatterCreateToZero(deltaG, VecScatterContext, deltaGOnProc0, ierr)
-        call VecScatterBegin(VecScatterContext, deltaG, deltaGOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
-        call VecScatterEnd(VecScatterContext, deltaG, deltaGOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
-        if (masterProc) then
-          ! Convert the PETSc vector into a normal Fortran array
-          call VecGetArrayF90(deltaGOnProc0, deltaGArray, ierr)
-        end if
-
-        if (masterProc) then
-          allocate(sourcesF(Nspecies,2))
-          allocate(sourcesG(Nspecies,2))
-          allocate(xIntegralFactor(Nx))
-          allocate(thetazetaIntegralFactor(Ntheta,Nzeta))
-
-          ! Get sources associated with deltaF and deltaG
-          if (constraintScheme == 1) then
-            do ispecies = 1,Nspecies
-              sourcesF(ispecies,1) = deltaFArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)+1)
-              sourcesF(ispecies,2) = deltaFArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)+1)
-              sourcesG(ispecies,1) = deltaGArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)+1)
-              sourcesG(ispecies,2) = deltaGArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)+1)
-            end do
+      select case (discreteAdjointOption)
+        case (0) ! continuous
+          ! Scatter deltaF to master proc
+          call VecScatterCreateToZero(deltaF, VecScatterContext, deltaFOnProc0, ierr)
+          call VecScatterBegin(VecScatterContext, deltaF, deltaFOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
+          call VecScatterEnd(VecScatterContext, deltaF, deltaFOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
+          if (masterProc) then
+            ! Convert the PETSc vector into a normal Fortran array
+            call VecGetArrayF90(deltaFOnProc0, deltaFArray, ierr)
           end if
 
-          !> Compute first term in inner product
-          result = zero
+          ! Scatter deltaG to master proc
+          call VecScatterCreateToZero(deltaG, VecScatterContext, deltaGOnProc0, ierr)
+          call VecScatterBegin(VecScatterContext, deltaG, deltaGOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
+          call VecScatterEnd(VecScatterContext, deltaG, deltaGOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
+          if (masterProc) then
+            ! Convert the PETSc vector into a normal Fortran array
+            call VecGetArrayF90(deltaGOnProc0, deltaGArray, ierr)
+          end if
 
-          do ispecies = 1,Nspecies
-            speciesResult = zero
-            THat = THats(ispecies)
-            mHat = mHats(ispecies)
-            nHat = nHats(ispecies)
+          if (masterProc) then
+            allocate(sourcesF(Nspecies,2))
+            allocate(sourcesG(Nspecies,2))
+            allocate(xIntegralFactor(Nx))
+            allocate(thetazetaIntegralFactor(Ntheta,Nzeta))
 
-            xIntegralFactor = ((pi*pi*sqrtpi*THat*THat*THat*THat)/(mHat*mHat*mHat*nHat*VprimeHat))*x*x*exp(x*x)
-            thetazetaIntegralFactor = one/DHat
-            do itheta=1,Ntheta
-              do izeta=1,Nzeta
-                do ix=1,Nx
-                  ! The integral over xi turns into a sum over L (with a factor of 2/(2L+1))
-                  do L=0,(Nxi_for_x(ix)-1)
-                    index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+            ! Get sources associated with deltaF and deltaG
+            if (constraintScheme == 1) then
+              do ispecies = 1,Nspecies
+                sourcesF(ispecies,1) = deltaFArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)+1)
+                sourcesF(ispecies,2) = deltaFArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)+1)
+                sourcesG(ispecies,1) = deltaGArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)+1)
+                sourcesG(ispecies,2) = deltaGArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)+1)
+              end do
+            end if
 
-                    speciesResult = speciesResult + thetazetaIntegralFactor(itheta,izeta)*xIntegralFactor(ix) &
-                      *(two/(two*real(L)+one))*thetaWeights(itheta)*zetaWeights(izeta) &
-                      *deltaFArray(index)*deltaGArray(index)*xWeights(ix)
-!                    if (deltaFArray(index)*deltaGArray(index) /= 0 .and. (L>2)) then
-!                      print *,"L = ", L
-!                      print *,"L result = ", deltaFArray(index)*deltaGArray(index)
-!                    end if
+            !> Compute first term in inner product
+            result = zero
+
+            do ispecies = 1,Nspecies
+              speciesResult = zero
+              THat = THats(ispecies)
+              mHat = mHats(ispecies)
+              nHat = nHats(ispecies)
+
+              xIntegralFactor = ((pi*pi*sqrtpi*THat*THat*THat*THat)/(mHat*mHat*mHat*nHat*VprimeHat))*x*x*exp(x*x)
+              thetazetaIntegralFactor = one/DHat
+              do itheta=1,Ntheta
+                do izeta=1,Nzeta
+                  do ix=1,Nx
+                    ! The integral over xi turns into a sum over L (with a factor of 2/(2L+1))
+                    do L=0,(Nxi_for_x(ix)-1)
+                      index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+
+                      speciesResult = speciesResult + thetazetaIntegralFactor(itheta,izeta)*xIntegralFactor(ix) &
+                        *(two/(two*real(L)+one))*thetaWeights(itheta)*zetaWeights(izeta) &
+                        *deltaFArray(index)*deltaGArray(index)*xWeights(ix)
+
+                    end do
                   end do
                 end do
               end do
-            end do
-            result = result + speciesResult
-  !          if (masterProc) then
-  !            print *,"speciesResult: ", speciesResult
-  !          end if
-  !!          if (masterProc) then
-  !            print *,"innerProduct term from sources: ", (two*pi*(THat**4)/((mHat**3)*nHat*VPrimeHat))*(sourcesF(ispecies,1)*sourcesG(ispecies,1) + sourcesF(ispecies,2)*sourcesG(ispecies,2))
-  !          end if
-            ! Now add terms which sum over sources
-            result = result + (two*pi*(THat**4)/((mHat**3)*nHat*VPrimeHat))*(sourcesF(ispecies,1)*sourcesG(ispecies,1) + sourcesF(ispecies,2)*sourcesG(ispecies,2))
-          end do ! ispecies
+              result = result + speciesResult
+              ! Now add terms which sum over sources
+              result = result + (two*pi*(THat**4)/((mHat**3)*nHat*VPrimeHat))*(sourcesF(ispecies,1)*sourcesG(ispecies,1) + sourcesF(ispecies,2)*sourcesG(ispecies,2))
+            end do ! ispecies
+          end if ! masterProc
 
-        end if ! masterProc
-      end if ! discreteAdjoint
+        case (1) ! discrete
+          call VecDot(deltaF, deltaG, result, ierr)
+        case (2) ! rescaled
+          call VecDot(deltaF, deltaG, result, ierr)
+      end select
     end subroutine
 
     !> Evaluates the term in the sensitivity derivative of the heat flux
@@ -554,7 +570,7 @@ module adjointDiagnostics
     !! @param adjointSolution Solution to adjoint equation.
     !! @param whichAdjointRHS Indicates which integrated quantity is being differentiated. If = 1 (particle flux), = 2 (heat flux), = 3 (bootstrap current).
     !! @param whichSpecies Indicates species used for inner product. If = 0, corresponds to a species-summed quantity. If nonzero, indicates number of species.
-    subroutine evaluateDiagnostics(forwardSolution, adjointSolution, adjointSolutionJr,whichAdjointRHS, whichSpecies)
+    subroutine evaluateDiagnostics(forwardSolution, adjointSolution, adjointSolutionJr, whichAdjointRHS, whichSpecies)
 
       use globalVariables
       use indices
@@ -580,9 +596,13 @@ module adjointDiagnostics
       call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointResidual, ierr)
       call VecSet(adjointResidual, zero, ierr)
 
-      if (RHSMode > 5) then
+      if (RHSMode == 5) then
         call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointResidualEr, ierr)
-        call VecSet(adjointResidualEr, zero, ierr)
+        call VecSet(adjointResidualEr,zero,ierr)
+        ! compute (dLdEr f - dSdEr)
+        call evaluateAdjointInnerProductFactor(forwardSolution,adjointResidualEr,0,0)
+        call innerProduct(adjointSolution,adjointResidualEr,innerProductResultEr1)
+        call innerProduct(adjointSolutionJr,adjointResidualEr,innerProductResultEr2)
       end if
 
       ! Same inner product is formed regardless of whichAdjointMatrix and whichSpecies
@@ -594,14 +614,11 @@ module adjointDiagnostics
           ! Call function to perform (dLdlambdaf - dSdlambda), which calls populatedMatrixdLambda and populatedRHSdLambda
           call evaluateAdjointInnerProductFactor(forwardSolution,adjointResidual,whichLambda,whichMode)
 
-          if (RHSMode > 5) then
-            call VecSet(adjointResidualEr,zero,ierr)
-            call evaluateAdjointInnerProductFactor(forwardSolution,adjointResidualEr,0,0)
-            call innerProduct(adjointSolution,adjointResidualEr,innerProductResultEr1)
-            call innerProduct(adjointSolutionJr,adjointResidualEr,innerProductResultEr2)
+          if (RHSMode == 5) then
             call innerProduct(adjointSolutionJr,adjointResidual,innerProductResultEr3)
             call particleFluxSensitivity(radialCurrentSensitivity,forwardSolution,0,whichLambda,whichMode)
             ErTermToAdd = -(innerProductResultEr1/innerProductResultEr2)*(radialCurrentSensitivity-innerProductResultEr3)
+            dPhidPsidLambda(whichLambda,whichMode) = (1/innerProductResultEr2)*(radialCurrentSensitivity-innerProductResultEr3)
           end if
 
             call innerProduct(adjointSolution,adjointResidual,innerProductResult)
@@ -638,7 +655,7 @@ module adjointDiagnostics
                   call heatFluxSensitivity(sensitivityResult, forwardSolution, whichSpecies, whichLambda, whichMode)
                   dHeatFluxdLambda(whichSpecies,whichLambda,whichMode) = sensitivityResult - innerProductResult
                   if (RHSMode == 5) then
-                    dParticleFluxdLambda(whichSpecies,whichLambda,whichMode) = dParticleFluxdLambda(whichSpecies,whichLambda,whichMode) + ErTermToAdd
+                    dHeatFluxdLambda(whichSpecies,whichLambda,whichMode) = dHeatFluxdLambda(whichSpecies,whichLambda,whichMode) + ErTermToAdd
                   end if
                 case (3) ! Parallel Flow
                   call parallelFlowSensitivity(sensitivityResult, forwardSolution,whichSpecies, whichLambda, whichMode)
@@ -651,6 +668,11 @@ module adjointDiagnostics
 
         end do
       end do
+
+      call VecDestroy(adjointResidual,ierr)
+      if (RHSMode==5) then
+        call VecDestroy(adjointResidualEr,ierr)
+      end if
 
     end subroutine
 
