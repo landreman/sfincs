@@ -610,24 +610,30 @@ will be used.
 \param{withNBIspec}
 {Boolean}
 {\false}
-{\todo{Whenever ?}}
-{\todo{Write description}}
+{Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true and \parlink{quasineutralityOption} == 1}
+{When this is \true, an extra species (here called NBIspec)
+  is added to the quasineutrality condition, but not as a species for
+  which the DKE is solved. This is to mimic that fast ions influece
+  the other species mostly via the parallel electric field, an not
+  much via collisions. The NBIspec is assumed to have a density
+  distribution on the flux suface proporional to $B$ (which is the
+  case if all particles have zero pitch angle).}
 
 \myhrule
 
 \param{NBIspecZ}
 {real}
 {1.0}
-{\todo{Whenever \parlink{RHSMode} == 1 and \parlink{withNBIspec} == \true}}
-{\todo{Charge of NBI heated species, in units of the proton charge $e$.}}
+{Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true and \parlink{quasineutralityOption} == 1}
+{Charge of the fast ion species, in units of the proton charge $e$.}
 
 \myhrule
 
 \param{NBIspecNHat}
 {real}
 {0.0}
-{\todo{Whenever \parlink{RHSMode} == 1 and \parlink{withNBIspec} == \true}}
-{\todo{Density of NBI heated species, in units of the reference density $\bar{n}$.}}
+{Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true and \parlink{quasineutralityOption} == 1}
+{Density of the fast ion species, in units of the reference density $\bar{n}$.}
 
 
 
