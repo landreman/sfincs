@@ -29,7 +29,8 @@ contains
     PetscScalar :: valueToSet
     PetscErrorCode :: err
 
-    if (abs(valueToSet) > threshholdForInclusion) then
+!!TEMP TEST AM 2018-02    if (abs(valueToSet) > threshholdForInclusion) then
+    if (valueToSet .ne. 0.0d+0) then !!TEMP TEST AM 2018-02
        call MatSetValue(myMat, row, col, valueToSet, mode, err)
     end if
 

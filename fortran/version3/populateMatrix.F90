@@ -2085,8 +2085,8 @@
                                   rowIndex=getIndex(iSpeciesA,ix_row,L+1,itheta,izeta,BLOCK_F)
                                   do ix_col = max(ixMinCol,min_x_for_L(L)),Nx
                                      colIndex=getIndex(iSpeciesB,ix_col,L+1,itheta,izeta,BLOCK_F)
- !!                                    call MatSetValueSparse(matrix, rowIndex, colIndex, & !!Commented by AM 2018-01
-                                     call MatSetValue(matrix, rowIndex, colIndex, & !!Added by AM 2018-01
+                                     call MatSetValueSparse(matrix, rowIndex, colIndex, & !!Commented by AM 2018-01
+ !!TEST                                    call MatSetValue(matrix, rowIndex, colIndex, & !!Added by AM 2018-01
                                      -nu_n*CHat(ix_row,ix_col), ADD_VALUES, ierr)
                                   end do ! ix_col
                                end do ! ix_row
