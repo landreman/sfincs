@@ -445,8 +445,14 @@ in the {\ttfamily xm\_nyq} and {\ttfamily xn\_nyq} arrays, where available.
 \param{EParallelHatSpec\_bcdatFile}
 {string}
 {``''}
-{\todo{Only when ?}}
-{\todo{Write description}}
+{Only when \parlink{EParallelHatSpec} is non-zero
+  and \parlink{RHSmode}==1 \\and \parlink{EParallelHatSpec\_bcdatFile}
+  is not == ``''}
+{When set this loads a file which looks like a bc file, but with the
+  part which usually contains Fourier coefficients for
+  $R$,$Z$,$B$,\ldots instead contains the coefficients for a function
+  which will multiply the ``effective parallel electric fields'' \parlink{EParallelHatSpec}
+  (otherwise just proportional to $B$).}
 
 
 
@@ -607,33 +613,37 @@ will be used.
 
 \myhrule
 
-\param{withNBIspec}
-{Boolean}
-{\false}
-{Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true and \parlink{quasineutralityOption} == 1}
-{When this is \true, an extra species (here called NBIspec)
-  is added to the quasineutrality condition, but not as a species for
-  which the DKE is solved. This is to mimic that fast ions influece
-  the other species mostly via the parallel electric field, an not
-  much via collisions. The NBIspec is assumed to have a density
-  distribution on the flux suface proporional to $B$ (which is the
-  case if all particles have zero pitch angle).}
+\param{withNBIspec} {Boolean} {\false} {Whenever \parlink{RHSMode} ==
+  1 and \parlink{includePhi1} == \true\\
+  ~and \parlink{quasineutralityOption} == 1} {When this is \true, an
+  extra species (here called NBIspec) is added to the quasineutrality
+  condition, but not as a species for which the DKE is solved. This is
+  to mimic how the fast ions influence the other species via the
+  $\phi_1$ variation on the flux surface. (The influence via
+  collisions can be modelled using \parlink{EParallelHatSpec}). The
+  NBIspec is assumed to have a density distribution on the flux suface
+  proportional to $B$ (which is the case if all particles have zero
+  pitch angle).}
 
 \myhrule
 
 \param{NBIspecZ}
 {real}
 {1.0}
-{Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true and \parlink{quasineutralityOption} == 1}
-{Charge of the fast ion species, in units of the proton charge $e$.}
+{Whenever \parlink{withNBIspec}== \true~ and \parlink{RHSMode} == 1 \\
+  and \parlink{includePhi1} == \true~ and \parlink{quasineutralityOption} == 1}
+{Charge of the fast ion species, in units of the proton charge $e$, see \parlink{withNBIspec}.}
 
 \myhrule
 
 \param{NBIspecNHat}
 {real}
 {0.0}
-{Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true and \parlink{quasineutralityOption} == 1}
-{Density of the fast ion species, in units of the reference density $\bar{n}$.}
+{Whenever \parlink{withNBIspec}== \true~ and \parlink{RHSMode} == 1 \\
+and \parlink{includePhi1} == \true~ and \parlink{quasineutralityOption} == 1}
+{Density of the fast ion species, in units of the reference density
+  $\bar{n}$, see \parlink{withNBIspec}. \todo{Implement possibility to load a bcdat file with the
+  fast ion density distribution on the flux surfaces}}
 
 
 
@@ -1041,8 +1051,17 @@ and nearly axisymmetric geometry.\\
 \param{EParallelHatSpec}
 {1D array of reals}
 {0.0}
-{\todo{Whenever \parlink{RHSMode} == 1} ?}
-{\todo{Write description}}
+{Whenever it is set to non-zero and \parlink{RHSmode}==1}
+{This is used to introduce parallel forces due to collisions with
+  a fast ion species (which are not included in the DKE solve). The
+  collision operator for collisions with a fast species has the same
+  structure as parallel electric field term in the DKE, and the input parameter
+  here is thus given in terms of a corresponding ``effective'' electric field. Since the
+forces from these collisions are different on the different species,
+this input must be given as an array of values corresponding to the different
+species. These effective electric fields are added to the physical one
+\parlink{EParallelHat} in the code. The electric field strength is
+proportional to $B$ unless explicitly specified using an input file \parlink{EParallelHatSpec\_bcdatFile}.}
 
 
 
