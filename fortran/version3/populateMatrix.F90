@@ -2643,8 +2643,8 @@
                             CHat_element = -oneHalf*nuDHatpol(iSpeciesA, ix,itheta,izeta)*(L*(L+1) + Krook*2) !!Added by AM 2018-01
 
                             index=getIndex(iSpeciesA,ix,L+1,itheta,izeta,BLOCK_F)
-                            !!call MatSetValueSparse(matrix, index, index, & !!Commented by AM 2018-01
-                            call MatSetValue(matrix, index, index, & !!Added by AM 2018-01
+                            call MatSetValueSparse(matrix, index, index, & 
+                            !!call MatSetValue(matrix, index, index, & !!Test by AM 2018-01
                             !! -nu_n*CHat_element*preFactor, ADD_VALUES, ierr)!! Modified by AI (2017-09), multiply with preFactor before saving !!Commented by AM 2018-01
                             -nu_n*CHat_element, ADD_VALUES, ierr) !!Added by AM 2018-01
                             
