@@ -2085,8 +2085,8 @@
                                   rowIndex=getIndex(iSpeciesA,ix_row,L+1,itheta,izeta,BLOCK_F)
                                   do ix_col = max(ixMinCol,min_x_for_L(L)),Nx
                                      colIndex=getIndex(iSpeciesB,ix_col,L+1,itheta,izeta,BLOCK_F)
- !!                                    call MatSetValueSparse(matrix, rowIndex, colIndex, & !!Commented by AM 2018-01
-                                     call MatSetValue(matrix, rowIndex, colIndex, & !!Added by AM 2018-01
+                                     call MatSetValueSparse(matrix, rowIndex, colIndex, & 
+!!                                     call MatSetValue(matrix, rowIndex, colIndex, & 
                                      -nu_n*CHat(ix_row,ix_col), ADD_VALUES, ierr)
                                   end do ! ix_col
                                end do ! ix_row
@@ -2643,8 +2643,8 @@
                             CHat_element = -oneHalf*nuDHatpol(iSpeciesA, ix,itheta,izeta)*(L*(L+1) + Krook*2) !!Added by AM 2018-01
 
                             index=getIndex(iSpeciesA,ix,L+1,itheta,izeta,BLOCK_F)
-                            !!call MatSetValueSparse(matrix, index, index, & !!Commented by AM 2018-01
-                            call MatSetValue(matrix, index, index, & !!Added by AM 2018-01
+                            call MatSetValueSparse(matrix, index, index, & 
+                            !!call MatSetValue(matrix, index, index, & !!Test by AM 2018-01
                             !! -nu_n*CHat_element*preFactor, ADD_VALUES, ierr)!! Modified by AI (2017-09), multiply with preFactor before saving !!Commented by AM 2018-01
                             -nu_n*CHat_element, ADD_VALUES, ierr) !!Added by AM 2018-01
                             
