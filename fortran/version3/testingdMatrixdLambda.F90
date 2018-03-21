@@ -31,6 +31,22 @@ subroutine testingdMatrixdLambda(forwardSolution,whichMode, whichLambda)
   Vec :: dummyVec
   PetscScalar, dimension(:), allocatable :: percentError
   integer :: i
+  PetscScalar :: deltaFactor
+
+  select case(whichLambda)
+    case(1)
+      deltaFactor = bmnc(whichMode)
+    case(2)
+      deltaFactor = bsupthetamnc(whichMode)
+    case(3)
+      deltaFactor = bsupzetamnc(whichMode)
+    case(4)
+      deltaFactor = bsubthetamnc(whichMode)
+    case(5)
+      deltaFactor = bsubzetamnc(whichMode)
+    case(6)
+      deltaFactor = gmnc(whichMode)
+  end select
 
   ! Populate matrix
   call preallocateMatrix(initMatrix, 1) ! the whichMatrix argument doesn't matter here
@@ -41,7 +57,11 @@ subroutine testingdMatrixdLambda(forwardSolution,whichMode, whichLambda)
   call populatedMatrixdLambda(dMatrixdLambda_analytic, whichLambda, whichMode)
 
   ! Recompute geometry
-  call updateVMECGeometry(whichMode, whichLambda,.false.)
+  if (geometryScheme == 5) then
+    call updateVMECGeometry(whichMode, whichLambda,.false.)
+  else
+    call updateBoozerGeometry(whichMode, .false.)
+  end if
 
   ! Populate new matrix
   call preallocateMatrix(newMatrix, 1) ! the whichMatrix argument doesn't matter here
@@ -51,7 +71,7 @@ subroutine testingdMatrixdLambda(forwardSolution,whichMode, whichLambda)
   call MatAXPY(newMatrix, -one, initMatrix, DIFFERENT_NONZERO_PATTERN,ierr)
 
   ! dMatrixdLambda = (newMatrix - matrix)/deltaLambda
-  call MatScale(newMatrix,one/deltaLambda,ierr)
+  call MatScale(newMatrix,one/(deltaLambda*deltaFactor),ierr)
 
   ! Create result_analytic and set to zero
   call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, result_analytic, ierr)
@@ -127,6 +147,10 @@ subroutine testingdMatrixdLambda(forwardSolution,whichMode, whichLambda)
   print *,"result_analyticArray at max: ", result_analyticArray(maxloc(percentError))
 
   ! Recompute geometry
-  call updateVMECGeometry(whichMode, whichLambda,.true.)
+  if (geometryScheme == 5) then
+    call updateVMECGeometry(whichMode, whichLambda, .true.)
+  else
+    call updateBoozerGeometry(whichMode, .true.)
+  end if
 
 end subroutine testingdMatrixdLambda

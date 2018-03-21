@@ -146,7 +146,11 @@ module testingAdjointDiagnostics
         end select
 
         ! Update geometry
-        call updateVMECGeometry(whichMode, whichLambda, .false.)
+        if (geometryScheme == 5) then
+          call updateVMECGeometry(whichMode, whichLambda, .false.)
+        else ! Boozer
+          call updateBoozerGeometry(whichMode, .false.)
+        end if
 
         ! Compute solutionVec and diagnostics with new geometry
         if (ambipolarSolve) then
@@ -175,7 +179,11 @@ module testingAdjointDiagnostics
         dBootstrapdLambda_finiteDiff(whichLambda,whichMode) = (dot_product(Zs(1:Nspecies),FSABVelocityUsingFSADensityOverRootFSAB2)-dot_product(Zs(1:Nspecies),parallelFlowInit))/(deltaLambda*deltaFactor)
 
         ! Reset geometry to original values
-        call updateVMECGeometry(whichMode, whichLambda, .true.)
+        if (geometryScheme == 5) then
+          call updateVMECGeometry(whichMode, whichLambda, .true.)
+        else
+          call updateBoozerGeometry(whichMode, .true.)
+        end if
       end do ! whichMode
     end do ! whichLambda
     call PetscTime(time2, ierr)

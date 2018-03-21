@@ -41,7 +41,7 @@
     PetscScalar :: dBHat_sup_zetadLambda, dBHatdthetadLambda, dBHatdzetadLambda, dDHatdLambda
     PetscScalar :: geometricFactor, dFSABHat2dBmn, dFSABHat2dDmn, dVPrimeHatdDmn
     integer :: m,n
-    PetscScalar :: angle, cos_angle, sin_angle
+    PetscScalar :: angle, cos_angle, sin_angle, dVPrimeHatdLambda
 
     if (whichLambda > 0) then
       m = ms(whichMode)
@@ -128,6 +128,10 @@
               case (1) ! BHat
                 dBHatdLambda = cos_angle
                 geometricFactor = - BHat_sup_theta(itheta,izeta)*dBHatdLambda/(BHat(itheta,izeta)*BHat(itheta,izeta))
+                if (geometryScheme > 10) then ! Boozer
+                  dBHat_sup_thetadLambda = 2*BHat_sup_theta(itheta,izeta)*cos_angle/BHat(itheta,izeta)
+                  geometricFactor = geometricFactor + dBHat_sup_thetadLambda/BHat(itheta,izeta)
+                end if
               case (2) ! BHat_sup_theta
                 dBHat_sup_thetadLambda = cos_angle
                 geometricFactor = dBHat_sup_thetadLambda/BHat(itheta,izeta)
@@ -213,6 +217,10 @@
               case (1) ! BHat
                 dBHatdLambda = cos_angle
                 geometricFactor = -BHat_sup_zeta(itheta,izeta)*dBHatdLambda/(BHat(itheta,izeta)*BHat(itheta,izeta))
+                if (geometryScheme > 10) then ! Boozer
+                  dBHat_sup_zetadLambda = 2*BHat_sup_zeta(itheta,izeta)*cos_angle/BHat(itheta,izeta)
+                  geometricFactor = geometricFactor + dBHat_sup_zetadLambda/BHat(itheta,izeta)
+                end if
               case (2) ! BHat_sup_theta
                 geometricFactor = zero
               case (3) ! BHat_sup_zeta
@@ -278,6 +286,18 @@
       allocate(rowIndices(localNtheta))
       allocate(colIndices(Ntheta))
 
+     if (whichLambda==1 .and. geometryScheme > 10) then
+        dVPrimeHatdLambda = zero
+        do itheta=1,Ntheta
+          do izeta=1,Nzeta
+            angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+            cos_angle = cos(angle)
+
+            dVPrimeHatdLambda = dVPrimeHatdLambda - two*thetaWeights(itheta)*zetaWeights(izeta)*cos_angle/(DHat(itheta,izeta)*BHat(itheta,izeta))
+          end do
+        end do
+      end if
+
       do L=0,(Nxi-1)
 
          if (ExBDerivativeSchemeTheta==0) then
@@ -315,12 +335,22 @@
 
               case (1) ! BHat
                 if (useDKESExBDrift) then
-                  geometricFactor = -DHat(itheta,izeta)*BHat_sub_zeta(itheta,izeta) &
-                    * dFSABHat2dBmn/(FSABHat2**2)
+                  if (geometryScheme > 10) then ! Boozer
+                    dDHatdLambda = two*DHat(itheta,izeta)*cos_angle/BHat(itheta,izeta)
+                    geometricFactor = dDHatdLambda*BHat_sub_zeta(itheta,izeta)/FSABHat2 &
+                      + DHat(itheta,izeta)*BHat_sub_zeta(itheta,izeta)*dVPrimeHatdLambda/(FSABHat2*VPrimeHat)
+                  else
+                    geometricFactor = -DHat(itheta,izeta)*BHat_sub_zeta(itheta,izeta) &
+                      * dFSABHat2dBmn/(FSABHat2**2)
+                  end if
                 else
                   dBHatdLambda = cos_angle
                   geometricFactor = -two*dBHatdLambda/(BHat(itheta,izeta) ** 3) &
                     *DHat(itheta,izeta)*BHat_sub_zeta(itheta,izeta)
+                  if (geometryScheme > 10) then ! Boozer
+                    dDHatdLambda = 2*DHat(itheta,izeta)*cos_angle/BHat(itheta,izeta)
+                    geometricFactor = geometricFactor + dDHatdLambda*BHat_sub_zeta(itheta,izeta)/BHat(itheta,izeta)**2
+                  end if
                 end if
                 factor = alpha*Delta/two*dPhiHatdpsiHat
               case (2) ! BHat_sup_theta
@@ -381,7 +411,6 @@
      ! Add the sensitivity of the ExB d/dzeta term:
      ! *********************************************************
 
-
       allocate(zetaPartOfTerm(Nzeta,Nzeta))
       allocate(localZetaPartOfTerm(Nzeta,localNzeta))
       allocate(rowIndices(localNzeta))
@@ -420,11 +449,21 @@
               case (1) ! BHat
                 dBHatdLambda = cos_angle
                 if (useDKESExBDrift) then
-                  geometricFactor = -DHat(itheta,izeta)*BHat_sub_theta(itheta,izeta) &
-                    *dFSABHat2dBmn/(FSABHat2**2)
+                  if (geometryScheme > 10) then ! Boozer
+                    dDHatdLambda = 2*DHat(itheta,izeta)*dBHatdLambda/BHat(itheta,izeta)
+                    geometricFactor = dDHatdLambda*BHat_sub_theta(itheta,izeta)/FSABHat2 &
+                      + DHat(itheta,izeta)*BHat_sub_theta(itheta,izeta)*dVPrimeHatdLambda/(FSABHat2*VPrimeHat)
+                  else
+                    geometricFactor = -DHat(itheta,izeta)*BHat_sub_theta(itheta,izeta) &
+                      *dFSABHat2dBmn/(FSABHat2**2)
+                  end if
                 else
                   geometricFactor = -two*dBHatdLambda*DHat(itheta,izeta)*BHat_sub_theta(itheta,izeta) &
                     /(BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta))
+                  if (geometryScheme > 10) then ! Boozer
+                    dDHatdLambda = 2*DHat(itheta,izeta)*cos_angle/BHat(itheta,izeta)
+                    geometricFactor = geometricFactor + dDHatdLambda*BHat_sub_theta(itheta,izeta)/(BHat(itheta,izeta)**2)
+                  end if
                 end if
                 factor = -alpha*Delta/two*dPhiHatdpsiHat
               case (2) ! BHat_sup_theta
@@ -513,6 +552,11 @@
                   * (BHat_sup_theta(itheta,izeta)*dBhatdthetadLambda &
                   ! Term from dBHatdzeta 
                   + BHat_sup_zeta(itheta,izeta)*dBhatdzetadLambda)
+                if (geometryScheme > 10) then ! Boozer
+                  dBHat_sup_thetadLambda = 2*BHat_sup_theta(itheta,izeta)*cos_angle/BHat(itheta,izeta)
+                  dBHat_sup_zetadLambda = 2*BHat_sup_zeta(itheta,izeta)*cos_angle/BHat(itheta,izeta)
+                  geometricFactor = geometricFactor + one/(BHat(itheta,izeta)**2)*(dBHat_sup_thetadLambda*dBHatdtheta(itheta,izeta) + dBHat_sup_zetadLambda*dBHatdzeta(itheta,izeta))
+                end if
               case (2) ! BHat_sup_theta
                 dBHat_sup_thetadLambda = cos_angle
                 geometricFactor = one/(BHat(itheta,izeta)*BHat(itheta,izeta)) &
@@ -571,7 +615,8 @@
                !factor = alpha*Delta*dPhiHatdpsiHat/(4*(BHat(itheta,izeta)**3)) &
                !   * DHat(itheta,izeta) * temp
 
-              ! geometricFactor = (DHat/BHat**3)*temp+              ! factor = alpha*Delta*dPhiHatdpsiHat*geometricFactor/4
+              ! geometricFactor = (DHat/BHat**3)*temp+              
+              ! factor = alpha*Delta*dPhiHatdpsiHat*geometricFactor/4
 
               select case(whichLambda)
                 case (0) ! Er
@@ -589,6 +634,11 @@
                     ! Term from dBHatdtheta and dBHatdzeta
                     + DHat(itheta,izeta) * dTempdLambda/(BHat(itheta,izeta)**3)
                   factor = (alpha*Delta*dPhiHatdpsiHat/four)*geometricFactor
+                  if (geometryScheme > 10) then ! Boozer
+                    dDHatdLambda = 2*DHat(itheta,izeta)*cos_angle/BHat(itheta,izeta)
+                    geometricFactor = geometricFactor + dDHatdLambda/(BHat(itheta,izeta)**3) * temp
+                    factor = (alpha*Delta*dPhiHatdpsiHat/four)*geometricFactor
+                  end if
                 case (2) ! BHat_sup_theta
                   geometricFactor = zero
                   factor = (alpha*Delta*dPhiHatdpsiHat/four)*geometricFactor
@@ -708,6 +758,12 @@
                       - Dhat(itheta,izeta)/(BHat(itheta,izeta)**3) &
                       * Bhat_sub_zeta(itheta,izeta)*dBHatdthetadLambda
                     factor = -alpha*Delta*dPhiHatdPsiHat/four
+                    if (geometryScheme > 10) then ! Boozer
+                      dDHatdLambda = 2*DHat(itheta,izeta)*cos_angle/BHat(itheta,izeta)
+                      geometricFactor = geometricFactor + dDHatdLambda/(BHat(itheta,izeta)**3) &
+                      * (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) &
+                      - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))
+                    end if
                   case (2) ! BHat_sup_theta
                     geometricFactor = zero
                     factor = -alpha*Delta*dPhiHatdPsiHat/four
@@ -808,6 +864,9 @@
             geometricFactor = zero
             if (whichLambda == 6) then
               dDHatdLambda = - DHat(itheta,izeta)*DHat(itheta,izeta)*cos_angle
+              geometricFactor = -dDHatdLambda/(DHat(itheta,izeta)**2)
+            else if (whichLambda == 1 .and. geometryScheme > 10) then ! Boozer, BHat
+              dDHatdLambda = 2*DHat(itheta,izeta)*cos_angle/BHat(itheta,izeta)
               geometricFactor = -dDHatdLambda/(DHat(itheta,izeta)**2)
             end if
             factor = thetaWeights(itheta)*zetaWeights(izeta)*geometricFactor

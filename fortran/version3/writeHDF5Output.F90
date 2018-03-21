@@ -737,6 +737,10 @@ contains
           call writeHDF5ExtensibleField(iterationNum,"dHeatFluxdLambda", dHeatFluxdLambda,ARRAY_ITERATION_SPECIES_LAMBDAS_NMODES,"")
         end if
         if (any(adjointParticleFluxOption) .or. debugAdjoint) then
+          if (masterProc) then
+            print *,"Updating output."
+            print *,"dParticleFluxdLambda: ", dParticleFluxdLambda
+          end if
           call writeHDF5ExtensibleField(iterationNum,"dParticleFluxdLambda", dParticleFluxdLambda,ARRAY_ITERATION_SPECIES_LAMBDAS_NMODES,"")
         end if
         if (any(adjointParticleFluxOption) .or. debugAdjoint) then

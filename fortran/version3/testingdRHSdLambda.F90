@@ -31,6 +31,23 @@ subroutine testingdRHSdLambda(whichMode, whichLambda)
   PetscScalar, dimension(:), allocatable :: percentError
   integer :: i
   VecScatter :: VecScatterContext
+  PetscScalar :: deltaFactor
+
+  select case(whichLambda)
+    case(1)
+      deltaFactor = bmnc(whichMode)
+    case(2)
+      deltaFactor = bsupthetamnc(whichMode)
+    case(3)
+      deltaFactor = bsupzetamnc(whichMode)
+    case(4)
+      deltaFactor = bsubthetamnc(whichMode)
+    case(5)
+      deltaFactor = bsubzetamnc(whichMode)
+    case(6)
+      deltaFactor = gmnc(whichMode)
+  end select
+
 
   ! Create stateVec and set to zero
   call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, stateVec, ierr)
@@ -46,7 +63,11 @@ subroutine testingdRHSdLambda(whichMode, whichLambda)
   call VecScale(RHS, -1d+0, ierr)
 
   ! Update geometry
-  call updateVMECGeometry(whichMode, whichLambda, .false.)
+  if (geometryScheme == 5) then ! VMEC
+    call updateVMECGeometry(whichMode, whichLambda, .false.)
+  else
+    call updateBoozerGeometry(whichMode, .false.)
+  end if
 
   ! Compute new RHS
   call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, dRHSdLambda, ierr)
@@ -59,7 +80,7 @@ subroutine testingdRHSdLambda(whichMode, whichLambda)
 
   ! Form finite diff derivative
   call VecAXPY(dRHSdLambda,-1d+0,RHS,ierr)
-  call VecScale(dRHSdLambda,one/deltaLambda,ierr)
+  call VecScale(dRHSdLambda,one/(deltaLambda*deltaFactor),ierr)
 
   ! Compute analytic derivatives
   call VecCreateMPI(MPIComm,PETSC_DECIDE, matrixSize, dRHSdLambda_analytic,ierr)
@@ -109,6 +130,10 @@ subroutine testingdRHSdLambda(whichMode, whichLambda)
 !  print *,"Maximum dRHSdLambda_analyticArray: ", maxval(dRHSdLambda_analyticArray)
 
   ! Update geometry
-  call updateVMECGeometry(whichMode, whichLambda, .true.)
+  if (geometryScheme == 5) then ! VMEC
+    call updateVMECGeometry(whichMode, whichLambda, .true.)
+  else
+    call updateBoozerGeometry(whichMode, .true.)
+  end if
 
 end subroutine testingdRHSdLambda

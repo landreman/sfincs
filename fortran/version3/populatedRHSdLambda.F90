@@ -87,6 +87,14 @@
                   ! Term from dBHatdzeta
                   - BHat_sub_theta(itheta,izeta)*dBHatdzetadLambda)
                 stuffToAdd = dFactordLambda*xPartOfRHS
+                if (geometryScheme > 10) then ! Boozer
+                  dDHatdLambda = 2*DHat(itheta,izeta)*cos_angle/BHat(itheta,izeta)
+                  dFactordLambda = dFactordLambda + 1/(BHat(itheta,izeta)**3) &
+                    *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
+                    - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
+                    * dDHatdLambda
+                  stuffToAdd = dFactordLambda*xPartOfRHS
+                end if
               case (2) ! BHat_sup_theta
                 dFactordLambda = 0
                 stuffToAdd = dFactordLambda*xPartOfRHS

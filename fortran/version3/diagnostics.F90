@@ -959,13 +959,10 @@
 
     ! updateOutputFile should be called by all procs since it contains MPI_Barrier
     ! (in order to be sure the HDF5 file is safely closed before moving on to the next computation.)
+    ! In case of adjoint solve, output is written after adjoint diagnostics
     if (RHSMode>1 .and. RHSMode<4 .and. whichRHS==transportMatrixSize) then
        call updateOutputFile(iterationNum, .true.)
     else
-    ! updateOuptuFile is called from testingAdjointDiagnostics()
-      if ((debugAdjoint .eqv. .false.) .and. (ambipolarSolve .eqv. .false.)) then
-        call updateOutputFile(iterationNum, .false.)
-      end if
     end if
 
     if (saveMatlabOutput) then

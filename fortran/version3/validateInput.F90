@@ -1147,13 +1147,15 @@ subroutine validateInput()
       endif
       stop
     endif
-    ! Check for VMEC input
+    ! Check for VMEC or Boozer geometry
     ! Check for stellarator symmetry is performed in geometry.f90
-    if (geometryScheme /= 5) then
+    if (geometryScheme /= 5 .and. geometryScheme < 11) then
       if (masterProc) then
         print *,"Error! RHSMode>3 must be used with VMEC geometry."
       endif
       stop
+    else if (geometryScheme > 10) then ! Boozer
+      NLambdas = 1 ! Only BHat derivatives computed
     end if
     ! Check there is no inductive E
     if (EParallelHat /= 0) then

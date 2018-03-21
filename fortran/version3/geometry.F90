@@ -353,6 +353,12 @@ contains
     PetscScalar :: dBHat_sub_psi_dthetaHarmonics_amplitude, dBHat_sub_psi_dzetaHarmonics_amplitude
     PetscScalar :: DeltapsiHat !, diotadpsiHat moved to global variables 2016-09-15 HS
     PetscScalar :: RadialWeight = 1.0 ! weight of closest surface with rN<=rN_wish
+    integer :: iMode
+
+    if (debugAdjoint) then
+      allocate(bmnc(NModesAdjoint))
+      bmnc = zero
+    end if
 
     ! For the BHarmonics_parity array, 
     ! true indicates the contribution to B(theta,zeta) has the form
@@ -1066,6 +1072,17 @@ contains
        dBHatdtheta = 0
        dBHatdzeta = 0
 
+      if (debugAdjoint) then
+        if (masterProc) then
+          print *,"Initializing B0OverBBar."
+        end if
+        do iMode = 1,NModesAdjoint
+          if (ms(iMode) == 0 .and. ns(iMode) == 0) then
+            bmnc(iMode) = B0OverBBar
+          end if
+        end do
+      end if
+
        !I do not Bother to calculate Sugama's drift for geometryScheme=1,2,3,4.
        !RHat = 0 
        !dRHatdtheta      = 0
@@ -1107,6 +1124,14 @@ contains
                    dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) + BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
                         sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
 
+                   if (debugAdjoint) then
+                    do iMode = 1,NModesAdjoint
+                      if (ms(iMode) == BHarmonics_l(i) .and. ns(iMode) == BHarmonics_n(i)) then
+                        bmnc(iMode) = BHarmonics_amplitudes(i)
+                      end if
+                    end do
+                   end if
+
                 end do
              end if
           else  ! The sine components of BHat
@@ -1132,7 +1157,6 @@ contains
 
                    dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) - BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
                         cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-
                 end do
              end if
           end if
@@ -1162,6 +1186,18 @@ contains
        allocate(d2Dzdtheta2L(Ntheta,Nzeta))
        allocate(d2Dzdzeta2L(Ntheta,Nzeta))
        allocate(d2DzdthetadzetaL(Ntheta,Nzeta))
+
+      ! Average L and R bmnc00's
+      if (debugAdjoint) then
+        if (masterProc) then
+          print *,"Initializing B0OverBBar."
+        end if
+        do iMode = 1,NModesAdjoint
+          if (ms(iMode) == 0 .and. ns(iMode) == 0) then
+            bmnc(iMode) = B0OverBBarL*RadialWeight + B0OverBBarH*(1-RadialWeight)
+          end if
+        end do
+      end if
 
        BHatL = B0OverBBarL ! This includes the (0,0) component.
        dBHatdthetaL = 0
@@ -1261,6 +1297,13 @@ contains
                    d2DzdthetadzetaL(itheta,:) = d2DzdthetadzetaL(itheta,:) + DzHarmonics_L(i) * BHarmonics_lL(i)*Nperiods*BHarmonics_nL(i) * &
                         sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
 
+                   if (debugAdjoint) then
+                      do iMode = 1,NModesAdjoint
+                        if (ms(iMode) == BHarmonics_lL(i) .and. ns(iMode) == BHarmonics_nL(i)) then
+                        bmnc(iMode) = BHarmonics_amplitudesL(i)
+                        end if
+                      end do
+                   end if
 
                 end do
              end if
@@ -1471,6 +1514,17 @@ contains
                    d2DzdthetadzetaH(itheta,:) = d2DzdthetadzetaH(itheta,:) + DzHarmonics_H(i) * BHarmonics_lH(i)*Nperiods*BHarmonics_nH(i) * &
                         sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
 
+                    if (debugAdjoint) then
+                      do iMode = 1,NModesAdjoint
+                        if (ms(iMode) == BHarmonics_lH(i) .and. ns(iMode) == BHarmonics_nH(i)) then
+                          ! Radial weighting
+                          bmnc(iMode) = (RadialWeight*bmnc(iMode) + BHarmonics_amplitudesH(i)*(1-RadialWeight))
+                          if (masterProc) then
+                            print *,"Averaging L and H."
+                          end if
+                        end if
+                      end do
+                   end if
 
                 end do
              end if
@@ -2000,6 +2054,18 @@ contains
        
        dBHat_sup_theta_dpsiHat = iota * dBHat_sup_zeta_dpsiHat + diotadpsiHat* DHat
        dBHat_sup_theta_dzeta = iota * 2.0 * BHat *dBHatdzeta / (GHat + iota * IHat)
+    end if
+
+    if (debugAdjoint) then
+      ! BHat_sub_theta, BHat_sub_zeta are fixed
+      DHat_init = DHat
+      BHat_init = BHat
+      dBHatdtheta_init = dBHatdtheta
+      dBHatdzeta_init = dBHatdzeta
+      BHat_sup_theta_init = BHat_sup_theta
+      dBHat_sup_theta_dzeta_init = dBHat_sup_theta_dzeta
+      BHat_sup_zeta_init = BHat_sup_zeta
+      dBHat_sup_zeta_dtheta_init = dBHat_sup_zeta_dtheta
     end if
 
     !possible double-check

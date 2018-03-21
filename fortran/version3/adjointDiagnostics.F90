@@ -219,6 +219,18 @@ module adjointDiagnostics
       call VecGetArrayF90(forwardSolutionOnProc0, forwardSolutionArray, ierr)
     end if
 
+    if (whichLambda==1 .and. geometryScheme > 10) then
+      dVPrimeHatdLambda = zero
+      do itheta=1,Ntheta
+        do izeta=1,Nzeta
+          angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+          cos_angle = cos(angle)
+
+          dVPrimeHatdLambda = dVPrimeHatdLambda - two*thetaWeights(itheta)*zetaWeights(izeta)*cos_angle/(DHat(itheta,izeta)*BHat(itheta,izeta))
+        end do
+      end do
+    end if
+
     if (masterProc) then
       allocate(xIntegralFactor(Nx))
 
@@ -245,17 +257,16 @@ module adjointDiagnostics
             cos_angle = cos(angle)
             sin_angle = sin(angle)
             select case (whichLambda)
-              case (0) ! Er
-                if (masterProc) then
-                  print *,"Error! Er sensitivity not yet implemented."
-                end if
-                stop
               case (1) ! BHat
                 dBHatdThetadLambda = -m*sin_angle
                 dBHatdZetadLambda = n*Nperiods*sin_angle
                 dBHatdLambda = cos_angle
                 factor = (BHat_sub_theta(itheta,izeta)*dBHatdZetadLambda - BHat_sub_zeta(itheta,izeta)*dBHatdThetadLambda)/(VPrimeHat*BHat(itheta,izeta)**3) - 3*(BHat_sub_theta(itheta,izeta)*dBHatdZeta(itheta,izeta) - &
                   BHat_sub_zeta(itheta,izeta)*dBHatdTheta(itheta,izeta))*dBHatdLambda/(VPrimeHat*BHat(itheta,izeta)**4)
+                if (geometryScheme > 10) then ! Boozer
+                  factor = factor - (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda/ &
+                    (VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
+                end if
               case (2) ! BHat_sup_theta
                 factor = 0
               case (3) ! BHat_sup_zeta
@@ -341,6 +352,19 @@ module adjointDiagnostics
       call VecGetArrayF90(deltaFOnProc0, deltaFArray, ierr)
     end if
 
+    if (whichLambda==1 .and. geometryScheme > 10) then
+      dVPrimeHatdLambda = zero
+      ! For Boozer coordinats, integral needed to compute dVPrimeHatdLambda
+      do itheta=1,Ntheta
+        do izeta=1,Nzeta
+          angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+          cos_angle = cos(angle)
+
+          dVPrimeHatdLambda = dVPrimeHatdLambda - two*thetaWeights(itheta)*zetaWeights(izeta)*cos_angle/(DHat(itheta,izeta)*BHat(itheta,izeta))
+        end do
+      end do
+    end if
+
     if (masterProc) then
       allocate(xIntegralFactor(Nx))
 
@@ -366,17 +390,16 @@ module adjointDiagnostics
             cos_angle = cos(angle)
             sin_angle = sin(angle)
             select case (whichLambda)
-              case (0) ! Er
-                if (masterProc) then
-                  print *,"Error! Er sensitivity not yet implemented."
-                end if
-                stop
               case (1) ! BHat
                 dBHatdThetadLambda = -m*sin_angle
                 dBHatdZetadLambda = n*Nperiods*sin_angle
                 dBHatdLambda = cos_angle
                 factor = (BHat_sub_theta(itheta,izeta)*dBHatdZetadLambda - BHat_sub_zeta(itheta,izeta)*dBHatdThetadLambda)/(VPrimeHat*BHat(itheta,izeta)**3) - 3*(BHat_sub_theta(itheta,izeta)*dBHatdZeta(itheta,izeta) &
                   - BHat_sub_zeta(itheta,izeta)*dBHatdTheta(itheta,izeta))*dBHatdLambda/(VPrimeHat*BHat(itheta,izeta)**4)
+                if (geometryScheme > 10) then !Boozer
+                    factor = factor - (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda &
+                      /(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
+                end if
               case (2) ! BHat_sup_theta
                 factor = zero
               case (3) ! BHat_sup_zeta
@@ -453,6 +476,7 @@ module adjointDiagnostics
     integer :: m, n
     VecScatter :: VecScatterContext
     PetscErrorCode :: ierr
+    PetscScalar :: dDHatdLambda
 
     sqrtFSAB2 = sqrt(FSABHat2)
     m = ms(whichMode)
@@ -478,7 +502,8 @@ module adjointDiagnostics
     if (masterProc) then
       result = zero
       dFSAB2dLambda = zero
-      if (whichLambda==1) then
+      ! For Boozer geometry, dFSAB2dLambda = 0
+      if (whichLambda==1 .and. geometryScheme == 5) then
         do itheta=1,Ntheta
           do izeta=1,Nzeta
             angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
@@ -489,7 +514,19 @@ module adjointDiagnostics
         end do
       end if
 
-      if (whichLambda==6) then
+      if (whichLambda==1 .and. geometryScheme > 10) then
+        dVPrimeHatdLambda = zero
+        do itheta=1,Ntheta
+          do izeta=1,Nzeta
+            angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+            cos_angle = cos(angle)
+
+            dVPrimeHatdLambda = dVPrimeHatdLambda - two*thetaWeights(itheta)*zetaWeights(izeta)*cos_angle/(DHat(itheta,izeta)*BHat(itheta,izeta))
+          end do
+        end do
+      end if
+
+      if (whichLambda==6) then ! DHat
         do itheta=1,Ntheta
           do izeta=1,Nzeta
             angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
@@ -524,14 +561,16 @@ module adjointDiagnostics
             cos_angle = cos(angle)
 
             select case (whichLambda)
-              case (0) ! Er
-                if (masterProc) then
-                  print *,"Error! Er sensitivity not yet implemented."
-                end if
-                stop
               case (1) ! BHat
                 dBHatdLambda = cos_angle
-                factor = dBHatdLambda/(DHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) - 0.5*BHat(itheta,izeta)*dFSAB2dLambda/(DHat(itheta,izeta)*sqrtFSAB2*FSABHat2*VPrimeHat)
+                if (geometryScheme > 10) then ! Boozer
+                  dDHatdLambda = two*DHat(itheta,izeta)*dBHatdLambda/BHat(itheta,izeta)
+                  dinvDHatdLambda = -dDHatdLambda/(DHat(itheta,izeta)**2)
+                  factor = dBHatdLambda/(DHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) + BHat(itheta,izeta)*dinvDHatdLambda/(VPrimeHat*sqrtFSAB2) &
+                    -0.5*dVPrimeHatdLambda*BHat(itheta,izeta)/(DHat(itheta,izeta)*VPrimeHat*VPrimeHat*sqrtFSAB2)
+                else
+                  factor = dBHatdLambda/(DHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) - 0.5*BHat(itheta,izeta)*dFSAB2dLambda/(DHat(itheta,izeta)*sqrtFSAB2*FSABHat2*VPrimeHat)
+                end if
               case (2) ! BHat_sup_theta
                 factor = 0
               case (3) ! BHat_sup_zeta
@@ -589,6 +628,7 @@ module adjointDiagnostics
       PetscScalar :: radialCurrentSensitivity
 
       if (masterProc) then
+        print *,"evaluateDiagnostics was called."
         print *,"Computing adjoint diagnostics for RHS ", whichAdjointRHS, " and species ", whichSpecies
       end if
 
@@ -608,7 +648,7 @@ module adjointDiagnostics
       ! Same inner product is formed regardless of whichAdjointMatrix and whichSpecies
       ! Loop over lambda's and perform inner product
       ! rethink this for Er
-      do whichLambda=1,6
+      do whichLambda=1,NLambdas
         do whichMode=1,NModesAdjoint
           call VecSet(adjointResidual,zero,ierr)
           ! Call function to perform (dLdlambdaf - dSdlambda), which calls populatedMatrixdLambda and populatedRHSdLambda

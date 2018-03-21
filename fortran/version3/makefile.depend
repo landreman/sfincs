@@ -7,7 +7,7 @@ OBJ_FILES = adjointDiagnostics.o ChebyshevGrid.o ChebyshevInterpolationMatrix.o 
 	  uniformDiffMatrices.o uniformInterpolationMatrix.o validateInput.o writeHDF5Output.o xGrid.o \
 	  readVMEC/readVMEC.a testingInnerProduct.o testingDiagnosticSensitivity.o testingdRHSdLambda.o \
       testingdMatrixdLambda.o updateVMECGeometry.o testingAdjointOperator.o testingAdjointDiagnostics.o \
-      ambipolarSolver.o testingNewtonSolve.o
+      ambipolarSolver.o testingNewtonSolve.o updateBoozerGeometry.o
  
 # Dependencies:
 adjointDiagnostics.o: globalVariables.o writeHDF5Output.o indices.o 
@@ -42,6 +42,7 @@ testingAdjointOperator.o: globalVariables.o
 testingAdjointDiagnostics.o: globalVariables.o solver.o
 testingNewtonSolve.o: globalVariables.o
 updateVMECGeometry.o: globalVariables.o geometry.o
+updateBoozerGeometry.o: globalVariables.o geometry.o
 uniformDiffMatrices.o: 
 uniformInterpolationMatrix.o: 
 validateInput.o: globalVariables.o xGrid.o
