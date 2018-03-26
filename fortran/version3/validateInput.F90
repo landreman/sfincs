@@ -1133,12 +1133,12 @@ subroutine validateInput()
         end if
         stop
       end if
-      if (ambipolarSolve .eqv. .false.) then
-        if (masterProc) then
-          print *,"Error! RHSMode=5 must be used with ambipolarSolve."
-        end if
-        stop
-      end if
+!      if (ambipolarSolve .eqv. .false.) then
+!        if (masterProc) then
+!          print *,"Error! RHSMode=5 must be used with ambipolarSolve."
+!        end if
+!        stop
+!      end if
     end if
     ! Check for linear solve
     if (includePhi1) then

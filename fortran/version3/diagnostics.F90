@@ -961,8 +961,9 @@
     ! (in order to be sure the HDF5 file is safely closed before moving on to the next computation.)
     ! In case of adjoint solve, output is written after adjoint diagnostics
     if (RHSMode>1 .and. RHSMode<4 .and. whichRHS==transportMatrixSize) then
-       call updateOutputFile(iterationNum, .true.)
-    else
+      call updateOutputFile(iterationNum, .true.)
+    else if (RHSMode==1) then
+      call updateOutputFile(iterationNum, .false.)
     end if
 
     if (saveMatlabOutput) then

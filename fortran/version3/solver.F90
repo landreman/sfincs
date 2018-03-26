@@ -40,7 +40,6 @@ module solver
     Vec :: adjointSolutionVec, summedSolutionVec, adjointRHSVec, adjointSolutionJr
     logical :: useSummedSolutionVec
     integer :: whichLambda, whichMode, whichSpecies
-    PetscReal :: norm
 
 !!Following three lines added by AM 2016-07-06
 #if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR > 6))
@@ -519,7 +518,7 @@ module solver
       ispecies = 0
       if (masterProc) then
         print *,"################################################################"
-        print "(a,i1,a,i1)"," Solving adjoint system with adjoint RHS ",whichAdjointRHS," and species ",ispecies
+        print "(a,i1,a,i1,a)"," Solving adjoint system with adjoint RHS ",whichAdjointRHS," and species ",ispecies," for ampolar solve."
         print *,"################################################################"
       end if
 
@@ -560,9 +559,7 @@ module solver
         end if
         call VecDestroy(adjointSolutionJr,ierr)
       end if
-
     end if
-
 
     !> This is where all the adjoint solves happen
     !> If currently looking for ambipolar solution, don't solve adjoint
@@ -625,12 +622,6 @@ module solver
       !> Allocate adjointSolutionVec
       call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointSolutionVec, ierr)
       call VecSet(adjointSolutionVec, zero, ierr)
-
-      !> Allocate adjointSolutionVecJr
-      if (RHSMode==5) then
-        call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointSolutionJr, ierr)
-        call VecSet(adjointSolutionJr, zero, ierr)
-      end if
 
       !> Allocate summedSolutionVec if needed
       if ((all(adjointHeatFluxOption) .and. adjointTotalHeatFluxOption) .or. &
@@ -749,7 +740,6 @@ module solver
         end do ! ispecies
 
         if (useSummedSolutionVec) then
-
           call evaluateDiagnostics(solutionVec,summedSolutionVec,adjointSolutionJr,whichAdjointRHS,0)
           call VecSet(summedSolutionVec,zero,ierr)
         end if
