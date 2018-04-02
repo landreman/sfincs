@@ -962,7 +962,7 @@
     ! In case of adjoint solve, output is written after adjoint diagnostics
     if (RHSMode>1 .and. RHSMode<4 .and. whichRHS==transportMatrixSize) then
       call updateOutputFile(iterationNum, .true.)
-    else if (RHSMode==1) then
+    else if (RHSMode==1 .and. (ambipolarSolve .eqv. .false.)) then
       call updateOutputFile(iterationNum, .false.)
     end if
 

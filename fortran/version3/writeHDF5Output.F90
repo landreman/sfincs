@@ -854,8 +854,10 @@ contains
     dimForExport_f_x = N_export_f_x
     call h5screate_simple_f(rank, dimForExport_f_x, dspaceIDForExport_f_x, HDF5Error)
 
-    dimForNModesAdjoint = NModesAdjoint
-    call h5screate_simple_f(rank, dimForNModesAdjoint, dspaceIDForNModesAdjoint, HDF5Error)
+    if (RHSMode > 3) then
+      dimForNModesAdjoint = NModesAdjoint
+      call h5screate_simple_f(rank, dimForNModesAdjoint, dspaceIDForNModesAdjoint, HDF5Error)
+    end if
 
     rank = 2
     dimForThetaZeta(1) = Ntheta
@@ -863,15 +865,17 @@ contains
     call h5screate_simple_f(rank, dimForThetaZeta, dspaceIDForThetaZeta, HDF5Error)
 
     ! Sensitivity arrays
-    dimForLambdasModes(1) = NLambdas
-    dimForLambdasModes(2) = NModesAdjoint
-    call h5screate_simple_f(rank, dimForLambdasModes, dspaceIDForLambdasModes, HDF5Error)
+    if (RHSMode > 3) then
+      dimForLambdasModes(1) = NLambdas
+      dimForLambdasModes(2) = NModesAdjoint
+      call h5screate_simple_f(rank, dimForLambdasModes, dspaceIDForLambdasModes, HDF5Error)
 
-    rank = 3
-    dimForSpeciesLambdasModes(1) = NSpecies
-    dimForSpeciesLambdasModes(2) = NLambdas
-    dimForSpeciesLambdasModes(3) = NModesAdjoint
-    call h5screate_simple_f(rank, dimForSpeciesLambdasModes, dspaceIDForSpeciesLambdasModes, HDF5Error)
+      rank = 3
+      dimForSpeciesLambdasModes(1) = NSpecies
+      dimForSpeciesLambdasModes(2) = NLambdas
+      dimForSpeciesLambdasModes(3) = NModesAdjoint
+      call h5screate_simple_f(rank, dimForSpeciesLambdasModes, dspaceIDForSpeciesLambdasModes, HDF5Error)
+    end if
 
     rank = 5
     dimForExport_f(1) = Nspecies
@@ -986,24 +990,27 @@ contains
 
 ! -------------------------------------
 
-    rank = 3
+    if (RHSMode > 3) then
+      rank = 3
 
-    dimForIterationLambdasNmodes(1)      = 1
-    maxdimForIterationLambdasNmodes(1)   = H5S_UNLIMITED_F
-    dimForIterationLambdasNmodesChunk(1) = 1
+      dimForIterationLambdasNmodes(1)      = 1
+      maxdimForIterationLambdasNmodes(1)   = H5S_UNLIMITED_F
+      dimForIterationLambdasNmodesChunk(1) = 1
 
-    dimForIterationLambdasNmodes(2)      = NLambdas
-    maxdimForIterationLambdasNmodes(2)   = NLambdas
-    dimForIterationLambdasNmodesChunk(2) = NLambdas
+      dimForIterationLambdasNmodes(2)      = NLambdas
+      maxdimForIterationLambdasNmodes(2)   = NLambdas
+      dimForIterationLambdasNmodesChunk(2) = NLambdas
 
-    dimForIterationLambdasNmodes(3)      = NModesAdjoint
-    maxdimForIterationLambdasNmodes(3)   = NModesAdjoint
-    dimForIterationLambdasNmodesChunk(3) = NModesAdjoint
+      dimForIterationLambdasNmodes(3)      = NModesAdjoint
+      maxdimForIterationLambdasNmodes(3)   = NModesAdjoint
+      dimForIterationLambdasNmodesChunk(3) = NModesAdjoint
 
-    call h5screate_simple_f(rank, dimForIterationLambdasNmodes, dspaceIDForIterationLambdasNmodes, &
-         HDF5Error, maxDimForIterationLambdasNmodes)
-    call h5pcreate_f(H5P_DATASET_CREATE_F, pForIterationLambdasNmodes, HDF5Error)
-    call h5pset_chunk_f(pForIterationLambdasNmodes, rank, dimForIterationLambdasNmodesChunk, HDF5Error)
+      call h5screate_simple_f(rank, dimForIterationLambdasNmodes, dspaceIDForIterationLambdasNmodes, &
+           HDF5Error, maxDimForIterationLambdasNmodes)
+      call h5pcreate_f(H5P_DATASET_CREATE_F, pForIterationLambdasNmodes, HDF5Error)
+      call h5pset_chunk_f(pForIterationLambdasNmodes, rank, dimForIterationLambdasNmodesChunk, HDF5Error)
+
+    end if
 
     ! -------------------------------------
 
@@ -1032,28 +1039,31 @@ contains
 
   ! -------------------------------------
 
-    rank = 4
+    if (RHSMode > 3) then
+      rank = 4
 
-    dimForIterationSpeciesLambdasNmodes(1)      = 1
-    maxdimForIterationSpeciesLambdasNmodes(1)   = H5S_UNLIMITED_F
-    dimForIterationSpeciesLambdasNmodesChunk(1) = 1
+      dimForIterationSpeciesLambdasNmodes(1)      = 1
+      maxdimForIterationSpeciesLambdasNmodes(1)   = H5S_UNLIMITED_F
+      dimForIterationSpeciesLambdasNmodesChunk(1) = 1
 
-    dimForIterationSpeciesLambdasNmodes(2)      = Nspecies
-    maxdimForIterationSpeciesLambdasNmodes(2)   = Nspecies
-    dimForIterationSpeciesLambdasNmodesChunk(2) = Nspecies
+      dimForIterationSpeciesLambdasNmodes(2)      = Nspecies
+      maxdimForIterationSpeciesLambdasNmodes(2)   = Nspecies
+      dimForIterationSpeciesLambdasNmodesChunk(2) = Nspecies
 
-    dimForIterationSpeciesLambdasNmodes(3)      = NLambdas
-    maxdimForIterationSpeciesLambdasNmodes(3)   = NLambdas
-    dimForIterationSpeciesLambdasNmodesChunk(3) = NLambdas
+      dimForIterationSpeciesLambdasNmodes(3)      = NLambdas
+      maxdimForIterationSpeciesLambdasNmodes(3)   = NLambdas
+      dimForIterationSpeciesLambdasNmodesChunk(3) = NLambdas
 
-    dimForIterationSpeciesLambdasNmodes(4)      = NModesAdjoint
-    maxdimForIterationSpeciesLambdasNmodes(4)   = NModesAdjoint
-    dimForIterationSpeciesLambdasNmodesChunk(4) = NModesAdjoint
+      dimForIterationSpeciesLambdasNmodes(4)      = NModesAdjoint
+      maxdimForIterationSpeciesLambdasNmodes(4)   = NModesAdjoint
+      dimForIterationSpeciesLambdasNmodesChunk(4) = NModesAdjoint
 
-    call h5screate_simple_f(rank, dimForIterationSpeciesLambdasNmodes, dspaceIDForIterationSpeciesLambdasNmodes, &
-         HDF5Error, maxDimForIterationSpeciesLambdasNmodes)
-    call h5pcreate_f(H5P_DATASET_CREATE_F, pForIterationSpeciesLambdasNmodes, HDF5Error)
-    call h5pset_chunk_f(pForIterationSpeciesLambdasNmodes, rank, dimForIterationSpeciesLambdasNmodesChunk, HDF5Error)
+      call h5screate_simple_f(rank, dimForIterationSpeciesLambdasNmodes, dspaceIDForIterationSpeciesLambdasNmodes, &
+           HDF5Error, maxDimForIterationSpeciesLambdasNmodes)
+      call h5pcreate_f(H5P_DATASET_CREATE_F, pForIterationSpeciesLambdasNmodes, HDF5Error)
+      call h5pset_chunk_f(pForIterationSpeciesLambdasNmodes, rank, dimForIterationSpeciesLambdasNmodesChunk, HDF5Error)
+
+    end if
 
     ! -------------------------------------
 

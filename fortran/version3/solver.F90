@@ -466,6 +466,7 @@ module solver
     ! Initialize things needed for adjoint solve
     if (RHSMode>3 .or. (ambipolarSolve .and. (ambipolarSolveOption==1))) then
 
+
       !> Allocate adjointRHSVec
       call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointRHSVec, ierr)
       call VecSet(adjointRHSVec, zero, ierr)
@@ -849,6 +850,7 @@ module solver
 
     call VecDestroy(solutionVec, ierr)
     call VecDestroy(residualVec, ierr)
+    !call VecDestroy(f0,ierr)
 
     ! A seg fault occurs in nonlinear runs if we call MatDestroy here, since the matrix was already destroyed (and a different Mat created) in evaluateJacobian().
 !!$    call MatDestroy(matrix, ierr)

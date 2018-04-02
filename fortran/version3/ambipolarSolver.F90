@@ -48,6 +48,7 @@ module ambipolarSolver
             dRadialCurrentdEr_init = dRadialCurrentdEr
           end if
           next_stage = 4
+
         case(4)
           ! Vary Er by 10 until we bracket radialCurrent = 0
           next_stage = 4
@@ -57,11 +58,17 @@ module ambipolarSolver
           else
             Er_search(iEr) = Er_search(iEr-1) + 10
           end if
+
       end select
 
       this_Er = Er_search(iEr)
       call updateEr(this_Er,this_radialCurrent)
       radialCurrent(iEr) = this_radialCurrent
+      if (masterProc) then
+        print *,"stage = ", stage
+        print *,"Er = ", this_Er
+        print *,"radial current = ", this_radialCurrent
+      end if
 
       last_above_target = (radialCurrent(iEr) > zero)
       if (stage == 1) positive_above_target = last_above_target
@@ -70,6 +77,10 @@ module ambipolarSolver
         if (negative_above_target .eqv. positive_above_target) then
           if (masterProc) then
             print *,"Error in ambipolarSolver! Unexpected behavior at Er = +-100."
+            print *,"Here are the Ers we used: "
+            print *,Er_search
+            print *,"Here are the radial currents: "
+            print *,radialCurrent
           end if
           stop
         end if
@@ -81,6 +92,7 @@ module ambipolarSolver
           exit
       end if
       stage = next_stage
+
   end do ! iEr
 
   if (exit_code == 0) then
