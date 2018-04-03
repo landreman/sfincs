@@ -53,16 +53,6 @@ module solver
     end if
     iterationForMatrixOutput = 0
 
-   if (masterProc) then
-      print *,"MPIComm: ", MPIComm
-      print *,"PETSC_DECIDE: ", PETSC_DECIDE
-      print *,"matrixSize: ", matrixSize
-      print *,"ierr: ", ierr
-    end if
-    !if (Er == -100) then
-    !  call VecDestroy(solutionVec,ierr)
-    !end if
-
     call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, solutionVec, ierr)
     call VecDuplicate(solutionVec, residualVec, ierr)
 

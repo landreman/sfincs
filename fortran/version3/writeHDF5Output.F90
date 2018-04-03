@@ -481,8 +481,6 @@ contains
 
     if (masterProc) then
 
-       print *,"RHSMode: ", RHSMode
-
        print *,"Saving diagnostics to h5 file for iteration ",iterationNum
 
        call h5fopen_f(outputFilename, H5F_ACC_RDWR_F, HDF5FileID, HDF5Error)
