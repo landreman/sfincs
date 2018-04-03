@@ -55,7 +55,7 @@ include makefile.depend
 export
 
 %.o: %.F90
-	$(FC) $(EXTRA_COMPILE_FLAGS) -IreadVMEC -c -g $<
+	$(FC) $(EXTRA_COMPILE_FLAGS) -IreadVMEC -c -g -O3 $<
 
 %.o: %.f
 	$(FC) $(EXTRA_COMPILE_FLAGS) -c $<

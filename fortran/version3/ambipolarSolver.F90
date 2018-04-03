@@ -64,13 +64,9 @@ module ambipolarSolver
       this_Er = Er_search(iEr)
       call updateEr(this_Er,this_radialCurrent)
       radialCurrent(iEr) = this_radialCurrent
-      if (masterProc) then
-        print *,"stage = ", stage
-        print *,"Er = ", this_Er
-        print *,"radial current = ", this_radialCurrent
-      end if
 
       last_above_target = (radialCurrent(iEr) > zero)
+
       if (stage == 1) positive_above_target = last_above_target
       if (stage == 2) then
         negative_above_target = last_above_target
@@ -82,6 +78,8 @@ module ambipolarSolver
             print *,"Here are the radial currents: "
             print *,radialCurrent
           end if
+          ! Make sure master has printed before stopping
+          call MPI_Barrier(MPIComm, ierr)
           stop
         end if
       end if
@@ -126,7 +124,7 @@ module ambipolarSolver
   end if
 
     ! Output was not written previously
-    if (debugAdjoint .eqv. .false.) then
+    if ((debugAdjoint .eqv. .false.) .and. (RHSMode<4)) then
       call updateOutputFile(1, .false.)
     end if
 
@@ -414,6 +412,10 @@ module ambipolarSolver
 
     PetscScalar :: thisEr, radialCurrent
     PetscErrorCode :: ierr
+    PetscScalar, dimension(:), allocatable :: array
+    integer :: rank, master_rank
+
+    allocate(array(1))
 
     Er = thisEr
 
@@ -425,7 +427,12 @@ module ambipolarSolver
 
     call mainSolverLoop()
 
-    radialCurrent = sum(particleFlux_vm_rN(1:Nspecies)*Zs(1:Nspecies))
+    if (masterProc) then
+      array(1) = sum(particleFlux_vm_rN(1:Nspecies)*Zs(1:Nspecies))
+    end if
+    ! Broadcast value of radialCurrent to all procs
+    call MPI_BCAST(array,1,MPI_DOUBLE,0,MPIComm,ierr)
+    radialCurrent = array(1)
 
   end subroutine
 

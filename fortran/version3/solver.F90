@@ -53,6 +53,16 @@ module solver
     end if
     iterationForMatrixOutput = 0
 
+   if (masterProc) then
+      print *,"MPIComm: ", MPIComm
+      print *,"PETSC_DECIDE: ", PETSC_DECIDE
+      print *,"matrixSize: ", matrixSize
+      print *,"ierr: ", ierr
+    end if
+    !if (Er == -100) then
+    !  call VecDestroy(solutionVec,ierr)
+    !end if
+
     call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, solutionVec, ierr)
     call VecDuplicate(solutionVec, residualVec, ierr)
 
@@ -466,7 +476,6 @@ module solver
     ! Initialize things needed for adjoint solve
     if (RHSMode>3 .or. (ambipolarSolve .and. (ambipolarSolveOption==1))) then
 
-
       !> Allocate adjointRHSVec
       call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointRHSVec, ierr)
       call VecSet(adjointRHSVec, zero, ierr)
@@ -552,7 +561,7 @@ module solver
 
       call checkIfKSPConverged(KSPInstance)
 
-      if (ambipolarSolve .and. ambipolarSolveOption == 1) then
+      if (ambipolarSolve .and. ambipolarSolveOption == 1 .and. RHSMode < 3) then
         call computedRadialCurrentdEr(solutionVec,adjointSolutionJr)
         call VecDestroy(adjointRHSVec, ierr)
         if (discreteAdjointOption == 0) then

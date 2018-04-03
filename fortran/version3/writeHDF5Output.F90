@@ -481,6 +481,8 @@ contains
 
     if (masterProc) then
 
+       print *,"RHSMode: ", RHSMode
+
        print *,"Saving diagnostics to h5 file for iteration ",iterationNum
 
        call h5fopen_f(outputFilename, H5F_ACC_RDWR_F, HDF5FileID, HDF5Error)
@@ -737,10 +739,6 @@ contains
           call writeHDF5ExtensibleField(iterationNum,"dHeatFluxdLambda", dHeatFluxdLambda,ARRAY_ITERATION_SPECIES_LAMBDAS_NMODES,"")
         end if
         if (any(adjointParticleFluxOption) .or. debugAdjoint) then
-          if (masterProc) then
-            print *,"Updating output."
-            print *,"dParticleFluxdLambda: ", dParticleFluxdLambda
-          end if
           call writeHDF5ExtensibleField(iterationNum,"dParticleFluxdLambda", dParticleFluxdLambda,ARRAY_ITERATION_SPECIES_LAMBDAS_NMODES,"")
         end if
         if (any(adjointParticleFluxOption) .or. debugAdjoint) then

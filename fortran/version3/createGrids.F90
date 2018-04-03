@@ -1216,11 +1216,11 @@
           imn = imn+1
         end do
       end do
-    end if
-
-   if (masterProc) then
-      print *,"ms: ", ms
-      print *,"ns: ", ns
+      if (masterProc) then
+        print *,"Here are the adjoint modes: "
+        print *,"ms: ", ms
+        print *,"ns: ", ns
+      end if
     end if
 
     call computeBHat()
