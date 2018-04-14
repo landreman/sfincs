@@ -158,7 +158,7 @@
           
           do itheta = 1,Ntheta
              do izeta = 1,Nzeta
-                index = getIndex(1,1,1,itheta,izeta,BLOCK_QN)+1
+                index = getIndex(1,1,1,itheta,izeta,BLOCK_QN,0)+1
                 ! Add 1 because getIndex returns 0-based PETSc indices, not 1-based fortran indices.
                 Phi1Hat(itheta,izeta) = solnarray(index)
              end do
@@ -361,14 +361,14 @@
        case (0)
        case (1,3,4)
           do ispecies = 1,Nspecies
-             sources(ispecies,1) = solutionWithDeltaFArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)+1)
-             sources(ispecies,2) = solutionWithDeltaFArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)+1)
+             sources(ispecies,1) = solutionWithDeltaFArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT,0)+1)
+             sources(ispecies,2) = solutionWithDeltaFArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT,0)+1)
              ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
           end do
        case (2)
           do ispecies = 1,Nspecies
              do ix=1,Nx
-                sources(ispecies,ix) = solutionWithDeltaFArray(getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)+1)
+                sources(ispecies,ix) = solutionWithDeltaFArray(getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT,0)+1)
                 ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
              end do
           end do
@@ -378,7 +378,7 @@
        end select
 
        if (includePhi1) then
-          lambda = solutionWithDeltaFArray(getIndex(1, 1, 1, 1, 1, BLOCK_PHI1_CONSTRAINT)+1)
+          lambda = solutionWithDeltaFArray(getIndex(1, 1, 1, 1, 1, BLOCK_PHI1_CONSTRAINT,0)+1)
        else
           lambda = zero
        end if
@@ -431,7 +431,7 @@
 
                 do ix=1,Nx
                    L = 0
-                   index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+                   index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,0)+1
                    ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
 
                    densityPerturbation(ispecies,itheta,izeta) = densityPerturbation(ispecies,itheta,izeta) &
@@ -497,7 +497,7 @@
 
 
                    L = 1
-                   index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+                   index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,0)+1
                    ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
 
                    flow(ispecies,itheta,izeta) = flow(ispecies,itheta,izeta) &
@@ -528,7 +528,7 @@
                         * xWeights(ix)*momentumFluxIntegralWeights_vE(ix)*solutionWithFullFArray(index)
 
                    L = 2
-                   index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+                   index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,0)+1
                    ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
 
                    particleFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
@@ -573,7 +573,7 @@
 
 
                    L = 3
-                   index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+                   index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,0)+1
                    ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
 
                    momentumFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
@@ -813,7 +813,7 @@
                 do izeta1 = 1,Nzeta
                    do ix1 = 1,Nx
                       do ixi1 = 1,Nxi_for_x(ix1)
-                         index = getIndex(ispecies, ix1, ixi1, itheta1, izeta1, BLOCK_F)+1
+                         index = getIndex(ispecies, ix1, ixi1, itheta1, izeta1, BLOCK_F,0)+1
                          temp1 = solutionWithFullFArray(index)
                          do itheta2 = 1,N_export_f_theta
                             temp2 = temp1 * map_theta_to_export_f_theta(itheta2, itheta1)
@@ -843,7 +843,7 @@
                 do izeta1 = 1,Nzeta
                    do ix1 = 1,Nx
                       do ixi1 = 1,Nxi_for_x(ix1)
-                         index = getIndex(ispecies, ix1, ixi1, itheta1, izeta1, BLOCK_F)+1
+                         index = getIndex(ispecies, ix1, ixi1, itheta1, izeta1, BLOCK_F,0)+1
                          temp1 = solutionWithDeltaFArray(index)
                          do itheta2 = 1,N_export_f_theta
                             temp2 = temp1 * map_theta_to_export_f_theta(itheta2, itheta1)

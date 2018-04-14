@@ -130,10 +130,10 @@ module adjointDiagnostics
             ! Get sources associated with deltaF and deltaG
             if (constraintScheme == 1) then
               do ispecies = 1,Nspecies
-                sourcesF(ispecies,1) = deltaFArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)+1)
-                sourcesF(ispecies,2) = deltaFArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)+1)
-                sourcesG(ispecies,1) = deltaGArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)+1)
-                sourcesG(ispecies,2) = deltaGArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)+1)
+                sourcesF(ispecies,1) = deltaFArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT,0)+1)
+                sourcesF(ispecies,2) = deltaFArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT,0)+1)
+                sourcesG(ispecies,1) = deltaGArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT,0)+1)
+                sourcesG(ispecies,2) = deltaGArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT,0)+1)
               end do
             end if
 
@@ -153,7 +153,7 @@ module adjointDiagnostics
                   do ix=1,Nx
                     ! The integral over xi turns into a sum over L (with a factor of 2/(2L+1))
                     do L=0,(Nxi_for_x(ix)-1)
-                      index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+                      index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,0)+1
 
                       speciesResult = speciesResult + thetazetaIntegralFactor(itheta,izeta)*xIntegralFactor(ix) &
                         *(two/(two*real(L)+one))*thetaWeights(itheta)*zetaWeights(izeta) &
@@ -219,7 +219,7 @@ module adjointDiagnostics
       call VecGetArrayF90(forwardSolutionOnProc0, forwardSolutionArray, ierr)
     end if
 
-    if (whichLambda==1 .and. geometryScheme > 10) then
+    if (whichLambda==1 .and. geometryScheme /= 5) then
       dVPrimeHatdLambda = zero
       do itheta=1,Ntheta
         do izeta=1,Nzeta
@@ -263,7 +263,7 @@ module adjointDiagnostics
                 dBHatdLambda = cos_angle
                 factor = (BHat_sub_theta(itheta,izeta)*dBHatdZetadLambda - BHat_sub_zeta(itheta,izeta)*dBHatdThetadLambda)/(VPrimeHat*BHat(itheta,izeta)**3) - 3*(BHat_sub_theta(itheta,izeta)*dBHatdZeta(itheta,izeta) - &
                   BHat_sub_zeta(itheta,izeta)*dBHatdTheta(itheta,izeta))*dBHatdLambda/(VPrimeHat*BHat(itheta,izeta)**4)
-                if (geometryScheme > 10) then ! Boozer
+                if (geometryScheme /= 5) then ! Boozer
                   factor = factor - (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda/ &
                     (VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
                 end if
@@ -290,13 +290,13 @@ module adjointDiagnostics
             do ix=1,Nx
 
                 L = 0
-                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,0)+1
                 ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
                 result = result + &
                   (8/three)*factor*xWeights(ix)*forwardSolutionArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
 
                 L = 2
-                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,0)+1
                 ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
                 result = result + &
                   (four/15)*factor*xWeights(ix)*forwardSolutionArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
@@ -352,7 +352,7 @@ module adjointDiagnostics
       call VecGetArrayF90(deltaFOnProc0, deltaFArray, ierr)
     end if
 
-    if (whichLambda==1 .and. geometryScheme > 10) then
+    if (whichLambda==1 .and. geometryScheme /= 5) then
       dVPrimeHatdLambda = zero
       ! For Boozer coordinats, integral needed to compute dVPrimeHatdLambda
       do itheta=1,Ntheta
@@ -396,7 +396,7 @@ module adjointDiagnostics
                 dBHatdLambda = cos_angle
                 factor = (BHat_sub_theta(itheta,izeta)*dBHatdZetadLambda - BHat_sub_zeta(itheta,izeta)*dBHatdThetadLambda)/(VPrimeHat*BHat(itheta,izeta)**3) - 3*(BHat_sub_theta(itheta,izeta)*dBHatdZeta(itheta,izeta) &
                   - BHat_sub_zeta(itheta,izeta)*dBHatdTheta(itheta,izeta))*dBHatdLambda/(VPrimeHat*BHat(itheta,izeta)**4)
-                if (geometryScheme > 10) then !Boozer
+                if (geometryScheme /= 5) then !Boozer
                     factor = factor - (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda &
                       /(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
                 end if
@@ -428,13 +428,13 @@ module adjointDiagnostics
             do ix=1,Nx
 
                 L = 0
-                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,0)+1
                 ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
                 result = result + &
                   (8/three)*factor*xWeights(ix)*deltaFArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
 
                 L = 2
-                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,0)+1
                 ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
                 result = result + &
                   (four/15)*factor*xWeights(ix)*deltaFArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
@@ -514,7 +514,7 @@ module adjointDiagnostics
         end do
       end if
 
-      if (whichLambda==1 .and. geometryScheme > 10) then
+      if (whichLambda==1 .and. geometryScheme /= 5) then
         dVPrimeHatdLambda = zero
         do itheta=1,Ntheta
           do izeta=1,Nzeta
@@ -563,7 +563,7 @@ module adjointDiagnostics
             select case (whichLambda)
               case (1) ! BHat
                 dBHatdLambda = cos_angle
-                if (geometryScheme > 10) then ! Boozer
+                if (geometryScheme /= 5) then ! Boozer
                   dDHatdLambda = two*DHat(itheta,izeta)*dBHatdLambda/BHat(itheta,izeta)
                   dinvDHatdLambda = -dDHatdLambda/(DHat(itheta,izeta)**2)
                   factor = dBHatdLambda/(DHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) + BHat(itheta,izeta)*dinvDHatdLambda/(VPrimeHat*sqrtFSAB2) &
@@ -592,7 +592,7 @@ module adjointDiagnostics
             do ix=1,Nx
 
                 L = 1
-                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,0)+1
                 ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
                 result = result + &
                   (four/three)*factor*xWeights(ix)*deltaFArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)

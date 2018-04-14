@@ -99,7 +99,7 @@ contains
        if (RHSMode>3) then
           if (vmec%iasym > 0) then
             if (masterProc) then
-              print *,"Error! RHSMode>3 must be used with VMEC geometry."
+              print *,"Error! RHSMode>3 must be used with stellarator symmetry."
             endif
             stop
           endif
@@ -330,7 +330,9 @@ contains
     PetscScalar, dimension(:,:), allocatable :: dXdtheta, dXdzeta, dYdtheta, dYdzeta
     PetscScalar, dimension(:,:), allocatable :: d2Xdtheta2, d2Xdthetadzeta, d2Xdzeta2, d2Ydtheta2, d2Ydthetadzeta, d2Ydzeta2
     PetscScalar, dimension(:,:), allocatable :: gradpsiX, gradpsiY, gradpsiZ, gpsipsi, CX, CY, CZ
-    
+    PetscScalar, dimension(:,:), allocatable :: BHatL_fine,dBHatdthetaL_fine,dBHatdzetaL_fine
+    PetscScalar, dimension(:,:), allocatable :: BHatH_fine, dBHatdthetaH_fine, dBHatdzetaH_fine
+
     integer :: fileUnit, didFileAccessWork
     character(len=200) :: lineOfFile
     integer, dimension(4) :: headerIntegers
@@ -385,6 +387,14 @@ contains
     dBHat_sup_zeta_dpsiHat = 0
     dBHat_sup_zeta_dtheta = 0
     diotadpsiHat = 0
+
+    ! Adjoint EC
+    if (RHSMode==6) then
+      dBHat_sub_theta_dzeta_fine = 0 !Always zero in Boozer coords.
+      dBHat_sup_theta_dzeta_fine = 0
+      dBHat_sub_zeta_dtheta_fine = 0
+      dBHat_sup_zeta_dtheta_fine = 0
+    end if
 
     nearbyRadiiGiven = .false. !Will be the case for all geometrySchemes except 11 and 12
 
@@ -1071,6 +1081,11 @@ contains
        BHat = B0OverBBar ! This includes the (0,0) component.
        dBHatdtheta = 0
        dBHatdzeta = 0
+       if (RHSMode==6) then
+          BHat_fine = B0overBBar
+          dBHatdtheta_fine = 0
+          dBhatdzeta_fine = 0
+       end if
 
       if (debugAdjoint) then
         if (masterProc) then
@@ -1131,8 +1146,20 @@ contains
                       end if
                     end do
                    end if
-
                 end do
+
+                if (RHSMode==6) then
+                  do itheta = 1, Ntheta_fine
+                    BHat_fine(itheta,:) = BHat_fine(itheta,:) + BHarmonics_amplitudes(i) * &
+                        cos(BHarmonics_l(i) * theta_fine(itheta) - NPeriods * BHarmonics_n(i) * zeta_fine)
+
+                   dBHatdtheta_fine(itheta,:) = dBHatdtheta_fine(itheta,:) - BHarmonics_amplitudes(i) * BHarmonics_l(i) * &
+                        sin(BHarmonics_l(i) * theta_fine(itheta) - NPeriods * BHarmonics_n(i) * zeta_fine)
+
+                   dBHatdzeta_fine(itheta,:) = dBHatdzeta_fine(itheta,:) + BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
+                        sin(BHarmonics_l(i) * theta_fine(itheta) - NPeriods * BHarmonics_n(i) * zeta_fine)
+                  end do
+                end if
              end if
           else  ! The sine components of BHat
              include_mn=.false.
@@ -1187,6 +1214,12 @@ contains
        allocate(d2Dzdzeta2L(Ntheta,Nzeta))
        allocate(d2DzdthetadzetaL(Ntheta,Nzeta))
 
+      if (RHSMode==6) then
+        allocate(BHatL_fine(Ntheta_fine,Nzeta_fine))
+        allocate(dBHatdthetaL_fine(Ntheta_fine,Nzeta_fine))
+        allocate(dBHatdzetaL_fine(Ntheta_fine,Nzeta_fine))
+      end if
+
       ! Average L and R bmnc00's
       if (debugAdjoint) then
         if (masterProc) then
@@ -1202,6 +1235,10 @@ contains
        BHatL = B0OverBBarL ! This includes the (0,0) component.
        dBHatdthetaL = 0
        dBHatdzetaL = 0
+
+       BHatL_fine = B0OverBBarL
+       dBHatdthetaL_fine = 0
+       dBHatdzetaL_fine = 0
 
        RHatL = R0L ! This includes the (0,0) component.
        dRHatdthetaL      = 0
@@ -1306,6 +1343,18 @@ contains
                    end if
 
                 end do
+                if (RHSMode==6) then
+                  do itheta=1,Ntheta_fine
+                     BHatL_fine(itheta,:) = BHatL_fine(itheta,:) + BHarmonics_amplitudesL(i) * &
+                          cos(BHarmonics_lL(i) * theta_fine(itheta) - NPeriods * BHarmonics_nL(i) * zeta_fine)
+
+                     dBHatdthetaL_fine(itheta,:) = dBHatdthetaL_fine(itheta,:) - BHarmonics_amplitudesL(i) * BHarmonics_lL(i) * &
+                          sin(BHarmonics_lL(i) * theta_fine(itheta) - NPeriods * BHarmonics_nL(i) * zeta_fine)
+
+                     dBHatdzetaL_fine(itheta,:) = dBHatdzetaL_fine(itheta,:) + BHarmonics_amplitudesL(i) * Nperiods * BHarmonics_nL(i) * &
+                          sin(BHarmonics_lL(i) * theta_fine(itheta) - NPeriods * BHarmonics_nL(i) * zeta_fine)
+                  end do
+                end if
              end if
           else  ! The sine components of BHat
              include_mn=.false.
@@ -1415,6 +1464,15 @@ contains
        allocate(d2Dzdtheta2H(Ntheta,Nzeta))
        allocate(d2Dzdzeta2H(Ntheta,Nzeta))
        allocate(d2DzdthetadzetaH(Ntheta,Nzeta))
+
+       if (RHSMode==6) then
+         allocate(BHatH_fine(Ntheta_fine,Nzeta_fine))
+         allocate(dBHatdthetaH_fine(Ntheta_fine,Nzeta_fine))
+         allocate(dBHatdzetaH_fine(Ntheta_fine,Nzeta_fine))
+         BHatH_fine = B0OverBBarH
+         dBHatdthetaH_fine = 0
+         dBHatdzetaH_fine = 0
+       end if
 
        BHatH = B0OverBBarH ! This includes the (0,0) component.
        dBHatdthetaH = 0
@@ -1527,6 +1585,18 @@ contains
                    end if
 
                 end do
+                if (RHSMode==6) then
+                  do itheta=1,Ntheta_fine
+                     BHatH_fine(itheta,:) = BHatH_fine(itheta,:) + BHarmonics_amplitudesH(i) * &
+                          cos(BHarmonics_lH(i) * theta_fine(itheta) - NPeriods * BHarmonics_nH(i) * zeta_fine)
+
+                     dBHatdthetaH_fine(itheta,:) = dBHatdthetaH_fine(itheta,:) - BHarmonics_amplitudesH(i) * BHarmonics_lH(i) * &
+                          sin(BHarmonics_lH(i) * theta_fine(itheta) - NPeriods * BHarmonics_nH(i) * zeta_fine)
+
+                     dBHatdzetaH_fine(itheta,:) = dBHatdzetaH_fine(itheta,:) + BHarmonics_amplitudesH(i) * Nperiods * BHarmonics_nH(i) * &
+                          sin(BHarmonics_lH(i) * theta_fine(itheta) - NPeriods * BHarmonics_nH(i) * zeta_fine)
+                  end do
+                end if
              end if
           else  ! The sine components of BHat
              include_mn=.false.
@@ -1616,9 +1686,15 @@ contains
           dBHatdtheta(itheta,:) = dBHatdthetaL(itheta,:)*RadialWeight + dBHatdthetaH(itheta,:)*(1.0-RadialWeight)
           dBHatdzeta(itheta,:)  =  dBHatdzetaL(itheta,:)*RadialWeight +  dBHatdzetaH(itheta,:)*(1.0-RadialWeight)
           dBHatdpsiHat(itheta,:)= (BHatH(itheta,:)-BHatL(itheta,:)) / DeltapsiHat
-
        end do
-       
+      if (RHSMode==6) then
+        do itheta=1,Ntheta_fine
+          BHat_fine(itheta,:) = BHatL_fine(itheta,:)*RadialWeight + BHatH_fine(itheta,:)*(1.0-RadialWeight)
+          dBHatdtheta_fine(itheta,:) = dBHatdthetaL_fine(itheta,:)*RadialWeight + dBHatdthetaH_fine(itheta,:)*(1.0-RadialWeight)
+          dBHatdzeta_fine(itheta,:) = dBHatdzetaL_fine(itheta,:)*RadialWeight + dBHatdzetaH_fine(itheta,:)*(1.0-RadialWeight)
+        end do
+      end if
+
        if (nearbyRadiiGiven) then !implemented only for geometryScheme 11 and 12 so far
           allocate(RHat(Ntheta,Nzeta))
           allocate(dRHatdtheta(Ntheta,Nzeta))
@@ -2046,6 +2122,14 @@ contains
     BHat_sub_theta = IHat
     BHat_sub_zeta = GHat
 
+    if (RHSMode==6) then
+      DHat_fine = BHat_fine * BHat_fine / (GHat + iota * IHat)
+      BHat_sup_theta_fine = iota*DHat_fine
+      BHat_sup_zeta_fine = DHat_fine
+      BHat_sub_theta_fine = IHat
+      BHat_sub_zeta_fine = GHat
+    end if
+
     if (nearbyRadiiGiven) then
        dBHat_sup_zeta_dpsiHat = 2.0 * BHat *dBHatdpsiHat / (GHat + iota * IHat) &
             -(dBHat_sub_zeta_dpsiHat + iota*dBHat_sub_theta_dpsiHat + diotadpsiHat*IHat) &
@@ -2054,6 +2138,11 @@ contains
        
        dBHat_sup_theta_dpsiHat = iota * dBHat_sup_zeta_dpsiHat + diotadpsiHat* DHat
        dBHat_sup_theta_dzeta = iota * 2.0 * BHat *dBHatdzeta / (GHat + iota * IHat)
+
+       if (RHSMode==6) then
+          dBHat_sup_zeta_dtheta_fine = 2.0 * BHat_fine * dBHatdtheta_fine / (GHat + iota * IHat)
+          dBHat_sup_theta_dzeta_fine = iota * 2.0 * BHat_fine * dBHatdzeta_fine / (GHat + iota * IHat)
+       end if
     end if
 
     if (debugAdjoint) then
@@ -2386,6 +2475,19 @@ contains
     BHat_sup_theta = zero
     BHat_sup_zeta = zero
 
+    if (RHSMode==6) then
+      BHat_fine = zero
+      DHat_fine = zero
+      dBHatdtheta_fine = zero
+      dBHatdzeta_fine = zero
+      BHat_sub_theta_fine = zero
+      dBHat_sub_theta_dzeta_fine = zero
+      BHat_sub_zeta_fine = zero
+      dBHat_sub_zeta_dtheta_fine = zero
+      BHat_sup_theta_fine = zero
+      BHat_sup_zeta_fine = zero
+    end if
+
     ! First, get the (m=0,n=0) component of |B|, which will be used for testing whether
     ! other harmonics of |B| are large enough to include.
     m = 0
@@ -2608,6 +2710,46 @@ contains
                    end do
                 end do
              end do
+             do itheta=1,Ntheta_fine
+                do izeta=1,Nzeta_fine
+                   angle = m * theta_fine(itheta) - n * NPeriods * zeta_fine(izeta)
+                   cos_angle = cos(angle)
+                   sin_angle = sin(angle)
+
+                   BHat_fine(itheta,izeta) = BHat_fine(itheta,izeta) + b * cos_angle
+
+                   dbHatdtheta_fine(itheta,izeta) = dBHatdtheta_fine(itheta,izeta) - m * b * sin_angle
+
+                   dbHatdzeta_fine(itheta,izeta) = dBHatdzeta_fine(itheta,izeta) + n * NPeriods * b * sin_angle
+
+                    do isurf = 1,2
+                      temp = vmec%gmnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf) / (psiAHat)
+                      temp = temp*scaleFactor
+
+                      DHat_fine(itheta,izeta) = DHat_fine(itheta,izeta) + temp * cos_angle
+
+                      temp = vmec%bsupumnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
+                      temp = temp*scaleFactor
+                      BHat_sup_theta_fine(itheta,izeta) = BHat_sup_theta_fine(itheta,izeta) + temp * cos_angle
+                      dBHat_sup_theta_dzeta_fine(itheta,izeta) = dBHat_sup_theta_dzeta_fine(itheta,izeta) + n * NPeriods * temp * sin_angle
+
+                      temp = vmec%bsupvmnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
+                      temp = temp*scaleFactor
+                      BHat_sup_zeta_fine(itheta,izeta) = BHat_sup_zeta_fine(itheta,izeta) + temp * cos_angle
+                      dBHat_sup_zeta_dtheta_fine(itheta,izeta) = dBHat_sup_zeta_dtheta_fine(itheta,izeta) - m * temp * sin_angle
+
+                      temp = vmec%bsubumnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
+                      temp = temp*scaleFactor
+                      BHat_sub_theta_fine(itheta,izeta) = BHat_sub_theta_fine(itheta,izeta) + temp * cos_angle
+                      dBHat_sub_theta_dzeta_fine(itheta,izeta) = dBHat_sub_theta_dzeta_fine(itheta,izeta) + n * NPeriods * temp * sin_angle
+
+                      temp = vmec%bsubvmnc(n,m,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
+                      temp = temp*scaleFactor
+                      BHat_sub_zeta_fine(itheta,izeta) = BHat_sub_zeta_fine(itheta,izeta) + temp * cos_angle
+                      dBHat_sub_zeta_dtheta_fine(itheta,izeta) = dBHat_sub_zeta_dtheta_fine(itheta,izeta) - m * temp * sin_angle
+                  end do
+                end do
+             end do
           else
              !if (masterProc) then
              !   print *,"NOT including mode with m = ",m,", n = ",n
@@ -2786,6 +2928,9 @@ contains
 
     ! Convert Jacobian to inverse Jacobian:
     DHat = one / DHat
+    if (RHSMode==6) then
+      DHat_fine = one / DHat_fine
+    end if
 
     do izeta = 1,Nzeta
        cos_angle = cos(zeta(izeta))
@@ -2864,6 +3009,7 @@ contains
     integer :: itheta, izeta
 
     ! This subroutine computes VPrimeHat, FSABHat2, and (if needed) B0OverBBar, GHat, and IHat.
+    ! Should be independent of grid - does not need to be called twice
 
     VPrimeHat = 0
     FSABHat2 = 0

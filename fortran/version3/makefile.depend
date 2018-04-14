@@ -7,20 +7,25 @@ OBJ_FILES = adjointDiagnostics.o ChebyshevGrid.o ChebyshevInterpolationMatrix.o 
 	  uniformDiffMatrices.o uniformInterpolationMatrix.o validateInput.o writeHDF5Output.o xGrid.o \
 	  readVMEC/readVMEC.a testingInnerProduct.o testingDiagnosticSensitivity.o testingdRHSdLambda.o \
       testingdMatrixdLambda.o updateVMECGeometry.o testingAdjointOperator.o testingAdjointDiagnostics.o \
-      ambipolarSolver.o testingNewtonSolve.o updateBoozerGeometry.o
+      ambipolarSolver.o testingNewtonSolve.o updateBoozerGeometry.o createGrids_fine.o adjointErrorCorrection.o \
+      build_adjointECProlongationMatrix.o periodic_interpolation.o
  
 # Dependencies:
+adjointErrorCorrection.o: globalVariables.o adjointDiagnostics.o
 adjointDiagnostics.o: globalVariables.o writeHDF5Output.o indices.o 
+build_adjointECProlongationMatrix.o: globalVariables.o indices.o
 ambipolarSolver.o: globalVariables.o solver.o
 ChebyshevGrid.o: 
 ChebyshevInterpolationMatrix.o: 
-createGrids.o: globalVariables.o polynomialDiffMatrices.o xGrid.o geometry.o indices.o export_f.o
+createGrids.o: globalVariables.o polynomialDiffMatrices.o xGrid.o geometry.o indices.o export_f.o createGrids_fine.o
+createGrids_fine.o: globalVariables.o
 diagnostics.o: globalVariables.o indices.o writeHDF5Output.o
 evaluateJacobian.o: globalVariables.o
 evaluateResidual.o: globalVariables.o indices.o
 export_f.o: globalVariables.o xGrid.o
 geometry.o: globalVariables.o radialCoordinates.o readVMEC/readVMEC.a
 indices.o: globalVariables.o
+periodic_interpolation.o: 
 polynomialDiffMatrices.o: xGrid.o
 polynomialInterpolationMatrix.o: 
 populatedMatrixdLambda.o: globalVariables.o indices.o sparsify.o

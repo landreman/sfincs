@@ -131,12 +131,12 @@
     ! Enforce <f_1> = 0 at each x
     integer, parameter :: BLOCK_F_CONSTRAINT        = 9995
 
-    integer, private :: DKE_size
+    integer, private :: DKE_size, DKE_size_fine
     integer, private, dimension(:), allocatable :: first_index_for_x
 
   contains
 
-    integer function getIndex(i_species, i_x, i_xi, i_theta, i_zeta, whichBlock)
+    integer function getIndex(i_species, i_x, i_xi, i_theta, i_zeta, whichBlock, whichMatrix)
 
       ! This function takes as inputs "local" indices in the species, x, xi, theta, and zeta grids,
       ! and returns the "global" index, i.e. the row or column of the master matrix.
@@ -144,11 +144,30 @@
       ! The input "local" indices (i_x, i_xi, etc) are 1-based, since small matrices are stored in Fortran.
       ! the output "global" index is 0-based, since PETSc uses 0-based indexing.
 
-      use globalVariables, only: Nspecies, Nx, Nxi, Ntheta, Nzeta, matrixSize, constraintScheme, includePhi1, masterProc, Nxi_for_x
+      use globalVariables, only: Nspecies, Nx, Nxi, Ntheta, Nzeta, matrixSize, constraintScheme, includePhi1, masterProc, Nxi_for_x, Nzeta_fine, Ntheta_fine, matrixSize_fine
 
       implicit none
 
-      integer, intent(in) :: i_species, i_x, i_xi, i_theta, i_zeta, whichBlock
+      integer, intent(in) :: i_species, i_x, i_xi, i_theta, i_zeta, whichBlock, whichmatrix
+      integer :: this_Ntheta, this_Nzeta, this_DKE_size, this_matrixSize
+
+      if (whichMatrix == 7) then
+        this_Ntheta = Ntheta_fine
+        this_Nzeta = Nzeta_fine
+        this_DKE_size = sum(Nxi_for_x)*Ntheta_fine*Nzeta_fine
+        this_matrixSize = Nspecies*this_DKE_size + 2 * Nspecies
+      else
+        this_Ntheta = Ntheta
+        this_Nzeta = Nzeta
+        this_DKE_size = DKE_size
+        this_matrixSize = matrixSize
+      end if
+!      if (whichMatrix==7) then
+!        print *,"this_DKE_size: ", this_DKE_size
+!        print *,"DKE_size_fine: ", DKE_size_fine
+!        print *,"this_matrixSize: ", this_matrixSize
+!        print *,"matrixSize_fine: ", matrixSize_fine
+!      end if
 
       ! Validate inputs:
 
@@ -189,7 +208,7 @@
          stop
       end if
 
-      if (i_theta > Ntheta) then
+      if (i_theta > this_Ntheta) then
          print *,"Error: i_theta > Ntheta"
          stop
       end if
@@ -199,7 +218,7 @@
          stop
       end if
 
-      if (i_zeta > Nzeta) then
+      if (i_zeta > this_Nzeta) then
          print *,"Error: i_zeta > Nzeta"
          stop
       end if
@@ -227,22 +246,22 @@
 !!$              +(i_xi-1)*Ntheta*Nzeta &
 !!$              +(i_theta-1)*Nzeta &
 !!$              +i_zeta -1
-         getIndex = (i_species-1)*DKE_size &
-              +first_index_for_x(i_x)*Ntheta*Nzeta &
-              +(i_xi-1)*Ntheta*Nzeta &
-              +(i_theta-1)*Nzeta &
+         getIndex = (i_species-1)*this_DKE_size &
+              +first_index_for_x(i_x)*this_Ntheta*this_Nzeta &
+              +(i_xi-1)*this_Ntheta*this_Nzeta &
+              +(i_theta-1)*this_Nzeta &
               +i_zeta -1
 
       case (BLOCK_QN)
          !getIndex = Nspecies*Nx*Nxi*Ntheta*Nzeta &
-         getIndex = Nspecies*DKE_size &
-              +(i_theta-1)*Nzeta &
+         getIndex = Nspecies*this_DKE_size &
+              +(i_theta-1)*this_Nzeta &
               +i_zeta-1
 
       case (BLOCK_PHI1_CONSTRAINT)
          !getIndex = Nspecies*Nx*Nxi*Ntheta*Nzeta &
-         getIndex = Nspecies*DKE_size &
-              +Ntheta*Nzeta
+         getIndex = Nspecies*this_DKE_size &
+              +this_Ntheta*this_Nzeta
 
       case (BLOCK_DENSITY_CONSTRAINT)
          if ((constraintScheme .ne. 1) .and. (constraintScheme .ne. 3) .and. (constraintScheme .ne. 4)) then
@@ -251,11 +270,11 @@
             stop
          end if
          if (includePhi1) then
-            getIndex = Nspecies*DKE_size &
-                 + Ntheta*Nzeta + 1 &
+            getIndex = Nspecies*this_DKE_size &
+                 + this_Ntheta*this_Nzeta + 1 &
                  + (i_species-1)*2
          else
-            getIndex = Nspecies*DKE_size &
+            getIndex = Nspecies*this_DKE_size &
                  + (i_species-1)*2
          end if
 
@@ -266,11 +285,11 @@
             stop
          end if
          if (includePhi1) then
-            getIndex = Nspecies*DKE_size &
-                 + Ntheta*Nzeta + 1 &
+            getIndex = Nspecies*this_DKE_size &
+                 + this_Ntheta*this_Nzeta + 1 &
                  + (i_species-1)*2 + 1
          else
-            getIndex = Nspecies*DKE_size &
+            getIndex = Nspecies*this_DKE_size &
                  + (i_species-1)*2 + 1
          end if
 
@@ -281,11 +300,11 @@
             stop
          end if
          if (includePhi1) then
-            getIndex = Nspecies*DKE_size &
-                 + Ntheta*Nzeta + 1 &
+            getIndex = Nspecies*this_DKE_size &
+                 + this_Ntheta*this_Nzeta + 1 &
                  + (i_species-1)*Nx + i_x - 1
          else
-            getIndex = Nspecies*DKE_size &
+            getIndex = Nspecies*this_DKE_size &
                  + (i_species-1)*Nx + i_x - 1
          end if
 
@@ -301,7 +320,7 @@
          stop
       end if
 
-      if (getIndex >= matrixSize) then
+      if (getIndex >= this_matrixSize) then
          print *,"Error! Something went wrong, and the index came out larger than the matrix size."
          stop
       end if
@@ -313,13 +332,17 @@
 
     subroutine computeMatrixSize()
 
-      use globalVariables, only: Nspecies, Ntheta, Nzeta, Nx, Nxi, includePhi1, constraintScheme, masterProc, matrixSize, Nxi_for_x
+      use globalVariables, only: Nspecies, Ntheta, Nzeta, Nx, Nxi, includePhi1, constraintScheme, masterProc, matrixSize, Nxi_for_x, Ntheta_fine, Nzeta_fine, RHSMode
 
       implicit none
 
       integer :: ix
 
       DKE_size = sum(Nxi_for_x)*Ntheta*Nzeta
+      if (RHSMode==6) then
+        DKE_size_fine = sum(Nxi_for_x)*Ntheta_fine*Nzeta_fine
+        print *,"DKE_size_fine: ", DKE_size_fine
+      end if
 
       matrixSize = Nspecies * DKE_size
       !matrixSize = Nspecies * Ntheta * Nzeta * Nxi * Nx

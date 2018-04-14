@@ -347,7 +347,7 @@ contains
        call writeHDF5Field("dnHatdrN", dnHatdrNs, dspaceIDForSpecies, dimForSpecies, "")
 
       ! Write output related to sensitivityOptions namelist
-      if (RHSMode > 3) then
+      if (RHSMode > 3 .and. RHSMode < 6) then
         call writeHDF5Field("adjointHeatFluxOption", adjointHeatFluxOption, dspaceIDForSpecies, dimForSpecies, "")
         call writeHDF5Field("adjointParticleFluxOption", adjointParticleFluxOption, dspaceIDForSpecies,  dimForSpecies, "")
         call writeHDF5Field("adjointParallelFlowOption", adjointParallelFlowOption,dspaceIDForSpecies, dimForSpecies, "")
@@ -364,13 +364,25 @@ contains
         call writeHDF5Field("deltaLambda", deltaLambda, "")
         if (debugAdjoint) then
           call writeHDF5Field("bmnc", bmnc, dspaceIDForNModesAdjoint, dimForNModesAdjoint, "")
-          call writeHDF5Field("gmnc", gmnc, dspaceIDForNModesAdjoint, dimForNModesAdjoint, "")
-          call writeHDF5Field("bsupthetamnc", bsupthetamnc, dspaceIDForNModesAdjoint, dimForNModesAdjoint, "")
-          call writeHDF5Field("bsupzetamnc", bsupzetamnc, dspaceIDForNModesAdjoint, dimForNModesAdjoint, "")
-          call writeHDF5Field("bsubthetamnc", bsubthetamnc, dspaceIDForNModesAdjoint, dimForNModesAdjoint, "")
-          call writeHDF5Field("bsubzetamnc", bsubzetamnc, dspaceIDForNModesAdjoint, dimForNModesAdjoint, "")
+          if (geometryScheme == 5) then
+            call writeHDF5Field("gmnc", gmnc, dspaceIDForNModesAdjoint, dimForNModesAdjoint, "")
+            call writeHDF5Field("bsupthetamnc", bsupthetamnc, dspaceIDForNModesAdjoint, dimForNModesAdjoint, "")
+            call writeHDF5Field("bsupzetamnc", bsupzetamnc, dspaceIDForNModesAdjoint, dimForNModesAdjoint, "")
+            call writeHDF5Field("bsubthetamnc", bsubthetamnc, dspaceIDForNModesAdjoint, dimForNModesAdjoint, "")
+            call writeHDF5Field("bsubzetamnc", bsubzetamnc, dspaceIDForNModesAdjoint, dimForNModesAdjoint, "")
+          end if
         end if
       endif
+      if (RHSMode==6) then
+        call writeHDF5Field("adjointHeatFluxECOption",adjointHeatFluxECOption,dspaceIDForSpecies,  dimForSpecies,"")
+        call writeHDF5Field("adjointParticleFluxECOption",adjointParticleFluxECOption,dspaceIDForSpecies,  dimForSpecies,"")
+        call writeHDF5Field("adjointParallelFlowECOption",adjointParallelFlowECOption,dspaceIDForSpecies,  dimForSpecies,"")
+        call writeHDF5Field("adjointBootstrapECOption",adjointBootstrapECOption,"")
+        call writeHDF5Field("adjointTotalHeatFluxECOption",adjointTotalHeatFluxECOption,"")
+        call writeHDF5Field("adjointRadialCurrentECOption",adjointRadialCurrentECOption,"")
+        call writeHDF5Field("Ntheta_fine",Ntheta_fine,"")
+        call writeHDF5Field("Nzeta_fine",Nzeta_fine,"")
+      end if
 
        call writeHDF5Field("includeTemperatureEquilibrationTerm", includeTemperatureEquilibrationTerm, &
             "Include the inhomogeneous term associated with the collision operator acting on the Maxwellians C[f_M, f_M]? " //&
@@ -732,7 +744,7 @@ contains
           call writeHDF5ExtensibleField(iterationNum, "sources", sources, ARRAY_ITERATION_SPECIES_SOURCES, "")
        end if
 
-      if (RHSMode > 3) then
+      if (RHSMode > 3 .and. RHSMode < 6) then
         if (any(adjointHeatFluxOption) .or. debugAdjoint) then
           call writeHDF5ExtensibleField(iterationNum,"dHeatFluxdLambda", dHeatFluxdLambda,ARRAY_ITERATION_SPECIES_LAMBDAS_NMODES,"")
         end if
@@ -772,6 +784,14 @@ contains
             call writeHDF5ExtensibleField(iterationNum,"dPhidPsidLambda_finitediff", dPhidPsidLambda_finitediff,ARRAY_ITERATION_LAMBDAS_NMODES,"")
           end if
         end if
+      end if
+      if (RHSMode==6) then
+        call writeHDF5ExtensibleField(iterationNum,"particleFlux_corrected",particleFlux_corrected,ARRAY_ITERATION_SPECIES,"")
+        call writeHDF5ExtensibleField(iterationNum,"heatFlux_corrected",heatFlux_corrected,ARRAY_ITERATION_SPECIES,"")
+        call writeHDF5ExtensibleField(iterationNum,"parallelFlow_corrected",parallelFlow_corrected,ARRAY_ITERATION_SPECIES,"")
+        call writeHDF5ExtensibleField(iterationNum,"bootstrap_corrected",bootstrap_corrected,ARRAY_ITERATION,"")
+        call writeHDF5ExtensibleField(iterationNum,"radialCurrent_corrected",radialCurrent_corrected,ARRAY_ITERATION,"")
+        call writeHDF5ExtensibleField(iterationNum,"totalHeatFlux_corrected",totalHeatFlux_corrected,ARRAY_ITERATION,"")
       end if
 !!$       ! ----------------------------------
 !!$
@@ -850,7 +870,7 @@ contains
     dimForExport_f_x = N_export_f_x
     call h5screate_simple_f(rank, dimForExport_f_x, dspaceIDForExport_f_x, HDF5Error)
 
-    if (RHSMode > 3) then
+    if (RHSMode > 3 .and. RHSMode < 6) then
       dimForNModesAdjoint = NModesAdjoint
       call h5screate_simple_f(rank, dimForNModesAdjoint, dspaceIDForNModesAdjoint, HDF5Error)
     end if
@@ -861,7 +881,7 @@ contains
     call h5screate_simple_f(rank, dimForThetaZeta, dspaceIDForThetaZeta, HDF5Error)
 
     ! Sensitivity arrays
-    if (RHSMode > 3) then
+    if (RHSMode > 3 .and. RHSMode < 6) then
       dimForLambdasModes(1) = NLambdas
       dimForLambdasModes(2) = NModesAdjoint
       call h5screate_simple_f(rank, dimForLambdasModes, dspaceIDForLambdasModes, HDF5Error)
@@ -984,9 +1004,9 @@ contains
     call h5pcreate_f(H5P_DATASET_CREATE_F, pForIterationSpeciesX, HDF5Error)
     call h5pset_chunk_f(pForIterationSpeciesX, rank, dimForIterationSpeciesXChunk, HDF5Error)
 
-! -------------------------------------
+    ! -------------------------------------
 
-    if (RHSMode > 3) then
+    if (RHSMode > 3 .and. RHSMode < 6) then
       rank = 3
 
       dimForIterationLambdasNmodes(1)      = 1
@@ -1035,7 +1055,7 @@ contains
 
   ! -------------------------------------
 
-    if (RHSMode > 3) then
+    if (RHSMode > 3 .and. RHSMode < 6) then
       rank = 4
 
       dimForIterationSpeciesLambdasNmodes(1)      = 1

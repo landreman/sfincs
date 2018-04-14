@@ -5,6 +5,7 @@
 #include <petsc/finclude/petscmatdef.h>
 #endif
 
+! whichMatrix = 7 -> matrixSize_fine
 subroutine preallocateMatrix(matrix, whichMatrix)
 
   use petscmat
@@ -12,7 +13,8 @@ subroutine preallocateMatrix(matrix, whichMatrix)
        !!constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, nonlinear, & !!Commented by AM 2016-02
        constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, & !!Added by AM 2016-02
        !!thetaDerivativeScheme, zetaDerivativeScheme, includeRadialExBDrive !!Commented by AM 2016-03
-       thetaDerivativeScheme, zetaDerivativeScheme, includePhi1InKineticEquation, quasineutralityOption !!Added by AM 2016-03
+       thetaDerivativeScheme, zetaDerivativeScheme, includePhi1InKineticEquation, quasineutralityOption, & !!Added by AM 2016-03
+       Ntheta_fine, Nzeta_fine, matrixSize_fine
   use indices
 
   implicit none
@@ -24,6 +26,17 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   PetscErrorCode :: ierr
   integer :: tempInt1, i, itheta, izeta, ispecies, ix, index
   integer :: firstRowThisProcOwns, lastRowThisProcOwns, numLocalRows
+  integer :: this_matrixSize, this_Ntheta, this_Nzeta
+
+  if (whichMatrix == 7) then
+    this_matrixSize = matrixSize_fine
+    this_Ntheta = Ntheta_fine
+    this_Nzeta = Nzeta_fine
+  else
+    this_matrixSize = matrixSize
+    this_Ntheta = Ntheta
+    this_Nzeta = Nzeta
+  end if
 
   if (masterProc) then
      print *,"Beginning preallocation for whichMatrix = ",whichMatrix
@@ -31,9 +44,10 @@ subroutine preallocateMatrix(matrix, whichMatrix)
 
   !predictedNNZForEachRowOfTotalMatrix = 4*(3*Nx + 5*3 + 5*3 + 5 + Nx)
   !predictedNNZForEachRowOfTotalMatrix = 4*(3*Nx + 5*3 + 5*3 + 5 + Nx + Ntheta*Nzeta)
-  tempInt1 = Nspecies*Nx + 5*3 + 5*3 + 5 + 3*Nx + 2 + Nx*Ntheta*Nzeta
-  if (tempInt1 > matrixSize) then
-     tempInt1 = matrixSize
+  tempInt1 = Nspecies*Nx + 5*3 + 5*3 + 5 + 3*Nx + 2 + Nx*this_Ntheta*this_Nzeta
+
+  if (tempInt1 > this_matrixSize) then
+     tempInt1 = this_matrixSize
   end if
   predictedNNZForEachRowOfTotalMatrix = tempInt1
 
@@ -41,8 +55,8 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   ! But for simplicity, just use the same estimate for now.
   predictedNNZForEachRowOfPreconditioner = predictedNNZForEachRowOfTotalMatrix
   
-  allocate(predictedNNZsForEachRow(matrixSize))
-  allocate(predictedNNZsForEachRowDiagonal(matrixSize))
+  allocate(predictedNNZsForEachRow(this_matrixSize))
+  allocate(predictedNNZsForEachRowDiagonal(this_matrixSize))
   ! Set tempInt1 to the expected number of nonzeros in a row of the kinetic equation block:
 
   tempInt1 = 3*Nx &        ! ddx terms on diagonal from collision operator, and ell=L +/- 2 in xDot. (Dense in x, and tridiagonal in L.)
@@ -83,8 +97,8 @@ subroutine preallocateMatrix(matrix, whichMatrix)
      tempInt1 = tempInt1 + 2*Nx -2 ! Nonlinear term is dense in x with ell = L +/- 1, which we have not yet counted. Subtract 2 for the diagonal we already counted.
   end if
   ! Note: we do not need extra nonzeros for the d/dxi terms or for the diagonal, since these have already been accounted for in the ddx and ddtheta parts.
-  if (tempInt1 > matrixSize) then
-     tempInt1 = matrixSize
+  if (tempInt1 > this_matrixSize) then
+     tempInt1 = this_matrixSize
   end if
   predictedNNZsForEachRow = tempInt1
   
@@ -95,10 +109,10 @@ subroutine preallocateMatrix(matrix, whichMatrix)
      !predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta*Nx + 1
      !predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta*Nx
      do ispecies=1,Nspecies
-        index = getIndex(ispecies,1,1,1,1,BLOCK_DENSITY_CONSTRAINT)
-        predictedNNZsForEachRow(index+1) = Ntheta*Nzeta*Nx + 1 ! +1 for diagonal
-        index = getIndex(ispecies,1,1,1,1,BLOCK_PRESSURE_CONSTRAINT)
-        predictedNNZsForEachRow(index+1) = Ntheta*Nzeta*Nx + 1 ! +1 for diagonal
+        index = getIndex(ispecies,1,1,1,1,BLOCK_DENSITY_CONSTRAINT,whichMatrix)
+        predictedNNZsForEachRow(index+1) = this_Ntheta*this_Nzeta*Nx + 1 ! +1 for diagonal
+        index = getIndex(ispecies,1,1,1,1,BLOCK_PRESSURE_CONSTRAINT,whichMatrix)
+        predictedNNZsForEachRow(index+1) = this_Ntheta*this_Nzeta*Nx + 1 ! +1 for diagonal
      end do
   case (2)
      ! The rows for the constraints have more nonzeros:
@@ -106,8 +120,8 @@ subroutine preallocateMatrix(matrix, whichMatrix)
      !predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta
      do ispecies=1,Nspecies
         do ix = 1, Nx
-           index = getIndex(ispecies,ix,1,1,1,BLOCK_F_CONSTRAINT)
-           predictedNNZsForEachRow(index+1) = Ntheta*Nzeta + 1 ! +1 for diagonal
+           index = getIndex(ispecies,ix,1,1,1,BLOCK_F_CONSTRAINT,whichMatrix)
+           predictedNNZsForEachRow(index+1) = this_Ntheta*this_Nzeta + 1 ! +1 for diagonal
         end do
      end do
   case default
@@ -117,7 +131,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
      ! Set rows for the quasineutrality condition:
      do itheta=1,Ntheta
         do izeta=1,Nzeta
-           index = getIndex(1,1,1,itheta,izeta,BLOCK_QN)
+           index = getIndex(1,1,1,itheta,izeta,BLOCK_QN,whichMatrix)
 
            !!Added by AM 2016-03!!
            if (quasineutralityOption == 1) then
@@ -138,7 +152,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
         end do
      end do
      ! Set row for lambda constraint:
-     index = getIndex(1,1,1,1,1,BLOCK_PHI1_CONSTRAINT)
+     index = getIndex(1,1,1,1,1,BLOCK_PHI1_CONSTRAINT,whichMatrix)
      predictedNNZsForEachRow(index+1) = Ntheta*Nzeta + 1 ! <Phi_1>, plus 1 for diagonal.
   end if
   predictedNNZsForEachRowDiagonal = predictedNNZsForEachRow
@@ -150,12 +164,12 @@ subroutine preallocateMatrix(matrix, whichMatrix)
      ! 0 = Old method with high estimated number-of-nonzeros.
      ! This method is simpler and works consistently but uses unnecessary memory.
      if (whichMatrix==0) then
-        call MatCreateAIJ(MPIComm, PETSC_DECIDE, PETSC_DECIDE, matrixSize, matrixSize, &
+        call MatCreateAIJ(MPIComm, PETSC_DECIDE, PETSC_DECIDE, this_matrixSize, this_matrixSize, &
              predictedNNZForEachRowOfPreconditioner, PETSC_NULL_INTEGER, &
              predictedNNZForEachRowOfPreconditioner, PETSC_NULL_INTEGER, &
              matrix, ierr)
      else
-        call MatCreateAIJ(MPIComm, PETSC_DECIDE, PETSC_DECIDE, matrixSize, matrixSize, &
+        call MatCreateAIJ(MPIComm, PETSC_DECIDE, PETSC_DECIDE, this_matrixSize, this_matrixSize, &
              predictedNNZForEachRowOfTotalMatrix, PETSC_NULL_INTEGER, &
              predictedNNZForEachRowOfTotalMatrix, PETSC_NULL_INTEGER, &
              matrix, ierr)
@@ -170,7 +184,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
      call MatSetType(matrix, MATAIJ, ierr)
      
      numLocalRows = PETSC_DECIDE
-     call PetscSplitOwnership(MPIComm, numLocalRows, matrixSize, ierr)
+     call PetscSplitOwnership(MPIComm, numLocalRows, this_matrixSize, ierr)
      
      call MatSetSizes(matrix, numLocalRows, numLocalRows, PETSC_DETERMINE, PETSC_DETERMINE, ierr)
      

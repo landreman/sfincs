@@ -107,6 +107,11 @@ program sfincs
   ! the magnetic field and its derivatives on the spatial grid.
   call createGrids()
 
+  ! Create grids, build matrices related to adjoint EC
+!  if (RHSMode == 6) then
+!    call adjointErrorCorrection()
+!  end if
+
   if (RHSMode==3) then
      ! Monoenergetic coefficient computation.
      ! Overwrite nu_n and dPhiHatd* using nuPrime and EStar.

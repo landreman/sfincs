@@ -91,6 +91,12 @@ contains
       nMinAdjoint, mMinadjoint, &
       nMaxAdjoint, mMaxAdjoint, adjointParallelFlowOption, debugAdjoint, discreteAdjointOption, deltaLambda
 
+    namelist / errorCorrectOptions / &
+      adjointBootstrapECOption, adjointRadialCurrentECOption, &
+      adjointTotalHeatFluxECOption, adjointHeatFluxECOption, &
+      adjointParticleFluxECOption, adjointParallelFlowECOption, &
+      Ntheta_fine, Nzeta_fine
+
     Zs = speciesNotInitialized
     mHats = speciesNotInitialized
     nHats = speciesNotInitialized
@@ -431,7 +437,7 @@ contains
     Nspecies = NZs
 
     ! We have to wait until we know Nspecies to read adjoint namelist
-     if (RHSMode>3) then
+     if (RHSMode>3 .and. RHSMode<6) then
        allocate(adjointHeatFluxOption(Nspecies))
        allocate(adjointParticleFluxOption(NSpecies))
        allocate(adjointParallelFlowOption(Nspecies))
@@ -448,6 +454,24 @@ contains
           print *,"Successfully read parameters from sensitivityOptions namelist in ", trim(filename), "."
        end if
      end if
+
+    if (RHSMode == 6) then
+       allocate(adjointHeatFluxECOption(Nspecies))
+       allocate(adjointParticleFluxECOption(NSpecies))
+       allocate(adjointParallelFlowECOption(Nspecies))
+       adjointHeatFluxECOption = .false.
+       adjointParticleFluxECOption = .false.
+       adjointParallelFlowECOption = .false.
+       read(fileUnit, nml=errorCorrectOptions, iostat=didFileAccessWork)
+       if (didFileAccessWork /= 0) then
+          print *,"Proc ",myRank,": Error!  I was able to open the file ", trim(filename), &
+               " but not read data from the errorCorrectOptions namelist in it."
+          stop
+       end if
+       if (masterProc) then
+          print *,"Successfully read parameters from errorCorrectOptions namelist in ", trim(filename), "."
+       end if
+    end if
 
     close(unit = fileUnit)
 

@@ -13,6 +13,7 @@
 
     implicit none
 
+    integer :: whichMatrix
     SNES :: mysnes
     Vec :: stateVec, residualVec
     PetscErrorCode :: ierr
@@ -28,6 +29,52 @@
     integer :: ixMin
     PetscViewer :: viewer
     character(len=200) :: filename
+    integer :: this_matrixSize, this_ithetaMin, this_ithetaMax, this_izetaMin, this_izetaMax
+    PetscScalar, dimension(:,:), allocatable :: this_DHat, this_BHat, this_BHat_sub_zeta, this_dBHatdtheta, this_dBHatdzeta, this_BHat_sub_theta
+
+    whichMatrix = userContext(1)
+    print *,"whichMatrix: ", whichMatrix
+
+    if (whichMatrix == 7) then
+      allocate(this_DHat(Ntheta_fine,Nzeta_fine))
+      allocate(this_BHat(Ntheta_fine,Nzeta_fine))
+      allocate(this_BHat_sub_zeta(Ntheta_fine,Nzeta_fine))
+      allocate(this_BHat_sub_theta(Ntheta_fine,Nzeta_fine))
+      allocate(this_dBHatdtheta(Ntheta_fine,Nzeta_fine))
+      allocate(this_dBHatdzeta(Ntheta_fine,Nzeta_fine))
+
+      this_matrixSize = matrixSize_fine
+      this_ithetaMin = ithetaMin_fine
+      this_ithetaMax = ithetaMax_fine
+      this_izetaMin = izetaMin_fine
+      this_izetaMax = izetaMax_fine
+      this_DHat = DHat_fine
+      this_BHat = BHat_fine
+      this_BHat_sub_zeta = BHat_sub_zeta_fine
+      this_BHat_sub_theta = BHat_sub_theta_fine
+      this_dBHatdtheta = dBHatdtheta_fine
+      this_dBhatdzeta = dBHatdzeta_fine
+    else
+      allocate(this_DHat(Ntheta,Nzeta))
+      allocate(this_BHat(Ntheta,Nzeta))
+      allocate(this_BHat_sub_zeta(Ntheta,Nzeta))
+      allocate(this_BHat_sub_theta(Ntheta,Nzeta))
+      allocate(this_dBHatdtheta(Ntheta,Nzeta))
+      allocate(this_dBHatdzeta(Ntheta,Nzeta))
+
+      this_matrixSize = matrixSize
+      this_ithetaMin = ithetaMin
+      this_ithetaMax = ithetaMax
+      this_izetaMin = izetaMin
+      this_izetaMax = izetaMax
+      this_DHat = DHat
+      this_BHat = BHat
+      this_BHat_sub_zeta = BHat_sub_zeta
+      this_BHat_sub_theta = BHat_sub_theta
+      this_dBHatdtheta = dBHatdtheta
+      this_dBhatdzeta = dBHatdzeta
+    end if
+!    print *,"this_dBHatdzeta: ", this_dBHatdzeta
 
     if (masterProc) then
        print *,"evaluateResidual called."
@@ -69,7 +116,7 @@
     ! --------------------------------------------------------------------------------
     ! --------------------------------------------------------------------------------
 
-    call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, rhs, ierr)
+    call VecCreateMPI(MPIComm, PETSC_DECIDE, this_matrixSize, rhs, ierr)
     call VecSet(rhs, zero, ierr)
 
     if (RHSMode==1 .or. RHSMode>3) then
@@ -120,8 +167,8 @@
           !xPartOfRHS = x2(ix)*exp(-x2(ix))*( dnHatdpsiHats(ispecies)/nHats(ispecies) &
           !     + (x2(ix) - three/two)*dTHatdpsiHats(ispecies)/THats(ispecies))
 
-          do itheta = ithetaMin,ithetaMax
-             do izeta = izetaMin,izetaMax
+          do itheta = this_ithetaMin,this_ithetaMax
+             do izeta = this_izetaMin,this_izetaMax
                 
                 !factor = Delta*nHats(ispecies)*mHat*sqrtMHat &
                 !     /(2*pi*sqrtpi*Zs(ispecies)*psiAHat*(BHat(itheta,izeta)**3)*sqrtTHat) &
@@ -137,19 +184,19 @@
                         * exp(-Zs(ispecies)*alpha*Phi1Hat(itheta,izeta)/THats(ispecies)) !!Added by AM 2016-02
                 else !!Added by AM 2016-03
                    factor = Delta*nHats(ispecies)*mHat*sqrtMHat &
-                        /(2*pi*sqrtpi*Zs(ispecies)*(BHat(itheta,izeta)**3)*sqrtTHat) &
-                        *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
-                        - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
-                        * DHat(itheta,izeta) * xPartOfRHS
+                        /(2*pi*sqrtpi*Zs(ispecies)*(this_BHat(itheta,izeta)**3)*sqrtTHat) &
+                        *(this_BHat_sub_zeta(itheta,izeta)*this_dBHatdtheta(itheta,izeta) &
+                        - this_BHat_sub_theta(itheta,izeta)*this_dBHatdzeta(itheta,izeta))&
+                        * this_DHat(itheta,izeta) * xPartOfRHS
                 end if !!Added by AM 2016-03
                 
                 
                 L = 0
-                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,whichMatrix)
                 call VecSetValue(rhs, index, (4/three)*factor, INSERT_VALUES, ierr)
                 
                 L = 2
-                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,whichMatrix)
                 call VecSetValue(rhs, index, (two/three)*factor, INSERT_VALUES, ierr)
              end do
           end do
@@ -165,7 +212,7 @@
        L=0
        do itheta = ithetaMin,ithetaMax
           do izeta = izetaMin,izetaMax
-             index = getIndex(1, 1, 1, itheta, izeta, BLOCK_QN)
+             index = getIndex(1, 1, 1, itheta, izeta, BLOCK_QN,whichMatrix)
 
              factor = 0
              do ispecies = 1,Nspecies
@@ -228,11 +275,11 @@
           !     *nHats(ispecies)*mHats(ispecies)/(pi*sqrtpi*THats(ispecies)*THats(ispecies)*FSABHat2)
           factor = alpha*Zs(ispecies)*x(ix)*exp(-x2(ix))*(EParallelHat+EParallelHatSpec(ispecies)) & !!EParallelHatSpec added 2017-02/HS
                *nHats(ispecies)*mHats(ispecies)/(pi*sqrtpi*THats(ispecies)*THats(ispecies)*FSABHat2)
-          do itheta=ithetaMin,ithetaMax
-             do izeta = izetaMin,izetaMax
-                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+          do itheta=this_ithetaMin,this_ithetaMax
+             do izeta = this_izetaMin,this_izetaMax
+                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,whichMatrix)
                 call VecSetValue(rhs, index, &
-                     factor * BHat(itheta,izeta), INSERT_VALUES, ierr)
+                     factor * this_BHat(itheta,izeta), INSERT_VALUES, ierr)
                      !factor/BHat(itheta,izeta), INSERT_VALUES, ierr)
              end do
           end do

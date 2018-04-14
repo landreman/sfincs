@@ -35,6 +35,8 @@ subroutine testingAdjointOperator(forwardSolution,adjointSolution,whichAdjointRH
   Vec :: solutionVec, result4, adjointRHS2
   integer :: iSpecies, iAdjointRHS
 
+  userContext(1) = 0
+
   if (masterProc) then
     print *,"ispecies = ", whichSpecies
     print *,"whichAdjointRHS = ", whichAdjointRHS

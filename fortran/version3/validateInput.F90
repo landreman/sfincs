@@ -28,9 +28,9 @@ subroutine validateInput()
      stop
   end if
   
-  if (RHSMode>5) then
+  if (RHSMode>6) then
      if (masterProc) then
-        print *,"Error! RHSMode must be no more than 5."
+        print *,"Error! RHSMode must be no more than 6."
      end if
      stop
   end if
@@ -1126,19 +1126,11 @@ subroutine validateInput()
 
   ! Validate adjoint inputs
   if (RHSMode>3) then
-    if (RHSMode==5) then
-      if (adjointRadialCurrentOption) then
-        if (masterProc) then
-          print *,"Error! RHSMode=5 cannot be used with adjointRadialCurrentOption."
-        end if
-        stop
+    if (RHSMode==5 .and. adjointRadialCurrentOption) then
+      if (masterProc) then
+        print *,"Error! RHSMode=5 cannot be used with adjointRadialCurrentOption."
       end if
-!      if (ambipolarSolve .eqv. .false.) then
-!        if (masterProc) then
-!          print *,"Error! RHSMode=5 must be used with ambipolarSolve."
-!        end if
-!        stop
-!      end if
+      stop
     end if
     ! Check for linear solve
     if (includePhi1) then
@@ -1149,13 +1141,10 @@ subroutine validateInput()
     endif
     ! Check for VMEC or Boozer geometry
     ! Check for stellarator symmetry is performed in geometry.f90
-    if (geometryScheme /= 5 .and. geometryScheme < 11) then
-      if (masterProc) then
-        print *,"Error! RHSMode>3 must be used with VMEC geometry."
-      endif
-      stop
-    else if (geometryScheme > 10) then ! Boozer
+    if (geometryScheme /= 5) then ! Boozer
       NLambdas = 1 ! Only BHat derivatives computed
+    else
+      NLambdas = 6 ! VMEC
     end if
     ! Check there is no inductive E
     if (EParallelHat /= 0) then
@@ -1164,13 +1153,6 @@ subroutine validateInput()
       end if
       stop
     end if
-    ! Check that DKES ExB drift is not used
-!    if (useDKESExBDrift) then
-!      if (masterProc) then
-!        print *,"Error! RHSMode>3 cannot be used with DKES ExB drift."
-!      end if
-!      stop
-!    end if
     ! Check that tangential magnetic drifts are not used
     if (magneticDriftScheme > 0) then
       if (masterProc) then
@@ -1178,13 +1160,6 @@ subroutine validateInput()
       end if
       stop
     end if
-!    ! Check that XDotTerm is retained
-!    if (includeXDotTerm .eqv. .false.) then
-!      if (masterProc) then
-!        print *,"Error! RHSMode>3 must be used with XDotTerm = .true.."
-!      end if
-!      stop
-!    end if
     ! Check constraintScheme
     if (constraintScheme /= -1 .and. constraintScheme /= 1) then
       if (masterProc) then
@@ -1192,7 +1167,8 @@ subroutine validateInput()
       end if
       stop
     end if
-    ! Check collision operator
+    ! Check collision operator 
+    ! This must be true for continuous. Probably doesn't matter for discrete.
     if (collisionOperator /= 0) then
       if (masterProc) then
         print *,"Error! RHSMode>3 must be used with collisionOperator=0."
@@ -1200,14 +1176,34 @@ subroutine validateInput()
       stop
     end if
     ! Check that adjoint rhs is specified in input parameters
-    if ((adjointBootstrapOption .or. adjointRadialCurrentOption .or. adjointTotalHeatFluxOption &
-      .or. any(adjointHeatFluxOption) .or. any(adjointParticleFluxOption)) .eqv. .false.) then
-      if (masterProc) then
-        print *,"Error! RHSMode>3 must be used with specification of adjoint solve to be performed."
+    if (RHSMode < 6) then
+      if ((adjointBootstrapOption .or. adjointRadialCurrentOption .or. adjointTotalHeatFluxOption &
+        .or. any(adjointHeatFluxOption) .or. any(adjointParticleFluxOption)) .eqv. .false.) then
+        if (masterProc) then
+          print *,"Error! RHSMode>3 must be used with specification of adjoint solve to be performed."
+        end if
+        stop
       end if
-      stop
+    else
+      if ((adjointBootstrapECOption .or. adjointRadialCurrentECOption .or. adjointTotalHeatFluxECOption &
+        .or. any(adjointHeatFluxECOption) .or. any(adjointParticleFluxECOption)) .eqv. .false.) then
+        if (masterProc) then
+          print *,"Error! RHSMode=6 must be used with specification of adjoint solve to be performed."
+        end if
+        stop
+      end if
+      if (forceOddNthetaAndNzeta) then
+        if (mod(Ntheta_fine, 2) == 0) then
+          Ntheta_fine = Ntheta_fine + 1
+        end if
+        if (mod(Nzeta_fine, 2) == 0) then
+          Nzeta_fine = Nzeta_fine + 1
+        end if
+      end if
+      ! Adjoint error correction must be used with continuous adjoint operator
+      discreteAdjointOption = 0
     end if
   end if
-  
+
 end subroutine validateInput
 

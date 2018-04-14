@@ -40,6 +40,13 @@ module solver
     Vec :: adjointSolutionVec, summedSolutionVec, adjointRHSVec, adjointSolutionJr
     logical :: useSummedSolutionVec
     integer :: whichLambda, whichMode, whichSpecies
+    logical :: summedSolution_particleFlux = .false.
+    logical :: summedSolution_heatFlux = .false.
+    logical :: summedSolution_parallelFlow = .false.
+    logical :: solve_particleFlux = .false.
+    logical :: solve_heatFlux = .false.
+    logical :: solve_parallelFlow = .false.
+    PetscScalar :: norm
 
 !!Following three lines added by AM 2016-07-06
 #if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR > 6))
@@ -60,7 +67,8 @@ module solver
     call init_f0()
 
     call SNESCreate(MPIComm, mysnes, ierr)
-    call SNESSetFunction(mysnes, residualVec, evaluateResidual, PETSC_NULL_OBJECT, ierr)
+    userContext(1) = 0
+    call SNESSetFunction(mysnes, residualVec, evaluateResidual, userContext, ierr)
 
     firstMatrixCreation = .true.
     call preallocateMatrix(matrix, 1)
@@ -254,9 +262,9 @@ module solver
     ! ***********************************************************************
 
     select case (RHSMode)
-    case (1,4,5)
+    case (1,4,5,6)
        ! Single solve, either linear or nonlinear.
-       ! Must also perform linear forward solve if RHSMode=4 or 5
+       ! Must also perform linear forward solve if RHSMode>3
 
        !  Set initial guess for the solution:
        call VecSet(solutionVec, zero, ierr)
@@ -430,6 +438,7 @@ module solver
           !  Set f=0:
           call VecSet(solutionVec, zero, ierr)
 
+          userContext(1) = 0
           call evaluateResidual(mysnes, solutionVec, residualVec, userContext, ierr)
           ! Multiply the residual by (-1):
           call VecScale(residualVec, -1d+0, ierr)
@@ -624,9 +633,46 @@ module solver
       call VecSet(adjointSolutionVec, zero, ierr)
 
       !> Allocate summedSolutionVec if needed
-      if ((all(adjointHeatFluxOption) .and. adjointTotalHeatFluxOption) .or. &
-        (all(adjointParticleFluxOption) .and. adjointRadialCurrentOption) .or. &
-        (all(adjointParallelFlowOption) .and. adjointBootstrapOption)) then
+      if (RHSMode==6) then
+        if (all(adjointHeatFluxECOption) .and. adjointTotalHeatFluxECOption) then
+          summedSolution_heatFlux = .true.
+        end if
+        if (all(adjointParticleFluxECOption) .and. adjointRadialCurrentECOption) then
+          summedSolution_particleFlux = .true.
+        end if
+        if (all(adjointParallelFlowECOption) .and. adjointBootstrapECOption) then
+          summedSolution_parallelFlow = .true.
+        end if
+        if (any(adjointHeatFluxECOption)) then
+          solve_heatFlux = .true.
+        end if
+        if (any(adjointParticleFluxECOption)) then
+          solve_particleFlux = .true.
+        end if
+        if (any(adjointParallelFlowECOption)) then
+          solve_parallelFlow = .true.
+        end if
+      else
+        if (all(adjointHeatFluxOption) .and. adjointTotalHeatFluxOption) then
+          summedSolution_heatFlux = .true.
+        end if
+        if (all(adjointParticleFluxOption) .and. adjointRadialCurrentOption) then
+          summedSolution_particleFlux = .true.
+        end if
+        if (all(adjointParallelFlowOption) .and. adjointBootstrapOption) then
+          summedSolution_parallelFlow = .true.
+        end if
+        if (any(adjointHeatFluxOption)) then
+          solve_heatFlux = .true.
+        end if
+        if (any(adjointParticleFluxOption)) then
+          solve_particleFlux = .true.
+        end if
+        if (any(adjointParallelFlowOption)) then
+          solve_parallelFlow = .true.
+        end if
+      end if
+      if (summedSolution_heatFlux .or. summedSolution_particleFlux .or. summedSolution_parallelFlow) then
         call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, summedSolutionVec, ierr)
         call VecSet(summedSolutionVec, zero, ierr)
       end if
@@ -638,24 +684,24 @@ module solver
         !> useSummedSolutionVec = .true. if all fluxes computed for all species and sensitivity of total flux also computed
         select case (whichAdjointRHS)
           case (1) ! particle flux
-            if (all(adjointParticleFluxOption) .and. adjointRadialCurrentOption) then
+            if (summedSolution_particleFlux) then
               useSummedSolutionVec = .true.
             end if
-            if (.not. any(adjointParticleFluxOption)) then
+            if (.not. solve_particleFlux) then
               cycle
             end if
           case (2) ! heat flux
-            if (all(adjointHeatFluxOption) .and. adjointTotalHeatFluxOption) then
+            if (summedSolution_heatFlux) then
               useSummedSolutionVec = .true.
             end if
-            if (.not. any(adjointHeatFluxOption)) then
+            if (.not. solve_heatFlux) then
               cycle
             end if
           case (3) ! parallel flow
-            if (all(adjointParallelFlowOption) .and. adjointBootstrapOption) then
+            if (summedSolution_parallelFlow) then
               useSummedSolutionVec = .true.
             end if
-            if (.not. any(adjointParallelFlowOption)) then
+            if (.not. solve_parallelFlow) then
               cycle
             end if
         end select
@@ -668,16 +714,34 @@ module solver
           !> Check if adjoint equation needs to be solved for this species
           select case (whichAdjointRHS)
             case (1) ! particle flux
-              if (.not. adjointParticleFluxOption(ispecies)) then
-                cycle
+              if (RHSMode==6) then
+                if (.not. adjointParticleFluxECOption(ispecies)) then
+                  cycle
+                end if
+              else
+                if (.not. adjointParticleFluxOption(ispecies)) then
+                  cycle
+                end if
               end if
             case (2) ! heat flux
-              if (.not. adjointHeatFluxOption(ispecies)) then
-                cycle
+              if (RHSMode==6) then
+                if (.not. adjointHeatFluxECOption(ispecies)) then
+                  cycle
+                end if
+              else
+                if (.not. adjointHeatFluxOption(ispecies)) then
+                  cycle
+                end if
               end if
             case (3) ! parallel flow
-              if (.not. adjointParallelFlowOption(ispecies)) then
-                cycle
+              if (RHSMode==6) then
+                if (.not. adjointParallelFlowECOption(ispecies)) then
+                  cycle
+                end if
+              else
+                if (.not. adjointParallelFlowOption(ispecies)) then
+                  cycle
+                end if
               end if
           end select
 
@@ -717,8 +781,13 @@ module solver
 !            stop
 !!          end if
 
-          !> Compute diagnostics for species-specific fluxes
-          call evaluateDiagnostics(solutionVec, adjointSolutionVec,adjointSolutionJr,whichAdjointRHS,ispecies)
+          if (RHSMode == 6) then
+            ! Perform error correction of fluxes
+            call adjointErrorCorrection(solutionVec,adjointSolutionVec,whichAdjointRHS,ispecies)
+          else
+            !> Compute diagnostics for species-specific fluxes
+            call evaluateDiagnostics(solutionVec, adjointSolutionVec,adjointSolutionJr,whichAdjointRHS,ispecies)
+          end if
 
           select case (whichAdjointRHS)
             case (1) ! particle flux
@@ -740,31 +809,64 @@ module solver
         end do ! ispecies
 
         if (useSummedSolutionVec) then
-          call evaluateDiagnostics(solutionVec,summedSolutionVec,adjointSolutionJr,whichAdjointRHS,0)
+          if (RHSMode==6) then
+            call adjointErrorCorrection(solutionVec, summedSolutionVec,whichAdjointRHS,0)
+          else
+            call evaluateDiagnostics(solutionVec,summedSolutionVec,adjointSolutionJr,whichAdjointRHS,0)
+          end if
           call VecSet(summedSolutionVec,zero,ierr)
         end if
 
       end do ! whichAdjointRHS
 
       !> Now, we'll compute the sensitivity of the species-summed fluxes if not already computed
-      if (adjointTotalHeatFluxOption .or. adjointBootstrapOption .or. adjointRadialCurrentOption) then
+      if (adjointTotalHeatFluxOption .or. adjointBootstrapOption .or. adjointRadialCurrentOption .or. adjointTotalHeatFluxECOption .or. adjointBootstrapECOption .or. adjointRadialCurrentECOption) then
         ispecies = 0 ! 0 denotes species-summed RHS
 
         do whichAdjointRHS=1,3
           select case(whichAdjointRHS)
             case (1) ! particle flux
-              if (all(adjointParticleFluxOption) .or. (adjointRadialCurrentOption .eqv. .false.) .or. (RHSMode==5)) then
+              if (summedSolution_particleFlux .or. (RHSMode==5)) then
                 ! species-summed flux computed already
+                ! For RHSMode = 5, derivatives computed at constant radial current, so 
+                ! it's sensitivity is 0
                 cycle
+              end if
+              if (RHSMode==6) then
+                if (adjointRadialCurrentECOption .eqv. .false.) then
+                  cycle
+                end if
+              else
+                if (adjointRadialCurrentOption .eqv. .false.) then
+                  cycle
+                end if
               end if
             case (2) ! heat flux
-              if (all(adjointHeatFluxOption) .or. (adjointTotalHeatFluxOption .eqv. .false.)) then
+              if (summedSolution_heatFlux) then
                 ! species-summed flux computed already
                 cycle
               end if
+             if (RHSMode==6) then
+                if (adjointTotalHeatFluxECOption .eqv. .false.) then
+                  cycle
+                end if
+              else
+                if (adjointTotalHeatFluxOption .eqv. .false.) then
+                  cycle
+                end if
+              end if
             case (3) ! bootstrap
-              if (all(adjointParallelFlowOption) .or. (adjointBootstrapOption .eqv. .false.)) then
+              if (summedSolution_parallelFlow) then
                 cycle
+              end if
+              if (RHSMode==6) then
+                if (adjointBootstrapECOption .eqv. .false.) then
+                  cycle
+                end if
+              else
+                if (adjointBootstrapOption .eqv. .false.) then
+                  cycle
+                end if
               end if
           end select
 
@@ -805,7 +907,11 @@ module solver
 
           call PetscTime(time1, ierr)
           ! compute diagnostics for species-summed fluxes
-          call evaluateDiagnostics(solutionVec, adjointSolutionVec, adjointSolutionJr, whichAdjointRHS, ispecies)
+          if (RHSMode==6) then
+            call adjointErrorCorrection(solutionVec, adjointSolutionVec, whichAdjointRHS,ispecies)
+          else
+              call evaluateDiagnostics(solutionVec, adjointSolutionVec, adjointSolutionJr, whichAdjointRHS, ispecies)
+          end if
           call PetscTime(time2, ierr)
           if (masterProc) then
             print *,"Done with the adjoint diagnostics.  Time: ", time2-time1, " seconds."
@@ -818,8 +924,7 @@ module solver
 
       ! Now deallocate things
       call VecDestroy(adjointSolutionVec, ierr)
-      if ((all(adjointHeatFluxOption) .and. adjointTotalHeatFluxOption) .or. &
-        (all(adjointParticleFluxOption) .and. adjointRadialCurrentOption)) then
+      if (summedSolution_particleFlux .or. summedSolution_heatFlux .or. summedSolution_parallelFlow) then
         call VecDestroy(summedSolutionVec, ierr)
       end if
       call VecDestroy(adjointRHSVec, ierr)

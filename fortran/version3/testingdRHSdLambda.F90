@@ -57,6 +57,7 @@ subroutine testingdRHSdLambda(whichMode, whichLambda)
   call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, RHS, ierr)
 
   ! Pass stateVec=0 to evaluateResidual to get -RHS
+  userContext(1) = 0
   call evaluateResidual(mysnes, stateVec, RHS, userContext, ierr)
 
   ! Multiply the residual by (-1)

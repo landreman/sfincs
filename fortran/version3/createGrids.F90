@@ -41,7 +41,6 @@
     integer :: status(MPI_STATUS_SIZE)
     integer :: imn, im, jn
 
-
     ! *******************************************************************************
     ! Do a few sundry initialization tasks:
     ! *******************************************************************************
@@ -403,6 +402,7 @@
        ddzeta_magneticDrift_plus = 0
        ddzeta_magneticDrift_minus = 0
     else
+
        call uniformDiffMatrices(Nzeta, zero, zetaMax, scheme, zeta, zetaWeights, ddzeta, d2dzeta2)
 
        ! Create upwinded matrices for ExB terms:
@@ -1223,6 +1223,11 @@
       end if
     end if
 
+    ! Fine grids need to be constructed before computeBHat() is called
+    if (RHSMode==6) then
+      call createGrids_fine()
+    end if
+
     call computeBHat()
 
     ! *********************************************************
@@ -1363,7 +1368,7 @@
     allocate(heatFluxBeforeSurfaceIntegral_vE(Nspecies,Ntheta,Nzeta))
     allocate(NTVBeforeSurfaceIntegral(Nspecies,Ntheta,Nzeta))
 
-    if (RHSMode > 3) then
+    if (RHSMode > 3 .and. RHSMode < 6) then
 
       allocate(dRadialCurrentdLambda(NLambdas,NModesAdjoint))
       allocate(dTotalHeatFluxdLambda(NLambdas,NModesAdjoint))
@@ -1406,6 +1411,11 @@
       if (RHSMode==5) then
         allocate(dPhidPsidLambda(NLambdas,NModesAdjoint))
       end if
+    end if
+    if (RHSMode==6) then
+      allocate(particleFlux_corrected(Nspecies))
+      allocate(heatFlux_corrected(Nspecies))
+      allocate(parallelFlow_corrected(Nspecies))
     end if
 
     allocate(particleFlux_vm_psiHat_vs_x(Nspecies,Nx))

@@ -10,6 +10,11 @@ module globalVariables
 #else
 #include <petsc/finclude/petscvecdef.h>
 #endif
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
+#include <finclude/petscmatdef.h>
+#else
+#include <petsc/finclude/petscmatdef.h>
+#endif
 
   character(len=50), parameter :: inputFilename = "input.namelist"
 
@@ -112,6 +117,45 @@ module globalVariables
   ! ********************************************************
   ! ********************************************************
   !
+  ! Adjoint error correction options:
+  !
+  ! ********************************************************
+  ! ********************************************************
+
+  logical :: adjointBootstrapECOption = .false.
+  logical :: adjointRadialCurrentECOption = .false.
+  logical :: adjointTotalHeatFluxECOption = .false.
+  logical, dimension(:), allocatable :: adjointHeatFluxECOption, adjointParticleFluxECOption, adjointParallelFlowECOption
+  Mat :: adjointECProlongationMatrix
+
+  ! Input fine grid resolution parameters
+  integer :: Ntheta_fine = 31
+  integer :: Nzeta_fine = 31
+  integer :: Nxi_fine = 32
+  integer :: Nx_fine = 10
+
+  ! Quantities related to fine grid
+  integer :: ithetaMin_fine, ithetaMax_fine, localNtheta_fine
+  integer :: izetaMin_fine, izetaMax_fine, localNzeta_fine
+  integer :: matrixSize_fine
+  PetscScalar, dimension(:), allocatable :: theta_fine, thetaWeights_fine
+  PetscScalar, dimension(:), allocatable :: zeta_fine, zetaWeights_fine
+  PetscScalar, dimension(:,:), allocatable :: ddtheta_plus_fine, ddtheta_minus_fine
+  PetscScalar, dimension(:,:), allocatable :: ddzeta_plus_fine, ddzeta_minus_fine
+  PetscScalar, dimension(:,:), allocatable :: ddtheta_ExB_plus_fine, ddtheta_ExB_minus_fine
+  PetscScalar, dimension(:,:), allocatable :: ddzeta_ExB_plus_fine, ddzeta_ExB_minus_fine
+  PetscScalar, dimension(:,:), allocatable :: ddtheta_fine, ddzeta_fine
+
+  ! Geometric quantities on fine grids
+  PetscScalar, dimension(:,:), allocatable :: BHat_fine, dBHatdtheta_fine, dBHatdzeta_fine, DHat_fine
+  PetscScalar, dimension(:,:), allocatable :: BHat_sub_theta_fine, dBHat_sub_theta_dzeta_fine
+  PetscScalar, dimension(:,:), allocatable :: BHat_sub_zeta_fine, dBHat_sub_zeta_dtheta_fine
+  PetscScalar, dimension(:,:), allocatable :: BHat_sup_theta_fine, dBHat_sup_theta_dzeta_fine
+  PetscScalar, dimension(:,:), allocatable :: BHat_sup_zeta_fine, dBHat_sup_zeta_dtheta_fine
+
+  ! ********************************************************
+  ! ********************************************************
+  !
   ! Physics input parameters:
   !
   ! ********************************************************
@@ -210,15 +254,18 @@ module globalVariables
   ! ********************************************************
 
   integer, dimension(:), allocatable :: Nxi_for_x, min_x_for_L
-  integer :: matrixSize, NxPotentials
-  PetscScalar, dimension(:), allocatable :: theta, zeta, x, x_plus1
+  integer :: matrixSize
+  integer :: NxPotentials
+  PetscScalar, dimension(:), allocatable :: x_plus1, x
+  PetscScalar, dimension(:), allocatable :: theta, zeta
   PetscScalar, dimension(:), allocatable :: thetaWeights, zetaWeights
   PetscScalar, dimension(:,:), allocatable :: ddtheta, ddzeta
   PetscScalar, dimension(:,:), allocatable :: ddtheta_ExB_plus, ddtheta_ExB_minus
   PetscScalar, dimension(:,:), allocatable :: ddzeta_ExB_plus, ddzeta_ExB_minus
   PetscScalar, dimension(:,:), allocatable :: ddtheta_magneticDrift_plus, ddtheta_magneticDrift_minus
   PetscScalar, dimension(:,:), allocatable :: ddzeta_magneticDrift_plus, ddzeta_magneticDrift_minus
-  PetscScalar, dimension(:), allocatable :: xWeights, xPotentials
+  PetscScalar, dimension(:), allocatable :: xWeights
+  PetscScalar, dimension(:), allocatable :: xPotentials
   PetscScalar :: maxxPotentials, zetaMax, xMaxNotTooSmall
   PetscScalar, dimension(:), allocatable :: x2, expx2
   PetscScalar, dimension(:,:), allocatable :: ddx, d2dx2, ddxPotentials, d2dx2Potentials
@@ -236,7 +283,8 @@ module globalVariables
   integer, parameter :: COORDINATE_SYSTEM_VMEC = 2
   integer :: coordinateSystem = COORDINATE_SYSTEM_UNINITIALIZED
 
-  PetscScalar, dimension(:,:), allocatable :: BHat, dBHatdtheta, dBHatdzeta, dBHatdpsiHat, DHat
+  PetscScalar, dimension(:,:), allocatable :: DHat
+  PetscScalar, dimension(:,:), allocatable :: BHat, dBHatdtheta, dBHatdzeta, dBHatdpsiHat
   PetscScalar, dimension(:,:), allocatable :: BHat_sub_psi, dBHat_sub_psi_dtheta, dBHat_sub_psi_dzeta
   PetscScalar, dimension(:,:), allocatable :: BHat_sub_theta, dBHat_sub_theta_dzeta, dBHat_sub_theta_dpsiHat
   PetscScalar, dimension(:,:), allocatable :: BHat_sub_zeta, dBHat_sub_zeta_dtheta, dBHat_sub_zeta_dpsiHat
@@ -409,6 +457,11 @@ module globalVariables
   PetscScalar, dimension(:,:), allocatable :: dPhidPsidLambda_finitediff, dPhidPsiPercentError
   ! Related to ambipolar solve
   PetscScalar :: dRadialCurrentdEr
+  ! Related to error correction
+  PetscScalar, dimension(:), allocatable :: particleFlux_corrected
+  PetscScalar, dimension(:), allocatable :: heatFlux_corrected
+  PetscScalar, dimension(:), allocatable :: parallelFlow_corrected
+  PetscScalar :: bootstrap_corrected, totalHeatFlux_corrected, radialCurrent_corrected
 
   ! ********************************************************
   !

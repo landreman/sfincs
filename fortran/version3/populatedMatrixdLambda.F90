@@ -128,7 +128,7 @@
               case (1) ! BHat
                 dBHatdLambda = cos_angle
                 geometricFactor = - BHat_sup_theta(itheta,izeta)*dBHatdLambda/(BHat(itheta,izeta)*BHat(itheta,izeta))
-                if (geometryScheme > 10) then ! Boozer
+                if (geometryScheme /= 5) then ! Boozer
                   dBHat_sup_thetadLambda = 2*BHat_sup_theta(itheta,izeta)*cos_angle/BHat(itheta,izeta)
                   geometricFactor = geometricFactor + dBHat_sup_thetadLambda/BHat(itheta,izeta)
                 end if
@@ -155,14 +155,14 @@
             do ix=max(ixMin,min_x_for_L(L)),Nx
 
               do itheta=1,localNtheta
-                rowIndices(itheta) = getIndex(ispecies, ix, L+1, ithetaMin+itheta-1, izeta, BLOCK_F)
+                rowIndices(itheta) = getIndex(ispecies, ix, L+1, ithetaMin+itheta-1, izeta, BLOCK_F,0)
               end do
 
           ! Super-diagonal-in-L term
               if (L < Nxi_for_x(ix)-1) then
                 ell = L+1
                 do itheta=1,Ntheta
-                  colIndices(itheta) = getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F)
+                  colIndices(itheta) = getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F,0)
                 end do
 
                 call MatSetValuesSparse(dMatrixdLambda, localNtheta, rowIndices, Ntheta, colIndices, &
@@ -173,7 +173,7 @@
               if (L > 0) then
                 ell = L-1
                 do itheta=1,Ntheta
-                  colIndices(itheta) = getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F)
+                  colIndices(itheta) = getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F,0)
                 end do
 
                 call MatSetValuesSparse(dMatrixdLambda, localNtheta, rowIndices, Ntheta, colIndices, &
@@ -217,7 +217,7 @@
               case (1) ! BHat
                 dBHatdLambda = cos_angle
                 geometricFactor = -BHat_sup_zeta(itheta,izeta)*dBHatdLambda/(BHat(itheta,izeta)*BHat(itheta,izeta))
-                if (geometryScheme > 10) then ! Boozer
+                if (geometryScheme /= 5) then ! Boozer
                   dBHat_sup_zetadLambda = 2*BHat_sup_zeta(itheta,izeta)*cos_angle/BHat(itheta,izeta)
                   geometricFactor = geometricFactor + dBHat_sup_zetadLambda/BHat(itheta,izeta)
                 end if
@@ -243,14 +243,14 @@
 
           do ix=max(ixMin,min_x_for_L(L)),Nx
              do izeta = 1,localNzeta
-                rowIndices(izeta)=getIndex(ispecies, ix, L+1, itheta, izetaMin+izeta-1, BLOCK_F)
+                rowIndices(izeta)=getIndex(ispecies, ix, L+1, itheta, izetaMin+izeta-1, BLOCK_F,0)
              end do
              
              ! Super-diagonal-in-L term
              if (L < Nxi_for_x(ix)-1) then
                 ell = L + 1
                 do izeta = 1,Nzeta
-                   colIndices(izeta)=getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F)
+                   colIndices(izeta)=getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F,0)
                 end do
                 
                 call MatSetValuesSparse(dMatrixdLambda, localNzeta, rowIndices, Nzeta, colIndices, &
@@ -261,7 +261,7 @@
              if (L > 0) then
                 ell = L - 1
                 do izeta = 1,Nzeta
-                   colIndices(izeta)=getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F)
+                   colIndices(izeta)=getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F,0)
                 end do
                 
                 call MatSetValuesSparse(dMatrixdLambda, localNzeta, rowIndices, Nzeta, colIndices, &
@@ -286,7 +286,7 @@
       allocate(rowIndices(localNtheta))
       allocate(colIndices(Ntheta))
 
-     if (whichLambda==1 .and. geometryScheme > 10) then
+     if (whichLambda==1 .and. geometryScheme /= 5) then
         dVPrimeHatdLambda = zero
         do itheta=1,Ntheta
           do izeta=1,Nzeta
@@ -335,7 +335,7 @@
 
               case (1) ! BHat
                 if (useDKESExBDrift) then
-                  if (geometryScheme > 10) then ! Boozer
+                  if (geometryScheme /= 5) then ! Boozer
                     dDHatdLambda = two*DHat(itheta,izeta)*cos_angle/BHat(itheta,izeta)
                     geometricFactor = dDHatdLambda*BHat_sub_zeta(itheta,izeta)/FSABHat2 &
                       + DHat(itheta,izeta)*BHat_sub_zeta(itheta,izeta)*dVPrimeHatdLambda/(FSABHat2*VPrimeHat)
@@ -347,7 +347,7 @@
                   dBHatdLambda = cos_angle
                   geometricFactor = -two*dBHatdLambda/(BHat(itheta,izeta) ** 3) &
                     *DHat(itheta,izeta)*BHat_sub_zeta(itheta,izeta)
-                  if (geometryScheme > 10) then ! Boozer
+                  if (geometryScheme /= 5) then ! Boozer
                     dDHatdLambda = 2*DHat(itheta,izeta)*cos_angle/BHat(itheta,izeta)
                     geometricFactor = geometricFactor + dDHatdLambda*BHat_sub_zeta(itheta,izeta)/BHat(itheta,izeta)**2
                   end if
@@ -391,10 +391,10 @@
             !do ix=ixMin,Nx
             do ix=max(ixMin,min_x_for_L(L)),Nx
                do itheta=1,localNtheta
-                  rowIndices(itheta)=getIndex(ispecies,ix,L+1,itheta+ithetaMin-1,izeta,BLOCK_F)
+                  rowIndices(itheta)=getIndex(ispecies,ix,L+1,itheta+ithetaMin-1,izeta,BLOCK_F,0)
                end do
                do itheta=1,Ntheta
-                  colIndices(itheta)=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
+                  colIndices(itheta)=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F,0)
                end do
                
                call MatSetValuesSparse(dMatrixdLambda, localNtheta, rowIndices, Ntheta, colIndices, &
@@ -449,7 +449,7 @@
               case (1) ! BHat
                 dBHatdLambda = cos_angle
                 if (useDKESExBDrift) then
-                  if (geometryScheme > 10) then ! Boozer
+                  if (geometryScheme /= 5) then ! Boozer
                     dDHatdLambda = 2*DHat(itheta,izeta)*dBHatdLambda/BHat(itheta,izeta)
                     geometricFactor = dDHatdLambda*BHat_sub_theta(itheta,izeta)/FSABHat2 &
                       + DHat(itheta,izeta)*BHat_sub_theta(itheta,izeta)*dVPrimeHatdLambda/(FSABHat2*VPrimeHat)
@@ -460,7 +460,7 @@
                 else
                   geometricFactor = -two*dBHatdLambda*DHat(itheta,izeta)*BHat_sub_theta(itheta,izeta) &
                     /(BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta))
-                  if (geometryScheme > 10) then ! Boozer
+                  if (geometryScheme /= 5) then ! Boozer
                     dDHatdLambda = 2*DHat(itheta,izeta)*cos_angle/BHat(itheta,izeta)
                     geometricFactor = geometricFactor + dDHatdLambda*BHat_sub_theta(itheta,izeta)/(BHat(itheta,izeta)**2)
                   end if
@@ -505,10 +505,10 @@
             !do ix=ixMin,Nx
             do ix=max(ixMin,min_x_for_L(L)),Nx
                do izeta=1,localNzeta
-                  rowIndices(izeta)=getIndex(ispecies,ix,L+1,itheta,izeta+izetaMin-1,BLOCK_F)
+                  rowIndices(izeta)=getIndex(ispecies,ix,L+1,itheta,izeta+izetaMin-1,BLOCK_F,0)
                end do
                do izeta=1,Nzeta
-                  colIndices(izeta)=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
+                  colIndices(izeta)=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F,0)
                end do
                
                call MatSetValuesSparse(dMatrixdLambda, localNzeta, rowIndices, Nzeta, colIndices, &
@@ -552,7 +552,7 @@
                   * (BHat_sup_theta(itheta,izeta)*dBhatdthetadLambda &
                   ! Term from dBHatdzeta 
                   + BHat_sup_zeta(itheta,izeta)*dBhatdzetadLambda)
-                if (geometryScheme > 10) then ! Boozer
+                if (geometryScheme /= 5) then ! Boozer
                   dBHat_sup_thetadLambda = 2*BHat_sup_theta(itheta,izeta)*cos_angle/BHat(itheta,izeta)
                   dBHat_sup_zetadLambda = 2*BHat_sup_zeta(itheta,izeta)*cos_angle/BHat(itheta,izeta)
                   geometricFactor = geometricFactor + one/(BHat(itheta,izeta)**2)*(dBHat_sup_thetadLambda*dBHatdtheta(itheta,izeta) + dBHat_sup_zetadLambda*dBHatdzeta(itheta,izeta))
@@ -576,12 +576,12 @@
 
             do ix=ixMin,Nx
                do L=0,(Nxi_for_x(ix)-1)
-                  rowIndex=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
+                  rowIndex=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F,0)
                   
                   if (L<Nxi_for_x(ix)-1) then
                      ! Super-diagonal-in-L term:
                      ell = L+1
-                     colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
+                     colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F,0)
                      call MatSetValueSparse(dMatrixdLambda, rowIndex, colIndex, &
                           (L+1)*(L+2)/(2*L+three)*x(ix)*factor, ADD_VALUES, ierr)
                   end if
@@ -589,7 +589,7 @@
                   if (L>0) then
                      ! Sub-diagonal-in-L term:
                      ell = L-1
-                     colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
+                     colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F,0)
                      call MatSetValueSparse(dMatrixdLambda, rowIndex, colIndex, &
                           -L*(L-1)/(2*L-one)*x(ix)*factor, ADD_VALUES, ierr)
                   end if
@@ -634,7 +634,7 @@
                     ! Term from dBHatdtheta and dBHatdzeta
                     + DHat(itheta,izeta) * dTempdLambda/(BHat(itheta,izeta)**3)
                   factor = (alpha*Delta*dPhiHatdpsiHat/four)*geometricFactor
-                  if (geometryScheme > 10) then ! Boozer
+                  if (geometryScheme /= 5) then ! Boozer
                     dDHatdLambda = 2*DHat(itheta,izeta)*cos_angle/BHat(itheta,izeta)
                     geometricFactor = geometricFactor + dDHatdLambda/(BHat(itheta,izeta)**3) * temp
                     factor = (alpha*Delta*dPhiHatdpsiHat/four)*geometricFactor
@@ -664,7 +664,7 @@
 
                 do ix=ixMin,Nx
                    do L=0,(Nxi_for_x(ix)-1)
-                      rowIndex=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
+                      rowIndex=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F,0)
 
                       ! Diagonal-in-L term
                       call MatSetValueSparse(dMatrixdLambda, rowIndex, rowIndex, &
@@ -673,7 +673,7 @@
                        if (L<Nxi_for_x(ix)-2) then
                           ! Super-super-diagonal-in-L term:
                           ell = L+2
-                          colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
+                          colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F,0)
                           call MatSetValueSparse(dMatrixdLambda, rowIndex, colIndex, &
                                (L+3)*(L+2)*(L+1)/((two*L+5)*(2*L+three))*factor, ADD_VALUES, ierr)
                        end if
@@ -681,7 +681,7 @@
                        if (L>1) then
                           ! Sub-sub-diagonal-in-L term:
                           ell = L-2
-                          colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
+                          colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F,0)
                           call MatSetValueSparse(dMatrixdLambda, rowIndex, colIndex, &
                                -L*(L-1)*(L-2)/((2*L-3)*(2*L-one))*factor, ADD_VALUES, ierr)
                        end if
@@ -758,7 +758,7 @@
                       - Dhat(itheta,izeta)/(BHat(itheta,izeta)**3) &
                       * Bhat_sub_zeta(itheta,izeta)*dBHatdthetadLambda
                     factor = -alpha*Delta*dPhiHatdPsiHat/four
-                    if (geometryScheme > 10) then ! Boozer
+                    if (geometryScheme /= 5) then ! Boozer
                       dDHatdLambda = 2*DHat(itheta,izeta)*cos_angle/BHat(itheta,izeta)
                       geometricFactor = geometricFactor + dDHatdLambda/(BHat(itheta,izeta)**3) &
                       * (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) &
@@ -790,7 +790,7 @@
 
                rowIndices = -1
                do ix=min_x_for_L(L),Nx
-                  rowIndices(ix)=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
+                  rowIndices(ix)=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F,0)
                end do
 
                ! Term that is diagonal in L:
@@ -810,7 +810,7 @@
                    stuffToAdd = (L+1)*(L+2)/((two*L+5)*(2*L+3))*factor*geometricFactor
                    !do ix_col=ixMinCol,Nx
                    do ix_col=max(ixMinCol,min_x_for_L(ell)),Nx
-                      colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F)
+                      colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F,0)
                       !do ix_row=ixMin,Nx
                       do ix_row=max(ixMin,min_x_for_L(L)),Nx
                          call MatSetValueSparse(dMatrixdLambda, rowIndices(ix_row), colIndex, &
@@ -824,7 +824,7 @@
                    ell = L - 2
                    stuffToAdd = L*(L-1)/((two*L-3)*(2*L-1))*factor*geometricFactor
                    do ix_col=max(ixMinCol,min_x_for_L(ell)),Nx
-                      colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F)
+                      colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F,0)
                       do ix_row=max(ixMin,min_x_for_L(L)),Nx
                          call MatSetValueSparse(dMatrixdLambda, rowIndices(ix_row), colIndex, &
                               stuffToAdd*xPartOfXDot(ix_row,ix_col), ADD_VALUES, ierr)
@@ -865,7 +865,7 @@
             if (whichLambda == 6) then
               dDHatdLambda = - DHat(itheta,izeta)*DHat(itheta,izeta)*cos_angle
               geometricFactor = -dDHatdLambda/(DHat(itheta,izeta)**2)
-            else if (whichLambda == 1 .and. geometryScheme > 10) then ! Boozer, BHat
+            else if (whichLambda == 1 .and. geometryScheme /= 5) then ! Boozer, BHat
               dDHatdLambda = 2*DHat(itheta,izeta)*cos_angle/BHat(itheta,izeta)
               geometricFactor = -dDHatdLambda/(DHat(itheta,izeta)**2)
             end if
@@ -873,13 +873,13 @@
 
             do ix=1,Nx
                do ispecies=1,Nspecies
-                  colIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+                  colIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,0)
 
-                  rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)
+                  rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT,0)
                   call MatSetValueSparse(dMatrixdLambda, rowIndex, colIndex, &
                        x2(ix)*xWeights(ix)*factor, ADD_VALUES, ierr)
 
-                  rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)
+                  rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT,0)
                   call MatSetValueSparse(dMatrixdLambda, rowIndex, colIndex, &
                        x2(ix)*x2(ix)*xWeights(ix)*factor, ADD_VALUES, ierr)
                end do

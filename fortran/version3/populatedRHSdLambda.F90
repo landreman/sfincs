@@ -87,7 +87,7 @@
                   ! Term from dBHatdzeta
                   - BHat_sub_theta(itheta,izeta)*dBHatdzetadLambda)
                 stuffToAdd = dFactordLambda*xPartOfRHS
-                if (geometryScheme > 10) then ! Boozer
+                if (geometryScheme /= 5) then ! Boozer
                   dDHatdLambda = 2*DHat(itheta,izeta)*cos_angle/BHat(itheta,izeta)
                   dFactordLambda = dFactordLambda + 1/(BHat(itheta,izeta)**3) &
                     *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
@@ -121,11 +121,11 @@
             end select
 
             L = 0
-            index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+            index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,0)
             call VecSetValue(dRHSdLambda, index, (four/three)*stuffToAdd, INSERT_VALUES, ierr)
 
             L = 2
-            index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+            index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,0)
             call VecSetValue(dRHSdLambda, index, (two/three)*stuffToAdd, INSERT_VALUES, ierr)
 
           enddo

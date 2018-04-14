@@ -29,6 +29,8 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies)
   ! Validate input
   if (whichAdjointRHS<1 .or. whichAdjointRHS>3 .or. whichSpecies<0 .or. whichSpecies>Nspecies) then
     if (masterProc) then
+      print *,"whichAdjointRHS: ", whichAdjointRHS
+      print *,"whichSpecies: ", whichSpecies
       print *,"Error! Incorrect input to populateAdjointRHS"
     end if
     stop
@@ -91,12 +93,12 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies)
 
                 L = 0
 
-                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,0)
                 call VecSetValue(rhs, index, factor1*factor, INSERT_VALUES, ierr)
 
                 L = 2
 
-                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,0)
                 call VecSetValue(rhs, index, factor2*factor, INSERT_VALUES, ierr)
 
              enddo
@@ -145,11 +147,11 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies)
                 ! factor is the samed for species-summed heat flux
 
                 L = 0
-                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,0)
                 call VecSetValue(rhs, index, factor1*factor, INSERT_VALUES, ierr)
 
                 L = 2
-                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,0)
                 call VecSetValue(rhs, index, factor2*factor, INSERT_VALUES, ierr)
 
              end do
@@ -193,7 +195,7 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies)
                   end select
 
                   L = 1
-                  index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+                  index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,0)
                   call VecSetValue(rhs, index, factor, INSERT_VALUES, ierr)
 
                enddo

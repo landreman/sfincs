@@ -3,7 +3,7 @@ module export_f
   ! This module contains subroutines and variables related to exporting the distribution function f.
   ! The exported f is available on various grids that can differ from the grid used for solving the kinetic equation.
 
-  use globalVariables
+  use globalVariables, Ntheta=>Ntheta
 
   implicit none
 
@@ -48,6 +48,9 @@ module export_f
       PetscScalar :: error, leastError, weight1, weight2
       PetscScalar, dimension(:,:), allocatable :: extrapMatrix, map_x_to_export_f_x_plus1
       PetscScalar, dimension(:), allocatable :: x_plus1
+
+      ! Variables relating to coarse grid
+      PetscScalar, dimension(:), allocatable :: theta, zeta
 
       ! --------------------------------------------------------
       ! Handle theta coordinate
