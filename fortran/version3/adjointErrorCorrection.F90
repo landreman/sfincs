@@ -180,7 +180,7 @@ subroutine adjointErrorCorrection(forwardSolution, adjointSolution,whichAdjointR
           print *,"innerProductResult: ", innerProductResult
           heatFlux_corrected(whichSpecies) = heatFlux_vm_rN(whichSpecies)-innerProductResult
         case (3) ! Parallel Flow
-          print *,"particleFlow_vm_rN: ", particleFlux_vm_rN(ispecies)
+          print *,"FSABVelocityUsingFSADensityOverRootFSAB2: ", FSABVelocityUsingFSADensityOverRootFSAB2(ispecies)
           print *,"innerProductResult: ", innerProductResult
           parallelFlow_corrected(whichSpecies) = FSABVelocityUsingFSADensityOverRootFSAB2(whichSpecies)-innerProductResult
       end select

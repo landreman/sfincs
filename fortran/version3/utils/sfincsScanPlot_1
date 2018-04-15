@@ -177,15 +177,18 @@ for directory in directories:
             if (adjointParticleFluxECOption[0] == 1):
               particleFlux_corrected = f["particleFlux_corrected"][()]
               particleFlux_vm_rN = f["particleFlux_vm_rN"][()]
-              results.append([particleFlux_vm_rN[0,0],particleFlux_corrected[0,0]])
+              results.append(particleFlux_vm_rN[0,0])
+              results.append(particleFlux_corrected[0,0])
             if (adjointHeatFluxECOption[0] == 1):
               heatFlux_corrected = f["heatFlux_corrected"][()]
               heatFlux_vm_rN = f["heatFlux_vm_rN"][()]
-              results.append([heatFlux_vm_rN[0,0],heatFlux_corrected[0,iteration]])
+              results.append(heatFlux_vm_rN[0,0])
+              results.append(heatFlux_corrected[0,0])
             if (adjointParallelFlowECOption[0] == 1):
               parallelFlow_corrected = f["parallelFlow_corrected"][()]
               FSABVelocityUsingFSADensityOverRootFSAB2 = f["FSABVelocityUsingFSADensityOverRootFSAB2"][()]
-              results.append([FSABVelocityUsingFSADensityOverRootFSAB2[0,0],parallelFlow_corrected[0,0]])
+              results.append(FSABVelocityUsingFSADensityOverRootFSAB2[0,0])
+              results.append(parallelFlow_corrected[0,0])
             outputs.append(results)
           else:
              outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],heatFlux_vm[0,0],sources[0,0,0],sources[1,0,0]])
@@ -261,12 +264,16 @@ else:
          ##yAxisLabels=["FSABFlow","particleFlux\nvm_psiHat","particleFlux\nvd_psiHat","heatFlux\nvm_psiHat","heatFlux\nvd_psiHat"] ##Commented by AM 2016-04
          yAxisLabels=["FSABFlow","particleFlux\nvm_psiHat","particleFlux\nvd_psiHat","heatFlux\nvm_psiHat","heatFlux\nvd_psiHat", "Phi1Hat\n[0,0]"] ##Added by AM 2016-04
       elif (RHSMode==6):
+        yAxisLabels=[]
         if (adjointParticleFluxECOption[0] == 1):
-          yAxisLabels=["particleFlux_vm_rN","particleFlux_corrected"]
+          yAxisLabels.append("particleFlux_vm_rN")
+          yAxisLabels.append("particleFlux_corrected")
         if (adjointHeatFluxECOption[0] == 1):
-          yAxisLabels=["heatFlux_vm_rN","heatFlux_corrected"]
-        if (adjointParallelFlowECOptino[0] == 1):
-          yAxisLabels=["FSABVelocityUsingFSADensityOverRootFSAB2","parallelFlow_corrected"]
+          yAxisLabels.append("heatFlux_vm_rN")
+          yAxisLabels.append("heatFlux_corrected")
+        if (adjointParallelFlowECOption[0] == 1):
+          yAxisLabels.append("FSABVelocityUsingFSADensityOverRootFSAB2")
+          yAxisLabels.append("parallelFlow_corrected")
       else:
          yAxisLabels=["FSABFlow","particleFlux\nvm_psiHat","heatFlux\nvm_psiHat","particle source",'heat source']
    else:
