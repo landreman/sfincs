@@ -69,15 +69,15 @@ subroutine build_adjointECProlongationMatrix()
   ! Parallelize the looping over rows (fine grid) but not the looping over columns (coarse grid)
   ! No prolongation in xi or x as of yet
 !  do itheta_coarse = 1,Ntheta
-!    do itheta_fine = 1,Ntheta_fine
+    do itheta_fine = 1,Ntheta_fine
    do itheta_coarse  = ithetaMin,ithetaMax
-     do itheta_fine = ithetaMin_fine, ithetaMax_fine
-      theta_value = theta_prolongation(itheta_fine, itheta_coarse)
+!     do itheta_fine = ithetaMin_fine,ithetaMax_fine
+      theta_value = theta_prolongation(itheta_fine,itheta_coarse)
       if (abs(theta_value)<1e-12) cycle
 !      do izeta_coarse = 1,Nzeta
-!        do izeta_fine = 1,Nzeta_fine
+        do izeta_fine = 1,Nzeta_fine
         do izeta_coarse = izetaMin,izetaMax
-           do izeta_fine = izetaMin_fine, izetaMax_fine
+!           do izeta_fine = izetaMin_fine,izetaMax_fine
           zeta_value = zeta_prolongation(izeta_fine, izeta_coarse)
           if (abs(zeta_value)<1e-12) cycle
           do ix_coarse = 1,Nx
