@@ -51,10 +51,12 @@ subroutine adjointErrorCorrection(forwardSolution, adjointSolution,whichAdjointR
   print *,"Norm of forwardSolution: ", norm
   call VecNorm(forward_interp,NORM_2,norm,ierr)
   print *,"Norm of forward_interp: ",norm
+
+
 !  print *,"DHat_fine: ", DHat_fine
 
-  allocate(zeta_prolongation(Nzeta_fine,Nzeta))
-  call  periodic_interpolation(Nzeta, Nzeta_fine,2*pi,zeta_fine,zeta_prolongation)
+!  allocate(zeta_prolongation(Nzeta_fine,Nzeta))
+!  call  periodic_interpolation(Nzeta, Nzeta_fine,2*pi,zeta_fine,zeta_prolongation)
   !! Testing
 !  allocate(DHat_interp(Ntheta_fine,Nzeta_fine))
 !  DHat_interp = zero
@@ -71,35 +73,35 @@ subroutine adjointErrorCorrection(forwardSolution, adjointSolution,whichAdjointR
 
   !!!!!! Testing interpolation - should provide same density perbation
   ! Scatter deltaF to master proc
-  call VecScatterCreateToZero(forward_interp, VecScatterContext, forward_interpOnProc0, ierr)
-  call VecScatterBegin(VecScatterContext, forward_interp, forward_interpOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
-  call VecScatterEnd(VecScatterContext, forward_interp, forward_interpOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
-  if (masterProc) then
-    ! Convert the PETSc vector into a normal Fortran array
-    call VecGetArrayF90(forward_interpOnProc0, forward_interpArray, ierr)
-
-    do ispecies = 1,Nspecies
-      density_interp = zero
-      THat = THats(ispecies)
-      mHat = mHats(ispecies)
-      sqrtTHat = sqrt(THat)
-      sqrtMHat = sqrt(mHat)
-      densityFactor = 4*pi*THat*sqrtTHat/(mHat*sqrtMHat)
-      do itheta=1, Ntheta_fine
-        do izeta=1, Nzeta_fine
-          do ix=1, Nx
-            L = 0
-            index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,7)+1
-            density_interp = density_interp &
-            + densityFactor*xWeights(ix)*x2(ix)*forward_interpArray(index)*thetaWeights_fine(itheta)*zetaWeights_fine(izeta)/DHat_fine(itheta,izeta)
-          end do ! ix
-        end do ! izeta
-      end do ! itheta
-      density_interp = density_interp / VPrimeHat
-      print *,"ispecies = ", ispecies
-      print *,"densityPerturbation = ", density_interp
-    end do
-  end if
+!  call VecScatterCreateToZero(forward_interp, VecScatterContext, forward_interpOnProc0, ierr)
+!  call VecScatterBegin(VecScatterContext, forward_interp, forward_interpOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
+!  call VecScatterEnd(VecScatterContext, forward_interp, forward_interpOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
+!  if (masterProc) then
+!    ! Convert the PETSc vector into a normal Fortran array
+!    call VecGetArrayF90(forward_interpOnProc0, forward_interpArray, ierr)
+!
+!    do ispecies = 1,Nspecies
+!      density_interp = zero
+!      THat = THats(ispecies)
+!      mHat = mHats(ispecies)
+!      sqrtTHat = sqrt(THat)
+!      sqrtMHat = sqrt(mHat)
+!      densityFactor = 4*pi*THat*sqrtTHat/(mHat*sqrtMHat)
+!      do itheta=1, Ntheta_fine
+!        do izeta=1, Nzeta_fine
+!          do ix=1, Nx
+!            L = 0
+!            index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,7)+1
+!            density_interp = density_interp &
+!            + densityFactor*xWeights(ix)*x2(ix)*forward_interpArray(index)*thetaWeights_fine(itheta)*zetaWeights_fine(izeta)/DHat_fine(itheta,izeta)
+!          end do ! ix
+!        end do ! izeta
+!      end do ! itheta
+!      density_interp = density_interp / VPrimeHat
+!      print *,"ispecies = ", ispecies
+!      print *,"densityPerturbation = ", density_interp
+!    end do
+!  end if
 
 !  VPrimeHat_fine = zero
 !  integral = zero
@@ -121,6 +123,8 @@ subroutine adjointErrorCorrection(forwardSolution, adjointSolution,whichAdjointR
   call MatMult(adjointECProlongationmatrix, adjointSolution, adjoint_interp, ierr)
   call VecNorm(adjoint_interp,NORM_2,norm,ierr)
   print *,"Norm of adjoint_interp: ",norm
+  call VecNorm(adjointSolution,NORM_2,norm,err)
+  print *,"Norm of adjoint: ", norm
 
   ! Construct fine matrix and RHS
   ! Create dummy and set to zero
@@ -131,8 +135,6 @@ subroutine adjointErrorCorrection(forwardSolution, adjointSolution,whichAdjointR
   ! whichMatrix = 7 -> matrixSize_fine
   call preallocateMatrix(matrix_fine,7) ! matrix_fine is initialized to 0 here
   call populateMatrix(matrix_fine,7,dummy) ! dummy is ignored here
-  call VecNorm(dummy,NORM_2,norm,ierr)
-  print *,"Norm of dummy: ",norm
 
   call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize_fine, RHS_fine, ierr)
   call VecSet(RHS_fine,zero,ierr)
@@ -157,24 +159,32 @@ subroutine adjointErrorCorrection(forwardSolution, adjointSolution,whichAdjointR
 
   ! Evaluate inner product
   call innerProduct(adjoint_interp,residual,innerProductResult)
-  if (whichSpecies == 0) then
-    select case (whichAdjointRHS)
-      case (1) ! Particle flux
-        radialCurrent_corrected = dot_product(Zs(1:Nspecies), particleFlux_vm_rN)-innerProductResult
-      case (2) ! Heat Flux
-        totalHeatFlux_corrected = sum(heatFlux_vm_rN)-innerProductResult
-      case (3) ! Bootstrap
-        bootstrap_corrected = dot_product(Zs(1:Nspecies),FSABVelocityUsingFSADensityOverRootFSAB2)-innerProductResult
-    end select
-  else
-    select case (whichAdjointRHS)
-      case (1) ! Particle flux
-        particleFlux_corrected(whichSpecies) = particleFlux_vm_rN(whichSpecies)-innerProductResult
-      case (2) ! Heat Flux
-        heatFlux_corrected(whichSpecies) = heatFlux_vm_rN(whichSpecies)-innerProductResult
-      case (3) ! Parallel Flow
-        parallelFlow_corrected(whichSpecies) = FSABVelocityUsingFSADensityOverRootFSAB2(whichSpecies)-innerProductResult
-    end select
+  if (masterProc) then
+    if (whichSpecies == 0) then
+      select case (whichAdjointRHS)
+        case (1) ! Particle flux
+          radialCurrent_corrected = dot_product(Zs(1:Nspecies), particleFlux_vm_rN)-innerProductResult
+        case (2) ! Heat Flux
+          totalHeatFlux_corrected = sum(heatFlux_vm_rN)-innerProductResult
+        case (3) ! Bootstrap
+          bootstrap_corrected = dot_product(Zs(1:Nspecies),FSABVelocityUsingFSADensityOverRootFSAB2)-innerProductResult
+      end select
+    else
+      select case (whichAdjointRHS)
+        case (1) ! Particle flux
+          print *,"particleFlux_vm_rN: ", particleFlux_vm_rN(ispecies)
+          print *,"innerProductResult: ", innerProductResult
+          particleFlux_corrected(whichSpecies) = particleFlux_vm_rN(whichSpecies)-innerProductResult
+        case (2) ! Heat Flux
+          print *,"heatFlux_vm_rN: ", heatFlux_vm_rN(ispecies)
+          print *,"innerProductResult: ", innerProductResult
+          heatFlux_corrected(whichSpecies) = heatFlux_vm_rN(whichSpecies)-innerProductResult
+        case (3) ! Parallel Flow
+          print *,"particleFlow_vm_rN: ", particleFlux_vm_rN(ispecies)
+          print *,"innerProductResult: ", innerProductResult
+          parallelFlow_corrected(whichSpecies) = FSABVelocityUsingFSADensityOverRootFSAB2(whichSpecies)-innerProductResult
+      end select
+    end if
   end if
 
   call MatDestroy(matrix_fine,ierr)
