@@ -125,6 +125,7 @@ module globalVariables
   logical :: adjointBootstrapECOption = .false.
   logical :: adjointRadialCurrentECOption = .false.
   logical :: adjointTotalHeatFluxECOption = .false.
+  logical :: debugAdjointEC = .false.
   logical, dimension(:), allocatable :: adjointHeatFluxECOption, adjointParticleFluxECOption, adjointParallelFlowECOption
   Mat :: adjointECProlongationMatrix
 
@@ -140,11 +141,11 @@ module globalVariables
   integer :: matrixSize_fine
   PetscScalar, dimension(:), allocatable, target :: theta_fine, thetaWeights_fine
   PetscScalar, dimension(:), allocatable, target :: zeta_fine, zetaWeights_fine
-  PetscScalar, dimension(:,:), allocatable :: ddtheta_plus_fine, ddtheta_minus_fine
-  PetscScalar, dimension(:,:), allocatable :: ddzeta_plus_fine, ddzeta_minus_fine
-  PetscScalar, dimension(:,:), allocatable :: ddtheta_ExB_plus_fine, ddtheta_ExB_minus_fine
-  PetscScalar, dimension(:,:), allocatable :: ddzeta_ExB_plus_fine, ddzeta_ExB_minus_fine
-  PetscScalar, dimension(:,:), allocatable :: ddtheta_fine, ddzeta_fine
+  PetscScalar, dimension(:,:), allocatable, target :: ddtheta_plus_fine, ddtheta_minus_fine
+  PetscScalar, dimension(:,:), allocatable, target :: ddzeta_plus_fine, ddzeta_minus_fine
+  PetscScalar, dimension(:,:), allocatable, target :: ddtheta_ExB_plus_fine, ddtheta_ExB_minus_fine
+  PetscScalar, dimension(:,:), allocatable, target :: ddzeta_ExB_plus_fine, ddzeta_ExB_minus_fine
+  PetscScalar, dimension(:,:), allocatable, target :: ddtheta_fine, ddzeta_fine, ddtheta_preconditioner_fine, ddzeta_preconditioner_fine
 
   ! Geometric quantities on fine grids
   PetscScalar, dimension(:,:), allocatable, target :: BHat_fine, dBHatdtheta_fine, dBHatdzeta_fine, DHat_fine
@@ -259,9 +260,9 @@ module globalVariables
   PetscScalar, dimension(:), allocatable :: x_plus1, x
   PetscScalar, dimension(:), allocatable :: theta, zeta
   PetscScalar, dimension(:), allocatable, target :: thetaWeights, zetaWeights
-  PetscScalar, dimension(:,:), allocatable :: ddtheta, ddzeta
-  PetscScalar, dimension(:,:), allocatable :: ddtheta_ExB_plus, ddtheta_ExB_minus
-  PetscScalar, dimension(:,:), allocatable :: ddzeta_ExB_plus, ddzeta_ExB_minus
+  PetscScalar, dimension(:,:), allocatable, target :: ddtheta, ddzeta
+  PetscScalar, dimension(:,:), allocatable, target :: ddtheta_ExB_plus, ddtheta_ExB_minus
+  PetscScalar, dimension(:,:), allocatable, target :: ddzeta_ExB_plus, ddzeta_ExB_minus
   PetscScalar, dimension(:,:), allocatable :: ddtheta_magneticDrift_plus, ddtheta_magneticDrift_minus
   PetscScalar, dimension(:,:), allocatable :: ddzeta_magneticDrift_plus, ddzeta_magneticDrift_minus
   PetscScalar, dimension(:), allocatable :: xWeights
@@ -272,8 +273,8 @@ module globalVariables
   PetscScalar, dimension(:,:), allocatable :: ddx_xDot_plus, ddx_xDot_preconditioner_plus
   PetscScalar, dimension(:,:), allocatable :: ddx_xDot_minus, ddx_xDot_preconditioner_minus
   PetscScalar, dimension(:,:), allocatable :: ddx_preconditioner
-  PetscScalar, dimension(:,:), allocatable :: ddtheta_preconditioner
-  PetscScalar, dimension(:,:), allocatable :: ddzeta_preconditioner
+  PetscScalar, dimension(:,:), allocatable, target :: ddtheta_preconditioner
+  PetscScalar, dimension(:,:), allocatable, target :: ddzeta_preconditioner
   PetscScalar, dimension(:,:), allocatable :: interpolateXToXPotentials
 
   PetscScalar, dimension(:,:,:,:,:), allocatable :: RosenbluthPotentialTerms

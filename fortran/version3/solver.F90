@@ -481,18 +481,35 @@ module solver
       end if
 
       !> Allocate adjointRHSVec
-      call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointRHSVec, ierr)
-      call VecSet(adjointRHSVec, zero, ierr)
+      if (debugAdjointEC) then
+        call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize_fine, adjointRHSVec, ierr)
+        call VecSet(adjointRHSVec, zero, ierr)
+      else
+        call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointRHSVec, ierr)
+        call VecSet(adjointRHSVec, zero, ierr)
+      end if
 
       ! adjointMatrix is only needed for 'continuous' adjoint approach
       if (discreteAdjointOption == 0) then
         !> Allocate and populate the adjoint matrix - the same matrix is used for each RHS
-        call preallocateMatrix(adjointMatrix, 1) ! the whichMatrix argument doesn't matter here
-        call populateMatrix(adjointMatrix,4,dummyVec) ! dummyVec is not initialized - not needed for linear solve
+        if (debugAdjointEC) then ! Solve adjoint equation on fine grid
+          call preallocateMatrix(adjointMatrix,7)
+          ! 8 = adjoint on fine grid
+          call populateMatrix(adjointMatrix,8,dummyVec)
+        else
+          call preallocateMatrix(adjointMatrix, 1) ! the whichMatrix argument doesn't matter here
+          call populateMatrix(adjointMatrix,4,dummyVec) ! dummyVec is not initialized - not needed for linear solve
+        end if
       end if
       if (useIterativeLinearSolver .and. (discreteAdjointOption == 0)) then
-        call preallocateMatrix(adjointPreconditionerMatrix, 1)
-        call populateMatrix(adjointPreconditionerMatrix,5,dummyVec)
+        if (debugAdjointEC) then
+          call preallocateMatrix(adjointPreconditionerMatrix,7)
+          ! 9 = adjointPreconditioner on fine grid
+          call populateMatrix(adjointPreconditionerMatrix,9,dummyVec)
+        else
+          call preallocateMatrix(adjointPreconditionerMatrix, 1)
+          call populateMatrix(adjointPreconditionerMatrix,5,dummyVec)
+        end if
       end if
 
       if (masterProc) then
@@ -634,7 +651,11 @@ module solver
       end if ! testing
 
       !> Allocate adjointSolutionVec
-      call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointSolutionVec, ierr)
+      if (debugAdjointEC) then
+        call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize_fine, adjointSolutionVec, ierr)
+      else
+        call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointSolutionVec, ierr)
+      end if
       call VecSet(adjointSolutionVec, zero, ierr)
 
       !> Allocate summedSolutionVec if needed
@@ -758,7 +779,11 @@ module solver
 
           !> Construct RHS vec
           call VecSet(adjointRHSVec, zero, ierr)
-          call populateAdjointRHS(adjointRHSVec, whichAdjointRHS, ispecies, 0)
+          if (debugAdjointEC) then
+            call populateAdjointRHS(adjointRHSVec, whichAdjointRHS, ispecies, 7)
+          else
+            call populateAdjointRHS(adjointRHSVec, whichAdjointRHS, ispecies, 0)
+          end if
 
           if (masterProc) then
              print *,"Beginning the adjoint solve.  This could take a while ..."

@@ -142,7 +142,10 @@
     allocate(temp_matrix(Ntheta_fine,Ntheta_fine))
     allocate(d2dtheta2(Ntheta_fine,Ntheta_fine))
 
-    ! *******************************************************************************
+    ! preconditioner variables
+    allocate(ddtheta_preconditioner_fine(Ntheta_fine,Ntheta_fine))
+
+  ! *******************************************************************************
     ! Handle d/dtheta for the main matrix.
     ! *******************************************************************************
 
@@ -195,7 +198,39 @@
        stop
     end select
 
-    ! preconditioner and magnetic drift matrices not needed
+    ! If needed, also make a sparser differentiation matrix for the preconditioner:
+    select case(preconditioner_theta)
+    case (0)
+
+       ! Theta coupling in preconditioner is identical to the full matrix:
+       ddtheta_preconditioner_fine = ddtheta_fine
+
+    case (1)
+       ! Preconditioner has a 3-point stencil instead of a 5-point stencil:
+       scheme = 0
+       call uniformDiffMatrices(Ntheta_fine, zero, two*pi, scheme, theta_preconditioner, &
+            thetaWeights_preconditioner, ddtheta_preconditioner_fine, d2dtheta2_preconditioner)
+
+    case (2)
+       ! All theta coupling is dropped in the preconditioner:
+       ddtheta_preconditioner_fine = zero
+
+    case (3)
+       ! Replace d/dtheta with the identity matrix:
+       ddtheta_preconditioner_fine = zero
+       do itheta=1,Ntheta_fine
+          ddtheta_preconditioner_fine(itheta,itheta)=one
+       end do
+
+    case default
+       if (masterProc) then
+          print *,"Error! Invalid setting for preconditioner_theta."
+       end if
+       stop
+
+    end select
+
+    ! magnetic drift matrices not needed
 
     ! The following arrays will not be needed:
     deallocate(d2dtheta2)
@@ -219,6 +254,7 @@
     allocate(zeta_preconditioner(Nzeta_fine))
     allocate(zetaWeights_preconditioner(Nzeta_fine))
     allocate(d2dzeta2_preconditioner(Nzeta_fine,Nzeta_fine))
+    allocate(ddzeta_preconditioner_fine(Nzeta_fine, Nzeta_fine))
 
     select case (zetaDerivativeScheme)
     case (0)
@@ -278,6 +314,45 @@
           stop
        end select
 
+    end if
+
+    ! If needed, also make a sparser differentiation matrix for the preconditioner:
+    if (Nzeta_fine==1) then
+       zeta_preconditioner_fine = 0
+       zetaWeights_preconditioner = 2*pi
+       ddzeta_preconditioner_fine = 0
+       d2dzeta2_preconditioner = 0
+    else
+       select case (preconditioner_zeta)
+       case (0)
+          ! Zeta coupling in preconditioner is identical to the full matrix:
+          ddzeta_preconditioner_fine = ddzeta_fine
+
+       case (1)
+          ! Preconditioner has a 3-point stencil instead of a 5-point stencil:
+
+          scheme = 0
+          call uniformDiffMatrices(Nzeta_fine, zero, zetaMax_fine, scheme, zeta_preconditioner, &
+               zetaWeights_preconditioner, ddzeta_preconditioner_fine, d2dzeta2_preconditioner)
+
+       case (2)
+          ! All zeta coupling is dropped in the preconditioner:
+          ddzeta_preconditioner_fine = zero
+          
+       case (3)
+          ! Replace d/dzeta by the identity matrix:
+          ddzeta_preconditioner_fine = zero
+          do izeta=1,Nzeta_fine
+             ddzeta_preconditioner_fine(izeta,izeta)=one
+          end do
+          
+       case default
+          if (masterProc) then
+             print *,"Error! Invalid setting for preconditioner_zeta."
+          end if
+          stop
+
+       end select
     end if
 
     zetaWeights_fine = zetaWeights_fine * NPeriods

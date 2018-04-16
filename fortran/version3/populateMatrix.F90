@@ -71,32 +71,25 @@
     PetscScalar, dimension(:), allocatable :: tempVector1, tempVector2
     PetscScalar, dimension(:,:), allocatable :: tempExtrapMatrix, fToFInterpolationMatrix_plus1
     PetscScalar :: adjointFactor
+    ! Quantities on reference grid
     integer :: this_Ntheta, this_Nzeta, this_localNtheta, this_localNzeta
     integer :: this_ithetaMin, this_ithetaMax, this_izetaMin, this_izetaMax, this_matrixSize
-    PetscScalar, dimension(:,:), allocatable :: this_ddtheta, this_ddzeta
-    PetscScalar, dimension(:,:), allocatable :: this_ddtheta_ExB_plus, this_ddtheta_ExB_minus
-    PetscScalar, dimension(:,:), allocatable :: this_ddzeta_ExB_plus, this_ddzeta_ExB_minus
-    PetscScalar, dimension(:,:), allocatable :: this_BHat, this_dBHatdtheta, this_dBHatdzeta, this_DHat, this_BHat_sub_theta, this_dBHat_sub_theta_dzeta, this_BHat_sub_zeta, this_dBHat_sub_zeta_dtheta, this_BHat_sup_theta, this_dBHat_sup_theta_dzeta, this_BHat_sup_zeta, this_dBHat_sup_zeta_dtheta
-    PetscScalar, dimension(:), allocatable :: this_thetaWeights, this_zetaWeights
+    PetscScalar, dimension(:,:), pointer :: this_ddtheta, this_ddzeta
+    PetscScalar, dimension(:,:), pointer :: this_ddtheta_ExB_plus, this_ddtheta_ExB_minus
+    PetscScalar, dimension(:,:), pointer :: this_ddzeta_ExB_plus, this_ddzeta_ExB_minus
+    PetscScalar, dimension(:,:), pointer :: this_BHat, this_dBHatdtheta, this_dBHatdzeta, this_DHat, this_BHat_sub_theta, this_dBHat_sub_theta_dzeta, this_BHat_sub_zeta, this_dBHat_sub_zeta_dtheta, this_BHat_sup_theta, this_dBHat_sup_theta_dzeta, this_BHat_sup_zeta, this_dBHat_sup_zeta_dtheta
+    PetscScalar, dimension(:), pointer :: this_thetaWeights, this_zetaWeights
+    PetscScalar, dimension(:,:), pointer :: this_ddtheta_preconditioner, this_ddzeta_preconditioner
 
     PetscScalar :: dPhiHatdpsiHatToUseInRHS, xPartOfRHS, xPartOfRHS2 !!Added by AM 2016-03
 
-    if (whichMatrix==4 .or. whichMatrix==5) then
+    if (whichMatrix==4 .or. whichMatrix==5 .or. whichMatrix>7) then
       adjointFactor = -one
     else
       adjointFactor = one
     end if
 
-    if (whichMatrix==7) then
-      allocate(this_ddtheta(Ntheta_fine,Ntheta_fine))
-      allocate(this_ddzeta(Nzeta_fine,Nzeta_fine))
-      allocate(this_ddtheta_ExB_plus(Ntheta_fine,Ntheta_fine))
-      allocate(this_ddtheta_ExB_minus(Ntheta_fine,Ntheta_fine))
-      allocate(this_ddzeta_ExB_plus(Nzeta_fine,Nzeta_fine))
-      allocate(this_ddzeta_ExB_minus(Nzeta_fine,Nzeta_fine))
-      allocate(this_thetaWeights(Ntheta_fine))
-      allocate(this_zetaWeights(Nzeta_fine))
-
+    if (whichMatrix>6) then
       this_matrixSize = matrixSize_fine
 
       this_Ntheta = Ntheta_fine
@@ -109,96 +102,66 @@
       this_ithetaMin = ithetaMin_fine
       this_ithetaMax = ithetaMax_fine
 
-      this_ddtheta = ddtheta_fine
-      this_ddzeta = ddzeta_fine
-      this_ddtheta_ExB_plus = ddtheta_ExB_plus_fine
-      this_ddtheta_ExB_minus = ddtheta_ExB_minus_fine
-      this_ddzeta_ExB_plus = ddzeta_ExB_plus_fine
-      this_ddzeta_ExB_minus = ddzeta_ExB_minus_fine
-      this_thetaWeights = thetaWeights_fine
-      this_zetaWeights = zetaWeights_fine
+      this_ddtheta => ddtheta_fine
+      this_ddzeta => ddzeta_fine
+      this_ddtheta_ExB_plus => ddtheta_ExB_plus_fine
+      this_ddtheta_ExB_minus => ddtheta_ExB_minus_fine
+      this_ddzeta_ExB_plus => ddzeta_ExB_plus_fine
+      this_ddzeta_ExB_minus => ddzeta_ExB_minus_fine
+      this_thetaWeights => thetaWeights_fine
+      this_zetaWeights => zetaWeights_fine
 
-      allocate(this_BHat(Ntheta_fine,Nzeta_fine))
-      allocate(this_dBHatdtheta(Ntheta_fine,Nzeta_fine))
-      allocate(this_dBHatdzeta(Ntheta_fine,Nzeta_fine))
-      allocate(this_DHat(Ntheta_fine,Nzeta_fine))
-      allocate(this_BHat_sub_theta(Ntheta_fine,Nzeta_fine))
-      allocate(this_dBHat_sub_theta_dzeta(Ntheta_fine,Nzeta_fine))
-      allocate(this_BHat_sub_zeta(Ntheta_fine,Nzeta_fine))
-      allocate(this_dBHat_sub_zeta_dtheta(Ntheta_fine,Nzeta_fine))
-      allocate(this_BHat_sup_theta(Ntheta_fine,Nzeta_fine))
-      allocate(this_dBHat_sup_theta_dzeta(Ntheta_fine,Nzeta_fine))
-      allocate(this_BHat_sup_zeta(Ntheta_fine,Nzeta_fine))
-      allocate(this_dBHat_sup_zeta_dtheta(Ntheta_fine,Nzeta_fine))
+      this_BHat => BHat_fine
+      this_dBHatdtheta => dBHatdtheta_fine
+      this_dBHatdzeta => dBHatdzeta_fine
+      this_DHat => DHat_fine
+      this_BHat_sub_theta => BHat_sub_theta_fine
+      this_dBHat_sub_theta_dzeta => dBHat_sub_theta_dzeta_fine
+      this_BHat_sub_zeta => BHat_sub_zeta_fine
+      this_dBHat_sub_zeta_dtheta => dBHat_sub_zeta_dtheta_fine
+      this_BHat_sup_theta => BHat_sup_theta_fine
+      this_dBHat_sup_theta_dzeta => dBHat_sup_theta_dzeta_fine
+      this_BHat_sup_zeta => BHat_sup_zeta_fine
+      this_dBHat_sup_zeta_dtheta => dBHat_sup_zeta_dtheta_fine
 
-      this_BHat = BHat_fine
-      this_dBHatdtheta = dBHatdtheta_fine
-      this_dBHatdzeta = dBHatdzeta_fine
-      this_DHat = DHat_fine
-      this_BHat_sub_theta = BHat_sub_theta_fine
-      this_dBHat_sub_theta_dzeta = dBHat_sub_theta_dzeta_fine
-      this_BHat_sub_zeta = BHat_sub_zeta_fine
-      this_dBHat_sub_zeta_dtheta = dBHat_sub_zeta_dtheta_fine
-      this_BHat_sup_theta = BHat_sup_theta_fine
-      this_dBHat_sup_theta_dzeta = dBHat_sup_theta_dzeta_fine
-      this_BHat_sup_zeta = BHat_sup_zeta_fine
-      this_dBHat_sup_zeta_dtheta = dBHat_sup_zeta_dtheta_fine
+      this_ddtheta_preconditioner => ddtheta_preconditioner_fine
+      this_ddzeta_preconditioner => ddzeta_preconditioner_fine
     else
-      allocate(this_ddtheta(Ntheta,Ntheta))
-      allocate(this_ddzeta(Nzeta,Nzeta))
-      allocate(this_ddtheta_ExB_plus(Ntheta,Ntheta))
-      allocate(this_ddtheta_ExB_minus(Ntheta,Ntheta))
-      allocate(this_ddzeta_ExB_plus(Nzeta,Nzeta))
-      allocate(this_ddzeta_ExB_minus(Nzeta,Nzeta))
-      allocate(this_thetaWeights(Ntheta))
-      allocate(this_zetaWeights(Nzeta))
-
       this_MatrixSize = matrixSize
 
       this_Ntheta = Ntheta
       this_Nzeta = Nzeta
       this_localNtheta = localNtheta
       this_localNzeta = localNzeta
-      this_ddtheta = ddtheta
-      this_ddzeta = ddzeta
+      this_ddtheta => ddtheta
+      this_ddzeta => ddzeta
       this_izetaMin = izetaMin
       this_izetaMax = izetaMax
       this_ithetaMin = ithetaMin
       this_ithetaMax = ithetaMax
-      this_ddtheta_ExB_plus = ddtheta_ExB_plus
-      this_ddtheta_ExB_minus = ddtheta_ExB_minus
-      this_ddzeta_ExB_plus = ddzeta_ExB_plus
-      this_ddzeta_ExB_minus = ddzeta_ExB_minus
-      this_thetaWeights = thetaWeights
-      this_zetaWeights = zetaWeights
+      this_ddtheta_ExB_plus => ddtheta_ExB_plus
+      this_ddtheta_ExB_minus => ddtheta_ExB_minus
+      this_ddzeta_ExB_plus => ddzeta_ExB_plus
+      this_ddzeta_ExB_minus => ddzeta_ExB_minus
+      this_thetaWeights => thetaWeights
+      this_zetaWeights => zetaWeights
 
-      allocate(this_BHat(Ntheta,Nzeta))
-      allocate(this_dBHatdtheta(Ntheta,Nzeta))
-      allocate(this_dBHatdzeta(Ntheta,Nzeta))
-      allocate(this_DHat(Ntheta,Nzeta))
-      allocate(this_BHat_sub_theta(Ntheta,Nzeta))
-      allocate(this_dBHat_sub_theta_dzeta(Ntheta,Nzeta))
-      allocate(this_BHat_sub_zeta(Ntheta,Nzeta))
-      allocate(this_dBHat_sub_zeta_dtheta(Ntheta,Nzeta))
-      allocate(this_BHat_sup_theta(Ntheta,Nzeta))
-      allocate(this_dBHat_sup_theta_dzeta(Ntheta,Nzeta))
-      allocate(this_BHat_sup_zeta(Ntheta,Nzeta))
-      allocate(this_dBHat_sup_zeta_dtheta(Ntheta,Nzeta))
-      this_BHat = BHat
-      this_dBHatdtheta = dBHatdtheta
-      this_dBHatdzeta = dBHatdzeta
-      this_DHat = DHat
-      this_BHat_sub_theta = BHat_sub_theta
-      this_dBHat_sub_theta_dzeta = dBHat_sub_theta_dzeta
-      this_BHat_sub_zeta = BHat_sub_zeta
-      this_dBHat_sub_zeta_dtheta = dBHat_sub_zeta_dtheta
-      this_BHat_sup_theta = BHat_sup_theta
-      this_dBHat_sup_theta_dzeta = dBHat_sup_theta_dzeta
-      this_BHat_sup_zeta = BHat_sup_zeta
-      this_dBHat_sup_zeta_dtheta = dBHat_sup_zeta_dtheta
+      this_BHat => BHat
+      this_dBHatdtheta => dBHatdtheta
+      this_dBHatdzeta => dBHatdzeta
+      this_DHat => DHat
+      this_BHat_sub_theta => BHat_sub_theta
+      this_dBHat_sub_theta_dzeta => dBHat_sub_theta_dzeta
+      this_BHat_sub_zeta => BHat_sub_zeta
+      this_dBHat_sub_zeta_dtheta => dBHat_sub_zeta_dtheta
+      this_BHat_sup_theta => BHat_sup_theta
+      this_dBHat_sup_theta_dzeta => dBHat_sup_theta_dzeta
+      this_BHat_sup_zeta => BHat_sup_zeta
+      this_dBHat_sup_zeta_dtheta => dBHat_sup_zeta_dtheta
+
+      this_ddtheta_preconditioner => ddtheta_preconditioner
+      this_ddzeta_preconditioner => ddzeta_preconditioner
     end if
-!    print *,"this_ddtheta: ", this_ddtheta
-
 
     ! *******************************************************************************
     ! Do a few sundry initialization tasks:
@@ -240,6 +203,10 @@
         whichMatrixName = "Jacobian (for adjoint testing)"
     case (7)
         whichMatrixName = "fine grid Jacobian (for adjoint EC)"
+    case (8)
+        whichMatrixName = "adjoint Jacobian on fine grid."
+    case (9)
+        whichMatrixName = "adjoint preconditioner on fine grid."
     case default
        if (masterProc) then
           print *,"Error! whichMatrix must be 0, 1, 2, 3, 4, or 5."
@@ -261,7 +228,7 @@
     ! (unlike mumps or superlu_dist), then if we're using this solver
     ! add some values to the diagonals of the preconditioner.  By trial-and-error, I found it works
     ! best to shift the diagonal of the quasineutrality and constraint blocks but not for the kinetic-equation block.
-    if ((.not. isAParallelDirectSolverInstalled) .and. masterProc .and. ((whichMatrix==0) .or. (whichMatrix == 5))) then
+    if ((.not. isAParallelDirectSolverInstalled) .and. masterProc .and. ((whichMatrix==0) .or. (whichMatrix == 5) .or. (whichMatrix == 9))) then
        print *,"Since PETSc's built-in solver is being used instead of superlu_dist or mumps, and this"
        print *,"   fragile solver often gives spurious error messages about zero pivots, the diagonal"
        print *,"   of the preconditioner is being shifted."
@@ -387,10 +354,10 @@
           allocate(colIndices(this_Ntheta))
           do L=0,(Nxi-1)
 
-             if ((whichMatrix>0 .and. (whichMatrix .ne. 5)) .or. L < preconditioner_theta_min_L) then
+             if ((whichMatrix>0 .and. (whichMatrix .ne. 5) .and. (whichMatrix .ne. 9)) .or. L < preconditioner_theta_min_L) then
                 ddthetaToUse = this_ddtheta
              else
-                ddthetaToUse = ddtheta_preconditioner
+                ddthetaToUse = this_ddtheta_preconditioner
              end if
 
              do izeta=this_izetaMin,this_izetaMax
@@ -453,10 +420,10 @@
           allocate(colIndices(this_Nzeta))
           do L=0,(Nxi-1)
 
-             if (((whichMatrix > 0) .and. (whichMatrix .ne. 5)) .or. L < preconditioner_zeta_min_L) then
+             if (((whichMatrix > 0) .and. (whichMatrix .ne. 5) .and. (whichMatrix .ne. 9)) .or. L < preconditioner_zeta_min_L) then
                 ddzetaToUse = this_ddzeta
              else
-                ddzetaToUse = ddzeta_preconditioner
+                ddzetaToUse = this_ddzeta_preconditioner
              end if
 
              do itheta=this_ithetaMin, this_ithetaMax
@@ -520,10 +487,10 @@
           do L=0,(Nxi-1)
 
              if (ExBDerivativeSchemeTheta==0) then
-                if ((whichMatrix>0 .and. whichMatrix .ne. 5) .or. L < preconditioner_theta_min_L) then
+                if ((whichMatrix>0 .and. (whichMatrix .ne. 5) .and. (whichMatrix .ne. 9)) .or. L < preconditioner_theta_min_L) then
                    ddthetaToUse = this_ddtheta
                 else
-                   ddthetaToUse = ddtheta_preconditioner
+                   ddthetaToUse = this_ddtheta_preconditioner
                 end if
              else
                 ! Assume DHat has the same sign everywhere. (Should be true even for VMEC coordinates.)
@@ -585,10 +552,10 @@
           do L=0,(Nxi-1)
 
              if (ExBDerivativeSchemeZeta==0) then
-                if (((whichMatrix>0) .and. (whichMatrix .ne. 5)) .or. L < preconditioner_zeta_min_L) then
+                if (((whichMatrix>0) .and. (whichMatrix .ne. 5) .and. (whichMatrix .ne. 9)) .or. L < preconditioner_zeta_min_L) then
                    ddzetaToUse = this_ddzeta
                 else
-                   ddzetaToUse = ddzeta_preconditioner
+                   ddzetaToUse = this_ddzeta_preconditioner
                 end if
              else
                 ! Assume DHat has the same sign everywhere. (Should be true even for VMEC coordinates.)
@@ -963,7 +930,7 @@
 
                       ! Drop the off-by-2 diagonal terms in L if this is the preconditioner
                       ! and preconditioner_xi = 1:
-                      if (((whichMatrix .ne. 0) .and. (whichMatrix .ne. 5)) .or. preconditioner_xi==0) then
+                      if (((whichMatrix .ne. 0) .and. (whichMatrix .ne. 5) .and. (whichMatrix .ne. 9)) .or. preconditioner_xi==0) then
 
                          if (L<Nxi_for_x(ix)-2) then
                             ! Super-super-diagonal-in-L term:
@@ -1075,7 +1042,7 @@
              end if
 
              ! Upwind in x
-             if (((whichMatrix==0) .or. (whichMatrix==5)) .and. L >= preconditioner_x_min_L) then
+             if ((whichMatrix==0 .or. whichMatrix==5 .or. whichMatrix==9) .and. L >= preconditioner_x_min_L) then
                 ddxToUse_plus = ddx_xDot_preconditioner_plus
                 ddxToUse_minus = ddx_xDot_preconditioner_minus
              else
@@ -1137,7 +1104,7 @@
 
                    ! Drop the off-by-2 diagonal terms in L if this is the preconditioner
                    ! and preconditioner_xi = 1:
-                   if (((whichMatrix>0) .and. (whichMatrix .ne. 5)) .or. preconditioner_xi==0) then
+                   if (((whichMatrix>0) .and. (whichMatrix .ne. 5) .and. (whichMatrix .ne. 9)) .or. preconditioner_xi==0) then
 
                       ! Term that is super-super-diagonal in L:
                       if (L<(Nxi-2)) then
@@ -1962,7 +1929,7 @@
              do iSpeciesB = 1,Nspecies
                 do iSpeciesA = iSpeciesB,iSpeciesB
                 !do iSpeciesA = 1,Nspecies
-                   if (iSpeciesA==iSpeciesB .or. ((whichMatrix>0) .and. (whichMatrix .ne. 5)) &
+                   if (iSpeciesA==iSpeciesB .or. ((whichMatrix>0) .and. (whichMatrix .ne. 5) .and. (whichMatrix .ne. 9)) &
                       .or. preconditioner_species==0) then
                       
                       speciesFactor = sqrt(THats(iSpeciesA)*mHats(iSpeciesB) &
@@ -2040,7 +2007,7 @@
                          CHat = M11;
                       end if
                       
-                      if (((whichMatrix==0) .or. (whichMatrix==5)) .and. L >= preconditioner_x_min_L) then
+                      if (((whichMatrix==0) .or. (whichMatrix==5) .or. (whichMatrix==9)) .and. L >= preconditioner_x_min_L) then
                          ! We're making the preconditioner, so simplify the x part of the matrix if desired.
                          select case (preconditioner_x)
                          case (0)
@@ -2220,7 +2187,7 @@
 
        ! For L=0 mode, impose regularity (df/dx=0) at x=0:
        L=0
-       if ((whichMatrix==0 .or. whichMatrix==5) .and. L >= preconditioner_x_min_L) then
+       if ((whichMatrix==0 .or. whichMatrix==5 .or. whichMatrix==9) .and. L >= preconditioner_x_min_L) then
           ddxToUse = ddx_preconditioner
        else
           ddxToUse = ddx
@@ -2263,7 +2230,7 @@
              select case (constraintScheme)
              case (1)
                 ! Constant and quadratic terms:
-                if (whichMatrix == 4 .or. whichMatrix == 5) then
+                if (whichMatrix == 4 .or. whichMatrix == 5 .or. whichMatrix > 7) then
                   xPartOfSource1 = exp(-x2(ix))/(pi*sqrtpi)
                   xPartOfSource2 = x2(ix)*exp(-x2(ix))/(pi*sqrtpi)
                 else
@@ -2344,7 +2311,7 @@
                 do ix=1,Nx
                    do ispecies=1,Nspecies
 
-                      if ((whichMatrix == 4) .or. (whichMatrix ==5)) then
+                      if ((whichMatrix == 4) .or. (whichMatrix ==5) .or. (whichMatrix>7)) then
                         colIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,whichMatrix)
 
                         rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT,whichMatrix)

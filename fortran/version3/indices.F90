@@ -151,7 +151,7 @@
       integer, intent(in) :: i_species, i_x, i_xi, i_theta, i_zeta, whichBlock, whichmatrix
       integer :: this_Ntheta, this_Nzeta, this_DKE_size, this_matrixSize
 
-      if (whichMatrix == 7) then
+      if (whichMatrix > 6) then
         this_Ntheta = Ntheta_fine
         this_Nzeta = Nzeta_fine
         this_DKE_size = sum(Nxi_for_x)*Ntheta_fine*Nzeta_fine

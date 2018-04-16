@@ -52,10 +52,14 @@ subroutine adjointErrorCorrection(forwardSolution, adjointSolution,whichAdjointR
 !    print *,"Norm of forward_interp: ",norm
 !  end if
 
-  ! Interpolate adjoint solution
-  call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize_fine, adjoint_interp,ierr)
-  call VecSet(adjoint_interp,zero,ierr)
-  call MatMult(adjointECProlongationmatrix, adjointSolution, adjoint_interp, ierr)
+  if (debugAdjointEC) then
+    adjoint_interp = adjointSolutino
+  else
+    ! Interpolate adjoint solution
+    call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize_fine, adjoint_interp,ierr)
+    call VecSet(adjoint_interp,zero,ierr)
+    call MatMult(adjointECProlongationmatrix, adjointSolution, adjoint_interp, ierr)
+  end if
 !  call VecNorm(adjoint_interp,NORM_2,norm,ierr)
 !  if (masterProc) then
 !    print *,"Norm of adjoint_interp: ",norm
@@ -127,11 +131,17 @@ subroutine adjointErrorCorrection(forwardSolution, adjointSolution,whichAdjointR
     else
       select case (whichAdjointRHS)
         case (1) ! Particle flux
-          particleFlux_corrected(whichSpecies) = fineMeshMoment-innerProductResult
+          if (masterProc) then
+
+        
+          particleFlux_corrected(whichSpecies) = fineMeshMoment
+!          particleFlux_corrected(whichSpecies) = fineMeshMoment-innerProductResult
         case (2) ! Heat Flux
-          heatFlux_corrected(whichSpecies) = fineMeshMoment-innerProductResult
+          heatFlux_corrected(whichSpecies) = fineMeshMoment
+!          heatFlux_corrected(whichSpecies) = fineMeshMoment-innerProductResult
         case (3) ! Parallel Flow
-          parallelFlow_corrected(whichSpecies) = fineMeshMoment-innerProductResult
+          parallelFlow_corrected(whichSpecies) = fineMeshMoment
+!          parallelFlow_corrected(whichSpecies) = fineMeshMoment-innerProductResult
       end select
     end if
   end if

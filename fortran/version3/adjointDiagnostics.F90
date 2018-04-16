@@ -121,7 +121,7 @@ module adjointDiagnostics
 
         this_thetaWeights => thetaWeights
         this_zetaWeights => zetaWeights
-        this_DHat => DHat_fine
+        this_DHat => DHat
       end if
 
       select case (discreteAdjointOption)
