@@ -70,8 +70,8 @@ subroutine testingAdjointOperator(forwardSolution,adjointSolution,whichAdjointRH
   call MatMult(adjointMatrix,forwardSolution,result2,ierr)
 
   ! Computer inner products
-  call innerProduct(forwardSolution,result1,innerProduct1)
-  call innerProduct(forwardSolution,result2,innerProduct2)
+  call innerProduct(forwardSolution,result1,innerProduct1,0)
+  call innerProduct(forwardSolution,result2,innerProduct2,0)
   if (masterproc) then
     print *,"Inner product 1: ", innerProduct1
     print *,"Inner product 2: ", innerProduct2
@@ -89,11 +89,11 @@ subroutine testingAdjointOperator(forwardSolution,adjointSolution,whichAdjointRH
   call populateAdjointRHS(adjointRHS, whichAdjointRHS, whichSpecies)
 
   ! Compute inner product
-  call innerProduct(adjointRHS, result2, innerProduct1)
+  call innerProduct(adjointRHS, result2, innerProduct1,0)
 
   call MatMult(matrix,adjointRHS,result3,ierr)
 
-  call innerProduct(forwardSolution,result3,innerProduct2)
+  call innerProduct(forwardSolution,result3,innerProduct2,0)
   if (masterProc) then
     print *,"Inner product 1: ", innerProduct1
     print *,"Inner product 2: ", innerProduct2
@@ -115,8 +115,8 @@ subroutine testingAdjointOperator(forwardSolution,adjointSolution,whichAdjointRH
       call populateAdjointRHS(adjointRHS2, iAdjointRHS, iSpecies)
       call VecSet(result4,zero,ierr)
       call MatMult(adjointMatrix,adjointRHS2,result4,ierr)
-      call innerProduct(adjointRHS,result4,innerProduct1)
-      call innerProduct(result3,adjointRHS2,innerProduct2)
+      call innerProduct(adjointRHS,result4,innerProduct1,0)
+      call innerProduct(result3,adjointRHS2,innerProduct2,0)
       if (masterProc) then
         print *,"whichAdjointRHS = ", iAdjointRHS
         print *,"whichSpecies = ", iSpecies
@@ -141,8 +141,8 @@ subroutine testingAdjointOperator(forwardSolution,adjointSolution,whichAdjointRH
   ! Multiply the residual by (-1):
   call VecScale(RHS, -1.d+0, ierr)
 
-  call innerProduct(adjointSolution,RHS, innerProduct1)
-  call innerProduct(forwardSolution,adjointRHS, innerProduct2)
+  call innerProduct(adjointSolution,RHS, innerProduct1,0)
+  call innerProduct(forwardSolution,adjointRHS, innerProduct2,0)
   if (masterProc) then
     print *,"Inner product 1: ", innerProduct1
     print *,"Inner product 2: ", innerProduct2

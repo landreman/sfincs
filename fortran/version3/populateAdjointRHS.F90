@@ -10,7 +10,8 @@
 !! @param rhs Vector to be populated.
 !! @param whichAdjointRHS Indicates which integrated quantity is being differentiated. If = 1 (particle flux), = 2 (heat flux), = 3 (bootstrap current).
 !! @param whichSpecies whichSpecies Indicates species used for inner product. If = 0, corresponds to a species-summed quantity. If nonzero, indicates number of species.
-subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies)
+!! @param fineGrid Indicates whether the RHS is evaluated on the fine grid. If 1, corresponds to the fine grid. Otherwise referes to the coarse grid.
+subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies, fineGrid)
 
   use globalVariables
   use indices
@@ -19,12 +20,15 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies)
   implicit none
 
   Vec :: rhs
-  integer :: whichAdjointRHS, whichSpecies
+  integer :: whichAdjointRHS, whichSpecies, fineGrid
 
   PetscErrorCode :: ierr
   integer :: ix, L, itheta, izeta, ispecies, index, ixMin
   PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, xPartOfRHS, factor, nHat, ZHat, sqrtFSAB2
   PetscReal :: norm, factor1, factor2
+  ! Reference to appropriate grid
+  integer :: this_ithetaMin, this_ithetaMax, this_izetaMin, this_izetaMax, whichMatrix, this_matrixSize
+  PetscScalar, dimension(:,:), pointer :: this_BHat, this_DHat, this_BHat_sub_theta, this_BHat_sub_zeta, this_dBHatdtheta, this_dBHatdzeta
 
   ! Validate input
   if (whichAdjointRHS<1 .or. whichAdjointRHS>3 .or. whichSpecies<0 .or. whichSpecies>Nspecies) then
@@ -36,7 +40,37 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies)
     stop
   end if
 
-  call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, rhs, ierr)
+  if (fineGrid==1) then
+    this_ithetaMin = ithetaMin_fine
+    this_ithetaMax = ithetaMax_fine
+    this_izetaMin = izetaMin_fine
+    this_izetaMax = izetaMax_fine
+    whichMatrix = 7
+    this_matrixSize = matrixSize_fine
+
+    this_BHat => BHat_fine
+    this_DHat => DHat_fine
+    this_BHat_sub_theta => BHat_sub_theta_fine
+    this_BHat_sub_zeta => BHat_sub_zeta_fine
+    this_dBHatdtheta => dBHatdtheta_fine
+    this_dBHatdzeta => dBHatdzeta_fine
+  else
+    this_ithetaMin = ithetaMin
+    this_ithetaMax = ithetaMax
+    this_izetaMin = izetaMin
+    this_izetaMax = izetaMax
+    whichMatrix = 0
+    this_matrixSize = matrixSize
+
+    this_BHat => BHat
+    this_DHat => DHat
+    this_BHat_sub_theta => BHat_sub_theta
+    this_BHat_sub_zeta => BHat_sub_zeta
+    this_dBHatdtheta => dBHatdtheta
+    this_dBHatdzeta => dBHatdzeta
+  end if
+
+  call VecCreateMPI(MPIComm, PETSC_DECIDE, this_matrixSize, rhs, ierr)
   call VecSet(rhs, zero, ierr)
 
   if (pointAtX0) then
@@ -73,14 +107,14 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies)
             xPartOfRHS = xPartOfRHS*ZHat
           end if
 
-          do itheta = ithetaMin,ithetaMax
-             do izeta = izetaMin,izetaMax
-                factor = xPartOfRHS/(BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)) &
-                  *(BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) &
-                  - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))
+          do itheta = this_ithetaMin,this_ithetaMax
+             do izeta = this_izetaMin,this_izetaMax
+                factor = xPartOfRHS/(this_BHat(itheta,izeta)*this_BHat(itheta,izeta)*this_BHat(itheta,izeta)) &
+                  *(this_BHat_sub_theta(itheta,izeta)*this_dBHatdzeta(itheta,izeta) &
+                  - this_BHat_sub_zeta(itheta,izeta)*this_dBHatdtheta(itheta,izeta))
                 select case(discreteAdjointOption)
                   case (0) ! continuous
-                    factor = factor*DHat(itheta,izeta)
+                    factor = factor*this_DHat(itheta,izeta)
                     factor1 = four/three
                     factor2 = two/three
                   case (1) ! discrete
@@ -93,12 +127,12 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies)
 
                 L = 0
 
-                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,0)
+                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,whichMatrix)
                 call VecSetValue(rhs, index, factor1*factor, INSERT_VALUES, ierr)
 
                 L = 2
 
-                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,0)
+                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,whichMatrix)
                 call VecSetValue(rhs, index, factor2*factor, INSERT_VALUES, ierr)
 
              enddo
@@ -126,13 +160,13 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies)
             xPartOfRHS = exp(-x2(ix))*nHat*mHat*sqrtMHat*Delta*x2(ix)*x2(ix)/ &
               (2*pi*sqrtpi*sqrtTHat*ZHat)*ddrN2ddpsiHat
           end if
-          do itheta = ithetaMin,ithetaMax
-             do izeta = izetaMin,izetaMax
+          do itheta = this_ithetaMin,this_ithetaMax
+             do izeta = this_izetaMin,this_izetaMax
                 select case (discreteAdjointOption)
                   case (0) ! continuous
-                    factor = xPartOfRHS*DHat(itheta,izeta)/(BHat(itheta,izeta)**3)*(BHat_sub_theta(itheta,izeta) &
-                      *dBHatdzeta(itheta,izeta) - BHat_sub_zeta(itheta,izeta)* &
-                    dBHatdtheta(itheta,izeta))
+                    factor = xPartOfRHS*this_DHat(itheta,izeta)/(this_BHat(itheta,izeta)**3)*(this_BHat_sub_theta(itheta,izeta) &
+                      *this_dBHatdzeta(itheta,izeta) - this_BHat_sub_zeta(itheta,izeta)* &
+                    this_dBHatdtheta(itheta,izeta))
                     factor1 = four/three
                     factor2 = two/three
                   case (1) ! discrete
@@ -147,11 +181,11 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies)
                 ! factor is the samed for species-summed heat flux
 
                 L = 0
-                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,0)
+                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,whichMatrix)
                 call VecSetValue(rhs, index, factor1*factor, INSERT_VALUES, ierr)
 
                 L = 2
-                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,0)
+                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,whichMatrix)
                 call VecSetValue(rhs, index, factor2*factor, INSERT_VALUES, ierr)
 
              end do
@@ -183,11 +217,11 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies)
             if (whichSpecies == 0) then
               xPartOfRHS = xPartOfRHS*ZHat
             end if
-            do itheta = ithetaMin,ithetaMax
-               do izeta = izetaMin,izetaMax
+            do itheta = this_ithetaMin,this_ithetaMax
+               do izeta = this_izetaMin,this_izetaMax
                   select case (discreteAdjointOption)
                     case (0) ! continuous
-                      factor = xPartOfRHS*BHat(itheta,izeta)
+                      factor = xPartOfRHS*this_BHat(itheta,izeta)
                     case (1) ! discrete
                       factor = xPartOfRHS*thetaWeights(itheta)*zetaWeights(izeta)*BHat(itheta,izeta)/DHat(itheta,izeta)
                     case (2) ! rescaled
@@ -195,7 +229,7 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies)
                   end select
 
                   L = 1
-                  index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,0)
+                  index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,whichMatrix)
                   call VecSetValue(rhs, index, factor, INSERT_VALUES, ierr)
 
                enddo

@@ -138,8 +138,8 @@ module globalVariables
   integer :: ithetaMin_fine, ithetaMax_fine, localNtheta_fine
   integer :: izetaMin_fine, izetaMax_fine, localNzeta_fine
   integer :: matrixSize_fine
-  PetscScalar, dimension(:), allocatable :: theta_fine, thetaWeights_fine
-  PetscScalar, dimension(:), allocatable :: zeta_fine, zetaWeights_fine
+  PetscScalar, dimension(:), allocatable, target :: theta_fine, thetaWeights_fine
+  PetscScalar, dimension(:), allocatable, target :: zeta_fine, zetaWeights_fine
   PetscScalar, dimension(:,:), allocatable :: ddtheta_plus_fine, ddtheta_minus_fine
   PetscScalar, dimension(:,:), allocatable :: ddzeta_plus_fine, ddzeta_minus_fine
   PetscScalar, dimension(:,:), allocatable :: ddtheta_ExB_plus_fine, ddtheta_ExB_minus_fine
@@ -147,11 +147,11 @@ module globalVariables
   PetscScalar, dimension(:,:), allocatable :: ddtheta_fine, ddzeta_fine
 
   ! Geometric quantities on fine grids
-  PetscScalar, dimension(:,:), allocatable :: BHat_fine, dBHatdtheta_fine, dBHatdzeta_fine, DHat_fine
-  PetscScalar, dimension(:,:), allocatable :: BHat_sub_theta_fine, dBHat_sub_theta_dzeta_fine
-  PetscScalar, dimension(:,:), allocatable :: BHat_sub_zeta_fine, dBHat_sub_zeta_dtheta_fine
-  PetscScalar, dimension(:,:), allocatable :: BHat_sup_theta_fine, dBHat_sup_theta_dzeta_fine
-  PetscScalar, dimension(:,:), allocatable :: BHat_sup_zeta_fine, dBHat_sup_zeta_dtheta_fine
+  PetscScalar, dimension(:,:), allocatable, target :: BHat_fine, dBHatdtheta_fine, dBHatdzeta_fine, DHat_fine
+  PetscScalar, dimension(:,:), allocatable, target :: BHat_sub_theta_fine, dBHat_sub_theta_dzeta_fine
+  PetscScalar, dimension(:,:), allocatable, target :: BHat_sub_zeta_fine, dBHat_sub_zeta_dtheta_fine
+  PetscScalar, dimension(:,:), allocatable, target :: BHat_sup_theta_fine, dBHat_sup_theta_dzeta_fine
+  PetscScalar, dimension(:,:), allocatable, target :: BHat_sup_zeta_fine, dBHat_sup_zeta_dtheta_fine
 
   ! ********************************************************
   ! ********************************************************
@@ -258,7 +258,7 @@ module globalVariables
   integer :: NxPotentials
   PetscScalar, dimension(:), allocatable :: x_plus1, x
   PetscScalar, dimension(:), allocatable :: theta, zeta
-  PetscScalar, dimension(:), allocatable :: thetaWeights, zetaWeights
+  PetscScalar, dimension(:), allocatable, target :: thetaWeights, zetaWeights
   PetscScalar, dimension(:,:), allocatable :: ddtheta, ddzeta
   PetscScalar, dimension(:,:), allocatable :: ddtheta_ExB_plus, ddtheta_ExB_minus
   PetscScalar, dimension(:,:), allocatable :: ddzeta_ExB_plus, ddzeta_ExB_minus
@@ -283,13 +283,13 @@ module globalVariables
   integer, parameter :: COORDINATE_SYSTEM_VMEC = 2
   integer :: coordinateSystem = COORDINATE_SYSTEM_UNINITIALIZED
 
-  PetscScalar, dimension(:,:), allocatable :: DHat
-  PetscScalar, dimension(:,:), allocatable :: BHat, dBHatdtheta, dBHatdzeta, dBHatdpsiHat
-  PetscScalar, dimension(:,:), allocatable :: BHat_sub_psi, dBHat_sub_psi_dtheta, dBHat_sub_psi_dzeta
-  PetscScalar, dimension(:,:), allocatable :: BHat_sub_theta, dBHat_sub_theta_dzeta, dBHat_sub_theta_dpsiHat
-  PetscScalar, dimension(:,:), allocatable :: BHat_sub_zeta, dBHat_sub_zeta_dtheta, dBHat_sub_zeta_dpsiHat
-  PetscScalar, dimension(:,:), allocatable :: BHat_sup_theta, dBHat_sup_theta_dzeta, dBHat_sup_theta_dpsiHat
-  PetscScalar, dimension(:,:), allocatable :: BHat_sup_zeta, dBHat_sup_zeta_dtheta, dBHat_sup_zeta_dpsiHat
+  PetscScalar, dimension(:,:), allocatable, target :: DHat
+  PetscScalar, dimension(:,:), allocatable, target :: BHat, dBHatdtheta, dBHatdzeta, dBHatdpsiHat
+  PetscScalar, dimension(:,:), allocatable, target :: BHat_sub_psi, dBHat_sub_psi_dtheta, dBHat_sub_psi_dzeta
+  PetscScalar, dimension(:,:), allocatable, target :: BHat_sub_theta, dBHat_sub_theta_dzeta, dBHat_sub_theta_dpsiHat
+  PetscScalar, dimension(:,:), allocatable, target :: BHat_sub_zeta, dBHat_sub_zeta_dtheta, dBHat_sub_zeta_dpsiHat
+  PetscScalar, dimension(:,:), allocatable, target :: BHat_sup_theta, dBHat_sup_theta_dzeta, dBHat_sup_theta_dpsiHat
+  PetscScalar, dimension(:,:), allocatable, target :: BHat_sup_zeta, dBHat_sup_zeta_dtheta, dBHat_sup_zeta_dpsiHat
   PetscScalar, dimension(:,:), allocatable :: BDotCurlB, uHat, gradpsidotgradB_overgpsipsi
   PetscScalar, dimension(:,:), allocatable :: sources, jHat, Phi1Hat, dPhi1Hatdtheta, dPhi1Hatdzeta
   PetscScalar, dimension(:,:,:), allocatable :: densityPerturbation, totalDensity

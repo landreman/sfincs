@@ -27,7 +27,7 @@ module adjointDiagnostics
       call VecSet(adjointResidualEr,zero,ierr)
       ! compute (dLdEr f - dSdEr)
       call evaluateAdjointInnerProductFactor(solutionVec,adjointResidualEr,0,0)
-      call innerProduct(adjointSolutionJr,adjointResidualEr,innerProductResult)
+      call innerProduct(adjointSolutionJr,adjointResidualEr,innerProductResult,0)
 
       ! dPhiHatdpsiHat = ddrHat2ddpsiHat * (-Er)
       ! dPhiHatdpsiHatdEr = -ddrHat2ddpsiHat
@@ -80,7 +80,8 @@ module adjointDiagnostics
     !! @param deltaF First quantity in inner product.
     !! @param deltaG Second quantity in inner product.
     !! @param result Result of inner product.
-    subroutine innerProduct(deltaF, deltaG, result)
+    !! @param fineGrid Integer denoting which grid to computer inner product on. fineGrid = 1 denotes fine, otherwise coarse.
+    subroutine innerProduct(deltaF, deltaG, result, fineGrid)
 
       use globalVariables
       use indices
@@ -88,6 +89,7 @@ module adjointDiagnostics
 
       implicit none
 
+      integer :: fineGrid
       Vec :: deltaF, deltaG
       PetscScalar :: result
       Vec :: deltaFOnProc0, deltaGOnProc0
@@ -100,6 +102,27 @@ module adjointDiagnostics
       VecScatter :: VecScatterContext
       PetscErrorCode :: ierr
       PetscScalar :: speciesResult
+      integer :: whichMatrix, this_Ntheta, this_Nzeta
+      PetscScalar, dimension(:), pointer :: this_thetaWeights, this_zetaWeights
+      PetscScalar, dimension(:,:), pointer :: this_BHat, this_DHat
+
+      if (fineGrid==1) then
+        whichMatrix = 7
+        this_Ntheta = Ntheta_fine
+        this_Nzeta = Nzeta_fine
+
+        this_DHat => DHat_fine
+        this_thetaWeights => thetaWeights_fine
+        this_zetaWeights => zetaWeights_fine
+      else
+        whichMatrix = 0
+        this_Ntheta = Ntheta
+        this_Nzeta = Nzeta
+
+        this_thetaWeights => thetaWeights
+        this_zetaWeights => zetaWeights
+        this_DHat => DHat_fine
+      end if
 
       select case (discreteAdjointOption)
         case (0) ! continuous
@@ -125,7 +148,7 @@ module adjointDiagnostics
             allocate(sourcesF(Nspecies,2))
             allocate(sourcesG(Nspecies,2))
             allocate(xIntegralFactor(Nx))
-            allocate(thetazetaIntegralFactor(Ntheta,Nzeta))
+            allocate(thetazetaIntegralFactor(this_Ntheta,this_Nzeta))
 
             ! Get sources associated with deltaF and deltaG
             if (constraintScheme == 1) then
@@ -147,16 +170,16 @@ module adjointDiagnostics
               nHat = nHats(ispecies)
 
               xIntegralFactor = ((pi*pi*sqrtpi*THat*THat*THat*THat)/(mHat*mHat*mHat*nHat*VprimeHat))*x*x*exp(x*x)
-              thetazetaIntegralFactor = one/DHat
-              do itheta=1,Ntheta
-                do izeta=1,Nzeta
+              thetazetaIntegralFactor = one/this_DHat
+              do itheta=1,this_Ntheta
+                do izeta=1,this_Nzeta
                   do ix=1,Nx
                     ! The integral over xi turns into a sum over L (with a factor of 2/(2L+1))
                     do L=0,(Nxi_for_x(ix)-1)
-                      index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,0)+1
+                      index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,whichMatrix)+1
 
                       speciesResult = speciesResult + thetazetaIntegralFactor(itheta,izeta)*xIntegralFactor(ix) &
-                        *(two/(two*real(L)+one))*thetaWeights(itheta)*zetaWeights(izeta) &
+                        *(two/(two*real(L)+one))*this_thetaWeights(itheta)*this_zetaWeights(izeta) &
                         *deltaFArray(index)*deltaGArray(index)*xWeights(ix)
 
                     end do
@@ -641,8 +664,8 @@ module adjointDiagnostics
         call VecSet(adjointResidualEr,zero,ierr)
         ! compute (dLdEr f - dSdEr)
         call evaluateAdjointInnerProductFactor(forwardSolution,adjointResidualEr,0,0)
-        call innerProduct(adjointSolution,adjointResidualEr,innerProductResultEr1)
-        call innerProduct(adjointSolutionJr,adjointResidualEr,innerProductResultEr2)
+        call innerProduct(adjointSolution,adjointResidualEr,innerProductResultEr1,0)
+        call innerProduct(adjointSolutionJr,adjointResidualEr,innerProductResultEr2,0)
       end if
 
       ! Same inner product is formed regardless of whichAdjointMatrix and whichSpecies
@@ -655,13 +678,13 @@ module adjointDiagnostics
           call evaluateAdjointInnerProductFactor(forwardSolution,adjointResidual,whichLambda,whichMode)
 
           if (RHSMode == 5) then
-            call innerProduct(adjointSolutionJr,adjointResidual,innerProductResultEr3)
+            call innerProduct(adjointSolutionJr,adjointResidual,innerProductResultEr3,0)
             call particleFluxSensitivity(radialCurrentSensitivity,forwardSolution,0,whichLambda,whichMode)
             ErTermToAdd = -(innerProductResultEr1/innerProductResultEr2)*(radialCurrentSensitivity-innerProductResultEr3)
             dPhidPsidLambda(whichLambda,whichMode) = (1/innerProductResultEr2)*(radialCurrentSensitivity-innerProductResultEr3)
           end if
 
-            call innerProduct(adjointSolution,adjointResidual,innerProductResult)
+            call innerProduct(adjointSolution,adjointResidual,innerProductResult,0)
 
             ! Save to appropriate sensitivity array
             if (whichSpecies == 0) then

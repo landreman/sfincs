@@ -471,9 +471,14 @@ module solver
        stop
     end select
 
-
     ! Initialize things needed for adjoint solve
     if (RHSMode>3 .or. (ambipolarSolve .and. (ambipolarSolveOption==1))) then
+
+      ! Forward matrix & preconditioner no longer needed
+      if (discreteAdjointOption==0) then
+        call MatDestroy(matrix,ierr)
+        call MatDestroy(preconditionerMatrix,ierr)
+      end if
 
       !> Allocate adjointRHSVec
       call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointRHSVec, ierr)
@@ -533,7 +538,7 @@ module solver
 
       !> Construct RHS vec
       call VecSet(adjointRHSVec, zero, ierr)
-      call populateAdjointRHS(adjointRHSVec, whichAdjointRHS, ispecies)
+      call populateAdjointRHS(adjointRHSVec, whichAdjointRHS, ispecies, 0)
 
       !> Construct solution vec
       call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointSolutionJr, ierr)
@@ -753,7 +758,7 @@ module solver
 
           !> Construct RHS vec
           call VecSet(adjointRHSVec, zero, ierr)
-          call populateAdjointRHS(adjointRHSVec, whichAdjointRHS, ispecies)
+          call populateAdjointRHS(adjointRHSVec, whichAdjointRHS, ispecies, 0)
 
           if (masterProc) then
              print *,"Beginning the adjoint solve.  This could take a while ..."
@@ -877,7 +882,7 @@ module solver
           end if
 
           ! Construct RHS vec
-          call populateAdjointRHS(adjointRHSVec, whichAdjointRHS, ispecies)
+          call populateAdjointRHS(adjointRHSVec, whichAdjointRHS, ispecies, 0)
 
           if (masterProc) then
              print *,"Beginning the adjoint solve.  This could take a while ..."
@@ -961,7 +966,7 @@ module solver
 !!$    if (useIterativeLinearSolver) then
 !!$       call MatDestroy(preconditionerMatrix, ierr)
 !!$    end if
-    if (ambipolarSolve) then
+    if (ambipolarSolve .and. discreteAdjointOption>0) then
       call MatDestroy(matrix,ierr)
       call MatDestroy(preconditionerMatrix,ierr)
     end if

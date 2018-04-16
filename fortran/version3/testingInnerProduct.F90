@@ -47,7 +47,7 @@ subroutine testingInnerProduct(forwardSolution,whichAdjointRHS,whichSpecies)
       print*, "calling innerProduct"
   end if
   ! Compute inner product
-  call innerProduct(forwardSolution,adjointRHSVec,innerProductResult)
+  call innerProduct(forwardSolution,adjointRHSVec,innerProductResult,0)
 
   ! Compare with appropriate quantity
   if (masterProc) then
