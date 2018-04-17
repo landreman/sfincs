@@ -1810,8 +1810,12 @@ file has a different name than {\ttfamily runspec.dat}, for instance
 {\ttfamily thefilename.dat}, this name can be
 specified by adding the line\\
 {\ttfamily
-!ss runSpecFile = thefilename.dat\\
-}
+!ss runSpecFile = thefilename.dat\\}
+
+{\ttfamily scanType} = 22: Similar to {\ttfamily scanType}=5 but the
+radial scan is specified with a runspec file like for {\ttfamily
+  scanType}=21. For each line in the {\ttfamily runspec.dat} file a
+directory is created, in which a {\ttfamily scanType}=2 $E_r$ scan is started.\\
 }
 
 
