@@ -270,7 +270,7 @@ $\displaystyle \text{\ttfamily heatFlux\_v\textcolor{magenta}{XN}\_\textcolor{ma
 \outputparam{totalDensity}
 {$\text{\ttfamily Nzeta} \times \text{\ttfamily Ntheta} \times \text{\ttfamily Nspecies} \times \text{\ttfamily NIterations}$ matrix of reals}
 {\parlink{RHSMode} == 1 and \parlink{solveSystem} == \true.}
-{{\ttfamily totalDensity} = \parlink{nHats}~+~\parlink{densityPerturbation}.}
+{{\ttfamily totalDensity} = \parlink{nHats}$\cdot \exp \left(- \frac{Z e \Phi_1}{T}  \right)$~+~\parlink{densityPerturbation}.}
 
 \myhrule
 
@@ -292,7 +292,7 @@ Should be within machine precision of 0.}
 \outputparam{totalPressure}
 {$\text{\ttfamily Nzeta} \times \text{\ttfamily Ntheta} \times \text{\ttfamily Nspecies} \times \text{\ttfamily NIterations}$ matrix of reals}
 {\parlink{RHSMode} == 1 and \parlink{solveSystem} == \true.}
-{{\ttfamily totalPressure} = \parlink{nHats} $\cdot$ \parlink{THats}~+~\parlink{pressurePerturbation}.}
+{{\ttfamily totalPressure} = \parlink{nHats}$\cdot \exp \left(- \frac{Z e \Phi_1}{T}  \right)$ $\cdot$ \parlink{THats}~+~\parlink{pressurePerturbation}.}
 
 \myhrule
 
