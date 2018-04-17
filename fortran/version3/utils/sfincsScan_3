@@ -109,6 +109,8 @@ elif scanVariable == "dphihatdrn":
     mustBeInteger = False
 elif scanVariable == "nu_n":
     mustBeInteger = False
+elif scanVariable == "krook":
+    mustBeInteger = False
 elif scanVariable == "nuprime":
     mustBeInteger = False
 elif scanVariable == "estar":

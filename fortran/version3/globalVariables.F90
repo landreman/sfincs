@@ -117,6 +117,7 @@ module globalVariables
   logical :: include_fDivVE_term = .false.
   logical :: includeTemperatureEquilibrationTerm = .false.
   logical :: includePhi1 = .false.
+  logical :: includePhi1InCollisionOperator = .false.
 !!  logical :: includeRadialExBDrive = .false. !!Commented by AM 2016-02
   logical :: includePhi1InKineticEquation = .true. !!Added by AM 2016-03
 
@@ -124,9 +125,9 @@ module globalVariables
 
   integer :: magneticDriftScheme = 0
 
-  !!Added by AM 2016-02!!
   integer :: quasineutralityOption = 1
-  !!!!!!!!!!!!!!!!!!!!!!!
+
+  PetscScalar :: Krook = 0
 
   ! ********************************************************
   ! ********************************************************
@@ -223,7 +224,7 @@ module globalVariables
   PetscScalar, dimension(:,:), allocatable :: BHat_sub_zeta, dBHat_sub_zeta_dtheta, dBHat_sub_zeta_dpsiHat
   PetscScalar, dimension(:,:), allocatable :: BHat_sup_theta, dBHat_sup_theta_dzeta, dBHat_sup_theta_dpsiHat
   PetscScalar, dimension(:,:), allocatable :: BHat_sup_zeta, dBHat_sup_zeta_dtheta, dBHat_sup_zeta_dpsiHat
-  PetscScalar, dimension(:,:), allocatable :: BDotCurlB, uHat, gradpsidotgradB_overgpsipsi
+  PetscScalar, dimension(:,:), allocatable :: BDotCurlB, uHat, gradpsidotgradB_overgpsipsi, gpsipsi
   PetscScalar, dimension(:,:), allocatable :: sources, jHat, Phi1Hat, dPhi1Hatdtheta, dPhi1Hatdzeta, bcdata
   PetscScalar, dimension(:,:,:), allocatable :: densityPerturbation, totalDensity
   PetscScalar, dimension(:,:,:), allocatable :: pressurePerturbation, totalPressure, pressureAnisotropy

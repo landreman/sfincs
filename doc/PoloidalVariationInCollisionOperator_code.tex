@@ -1,0 +1,454 @@
+
+\documentclass[12pt]{article}
+\usepackage{url} 
+%\usepackage[dvips]{graphicx}
+\usepackage[pdftex]{graphicx}
+\usepackage[latin1]{inputenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{fancyhdr}
+\usepackage{bm}
+\usepackage{float}
+\usepackage{listings}
+\usepackage{color}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+  language=Fortran,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3,
+  frame=none
+}\usepackage[dvipsnames]{xcolor}
+\usepackage{wrapfig}
+\usepackage{multicol}
+\usepackage[colorlinks=true,
+		linkcolor=red,
+		citecolor=blue,
+		urlcolor=blue]{hyperref}
+
+\usepackage{titlesec}
+\usepackage[titletoc]{appendix}
+%\usepackage{appendix}
+\setcounter{secnumdepth}{4}
+
+\titleformat{\paragraph}
+{\normalfont\normalsize\bfseries}{\theparagraph}{1em}{}
+\titlespacing*{\paragraph}
+{0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
+
+\setlength {\parindent} { 10mm} 
+\setlength{\textheight}{230mm} 
+\setlength{\textwidth}{160mm} 
+\setlength{\oddsidemargin}{0mm}
+\setlength{\topmargin}{-10mm} 
+% newcommands
+\newcommand{\p}{\partial}
+\newcommand{\g}[1]{\mbox{\boldmath $#1$}}
+\newcommand{\vi}{\g V_{\! \! i}}
+\newcommand{\ps}{Pfirsch-Schl\"{u}ter} 
+\newcommand{\lp}{\left(}
+\newcommand{\rp}{\right)}
+\newcommand{\ca}[1]{\mbox{\cal $#1$}}
+\newcommand{\be}{\begin{displaymath}}
+\newcommand{\ee}{\end{displaymath}}
+\newcommand{\bn}{\begin{equation}}
+\newcommand{\en}{\end{equation}}
+\newcommand{\mygtrsim}{\mathrel{\mbox{\raisebox{-1mm}{$\stackrel{>}{\sim}$}}}}
+\newcommand{\mylsim}{\mathrel{\mbox{\raisebox{-1mm}{$\stackrel{<}{\sim}$}}}}
+\newcommand{\vek}{\bf}
+\newcommand{\ten}{\sf}
+\newcommand{\bfm}[1]{\mbox{\boldmath$#1$}}
+\newcommand{\lang}{\left\langle}
+\newcommand{\rang}{\right\rangle}
+\newcommand{\vo}[1]{\left|\begin {array}{l} \mbox{} \\ \mbox{} \\$#1$ \end
+{array}\right .}  
+\newcommand{\von}[2]{\left |\begin {array}{l}
+\mbox{}\\$#1$\\$#2$ \end {array}\right .}
+\newcommand{\simgt}{\:{\raisebox{-1.5mm}{$\stackrel
+{\textstyle{>}}{\sim}$}}\:}
+\newcommand{\simlt}{\:{\raisebox{-1.5mm}{$\stackrel
+{\textstyle{<}}{\sim}$}}\:}
+%\renewcommand {\baselinestretch} {1.67}
+%\pagestyle{empty}
+\newcommand{\todo}[1]{\textbf{\textcolor{red}{TODO: #1}}}
+\newcommand{\remark}[1]{\textbf{\textcolor{red}{REMARK: #1}}}
+
+
+\usepackage{siunitx}
+
+\title{Implementation of poloidal density variation in collision operator}
+\author{Aylwin Iantchenko}
+
+
+\pagestyle{fancy}
+\fancyhead{}
+\chead{Aylwin Iantchenko %850227-2019
+\\ Implementation of poloidal density variation in collision operator}
+\cfoot{\thepage}
+\renewcommand{\headrulewidth}{1pt}
+\renewcommand{\footrulewidth}{1pt}
+\setlength{\headheight}{28pt}
+\setlength{\footskip}{25pt}
+
+\newcommand{\red}[1]{\textcolor{red}{#1}}
+\newcommand{\mE}{\mathcal{E}}
+\newcommand{\energy}{\mathcal{E}}
+\newcommand{\mK}{\mathcal{K}}
+\newcommand{\mN}{\mathcal{N}}
+\newcommand{\mD}{\mathcal{D}}
+\newcommand{\ord}{\mathcal{O}}
+\newcommand{\Tpe}{T_\perp}
+\newcommand{\Tpa}{T_\|}
+\newcommand{\vpe}{v_\perp}
+\newcommand{\vpa}{v_\|}
+\newcommand{\kpe}{k_\perp}
+\newcommand{\kpa}{k_\|}
+\newcommand{\Bv}{\mathbf{B}}
+\newcommand{\Ev}{\mathbf{E}}
+\newcommand{\bv}{\mathbf{b}}
+\newcommand{\vv}{\mathbf{v}}
+\newcommand{\cd}{\cdot}
+\newcommand{\na}{\nabla}
+\newcommand{\btheta}{\bar{\theta}}
+\newcommand{\phit}{\tilde{\phi}}
+\newcommand{\oert}{\tilde{\omega}_{Er}}
+
+% Simplify equations
+\newcommand{\eq}[1]{\begin{align*}\begin{gathered}#1\end{gathered}\end{align*}}
+\newcommand{\eqre}[1]{\begin{align}\begin{gathered}#1\end{gathered}\end{align}}
+
+\usepackage{tikzPackages}
+
+
+\begin{document}
+\titlepage
+
+\maketitle
+
+The aim of this document is to explain the modifications in \texttt{SFINCS} that have been done, in order to include poloidal density variation in the collision operator (in both full Fokker-Planck and pure pitch angle scattering operator options). 
+
+As is explained in Ref.~\cite{ref:PolVarColl_stefan} poloidal density variation can be included by modifying the lowest order distribution function 
+\eq{
+f_{Ms}(\psi) \rightarrow f_{0s} = f_{Ms}(\psi)e^{-Z_se\Phi_1(\theta,\zeta)/T_s},
+}
+where $f_M(\psi)$ is the flux-function Maxwellian, $\Phi_1$ is first order variation of the electrostatic potential, and $Z_s,T_s$ are the charge and temperature of species $s$ respectively. To implement this change one may simply modify the species density accordingly
+\eqre{
+\label{eq:densMod}
+n_s \rightarrow n_se^{-Ze\Phi_1(\theta,\zeta)/T},
+}
+in the original equations for the various terms in the collision operator, which are described in Ref.~\cite{ref:Coll1}. The linearised collision operator takes the new form
+\eqre{
+C_{ab}^{L:f0} =  C_{ab}\left\{f_{aM},f_{bM}\right\}e^{-\left(Z_a/T_a + Z_b/T_b\right)e\Phi_1(\theta,\zeta)} + C_{ab}\left\{f_{a1},f_{bM}\right\}e^{-Z_b/T_be\Phi_1(\theta,\zeta)} + \\ + C_{ab}\left\{f_{aM},f_{b1}\right\}e^{-Z_a/T_ae\Phi_1(\theta,\zeta)},
+}
+which describes collisions between species $a$ and $b$. In normalised \texttt{SFINCS} units this becomes
+\eqre{
+\label{eq:CollMod}
+\hat C_{ab}^{L:f0} = \hat C_{ab}\left\{f_{aM},f_{bM}\right\}e^{-\left(\hat Z_a/\hat T_a + \hat Z_b/\hat T_b\right) \alpha\hat\Phi_1(\theta,\zeta)} + \hat C_{ab}\left\{f_{a1},f_{bM}\right\}e^{-\hat Z_b/\hat T_b \alpha\hat\Phi_1(\theta,\zeta)} + \\ + \hat C_{ab}\left\{f_{aM},f_{b1}\right\}e^{-\hat Z_a/\hat T_a\alpha\hat\Phi_1(\theta,\zeta)}.
+}
+
+\noindent
+The first term on the RHS of Eq.~\eqref{eq:CollMod} is the \textit{temperature equilibration term}. Since this term does not include $f_{1s}$ it has to be treated differently compared to the other two cases, as will be seen shortly. In the code, the calculation of the residual (see Ref.~\cite{ref:Phi1Implem} for definition of the residual and Jacobian in this context) has to be modified to include the factors specified in Eq.~\eqref{eq:CollMod}. 
+
+The contribution to the Jacobian are $\delta \hat C_{ab}^{L:f0}/\delta \hat f_{1s}$ and $\delta \hat C_{ab}^{L:f0}/\delta\hat \Phi_1$. The first contribution is the same as in Eq.~\eqref{eq:CollMod} (without the temperature equilibration term) except that the collision operator does not act on the distribution function. In the second case we get 
+
+\eqre{
+\label{eq:Jac1}
+\frac{\delta \hat C_{ab}^{L:f0}}{\delta \hat \Phi_1} = -\left(\hat Z_a/\hat T_a + \hat Z_b/\hat T_b\right) \alpha \hat C_{ab}\left\{f_{aM},f_{bM}\right\}e^{-\left(\hat Z_a/\hat T_a + \hat Z_b/\hat T_b\right) \alpha\hat\Phi_1(\theta,\zeta)}  \\ -\hat Z_b/\hat T_b \alpha\ \hat C_{ab}\left\{f_{a1},f_{bM}\right\}e^{-\hat Z_b/\hat T_b \alpha\hat\Phi_1(\theta,\zeta)}  - \hat Z_a/\hat T_a\alpha\hat\Phi_1(\theta,\zeta) \hat C_{ab}\left\{f_{aM},f_{b1}\right\}e^{-\hat Z_a/\hat T_a\alpha\hat\Phi_1(\theta,\zeta)}.
+}
+
+\noindent
+Apart from the different pre-factor, the term in Eq.~\eqref{eq:Jac1} differs from the term in $\delta \hat C_{ab}^{L:f0}/\delta \hat f_{1s}$ by acting on the first order distribution function $f_{1s}$. For example, in the first case, terms such as $\partial f_{1s}/\partial x_s$ become 
+\eq{
+\frac{\partial}{\partial f_{1s}}\frac{\partial f_{1s}}{\partial x_s} = \frac{\partial}{\partial x_s},
+}
+whereas in the second case, when we take the derivative with respect to $\Phi_1$, we have to include the derivative $\partial f_{1s}/\partial x_s$ (and $\partial f_{0s}/\partial x_s$ for temperature equilibration, which again is not present in the first contribution), as well.
+
+%We will now go through the various changes in the code that have been done to implement Eq.~\eqref{eq:CollMod}. 
+
+\section*{Implementation in the Code}
+To implement Eq.~\eqref{eq:CollMod} and Eq.~\eqref{eq:Jac1} we need to modify the evaluation of the residual and the Jacobian. The residual is evaluated in \texttt{evaluateResidual.F90} and the Jacobian in \texttt{evaluateJacobian.F90}. Both these two routines call the functions in \texttt{PopulateMatrix.F90}, where the actual assembly of the matrices used to compute the residual (by multiplying the matrix with the state-vector) and Jacobian, is done. As a consequence of this structure, we only need to modify \texttt{PopulateMatrix.F90} in order to include poloidal density variation in the collision operator.
+
+\subsection*{Residual}
+\label{sec:Res}
+In the residual we have to include the extra pre-factor appearing in Eq.~\eqref{eq:CollMod}. Since this factor is species specific, we have to keep track of which species density is appearing in the equations. The pitch-angle scattering and the $\hat C^E_{ab}\left \{f_{a1}\right \}$ parts of the collision operator (see Ref. ~\cite{ref:Coll1}) both uses the density $\texttt{nHats(iSpeciesB)}$ while the other contributions to the total collision operator \texttt{CHat} uses \texttt{nHats(iSpeciesA)} instead. 
+
+Rather than creating many if-statements in the current implementation of the collision operator, for sake of clarity we separate the two implementations with one if-statement directly before the various contributions to the collision operator are calculated. If \texttt{Phi1} is included and \texttt{poloidalVariationInCollisionOperator = .true.} the contribution from the collision operator is calculated taking poloidal density variation into account. 
+
+\begin{lstlisting}
+ if (poloidalVariationInCollisionOperator .and. includePhi1 .and. includePhi1InKineticEquation) then
+\end{lstlisting}
+
+Otherwise the second block is executed, which contains the original code. 
+
+\noindent
+Since we now will have a \texttt{Phi1Hat} dependence in the various terms of the collision operator we will have to iterate over \texttt{itheta} and \texttt{izeta} when calculating the various contributions. Before calculating each term, we define a pre-factor (\texttt{PreFactor}) as is specified in Eq.~\eqref{eq:CollMod}, taking the correct species index into account. 
+
+\begin{lstlisting}
+ do itheta=ithetaMin,ithetaMax
+    do izeta=izetaMin,izetaMax
+       ! Generate preFactor for nHats(iSpeciesA) terms
+       preFactor =  exp(-Zs(iSpeciesA)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesA))
+\end{lstlisting}
+
+\noindent
+When required, this pre-factor is overwritten using the charge and temperature of \texttt{iSpeciesB} instead. 
+Because of the \texttt{itheta}, \texttt{izeta} dependence we have replaced \texttt{CECD} and \texttt{nuDHat} to their equivalents \texttt{CECDpol} and \texttt{nuDHatpol} with space for their \texttt{itheta} and \texttt{izeta} components. 
+
+The rest of this block is the same as in the original code, except that we do the second iteration over \texttt{itheta}, \texttt{izeta} slightly earlier, and include the appropriate \texttt{PreFactor} in front of additional contributions to the total collision operator \texttt{CHat}.
+
+\subsubsection*{Temperature equilibration term}
+In the original version of the code, the temperature equilibration term is calculated in \\ \texttt{evaluateResidual.F90} by using \texttt{whichMatrix = 2} when calling \texttt{PopulateMatrix.F90}. The output is then multiplied with $f_{0s}$. Since the original version of \texttt{SFINCS} already includes $\Phi_1$ in the definition of $f_{0s}$ (in the subroutine \texttt{init\_f0()} inside \texttt{PopulateMatrix.F90}), the same routines as were presented above can be used also if\\ \texttt{includeTemperatureEquilibrationTerm = .true.}. 
+
+\subsection*{Jacobian}
+ If the modifications explained in the previous section are implemented, the $\delta C/\delta f_{1s}$ contribution to the Jacobian is at this point already taking the density variation into account. We need to add the calculation of $\delta C/\delta \Phi_1$.
+
+\subsubsection*{The $\delta C/\delta \Phi_1$ term}
+\label{sec:Jac1}
+We begin with treating the two latter terms appearing in Eq.~\eqref{eq:Jac1} and will then look at the temperature equilibration term. 
+
+To implement the derivative with respect to $\Phi_1$ we need to redo the calculation of the various contributions to the collision operator, but including a new pre-factor, \texttt{PreFactorJ} as specified in Eq.~\eqref{eq:Jac1}. This should only be done when the Jacobian (\texttt{whichmatrix =1}) or the preconditioner (\texttt{whichmatrix =0}) is calculated.
+
+\begin{lstlisting}
+ if (whichMatrix == 1 .or. whichMatrix == 0) then
+    ! Generate preFactorJ for nHats(iSpeciesB) terms              
+    preFactorJ =  (-Zs(iSpeciesA)*alpha/Thats(iSpeciesA)) &
+    *exp(-Zs(iSpeciesA)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesA))
+\end{lstlisting}
+
+\noindent
+Again, the same is done using the charge and temperature of \texttt{iSpeciesB} instead, whenever required. 
+The result is saved in the new matrices \texttt{nuDHatpolJ}, \texttt{CECDpolJ} etc. Same calculations are then repeated for these terms (except for the different pre-factor), and the result is saved in \texttt{CHatJ}. 
+
+In contrary to the residual (and the $\delta C/\delta f_{1s}$ terms ), when calculating $\delta C/\delta \Phi_1$ we have to include the first order distribution function before saving the result into the main matrix. For this purpose we first have to initiate this distribution function, by reading the appropriate terms in the current state vector. 
+
+\begin{lstlisting}
+ do ix= max(ixMinCol,min_x_for_L(L)),Nx
+    ! Generate f1b from state vector
+    index = getIndex(iSpeciesB,ix,L+1,itheta,izeta,BLOCK_F) 
+    f1b(ix) = stateArray(index + 1)
+\end{lstlisting}
+
+\noindent
+We multiply the terms in the collision operator with this distribution function.
+
+ \begin{lstlisting}
+  CHatTimesf = matmul(CHatJ,f1b)
+ \end{lstlisting}
+\noindent
+The result is then saved into the $\delta \Hat C/\delta \hat \Phi_1$ block of the main matrix,
+
+ \begin{lstlisting}
+do ix_row=max(ixMin,min_x_for_L(L)),Nx
+   rowIndex=getIndex(iSpeciesA,ix_row,L+1,itheta,izeta,BLOCK_F)
+   ! Get column index for the d/dPhi1 terms
+   colIndex=getIndex(1,1,1,itheta,izeta,BLOCK_QN)
+   ! Save into the main matrix, note that here we only use ix_row since CHatTimesf is now a vector
+   call MatSetValue(matrix, rowIndex, colIndex, & 
+   -nu_n*CHatTimesf(ix_row), ADD_VALUES, ierr) 
+   ! need to use MatSetValue, otherwise petsc gives error
+end do ! ix_row
+\end{lstlisting}
+\noindent
+
+\subsubsection*{Temperature equilibration}
+\label{sec:Jac2}
+If the temperature equilibration terms should be included, we have to add additional terms into the main matrix, when calculating  $\delta \Hat C/\delta \hat \Phi_1$. These terms are different from the other contributions since now we need to multiply the output with $f_{0s} = f_{Ms}(\psi)e^{-Z_se\Phi_1(\theta,\zeta)/T_s}$ (instead of the first order distribution function $f_{1s}$). Because of this, we need to generate the Maxwellian distribution function for \texttt{iSpeciesB}.
+
+\begin{lstlisting}
+if (includeTemperatureEquilibrationTerm .and. L==0) then
+   fM(ix) = sqrt(mhats(iSpeciesB)/Thats(iSpeciesB))*mhats(iSpeciesB)/Thats(iSpeciesB)&
+   * nhats(iSpeciesB)/(pi*sqrtpi)*expxb2(ix)
+end if   
+\end{lstlisting}
+
+\noindent
+Because of the \texttt{Phi1Hat} dependence in the zeroth order distribution function we get a different contribution to the Jacobian, as specified in the first term of Eq.~\eqref{eq:Jac1}. In the code, we need to use both the residual term \texttt{CHat} and the Jacobian terms \texttt{CHatJ} to obtain the correct result. 
+
+\begin{lstlisting}
+  CHatTimesf = matmul((CHatJ + CHat*(-Zs(iSpeciesB)*alpha/Thats(iSpeciesB))&
+   )*exp(-Zs(iSpeciesB)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesB)),fM)
+\end{lstlisting}
+
+\noindent
+Written in terms of operators we have that \texttt{CHat} is  $\hat C_{ab}\left\{f_{aM},\cdot\right\}e^{-\hat Z_a/\hat T_a \alpha\hat\Phi_1(\theta,\zeta)}$ and \texttt{CHatJ} is $\hat C_{ab}\left\{f_{aM},\cdot\right\}\left ( -\hat Z_a/\hat T_a \alpha \right ) e^{-\hat Z_a/\hat T_a \alpha\hat\Phi_1(\theta,\zeta)}$. Here $\cdot$ means that the operator does not act on anything. What is left is to add this term into the main matrix, using the the same procedure as was explained in the previous section.
+
+\subsection*{Pure pitch angle scattering operator}
+The implementation of poloidal density variation in the case the pure pitch angle scattering collision operator is used (corresponding to the case \texttt{collisionoperator = 1}), is slightly easier because of the existing loop over \texttt{itheta}, \texttt{izeta} and since we are working with a scalar \texttt{CHat\_element}. Also, since $L > 0$ always for this term, no temperature equilibration has to be included. The only block we need to change is when we save the collision operator into the main matrix. 
+
+We introduce the factor \texttt{preFactor} which is in normal cases equal to one, but when \texttt{poloidalVariationInCollisionOperator = .true.} it is equal to the exponential pre-factor containing $\Phi_1$ in Eq.~\eqref{eq:CollMod}.
+
+Before saving into the main matrix, we multiply the collision operator with this factor.
+
+ \begin{lstlisting}
+ call MatSetValue(matrix, index, colIndex, & 
+   -nu_n*CHat_element*preFactor, ADD_VALUES, ierr)
+  \end{lstlisting}
+
+\subsection*{Jacobian, the $\delta C/\delta \Phi_1$ term}
+Just as before, the   $\delta C/\delta f_1$ terms are the same as in the residual. What is different is the $\delta C/\delta \Phi_1$  term. The procedure to calculate this term is however very similar, to the case with the residual. The only difference is the different pre-factor which now also is multiplied with the distribution function from the state vector.
+
+ \begin{lstlisting}
+  preFactor = -Zs(iSpeciesA)*alpha/Thats(iSpeciesA)*exp(-Zs(iSpeciesA) &
+            *alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesA))*stateArray(index + 1)
+  \end{lstlisting}
+
+\section*{Current state of the project}
+Presently, the modifications discussed in the previous section have been implemented into the ``poloidalVariationInCollisionOperator'' branch of \texttt{SFINCS}. What remains is to verify that the new implementation is correct. First, we try to make simple tests and compare the output from the new code (with poloidal density variation included in the collision operator), with the original code (without poloidal density variation in the collision operator). This is discussed in the first subsection below. Next, we attempt to benchmark the output from the code with theoretical predictions. This is done in the second subsection. 
+
+Tokamak geometry has been used in all cases considered here.
+
+\subsection*{Tests of new code}
+First, for simple scenarios (such as one species cases, or two species but with low impurity charge, $Z \le 4$), comparison between the new and old version of the code gives exactly the same results. The time it takes to run a simulation is practically the same.  
+
+Next, we try to increase the effect of poloidal density variation in the collision operator, by increasing the impurity charge. For $Z \le 16$ this leads to a much longer computation time, but eventually the solver converges and we get a solution. When attempting to run with $Z = 17$, the nonlinear solver diverges. It is possible to get a solution by using \texttt{reusePreconditioner = .false.} in the input to \texttt{SFINCS} and by changing the relative and absolute tolerances used in the iterations. This can be done by providing the flags \texttt{-ksp\_atol} and \texttt{-snes\_rtol} when running the \texttt{SFINCS} simulation. Example of values that can be used are $1e-8$ for \texttt{-ksp\_atol} and $1.0e-6$ for \texttt{-snes\_rtol}. With these options, the nonlinear solver should eventually converge. Note that the other input parameters, such as geometry, species and resolution parameters, all have a strong impact on whether the solver will converge or not. Typical input parameters used here will be presented in the next subsection, further below. 
+
+Even for these more complicated cases, with high impurity charge, there is still practically no difference between using the new code and the original version. This is demonstrated in Fig.~\ref{fig:0} where the perturbed impurity density is shown for $Z=1$ and $Z=17$ respectively. Both cases have been computed using the new and original version of the code. As is seen in the figure, the output from the old and new version of the code is almost identical. 
+
+\begin{figure}
+ \setlength\figureheight{0.4\textheight}
+ \setlength\figurewidth{0.9\textwidth}
+    \centering
+    \input{figures/outdn.tex}
+    \caption{Normalised perturbed impurity density for impurity charge $Z = 1$ (orange) and $Z = 17$ (violet) respectively. The result is shown for the case when the original code is used (solid lines) and  when the new code is used instead, with poloidal density variation included in the collision operator(dashed line with circles).}
+            \label{fig:0}
+      \end{figure} 
+
+Other cases, when changing for example impurity density, have also been studied. All have the same conclusion that poloidal density variation does not seem to matter in the collision operator, at least when Tokamak geometry is considered. Further work with Stellarators might be more interesting and should be done.
+
+
+%Note that depending on the other input parameters used, the value of the charge   
+%First we test the new version of the code for simple scenarios, such as plasmas with only one species, or with two species but with low impurity charge ($Z \le 6$). For such cases, the new version of the code successfully generates an output which is almost identical to the output from the original code. The time it takes to run a simulation is practically the same. 
+
+%Next, in order to increase the effect of poloidal density variation in the collision operator, we try to increase the impurity charge. Now the code runs much slower (compared to when running the same cases with the original code) and it is much more difficult for the (nonlinear) solver to find a solution, which divereges. It is possible to make the nonlinear solver converge by using specific input. First, set the parameters \texttt{reusePreconditione = .false.} in the input file to \texttt{SFINCS}. Secondly, you should modify the relative and absolute tolerance used in the solver-iterations. This can be done by running \texttt{SFINCS} with the flags \texttt{-ksp\_atol} and \texttt{-snes\_rtol}. Good values are $1e-8$ and $1.0e-6$. By playing around with these input parameters it is eventually possible to make the code converge, although at a significant increased computation time. Still, even at higher charge number is is practically no difference between using the new version of the code and the old. This is demonstrated in Fig.~\ref{fig:0} where we show the perturbed impurity density as a function of poloidal angle, for two cases. One has impurity charge $z = 1$ while the other has $z = 17$. Both cases have been run using the original code and the new implementation, where poloidal density variation has been included.
+
+
+
+
+%Other simulations, for example when increasing the impurity density while maintaining high impurity charge also take time to run, and in the end does not show any particular difference when compared with running the simulation with the original code. This shows that poloidal density varation seems to play a small role in simple Tokamak scenarious. Perhaps, Stellarator cases may be required to observe a bigger difference.
+
+\subsection*{Comparing with model}
+The second approach we take to validate the code, is to benchmark the \texttt{SFINCS} output with theoretical predictions, using for example the model described in Ref.~\cite{ref:Fulop}\footnote{Note that in this model the collision operator is not linearised around a poloidally varying zeroth order distribution function (as is done here), but the poloidal variation enters through the perturbed distribution function in the ion-impurity collision operator, when computing the parallel friction force.}. 
+
+
+%Note that in this case only Tokamak cases are considered.
+
+The first step is to test the model with the output from the original \texttt{SFINCS} code, without including poloidal density variation. By setting the temperature gradient to zero we remove the effect from the collision operator and expect therefore the output from \texttt{SFINCS} to agree reasonably well with the predictions from the model. Example of typical \texttt{SFINCS}-input used to get the best agreement so far is:
+\newpage
+ \begin{lstlisting}
+ &speciesParameters
+ Zs = 1.0, 20.0
+ mHats = 1.0, 20.0
+ nHats = 4.0, 0.012
+ THats = 2.0, 2.0
+ dnHatdrNs = -40.0, -0.12
+ dTHatdrNs = -0.0, -0.0
+ 
+ &geometryParameters
+ inputRadialCoordinate = 3
+ inputRadialCoordinateForGradients = 3
+
+ rN_wish = 0.3
+
+ geometryScheme = 1
+ B0OverBBar = 60.0
+ GHat = 180.0
+ IHat = 0.9
+ iota = 0.5
+ epsilon_t = 0.1
+ epsilon_h = 0
+ epsilon_antisymm = 0
+ helicity_l = 1
+ helicity_n = 1
+
+ psiAHat = 30.0
+ aHat = 1.0
+/
+  \end{lstlisting}
+\noindent
+For this input, the orderings of various parameters described in Ref.~\cite{ref:Fulop} are reasonably satisfied (we have $\Delta\sim 0.3, \delta \sim 0.15, \epsilon \sim 0.1, n_zZ^2/n_i \sim 1.2$ and $\nu^*\sim 0.11$). If we use this input for varying magnetic field strength $B_0$ (as an example) and calculate the sine and cosine parts of the perturbed impurity density, we get Fig.~\ref{fig:1} and Fig.~\ref{fig:2} respectively. Solid lines correspond to the case when \texttt{SFINCS} output is used to calculate the perturbed density while dashed lines correspond to the analytical model. The two outputs show good agreement for the cosine parts while the sine is slightly deviating. 
+
+\begin{figure}[H]
+ \setlength\figureheight{0.3\textheight}
+ \setlength\figurewidth{0.9\textwidth}
+    \centering
+    \input{figures/out.tex}
+    \caption{Sine part of the perturbed density for a scan in the magnetic field strength $B_0$. Solid line shows result calculated from \texttt{SFINCS} output while the dashed line is the prediction from the model.}
+            \label{fig:1}
+      \end{figure}  
+  
+  \begin{figure}[H]
+ \setlength\figureheight{0.3\textheight}
+ \setlength\figurewidth{0.9\textwidth}
+    \centering
+        \input{figures/out2.tex}
+       \caption{Cosine part of the perturbed density for a scan in the magnetic field strength $B_0$. Solid line shows result calculated from \texttt{SFINCS} output while the dashed line is the prediction from the model.}
+                  \label{fig:2}
+  \end{figure}  
+
+Scans in $\epsilon$ shows a similar result, but a scan in impurity charge and density show more disagreement between model predictions and output from \texttt{SFINCS}. Similar tests using the new version of the code (with nonzero temperature gradients) show the same result. 
+
+It appears to be challenging to get good agreement between the model and \texttt{SFINCS}. A possible explanation is the difficulty to get asymptotic in the various quantities required for the model to be valid, while maintaining a sufficiently large density perturbation to make a meaningful comparison. As mentioned, here we use $\Delta\sim 0.3, \delta \sim 0.15, \epsilon \sim 0.1, n_zZ^2/n_i \sim 1.2$ and $\nu^*\sim 0.11$ which might not be good enough for the theoretical model to be valid. 
+
+Comparison between \texttt{SFINCS} and the model has been done using a series of python scripts available on \href{https://github.com/landreman/sfincs/commit/520091f6b9ed06cf0b7b1caaa7e0fcfc477f906f}{GitHub}. Further work is required and welcome. 
+
+
+
+%Scan in other parameters, such as impurity density or $\epsilon$ show even worse disagreement. 
+
+
+%It seems to be very difficult to get a proper agreement between this model and \texttt{SFINCS} which might be because it is difficult to get asymptotic in the various quantities, such as for example $\epsilon \ll 1$, while maintaining sufficiently large density perturbations. 
+
+
+
+%For vaious scans, the result is a good agreement between the cosine parts of the perturbed density, while the sine part deviates somewhat. Below is an example of input parameters used for a scan in "X". As sen in Fig.
+
+%Test with the code using the new implementation, when poloidal density varation is included gives identical results as when poloidal density variations are neglected. The new code has a problem converging for large impurity charge. 
+
+ %Using the new implementation, for ``reasonable'' input values of impurity charge and main ion temperature gradient, no particular poloidal asymmetries have been observed, and the result is fairly similar if the original code is used instead. Attempts to benchmark with the model described in Ref.~\cite{ref:Fulop} suggests that much larger ion temperature gradients and impurity charge has to be used, in order to observe poloidal asymmetries in the perturbed density. The problem is, at this high gradients and impurity charge, it becomes difficult to converge. In general, it seems that a slightly higher \texttt{Ntheta} has to be used, when including poloidal variations in the collision operator. 
+ 
+ % a test comment
+
+\newpage
+
+\begin{thebibliography}{99}
+
+\bibitem{ref:PolVarColl_stefan} S.~Buller, \href{https://github.com/landreman/sfincs/blob/poloidalVariationInCollisionOperator/doc/poloidal_variation_in_collision_operator_2017-09-08.pdf}{ \em Poloidal variation in collision operator} (2017).
+
+\bibitem{ref:Phi1Implem} A.~Moll\'en, \href{https://github.com/landreman/sfincs/blob/master/doc/Phi1_implementation_2016-01.pdf}{ \em Implementation of $\Phi_1$ in SFINCS} (2016).
+
+
+\bibitem{ref:Coll1} M.~Landreman, \href{https://github.com/landreman/sfincs/blob/poloidalVariationInCollisionOperator/doc/20150507-01\%20Technical\%20documentation\%20for\%20version\%203\%20of\%20SFINCS.pdf}{\em Technical Documentation for version 3 of SFINCS} (2014).
+
+\bibitem{ref:Fulop} T.~F\"{u}l\"{o}p, P.~Helander \href{http://aip.scitation.org/doi/abs/10.1063/1.873593}{\em Phys. Plasmas}{ \bf 6}, 3066 (1999) % fix this
+
+.
+
+%\bibitem{simakov} A.~N.~Simakov, P.~Helander,
+%  {\em Phys. Plasmas} {\bf 16}, 042503 (2009).
+  
+%\bibitem{nonAxis} P.~Helander, Theory of plasma confinement in non-axisymmetric magnetic fields (2013).
+
+%\bibitem{MH} L.~Råde and B.~Westergren, Mathematics Handbook for Science and Engineering, $5^{\mathrm{th}}$ edition, 2004. %\vspace{-5mm}
+
+%\bibitem{Abra} M.~Abramowitz and I.~A.~Stegun, Handbook of Mathematical Functions, $10^{\mathrm{th}}$ printing, 1972.
+
+\end{thebibliography}
+
+\end{document}
+
+% Some notes:
+Basically the structure is the following: the densoty might not always be corresponding to the row index (since we might have cross terms) but the distribution function is ALWAYS the column index, which is SpeciesB, that is why we use  f1b in the end

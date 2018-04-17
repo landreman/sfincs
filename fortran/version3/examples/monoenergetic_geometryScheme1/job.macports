@@ -1,0 +1,2 @@
+#!/bin/bash
+mpiexec -n 3 ../../sfincs -mat_mumps_cntl_1 0.01 -ksp_view

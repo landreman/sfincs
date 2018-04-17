@@ -144,7 +144,10 @@ for directory in directories:
     particleFlux_vm = f["particleFlux_vm_psiHat"][()]
     heatFlux_vm = f["heatFlux_vm_psiHat"][()]
     elapsedTime = f["elapsed time (s)"][()]
-    sources = f["sources"][()]
+    try:
+       sources = f["sources"][()]
+    except:
+       sources = numpy.array([0,0])
     radCurr_vm = 0
     radCurr_vd = 0
 
@@ -168,7 +171,10 @@ for directory in directories:
              ##outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],particleFlux_vd[0,0],heatFlux_vm[0,0],heatFlux_vd[0,0]]) ##Commented by AM 2016-04
              outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],particleFlux_vd[0,0],heatFlux_vm[0,0],heatFlux_vd[0,0], Phi1atOrigin[0]]) ##Added by AM 2016-04
           else:
-             outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],heatFlux_vm[0,0],sources[0,0,0],sources[1,0,0]])
+             if sources.shape[0]>1:
+                outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],heatFlux_vm[0,0],sources[0,0,0],sources[1,0,0]])
+             else:
+                outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],heatFlux_vm[0,0],sources[0,0,0]])
        else:
           results = []
           iteration = -1
@@ -217,7 +223,10 @@ else:
          ##yAxisLabels=["FSABFlow","particleFlux\nvm_psiHat","particleFlux\nvd_psiHat","heatFlux\nvm_psiHat","heatFlux\nvd_psiHat"] ##Commented by AM 2016-04
          yAxisLabels=["FSABFlow","particleFlux\nvm_psiHat","particleFlux\nvd_psiHat","heatFlux\nvm_psiHat","heatFlux\nvd_psiHat", "Phi1Hat\n[0,0]"] ##Added by AM 2016-04
       else:
-         yAxisLabels=["FSABFlow","particleFlux\nvm_psiHat","heatFlux\nvm_psiHat","particle source",'heat source']
+         if sources.shape[0]>1:
+            yAxisLabels=["FSABFlow","particleFlux\nvm_psiHat","heatFlux\nvm_psiHat","particle source",'heat source']
+         else:
+            yAxisLabels=["FSABFlow","particleFlux\nvm_psiHat","heatFlux\nvm_psiHat","source"]
    else:
       if includePhi1:
          yAxisLabels=[]

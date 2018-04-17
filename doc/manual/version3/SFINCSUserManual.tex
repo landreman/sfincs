@@ -1,6 +1,6 @@
 % -*- Mode:TeX -*-
 
-
+   
 \documentclass[11pt,twoside,singlespace]{report}
 %\pagestyle{plain}
 %\pagestyle{headings}
@@ -20,6 +20,8 @@
 \usepackage{url}
 \usepackage{hyperref}
 \hypersetup{colorlinks=true,linkcolor=blue}
+
+\usepackage{bm}
 
 \newcommand{\vv}{\upsilon}
 \newcommand{\vect}[1]{{\mathbf #1}}
@@ -59,16 +61,16 @@
 \setcounter{tocdepth}{1}
 \begin{document}
 
-
+ 
 \include{cover}
-
+  
 
 %\pagestyle{plain}
 \fancyhf{}
 \cfoot{\thepage}
-\tableofcontents
+\tableofcontents 
 
-\clearpage
+\clearpage  
 
 
 \pagestyle{fancy}
@@ -85,9 +87,11 @@
 \include{overview}
 \include{installation}
 \include{inputParameters}
+\include{outputParameters}
 \include{equations}
 \include{runs}
-\include{resolution} 
+\include{resolution}
+%\include{Phi1}
 
 \renewcommand{\chaptermark}[1]{\markboth{\sc{Appendix\ \thechapter.\ #1}}{}}
 \appendix

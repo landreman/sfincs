@@ -518,10 +518,11 @@ subroutine validateInput()
 
   if (magneticDriftScheme>0 .and. includePhi1) then
      if (masterProc) then
-        print *,"**   ERROR! Some terms involving Phi1 and the magnetic drifts have not yet been implemented."
+        !!print *,"**   ERROR! Some terms involving Phi1 and the magnetic drifts have not yet been implemented." !!Commented by AM 2018-02 
+        print *,"**   WARNING! Some terms involving Phi1 and the magnetic drifts have not yet been implemented." !!Added by AM 2018-02 
         print *,"**          Hence magneticDriftScheme>0 is incompatible with includePhi1."
      end if
-     stop
+     !!stop !!Commented by AM 2018-02
   end if
 
   if (magneticDriftScheme>0) then
@@ -556,6 +557,30 @@ subroutine validateInput()
      print *,line
      print *,line
   end if
+
+  !!Check added by AM 2018-01!! 
+  if (includePhi1InKineticEquation .and. (.not. includePhi1) .and. masterProc) then 
+     print *,line 
+     print *,line 
+     print *,"**   WARNING: You are including Phi1 in the kinetic equation"
+     print *,"**            but this has no effect since includePhi1 = .false."
+     print *,line
+     print *,line
+  end if
+
+  !!Check modified by AM 2018-01!!
+  !if (includePhi1InCollisionOperator .and. (.not. includePhi1InKineticEquation) .and. masterProc) then
+  if (includePhi1InCollisionOperator .and. (.not. includePhi1) .and. (.not. includePhi1InKineticEquation) .and. masterProc) then
+     print *,line
+     print *,line
+     print *,"**   WARNING: You are including Phi1 in the collision operator"
+     !print *,"**            but not in the other parts of the kinetic equation."
+     !print *,"**            This is likely to be inconsistent."
+     print *,"**            but this only has an effect if includePhi1 = .true. and includePhi1InKineticEquation = .true."
+     print *,line
+     print *,line
+  end if
+
 
   if ((.not. withAdiabatic) .and. includePhi1 .and. quasineutralityOption == 1 .and. (Nspecies < 2)) then 
       if (masterProc) then

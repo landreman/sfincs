@@ -51,17 +51,19 @@ contains
 
     namelist / physicsParameters / Delta, alpha, nu_n, EParallelHat, EParallelHatSpec, & !!EParallelHatSpec added by HM 2017-02
          collisionOperator, constraintScheme, includeXDotTerm, &
-!!         includeElectricFieldTermInXiDot, useDKESExBDrift, include_fDivVE_term, nonlinear, & !!Commented by AM 2016-02
-         includeElectricFieldTermInXiDot, useDKESExBDrift, include_fDivVE_term, & !!Added by AM 2016-02
+         includeElectricFieldTermInXiDot, useDKESExBDrift, include_fDivVE_term, &
          dPhiHatdpsiHat, dPhiHatdpsiN, dPhiHatdrHat, dPhiHatdrN, Er, &
-         includeTemperatureEquilibrationTerm, includePhi1, &
+!<<<<<<< HEAD
+         includeTemperatureEquilibrationTerm, includePhi1, includePhi1InCollisionOperator, &
          !!Commented by AM 2016-02!!
          !!nuPrime, EStar, magneticDriftScheme, includeRadialExBDrive
 	 !!!!!!!!!!!!!!!!!!!!!!!!!!!
 	 !!Added by AM 2016-02!!         
+!=======
+!         includeTemperatureEquilibrationTerm, includePhi1, &
+!>>>>>>> origin/master
          nuPrime, EStar, magneticDriftScheme, includePhi1InKineticEquation, &
-         quasineutralityOption
-         !!!!!!!!!!!!!!!!!!!!!!
+         quasineutralityOption, Krook
 
     namelist / resolutionParameters / forceOddNthetaAndNzeta, &
          Ntheta, &

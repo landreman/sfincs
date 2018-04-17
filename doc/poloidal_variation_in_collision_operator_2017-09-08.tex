@@ -1,0 +1,175 @@
+
+\documentclass[12pt]{article}
+\usepackage{url} 
+%\usepackage[dvips]{graphicx}
+\usepackage[pdftex]{graphicx}
+\usepackage[latin1]{inputenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{fancyhdr}
+\usepackage{bm}
+\usepackage{float}
+\usepackage{color}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{wrapfig}
+\usepackage{multicol}
+\usepackage[colorlinks=true,
+		linkcolor=red,
+		citecolor=blue,
+		urlcolor=blue]{hyperref}
+
+\usepackage{titlesec}
+\usepackage[titletoc]{appendix}
+%\usepackage{appendix}
+\setcounter{secnumdepth}{4}
+
+\titleformat{\paragraph}
+{\normalfont\normalsize\bfseries}{\theparagraph}{1em}{}
+\titlespacing*{\paragraph}
+{0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
+
+\setlength {\parindent} { 10mm} 
+\setlength{\textheight}{230mm} 
+\setlength{\textwidth}{160mm} 
+\setlength{\oddsidemargin}{0mm}
+\setlength{\topmargin}{-10mm} 
+% newcommands
+\newcommand{\p}{\partial}
+\newcommand{\g}[1]{\mbox{\boldmath $#1$}}
+\newcommand{\vi}{\g V_{\! \! i}}
+\newcommand{\ps}{Pfirsch-Schl\"{u}ter} 
+\newcommand{\lp}{\left(}
+\newcommand{\rp}{\right)}
+\newcommand{\ca}[1]{\mbox{\cal $#1$}}
+\newcommand{\be}{\begin{displaymath}}
+\newcommand{\ee}{\end{displaymath}}
+\newcommand{\bn}{\begin{equation}}
+\newcommand{\en}{\end{equation}}
+\newcommand{\mygtrsim}{\mathrel{\mbox{\raisebox{-1mm}{$\stackrel{>}{\sim}$}}}}
+\newcommand{\mylsim}{\mathrel{\mbox{\raisebox{-1mm}{$\stackrel{<}{\sim}$}}}}
+\newcommand{\vek}{\bf}
+\newcommand{\ten}{\sf}
+\newcommand{\bfm}[1]{\mbox{\boldmath$#1$}}
+\newcommand{\lang}{\left\langle}
+\newcommand{\rang}{\right\rangle}
+\newcommand{\vo}[1]{\left|\begin {array}{l} \mbox{} \\ \mbox{} \\$#1$ \end
+{array}\right .}  
+\newcommand{\von}[2]{\left |\begin {array}{l}
+\mbox{}\\$#1$\\$#2$ \end {array}\right .}
+\newcommand{\simgt}{\:{\raisebox{-1.5mm}{$\stackrel
+{\textstyle{>}}{\sim}$}}\:}
+\newcommand{\simlt}{\:{\raisebox{-1.5mm}{$\stackrel
+{\textstyle{<}}{\sim}$}}\:}
+%\renewcommand {\baselinestretch} {1.67}
+%\pagestyle{empty}
+\newcommand{\todo}[1]{\textbf{\textcolor{red}{TODO: #1}}}
+\newcommand{\remark}[1]{\textbf{\textcolor{red}{REMARK: #1}}}
+
+\title{Implementation of poloidal density variation in collision operator}
+
+\pagestyle{fancy}
+\fancyhead{}
+\chead{Stefan Buller %850227-2019
+\\ Implementation of poloidal density variation in collision operator}
+\cfoot{\thepage}
+\renewcommand{\headrulewidth}{1pt}
+\renewcommand{\footrulewidth}{1pt}
+\setlength{\headheight}{28pt}
+\setlength{\footskip}{25pt}
+
+\newcommand{\red}[1]{\textcolor{red}{#1}}
+\newcommand{\mE}{\mathcal{E}}
+\newcommand{\energy}{\mathcal{E}}
+\newcommand{\mK}{\mathcal{K}}
+\newcommand{\mN}{\mathcal{N}}
+\newcommand{\mD}{\mathcal{D}}
+\newcommand{\ord}{\mathcal{O}}
+\newcommand{\Tpe}{T_\perp}
+\newcommand{\Tpa}{T_\|}
+\newcommand{\vpe}{v_\perp}
+\newcommand{\vpa}{v_\|}
+\newcommand{\kpe}{k_\perp}
+\newcommand{\kpa}{k_\|}
+\newcommand{\Bv}{\mathbf{B}}
+\newcommand{\Ev}{\mathbf{E}}
+\newcommand{\bv}{\mathbf{b}}
+\newcommand{\vv}{\mathbf{v}}
+\newcommand{\cd}{\cdot}
+\newcommand{\na}{\nabla}
+\newcommand{\btheta}{\bar{\theta}}
+\newcommand{\phit}{\tilde{\phi}}
+\newcommand{\oert}{\tilde{\omega}_{Er}}
+
+\begin{document}
+\titlepage
+
+\maketitle
+
+These notes are concerned with the implementation of the \texttt{poloidal\-Variation\-In\-Collision\-Operator} option in SFINCS version 3.
+
+\section*{$\Phi_1$ implementation in SFINCS}
+In a previous set of notes (\emph{$\Phi_1$ implementation}), poloidal density variation to the lowest order was implemented by linearizing around a poloidally varying Maxwellian $f_0$, rather than a flux-function Maxwellian $f_M$.
+
+Poloidal variations can occur to lowest order if the potential varies on a flux-surface, in which case the lowest order distribution function becomes
+\begin{equation}
+f_0(\psi,\theta,\zeta) = f_M(\psi) e^{-Ze\Phi_1(\theta,\zeta)/T}.
+\end{equation}
+[We will in the future suppress the $\psi$ dependence, as SFINCS only solves for a single flux-surface.]
+
+In the \emph{$\Phi_1$ implementation} notes, the equations were modified to linearize around this $f_0$ rather than $f_M$. However, the linearization in the collision operator was not treated, which is the subject of these notes.
+
+
+\section*{$\Phi_1$ implementation in the linearized collision operator}
+The linearized collision operator can be written as
+\begin{equation}
+C^{L:f_0}_{ab} = C_{ab}\{f_{a0},f_{b0}\} +  C_{ab}\{f_{a1},f_{b0}\} +  C_{ab}\{f_{a0},f_{b1}\},
+\end{equation}
+where we use the superscript $L:f_0$ to indicate that the operator has been linearized around $f_0$ rather than $f_M$. 
+
+As $f_0$ and $f_M$ have the same velocity space-structure, the terms in the above linearization can easily be expressed in terms of the terms in the linearization around $f_M$:
+\begin{equation}
+C^{L:f_0}_{ab} =  C_{ab}\{f_{aM},f_{bM}\} e^{-(Z_a/T_a + Z_b/T_b) e\Phi_1(\theta,\zeta)} +  C_{ab}\{f_{a1},f_{b0}\} e^{-Z_b e\Phi_1(\theta,\zeta)/T_b} +  C_{ab}\{f_{aM},f_{b1}\} e^{-Z_a e\Phi_1(\theta,\zeta)/T_a}.
+\end{equation}
+Effectively, from the explicit expressions for $C^{L:f_M}$, one can obtain $C^{L:f_0}$ by substituting the density of each species by:
+\begin{equation}
+n_a \to n_a e^{-\frac{Z_a e\Phi_1(\theta,\zeta)}{T_a}}. \label{eq:denssub}
+\end{equation}
+
+\subsection*{Changes to the Jacobian}
+As the old collision operator only depend on $f_{1}$ (neglecting the temperature equilibration term $C_{ab}\{f_{aM},f_{bM}\}$ for the moment), its contribution to the Jacobian was
+\begin{equation}
+J^{L:f_M} = \frac{\delta C^{L:f_M}}{\delta f_{1}}.
+\end{equation}
+Furthermore, as the linearized collision operator is linear in $f_{1}$, we have
+\begin{equation}
+\frac{\delta C^{L:f_M}}{\delta f_{1}} =  C^{L:f_M}[.],
+\end{equation}
+where the notation $C^{L:f_M}[.]$ implies that the operator does not act on anything, i.e. the matrix used to represent $C^{L:f_M}[.]$ enters as is into the Jacobian.
+
+In the system linearized around $f_0$, we have essentially the same $f_1$ dependence, if we substitute the density as in \eqref{eq:denssub}
+\begin{equation}
+\frac{\delta C^{L:f_0}}{\delta f_{1}} =  C^{L:f_M}[.] \left\{n_a \to n_a e^{-\frac{Z_a e\Phi_1(\theta,\zeta)}{T_a}}\right\},
+\end{equation}
+however, as $\Phi_1$ is an unknown, we get new non-zero elements in the Jacobian due to $\frac{\delta C^{L:f_0}}{\delta \Phi_{1}}$.
+As $C^{L:f_0}$ only depends on $\Phi_1$ through $n_a e^{-\frac{Z_a e\Phi_1(\theta,\zeta)}{T_a}}$, we can also get the new expressions through as a density substitution
+\begin{equation}
+n_a e^{-\frac{Z_a e\Phi_1}{T_a}} \to  -\frac{Z_a e}{T_a} n_a e^{-\frac{Z_a e\Phi_1}{T_a}}.
+\end{equation}
+Thus
+\begin{equation}
+\frac{\delta C^{L:f_0}}{\delta \Phi_{1}} =  C^{L:f_M}[f_1] \left\{n_a \to -\frac{Z_a e}{T_a} n_a e^{-\frac{Z_a e\Phi_1}{T_a}}\right\}.
+\end{equation}
+Note that the collision operator here acts on $f_1$.
+
+In addition, if we include temperature equilibration, we get an additional contribtution to the Jacobian
+\begin{equation}
+\frac{\delta C^{L:f_0}}{\delta \Phi_{1}} =  -e\frac{Z_a T_b + Z_b T_a}{T_a T_b} e^{\left(-\frac{Z_a T_b + Z_b T_a}{T_a T_b} e\Phi_1\right)} C_{ab}\{f_{aM},f_{bM}\}.
+\end{equation}
+This term, like all the other in this document, is merely an extra factor to an expression already calculated in the code.
+
+\section*{Changes to the code}
+The collision operator is linearized around $f_0$ if \texttt{poloidalVariationInCollisionOperator} is set to true in the input file. This switch adds the extra factor $e^{-\frac{Z_a e\Phi_1}{T_a}}$ to the densities in the collision operator as calculated in the code, and reuses the calculations to evaluate $\frac{\delta C^{L:f_0}}{\delta \Phi_{1}}$. If \texttt{includeTemperatureEquilibrationTerm} is set to true, the contribution from this term is also included in the Jacobian. 
+
+
+
+\end{document}
