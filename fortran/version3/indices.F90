@@ -154,20 +154,14 @@
       if (whichMatrix > 6) then
         this_Ntheta = Ntheta_fine
         this_Nzeta = Nzeta_fine
-        this_DKE_size = sum(Nxi_for_x)*Ntheta_fine*Nzeta_fine
-        this_matrixSize = Nspecies*this_DKE_size + 2 * Nspecies
+        this_DKE_size = DKE_size_fine
+        this_matrixSize = matrixSize_fine
       else
         this_Ntheta = Ntheta
         this_Nzeta = Nzeta
         this_DKE_size = DKE_size
         this_matrixSize = matrixSize
       end if
-!      if (whichMatrix==7) then
-!        print *,"this_DKE_size: ", this_DKE_size
-!        print *,"DKE_size_fine: ", DKE_size_fine
-!        print *,"this_matrixSize: ", this_matrixSize
-!        print *,"matrixSize_fine: ", matrixSize_fine
-!      end if
 
       ! Validate inputs:
 
@@ -332,7 +326,7 @@
 
     subroutine computeMatrixSize()
 
-      use globalVariables, only: Nspecies, Ntheta, Nzeta, Nx, Nxi, includePhi1, constraintScheme, masterProc, matrixSize, Nxi_for_x, Ntheta_fine, Nzeta_fine, RHSMode
+      use globalVariables, only: Nspecies, Ntheta, Nzeta, Nx, Nxi, includePhi1, constraintScheme, masterProc, matrixSize, Nxi_for_x, Ntheta_fine, Nzeta_fine, RHSMode, matrixSize_fine
 
       implicit none
 
@@ -341,7 +335,9 @@
       DKE_size = sum(Nxi_for_x)*Ntheta*Nzeta
       if (RHSMode==6) then
         DKE_size_fine = sum(Nxi_for_x)*Ntheta_fine*Nzeta_fine
-        print *,"DKE_size_fine: ", DKE_size_fine
+        matrixSize_fine = Nspecies * DKE_size_fine
+        ! Contstraint scheme 1 
+        matrixSize_fine = matrixSize_fine + 2 * Nspecies
       end if
 
       matrixSize = Nspecies * DKE_size

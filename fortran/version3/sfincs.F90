@@ -135,6 +135,11 @@ program sfincs
     stop
   end if
 
+!  if (RHSMode==6) then
+!    call testingInterpolation()
+!    stop
+!  end if
+
   ! Solve the main system, either linear or nonlinear.
   ! This step takes more time than everything else combined.
   if (ambipolarSolve) then

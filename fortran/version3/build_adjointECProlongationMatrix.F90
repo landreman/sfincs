@@ -64,38 +64,26 @@ subroutine build_adjointECProlongationMatrix()
     end do
   end if
 
-!  print *,"Populating matrix."
   ! Now populate the 3D prolongation matrix.
-  ! Parallelize the looping over rows (fine grid) but not the looping over columns (coarse grid)
+
   ! No prolongation in xi or x as of yet
-!  do itheta_coarse = 1,Ntheta
-    do itheta_fine = 1,Ntheta_fine
-   do itheta_coarse  = ithetaMin,ithetaMax
-!     do itheta_fine = ithetaMin_fine,ithetaMax_fine
-      theta_value = theta_prolongation(itheta_fine,itheta_coarse)
+  do itheta_fine = 1,Ntheta_fine
+    do itheta_coarse  = ithetaMin,ithetaMax
+    theta_value = theta_prolongation(itheta_fine,itheta_coarse)
       if (abs(theta_value)<1e-12) cycle
-!      do izeta_coarse = 1,Nzeta
         do izeta_fine = 1,Nzeta_fine
-        do izeta_coarse = izetaMin,izetaMax
-!           do izeta_fine = izetaMin_fine,izetaMax_fine
-          zeta_value = zeta_prolongation(izeta_fine, izeta_coarse)
+          do izeta_coarse = izetaMin,izetaMax
+          zeta_value = zeta_prolongation(izeta_fine,izeta_coarse)
           if (abs(zeta_value)<1e-12) cycle
           do ix_coarse = 1,Nx
-!            do ix_fine = 1,Nx_fine
-!              x_value = x_prolongation(ix_fine,ix_coarse)
-!              x_value = 1
-!              if (abs(x_value)<1e-12) cycle
               do L_coarse=0,(Nxi_for_x(ix_coarse)-1)
-!                do L_fine=0,(Nxi_for_x_fine(ix_fine)-1)
                   do ispecies = 1,Nspecies
                     call MatSetValue(adjointECProlongationMatrix, &
                             getIndex(ispecies,ix_coarse,L_coarse+1,itheta_fine,izeta_fine,BLOCK_F,7), &
                             getIndex(ispecies,ix_coarse,L_coarse+1,itheta_coarse,izeta_coarse,BLOCK_F,0), &
                             theta_value*zeta_value, ADD_VALUES, ierr)
                   end do ! ispecies
-!                end do ! L_fine
               end do ! L_coarse
-!            end do ! ix_fine
           end do ! ix_coarse
         end do ! izeta_fine
       end do ! izeta_coarse

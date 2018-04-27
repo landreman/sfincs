@@ -27,8 +27,8 @@ subroutine adjointErrorCorrection(forwardSolution, adjointSolution,whichAdjointR
   PetscScalar :: innerProductResult
   PetscErrorCode :: ierr
   PetscScalar :: norm
-  PetscScalar :: fineMeshMoment
-  Vec :: adjointRHSVec
+  PetscScalar :: fineMeshMoment, coarseMeshMoment
+  Vec :: adjointRHSVec, adjointRHSVec_coarse
 
   ! Prolongation matrix is build in createGrids_fine()
   if (masterProc) then
@@ -43,15 +43,6 @@ subroutine adjointErrorCorrection(forwardSolution, adjointSolution,whichAdjointR
   ! Interpolate forward solution
   call MatMult(adjointECProlongationMatrix, forwardSolution, forward_interp, ierr)
 
-!  call VecNorm(forwardSolution,NORM_2,norm,ierr)
-!  if (masterProc) then
-!    print *,"Norm of forwardSolution: ", norm
-!  end if
-!  call VecNorm(forward_interp,NORM_2,norm,ierr)
-!  if (masterProc) then
-!    print *,"Norm of forward_interp: ",norm
-!  end if
-
   if (debugAdjointEC) then
     adjoint_interp = adjointSolutino
   else
@@ -60,14 +51,6 @@ subroutine adjointErrorCorrection(forwardSolution, adjointSolution,whichAdjointR
     call VecSet(adjoint_interp,zero,ierr)
     call MatMult(adjointECProlongationmatrix, adjointSolution, adjoint_interp, ierr)
   end if
-!  call VecNorm(adjoint_interp,NORM_2,norm,ierr)
-!  if (masterProc) then
-!    print *,"Norm of adjoint_interp: ",norm
-!  end if
-!  call VecNorm(adjointSolution,NORM_2,norm,err)
-!  if (masterProc) then
-!    print *,"Norm of adjoint: ", norm
-!  end if
 
   ! Construct fine matrix and RHS
   ! Create dummy and set to zero
@@ -85,28 +68,16 @@ subroutine adjointErrorCorrection(forwardSolution, adjointSolution,whichAdjointR
   call VecSet(RHS_fine,zero,ierr)
   userContext(1) = 7
   call evaluateResidual(mysnes,dummy,RHS_fine,userContext,ierr)
-!  call VecNorm(RHS_fine,NORM_2,norm,ierr)
-!  if (masterProc) then
-!    print *,"Norm of RHS_fine: ", norm
-!  end if
 
   call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, RHS, ierr)
   call VecSet(RHS,zero,ierr)
   userContext(1) = 0
   call evaluateResidual(mysnes,dummy,RHS,userContext,ierr)
-!  call VecNorm(RHS,NORM_2,norm,ierr)
-!  if (masterProc) then
-!    print *,"Norm of RHS: ", norm
-!  end if
 
   call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize_fine, residual, ierr)
   call VecSet(residual,zero,ierr)
   ! Evaluate residual
   call MatMultAdd(matrix_fine, forward_interp, RHS_fine, residual, ierr)
-!  call VecNorm(residual,NORM_2,norm,ierr)
-!  if (masterProc) then
-!    print *,"Norm of residual: ",norm
-!  end if
 
   ! Evaluate inner product
   call innerProduct(adjoint_interp,residual,innerProductResult,1)
@@ -117,6 +88,12 @@ subroutine adjointErrorCorrection(forwardSolution, adjointSolution,whichAdjointR
   ! 1 indicates fine grid
   call populateAdjointRHS(adjointRHSVec, whichAdjointRHS, whichSpecies, 1)
   call innerProduct(adjointRHSVec,forward_interp,fineMeshMoment,1)
+
+  ! Evaluate moment on coarse grid
+  call VecCreateMPI(MPIComm, PETSC_DECIdE, matrixSize, adjointRHSVec_coarse,ierr)
+  call VecSet(adjointRHSVec_coarse, zero, ierr)
+  call populateAdjointRHS(adjointRHSVec_coarse, whichAdjointRHS, whichSpecies, 0)
+  call innerProduct(adjointRHSVec_coarse,forwardSolution,coarseMeshMoment,0)
 
   if (masterProc) then
     if (whichSpecies == 0) then
@@ -131,17 +108,14 @@ subroutine adjointErrorCorrection(forwardSolution, adjointSolution,whichAdjointR
     else
       select case (whichAdjointRHS)
         case (1) ! Particle flux
-          if (masterProc) then
-
-        
+          print *,"Coarse mesh particleFlux: ", coarseMeshMoment
           particleFlux_corrected(whichSpecies) = fineMeshMoment
-!          particleFlux_corrected(whichSpecies) = fineMeshMoment-innerProductResult
         case (2) ! Heat Flux
+          print *,"Coarse mesh heatFlux: ", coarseMeshMoment
           heatFlux_corrected(whichSpecies) = fineMeshMoment
-!          heatFlux_corrected(whichSpecies) = fineMeshMoment-innerProductResult
         case (3) ! Parallel Flow
+          print *,"Coarse mesh parallel flow: ", coarseMeshMoment
           parallelFlow_corrected(whichSpecies) = fineMeshMoment
-!          parallelFlow_corrected(whichSpecies) = fineMeshMoment-innerProductResult
       end select
     end if
   end if

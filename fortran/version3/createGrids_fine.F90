@@ -15,6 +15,7 @@
 
     use globalVariables
     use petscdmda
+    use indices
 
     PetscErrorCode :: ierr
     integer :: i, j, k
@@ -38,10 +39,10 @@
     PetscScalar, dimension(:,:), allocatable :: d2dzeta2_preconditioner
 
     ! Compute matrixSize_fine 
-    DKE_size_fine = sum(Nxi_for_x)*Ntheta_fine*Nzeta_fine
-    matrixSize_fine = Nspecies * DKE_size_fine
-    ! Constraints
-    matrixSize_fine = matrixSize_fine + 2 * Nspecies
+    ! This is now computed in computeMatrixSize
+!    matrixSize_fine = Nspecies * DKE_size_fine
+!    ! Constraints
+!    matrixSize_fine = matrixSize_fine + 2 * Nspecies
 
     if (masterProc) print *, "---- Initializing grids for adjoint error correction"
 

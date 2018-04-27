@@ -8,7 +8,7 @@ OBJ_FILES = adjointDiagnostics.o ChebyshevGrid.o ChebyshevInterpolationMatrix.o 
 	  readVMEC/readVMEC.a testingInnerProduct.o testingDiagnosticSensitivity.o testingdRHSdLambda.o \
       testingdMatrixdLambda.o updateVMECGeometry.o testingAdjointOperator.o testingAdjointDiagnostics.o \
       ambipolarSolver.o testingNewtonSolve.o updateBoozerGeometry.o createGrids_fine.o adjointErrorCorrection.o \
-      build_adjointECProlongationMatrix.o periodic_interpolation.o
+      build_adjointECProlongationMatrix.o periodic_interpolation.o testingInterpolation.o
  
 # Dependencies:
 adjointErrorCorrection.o: globalVariables.o adjointDiagnostics.o populateAdjointRHS.o
@@ -45,6 +45,7 @@ testingdRHSdLambda.o: globalVariables.o geometry.o
 testingdMatrixdLambda.o: globalVariables.o geometry.o
 testingAdjointOperator.o: globalVariables.o
 testingAdjointDiagnostics.o: globalVariables.o solver.o
+testingInterpolation.o: globalVariables.o indices.o
 testingNewtonSolve.o: globalVariables.o
 updateVMECGeometry.o: globalVariables.o geometry.o
 updateBoozerGeometry.o: globalVariables.o geometry.o

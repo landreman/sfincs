@@ -1123,6 +1123,7 @@
        print *,"min_x_for_L:",min_x_for_L
     end if
 
+    ! Here both matrixSize and matrixSize_fine are computed
     call computeMatrixSize()
 
     ! *******************************************************************************

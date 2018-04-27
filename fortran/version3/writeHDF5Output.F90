@@ -39,6 +39,10 @@ module writeHDF5Output
   integer(HSIZE_T), dimension(2) :: dimForLambdasModes
   integer(HSIZE_T), dimension(3) :: dimForSpeciesLambdasModes
   integer(HSIZE_T), dimension(1) :: dimForNModesAdjoint
+  ! Dimensions associated with fine grid
+  integer(HSIZE_T), dimension(1) :: dimForTheta_fine
+  integer(HSIZE_T), dimension(1) :: dimForZeta_fine
+  integer(HSIZE_T), dimension(2) :: dimForThetaZeta_fine
 
   integer(HID_T) :: dspaceIDForScalar
   integer(HID_T) :: dspaceIDForSpecies
@@ -54,6 +58,10 @@ module writeHDF5Output
   integer(HID_T) :: dspaceIDForLambdasModes
   integer(HID_T) :: dspaceIDForSpeciesLambdasModes
   integer(HID_T) :: dspaceIDForNModesAdjoint
+  ! Dimensions associated with fine grid
+  integer(HID_T) :: dspaceIDForTheta_fine
+  integer(HID_T) :: dspaceIDForZeta_fine
+  integer(HID_T) :: dspaceIDForThetaZeta_fine
 
   ! Dimension arrays related to arrays that expand with each iteration:
   integer(HSIZE_T), dimension(1) :: dimForIteration
@@ -382,6 +390,9 @@ contains
         call writeHDF5Field("adjointRadialCurrentECOption",adjointRadialCurrentECOption,"")
         call writeHDF5Field("Ntheta_fine",Ntheta_fine,"")
         call writeHDF5Field("Nzeta_fine",Nzeta_fine,"")
+        call writeHDF5Field("theta_fine",theta_fine,dspaceIDForTheta_fine, dimForTheta_fine,"")
+        call writeHDF5Field("zeta_fine",zeta_fine,dspaceIDForZeta_fine,dimForZeta_fine,"")
+        call writeHDF5Field("BHat_fine",BHat_fine,dspaceIDForThetaZeta_fine, dimForThetaZeta_fine,"")
       end if
 
        call writeHDF5Field("includeTemperatureEquilibrationTerm", includeTemperatureEquilibrationTerm, &
@@ -855,6 +866,13 @@ contains
     dimForTheta = Ntheta
     call h5screate_simple_f(rank, dimForTheta, dspaceIDForTheta, HDF5Error)
 
+    if (RHSMode==6) then
+      dimForZeta_fine = Nzeta_fine
+      call h5screate_simple_f(rank, dimForZeta_fine, dspaceIDForZeta_fine, HDF5Error)
+      dimForTheta_fine = Ntheta_fine
+      call h5screate_simple_f(rank, dimForTheta_fine, dspaceIDForTheta_fine, HDF5Error)
+    end if
+
     dimForx = Nx
     call h5screate_simple_f(rank, dimForx, dspaceIDForx, HDF5Error)
 
@@ -879,6 +897,12 @@ contains
     dimForThetaZeta(1) = Ntheta
     dimForThetaZeta(2) = Nzeta
     call h5screate_simple_f(rank, dimForThetaZeta, dspaceIDForThetaZeta, HDF5Error)
+
+    if (RHSMode==6) then
+      dimForThetaZeta_fine(1) = Ntheta_fine
+      dimForThetaZeta_fine(2) = Nzeta_fine
+      call h5screate_simple_f(rank, dimForThetaZeta_fine, dspaceIDForThetaZeta_fine, HDF5Error)
+    end if
 
     ! Sensitivity arrays
     if (RHSMode > 3 .and. RHSMode < 6) then

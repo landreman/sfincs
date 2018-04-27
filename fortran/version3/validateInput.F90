@@ -1192,14 +1192,15 @@ subroutine validateInput()
         end if
         stop
       end if
-      if (forceOddNthetaAndNzeta) then
-        if (mod(Ntheta_fine, 2) == 0) then
-          Ntheta_fine = Ntheta_fine + 1
-        end if
-        if (mod(Nzeta_fine, 2) == 0) then
-          Nzeta_fine = Nzeta_fine + 1
-        end if
-      end if
+! The following lines are now in createGrids_fine.F90
+!      if (forceOddNthetaAndNzeta) then
+!        if (mod(Ntheta_fine, 2) == 0) then
+!          Ntheta_fine = Ntheta_fine + 1
+!        end if
+!        if (mod(Nzeta_fine, 2) == 0) then
+!          Nzeta_fine = Nzeta_fine + 1
+!        end if
+!      end if
       ! Adjoint error correction must be used with continuous adjoint operator
       discreteAdjointOption = 0
     end if

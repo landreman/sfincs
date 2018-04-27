@@ -703,7 +703,7 @@ module solver
         call VecSet(summedSolutionVec, zero, ierr)
       end if
 
-      !> First, we'll compute the species-specific fluxes if needed
+      !> First,we'll compute the species-specific fluxes if needed
       do whichAdjointRHS=1,3
         useSummedSolutionVec = .false.
 
