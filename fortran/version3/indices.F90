@@ -336,7 +336,7 @@
       if (RHSMode==6) then
         DKE_size_fine = sum(Nxi_for_x)*Ntheta_fine*Nzeta_fine
         matrixSize_fine = Nspecies * DKE_size_fine
-        ! Contstraint scheme 1 
+        ! Contstraint scheme 1
         matrixSize_fine = matrixSize_fine + 2 * Nspecies
       end if
 

@@ -128,6 +128,7 @@ module globalVariables
   logical :: debugAdjointEC = .false.
   logical, dimension(:), allocatable :: adjointHeatFluxECOption, adjointParticleFluxECOption, adjointParallelFlowECOption
   Mat :: adjointECProlongationMatrix
+  integer :: adjointECInterpOption = 1 ! Linear default
 
   ! Input fine grid resolution parameters
   integer :: Ntheta_fine = 31
@@ -153,6 +154,7 @@ module globalVariables
   PetscScalar, dimension(:,:), allocatable, target :: BHat_sub_zeta_fine, dBHat_sub_zeta_dtheta_fine
   PetscScalar, dimension(:,:), allocatable, target :: BHat_sup_theta_fine, dBHat_sup_theta_dzeta_fine
   PetscScalar, dimension(:,:), allocatable, target :: BHat_sup_zeta_fine, dBHat_sup_zeta_dtheta_fine
+  PetscScalar, dimension(:), allocatable :: sin_interp, y2
 
   ! ********************************************************
   ! ********************************************************

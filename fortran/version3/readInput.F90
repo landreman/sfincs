@@ -95,7 +95,7 @@ contains
       adjointBootstrapECOption, adjointRadialCurrentECOption, &
       adjointTotalHeatFluxECOption, adjointHeatFluxECOption, &
       adjointParticleFluxECOption, adjointParallelFlowECOption, &
-      Ntheta_fine, Nzeta_fine, debugAdjointEC
+      Ntheta_fine, Nzeta_fine, debugAdjointEC, adjointECInterpOption
 
     Zs = speciesNotInitialized
     mHats = speciesNotInitialized

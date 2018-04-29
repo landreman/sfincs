@@ -78,7 +78,8 @@ subroutine periodic_interpolation(N, M, period, y, matrix)
         end if
 
         if (index==1) then
-           indicesToUse = [1,2]
+!           indicesToUse = [1,2]
+           indicesToUse = [N,1]
            x0 = x(indicesToUse(1))
            x1 = x(indicesToUse(2))
         else if (index .le. N) then

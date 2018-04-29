@@ -388,11 +388,13 @@ contains
         call writeHDF5Field("adjointBootstrapECOption",adjointBootstrapECOption,"")
         call writeHDF5Field("adjointTotalHeatFluxECOption",adjointTotalHeatFluxECOption,"")
         call writeHDF5Field("adjointRadialCurrentECOption",adjointRadialCurrentECOption,"")
+        call writeHDF5Field("adjointECInterpOption",adjointECInterpOption,"")
         call writeHDF5Field("Ntheta_fine",Ntheta_fine,"")
         call writeHDF5Field("Nzeta_fine",Nzeta_fine,"")
         call writeHDF5Field("theta_fine",theta_fine,dspaceIDForTheta_fine, dimForTheta_fine,"")
         call writeHDF5Field("zeta_fine",zeta_fine,dspaceIDForZeta_fine,dimForZeta_fine,"")
         call writeHDF5Field("BHat_fine",BHat_fine,dspaceIDForThetaZeta_fine, dimForThetaZeta_fine,"")
+        call writeHDF5Field("sin_interp",sin_interp,dspaceIDForTheta_fine,dimForTheta_fine,"")
       end if
 
        call writeHDF5Field("includeTemperatureEquilibrationTerm", includeTemperatureEquilibrationTerm, &
@@ -1387,6 +1389,10 @@ contains
        ! No labels applied in this case.
     elseif (dspaceID == dspaceIDForNModesAdjoint) then
       ! No labels applied in this case.
+    elseif (dspaceID == dspaceIDForTheta_fine) then
+    ! No labels applied in this case.
+    elseif (dspaceID == dspaceIDForZeta_fine) then
+    ! No labels applied in this case.
     else
        print *,"WARNING: PROGRAM SHOULD NOT GET HERE. (writeHDF5Doubles)"
     end if
@@ -1418,6 +1424,9 @@ contains
     if (dspaceID == dspaceIDForThetaZeta) then
        call h5dsset_label_f(dsetID, 1, "zeta", HDF5Error)
        call h5dsset_label_f(dsetID, 2, "theta", HDF5Error)
+    elseif (dspaceID == dspaceIDForThetaZeta_fine) then
+      call h5dsset_label_f(dsetID, 1, "zeta_fine", HDF5Error)
+      call h5dsset_label_f(dsetID, 2, "theta_fine", HDF5Error)
     elseif (dspaceID == dspaceIDForLambdasModes) then
        call h5dsset_label_f(dsetID, 1, "NLambdas", HDF5Error)
        call h5dsset_label_f(dsetID, 2, "NModesAdjoint", HDF5Error)
