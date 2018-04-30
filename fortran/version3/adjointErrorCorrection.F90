@@ -109,13 +109,13 @@ subroutine adjointErrorCorrection(forwardSolution, adjointSolution,whichAdjointR
       select case (whichAdjointRHS)
         case (1) ! Particle flux
           print *,"Coarse mesh particleFlux: ", coarseMeshMoment
-          particleFlux_corrected(whichSpecies) = fineMeshMoment
+          particleFlux_corrected(whichSpecies) = fineMeshMoment-innerProductResult
         case (2) ! Heat Flux
           print *,"Coarse mesh heatFlux: ", coarseMeshMoment
-          heatFlux_corrected(whichSpecies) = fineMeshMoment
+          heatFlux_corrected(whichSpecies) = fineMeshMoment-innerProductResult
         case (3) ! Parallel Flow
           print *,"Coarse mesh parallel flow: ", coarseMeshMoment
-          parallelFlow_corrected(whichSpecies) = fineMeshMoment
+          parallelFlow_corrected(whichSpecies) = fineMeshMoment-innerProductResult
       end select
     end if
   end if

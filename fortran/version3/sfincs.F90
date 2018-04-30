@@ -124,14 +124,14 @@ program sfincs
   ! radial coordinate, and use these values to over-write values for the other radial coordinates.
   call setInputRadialCoordinate()
 
-  if (RHSMode==6) then
-    call testingInterpolation()
-  end if
+!  if (RHSMode==6) then
+!    call testingInterpolation()
+!  end if
 
   ! Create HDF5 data structures, and save the quantities that will not change
   ! at each iteration of the solver (i.e. save all quantities except diagnostics.)
   call initializeOutputFile()
-  stop
+!  stop
 
   !call testingNewtonSolve()
 

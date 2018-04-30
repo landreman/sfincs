@@ -13,14 +13,14 @@
 
 subroutine periodicCubicInterpolation(nx_coarse,nx_fine,period,x_coarse,x_fine,y_coarse,y_interp)
 
-  use globalVariables, only: zero, y2
+  use globalVariables, only: zero
 
   implicit none
 
   integer, intent(in) :: nx_coarse, nx_fine
   PetscScalar, intent(in) :: x_coarse(nx_coarse), x_fine(nx_fine), y_coarse(nx_coarse), period
   PetscScalar, intent(out) :: y_interp(nx_fine)
-  PetscScalar, dimension(:), allocatable :: x_appended, u
+  PetscScalar, dimension(:), allocatable :: x_appended, u, y2
   PetscScalar :: dx_coarse, yp1, ypn, p, un, A, B, C, D, x0, x1
   integer :: i, k, ix_fine, ix_coarse, index, index1, index2
   logical :: flag

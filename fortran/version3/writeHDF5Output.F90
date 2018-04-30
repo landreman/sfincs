@@ -394,7 +394,10 @@ contains
         call writeHDF5Field("theta_fine",theta_fine,dspaceIDForTheta_fine, dimForTheta_fine,"")
         call writeHDF5Field("zeta_fine",zeta_fine,dspaceIDForZeta_fine,dimForZeta_fine,"")
         call writeHDF5Field("BHat_fine",BHat_fine,dspaceIDForThetaZeta_fine, dimForThetaZeta_fine,"")
-        call writeHDF5Field("sin_interp",sin_interp,dspaceIDForTheta_fine,dimForTheta_fine,"")
+        call writeHDF5Field("dBHatdtheta_fine",dBHatdtheta_fine,dspaceIDForThetaZeta_fine, dimForThetaZeta_fine,"")
+        call writeHDF5Field("BHat_sub_zeta_fine",BHat_sub_zeta_fine,dspaceIDForThetaZeta_fine, dimForThetaZeta_fine,"")
+        call writeHDF5Field("DHat_fine",DHat_fine,dspaceIDForThetaZeta_fine, dimForThetaZeta_fine,"")
+!        call writeHDF5Field("sin_interp",sin_interp,dspaceIDForTheta_fine,dimForTheta_fine,"")
       end if
 
        call writeHDF5Field("includeTemperatureEquilibrationTerm", includeTemperatureEquilibrationTerm, &

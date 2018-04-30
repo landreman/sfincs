@@ -153,10 +153,10 @@ module adjointDiagnostics
             ! Get sources associated with deltaF and deltaG
             if (constraintScheme == 1) then
               do ispecies = 1,Nspecies
-                sourcesF(ispecies,1) = deltaFArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT,0)+1)
-                sourcesF(ispecies,2) = deltaFArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT,0)+1)
-                sourcesG(ispecies,1) = deltaGArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT,0)+1)
-                sourcesG(ispecies,2) = deltaGArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT,0)+1)
+                sourcesF(ispecies,1) = deltaFArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT,whichMatrix)+1)
+                sourcesF(ispecies,2) = deltaFArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT,whichMatrix)+1)
+                sourcesG(ispecies,1) = deltaGArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT,whichMatrix)+1)
+                sourcesG(ispecies,2) = deltaGArray(getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT,whichMatrix)+1)
               end do
             end if
 

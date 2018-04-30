@@ -154,7 +154,8 @@ module globalVariables
   PetscScalar, dimension(:,:), allocatable, target :: BHat_sub_zeta_fine, dBHat_sub_zeta_dtheta_fine
   PetscScalar, dimension(:,:), allocatable, target :: BHat_sup_theta_fine, dBHat_sup_theta_dzeta_fine
   PetscScalar, dimension(:,:), allocatable, target :: BHat_sup_zeta_fine, dBHat_sup_zeta_dtheta_fine
-  PetscScalar, dimension(:), allocatable :: sin_interp, y2
+  ! The following are for testing of interpolation
+  PetscScalar, dimension(:), allocatable :: sin_interp
 
   ! ********************************************************
   ! ********************************************************
