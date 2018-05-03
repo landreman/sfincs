@@ -1236,6 +1236,9 @@
     allocate(particleFlux_vd1_rN(Nspecies))
     allocate(particleFlux_vd_rN(Nspecies))
 
+    allocate(classicalParticleFlux(Nspecies))
+    allocate(classicalParticleFluxNoPhi1(Nspecies))
+
     allocate(momentumFlux_vm0_psiHat(Nspecies))
     allocate(momentumFlux_vm_psiHat(Nspecies))
     allocate(momentumFlux_vE0_psiHat(Nspecies))

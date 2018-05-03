@@ -316,6 +316,10 @@ contains
        end if
        !!!!!!!!!!!!!!!!!!!!!!!
 
+       !!Added by SB 2018-02!!
+       call writeHDF5Field("classicalParticleFluxNoPhi1", classicalParticleFluxNoPhi1, dspaceIDForSpecies, dimForSpecies, "Classical particle flux calculcated with Phi1 = 0.")
+       !!!!!!!!!!!!!!!!!!!!!!!
+
        call writeHDF5Field("dPhiHatdpsiHat", dPhiHatdpsiHat, "")
        call writeHDF5Field("dPhiHatdpsiN", dPhiHatdpsiN, "")
        call writeHDF5Field("dPhiHatdrHat", dPhiHatdrHat, "")
@@ -580,6 +584,7 @@ contains
           call writeHDF5ExtensibleField(iterationNum, "particleFlux_vd_rHat", particleFlux_vd_rHat, ARRAY_ITERATION_SPECIES, "")
           call writeHDF5ExtensibleField(iterationNum, "particleFlux_vd_rN", particleFlux_vd_rN, ARRAY_ITERATION_SPECIES, "")
        end if
+       call writeHDF5ExtensibleField(iterationNum, "classicalParticleFlux", classicalParticleFlux, ARRAY_ITERATION_SPECIES, "")
 
        call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vm0_psiHat", momentumFlux_vm0_psiHat, ARRAY_ITERATION_SPECIES, "")
        call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vm0_psiN", momentumFlux_vm0_psiN, ARRAY_ITERATION_SPECIES, "")

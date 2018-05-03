@@ -8,9 +8,9 @@
 ! This next subroutine is called as a "Monitor" of SNES, set in solver.F90 using SNESSetMonitor.
   subroutine diagnosticsMonitor(mysnes, iterationNum, residual, userContext, ierr)
 
-    use globalVariables, only: masterProc, iterationForMatrixOutput
+    use globalVariables, only: masterProc, iterationForMatrixOutput, classicalParticleFlux
     use petscsnes
-
+    
     implicit none
 
     SNES :: mysnes
@@ -192,6 +192,7 @@
     use writeHDF5Output
     use petscvec
     use export_f
+    use classicalTransport
 
     implicit none
 
@@ -236,6 +237,9 @@
 
     ! Find Phi_1 in the PETSc Vec, and store Phi_1 in a standard Fortran 2D array:
     call extractPhi1(solutionWithDeltaF)
+
+    ! Calculate the classical transport:
+    call calculateClassicalParticleFlux(classicalParticleFlux)
 
     ! The solution vector contains the departure from a Maxwellian, not the "full f" distribution function.
     ! Form the full f:
@@ -888,11 +892,13 @@
           print *,"   NTV:                     ", NTV(ispecies)
           print *,"   particleFlux_vm0_psiHat  ", particleFlux_vm0_psiHat(ispecies)
           print *,"   particleFlux_vm_psiHat   ", particleFlux_vm_psiHat(ispecies)
+          print *,"   classicalParticleFlux    ", classicalParticleFlux(ispecies)
           if (includePhi1) then
              print *,"   particleFlux_vE0_psiHat  ", particleFlux_vE0_psiHat(ispecies)
              print *,"   particleFlux_vE_psiHat   ", particleFlux_vE_psiHat(ispecies)
              print *,"   particleFlux_vd1_psiHat  ", particleFlux_vd1_psiHat(ispecies)
              print *,"   particleFlux_vd_psiHat   ", particleFlux_vd_psiHat(ispecies)
+             print *,"   classicalParticleFluxNoPhi1", classicalParticleFluxNoPhi1(ispecies)
           end if
           print *,"   momentumFlux_vm0_psiHat  ", momentumFlux_vm0_psiHat(ispecies)
           print *,"   momentumFlux_vm_psiHat   ", momentumFlux_vm_psiHat(ispecies)

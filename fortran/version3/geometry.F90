@@ -14,9 +14,9 @@ module geometry
   use globalVariables
   use radialCoordinates
   use petscsysdef
-  use read_wout_mod, only: read_wout_file, Aminor, phi, nfp, ns, xm, xn, xm_nyq, xn_nyq, mpol, ntor, mnmax, mnmax_nyq, lasym, presf, phip, iotas, &
-       bmnc, bmns, gmnc, gmns, bsubumnc, bsubumns, bsubvmnc, bsubvmns, bsubsmnc, bsubsmns, bsupumnc, bsupumns, bsupvmnc, bsupvmns, &
-       rmnc, rmns, zmnc, zmns
+  use read_wout_mod, only: read_wout_file, Aminor, phi, nfp, ns, xm, xn, xm_nyq, xn_nyq, mpol, ntor, mnmax, mnmax_nyq, &
+       lasym, presf, phip, iotas, bmnc, bmns, gmnc, gmns, &
+       bsubumnc, bsubumns, bsubvmnc, bsubvmns, bsubsmnc, bsubsmns, bsupumnc, bsupumns, bsupvmnc, bsupvmns, rmnc, rmns, zmnc, zmns
 
   implicit none
 
@@ -346,11 +346,11 @@ contains
     PetscScalar, dimension(:,:), allocatable :: BHatL, dBHatdthetaL, dBHatdzetaL
     PetscScalar, dimension(:,:), allocatable :: BHatH, dBHatdthetaH, dBHatdzetaH
     PetscScalar, dimension(:,:), allocatable :: RHat,  dRHatdtheta,  dRHatdzeta,  d2RHatdtheta2,  d2RHatdzeta2,  d2RHatdthetadzeta
-    PetscScalar, dimension(:,:), allocatable :: RHatL, dRHatdthetaL, dRHatdzetaL, d2RHatdtheta2L, d2RHatdzeta2L, d2RHatdthetadzetaL
-    PetscScalar, dimension(:,:), allocatable :: RHatH, dRHatdthetaH, dRHatdzetaH, d2RHatdtheta2H, d2RHatdzeta2H, d2RHatdthetadzetaH
-    PetscScalar, dimension(:,:), allocatable :: ZHat,  dZHatdtheta,  dZHatdzeta,  d2ZHatdtheta2,  d2ZHatdzeta2,  d2ZHatdthetadzeta
-    PetscScalar, dimension(:,:), allocatable :: ZHatL, dZHatdthetaL, dZHatdzetaL, d2ZHatdtheta2L, d2ZHatdzeta2L, d2ZHatdthetadzetaL
-    PetscScalar, dimension(:,:), allocatable :: ZHatH, dZHatdthetaH, dZHatdzetaH, d2ZHatdtheta2H, d2ZHatdzeta2H, d2ZHatdthetadzetaH
+    PetscScalar, dimension(:,:), allocatable :: RHatL,dRHatdthetaL,dRHatdzetaL,d2RHatdtheta2L, d2RHatdzeta2L,d2RHatdthetadzetaL
+    PetscScalar, dimension(:,:), allocatable :: RHatH,dRHatdthetaH,dRHatdzetaH,d2RHatdtheta2H,d2RHatdzeta2H,d2RHatdthetadzetaH
+    PetscScalar, dimension(:,:), allocatable :: ZHat,  dZHatdtheta,  dZHatdzeta,  d2ZHatdtheta2,  d2ZHatdzeta2, d2ZHatdthetadzeta
+    PetscScalar, dimension(:,:), allocatable :: ZHatL, dZHatdthetaL, dZHatdzetaL, d2ZHatdtheta2L, d2ZHatdzeta2L,d2ZHatdthetadzetaL
+    PetscScalar, dimension(:,:), allocatable :: ZHatH, dZHatdthetaH, dZHatdzetaH, d2ZHatdtheta2H, d2ZHatdzeta2H,d2ZHatdthetadzetaH
     PetscScalar, dimension(:,:), allocatable :: Dz,  dDzdtheta,  dDzdzeta,  d2Dzdtheta2,  d2Dzdzeta2,  d2Dzdthetadzeta
     PetscScalar, dimension(:,:), allocatable :: DzL, dDzdthetaL, dDzdzetaL, d2Dzdtheta2L, d2Dzdzeta2L, d2DzdthetadzetaL
     PetscScalar, dimension(:,:), allocatable :: DzH, dDzdthetaH, dDzdzetaH, d2Dzdtheta2H, d2Dzdzeta2H, d2DzdthetadzetaH

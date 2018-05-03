@@ -279,6 +279,9 @@ module globalVariables
   PetscScalar, dimension(:), allocatable :: particleFlux_vd_rHat
   PetscScalar, dimension(:), allocatable :: particleFlux_vd_rN
 
+  PetscScalar, dimension(:), allocatable :: classicalParticleFlux
+  PetscScalar, dimension(:), allocatable :: classicalParticleFluxNoPhi1
+
   PetscScalar, dimension(:), allocatable :: momentumFlux_vm0_psiHat
   PetscScalar, dimension(:), allocatable :: momentumFlux_vm0_psiN
   PetscScalar, dimension(:), allocatable :: momentumFlux_vm0_rHat
