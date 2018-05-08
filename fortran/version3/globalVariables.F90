@@ -36,6 +36,12 @@ module globalVariables
   integer :: RHSMode = 1, whichRHS
   logical :: isAParallelDirectSolverInstalled
 
+  ! Quantities related to ambipolar solve
+  logical :: ambipolarSolve = .false.
+  integer :: ambipolarSolveOption = 1
+  integer :: NEr_ambipolarSolve = 20
+  PetscScalar :: Er_search_tolerance = 1.d-8
+
   ! ********************************************************
   ! ********************************************************
   !
@@ -89,6 +95,23 @@ module globalVariables
   PetscScalar :: NBIspecZ = 1.0,  NBIspecNHat = 0.0
   logical :: withNBIspec = .false.
   !!!!!!!!!!!!!!!!!!!!!!!
+
+  ! ********************************************************
+  ! ********************************************************
+  !
+  ! Sensitivity options:
+  !
+  ! ********************************************************
+  ! ********************************************************
+
+  logical :: debugAdjoint = .false.
+  PetscScalar :: deltaLambda = 1.d-4 ! for finite diff testing
+  logical :: adjointBootstrapOption = .false.
+  logical :: adjointRadialCurrentOption = .false.
+  logical :: adjointTotalHeatFluxOption = .false.
+  ! These are initialized to .false. in readInput
+  logical, dimension(:), allocatable :: adjointHeatFluxOption, adjointParticleFluxOption, adjointParallelFlowOption
+  integer :: discreteAdjointOption = 1
 
 
   ! ********************************************************
@@ -194,7 +217,7 @@ module globalVariables
   integer, dimension(:), allocatable :: Nxi_for_x, min_x_for_L
   integer :: matrixSize, NxPotentials
   PetscScalar, dimension(:), allocatable :: theta, zeta, x, x_plus1
-  PetscScalar, dimension(:), allocatable :: thetaWeights, zetaWeights
+  PetscScalar, dimension(:), allocatable, target :: thetaWeights, zetaWeights
   PetscScalar, dimension(:,:), allocatable :: ddtheta, ddzeta
   PetscScalar, dimension(:,:), allocatable :: ddtheta_ExB_plus, ddtheta_ExB_minus
   PetscScalar, dimension(:,:), allocatable :: ddzeta_ExB_plus, ddzeta_ExB_minus
@@ -218,10 +241,10 @@ module globalVariables
   integer, parameter :: COORDINATE_SYSTEM_VMEC = 2
   integer :: coordinateSystem = COORDINATE_SYSTEM_UNINITIALIZED
 
-  PetscScalar, dimension(:,:), allocatable :: BHat, dBHatdtheta, dBHatdzeta, dBHatdpsiHat, DHat
+  PetscScalar, dimension(:,:), allocatable, target :: BHat, dBHatdtheta, dBHatdzeta, dBHatdpsiHat, DHat
   PetscScalar, dimension(:,:), allocatable :: BHat_sub_psi, dBHat_sub_psi_dtheta, dBHat_sub_psi_dzeta
-  PetscScalar, dimension(:,:), allocatable :: BHat_sub_theta, dBHat_sub_theta_dzeta, dBHat_sub_theta_dpsiHat
-  PetscScalar, dimension(:,:), allocatable :: BHat_sub_zeta, dBHat_sub_zeta_dtheta, dBHat_sub_zeta_dpsiHat
+  PetscScalar, dimension(:,:), allocatable, target :: BHat_sub_theta, dBHat_sub_theta_dzeta, dBHat_sub_theta_dpsiHat
+  PetscScalar, dimension(:,:), allocatable, target :: BHat_sub_zeta, dBHat_sub_zeta_dtheta, dBHat_sub_zeta_dpsiHat
   PetscScalar, dimension(:,:), allocatable :: BHat_sup_theta, dBHat_sup_theta_dzeta, dBHat_sup_theta_dpsiHat
   PetscScalar, dimension(:,:), allocatable :: BHat_sup_zeta, dBHat_sup_zeta_dtheta, dBHat_sup_zeta_dpsiHat
   PetscScalar, dimension(:,:), allocatable :: BDotCurlB, uHat, gradpsidotgradB_overgpsipsi, gpsipsi
@@ -365,6 +388,33 @@ module globalVariables
 
   Vec :: f0
 
+  ! ********************************************************
+  !
+  !  Variables related to sensitivity:
+  !
+  ! ********************************************************
+
+  !> @var ns Values of n to use for Fourier derivatives.
+  !> @var ms Values of m to sue for Fourier derivatives.
+  integer, dimension(:), allocatable :: ns_sensitivity
+  integer, dimension(:), allocatable :: ms_sensitivity
+  integer :: nMaxAdjoint = 0, mMaxAdjoint = 0
+  integer :: nMinAdjoint = 0, mMinAdjoint = 0
+  integer :: NModesAdjoint = 0, NLambdas = 6
+  PetscScalar, dimension(:,:), allocatable :: dRadialCurrentdLambda,dTotalHeatFluxdLambda,dBootstrapdLambda
+  PetscScalar, dimension(:,:,:), allocatable :: dParticleFluxdLambda, dHeatFluxdLambda, dParallelFlowdLambda
+  PetscScalar, dimension(:,:), allocatable :: dPhidPsidLambda
+  ! Below are quantities related to finite diff testing
+  PetscScalar, dimension(:,:), allocatable :: dRadialCurrentdLambda_finitediff,dTotalHeatFluxdLambda_finitediff,dBootstrapdLambda_finitediff
+  PetscScalar, dimension(:,:,:), allocatable :: dParticleFluxdLambda_finitediff, dHeatFluxdLambda_finitediff, dParallelFlowdLambda_finitediff
+  PetscScalar, dimension(:,:,:), allocatable :: particleFluxPercentError, heatFluxPercentError, parallelFlowPercentError
+  PetscScalar, dimension(:,:), allocatable :: radialCurrentPercentError, totalHeatFluxPercentError, bootstrapPercentError
+! No longer needed - these are now in read_wout_mod
+!  PetscScalar, dimension(:), allocatable :: bmnc, bsubthetamnc, bsubzetamnc, bsupthetamnc, bsupzetamnc, gmnc
+  PetscScalar, dimension(:,:), allocatable :: DHat_init, BHat_init, dBHatdtheta_init, dBHatdzeta_init, BHat_sup_theta_init, dBHat_sup_theta_dzeta_init, BHat_sup_zeta_init, dBHat_sup_zeta_dtheta_init, BHat_sub_theta_init, dBHat_sub_theta_dzeta_init, BHat_sub_zeta_init, dBHat_sub_zeta_dtheta_init
+  PetscScalar, dimension(:,:), allocatable :: dPhidPsidLambda_finitediff, dPhidPsiPercentError
+  ! Related to ambipolar solve
+  PetscScalar :: dRadialCurrentdEr
 
   ! ********************************************************
   !
