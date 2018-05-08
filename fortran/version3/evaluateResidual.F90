@@ -145,11 +145,11 @@
                 
                 
                 L = 0
-                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F, 0)
                 call VecSetValue(rhs, index, (4/three)*factor, INSERT_VALUES, ierr)
                 
                 L = 2
-                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F, 0)
                 call VecSetValue(rhs, index, (two/three)*factor, INSERT_VALUES, ierr)
              end do
           end do
@@ -165,7 +165,7 @@
        L=0
        do itheta = ithetaMin,ithetaMax
           do izeta = izetaMin,izetaMax
-             index = getIndex(1, 1, 1, itheta, izeta, BLOCK_QN)
+             index = getIndex(1, 1, 1, itheta, izeta, BLOCK_QN, 0)
 
              factor = 0
              do ispecies = 1,Nspecies
@@ -235,7 +235,7 @@
                   *nHats(ispecies)*mHats(ispecies)/(pi*sqrtpi*THats(ispecies)*THats(ispecies)*FSABHat2)
              do itheta=ithetaMin,ithetaMax
                 do izeta = izetaMin,izetaMax
-                   index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+                   index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F, 0)
                    call VecSetValue(rhs, index, &
                         factor * BHat(itheta,izeta), INSERT_VALUES, ierr)
                    !factor/BHat(itheta,izeta), INSERT_VALUES, ierr)
@@ -250,7 +250,7 @@
                   *nHats(ispecies)*mHats(ispecies)/(pi*sqrtpi*THats(ispecies)*THats(ispecies)*FSABHat2)
              do itheta=ithetaMin,ithetaMax
                 do izeta = izetaMin,izetaMax
-                   index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+                   index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F, 0)
                    call VecSetValue(rhs, index, &
                         factor * (EParallelHat+EParallelHatSpec(ispecies)*bcdata(itheta,izeta)) &
                         *BHat(itheta,izeta), INSERT_VALUES, ierr)

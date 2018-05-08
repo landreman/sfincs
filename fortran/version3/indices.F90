@@ -136,19 +136,20 @@
 
   contains
 
-    integer function getIndex(i_species, i_x, i_xi, i_theta, i_zeta, whichBlock)
+    integer function getIndex(i_species, i_x, i_xi, i_theta, i_zeta, whichBlock,whichMatrix)
 
       ! This function takes as inputs "local" indices in the species, x, xi, theta, and zeta grids,
       ! and returns the "global" index, i.e. the row or column of the master matrix.
       
       ! The input "local" indices (i_x, i_xi, etc) are 1-based, since small matrices are stored in Fortran.
       ! the output "global" index is 0-based, since PETSc uses 0-based indexing.
+      ! whichMatrix denotes matrix to be indexed into (corresponds with convention in populateMatrix.F90). This is for future use with adjointEC and is not currently used.
 
       use globalVariables, only: Nspecies, Nx, Nxi, Ntheta, Nzeta, matrixSize, constraintScheme, includePhi1, masterProc, Nxi_for_x
 
       implicit none
 
-      integer, intent(in) :: i_species, i_x, i_xi, i_theta, i_zeta, whichBlock
+      integer, intent(in) :: i_species, i_x, i_xi, i_theta, i_zeta, whichBlock, whichMatrix
 
       ! Validate inputs:
 

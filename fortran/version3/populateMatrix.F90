@@ -139,15 +139,15 @@
           ! Nothing to do here.
        case (1,3,4)
           do ispecies = 1,Nspecies
-             index = getIndex(ispecies,1,1,1,1,BLOCK_DENSITY_CONSTRAINT)
+             index = getIndex(ispecies,1,1,1,1,BLOCK_DENSITY_CONSTRAINT,0)
              call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
-             index = getIndex(ispecies,1,1,1,1,BLOCK_PRESSURE_CONSTRAINT)
+             index = getIndex(ispecies,1,1,1,1,BLOCK_PRESSURE_CONSTRAINT,0)
              call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
           end do
        case (2)
           do ispecies = 1,Nspecies
              do ix = 1,Nx
-                index = getIndex(ispecies,ix,1,1,1,BLOCK_F_CONSTRAINT)
+                index = getIndex(ispecies,ix,1,1,1,BLOCK_F_CONSTRAINT,0)
                 call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
              end do
           end do
@@ -155,11 +155,11 @@
           stop "Invalid constraintScheme!"
        end select
        if (includePhi1) then
-          index = getIndex(1,1,1,1,1,BLOCK_PHI1_CONSTRAINT)
+          index = getIndex(1,1,1,1,1,BLOCK_PHI1_CONSTRAINT,0)
           call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
           do itheta = 1,Ntheta
              do izeta = 1,Nzeta
-                index = getIndex(1,1,1,itheta,izeta,BLOCK_QN)
+                index = getIndex(1,1,1,itheta,izeta,BLOCK_QN,0)
                 call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
              end do
           end do
@@ -279,14 +279,14 @@
                 !do ix=ixMin,Nx
                 do ix=max(ixMin,min_x_for_L(L)),Nx
                    do itheta=1,localNtheta
-                      rowIndices(itheta) = getIndex(ispecies, ix, L+1, ithetaMin+itheta-1, izeta, BLOCK_F)
+                      rowIndices(itheta) = getIndex(ispecies, ix, L+1, ithetaMin+itheta-1, izeta, BLOCK_F,0)
                    end do
                    
                    ! Super-diagonal-in-L term
                    if (L < Nxi_for_x(ix)-1) then
                       ell = L+1
                       do itheta=1,Ntheta
-                         colIndices(itheta) = getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F)
+                         colIndices(itheta) = getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F, 0)
                       end do
                       
                       call MatSetValuesSparse(matrix, localNtheta, rowIndices, Ntheta, colIndices, &
@@ -297,7 +297,7 @@
                    if (L > 0) then
                       ell = L-1
                       do itheta=1,Ntheta
-                         colIndices(itheta) = getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F)
+                         colIndices(itheta) = getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F, 0)
                       end do
                       
                       call MatSetValuesSparse(matrix, localNtheta, rowIndices, Ntheta, colIndices, &
@@ -344,14 +344,14 @@
                 !do ix=ixMin,Nx
                 do ix=max(ixMin,min_x_for_L(L)),Nx
                    do izeta = 1,localNzeta
-                      rowIndices(izeta)=getIndex(ispecies, ix, L+1, itheta, izetaMin+izeta-1, BLOCK_F)
+                      rowIndices(izeta)=getIndex(ispecies, ix, L+1, itheta, izetaMin+izeta-1, BLOCK_F, 0)
                    end do
                    
                    ! Super-diagonal-in-L term
                    if (L < Nxi_for_x(ix)-1) then
                       ell = L + 1
                       do izeta = 1,Nzeta
-                         colIndices(izeta)=getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F)
+                         colIndices(izeta)=getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F, 0)
                       end do
                       
                       call MatSetValuesSparse(matrix, localNzeta, rowIndices, Nzeta, colIndices, &
@@ -362,7 +362,7 @@
                    if (L > 0) then
                       ell = L - 1
                       do izeta = 1,Nzeta
-                         colIndices(izeta)=getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F)
+                         colIndices(izeta)=getIndex(ispecies, ix, ell+1, itheta, izeta, BLOCK_F, 0)
                       end do
                       
                       call MatSetValuesSparse(matrix, localNzeta, rowIndices, Nzeta, colIndices, &
@@ -427,10 +427,10 @@
                 !do ix=ixMin,Nx
                 do ix=max(ixMin,min_x_for_L(L)),Nx
                    do itheta=1,localNtheta
-                      rowIndices(itheta)=getIndex(ispecies,ix,L+1,itheta+ithetaMin-1,izeta,BLOCK_F)
+                      rowIndices(itheta)=getIndex(ispecies,ix,L+1,itheta+ithetaMin-1,izeta,BLOCK_F,0)
                    end do
                    do itheta=1,Ntheta
-                      colIndices(itheta)=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
+                      colIndices(itheta)=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F,0)
                    end do
                    
                    call MatSetValuesSparse(matrix, localNtheta, rowIndices, Ntheta, colIndices, &
@@ -492,10 +492,10 @@
                 !do ix=ixMin,Nx
                 do ix=max(ixMin,min_x_for_L(L)),Nx
                    do izeta=1,localNzeta
-                      rowIndices(izeta)=getIndex(ispecies,ix,L+1,itheta,izeta+izetaMin-1,BLOCK_F)
+                      rowIndices(izeta)=getIndex(ispecies,ix,L+1,itheta,izeta+izetaMin-1,BLOCK_F,0)
                    end do
                    do izeta=1,Nzeta
-                      colIndices(izeta)=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
+                      colIndices(izeta)=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F,0)
                    end do
                    
                    call MatSetValuesSparse(matrix, localNzeta, rowIndices, Nzeta, colIndices, &
@@ -580,7 +580,7 @@
 
                    !do ix = ixMin, Nx
                    do ix = max(ixMin,min_x_for_L(L)), Nx
-                      rowIndex = getIndex(ispecies, ix, L+1, ithetaRow, izeta, BLOCK_F)
+                      rowIndex = getIndex(ispecies, ix, L+1, ithetaRow, izeta, BLOCK_F, 0)
                       
                       factor = Delta*THat*DHat(ithetaRow,izeta)*x(ix)*x(ix) &
                            / (2*Z*BHat(ithetaRow,izeta)*BHat(ithetaRow,izeta)*BHat(ithetaRow,izeta))
@@ -589,7 +589,7 @@
 
                          ! Diagonal-in-L term
                          ell = L
-                         colIndex = getIndex(ispecies, ix, ell+1, ithetaCol, izeta, BLOCK_F)
+                         colIndex = getIndex(ispecies, ix, ell+1, ithetaCol, izeta, BLOCK_F, 0)
 
                          stuffToAdd = factor * (2*(3*L*L+3*L-2)/((two*L+3)*(2*L-1)) * geometricFactor1 &
                               + (2*L*L+2*L-1)/((two*L+3)*(2*L-1)) * geometricFactor2 &
@@ -606,7 +606,7 @@
                             ! Super-super-diagonal-in-L term
                             if (L < Nxi_for_x(ix)-2) then
                                ell = L+2
-                               colIndex = getIndex(ispecies, ix, ell+1, ithetaCol, izeta, BLOCK_F)
+                               colIndex = getIndex(ispecies, ix, ell+1, ithetaCol, izeta, BLOCK_F, 0)
 
                                stuffToAdd = factor*(L+2)*(L+1)/((two*L+5)*(2*L+3)) &
                                     * (geometricFactor1 + geometricFactor2 - 3*geometricFactor3)
@@ -619,7 +619,7 @@
                             ! Sub-sub-diagonal-in-L term
                             if (L > 1) then
                                ell = L-2
-                               colIndex = getIndex(ispecies, ix, ell+1, ithetaCol, izeta, BLOCK_F)
+                               colIndex = getIndex(ispecies, ix, ell+1, ithetaCol, izeta, BLOCK_F, 0)
 
                                stuffToAdd = factor*(L-1)*L/((two*L-3)*(2*L-1)) &
                                     * (geometricFactor1 + geometricFactor2 - 3*geometricFactor3)
@@ -727,7 +727,7 @@
 
                    !do ix = ixMin, Nx
                    do ix = max(ixMin,min_x_for_L(L)), Nx
-                      rowIndex = getIndex(ispecies, ix, L+1, itheta, izetaRow, BLOCK_F)
+                      rowIndex = getIndex(ispecies, ix, L+1, itheta, izetaRow, BLOCK_F, 0)
                       
                       factor = Delta*THat*DHat(itheta,izetaRow)*x(ix)*x(ix) &
                            / (2*Z*BHat(itheta,izetaRow)*BHat(itheta,izetaRow)*BHat(itheta,izetaRow))
@@ -736,7 +736,7 @@
 
                          ! Diagonal-in-L term
                          ell = L
-                         colIndex = getIndex(ispecies, ix, ell+1, itheta, izetaCol, BLOCK_F)
+                         colIndex = getIndex(ispecies, ix, ell+1, itheta, izetaCol, BLOCK_F, 0)
 
                          stuffToAdd = factor * (2*(3*L*L+3*L-2)/((two*L+3)*(2*L-1)) * geometricFactor1 &
                               + (2*L*L+2*L-1)/((two*L+3)*(2*L-1)) * geometricFactor2 &
@@ -753,7 +753,7 @@
                             ! Super-super-diagonal-in-L term
                             if (L < Nxi_for_x(ix)-2) then
                                ell = L+2
-                               colIndex = getIndex(ispecies, ix, ell+1, itheta, izetaCol, BLOCK_F)
+                               colIndex = getIndex(ispecies, ix, ell+1, itheta, izetaCol, BLOCK_F, 0)
 
                                stuffToAdd = factor*(L+2)*(L+1)/((two*L+5)*(2*L+3)) &
                                     * (geometricFactor1 + geometricFactor2 - 3*geometricFactor3)
@@ -766,7 +766,7 @@
                             ! Sub-sub-diagonal-in-L term
                             if (L > 1) then
                                ell = L-2
-                               colIndex = getIndex(ispecies, ix, ell+1, itheta, izetaCol, BLOCK_F)
+                               colIndex = getIndex(ispecies, ix, ell+1, itheta, izetaCol, BLOCK_F, 0)
 
                                stuffToAdd = factor*(L-1)*L/((two*L-3)*(2*L-1)) &
                                     * (geometricFactor1 + geometricFactor2 - 3*geometricFactor3)
@@ -796,12 +796,12 @@
                 
                 do ix=ixMin,Nx
                    do L=0,(Nxi_for_x(ix)-1)
-                      rowIndex=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
+                      rowIndex=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F, 0)
                       
                       if (L<Nxi_for_x(ix)-1) then
                          ! Super-diagonal-in-L term:
                          ell = L+1
-                         colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
+                         colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F,0)
                          call MatSetValueSparse(matrix, rowIndex, colIndex, &
                               (L+1)*(L+2)/(2*L+three)*x(ix)*factor, ADD_VALUES, ierr)
                       end if
@@ -809,7 +809,7 @@
                       if (L>0) then
                          ! Sub-diagonal-in-L term:
                          ell = L-1
-                         colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
+                         colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F,0)
                          call MatSetValueSparse(matrix, rowIndex, colIndex, &
                               -L*(L-1)/(2*L-one)*x(ix)*factor, ADD_VALUES, ierr)
                       end if
@@ -840,7 +840,7 @@
                      
                 do ix=ixMin,Nx
                    do L=0,(Nxi_for_x(ix)-1)
-                      rowIndex=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
+                      rowIndex=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F,0)
 
                       ! Diagonal-in-L term
                       call MatSetValueSparse(matrix, rowIndex, rowIndex, &
@@ -853,7 +853,7 @@
                          if (L<Nxi_for_x(ix)-2) then
                             ! Super-super-diagonal-in-L term:
                             ell = L+2
-                            colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
+                            colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F,0)
                             call MatSetValueSparse(matrix, rowIndex, colIndex, &
                                  (L+3)*(L+2)*(L+1)/((two*L+5)*(2*L+three))*factor, ADD_VALUES, ierr)
                          end if
@@ -861,7 +861,7 @@
                          if (L>1) then
                             ! Sub-sub-diagonal-in-L term:
                             ell = L-2
-                            colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
+                            colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F,0)
                             call MatSetValueSparse(matrix, rowIndex, colIndex, &
                                  -L*(L-1)*(L-2)/((2*L-3)*(2*L-one))*factor, ADD_VALUES, ierr)
                          end if
@@ -901,7 +901,7 @@
                    factor = -Delta*DHat(itheta,izeta)*THat*x(ix)*x(ix)/(2*Z*(BHat(itheta,izeta)**3)) * temp
                      
                    do L=0,(Nxi_for_x(ix)-1)
-                      rowIndex=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
+                      rowIndex=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F,0)
 
                       ! Diagonal-in-L term
                       call MatSetValueSparse(matrix, rowIndex, rowIndex, &
@@ -914,7 +914,7 @@
                          if (L<Nxi_for_x(ix)-2) then
                             ! Super-super-diagonal-in-L term:
                             ell = L+2
-                            colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
+                            colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F,0)
                             call MatSetValueSparse(matrix, rowIndex, colIndex, &
                                  (L+3)*(L+2)*(L+1)/((two*L+5)*(2*L+three))*factor, ADD_VALUES, ierr)
                          end if
@@ -922,7 +922,7 @@
                          if (L>1) then
                             ! Sub-sub-diagonal-in-L term:
                             ell = L-2
-                            colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
+                            colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F,0)
                             call MatSetValueSparse(matrix, rowIndex, colIndex, &
                                  -L*(L-1)*(L-2)/((2*L-3)*(2*L-one))*factor, ADD_VALUES, ierr)
                          end if
@@ -1004,7 +1004,7 @@
 
                    rowIndices = -1
                    do ix=min_x_for_L(L),Nx
-                      rowIndices(ix)=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
+                      rowIndices(ix)=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F,0)
                    end do
 
                    ! Term that is diagonal in L:
@@ -1030,7 +1030,7 @@
                          stuffToAdd = (L+1)*(L+2)/((two*L+5)*(2*L+3))*(xDotFactor+xDotFactor2)
                          !do ix_col=ixMinCol,Nx
                          do ix_col=max(ixMinCol,min_x_for_L(ell)),Nx
-                            colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F)
+                            colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F,0)
                             !do ix_row=ixMin,Nx
                             do ix_row=max(ixMin,min_x_for_L(L)),Nx
                                call MatSetValueSparse(matrix, rowIndices(ix_row), colIndex, &
@@ -1045,7 +1045,7 @@
                          stuffToAdd = L*(L-1)/((two*L-3)*(2*L-1))*(xDotFactor+xDotFactor2)
                          !do ix_col=ixMinCol,Nx
                          do ix_col=max(ixMinCol,min_x_for_L(ell)),Nx
-                            colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F)
+                            colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F,0)
                             !do ix_row=ixMin,Nx
                             do ix_row=max(ixMin,min_x_for_L(L)),Nx
                                call MatSetValueSparse(matrix, rowIndices(ix_row), colIndex, &
@@ -1256,7 +1256,7 @@
              itheta = -1 ! Just so a runtime error occurs if I use itheta by mistake
              do ithetaRow = ithetaMin, ithetaMax
                 do izeta = izetaMin, izetaMax
-                   rowIndex = getIndex(ispecies, ix, L+1, ithetaRow, izeta, BLOCK_F)
+                   rowIndex = getIndex(ispecies, ix, L+1, ithetaRow, izeta, BLOCK_F,0)
 
 !!$ COMMENTED BY AM 2016-02
 !!$                   factor = -alpha*Delta*DHat(ithetaRow,izeta)*BHat_sub_zeta(ithetaRow,izeta) &
@@ -1276,7 +1276,7 @@
                         * (dPhiHatdpsiHat + Phi1Hat(ithetaRow,izeta)*dTHatdpsiHats(ispecies)/THat)
 
                    do ithetaCol = 1,Ntheta
-                      colIndex = getIndex(1,1,1,ithetaCol, izeta, BLOCK_QN)
+                      colIndex = getIndex(1,1,1,ithetaCol, izeta, BLOCK_QN,0)
 !!                      call MatSetValueSparse(matrix, rowIndex, colIndex,& !!Commented by AM 2016-03
 !!                           factor*ddtheta(ithetaRow, ithetaCol), ADD_VALUES, ierr) !!Commented by AM 2016-03
                       !!! SHOULD THE NEXT LINE BE MatSetValueSparse???
@@ -1299,7 +1299,7 @@
              ithetaCol = -1 ! Just so a runtime error occurs if I use itheta by mistake
              do itheta = ithetaMin, ithetaMax
                 do izetaRow = izetaMin, izetaMax
-                   rowIndex = getIndex(ispecies, ix, L+1, itheta, izetaRow, BLOCK_F)
+                   rowIndex = getIndex(ispecies, ix, L+1, itheta, izetaRow, BLOCK_F,0)
 
 !!$ COMMENTED BY AM 2016-02
 !!$                   factor = alpha*Delta*DHat(ithetaRow,izeta)*BHat_sub_theta(ithetaRow,izeta) &
@@ -1319,7 +1319,7 @@
                         * (dPhiHatdpsiHat + Phi1Hat(itheta,izetaRow)*dTHatdpsiHats(ispecies)/THat)
                    
                    do izetaCol = 1,Nzeta
-                      colIndex = getIndex(1,1,1,itheta, izetaCol, BLOCK_QN)
+                      colIndex = getIndex(1,1,1,itheta, izetaCol, BLOCK_QN,0)
                       !!                      call MatSetValueSparse(matrix, rowIndex, colIndex,& !!Commented by AM 2016-03
                       !!                           factor*ddzeta(izetaRow, izetaCol), ADD_VALUES, ierr) !!Commented by AM 2016-03
                       !!! SHOULD THE NEXT LINE BE MatSetValueSparse ????
@@ -1347,11 +1347,11 @@
                 izetaCol = -1 ! Just so a runtime error occurs if I use itheta by mistake
                 do itheta = ithetaMin, ithetaMax
                    do izeta = izetaMin, izetaMax
-                      rowIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                      rowIndex2 = getIndex(ispecies, ix, L2+1, itheta, izeta, BLOCK_F) !!Added by AM 2016-03 to add extra P_2 terms
+                      rowIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,0)
+                      rowIndex2 = getIndex(ispecies, ix, L2+1, itheta, izeta, BLOCK_F,0) !!Added by AM 2016-03 to add extra P_2 terms
                       
                       !!These terms are diagonal in theta and zeta
-                      colIndex = getIndex(1,1,1,itheta, izeta, BLOCK_QN)
+                      colIndex = getIndex(1,1,1,itheta, izeta, BLOCK_QN,0)
                       
                       !!The following factors are only used in the Jacobian. These terms do not contain d/dtheta or d/dzeta
                       !!but d(Phi1)/dtheta, d(Phi1)/dzeta, dB/dtheta, dB/dzeta.
@@ -1477,7 +1477,7 @@
 
                    !do ix_row=ixMin,Nx
                    do ix_row=max(ixMin,min_x_for_L(L)),Nx
-                      rowIndex = getIndex(ispecies,ix_row,L+1,itheta,izeta,BLOCK_F)
+                      rowIndex = getIndex(ispecies,ix_row,L+1,itheta,izeta,BLOCK_F,0)
 
                       ! Term that is super-diagonal in L:
                       if (L<Nxi-1) then
@@ -1485,7 +1485,7 @@
                          !do ix_col=ixMinCol,Nx
                          do ix_col=max(ixMinCol,min_x_for_L(ell)),Nx
                             if (abs(nonlinearTerm_Lp1(ix_row,ix_col))>threshholdForInclusion) then
-                               colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F)
+                               colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F,0)
                                ! We must use MatSetValue instead of MatSetValueSparse here!!
                                call MatSetValue(matrix, rowIndex, colIndex, &
                                     factor*nonlinearTerm_Lp1(ix_row,ix_col), ADD_VALUES, ierr)
@@ -1499,7 +1499,7 @@
                          !do ix_col=ixMinCol,Nx
                          do ix_col=max(ixMinCol,min_x_for_L(ell)),Nx
                             if (abs(nonlinearTerm_Lm1(ix_row,ix_col))>threshholdForInclusion) then
-                               colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F)
+                               colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F,0)
                                ! We must use MatSetValue instead of MatSetValueSparse here!!
                                call MatSetValue(matrix, rowIndex, colIndex, &
                                     factor*nonlinearTerm_Lm1(ix_row,ix_col), ADD_VALUES, ierr)
@@ -1548,7 +1548,7 @@
                       tempVector2=0
                       !do ix=1,Nx
                       do ix=min_x_for_L(ell),Nx
-                         index = getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
+                         index = getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F,0)
                          ! Add 1 because we are indexing a Fortran array instead of a PETSc object
                          tempVector1(ix) = stateArray(index+1)
                          tempVector2(ix) = tempVector2(ix) - (L-1)*L/(two*L-1)*stateArray(index+1)/x(ix)
@@ -1563,7 +1563,7 @@
                       tempVector2=0
                       !do ix=1,Nx
                       do ix=min_x_for_L(ell),Nx
-                         index = getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
+                         index = getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F,0)
                          ! Add 1 because we are indexing a Fortran array instead of a PETSc object
                          tempVector1(ix) = stateArray(index+1)
                          tempVector2(ix) = tempVector2(ix) + (L+1)*(L+2)/(two*L+3)*stateArray(index+1)/x(ix)
@@ -1573,12 +1573,12 @@
 
                    !do ix=ixMin,Nx
                    do ix=max(ixMin,min_x_for_L(L)),Nx
-                      rowIndex = getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
+                      rowIndex = getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F,0)
 
                       ! Add the d Phi_1 / d theta term:
                       do j=1,Ntheta
                          if (abs(ddtheta(itheta,j))>threshholdForInclusion) then
-                            colIndex = getIndex(1,1,1,j,izeta,BLOCK_QN)
+                            colIndex = getIndex(1,1,1,j,izeta,BLOCK_QN,0)
                             ! We must use MatSetValue instead of MatSetValueSparse here!!
                             call MatSetValue(matrix, rowIndex, colIndex, &
                                  factor*BHat_sup_theta(itheta,izeta)*ddtheta(itheta,j)*tempVector2(ix), &
@@ -1589,7 +1589,7 @@
                       ! Add the d Phi_1 / d zeta term:
                       do j=1,Nzeta
                          if (abs(ddzeta(izeta,j))>threshholdForInclusion) then
-                            colIndex = getIndex(1,1,1,itheta,j,BLOCK_QN)
+                            colIndex = getIndex(1,1,1,itheta,j,BLOCK_QN,0)
                             ! We must use MatSetValue instead of MatSetValueSparse here!!
                             call MatSetValue(matrix, rowIndex, colIndex, &
                                  factor*BHat_sup_zeta(itheta,izeta)*ddzeta(izeta,j)*tempVector2(ix), &
@@ -2082,9 +2082,9 @@
                                ! Save the residual, and equivalently, the d(collision op.) / d f1 terms
                                
                                do ix_row=max(ixMin,min_x_for_L(L)),Nx 
-                                  rowIndex=getIndex(iSpeciesA,ix_row,L+1,itheta,izeta,BLOCK_F)
+                                  rowIndex=getIndex(iSpeciesA,ix_row,L+1,itheta,izeta,BLOCK_F,0)
                                   do ix_col = max(ixMinCol,min_x_for_L(L)),Nx
-                                     colIndex=getIndex(iSpeciesB,ix_col,L+1,itheta,izeta,BLOCK_F)
+                                     colIndex=getIndex(iSpeciesB,ix_col,L+1,itheta,izeta,BLOCK_F,0)
                                      call MatSetValueSparse(matrix, rowIndex, colIndex, & 
 !!                                     call MatSetValue(matrix, rowIndex, colIndex, & 
                                      -nu_n*CHat(ix_row,ix_col), ADD_VALUES, ierr)
@@ -2110,7 +2110,7 @@
                                   
                                   do ix= max(ixMinCol,min_x_for_L(L)),Nx
                                      ! Generate f1b from state vector
-                                     index = getIndex(iSpeciesB,ix,L+1,itheta,izeta,BLOCK_F) 
+                                     index = getIndex(iSpeciesB,ix,L+1,itheta,izeta,BLOCK_F,0)
                                      f1b(ix) = stateArray(index + 1)
                                      
                                      ! If includeTemperatureEquilibrationTerm = .true., also generate the Maxwellian for species B
@@ -2129,9 +2129,9 @@
                                   
                                   ! Save into the main matrix
                                   do ix_row=max(ixMin,min_x_for_L(L)),Nx
-                                     rowIndex=getIndex(iSpeciesA,ix_row,L+1,itheta,izeta,BLOCK_F)
+                                     rowIndex=getIndex(iSpeciesA,ix_row,L+1,itheta,izeta,BLOCK_F,0)
                                      ! Get column index for the d/dPhi1 terms
-                                     colIndex=getIndex(1,1,1,itheta,izeta,BLOCK_QN)
+                                     colIndex=getIndex(1,1,1,itheta,izeta,BLOCK_QN,0)
                                      ! Save into the main matrix, note that here we only use ix_row since CHatTimesf is now a vector
                                      call MatSetValue(matrix, rowIndex, colIndex, &  
                                      -nu_n*CHatTimesf(ix_row), ADD_VALUES, ierr) 
@@ -2150,8 +2150,8 @@
                                      
                                      ! Save into the main matrix
                                      do ix_row=max(ixMin,min_x_for_L(L)),Nx
-                                        rowIndex=getIndex(iSpeciesA,ix_row,L+1,itheta,izeta,BLOCK_F)
-                                        colIndex=getIndex(1,1,1,itheta,izeta,BLOCK_QN)                                                                                        
+                                        rowIndex=getIndex(iSpeciesA,ix_row,L+1,itheta,izeta,BLOCK_F,0)
+                                        colIndex=getIndex(1,1,1,itheta,izeta,BLOCK_QN,0)
                                         call MatSetValue(matrix, rowIndex, colIndex, &
                                         -nu_n*CHatTimesf(ix_row), ADD_VALUES, ierr)
                                      end do !ix_row
@@ -2432,10 +2432,10 @@
                             do izeta=izetaMin,izetaMax
                                !do ix_row=ixMin,Nx
                                do ix_row=max(ixMin,min_x_for_L(L)),Nx
-                                  rowIndex=getIndex(iSpeciesA,ix_row,L+1,itheta,izeta,BLOCK_F)
+                                  rowIndex=getIndex(iSpeciesA,ix_row,L+1,itheta,izeta,BLOCK_F,0)
                                   !do ix_col = ixMinCol,Nx
                                   do ix_col = max(ixMinCol,min_x_for_L(L)),Nx
-                                     colIndex=getIndex(iSpeciesB,ix_col,L+1,itheta,izeta,BLOCK_F)
+                                     colIndex=getIndex(iSpeciesB,ix_col,L+1,itheta,izeta,BLOCK_F,0)
                                      call MatSetValueSparse(matrix, rowIndex, colIndex, &
                                      -nu_n*CHat(ix_row,ix_col), ADD_VALUES, ierr)
                                   end do
@@ -2642,7 +2642,7 @@
                             
                             CHat_element = -oneHalf*nuDHatpol(iSpeciesA, ix,itheta,izeta)*(L*(L+1) + Krook*2) !!Added by AM 2018-01
 
-                            index=getIndex(iSpeciesA,ix,L+1,itheta,izeta,BLOCK_F)
+                            index=getIndex(iSpeciesA,ix,L+1,itheta,izeta,BLOCK_F,0)
                             call MatSetValueSparse(matrix, index, index, & 
                             !!call MatSetValue(matrix, index, index, & !!Test by AM 2018-01
                             !! -nu_n*CHat_element*preFactor, ADD_VALUES, ierr)!! Modified by AI (2017-09), multiply with preFactor before saving !!Commented by AM 2018-01
@@ -2669,7 +2669,7 @@
                                CHat_elementJ = (-oneHalf*nuDHatpolJ(iSpeciesA, ix,itheta,izeta)*(L*(L+1) + Krook*2))*stateArray(index + 1) !!Added by AM 2018-01
 
                                ! Now we need to use a different col index since we save in the phi1 part
-                               colIndex=getIndex(1,1,1,itheta,izeta,BLOCK_QN)
+                               colIndex=getIndex(1,1,1,itheta,izeta,BLOCK_QN,0)
                                call MatSetValue(matrix, index, colIndex, & 
                                !! -nu_n*CHat_element*preFactor, ADD_VALUES, ierr) !! Modified by AI (2017-09), multiply with preFactor before saving  !!Commented by AM 2018-01
                                -nu_n*CHat_elementJ, ADD_VALUES, ierr) !!Added by AM 2018-01
@@ -2725,7 +2725,7 @@
                       
                       do itheta=ithetaMin,ithetaMax
                          do izeta=izetaMin,izetaMax
-                            index=getIndex(iSpeciesA,ix,L+1,itheta,izeta,BLOCK_F)
+                            index=getIndex(iSpeciesA,ix,L+1,itheta,izeta,BLOCK_F,0)
                             call MatSetValueSparse(matrix, index, index, &
                             -nu_n*CHat_element, ADD_VALUES, ierr)
                             !-nu_n*(GHat+iota*IHat)/(BHat(itheta,izeta)*BHat(itheta,izeta))*CHat_element, &
@@ -2770,7 +2770,7 @@
           do itheta = ithetaMin,ithetaMax
              do izeta = izetaMin,izetaMax
                 do ispecies = 1,Nspecies
-                   index = getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
+                   index = getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F,0)
                    call MatSetValue(matrix, index, index, one, ADD_VALUES, ierr)
                 end do
              end do
@@ -2788,9 +2788,9 @@
        do itheta = ithetaMin,ithetaMax
           do izeta = izetaMin,izetaMax
              do ispecies = 1,Nspecies
-                rowIndex = getIndex(ispecies,ix_row,L+1,itheta,izeta,BLOCK_F)
+                rowIndex = getIndex(ispecies,ix_row,L+1,itheta,izeta,BLOCK_F,0)
                 do ix_col = 1,Nx
-                   colIndex = getIndex(ispecies,ix_col,L+1,itheta,izeta,BLOCK_F)
+                   colIndex = getIndex(ispecies,ix_col,L+1,itheta,izeta,BLOCK_F,0)
                    call MatSetValueSparse(matrix, rowIndex, colIndex, ddxToUse(ix_row,ix_col), ADD_VALUES, ierr)
                 end do
              end do
@@ -2840,12 +2840,12 @@
              do itheta = ithetaMin,ithetaMax
                 do izeta = izetaMin,izetaMax
                    do ispecies = 1,Nspecies
-                      rowIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+                      rowIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F, 0)
                       
-                      colIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)
+                      colIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT, 0)
                       call MatSetValueSparse(matrix, rowIndex, colIndex, xPartOfSource1, ADD_VALUES, ierr)
                       
-                      colIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)
+                      colIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT, 0)
                       call MatSetValueSparse(matrix, rowIndex, colIndex, xPartOfSource2, ADD_VALUES, ierr)
                    end do
                 end do
@@ -2859,8 +2859,8 @@
              do itheta = ithetaMin,ithetaMax
                 do izeta = izetaMin,izetaMax
                    do ispecies = 1,Nspecies
-                      rowIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                      colIndex = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)
+                      rowIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F, 0)
+                      colIndex = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT, 0)
                       call MatSetValue(matrix, rowIndex, colIndex, one, ADD_VALUES, ierr)
                    end do
                 end do
@@ -2893,13 +2893,13 @@
 
                 do ix=1,Nx
                    do ispecies=1,Nspecies
-                      colIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+                      colIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F, 0)
 
-                      rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)
+                      rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT, 0)
                       call MatSetValueSparse(matrix, rowIndex, colIndex, &
                            x2(ix)*xWeights(ix)*factor, ADD_VALUES, ierr)
 
-                      rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)
+                      rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT, 0)
                       call MatSetValueSparse(matrix, rowIndex, colIndex, &
                            x2(ix)*x2(ix)*xWeights(ix)*factor, ADD_VALUES, ierr)
                    end do
@@ -2918,8 +2918,8 @@
 
                 do ix=ixMin,Nx
                    do ispecies = 1,Nspecies
-                      colIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                      rowIndex = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)
+                      colIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F, 0)
+                      rowIndex = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT, 0)
                       call MatSetValueSparse(matrix, rowIndex, colIndex, &
                            factor, ADD_VALUES, ierr)
                    end do
@@ -2934,7 +2934,7 @@
 
              ix = 1
              do ispecies = 1,Nspecies
-                rowIndex = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT)
+                rowIndex = getIndex(ispecies, ix, 1, 1, 1, BLOCK_F_CONSTRAINT, 0)
                 colIndex = rowIndex
                 call MatSetValue(matrix, rowIndex, colIndex, &
                      one, ADD_VALUES, ierr)
@@ -2956,7 +2956,7 @@
        L=0
        do itheta = ithetaMin,ithetaMax
           do izeta = izetaMin,izetaMax
-             rowIndex = getIndex(1, 1, 1, itheta, izeta, BLOCK_QN)
+             rowIndex = getIndex(1, 1, 1, itheta, izeta, BLOCK_QN, 0)
 
              ! Add the charge density of the kinetic species (the part of the residual/Jacobian related to f1):
              do ispecies = 1,Nspecies
@@ -2968,7 +2968,7 @@
                      * sqrt(THats(ispecies)/mHats(ispecies)) !!Added by AM 2016-02
 
                 do ix = 1,Nx
-                   colIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+                   colIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F, 0)
                    call MatSetValueSparse(matrix, rowIndex, colIndex, &
                         speciesFactor*x2(ix)*xWeights(ix), ADD_VALUES, ierr)
                 end do
@@ -2984,7 +2984,7 @@
              !!Added by AM 2016-02!!
 
              !Add the part of the residual/Jacobian related to Phi1
-             colIndex = getIndex(1, 1, 1, itheta, izeta, BLOCK_QN)
+             colIndex = getIndex(1, 1, 1, itheta, izeta, BLOCK_QN, 0)
              if (quasineutralityOption == 1 .and. (whichMatrix == 0 .or. whichMatrix == 1)) then !!Only add in Jacobian matrix
                 do ispecies = 1,Nspecies
                    call MatSetValueSparse(matrix, rowIndex, colIndex, &
@@ -3001,7 +3001,7 @@
 	     !!!!!!!!!!!!!!!!!!!!!!!
 
              ! Add the Lagrange multiplier lambda:
-             colIndex = getIndex(1, 1, 1, 1, 1, BLOCK_PHI1_CONSTRAINT)
+             colIndex = getIndex(1, 1, 1, 1, 1, BLOCK_PHI1_CONSTRAINT, 0)
              call MatSetValueSparse(matrix, rowIndex, colIndex, &
                   one, ADD_VALUES, ierr)
 
@@ -3018,10 +3018,10 @@
        allocate(rowIndices(1))
        allocate(colIndices(Nzeta))
 
-       rowIndices(1) = getIndex(1, 1, 1, 1, 1, BLOCK_PHI1_CONSTRAINT)
+       rowIndices(1) = getIndex(1, 1, 1, 1, 1, BLOCK_PHI1_CONSTRAINT, 0)
        do itheta=1,Ntheta
           do izeta=1,Nzeta
-             colIndices(izeta) = getIndex(1, 1, 1, itheta, izeta, BLOCK_QN)
+             colIndices(izeta) = getIndex(1, 1, 1, itheta, izeta, BLOCK_QN, 0)
           end do
 
           call MatSetValuesSparse(matrix, 1, rowIndices(1), Nzeta, colIndices, &
@@ -3126,7 +3126,7 @@
                * sqrt(mHats(ispecies)/(pi*THats(ispecies))) * expx2(ix)
           do itheta = ithetaMin,ithetaMax
              do izeta = izetaMin,izetaMax
-                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F, 0)
                 call VecSetValue(f0, index, &
                 !!     factor, INSERT_VALUES, ierr)
  !!Commented by AM 2016-06

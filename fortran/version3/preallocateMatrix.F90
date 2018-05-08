@@ -95,9 +95,9 @@ subroutine preallocateMatrix(matrix, whichMatrix)
      !predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta*Nx + 1
      !predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta*Nx
      do ispecies=1,Nspecies
-        index = getIndex(ispecies,1,1,1,1,BLOCK_DENSITY_CONSTRAINT)
+        index = getIndex(ispecies,1,1,1,1,BLOCK_DENSITY_CONSTRAINT,0)
         predictedNNZsForEachRow(index+1) = Ntheta*Nzeta*Nx + 1 ! +1 for diagonal
-        index = getIndex(ispecies,1,1,1,1,BLOCK_PRESSURE_CONSTRAINT)
+        index = getIndex(ispecies,1,1,1,1,BLOCK_PRESSURE_CONSTRAINT,0)
         predictedNNZsForEachRow(index+1) = Ntheta*Nzeta*Nx + 1 ! +1 for diagonal
      end do
   case (2)
@@ -106,7 +106,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
      !predictedNNZsForEachRow((Nspecies*Nx*Ntheta*Nzeta*Nxi+1):matrixSize) = Ntheta*Nzeta
      do ispecies=1,Nspecies
         do ix = 1, Nx
-           index = getIndex(ispecies,ix,1,1,1,BLOCK_F_CONSTRAINT)
+           index = getIndex(ispecies,ix,1,1,1,BLOCK_F_CONSTRAINT,0)
            predictedNNZsForEachRow(index+1) = Ntheta*Nzeta + 1 ! +1 for diagonal
         end do
      end do
@@ -117,7 +117,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
      ! Set rows for the quasineutrality condition:
      do itheta=1,Ntheta
         do izeta=1,Nzeta
-           index = getIndex(1,1,1,itheta,izeta,BLOCK_QN)
+           index = getIndex(1,1,1,itheta,izeta,BLOCK_QN,0)
 
            !!Added by AM 2016-03!!
            if (quasineutralityOption == 1) then
@@ -138,7 +138,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
         end do
      end do
      ! Set row for lambda constraint:
-     index = getIndex(1,1,1,1,1,BLOCK_PHI1_CONSTRAINT)
+     index = getIndex(1,1,1,1,1,BLOCK_PHI1_CONSTRAINT,0)
      predictedNNZsForEachRow(index+1) = Ntheta*Nzeta + 1 ! <Phi_1>, plus 1 for diagonal.
   end if
   predictedNNZsForEachRowDiagonal = predictedNNZsForEachRow
