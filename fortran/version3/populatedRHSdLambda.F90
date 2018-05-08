@@ -30,8 +30,8 @@
     integer :: m,n
 
     if (whichLambda > 0) then
-      m = ms(whichMode)
-      n = ns(whichMode)
+      m = ms_sensitivity(whichMode)
+      n = ns_sensitivity(whichMode)
     end if
 
     call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, dRHSdLambda, ierr)

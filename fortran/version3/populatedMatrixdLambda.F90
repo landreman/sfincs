@@ -44,8 +44,8 @@
     PetscScalar :: angle, cos_angle, sin_angle, dVPrimeHatdLambda
 
     if (whichLambda > 0) then
-      m = ms(whichMode)
-      n = ns(whichMode)
+      m = ms_sensitivity(whichMode)
+      n = ns_sensitivity(whichMode)
     end if
 
     ! Sometimes PETSc complains if any of the diagonal elements are not set.

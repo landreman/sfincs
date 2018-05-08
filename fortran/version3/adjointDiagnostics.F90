@@ -228,8 +228,8 @@ module adjointDiagnostics
     VecScatter :: VecScatterContext
     PetscErrorCode :: ierr
 
-    m = ms(whichMode)
-    n = ns(whichMode)
+    m = ms_sensitivity(whichMode)
+    n = ns_sensitivity(whichMode)
 
     result = zero
 
@@ -301,7 +301,7 @@ module adjointDiagnostics
                 dBHat_sub_zetadLambda = cos_angle
                 factor = -dBHatdtheta(itheta,izeta)*dBHat_sub_zetadLambda/(VPrimeHat*BHat(itheta,izeta)**3)
               case (6) ! DHat
-                if (ns(whichMode)==0 .and. ms(whichMode)==0) then
+                if (ns_sensitivity(whichMode)==0 .and. ms_sensitivity(whichMode)==0) then
                   dVPrimeHatdLambda = four*pi*pi
                   factor = - (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda/ &
                     (VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
@@ -363,8 +363,8 @@ module adjointDiagnostics
 
     result = zero
 
-    m = ms(whichMode)
-    n = ns(whichMode)
+    m = ms_sensitivity(whichMode)
+    n = ns_sensitivity(whichMode)
 
     ! Scatter deltaF to master proc
     call VecScatterCreateToZero(deltaF, VecScatterContext, deltaFOnProc0, ierr)
@@ -502,8 +502,8 @@ module adjointDiagnostics
     PetscScalar :: dDHatdLambda
 
     sqrtFSAB2 = sqrt(FSABHat2)
-    m = ms(whichMode)
-    n = ns(whichMode)
+    m = ms_sensitivity(whichMode)
+    n = ns_sensitivity(whichMode)
 
     ! Scatter deltaF to master proc
     call VecScatterCreateToZero(deltaF, VecScatterContext, deltaFOnProc0, ierr)
