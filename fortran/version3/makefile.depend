@@ -1,12 +1,15 @@
 # -*- mode: makefile -*-
 
-OBJ_FILES = ChebyshevGrid.o ChebyshevInterpolationMatrix.o \
+OBJ_FILES = adjointDiagnostics.o ambipolarSolver.o ChebyshevGrid.o ChebyshevInterpolationMatrix.o \
 	  createGrids.o diagnostics.o evaluateJacobian.o evaluateResidual.o export_f.o geometry.o \
-	  globalVariables.o indices.o polynomialDiffMatrices.o polynomialInterpolationMatrix.o \
+	  globalVariables.o indices.o polynomialDiffMatrices.o polynomialInterpolationMatrix.o populateAdjointRHS.o \
+      populatedMatrixdLambda.o populatedRHSdLambda.o \
 	  populateMatrix.o preallocateMatrix.o quadpack.o radialCoordinates.o readInput.o sfincs_finalize.o sfincs_main.o solver.o sparsify.o \
 	  uniformDiffMatrices.o uniformInterpolationMatrix.o validateInput.o writeHDF5Output.o xGrid.o
 
 # Dependencies:
+adjointDiagnostics.o: globalVariables.o indices.o writeHDF5Output.o
+ambipolarSolver.o: globalVariables.o solver.o writeHDF5Output.o
 ChebyshevGrid.o: 
 ChebyshevInterpolationMatrix.o: 
 createGrids.o: globalVariables.o polynomialDiffMatrices.o xGrid.o geometry.o indices.o export_f.o
@@ -18,6 +21,9 @@ geometry.o: globalVariables.o radialCoordinates.o mini_libstell/mini_libstell.a
 indices.o: globalVariables.o
 polynomialDiffMatrices.o: xGrid.o
 polynomialInterpolationMatrix.o: 
+populateAdjointRHS.o: globalVariables.o indices.o
+populatedMatrixdLambda.o: globalVariables.o indices.o xGrid.o
+populatedRHSdLambda.o: globalVariables.o indices.o
 populateMatrix.o: globalVariables.o sparsify.o indices.o xGrid.o
 preallocateMatrix.o: indices.o globalVariables.o
 quadpack.o:
