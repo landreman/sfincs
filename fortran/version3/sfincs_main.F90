@@ -155,7 +155,11 @@ module sfincs_main
 
     ! Solve the main system, either linear or nonlinear.
     ! This step takes more time than everything else combined.
-    call mainSolverLoop()
+    if (ambipolarSolve) then
+      call mainAmbipolarSolver()
+    else
+      call mainSolverLoop()
+    end if
     
     call finalizeHDF5()
     call PetscFinalize(ierr)
