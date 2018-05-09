@@ -129,6 +129,7 @@ module sfincs_main
     use geometry
     use writeHDF5Output
     use solver
+    use ambipolarSolver
     
     implicit none
     
@@ -167,7 +168,6 @@ module sfincs_main
     if (masterProc) then
        print *,"Goodbye!"
     end if
-    
 
   end subroutine sfincs_run
 
