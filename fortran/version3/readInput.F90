@@ -22,7 +22,7 @@ contains
 
     namelist / general / saveMatlabOutput, MatlabOutputFilename, &
          outputFilename, solveSystem, RHSMode, &
-         saveMatricesAndVectorsInBinary, binaryOutputFilename
+         saveMatricesAndVectorsInBinary, binaryOutputFilename, ambipolarSolve, NEr_ambipolarSolve, Er_search_tolerance, ambipolarSolveOption
 
     namelist / geometryParameters / GHat, IHat, iota, epsilon_t, epsilon_h, &
          helicity_l, helicity_n, B0OverBBar, geometryScheme, &
@@ -88,6 +88,11 @@ contains
 
     namelist / export_f / export_full_f, export_delta_f, export_f_theta, export_f_zeta, export_f_x, export_f_xi, &
          export_f_theta_option, export_f_zeta_option, export_f_xi_option, export_f_x_option
+
+    namelist / sensitivityOptions / adjointBootstrapOption, adjointRadialCurrentOption, &
+      adjointTotalHeatFluxOption, adjointHeatFluxOption, adjointParticleFluxOption, &
+      nMinAdjoint, mMinadjoint, &
+      nMaxAdjoint, mMaxAdjoint, adjointParallelFlowOption, debugAdjoint, discreteAdjointOption, deltaLambda
 
     Zs = speciesNotInitialized
     mHats = speciesNotInitialized
@@ -427,6 +432,24 @@ contains
 
     Nspecies = NZs
 
+    ! We have to wait until we know Nspecies to read adjoint namelist
+     if (RHSMode>3 .and. RHSMode<6) then
+       allocate(adjointHeatFluxOption(Nspecies))
+       allocate(adjointParticleFluxOption(NSpecies))
+       allocate(adjointParallelFlowOption(Nspecies))
+       adjointHeatFluxOption = .false.
+       adjointParticleFluxOption = .false.
+       adjointParallelFlowOption = .false.
+       read(fileUnit, nml=sensitivityOptions, iostat=didFileAccessWork)
+       if (didFileAccessWork /= 0) then
+          print *,"Proc ",myRank,": Error!  I was able to open the file ", trim(filename), &
+               " but not read data from the sensitivityOptions namelist in it."
+          stop
+       end if
+       if (masterProc) then
+          print *,"Successfully read parameters from sensitivityOptions namelist in ", trim(filename), "."
+       end if
+     end if
 
     ! ----------------------------------------------------------------
 
