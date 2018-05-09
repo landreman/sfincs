@@ -22,7 +22,7 @@ indices.o: globalVariables.o
 polynomialDiffMatrices.o: xGrid.o
 polynomialInterpolationMatrix.o: 
 populateAdjointRHS.o: globalVariables.o indices.o
-populatedMatrixdLambda.o: globalVariables.o indices.o xGrid.o
+populatedMatrixdLambda.o: globalVariables.o indices.o xGrid.o sparsify.o
 populatedRHSdLambda.o: globalVariables.o indices.o
 populateMatrix.o: globalVariables.o sparsify.o indices.o xGrid.o
 preallocateMatrix.o: indices.o globalVariables.o
@@ -31,9 +31,9 @@ radialCoordinates.o: globalVariables.o
 readInput.o: export_f.o globalVariables.o xGrid.o
 sfincs.o: sfincs_main.o
 sfincs_finalize.o: export_f.o indices.o globalVariables.o xGrid.o
-sfincs_main.o: geometry.o globalVariables.o writeHDF5Output.o readInput.o solver.o radialCoordinates.o
-solver.o: globalVariables.o
-sparsify.o:
+sfincs_main.o: geometry.o globalVariables.o writeHDF5Output.o readInput.o solver.o radialCoordinates.o ambipolarSolver.o
+solver.o: globalVariables.o adjointDiagnostics.o
+sparsify.o: 
 uniformDiffMatrices.o: 
 uniformInterpolationMatrix.o: 
 validateInput.o: globalVariables.o xGrid.o

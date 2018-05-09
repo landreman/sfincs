@@ -91,8 +91,9 @@ contains
 
     namelist / sensitivityOptions / adjointBootstrapOption, adjointRadialCurrentOption, &
       adjointTotalHeatFluxOption, adjointHeatFluxOption, adjointParticleFluxOption, &
-      nMinAdjoint, mMinadjoint, &
-      nMaxAdjoint, mMaxAdjoint, adjointParallelFlowOption, debugAdjoint, discreteAdjointOption, deltaLambda
+      nMinAdjoint, mMinAdjoint, &
+      nMaxAdjoint, mMaxAdjoint, adjointParallelFlowOption, discreteAdjointOption, &
+      debugAdjoint, deltaLambda
 
     Zs = speciesNotInitialized
     mHats = speciesNotInitialized
@@ -222,8 +223,6 @@ contains
           print *,"Successfully read parameters from export_f namelist in ", trim(filename), "."
        end if
     end if
-
-    close(unit = fileUnit)
 
     ! Validate species parameters                                                                                                                                                                            
 
@@ -450,6 +449,8 @@ contains
           print *,"Successfully read parameters from sensitivityOptions namelist in ", trim(filename), "."
        end if
      end if
+
+    close(unit = fileUnit)
 
     ! ----------------------------------------------------------------
 

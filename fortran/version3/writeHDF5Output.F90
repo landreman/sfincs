@@ -1027,6 +1027,34 @@ contains
 
     ! -------------------------------------
 
+    if (RHSMode > 3 .and. RHSMode < 6) then
+      rank = 4
+
+      dimForIterationSpeciesLambdasNmodes(1)      = 1
+      maxdimForIterationSpeciesLambdasNmodes(1)   = H5S_UNLIMITED_F
+      dimForIterationSpeciesLambdasNmodesChunk(1) = 1
+
+      dimForIterationSpeciesLambdasNmodes(2)      = Nspecies
+      maxdimForIterationSpeciesLambdasNmodes(2)   = Nspecies
+      dimForIterationSpeciesLambdasNmodesChunk(2) = Nspecies
+
+      dimForIterationSpeciesLambdasNmodes(3)      = NLambdas
+      maxdimForIterationSpeciesLambdasNmodes(3)   = NLambdas
+      dimForIterationSpeciesLambdasNmodesChunk(3) = NLambdas
+
+      dimForIterationSpeciesLambdasNmodes(4)      = NModesAdjoint
+      maxdimForIterationSpeciesLambdasNmodes(4)   = NModesAdjoint
+      dimForIterationSpeciesLambdasNmodesChunk(4) = NModesAdjoint
+
+      call h5screate_simple_f(rank, dimForIterationSpeciesLambdasNmodes, dspaceIDForIterationSpeciesLambdasNmodes, &
+           HDF5Error, maxDimForIterationSpeciesLambdasNmodes)
+      call h5pcreate_f(H5P_DATASET_CREATE_F, pForIterationSpeciesLambdasNmodes, HDF5Error)
+      call h5pset_chunk_f(pForIterationSpeciesLambdasNmodes, rank, dimForIterationSpeciesLambdasNmodesChunk, HDF5Error)
+
+    end if
+
+    ! -------------------------------------
+
     rank = 6
     dimForExport_f(1)      = 1
     maxDimForExport_f(1)   = H5S_UNLIMITED_F
@@ -1776,7 +1804,7 @@ contains
 
        call h5ltset_attribute_string_f(HDF5FileID, arrayName, attribute_name, description, HDF5Error)
     else
-       ! Extend an existing array in the .h5 file:
+       ! Extend an existing array in the .h5 file
        call h5dopen_f(HDF5FileID, arrayName, dsetID, HDF5Error)
        call h5dset_extent_f(dsetID, dim, HDF5Error)
        call h5dget_space_f(dsetID, dspaceID, HDF5Error)

@@ -571,7 +571,7 @@ contains
     end if
 
     ! Adjoint solve for Newton method
-    if (ambipolarSolve .and. ambipolarSolveOption == 1) then
+    if ((ambipolarSolve .and. ambipolarSolveOption == 1) .or. RHSMode==5) then
       whichAdjointRHS = 1
       ispecies = 0
       if (masterProc) then
