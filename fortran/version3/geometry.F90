@@ -1088,6 +1088,13 @@ contains
        stop
     end select
 
+    if (RHSMode>3 .and. RHSMode<6 .and. (.not. all(BHarmonics_parity))) then
+      if (masterProc) then
+        print *,"Error! Adjoint not compatible stellarator asymmety."
+      end if
+      stop
+    end if
+
     if (.not. nearbyRadiiGiven) then
        ! Initialize arrays:
        BHat = B0OverBBar ! This includes the (0,0) component.
@@ -2569,6 +2576,13 @@ contains
        ! -----------------------------------------------------
 
        if (lasym) then
+
+          if (RHSMode>3 .and. RHSMode<6) then
+            if (masterProc) then
+              print *,"Error! Adjoint not compatible with stellarator asymmetry."
+            end if
+            stop
+          end if
 
           b = bmns(imn_nyq,vmecRadialIndex_half(1)) * vmecRadialWeight_half(1) &
                + bmns(imn_nyq,vmecRadialIndex_half(2)) * vmecRadialWeight_half(2)
