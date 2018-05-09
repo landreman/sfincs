@@ -28,9 +28,9 @@ subroutine validateInput()
      stop
   end if
   
-  if (RHSMode>3) then
+  if (RHSMode>5) then
      if (masterProc) then
-        print *,"Error! RHSMode must be no more than 3."
+        print *,"Error! RHSMode must be no more than 5."
      end if
      stop
   end if
@@ -1168,6 +1168,58 @@ subroutine validateInput()
         print *,"Error! preconditioner_xi cannot be more than 1."
      end if
      stop
+  end if
+  ! Validate adjoint inputs
+  if (RHSMode>3) then
+    if (RHSMode==5 .and. adjointRadialCurrentOption) then
+      if (masterProc) then
+        print *,"Error! RHSMode=5 cannot be used with adjointRadialCurrentOption."
+      end if
+      stop
+    end if
+    ! Check for linear solve
+    if (includePhi1) then
+      if (masterProc) then
+        print *,"Error! RHSMode>3 cannot be used with Phi1."
+      endif
+      stop
+    endif
+    ! Check for VMEC or Boozer geometry
+    ! Check for stellarator symmetry is performed in geometry.f90
+    if (geometryScheme /= 5) then ! Boozer
+      NLambdas = 1 ! Only BHat derivatives computed
+    else
+      NLambdas = 6 ! VMEC
+    end if
+    ! Check there is no inductive E
+    if (EParallelHat /= 0) then
+      if (masterProc) then
+        print *,"Error! RHSMode>3 cannot be used with inductive electric field."
+      end if
+      stop
+    end if
+    ! Check that tangential magnetic drifts are not used
+    if (magneticDriftScheme > 0) then
+      if (masterProc) then
+        print *,"Error! RHSMode>3 cannot be used with tangential magnetic drifts."
+      end if
+      stop
+    end if
+    ! Check constraintScheme
+    if (constraintScheme /= -1 .and. constraintScheme /= 1) then
+      if (masterProc) then
+        print *,"Error! RHSMode>3 must be used with constraintScheme=1 or constraintScheme=-1."
+      end if
+      stop
+    end if
+    ! Check collision operator
+    ! This must be true for continuous. Probably doesn't matter for discrete.
+    if (collisionOperator /= 0) then
+      if (masterProc) then
+        print *,"Error! RHSMode>3 must be used with collisionOperator=0."
+      end if
+      stop
+    end if
   end if
   
 end subroutine validateInput
