@@ -8,7 +8,7 @@
 ! This next subroutine is called as a "Monitor" of SNES, set in solver.F90 using SNESSetMonitor.
   subroutine diagnosticsMonitor(mysnes, iterationNum, residual, userContext, ierr)
 
-    use globalVariables, only: masterProc, iterationForMatrixOutput, classicalParticleFlux
+    use globalVariables, only: masterProc, iterationForMatrixOutput
     use petscsnes
     
     implicit none
@@ -239,7 +239,7 @@
     call extractPhi1(solutionWithDeltaF)
 
     ! Calculate the classical transport:
-    call calculateClassicalParticleFlux(classicalParticleFlux)
+    call calculateClassicalParticleFlux(classicalParticleFlux_psiHat)
 
     ! The solution vector contains the departure from a Maxwellian, not the "full f" distribution function.
     ! Form the full f:
@@ -690,6 +690,7 @@
        heatFlux_vd1_psiN = ddpsiN2ddpsiHat * heatFlux_vd1_psiHat
        heatFlux_vd_psiN = ddpsiN2ddpsiHat * heatFlux_vd_psiHat
        heatFlux_withoutPhi1_psiN = ddpsiN2ddpsiHat * heatFlux_withoutPhi1_psiHat
+       classicalParticleFlux_psiN = ddpsiN2ddpsiHat * classicalParticleFlux_psiHat
 
        particleFlux_vm0_rHat = ddrHat2ddpsiHat * particleFlux_vm0_psiHat
        particleFlux_vm_rHat = ddrHat2ddpsiHat * particleFlux_vm_psiHat
@@ -710,6 +711,7 @@
        heatFlux_vd1_rHat = ddrHat2ddpsiHat * heatFlux_vd1_psiHat
        heatFlux_vd_rHat = ddrHat2ddpsiHat * heatFlux_vd_psiHat
        heatFlux_withoutPhi1_rHat = ddrHat2ddpsiHat * heatFlux_withoutPhi1_psiHat
+       classicalParticleFlux_rHat = ddrHat2ddpsiHat * classicalParticleFlux_psiHat
 
        particleFlux_vm0_rN = ddrN2ddpsiHat * particleFlux_vm0_psiHat
        particleFlux_vm_rN = ddrN2ddpsiHat * particleFlux_vm_psiHat
@@ -730,6 +732,7 @@
        heatFlux_vd1_rN = ddrN2ddpsiHat * heatFlux_vd1_psiHat
        heatFlux_vd_rN = ddrN2ddpsiHat * heatFlux_vd_psiHat
        heatFlux_withoutPhi1_rN = ddrN2ddpsiHat * heatFlux_withoutPhi1_psiHat
+       classicalParticleFlux_rHat = ddrN2ddpsiHat * classicalParticleFlux_psiHat
 
        FSADensityPerturbation = FSADensityPerturbation / VPrimeHat
        FSABFlow = FSABFlow / VPrimeHat
@@ -892,13 +895,12 @@
           print *,"   NTV:                     ", NTV(ispecies)
           print *,"   particleFlux_vm0_psiHat  ", particleFlux_vm0_psiHat(ispecies)
           print *,"   particleFlux_vm_psiHat   ", particleFlux_vm_psiHat(ispecies)
-          print *,"   classicalParticleFlux    ", classicalParticleFlux(ispecies)
+          print *,"   classicalParticleFlux    ", classicalParticleFlux_psiHat(ispecies)
           if (includePhi1) then
              print *,"   particleFlux_vE0_psiHat  ", particleFlux_vE0_psiHat(ispecies)
              print *,"   particleFlux_vE_psiHat   ", particleFlux_vE_psiHat(ispecies)
              print *,"   particleFlux_vd1_psiHat  ", particleFlux_vd1_psiHat(ispecies)
              print *,"   particleFlux_vd_psiHat   ", particleFlux_vd_psiHat(ispecies)
-             print *,"   classicalParticleFluxNoPhi1", classicalParticleFluxNoPhi1(ispecies)
           end if
           print *,"   momentumFlux_vm0_psiHat  ", momentumFlux_vm0_psiHat(ispecies)
           print *,"   momentumFlux_vm_psiHat   ", momentumFlux_vm_psiHat(ispecies)
