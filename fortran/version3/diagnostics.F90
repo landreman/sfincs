@@ -10,7 +10,7 @@
 
     use globalVariables, only: masterProc, iterationForMatrixOutput
     use petscsnes
-
+    
     implicit none
 
     SNES :: mysnes
@@ -192,6 +192,7 @@
     use writeHDF5Output
     use petscvec
     use export_f
+    use classicalTransport
 
     implicit none
 
@@ -236,6 +237,9 @@
 
     ! Find Phi_1 in the PETSc Vec, and store Phi_1 in a standard Fortran 2D array:
     call extractPhi1(solutionWithDeltaF)
+
+    ! Calculate the classical transport:
+    call calculateClassicalParticleFlux(classicalParticleFlux_psiHat)
 
     ! The solution vector contains the departure from a Maxwellian, not the "full f" distribution function.
     ! Form the full f:
@@ -686,6 +690,7 @@
        heatFlux_vd1_psiN = ddpsiN2ddpsiHat * heatFlux_vd1_psiHat
        heatFlux_vd_psiN = ddpsiN2ddpsiHat * heatFlux_vd_psiHat
        heatFlux_withoutPhi1_psiN = ddpsiN2ddpsiHat * heatFlux_withoutPhi1_psiHat
+       classicalParticleFlux_psiN = ddpsiN2ddpsiHat * classicalParticleFlux_psiHat
 
        particleFlux_vm0_rHat = ddrHat2ddpsiHat * particleFlux_vm0_psiHat
        particleFlux_vm_rHat = ddrHat2ddpsiHat * particleFlux_vm_psiHat
@@ -706,6 +711,7 @@
        heatFlux_vd1_rHat = ddrHat2ddpsiHat * heatFlux_vd1_psiHat
        heatFlux_vd_rHat = ddrHat2ddpsiHat * heatFlux_vd_psiHat
        heatFlux_withoutPhi1_rHat = ddrHat2ddpsiHat * heatFlux_withoutPhi1_psiHat
+       classicalParticleFlux_rHat = ddrHat2ddpsiHat * classicalParticleFlux_psiHat
 
        particleFlux_vm0_rN = ddrN2ddpsiHat * particleFlux_vm0_psiHat
        particleFlux_vm_rN = ddrN2ddpsiHat * particleFlux_vm_psiHat
@@ -726,6 +732,7 @@
        heatFlux_vd1_rN = ddrN2ddpsiHat * heatFlux_vd1_psiHat
        heatFlux_vd_rN = ddrN2ddpsiHat * heatFlux_vd_psiHat
        heatFlux_withoutPhi1_rN = ddrN2ddpsiHat * heatFlux_withoutPhi1_psiHat
+       classicalParticleFlux_rHat = ddrN2ddpsiHat * classicalParticleFlux_psiHat
 
        FSADensityPerturbation = FSADensityPerturbation / VPrimeHat
        FSABFlow = FSABFlow / VPrimeHat
@@ -888,6 +895,7 @@
           print *,"   NTV:                     ", NTV(ispecies)
           print *,"   particleFlux_vm0_psiHat  ", particleFlux_vm0_psiHat(ispecies)
           print *,"   particleFlux_vm_psiHat   ", particleFlux_vm_psiHat(ispecies)
+          print *,"   classicalParticleFlux    ", classicalParticleFlux_psiHat(ispecies)
           if (includePhi1) then
              print *,"   particleFlux_vE0_psiHat  ", particleFlux_vE0_psiHat(ispecies)
              print *,"   particleFlux_vE_psiHat   ", particleFlux_vE_psiHat(ispecies)

@@ -118,7 +118,7 @@ module sfincs_main
     ! iteration, such as setting up the coordinate grids and evaluating
     ! the magnetic field and its derivatives on the spatial grid.
     call createGrids()
-
+    
   end subroutine sfincs_prepare
 
   ! -----------------------------------------------------------------------------------
@@ -129,6 +129,7 @@ module sfincs_main
     use geometry
     use writeHDF5Output
     use solver
+    use classicalTransport
     
     implicit none
     
@@ -148,6 +149,13 @@ module sfincs_main
     ! For input quantities that depend on the radial coordinate, pick out the values for the selected
     ! radial coordinate, and use these values to over-write values for the other radial coordinates.
     call setInputRadialCoordinate()
+
+    ! calculate the classical transport without Phi1
+    ! this can be done without solving the system, and so is done here
+    call calculateClassicalParticleFlux(classicalParticleFluxNoPhi1_psiHat)
+    classicalParticleFluxNoPhi1_psiN = ddpsiN2ddpsiHat * classicalParticleFluxNoPhi1_psiHat
+    classicalParticleFluxNoPhi1_rHat = ddrHat2ddpsiHat * classicalParticleFluxNoPhi1_psiHat
+    classicalParticleFluxNoPhi1_rN = ddrN2ddpsiHat * classicalParticleFluxNoPhi1_psiHat
 
     ! Create HDF5 data structures, and save the quantities that will not change
     ! at each iteration of the solver (i.e. save all quantities except diagnostics.)

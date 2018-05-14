@@ -163,13 +163,13 @@ contains
 
     ! Conversion factors for converting TO d/dpsiHat:
     ddpsiN2ddpsiHat =  one / psiAHat
-    ddrN2ddpsiHat   =  one / (two * psiAHat * sqrt(psiN))
     ddrHat2ddpsiHat = aHat / (two * psiAHat * sqrt(psiN))
+    ddrN2ddpsiHat   =  one / (two * psiAHat * sqrt(psiN))
 
     ! Conversion factors for converting FROM d/dpsiHat:
     ddpsiHat2ddpsiN = psiAHat
-    ddpsiHat2ddrN   = (two * psiAHat * sqrt(psiN))
     ddpsiHat2ddrHat = (two * psiAHat * sqrt(psiN)) / aHat
+    ddpsiHat2ddrN   = (two * psiAHat * sqrt(psiN))
 
     ! Next, set the d/dpsiHat quantities related to input gradients:
     if (RHSMode==3) then
