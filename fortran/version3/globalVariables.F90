@@ -409,8 +409,7 @@ module globalVariables
   PetscScalar, dimension(:,:,:), allocatable :: dParticleFluxdLambda_finitediff, dHeatFluxdLambda_finitediff, dParallelFlowdLambda_finitediff
   PetscScalar, dimension(:,:,:), allocatable :: particleFluxPercentError, heatFluxPercentError, parallelFlowPercentError
   PetscScalar, dimension(:,:), allocatable :: radialCurrentPercentError, totalHeatFluxPercentError, bootstrapPercentError
-! No longer needed - these are now in read_wout_mod
-!  PetscScalar, dimension(:), allocatable :: bmnc, bsubthetamnc, bsubzetamnc, bsupthetamnc, bsupzetamnc, gmnc
+  PetscScalar, dimension(:), allocatable :: bmnc_init, bsubthetamnc_init, bsubzetamnc_init, bsupthetamnc_init, bsupzetamnc_init, gmnc_init
   PetscScalar, dimension(:,:), allocatable :: DHat_init, BHat_init, dBHatdtheta_init, dBHatdzeta_init, BHat_sup_theta_init, dBHat_sup_theta_dzeta_init, BHat_sup_zeta_init, dBHat_sup_zeta_dtheta_init, BHat_sub_theta_init, dBHat_sub_theta_dzeta_init, BHat_sub_zeta_init, dBHat_sub_zeta_dtheta_init
   PetscScalar, dimension(:,:), allocatable :: dPhidPsidLambda_finitediff, dPhidPsiPercentError
   ! Related to ambipolar solve

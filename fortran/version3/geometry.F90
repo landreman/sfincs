@@ -381,6 +381,7 @@ contains
     PetscScalar :: dBHat_sub_psi_dthetaHarmonics_amplitude, dBHat_sub_psi_dzetaHarmonics_amplitude
     PetscScalar :: DeltapsiHat !, diotadpsiHat moved to global variables 2016-09-15 HS
     PetscScalar :: RadialWeight = 1.0 ! weight of closest surface with rN<=rN_wish
+    integer :: iMode
 
     ! For the BHarmonics_parity array, 
     ! true indicates the contribution to B(theta,zeta) has the form
@@ -389,7 +390,13 @@ contains
     ! sin(l * theta - n * zeta)
 
     ! Initialise some quantities which will otherwise only be calculated
-    ! in geometryScheme 11 and 12 
+    ! in geometryScheme 11 and 12
+
+    if (debugAdjoint) then
+      allocate(bmnc_init(NModesAdjoint))
+      bmnc_init = zero
+    end if
+
     dBHatdpsiHat = 0
     BHat_sub_psi = 0
     dBHat_sub_psi_dtheta = 0
@@ -844,7 +851,6 @@ contains
        dBHat_sub_zeta_dpsiHat = (GHat_new-GHat_old)/DeltapsiHat
        dBHat_sub_theta_dpsiHat =(IHat_new-IHat_old)/DeltapsiHat
        diotadpsiHat= (iota_new-iota_old)/DeltapsiHat
-
     case (12)
        ! Read Boozer coordinate file in a generalisation of the .bc format used at IPP Greifswald for non-stellarator symmetric equilibria 
 
@@ -1088,18 +1094,19 @@ contains
        stop
     end select
 
-    if (RHSMode>3 .and. RHSMode<6 .and. (.not. all(BHarmonics_parity))) then
-      if (masterProc) then
-        print *,"Error! Adjoint not compatible stellarator asymmety."
-      end if
-      stop
-    end if
-
     if (.not. nearbyRadiiGiven) then
        ! Initialize arrays:
        BHat = B0OverBBar ! This includes the (0,0) component.
        dBHatdtheta = 0
        dBHatdzeta = 0
+
+      if (debugAdjoint) then
+        do iMode = 1,NModesAdjoint
+          if (ms_sensitivity(iMode) == 0 .and. ns_sensitivity(iMode) == 0) then
+            bmnc_init(iMode) = B0OverBBar
+          end if
+        end do
+      end if
 
        !I do not Bother to calculate Sugama's drift for geometryScheme=1,2,3,4.
 !!$       RHat = 0 
@@ -1121,7 +1128,6 @@ contains
 !!$       d2Dzdzeta2     = 0
 !!$       d2Dzdthetadzeta= 0
 
-       
        do i = 1, NHarmonics
           if (BHarmonics_parity(i)) then   ! The cosine components of BHat
              include_mn = .false.
@@ -1141,6 +1147,14 @@ contains
 
                    dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) + BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
                         sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+
+                  if (debugAdjoint) then
+                    do iMode = 1,NModesAdjoint
+                      if (ms_sensitivity(iMode) == BHarmonics_l(i) .and. ns_sensitivity(iMode) == BHarmonics_n(i)) then
+                        bmnc_init(iMode) = BHarmonics_amplitudes(i)
+                      end if
+                    end do
+                   end if
 
                 end do
              end if
@@ -1172,7 +1186,7 @@ contains
              end if
           end if
        end do
-    else !Two nearby radii L and H are given 
+    else !Two nearby radii L and H are given
        allocate(BHatL(Ntheta,Nzeta))
        allocate(dBHatdthetaL(Ntheta,Nzeta))
        allocate(dBHatdzetaL(Ntheta,Nzeta))
@@ -1197,6 +1211,15 @@ contains
        allocate(d2Dzdtheta2L(Ntheta,Nzeta))
        allocate(d2Dzdzeta2L(Ntheta,Nzeta))
        allocate(d2DzdthetadzetaL(Ntheta,Nzeta))
+
+     ! Average L and R bmnc00's
+      if (debugAdjoint) then
+        do iMode = 1,NModesAdjoint
+          if (ms_sensitivity(iMode) == 0 .and. ns_sensitivity(iMode) == 0) then
+            bmnc_init(iMode) = B0OverBBarL*RadialWeight + B0OverBBarH*(1-RadialWeight)
+          end if
+        end do
+      end if
 
        BHatL = B0OverBBarL ! This includes the (0,0) component.
        dBHatdthetaL = 0
@@ -1296,6 +1319,13 @@ contains
                    d2DzdthetadzetaL(itheta,:) = d2DzdthetadzetaL(itheta,:) + DzHarmonics_L(i) * BHarmonics_lL(i)*Nperiods*BHarmonics_nL(i) * &
                         sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
 
+                      if (debugAdjoint) then
+                        do iMode = 1,NModesAdjoint
+                          if (ms_sensitivity(iMode) == BHarmonics_lL(i) .and. ns_sensitivity(iMode) == BHarmonics_nL(i)) then
+                          bmnc_init(iMode) = BHarmonics_amplitudesL(i)
+                          end if
+                        end do
+                      end if
 
                 end do
              end if
@@ -1506,6 +1536,14 @@ contains
                    d2DzdthetadzetaH(itheta,:) = d2DzdthetadzetaH(itheta,:) + DzHarmonics_H(i) * BHarmonics_lH(i)*Nperiods*BHarmonics_nH(i) * &
                         sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
 
+                    if (debugAdjoint) then
+                      do iMode = 1,NModesAdjoint
+                        if (ms_sensitivity(iMode) == BHarmonics_lH(i) .and. ns_sensitivity(iMode) == BHarmonics_nH(i)) then
+                          ! Radial weighting - bmnc_init set to BHarmonics_amplitudeL previously
+                          bmnc_init(iMode) = (RadialWeight*bmnc_init(iMode) + BHarmonics_amplitudesH(i)*(1-RadialWeight))
+                        end if
+                      end do
+                   end if
 
                 end do
              end if
@@ -2019,6 +2057,13 @@ contains
        deallocate(d2DzdthetadzetaH)
     end if
 
+    if (RHSMode>3 .and. RHSMode<6 .and. nonStelSym) then
+      if (masterProc) then
+        print *,"Error! Adjoint not compatible stellarator asymmety."
+      end if
+      stop
+    end if
+
     ! Set the Jacobian and various other components of B:
 
     DHat = BHat * BHat / (GHat + iota * IHat)
@@ -2035,6 +2080,18 @@ contains
        
        dBHat_sup_theta_dpsiHat = iota * dBHat_sup_zeta_dpsiHat + diotadpsiHat* DHat
        dBHat_sup_theta_dzeta = iota * 2.0 * BHat *dBHatdzeta / (GHat + iota * IHat)
+    end if
+
+  if (debugAdjoint) then
+      ! BHat_sub_theta, BHat_sub_zeta are fixed
+      DHat_init = DHat
+      BHat_init = BHat
+      dBHatdtheta_init = dBHatdtheta
+      dBHatdzeta_init = dBHatdzeta
+      BHat_sup_theta_init = BHat_sup_theta
+      dBHat_sup_theta_dzeta_init = dBHat_sup_theta_dzeta
+      BHat_sup_zeta_init = BHat_sup_zeta
+      dBHat_sup_zeta_dtheta_init = dBHat_sup_zeta_dtheta
     end if
 
     !possible double-check
@@ -2065,6 +2122,7 @@ contains
     PetscScalar, dimension(:,:), allocatable :: dXdtheta, dXdzeta, dXdpsiHat, dYdtheta, dYdzeta, dYdpsiHat
     PetscScalar, dimension(:,:), allocatable :: g_sub_theta_theta, g_sub_theta_zeta, g_sub_zeta_zeta, g_sub_psi_theta, g_sub_psi_zeta, g_sub_psi_psi
     logical :: non_Nyquist_mode_available, found_imn
+    integer :: iMode
 
 
     ! This subroutine is written so that only psiN_wish is used, not the other *_wish quantities.
@@ -2103,6 +2161,21 @@ contains
     allocate(g_sub_psi_theta(Ntheta,Nzeta))
     allocate(g_sub_psi_zeta(Ntheta,Nzeta))
     allocate(g_sub_psi_psi(Ntheta,Nzeta))
+
+    if (debugAdjoint) then
+      allocate(bsubthetamnc_init(NModesAdjoint))
+      allocate(bsubzetamnc_init(NModesAdjoint))
+      allocate(bsupthetamnc_init(NModesAdjoint))
+      allocate(bsupzetamnc_init(NModesAdjoint))
+      allocate(bmnc_init(NModesAdjoint))
+      allocate(gmnc_init(NModesAdjoint))
+      bsubthetamnc_init = zero
+      bsubzetamnc_init = zero
+      bsupthetamnc_init = zero
+      bsupzetamnc_init = zero
+      bmnc_init = zero
+      gmnc_init = zero
+    end if
 
     ! There is a bug in libstell read_wout_file for ASCII-format wout files, in which the xm_nyq and xn_nyq arrays are sometimes
     ! not populated. The next few lines here provide a workaround:
@@ -2410,7 +2483,15 @@ contains
        
        b = bmnc(imn_nyq,vmecRadialIndex_half(1)) * vmecRadialWeight_half(1) &
             + bmnc(imn_nyq,vmecRadialIndex_half(2)) * vmecRadialWeight_half(2)
-       
+
+      if (debugAdjoint) then
+        do iMode = 1,NModesAdjoint
+          if (ms_sensitivity(iMode) == m .and. ns_sensitivity(iMode) == n) then
+            bmnc_init(iMode) = b
+          end if
+        end do
+      end if
+
        ! Set scaleFactor to rippleScale for non-axisymmetric or non-quasisymmetric modes
        scaleFactor = setScaleFactor(n,m)
        b = b*scaleFactor
@@ -2476,12 +2557,28 @@ contains
                    temp = temp*scaleFactor
                    DHat(itheta,izeta) = DHat(itheta,izeta) + temp * cos_angle
 
+                  if (debugAdjoint) then
+                    do iMode = 1,NModesAdjoint
+                      if (ms_sensitivity(iMode) == m .and. ns_sensitivity(iMode) == n) then
+                        gmnc_init(iMode) = temp
+                      end if
+                    end do
+                  end if
+
                    ! Handle B sup theta:
                    ! Note that VMEC's bsupumnc and bsupumns are exactly the same as SFINCS's BHat_sup_theta, with no conversion factors of 2pi needed.
                    temp = bsupumnc(imn_nyq,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
                    temp = temp*scaleFactor
                    BHat_sup_theta(itheta,izeta) = BHat_sup_theta(itheta,izeta) + temp * cos_angle
                    dBHat_sup_theta_dzeta(itheta,izeta) = dBHat_sup_theta_dzeta(itheta,izeta) + n * NPeriods * temp * sin_angle
+
+                    if (debugAdjoint) then
+                      do iMode = 1,NModesAdjoint
+                        if (ms_sensitivity(iMode) == m .and. ns_sensitivity(iMode) == n) then
+                          bsupthetamnc_init(iMode) = temp
+                        end if
+                      end do
+                    end if
 
                    ! Handle B sup zeta:
                    ! Note that VMEC's bsupvmnc and bsupvmns are exactly the same as SFINCS's BHat_sup_zeta, with no conversion factors of 2pi or Nperiods needed.
@@ -2490,6 +2587,14 @@ contains
                    BHat_sup_zeta(itheta,izeta) = BHat_sup_zeta(itheta,izeta) + temp * cos_angle
                    dBHat_sup_zeta_dtheta(itheta,izeta) = dBHat_sup_zeta_dtheta(itheta,izeta) - m * temp * sin_angle
 
+                    if (debugAdjoint) then
+                      do iMode = 1,NModesAdjoint
+                        if (ms_sensitivity(iMode) == m .and. ns_sensitivity(iMode) == n) then
+                          bsupzetamnc_init(iMode) = temp
+                        end if
+                      end do
+                    end if
+
                    ! Handle B sub theta:
                    ! Note that VMEC's bsubumnc and bsubumns are exactly the same as SFINCS's BHat_sub_theta, with no conversion factors of 2pi needed.
                    temp = bsubumnc(imn_nyq,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
@@ -2497,12 +2602,28 @@ contains
                    BHat_sub_theta(itheta,izeta) = BHat_sub_theta(itheta,izeta) + temp * cos_angle
                    dBHat_sub_theta_dzeta(itheta,izeta) = dBHat_sub_theta_dzeta(itheta,izeta) + n * NPeriods * temp * sin_angle
 
+                  if (debugAdjoint) then
+                    do iMode = 1,NModesAdjoint
+                      if (ms_sensitivity(iMode) == m .and. ns_sensitivity(iMode) == n) then
+                        bsubthetamnc_init(iMode) = temp
+                      end if
+                    end do
+                  end if
+
                    ! Handle B sub zeta:
                    ! Note that VMEC's bsubvmnc and bsubvmns are exactly the same as SFINCS's BHat_sub_zeta, with no conversion factors of 2pi needed.
                    temp = bsubvmnc(imn_nyq,vmecRadialIndex_half(isurf)) * vmecRadialWeight_half(isurf)
                    temp = temp*scaleFactor
                    BHat_sub_zeta(itheta,izeta) = BHat_sub_zeta(itheta,izeta) + temp * cos_angle
                    dBHat_sub_zeta_dtheta(itheta,izeta) = dBHat_sub_zeta_dtheta(itheta,izeta) - m * temp * sin_angle
+
+                  if (debugAdjoint) then
+                    do iMode = 1,NModesAdjoint
+                      if (ms_sensitivity(iMode) == m .and. ns_sensitivity(iMode) == n) then
+                        bsubzetamnc_init(iMode) = temp
+                      end if
+                    end do
+                  end if
 
                    ! Handle B sub psi.
                    ! Unlike the other components of B, this one is on the full mesh.
@@ -2792,6 +2913,21 @@ contains
     ! These next lines should be replaced eventually with a proper calculation:
     dBHat_sup_theta_dpsiHat = 0
     dBHat_sup_zeta_dpsiHat = 0
+
+    if (debugAdjoint) then
+      DHat_init = DHat
+      BHat_init = BHat
+      dBHatdtheta_init = dBHatdtheta
+      dBHatdzeta_init = dBHatdzeta
+      BHat_sup_theta_init = BHat_sup_theta
+      dBHat_sup_theta_dzeta_init = dBHat_sup_theta_dzeta
+      BHat_sup_zeta_init = BHat_sup_zeta
+      dBHat_sup_zeta_dtheta_init = dBHat_sup_zeta_dtheta
+      BHat_sub_theta_init = BHat_sub_theta
+      dBHat_sub_theta_dzeta_init = dBHat_sub_theta_dzeta
+      BHat_sub_zeta_init = BHat_sub_zeta
+      dBHat_sub_zeta_dtheta_init = dBHat_sub_zeta_dtheta
+    end if
 
     deallocate(psiN_full)
     deallocate(psiN_half)

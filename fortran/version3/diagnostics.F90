@@ -959,7 +959,7 @@
     ! (in order to be sure the HDF5 file is safely closed before moving on to the next computation.)
     if (RHSMode >1 .and. RHSMode<4 .and.   whichRHS==transportMatrixSize) then
        call updateOutputFile(iterationNum, .true.)
-    else if (RHSMode==1 .and. (ambipolarSolve .eqv. .false.)) then
+    else if (RHSMode==1 .and. (ambipolarSolve .eqv. .false.) .and. (debugAdjoint .eqv. .false.)) then
        call updateOutputFile(iterationNum, .false.)
     end if
 

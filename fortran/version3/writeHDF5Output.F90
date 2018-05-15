@@ -357,7 +357,7 @@ contains
       ! Write output related to sensitivityOptions namelist
       if (RHSMode > 3 .and. RHSMode < 6) then
         call writeHDF5Field("adjointHeatFluxOption", adjointHeatFluxOption, dspaceIDForSpecies, dimForSpecies, "")
-        call writeHDF5Field("adjointParticleFluxOption", adjointParticleFluxOption, dspaceIDForSpecies,  dimForSpecies, "")
+        call writeHDF5Field("adjointParticleFluxOption", adjointParticleFluxOption,dspaceIDForSpecies,  dimForSpecies, "")
         call writeHDF5Field("adjointParallelFlowOption", adjointParallelFlowOption,dspaceIDForSpecies, dimForSpecies, "")
         call writeHDF5Field("discreteAdjointOption", discreteAdjointOption, "")
         call writeHDF5Field("adjointBootstrapOption", adjointBootstrapOption, "")
@@ -849,6 +849,11 @@ contains
 
     dimForExport_f_x = N_export_f_x
     call h5screate_simple_f(rank, dimForExport_f_x, dspaceIDForExport_f_x, HDF5Error)
+
+    if (RHSMode > 3 .and. RHSMode < 6) then
+      dimForNModesAdjoint = NModesAdjoint
+    call h5screate_simple_f(rank, dimForNModesAdjoint, dspaceIDForNModesAdjoint, HDF5Error)
+    end if
 
     rank = 2
     dimForThetaZeta(1) = Ntheta
@@ -1702,8 +1707,8 @@ contains
        dimForChunk = dimForIterationLambdasNmodesChunk
        chunkProperties = pForIterationLambdasNmodes
 
-       label1 = "Nlambdas"
-       label2 = "NmodesAdjoint"
+       label1 = "NmodesAdjoint"
+       label2 = "Nlambdas"
        label3 = "iteration"
     case default
        print *,"This is writeHDF5ExtensibleField3"
@@ -1780,9 +1785,9 @@ contains
        dimForChunk = dimForIterationSpeciesLambdasNmodesChunk
        chunkProperties = pForIterationSpeciesLambdasNmodes
 
-       label1 = "species"
+       label1 = "NmodesAdjoint"
        label2 = "Nlambdas"
-       label3 = "NmodesAdjoint"
+       label3 = "species"
        label4 = "iteration"
     case default
        print *,"This is writeHDF5ExtensibleField4"
