@@ -1,0 +1,9 @@
+# -*- mode: makefile -*-
+
+OBJ_FILES = sfincs_testAdjointDiagnostics.o testingAdjointDiagnostics.o updateBoozerGeometry.o updateVMECGeometry.o
+
+# Dependencies:
+sfincs_testAdjointDiagnostics.o: testingAdjointDiagnostics.o
+testingAdjointDiagnostics.o: updateBoozerGeometry.o updateVMECGeometry.o
+updateBoozerGeometry.o: 
+updateVMECGeometry.o:
