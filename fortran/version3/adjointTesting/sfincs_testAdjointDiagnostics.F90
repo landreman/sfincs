@@ -1,93 +1,23 @@
-#include "../PETScVersions.F90"
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscsysdef.h>
-#else
-#include <petsc/finclude/petscsysdef.h>
-#endif
-
 program sfincs_testAdjointDiagnostics
 
-  use globalVariables
-  use ambipolarSolver
-  use writeHDF5Output
-  use readInput
-  use solver
-  use geometry
-  use radialCoordinates
-  use testingAdjointDiagnostics
+    use sfincs_main
+    use testingAdjointDiagnostics
+    use mpi
 
-  implicit none
+    implicit none
 
-  PetscErrorCode ierr
-  PetscLogDouble :: startTime, time1
+    integer :: ierr
 
-  call PetscInitialize(PETSC_NULL_CHARACTER, ierr)
+    call MPI_INIT(ierr)
 
-  call MPI_COMM_SIZE(PETSC_COMM_WORLD, numProcs, ierr)
-  call MPI_COMM_RANK(PETSC_COMM_WORLD, myRank, ierr)
-  masterProc = (myRank==0)
+    call sfincs_init(MPI_COMM_WORLD)
 
-  debugAdjoint = .true.
+    call sfincs_prepare()
 
-  ! In the future, if we want to divide the processors into sub-communicators, this next line would change:
-  MPIComm = PETSC_COMM_WORLD
+    call compareAdjointDiagnostics()
 
-  if (masterProc) then
-     print *,"****************************************************************************"
-     print *,"SFINCS: Stellarator Fokker-Plank Iterative Neoclassical Conservative Solver"
-     print *,"Version 3"
-#if defined(PETSC_USE_REAL_SINGLE)
-     print *,"Using single precision."
-#else
-     print *,"Using double precision."
-#endif
-     if (numProcs==1) then
-        print *,"Serial job (1 process) detected."
-     else
-        print "(a, i4, a)", " Parallel job (",numProcs," processes) detected."
-     end if
-  end if
+    call sfincs_finalize()
 
-  call PetscTime(time1, ierr)
-  startTime = time1
-
-  call readNamelistInput()
-  call validateInput()
-
-  ! If running with >1 proc,
-  ! make sure either superlu_dist or mumps is installed, and pick which one
-  ! of these packages to use:
-  call chooseParallelDirectSolver()
-
-  if (masterProc) then
-     print *,"---- Physics parameters: ----"
-     print *,"Number of particle species = ", Nspecies
-     print *,"Delta (rho* at reference parameters)          = ", Delta
-     print *,"alpha (e Phi / T at reference parameters)     = ", alpha
-     print *,"nu_n (collisionality at reference parameters) = ", nu_n
-  end if
-
-  ! Initialize NPeriods, psiAHat, and aHat.  We need to know NPeriods before
-  ! we can initialize the zeta grid.
-  call initializeGeometry()
-
-  ! Do various calculations that will not need to be repeated at each
-  ! iteration, such as setting up the coordinate grids and evaluating
-  ! the magnetic field and its derivatives on the spatial grid.
-  call createGrids()
-
-  ! For input quantities that depend on the radial coordinate, pick out the values for the selected
-  ! radial coordinate, and use these values to over-write values for the other radial coordinates.
-  call setInputRadialCoordinate()
-
-  ! Create HDF5 data structures, and save the quantities that will not change
-  ! at each iteration of the solver (i.e. save all quantities except diagnostics.)
-  call initializeOutputFile()
-
-  call compareAdjointDiagnostics()
-
-  if (masterProc) then
-     print *,"Goodbye!"
-  end if
+    call MPI_FINALIZE(ierr)
 
 end program sfincs_testAdjointDiagnostics

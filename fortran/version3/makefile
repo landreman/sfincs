@@ -39,7 +39,7 @@ endif
 
 .PHONY: all clean test retest
 
-all: sfincs
+all: sfincs 
 
 include $(SYSTEM_MAKEFILE)
 
@@ -74,6 +74,7 @@ sfincs: sfincs.o libsfincs.a
 clean::
 	rm -f *.o *.mod *.MOD *.a *.dat *~ sfincs sfincsMatrices.m sfincsOutput.h5
 	cd mini_libstell; rm -f *.o *.mod *.MOD *.a
+	cd adjointTesting; rm -f *.o *.mod *.a
 
 test_make:
 	@echo SFINCS_SYSTEM is $(SFINCS_SYSTEM)

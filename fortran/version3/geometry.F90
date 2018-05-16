@@ -2099,6 +2099,7 @@ contains
     !                              +dBHat_sub_theta_dpsiHat*BHat_sup_theta &
     !                              +dBHat_sup_zeta_dpsiHat *BHat_sub_zeta &
     !                              +dBHat_sub_zeta_dpsiHat *BHat_sup_zeta)
+
   end subroutine computeBHat_Boozer
 
   ! -----------------------------------------------------------------------------------------
@@ -3005,7 +3006,7 @@ contains
 
     end if
 
-    if (masterProc) then
+    if (masterProc .and. debugAdjoint .eqv. .false.) then
        print *,"---- Geometry parameters: ----"
        print *,"Geometry scheme = ", geometryScheme
        print *,"psiAHat (Normalized toroidal flux at the last closed flux surface) = ", psiAHat

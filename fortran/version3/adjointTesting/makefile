@@ -55,9 +55,8 @@ export
 	$(FC) $(EXTRA_COMPILE_FLAGS) -c $<
 
 sfincs_testAdjointDiagnostics: sfincs_testAdjointDiagnostics.o
-	$(FLINKER) -o sfincs_testAdjointDiagnostics sfincs_testAdjointDiagnostics.o testingAdjointDiagnostics.o updateBoozerGeometry.o updateVMECGeometry.o $(LIBSTELL_FOR_SFINCS) $(SFINCS_LIB) $(EXTRA_LINK_FLAGS) $(PETSC_LIB)
+	$(FLINKER) -o sfincs_testAdjointDiagnostics sfincs_testAdjointDiagnostics.o $(LIBSTELL_FOR_SFINCS) $(SFINCS_LIB) $(EXTRA_LINK_FLAGS) $(PETSC_LIB)
 
 # Since the sometimes-included PETSc makefile uses a double-colon to define "clean", we must do the same here:
 clean::
 	rm -f *.o *.mod *.MOD *.a *.dat *~ sfincs_testAdjointDiagnostics
-	cd mini_libstell; rm -f *.o *.mod *.MOD *.a

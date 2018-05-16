@@ -35,19 +35,21 @@ subroutine testingdRHSdLambda(whichMode, whichLambda)
 
   select case(whichLambda)
     case(1)
-      deltaFactor = bmnc(whichMode)
+      deltaFactor = bmnc_init(whichMode)
     case(2)
-      deltaFactor = bsupthetamnc(whichMode)
+      deltaFactor = bsupthetamnc_init(whichMode)
     case(3)
-      deltaFactor = bsupzetamnc(whichMode)
+      deltaFactor = bsupzetamnc_init(whichMode)
     case(4)
-      deltaFactor = bsubthetamnc(whichMode)
+      deltaFactor = bsubthetamnc_init(whichMode)
     case(5)
-      deltaFactor = bsubzetamnc(whichMode)
+      deltaFactor = bsubzetamnc_init(whichMode)
     case(6)
-      deltaFactor = gmnc(whichMode)
+      deltaFactor = gmnc_init(whichMode)
   end select
-
+  if (abs(deltaFactor) < 1.d-10) then
+    return
+  end if
 
   ! Create stateVec and set to zero
   call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, stateVec, ierr)
@@ -112,7 +114,7 @@ subroutine testingdRHSdLambda(whichMode, whichLambda)
   allocate(percentError(matrixSize))
   do i=1,matrixSize
     if (abs(dRHSdLambdaArray(i)) < 1.d-16) then
-      if (abs(dRHSdLambdaArray(i)) < 1.d-16) then
+      if (abs(dRHSdLambda_analyticArray(i)) < 1.d-16) then
         percentError(i) = zero
       else
         percentError(i) = 1.d6
@@ -121,14 +123,10 @@ subroutine testingdRHSdLambda(whichMode, whichLambda)
       percentError(i) = 100.0*abs(dRHSdLambda_analyticArray(i) - dRHSdLambdaArray(i))/abs(dRHSdLambdaArray(i))
     end if
   end do
-
   ! Compute metrics for percentError
   print *,"Maximum percentError: ", maxval(percentError), "%"
   print *,"dRHSdLambdaArray at max: ", dRHSdLambdaArray(maxloc(percentError))
   print *,"dRHSdLambda_analyticArray at max: ", dRHSdLambda_analyticArray(maxloc(percentError))
-!  print *,"Minimum percentError: ", minval(percentError), "%"
-!  print *,"Maximum dRHSdLambdaArray: ", maxval(dRHSdLambdaArray)
-!  print *,"Maximum dRHSdLambda_analyticArray: ", maxval(dRHSdLambda_analyticArray)
 
   ! Update geometry
   if (geometryScheme == 5) then ! VMEC

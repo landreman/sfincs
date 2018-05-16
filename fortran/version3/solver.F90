@@ -623,59 +623,55 @@ contains
     !> If currently looking for ambipolar solution, don't solve adjoint
     if (RHSMode>3 .and. (ambipolarSolve .eqv. .false.)) then
 
-!      ! Testing adjoint operator and inner product
-!      if (.false.) then
-!
-!        do whichMode = 1,NModesAdjoint
-!          do whichLambda = 1,NLambdas
-!            if (masterProc) then
-!              print "(a,i4,a,i4,a)","Benchmarking dMatrixdLambda for whichMode: ", whichMode, &
-!                " and whichLambda: ", whichLambda," -----------------------------"
-!              print *,"m = ", ms(whichMode)," and n = ", ns(whichMode)
-!            end if
-!            call testingdMatrixdLambda(solutionVec,whichMode, whichLambda, deltaLambda)
-!          end do
-!        end do
-!        stop
-!
-!        do whichMode = 1,NModesAdjoint
-!          do whichLambda = 1,NLambdas
-!            if (masterProc) then
-!              print "(a,i4,a,i4,a)","Benchmarking dRHSdLambda for whichMode: ", whichMode, &
-!                " and whichLambda: ", whichLambda," -----------------------------"
-!              print *,"m = ", ms(whichMode)," and n = ", ns(whichMode)
-!            end if
-!            call testingdRHSdLambda(whichMode, whichLambda)
-!          end do
-!        end do
-!
-!        do whichMode = 1,NModesAdjoint
-!          do whichLambda = 1,NLambdas
-!            if (masterProc) then
-!              print "(a,i4,a,i4,a)","Benchmarking fluxes for whichMode: ", whichMode, &
-!                " and whichLambda: ", whichLambda," -----------------------------"
-!              print *,"m = ", ms(whichMode)," and n = ", ns(whichMode)
-!            end if
-!            call testingDiagnosticSensitivity(solutionVec,whichMode,whichLambda)
-!          end do
-!        end do
-!        stop
-!
-!        do ispecies = 0,Nspecies
-!          do whichAdjointRHS = 1,3
-!            call testingAdjointOperator(solutionVec,adjointSolutionVec,whichAdjointRHS,ispecies)
-!          end do
-!        end do
-!        stop
-!
-!        !> Testing of inner product and adjoint RHS
-!        do whichAdjointRHS=1,3
-!          do ispecies = 0,Nspecies
-!            call testingInnerProduct(solutionVec,whichAdjointRHS,ispecies)
-!          end do
-!        end do
-!
-!      end if ! testing
+      ! Testing adjoint operator and inner product
+      if (debugAdjoint) then
+        do whichMode = 1,NModesAdjoint
+          do whichLambda = 1,NLambdas
+            if (masterProc) then
+              print "(a,i4,a,i4,a)","Benchmarking dMatrixdLambda for whichMode: ", whichMode, &
+                " and whichLambda: ", whichLambda," -----------------------------"
+              print *,"m = ", ms_sensitivity(whichMode)," and n = ", ns_sensitivity(whichMode)
+            end if
+            call testingdMatrixdLambda(solutionVec,whichMode, whichLambda, deltaLambda)
+          end do
+        end do
+
+        do whichMode = 1,NModesAdjoint
+          do whichLambda = 1,NLambdas
+            if (masterProc) then
+              print "(a,i4,a,i4,a)","Benchmarking dRHSdLambda for whichMode: ", whichMode, &
+                " and whichLambda: ", whichLambda," -----------------------------"
+              print *,"m = ", ms_sensitivity(whichMode)," and n = ", ns_sensitivity(whichMode)
+            end if
+            call testingdRHSdLambda(whichMode, whichLambda)
+          end do
+        end do
+
+        do whichMode = 1,NModesAdjoint
+          do whichLambda = 1,NLambdas
+            if (masterProc) then
+              print "(a,i4,a,i4,a)","Benchmarking fluxes for whichMode: ", whichMode, &
+                " and whichLambda: ", whichLambda," -----------------------------"
+              print *,"m = ", ms_sensitivity(whichMode)," and n = ", ns_sensitivity(whichMode)
+            end if
+            call testingDiagnosticSensitivity(solutionVec,whichMode,whichLambda)
+          end do
+        end do
+
+        do ispecies = 0,Nspecies
+          do whichAdjointRHS = 1,3
+            call testingAdjointOperator(solutionVec,adjointSolutionVec,whichAdjointRHS,ispecies)
+          end do
+        end do
+
+        !> Testing of inner product and adjoint RHS
+        do whichAdjointRHS=1,3
+          do ispecies = 0,Nspecies
+            call testingInnerProduct(solutionVec,whichAdjointRHS,ispecies)
+          end do
+        end do
+        stop
+      end if ! debugAdjoint
 
       !> Allocate adjointSolutionVec
       call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointSolutionVec, ierr)

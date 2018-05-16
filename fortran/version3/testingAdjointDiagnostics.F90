@@ -170,13 +170,14 @@ module testingAdjointDiagnostics
 
         do ispecies = 1, Nspecies
           ! Compute finite difference derivatives
-          dParticleFluxdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (particleFlux_vm_rN(iSpecies)-particleFluxInit(iSpecies))/(deltaLambda*deltaFactor)
+          print *,"change in particle flux: ", particleFlux_vm_rN(iSpecies)-particleFluxInit(iSpecies)
+        dParticleFluxdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (particleFlux_vm_rN(iSpecies)-particleFluxInit(iSpecies))/(deltaLambda*deltaFactor)
           dHeatFluxdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (heatFlux_vm_rN(iSpecies)-heatFluxInit(iSpecies))/(deltaLambda*deltaFactor)
-          dParallelFlowdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (FSABVelocityUsingFSADensityOverRootFSAB2(iSpecies)-parallelFlowInit(iSpecies))/(deltaLambda*deltaFactor)
+        dParallelFlowdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (FSABVelocityUsingFSADensityOverRootFSAB2(iSpecies)-parallelFlowInit(iSpecies))/(deltaLambda*deltaFactor)
         end do ! ispecies
         dTotalHeatFluxdLambda_finiteDiff(whichLambda,whichMode) = (sum(heatFlux_vm_rN)-sum(heatFluxInit))/(deltaLambda*deltaFactor)
         if (constantJr .eqv. .false.) then
-          dRadialCurrentdLambda_finiteDiff(whichLambda,whichMode) = (dot_product(Zs(1:Nspecies), particleFlux_vm_rN)-dot_product(Zs(1:Nspecies),particleFluxInit))/(deltaLambda*deltaFactor)
+          dRadialCurrentdLambda_finiteDiff(whichLambda,whichMode) = (dot_product(Zs(1:Nspecies),particleFlux_vm_rN)-dot_product(Zs(1:Nspecies),particleFluxInit))/(deltaLambda*deltaFactor)
         end if
         dBootstrapdLambda_finiteDiff(whichLambda,whichMode) = (dot_product(Zs(1:Nspecies),FSABVelocityUsingFSADensityOverRootFSAB2)-dot_product(Zs(1:Nspecies),parallelFlowInit))/(deltaLambda*deltaFactor)
 
@@ -209,6 +210,8 @@ module testingAdjointDiagnostics
           case(6)
             deltaFactor = gmnc_init(whichMode)
         end select
+!        print *,"deltaFactor: ", deltaFactor
+!        print *,"bmnc_init(whichMode): ", bmnc_init(whichMode)
         ! If magnitude of fourier mode is nearly zero, don't use for benchmarking tests
         if (abs(deltaFactor) > 1.d-6) then
           if (constantJr .eqv. .false.) then

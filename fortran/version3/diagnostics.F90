@@ -876,62 +876,64 @@
        call VecRestoreArrayF90(f0OnProc0, f0Array, ierr)
        !!call VecRestoreArrayF90(expPhi1, expPhi1Array, ierr) !!Added by AM 2016-06
 
-       do ispecies=1,Nspecies
-          if (Nspecies>1) then
-             print *,"Results for species ",ispecies,":"
-          end if
-          print *,"   FSADensityPerturbation:  ", FSADensityPerturbation(ispecies)
-          print *,"   FSABFlow:                ", FSABFlow(ispecies)
-          print *,"   max and min Mach #:      ", maxval(MachUsingFSAThermalSpeed(ispecies,:,:)),&
-               minval(MachUsingFSAThermalSpeed(ispecies,:,:))
-          print *,"   FSAPressurePerturbation: ", FSAPressurePerturbation(ispecies)
-          print *,"   NTV:                     ", NTV(ispecies)
-          print *,"   particleFlux_vm0_psiHat  ", particleFlux_vm0_psiHat(ispecies)
-          print *,"   particleFlux_vm_psiHat   ", particleFlux_vm_psiHat(ispecies)
-          if (includePhi1) then
-             print *,"   particleFlux_vE0_psiHat  ", particleFlux_vE0_psiHat(ispecies)
-             print *,"   particleFlux_vE_psiHat   ", particleFlux_vE_psiHat(ispecies)
-             print *,"   particleFlux_vd1_psiHat  ", particleFlux_vd1_psiHat(ispecies)
-             print *,"   particleFlux_vd_psiHat   ", particleFlux_vd_psiHat(ispecies)
-          end if
-          print *,"   momentumFlux_vm0_psiHat  ", momentumFlux_vm0_psiHat(ispecies)
-          print *,"   momentumFlux_vm_psiHat   ", momentumFlux_vm_psiHat(ispecies)
-          if (includePhi1) then
-             print *,"   momentumFlux_vE0_psiHat  ", momentumFlux_vE0_psiHat(ispecies)
-             print *,"   momentumFlux_vE_psiHat   ", momentumFlux_vE_psiHat(ispecies)
-             print *,"   momentumFlux_vd1_psiHat  ", momentumFlux_vd1_psiHat(ispecies)
-             print *,"   momentumFlux_vd_psiHat   ", momentumFlux_vd_psiHat(ispecies)
-          end if
-          print *,"   heatFlux_vm0_psiHat      ", heatFlux_vm0_psiHat(ispecies)
-          print *,"   heatFlux_vm_psiHat       ", heatFlux_vm_psiHat(ispecies)
-          if (includePhi1) then
-             print *,"   heatFlux_vE0_psiHat      ", heatFlux_vE0_psiHat(ispecies)
-             print *,"   heatFlux_vE_psiHat       ", heatFlux_vE_psiHat(ispecies)
-             print *,"   heatFlux_vd1_psiHat      ", heatFlux_vd1_psiHat(ispecies)
-             print *,"   heatFlux_vd_psiHat       ", heatFlux_vd_psiHat(ispecies)
-             print *,"   heatFlux_withoutPhi1_psiHat ", heatFlux_withoutPhi1_psiHat(ispecies)
-          end if
-          select case (constraintScheme)
-          case (0)
-             ! Nothing to print.
-          case (1,3,4)
-             print *,"   particle source          ", sources(ispecies,1)
-             print *,"   heat source              ", sources(ispecies,2)
-          case (2)
-             print *,"   sources: ", sources(ispecies,:)
-          end select
-       end do
-       print *,"FSABjHat (bootstrap current): ", FSABjHat
-       if (includePhi1) then
-          print *,"lambda: ", lambda
-       end if
+       if (debugAdjoint .eqv. .false.) then
+         do ispecies=1,Nspecies
+            if (Nspecies>1) then
+               print *,"Results for species ",ispecies,":"
+            end if
+            print *,"   FSADensityPerturbation:  ", FSADensityPerturbation(ispecies)
+            print *,"   FSABFlow:                ", FSABFlow(ispecies)
+            print *,"   max and min Mach #:      ", maxval(MachUsingFSAThermalSpeed(ispecies,:,:)),&
+                 minval(MachUsingFSAThermalSpeed(ispecies,:,:))
+            print *,"   FSAPressurePerturbation: ", FSAPressurePerturbation(ispecies)
+            print *,"   NTV:                     ", NTV(ispecies)
+            print *,"   particleFlux_vm0_psiHat  ", particleFlux_vm0_psiHat(ispecies)
+            print *,"   particleFlux_vm_psiHat   ", particleFlux_vm_psiHat(ispecies)
+            if (includePhi1) then
+               print *,"   particleFlux_vE0_psiHat  ", particleFlux_vE0_psiHat(ispecies)
+               print *,"   particleFlux_vE_psiHat   ", particleFlux_vE_psiHat(ispecies)
+               print *,"   particleFlux_vd1_psiHat  ", particleFlux_vd1_psiHat(ispecies)
+               print *,"   particleFlux_vd_psiHat   ", particleFlux_vd_psiHat(ispecies)
+            end if
+            print *,"   momentumFlux_vm0_psiHat  ", momentumFlux_vm0_psiHat(ispecies)
+            print *,"   momentumFlux_vm_psiHat   ", momentumFlux_vm_psiHat(ispecies)
+            if (includePhi1) then
+               print *,"   momentumFlux_vE0_psiHat  ", momentumFlux_vE0_psiHat(ispecies)
+               print *,"   momentumFlux_vE_psiHat   ", momentumFlux_vE_psiHat(ispecies)
+               print *,"   momentumFlux_vd1_psiHat  ", momentumFlux_vd1_psiHat(ispecies)
+               print *,"   momentumFlux_vd_psiHat   ", momentumFlux_vd_psiHat(ispecies)
+            end if
+            print *,"   heatFlux_vm0_psiHat      ", heatFlux_vm0_psiHat(ispecies)
+            print *,"   heatFlux_vm_psiHat       ", heatFlux_vm_psiHat(ispecies)
+            if (includePhi1) then
+               print *,"   heatFlux_vE0_psiHat      ", heatFlux_vE0_psiHat(ispecies)
+               print *,"   heatFlux_vE_psiHat       ", heatFlux_vE_psiHat(ispecies)
+               print *,"   heatFlux_vd1_psiHat      ", heatFlux_vd1_psiHat(ispecies)
+               print *,"   heatFlux_vd_psiHat       ", heatFlux_vd_psiHat(ispecies)
+               print *,"   heatFlux_withoutPhi1_psiHat ", heatFlux_withoutPhi1_psiHat(ispecies)
+            end if
+            select case (constraintScheme)
+            case (0)
+               ! Nothing to print.
+            case (1,3,4)
+               print *,"   particle source          ", sources(ispecies,1)
+               print *,"   heat source              ", sources(ispecies,2)
+            case (2)
+               print *,"   sources: ", sources(ispecies,:)
+            end select
+         end do
+         print *,"FSABjHat (bootstrap current): ", FSABjHat
+         if (includePhi1) then
+            print *,"lambda: ", lambda
+         end if
 
-       if (rhsMode > 1 .and. RHSMode<4) then
-          print *,"Transport matrix:"
-          do i=1,transportMatrixSize
-             print *,"   ", transportMatrix(i,:)
-          end do
-       end if
+         if (rhsMode > 1 .and. RHSMode<4) then
+            print *,"Transport matrix:"
+            do i=1,transportMatrixSize
+               print *,"   ", transportMatrix(i,:)
+            end do
+         end if
+      end if
 
 
        deallocate(densityIntegralWeights)

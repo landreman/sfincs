@@ -56,18 +56,22 @@ subroutine testingDiagnosticSensitivity(forwardSolution, whichMode, whichLambda)
 
   select case(whichLambda)
     case(1)
-      deltaFactor = bmnc(whichMode)
+      deltaFactor = bmnc_init(whichMode)
     case(2)
-      deltaFactor = bsupthetamnc(whichMode)
+      deltaFactor = bsupthetamnc_init(whichMode)
     case(3)
-      deltaFactor = bsupzetamnc(whichMode)
+      deltaFactor = bsupzetamnc_init(whichMode)
     case(4)
-      deltaFactor = bsubthetamnc(whichMode)
+      deltaFactor = bsubthetamnc_init(whichMode)
     case(5)
-      deltaFactor = bsubzetamnc(whichMode)
+      deltaFactor = bsubzetamnc_init(whichMode)
     case(6)
-      deltaFactor = gmnc(whichMode)
+      deltaFactor = gmnc_init(whichMode)
   end select
+  ! If amplitude of mode too small don't finite difference
+  if (deltaFactor < 1.d-10) then
+    return
+  end if
 
   ! Compute diagnostics with new geometry
   call diagnostics(forwardSolution, iterationNum)

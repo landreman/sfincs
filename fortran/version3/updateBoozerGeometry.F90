@@ -41,6 +41,14 @@ subroutine updateBoozerGeometry(whichMode, reset)
     dBHat_sup_theta_dzeta = dBHat_sup_theta_dzeta_init
     BHat_sup_zeta = BHat_sup_zeta_init
     dBHat_sup_zeta_dtheta = dBHat_sup_zeta_dtheta_init
+!    print *,"DHat_init: ", DHat_init
+!    print *,"BHat_init: ", BHat_init
+!    print *,"dBHatdtheta_init: ", dBHatdtheta_init
+!    print *,"dBHatdzeta_init: ", dBHatdzeta_init
+!    print *,"BHat_sup_theta_init: ", BHat_sup_theta_init
+!    print *,"dBHat_sup_theta_dzeta_init: ", dBHat_sup_theta_dzeta_init
+!    print *,"BHat_sup_zeta_init: ", BHat_sup_zeta_init
+!    print *,"dBHat_sup_zeta_dtheta: ", dBHat_sup_zeta_dtheta
   else
 
     allocate(deltaBHat(Ntheta,Nzeta))
