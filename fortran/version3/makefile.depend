@@ -6,7 +6,7 @@ OBJ_FILES = adjointDiagnostics.o ambipolarSolver.o ChebyshevGrid.o ChebyshevInte
       populatedMatrixdLambda.o populatedRHSdLambda.o \
 	  populateMatrix.o preallocateMatrix.o quadpack.o radialCoordinates.o readInput.o sfincs_finalize.o \
       sfincs_main.o solver.o sparsify.o testingAdjointDiagnostics.o testingAdjointOperator.o \
-      testingDiagnosticSensitivity.o testingInnerProduct.o testingNewtonSolve.o testingdMatrixdLambda.o \
+      testingDiagnosticSensitivity.o testingInnerProduct.o testingdMatrixdLambda.o \
       testingdRHSdLambda.o updateBoozerGeometry.o updateVMECGeometry.o \
       uniformDiffMatrices.o uniformInterpolationMatrix.o validateInput.o writeHDF5Output.o xGrid.o
       
@@ -46,7 +46,6 @@ testingDiagnosticSensitivity.o:
 testingdMatrixdLambda.o:
 testingdRHSdLambda.o:
 testingInnerProduct.o:
-testingNewtonSolve.o:
 updateBoozerGeometry.o:
 updateVMECGeometry.o:
 validateInput.o: globalVariables.o xGrid.o
