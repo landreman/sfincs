@@ -136,7 +136,8 @@ module sfincs_main
     PetscErrorCode ierr
 
     ! Compute a few quantities related to the magnetic field:
-    call computeBIntegrals()
+		! This is already called from create_grids()
+!    call computeBIntegrals()
 
     if (RHSMode==3) then
        ! Monoenergetic coefficient computation.
