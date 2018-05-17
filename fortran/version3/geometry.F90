@@ -226,6 +226,8 @@ contains
        !Switch from a left-handed to right-handed (radial,poloidal,toroidal) system
        psiAHat=psiAHat*(-1)           !toroidal direction sign switch    
 
+		case (13) ! Boozer geometry for STELLOPT BMNC optimization
+				! Nperiods, psiAHat, and aHat read from input file
     case default
        print *,"Error! Invalid setting for geometryScheme."
        stop
@@ -275,7 +277,7 @@ contains
     rN = -9999
 
     select case (geometryScheme)
-    case (1,2,3,4,11,12)
+    case (1,2,3,4,11,12,13)
        coordinateSystem = COORDINATE_SYSTEM_BOOZER
        call computeBHat_Boozer()
     case (5,6,7)
@@ -331,7 +333,7 @@ contains
 
     implicit none
 
-    integer :: itheta, izeta, NHarmonics, NHarmonicsL, NHarmonicsH, i, m, n
+    integer :: itheta, izeta, NHarmonics, NHarmonicsL, NHarmonicsH, i, m, n, imn
     integer, dimension(:), allocatable :: BHarmonics_l, BHarmonics_n
     integer, dimension(:), allocatable :: BHarmonics_lL, BHarmonics_nL, BHarmonics_lH, BHarmonics_nH
     PetscScalar, dimension(:), allocatable :: BHarmonics_amplitudes
@@ -1088,6 +1090,36 @@ contains
        dBHat_sub_zeta_dpsiHat = (GHat_new-GHat_old)/DeltapsiHat
        dBHat_sub_theta_dpsiHat =(IHat_new-IHat_old)/DeltapsiHat
        diotadpsiHat= (iota_new-iota_old)/DeltapsiHat
+		case (13) ! Boozer - for BMNC Stellopt optimization
+       NHarmonics = count(boozer_bmnc>zero)
+			 if (boozer_bmnc(0,0) /= zero) then
+			 		NHarmonics = NHarmonics - 1
+			 end if
+       allocate(BHarmonics_l(NHarmonics))
+       allocate(BHarmonics_n(NHarmonics))
+       allocate(BHarmonics_amplitudes(NHarmonics))
+       allocate(BHarmonics_parity(NHarmonics))
+       BHarmonics_parity = .true.
+			 imn = 1
+			 do m=0,sfincs_mmax
+					do n=-sfincs_nmax,sfincs_nmax
+						if (m/=0 .or. n/= 0) then
+							if (boozer_bmnc(m,n)/=zero) then
+								BHarmonics_l(imn) = m
+								BHarmonics_n(imn) = n
+								BHarmonics_amplitudes(imn) = boozer_bmnc(m,n)
+								imn = imn + 1
+							end if
+						end if
+					end do
+			 end do
+
+			 B0OverBBar = boozer_bmnc(0,0)
+       dGdpHat = 0 !Not implemented as an input for this case yet, could be put in namelist input if needed
+       rN = rN_wish
+				print *,"BHarmonics_l: ", BHarmonics_l
+				print *,"BHarmonics_n: ", BHarmonics_n
+				print *,"BHarmonics_amplitudes: ", BHarmonics_amplitudes
 
     case default
        print *,"Error! Invalid geometryScheme"
@@ -2099,7 +2131,6 @@ contains
     !                              +dBHat_sub_theta_dpsiHat*BHat_sup_theta &
     !                              +dBHat_sup_zeta_dpsiHat *BHat_sub_zeta &
     !                              +dBHat_sub_zeta_dpsiHat *BHat_sup_zeta)
-
   end subroutine computeBHat_Boozer
 
   ! -----------------------------------------------------------------------------------------

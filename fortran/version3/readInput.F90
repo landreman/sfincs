@@ -30,7 +30,7 @@ contains
          equilibriumFile, min_Bmn_to_load, &
          psiAHat, inputRadialCoordinate, inputRadialCoordinateForGradients, aHat, &
          psiHat_wish, psiN_wish, rHat_wish, rN_wish, &
-         VMECRadialOption, VMEC_Nyquist_option, rippleScale, EParallelHatSpec_bcdatFile
+         VMECRadialOption, VMEC_Nyquist_option, rippleScale, EParallelHatSpec_bcdatFile, Nperiods, boozer_bmnc
 
     namelist / speciesParameters / mHats, Zs, nHats, THats, &
          dNHatdpsiHats, dTHatdpsiHats, &
@@ -131,6 +131,7 @@ contains
     export_f_zeta(1) = zero
     export_f_x(1) = one
     export_f_xi(1) = zero
+		boozer_bmnc = zero
 
 
     filename = trim(inputFilename)

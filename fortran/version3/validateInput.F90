@@ -1221,6 +1221,15 @@ subroutine validateInput()
       stop
     end if
   end if
+	! Check if stellopt bmnc specification used, required input given
+	if (geometryScheme == 13) then
+		if (count(boozer_bmnc>0)==0) then
+			if (masterProc) then
+				print *,"Error! Boozer_bmnc must be specified with geometryScheme =13."
+			end if
+			stop
+		end if
+	end if
   
 end subroutine validateInput
 
