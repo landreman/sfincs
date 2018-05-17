@@ -444,9 +444,11 @@ contains
        call h5sclose_f(dspaceIDForExport_f_zeta, HDF5Error)
        call h5sclose_f(dspaceIDForExport_f_xi, HDF5Error)
        call h5sclose_f(dspaceIDForExport_f_x, HDF5Error)
-       call h5sclose_f(dspaceIDForLambdasModes, HDF5Error)
-       call h5sclose_f(dspaceIDForSpeciesLambdasModes, HDF5Error)
-       call h5sclose_f(dspaceIDForNModesAdjoint, HDF5Error)
+			 if (RHSMode > 3) then
+					call h5sclose_f(dspaceIDForSpeciesLambdasModes, HDF5Error)
+					call h5sclose_f(dspaceIDForLambdasModes, HDF5Error)
+       		call h5sclose_f(dspaceIDForNModesAdjoint, HDF5Error)
+			 end if
 
        call h5fclose_f(HDF5FileID, HDF5Error)
 
