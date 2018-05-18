@@ -67,9 +67,9 @@ module globalVariables
   integer :: VMEC_Nyquist_option = 1
   PetscScalar :: rippleScale = 1
 	! For use in Boozer bmnc stellopt
-	integer, parameter :: sfincs_mmax = 32
-	integer, parameter :: sfincs_nmax = 32
-	PetscScalar, dimension(0:sfincs_mmax,-sfincs_nmax:sfincs_nmax) :: boozer_bmnc
+	integer, parameter :: mmax_boozer = 32
+	integer, parameter :: nmax_boozer = 32
+	PetscScalar, dimension(0:mmax_boozer,-nmax_boozer:nmax_boozer) :: boozer_bmnc
 
   ! ********************************************************
   ! ********************************************************

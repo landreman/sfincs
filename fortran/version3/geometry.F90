@@ -1101,8 +1101,8 @@ contains
        allocate(BHarmonics_parity(NHarmonics))
        BHarmonics_parity = .true.
 			 imn = 1
-			 do m=0,sfincs_mmax
-					do n=-sfincs_nmax,sfincs_nmax
+			 do m=0,mmax_boozer
+					do n=-nmax_boozer,nmax_boozer
 						if (m/=0 .or. n/= 0) then
 							if (boozer_bmnc(m,n)/=zero) then
 								BHarmonics_l(imn) = m
