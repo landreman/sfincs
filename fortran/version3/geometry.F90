@@ -1091,6 +1091,7 @@ contains
        dBHat_sub_theta_dpsiHat =(IHat_new-IHat_old)/DeltapsiHat
        diotadpsiHat= (iota_new-iota_old)/DeltapsiHat
 		case (13) ! Boozer - for BMNC Stellopt optimization
+			 nearbyRadiiGiven = .false.
        NHarmonics = count(boozer_bmnc>zero)
 			 if (boozer_bmnc(0,0) /= zero) then
 			 		NHarmonics = NHarmonics - 1

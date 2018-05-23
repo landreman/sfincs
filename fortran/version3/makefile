@@ -47,6 +47,9 @@ ifdef USE_NETCDF
 	EXTRA_COMPILE_FLAGS += -DUSE_NETCDF
 endif
 
+# DEBUG
+EXTRA_COMPILE_FLAGS += -g
+
 include makefile.depend
 
 # Export variables that will be used in the mini_libstell subdirectory or for "make test":
