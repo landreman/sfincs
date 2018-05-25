@@ -1092,10 +1092,11 @@ contains
        diotadpsiHat= (iota_new-iota_old)/DeltapsiHat
 		case (13) ! Boozer - for BMNC Stellopt optimization
 			 nearbyRadiiGiven = .false.
-       NHarmonics = count(boozer_bmnc>zero)
+       NHarmonics = count(abs(boozer_bmnc)>zero)
 			 if (boozer_bmnc(0,0) /= zero) then
 			 		NHarmonics = NHarmonics - 1
 			 end if
+       print *,"Nharmonics: ", Nharmonics
        allocate(BHarmonics_l(NHarmonics))
        allocate(BHarmonics_n(NHarmonics))
        allocate(BHarmonics_amplitudes(NHarmonics))
@@ -1118,9 +1119,9 @@ contains
 			 B0OverBBar = boozer_bmnc(0,0)
        dGdpHat = 0 !Not implemented as an input for this case yet, could be put in namelist input if needed
        rN = rN_wish
-				print *,"BHarmonics_l: ", BHarmonics_l
-				print *,"BHarmonics_n: ", BHarmonics_n
-				print *,"BHarmonics_amplitudes: ", BHarmonics_amplitudes
+      print *,"BHarmonics_l: ", BHarmonics_l
+      print *,"BHarmonics_n: ", BHarmonics_n
+      print *,"BHarmonics_amplitudes: ", BHarmonics_amplitudes
 
     case default
        print *,"Error! Invalid geometryScheme"
