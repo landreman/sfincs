@@ -1,10 +1,3 @@
-#include "PETScVersions.F90"
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscsysdef.h>
-#else
-#include <petsc/finclude/petscsysdef.h>
-#endif
-
 subroutine ChebyshevInterpolationMatrix(N, M, xk, x, matrix)
   ! Interpolates from Chebyshev points xk to a new grid x.
   ! Based on the Matlab function chebint included with DMSuite.
@@ -17,6 +10,8 @@ subroutine ChebyshevInterpolationMatrix(N, M, xk, x, matrix)
   !
   ! Outputs:
   ! matrix(M,N) = interpolation matrix
+
+#include "PETScVersions.F90"
 
   implicit none
 

@@ -6,14 +6,9 @@ module sparsify
   ! prevents zero entries from being added to the nonzero structure of the matrix, increasing
   ! sparsity.
 
-  implicit none
-
 #include "PETScVersions.F90"
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscmatdef.h>
-#else
-#include <petsc/finclude/petscmatdef.h>
-#endif
+
+  implicit none
 
   PetscScalar :: threshholdForInclusion = 1d-12
 

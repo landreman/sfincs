@@ -1,16 +1,10 @@
-#include "PETScVersions.F90"
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscdmdadef.h>
-#else
-#include <petsc/finclude/petscdmdadef.h>
-#endif
-
   subroutine createGrids()
+
+#include "PETScVersions.F90"
 
     use globalVariables
     use polynomialDiffMatrices
     use xGrid
-    use petscdmda
     use geometry
     use indices
     use export_f
@@ -125,6 +119,7 @@
        ! Assign a range of theta indices to each processor.
        ! This is done by creating a PETSc DM that is not actually used for anything else.
        call DMDACreate1d(MPIComm, DM_BOUNDARY_NONE, Ntheta, 1, 0, PETSC_NULL_INTEGER, myDM, ierr)
+       call DMSetup(myDM, ierr)
 
        call DMDAGetCorners(myDM, ithetaMin, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, &
             localNtheta, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr)
@@ -140,6 +135,7 @@
        ! Assign a range of zeta indices to each processor.
        ! This is done by creating a PETSc DM that is not actually used for anything else.
        call DMDACreate1d(MPIComm, DM_BOUNDARY_NONE, Nzeta, 1, 0, PETSC_NULL_INTEGER, myDM, ierr)
+       call DMSetup(myDM, ierr)
 
        call DMDAGetCorners(myDM, izetaMin, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, &
             localNzeta, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr)

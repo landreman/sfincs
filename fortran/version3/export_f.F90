@@ -3,16 +3,11 @@ module export_f
   ! This module contains subroutines and variables related to exporting the distribution function f.
   ! The exported f is available on various grids that can differ from the grid used for solving the kinetic equation.
 
+#include "PETScVersions.F90"
+
   use globalVariables
 
   implicit none
-
-#include "PETScVersions.F90"
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscsysdef.h>
-#else
-#include <petsc/finclude/petscsysdef.h>
-#endif
 
   integer, parameter :: max_N_export_f = 500 ! Max grid size in each one of the 4 coordinates (theta, zeta, xi, x)
   ! Defaults for the next 4 array variables are given in readInput.F90.

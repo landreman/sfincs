@@ -1,10 +1,3 @@
-#include "PETScVersions.F90"
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscsysdef.h>
-#else
-#include <petsc/finclude/petscsysdef.h>
-#endif
-
 subroutine interpolationMatrix(N, M, x, y, scheme, matrix, extrapMatrix)
   ! Builds a matrix for interpolating from a uniform grid to any
   ! other grid.
@@ -32,6 +25,8 @@ subroutine interpolationMatrix(N, M, x, y, scheme, matrix, extrapMatrix)
   ! Extrapolation to the right of the x grid is allowed but extrapolation
   ! to the left of the x grid is not allowed, since the former
   ! can occur in the collision operator but the latter should not.
+
+#include "PETScVersions.F90"
 
   implicit none
 

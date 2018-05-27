@@ -1,14 +1,8 @@
-#include "PETScVersions.F90"
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscsnesdef.h>
-#else
-#include <petsc/finclude/petscsnesdef.h>
-#endif
-
 module solver
 
-  use petscsnesdef
   use globalVariables
+
+#include "PETScVersions.F90"
 
   implicit none
 
@@ -46,18 +40,28 @@ contains
 
     ! If mumps ICNTL(14) was set via the command line, we need to clear it, or else
     ! the auto-increase feature will not work.
-#if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR > 6))
+#if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR >= 8))
+    ! Version 3.8
+    call PetscOptionsGetInt(PETSC_NULL_OPTIONS, PETSC_NULL_CHARACTER,'-mat_mumps_icntl_14',mumps_icntl_14,is_icntl_14_set,ierr)
+#elif (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR >= 7)
+    ! Version 3.7
     call PetscOptionsGetInt(PETSC_NULL_OBJECT, PETSC_NULL_CHARACTER,'-mat_mumps_icntl_14',mumps_icntl_14,is_icntl_14_set,ierr)
 #else
+    ! Version <= 3.6
     call PetscOptionsGetInt(PETSC_NULL_CHARACTER,'-mat_mumps_icntl_14',mumps_icntl_14,is_icntl_14_set,ierr)
 #endif
     if (.not. is_icntl_14_set) then
        ! Default:
        mumps_icntl_14 = 50
     else
-#if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR > 6))
+#if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR >= 8))
+       ! Verion 3.8
+       call PetscOptionsClearValue(PETSC_NULL_OPTIONS,'-mat_mumps_icntl_14',ierr)
+#elif (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR >= 7)
+       ! Version 3.7
        call PetscOptionsClearValue(PETSC_NULL_OBJECT,'-mat_mumps_icntl_14',ierr)
 #else
+       ! Versions <= 3.6
        call PetscOptionsClearValue('-mat_mumps_icntl_14',ierr)
 #endif
     end if
@@ -78,15 +82,21 @@ contains
        call init_f0()
 
        call SNESCreate(MPIComm, mysnes, ierr)
-       call SNESSetFunction(mysnes, residualVec, evaluateResidual, PETSC_NULL_OBJECT, ierr)
+#if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR >= 8))
+#define PETSC_NULL_OBJECT_OR_INTEGER 0
+#else
+#define PETSC_NULL_OBJECT_OR_INTEGER PETSC_NULL_OBJECT
+#endif
+
+       call SNESSetFunction(mysnes, residualVec, evaluateResidual, PETSC_NULL_OBJECT_OR_INTEGER, ierr)
 
        firstMatrixCreation = .true.
        call preallocateMatrix(matrix, 1)
        if (useIterativeLinearSolver) then
           call preallocateMatrix(preconditionerMatrix, 0)
-          call SNESSetJacobian(mysnes, matrix, preconditionerMatrix, evaluateJacobian, PETSC_NULL_OBJECT, ierr)
+          call SNESSetJacobian(mysnes, matrix, preconditionerMatrix, evaluateJacobian, PETSC_NULL_OBJECT_OR_INTEGER, ierr)
        else
-          call SNESSetJacobian(mysnes, matrix, matrix, evaluateJacobian, PETSC_NULL_OBJECT, ierr)
+          call SNESSetJacobian(mysnes, matrix, matrix, evaluateJacobian, PETSC_NULL_OBJECT_OR_INTEGER, ierr)
        end if
 
        call SNESGetKSP(mysnes, KSPInstance, ierr)
@@ -173,7 +183,12 @@ contains
 
 
        ! Tell PETSc to call the diagnostics subroutine at each iteration of SNES:
+       ! 20180525 uncomment the next line!
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR >= 8))
+       call SNESMonitorSet(mysnes, diagnosticsMonitor, 0, PETSC_NULL_FUNCTION, ierr)
+#else
        call SNESMonitorSet(mysnes, diagnosticsMonitor, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
+#endif
 
        if (reusePreconditioner) then
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
@@ -297,7 +312,11 @@ contains
 
           call PetscTime(time1, ierr)
           if (solveSystem) then
+#if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR >= 8))
+             call SNESSolve(mysnes,PETSC_NULL_VEC, solutionVec, ierr)
+#else
              call SNESSolve(mysnes,PETSC_NULL_OBJECT, solutionVec, ierr)
+#endif
              call MatMumpsGetInfog(factorMat, 1, factor_err, ierr)
 
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))

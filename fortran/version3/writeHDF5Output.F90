@@ -4,20 +4,14 @@
 
 module writeHDF5Output
 
+#include "PETScVersions.F90"
+
   use globalVariables
-  use petscsysdef
   use HDF5
   use H5DS
   use H5LT
 
   implicit none
-
-#include "PETScVersions.F90"
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscsysdef.h>
-#else
-#include <petsc/finclude/petscsysdef.h>
-#endif
 
   private
   public :: initializeOutputFile, updateOutputFile, finalizeHDF5

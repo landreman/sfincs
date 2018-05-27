@@ -1,15 +1,9 @@
-#include "PETScVersions.F90"
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscsnesdef.h>
-#else
-#include <petsc/finclude/petscsnesdef.h>
-#endif
-
 ! This next subroutine is called as a "Monitor" of SNES, set in solver.F90 using SNESSetMonitor.
   subroutine diagnosticsMonitor(mysnes, iterationNum, residual, userContext, ierr)
 
+#include "PETScVersions.F90"
+
     use globalVariables, only: masterProc, iterationForMatrixOutput
-    use petscsnes
     
     implicit none
 
@@ -48,9 +42,9 @@
 
   subroutine checkIfKSPConverged(myKSP)
 
-    use globalVariables, only: integerToRepresentTrue, integerToRepresentFalse, useIterativeLinearSolver, masterProc
-    use petscksp
+#include "PETScVersions.F90"
 
+    use globalVariables, only: integerToRepresentTrue, integerToRepresentFalse, useIterativeLinearSolver, masterProc
     implicit none
 
     KSP :: myKSP
@@ -127,10 +121,11 @@
 
   subroutine extractPhi1(myVec)
 
+#include "PETScVersions.F90"
+
     use globalVariables, only: Phi1Hat, dPhi1Hatdtheta, dPhi1Hatdzeta, MPIComm, masterProc, ddtheta, ddzeta, Ntheta, Nzeta
     use globalVariables, only: includePhi1, zero
     use indices
-    use petscvec
 
     implicit none
 
@@ -187,10 +182,11 @@
 
   subroutine diagnostics(solutionWithDeltaF, iterationNum)
 
+#include "PETScVersions.F90"
+
     use globalVariables
     use indices
     use writeHDF5Output
-    use petscvec
     use export_f
     use classicalTransport
 

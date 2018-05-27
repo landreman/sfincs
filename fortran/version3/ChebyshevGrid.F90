@@ -1,10 +1,3 @@
-#include "PETScVersions.F90"
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscsysdef.h>
-#else
-#include <petsc/finclude/petscsysdef.h>
-#endif
-
 subroutine ChebyshevGrid(N, xMin, xMax, x, weights, D)
   ! Creates a Chebyshev grid, together with the associated weights
   ! for Clenshaw-Curtis integration, and the spectral
@@ -24,6 +17,8 @@ subroutine ChebyshevGrid(N, xMin, xMax, x, weights, D)
   ! x(N) = grid points (abscissae)
   ! weights(N) = Clenshaw-Curtis integration weights
   ! D(N,N) = differentiation matrix
+
+#include "PETScVersions.F90"
 
   implicit none
 

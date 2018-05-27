@@ -1,10 +1,4 @@
-#include "PETScVersions.F90"
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscsnesdef.h>
-#else
-#include <petsc/finclude/petscsnesdef.h>
-#endif
-
+#include <petscversion.h>
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
        ! Syntax for PETSc versions up through 3.4
   subroutine evaluateJacobian(mysnes, stateVec, jacobian, jacobianPC, flag, userContext, ierr)
@@ -13,7 +7,7 @@
   subroutine evaluateJacobian(mysnes, stateVec, jacobian, jacobianPC, userContext, ierr)
 #endif
 
-    use petscsnes
+#include "PETScVersions.F90"
     use globalVariables, only: masterProc, useIterativeLinearSolver, firstMatrixCreation, reusePreconditioner
 
     implicit none

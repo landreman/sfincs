@@ -1,12 +1,9 @@
-#include "PETScVersions.F90"
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscsnesdef.h>
-#else
-#include <petsc/finclude/petscsnesdef.h>
-#endif
-
 module classicalTransport
+
+#include "PETScVersions.F90"
+
   implicit none
+
 contains
  
   subroutine calculateClassicalParticleFlux(classicalPF)

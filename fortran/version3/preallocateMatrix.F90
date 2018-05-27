@@ -1,13 +1,7 @@
-#include "PETScVersions.F90"
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscmatdef.h>
-#else
-#include <petsc/finclude/petscmatdef.h>
-#endif
-
 subroutine preallocateMatrix(matrix, whichMatrix)
 
-  use petscmat
+#include "PETScVersions.F90"
+
   use globalVariables, only: Nx, Nxi, Ntheta, Nzeta, Nspecies, matrixSize, includePhi1, &
        !!constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, nonlinear, & !!Commented by AM 2016-02
        constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, & !!Added by AM 2016-02

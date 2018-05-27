@@ -11,21 +11,15 @@
 
 module geometry
 
+#include "PETScVersions.F90"
+
   use globalVariables
   use radialCoordinates
-  use petscsysdef
   use read_wout_mod, only: read_wout_file, Aminor, phi, nfp, ns, xm, xn, xm_nyq, xn_nyq, mpol, ntor, mnmax, mnmax_nyq, &
        lasym, presf, phip, iotas, bmnc, bmns, gmnc, gmns, &
        bsubumnc, bsubumns, bsubvmnc, bsubvmns, bsubsmnc, bsubsmns, bsupumnc, bsupumns, bsupvmnc, bsupvmns, rmnc, rmns, zmnc, zmns
 
   implicit none
-
-#include "PETScVersions.F90"
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscsysdef.h>
-#else
-#include <petsc/finclude/petscsysdef.h>
-#endif
 
 contains
 

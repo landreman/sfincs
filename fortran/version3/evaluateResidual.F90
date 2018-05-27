@@ -1,13 +1,7 @@
-#include "PETScVersions.F90"
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscsnesdef.h>
-#else
-#include <petsc/finclude/petscsnesdef.h>
-#endif
-
   subroutine evaluateResidual(mysnes, stateVec, residualVec, userContext, ierr)
 
-    use petscsnes
+#include "PETScVersions.F90"
+
     use globalVariables
     use indices
 
@@ -265,7 +259,6 @@
     ! Finally, assemble the RHS vector:
     call VecAssemblyBegin(rhs, ierr)
     call VecAssemblyEnd(rhs, ierr)
-
 
     ! Subtract the RHS from the residual:
     scalar = -1

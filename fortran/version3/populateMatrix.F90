@@ -2,16 +2,10 @@
 ! below should be un-commented:
 !#define USE_GSL_ERF
   
-#include "PETScVersions.F90"
-#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
-#include <finclude/petscmatdef.h>
-#else
-#include <petsc/finclude/petscmatdef.h>
-#endif
-
   subroutine populateMatrix(matrix, whichMatrix, stateVec)
 
-    use petscmat
+#include "PETScVersions.F90"
+
     use globalVariables
     use sparsify
     use indices
