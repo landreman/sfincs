@@ -38,13 +38,11 @@
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
   ! Version <= 3.5
 #include <finclude/petscsnesdef.h>
-  use petscsnesdef
 #elif (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 8)
   ! Version 3.6-3.7
 #include <petsc/finclude/petscsnesdef.h>
-  use petscsnesdef
 #else
   ! Version 3.8
 #include <petsc/finclude/petscsnes.h>
-  use petscsnes
 #endif
+  use petscsnes
