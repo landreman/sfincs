@@ -22,4 +22,4 @@ export OMP_PLACES=cores
 # Wall clock limit:
 #SBATCH --time=00:30:00
 
-srun ../../sfincs -ksp_view
+srun ../../sfincs -ksp_view -mat_mumps_cntl_1 1e-3
