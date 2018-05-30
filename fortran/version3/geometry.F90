@@ -1097,10 +1097,18 @@ contains
 			 		NHarmonics = NHarmonics - 1
 			 end if
        print *,"Nharmonics: ", Nharmonics
-       allocate(BHarmonics_l(NHarmonics))
-       allocate(BHarmonics_n(NHarmonics))
-       allocate(BHarmonics_amplitudes(NHarmonics))
-       allocate(BHarmonics_parity(NHarmonics))
+       if (.not. allocated(BHarmonics_l)) then
+          allocate(BHarmonics_l(NHarmonics))
+       end if
+       if (.not. allocated(BHarmonics_n)) then
+          allocate(BHarmonics_n(NHarmonics))
+       end if
+       if (.not. allocated(BHarmonics_amplitudes)) then
+          allocate(BHarmonics_amplitudes(NHarmonics))
+       end if
+       if (.not. allocated(BHarmonics_parity)) then
+          allocate(BHarmonics_parity(NHarmonics))
+       end if
        BHarmonics_parity = .true.
 			 imn = 1
 			 do m=0,mmax_boozer

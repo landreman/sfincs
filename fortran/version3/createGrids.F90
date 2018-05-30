@@ -1192,8 +1192,13 @@
           NModesAdjoint = NModesAdjoint + ((mMaxAdjoint-mMinAdjoint)+1)*2*(nMaxAdjoint-nMinAdjoint+1)
         end if
       end if
-      allocate(ns_sensitivity(NModesAdjoint))
-      allocate(ms_sensitivity(NModesAdjoint))
+      ! This is necessary for stellopt
+      if (.not. allocated(ns_sensitivity)) then
+        allocate(ns_sensitivity(NModesAdjoint))
+      end if
+      if (.not. allocated(ms_sensitivity)) then
+        allocate(ms_sensitivity(NModesAdjoint))
+      end if
 
       ! Now initialize ms and ns, starting with m = 0
       ! Note that ns is multiplied by Nperiods for VMEC convention
@@ -1373,7 +1378,9 @@
     if (RHSMode > 3 .and. RHSMode < 6) then
       allocate(dRadialCurrentdLambda(NLambdas,NModesAdjoint))
       allocate(dTotalHeatFluxdLambda(NLambdas,NModesAdjoint))
-      allocate(dBootstrapdLambda(NLambdas,NModesAdjoint))
+      if (.not. allocated(dBootstrapdLambda)) then
+        allocate(dBootstrapdLambda(NLambdas,NModesAdjoint))
+      end if
       allocate(dParticleFluxdLambda(NSpecies,NLambdas,NModesAdjoint))
       allocate(dHeatFluxdLambda(NSpecies,NLambdas,NModesAdjoint))
       allocate(dParallelFlowdLambda(Nspecies,NLambdas,NModesAdjoint))
@@ -1405,7 +1412,7 @@
         dBootstrapdLambda_finitediff = zero
         dHeatFluxdLambda_finitediff = zero
         dParallelFlowdLambda_finitediff = zero
-        if (RHSMode==5) then
+        if (RHSMode==5 .and. (.not. allocated(dPhidPsidLambda_finitediff))) then
           allocate(dPhidPsidLambda_finitediff(NLambdas,NModesAdjoint))
         end if
       end if
