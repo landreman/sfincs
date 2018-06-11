@@ -1220,6 +1220,14 @@ subroutine validateInput()
       end if
       stop
     end if
+    if (discreteAdjointOption==0 .and. ((((includeXDotTerm .eqv. .true.) .and. &
+      (useDKESExBDrift .eqv. .false.) .and. (includeElectricFieldTermInXiDot .eqv. .true.)) &
+      .or. ((includeXDotTerm .eqv. .false.) .and. (useDKESExBDrift .eqv. .true.) .and. &
+      (includeElectricFieldTermInXiDot .eqv. .false.))) .eqv. .false.)) then
+      if (masterProc) then
+        print *,"Error! discreteAdjointOption=0 must be used with DKES trajectories or full trajectories."
+      end if
+      stop
   end if
 	! Check if stellopt bmnc specification used, required input given
 	if (geometryScheme == 13) then

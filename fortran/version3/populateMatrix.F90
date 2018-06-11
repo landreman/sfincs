@@ -1069,7 +1069,6 @@
                          end do
                       end if
                    end if
-
                 end do
              end do
           end do
@@ -1078,6 +1077,44 @@
           deallocate(xPartOfXDot)
           deallocate(xPartOfXDot_plus)
           deallocate(xPartOfXDot_minus)
+       end if
+
+        ! *********************************************************
+        ! Add the adjoint operator term associated with E_r and
+        ! full trajectories
+        ! *********************************************************
+       if (RHSMode>3 .and. (discreteAdjointOption==0) .and. (includeXDotTerm .eqv. .true.) .and. &
+          (useDKESExBDrift .eqv. .false.) .and. (includeElectricFieldTermInXiDot .eqv. .true.) .and. (whichMatrix>3)) then
+          do itheta=ithetaMin,ithetaMax
+             do izeta=izetaMin,izetaMax
+                factor = (alpha*delta/2)*(BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) - BHat_sub_zeta(itheta,izeta) &
+                    *dBHatdtheta(itheta,izeta))*dPhiHatdPsiHat*DHat(itheta,izeta)/BHat(itheta,izeta)**3
+                do ix=ixMin,Nx
+                   do L=0,(Nxi_for_x(ix)-1)
+                      rowIndex=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F,whichMatrix)
+                      if (L<Nxi_for_x(ix)-2) then
+                         ! Super-super-diagonal-in-L term:
+                         ell = L+2
+                         colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F,whichMatrix)
+                         call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                              (L+2)*(L+1)/((2*L+five)*(2*L+three))*x2(ix)*factor, ADD_VALUES, ierr)
+                      end if
+                      if (L>1) then
+                         ! Sub-sub-diagonal-in-L term:
+                         ell = L-2
+                         colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F,whichMatrix)
+                         call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                              (L-one)*L/((two*L-three)*(two*L-one))*x2(ix)*factor, ADD_VALUES, ierr)
+                      end if
+                      ! diagonal-in-L term
+                      ell = L
+                      colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F,whichMatrix)
+                      call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                        two*(three*L*L+three*L-two)/((two*L+three)*(two*L-one))*x2(ix)*factor, ADD_VALUES, ierr)
+                   end do
+                end do
+             end do
+          end do
        end if
 
        ! *********************************************************
