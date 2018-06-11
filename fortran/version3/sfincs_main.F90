@@ -130,6 +130,7 @@ module sfincs_main
     use writeHDF5Output
     use solver
     use ambipolarSolver
+    use testingAdjointDiagnostics
     
     implicit none
     
@@ -154,6 +155,10 @@ module sfincs_main
     ! Create HDF5 data structures, and save the quantities that will not change
     ! at each iteration of the solver (i.e. save all quantities except diagnostics.)
     call initializeOutputFile()
+
+    if (debugAdjoint) then
+      call compareAdjointDiagnostics()
+    end if
 
     ! Solve the main system, either linear or nonlinear.
     ! This step takes more time than everything else combined.

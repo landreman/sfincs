@@ -624,7 +624,7 @@ contains
     if (RHSMode>3 .and. (ambipolarSolve .eqv. .false.)) then
 
       ! Testing adjoint operator and inner product
-      if (debugAdjoint) then
+      if (.false.) then
         do whichMode = 1,NModesAdjoint
           do whichLambda = 1,NLambdas
             if (masterProc) then
