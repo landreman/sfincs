@@ -34,8 +34,7 @@ radialCoordinates.o: globalVariables.o
 readInput.o: export_f.o globalVariables.o xGrid.o
 sfincs.o: sfincs_main.o
 sfincs_finalize.o: export_f.o indices.o globalVariables.o xGrid.o
-sfincs_main.o: geometry.o globalVariables.o writeHDF5Output.o readInput.o solver.o radialCoordinates.o ambipolarSolver.o
-sfincs_testAjointDiagnostics.o: sfincs_main.o testingAdjointDiagnostics.o
+sfincs_main.o: geometry.o globalVariables.o writeHDF5Output.o readInput.o solver.o radialCoordinates.o ambipolarSolver.o testingAdjointDiagnostics.o
 solver.o: globalVariables.o adjointDiagnostics.o 
 sparsify.o:
 uniformDiffMatrices.o: 
