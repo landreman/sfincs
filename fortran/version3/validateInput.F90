@@ -1228,6 +1228,7 @@ subroutine validateInput()
         print *,"Error! discreteAdjointOption=0 must be used with DKES trajectories or full trajectories."
       end if
       stop
+    end if
   end if
 	! Check if stellopt bmnc specification used, required input given
 	if (geometryScheme == 13) then
