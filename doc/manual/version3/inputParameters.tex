@@ -437,8 +437,8 @@ in the {\ttfamily xm\_nyq} and {\ttfamily xn\_nyq} arrays, where available.
 \param{rippleScale}
 {real}
 {1.0}
-{\todo{Only when ?}}
-{\todo{Write description}}
+{Only when \parlink{geometryScheme}==5. \parlink{helicity\_l} and \parlink{helicity\_n} must be specified.}
+{Scales the values of components of VMEC geometry (modes of $B$, $B^{u}$, $B_{u}$, $B^{v}$, $B_{v}$, $B_{s}$, and $\sqrt{g}$) that do not satisfy a desired symmetry. If \parlink{helicity\_n}$==0$, modes for which $n \neq 0$ or $m \neq$ \parlink{helicity\_l} are multiplied by \parlink{rippleScale}. If \parlink{helicity\_n}$\neq0$, modes for which $m/n \neq$ \parlink{helicity\_l}/\parlink{helicity\_n} or $n==0$ are multiplied by \parlink{rippleScale}. All other modes remain unchanged.}
 
 \myhrule
 

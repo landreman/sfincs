@@ -2872,12 +2872,16 @@ contains
     integer :: m
     PetscScalar :: scale 
     scale = 1
-    if (helicity_n == 0 .and. n /= 0) then
-      scale = rippleScale
-    else if ((n /= 0) .and. (helicity_l/helicity_n) /= (m/n)) then
-      scale = rippleScale
-    else if (helicity_n /= 0 .and. n == 0) then
-      scale = rippleScale
+    if (helicity_n == 0) then
+      if (n /=0 .or. m/=helicity_l) then
+        scale = rippleScale
+      end if
+    else
+      if ((n /= 0) .and. (helicity_l/helicity_n) /= (m/n)) then
+        scale = rippleScale
+      else if (n == 0) then
+        scale = rippleScale
+      end if
     end if
   end function setScaleFactor
 
