@@ -24,8 +24,8 @@ contains
     PetscScalar :: valueToSet
     PetscErrorCode :: err
 
-!!    if (abs(valueToSet) > threshholdForInclusion) then !!Commented by AM 2018-03
-    if (valueToSet .ne. 0.0d+0) then !!Added by AM 2018-03
+    if (abs(valueToSet) > threshholdForInclusion) then !!Commented by AM 2018-03
+!!    if (valueToSet .ne. 0.0d+0) then !!Added by AM 2018-03
        call MatSetValue(myMat, row, col, valueToSet, mode, err)
     end if
 
@@ -47,7 +47,8 @@ contains
        do col=1,n
           valueToSet = v(col,row) ! I'll use PETSc's ordering instead of Fortran's.
 
-          if (abs(valueToSet) > threshholdForInclusion) then
+          if (abs(valueToSet) > threshholdForInclusion) then !!Commented by AM 2018-05
+!!          if (valueToSet .ne. 0.0d+0) then !!Added by AM 2018-05 
              call MatSetValue(myMat, idxm(row), idxn(col), valueToSet, mode, err)
           end if
        end do
