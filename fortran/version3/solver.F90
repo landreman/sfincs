@@ -29,7 +29,13 @@ contains
     PetscReal :: mumps_value
     PetscReal :: atol, rtol, stol
     integer :: maxit, maxf, factor_err
+
+#if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR >= 9))
+    ! Version 3.9
+    MatSolverType :: actualSolverPackage
+#else
     MatSolverPackage :: actualSolverPackage
+#endif
     PetscBool :: is_icntl_14_set
     logical :: doAnotherSolve
 #if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR > 6))
@@ -144,14 +150,24 @@ contains
        if (isAParallelDirectSolverInstalled) then
           select case (whichParallelSolverToFactorPreconditioner)
           case (1)
+#if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR >= 9))
+             ! Version 3.9
+             call PCFactorSetMatSolverType(preconditionerContext, MATSOLVERMUMPS, ierr)
+#else
              call PCFactorSetMatSolverPackage(preconditionerContext, MATSOLVERMUMPS, ierr)
+#endif
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
              ! The functions MatMumpsSetICNTL were introduced in PETSc 3.5.
              ! For earlier versions, we can achieve a similar result with the following hack:
              call PetscOptionsInsertString("-mat_mumps_cntl_1 1e-6 -mat_mumps_icntl_4 2", ierr)
 #endif
           case (2)
+#if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR >= 9))
+             ! Version 3.9
+             call PCFactorSetMatSolverType(preconditionerContext, MATSOLVERSUPERLU_DIST, ierr)
+#else
              call PCFactorSetMatSolverPackage(preconditionerContext, MATSOLVERSUPERLU_DIST, ierr)
+#endif
              ! Turn on superlu_dist diagnostic output:
              call PetscOptionsInsertString("-mat_superlu_dist_statprint", ierr)
           case default
@@ -237,8 +253,12 @@ contains
 !!$    end if
 
        call SNESSetFromOptions(mysnes, ierr)
-
+#if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR >= 9))
+       ! Version 3.9
+       call PCFactorGetMatSolverType(preconditionerContext, actualSolverPackage, ierr)
+#else
        call PCFactorGetMatSolverPackage(preconditionerContext, actualSolverPackage, ierr)
+#endif
        if (masterProc) then
           print *,"Solver package which will be used: ",actualSolverPackage
        end if
@@ -258,7 +278,12 @@ contains
           ! Syntax for PETSc versions up through 3.4
 #else
           ! These commands must be AFTER SNESSetFromOptions or else there is a seg fault.
+#if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR >= 9))
+          ! Version 3.9
+          call PCFactorSetUpMatSolverType(preconditionerContext,ierr)
+#else
           call PCFactorSetUpMatSolverPackage(preconditionerContext,ierr)
+#endif
           call PCFactorGetMatrix(preconditionerContext,factorMat,ierr)
 
           ! All options set below can be over-ridden by command-line arguments, even though
