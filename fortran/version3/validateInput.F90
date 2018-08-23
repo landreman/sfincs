@@ -554,14 +554,15 @@ subroutine validateInput()
   end if
 
   !!Check added by AM 2018-01!! 
-  if (includePhi1InKineticEquation .and. (.not. includePhi1) .and. masterProc) then 
-     print *,line 
-     print *,line 
-     print *,"**   WARNING: You are including Phi1 in the kinetic equation"
-     print *,"**            but this has no effect since includePhi1 = .false."
-     print *,line
-     print *,line
-  end if
+  !!This warning message is not useful because includePhi1 = .true. is not the default but includePhi1InKineticEquation = .true. is default, so removed it !!AM 2018-08
+!  if (includePhi1InKineticEquation .and. (.not. includePhi1) .and. masterProc) then 
+!     print *,line 
+!     print *,line 
+!     print *,"**   WARNING: You are including Phi1 in the kinetic equation"
+!     print *,"**            but this has no effect since includePhi1 = .false."
+!     print *,line
+!     print *,line
+!  end if
 
   !!Check modified by AM 2018-01!!
   !if (includePhi1InCollisionOperator .and. (.not. includePhi1InKineticEquation) .and. masterProc) then
