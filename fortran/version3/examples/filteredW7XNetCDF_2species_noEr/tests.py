@@ -29,7 +29,7 @@ numFailures += shouldBe("heatFlux_vm_psiHat[0,0;;;]", -2.34336e-06, desiredToler
 
 # Species 2
 ##numFailures += shouldBe("FSABFlow[1,0;;;]", -0.00056099, desiredTolerance) ##Commented by AM 2018-03
-numFailures += shouldBe("FSABFlow[1,0;;;]", -0.000561962, desiredTolerance) ##Added by AM 2018-03
+numFailures += shouldBe("FSABFlow[1,0;;;]", -0.000561962, 5.0*desiredTolerance) ##Modified by AM 2018-08
 numFailures += shouldBe("particleFlux_vm_psiHat[1,0;;;]", -6.31647e-09, desiredTolerance)
 numFailures += shouldBe("heatFlux_vm_psiHat[1,0;;;]",  -3.37095e-08, desiredTolerance)
 
