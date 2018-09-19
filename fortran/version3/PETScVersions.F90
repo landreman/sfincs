@@ -33,6 +33,14 @@
 #endif
 !Hereafter in this code, use DM_BOUNDARY_NONE.
 
+! For PETSc versions prior to 3.9, MatSolverPackage was called MatSolverType.
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 9))
+#define MatSolverType MatSolverPackage
+#define PCFactorSetMatSolverType PCFactorSetMatSolverPackage
+#define PCFactorSetUpMatSolverType PCFactorSetUpMatSolverPackage
+#endif
+!Hereafter in this code, use MatSolverType.
+
 ! The remaining code ensures that the proper PETSc include files and modules are included in every subroutine by including just one line:
 ! #include "PETScVersions.F90"
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
