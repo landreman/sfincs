@@ -2320,6 +2320,8 @@ contains
     iota = iotas(vmecRadialIndex_half(1)) * vmecRadialWeight_half(1) &
          + iotas(vmecRadialIndex_half(2)) * vmecRadialWeight_half(2)
 
+    diotadpsiHat=(iotas(vmecRadialIndex_half(2))-iotas(vmecRadialIndex_half(1)))/(psiN_half(vmecRadialIndex_half(2))-psiN_half(vmecRadialIndex_half(1)))/psiAHat !Added 2018-09-26 HS
+
     dpsi = phi(2)/(2*pi)
     vmec_dpdpsiHat = 0
     vmec_dpdpsiHat(2:ns) = (presf(2:ns) - presf(1:ns-1)) / dpsi
