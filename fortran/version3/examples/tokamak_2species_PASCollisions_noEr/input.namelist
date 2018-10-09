@@ -49,12 +49,12 @@
 !  dNHatdrHats = -6.0d+0
 !  dTHatdrHats = -3.0d+0
 
-  Zs = 1 -1      
-  mHats = 1 0.000545509d+0
-  nHats = 1.0d+0 1.0d+0
-  THats = 1.0d+0 1.0d+0
-  dNHatdrHats = -0.5d+0 -0.5d+0
-  dTHatdrHats = -2.0d+0 -2.0d+0
+  Zs = 1 -1 13      
+  mHats = 1 0.000545509d+0 13
+  nHats = 1.0d+0 1.0d+0 0.01d+0
+  THats = 1.0d+0 1.0d+0 1.0d+0
+  dNHatdrHats = -0.5d+0 -0.5d+0 -0.5d+0
+  dTHatdrHats = -2.0d+0 -2.0d+0 -2.0d+0
 
 !  Zs =  -1      
 !  mHats =  0.000545509d+0
@@ -74,9 +74,9 @@
 &physicsParameters
   Delta = 4.5694d-3
   alpha = 1.0d+0
-  nu_n = 8.4774d-3
+  nu_n = 8.4774d-6
 
-  Er = 0.0d+0
+  Er = 0.01d+0
 
   collisionOperator = 1
 

@@ -78,6 +78,9 @@ module sfincs_main
        print *,"Delta (rho* at reference parameters)          = ", Delta
        print *,"alpha (e Phi / T at reference parameters)     = ", alpha
        print *,"nu_n (collisionality at reference parameters) = ", nu_n
+
+       call all_species_collisionalities() ! MFM 08/20/18
+
        if (includePhi1) then
           print *,"Nonlinear run"
           if (includePhi1InKineticEquation) then

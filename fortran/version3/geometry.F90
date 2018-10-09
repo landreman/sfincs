@@ -1120,15 +1120,63 @@ contains
              end if
              if (include_mn) then
                 do itheta = 1,Ntheta
-                   BHat(itheta,:) = BHat(itheta,:) + BHarmonics_amplitudes(i) * &
-                        cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                   !! Added by MFM - 07/31/18
+                   if (boozer_symmbreak_scaling) then
+                      if (symm_type == 1) then ! QHS
+                         if (qhs_poloidal*abs(BHarmonics_n(i)) == qhs_toroidal*BHarmonics_l(i)) then
+                            BHat(itheta,:) = BHat(itheta,:) + BHarmonics_amplitudes(i) * &
+                                 cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
 
-                   dBHatdtheta(itheta,:) = dBHatdtheta(itheta,:) - BHarmonics_amplitudes(i) * BHarmonics_l(i) * &
-                        sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                            dBHatdtheta(itheta,:) = dBHatdtheta(itheta,:) - BHarmonics_amplitudes(i) * BHarmonics_l(i) * &
+                                 sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
 
-                   dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) + BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
-                        sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                            dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) + BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
+                                 sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                         else
+                            BHarmonics_amplitudes(i) = BHarmonics_amplitudes(i)*epsilon_symmbreak !! Set amplitude of symmetry-breaking term to epsilon
+                            BHat(itheta,:) = BHat(itheta,:) + BHarmonics_amplitudes(i) * &
+                                 cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
 
+                            dBHatdtheta(itheta,:) = dBHatdtheta(itheta,:) - BHarmonics_amplitudes(i) * BHarmonics_l(i) * &
+                                 sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+
+                            dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) + BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
+                                 sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                         end if
+                      else ! QAS
+                         if (BHarmonics_n(i)==0) then ! if mode is QAS
+                            BHat(itheta,:) = BHat(itheta,:) + BHarmonics_amplitudes(i) * &
+                                 cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+
+                            dBHatdtheta(itheta,:) = dBHatdtheta(itheta,:) - BHarmonics_amplitudes(i) * BHarmonics_l(i) * &
+                                 sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+
+                            dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) + BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
+                                 sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                         else ! if mode is symmetry-breaking
+                            BHarmonics_amplitudes(i) = BHarmonics_amplitudes(i)*epsilon_symmbreak !! Set amplitude of symmetry-breaking term to epsilon
+                            BHat(itheta,:) = BHat(itheta,:) + BHarmonics_amplitudes(i) * &
+                                 cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+
+                            dBHatdtheta(itheta,:) = dBHatdtheta(itheta,:) - BHarmonics_amplitudes(i) * BHarmonics_l(i) * &
+                                 sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+
+                            dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) + BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
+                                 sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                         end if
+                      end if
+                   else
+                   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                      BHat(itheta,:) = BHat(itheta,:) + BHarmonics_amplitudes(i) * &
+                      cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                      
+                      dBHatdtheta(itheta,:) = dBHatdtheta(itheta,:) - BHarmonics_amplitudes(i) * BHarmonics_l(i) * &
+                      sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                      
+                      dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) + BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
+                      sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                   end if
                 end do
              end if
           else  ! The sine components of BHat
@@ -1146,15 +1194,65 @@ contains
              end if
              if (include_mn) then
                 do itheta = 1,Ntheta
-                   BHat(itheta,:) = BHat(itheta,:) + BHarmonics_amplitudes(i) * &
-                        sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                   !! Added by MFM - 07/31/18
+                   if (boozer_symmbreak_scaling) then
+                      if (symm_type == 1) then ! QHS
+                         if (qhs_poloidal*abs(BHarmonics_n(i)) == qhs_toroidal*BHarmonics_l(i)) then
+                            BHat(itheta,:) = BHat(itheta,:) + BHarmonics_amplitudes(i) * &
+                                 sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
 
-                   dBHatdtheta(itheta,:) = dBHatdtheta(itheta,:) + BHarmonics_amplitudes(i) * BHarmonics_l(i) * &
-                        cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                            dBHatdtheta(itheta,:) = dBHatdtheta(itheta,:) + BHarmonics_amplitudes(i) * BHarmonics_l(i) * &
+                                 cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
 
-                   dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) - BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
-                        cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                            dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) - BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
+                                 cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                         else
+                            BHarmonics_amplitudes(i) = BHarmonics_amplitudes(i)*epsilon_symmbreak !! Set amplitude of symmetry-breaking term to epsilon                            
+                            BHat(itheta,:) = BHat(itheta,:) + BHarmonics_amplitudes(i) * &
+                                 sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
 
+                            dBHatdtheta(itheta,:) = dBHatdtheta(itheta,:) + BHarmonics_amplitudes(i) * BHarmonics_l(i) * &
+                                 cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+
+                            dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) - BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
+                                 cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+
+                         end if
+                      else ! QAS
+                         if (BHarmonics_n(i)==0) then ! if mode is QAS
+                            BHat(itheta,:) = BHat(itheta,:) + BHarmonics_amplitudes(i) * &
+                                 sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+
+                            dBHatdtheta(itheta,:) = dBHatdtheta(itheta,:) + BHarmonics_amplitudes(i) * BHarmonics_l(i) * &
+                                 cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+
+                            dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) - BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
+                                 cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                         else
+                            BHarmonics_amplitudes(i) = BHarmonics_amplitudes(i)*epsilon_symmbreak !! Set amplitude of symmetry-breaking term to epsilon                            
+                            BHat(itheta,:) = BHat(itheta,:) + BHarmonics_amplitudes(i) * &
+                                 sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+
+                            dBHatdtheta(itheta,:) = dBHatdtheta(itheta,:) + BHarmonics_amplitudes(i) * BHarmonics_l(i) * &
+                                 cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+
+                            dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) - BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
+                                 cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                         end if
+                      end if
+                   else
+                   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                      BHat(itheta,:) = BHat(itheta,:) + BHarmonics_amplitudes(i) * &
+                      sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                      
+                      dBHatdtheta(itheta,:) = dBHatdtheta(itheta,:) + BHarmonics_amplitudes(i) * BHarmonics_l(i) * &
+                      cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                      
+                      dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) - BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
+                      cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                      
+                   end if
                 end do
              end if
           end if
@@ -1219,15 +1317,65 @@ contains
              end if
              if (include_mn) then
                 do itheta = 1,Ntheta
-                   BHatL(itheta,:) = BHatL(itheta,:) + BHarmonics_amplitudesL(i) * &
-                        cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+                   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                   !! Added by MFM - 07/31/18
+                   if (boozer_symmbreak_scaling) then
+                      if (symm_type == 1) then ! QHS
+                         if (qhs_poloidal*abs(BHarmonics_nL(i)) == qhs_toroidal*BHarmonics_lL(i)) then
+                            BHatL(itheta,:) = BHatL(itheta,:) + BHarmonics_amplitudesL(i) * &
+                                 cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
 
-                   dBHatdthetaL(itheta,:) = dBHatdthetaL(itheta,:) - BHarmonics_amplitudesL(i) * BHarmonics_lL(i) * &
-                        sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+                            dBHatdthetaL(itheta,:) = dBHatdthetaL(itheta,:) - BHarmonics_amplitudesL(i) * BHarmonics_lL(i) * &
+                                 sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
 
-                   dBHatdzetaL(itheta,:) = dBHatdzetaL(itheta,:) + BHarmonics_amplitudesL(i) * Nperiods * BHarmonics_nL(i) * &
-                        sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+                            dBHatdzetaL(itheta,:) = dBHatdzetaL(itheta,:) + BHarmonics_amplitudesL(i) * Nperiods * BHarmonics_nL(i) * &
+                                 sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+                         else
+                            BHarmonics_amplitudesL(i) = BHarmonics_amplitudesL(i)*epsilon_symmbreak !! Set amplitude of symmetry-breaking term to epsilon
+                            BHatL(itheta,:) = BHatL(itheta,:) + BHarmonics_amplitudesL(i) * &
+                                 cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
 
+                            dBHatdthetaL(itheta,:) = dBHatdthetaL(itheta,:) - BHarmonics_amplitudesL(i) * BHarmonics_lL(i) * &
+                                 sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+
+                            dBHatdzetaL(itheta,:) = dBHatdzetaL(itheta,:) + BHarmonics_amplitudesL(i) * Nperiods * BHarmonics_nL(i) * &
+                                 sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+                         end if
+                      else ! QAS
+                         if (BHarmonics_nL(i)==0) then ! if mode is QAS
+                            BHatL(itheta,:) = BHatL(itheta,:) + BHarmonics_amplitudesL(i) * &
+                                 cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+
+                            dBHatdthetaL(itheta,:) = dBHatdthetaL(itheta,:) - BHarmonics_amplitudesL(i) * BHarmonics_lL(i) * &
+                                 sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+
+                            dBHatdzetaL(itheta,:) = dBHatdzetaL(itheta,:) + BHarmonics_amplitudesL(i) * Nperiods * BHarmonics_nL(i) * &
+                                 sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+                         else
+                            BHarmonics_amplitudesL(i) = BHarmonics_amplitudesL(i)*epsilon_symmbreak
+                            BHatL(itheta,:) = BHatL(itheta,:) + BHarmonics_amplitudesL(i) * &
+                                 cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+
+                            dBHatdthetaL(itheta,:) = dBHatdthetaL(itheta,:) - BHarmonics_amplitudesL(i) * BHarmonics_lL(i) * &
+                                 sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+
+                            dBHatdzetaL(itheta,:) = dBHatdzetaL(itheta,:) + BHarmonics_amplitudesL(i) * Nperiods * BHarmonics_nL(i) * &
+                                 sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+                         end if
+                      end if
+                   else
+                   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+                      BHatL(itheta,:) = BHatL(itheta,:) + BHarmonics_amplitudesL(i) * &
+                      cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+                      
+                      dBHatdthetaL(itheta,:) = dBHatdthetaL(itheta,:) - BHarmonics_amplitudesL(i) * BHarmonics_lL(i) * &
+                      sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+                      
+                      dBHatdzetaL(itheta,:) = dBHatdzetaL(itheta,:) + BHarmonics_amplitudesL(i) * Nperiods * BHarmonics_nL(i) * &
+                      sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+                      
+                   end if
                    !The following are only there to calculate Sugama's magnetic drift
                    RHatL(itheta,:) = RHatL(itheta,:) + RHarmonics_L(i) * &
                         cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
@@ -1301,15 +1449,64 @@ contains
              end if
              if (include_mn) then
                 do itheta = 1,Ntheta
-                   BHatL(itheta,:) = BHatL(itheta,:) + BHarmonics_amplitudesL(i) * &
-                        sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+                   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                   !! Added by MFM - 07/31/18
+                   if (boozer_symmbreak_scaling) then
+                      if (symm_type == 1) then ! QHS
+                         if (qhs_poloidal*abs(BHarmonics_nL(i)) == qhs_toroidal*BHarmonics_lL(i)) then
+                            BHatL(itheta,:) = BHatL(itheta,:) + BHarmonics_amplitudesL(i) * &
+                                 sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
 
-                   dBHatdthetaL(itheta,:) = dBHatdthetaL(itheta,:) + BHarmonics_amplitudesL(i) * BHarmonics_lL(i) * &
-                        cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+                            dBHatdthetaL(itheta,:) = dBHatdthetaL(itheta,:) + BHarmonics_amplitudesL(i) * BHarmonics_lL(i) * &
+                                 cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
 
-                   dBHatdzetaL(itheta,:) = dBHatdzetaL(itheta,:) - BHarmonics_amplitudesL(i) * Nperiods * BHarmonics_nL(i) * &
-                        cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-                   
+                            dBHatdzetaL(itheta,:) = dBHatdzetaL(itheta,:) - BHarmonics_amplitudesL(i) * Nperiods * BHarmonics_nL(i) * &
+                                 cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+                         else
+                            BHarmonics_amplitudesL(i) = BHarmonics_amplitudesL(i)*epsilon_symmbreak
+                            BHatL(itheta,:) = BHatL(itheta,:) + BHarmonics_amplitudesL(i) * &
+                                 cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+
+                            dBHatdthetaL(itheta,:) = dBHatdthetaL(itheta,:) - BHarmonics_amplitudesL(i) * BHarmonics_lL(i) * &
+                                 sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+
+                            dBHatdzetaL(itheta,:) = dBHatdzetaL(itheta,:) + BHarmonics_amplitudesL(i) * Nperiods * BHarmonics_nL(i) * &
+                                 sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+                         end if
+                      else
+                         if (BHarmonics_nL(i)==0) then ! if mode is QAS
+                            BHatL(itheta,:) = BHatL(itheta,:) + BHarmonics_amplitudesL(i) * &
+                                 cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+
+                            dBHatdthetaL(itheta,:) = dBHatdthetaL(itheta,:) - BHarmonics_amplitudesL(i) * BHarmonics_lL(i) * &
+                                 sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+
+                            dBHatdzetaL(itheta,:) = dBHatdzetaL(itheta,:) + BHarmonics_amplitudesL(i) * Nperiods * BHarmonics_nL(i) * &
+                                 sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+                         else
+                            BHarmonics_amplitudesL(i) = BHarmonics_amplitudesL(i)*epsilon_symmbreak
+                            BHatL(itheta,:) = BHatL(itheta,:) + BHarmonics_amplitudesL(i) * &
+                                 cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+
+                            dBHatdthetaL(itheta,:) = dBHatdthetaL(itheta,:) - BHarmonics_amplitudesL(i) * BHarmonics_lL(i) * &
+                                 sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+
+                            dBHatdzetaL(itheta,:) = dBHatdzetaL(itheta,:) + BHarmonics_amplitudesL(i) * Nperiods * BHarmonics_nL(i) * &
+                                 sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+                         end if
+                      end if
+                   else
+                   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                      BHatL(itheta,:) = BHatL(itheta,:) + BHarmonics_amplitudesL(i) * &
+                      sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+                      
+                      dBHatdthetaL(itheta,:) = dBHatdthetaL(itheta,:) + BHarmonics_amplitudesL(i) * BHarmonics_lL(i) * &
+                      cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+                      
+                      dBHatdzetaL(itheta,:) = dBHatdzetaL(itheta,:) - BHarmonics_amplitudesL(i) * Nperiods * BHarmonics_nL(i) * &
+                      cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+                      
+                   end if
                    !The following are only there to calculate Sugama's magnetic drift
                    RHatL(itheta,:) = RHatL(itheta,:) + RHarmonics_L(i) * &
                         sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
@@ -1429,15 +1626,70 @@ contains
              end if
              if (include_mn) then
                 do itheta = 1,Ntheta
-                   BHatH(itheta,:) = BHatH(itheta,:) + BHarmonics_amplitudesH(i) * &
-                        cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+                   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                   !! Added by MFM - 07/31/18
+                   if (boozer_symmbreak_scaling) then
+                      if (symm_type == 1) then ! QHS
+                         if (qhs_poloidal*abs(BHarmonics_nH(i)) == qhs_toroidal*BHarmonics_lH(i)) then
+                            BHatH(itheta,:) = BHatH(itheta,:) + BHarmonics_amplitudesH(i) * &
+                                 cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
 
-                   dBHatdthetaH(itheta,:) = dBHatdthetaH(itheta,:) - BHarmonics_amplitudesH(i) * BHarmonics_lH(i) * &
-                        sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+                            dBHatdthetaH(itheta,:) = dBHatdthetaH(itheta,:) - BHarmonics_amplitudesH(i) * BHarmonics_lH(i) * &
+                                 sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
 
-                   dBHatdzetaH(itheta,:) = dBHatdzetaH(itheta,:) + BHarmonics_amplitudesH(i) * Nperiods * BHarmonics_nH(i) * &
-                        sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+                            dBHatdzetaH(itheta,:) = dBHatdzetaH(itheta,:) + BHarmonics_amplitudesH(i) * Nperiods * BHarmonics_nH(i) * &
+                                 sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+                         else
+                            BHarmonics_amplitudesH(i) = BHarmonics_amplitudesH(i)*epsilon_symmbreak
+                            BHatH(itheta,:) = BHatH(itheta,:) + BHarmonics_amplitudesH(i) * &
+                                 cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
 
+                            dBHatdthetaH(itheta,:) = dBHatdthetaH(itheta,:) - BHarmonics_amplitudesH(i) * BHarmonics_lH(i) * &
+                                 sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+
+                            dBHatdzetaH(itheta,:) = dBHatdzetaH(itheta,:) + BHarmonics_amplitudesH(i) * Nperiods * BHarmonics_nH(i) * &
+                                 sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+                         end if
+                      else
+                         if (BHarmonics_nH(i)==0) then ! if mode is QAS
+!                            if (masterProc) then
+!                               print *,"n=",BHarmonics_nH(i)
+!                               print *,"m=",BHarmonics_lH(i)
+!                               print *,"bmag=",BHarmonics_amplitudesH(i)
+!                            end if
+                            !write(*,'(2I3)') "m=",BHarmonics_nH(i),"  n=",BHarmonics_lH(i)
+                            BHatH(itheta,:) = BHatH(itheta,:) + BHarmonics_amplitudesH(i) * &
+                                 cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+
+                            dBHatdthetaH(itheta,:) = dBHatdthetaH(itheta,:) - BHarmonics_amplitudesH(i) * BHarmonics_lH(i) * &
+                                 sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+
+                            dBHatdzetaH(itheta,:) = dBHatdzetaH(itheta,:) + BHarmonics_amplitudesH(i) * Nperiods * BHarmonics_nH(i) * &
+                                 sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+                         else
+                            BHarmonics_amplitudesH(i) = BHarmonics_amplitudesH(i)*epsilon_symmbreak
+                            BHatH(itheta,:) = BHatH(itheta,:) + BHarmonics_amplitudesH(i) * &
+                                 cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+
+                            dBHatdthetaH(itheta,:) = dBHatdthetaH(itheta,:) - BHarmonics_amplitudesH(i) * BHarmonics_lH(i) * &
+                                 sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+
+                            dBHatdzetaH(itheta,:) = dBHatdzetaH(itheta,:) + BHarmonics_amplitudesH(i) * Nperiods * BHarmonics_nH(i) * &
+                                 sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+                         end if
+                      end if
+                   else
+                   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                      BHatH(itheta,:) = BHatH(itheta,:) + BHarmonics_amplitudesH(i) * &
+                      cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+                      
+                      dBHatdthetaH(itheta,:) = dBHatdthetaH(itheta,:) - BHarmonics_amplitudesH(i) * BHarmonics_lH(i) * &
+                      sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+                      
+                      dBHatdzetaH(itheta,:) = dBHatdzetaH(itheta,:) + BHarmonics_amplitudesH(i) * Nperiods * BHarmonics_nH(i) * &
+                      sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+                      
+                   end if
                    !The following are only there to calculate Sugama's magnetic drift
                    RHatH(itheta,:) = RHatH(itheta,:) + RHarmonics_H(i) * &
                         cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
@@ -1511,15 +1763,64 @@ contains
              end if
              if (include_mn) then
                 do itheta = 1,Ntheta
-                   BHatH(itheta,:) = BHatH(itheta,:) + BHarmonics_amplitudesH(i) * &
-                        sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+                   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                   !! Added by MFM - 07/31/18
+                   if (boozer_symmbreak_scaling) then
+                      if (symm_type == 1) then ! QHS
+                         if (qhs_poloidal*abs(BHarmonics_nH(i)) == qhs_toroidal*BHarmonics_lH(i)) then
+                            BHatH(itheta,:) = BHatH(itheta,:) + BHarmonics_amplitudesH(i) * &
+                                 sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
 
-                   dBHatdthetaH(itheta,:) = dBHatdthetaH(itheta,:) + BHarmonics_amplitudesH(i) * BHarmonics_lH(i) * &
-                        cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+                            dBHatdthetaH(itheta,:) = dBHatdthetaH(itheta,:) + BHarmonics_amplitudesH(i) * BHarmonics_lH(i) * &
+                                 cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
 
-                   dBHatdzetaH(itheta,:) = dBHatdzetaH(itheta,:) - BHarmonics_amplitudesH(i) * Nperiods * BHarmonics_nH(i) * &
-                        cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+                            dBHatdzetaH(itheta,:) = dBHatdzetaH(itheta,:) - BHarmonics_amplitudesH(i) * Nperiods * BHarmonics_nH(i) * &
+                                 cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+                         else
+                            BHarmonics_amplitudesH(i) = BHarmonics_amplitudesH(i)*epsilon_symmbreak
+BHatH(itheta,:) = BHatH(itheta,:) + BHarmonics_amplitudesH(i) * &
+                                 sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
 
+                            dBHatdthetaH(itheta,:) = dBHatdthetaH(itheta,:) + BHarmonics_amplitudesH(i) * BHarmonics_lH(i) * &
+                                 cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+
+                            dBHatdzetaH(itheta,:) = dBHatdzetaH(itheta,:) - BHarmonics_amplitudesH(i) * Nperiods * BHarmonics_nH(i) * &
+                                 cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+                         end if
+                      else ! QAS
+                         if (BHarmonics_nH(i)==0) then ! if mode is QAS
+                            BHatH(itheta,:) = BHatH(itheta,:) + BHarmonics_amplitudesH(i) * &
+                                 sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+
+                            dBHatdthetaH(itheta,:) = dBHatdthetaH(itheta,:) + BHarmonics_amplitudesH(i) * BHarmonics_lH(i) * &
+                                 cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+
+                            dBHatdzetaH(itheta,:) = dBHatdzetaH(itheta,:) - BHarmonics_amplitudesH(i) * Nperiods * BHarmonics_nH(i) * &
+                                 cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+                         else
+                            BHarmonics_amplitudesH(i) = BHarmonics_amplitudesH(i)*epsilon_symmbreak
+BHatH(itheta,:) = BHatH(itheta,:) + BHarmonics_amplitudesH(i) * &
+                                 sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+
+                            dBHatdthetaH(itheta,:) = dBHatdthetaH(itheta,:) + BHarmonics_amplitudesH(i) * BHarmonics_lH(i) * &
+                                 cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+
+                            dBHatdzetaH(itheta,:) = dBHatdzetaH(itheta,:) - BHarmonics_amplitudesH(i) * Nperiods * BHarmonics_nH(i) * &
+                                 cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+                         end if
+                      end if
+                   else
+                   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                      BHatH(itheta,:) = BHatH(itheta,:) + BHarmonics_amplitudesH(i) * &
+                      sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+                      
+                      dBHatdthetaH(itheta,:) = dBHatdthetaH(itheta,:) + BHarmonics_amplitudesH(i) * BHarmonics_lH(i) * &
+                      cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+                      
+                      dBHatdzetaH(itheta,:) = dBHatdzetaH(itheta,:) - BHarmonics_amplitudesH(i) * Nperiods * BHarmonics_nH(i) * &
+                      cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+                      
+                   end if
                    !The following are only there to calculate Sugama's magnetic drift
                    RHatH(itheta,:) = RHatH(itheta,:) + RHarmonics_H(i) * &
                         sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)

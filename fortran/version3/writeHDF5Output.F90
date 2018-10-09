@@ -268,6 +268,15 @@ contains
        end if
 
        call writeHDF5Field("rippleScale", rippleScale, "Factor to scale non-axisymmetric or non-quasisymmetric modes of field.")
+
+       !! MFM - 07/31/18
+       call writeHDF5Field("boozer_symmbreak_scaling", boozer_symmbreak_scaling, "Switch to turn on scaling of non-quasisymmetric modes of Boozer magnetic field.")
+       call writeHDF5Field("symm_type", symm_type, "Scaling of non-quasisymmetric modes for (1) quasihelically symmetric or (2) quasiaxisymmetric equilibria")
+       call writeHDF5Field("qhs_poloidal", qhs_poloidal, "For quasihelical symmetry, the value of M in (M\theta - N\zeta)")
+       call writeHDF5Field("qhs_toroidal", qhs_toroidal, "For quasihelical symmetry, the value of N in (M\theta - N\zeta)")
+       call writeHDF5Field("epsilon_symmbreak", epsilon_symmbreak, "Magnitude of symmetry-breaking modes")
+       !!
+       
        call writeHDF5Field("NPeriods", NPeriods, "Number of identical toroidal periods (e.g. 5 for W7-X, 10 for LHD, 4 for HSX), equivalent to the vmec variable nfp.")
        call writeHDF5Field("Delta", Delta, &
             "Dimensionless combination of the normalization constants, resembling rho_*: Delta = mBar * vBar / (e * BBar * RBar) (SI units) " // &

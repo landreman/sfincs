@@ -2,7 +2,7 @@
 ! See the user manual for documentation of the parameters in this file.
 !----------------------------------------------------------------------
 
-!ss scanType = 1
+!ss scanType = 2
 
 ! Parameters specific to scanType = 2:
 !ss NErs = 5

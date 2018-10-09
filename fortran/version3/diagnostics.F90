@@ -177,6 +177,33 @@
 
   end subroutine extractPhi1
 
+
+  subroutine all_species_collisionalities() ! MFM 08/20/18
+    
+    ! Calculates nu_(j,k) and nu_(j) as a function of the reference nu_n value
+    use globalVariables
+
+    implicit none
+
+    PetscScalar, dimension(Nspecies,Nspecies) :: nustar_jk
+    PetscScalar, dimension(Nspecies) :: nustar_j
+    integer :: index1, index2
+
+    print *,""
+    print *,"---- Collisionality by Species ----"
+    do index1 = 1, Nspecies
+       write (*,'(A7,I3,A7,F14.10,A8,F14.10,A8,F14.10,A8,F14.10,A1)')"Species",index1," -- (Z=",Zs(index1)," , mHat=",mHats(index1)," , nHat=",nHats(index1)," , THat=",THats(index1),")"
+       nustar_j(index1) = 0
+       do index2 = 1, Nspecies
+          nustar_jk(index1,index2) = ((Zs(index1)*Zs(index1) * Zs(index2)*Zs(index2) * nHats(index2)) / (THats(index1)*sqrt(THats(index1)) * sqrt(mHats(index1)))) * nu_n
+          write (*,'(A4,I2,A1,I2,A4,E10.4)')"nu_(",index1,",",index2,") = ",nustar_jk(index1,index2)
+          nustar_j(index1) = nustar_j(index1) + nustar_jk(index1,index2)
+       end do
+       write (*,'(A4,I2,A14,I2,A6,E10.4)')"nu_(",index1,") = sum_k nu_(",index1,",k) = ",nustar_j(index1)
+    end do
+
+  end subroutine all_species_collisionalities
+
   ! *******************************************************************************************
   ! *******************************************************************************************
 

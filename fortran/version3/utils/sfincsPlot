@@ -272,6 +272,11 @@ else:
     plt.subplot(numRows, numCols, 1)
     #plt.contourf(zeta,theta,BHat.transpose(),20)
     plt.contourf(zeta2D,theta2D,BHat.transpose(),20)
+#    plt.contourf(zeta2D,theta2D,BHat,10)
+
+    print numpy.amax(BHat)
+    print numpy.amin(BHat)
+    print numpy.amax(zeta2D)
     if geometryScheme==5:
         plt.title('BHat with an approximate field line\n(Not straight in VMEC coordinates)')
     else:
@@ -280,9 +285,12 @@ else:
     plt.ylabel('theta')
     plt.colorbar()
     # Plot a field line:
+
     if iota>0:
         plt.plot([0,zeta.max()],[0,zeta.max()*iota],'k')
     else:
+        # not sure if this is a mistake? the line commented out was initially here
+#        plt.plot([0,zeta.max()],[0,-zeta.max()*iota],'k')
         plt.plot([0,zeta.max()],[-zeta.max()*iota,0],'k')
 
     plt.subplot(numRows, numCols, 2)

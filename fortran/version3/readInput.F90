@@ -30,7 +30,8 @@ contains
          equilibriumFile, min_Bmn_to_load, &
          psiAHat, inputRadialCoordinate, inputRadialCoordinateForGradients, aHat, &
          psiHat_wish, psiN_wish, rHat_wish, rN_wish, &
-         VMECRadialOption, VMEC_Nyquist_option, rippleScale, EParallelHatSpec_bcdatFile
+         VMECRadialOption, VMEC_Nyquist_option, rippleScale, EParallelHatSpec_bcdatFile, &
+         boozer_symmbreak_scaling, symm_type, qhs_poloidal, qhs_toroidal, epsilon_symmbreak ! MFM - 07/31/18
 
     namelist / speciesParameters / mHats, Zs, nHats, THats, &
          dNHatdpsiHats, dTHatdpsiHats, &

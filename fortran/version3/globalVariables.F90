@@ -56,6 +56,12 @@ module globalVariables
   integer :: VMECRadialOption = 1
   integer :: VMEC_Nyquist_option = 1
   PetscScalar :: rippleScale = 1
+  ! MFM boozer bmode scaling - 07/31/18
+  logical :: boozer_symmbreak_scaling = .false.
+  integer :: symm_type = 1
+  integer :: qhs_poloidal = 1
+  integer :: qhs_toroidal = 1
+  PetscScalar :: epsilon_symmbreak = 1.0
 
   ! ********************************************************
   ! ********************************************************

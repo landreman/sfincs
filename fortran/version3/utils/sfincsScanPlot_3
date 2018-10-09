@@ -136,6 +136,7 @@ for directory in directories:
     FSABFlow = f["FSABFlow"][()]
     FSABjHat = f["FSABjHat"][()]
     particleFlux_vm = f["particleFlux_vm_psiHat"][()]
+    particleFlux_vm_psiN = f["particleFlux_vm_psiN"][()]
     heatFlux_vm = f["heatFlux_vm_psiHat"][()]
     elapsedTime = f["elapsed time (s)"][()]
     try:
@@ -161,7 +162,9 @@ for directory in directories:
           if includePhi1:
              outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],particleFlux_vd[0,0],heatFlux_vm[0,0],heatFlux_vd[0,0]])
           else:
-             outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],heatFlux_vm[0,0]])
+#             outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],heatFlux_vm[0,0],sources[0,0,0],sources[0,0,0]])
+              outputs.append([FSABFlow[0,0],particleFlux_vm_psiN[0,0],heatFlux_vm[0,0]]) #TEMP MFM
+#             outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],heatFlux_vm[0,0]])
              #outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],heatFlux_vm[0,0],elapsedTime])
        else:
           results = []
@@ -175,10 +178,13 @@ for directory in directories:
                 results.append(heatFlux_vd[ispecies,iteration])
              else:
                 results.append(FSABFlow[ispecies,iteration])
-                results.append(particleFlux_vm[ispecies,iteration])
+#                results.append(particleFlux_vm[ispecies,iteration])
+                results.append(particleFlux_vm_psiN[ispecies,iteration]) #MFM
                 results.append(heatFlux_vm[ispecies,iteration])
                 results.append(sources[0,ispecies,iteration])
                 results.append(sources[1,ispecies,iteration])
+#                results.append(sources[0])
+#                results.append(sources[1])
           results.append(FSABjHat[iteration])
           outputs.append(results)
 
@@ -212,7 +218,8 @@ else:
          yAxisLabels=["FSABFlow","particleFlux\nvm_psiHat","particleFlux\nvd_psiHat","heatFlux\nvm_psiHat","heatFlux\nvd_psiHat"]
       else:
          numQuantities = 3
-         yAxisLabels=["FSABFlow","particleFlux\nvm_psiHat","heatFlux\nvm_psiHat","elapsed time (s)"]
+#         yAxisLabels=["FSABFlow","particleFlux\nvm_psiHat","heatFlux\nvm_psiHat","elapsed time (s)"] #MFM
+         yAxisLabels=["FSABFlow","particleFlux\nvm_psiN","heatFlux\nvm_psiHat","elapsed time (s)"]
    else:
       if includePhi1:
          numQuantities = Nspecies*5+1
@@ -230,7 +237,8 @@ else:
          yAxisLabels=[]
          for i in range(1,Nspecies+1):
             yAxisLabels.append("FSABFlow (species "+str(i)+")")
-            yAxisLabels.append("particleFlux_vm_psiHat (species "+str(i)+")")
+#            yAxisLabels.append("particleFlux_vm_psiHat (species "+str(i)+")") # MFM
+            yAxisLabels.append("particleFlux_vm_psiN (species "+str(i)+")")
             yAxisLabels.append("heatFlux_vm_psiHat (species "+str(i)+")")
             yAxisLabels.append("sources(1) (species "+str(i)+")")
             yAxisLabels.append("sources(2) (species "+str(i)+")")
@@ -267,17 +275,26 @@ for iQuantity in range(numQuantities):
       yscales.append('linear')
    else:
       # Use log scale for fluxes
-      ydata.append(abs(outputs_array[:,iQuantity]))
-      yscales.append('log')
+      ydata.append((outputs_array[:,iQuantity]))
+#      plt.yscale('symlog', linthreshy=1e-1)
+      yscales.append('linear')
    
    xlabels.append(scanVariable)
    ylabels.append(yAxisLabels[iQuantity])
    if scanScale=="log":
-      xscales.append('log')
+      xscales.append('linear')
    else:
       xscales.append('linear') 
 
    plt.plot(xdata[-1],ydata[-1],linespec)
+#   if iQuantity == 11:
+      #plt.plot([5.0e-5, 7.93e-5, 3.344e-4, 8.729e-4],[0.01883e-8, 0.02988e-8, 0.12598e-8, 0.32885e-8])
+#      plt.plot([5.0e-7, 5.0e-6, 5.0e-5, 7.93e-5, 3.344e-4, 8.729e-4],[-0.00013e-8, -0.0013e-08, -0.013e-8,-0.0206e-8, -0.0869e-8, -0.2267e-8])
+#   elif iQuantity == 1:
+      #plt.plot([5.0e-5, 7.93e-5, 3.344e-4, 8.729e-4],[0.02449e-7, 0.03884e-7, 0.16377e-7, 0.42751e-7])
+#      plt.plot([5.0e-7, 5.0e-6, 5.0e-5, 7.93e-5, 3.344e-4, 8.729e-4],[0.00017e-7, 0.0017e-7, 0.0169e-7, 0.0268e-7, 0.1129e-7, 0.2948e-7])
+   #elif iQuantity == 6:
+   #   plt.plot([7.93e-5, 3.344e-4, 8.729e-4],[0.0517e-8, 0.2182e-8, 0.5696e-8])
    plt.xscale(xscales[-1])
    plt.yscale(yscales[-1])
    plt.xlabel(xlabels[-1])
