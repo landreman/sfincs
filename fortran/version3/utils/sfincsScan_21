@@ -108,9 +108,11 @@ for paramname in runparamnames:
             pass
     testReadName = readVariable(paramname, "string", False)
     if testReadName == None :
-        print "The variable " + paramname + " you wish to scan must be explicitly assigned some value in the appropriate namelist,"
-        print "even though the value will be ignored in the scan."
-        exit(1)
+        if not(paramname in ["node","tasks_per_node","wall_clock_limit","nodes","ntasks-per-node","time"]):
+            print("The variable " + paramname + 
+                  " you wish to scan must be explicitly assigned some value in the appropriate namelist,")
+            print("even though the value will be ignored in the scan.")
+            exit(1)
 #######################
 
 # First, print the data from runspec.dat to the screen
@@ -121,7 +123,6 @@ for lind in range(numRunsInScan):
         theformat= "%"+str(max(9,len(runparamnames[parind])))+".3e"
         oneline=oneline+' '+theformat % runparams[lind][parind]
     print oneline
-
 
 while True:
     proceed=raw_input("Should I go ahead and launch these "+str(numRunsInScan)+" jobs? [y/n] ")
@@ -159,6 +160,7 @@ for runNum in range(numRunsInScan):
    nameJobFile(thisJobFile,jobName)
    if sfincsSystem=="hydra":
        for parind in range(len(runparamnames)):
+           #LoadLeveler parameters:
            if runparamnames[parind]=="node":
                for line in thisJobFile:
                    if "# @ node =" in line:
@@ -174,6 +176,8 @@ for runNum in range(numRunsInScan):
            if runparamnames[parind]=="wall_clock_limit":
                hours=runparams[runNum][parind]//60
                minutes=runparams[runNum][parind]%60
+               hour_str=str(hour)
+               minute_str=str(minutes)
                if hours<10:
                   hour_str="0"+str(hours)
                if minutes<10:
@@ -181,6 +185,32 @@ for runNum in range(numRunsInScan):
                for line in thisJobFile:
                    if "# @ wall_clock_limit =" in line:
                        thisJobFile[thisJobFile.index(line)]="# @ wall_clock_limit = "+hour_str+":"+minute_str+":00\n"
+
+   if sfincsSystem=="draco":
+       for parind in range(len(runparamnames)):
+           #SLURM parameters:
+           if runparamnames[parind]=="nodes":
+               for line in thisJobFile:
+                   if "#SBATCH --nodes" in line:
+                       thisJobFile[thisJobFile.index(line)]="#SBATCH --nodes="+str(runparams[runNum][parind])+"\n"
+           if runparamnames[parind]=="ntasks-per-node":
+               for line in thisJobFile:
+                   if "#SBATCH --ntasks-per-node" in line:
+                       thisJobFile[thisJobFile.index(line)]="#SBATCH --ntasks-per-node="+str(runparams[runNum][parind])+"\n"
+           if runparamnames[parind]=="time":
+               hours=runparams[runNum][parind]//60
+               minutes=runparams[runNum][parind]%60
+               hour_str=str(hours)
+               minute_str=str(minutes)
+               if hours<10:
+                  hour_str="0"+str(hours)
+               if minutes<10:
+                  minute_str="0"+str(minutes)
+               for line in thisJobFile:
+                   if "#SBATCH --time" in line:
+                       print("found!")
+                       thisJobFile[thisJobFile.index(line)]="#SBATCH --time="+hour_str+":"+minute_str+":00\n"
+ 
 
    f = open(jobFilename,"w")
    f.writelines(thisJobFile)
