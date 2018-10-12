@@ -1124,7 +1124,7 @@ contains
                    !! Added by MFM - 07/31/18
                    if (boozer_symmbreak_scaling) then
                       if (symm_type == 1) then ! QHS
-                         if (qhs_poloidal*abs(BHarmonics_n(i)) == qhs_toroidal*BHarmonics_l(i)) then
+                         if (qhs_poloidal*(-1)*BHarmonics_n(i) == qhs_toroidal*BHarmonics_l(i)) then
                             BHat(itheta,:) = BHat(itheta,:) + BHarmonics_amplitudes(i) * &
                                  cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
 
@@ -1198,7 +1198,7 @@ contains
                    !! Added by MFM - 07/31/18
                    if (boozer_symmbreak_scaling) then
                       if (symm_type == 1) then ! QHS
-                         if (qhs_poloidal*abs(BHarmonics_n(i)) == qhs_toroidal*BHarmonics_l(i)) then
+                         if (qhs_poloidal*(-1)*BHarmonics_n(i) == qhs_toroidal*BHarmonics_l(i)) then
                             BHat(itheta,:) = BHat(itheta,:) + BHarmonics_amplitudes(i) * &
                                  sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
 
@@ -1321,7 +1321,7 @@ contains
                    !! Added by MFM - 07/31/18
                    if (boozer_symmbreak_scaling) then
                       if (symm_type == 1) then ! QHS
-                         if (qhs_poloidal*abs(BHarmonics_nL(i)) == qhs_toroidal*BHarmonics_lL(i)) then
+                         if (qhs_poloidal*(-1)*BHarmonics_nL(i) == qhs_toroidal*BHarmonics_lL(i)) then
                             BHatL(itheta,:) = BHatL(itheta,:) + BHarmonics_amplitudesL(i) * &
                                  cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
 
@@ -1453,7 +1453,7 @@ contains
                    !! Added by MFM - 07/31/18
                    if (boozer_symmbreak_scaling) then
                       if (symm_type == 1) then ! QHS
-                         if (qhs_poloidal*abs(BHarmonics_nL(i)) == qhs_toroidal*BHarmonics_lL(i)) then
+                         if (qhs_poloidal*(-1)*BHarmonics_nL(i) == qhs_toroidal*BHarmonics_lL(i)) then
                             BHatL(itheta,:) = BHatL(itheta,:) + BHarmonics_amplitudesL(i) * &
                                  sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
 
@@ -1630,7 +1630,7 @@ contains
                    !! Added by MFM - 07/31/18
                    if (boozer_symmbreak_scaling) then
                       if (symm_type == 1) then ! QHS
-                         if (qhs_poloidal*abs(BHarmonics_nH(i)) == qhs_toroidal*BHarmonics_lH(i)) then
+                         if (qhs_poloidal*(-1)*BHarmonics_nH(i) == qhs_toroidal*BHarmonics_lH(i)) then
                             BHatH(itheta,:) = BHatH(itheta,:) + BHarmonics_amplitudesH(i) * &
                                  cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
 
@@ -1767,7 +1767,7 @@ contains
                    !! Added by MFM - 07/31/18
                    if (boozer_symmbreak_scaling) then
                       if (symm_type == 1) then ! QHS
-                         if (qhs_poloidal*abs(BHarmonics_nH(i)) == qhs_toroidal*BHarmonics_lH(i)) then
+                         if (qhs_poloidal*(-1)*BHarmonics_nH(i) == qhs_toroidal*BHarmonics_lH(i)) then
                             BHatH(itheta,:) = BHatH(itheta,:) + BHarmonics_amplitudesH(i) * &
                                  sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
 
