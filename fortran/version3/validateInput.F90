@@ -953,7 +953,7 @@ subroutine validateInput()
      stop
   end if
   
-  if (magneticDriftDerivativeScheme>0 .and. preconditioner_theta>0) then
+  if (magneticDriftDerivativeScheme>0 .and. preconditioner_theta>0 .and. magneticDriftScheme .ne. 0) then
      if (masterProc) then
         print *,"Error! The implementation of magneticDriftDerivativeScheme>0 does not presently allow"
         print *,"       preconditioning in theta (preconditioner_theta>0)."
@@ -961,7 +961,7 @@ subroutine validateInput()
      stop
   end if
   
-  if (magneticDriftDerivativeScheme>0 .and. preconditioner_zeta>0) then
+  if (magneticDriftDerivativeScheme>0 .and. preconditioner_zeta>0 .and. magneticDriftScheme .ne. 0) then
      if (masterProc) then
         print *,"Error! The implementation of magneticDriftDerivativeScheme>0 does not presently allow"
         print *,"       preconditioning in zeta (preconditioner_zeta>0)."
