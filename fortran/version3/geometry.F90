@@ -3047,7 +3047,7 @@ contains
 
     end if
 
-    if (masterProc .and. debugAdjoint .eqv. .false.) then
+    if (masterProc .and. (debugAdjoint .eqv. .false.)) then
        print *,"---- Geometry parameters: ----"
        print *,"Geometry scheme = ", geometryScheme
        print *,"psiAHat (Normalized toroidal flux at the last closed flux surface) = ", psiAHat
