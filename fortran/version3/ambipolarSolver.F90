@@ -24,74 +24,76 @@ module ambipolarSolver
     PetscScalar, dimension(:), allocatable :: Er_search, radialCurrent
     PetscScalar :: time1, time2, dRadialCurrentdEr_init
     PetscErrorCode :: ierr
+		PetscScalar :: Er_min, Er_max
 
     allocate(Er_search(NEr_ambipolarSolve))
     allocate(radialCurrent(NEr_ambipolarSolve))
     Er_search = zero
     radialCurrent = zero
 
-    Er_init = Er
-    stage = 1
-    exit_code = -1
+		exit_code = 0
+		if (ambipolarSolveOption==1 .or. ambipolarSolveOption==2) then
+			Er_init = Er
+			stage = 1
+			exit_code = -1
+			do iEr = 1,NEr_ambipolarSolve
+				select case(stage)
+					case(1) ! Er = 100
+						Er_search(iEr) = 100
+						next_stage = 2
+					case(2) ! Er = -100
+						Er_search(iEr) = -100
+						next_stage = 3
+					case(3) ! Initial guess
+						Er_search(iEr) = Er_init
+						if (ambipolarSolveOption==1) then
+							dRadialCurrentdEr_init = dRadialCurrentdEr
+						end if
+						next_stage = 4
 
-    do iEr = 1,NEr_ambipolarSolve
-      select case(stage)
-        case(1) ! Er = 100
-          Er_search(iEr) = 100
-          next_stage = 2
-        case(2) ! Er = -100
-          Er_search(iEr) = -100
-          next_stage = 3
-        case(3) ! Initial guess
-          Er_search(iEr) = Er_init
-          if (ambipolarSolveOption==1) then
-            dRadialCurrentdEr_init = dRadialCurrentdEr
-          end if
-          next_stage = 4
+					case(4)
+						! Vary Er by 10 until we bracket radialCurrent = 0
+						next_stage = 4
 
-        case(4)
-          ! Vary Er by 10 until we bracket radialCurrent = 0
-          next_stage = 4
+						if (initial_above_target .eqv. positive_above_target) then
+							Er_search(iEr) = Er_search(iEr-1) - 10
+						else
+							Er_search(iEr) = Er_search(iEr-1) + 10
+						end if
 
-          if (initial_above_target .eqv. positive_above_target) then
-            Er_search(iEr) = Er_search(iEr-1) - 10
-          else
-            Er_search(iEr) = Er_search(iEr-1) + 10
-          end if
+				end select
 
-      end select
+				this_Er = Er_search(iEr)
+				call updateEr(this_Er,this_radialCurrent)
+				radialCurrent(iEr) = this_radialCurrent
 
-      this_Er = Er_search(iEr)
-      call updateEr(this_Er,this_radialCurrent)
-      radialCurrent(iEr) = this_radialCurrent
+				last_above_target = (radialCurrent(iEr) > zero)
 
-      last_above_target = (radialCurrent(iEr) > zero)
-
-      if (stage == 1) positive_above_target = last_above_target
-      if (stage == 2) then
-        negative_above_target = last_above_target
-        if (negative_above_target .eqv. positive_above_target) then
-          if (masterProc) then
-            print *,"Error in ambipolarSolver! Unexpected behavior at Er = +-100."
-            print *,"Here are the Ers we used: "
-            print *,Er_search
-            print *,"Here are the radial currents: "
-            print *,radialCurrent
-          end if
-          ! Make sure master has printed before stopping
-          call MPI_Barrier(MPIComm, ierr)
-          stop
-        end if
-      end if
-      if (stage == 3) initial_above_target = last_above_target
-      if (stage == 4 .and. (last_above_target .neqv. initial_above_target)) then
-          ! We've bracketed zero radial current
-          exit_code = 0
-          exit
-      end if
-      stage = next_stage
-
-  end do ! iEr
+				if (stage == 1) positive_above_target = last_above_target
+				if (stage == 2) then
+					negative_above_target = last_above_target
+					if (negative_above_target .eqv. positive_above_target) then
+						if (masterProc) then
+							print *,"Error in ambipolarSolver! Unexpected behavior at Er = +-100."
+							print *,"Here are the Ers we used: "
+							print *,Er_search
+							print *,"Here are the radial currents: "
+							print *,radialCurrent
+						end if
+						! Make sure master has printed before stopping
+						call MPI_Barrier(MPIComm, ierr)
+						stop
+					end if
+				end if
+				if (stage == 3) initial_above_target = last_above_target
+				if (stage == 4 .and. (last_above_target .neqv. initial_above_target)) then
+						! We've bracketed zero radial current
+						exit_code = 0
+						exit
+				end if
+				stage = next_stage
+		end do ! iEr
+	end if
 
   if (exit_code == 0) then
     print *,"Successful bracketing in ambipolar solve."
@@ -102,9 +104,13 @@ module ambipolarSolver
 
     call PetscTime(time1, ierr)
     if (ambipolarSolveOption==1) then
-      call ambipolarSolverNewton(Er_search(iEr),Er_search(3),radialCurrent(iEr),radialCurrent(3),dRadialCurrentdEr_init,ambipolarEr)
+      call ambipolarSolverNewton_Bisection(Er_search(iEr),Er_search(3),radialCurrent(iEr),radialCurrent(3),dRadialCurrentdEr_init,ambipolarEr)
     else if (ambipolarSolveOption==2) then
       call ambipolarSolverBrent(Er_search(iEr),Er_search(3),radialCurrent(iEr),radialCurrent(3),ambipolarEr)
+		else if (ambipolarSolveOption==3) then
+			Er_min = -100
+			Er_max = 100
+			call ambipolarSolverNewton(Er_min,Er_max,ambipolarEr)
     end if
     call PetscTime(time2,ierr)
     if (masterProc) then
@@ -280,7 +286,7 @@ module ambipolarSolver
 
   ! This subroutine should be called after ambipolar Er has been bracketed. This Newton method uses dRadialCurrentdEr computed
   ! using the adjoint method.
-  subroutine ambipolarSolverNewton(Er1, Er2, fl, fh, df, ambipolarEr)
+  subroutine ambipolarSolverNewton_Bisection(Er1, Er2, fl, fh, df, ambipolarEr)
 
     use globalVariables
     use radialCoordinates
@@ -297,6 +303,7 @@ module ambipolarSolver
 
     allocate(Er_search(NEr_ambipolarSolve))
     allocate(radialCurrent(NEr_ambipolarSolve))
+
     Er_search = zero
     radialCurrent = zero
 !    call updateEr(Er1,fl)
@@ -401,7 +408,95 @@ module ambipolarSolver
       stop
     end if
 
-  end subroutine ambipolarSolverNewton
+  end subroutine ambipolarSolverNewton_Bisection
+
+	subroutine ambipolarSolverNewton(Er_min,Er_max,ambipolarEr)
+
+		use globalVariables
+		use radialCoordinates
+		use solver
+
+		implicit none
+
+		PetscScalar, intent(in) :: Er_min, Er_max
+		PetscScalar, intent(out) :: ambipolarEr
+		PetscScalar, dimension(:), allocatable :: Er_search, radialCurrent
+		integer :: j, exit_code
+		PetscErrorCode :: ierr
+		PetscScalar :: time1, time2, this_Er, this_RadialCurrent, dx
+
+		allocate(Er_search(NEr_ambipolarSolve))
+		allocate(radialCurrent(NEr_ambipolarSolve))
+		Er_search = zero
+		radialCurrent = zero
+
+		exit_code = -1
+		this_Er = 0.5*(Er_max+Er_min)
+		do j = 1, NEr_ambipolarSolve
+			call PetscTime(time1,ierr)
+			! The one new function evaluation per iteration
+			call updateEr(this_Er,this_RadialCurrent)
+			Er_search(j) = this_Er
+			radialCurrent(j) = this_RadialCurrent
+			dx = this_RadialCurrent/dRadialCurrentdEr ! this comes from globalVariables
+			this_Er = this_Er - dx
+			if (this_Er < Er_min .or. this_Er > Er_max) then
+				print *,"Newton method iterate exceeded Er bounds!"
+				exit_code = -2
+				exit
+			end if
+			if (abs(dx) < Er_search_tolerance) then
+				ambipolarEr = this_Er
+				exit_code = 0
+				exit
+			end if
+			call PetscTime(time2,ierr)
+			if (masterProc) then
+				print *,"Time for one Newton loop: ", time2-time1," sec."
+			end if
+		end do ! j
+
+		if (exit_code == 0) then
+      if (masterProc) then
+        print *,"Newton ambipolar solve was successful."
+        print *,"Here are the Ers we used: "
+        print *,Er_search
+        print *,"Here are the radial currents: "
+        print *,radialCurrent
+      end if
+    end if
+
+    if (exit_code == -1) then
+      if (masterProc) then
+         print *,"*******************************************************************************"
+         print *,"*******************************************************************************"
+         print *,"The Er search did not converge within NEr iterations!"
+         print *,"*******************************************************************************"
+         print *,"*******************************************************************************"
+         print *,"Here are the Ers we used: "
+         print *,Er_search
+         print *,"Here are the radial currents: "
+         print *,radialCurrent
+      end if
+      stop
+    end if
+
+    if (exit_code == -2) then
+      if (masterProc) then
+         print *,"*******************************************************************************"
+         print *,"*******************************************************************************"
+         print *,"The Er search exceeded bounds!"
+         print *,"*******************************************************************************"
+         print *,"*******************************************************************************"
+         print *,"Here are the Ers we used: "
+         print *,Er_search
+         print *,"Here are the radial currents: "
+         print *,radialCurrent
+      end if
+      stop
+    end if
+
+	end subroutine ambipolarSolverNewton
 
   subroutine updateEr(thisEr,radialCurrent)
 
