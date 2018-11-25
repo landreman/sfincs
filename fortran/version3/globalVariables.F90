@@ -126,7 +126,8 @@ module globalVariables
   ! ********************************************************
   ! ********************************************************
 
-!!  logical :: nonlinear = .false. !!Commented by AM 2016-02
+!!  logical :: nonlinear = .false.
+ !!Commented by AM 2016-02
   PetscScalar :: Delta = 4.5694d-3
   PetscScalar :: alpha = 1.0
   PetscScalar :: nu_n = 8.330d-3
