@@ -85,6 +85,7 @@ module testingAdjointDiagnostics
 
     ! Change settings so adjoint solve occurs - derivatives of all fluxes computed
     !RHSMode = 4
+		!print *,"RHSMode = ", RHSMode
     adjointParticleFluxOption = .true.
     adjointHeatFluxOption = .true.
     adjointParallelFlowOption = .true.
@@ -170,7 +171,7 @@ module testingAdjointDiagnostics
 
         do ispecies = 1, Nspecies
           ! Compute finite difference derivatives
-          print *,"change in particle flux: ", particleFlux_vm_rN(iSpecies)-particleFluxInit(iSpecies)
+          !print *,"change in particle flux: ", particleFlux_vm_rN(iSpecies)-particleFluxInit(iSpecies)
         dParticleFluxdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (particleFlux_vm_rN(iSpecies)-particleFluxInit(iSpecies))/(deltaLambda*deltaFactor)
           dHeatFluxdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (heatFlux_vm_rN(iSpecies)-heatFluxInit(iSpecies))/(deltaLambda*deltaFactor)
         dParallelFlowdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (FSABVelocityUsingFSADensityOverRootFSAB2(iSpecies)-parallelFlowInit(iSpecies))/(deltaLambda*deltaFactor)
@@ -240,7 +241,6 @@ module testingAdjointDiagnostics
       RHSMode = 4
     end if
     call updateOutputFile(1, .false.)
-    call finalizeHDF5()
 
   end subroutine compareAdjointDiagnostics
 
