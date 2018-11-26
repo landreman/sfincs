@@ -259,7 +259,7 @@ module solver
        ! Tell PETSc to call the diagnostics subroutine at each iteration of SNES:
        call SNESMonitorSet(mysnes, diagnosticsMonitor, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
 
-       if (reusePreconditioner) then
+       if (reusePreconditioner .or. (discreteAdjointOption==1)) then
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
           ! Syntax for PETSc versions up through 3.4
           ! In this case the associated code appears in evaluateJacobian.F90
@@ -1011,7 +1011,7 @@ module solver
 								call checkIfKSPConverged(KSPInstance_adjoint)
              else
                 call KSPSolveTranspose(KSPInstance,adjointRHSVec,adjointSolutionVec, ierr)
-								call checkIfKSPConverged(KSPInstance_adjoint)
+								call checkIfKSPConverged(KSPInstance)
              end if
           end if
 
@@ -1020,11 +1020,9 @@ module solver
              print *,"Done with the adjoint solve.  Time to solve: ", time2-time1, " seconds."
           end if
 
-
 !          if (debugAdjoint) then
 !            call testingAdjointOperator(solutionVec,adjointSolutionVec,residualVec,adjointRHSVec,matrix,adjointMatrix,whichAdjointRHS,ispecies)
 !          end if
-
 
           call PetscTime(time1, ierr)
           ! compute diagnostics for species-summed fluxes
