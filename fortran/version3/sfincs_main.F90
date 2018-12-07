@@ -60,6 +60,7 @@ module sfincs_main
     use solver
     use geometry
     use radialCoordinates
+    use readHDF5Input !!Added by AM 2018-12
     
     implicit none
     
@@ -78,7 +79,8 @@ module sfincs_main
        print *,"Delta (rho* at reference parameters)          = ", Delta
        print *,"alpha (e Phi / T at reference parameters)     = ", alpha
        print *,"nu_n (collisionality at reference parameters) = ", nu_n
-       if (includePhi1) then
+       !!if (includePhi1) then !!Commented by AM 2018-12
+       if (includePhi1 .and. (.not. readExternalPhi1)) then !!Added by AM 2018-12
           print *,"Nonlinear run"
           if (includePhi1InKineticEquation) then
              print *,"with Phi1 included in the kinetic equation"
@@ -91,6 +93,8 @@ module sfincs_main
           else
              print *,"Using EUTERPE quasi-neutrality equation"
           end if
+       else if (includePhi1  .and. includePhi1InKineticEquation .and. readExternalPhi1) then !!Added by AM 2018-12
+          print *,"Linear run but with Phi1 read from external file and included in the kinetic equation" !!Added by AM 2018-12
        else
           print *,"Linear run"
        end if
@@ -113,6 +117,10 @@ module sfincs_main
     ! the magnetic field and its derivatives on the spatial grid.
     call createGrids()
     
+    if (includePhi1 .and. readExternalPhi1) then !!Added by AM 2018-12
+       call setPhi1() !!Added by AM 2018-12
+    end if !!Added by AM 2018-12
+
   end subroutine sfincs_prepare
 
   ! -----------------------------------------------------------------------------------

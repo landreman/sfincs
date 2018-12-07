@@ -212,7 +212,8 @@ contains
        ! number of iterations to 1 for a linear run.
        call SNESSetType(mysnes, SNESNEWTONLS, ierr)
        !!if (nonlinear) then !!Commented by AM 2016-02
-       if (includePhi1) then !!Added by AM 2016-02
+       !!if (includePhi1) then !!Added by AM 2016-02 !!Commented by AM 2018-12
+       if (includePhi1 .and. (.not. readExternalPhi1)) then !!Added by AM 2018-12
           if (masterProc) then
              print *,"Since this is a nonlinear run, we will use Newton's method."
           end if
@@ -353,7 +354,8 @@ contains
           end if
           call PetscTime(time1, ierr)
 
-          if (includePhi1) then
+          !!if (includePhi1) then !!Commented by AM 2018-12
+          if (includePhi1 .and. (.not. readExternalPhi1)) then !!Added by AM 2018-12
              call SNESGetConvergedReason(mysnes, reason, ierr)
              if (reason>0) then
                 if (masterProc) then

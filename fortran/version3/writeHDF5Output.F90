@@ -309,6 +309,11 @@ contains
        !!Added by AM 2016-02!!
        if (includePhi1) then
           call writeHDF5Field("quasineutralityOption", quasineutralityOption, "")
+          call writeHDF5Field("readExternalPhi1", readExternalPhi1, & !!Added by AM 2018-12
+               "Instead of calculating Phi1 in SFINCS, read it from an external file." // boolDescription) !!Added by AM 2018-12
+          !!if (readExternalPhi1) then !!Added by AM 2018-12
+          !!   call writeHDF5Field("externalPhi1Filename", externalPhi1Filename, "Name of file from which Phi1 is read.") !!Added by AM 2018-12
+          !!end if !!Added by AM 2018-12
        end if
        !!!!!!!!!!!!!!!!!!!!!!!
 
@@ -350,7 +355,8 @@ contains
        call writeHDF5Field("includePhi1InKineticEquation", includePhi1InKineticEquation, & !!Added by AM 2016-03
             "Include terms containing Phi1 in kinetic equation? (Only matters if includePhi1=.true.)" // boolDescription) !!Added by AM 2016-03
        call writeHDF5Field("includePhi1InCollisionOperator", includePhi1InCollisionOperator, &
-            "Include density variations due to Phi1 in the collision operator " // boolDescription)
+            "Include density variations due to Phi1 in the collision operator (Only matters if includePhi1=.true.)" // boolDescription)
+
        call writeHDF5Field("integerToRepresentTrue", integerToRepresentTrue, &
             "Since HDF5 does not have a Boolean datatype, this integer value is used in this file for Boolean quantities.")
        call writeHDF5Field("integerToRepresentFalse", integerToRepresentFalse, &

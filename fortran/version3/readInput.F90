@@ -63,7 +63,7 @@ contains
 !         includeTemperatureEquilibrationTerm, includePhi1, &
 !>>>>>>> origin/master
          nuPrime, EStar, magneticDriftScheme, includePhi1InKineticEquation, &
-         quasineutralityOption, Krook
+         quasineutralityOption, Krook, externalPhi1Filename, readExternalPhi1 !!AM added externalPhi1Filename, readExternalPhi1 2018-12
 
     namelist / resolutionParameters / forceOddNthetaAndNzeta, &
          Ntheta, &
