@@ -686,81 +686,10 @@ module solver
     !> If currently looking for ambipolar solution, don't solve adjoint
     if (RHSMode>3 .and. (ambipolarSolve .eqv. .false.)) then
 
-      ! Testing adjoint operator and inner product
-      if (.false.) then
-        do whichMode = 1,NModesAdjoint
-          do whichLambda = 1,NLambdas
-            if (masterProc) then
-              print "(a,i4,a,i4,a)","Benchmarking dMatrixdLambda for whichMode: ", whichMode, &
-                " and whichLambda: ", whichLambda," -----------------------------"
-              print *,"m = ", ms_sensitivity(whichMode)," and n = ", ns_sensitivity(whichMode)
-            end if
-            call testingdMatrixdLambda(solutionVec,whichMode, whichLambda, deltaLambda)
-          end do
-        end do
-
-        do whichMode = 1,NModesAdjoint
-          do whichLambda = 1,NLambdas
-            if (masterProc) then
-              print "(a,i4,a,i4,a)","Benchmarking dRHSdLambda for whichMode: ", whichMode, &
-                " and whichLambda: ", whichLambda," -----------------------------"
-              print *,"m = ", ms_sensitivity(whichMode)," and n = ", ns_sensitivity(whichMode)
-            end if
-            call testingdRHSdLambda(whichMode, whichLambda)
-          end do
-        end do
-
-        do whichMode = 1,NModesAdjoint
-          do whichLambda = 1,NLambdas
-            if (masterProc) then
-              print "(a,i4,a,i4,a)","Benchmarking fluxes for whichMode: ", whichMode, &
-                " and whichLambda: ", whichLambda," -----------------------------"
-              print *,"m = ", ms_sensitivity(whichMode)," and n = ", ns_sensitivity(whichMode)
-            end if
-            call testingDiagnosticSensitivity(solutionVec,whichMode,whichLambda)
-          end do
-        end do
-
-        do ispecies = 0,Nspecies
-          do whichAdjointRHS = 1,3
-            call testingAdjointOperator(solutionVec,adjointSolutionVec,whichAdjointRHS,ispecies)
-          end do
-        end do
-
-        !> Testing of inner product and adjoint RHS
-        do whichAdjointRHS=1,3
-          do ispecies = 0,Nspecies
-            call testingInnerProduct(solutionVec,whichAdjointRHS,ispecies)
-          end do
-        end do
-        stop
-      end if ! debugAdjoint
-
       !> Allocate adjointSolutionVec
       call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointSolutionVec, ierr)
       call VecSet(adjointSolutionVec, zero, ierr)
 
-      !> Allocate summedSolutionVec if needed
-!      if (RHSMode==6) then
-!        if (all(adjointHeatFluxECOption) .and. adjointTotalHeatFluxECOption) then
-!          summedSolution_heatFlux = .true.
-!        end if
-!        if (all(adjointParticleFluxECOption) .and. adjointRadialCurrentECOption) then
-!          summedSolution_particleFlux = .true.
-!        end if
-!        if (all(adjointParallelFlowECOption) .and. adjointBootstrapECOption) then
-!          summedSolution_parallelFlow = .true.
-!        end if
-!        if (any(adjointHeatFluxECOption)) then
-!          solve_heatFlux = .true.
-!        end if
-!        if (any(adjointParticleFluxECOption)) then
-!          solve_particleFlux = .true.
-!        end if
-!        if (any(adjointParallelFlowECOption)) then
-!          solve_parallelFlow = .true.
-!        end if
-!      else
         if (all(adjointHeatFluxOption) .and. adjointTotalHeatFluxOption) then
           summedSolution_heatFlux = .true.
         end if
@@ -779,7 +708,6 @@ module solver
         if (any(adjointParallelFlowOption)) then
           solve_parallelFlow = .true.
         end if
-!      end if
       if (summedSolution_heatFlux .or. summedSolution_particleFlux .or. summedSolution_parallelFlow) then
         call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, summedSolutionVec, ierr)
         call VecSet(summedSolutionVec, zero, ierr)
@@ -822,35 +750,17 @@ module solver
           !> Check if adjoint equation needs to be solved for this species
           select case (whichAdjointRHS)
             case (1) ! particle flux
-!              if (RHSMode==6) then
-!                if (.not. adjointParticleFluxECOption(ispecies)) then
-!                  cycle
-!                end if
-!              else
                 if (.not. adjointParticleFluxOption(ispecies)) then
                   cycle
                 end if
-!              end if
             case (2) ! heat flux
-!              if (RHSMode==6) then
-!                if (.not. adjointHeatFluxECOption(ispecies)) then
-!                  cycle
-!                end if
-!              else
                 if (.not. adjointHeatFluxOption(ispecies)) then
                   cycle
                 end if
-!              end if
             case (3) ! parallel flow
-!              if (RHSMode==6) then
-!                if (.not. adjointParallelFlowECOption(ispecies)) then
-!                  cycle
-!                end if
-!              else
                 if (.not. adjointParallelFlowOption(ispecies)) then
                   cycle
                 end if
-!              end if
           end select
 
           if (masterProc) then
@@ -882,26 +792,14 @@ module solver
           if (masterProc) then
              print *,"Done with the adjoint solve.  Time to solve: ", time2-time1, " seconds."
           end if
-          call PetscTime(time1, ierr)
 
-
-!!          if (debugAdjoint) then
-!            call testingAdjointOperator(solutionVec,adjointSolutionVec,whichAdjointRHS,ispecies)
-!            stop
-!!          end if
-
-!          if (RHSMode == 6) then
-!            ! Perform error correction of fluxes
-!            call adjointErrorCorrection(solutionVec,adjointSolutionVec,whichAdjointRHS,ispecies)
-!          else
-            !> Compute diagnostics for species-specific fluxes
-						call PetscTime(time1, ierr)
-            call evaluateDiagnostics(solutionVec, adjointSolutionVec,adjointSolutionJr,whichAdjointRHS,ispecies)
-          	call PetscTime(time2, ierr)
-						if (masterProc) then
-							print *,"Done with the adjoint diagnostics.  Time: ", time2-time1, " seconds."
-						end if
-!          end if
+					!> Compute diagnostics for species-specific fluxes
+					call PetscTime(time1, ierr)
+					call evaluateDiagnostics(solutionVec, adjointSolutionVec,adjointSolutionJr,whichAdjointRHS,ispecies)
+					call PetscTime(time2, ierr)
+					if (masterProc) then
+						print *,"Done with the adjoint diagnostics.  Time: ", time2-time1, " seconds."
+					end if
 
           select case (whichAdjointRHS)
             case (1) ! particle flux
@@ -923,12 +821,8 @@ module solver
         end do ! ispecies
 
         if (useSummedSolutionVec) then
-!          if (RHSMode==6) then
-!            call adjointErrorCorrection(solutionVec, summedSolutionVec,whichAdjointRHS,0)
-!          else
 						call PetscTime(time1, ierr)
             call evaluateDiagnostics(solutionVec,summedSolutionVec,adjointSolutionJr,whichAdjointRHS,0)
-!          end if
           	call PetscTime(time2, ierr)
 						if (masterProc) then
 							print *,"Done with the adjoint diagnostics.  Time: ", time2-time1, " seconds."
@@ -940,7 +834,6 @@ module solver
 
       !> Now, we'll compute the sensitivity of the species-summed fluxes if not already computed
       if (adjointTotalHeatFluxOption .or. adjointBootstrapOption .or. adjointRadialCurrentOption) then
-!      if (adjointTotalHeatFluxOption .or. adjointBootstrapOption .or. adjointRadialCurrentOption .or. adjointTotalHeatFluxECOption .or. adjointBootstrapECOption .or. adjointRadialCurrentECOption) then
         ispecies = 0 ! 0 denotes species-summed RHS
 
         do whichAdjointRHS=1,3
@@ -952,42 +845,24 @@ module solver
                 ! it's sensitivity is 0
                 cycle
               end if
-!              if (RHSMode==6) then
-!                if (adjointRadialCurrentECOption .eqv. .false.) then
-!                  cycle
-!                end if
-!              else
                 if (adjointRadialCurrentOption .eqv. .false.) then
                   cycle
                 end if
-!              end if
             case (2) ! heat flux
               if (summedSolution_heatFlux) then
                 ! species-summed flux computed already
                 cycle
               end if
-!             if (RHSMode==6) then
-!                if (adjointTotalHeatFluxECOption .eqv. .false.) then
-!                  cycle
-!                end if
-!              else
-                if (adjointTotalHeatFluxOption .eqv. .false.) then
-                  cycle
-                end if
-!              end if
+							if (adjointTotalHeatFluxOption .eqv. .false.) then
+								cycle
+							end if
             case (3) ! bootstrap
               if (summedSolution_parallelFlow) then
                 cycle
               end if
-!              if (RHSMode==6) then
-!                if (adjointBootstrapECOption .eqv. .false.) then
-!                  cycle
-!                end if
-!              else
-                if (adjointBootstrapOption .eqv. .false.) then
-                  cycle
-                end if
-!              end if
+							if (adjointBootstrapOption .eqv. .false.) then
+								cycle
+							end if
           end select
 
           if (masterProc) then
@@ -1020,17 +895,8 @@ module solver
              print *,"Done with the adjoint solve.  Time to solve: ", time2-time1, " seconds."
           end if
 
-!          if (debugAdjoint) then
-!            call testingAdjointOperator(solutionVec,adjointSolutionVec,residualVec,adjointRHSVec,matrix,adjointMatrix,whichAdjointRHS,ispecies)
-!          end if
-
           call PetscTime(time1, ierr)
-          ! compute diagnostics for species-summed fluxes
-!          if (RHSMode==6) then
-!            call adjointErrorCorrection(solutionVec, adjointSolutionVec, whichAdjointRHS,ispecies)
-!          else
-              call evaluateDiagnostics(solutionVec, adjointSolutionVec, adjointSolutionJr, whichAdjointRHS, ispecies)
-!          end if
+					call evaluateDiagnostics(solutionVec, adjointSolutionVec, adjointSolutionJr, whichAdjointRHS, ispecies)
           call PetscTime(time2, ierr)
           if (masterProc) then
             print *,"Done with the adjoint diagnostics.  Time: ", time2-time1, " seconds."
