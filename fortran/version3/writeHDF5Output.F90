@@ -341,8 +341,8 @@ contains
        call writeHDF5Field("dPhiHatdpsiN", dPhiHatdpsiN, "")
        call writeHDF5Field("dPhiHatdrHat", dPhiHatdrHat, "")
        call writeHDF5Field("dPhiHatdrN", dPhiHatdrN, "")
-       call writeHDF5Field("Er", Er, "Radial electric field, defined by -dPhiHatdrHat. Here, PhiHat is the electrostatic potential in units of PhiBar, and rHat is the square root"//&
-            " of the toroidal magnetic flux, scaled by a constant so rHat=0 on the magnetic axis and rHat=aHat at the last closed flux surface.")
+			 call writeHDF5Field("Er", Er, "Radial electric field, defined by -dPhiHatdrHat. Here, PhiHat is the electrostatic potential in units of PhiBar, and rHat is the square root"//&
+							" of the toroidal magnetic flux, scaled by a constant so rHat=0 on the magnetic axis and rHat=aHat at the last closed flux surface.")
 
        call writeHDF5Field("dTHatdpsiHat", dTHatdpsiHats, dspaceIDForSpecies, dimForSpecies, "")
        call writeHDF5Field("dTHatdpsiN", dTHatdpsiNs, dspaceIDForSpecies, dimForSpecies, "")
@@ -380,8 +380,10 @@ contains
        call writeHDF5Field("useDKESExBDrift", useDKESExBDrift, "")
        call writeHDF5Field("includePhi1", includePhi1, &
             "Include a quasineutrality equation, and include variation of the electrostatic potential on a flux surface? " // boolDescription)
-!!       call writeHDF5Field("includeRadialExBDrive", includeRadialExBDrive, & !!Commented by AM 2016-03
-!!            "Include term $(\vect{v}_{E} \cdot\nabla\psi)f_{Ms} [(1/n_s)(dn_s/d\psi) + (x_s^2-3/2)(1/T_s)(dT_s/d\psi)]$ term? " // boolDescription) !!Commented by AM 2016-03
+!!       call writeHDF5Field("includeRadialExBDrive", includeRadialExBDrive, &
+ !!Commented by AM 2016-03
+!!            "Include term $(\vect{v}_{E} \cdot\nabla\psi)f_{Ms} [(1/n_s)(dn_s/d\psi) + (x_s^2-3/2)(1/T_s)(dT_s/d\psi)]$ term? " // boolDescription)
+ !!Commented by AM 2016-03
        call writeHDF5Field("includePhi1InKineticEquation", includePhi1InKineticEquation, & !!Added by AM 2016-03
             "Include terms containing Phi1 in kinetic equation? (Only matters if includePhi1=.true.)" // boolDescription) !!Added by AM 2016-03
        call writeHDF5Field("includePhi1InCollisionOperator", includePhi1InCollisionOperator, &
@@ -494,6 +496,14 @@ contains
        call h5dopen_f(HDF5FileID, "NIterations", dsetID, HDF5Error)
        call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, iterationNum, dimForScalar, HDF5Error)
        call h5dclose_f(dsetID, HDF5Error)
+
+			 ! Over-write prevoius value for Er
+
+				if (ambipolarSolve) then
+					call h5dopen_f(HDF5FileID, "Er", dsetID, HDF5Error)
+					call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, Er, dimForScalar, HDF5Error)
+					call h5dclose_f(dsetID, HDF5Error)
+			 end if
 
        dimForIteration(1) = iterationNum
        dimForIterationSpecies(1) = iterationNum
@@ -733,7 +743,7 @@ contains
           call writeHDF5ExtensibleField(iterationNum, "sources", sources, ARRAY_ITERATION_SPECIES_SOURCES, "")
        end if
 
-      if (RHSMode > 3 .and. RHSMode < 6) then
+			if (RHSMode > 3 .and. RHSMode < 6) then
         if (any(adjointHeatFluxOption) .or. debugAdjoint) then
           call writeHDF5ExtensibleField(iterationNum,"dHeatFluxdLambda", dHeatFluxdLambda,ARRAY_ITERATION_SPECIES_LAMBDAS_NMODES,"")
         end if
