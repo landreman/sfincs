@@ -22,7 +22,9 @@ contains
 
     namelist / general / saveMatlabOutput, MatlabOutputFilename, &
          outputFilename, solveSystem, RHSMode, &
-         saveMatricesAndVectorsInBinary, binaryOutputFilename, ambipolarSolve, NEr_ambipolarSolve, Er_search_tolerance, ambipolarSolveOption
+         saveMatricesAndVectorsInBinary, binaryOutputFilename, ambipolarSolve, &
+				 NEr_ambipolarSolve, Er_search_tolerance_dx, Er_search_tolerance_f, ambipolarSolveOption, Er_min, &
+				 Er_max
 
     namelist / geometryParameters / GHat, IHat, iota, epsilon_t, epsilon_h, &
          helicity_l, helicity_n, B0OverBBar, geometryScheme, &
@@ -30,7 +32,7 @@ contains
          equilibriumFile, min_Bmn_to_load, &
          psiAHat, inputRadialCoordinate, inputRadialCoordinateForGradients, aHat, &
          psiHat_wish, psiN_wish, rHat_wish, rN_wish, &
-         VMECRadialOption, VMEC_Nyquist_option, rippleScale, EParallelHatSpec_bcdatFile, Nperiods, boozer_bmnc
+         VMECRadialOption, VMEC_Nyquist_option, rippleScale, EParallelHatSpec_bcdatFile, Nperiods, boozer_bmnc, mmax_boozer, nmax_boozer
 
     namelist / speciesParameters / mHats, Zs, nHats, THats, &
          dNHatdpsiHats, dTHatdpsiHats, &
@@ -89,7 +91,7 @@ contains
     namelist / export_f / export_full_f, export_delta_f, export_f_theta, export_f_zeta, export_f_x, export_f_xi, &
          export_f_theta_option, export_f_zeta_option, export_f_xi_option, export_f_x_option
 
-    namelist / sensitivityOptions / adjointBootstrapOption, adjointRadialCurrentOption, &
+    namelist / adjointOptions / adjointBootstrapOption, adjointRadialCurrentOption, &
       adjointTotalHeatFluxOption, adjointHeatFluxOption, adjointParticleFluxOption, &
       nMinAdjoint, mMinAdjoint, &
       nMaxAdjoint, mMaxAdjoint, adjointParallelFlowOption, discreteAdjointOption, &
@@ -107,7 +109,8 @@ contains
     dTHatdrHats = speciesNotInitialized
     dNHatdrNs = speciesNotInitialized
     dTHatdrNs = speciesNotInitialized
-	
+
+	
 
     export_f_theta = speciesNotInitialized
     export_f_zeta = speciesNotInitialized
@@ -131,7 +134,7 @@ contains
     export_f_zeta(1) = zero
     export_f_x(1) = one
     export_f_xi(1) = zero
-		boozer_bmnc = zero
+!		boozer_bmnc = zero
 
 
     filename = trim(inputFilename)
@@ -440,7 +443,7 @@ contains
        adjointHeatFluxOption = .false.
        adjointParticleFluxOption = .false.
        adjointParallelFlowOption = .false.
-       read(fileUnit, nml=sensitivityOptions, iostat=didFileAccessWork)
+       read(fileUnit, nml=adjointOptions, iostat=didFileAccessWork)
        if (didFileAccessWork /= 0) then
           print *,"Proc ",myRank,": Error!  I was able to open the file ", trim(filename), &
                " but not read data from the sensitivityOptions namelist in it."
@@ -450,6 +453,10 @@ contains
           print *,"Successfully read parameters from sensitivityOptions namelist in ", trim(filename), "."
        end if
      end if
+
+		 if (geometryScheme==13) then
+			allocate(boozer_bmnc(0:mmax_boozer,-nmax_boozer:nmax_boozer))
+		 end if
 
     close(unit = fileUnit)
 
