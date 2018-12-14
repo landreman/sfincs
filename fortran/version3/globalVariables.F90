@@ -40,7 +40,10 @@ module globalVariables
   logical :: ambipolarSolve = .false.
   integer :: ambipolarSolveOption = 1
   integer :: NEr_ambipolarSolve = 20
-  PetscScalar :: Er_search_tolerance = 1.d-8
+  PetscScalar :: Er_search_tolerance_dx = 1.d-8
+	PetscScalar :: Er_search_tolerance_f = 1.d-10
+	PetscScalar :: Er_min = -100
+	PetscScalar :: Er_max = 100
 
   ! ********************************************************
   ! ********************************************************
@@ -67,9 +70,9 @@ module globalVariables
   integer :: VMEC_Nyquist_option = 1
   PetscScalar :: rippleScale = 1
 	! For use in Boozer bmnc stellopt
-	integer, parameter :: mmax_boozer = 40
-	integer, parameter :: nmax_boozer = 40
-	PetscScalar, dimension(0:mmax_boozer,-nmax_boozer:nmax_boozer) :: boozer_bmnc
+	integer :: mmax_boozer = 40
+	integer :: nmax_boozer = 40
+	PetscScalar, dimension(:,:), allocatable :: boozer_bmnc
 
   ! ********************************************************
   ! ********************************************************
