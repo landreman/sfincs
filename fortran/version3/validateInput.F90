@@ -35,7 +35,8 @@ subroutine validateInput()
      stop
   end if
   
-  !!if (RHSMode == 2 .and. nonlinear) then !!Commented by AM 2016-02
+  !!if (RHSMode == 2 .and. nonlinear) then
+ !!Commented by AM 2016-02
   if (RHSMode == 2 .and. includePhi1) then !!Added by AM 2016-02
      if (masterProc) then
         print *,"Error! RHSMode cannot be 2 for a nonlinear calculation."
@@ -61,19 +62,23 @@ subroutine validateInput()
         Nxi_for_x_option=0
      end if
 
-     !!if (nonlinear) then !!Commented by AM 2016-02
+     !!if (nonlinear) then
+ !!Commented by AM 2016-02
      if (includePhi1) then !!Added by AM 2016-02
         if (masterProc) then
            print *,line
            print *,line
-!!           print *,"**   WARNING: You asked for RHSMode=3 (monoenergetic transport matrix) with nonlinear = .true., which is incompatble." !!Commented by AM 2016-02
-!!           print *,"**            Setting nonlinear = .false." !!Commented by AM 2016-02
+!!           print *,"**   WARNING: You asked for RHSMode=3 (monoenergetic transport matrix) with nonlinear = .true., which is incompatble."
+ !!Commented by AM 2016-02
+!!           print *,"**            Setting nonlinear = .false."
+ !!Commented by AM 2016-02
            print *,"**   WARNING: You asked for RHSMode=3 (monoenergetic transport matrix) with includePhi1 = .true., which is incompatble." !!Added by AM 2016-02
            print *,"**            Setting includePhi1 = .false." !!Added by AM 2016-02
            print *,line
            print *,line
         end if
-!!        nonlinear = .false. !!Commented by AM 2016-02
+!!        nonlinear = .false.
+ !!Commented by AM 2016-02
         includePhi1 = .false. !!Added by AM 2016-02
      end if
 
@@ -474,9 +479,12 @@ subroutine validateInput()
 !!$!!  if (includeRadialExBDrive .and. (.not. includePhi1)) then !!Commented by AM 2016-03
 !!$  if (includePhi1InKineticEquation .and. (.not. includePhi1)) then !!Added by AM 2016-03
 !!$     if (masterProc) then
-!!$!!        print *,"Error! You requested a calculation including the radial ExB drive term" !!Commented by AM 2016-03
-!!$!!        print *,"(includeRadialExBDrive=.true.) but you set includePhi1=.false." !!Commented by AM 2016-03
-!!$!!        print *,"These options are inconsistent since the radial ExB drive term involves Phi1." !!Commented by AM 2016-03
+!!$!!        print *,"Error! You requested a calculation including the radial ExB drive term"
+ !!Commented by AM 2016-03
+!!$!!        print *,"(includeRadialExBDrive=.true.) but you set includePhi1=.false."
+ !!Commented by AM 2016-03
+!!$!!        print *,"These options are inconsistent since the radial ExB drive term involves Phi1."
+ !!Commented by AM 2016-03
 !!$        print *,"Error! You requested a calculation including Phi1 in the kinetic equation" !!Added by AM 2016-03
 !!$        print *,"(includePhi1InKineticEquation=.true.) but you set includePhi1=.false." !!Added by AM 2016-03
 !!$        print *,"These options are inconsistent." !!Added by AM 2016-03
@@ -503,7 +511,8 @@ subroutine validateInput()
         if (masterProc) then
            print *,"Error! magneticDriftScheme 4 has only been implemented for geometryScheme 11 and 12."
         end if
-        stop        
+        stop
+        
      end if
   end if
 
@@ -512,17 +521,20 @@ subroutine validateInput()
         if (masterProc) then
            print *,"Error! magneticDriftSchemes 5 and 6 have only been implemented for geometryScheme 5, 6, 11, and 12."
         end if
-        stop        
+        stop
+        
      end if
   end if
 
   if (magneticDriftScheme>0 .and. includePhi1) then
      if (masterProc) then
-        !!print *,"**   ERROR! Some terms involving Phi1 and the magnetic drifts have not yet been implemented." !!Commented by AM 2018-02 
+        !!print *,"**   ERROR! Some terms involving Phi1 and the magnetic drifts have not yet been implemented."
+ !!Commented by AM 2018-02 
         print *,"**   WARNING! Some terms involving Phi1 and the magnetic drifts have not yet been implemented." !!Added by AM 2018-02 
         print *,"**          Hence magneticDriftScheme>0 is incompatible with includePhi1."
      end if
-     !!stop !!Commented by AM 2018-02
+     !!stop
+ !!Commented by AM 2018-02
   end if
 
   if (magneticDriftScheme>0) then
@@ -1170,7 +1182,7 @@ subroutine validateInput()
      stop
   end if
   ! Validate adjoint inputs
-  if (RHSMode>3) then
+  if (RHSMode>3 .or. (ambipolarSolve .and. ambipolarSolveOption /= 2)) then
     if (RHSMode==5 .and. adjointRadialCurrentOption) then
       if (masterProc) then
         print *,"Error! RHSMode=5 cannot be used with adjointRadialCurrentOption."
@@ -1239,6 +1251,19 @@ subroutine validateInput()
 			stop
 		end if
 	end if
+	if (ambipolarSolve) then
+		if (includePhi1) then
+			if (masterProc) then
+				print *,"Error! ambipolarSolve cannot be used with includePhi1."
+			end if
+			stop
+		end if
+		if (RHSMode==2 .or. RHSMode==3) then
+			if (masterProc) then
+				print *,"Error! ambipolarSolve must be used with RHSMode==1, 4, or 5."
+			end if
+			stop
+		end if
+	end if
   
 end subroutine validateInput
-
