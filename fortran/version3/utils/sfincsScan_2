@@ -49,9 +49,12 @@ directories_copy = list(directories)
 for i in range(len(generalErs_copy)):
     directory = directories_copy[i]
     if os.path.exists(directory):
-        print "Warning: directory "+directory+" already exists, so skipping this run."
-        generalErs.remove(generalErs_copy[i])
-        directories.remove(directory)
+        # This does not check if a sfincs job is pending, only if it has completed.
+        run_files = os.listdir(directory)
+        if 'sfincsOutput.h5' in run_files:
+            print "Warning: directory "+directory+" already exists, so skipping this run."
+            generalErs.remove(generalErs_copy[i])
+            directories.remove(directory)
 
 print
 print "Here are the directories that will be created:"

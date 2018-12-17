@@ -4,11 +4,14 @@
 # From the command line, you should call sfincsScan instead.
 
 import os, inspect
+import h5py
 
 print "This is "+ inspect.getfile(inspect.currentframe())
 print "Beginning a convergence scan."
 
 #####################################################################################################################3
+
+outputFilename = "sfincsOutput.h5"
 
 ###############################################################
 ##In section below try/except structure removed by AM 2015-12##
@@ -439,13 +442,29 @@ runNum = 0
 while runNum < numRunsInScan:
     directory = descriptions[runNum]
     if os.path.exists(directory):
-        print "Warning: directory "+directory+" already exists, so skipping this run."
-        numRunsInScan -= 1
-        descriptions.pop(runNum)
-        parametersForScan.pop(runNum)
-        runNum -= 1
-    runNum += 1
+        run_exists = True
+        out_filepath = directory+"/"+outputFilename
+        try:
+            f = h5py.File(out_filepath,'r')
+        except IOError:
+            print "Unable to open "+out_filepath+" even though this file exists."
+            run_exists = False
         
+        if run_exists and (not 'finished' in f):
+            print "Incomplete run found in "+directory+"."
+            run_exists = False
+
+        if run_exists and (not f['finished']):
+            print "Run found in "+directory+", but marked as unfinished."
+            run_exists = False
+
+        if run_exists:
+            print "Warning: finished run found in "+directory+", so skipping this run."
+            numRunsInScan -= 1
+            descriptions.pop(runNum)
+            parametersForScan.pop(runNum)
+            runNum -= 1
+    runNum += 1
 
 print
 print "Here are the parameters for the "+str(numRunsInScan)+" runs we will launch:"
@@ -458,6 +477,17 @@ print
 print "Here are the directories that will be created:"
 print descriptions
 
+overwrite = []
+for directory in descriptions:
+    # Check again to see if the directory exists and print a warning.
+    if os.path.exists(directory):
+        overwrite.append(directory)
+if overwrite:
+    print
+    print "Warning: the following directories will be overwritten:"
+    print overwrite
+
+        
 if waitBeforeSubmitting:
     while True:
         proceed=raw_input("Should I go ahead and launch these "+str(numRunsInScan)+" jobs? [y/n] ")
@@ -477,18 +507,9 @@ with open(jobFilename, 'r') as f:
 for runNum in range(numRunsInScan):
     directory = descriptions[runNum]
     print "Beginning to handle job "+str(runNum+1)+" of "+str(numRunsInScan)+": "+directory
-
-    # To be extra safe, check again to see if the directory exists.
-    if os.path.exists(directory):
-        print "Warning: directory "+directory+" already exists."
-        i = -1
-        while True:
-            i += 1
-            directory2 = directory+"_"+str(i)
-            if not os.path.exists(directory2):
-                break
-        directory = directory2
-    os.makedirs(directory)
+    
+    if not os.path.exists(directory):
+        os.makedirs(directory)
     os.chdir(directory)
 
     # Copy the job.sfincsScan file:
