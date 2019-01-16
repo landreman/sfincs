@@ -107,24 +107,13 @@ module adjointDiagnostics
       PetscScalar, dimension(:), pointer :: this_thetaWeights, this_zetaWeights
       PetscScalar, dimension(:,:), pointer :: this_BHat, this_DHat
 
-      ! In the future I'll make this compatible with fine grid calculations
-!      if (fineGrid==1) then
-!        whichMatrix = 7
-!        this_Ntheta = Ntheta_fine
-!        this_Nzeta = Nzeta_fine
-!
-!        this_DHat => DHat_fine
-!        this_thetaWeights => thetaWeights_fine
-!        this_zetaWeights => zetaWeights_fine
-!      else
-        whichMatrix = 0
-        this_Ntheta = Ntheta
-        this_Nzeta = Nzeta
+			whichMatrix = 0
+			this_Ntheta = Ntheta
+			this_Nzeta = Nzeta
 
-        this_thetaWeights => thetaWeights
-        this_zetaWeights => zetaWeights
-        this_DHat => DHat
-!      end if
+			this_thetaWeights => thetaWeights
+			this_zetaWeights => zetaWeights
+			this_DHat => DHat
 
       select case (discreteAdjointOption)
         case (0) ! continuous
@@ -242,17 +231,36 @@ module adjointDiagnostics
       call VecGetArrayF90(forwardSolutionOnProc0, forwardSolutionArray, ierr)
     end if
 
-    if (whichLambda==1 .and. geometryScheme /= 5) then
-      dVPrimeHatdLambda = zero
-      do itheta=1,Ntheta
-        do izeta=1,Nzeta
-          angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-          cos_angle = cos(angle)
+		if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+			if (whichLambda==1) then ! BHat
+				dVPrimeHatdLambda = zero
+				do itheta=1,Ntheta
+					do izeta=1,Nzeta
+						angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+						cos_angle = cos(angle)
 
-          dVPrimeHatdLambda = dVPrimeHatdLambda - two*thetaWeights(itheta)*zetaWeights(izeta)*cos_angle/(DHat(itheta,izeta)*BHat(itheta,izeta))
-        end do
-      end do
-    end if
+						dVPrimeHatdLambda = dVPrimeHatdLambda - two*thetaWeights(itheta)*zetaWeights(izeta)*cos_angle/(DHat(itheta,izeta)*BHat(itheta,izeta))
+					end do
+				end do
+			else if (whichLambda==2) then ! IHat
+				dVPrimeHatdLambda = iota*VprimeHat/(GHat+iota*IHat)
+			else if (whichLambda==3) then ! GHat
+				dVPrimeHatdLambda = VPrimeHat/(GHat+iota*IHat)
+			else if (whichLambda==4) then ! iota
+				dVPrimeHatdLambda = IHat*VPrimeHat/(GHat+iota*IHat)
+			end if
+		else
+			if (whichLambda==6) then ! DHat
+				dVPrimeHatdLambda = zero
+				do itheta=1,Ntheta
+					do izeta=1,Nzeta
+						angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+						cos_angle = cos(angle)
+						dVPrimeHatdLambda = dVPrimeHatdLambda + thetaWeights(itheta) * zetaWeights(izeta) * cos_angle
+					end do
+				end do
+			end if
+		end if
 
     if (masterProc) then
       allocate(xIntegralFactor(Nx))
@@ -274,6 +282,8 @@ module adjointDiagnostics
         ! This is everything independent of geometry
         xIntegralFactor = x*x*x*x*x*x*pi*THat*THat*THat*sqrtTHat*Delta/(2*mHat*sqrtmHat*Zs(ispecies))*ddrN2ddpsiHat
 
+				! factor = (BHat_sub_theta*dBHatdzeta-BHat_sub_zeta*dBHatdtheta)/(VPrimeHat*BHat**3)
+				!				 = (IHat*dBHatdzeta-GHat*dBHatdtheta)/(VPrimeHat*BHat**3)
         do itheta=1,Ntheta
           do izeta=1,Nzeta
             angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
@@ -284,22 +294,41 @@ module adjointDiagnostics
                 dBHatdThetadLambda = -m*sin_angle
                 dBHatdZetadLambda = n*Nperiods*sin_angle
                 dBHatdLambda = cos_angle
-                factor = (BHat_sub_theta(itheta,izeta)*dBHatdZetadLambda - BHat_sub_zeta(itheta,izeta)*dBHatdThetadLambda)/(VPrimeHat*BHat(itheta,izeta)**3) - 3*(BHat_sub_theta(itheta,izeta)*dBHatdZeta(itheta,izeta) - &
-                  BHat_sub_zeta(itheta,izeta)*dBHatdTheta(itheta,izeta))*dBHatdLambda/(VPrimeHat*BHat(itheta,izeta)**4)
-                if (geometryScheme /= 5) then ! Boozer
-                  factor = factor - (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda/ &
+                factor = (BHat_sub_theta(itheta,izeta)*dBHatdZetadLambda &
+									- BHat_sub_zeta(itheta,izeta)*dBHatdThetadLambda)/(VPrimeHat*BHat(itheta,izeta)**3) &
+									- 3*(BHat_sub_theta(itheta,izeta)*dBHatdZeta(itheta,izeta) &
+                  - BHat_sub_zeta(itheta,izeta)*dBHatdTheta(itheta,izeta))*dBHatdLambda/(VPrimeHat*BHat(itheta,izeta)**4)
+                if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then 
+                  factor = factor - (IHat*dBHatdzeta(itheta,izeta) - GHat*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda/ &
                     (VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
                 end if
-              case (2) ! BHat_sup_theta
+							case (2) ! BHat_sub_theta / IHat
+                if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+									factor = dBHatdzeta(itheta,izeta)/(VPrimeHat*BHat(itheta,izeta)**3) &
+										- dVPrimeHatdLambda*(IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta)) &
+											/(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
+								else
+                	dBHat_sub_thetadLambda = cos_angle
+                	factor = dBHatdzeta(itheta,izeta)*dBHat_sub_thetadLambda/(VPrimeHat*BHat(itheta,izeta)**3)
+								end if
+              case (3) ! BHat_sub_zeta / GHat
+                if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+									factor = -dBHatdtheta(itheta,izeta)/(VPrimeHat*BHat(itheta,izeta)**3) &
+										- dVPrimeHatdLambda*(IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta)) &
+										/(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
+								else
+                	dBHat_sub_zetadLambda = cos_angle
+                	factor = -dBHatdtheta(itheta,izeta)*dBHat_sub_zetadLambda/(VPrimeHat*BHat(itheta,izeta)**3)
+								end if
+              case (4) ! BHat_sup_theta / iota
+                if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+									factor = -dVPrimeHatdLambda*(IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta)) &
+										/(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
+								else
+                	factor = 0
+								end if
+              case (5) ! BHat_sup_zeta
                 factor = 0
-              case (3) ! BHat_sup_zeta
-                factor = 0
-              case (4) ! BHat_sub_theta
-                dBHat_sub_thetadLambda = cos_angle
-                factor = dBHatdzeta(itheta,izeta)*dBHat_sub_thetadLambda/(VPrimeHat*BHat(itheta,izeta)**3)
-              case (5) ! BHat_sub_zeta
-                dBHat_sub_zetadLambda = cos_angle
-                factor = -dBHatdtheta(itheta,izeta)*dBHat_sub_zetadLambda/(VPrimeHat*BHat(itheta,izeta)**3)
               case (6) ! DHat
                 if (ns_sensitivity(whichMode)==0 .and. ms_sensitivity(whichMode)==0) then
                   dVPrimeHatdLambda = four*pi*pi
@@ -375,18 +404,36 @@ module adjointDiagnostics
       call VecGetArrayF90(deltaFOnProc0, deltaFArray, ierr)
     end if
 
-    if (whichLambda==1 .and. geometryScheme /= 5) then
-      dVPrimeHatdLambda = zero
-      ! For Boozer coordinats, integral needed to compute dVPrimeHatdLambda
-      do itheta=1,Ntheta
-        do izeta=1,Nzeta
-          angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-          cos_angle = cos(angle)
+		if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+			if (whichLambda==1) then ! BHat
+				dVPrimeHatdLambda = zero
+				do itheta=1,Ntheta
+					do izeta=1,Nzeta
+						angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+						cos_angle = cos(angle)
 
-          dVPrimeHatdLambda = dVPrimeHatdLambda - two*thetaWeights(itheta)*zetaWeights(izeta)*cos_angle/(DHat(itheta,izeta)*BHat(itheta,izeta))
-        end do
-      end do
-    end if
+						dVPrimeHatdLambda = dVPrimeHatdLambda - two*thetaWeights(itheta)*zetaWeights(izeta)*cos_angle/(DHat(itheta,izeta)*BHat(itheta,izeta))
+					end do
+				end do
+			else if (whichLambda==2) then ! IHat
+				dVPrimeHatdLambda = iota*VprimeHat/(GHat+iota*IHat)
+			else if (whichLambda==3) then ! GHat
+				dVPrimeHatdLambda = VPrimeHat/(GHat+iota*IHat)
+			else if (whichLambda==4) then ! iota
+				dVPrimeHatdLambda = IHat*VPrimeHat/(GHat+iota*IHat)
+			end if
+		else
+			if (whichLambda==6) then ! DHat
+				dVPrimeHatdLambda = zero
+				do itheta=1,Ntheta
+					do izeta=1,Nzeta
+						angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+						cos_angle = cos(angle)
+						dVPrimeHatdLambda = dVPrimeHatdLambda + thetaWeights(itheta) * zetaWeights(izeta) * cos_angle
+					end do
+				end do
+			end if
+		end if
 
     if (masterProc) then
       allocate(xIntegralFactor(Nx))
@@ -399,6 +446,7 @@ module adjointDiagnostics
         maxSpecies = whichSpecies
       end if
 
+			! factor = (BHat_sub_theta*dBHatdzeta-BHat_sub_zeta*dBHatdtheta)/(VPrimeHat*BHat**3)
       do ispecies = minSpecies,maxSpecies
         THat = THats(ispecies)
         mHat = mHats(ispecies)
@@ -417,22 +465,44 @@ module adjointDiagnostics
                 dBHatdThetadLambda = -m*sin_angle
                 dBHatdZetadLambda = n*Nperiods*sin_angle
                 dBHatdLambda = cos_angle
-                factor = (BHat_sub_theta(itheta,izeta)*dBHatdZetadLambda - BHat_sub_zeta(itheta,izeta)*dBHatdThetadLambda)/(VPrimeHat*BHat(itheta,izeta)**3) - 3*(BHat_sub_theta(itheta,izeta)*dBHatdZeta(itheta,izeta) &
-                  - BHat_sub_zeta(itheta,izeta)*dBHatdTheta(itheta,izeta))*dBHatdLambda/(VPrimeHat*BHat(itheta,izeta)**4)
-                if (geometryScheme /= 5) then !Boozer
-                    factor = factor - (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda &
-                      /(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
-                end if
-              case (2) ! BHat_sup_theta
+								if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+										factor = (IHat*dBHatdzetadLambda-GHat*dBHatdthetadLambda)/(VPrimeHat*BHat(itheta,izeta)**3) &
+											- 3*(IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta))/(VprimeHat*BHat(itheta,izeta)**4) &
+											* dBHatdLambda - (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda &
+											/(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
+                else
+									factor = (BHat_sub_theta(itheta,izeta)*dBHatdZetadLambda &
+										-BHat_sub_zeta(itheta,izeta)*dBHatdThetadLambda)/(VPrimeHat*BHat(itheta,izeta)**3) &
+										- 3*(BHat_sub_theta(itheta,izeta)*dBHatdZeta(itheta,izeta) &
+										- BHat_sub_zeta(itheta,izeta)*dBHatdTheta(itheta,izeta))*dBHatdLambda/(VPrimeHat*BHat(itheta,izeta)**4)
+								end if
+              case (2) ! BHat_sub_theta / IHat
+								if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+									factor = dBHatdzeta(itheta,izeta)/(VPrimeHat*BHat(itheta,izeta)**3) &
+										- (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta)) &
+											* dVPrimeHatdLambda/(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
+								else
+									dBHat_sub_thetadLambda = cos_angle
+									factor = dBHatdzeta(itheta,izeta)*dBHat_sub_thetadLambda/(VPrimeHat*BHat(itheta,izeta)**3)
+								end if
+              case (3) ! BHat_sub_zeta / GHat
+								if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+									factor = -dBHatdtheta(itheta,izeta)/(VPrimeHat*BHat(itheta,izeta)**3) &
+										- (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda &
+										/ (VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
+								else
+                	dBHat_sub_zetadLambda = cos_angle
+                	factor = -dBHatdtheta(itheta,izeta)*dBHat_sub_zetadLambda/(VPrimeHat*BHat(itheta,izeta)**3)
+								end if
+              case (4) ! BHat_sup_theta / iota
+								if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+									factor = - (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda &
+										/ (VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
+								else
+									factor = zero
+								end if
+              case (5) ! BHat_sup_zeta
                 factor = zero
-              case (3) ! BHat_sup_zeta
-                factor = zero
-              case (4) ! BHat_sub_theta
-                dBHat_sub_thetadLambda = cos_angle
-                factor = dBHatdzeta(itheta,izeta)*dBHat_sub_thetadLambda/(VPrimeHat*BHat(itheta,izeta)**3)
-              case (5) ! BHat_sub_zeta
-                dBHat_sub_zetadLambda = cos_angle
-                factor = -dBHatdtheta(itheta,izeta)*dBHat_sub_zetadLambda/(VPrimeHat*BHat(itheta,izeta)**3)
               case (6) ! DHat
                 if (m==0 .and. n==0) then
                   dVPrimeHatdLambda = four*pi*pi
@@ -462,10 +532,10 @@ module adjointDiagnostics
                 result = result + &
                   (four/15)*factor*xWeights(ix)*deltaFArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
 
-              end do
-            end do
-          end do
-        end do
+              end do ! ix
+            end do ! izeta
+          end do ! itheta
+        end do ! ispecies
       end if !masterProc
     end subroutine
 
@@ -494,7 +564,7 @@ module adjointDiagnostics
     PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, dBHatdThetadLambda, dBHatdZetadLambda
     PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dinvDHatdLambda, factor, dVPrimeHatdLambda
     PetscScalar, dimension(:), allocatable :: xIntegralFactor
-    PetscScalar :: dBHatdLambda, dFSAB2dLambda, nHat, sqrtFSAB2
+    PetscScalar :: dBHatdLambda, dFSABHat2dLambda, nHat, sqrtFSAB2
     PetscScalar :: angle, cos_angle, sin_angle
     integer :: m, n
     VecScatter :: VecScatterContext
@@ -524,45 +594,49 @@ module adjointDiagnostics
 
     if (masterProc) then
       result = zero
-      dFSAB2dLambda = zero
-      ! For Boozer geometry, dFSAB2dLambda = 0
-      if (whichLambda==1 .and. geometryScheme == 5) then
-        do itheta=1,Ntheta
-          do izeta=1,Nzeta
-            angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-            cos_angle = cos(angle)
-
-            dFSAB2dLambda = dFSAB2dLambda + two*(thetaWeights(itheta)*zetaWeights(izeta)*BHat(itheta,izeta)*cos_angle)/(DHat(itheta,izeta)*VPrimeHat)
-          end do
-        end do
-      end if
-
-      if (whichLambda==1 .and. geometryScheme /= 5) then
-        dVPrimeHatdLambda = zero
-        do itheta=1,Ntheta
-          do izeta=1,Nzeta
-            angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-            cos_angle = cos(angle)
-
-            dVPrimeHatdLambda = dVPrimeHatdLambda - two*thetaWeights(itheta)*zetaWeights(izeta)*cos_angle/(DHat(itheta,izeta)*BHat(itheta,izeta))
-          end do
-        end do
-      end if
-
-      if (whichLambda==6) then ! DHat
-        do itheta=1,Ntheta
-          do izeta=1,Nzeta
-            angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-            cos_angle = cos(angle)
-
-            dFSAB2dLambda = dFSAB2dLambda + thetaWeights(itheta)*zetaWeights(izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)*cos_angle/(VPrimeHat)
-          end do
-        end do
-        if (m == zero .and. n == zero) then
-          dVPrimeHatdLambda = (four*pi*pi)
-          dFSAB2dLambda = dFSAB2dLambda - (VPrimeHat*FSABHat2)*dVPrimeHatdLambda/(VPrimeHat*VPrimeHat)
-        end if
-      end if
+      dFSABHat2dLambda = zero
+			dVPrimeHatdLambda = zero
+			if (coordinateSystem == COORDINATE_SYSTEM_VMEC) then
+				if (whichLambda == 1 .or. whichLambda ==6) then
+					do itheta=1,Ntheta
+						do izeta=1,Nzeta
+							angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+							cos_angle = cos(angle)
+							if (whichLambda==1) then ! BHat
+								dFSABHat2dLambda = dFSABHat2dLambda + 2*thetaWeights(itheta) * zetaWeights(izeta) &
+									* BHat(itheta,izeta) * cos_angle / DHat(itheta,izeta)
+							else if (whichLambda==6) then ! DHat
+								dFSABHat2dLambda = dFSABHat2dLambda + thetaWeights(itheta) * zetaWeights(izeta) &
+									* (BHat(itheta,izeta)**2)*cos_angle
+								dVPrimeHatdLambda = dVPrimeHatdLambda + thetaWeights(itheta) * zetaWeights(izeta) * cos_angle
+							end if
+						end do
+					end do
+				end if
+				if (whichLambda == 1) then ! BHat
+					dFSABHat2dLambda = dFSABHat2dLambda/VPrimeHat
+				else if (whichLambda == 6) then ! DHat
+					dFSABHat2dLambda = dFSABHat2dLambda/VPrimeHat - FSABHat2*dVPrimeHatdLambda/VPrimeHat
+				end if
+			else ! Boozer
+				if (whichLambda==1) then ! BHat
+					do itheta=1,Ntheta
+						do izeta=1,Nzeta
+							angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+							cos_angle = cos(angle)
+							dVPrimeHatdLambda = dVPrimeHatdLambda - (two*(GHat+iota*IHat)) * thetaWeights(itheta) * zetaWeights(izeta) &
+								* BHat(itheta,izeta)**(-3) * cos_angle
+						end do
+					end do
+					dFSABHat2dLambda = -4*pi*pi*(GHat+iota*IHat)*dVPrimeHatdLambda/(VPrimeHat**2)
+				else if (whichLambda==2) then ! IHat
+					dVPrimeHatdLambda = VPrimeHat*iota/(GHat+iota*IHat)
+				else if (whichLambda==3) then ! GHat
+					dVPrimeHatdLambda = VPrimeHat/(GHat+iota*IHat)
+				else if (whichLambda==4) then ! iota
+					dVPrimeHatdLambda = VPrimeHat*IHat/(GHat+iota*IHat)
+				end if
+			end if
 
       allocate(xIntegralFactor(Nx))
 
@@ -578,34 +652,51 @@ module adjointDiagnostics
           xIntegralFactor = xIntegralFactor*Zs(ispecies)
         end if
 
+				!factor = BHat/(DHat*VPrimeHat*sqrtFSAB2) = (GHat+iota*IHat)/(BHat*VPrimeHat*sqrtFSAB2)
+
         do itheta=1,Ntheta
           do izeta=1,Nzeta
             angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
             cos_angle = cos(angle)
-
             select case (whichLambda)
               case (1) ! BHat
                 dBHatdLambda = cos_angle
-                if (geometryScheme /= 5) then ! Boozer
-                  dDHatdLambda = two*DHat(itheta,izeta)*dBHatdLambda/BHat(itheta,izeta)
-                  dinvDHatdLambda = -dDHatdLambda/(DHat(itheta,izeta)**2)
-                  factor = dBHatdLambda/(DHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) + BHat(itheta,izeta)*dinvDHatdLambda/(VPrimeHat*sqrtFSAB2) &
-                    -0.5*dVPrimeHatdLambda*BHat(itheta,izeta)/(DHat(itheta,izeta)*VPrimeHat*VPrimeHat*sqrtFSAB2)
-                else
-                  factor = dBHatdLambda/(DHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) - 0.5*BHat(itheta,izeta)*dFSAB2dLambda/(DHat(itheta,izeta)*sqrtFSAB2*FSABHat2*VPrimeHat)
-                end if
-              case (2) ! BHat_sup_theta
-                factor = 0
-              case (3) ! BHat_sup_zeta
-                factor = 0
-              case (4) ! BHat_sub_theta
-                factor = 0
-              case (5) ! BHat_sub_zeta
+								if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+									factor = -(GHat+iota*IHat)*dBHatdLambda/(BHat(itheta,izeta)*BHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) &
+										- (GHat+iota*IHat)*dVPrimeHatdLambda/(BHat(itheta,izeta)*VPrimeHat*VPrimeHat*sqrtFSAB2) &
+										- 0.5*(GHat+iota*IHat)*dFSABHat2dLambda/(BHat(itheta,izeta)*VPrimeHat*sqrtFSAB2*FSABHat2)
+								else
+                  factor = dBHatdLambda/(DHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) &
+										- 0.5*BHat(itheta,izeta)*dFSABHat2dLambda/(DHat(itheta,izeta)*sqrtFSAB2*FSABHat2*VPrimeHat)
+								end if
+							case (2) ! BHat_sub_theta / IHat
+								if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+									factor = iota/(BHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) &
+											- (GHat+iota*IHat)*dVPrimeHatdLambda/ &
+											(BHat(itheta,izeta)*sqrtFSAB2*VPrimeHat*VPrimeHat)
+								else
+									factor = 0
+								end if
+							case (3) ! BHat_sub_zeta / GHat
+								if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+									factor = one/(BHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) &
+											- (GHat+iota*IHat)*dVPrimeHatdLambda/(BHat(itheta,izeta)*sqrtFSAB2*VPrimeHat*VPrimeHat)
+								else
+									factor = 0
+								end if
+              case (4) ! BHat_sup_theta / iota
+								if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+									factor = IHat/(BHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) &
+											- (GHat+iota*IHat)*dVPrimeHatdLambda/(BHat(itheta,izeta)*sqrtFSAB2*VPrimeHat*VPrimeHat)
+								else
+                	factor = 0
+								end if
+              case (5) ! BHat_sup_zeta
                 factor = 0
               case (6) ! DHat
                 dinvDHatdLambda = cos_angle
                 factor = BHat(itheta,izeta)*dinvDHatdLambda/(VPrimeHat*sqrtFSAB2) &
-                  - 0.5*BHat(itheta,izeta)*dFSAB2dLambda/(DHat(itheta,izeta)*VPrimeHat*FSABHat2*sqrtFSAB2)
+                  - 0.5*BHat(itheta,izeta)*dFSABHat2dLambda/(DHat(itheta,izeta)*VPrimeHat*FSABHat2*sqrtFSAB2)
                 if (m==0 .and. n==0) then
                   dVPrimeHatdLambda = (four*pi*pi)
                   factor = factor - BHat(itheta,izeta)*dVPrimeHatdLambda/(DHat(itheta,izeta)*VPrimeHat*VPrimeHat*sqrtFSAB2)

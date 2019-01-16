@@ -41,21 +41,6 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies, fineGrid)
     stop
   end if
 
-!  if (fineGrid==1) then
-!    this_ithetaMin = ithetaMin_fine
-!    this_ithetaMax = ithetaMax_fine
-!    this_izetaMin = izetaMin_fine
-!    this_izetaMax = izetaMax_fine
-!    whichMatrix = 7
-!    this_matrixSize = matrixSize_fine
-!
-!    this_BHat => BHat_fine
-!    this_DHat => DHat_fine
-!    this_BHat_sub_theta => BHat_sub_theta_fine
-!    this_BHat_sub_zeta => BHat_sub_zeta_fine
-!    this_dBHatdtheta => dBHatdtheta_fine
-!    this_dBHatdzeta => dBHatdzeta_fine
-!  else
     this_ithetaMin = ithetaMin
     this_ithetaMax = ithetaMax
     this_izetaMin = izetaMin
@@ -69,7 +54,6 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies, fineGrid)
     this_BHat_sub_zeta => BHat_sub_zeta
     this_dBHatdtheta => dBHatdtheta
     this_dBHatdzeta => dBHatdzeta
-!  end if
 
   call VecCreateMPI(MPIComm, PETSC_DECIDE, this_matrixSize, rhs, ierr)
   call VecSet(rhs, zero, ierr)

@@ -32,7 +32,9 @@ contains
          equilibriumFile, min_Bmn_to_load, &
          psiAHat, inputRadialCoordinate, inputRadialCoordinateForGradients, aHat, &
          psiHat_wish, psiN_wish, rHat_wish, rN_wish, &
-         VMECRadialOption, VMEC_Nyquist_option, rippleScale, EParallelHatSpec_bcdatFile, Nperiods, boozer_bmnc, mmax_boozer, nmax_boozer
+         VMECRadialOption, VMEC_Nyquist_option, rippleScale, EParallelHatSpec_bcdatFile, Nperiods, &
+!				 boozer_bmnc, mmax_boozer, nmax_boozer
+				 boozer_bmnc
 
     namelist / speciesParameters / mHats, Zs, nHats, THats, &
          dNHatdpsiHats, dTHatdpsiHats, &
@@ -454,9 +456,9 @@ contains
        end if
      end if
 
-		 if (geometryScheme==13) then
-			allocate(boozer_bmnc(0:mmax_boozer,-nmax_boozer:nmax_boozer))
-		 end if
+!		 if (geometryScheme==13) then
+!			allocate(boozer_bmnc(0:mmax_boozer,-nmax_boozer:nmax_boozer))
+!		 end if
 
     close(unit = fileUnit)
 

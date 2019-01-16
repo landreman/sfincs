@@ -60,6 +60,7 @@
             - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
             * DHat(itheta,izeta) * xPartOfRHS
 
+				! factor = (1/(BHat*(GHat+iota*IHat)))*(GHat*dBHatdtheta-IHat*dBHatdzeta)*xPartOfRHS
         do itheta = ithetaMin,ithetaMax
           do izeta = izetaMin,izetaMax
             angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
@@ -77,39 +78,55 @@
                 dBHatdLambda = cos_angle
                 dBHatdthetadLambda = -m*sin_angle
                 dBHatdzetadLambda = n*Nperiods*sin_angle
-                dFactordLambda = -three/(BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)) & ! Term from BHat**(-3)
-                  *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
-                  - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
-                  * DHat(itheta,izeta)*dBHatdLambda &
-                  ! Term from dBHatdtheta
-                  + DHat(itheta,izeta)/(BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)) &
-                  *(BHat_sub_zeta(itheta,izeta)*dBHatdthetadLambda &
-                  ! Term from dBHatdzeta
-                  - BHat_sub_theta(itheta,izeta)*dBHatdzetadLambda)
-                stuffToAdd = dFactordLambda*xPartOfRHS
-                if (geometryScheme /= 5) then ! Boozer
-                  dDHatdLambda = 2*DHat(itheta,izeta)*cos_angle/BHat(itheta,izeta)
-                  dFactordLambda = dFactordLambda + 1/(BHat(itheta,izeta)**3) &
-                    *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
-                    - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
-                    * dDHatdLambda
+                if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+									dFactordLambda = -dBHatdLambda/(BHat(itheta,izeta)*BHat(itheta,izeta)*(GHat+iota*IHat)) &
+										* (GHat*dBHatdtheta(itheta,izeta)-IHat*dBHatdzeta(itheta,izeta)) &
+										+ (GHat*dBHatdthetadLambda-IHat*dBHatdzetadLambda)/(BHat(itheta,izeta)*(GHat+iota*IHat))
                   stuffToAdd = dFactordLambda*xPartOfRHS
-                end if
-              case (2) ! BHat_sup_theta
+                else
+									dFactordLambda = -three/(BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)) & ! Term from BHat**(-3)
+										*(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
+										- BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
+										* DHat(itheta,izeta)*dBHatdLambda &
+										! Term from dBHatdtheta
+										+ DHat(itheta,izeta)/(BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)) &
+										*(BHat_sub_zeta(itheta,izeta)*dBHatdthetadLambda &
+										! Term from dBHatdzeta
+										- BHat_sub_theta(itheta,izeta)*dBHatdzetadLambda)
+									stuffToAdd = dFactordLambda*xPartOfRHS
+								end if
+              case (2) ! BHat_sub_theta / IHat
+                if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+									dFactordLambda = -iota/(BHat(itheta,izeta)*(GHat+iota*IHat)**2) &
+										*(GHat*dBHatdtheta(itheta,izeta)-IHat*dBHatdzeta(itheta,izeta)) &
+										-dBHatdzeta(itheta,izeta)/(BHat(itheta,izeta)*(GHat+iota*IHat))
+								else
+									dBHat_sub_thetadLambda = cos_angle
+									dFactordLambda = -DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
+										*dBHatdzeta(itheta,izeta)*dBHat_sub_thetadLambda
+								end if
+                stuffToAdd = dFactordLambda*xPartOfRHS
+              case (3) ! BHat_sub_zeta / GHat
+                if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+									dFactordLambda = -1/(BHat(itheta,izeta)*(GHat+iota*IHat)**2) &
+										*(GHat*dBHatdtheta(itheta,izeta)-IHat*dBHatdzeta(itheta,izeta)) &
+										+ dBHatdtheta(itheta,izeta)/(BHat(itheta,izeta)*(GHat+iota*IHat))
+								else
+									dBHat_sub_zetadLambda = cos_angle
+									dFactordLambda = DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
+										* dBHatdtheta(itheta,izeta)*dBHat_sub_zetadLambda
+								end if
+                stuffToAdd = dFactordLambda*xPartOfRHS
+              case (4) ! BHat_sup_theta / iota
+                if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+									dFactordLambda = -IHat/(BHat(itheta,izeta)*(GHat+iota*IHat)**2) &
+										*(GHat*dBHatdtheta(itheta,izeta)-IHat*dBHatdzeta(itheta,izeta))
+								else
+                	dFactordLambda = 0
+								end if
+                stuffToAdd = dFactordLambda*xPartOfRHS
+              case (5) ! BHat_sup_zeta
                 dFactordLambda = 0
-                stuffToAdd = dFactordLambda*xPartOfRHS
-              case (3) ! BHat_sup_zeta
-                dFactordLambda = 0
-                stuffToAdd = dFactordLambda*xPartOfRHS
-              case (4) ! BHat_sub_theta
-                dBHat_sub_thetadLambda = cos_angle
-                dFactordLambda = -DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
-                  *dBHatdzeta(itheta,izeta)*dBHat_sub_thetadLambda
-                stuffToAdd = dFactordLambda*xPartOfRHS
-              case (5) ! BHat_sub_zeta
-                dBHat_sub_zetadLambda = cos_angle
-                dFactordLambda = DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
-                  * dBHatdtheta(itheta,izeta)*dBHat_sub_zetadLambda
                 stuffToAdd = dFactordLambda*xPartOfRHS
               case (6) ! DHat
                 dDHatdLambda = -DHat(itheta,izeta)*DHat(itheta,izeta)*cos_angle

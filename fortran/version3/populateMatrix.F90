@@ -63,7 +63,8 @@
     PetscScalar, dimension(:,:), allocatable :: tempMatrix, tempMatrix2, extrapMatrix
     double precision :: myMatInfo(MAT_INFO_SIZE)
     integer :: NNZ, NNZAllocated, NMallocs
-    PetscScalar :: CHat_element, dfMdx, preFactor, preFactorJ,  CHat_elementJ !! preFactor, preFactorJ Added by AI (2017-09)  !! CHat_elementJ added by AM 2018-01
+    PetscScalar :: CHat_element, dfMdx, preFactor, preFactorJ,  CHat_elementJ !! preFactor, preFactorJ Added by AI (2017-09) 
+ !! CHat_elementJ added by AM 2018-01
     character(len=200) :: whichMatrixName, filename
     PetscViewer :: viewer
     integer :: ithetaRow, ithetaCol, izetaRow, izetaCol, ixMin, ixMinCol
@@ -181,7 +182,8 @@
        end if
     end if
 
-!!    useStateVec = (nonlinear .and. (whichMatrix==0 .or. whichMatrix==1)) !!Commented by AM 2016-02
+!!    useStateVec = (nonlinear .and. (whichMatrix==0 .or. whichMatrix==1))
+ !!Commented by AM 2016-02
     useStateVec = (includePhi1 .and. (whichMatrix==0 .or. whichMatrix==1)) !!Added by AM 2016-02
     if (useStateVec) then
        ! We need delta f to evaluate the Jacobian, so send a copy to every proc:
@@ -192,7 +194,8 @@
     end if
 
     ! In nonlinear runs, the Jacobian and residual require Phi1:
-    !!if (nonlinear .and. (whichMatrix .ne. 2)) then !!Commented by AM 2016-02
+    !!if (nonlinear .and. (whichMatrix .ne. 2)) then
+ !!Commented by AM 2016-02
     if (includePhi1 .and. (whichMatrix .ne. 2)) then !!Added by AM 2016-02
        call extractPhi1(stateVec)
     end if
@@ -1492,7 +1495,8 @@
        ! However, we need not add elements which are 0 due to ddtheta=0 as opposed to because Phi1=0, since such elements will remain 0 at every iteration of SNES.
 
        !if (nonlinear .and. (whichMatrix .ne. 2)) then
-       !!if (nonlinear .and. (whichMatrix == 1 .or. whichMatrix == 3 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Commented by AM 2016-02
+       !!if (nonlinear .and. (whichMatrix == 1 .or. whichMatrix == 3 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then
+ !!Commented by AM 2016-02
        !if (.false.) then
        if (includePhi1 .and. includePhi1InKineticEquation .and. (whichMatrix == 1 .or. whichMatrix == 3 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Added by AM 2016-02
 
@@ -1578,7 +1582,8 @@
        ! in the first iteration (due to delta f = 0). The reason is that PETSc will re-use the pattern of nonzeros from the first iteration in subsequent iterations.
        ! However, we need not add elements which are 0 due to ddtheta=0 as opposed to because delta f = 0, since such elements will remain 0 at every iteration of SNES.
 
-       !!if (nonlinear .and. (whichMatrix==1 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Commented by AM 2016-02
+       !!if (nonlinear .and. (whichMatrix==1 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then
+ !!Commented by AM 2016-02
        
        ! This next line should be replaced with the line after!!!
        !if (.false.) then
@@ -1655,7 +1660,6 @@
           deallocate(tempVector1)
           deallocate(tempVector2)
        end if
-
     end do ! End of loop over species for the collisionless terms.
 
     ! *********************************************************
@@ -1934,7 +1938,8 @@
                             * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
                             * nHats(iSpeciesB)*preFactorJ*(erfs - Psi_Chandra)/(x*x*x)
                             
-                            !! speciesFactor = 3*sqrtpi/four * nHats(iSpeciesB)* preFactor  & !!Commented by AM 2018-01
+                            !! speciesFactor = 3*sqrtpi/four * nHats(iSpeciesB)* preFactor  &
+ !!Commented by AM 2018-01
                             speciesFactor = 3*sqrtpi/four * nHats(iSpeciesB)* preFactorJ  & !!Added by AM 2018-01
                             * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / T32m
                             
@@ -1997,9 +2002,11 @@
                                M11J = CECDpolJ(iSpeciesA, iSpeciesB,:,:,itheta,izeta)                     
                                if (iSpeciesA == iSpeciesB) then
                                   do i=1,Nx
-                                     !!M11(i,i) = M11(i,i) + (-oneHalf*nuDHatpol(iSpeciesA,i,itheta,izeta)*L*(L+1)) !!Commented by AM 2018-01
+                                     !!M11(i,i) = M11(i,i) + (-oneHalf*nuDHatpol(iSpeciesA,i,itheta,izeta)*L*(L+1))
+ !!Commented by AM 2018-01
                                      M11(i,i) = M11(i,i) + (-oneHalf*nuDHatpol(iSpeciesA,i,itheta,izeta)*L*(L+1)  + Krook*2) !!Added by AM 2018-01
-                                     !!M11J(i,i) = M11J(i,i) + (-oneHalf*nuDHatpolJ(iSpeciesA,i,itheta,izeta)*L*(L+1)) !!Commented by AM 2018-01
+                                     !!M11J(i,i) = M11J(i,i) + (-oneHalf*nuDHatpolJ(iSpeciesA,i,itheta,izeta)*L*(L+1))
+ !!Commented by AM 2018-01
                                      M11J(i,i) = M11J(i,i) + (-oneHalf*nuDHatpolJ(iSpeciesA,i,itheta,izeta)*L*(L+1)  + Krook*2) !!Added by AM 2018-01
                                   end do
                                end if
@@ -2137,7 +2144,8 @@
                                   rowIndex=getIndex(iSpeciesA,ix_row,L+1,itheta,izeta,BLOCK_F,whichMatrix)
                                   do ix_col = max(ixMinCol,min_x_for_L(L)),Nx
                                      colIndex=getIndex(iSpeciesB,ix_col,L+1,itheta,izeta,BLOCK_F,whichMatrix)
-                                     call MatSetValueSparse(matrix, rowIndex, colIndex, & 
+                                     call MatSetValueSparse(matrix, rowIndex, colIndex, &
+ 
 !!                                     call MatSetValue(matrix, rowIndex, colIndex, & 
                                      -nu_n*CHat(ix_row,ix_col), ADD_VALUES, ierr)
                                   end do ! ix_col
@@ -2185,7 +2193,8 @@
                                      ! Get column index for the d/dPhi1 terms
                                      colIndex=getIndex(1,1,1,itheta,izeta,BLOCK_QN,whichMatrix)
                                      ! Save into the main matrix, note that here we only use ix_row since CHatTimesf is now a vector
-                                     call MatSetValue(matrix, rowIndex, colIndex, &  
+                                     call MatSetValue(matrix, rowIndex, colIndex, & 
+ 
                                      -nu_n*CHatTimesf(ix_row), ADD_VALUES, ierr) 
                                      ! need to use MatSetValue, otherwise petsc gives error
                                   end do ! ix_row
@@ -2620,7 +2629,8 @@
           ! *** WITH PHI1 *** !
           ! With Phi1 the deflection frequency is a function of (species, velocity, theta, zeta)
           if (includePhi1InCollisionOperator .and. includePhi1 .and. includePhi1InKineticEquation) then 
-             !nuDHat = zero !!Commented by AM 2018-01
+             !nuDHat = zero
+ !!Commented by AM 2018-01
              nuDHatpol = zero !!Added by AM 2018-01
              nuDHatpolJ = zero !!Added by AM 2018-01
              ! row is species A, column is species B
@@ -2645,9 +2655,12 @@
                    T32m = THats(iSpeciesA) * sqrt(THats(iSpeciesA)*mHats(ispeciesA))
                    
                    ! Build the pitch-angle scattering frequency:
-!!$                   nuDHat(iSpeciesA, :) =  nuDHat(iSpeciesA, :) & !!Commented by AM 2018-01
-!!$                   + (three*sqrtpi/four) / T32m & !!Commented by AM 2018-01
-!!$                   * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) & !!Commented by AM 2018-01
+!!$                   nuDHat(iSpeciesA, :) =  nuDHat(iSpeciesA, :) &
+ !!Commented by AM 2018-01
+!!$                   + (three*sqrtpi/four) / T32m &
+ !!Commented by AM 2018-01
+!!$                   * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
+ !!Commented by AM 2018-01
 !!$                   * nHats(iSpeciesB)*(erfs - Psi_Chandra)/(x*x*x) !!Commented by AM 2018-01
 
                    ! Build the pitch-angle scattering frequencies:
@@ -2678,24 +2691,31 @@
                 do ix=ixMin,Nx
                    !do L=1, Nxi-1
                    do L=0, Nxi_for_x(ix)-1
-                      !! CHat_element = -oneHalf*nuDHat(iSpeciesA,ix)*(L*(L+1) + Krook*2) !!Commented by AM 2018-01
+                      !! CHat_element = -oneHalf*nuDHat(iSpeciesA,ix)*(L*(L+1) + Krook*2)
+ !!Commented by AM 2018-01
                       
                       ! At this point, CHat contains the collision operator normalized by
                       ! \bar{nu}, (the collision frequency at the reference mass, density, and temperature.)
                       
                       do itheta=ithetaMin,ithetaMax
                          do izeta=izetaMin,izetaMax
-!!$                            preFactor = 1.0 ! Initiate the preFactor used to multiply CHat before saving into the Main matrix  !!Commented by AM 2018-01
+!!$                            preFactor = 1.0 ! Initiate the preFactor used to multiply CHat before saving into the Main matrix 
+ !!Commented by AM 2018-01
 !!$                            
-!!$                            ! If Phi1 should be included, use the correct preFactor !!Commented by AM 2018-01
-!!$                            if (includePhi1InCollisionOperator .and. includePhi1 .and. includePhi1InKineticEquation) then  !!Commented by AM 2018-01
-!!$                               preFactor = exp(-Zs(iSpeciesA)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesA)) !!Commented by AM 2018-01
-!!$                            end if !!Commented by AM 2018-01
+!!$                            ! If Phi1 should be included, use the correct preFactor
+ !!Commented by AM 2018-01
+!!$                            if (includePhi1InCollisionOperator .and. includePhi1 .and. includePhi1InKineticEquation) then 
+ !!Commented by AM 2018-01
+!!$                               preFactor = exp(-Zs(iSpeciesA)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesA))
+ !!Commented by AM 2018-01
+!!$                            end if
+ !!Commented by AM 2018-01
                             
                             CHat_element = -oneHalf*nuDHatpol(iSpeciesA, ix,itheta,izeta)*(L*(L+1) + Krook*2) !!Added by AM 2018-01
 
                             index=getIndex(iSpeciesA,ix,L+1,itheta,izeta,BLOCK_F,whichMatrix)
-                            call MatSetValueSparse(matrix, index, index, & 
+                            call MatSetValueSparse(matrix, index, index, &
+ 
                             !!call MatSetValue(matrix, index, index, & !!Test by AM 2018-01
                             !! -nu_n*CHat_element*preFactor, ADD_VALUES, ierr)!! Modified by AI (2017-09), multiply with preFactor before saving !!Commented by AM 2018-01
                             -nu_n*CHat_element, ADD_VALUES, ierr) !!Added by AM 2018-01
@@ -2710,20 +2730,25 @@
                             !  Required since we now have a Phi1Hat dependence in the collision operator
                             ! ************************************************************************************
                             
-                            !!if (includePhi1InCollisionOperator .and. includePhi1 .and. includePhi1InKineticEquation & !!Commented by AM 2018-01
-                            !!   .and. (whichMatrix == 1 .or. whichMatrix == 0)) then !!Commented by AM 2018-01
+                            !!if (includePhi1InCollisionOperator .and. includePhi1 .and. includePhi1InKineticEquation &
+ !!Commented by AM 2018-01
+                            !!   .and. (whichMatrix == 1 .or. whichMatrix == 0)) then
+ !!Commented by AM 2018-01
                             if (whichMatrix == 1 .or. whichMatrix == 0) then !!Added by AM 2018-01
                                
                                ! Generate pre-factor together with f1b from state vector
-                               !! preFactor = -Zs(iSpeciesA)*alpha/Thats(iSpeciesA)*exp(-Zs(iSpeciesA) & !!Commented by AM 2018-01
-                               !! *alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesA))*stateArray(index + 1) !!Commented by AM 2018-01
+                               !! preFactor = -Zs(iSpeciesA)*alpha/Thats(iSpeciesA)*exp(-Zs(iSpeciesA) &
+ !!Commented by AM 2018-01
+                               !! *alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesA))*stateArray(index + 1)
+ !!Commented by AM 2018-01
 
                                CHat_elementJ = (-oneHalf*nuDHatpolJ(iSpeciesA, ix,itheta,izeta)*(L*(L+1) + Krook*2))*stateArray(index + 1) !!Added by AM 2018-01
 
                                ! Now we need to use a different col index since we save in the phi1 part
                                colIndex=getIndex(1,1,1,itheta,izeta,BLOCK_QN,whichMatrix)
                                call MatSetValue(matrix, index, colIndex, & 
-                               !! -nu_n*CHat_element*preFactor, ADD_VALUES, ierr) !! Modified by AI (2017-09), multiply with preFactor before saving  !!Commented by AM 2018-01
+                               !! -nu_n*CHat_element*preFactor, ADD_VALUES, ierr) !! Modified by AI (2017-09), multiply with preFactor before saving 
+ !!Commented by AM 2018-01
                                -nu_n*CHat_elementJ, ADD_VALUES, ierr) !!Added by AM 2018-01
                                ! use MatSetValue, otherwise petc error
                             end if

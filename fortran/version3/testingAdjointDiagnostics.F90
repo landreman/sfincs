@@ -47,7 +47,6 @@ module testingAdjointDiagnostics
 
     implicit none
 
-  !  Vec :: forwardSolution
     integer :: whichMode, whichLambda
     integer :: iterationNum
     PetscScalar, dimension(:), allocatable :: particleFluxInit, heatFluxInit, parallelFlowInit
@@ -57,7 +56,7 @@ module testingAdjointDiagnostics
     PetscErrorCode :: ierr
     PetscScalar, dimension(:,:,:), allocatable :: dParticleFluxdLambda_analytic, dHeatFluxdLambda_analytic, dParallelFlowdLambda_analytic
     PetscScalar, dimension(:,:), allocatable :: dRadialCurrentdLambda_analytic, dTotalHeatFluxdLambda_analytic, dBootstrapdLambda_analytic, dPhidPsidLambda_analytic
-    integer :: ispecies, whichQuantity
+    integer :: ispecies, whichQuantity, this_NmodesAdjoint
     PetscScalar :: analyticResult, finiteDiffResult, deltaFactor
     PetscLogDouble :: time1, time2
     logical :: constantJr
@@ -84,8 +83,6 @@ module testingAdjointDiagnostics
     end if
 
     ! Change settings so adjoint solve occurs - derivatives of all fluxes computed
-    !RHSMode = 4
-		!print *,"RHSMode = ", RHSMode
     adjointParticleFluxOption = .true.
     adjointHeatFluxOption = .true.
     adjointParallelFlowOption = .true.
@@ -131,28 +128,45 @@ module testingAdjointDiagnostics
     ! Set RHSMode = 1 so call to solver does not include adjoint solve
     RHSMode = 1
     call PetscTime(time1, ierr)
-    do whichMode = 1, NModesAdjoint
-      do whichLambda = 1, NLambdas
+		do whichLambda = 1, NLambdas
+			if ((coordinateSystem == COORDINATE_SYSTEM_BOOZER) .and. (whichLambda .ne. 1)) then
+				this_NmodesAdjoint = 1
+			else
+				this_NmodesAdjoint = NModesAdjoint
+			end if
+    	do whichMode = 1, this_NModesAdjoint
         select case(whichLambda)
           case(1)
             deltaFactor = bmnc_init(whichMode)
           case(2)
-            deltaFactor = bsupthetamnc_init(whichMode)
+						if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+							deltaFactor = IHat_init
+						else
+            	deltaFactor = bsubthetamnc_init(whichMode)
+						end if
           case(3)
-            deltaFactor = bsupzetamnc_init(whichMode)
+						if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+							deltaFactor = GHat_init
+						else
+            	deltaFactor = bsubzetamnc_init(whichMode)
+						end if
           case(4)
-            deltaFactor = bsubthetamnc_init(whichMode)
+						if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+							deltaFactor = iota_init
+						else
+            	deltaFactor = bsupthetamnc_init(whichMode)
+						end if
           case(5)
-            deltaFactor = bsubzetamnc_init(whichMode)
+            deltaFactor = bsupzetamnc_init(whichMode)
           case(6)
             deltaFactor = gmnc_init(whichMode)
         end select
 
         ! Update geometry
-        if (geometryScheme == 5) then
+        if (coordinateSystem == COORDINATE_SYSTEM_VMEC) then
           call updateVMECGeometry(whichMode, whichLambda, .false.)
-        else ! Boozer
-          call updateBoozerGeometry(whichMode, .false.)
+        else
+          call updateBoozerGeometry(whichMode, whichLambda, .false.)
         end if
 
         ! Compute solutionVec and diagnostics with new geometry
@@ -171,10 +185,9 @@ module testingAdjointDiagnostics
 
         do ispecies = 1, Nspecies
           ! Compute finite difference derivatives
-          !print *,"change in particle flux: ", particleFlux_vm_rN(iSpecies)-particleFluxInit(iSpecies)
-        dParticleFluxdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (particleFlux_vm_rN(iSpecies)-particleFluxInit(iSpecies))/(deltaLambda*deltaFactor)
-          dHeatFluxdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (heatFlux_vm_rN(iSpecies)-heatFluxInit(iSpecies))/(deltaLambda*deltaFactor)
-        dParallelFlowdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (FSABVelocityUsingFSADensityOverRootFSAB2(iSpecies)-parallelFlowInit(iSpecies))/(deltaLambda*deltaFactor)
+					dParticleFluxdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (particleFlux_vm_rN(iSpecies)-particleFluxInit(iSpecies))/(deltaLambda*deltaFactor)
+						dHeatFluxdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (heatFlux_vm_rN(iSpecies)-heatFluxInit(iSpecies))/(deltaLambda*deltaFactor)
+					dParallelFlowdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (FSABVelocityUsingFSADensityOverRootFSAB2(iSpecies)-parallelFlowInit(iSpecies))/(deltaLambda*deltaFactor)
         end do ! ispecies
         dTotalHeatFluxdLambda_finiteDiff(whichLambda,whichMode) = (sum(heatFlux_vm_rN)-sum(heatFluxInit))/(deltaLambda*deltaFactor)
         if (constantJr .eqv. .false.) then
@@ -183,10 +196,10 @@ module testingAdjointDiagnostics
         dBootstrapdLambda_finiteDiff(whichLambda,whichMode) = (dot_product(Zs(1:Nspecies),FSABVelocityUsingFSADensityOverRootFSAB2)-dot_product(Zs(1:Nspecies),parallelFlowInit))/(deltaLambda*deltaFactor)
 
         ! Reset geometry to original values
-        if (geometryScheme == 5) then
+        if (coordinateSystem == COORDINATE_SYSTEM_VMEC) then
           call updateVMECGeometry(whichMode, whichLambda, .true.)
         else
-          call updateBoozerGeometry(whichMode, .true.)
+          call updateBoozerGeometry(whichMode, whichLambda, .true.)
         end if
       end do ! whichMode
     end do ! whichLambda
@@ -195,26 +208,42 @@ module testingAdjointDiagnostics
       print *,"Time for finite difference: ", time2-time1
     end if
 
-    do whichMode = 1, NModesAdjoint
-      do whichLambda = 1, NLambdas
+	do whichLambda = 1, NLambdas
+		if (coordinateSystem == COORDINATE_SYSTEM_BOOZER .and. (whichLambda .ne. 1)) then
+			this_NmodesAdjoint = 1
+		else
+			this_NmodesAdjoint = NModesAdjoint
+		end if
+			do whichMode = 1, this_NModesAdjoint
+
         select case(whichLambda)
           case(1)
             deltaFactor = bmnc_init(whichMode)
           case(2)
-            deltaFactor = bsupthetamnc_init(whichMode)
+						if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+							deltaFactor = IHat_init
+						else
+            	deltaFactor = bsupthetamnc_init(whichMode)
+						end if
           case(3)
-            deltaFactor = bsupzetamnc_init(whichMode)
+						if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+							deltaFactor = GHat_init
+						else
+            	deltaFactor = bsupzetamnc_init(whichMode)
+						end if
           case(4)
-            deltaFactor = bsubthetamnc_init(whichMode)
+						if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+							deltaFactor = iota_init
+						else
+            	deltaFactor = bsubthetamnc_init(whichMode)
+						end if
           case(5)
             deltaFactor = bsubzetamnc_init(whichMode)
           case(6)
             deltaFactor = gmnc_init(whichMode)
         end select
-!        print *,"deltaFactor: ", deltaFactor
-!        print *,"bmnc_init(whichMode): ", bmnc_init(whichMode)
         ! If magnitude of fourier mode is nearly zero, don't use for benchmarking tests
-        if (abs(deltaFactor) > 1.d-6) then
+        if (abs(deltaFactor) > 1.d-7) then
           if (constantJr .eqv. .false.) then
             radialCurrentPercentError(whichLambda,whichMode) = percentError(dRadialCurrentdLambda_analytic(whichLambda,whichMode),dRadialCurrentdLambda_finitediff(whichLambda,whichMode))
           end if
@@ -224,15 +253,21 @@ module testingAdjointDiagnostics
           totalHeatFluxPercentError(whichLambda,whichMode) = percentError(dTotalHeatFluxdLambda_analytic(whichLambda,whichMode),dTotalHeatFluxdLambda_finitediff(whichLambda,whichMode))
           bootstrapPercentError(whichLambda,whichMode) = percentError(dBootstrapdLambda_analytic(whichLambda, whichMode), dBootstrapdLambda_finitediff(whichLambda,whichMode))
           do ispecies = 1, NSpecies
-            particleFluxPercentError(ispecies,whichLambda,whichMode) = percentError(dParticleFluxdLambda_analytic(ispecies,whichLambda,whichMode),dParticleFluxdLambda_finitediff(ispecies,whichLambda,whichMode))
+            particleFluxPercentError(ispecies,whichLambda,whichMode) = &
+							percentError(dParticleFluxdLambda_analytic(ispecies,whichLambda,whichMode), &
+							dParticleFluxdLambda_finitediff(ispecies,whichLambda,whichMode))
 
-            heatFluxPercentError(ispecies,whichLambda,whichMode) = percentError(dHeatFluxdLambda_analytic(ispecies,whichLambda,whichMode),dHeatFluxdLambda_finitediff(ispecies,whichLambda,whichMode))
+            heatFluxPercentError(ispecies,whichLambda,whichMode) = &
+							percentError(dHeatFluxdLambda_analytic(ispecies,whichLambda,whichMode), &
+							dHeatFluxdLambda_finitediff(ispecies,whichLambda,whichMode))
 
-            parallelFlowPercentError(ispecies,whichLambda,whichMode) = percentError(dParallelFlowdLambda_analytic(ispecies,whichLambda,whichMode),dParallelFlowdLambda_finitediff(ispecies,whichLambda,whichMode))
+            parallelFlowPercentError(ispecies,whichLambda,whichMode) = &
+							percentError(dParallelFlowdLambda_analytic(ispecies,whichLambda,whichMode), &
+							dParallelFlowdLambda_finitediff(ispecies,whichLambda,whichMode))
           end do ! ispecies
         end if
-      end do ! whichLambda
-    end do ! whichMode
+      end do ! whichMode
+    end do ! whichLambda
 
     ! Change RHSMode so adjoint-related quantities are written to output
     if (constantJr) then

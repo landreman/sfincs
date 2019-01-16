@@ -41,7 +41,7 @@
     PetscScalar :: dBHat_sup_zetadLambda, dBHatdthetadLambda, dBHatdzetadLambda, dDHatdLambda
     PetscScalar :: geometricFactor, dFSABHat2dBmn, dFSABHat2dDmn, dVPrimeHatdDmn
     integer :: m,n
-    PetscScalar :: angle, cos_angle, sin_angle, dVPrimeHatdLambda
+    PetscScalar :: angle, cos_angle, sin_angle, dVPrimeHatdLambda, dFSABHat2dLambda, dVPrimeHatdBmn
 
     if (whichLambda > 0) then
       m = ms_sensitivity(whichMode)
@@ -63,21 +63,34 @@
     end if
 
     if (useDKESExBDrift) then
-      dFSABHat2dBmn = zero
-      dFSABHat2dDmn = zero
-      do itheta=1,Ntheta
-        do izeta=1,Nzeta
-          angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-          cos_angle = cos(angle)
-          dFSABHat2dBmn = dFSABHat2dBmn + 2*thetaWeights(itheta) * zetaWeights(izeta) &
-          * BHat(itheta,izeta) * cos_angle / DHat(itheta,izeta)
-          dFSABHat2dDmn = dFSABHat2dDmn + thetaWeights(itheta) * zetaWeights(izeta) &
-            * (BHat(itheta,izeta)**2)*cos_angle
-          dVPrimeHatdDmn = dVPrimeHatdDmn + thetaWeights(itheta) * zetaWeights(izeta) * cos_angle
-        end do
-      end do
-      dFSABHat2dBmn = dFSABHat2dBmn/VPrimeHat
-      dFSABHat2dDmn = dFSABHat2dDmn/VPrimeHat - FSABHat2*dVPrimeHatdDmn/VPrimeHat
+			if (coordinateSystem == COORDINATE_SYSTEM_VMEC) then
+				dFSABHat2dBmn = zero
+				dFSABHat2dDmn = zero
+				do itheta=1,Ntheta
+					do izeta=1,Nzeta
+						angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+						cos_angle = cos(angle)
+						dFSABHat2dBmn = dFSABHat2dBmn + 2*thetaWeights(itheta) * zetaWeights(izeta) &
+							* BHat(itheta,izeta) * cos_angle / DHat(itheta,izeta)
+						dFSABHat2dDmn = dFSABHat2dDmn + thetaWeights(itheta) * zetaWeights(izeta) &
+							* (BHat(itheta,izeta)**2)*cos_angle
+						dVPrimeHatdDmn = dVPrimeHatdDmn + thetaWeights(itheta) * zetaWeights(izeta) * cos_angle
+					end do
+				end do
+				dFSABHat2dBmn = dFSABHat2dBmn/VPrimeHat
+				dFSABHat2dDmn = dFSABHat2dDmn/VPrimeHat - FSABHat2*dVPrimeHatdDmn/VPrimeHat
+			else ! Boozer
+				dVPrimeHatdBmn  = zero
+				do itheta=1,Ntheta
+					do izeta=1,Nzeta
+						angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+						cos_angle = cos(angle)
+						dVPrimeHatdBmn = dVPrimeHatdBmn - (two*(GHat+iota*IHat)) * thetaWeights(itheta) * zetaWeights(izeta) &
+							* BHat(itheta,izeta)**(-3) * cos_angle
+					end do
+				end do
+				dFSABHat2dBmn = -4*pi*pi*(GHat+iota*IHat)*dVPrimeHatdBmn/(VPrimeHat**2)
+			end if
     end if
 
     ! *********************************************************
@@ -117,29 +130,38 @@
             cos_angle = cos(angle)
             sin_angle = sin(angle)
 
-            !thetaPartOfTerm(itheta,:) = BHat_sup_theta(itheta,izeta) &
-            !   * sqrtTHat/sqrtMHat * ddthetaToUse(itheta,:) &
-            !   / BHat(itheta,izeta)
-            ! geometricFactor = BHat_sup_theta/BHat
-
+						! geometricFactor = BHat_sup_theta/BHat = iota*BHat/(GHat+iota*IHat)
             select case(whichLambda)
               case (0) ! Er
                 geometricFactor = zero
               case (1) ! BHat
                 dBHatdLambda = cos_angle
-                geometricFactor = - BHat_sup_theta(itheta,izeta)*dBHatdLambda/(BHat(itheta,izeta)*BHat(itheta,izeta))
-                if (geometryScheme /= 5) then ! Boozer
-                  dBHat_sup_thetadLambda = 2*BHat_sup_theta(itheta,izeta)*cos_angle/BHat(itheta,izeta)
-                  geometricFactor = geometricFactor + dBHat_sup_thetadLambda/BHat(itheta,izeta)
-                end if
-              case (2) ! BHat_sup_theta
-                dBHat_sup_thetadLambda = cos_angle
-                geometricFactor = dBHat_sup_thetadLambda/BHat(itheta,izeta)
-              case (3) ! BHat_sup_zeta
-                geometricFactor = zero
-              case (4) ! BHat_sub_theta
-                geometricFactor = zero
-              case (5) ! BHat_sub_zeta
+                if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+									 geometricFactor = dBHatdLambda*iota/(GHat+iota*IHat)
+                else
+									 geometricFactor = -BHat_sup_theta(itheta,izeta)*dBHatdLambda/(BHat(itheta,izeta)*BHat(itheta,izeta))
+								end if
+              case (2) ! BHat_sub_theta / IHat
+								if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+									geometricFactor = -iota*iota*BHat(itheta,izeta)/(GHat+iota*IHat)**2
+								else
+                	geometricFactor = zero
+								end if
+              case (3) ! BHat_sub_zeta / GHat
+								if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+									geometricFactor = -iota*BHat(itheta,izeta)/(GHat+iota*IHat)**2
+								else
+                	geometricFactor = zero
+								end if
+              case (4) ! BHat_sup_theta / iota
+								if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+									geometricFactor = BHat(itheta,izeta)/(GHat+iota*IHat) &
+										-iota*IHat*BHat(itheta,izeta)/(GHat+iota*IHat)**2
+								else
+                	dBHat_sup_thetadLambda = cos_angle
+                	geometricFactor = dBHat_sup_thetadLambda/BHat(itheta,izeta)
+								end if
+              case (5) ! BHat_sup_zeta
                 geometricFactor = zero
               case (6) ! DHat
                 geometricFactor = zero
@@ -151,7 +173,6 @@
             thetaPartOfTerm = transpose(thetaPartOfTerm)
             localThetaPartOfTerm = thetaPartOfTerm(:,ithetaMin:ithetaMax)
 
-            !do ix=ixMin,Nx
             do ix=max(ixMin,min_x_for_L(L)),Nx
 
               do itheta=1,localNtheta
@@ -198,6 +219,8 @@
       allocate(rowIndices(localNzeta))
       allocate(colIndices(Nzeta))
 
+!			if (.false.) then
+
       do L=0,(Nxi-1)
         ddzetaToUse = ddzeta
         do itheta=ithetaMin, ithetaMax
@@ -207,33 +230,41 @@
             cos_angle = cos(angle)
             sin_angle = sin(angle)
 
-            !zetaPartOfTerm(izeta,:) = sqrtTHat/sqrtMHat * BHat_sup_zeta(itheta,izeta) &
-            !  * ddzetaToUse(izeta,:) / BHat(itheta,izeta)
-
-            ! geometricFactor = BHat_sup_zeta/BHat
+            ! geometricFactor = BHat_sup_zeta/BHat = BHat/(GHat+iota*IHat)
             select case(whichLambda)
               case (0) ! Er
                 geometricFactor = zero
               case (1) ! BHat
                 dBHatdLambda = cos_angle
-                geometricFactor = -BHat_sup_zeta(itheta,izeta)*dBHatdLambda/(BHat(itheta,izeta)*BHat(itheta,izeta))
-                if (geometryScheme /= 5) then ! Boozer
-                  dBHat_sup_zetadLambda = 2*BHat_sup_zeta(itheta,izeta)*cos_angle/BHat(itheta,izeta)
-                  geometricFactor = geometricFactor + dBHat_sup_zetadLambda/BHat(itheta,izeta)
-                end if
-              case (2) ! BHat_sup_theta
-                geometricFactor = zero
-              case (3) ! BHat_sup_zeta
+                if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+									 geometricFactor = dBHatdLambda/(GHat+iota*IHat)
+                else
+                	 geometricFactor = -BHat_sup_zeta(itheta,izeta)*dBHatdLambda/(BHat(itheta,izeta)*BHat(itheta,izeta))
+								end if
+              case (2) ! BHat_sub_theta / IHat
+							  if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+									geometricFactor = -BHat(itheta,izeta)*iota/(GHat+iota*IHat)**2
+								else
+                	geometricFactor = zero
+								end if
+              case (3) ! BHat_sub_zeta / GHat
+							  if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+									geometricFactor = -BHat(itheta,izeta)/(GHat+iota*IHat)**2
+								else
+                	geometricFactor = zero
+								end if
+              case (4) ! BHat_sup_theta / iota
+							  if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+									geometricFactor = -IHat*BHat(itheta,izeta)/(GHat+iota*IHat)
+								else
+                	geometricFactor = zero
+								end if
+              case (5) ! BHat_sup_zeta
                 dBHat_sup_zetadLambda = cos_angle
                 geometricFactor = dBHat_sup_zetadLambda/BHat(itheta,izeta)
-              case (4) ! BHat_sub_theta
-                geometricFactor = zero
-              case (5) ! BHat_sub_zeta
-                geometricFactor = zero
               case (6) ! DHat
                 geometricFactor = zero
             end select
-            !print *,"geometricFactor ", geometricFactor
             zetaPartOfTerm(izeta,:) = (sqrtTHat/sqrtMHat)*ddzetaToUse(izeta,:)*geometricFactor
           end do
 
@@ -286,7 +317,7 @@
       allocate(rowIndices(localNtheta))
       allocate(colIndices(Ntheta))
 
-     if (whichLambda==1 .and. geometryScheme /= 5) then
+     if (whichLambda==1 .and. coordinateSystem == COORDINATE_SYSTEM_BOOZER) then ! BHat
         dVPrimeHatdLambda = zero
         do itheta=1,Ntheta
           do izeta=1,Nzeta
@@ -318,12 +349,10 @@
             cos_angle = cos(angle)
             sin_angle = sin(angle)
 
-          !thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / FSABHat2 &
-          !* DHat(itheta,izeta) * BHat_sub_zeta(itheta,izeta)
-
-          !thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2) &
-              !* DHat(itheta,izeta) * BHat_sub_zeta(itheta,izeta)
-            !geometricFactor = DHat*BHat_sub_zeta/(BHat*BHat)
+						! factor = alpha*Delta/two*dPhiHatdpsiHat
+						! geometricFactor = DHat(itheta,izeta)*BHat_sub_zeta(itheta,izeta)/(BHat*BHat) = GHat/(GHat + iota*IHat)
+						! useDKESExBDrift = .true.
+							! geometricFactor = DHat(itheta,izeta)*BHat_sub_zeta(itheta,izeta)/(FSABHat2) = (GHat/(GHat + iota*IHat))*(BHat*BHat/FSABHat2)
             select case(whichLambda)
               case (0) ! Er
                 if (useDKESExBDrift) then
@@ -332,43 +361,67 @@
                   geometricFactor = DHat(itheta,izeta)*BHat_sub_zeta(itheta,izeta)/(BHat(itheta,izeta)*BHat(itheta,izeta))
                 end if
                 factor = alpha*Delta/two
-
               case (1) ! BHat
                 if (useDKESExBDrift) then
-                  if (geometryScheme /= 5) then ! Boozer
-                    dDHatdLambda = two*DHat(itheta,izeta)*cos_angle/BHat(itheta,izeta)
-                    geometricFactor = dDHatdLambda*BHat_sub_zeta(itheta,izeta)/FSABHat2 &
-                      + DHat(itheta,izeta)*BHat_sub_zeta(itheta,izeta)*dVPrimeHatdLambda/(FSABHat2*VPrimeHat)
+                  if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+										dBHatdLambda = cos_angle
+										geometricFactor = (GHat/(GHat + iota*IHat))*(two*BHat(itheta,izeta)*dBHatdLambda/FSABHat2 &
+											- BHat(itheta,izeta)*BHat(itheta,izeta)*dFSABHat2dBmn/(FSABHat2**2))
                   else
                     geometricFactor = -DHat(itheta,izeta)*BHat_sub_zeta(itheta,izeta) &
                       * dFSABHat2dBmn/(FSABHat2**2)
                   end if
                 else
-                  dBHatdLambda = cos_angle
-                  geometricFactor = -two*dBHatdLambda/(BHat(itheta,izeta) ** 3) &
-                    *DHat(itheta,izeta)*BHat_sub_zeta(itheta,izeta)
-                  if (geometryScheme /= 5) then ! Boozer
-                    dDHatdLambda = 2*DHat(itheta,izeta)*cos_angle/BHat(itheta,izeta)
-                    geometricFactor = geometricFactor + dDHatdLambda*BHat_sub_zeta(itheta,izeta)/BHat(itheta,izeta)**2
-                  end if
+                  if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+										geometricFactor = zero
+                  else
+                  	dBHatdLambda = cos_angle
+                  	geometricFactor = -two*dBHatdLambda/(BHat(itheta,izeta) ** 3) &
+                    	*DHat(itheta,izeta)*BHat_sub_zeta(itheta,izeta)
+									end if
                 end if
                 factor = alpha*Delta/two*dPhiHatdpsiHat
-              case (2) ! BHat_sup_theta
-                geometricFactor = zero
+              case (2) ! BHat_sub_theta / IHat
+								if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+									if (useDKESExBDrift) then
+										geometricFactor = -(GHat*iota/(GHat+iota*IHat)**2)*(BHat(itheta,izeta)*BHat(itheta,izeta)/FSABHat2)
+									else
+										geometricFactor = -GHat*iota/(GHat+iota*IHat)**2
+									end if
+								else
+                	geometricFactor = zero
+								end if
                 factor = alpha*Delta/two*dPhiHatdpsiHat
-              case (3) ! BHat_sup_zeta
-                geometricFactor = zero
+              case (3) ! BHat_sub_zeta / GHat
+								if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+									if (useDKESExBDrift) then
+										geometricFactor = (one/(GHat+iota*IHat)-GHat/(GHat+iota*IHat)**2) &
+											* (BHat(itheta,izeta)*BHat(itheta,izeta)/FSABHat2)
+									else
+										geometricFactor = (one/(GHat+iota*IHat)-GHat/(GHat+iota*IHat)**2)
+									end if
+								else
+								  dBHat_sub_zetadLambda = cos_angle
+									if (useDKESExBDrift) then
+										geometricFactor = DHat(itheta,izeta) * dBHat_sub_zetadLambda/FSABHat2
+									else
+										geometricFactor = DHat(itheta,izeta) * dBHat_sub_zetadLambda/ (BHat(itheta,izeta)*BHat(itheta,izeta))
+									end if
+								end if
                 factor = alpha*Delta/two*dPhiHatdpsiHat
-              case (4) ! BHat_sub_theta
-                geometricFactor = zero
+              case (4) ! BHat_sup_theta / iota
+								if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+									if (useDKESExBDrift) then
+										geometricFactor = (-GHat*IHat/(GHat+iota*IHat)**2)*(BHat(itheta,izeta)*BHat(itheta,izeta)/FSABHat2)
+									else
+										geometricFactor = (-GHat*IHat/(GHat+iota*IHat)**2)
+									end if
+								else
+                	geometricFactor = zero
+								end if
                 factor = alpha*Delta/two*dPhiHatdpsiHat
-              case (5) ! BHat_sub_zeta
-                dBHat_sub_zetadLambda = cos_angle
-                if (useDKESExBDrift) then
-                  geometricFactor = DHat(itheta,izeta) * dBHat_sub_zetadLambda/FSABHat2
-                else
-                  geometricFactor = DHat(itheta,izeta) * dBHat_sub_zetadLambda/ (BHat(itheta,izeta)*BHat(itheta,izeta))
-                end if
+              case (5) ! BHat_sup_zeta
+                geometricFactor = zero
                 factor = alpha*Delta/two*dPhiHatdpsiHat
               case (6) ! DHat
                 dDHatdLambda = -DHat(itheta,izeta)*DHat(itheta,izeta)*cos_angle
@@ -435,9 +488,8 @@
             cos_angle = cos(angle)
             sin_angle = sin(angle)
 
-            !  zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2) &
-            !       * DHat(itheta,izeta) * BHat_sub_theta(itheta,izeta)
-            ! geometricFactor = DHat*BHat_sub_theta/(BHat*BHat)
+						! geometryFactor = DHat(itheta,izeta)*BHat_sub_theta(itheta,izeta)/(BHat(itheta,izeta)*BHat(itheta,izeta)) = IHat/(GHat+iota*IHat)
+						! geometryFactor = DHat(itheta,izeta)*BHat_sub_theta(itheta,izeta)/FSABHat2 = (IHat/(GHat+iota*IHat))*(BHat*BHat/FSABHat2)
             select case(whichLambda)
               case (0) ! Er
                 if (useDKESExBDrift) then
@@ -449,38 +501,62 @@
               case (1) ! BHat
                 dBHatdLambda = cos_angle
                 if (useDKESExBDrift) then
-                  if (geometryScheme /= 5) then ! Boozer
-                    dDHatdLambda = 2*DHat(itheta,izeta)*dBHatdLambda/BHat(itheta,izeta)
-                    geometricFactor = dDHatdLambda*BHat_sub_theta(itheta,izeta)/FSABHat2 &
-                      + DHat(itheta,izeta)*BHat_sub_theta(itheta,izeta)*dVPrimeHatdLambda/(FSABHat2*VPrimeHat)
+                  if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+										geometricFactor = (2*BHat(itheta,izeta)*dBHatdLambda/FSABHat2)*(IHat/(GHat+iota*IHat))
                   else
                     geometricFactor = -DHat(itheta,izeta)*BHat_sub_theta(itheta,izeta) &
                       *dFSABHat2dBmn/(FSABHat2**2)
                   end if
                 else
-                  geometricFactor = -two*dBHatdLambda*DHat(itheta,izeta)*BHat_sub_theta(itheta,izeta) &
-                    /(BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta))
-                  if (geometryScheme /= 5) then ! Boozer
-                    dDHatdLambda = 2*DHat(itheta,izeta)*cos_angle/BHat(itheta,izeta)
-                    geometricFactor = geometricFactor + dDHatdLambda*BHat_sub_theta(itheta,izeta)/(BHat(itheta,izeta)**2)
-                  end if
+                  if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+										 geometricFactor = 0
+                  else
+										 geometricFactor = -two*dBHatdLambda*DHat(itheta,izeta)*BHat_sub_theta(itheta,izeta) &
+                     		/(BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta))
+									end if
                 end if
                 factor = -alpha*Delta/two*dPhiHatdpsiHat
-              case (2) ! BHat_sup_theta
-                geometricFactor = zero
-                factor = -alpha*Delta/two*dPhiHatdpsiHat
-              case (3) ! BHat_sup_zeta
-                geometricFactor = zero
-                factor = -alpha*Delta/two*dPhiHatdpsiHat
-              case (4) ! BHat_sub_theta
-                dBHat_sub_thetadLambda = cos_angle
+              case (2) ! BHat_sub_theta / IHat
                 if (useDKESExBDrift) then
-                  geometricFactor = DHat(itheta,izeta)*dBHat_sub_thetadLambda/FSABHat2
+									if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+										geometricFactor = (one/(GHat+iota*IHat)-(IHat*iota/(GHat+iota*IHat)**2)) &
+											*(BHat(itheta,izeta)*BHat(itheta,izeta))/FSABHat2
+									else
+                		dBHat_sub_thetadLambda = cos_angle
+                  	geometricFactor = DHat(itheta,izeta)*dBHat_sub_thetadLambda/FSABHat2
+									end if
                 else
-                  geometricFactor = DHat(itheta,izeta)*dBHat_sub_thetadLambda/(BHat(itheta,izeta) * BHat(itheta,izeta))
+									if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+										geometricFactor = (one/(GHat+iota*IHat)-(IHat*iota/(GHat+iota*IHat)**2))
+									else
+                		dBHat_sub_thetadLambda = cos_angle
+                  	geometricFactor = DHat(itheta,izeta)*dBHat_sub_thetadLambda/(BHat(itheta,izeta) * BHat(itheta,izeta))
+									end if
                 end if
                 factor = -alpha*Delta/two*dPhiHatdpsiHat
-              case (5) ! BHat_sub_zeta
+              case (3) ! BHat_sub_zeta / GHat
+								if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+									if (useDKESExBDrift) then
+										geometricFactor = -(IHat/(GHat+iota*IHat)**2)*(BHat(itheta,izeta)*BHat(itheta,izeta))/FSABHat2
+									else
+										geometricFactor = -(IHat/(GHat+iota*IHat)**2)
+									end if
+								else
+                	geometricFactor = zero
+								end if
+                factor = -alpha*Delta/two*dPhiHatdpsiHat
+              case (4) ! BHat_sup_theta / iota
+								if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+									if (useDKESExBDrift) then
+										geometricFactor = -(IHat*IHat/(GHat+iota*IHat)**2)*(BHat(itheta,izeta)*BHat(itheta,izeta)/FSABHat2)
+									else
+										geometricFactor = -(IHat*IHat/(GHat+iota*IHat)**2)
+									end if
+								else
+									geometricFactor = zero
+								end if
+                factor = -alpha*Delta/two*dPhiHatdpsiHat
+              case (5) ! BHat_sup_zeta
                 geometricFactor = zero
                 factor = -alpha*Delta/two*dPhiHatdpsiHat
               case (6) ! DHat
@@ -524,6 +600,8 @@
        ! *********************************************************
        ! Add the sensitivity of the standard mirror term:
        ! *********************************************************
+			 ! (1/(BHat*BHat))*(BHat_sup_theta*dBHatdtheta+BHat_sup_zeta*dBHatdzeta)
+					! = (1/(GHat+iota*IHat))*(iota*dBHatdtheta + dBHatdzeta)
 
       do itheta=ithetaMin,ithetaMax
          do izeta=izetaMin,izetaMax
@@ -531,11 +609,6 @@
             cos_angle = cos(angle)
             sin_angle = sin(angle)
 
-            !factor = -sqrtTHat/(2*sqrtMHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
-            !     * (BHat_sup_theta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
-            !     + BHat_sup_zeta(itheta,izeta) * dBHatdzeta(itheta,izeta))
-            !geometricFactor = 1/(BHat*BHat) * (BHat_sup_theta*dBHatdtheta 
-            ! + BHat_sup_zeta*dBHatdzeta)
             select case(whichLambda)
               case (0) ! Er
                 geometricFactor = zero
@@ -543,32 +616,44 @@
                 dBHatdLambda = cos_angle
                 dBHatdthetadLambda = -m*sin_angle
                 dBHatdzetadLambda = n*Nperiods*sin_angle
-                ! Term from 1/(BHat**2)
-                geometricFactor = -two*dBHatdLambda/(BHat(itheta,izeta)**3) &
-                  * (BHat_sup_theta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
-                  + BHat_sup_zeta(itheta,izeta)*dBHatdzeta(itheta,izeta)) &
-                  ! Term from dBHatdtheta
-                  + one/(BHat(itheta,izeta)*BHat(itheta,izeta)) &
-                  * (BHat_sup_theta(itheta,izeta)*dBhatdthetadLambda &
-                  ! Term from dBHatdzeta 
-                  + BHat_sup_zeta(itheta,izeta)*dBhatdzetadLambda)
-                if (geometryScheme /= 5) then ! Boozer
-                  dBHat_sup_thetadLambda = 2*BHat_sup_theta(itheta,izeta)*cos_angle/BHat(itheta,izeta)
-                  dBHat_sup_zetadLambda = 2*BHat_sup_zeta(itheta,izeta)*cos_angle/BHat(itheta,izeta)
-                  geometricFactor = geometricFactor + one/(BHat(itheta,izeta)**2)*(dBHat_sup_thetadLambda*dBHatdtheta(itheta,izeta) + dBHat_sup_zetadLambda*dBHatdzeta(itheta,izeta))
-                end if
-              case (2) ! BHat_sup_theta
-                dBHat_sup_thetadLambda = cos_angle
-                geometricFactor = one/(BHat(itheta,izeta)*BHat(itheta,izeta)) &
-                  * (dBHat_sup_thetadLambda*dBHatdtheta(itheta,izeta))
-              case (3) ! BHat_sup_zeta
+								if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+									geometricFactor = (1/(GHat+iota*IHat))*(iota*dBHatdthetadLambda + dBHatdzetadLambda)
+								else
+									! Term from 1/(BHat**2)
+									geometricFactor = -two*dBHatdLambda/(BHat(itheta,izeta)**3) &
+										* (BHat_sup_theta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
+										+ BHat_sup_zeta(itheta,izeta)*dBHatdzeta(itheta,izeta)) &
+										! Term from dBHatdtheta
+										+ one/(BHat(itheta,izeta)*BHat(itheta,izeta)) &
+										* (BHat_sup_theta(itheta,izeta)*dBhatdthetadLambda &
+										! Term from dBHatdzeta
+										+ BHat_sup_zeta(itheta,izeta)*dBhatdzetadLambda)
+								end if
+              case (2) ! BHat_sub_theta / IHat
+								if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+									geometricFactor = -(iota/(GHat+iota*IHat)**2)*(iota*dBHatdtheta(itheta,izeta) + dBHatdzeta(itheta,izeta))
+								else
+                	geometricFactor = zero
+								end if
+              case (3) ! BHat_sub_zeta / GHat
+								if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+									geometricFactor = -(one/(GHat+iota*IHat)**2)*(iota*dBHatdtheta(itheta,izeta) + dBHatdzeta(itheta,izeta))
+								else
+                	geometricFactor = zero
+								end if
+              case (4) ! BHat_sup_theta / iota
+								if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+									geometricFactor = -IHat/(GHat+iota*IHat)**2*(iota*dBHatdtheta(itheta,izeta) + dBHatdzeta(itheta,izeta)) &
+										+ (dBHatdtheta(itheta,izeta)/(GHat+iota*IHat))
+								else
+									dBHat_sup_thetadLambda = cos_angle
+									geometricFactor = one/(BHat(itheta,izeta)*BHat(itheta,izeta)) &
+										* (dBHat_sup_thetadLambda*dBHatdtheta(itheta,izeta))
+								end if
+              case (5) ! BHat_sup_zeta
                 dBHat_sup_zetadLambda = cos_angle
                 geometricFactor = one/(BHat(itheta,izeta)*BHat(itheta,izeta)) &
                   * (dBHat_sup_zetadLambda*dBHatdzeta(itheta,izeta))
-              case (4) ! BHat_sub_theta
-                geometricFactor = zero
-              case (5) ! BHat_sub_zeta
-                geometricFactor = zero
               case (6) ! DHat
                 geometricFactor = zero
             end select
@@ -602,6 +687,10 @@
        ! Add the sensitivity of the non-standard d/dxi term associated with E_r:
        ! *********************************************************
 
+			 ! (BHat_sub_zeta(itheta,izeta) * dBHatdtheta(itheta,izeta) &
+       !   - BHat_sub_theta(itheta,izeta) * dBHatdzeta(itheta,izeta))*DHat/(BHat(itheta,izeta)**3)
+			 ! = (GHat*dBHatdtheta-IHat*dBHatdzeta)*(1/(BHat*(GHat+iota*IHat)))
+
        if (includeElectricFieldTermInXiDot) then
           do itheta=ithetaMin,ithetaMax
              do izeta=izetaMin,izetaMax
@@ -612,12 +701,6 @@
                temp = BHat_sub_zeta(itheta,izeta) * dBHatdtheta(itheta,izeta) &
                      - BHat_sub_theta(itheta,izeta) * dBHatdzeta(itheta,izeta)
 
-               !factor = alpha*Delta*dPhiHatdpsiHat/(4*(BHat(itheta,izeta)**3)) &
-               !   * DHat(itheta,izeta) * temp
-
-              ! geometricFactor = (DHat/BHat**3)*temp+              
-              ! factor = alpha*Delta*dPhiHatdpsiHat*geometricFactor/4
-
               select case(whichLambda)
                 case (0) ! Er
                   geometricFactor = DHat(itheta,izeta)*temp/(BHat(itheta,izeta)**3)
@@ -626,41 +709,55 @@
                   dBHatdthetadLambda = -m*sin_angle
                   dBHatdzetadLambda = n*Nperiods*sin_angle
                   dBHatdLambda = cos_angle
-                  dTempdLambda = BHat_sub_zeta(itheta,izeta) * dBHatdthetadLambda &
-                    - BHat_sub_theta(itheta,izeta) * dBHatdzetadLambda
-                  geometricFactor = &
-                    ! Term from 1/(BHat**3)
-                    -three*DHat(itheta,izeta)*temp*dBHatdLambda/(BHat(itheta,izeta)**4) &
-                    ! Term from dBHatdtheta and dBHatdzeta
-                    + DHat(itheta,izeta) * dTempdLambda/(BHat(itheta,izeta)**3)
+									dTempdLambda = BHat_sub_zeta(itheta,izeta) * dBHatdthetadLambda &
+										- BHat_sub_theta(itheta,izeta) * dBHatdzetadLambda
+!                  factor = (alpha*Delta*dPhiHatdpsiHat/four)*geometricFactor
+                  if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+										geometricFactor = dTempdLambda/ (BHat(itheta,izeta)*(GHat+iota*IHat)) &
+											- temp/(BHat(itheta,izeta)*BHat(itheta,izeta)*(GHat+iota*IHat))
+                  else
+										geometricFactor = &
+											! Term from 1/(BHat**3)
+											-three*DHat(itheta,izeta)*temp*dBHatdLambda/(BHat(itheta,izeta)**4) &
+											! Term from dBHatdtheta and dBHatdzeta
+											+ DHat(itheta,izeta) * dTempdLambda/(BHat(itheta,izeta)**3)
+									end if
+									factor = (alpha*Delta*dPhiHatdpsiHat/four)*geometricFactor
+                case (2) ! BHat_sub_theta / IHat
+									if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+										geometricFactor = -dBHatdzeta(itheta,izeta)/(BHat(itheta,izeta)*(GHat+iota*IHat)) &
+											-temp*iota/(BHat(itheta,izeta)*(GHat+iota*IHat)**2)
+									else
+                  	dBHat_sub_thetadLambda = cos_angle
+                  	dTempdLambda = - dBHat_sub_thetadLambda * dBHatdzeta(itheta,izeta)
+                  	geometricFactor = DHat(itheta,izeta)*dTempdLambda/(BHat(itheta,izeta)**3)
+									end if
                   factor = (alpha*Delta*dPhiHatdpsiHat/four)*geometricFactor
-                  if (geometryScheme /= 5) then ! Boozer
-                    dDHatdLambda = 2*DHat(itheta,izeta)*cos_angle/BHat(itheta,izeta)
-                    geometricFactor = geometricFactor + dDHatdLambda/(BHat(itheta,izeta)**3) * temp
-                    factor = (alpha*Delta*dPhiHatdpsiHat/four)*geometricFactor
-                  end if
-                case (2) ! BHat_sup_theta
+                case (3) ! BHat_sub_zeta / GHat
+									if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+										geometricFactor = dBHatdtheta(itheta,izeta)/(BHat(itheta,izeta)*(GHat+iota*IHat)) &
+											- temp/(BHat(itheta,izeta)*(GHat+iota*IHat)**2)
+									else
+                  	dBHat_sub_zetadLambda = cos_angle
+                  	dTempdLambda = dBHat_sub_zetadLambda * dBHatdtheta(itheta,izeta)
+                  	geometricFactor = DHat(itheta,izeta)*dTempdLambda/(BHat(itheta,izeta)**3)
+									end if
+                  factor = (alpha*Delta*dPhiHatdpsiHat/four)*geometricFactor
+                case (4) ! BHat_sup_theta / iota
+									if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+										geometricFactor = -IHat*temp/(BHat(itheta,izeta)*(GHat+iota*IHat)**2)
+									else
+                  	geometricFactor = zero
+									end if
+                  factor = (alpha*Delta*dPhiHatdpsiHat/four)*geometricFactor
+                case (5) ! BHat_sup_zeta
                   geometricFactor = zero
-                  factor = (alpha*Delta*dPhiHatdpsiHat/four)*geometricFactor
-                case (3) ! BHat_sup_zeta
-                  geometricFactor = zero
-                  factor = (alpha*Delta*dPhiHatdpsiHat/four)*geometricFactor
-                case (4) ! BHat_sub_theta
-                  dBHat_sub_thetadLambda = cos_angle
-                  dTempdLambda = - dBHat_sub_thetadLambda * dBHatdzeta(itheta,izeta)
-                  geometricFactor = DHat(itheta,izeta)*dTempdLambda/(BHat(itheta,izeta)**3)
-                  factor = (alpha*Delta*dPhiHatdpsiHat/four)*geometricFactor
-                case (5) ! BHat_sub_zeta
-                  dBHat_sub_zetadLambda = cos_angle
-                  dTempdLambda = dBHat_sub_zetadLambda * dBHatdtheta(itheta,izeta)
-                  geometricFactor = DHat(itheta,izeta)*dTempdLambda/(BHat(itheta,izeta)**3)
                   factor = (alpha*Delta*dPhiHatdpsiHat/four)*geometricFactor
                 case (6) ! DHat
                   dDHatdLambda = -DHat(itheta,izeta)*DHat(itheta,izeta)*cos_angle
                   geometricFactor = dDHatdLambda*temp/(BHat(itheta,izeta)**3)
                   factor = (alpha*Delta*dPhiHatdpsiHat/four)*geometricFactor
               end select
-
 
                 do ix=ixMin,Nx
                    do L=0,(Nxi_for_x(ix)-1)
@@ -695,6 +792,8 @@
     ! Add the sensitivity of the collisionless d/dx term associated with E_r
     ! *********************************************************
 
+		! DHat/BHat**3 * (BHat_sub_theta*dBHatdzeta-BHat_sub_zeta*dBHatdtheta)
+		! = 1/(BHat*(GHat+iota*IHat)) * (IHat*dBHatdzeta-GHat*dBHatdtheta)
     if (includeXDotTerm) then
 
       allocate(xPartOfXDot(Nx,Nx))
@@ -743,42 +842,59 @@
                       - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))
                   case (1) ! BHat
                     dBHatdLambda = cos_angle
-                    dBHatdzetadLambda = n*Nperiods*sin_angle
-                    dBHatdthetadLambda = -m*sin_angle
-                    geometricFactor = &
-                      ! Term from 1/(BHat**3)
-                      -three*DHat(itheta,izeta)*dBHatdLambda &
-                      /(BHat(itheta,izeta)**4) &
-                      * (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) &
-                      - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta)) &
-                      ! Term from dBHatdzeta
-                      + DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
-                      * BHat_sub_theta(itheta,izeta)*dBHatdzetadLambda &
-                      ! Term from dBHatdtheta
-                      - Dhat(itheta,izeta)/(BHat(itheta,izeta)**3) &
-                      * Bhat_sub_zeta(itheta,izeta)*dBHatdthetadLambda
+										dBHatdzetadLambda = n*Nperiods*sin_angle
+										dBHatdthetadLambda = -m*sin_angle
+										if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+											geometricFactor = -dBHatdLambda/(BHat(itheta,izeta)*BHat(itheta,izeta)*(GHat + iota*IHat)) &
+												* (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta)) &
+												+ 1/(BHat(itheta,izeta)*(GHat+iota*IHat)) * (IHat*dBHatdzetadlambda-GHat*dBHatdthetadLambda)
+										else
+											geometricFactor = &
+												! Term from 1/(BHat**3)
+												-three*DHat(itheta,izeta)*dBHatdLambda &
+												/(BHat(itheta,izeta)**4) &
+												* (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) &
+												- BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta)) &
+												! Term from dBHatdzeta
+												+ DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
+												* BHat_sub_theta(itheta,izeta)*dBHatdzetadLambda &
+												! Term from dBHatdtheta
+												- Dhat(itheta,izeta)/(BHat(itheta,izeta)**3) &
+												* Bhat_sub_zeta(itheta,izeta)*dBHatdthetadLambda
+										end if
                     factor = -alpha*Delta*dPhiHatdPsiHat/four
-                    if (geometryScheme /= 5) then ! Boozer
-                      dDHatdLambda = 2*DHat(itheta,izeta)*cos_angle/BHat(itheta,izeta)
-                      geometricFactor = geometricFactor + dDHatdLambda/(BHat(itheta,izeta)**3) &
-                      * (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) &
-                      - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))
-                    end if
-                  case (2) ! BHat_sup_theta
+                  case (2) ! BHat_sub_theta / IHat
+										if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+											geometricFactor = -iota/(BHat(itheta,izeta)*(GHat+iota*IHat)**2) &
+												* (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta)) &
+												+ one/(BHat(itheta,izeta)*(GHat+iota*IHat)) * dBHatdzeta(itheta,izeta)
+										else
+                    	dBHat_sub_thetadLambda = cos_angle
+                    	geometricFactor = DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
+                      	* dBHat_sub_thetadLambda*dBHatdzeta(itheta,izeta)
+										end if
+                    factor = -alpha*Delta*dPhiHatdPsiHat/four
+                  case (3) ! BHat_sub_zeta / GHat
+										if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+											geometricFactor = -one/(BHat(itheta,izeta)*(GHat+iota*IHat)**2) &
+												* (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta)) &
+												- dBHatdtheta(itheta,izeta)/(BHat(itheta,izeta)*(GHat+iota*IHat))
+										else
+											dBHat_sub_zetadLambda = cos_angle
+											geometricFactor = -DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
+												* dBHat_sub_zetadLambda*dBHatdtheta(itheta,izeta)
+										end if
+                    factor = -alpha*Delta*dPhiHatdPsiHat/four
+                  case (4) ! BHat_sup_theta / iota
+										if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+											geometricFactor = -IHat/(BHat(itheta,izeta)*(GHat+iota*IHat)**2) &
+ 												* (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta))
+										else
+                    	geometricFactor = zero
+										end if
+                    factor = -alpha*Delta*dPhiHatdPsiHat/four
+                  case (5) ! BHat_sup_zeta
                     geometricFactor = zero
-                    factor = -alpha*Delta*dPhiHatdPsiHat/four
-                  case (3) ! BHat_sup_zeta
-                    geometricFactor = zero
-                    factor = -alpha*Delta*dPhiHatdPsiHat/four
-                  case (4) ! BHat_sub_theta
-                    dBHat_sub_thetadLambda = cos_angle
-                    geometricFactor = DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
-                      * dBHat_sub_thetadLambda*dBHatdzeta(itheta,izeta)
-                    factor = -alpha*Delta*dPhiHatdPsiHat/four
-                  case (5) ! BHat_sub_zeta
-                    dBHat_sub_zetadLambda = cos_angle
-                    geometricFactor = -DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
-                      * dBHat_sub_zetadLambda*dBHatdtheta(itheta,izeta)
                     factor = -alpha*Delta*dPhiHatdPsiHat/four
                   case (6) ! DHat
                     dDHatdLambda = -DHat(itheta,izeta)*DHat(itheta,izeta)*cos_angle
@@ -803,15 +919,12 @@
                   end do
                end do
 
-
                 ! Term that is super-super-diagonal in L:
                 if (L<(Nxi-2)) then
                    ell = L + 2
                    stuffToAdd = (L+1)*(L+2)/((two*L+5)*(2*L+3))*factor*geometricFactor
-                   !do ix_col=ixMinCol,Nx
                    do ix_col=max(ixMinCol,min_x_for_L(ell)),Nx
                       colIndex=getIndex(ispecies,ix_col,ell+1,itheta,izeta,BLOCK_F,0)
-                      !do ix_row=ixMin,Nx
                       do ix_row=max(ixMin,min_x_for_L(L)),Nx
                          call MatSetValueSparse(dMatrixdLambda, rowIndices(ix_row), colIndex, &
                               stuffToAdd*xPartOfXDot(ix_row,ix_col), ADD_VALUES, ierr)
@@ -842,6 +955,8 @@
       deallocate(xPartOfXDot_minus)
     end if
 
+!		end if ! comment out
+
     end do ! ispecies
 
     ! *********************************************************************************
@@ -853,6 +968,7 @@
     ! Add the sensitivity of the density and pressure constraints:
     ! *******************************************************************************
 
+		! geometricFactor = 1/DHat = (GHat+iota*IHat)/(BHat*BHat)
     if (procThatHandlesConstraints) then
       L=0
       do itheta=1,Ntheta
@@ -860,15 +976,24 @@
             angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
             cos_angle = cos(angle)
             sin_angle = sin(angle)
-            !factor = thetaWeights(itheta)*zetaWeights(izeta)/DHat(itheta,izeta)
             geometricFactor = zero
-            if (whichLambda == 6) then
-              dDHatdLambda = - DHat(itheta,izeta)*DHat(itheta,izeta)*cos_angle
-              geometricFactor = -dDHatdLambda/(DHat(itheta,izeta)**2)
-            else if (whichLambda == 1 .and. geometryScheme /= 5) then ! Boozer, BHat
-              dDHatdLambda = 2*DHat(itheta,izeta)*cos_angle/BHat(itheta,izeta)
-              geometricFactor = -dDHatdLambda/(DHat(itheta,izeta)**2)
-            end if
+						if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+							if (whichLambda == 1) then  ! BHat
+								dBHatdLambda = cos_angle
+								geometricFactor = -two*dBHatdLambda*(GHat+iota*IHat)/(BHat(itheta,izeta)**3)
+							else if (whichLambda == 2) then ! IHat
+								geometricFactor = iota/(BHat(itheta,izeta)*BHat(itheta,izeta))
+							else if (whichLambda == 3) then ! GHat
+								geometricFactor = 1/(BHat(itheta,izeta)*BHat(itheta,izeta))
+							else if (whichLambda == 4) then ! iota
+								geometricFactor = IHat/(BHat(itheta,izeta)*BHat(itheta,izeta))
+							end if
+						else
+							if (whichLambda == 6) then ! DHat
+								dDHatdLambda = - DHat(itheta,izeta)*DHat(itheta,izeta)*cos_angle
+								geometricFactor = -dDHatdLambda/(DHat(itheta,izeta)**2)
+							end if
+						end if
             factor = thetaWeights(itheta)*zetaWeights(izeta)*geometricFactor
 
             do ix=1,Nx
@@ -894,18 +1019,12 @@
     ! *******************************************************************************
 
     call PetscTime(time2, ierr)
-!    if (masterProc) then
-!       print *,"Time to pre-assemble sensitivity of matrix: ", time2-time1, " seconds."
-!    end if
     call PetscTime(time1, ierr)
 
     call MatAssemblyBegin(dMatrixdLambda, MAT_FINAL_ASSEMBLY, ierr)
     call MatAssemblyEnd(dMatrixdLambda, MAT_FINAL_ASSEMBLY, ierr)
 
     call PetscTime(time2, ierr)
-!    if (masterProc) then
-!       print *,"Time to assemble sensitivity of matrix: ", time2-time1, " seconds."
-!    end if
     call PetscTime(time1, ierr)
 
 
@@ -913,9 +1032,5 @@
     NNZ = nint(myMatInfo(MAT_INFO_NZ_USED))
     NNZAllocated = nint(myMatInfo(MAT_INFO_NZ_ALLOCATED))
     NMallocs = nint(myMatInfo(MAT_INFO_MALLOCS))
-!    if (masterProc) then
-!       print *,"# of nonzeros in sensitivity of matrix:",NNZ, ", allocated:",NNZAllocated, &
-!            ", mallocs:",NMallocs," (should be 0)"
-!    end if
 
   end subroutine populatedMatrixdLambda
