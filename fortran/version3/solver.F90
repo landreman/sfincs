@@ -639,7 +639,7 @@ module solver
       ispecies = 0
       if (masterProc) then
         print *,"################################################################"
-        print "(a,i1,a,i1,a)"," Solving adjoint system with adjoint RHS ",whichAdjointRHS," and species ",ispecies," for ampolar solve."
+        print "(a,i1,a,i1,a)"," Solving adjoint system with adjoint RHS ",whichAdjointRHS," and species ",ispecies," for ambipolar solve."
         print *,"################################################################"
       end if
 
@@ -677,7 +677,7 @@ module solver
         call VecDestroy(adjointRHSVec, ierr)
         if (discreteAdjointOption == 0) then
           call MatDestroy(adjointMatrix, ierr)
-        end if
+      	end if
         call VecDestroy(adjointSolutionJr,ierr)
       end if
     end if
@@ -820,6 +820,7 @@ module solver
           call VecSet(adjointSolutionVec, zero, ierr)
         end do ! ispecies
 
+				! Now compute diagnostics for species-summed quantities
         if (useSummedSolutionVec) then
 						call PetscTime(time1, ierr)
             call evaluateDiagnostics(solutionVec,summedSolutionVec,adjointSolutionJr,whichAdjointRHS,0)

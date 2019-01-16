@@ -33,17 +33,36 @@ subroutine testingdMatrixdLambda(forwardSolution,whichMode, whichLambda)
   integer :: i
   PetscScalar :: deltaFactor
 
+	print *,"whichLambda: ", whichLambda
   select case(whichLambda)
     case(1)
       deltaFactor = bmnc_init(whichMode)
     case(2)
-      deltaFactor = bsupthetamnc_init(whichMode)
+			if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+				deltaFactor = IHat_init
+!				print *,"IHat_init: ", IHat_init
+!				stop
+			else
+      	deltaFactor = bsubthetamnc_init(whichMode)
+			end if
     case(3)
-      deltaFactor = bsupzetamnc_init(whichMode)
+			if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+				deltaFactor = GHat_init
+!				print *,"GHat_init: ", GHat_init
+!				stop
+			else
+      	deltaFactor = bsubzetamnc_init(whichMode)
+			end if
     case(4)
-      deltaFactor = bsubthetamnc_init(whichMode)
+			if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+				deltaFactor = iota_init
+!				print *,"iota_init: ", iota_init
+!				stop
+			else
+      	deltaFactor = bsupthetamnc_init(whichMode)
+			end if
     case(5)
-      deltaFactor = bsubzetamnc_init(whichMode)
+      deltaFactor = bsupzetamnc_init(whichMode)
     case(6)
       deltaFactor = gmnc_init(whichMode)
   end select
@@ -57,10 +76,10 @@ subroutine testingdMatrixdLambda(forwardSolution,whichMode, whichLambda)
   call populatedMatrixdLambda(dMatrixdLambda_analytic, whichLambda, whichMode)
 
   ! Recompute geometry
-  if (geometryScheme == 5) then
+  if (coordinateSystem == COORDINATE_SYSTEM_VMEC) then
     call updateVMECGeometry(whichMode, whichLambda,.false.)
   else
-    call updateBoozerGeometry(whichMode, .false.)
+    call updateBoozerGeometry(whichMode, whichLambda,.false.)
   end if
 
   ! Populate new matrix
@@ -140,17 +159,15 @@ subroutine testingdMatrixdLambda(forwardSolution,whichMode, whichLambda)
   end do
 
   ! Compute metrics for percentError
-  print *,"Max result: ", maxval(resultArray)
-  print *,"Max result_analytic: ", maxval(result_analyticArray)
   print *,"Maximum percentError: ", maxval(percentError), "%"
   print *,"resultArray at max: ", resultArray(maxloc(percentError))
   print *,"result_analyticArray at max: ", result_analyticArray(maxloc(percentError))
 
   ! Recompute geometry
-  if (geometryScheme == 5) then
+  if (coordinateSystem == COORDINATE_SYSTEM_VMEC) then
     call updateVMECGeometry(whichMode, whichLambda, .true.)
   else
-    call updateBoozerGeometry(whichMode, .true.)
+    call updateBoozerGeometry(whichMode, whichLambda, .true.)
   end if
 
 end subroutine testingdMatrixdLambda

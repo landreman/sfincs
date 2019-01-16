@@ -48,23 +48,35 @@ subroutine testingDiagnosticSensitivity(forwardSolution, whichMode, whichLambda)
   parallelFlowInit = FSABVelocityUsingFSADensityOverRootFSAB2
 
   ! Update geometry
-  if (geometryScheme == 5) then
+  if (coordinateSystem == COORDINATE_SYSTEM_VMEC) then
     call updateVMECGeometry(whichMode, whichLambda, .false.)
   else
-    call updateBoozerGeometry(whichMode, .false.)
+    call updateBoozerGeometry(whichMode, whichLambda, .false.)
   end if
 
   select case(whichLambda)
     case(1)
       deltaFactor = bmnc_init(whichMode)
     case(2)
-      deltaFactor = bsupthetamnc_init(whichMode)
+			if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+				deltaFactor = IHat_init
+			else
+      	deltaFactor = bsubthetamnc_init(whichMode)
+			end if
     case(3)
-      deltaFactor = bsupzetamnc_init(whichMode)
+			if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+				deltaFactor = GHat_init
+			else
+      	deltaFactor = bsubzetamnc_init(whichMode)
+			end if
     case(4)
-      deltaFactor = bsubthetamnc_init(whichMode)
+			if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+				deltaFactor = iota_init
+			else
+      	deltaFactor = bsupthetamnc_init(whichMode)
+			end if
     case(5)
-      deltaFactor = bsubzetamnc_init(whichMode)
+      deltaFactor = bsupzetamnc_init(whichMode)
     case(6)
       deltaFactor = gmnc_init(whichMode)
   end select
@@ -77,10 +89,10 @@ subroutine testingDiagnosticSensitivity(forwardSolution, whichMode, whichLambda)
   call diagnostics(forwardSolution, iterationNum)
 
   ! Reset geometry to original values
-  if (geometryScheme == 5) then
+  if (coordinateSystem == COORDINATE_SYSTEM_VMEC) then
     call updateVMECGeometry(whichMode, whichLambda, .true.)
   else
-    call updateBoozerGeometry(whichMode, .true.)
+    call updateBoozerGeometry(whichMode, whichLambda, .true.)
   end if
   percentError = zero
 
@@ -138,13 +150,7 @@ subroutine testingDiagnosticSensitivity(forwardSolution, whichMode, whichLambda)
     end if
   end do
 
-    ! Compute diagnostics with old geometry for testing
-    call diagnostics(forwardSolution, iterationNum)
-!
-!    do whichSpecies=1,Nspecies
-!      print *,"Delta particleFlux (should be 0): ", particleFlux_vm_rN(whichSpecies)-particleFluxInit(whichSpecies)
-!      print *,"Delta heatFlux (should be 0): ",heatFlux_vm_rN(whichSpecies)-heatFluxInit(whichSpecies)
-!      print *,"Delta parallelFlow (should be 0):",FSABVelocityUsingFSADensityOverRootFSAB2(whichSpecies)-parallelFlowInit(whichSpecies)
-!    end do
+	! Compute diagnostics with old geometry for testing
+	call diagnostics(forwardSolution, iterationNum)
 
 end subroutine testingDiagnosticSensitivity

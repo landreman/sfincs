@@ -37,13 +37,25 @@ subroutine testingdRHSdLambda(whichMode, whichLambda)
     case(1)
       deltaFactor = bmnc_init(whichMode)
     case(2)
-      deltaFactor = bsupthetamnc_init(whichMode)
+			if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+				deltaFactor = IHat_init
+			else
+      	deltaFactor = bsubthetamnc_init(whichMode)
+			end if
     case(3)
-      deltaFactor = bsupzetamnc_init(whichMode)
+			if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+				deltaFactor = GHat_init
+			else
+      	deltaFactor = bsubzetamnc_init(whichMode)
+			end if
     case(4)
-      deltaFactor = bsubthetamnc_init(whichMode)
+			if (coordinateSystem == COORDINATE_SYSTEM_BOOZER) then
+				deltaFactor = iota_init
+			else
+      	deltaFactor = bsupthetamnc_init(whichMode)
+			end if
     case(5)
-      deltaFactor = bsubzetamnc_init(whichMode)
+      deltaFactor = bsupzetamnc_init(whichMode)
     case(6)
       deltaFactor = gmnc_init(whichMode)
   end select
@@ -69,7 +81,7 @@ subroutine testingdRHSdLambda(whichMode, whichLambda)
   if (geometryScheme == 5) then ! VMEC
     call updateVMECGeometry(whichMode, whichLambda, .false.)
   else
-    call updateBoozerGeometry(whichMode, .false.)
+    call updateBoozerGeometry(whichMode, whichLambda, .false.)
   end if
 
   ! Compute new RHS
@@ -128,11 +140,15 @@ subroutine testingdRHSdLambda(whichMode, whichLambda)
   print *,"dRHSdLambdaArray at max: ", dRHSdLambdaArray(maxloc(percentError))
   print *,"dRHSdLambda_analyticArray at max: ", dRHSdLambda_analyticArray(maxloc(percentError))
 
+!  print *,"Sum percentError: ", sum(percentError), "%"
+!  print *,"dRHSdLambdaArray at max: ", dRHSdLambdaArray(maxloc(percentError))
+!  print *,"dRHSdLambda_analyticArray at max: ", dRHSdLambda_analyticArray(maxloc(percentError))
+
   ! Update geometry
   if (geometryScheme == 5) then ! VMEC
     call updateVMECGeometry(whichMode, whichLambda, .true.)
   else
-    call updateBoozerGeometry(whichMode, .true.)
+    call updateBoozerGeometry(whichMode, whichLambda, .true.)
   end if
 
 end subroutine testingdRHSdLambda
