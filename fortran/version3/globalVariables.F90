@@ -70,9 +70,9 @@ module globalVariables
   integer :: VMEC_Nyquist_option = 1
   PetscScalar :: rippleScale = 1
 	! For use in Boozer bmnc stellopt
-	integer :: mmax_boozer = 40
-	integer :: nmax_boozer = 40
-	PetscScalar, dimension(:,:), allocatable :: boozer_bmnc
+	integer, parameter :: mmax_boozer = 40
+	integer, parameter :: nmax_boozer = 40
+	PetscScalar, dimension(0:mmax_boozer,-nmax_boozer:nmax_boozer) :: boozer_bmnc
 
   ! ********************************************************
   ! ********************************************************
@@ -419,6 +419,7 @@ module globalVariables
   PetscScalar, dimension(:,:), allocatable :: radialCurrentPercentError, totalHeatFluxPercentError, bootstrapPercentError
   PetscScalar, dimension(:), allocatable :: bmnc_init, bsubthetamnc_init, bsubzetamnc_init, bsupthetamnc_init, bsupzetamnc_init, gmnc_init
   PetscScalar, dimension(:,:), allocatable :: DHat_init, BHat_init, dBHatdtheta_init, dBHatdzeta_init, BHat_sup_theta_init, dBHat_sup_theta_dzeta_init, BHat_sup_zeta_init, dBHat_sup_zeta_dtheta_init, BHat_sub_theta_init, dBHat_sub_theta_dzeta_init, BHat_sub_zeta_init, dBHat_sub_zeta_dtheta_init
+	PetscScalar :: GHat_init, IHat_init, iota_init
   PetscScalar, dimension(:,:), allocatable :: dPhidPsidLambda_finitediff, dPhidPsiPercentError
   ! Related to ambipolar solve
   PetscScalar :: dRadialCurrentdEr
