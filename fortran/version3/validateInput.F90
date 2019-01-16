@@ -1196,13 +1196,6 @@ subroutine validateInput()
       endif
       stop
     endif
-    ! Check for VMEC or Boozer geometry
-    ! Check for stellarator symmetry is performed in geometry.f90
-    if (geometryScheme /= 5) then ! Boozer
-      NLambdas = 1 ! Only BHat derivatives computed
-    else
-      NLambdas = 6 ! VMEC
-    end if
     ! Check there is no inductive E
     if (EParallelHat /= 0) then
       if (masterProc) then

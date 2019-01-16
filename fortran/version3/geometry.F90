@@ -279,10 +279,12 @@ contains
     select case (geometryScheme)
     case (1,2,3,4,11,12,13)
        coordinateSystem = COORDINATE_SYSTEM_BOOZER
-       call computeBHat_Boozer()
+			 call computeBHat_Boozer()
+			 NLambdas = 4 ! BHat, GHat, IHat, iota
     case (5,6,7)
        coordinateSystem = COORDINATE_SYSTEM_VMEC
        call computeBHat_VMEC()
+			 NLambdas = 6 ! BHat, B_sub_theta, B_sub_zeta, B_sup_theta, B_sup_zeta, DHat
     case default
        print *,"Error! Invalid setting for geometryScheme."
        stop
@@ -1096,7 +1098,7 @@ contains
 			 if (boozer_bmnc(0,0) /= zero) then
 			 		NHarmonics = NHarmonics - 1
 			 end if
-       print *,"Nharmonics: ", Nharmonics
+!       print *,"Nharmonics: ", Nharmonics
        if (.not. allocated(BHarmonics_l)) then
           allocate(BHarmonics_l(NHarmonics))
        end if
@@ -1127,9 +1129,9 @@ contains
 			 B0OverBBar = boozer_bmnc(0,0)
        dGdpHat = 0 !Not implemented as an input for this case yet, could be put in namelist input if needed
        rN = rN_wish
-      print *,"BHarmonics_l: ", BHarmonics_l
-      print *,"BHarmonics_n: ", BHarmonics_n
-      print *,"BHarmonics_amplitudes: ", BHarmonics_amplitudes
+!      print *,"BHarmonics_l: ", BHarmonics_l
+!      print *,"BHarmonics_n: ", BHarmonics_n
+!      print *,"BHarmonics_amplitudes: ", BHarmonics_amplitudes
 
     case default
        print *,"Error! Invalid geometryScheme"
@@ -2101,7 +2103,7 @@ contains
 
     if (RHSMode>3 .and. RHSMode<6 .and. nonStelSym) then
       if (masterProc) then
-        print *,"Error! Adjoint not compatible stellarator asymmety."
+        print *,"Error! Adjoint not compatible with  stellarator asymmety."
       end if
       stop
     end if
@@ -2125,7 +2127,6 @@ contains
     end if
 
   if (debugAdjoint) then
-      ! BHat_sub_theta, BHat_sub_zeta are fixed
       DHat_init = DHat
       BHat_init = BHat
       dBHatdtheta_init = dBHatdtheta
@@ -2134,6 +2135,11 @@ contains
       dBHat_sup_theta_dzeta_init = dBHat_sup_theta_dzeta
       BHat_sup_zeta_init = BHat_sup_zeta
       dBHat_sup_zeta_dtheta_init = dBHat_sup_zeta_dtheta
+			BHat_sub_theta_init = BHat_sub_theta
+			BHat_sub_zeta_init = BHat_sub_zeta
+			GHat_init = GHat
+			IHat_init = IHat
+			iota_init = iota
     end if
 
     !possible double-check
@@ -2211,6 +2217,18 @@ contains
       allocate(bsupzetamnc_init(NModesAdjoint))
       allocate(bmnc_init(NModesAdjoint))
       allocate(gmnc_init(NModesAdjoint))
+			allocate(BHat_init(Ntheta,Nzeta))
+			allocate(DHat_init(Ntheta,Nzeta))
+			allocate(BHat_sub_theta_init(Ntheta,Nzeta))
+			allocate(BHat_sub_zeta_init(Ntheta,Nzeta))
+			allocate(dBHatdtheta_init(Ntheta,Nzeta))
+			allocate(dBHatdzeta_init(Ntheta,Nzeta))
+			allocate(BHat_sup_theta_init(Ntheta,Nzeta))
+			allocate(BHat_sup_zeta_init(Ntheta,Nzeta))
+			allocate(dBHat_sup_theta_dzeta(Ntheta,Nzeta))
+			allocate(dBHat_sup_zeta_dtheta(Ntheta,Nzeta))
+			allocate(BHat_sub_theta(Ntheta,Nzeta))
+			allocate(BHat_sub_zeta(Ntheta,Nzeta))
       bsubthetamnc_init = zero
       bsubzetamnc_init = zero
       bsupthetamnc_init = zero
