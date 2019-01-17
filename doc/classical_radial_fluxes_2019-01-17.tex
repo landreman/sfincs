@@ -1,0 +1,383 @@
+\documentclass[12pt, a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath}
+%\usepackage{relsize}
+
+%\usepackage{fixmath}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage[usenames,dvipsnames]{color}
+%\usepackage[small,font=it]{caption}
+\usepackage{amssymb}
+%\usepackage{icomma}
+%\usepackage{hyperref}
+%\usepackage{mcode}
+\usepackage{verbatim}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{units}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\lhead{\footnotesize \parbox{11cm}{Braginskii matrix approach to classical transport from the linearized Fokker-Planck collision operator}}
+\rhead{\footnotesize \parbox{2cm}{Stefan Buller}}
+\renewcommand\headheight{24pt}
+%\usepackage{dirtytalk} \say{} command for quotations
+
+\makeatletter
+\newenvironment{tablehere}
+  {\def\@captype{table}}
+  {}
+
+\newenvironment{figurehere}
+  {\def\@captype{figure}}
+  {}
+
+\newsavebox\myboxA
+\newsavebox\myboxB
+\newlength\mylenA
+
+\newcommand*\obar[2][0.75]{% OverBAR, adds bar over an element
+    \sbox{\myboxA}{$\m@th#2$}%
+    \setbox\myboxB\null% Phantom box
+    \ht\myboxB=\ht\myboxA%
+    \dp\myboxB=\dp\myboxA%
+    \wd\myboxB=#1\wd\myboxA% Scale phantom
+    \sbox\myboxB{$\m@th\overline{\copy\myboxB}$}%  Overlined phantom
+    \setlength\mylenA{\the\wd\myboxA}%   calc width diff
+    \addtolength\mylenA{-\the\wd\myboxB}%
+    \ifdim\wd\myboxB<\wd\myboxA%
+       \rlap{\hskip 0.5\mylenA\usebox\myboxB}{\usebox\myboxA}%
+    \else
+        \hskip -0.5\mylenA\rlap{\usebox\myboxA}{\hskip 0.5\mylenA\usebox\myboxB}%
+    \fi}
+
+\makeatother
+
+
+%\def\equationautorefname{ekvation}
+%\def\tableautorefname{tabell}
+%\def\figureautorefname{figur}
+%\def\sectionautorefname{sektion}
+%\def\subsectionautorefname{sektion}
+
+\DeclareMathOperator\erf{erf}
+%\DeclareMathOperator\mod{mod}
+
+\newcommand{\ordo}[1]{{\cal O}\left( #1 \right)}
+\DeclareMathOperator{\sgn}{sgn}
+%\renewcommand{\vec}[1]{\boldsymbol{#1}}
+\newcommand{\im}{\ensuremath{\mathrm{i}}}
+\newcommand{\e}{\ensuremath{\mathrm{e}}}
+\newcommand{\E}{\ensuremath{\mathcal{E}}}
+\newcommand{\p}{\ensuremath{\partial}}
+\newcommand{\Z}{\ensuremath{\mathbb{Z}}}
+
+\newcommand{\bra}[1]{\langle #1 \mid}
+\newcommand{\ket}[1]{\mid #1 \rangle}
+\newcommand\matris[4]{\ensuremath{\begin{pmatrix} #1 & #2 \\ #3 & #4\end{pmatrix}}}
+\renewcommand{\d}{\ensuremath{\mathrm{d}}}
+%\DeclareMathOperator*{\sgn}{sgn}
+\newcommand{\todo}[1]{\textcolor{red}{#1}}
+\newcommand{\lang}{\left\langle}
+\newcommand{\rang}{\right\rangle}
+
+
+
+%to get leftrightarrow over tensors of rank-2.
+\def\shrinkage{2.1mu}
+\def\vecsign{\mathchar"017E}
+\def\dvecsign{\smash{\stackon[-1.95pt]{\mkern-\shrinkage\vecsign}{\rotatebox{180}{$\mkern-\shrinkage\vecsign$}}}}
+\def\dvec#1{\def\useanchorwidth{T}\stackon[-4.2pt]{#1}{\,\dvecsign}}
+\usepackage{stackengine}
+\stackMath
+\def\perfect{\textsc{Perfect}}
+
+
+\lstset{language=[90]Fortran,
+  basicstyle=\ttfamily,
+  keywordstyle=\color{red},
+  commentstyle=\color{green},
+  morecomment=[l]{!\ }% Comment only with space after !
+   frame=single,
+   breaklines=true,
+   postbreak=\raisebox{0ex}[0ex][0ex]{\ensuremath{\color{blue}\hookrightarrow\space}}
+}
+
+\usepackage[
+    backend=biber,
+    style=alphabetic,
+    citestyle=authoryear,
+    natbib=true,
+    url=false,
+    doi=false,
+    isbn=false,
+    eprint=false,
+    sorting=none,
+    maxcitenames=2,
+    maxbibnames=3
+]{biblatex} 
+
+\AtEveryBibitem{\clearfield{month}}
+\AtEveryCitekey{\clearfield{month}}
+\AtEveryBibitem{\clearfield{issue}}
+\AtEveryCitekey{\clearfield{issue}}
+
+\bibliography{../../../plasma-bib} 
+
+%=================================================================
+\begin{document}
+\section{Drift-kinetic classical transport}
+These notes derive the classical transport under the same set of assumptions as in the linearized drift-kinetic equation solved by the $\delta f$-code neoclassical code \textsc{Sfincs} (and probably most other neoclassical codes). 
+
+\subsection{Motivation}
+For a mass-ratio expanded ion-impurity collision operator, we found that the classical transport of collisional impurities in W7-X can be comparable to the neoclassical transport. Thus, it would be of interest to have a general numerical tool to calculate the classical transport alongside the neoclassical transport from a drift-kinetic solver such as \textsc{Sfincs}.
+
+
+\subsection{Gyrophase dependent part of $f$}
+In many ways, calculating the classical transport is simpler than calculating the neoclassical transport, as the gyrophase dependent part of the distribution function is smaller than the gyrophase-independent in the expansion parameter $\rho/L$, and the gyrophase dependent part to required order is given entirely by the zeroth order gyrophase independent distribution. When $f_{a0}$ is a Maxwellian $f_{aM}$, the gyrophase dependent part is given by
+\begin{equation}
+\tilde{f}_{a1} = -\vec{\rho}_a(\gamma) \cdot \nabla f_{Ma} = -\vec{\rho}(\gamma) \cdot \nabla \psi  \frac{\p f_{Ma}}{\p \psi}, \label{eq:ftilde}
+\end{equation}
+where $\gamma$ is the gyrophase, $\psi$ a flux-label and $\vec{\rho}$ the gyrophase vector
+\begin{equation}
+\vec{\rho}_a = \frac{1}{\Omega_a}\vec{b} \times \vec{v}_\perp,
+\end{equation}
+with $\vec{v}_\perp$ the velocity perpendicular to the magnetic field, $\Omega_a=Z_a eB/m_a$ the gyrofrequency, $\vec{b}$ the unit vector in the direction of the magnetic field $\vec{B}$; and $\psi$ a flux-label, which acts as our radial coordinate.
+
+\autoref{eq:ftilde} can be massaged a bit to yield (we drop the tilde since we will only consider the gyrophase dependent part of $f_{a1}$ here)
+\begin{equation}
+f_{a1} = \frac{1}{\Omega_a}(\vec{b}\times \nabla \psi) \cdot  \vec{v}_\perp\frac{\p f_{Ma}}{\p \psi},
+\end{equation}
+and we introduce the local coordinate system $\vec{v}_\perp = v_2 \hat{e}_2 + v_3 \hat{e}_3$, where $\hat{e}_2$, $\hat{e}_3$ form an orthonormal triplet with $\vec{b}$. There is some freedom in how we align our $\hat{e}_2$, $\hat{e}_3$ coordinates, and we choose these vectors so that $\hat{e}_2$ is entirely in the $(\vec{b}\times \nabla \psi)$ direction. Thus
+\begin{equation}
+f_{a1} = \frac{1}{\Omega_a}|\vec{b}\times \nabla \psi| v_2 \frac{\p f_{Ma}}{\p \psi}.
+\end{equation}
+
+Finally, we evaluate $\frac{\p f_{Ma}}{\p \psi}$. For heavy impurities, the lowest order distribution may vary on the flux-surface in response to a flux-surface variation of the electrostatic potential, in which case, we write
+\begin{equation}
+f_{Ma} = \eta_a(\psi) \left(\frac{m_a}{2\pi T_a}\right)^{3/2} \exp{\left(-\frac{m_av^2}{2T_a} - \frac{Z_a e \tilde{\Phi}}{T_a}\right)},
+\end{equation}
+where the \emph{pseudo-density} $\eta_a$ is related to the ordinary density by
+\begin{equation}
+\eta_a = n_a \e^{Z_a e \tilde{\Phi}/T_a}.
+\end{equation}
+The gradient thus becomes
+\begin{equation}
+\frac{\p f_{Ma}}{\p \psi} = f_{Ma}\left(\frac{\d \ln\eta_a}{\d \psi} + \frac{Z_a e}{T_a} \frac{\p \tilde{\Phi}}{\p \psi}  + \frac{Z_a e \tilde{\Phi}}{T_a} \frac{\d \ln T_a}{\d \psi}
+ + \left[\frac{m_a v^2}{2T_a} - \frac{3}{2}\right]  \frac{\d \ln T_a}{\d \psi}\right). \label{eq:dpsif0}
+\end{equation}
+To simplify notation, we will introduce the quantities
+\begin{align}
+\alpha_{1a} \equiv & \frac{\d \ln\eta_a}{\d \psi} + \frac{Z_a e}{T_a} \frac{\p \tilde{\Phi}}{\p \psi}  + \frac{Z_a e \tilde{\Phi}}{T_a} \frac{\d \ln T_a}{\d \psi}
+  - \frac{3}{2}  \frac{\d \ln T_a}{\d \psi} \\
+  \alpha_{2a} \equiv & \frac{\d \ln T_a}{\d \psi},
+\end{align}
+so that $\frac{\p f_{Ma}}{\p \psi} = f_{Ma}(\alpha_{a1} + \alpha_{2a} x_a^2)$,
+where
+\begin{equation}
+x_a^2 \equiv \frac{m_a v^2}{2T_a} \equiv \frac{v^2}{v_{Ta}^2}.
+\end{equation}
+Thus
+\begin{equation}
+f_{a1} = \frac{|\vec{b}\times \nabla \psi| }{\Omega_a}v_2 f_{Ma}(\alpha_{1a} + \alpha_{2a} x_a^2).
+\end{equation}
+
+
+\subsection{Radial fluxes}
+The classical radial flux of particle and heat is given by
+\begin{align}
+  \Gamma_a \equiv \lang \vec{\Gamma}_a \cdot \nabla \psi \rang^{\text{C}} \equiv& \lang \frac{\vec{b} \times \nabla \psi}{Z_a e B} \cdot\vec{R}_a \rang,\label{eq:Gamma} \\
+  Q_a \equiv \lang \vec{Q}_a \cdot \nabla \psi \rang^{\text{C}} \equiv& \lang \frac{\vec{b} \times \nabla \psi}{Z_a e B} \cdot\vec{G}_a \rang,\label{eq:Q}
+\end{align}
+where we have introduced the \emph{friction force} and \emph{energy-weighted friction force}
+\begin{align}
+  \vec{R}_a &= \int \d^3 v m_a \vec{v} C[f_{a}],\\
+  \vec{G}_a &= \int \d^3 v \frac{m_a v^2}{2}  m_a \vec{v} C[f_{a}].
+\end{align}
+Here, $C[f_a]$ is the Fokker-Planck collision operator accounting for the effects of all species acting on $f_a$
+\begin{equation}
+    C[f_a] = \sum_b C_{ab}\left[f_{a},f_{b}\right].
+    \end{equation}
+    An important property of the Fokker-Planck operator is that it preserves the gyrophase dependence of $f_a$. Thus, only the gyrophase dependent part of $f_{a}$ will contribute to the friction force in the $\vec{b} \times \nabla\psi$ direction.
+    As the gyrophase dependent part of $f_a$ acts as a small correction to $f_{Ma}$, we can linearize the Fokker-Planck operator around $f_{Ma}$ and write
+\begin{equation}
+  \begin{aligned}
+    C[f_a] =& \sum_b C_{ab}\left[f_{Ma} + f_{1a},f_{Mb}+f_{1b}\right] \\
+    \approx & \sum_b C_{ab}[f_{Ma},f_{Mb}] + C_{ab}[f_{Ma},f_{b1}] + C_{ab}[f_{a1},f_{Mb}],
+      \end{aligned}
+    \end{equation}
+    where the gyrophase-independent $C_{ab}[f_{Ma},f_{Mb}]$ part will not contribute to the classical transport. With this result, we write the relevant components of $\vec{R}_a$ and $\vec{G}_a$ as
+    \begin{align}
+  \vec{b} \times \nabla \psi \cdot \vec{R}_a &= m_a  |\vec{b} \times \nabla \psi|\sum_b \int \!\d^3 v \, v_2 \left(C_{ab}[f_{a1},f_{Mb}] + C_{ab}[f_{Ma},f_{b1}]\right),\\
+  \vec{b} \times \nabla \psi \cdot \vec{G}_a &= m_a T_a |\vec{b} \times \nabla \psi| \sum_b \int \!\d^3 v\, v_2 x_a^2  \left(C_{ab}[f_{a1},f_{Mb}] + C_{ab}[f_{Ma},f_{b1}] \right).
+    \end{align}
+    Inserting our expressions for $f_{1}$, we thus get
+    \begin{align}
+      &\begin{aligned}
+        (\vec{b} \times \nabla \psi) \cdot \vec{R}_a = m_a  |\vec{b} \times \nabla \psi|^2\sum_b \int \!\d^3 v \, v_2 &\left( \frac{\alpha_{1a}}{\Omega_a}  C_{ab}[v_2 f_{Ma},f_{Mb}] + \frac{\alpha_{2a}}{\Omega_a} C_{ab}[v_2 x_a^2 f_{Ma} ,f_{Mb}] \right.\\
+          &\left.+ \frac{\alpha_{1b}}{\Omega_b}C_{ab}[f_{Ma},v_2 f_{Mb}] + \frac{\alpha_{2b}}{\Omega_b}C_{ab}[f_{Ma},v_2 x_b^2 f_{Mb} ]\right),
+      \end{aligned}\\
+      &\begin{aligned}
+        (\vec{b} \times \nabla \psi) \cdot \vec{G}_a = m_a T_a |\vec{b} \times \nabla \psi|^2 \sum_b \int \!\d^3 v\, v_2 x_a^2  &\left( \frac{\alpha_{1a} }{\Omega_a}C_{ab}[v_2 f_{Ma},f_{Mb}]
+          + \frac{\alpha_{2a}}{\Omega_a}C_{ab}[v_2 x_a^2 f_{Ma} ,f_{Mb}]
+        \right.\\
+        &\left.+ \frac{\alpha_{1b}}{\Omega_b}C_{ab}[f_{Ma},v_2 f_{Ma}]
+          + \frac{\alpha_{2b}}{\Omega_b}C_{ab}[f_{Ma},v_2 x_b^2f_{Ma}] 
+        \right).
+      \end{aligned}
+    \end{align}
+    These friction-force projections can be conveniently expressed in terms of Braginskii matrix elements
+    \begin{align}
+  M_{ab}^{jk} = \frac{\tau_{ab}}{n_a} \int v_2 L_j^{(3/2)}(x_a^2) C_{ab}\left[\frac{m_a v_2}{T_a} L_k^{(3/2)}(x_a^2) f_{a0},f_{b0}\right] \\
+  N_{ab}^{jk} = \frac{\tau_{ab}}{n_a} \int v_2 L_j^{(3/2)}(x_a^2) C_{ab}\left[f_{a0},\frac{m_b v_2}{T_b} L_k^{(3/2)}(x_b^2)  f_{b0}\right],
+\end{align}
+where
+\begin{equation}
+\tau_{ab} = \frac{12 \pi^{3/2} \epsilon_0^2}{\sqrt{2} e^4 \ln \Lambda} \frac{m_a^{1/2} T_a^{3/2}}{Z_a^2 Z_b^2 n_b},
+\end{equation}
+and the relevant Sonine polynomials are
+\begin{align}
+  L_0^{(3/2)}(x_a^2) = 1 \\
+  L_1^{(3/2)}(x_a^2) = \frac{5}{2} - x_a^2,
+\end{align}
+so that
+\begin{align}
+  x_a^2 - \frac{5}{2} =& -L_1^{(3/2)}(x_a^2)  \label{eq:qmotiv}\\
+  x_a^2  =& \frac{5}{2}L_0^{(3/2)}(x_a^2) -L_1^{(3/2)}(x_a^2)  \\
+  1 = &L_0^{(3/2)}(x_a^2).
+\end{align}
+\autoref{eq:qmotiv} makes it convenient to calculate the conductive heat flux $q_a = Q_a - \frac{5}{2} T_a \Gamma_a$ rather than directly calculating $Q_a$. With this in mind, we write
+\begin{align}
+      &\begin{aligned}
+        (\vec{b} \times \nabla \psi) \cdot \vec{R}_a = m_a  |\vec{b} \times \nabla \psi|^2\sum_b \frac{n_a}{\tau_{ab}}&\left[ \frac{\alpha_{1a}}{\Omega_a}  \frac{T_a}{m_a}M_{ab}^{00} + \frac{\alpha_{2a}}{\Omega_a}\frac{T_a}{m_a} \left(\frac{5}{2}M_{ab}^{00} - M_{ab}^{01}\right)  \right.\\
+          &\left.+ \frac{\alpha_{1b}}{\Omega_b}\frac{T_b}{m_b}N_{ab}^{00}+ \frac{\alpha_{2b}}{\Omega_b}\frac{T_b}{m_b}\left(\frac{5}{2} N_{ab}^{00} - N_{ab}^{01}\right)\right],
+      \end{aligned}\\
+      &\begin{aligned}
+        (\vec{b} \times \nabla \psi) \cdot \left(\vec{G}_a - T_a \frac{5}{2}\vec{R}_a\right) = -m_a T_a |\vec{b} \times \nabla \psi|^2 \sum_b \frac{n_a}{\tau_{ab}} &\left[ \frac{\alpha_{1a} }{\Omega_a} \frac{T_a}{m_a}M_{ab}^{10}
+          + \frac{\alpha_{2a}}{\Omega_a}\frac{T_a}{m_a}\left(\frac{5}{2}M_{ab}^{10} - M_{ab}^{11}\right) 
+        \right.\\
+        &\left.+ \frac{\alpha_{1b}}{\Omega_b}\frac{T_b}{m_b} N_{ab}^{10}
+          + \frac{\alpha_{2b}}{\Omega_b}\frac{T_b}{m_b}\left(\frac{5}{2}N_{ab}^{10} - N_{ab}^{11}\right) 
+        \right].
+      \end{aligned}
+\end{align}
+The classical particle-flux and heat-flux thus become
+
+\begin{align}
+  \hspace*{-18ex}\Gamma_a =&  \frac{m_a}{Z_a  e^2}\lang |\nabla \psi|^2 \sum_b \frac{n_a n_b}{B^2 \tau_{ab} n_b}\left[ \frac{\alpha_{1a} T_a}{Z_a}  M_{ab}^{00} + \frac{\alpha_{2a} T_a}{Z_a} \left(\frac{5}{2}M_{ab}^{00} - M_{ab}^{01}\right) + \frac{\alpha_{1b} T_b}{Z_b}N_{ab}^{00}+ \frac{\alpha_{2b} T_b}{Z_b}\left(\frac{5}{2} N_{ab}^{00} - N_{ab}^{01}\right)\right] \rang \\
+  \hspace*{-18ex}q_a =&  -\frac{T_a m_a}{Z_a e^2}\lang |\nabla \psi|^2 \sum_b \frac{n_a n_b}{B^2 \tau_{ab} n_b }\left[ \frac{\alpha_{1a} T_a}{Z_a}  M_{ab}^{10} + \frac{\alpha_{2a} T_a}{Z_a} \left(\frac{5}{2}M_{ab}^{10} - M_{ab}^{11}\right) + \frac{\alpha_{1b} T_b}{Z_b}N_{ab}^{10}+ \frac{\alpha_{2b} T_b}{Z_b}\left(\frac{5}{2} N_{ab}^{10} - N_{ab}^{11}\right)\right] \rang.
+\end{align}
+
+The values for the matrix-components can be found in the appendix of Helander+Sigmar. We can simplify the above expressions slightly by noting the symmetry properties
+\begin{align}
+  M_{ab}^{jk} &= M_{ab}^{kj}, \\
+  N_{ab}^{jk} &= \frac{T_a v_{Ta}}{T_b v_{Tb}} N_{ba}^{kj}, \\
+  N_{ab}^{j0} &=-M_{ab}^{j0} = -M_{ab}^{0j},  \\
+  N_{ab}^{0j} &= \frac{T_a v_{Ta}}{T_b v_{Tb}} N_{ba}^{j0} =-\frac{T_a v_{Ta}}{T_b v_{Tb}} M_{ba}^{j0}  =-\frac{T_a^{3/2} m_b^{1/2}}{T_b^{3/2} m_a^{1/2}} M_{ba}^{0j}, \\
+\end{align}
+where the last property follows from applying the other 3. Thus, we only need
+\begin{align}
+  M_{ab}^{00} =& - \frac{1+\frac{m_a}{m_b}}{\left(1+\frac{m_a T_b}{m_b T_a}\right)^{3/2}} = - \frac{\left(1+\frac{m_a}{m_b}\right)\left(1+\frac{m_a T_b}{m_b T_a}\right)}{\left(1+\frac{m_a T_b}{m_b T_a}\right)^{5/2}}\\
+  M_{ab}^{01} =& - \frac{3}{2} \frac{1+\frac{m_a}{m_b}}{\left(1+\frac{m_a T_b}{m_b T_a}\right)^{5/2}} \\
+  M_{ba}^{01} =& - \frac{3}{2} \frac{1+\frac{m_b}{m_a}}{\left(1+\frac{m_b T_a}{m_a T_b}\right)^{5/2}} =- \frac{3}{2} \frac{\left(1+\frac{m_a}{m_b}\right)\frac{m_b}{m_a}\left(\frac{m_a T_b}{m_b T_a}\right)^{5/2}}{\left(1+\frac{m_a T_b}{m_b T_a}\right)^{5/2}} \\
+  M_{ab}^{11} =& - \frac{\frac{13}{4} + 4 \frac{m_a T_b}{m_b T_a} + \frac{15}{2}\left(\frac{m_a T_b}{m_b T_a}\right)^2 }{\left(1+\frac{m_a T_b}{m_b T_a}\right)^{5/2}} \\
+  N_{ab}^{11} =& \frac{27}{4}  \frac{\frac{m_a}{m_b}}{\left(1+\frac{m_a T_b}{m_b T_a}\right)^{5/2}}. \\
+\end{align}
+
+The property $N_{ab}^{j0} =-M_{ab}^{j0} = -M_{ab}^{0j}$ also means that the radial electric field does not contribute to the classical heat or particle flux.
+
+Writing out the $\alpha_1$ and $\alpha_2$ and employing the relevant symmetry properties, we obtain the particle flux
+\begin{equation}
+\begin{aligned}
+ \hspace*{-10ex} \Gamma_a =  \frac{m_a}{Z_a e^2}\sum_b \frac{1}{\tau_{ab} n_b}&\left[\lang  n_a n_b\frac{ |\nabla \psi|^2}{B^2} \rang M_{ab}^{00} \left(\frac{ T_a}{Z_a}  \frac{\d \ln\eta_a}{\d \psi} -\frac{ T_b}{Z_b}  \frac{\d \ln\eta_b}{\d \psi}\right) \right.\\
+    &\left.+    \lang n_a n_b\frac{  |\nabla \psi|^2}{B^2} e\tilde{\Phi} \rang M_{ab}^{00} \left(\frac{\d \ln T_a}{\d \psi} -\frac{\d \ln T_b}{\d \psi}\right) \right.\\
+   &\left. + \lang n_a n_b \frac{|\nabla \psi|^2 }{B^2}\rang\left(  \left(M_{ab}^{00} - M_{ab}^{01}\right)\frac{ T_a}{Z_a}\frac{\d \ln T_a}{\d \psi} 
+    - \left(M_{ab}^{00} - \frac{m_a T_b}{m_b T_a} M_{ab}^{01}\right)\frac{ T_b}{Z_b}\frac{\d \ln T_b}{\d \psi}\right)\right] 
+\end{aligned}
+\end{equation}
+and the heat-flux
+\begin{equation}
+\begin{aligned}
+  \hspace*{-10ex} q_a =  -\frac{T_a m_a}{Z_a e^2} \sum_b \frac{1}{\tau_{ab} n_b} &\left[
+    \lang n_a n_b\frac{|\nabla \psi|^2}{B^2 } \rang M_{ab}^{01}\left(\frac{T_a}{Z_a}  \frac{\d \ln\eta_a}{\d \psi} - \frac{T_b}{Z_b}\frac{\d \ln\eta_b}{\d \psi}\right) \right.\\
+    &\left.+\lang n_a n_b\frac{|\nabla \psi|^2}{B^2 } e \tilde{\Phi} \rang M_{ab}^{01} \left(\frac{\d \ln T_a}{\d \psi}-\frac{\d \ln T_b}{\d \psi}\right) \right.\\
+    &\left.+ \lang n_a n_b\frac{|\nabla \psi|^2}{B^2 } \rang \left(\left(M_{ab}^{01} - M_{ab}^{11}\right)\frac{ T_a}{Z_a} \frac{\d \ln T_a}{\d \psi}
+    - \left(M_{ab}^{01} + N_{ab}^{11}\right)\frac{T_b}{Z_b}\frac{\d \ln T_b}{\d \psi}\right) \right]
+\end{aligned}
+\end{equation}
+
+\section{SFINCS implementation}
+\textsc{Sfincs} uses normalized quantities (denoted with a hat), where the normalized radial fluxes are defined in terms of the physical fluxes as
+\begin{align}
+  \hat{\Gamma}_a &= \frac{\bar{R}}{\bar{n}\bar{v}} \frac{1}{Z_a e} \lang B^{-2} \left(\vec{B} \times \nabla \hat{\psi}\right) \cdot \vec{R}_a \rang, \\
+  \hat{Q}_a &= \frac{\bar{R}}{\bar{n}\bar{v} \bar{T}} \frac{1}{Z_a e} \lang B^{-2} \left(\vec{B} \times \nabla \hat{\psi}\right) \cdot \vec{G}_a \rang,
+\end{align}
+where $\hat{\psi} = \psi/(\bar{B}\hat{R}^2)$ is just a new choice of radial coordinate rather than a normalization -- see the \textsc{Sfincs} manual for more details. We also define the dimensionless parameters $\alpha = e\bar{\Phi}/\bar{T}$ and $\Delta = \frac{\sqrt{2\bar{m}\bar{T}}}{e\bar{R}\bar{B}}$, and the dimensionless collisionality $\nu_n$
+\begin{align}
+  \bar{\nu} &\equiv \frac{\sqrt{2}}{12 \pi^{3/2}} \frac{\bar{n} e^4 \ln \Lambda}{\epsilon_0^2 \bar{m}^{1/2} \bar{T}^{3/2}} \\
+  \nu_n &\equiv \bar{\nu} \frac{\bar{R} \sqrt{\bar{m}}}{\sqrt{2\bar{T}}} =\frac{1}{12 \pi^{3/2}} \frac{\bar{n} \bar{R} e^4 \ln \Lambda}{\epsilon_0^2 \bar{T}^{2}},
+\end{align}
+so that
+\begin{equation}
+\frac{1}{\tau_{ab} n_b} = \frac{Z_a^2 Z_b^2}{\hat{m}_a^{1/2} \hat{T}_a^{3/2}} \frac{\sqrt{2} \bar{T}^{1/2}}{\bar{n} \bar{R} \bar{m}^{1/2}} \nu_n = \frac{Z_a^2 Z_b^2}{\hat{m}_a^{1/2} \hat{T}_a^{3/2}} \frac{\sqrt{2} \bar{T}^{1/2}\bar{m}^{1/2} \bar{B}}{\bar{n} \bar{R} \bar{B} \bar{m}} \nu_n = \frac{Z_a^2 Z_b^2}{\hat{m}_a^{1/2} \hat{T}_a^{3/2}} \frac{e\bar{B}}{\bar{n}\bar{m}} \Delta \nu_n.
+\end{equation}
+With this, the normalized particle and conductive heat-flux becomes
+\begin{equation}
+\begin{aligned}
+  \hspace*{-10ex} \hat{\Gamma}_a =   \frac{\Delta^2 \nu_n}{2}\frac{Z_a\hat{m}_a^{1/2}}{\hat{T}_a^{3/2}}\sum_b Z_b^2 &\left[
+    \lang  \hat{n}_a \hat{n}_b\frac{ |\bar{R}\nabla \hat{\psi}|^2}{\hat{B}^2} \rang M_{ab}^{00} \left(\frac{ \hat{T}_a}{Z_a}  \frac{\d \ln\eta_a}{\d \hat{\psi}} -\frac{ \hat{T}_b}{Z_b}  \frac{\d \ln\eta_b}{\d \hat{\psi}}\right) \right.\\
+    &\left.+    \lang \hat{n}_a \hat{n}_b\frac{  |\bar{R}\nabla \hat{\psi}|^2}{\hat{B}^2} \hat{\Phi}_1 \rang \alpha  M_{ab}^{00} \left(\frac{\d \ln T_a}{\d \hat{\psi}} -\frac{\d \ln T_b}{\d \hat{\psi}}\right) \right.\\
+   &\left. + \lang \hat{n}_a \hat{n}_b \frac{| \bar{R} \nabla \hat{\psi}|^2 }{\hat{B}^2}\rang\left(  \left(M_{ab}^{00} - M_{ab}^{01}\right)\frac{ \hat{T}_a}{Z_a}\frac{\d \ln T_a}{\d \hat{\psi}} 
+    - \left(M_{ab}^{00} - \frac{\hat{m}_a \hat{T}_b}{\hat{m}_b \hat{T}_a} M_{ab}^{01}\right)\frac{ \hat{T}_b}{Z_b}\frac{\d \ln T_b}{\d \hat{\psi}}\right)\right] 
+\end{aligned}
+\end{equation}
+
+\begin{equation}
+\begin{aligned}
+  \hspace*{-10ex} \hat{q}_a =  -\frac{\Delta^2 \nu_n}{2} \frac{Z_a\hat{m}_a^{1/2}}{\hat{T}_a^{1/2}} \sum_b Z_b^2 &\left[
+    \lang \hat{n}_a \hat{n}_b\frac{|\bar{R}\nabla \hat{\psi}|^2}{\hat{B}^2 } \rang M_{ab}^{01}\left(\frac{\hat{T}_a}{Z_a}  \frac{\d \ln\eta_a}{\d \hat{\psi}} - \frac{\hat{T}_b}{Z_b}\frac{\d \ln\eta_b}{\d \hat{\psi}}\right) \right.\\
+    &\left.+\lang \hat{n}_a \hat{n}_b\frac{|\bar{R}\nabla \hat{\psi}|^2}{\hat{B}^2 }  \hat{\Phi}_1 \rang \alpha M_{ab}^{01} \left(\frac{\d \ln T_a}{\d \hat{\psi}}-\frac{\d \ln T_b}{\d \hat{\psi}}\right) \right.\\
+    &\left.+ \lang \hat{n}_a \hat{n}_b\frac{|\bar{R}\nabla \hat{\psi}|^2}{\hat{B}^2 } \rang \left(\left(M_{ab}^{01} - M_{ab}^{11}\right)\frac{ \hat{T}_a}{Z_a} \frac{\d \ln T_a}{\d \hat{\psi}}
+    - \left(M_{ab}^{01} + N_{ab}^{11}\right)\frac{\hat{T}_b}{Z_b}\frac{\d \ln T_b}{\d \hat{\psi}}\right) \right].
+\end{aligned}
+\end{equation}
+Finally, using $\hat{n}_a = \hat{\eta}_a \e^{-Z_a \alpha \hat{\Phi}_1/\hat{T}_a}$, we get
+\begin{equation}
+\hat{n}_a\hat{n}_b = \hat{\eta}_a \hat{\eta}_b \exp{\left(-\alpha\hat{\Phi}_1\left[\frac{Z_a}{\hat{T}_a} + \frac{Z_b}{\hat{T}_b}\right]\right)},
+\end{equation}
+where $\hat{\eta}$ is the ``density'' in \textsc{Sfincs}, which is a flux-function. In the code, we define
+\begin{align}
+  G_{ab}^{(1)} =& \lang \exp{\left(-\alpha\hat{\Phi}_1\left[\frac{Z_a}{\hat{T}_a} + \frac{Z_b}{\hat{T}_b}\right]\right)}\frac{|\bar{R}\nabla \hat{\psi}|^2}{\hat{B}^2 } \rang \\
+  G_{ab}^{(2)} =& \lang \exp{\left(-\alpha\hat{\Phi}_1\left[\frac{Z_a}{\hat{T}_a} + \frac{Z_b}{\hat{T}_b}\right]\right)}\frac{|\bar{R}\nabla \hat{\psi}|^2}{\hat{B}^2 } \hat{\Phi}_1 \rang,
+\end{align}
+so that
+\begin{equation}
+\begin{aligned}
+  \hspace*{-10ex} \hat{\Gamma}_a =   \frac{\Delta^2 \nu_n}{2}\frac{Z_a\hat{m}_a^{1/2} \hat{\eta}_a}{\hat{T}_a^{3/2}}\sum_b Z_b^2 \hat{\eta}_b&\left[
+    G_{ab}^{(1)} M_{ab}^{00} \left(\frac{ \hat{T}_a}{Z_a}  \frac{\d \ln\eta_a}{\d \hat{\psi}} -\frac{ \hat{T}_b}{Z_b}  \frac{\d \ln\eta_b}{\d \hat{\psi}}\right) \right.\\
+    &\left.+    G_{ab}^{(2)} \alpha  M_{ab}^{00} \left(\frac{\d \ln T_a}{\d \hat{\psi}} -\frac{\d \ln T_b}{\d \hat{\psi}}\right) \right.\\
+   &\left. +G_{ab}^{(1)}\left(  \left(M_{ab}^{00} - M_{ab}^{01}\right)\frac{ \hat{T}_a}{Z_a}\frac{\d \ln T_a}{\d \hat{\psi}} 
+    - \left(M_{ab}^{00} - \frac{\hat{m}_a \hat{T}_b}{\hat{m}_b \hat{T}_a} M_{ab}^{01}\right)\frac{ \hat{T}_b}{Z_b}\frac{\d \ln T_b}{\d \hat{\psi}}\right)\right],
+\end{aligned}
+\end{equation}
+
+\begin{equation}
+\begin{aligned}
+  \hspace*{-10ex} \hat{q}_a =  -\frac{\Delta^2 \nu_n}{2} \frac{Z_a\hat{m}_a^{1/2} \hat{\eta}_a}{\hat{T}_a^{1/2}} \sum_b Z_b^2 \hat{\eta}_b &\left[
+    G_{ab}^{(1)}  M_{ab}^{01}\left(\frac{\hat{T}_a}{Z_a}  \frac{\d \ln\eta_a}{\d \hat{\psi}} - \frac{\hat{T}_b}{Z_b}\frac{\d \ln\eta_b}{\d \hat{\psi}}\right) \right.\\
+    &\left.+G_{ab}^{(2)} \alpha M_{ab}^{01} \left(\frac{\d \ln T_a}{\d \hat{\psi}}-\frac{\d \ln T_b}{\d \hat{\psi}}\right) \right.\\
+    &\left.+ G_{ab}^{(1)} \left(\left(M_{ab}^{01} - M_{ab}^{11}\right)\frac{ \hat{T}_a}{Z_a} \frac{\d \ln T_a}{\d \hat{\psi}}
+    - \left(M_{ab}^{01} + N_{ab}^{11}\right)\frac{\hat{T}_b}{Z_b}\frac{\d \ln T_b}{\d \hat{\psi}}\right) \right],
+\end{aligned}
+\end{equation}
+and
+\begin{equation}
+\hat{Q}_a = \hat{q}_a + \frac{5}{2} \hat{T}_a \hat{\Gamma}_a. 
+\end{equation}
+
+\paragraph{Thanks to Sarah Newton} for bringing to my attention that the classical transport can be calculated using the Braginskii matrices. 
+
+\end{document}

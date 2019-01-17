@@ -317,6 +317,11 @@ contains
        call writeHDF5Field("classicalParticleFluxNoPhi1_psiN", classicalParticleFluxNoPhi1_psiN, dspaceIDForSpecies, dimForSpecies, "Classical particle flux projected onto \nabla psiN, calculcated, with Phi1 = 0.")
        call writeHDF5Field("classicalParticleFluxNoPhi1_rHat", classicalParticleFluxNoPhi1_rHat, dspaceIDForSpecies, dimForSpecies, "Classical particle flux projected onto \nabla rHat, calculcated, with Phi1 = 0.")
        call writeHDF5Field("classicalParticleFluxNoPhi1_rN", classicalParticleFluxNoPhi1_rN, dspaceIDForSpecies, dimForSpecies, "Classical particle flux projected onto \nabla rN, calculcated, with Phi1 = 0.")
+       !!Added by SB 2019-01!!
+       call writeHDF5Field("classicalHeatFluxNoPhi1_psiHat", classicalHeatFluxNoPhi1_psiHat, dspaceIDForSpecies, dimForSpecies, "Classical particle flux projected onto \nabla psiHat, calculcated with Phi1 = 0.")
+       call writeHDF5Field("classicalHeatFluxNoPhi1_psiN", classicalHeatFluxNoPhi1_psiN, dspaceIDForSpecies, dimForSpecies, "Classical particle flux projected onto \nabla psiN, calculcated, with Phi1 = 0.")
+       call writeHDF5Field("classicalHeatFluxNoPhi1_rHat", classicalHeatFluxNoPhi1_rHat, dspaceIDForSpecies, dimForSpecies, "Classical particle flux projected onto \nabla rHat, calculcated, with Phi1 = 0.")
+       call writeHDF5Field("classicalHeatFluxNoPhi1_rN", classicalHeatFluxNoPhi1_rN, dspaceIDForSpecies, dimForSpecies, "Classical particle flux projected onto \nabla rN, calculcated, with Phi1 = 0.")
        !!!!!!!!!!!!!!!!!!!!!!!
 
        call writeHDF5Field("dPhiHatdpsiHat", dPhiHatdpsiHat, "")
@@ -587,6 +592,10 @@ contains
        call writeHDF5ExtensibleField(iterationNum, "classicalParticleFlux_psiN", classicalParticleFlux_psiHat, ARRAY_ITERATION_SPECIES, "")
        call writeHDF5ExtensibleField(iterationNum, "classicalParticleFlux_rHat", classicalParticleFlux_psiHat, ARRAY_ITERATION_SPECIES, "")
        call writeHDF5ExtensibleField(iterationNum, "classicalParticleFlux_rN", classicalParticleFlux_psiHat, ARRAY_ITERATION_SPECIES, "")
+       call writeHDF5ExtensibleField(iterationNum, "classicalHeatFlux_psiHat", classicalHeatFlux_psiHat, ARRAY_ITERATION_SPECIES, "")
+       call writeHDF5ExtensibleField(iterationNum, "classicalHeatFlux_psiN", classicalHeatFlux_psiHat, ARRAY_ITERATION_SPECIES, "")
+       call writeHDF5ExtensibleField(iterationNum, "classicalHeatFlux_rHat", classicalHeatFlux_psiHat, ARRAY_ITERATION_SPECIES, "")
+       call writeHDF5ExtensibleField(iterationNum, "classicalHeatFlux_rN", classicalHeatFlux_psiHat, ARRAY_ITERATION_SPECIES, "")
 
        call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vm0_psiHat", momentumFlux_vm0_psiHat, ARRAY_ITERATION_SPECIES, "")
        call writeHDF5ExtensibleField(iterationNum, "momentumFlux_vm0_psiN", momentumFlux_vm0_psiN, ARRAY_ITERATION_SPECIES, "")

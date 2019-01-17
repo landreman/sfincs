@@ -283,6 +283,14 @@ module globalVariables
   PetscScalar, dimension(:), allocatable :: classicalParticleFluxNoPhi1_psiN
   PetscScalar, dimension(:), allocatable :: classicalParticleFluxNoPhi1_rHat
   PetscScalar, dimension(:), allocatable :: classicalParticleFluxNoPhi1_rN
+  PetscScalar, dimension(:), allocatable :: classicalHeatFlux_psiHat
+  PetscScalar, dimension(:), allocatable :: classicalHeatFlux_psiN
+  PetscScalar, dimension(:), allocatable :: classicalHeatFlux_rHat
+  PetscScalar, dimension(:), allocatable :: classicalHeatFlux_rN
+  PetscScalar, dimension(:), allocatable :: classicalHeatFluxNoPhi1_psiHat
+  PetscScalar, dimension(:), allocatable :: classicalHeatFluxNoPhi1_psiN
+  PetscScalar, dimension(:), allocatable :: classicalHeatFluxNoPhi1_rHat
+  PetscScalar, dimension(:), allocatable :: classicalHeatFluxNoPhi1_rN
 
   PetscScalar, dimension(:), allocatable :: momentumFlux_vm0_psiHat
   PetscScalar, dimension(:), allocatable :: momentumFlux_vm0_psiN
