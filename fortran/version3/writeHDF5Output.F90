@@ -682,8 +682,10 @@ contains
           call writeHDF5ExtensibleField(iterationNum, "dPhi1Hatdzeta", dPhi1Hatdzeta, ARRAY_ITERATION_THETA_ZETA,  &
                "Derivative of Phi_1 with respect to zeta. Phi_1 = Electrostatic potential Phi minus its flux-surface-average, in units of PhiBar." //&
                "zeta = toroidal angle")
-          call writeHDF5ExtensibleField(iterationNum, "lambda", lambda, ARRAY_ITERATION, &
-               "Lagrange multiplier associated with the constraint that <Phi_1>=0. Should be within machine precision of 0.")
+          if (.not. readExternalPhi1) then !!Added by AM 2018-12
+             call writeHDF5ExtensibleField(iterationNum, "lambda", lambda, ARRAY_ITERATION, &
+             "Lagrange multiplier associated with the constraint that <Phi_1>=0. Should be within machine precision of 0.")
+          end if !!Added by AM 2018-12
        end if
 
        call writeHDF5ExtensibleField(iterationNum, "elapsed time (s)", elapsedTime, ARRAY_ITERATION, "")
@@ -977,7 +979,8 @@ contains
             "If this variable exists in sfincsOutput.h5, then SFINCS reached the end of all requested computations and exited gracefully.")
 
        !!Added by AM 2016-08!!
-       if (includePhi1) then
+       !!if (includePhi1) then !!Commented by AM 2018-12
+       if (includePhi1 .and. (.not. readExternalPhi1)) then !!Added by AM 2018-12
           call writeHDF5Field("didNonlinearCalculationConverge", didNonlinearCalculationConverge, &
                "If this variable is .true. the nonlinear iteration has converged. " // boolDescription)
        end if

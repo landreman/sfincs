@@ -33,7 +33,8 @@ subroutine validateInput()
   !!if (RHSMode == 2 .and. nonlinear) then !!Commented by AM 2016-02
   if (RHSMode == 2 .and. includePhi1) then !!Added by AM 2016-02
      if (masterProc) then
-        print *,"Error! RHSMode cannot be 2 for a nonlinear calculation."
+        !!print *,"Error! RHSMode cannot be 2 for a nonlinear calculation." !!Commented by AM 2018-12
+        print *,"Error! RHSMode = 2 is incompatble with includePhi1 = .true.." !!Added by AM 2018-12
      end if
      stop
   end if
@@ -369,7 +370,8 @@ subroutine validateInput()
   end if
 
 !!  if (includePhi1 .and. (abs(chargeDensity) >1d-15)) then
-  if (includePhi1 .and. (abs(chargeDensity)/maxSingleChargeDensity >1d-4)) then
+  !!if (includePhi1 .and. (abs(chargeDensity)/maxSingleChargeDensity >1d-4)) then !!Commented by AM 2018-12
+  if (includePhi1 .and. (abs(chargeDensity)/maxSingleChargeDensity >1d-4) .and. (.not. readExternalPhi1)) then !!Added by AM 2018-12
      if (masterProc) then
         print *,"Error! When running with includePhi1=.true. you must ensure that"
         print *,"quasi-neutrality is fulfilled for the input species."
@@ -514,7 +516,7 @@ subroutine validateInput()
   if (magneticDriftScheme>0 .and. includePhi1) then
      if (masterProc) then
         !!print *,"**   ERROR! Some terms involving Phi1 and the magnetic drifts have not yet been implemented." !!Commented by AM 2018-02 
-        print *,"**   WARNING! Some terms involving Phi1 and the magnetic drifts have not yet been implemented." !!Added by AM 2018-02 
+        print *,"**   WARNING! Some terms involving both Phi1 and the magnetic drifts have not yet been implemented." !!Added by AM 2018-02 
         print *,"**          Hence magneticDriftScheme>0 is incompatible with includePhi1."
      end if
      !!stop !!Commented by AM 2018-02
@@ -553,6 +555,39 @@ subroutine validateInput()
      print *,line
   end if
 
+  !!Check added by AM 2018-12!!
+  if (withAdiabatic .and. includePhi1 .and. readExternalPhi1 .and. masterProc) then
+     print *,line
+     print *,line
+     print *,"**   WARNING: You are running with an adiabatic species,"
+     print *,"**            but with readExternalPhi1 = .true. which implies "
+     print *,"**            that the adiabatic species has no impact."
+     print *,line
+     print *,line
+  end if
+
+  !!Check added by AM 2018-12!!
+  if (withNBIspec .and. (.not. includePhi1) .and. masterProc) then
+     print *,line
+     print *,line
+     print *,"**   WARNING: You are running with an NBI species,"
+     print *,"**            but with includePhi1 = .false. which implies "
+     print *,"**            that the NBI species has no impact."
+     print *,line
+     print *,line
+  end if
+
+  !!Check added by AM 2018-12!!
+  if (withNBIspec .and. includePhi1 .and. readExternalPhi1 .and. masterProc) then
+     print *,line
+     print *,line
+     print *,"**   WARNING: You are running with an NBI species,"
+     print *,"**            but with readExternalPhi1 = .true. which implies "
+     print *,"**            that the NBI species has no impact."
+     print *,line
+     print *,line
+  end if
+
   !!Check added by AM 2018-01!! 
   !!This warning message is not useful because includePhi1 = .true. is not the default but includePhi1InKineticEquation = .true. is default, so removed it !!AM 2018-08
 !  if (includePhi1InKineticEquation .and. (.not. includePhi1) .and. masterProc) then 
@@ -566,26 +601,35 @@ subroutine validateInput()
 
   !!Check modified by AM 2018-01!!
   !if (includePhi1InCollisionOperator .and. (.not. includePhi1InKineticEquation) .and. masterProc) then
-  if (includePhi1InCollisionOperator .and. (.not. includePhi1) .and. (.not. includePhi1InKineticEquation) .and. masterProc) then
+  if (includePhi1InCollisionOperator .and. ((.not. includePhi1) .or. (.not. includePhi1InKineticEquation)) .and. masterProc) then
      print *,line
      print *,line
      print *,"**   WARNING: You are including Phi1 in the collision operator"
-     !print *,"**            but not in the other parts of the kinetic equation."
-     !print *,"**            This is likely to be inconsistent."
      print *,"**            but this only has an effect if includePhi1 = .true. and includePhi1InKineticEquation = .true."
      print *,line
      print *,line
   end if
 
+  !!Check added by AM 2018-12!!
+  if (readExternalPhi1 .and. ((.not. includePhi1) .or. (.not. includePhi1InKineticEquation)) .and. masterProc) then
+     print *,line
+     print *,line
+     print *,"**   WARNING: You are using an external Phi1"
+     print *,"**            but this only has an effect if includePhi1 = .true. and includePhi1InKineticEquation = .true."
+     print *,line
+     print *,line
+  end if
 
-  if ((.not. withAdiabatic) .and. includePhi1 .and. quasineutralityOption == 1 .and. (Nspecies < 2)) then 
+  !!if ((.not. withAdiabatic) .and. includePhi1 .and. quasineutralityOption == 1 .and. (Nspecies < 2)) then !!Commented by AM 2018-12
+  if ((.not. withAdiabatic) .and. includePhi1 .and. (.not. readExternalPhi1) .and. quasineutralityOption == 1 .and. (Nspecies < 2)) then !!Added by AM 2018-12
       if (masterProc) then
         print *,"Error! In a nonlinear run (includePhi1 = .true.) you must use at least two species, to be able to fulfill quasi-neutrality."
       end if
       stop
   end if 
 
-  if ((.not. withAdiabatic) .and. includePhi1 .and. quasineutralityOption == 2) then 
+  !!if ((.not. withAdiabatic) .and. includePhi1 .and. quasineutralityOption == 2) then !!Commented by AM 2018-12
+  if ((.not. withAdiabatic) .and. includePhi1 .and. (.not. readExternalPhi1) .and. quasineutralityOption == 2) then !!Added by AM 2018-12
       if (masterProc) then
         print *,"Error! If running with EUTERPE quasi-neutrality equations (quasineutralityOption = 2) in a nonlinear run (includePhi1 = .true.) you must use an adiabatic species (withAdiabatic = .true.)."
       end if
@@ -598,6 +642,15 @@ subroutine validateInput()
 !!$      end if
 !!$      stop
 !!$  end if 
+
+
+  !!Temporary check added by AM 2018-12!!
+  if (includePhi1InCollisionOperator  .and. readExternalPhi1 .and. includePhi1) then
+      if (masterProc) then
+        print *,"Error! Using an external Phi1 in the collision operator has not yet been implemented."
+      end if
+      stop
+  end if
 
   !!!!!!!!!!!!!!!!!!!!!!!
 
@@ -971,7 +1024,8 @@ subroutine validateInput()
   
   if (xDotDerivativeScheme<-2) then
      if (masterProc) then
-        print *,"Error! xGridScheme cannot be less than -2."
+        !!print *,"Error! xGridScheme cannot be less than -2." !!Commented by AM 2018-12
+        print *,"Error! xDotDerivativeScheme cannot be less than -2." !!Added by AM 2018-12
      end if
      stop
   end if

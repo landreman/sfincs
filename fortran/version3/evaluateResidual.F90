@@ -14,6 +14,7 @@
     Vec :: rhs
 !!    PetscScalar :: scalar, xPartOfRHS, factor !!Commented by AM 2016-03
     PetscScalar :: scalar, xPartOfRHS, factor, xPartOfRHS2 !!Added by AM 2016-03
+    PetscScalar :: factorExternalPhi1 !!Added by AM 2018-12
     integer :: ix, L, itheta, izeta, ispecies, index
     PetscScalar :: THat, mHat, sqrtTHat, sqrtmHat, dfMdx
     Mat :: residualMatrix
@@ -79,7 +80,8 @@
     end if
 
     !!Added by AM 2016-03!!
-    if (includePhi1) then
+    !!if (includePhi1) then !!Commented by AM 2018-12
+    if (includePhi1 .and. (.not. readExternalPhi1)) then !!Added by AM 2018-12
        call extractPhi1(stateVec)
     end if
     !!!!!!!!!!!!!!!!!!!!!!!
@@ -117,6 +119,8 @@
           do itheta = ithetaMin,ithetaMax
              do izeta = izetaMin,izetaMax
                 
+                factorExternalPhi1 = zero !!Added by AM 2018-12
+                
                 !factor = Delta*nHats(ispecies)*mHat*sqrtMHat &
                 !     /(2*pi*sqrtpi*Zs(ispecies)*psiAHat*(BHat(itheta,izeta)**3)*sqrtTHat) &
                 !     *(GHat*dBHatdtheta(itheta,izeta) - IHat*dBHatdzeta(itheta,izeta))&
@@ -129,6 +133,14 @@
                         !!                     * DHat(itheta,izeta) * xPartOfRHS !!Commented by AM 2016-02
                         * DHat(itheta,izeta) * (xPartOfRHS + xPartOfRHS2*Zs(ispecies)*alpha*Phi1Hat(itheta,izeta))  & !!Added by AM 2016-02
                         * exp(-Zs(ispecies)*alpha*Phi1Hat(itheta,izeta)/THats(ispecies)) !!Added by AM 2016-02
+                   if (readExternalPhi1) then !!Added by AM 2018-12
+                      factorExternalPhi1 = alpha*Delta*nHats(ispecies)*mHat*sqrtMHat & !!Added by AM 2018-12
+                        /(2*pi*sqrtpi*(BHat(itheta,izeta)**2)*THats(ispecies)*sqrtTHat) & !!Added by AM 2018-12
+                        *(BHat_sub_zeta(itheta,izeta)*dPhi1Hatdtheta(itheta,izeta) & !!Added by AM 2018-12
+                        - BHat_sub_theta(itheta,izeta)*dPhi1Hatdzeta(itheta,izeta))& !!Added by AM 2018-12
+                        * DHat(itheta,izeta) * ((xPartOfRHS/x2(ix)) + (xPartOfRHS2/x2(ix))*Zs(ispecies)*alpha*Phi1Hat(itheta,izeta))  & !!Added by AM 2018-12
+                        * exp(-Zs(ispecies)*alpha*Phi1Hat(itheta,izeta)/THats(ispecies)) !!Added by AM 2018-12
+                   end if !!Added by AM 2018-12
                 else !!Added by AM 2016-03
                    factor = Delta*nHats(ispecies)*mHat*sqrtMHat &
                         /(2*pi*sqrtpi*Zs(ispecies)*(BHat(itheta,izeta)**3)*sqrtTHat) &
@@ -140,7 +152,8 @@
                 
                 L = 0
                 index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                call VecSetValue(rhs, index, (4/three)*factor, INSERT_VALUES, ierr)
+                !!call VecSetValue(rhs, index, (4/three)*factor, INSERT_VALUES, ierr) !!Commented by AM 2018-12
+                call VecSetValue(rhs, index, (4/three)*factor + factorExternalPhi1, INSERT_VALUES, ierr) !!Added by AM 2018-12
                 
                 L = 2
                 index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
@@ -155,7 +168,8 @@
     ! Add part of the residual related to Phi1 in the quasineutrality equation
     ! *******************************************************************************
 
-    if (includePhi1 .and. quasineutralityOption == 1) then
+    !!if (includePhi1 .and. quasineutralityOption == 1) then !!Commented by AM 2018-12
+    if (includePhi1 .and. quasineutralityOption == 1 .and. (.not. readExternalPhi1)) then !!Added by AM 2018-12
        L=0
        do itheta = ithetaMin,ithetaMax
           do izeta = izetaMin,izetaMax
