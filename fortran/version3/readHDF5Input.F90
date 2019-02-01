@@ -224,7 +224,6 @@ contains
     end if
 
     dimensions = shape(variable)
-!!    print *,"dimensions:",dimensions !!TEST
 
     ! Open Dataset
     call h5dopen_f(groupID, varname, dataSetID, HDF5Error)
@@ -256,10 +255,9 @@ contains
 
     integer :: externalNzeta, externalNtheta, externalNIterations, externalNPeriods
     integer :: i, j
-!!    logical flagZetaUpper, flagZetaLower, flagThetaUpper, flagThetaLower
     character(len=*), parameter :: line="******************************************************************"
 
-    integer :: itheta, izeta, indexZetaUpper, indexZetaLower, indexThetaUpper, indexThetaLower!, externalItheta, externalIzeta
+    integer :: itheta, izeta, indexZetaUpper, indexZetaLower, indexThetaUpper, indexThetaLower
 
     PetscScalar, dimension(:), allocatable :: externalTheta, externalZeta
 
@@ -424,9 +422,7 @@ contains
           indexZetaLower = 0
 
           do j=1,externalNzeta 
-             !if (flagZeta .and. (externalZeta(j) >= zeta(izeta))) then
              if (externalZeta(j) >= zeta(izeta)) then
-                !flagZetaUpper = .false.
                 indexZetaUpper = j
                 exit
              end if
@@ -463,9 +459,7 @@ contains
              indexThetaLower = 0
 
              do i=1,externalNtheta
-                !if (flagTheta .and. (externalTheta(i) >= theta(itheta))) then
                 if (externalTheta(i) >= theta(itheta)) then
-                   !flagTheta = .false.
                    indexThetaUpper = i
                    exit
                 end if
@@ -516,33 +510,11 @@ contains
     dPhi1Hatdtheta = matmul(ddtheta,Phi1Hat)
     dPhi1Hatdzeta = transpose(matmul(ddzeta,transpose(Phi1Hat)))
 
-    !print *,"externalPhi1Hat = ",externalPhi1Hat
-    !print *,"Phi1Hat = ",Phi1Hat
-
-    !WRITE(*,*) "Phi1Hat :"
-    !DO i = 1, Nzeta
-    !   WRITE(*,*) (Phi1Hat(i,j), j = 1, Ntheta) 
-    !END DO
-    !WRITE(*,*)
-
-    !WRITE(*,*) "dPhi1Hatdtheta :"
-    !DO i = 1, Nzeta
-    !   WRITE(*,*) (dPhi1Hatdtheta(i,j), j = 1, Ntheta)
-    !END DO
-    !WRITE(*,*)
-
-    !WRITE(*,*) "dPhi1Hatdzeta :"
-    !DO i = 1, Nzeta
-    !   WRITE(*,*) (dPhi1Hatdzeta(i,j), j = 1, Ntheta)
-    !END DO
-    !WRITE(*,*)
-
     call closeInputFile()
 
     if(allocated(externalTheta))deallocate(externalTheta)
     if(allocated(externalZeta))deallocate(externalZeta)
     if(allocated(externalPhi1Hat))deallocate(externalPhi1Hat)
-    !!stop !!End SFINCS
 
     if (masterProc) then
        !print *,""
