@@ -144,7 +144,8 @@
       ! The input "local" indices (i_x, i_xi, etc) are 1-based, since small matrices are stored in Fortran.
       ! the output "global" index is 0-based, since PETSc uses 0-based indexing.
 
-      use globalVariables, only: Nspecies, Nx, Nxi, Ntheta, Nzeta, matrixSize, constraintScheme, includePhi1, masterProc, Nxi_for_x
+      !!use globalVariables, only: Nspecies, Nx, Nxi, Ntheta, Nzeta, matrixSize, constraintScheme, includePhi1, masterProc, Nxi_for_x !!Commented by AM 2018-12
+      use globalVariables, only: Nspecies, Nx, Nxi, Ntheta, Nzeta, matrixSize, constraintScheme, includePhi1, masterProc, Nxi_for_x, readExternalPhi1 !!Added by AM 2018-12
 
       implicit none
 
@@ -204,16 +205,20 @@
          stop
       end if
       
-      if (whichBlock==BLOCK_QN .and. (.not. includePhi1)) then
+      !!if (whichBlock==BLOCK_QN .and. (.not. includePhi1)) then !!Commented by AM 2018-12
+      if (whichBlock==BLOCK_QN .and. ((.not. includePhi1) .or. readExternalPhi1)) then !!Added by AM 2018-12
          if (masterProc) then
-            print *,"Error! whichBlock==BLOCK_QN but includePhi1=.false."
+            !!print *,"Error! whichBlock==BLOCK_QN but includePhi1=.false." !!Commented by AM 2018-12
+            print *,"Error! whichBlock==BLOCK_QN but includePhi1=.false. or readExternalPhi1=.true." !!Added by AM 2018-12
          end if
          stop
       end if
 
-      if (whichBlock==BLOCK_PHI1_CONSTRAINT .and. (.not. includePhi1)) then
+      !!if (whichBlock==BLOCK_PHI1_CONSTRAINT .and. (.not. includePhi1)) then !!Commented by AM 2018-12
+      if (whichBlock==BLOCK_PHI1_CONSTRAINT .and. ((.not. includePhi1) .or. readExternalPhi1)) then !!Added by AM 2018-12
          if (masterProc) then
-            print *,"Error! whichBlock==BLOCK_PHI1_CONSTRAINT but includePhi1=.false."
+            !!print *,"Error! whichBlock==BLOCK_PHI1_CONSTRAINT but includePhi1=.false." !!Commented by AM 2018-12
+            print *,"Error! whichBlock==BLOCK_PHI1_CONSTRAINT but includePhi1=.false. or readExternalPhi1=.true." !!Added by AM 2018-12
          end if
          stop
       end if
@@ -250,7 +255,8 @@
             print *,"Now, constraintScheme = ",constraintScheme
             stop
          end if
-         if (includePhi1) then
+         !!if (includePhi1) then !!Commented by AM 2018-12
+         if (includePhi1 .and. (.not. readExternalPhi1)) then !!Added by AM 2018-12
             getIndex = Nspecies*DKE_size &
                  + Ntheta*Nzeta + 1 &
                  + (i_species-1)*2
@@ -265,7 +271,8 @@
             print *,"Now, constraintScheme = ",constraintScheme
             stop
          end if
-         if (includePhi1) then
+         !!if (includePhi1) then !!Commented by AM 2018-12
+         if (includePhi1 .and. (.not. readExternalPhi1)) then !!Added by AM 2018-12
             getIndex = Nspecies*DKE_size &
                  + Ntheta*Nzeta + 1 &
                  + (i_species-1)*2 + 1
@@ -280,7 +287,8 @@
             print *,"Now, constraintScheme = ",constraintScheme
             stop
          end if
-         if (includePhi1) then
+         !!if (includePhi1) then !!Commented by AM 2018-12
+         if (includePhi1 .and. (.not. readExternalPhi1)) then !!Added by AM 2018-12
             getIndex = Nspecies*DKE_size &
                  + Ntheta*Nzeta + 1 &
                  + (i_species-1)*Nx + i_x - 1
@@ -313,7 +321,8 @@
 
     subroutine computeMatrixSize()
 
-      use globalVariables, only: Nspecies, Ntheta, Nzeta, Nx, Nxi, includePhi1, constraintScheme, masterProc, matrixSize, Nxi_for_x
+      !!use globalVariables, only: Nspecies, Ntheta, Nzeta, Nx, Nxi, includePhi1, constraintScheme, masterProc, matrixSize, Nxi_for_x !!Commented by AM 2018-12
+      use globalVariables, only: Nspecies, Ntheta, Nzeta, Nx, Nxi, includePhi1, constraintScheme, masterProc, matrixSize, Nxi_for_x, readExternalPhi1 !!Added by AM 2018-12
 
       implicit none
 
@@ -331,7 +340,8 @@
       end do
 
 
-      if (includePhi1) then
+      !!if (includePhi1) then !!Commented by AM 2018-12
+      if (includePhi1 .and. (.not. readExternalPhi1)) then !!Added by AM 2018-12
          ! Include quasineutrality at Ntheta*Nzeta grid points, plus the <Phi_1>=0 constraint:
          matrixSize = matrixSize + Ntheta*Nzeta + 1
       end if

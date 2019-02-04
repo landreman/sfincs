@@ -6,7 +6,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
        !!constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, nonlinear, & !!Commented by AM 2016-02
        constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, & !!Added by AM 2016-02
        !!thetaDerivativeScheme, zetaDerivativeScheme, includeRadialExBDrive !!Commented by AM 2016-03
-       thetaDerivativeScheme, zetaDerivativeScheme, includePhi1InKineticEquation, quasineutralityOption !!Added by AM 2016-03
+       thetaDerivativeScheme, zetaDerivativeScheme, includePhi1InKineticEquation, quasineutralityOption, readExternalPhi1 !!Added by AM 2016-03 and 2018-12
   use indices
 
   implicit none
@@ -66,12 +66,14 @@ subroutine preallocateMatrix(matrix, whichMatrix)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!  if (includeRadialExBDrive) then !!Commented by AM 2016-03
-  if (includePhi1InKineticEquation .and. includePhi1) then !!Added by AM 2016-03
-     tempInt1 = tempInt1 &
-       + 4 &               ! d Phi_1 / d theta term at L=0
-       + 4                 ! d Phi_1 / d zeta term at L=0
-  !!end if !!Commented by AM 2016-04
-     tempInt1 = tempInt1 + 1 !!Added by AM 2016-04, for row = BLOCK_F, col = BLOCK_QN)
+  if (includePhi1InKineticEquation .and. includePhi1) then 
+     if (.not. readExternalPhi1) then !!Added by AM 2018-12
+        tempInt1 = tempInt1 &
+             + 4 &               ! d Phi_1 / d theta term at L=0
+             + 4                 ! d Phi_1 / d zeta term at L=0
+        !!end if !!Commented by AM 2016-04
+        tempInt1 = tempInt1 + 1 !!Added by AM 2016-04, for row = BLOCK_F, col = BLOCK_QN)
+     end if !!Added by AM 2018-12
   !!if (nonlinear) then !!Commented by AM 2016-02
   !!if (includePhi1) then !!Added by AM 2016-02
      tempInt1 = tempInt1 + 2*Nx -2 ! Nonlinear term is dense in x with ell = L +/- 1, which we have not yet counted. Subtract 2 for the diagonal we already counted.
@@ -107,7 +109,8 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   case default
   end select
   
-  if (includePhi1) then
+  !!if (includePhi1) then !!Commented by AM 2018-12
+  if (includePhi1 .and. (.not. readExternalPhi1)) then !!Added by AM 2018-12
      ! Set rows for the quasineutrality condition:
      do itheta=1,Ntheta
         do izeta=1,Nzeta

@@ -309,6 +309,11 @@ contains
        !!Added by AM 2016-02!!
        if (includePhi1) then
           call writeHDF5Field("quasineutralityOption", quasineutralityOption, "")
+          call writeHDF5Field("readExternalPhi1", readExternalPhi1, & !!Added by AM 2018-12
+               "Instead of calculating Phi1 in SFINCS, read it from an external file." // boolDescription) !!Added by AM 2018-12
+          !!if (readExternalPhi1) then !!Added by AM 2018-12
+          !!   call writeHDF5Field("externalPhi1Filename", externalPhi1Filename, "Name of file from which Phi1 is read.") !!Added by AM 2018-12
+          !!end if !!Added by AM 2018-12
        end if
        !!!!!!!!!!!!!!!!!!!!!!!
 
@@ -355,7 +360,8 @@ contains
        call writeHDF5Field("includePhi1InKineticEquation", includePhi1InKineticEquation, & !!Added by AM 2016-03
             "Include terms containing Phi1 in kinetic equation? (Only matters if includePhi1=.true.)" // boolDescription) !!Added by AM 2016-03
        call writeHDF5Field("includePhi1InCollisionOperator", includePhi1InCollisionOperator, &
-            "Include density variations due to Phi1 in the collision operator " // boolDescription)
+            "Include density variations due to Phi1 in the collision operator (Only matters if includePhi1=.true.)" // boolDescription)
+
        call writeHDF5Field("integerToRepresentTrue", integerToRepresentTrue, &
             "Since HDF5 does not have a Boolean datatype, this integer value is used in this file for Boolean quantities.")
        call writeHDF5Field("integerToRepresentFalse", integerToRepresentFalse, &
@@ -685,8 +691,10 @@ contains
           call writeHDF5ExtensibleField(iterationNum, "dPhi1Hatdzeta", dPhi1Hatdzeta, ARRAY_ITERATION_THETA_ZETA,  &
                "Derivative of Phi_1 with respect to zeta. Phi_1 = Electrostatic potential Phi minus its flux-surface-average, in units of PhiBar." //&
                "zeta = toroidal angle")
-          call writeHDF5ExtensibleField(iterationNum, "lambda", lambda, ARRAY_ITERATION, &
-               "Lagrange multiplier associated with the constraint that <Phi_1>=0. Should be within machine precision of 0.")
+          if (.not. readExternalPhi1) then !!Added by AM 2018-12
+             call writeHDF5ExtensibleField(iterationNum, "lambda", lambda, ARRAY_ITERATION, &
+             "Lagrange multiplier associated with the constraint that <Phi_1>=0. Should be within machine precision of 0.")
+          end if !!Added by AM 2018-12
        end if
 
        call writeHDF5ExtensibleField(iterationNum, "elapsed time (s)", elapsedTime, ARRAY_ITERATION, "")
@@ -980,7 +988,8 @@ contains
             "If this variable exists in sfincsOutput.h5, then SFINCS reached the end of all requested computations and exited gracefully.")
 
        !!Added by AM 2016-08!!
-       if (includePhi1) then
+       !!if (includePhi1) then !!Commented by AM 2018-12
+       if (includePhi1 .and. (.not. readExternalPhi1)) then !!Added by AM 2018-12
           call writeHDF5Field("didNonlinearCalculationConverge", didNonlinearCalculationConverge, &
                "If this variable is .true. the nonlinear iteration has converged. " // boolDescription)
        end if

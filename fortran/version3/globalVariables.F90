@@ -28,6 +28,7 @@ module globalVariables
   character(len=200) :: MatlabOutputFilename = "sfincsMatrices"
   character(len=200) :: binaryOutputFilename = "sfincsBinary"
   character(len=200) :: outputFilename = "sfincsOutput.h5"
+  character(len=200) :: externalPhi1Filename = "externalPhi1.h5" !!Added by AM 2018-12
   logical :: solveSystem = .true.
   integer :: RHSMode = 1, whichRHS
   logical :: isAParallelDirectSolverInstalled
@@ -116,6 +117,7 @@ module globalVariables
   logical :: includePhi1InCollisionOperator = .false.
 !!  logical :: includeRadialExBDrive = .false. !!Commented by AM 2016-02
   logical :: includePhi1InKineticEquation = .true. !!Added by AM 2016-03
+  logical :: readExternalPhi1 = .false. !!Added by AM 2018-12
 
   PetscScalar :: nuPrime = 1, EStar = 0
 

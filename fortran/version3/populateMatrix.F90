@@ -148,7 +148,8 @@
        case default
           stop "Invalid constraintScheme!"
        end select
-       if (includePhi1) then
+       !!if (includePhi1) then !!Commented by AM 2018-12
+       if (includePhi1 .and. (.not. readExternalPhi1)) then !!Added by AM 2018-12
           index = getIndex(1,1,1,1,1,BLOCK_PHI1_CONSTRAINT)
           call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
           do itheta = 1,Ntheta
@@ -161,7 +162,8 @@
     end if
 
 !!    useStateVec = (nonlinear .and. (whichMatrix==0 .or. whichMatrix==1)) !!Commented by AM 2016-02
-    useStateVec = (includePhi1 .and. (whichMatrix==0 .or. whichMatrix==1)) !!Added by AM 2016-02
+    !!useStateVec = (includePhi1 .and. (whichMatrix==0 .or. whichMatrix==1)) !!Added by AM 2016-02 !!Commented by AM 2018-12
+    useStateVec = (includePhi1 .and. (.not. readExternalPhi1) .and. (whichMatrix==0 .or. whichMatrix==1)) !!Added by AM 2018-12
     if (useStateVec) then
        ! We need delta f to evaluate the Jacobian, so send a copy to every proc:
        call VecScatterCreateToAll(stateVec, vecScatterContext, vecOnEveryProc, ierr)
@@ -172,7 +174,8 @@
 
     ! In nonlinear runs, the Jacobian and residual require Phi1:
     !!if (nonlinear .and. (whichMatrix .ne. 2)) then !!Commented by AM 2016-02
-    if (includePhi1 .and. (whichMatrix .ne. 2)) then !!Added by AM 2016-02
+    !!if (includePhi1 .and. (whichMatrix .ne. 2)) then !!Added by AM 2016-02 !!Commented by AM 2018-12
+    if (includePhi1 .and. (.not. readExternalPhi1) .and. (whichMatrix .ne. 2)) then !!Added by AM 2018-12
        call extractPhi1(stateVec)
     end if
 
@@ -1222,7 +1225,8 @@
 
        !!THE includeRadialExBDrive FLAG IS NOT USED ANYMORE
        !!if ((whichMatrix .ne. 2) .and. includeRadialExBDrive) then !!Commented by AM 2016-02
-       if ((whichMatrix .ne. 2) .and. includePhi1 .and. includePhi1InKineticEquation) then !!Added by AM 2016-02
+       !!if ((whichMatrix .ne. 2) .and. includePhi1 .and. includePhi1InKineticEquation) then !!Added by AM 2016-02 !!Commented by AM 2018-12
+       if ((whichMatrix .ne. 2) .and. includePhi1 .and. includePhi1InKineticEquation .and. (.not. readExternalPhi1)) then !!Added by AM 2018-12
           L=0
           L2=2 !!Added by AM 2016-03 to add extra P_2 terms
           
@@ -1433,10 +1437,13 @@
        ! in the first iteration (due to Phi1=0). The reason is that PETSc will re-use the pattern of nonzeros from the first iteration in subsequent iterations.
        ! However, we need not add elements which are 0 due to ddtheta=0 as opposed to because Phi1=0, since such elements will remain 0 at every iteration of SNES.
 
+       !NOTE BY AM 2018-12: This term should be added even if readExternalPhi1 = .true.
+
        !if (nonlinear .and. (whichMatrix .ne. 2)) then
        !!if (nonlinear .and. (whichMatrix == 1 .or. whichMatrix == 3 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Commented by AM 2016-02
        !if (.false.) then
-       if (includePhi1 .and. includePhi1InKineticEquation .and. (whichMatrix == 1 .or. whichMatrix == 3 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Added by AM 2016-02
+       !!if (includePhi1 .and. includePhi1InKineticEquation .and. (whichMatrix == 1 .or. whichMatrix == 3 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Added by AM 2016-02 !! !!Commented by AM 2018-12
+       if (includePhi1 .and. includePhi1InKineticEquation .and. (whichMatrix == 1 .or. whichMatrix == 3 .or. (whichMatrix==0 .and. ((.not. reusePreconditioner) .or. readExternalPhi1)))) then !!Added by AM 2018-12
 
           !print *,"@@@@@@ ",myRank," max(abs(dPhi1Hatdtheta)): ",maxval(abs(dPhi1Hatdtheta)),maxval(abs(dPhi1Hatdzeta))
 
@@ -1520,11 +1527,14 @@
        ! in the first iteration (due to delta f = 0). The reason is that PETSc will re-use the pattern of nonzeros from the first iteration in subsequent iterations.
        ! However, we need not add elements which are 0 due to ddtheta=0 as opposed to because delta f = 0, since such elements will remain 0 at every iteration of SNES.
 
+       !NOTE BY AM 2018-12: This term should not be added if readExternalPhi1 = .true.
+
        !!if (nonlinear .and. (whichMatrix==1 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Commented by AM 2016-02
        
        ! This next line should be replaced with the line after!!!
        !if (.false.) then
-       if (includePhi1 .and. includePhi1InKineticEquation .and. (whichMatrix==1 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Added by AM 2016-02
+       !!if (includePhi1 .and. includePhi1InKineticEquation .and. (whichMatrix==1 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Added by AM 2016-02 !!Commented by AM 2018-12
+       if (includePhi1 .and. includePhi1InKineticEquation .and. (.not. readExternalPhi1) .and. (whichMatrix==1 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Added by AM 2018-12
        !if (nonlinear .and. (whichMatrix==1)) then
        !if (nonlinear .and. (whichMatrix==0 .or. whichMatrix==1)) then
           allocate(tempVector1(Nx))
@@ -2946,7 +2956,8 @@
     ! Add the quasineutrality equation
     ! *******************************************************************************
 
-    if (whichMatrix .ne. 2 .and. includePhi1) then
+    !!if (whichMatrix .ne. 2 .and. includePhi1) then !!Commented by AM 2018-12
+    if (whichMatrix .ne. 2 .and. includePhi1  .and. (.not. readExternalPhi1)) then !!Added by AM 2018-12
        L=0
        do itheta = ithetaMin,ithetaMax
           do izeta = izetaMin,izetaMax
@@ -3008,7 +3019,8 @@
     ! Add the constraint < Phi_1 > = 0
     ! *******************************************************************************
 
-    if (whichMatrix .ne. 2 .and. procThatHandlesConstraints .and. includePhi1) then
+    !!if (whichMatrix .ne. 2 .and. procThatHandlesConstraints .and. includePhi1) then !!Commented by AM 2018-12
+    if (whichMatrix .ne. 2 .and. procThatHandlesConstraints .and. includePhi1 .and. (.not. readExternalPhi1)) then !!Added by AM 2018-12
        allocate(rowIndices(1))
        allocate(colIndices(Nzeta))
 

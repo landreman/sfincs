@@ -124,7 +124,8 @@
 #include "PETScVersions.F90"
 
     use globalVariables, only: Phi1Hat, dPhi1Hatdtheta, dPhi1Hatdzeta, MPIComm, masterProc, ddtheta, ddzeta, Ntheta, Nzeta
-    use globalVariables, only: includePhi1, zero
+    !!use globalVariables, only: includePhi1, zero !!Commented by AM 2018-12
+    use globalVariables, only: includePhi1, zero, readExternalPhi1 !!Added by AM 2018-12
     use indices
 
     implicit none
@@ -137,7 +138,8 @@
 
     integer :: itheta, izeta, index
 
-    if (includePhi1) then
+    !!if (includePhi1) then !!Commented by AM 2018-12
+    if (includePhi1 .and. (.not. readExternalPhi1)) then !!Added by AM 2018-12
        if (masterProc) then
           print *,"Computing Phi1"
        end if
@@ -167,7 +169,8 @@
 
        dPhi1Hatdtheta = matmul(ddtheta,Phi1Hat)
        dPhi1Hatdzeta = transpose(matmul(ddzeta,transpose(Phi1Hat)))
-
+    else if (includePhi1 .and. readExternalPhi1) then !!Added by AM 2018-12
+       continue !!Do nothing with Phi1 !!Added by AM 2018-12
     else
        ! We are not including Phi_1 in the calculation
        Phi1Hat = zero
@@ -377,7 +380,8 @@
           stop
        end select
 
-       if (includePhi1) then
+       !!if (includePhi1) then !!Commented by AM 2018-12
+       if (includePhi1 .and. (.not. readExternalPhi1)) then !!Added by AM 2018-12
           lambda = solutionWithDeltaFArray(getIndex(1, 1, 1, 1, 1, BLOCK_PHI1_CONSTRAINT)+1)
        else
           lambda = zero
@@ -930,7 +934,8 @@
           end select
        end do
        print *,"FSABjHat (bootstrap current): ", FSABjHat
-       if (includePhi1) then
+       !!if (includePhi1) then !!Commented by AM 2018-12
+       if (includePhi1 .and. (.not. readExternalPhi1)) then !!Added by AM 2018-12
           print *,"lambda: ", lambda
        end if
 
