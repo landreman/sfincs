@@ -6,11 +6,12 @@ module classicalTransport
 
 contains
  
-  subroutine calculateClassicalParticleFlux(classicalPF, classicalHF)
+  subroutine calculateClassicalFlux(usePhi1,classicalPF, classicalHF)
     use globalVariables, only: Nspecies, Ntheta, Nzeta, Delta, nu_n, mHats, THats, Zs, thetaWeights, zetaWeights, DHat, gpsipsi, BHat,alpha, Phi1Hat, VPrimeHat, NHats, dNHatdpsiHats, dTHatdpsiHats
     implicit None
     integer :: itheta, izeta, iSpeciesA, iSpeciesB
     PetscScalar :: geometry1, geometry2, xab2, Mab00, Mab01, Mab11, Nab11
+    logical, intent(in) :: usePhi1
     PetscScalar, dimension(Nspecies), intent(out) :: classicalPF, classicalHF
 
     do ispeciesA=1,Nspecies
@@ -39,18 +40,29 @@ contains
           geometry1 = 0
           ! geometry2 = <|\nabla \psi|^2 n_a n_b Phi1/(B^2)>
           geometry2 = 0
-          do itheta=1,Ntheta
-             do izeta=1,Nzeta
-                geometry1 = geometry1 &
-                     + thetaWeights(itheta) * zetaWeights(izeta)/DHat(itheta,izeta) &
-                     * (gpsipsi(itheta,izeta)/BHat(itheta,izeta)**2) &
-                     * exp(-alpha *( Zs(iSpeciesA)/THats(iSpeciesA) + Zs(iSpeciesB)/THats(iSpeciesB)) * Phi1Hat(itheta,izeta))
-                geometry2 = geometry2 &
-                     + thetaWeights(itheta) * zetaWeights(izeta)/DHat(itheta,izeta) &
-                     * (gpsipsi(itheta,izeta)/BHat(itheta,izeta)**2) * Phi1Hat(itheta,izeta) &
-                     * exp(-alpha *( Zs(iSpeciesA)/THats(iSpeciesA) + Zs(iSpeciesB)/THats(iSpeciesB)) * Phi1Hat(itheta,izeta))
+          if (usePhi1) then
+             do itheta=1,Ntheta
+                do izeta=1,Nzeta
+                   geometry1 = geometry1 &
+                        + thetaWeights(itheta) * zetaWeights(izeta)/DHat(itheta,izeta) &
+                        * (gpsipsi(itheta,izeta)/BHat(itheta,izeta)**2) &
+                        * exp(-alpha *( Zs(iSpeciesA)/THats(iSpeciesA) + Zs(iSpeciesB)/THats(iSpeciesB)) * Phi1Hat(itheta,izeta))
+                   geometry2 = geometry2 &
+                        + thetaWeights(itheta) * zetaWeights(izeta)/DHat(itheta,izeta) &
+                        * (gpsipsi(itheta,izeta)/BHat(itheta,izeta)**2) * Phi1Hat(itheta,izeta) &
+                        * exp(-alpha *( Zs(iSpeciesA)/THats(iSpeciesA) + Zs(iSpeciesB)/THats(iSpeciesB)) * Phi1Hat(itheta,izeta))
+                end do
              end do
-          end do   
+          else
+             do itheta=1,Ntheta
+                do izeta=1,Nzeta
+                   geometry1 = geometry1 &
+                        + thetaWeights(itheta) * zetaWeights(izeta)/DHat(itheta,izeta) &
+                        * (gpsipsi(itheta,izeta)/BHat(itheta,izeta)**2)
+                end do
+             end do
+             geometry2 = 0.0
+          end if
           geometry1 = NHats(ispeciesA) * NHats(ispeciesB) * geometry1/VPrimeHat    
           geometry2 = NHats(ispeciesA) * NHats(ispeciesB) * geometry2/VPrimeHat
           ! Benchmarked against python impelementation 2019-01
@@ -85,6 +97,6 @@ contains
        
     end do
 
-  end subroutine calculateClassicalParticleFlux
+  end subroutine calculateClassicalFlux
       
 end module classicalTransport

@@ -154,7 +154,7 @@ module sfincs_main
 
     ! calculate the classical transport without Phi1
     ! this can be done without solving the system, and so is done here
-    call calculateClassicalParticleFlux(classicalParticleFluxNoPhi1_psiHat,classicalHeatFluxNoPhi1_psiHat)
+    call calculateClassicalFlux(.false.,classicalParticleFluxNoPhi1_psiHat,classicalHeatFluxNoPhi1_psiHat)
     classicalParticleFluxNoPhi1_psiN = ddpsiN2ddpsiHat * classicalParticleFluxNoPhi1_psiHat
     classicalParticleFluxNoPhi1_rHat = ddrHat2ddpsiHat * classicalParticleFluxNoPhi1_psiHat
     classicalParticleFluxNoPhi1_rN = ddrN2ddpsiHat * classicalParticleFluxNoPhi1_psiHat

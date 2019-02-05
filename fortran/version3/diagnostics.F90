@@ -238,7 +238,7 @@
     call extractPhi1(solutionWithDeltaF)
 
     ! Calculate the classical transport:
-    call calculateClassicalParticleFlux(classicalParticleFlux_psiHat,classicalHeatFlux_psiHat)
+    call calculateClassicalFlux(.true.,classicalParticleFlux_psiHat,classicalHeatFlux_psiHat)
 
     ! The solution vector contains the departure from a Maxwellian, not the "full f" distribution function.
     ! Form the full f:
@@ -734,8 +734,8 @@
        heatFlux_vd1_rN = ddrN2ddpsiHat * heatFlux_vd1_psiHat
        heatFlux_vd_rN = ddrN2ddpsiHat * heatFlux_vd_psiHat
        heatFlux_withoutPhi1_rN = ddrN2ddpsiHat * heatFlux_withoutPhi1_psiHat
-       classicalParticleFlux_rHat = ddrN2ddpsiHat * classicalParticleFlux_psiHat
-       classicalHeatFlux_rHat = ddrN2ddpsiHat * classicalHeatFlux_psiHat
+       classicalParticleFlux_rN = ddrN2ddpsiHat * classicalParticleFlux_psiHat
+       classicalHeatFlux_rN = ddrN2ddpsiHat * classicalHeatFlux_psiHat
 
        FSADensityPerturbation = FSADensityPerturbation / VPrimeHat
        FSABFlow = FSABFlow / VPrimeHat
