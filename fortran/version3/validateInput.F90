@@ -1225,7 +1225,7 @@ subroutine validateInput()
       end if
       stop
     end if
-    if (discreteAdjointOption==0 .and. ((((includeXDotTerm .eqv. .true.) .and. &
+    if ((discreteAdjointOption .eqv. .false.) .and. ((((includeXDotTerm .eqv. .true.) .and. &
       (useDKESExBDrift .eqv. .false.) .and. (includeElectricFieldTermInXiDot .eqv. .true.)) &
       .or. ((includeXDotTerm .eqv. .false.) .and. (useDKESExBDrift .eqv. .true.) .and. &
       (includeElectricFieldTermInXiDot .eqv. .false.))) .eqv. .false.)) then

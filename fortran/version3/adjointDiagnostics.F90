@@ -115,8 +115,7 @@ module adjointDiagnostics
 			this_zetaWeights => zetaWeights
 			this_DHat => DHat
 
-      select case (discreteAdjointOption)
-        case (0) ! continuous
+			if (discreteAdjointOption .eqv. .false.) then
           ! Scatter deltaF to master proc
           call VecScatterCreateToZero(deltaF, VecScatterContext, deltaFOnProc0, ierr)
           call VecScatterBegin(VecScatterContext, deltaF, deltaFOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
@@ -183,9 +182,9 @@ module adjointDiagnostics
             end do ! ispecies
           end if ! masterProc
 
-        case (1) ! discrete
+			else ! discrete
           call VecDot(deltaF, deltaG, result, ierr)
-      end select
+			end if
     end subroutine
 
     !> Evaluates the term in the sensitivity derivative of the heat flux

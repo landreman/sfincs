@@ -79,13 +79,12 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies, fineGrid)
         ZHat = Zs(ispecies)
 
         do ix=ixMin,Nx
-          select case(discreteAdjointOption)
-            case(0) ! continuous
+          if (discreteAdjointOption .eqv. .false.) then
             xPartOfRHS = exp(-x2(ix))*nHat*mHat*sqrtMHat*Delta*x2(ix)/ &
               (pi*sqrtpi*THat*sqrtTHat*ZHat)*ddrN2ddpsiHat
-            case(1) ! discrete
-            xPartOfRHS = pi*Delta*THat*THat*sqrtTHat*x2(ix)*x2(ix)*ddrN2ddpsiHat*xweights(ix)/(ZHat*VPrimeHat*mHat*sqrtMHat)
-          end select
+					else
+						xPartOfRHS = pi*Delta*THat*THat*sqrtTHat*x2(ix)*x2(ix)*ddrN2ddpsiHat*xweights(ix)/(ZHat*VPrimeHat*mHat*sqrtMHat)
+					end if
           if (whichSpecies == 0) then
             xPartOfRHS = xPartOfRHS*ZHat
           end if
@@ -95,16 +94,15 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies, fineGrid)
                 factor = xPartOfRHS/(this_BHat(itheta,izeta)*this_BHat(itheta,izeta)*this_BHat(itheta,izeta)) &
                   *(this_BHat_sub_theta(itheta,izeta)*this_dBHatdzeta(itheta,izeta) &
                   - this_BHat_sub_zeta(itheta,izeta)*this_dBHatdtheta(itheta,izeta))
-                select case(discreteAdjointOption)
-                  case (0) ! continuous
+                if (discreteAdjointOption .eqv. .false.) then
                     factor = factor*this_DHat(itheta,izeta)
                     factor1 = four/three
                     factor2 = two/three
-                  case (1) ! discrete
+								else
                     factor = factor*thetaWeights(itheta)*zetaWeights(izeta)
                     factor1 = 8/three
                     factor2 = four/15
-                end select
+                end if
 
                 L = 0
 
@@ -135,7 +133,7 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies, fineGrid)
         ZHat = Zs(ispecies)
 
         do ix=ixMin,Nx
-          if (discreteAdjointOption == 1) then
+          if (discreteAdjointOption) then
             xPartOfRHS = pi*Delta*x2(ix)*x2(ix)*x2(ix)*xweights(ix)*THat*THat*THat*sqrtTHat*ddrN2ddpsiHat/(2*Zs(ispecies)*VPrimeHat*mHat*sqrtMHat)
           else
             xPartOfRHS = exp(-x2(ix))*nHat*mHat*sqrtMHat*Delta*x2(ix)*x2(ix)/ &
@@ -143,20 +141,19 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies, fineGrid)
           end if
           do itheta = this_ithetaMin,this_ithetaMax
              do izeta = this_izetaMin,this_izetaMax
-                select case (discreteAdjointOption)
-                  case (0) ! continuous
+                if (discreteAdjointOption .eqv. .false.) then
                     factor = xPartOfRHS*this_DHat(itheta,izeta)/(this_BHat(itheta,izeta)**3)*(this_BHat_sub_theta(itheta,izeta) &
                       *this_dBHatdzeta(itheta,izeta) - this_BHat_sub_zeta(itheta,izeta)* &
                     this_dBHatdtheta(itheta,izeta))
                     factor1 = four/three
                     factor2 = two/three
-                  case (1) ! discrete
+								else
                     factor = xPartOfRHS*thetaWeights(itheta)*zetaWeights(izeta)*(BHat_sub_theta(itheta,izeta) &
                       *dBHatdzeta(itheta,izeta) - BHat_sub_zeta(itheta,izeta)* &
                     dBHatdtheta(itheta,izeta))/(BHat(itheta,izeta)**3)
                     factor1 = 8/three
                     factor2 = four/15
-                end select
+                end if
                 ! factor is the samed for species-summed heat flux
 
                 L = 0
@@ -184,24 +181,22 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies, fineGrid)
           ZHat = Zs(ispecies)
 
           do ix=ixMin,Nx
-             select case (discreteAdjointOption)
-                case (0) ! continuous
+						 if (discreteAdjointOption .eqv. .false.) then
                   xPartOfRHS = exp(-x2(ix))*x(ix)*2*mHat/(THat*THat*pi*sqrtPi*sqrtFSAB2)
-                case (1) ! discrete
+             else
                   xPartOfRHS = 4*pi*THat*THat*x(ix)*x(ix)*x(ix)*xWeights(ix)/(three*mHat*mHat*sqrtFSAB2*VPrimeHat*nHat)
-             end select
+             end if
 
             if (whichSpecies == 0) then
               xPartOfRHS = xPartOfRHS*ZHat
             end if
             do itheta = this_ithetaMin,this_ithetaMax
                do izeta = this_izetaMin,this_izetaMax
-                  select case (discreteAdjointOption)
-                    case (0) ! continuous
+                  if (discreteAdjointOption .eqv. .false.) then
                       factor = xPartOfRHS*this_BHat(itheta,izeta)
-                    case (1) ! discrete
+                  else
                       factor = xPartOfRHS*thetaWeights(itheta)*zetaWeights(izeta)*BHat(itheta,izeta)/DHat(itheta,izeta)
-                  end select
+                  end if 
 
                   L = 1
                   index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F,whichMatrix)

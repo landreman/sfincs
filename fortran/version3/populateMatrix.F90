@@ -1086,7 +1086,7 @@
         ! Add the adjoint operator term associated with E_r and
         ! full trajectories
         ! *********************************************************
-       if (RHSMode>3 .and. (discreteAdjointOption==0) .and. (includeXDotTerm .eqv. .true.) .and. &
+       if (RHSMode>3 .and. (discreteAdjointOption .eqv. .false.) .and. (includeXDotTerm .eqv. .true.) .and. &
           (useDKESExBDrift .eqv. .false.) .and. (includeElectricFieldTermInXiDot .eqv. .true.) .and. (whichMatrix>3)) then
           do itheta=ithetaMin,ithetaMax
              do izeta=izetaMin,izetaMax
