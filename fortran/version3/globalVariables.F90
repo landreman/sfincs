@@ -73,6 +73,7 @@ module globalVariables
 	integer, parameter :: mmax_boozer = 40
 	integer, parameter :: nmax_boozer = 40
 	PetscScalar, dimension(0:mmax_boozer,-nmax_boozer:nmax_boozer) :: boozer_bmnc
+	PetscScalar, dimension(0:mmax_boozer,-nmax_boozer:nmax_boozer) :: boozer_bmns
 
   ! ********************************************************
   ! ********************************************************

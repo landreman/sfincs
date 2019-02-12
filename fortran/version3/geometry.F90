@@ -1094,11 +1094,13 @@ contains
        diotadpsiHat= (iota_new-iota_old)/DeltapsiHat
 		case (13) ! Boozer - for BMNC Stellopt optimization
 			 nearbyRadiiGiven = .false.
-       NHarmonics = count(abs(boozer_bmnc)>zero)
+       NHarmonics = count(abs(boozer_bmnc)>zero) + count(abs(boozer_bmns)>0)
 			 if (boozer_bmnc(0,0) /= zero) then
 			 		NHarmonics = NHarmonics - 1
 			 end if
-!       print *,"Nharmonics: ", Nharmonics
+			 if (boozer_bmns(0,0) /= zero) then
+					NHarmonics = NHarmonics - 1
+			 end if
        if (.not. allocated(BHarmonics_l)) then
           allocate(BHarmonics_l(NHarmonics))
        end if
@@ -1111,7 +1113,7 @@ contains
        if (.not. allocated(BHarmonics_parity)) then
           allocate(BHarmonics_parity(NHarmonics))
        end if
-       BHarmonics_parity = .true.
+			 ! First stellarator-symmetric
 			 imn = 1
 			 do m=0,mmax_boozer
 					do n=-nmax_boozer,nmax_boozer
@@ -1120,6 +1122,21 @@ contains
 								BHarmonics_l(imn) = m
 								BHarmonics_n(imn) = n
 								BHarmonics_amplitudes(imn) = boozer_bmnc(m,n)
+								BHarmonics_parity(imn) = .true.
+								imn = imn + 1
+							end if
+						end if
+					end do
+			 end do
+			 ! Now asymmetric
+			 do m=0,mmax_boozer
+					do n=-nmax_boozer,nmax_boozer
+						if ((m/=0 .or. n/=0) .and. (m/=n)) then ! exclude 00 mode
+							if (boozer_bmnc(m,n)/=zero) then
+								BHarmonics_l(imn) = m
+								BHarmonics_n(imn) = n
+								BHarmonics_amplitudes(imn) = boozer_bmns(m,n)
+								BHarmonics_parity(imn) = .false.
 								imn = imn + 1
 							end if
 						end if

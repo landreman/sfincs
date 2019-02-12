@@ -527,9 +527,22 @@ in the {\ttfamily xm\_nyq} and {\ttfamily xn\_nyq} arrays, where available.
 {Only when \parlink{geometryScheme} == 13. }
 {Fourier harmonics describing the magnetic field in Boozer coordinates,
 \begin{gather}
-B(\theta_B,\zeta_B) = \sum_{m,n}\mathrm{\texttt{boozer\_bmnc}}(m,n) \cos(m\theta_B-n\mathrm{\texttt{Nperiods}} \zeta_B),
+B(\theta_B,\zeta_B) = \sum_{m,n}\mathrm{\texttt{boozer\_bmnc}}(m,n) \cos(m\theta_B-n\mathrm{\texttt{Nperiods}} \zeta_B) + \mathrm{\texttt{boozer\_bmnc}}(m,n) \sin(m\theta_B-n\mathrm{\texttt{Nperiods}} \zeta_B),
 \end{gather}
 The first index of \texttt{ Boozer\_bmnc} corresponds to $m \in $[0,40], and the second corresponds to $n \in $[-40,40]. Here \parlink{Nperiods} can be specified in the input file.
+}
+
+\myhrule
+
+\param{boozer\_bmns}
+{2D array of reals}
+{0}
+{Only when \parlink{geometryScheme} == 13. }
+{Fourier harmonics describing the magnetic field in Boozer coordinates,
+\begin{gather}
+B(\theta_B,\zeta_B) = \sum_{m,n}\mathrm{\texttt{boozer\_bmnc}}(m,n) \cos(m\theta_B-n\mathrm{\texttt{Nperiods}} \zeta_B) + \mathrm{\texttt{boozer\_bmnc}}(m,n) \sin(m\theta_B-n\mathrm{\texttt{Nperiods}} \zeta_B),
+\end{gather}
+The first index of \texttt{ Boozer\_bmns} corresponds to $m \in $[0,40], and the second corresponds to $n \in $[-40,40]. Here \parlink{Nperiods} can be specified in the input file.
 }
 
 \myhrule

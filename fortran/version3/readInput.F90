@@ -34,7 +34,7 @@ contains
          psiHat_wish, psiN_wish, rHat_wish, rN_wish, &
          VMECRadialOption, VMEC_Nyquist_option, rippleScale, EParallelHatSpec_bcdatFile, Nperiods, &
 !				 boozer_bmnc, mmax_boozer, nmax_boozer
-				 boozer_bmnc
+				 boozer_bmnc, boozer_bmns
 
     namelist / speciesParameters / mHats, Zs, nHats, THats, &
          dNHatdpsiHats, dTHatdpsiHats, &
