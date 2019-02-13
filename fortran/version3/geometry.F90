@@ -1117,7 +1117,7 @@ contains
 			 imn = 1
 			 do m=0,mmax_boozer
 					do n=-nmax_boozer,nmax_boozer
-						if (m/=0 .or. n/= 0) then
+						if (m/=0 .or. n/= 0) then ! exclude 00 mode
 							if (boozer_bmnc(m,n)/=zero) then
 								BHarmonics_l(imn) = m
 								BHarmonics_n(imn) = n
@@ -1131,7 +1131,7 @@ contains
 			 ! Now asymmetric
 			 do m=0,mmax_boozer
 					do n=-nmax_boozer,nmax_boozer
-						if ((m/=0 .or. n/=0) .and. (m/=n)) then ! exclude 00 mode
+						if ((m/=0 .or. n/=0)) then ! exclude 00 mode
 							if (boozer_bmnc(m,n)/=zero) then
 								BHarmonics_l(imn) = m
 								BHarmonics_n(imn) = n
