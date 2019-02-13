@@ -1131,8 +1131,8 @@ contains
 			 ! Now asymmetric
 			 do m=0,mmax_boozer
 					do n=-nmax_boozer,nmax_boozer
-						if ((m/=0 .or. n/=0)) then ! exclude 00 mode
-							if (boozer_bmnc(m,n)/=zero) then
+						if (m/=0 .or. n/=0) then ! exclude 00 mode
+							if (boozer_bmns(m,n)/=zero) then
 								BHarmonics_l(imn) = m
 								BHarmonics_n(imn) = n
 								BHarmonics_amplitudes(imn) = boozer_bmns(m,n)
@@ -1146,9 +1146,6 @@ contains
 			 B0OverBBar = boozer_bmnc(0,0)
        dGdpHat = 0 !Not implemented as an input for this case yet, could be put in namelist input if needed
        rN = rN_wish
-!      print *,"BHarmonics_l: ", BHarmonics_l
-!      print *,"BHarmonics_n: ", BHarmonics_n
-!      print *,"BHarmonics_amplitudes: ", BHarmonics_amplitudes
 
     case default
        print *,"Error! Invalid geometryScheme"
