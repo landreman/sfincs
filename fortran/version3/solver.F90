@@ -11,6 +11,7 @@ module solver
   use globalVariables
   use adjointDiagnostics
   use writeHDF5Output
+	use petscsysdef
 
   implicit none
 
@@ -41,11 +42,10 @@ module solver
     PetscBool :: is_icntl_14_set, boolean
     logical :: doAnotherSolve
     ! Related to adjoint solve
-    integer :: whichAdjointRHS, iSpecies
+    integer :: whichAdjointRHS, iSpecies, whichLambda, whichMode, whichSpecies
     Vec :: adjointSolutionVec, summedSolutionVec, adjointRHSVec, adjointSolutionJr
     Mat :: adjointMatrix, adjointPreconditionerMatrix
     logical :: useSummedSolutionVec
-    integer :: whichLambda, whichMode, whichSpecies
     logical :: summedSolution_particleFlux = .false.
     logical :: summedSolution_heatFlux = .false.
     logical :: summedSolution_parallelFlow = .false.
@@ -168,6 +168,7 @@ module solver
 						call PCSetReusePreconditioner(preconditionerContext_adjoint, PETSC_TRUE, ierr)
 #endif
 					end if
+
        else
           ! Direct solver:
 !!$#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
@@ -198,7 +199,7 @@ module solver
 						call KSPGetPC(KSPInstance_adjoint, preconditionerContext_adjoint, ierr)
 						call PCSetType(preconditionerContext_adjoint, PCLU, ierr)
 						call KSPSetType(KSPInstance_adjoint, KSPPREONLY, ierr)
-						! Allow options to be controlled using command-line flags:
+!						 Allow options to be controlled using command-line flags:
 						call KSPSetFromOptions(KSPInstance_adjoint, ierr)
 					end if
        end if
@@ -254,7 +255,6 @@ module solver
 						call PCFactorSetZeroPivot(preconditionerContext_adjoint, 1d-200, ierr)
 					end if
        end if
-
 
        ! Tell PETSc to call the diagnostics subroutine at each iteration of SNES:
        call SNESMonitorSet(mysnes, diagnosticsMonitor, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
@@ -395,7 +395,6 @@ module solver
        !
        ! ***********************************************************************
        ! ***********************************************************************
-
        select case (RHSMode)
        case (1,4,5)
           ! Single solve, either linear or nonlinear.
@@ -618,8 +617,11 @@ module solver
 
       ! Forward matrix & preconditioner no longer needed
       if (discreteAdjointOption .eqv. .false.) then
+				call VecDestroy(residualVec,ierr)
+				if (useIterativeLinearSolver) then
+					call MatDestroy(preconditionerMatrix,ierr)
+				end if
         call MatDestroy(matrix,ierr)
-        call MatDestroy(preconditionerMatrix,ierr)
 				call SNESDestroy(mysnes,ierr)
       end if
 
@@ -823,7 +825,7 @@ module solver
 				! Now compute diagnostics for species-summed quantities
         if (useSummedSolutionVec) then
 						call PetscTime(time1, ierr)
-            call evaluateDiagnostics(solutionVec,summedSolutionVec,adjointSolutionJr,whichAdjointRHS,0)
+						call evaluateDiagnostics(solutionVec,summedSolutionVec,adjointSolutionJr,whichAdjointRHS,0)
           	call PetscTime(time2, ierr)
 						if (masterProc) then
 							print *,"Done with the adjoint diagnostics.  Time: ", time2-time1, " seconds."
@@ -890,7 +892,6 @@ module solver
 								call checkIfKSPConverged(KSPInstance)
              end if
           end if
-
           call PetscTime(time2, ierr)
           if (masterProc) then
              print *,"Done with the adjoint solve.  Time to solve: ", time2-time1, " seconds."
@@ -937,20 +938,29 @@ module solver
        ! ***********************************************************************
        ! ***********************************************************************
 
+			 call VecDestroy(solutionVec, ierr)
+			 if (((discreteAdjointOption .eqv. .false.) .and. RHSMode>3) .eqv. .false.) then
+       	call VecDestroy(residualVec, ierr)
+			 end if
+			 call VecDestroy(f0,ierr)
 
-       call VecDestroy(solutionVec, ierr)
-       call VecDestroy(residualVec, ierr)
        ! A seg fault occurs in nonlinear runs if we call MatDestroy or KSPDestroy here, since the matrix was already destroyed (and a different Mat created) in evaluateJacobian().
 !!$    call MatDestroy(matrix, ierr)
 !!$    if (useIterativeLinearSolver) then
 !!$       call MatDestroy(preconditionerMatrix, ierr)
 !!$    end if
 
-      if (ambipolarSolve .and. discreteAdjointOption) then
-        call MatDestroy(matrix,ierr)
-        call MatDestroy(preconditionerMatrix,ierr)
-	 			call SNESDestroy(mysnes,ierr)
-      end if
+			if ((discreteAdjointOption .eqv. .false.) .and. RHSMode>3) then
+				call KSPDestroy(KSPInstance_adjoint,ierr)
+			end if
+
+			if ((includePhi1 .eqv. .false.) .and. ((discreteAdjointOption.eqv. .false.) .and. RHSMode>3) .eqv. .false.) then
+				call MatDestroy(matrix, ierr)
+				call SNESDestroy(mysnes,ierr)
+				if (useIterativeLinearSolver) then
+				 call MatDestroy(preconditionerMatrix, ierr)
+				end if
+			end if
 
     end do
 

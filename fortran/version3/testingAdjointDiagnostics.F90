@@ -189,11 +189,11 @@ module testingAdjointDiagnostics
 						dHeatFluxdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (heatFlux_vm_rN(iSpecies)-heatFluxInit(iSpecies))/(deltaLambda*deltaFactor)
 					dParallelFlowdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (FSABVelocityUsingFSADensityOverRootFSAB2(iSpecies)-parallelFlowInit(iSpecies))/(deltaLambda*deltaFactor)
         end do ! ispecies
-        dTotalHeatFluxdLambda_finiteDiff(whichLambda,whichMode) = (sum(heatFlux_vm_rN)-sum(heatFluxInit))/(deltaLambda*deltaFactor)
+        dTotalHeatFluxdLambda_finiteDiff(whichLambda,whichMode) = (sum(heatFlux_vm_rN(1:Nspecies))-sum(heatFluxInit(1:Nspecies)))/(deltaLambda*deltaFactor)
         if (constantJr .eqv. .false.) then
-          dRadialCurrentdLambda_finiteDiff(whichLambda,whichMode) = (dot_product(Zs(1:Nspecies),particleFlux_vm_rN)-dot_product(Zs(1:Nspecies),particleFluxInit))/(deltaLambda*deltaFactor)
+          dRadialCurrentdLambda_finiteDiff(whichLambda,whichMode) = (dot_product(Zs(1:Nspecies),particleFlux_vm_rN(1:Nspecies))-dot_product(Zs(1:Nspecies),particleFluxInit(1:Nspecies)))/(deltaLambda*deltaFactor)
         end if
-        dBootstrapdLambda_finiteDiff(whichLambda,whichMode) = (dot_product(Zs(1:Nspecies),FSABVelocityUsingFSADensityOverRootFSAB2)-dot_product(Zs(1:Nspecies),parallelFlowInit))/(deltaLambda*deltaFactor)
+        dBootstrapdLambda_finiteDiff(whichLambda,whichMode) = (dot_product(Zs(1:Nspecies),FSABVelocityUsingFSADensityOverRootFSAB2(1:Nspecies))-dot_product(Zs(1:Nspecies),parallelFlowInit(1:Nspecies)))/(deltaLambda*deltaFactor)
 
         ! Reset geometry to original values
         if (coordinateSystem == COORDINATE_SYSTEM_VMEC) then

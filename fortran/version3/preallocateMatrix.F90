@@ -12,7 +12,8 @@ subroutine preallocateMatrix(matrix, whichMatrix)
        !!constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, nonlinear, & !!Commented by AM 2016-02
        constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, & !!Added by AM 2016-02
        !!thetaDerivativeScheme, zetaDerivativeScheme, includeRadialExBDrive !!Commented by AM 2016-03
-       thetaDerivativeScheme, zetaDerivativeScheme, includePhi1InKineticEquation, quasineutralityOption !!Added by AM 2016-03
+       thetaDerivativeScheme, zetaDerivativeScheme, includePhi1InKineticEquation, quasineutralityOption, & !!Added by AM 2016-03
+			 RHSMode
   use indices
 
   implicit none
@@ -25,7 +26,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
   integer :: tempInt1, i, itheta, izeta, ispecies, ix, index
   integer :: firstRowThisProcOwns, lastRowThisProcOwns, numLocalRows
 
-  if (masterProc) then
+  if (masterProc .and. (RHSMode<4)) then
      print *,"Beginning preallocation for whichMatrix = ",whichMatrix
   end if
 

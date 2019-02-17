@@ -1009,7 +1009,6 @@
                        x2(ix)*x2(ix)*xWeights(ix)*factor, ADD_VALUES, ierr)
                end do
             end do
-
          end do
       end do
     endif
@@ -1018,19 +1017,7 @@
     ! Now finalize the matrix
     ! *******************************************************************************
 
-    call PetscTime(time2, ierr)
-    call PetscTime(time1, ierr)
-
     call MatAssemblyBegin(dMatrixdLambda, MAT_FINAL_ASSEMBLY, ierr)
     call MatAssemblyEnd(dMatrixdLambda, MAT_FINAL_ASSEMBLY, ierr)
-
-    call PetscTime(time2, ierr)
-    call PetscTime(time1, ierr)
-
-
-    call MatGetInfo(dMatrixdLambda, MAT_GLOBAL_SUM, myMatInfo, ierr)
-    NNZ = nint(myMatInfo(MAT_INFO_NZ_USED))
-    NNZAllocated = nint(myMatInfo(MAT_INFO_NZ_ALLOCATED))
-    NMallocs = nint(myMatInfo(MAT_INFO_MALLOCS))
 
   end subroutine populatedMatrixdLambda

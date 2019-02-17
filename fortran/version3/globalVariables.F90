@@ -38,7 +38,7 @@ module globalVariables
 
   ! Quantities related to ambipolar solve
   logical :: ambipolarSolve = .false.
-  integer :: ambipolarSolveOption = 1
+  integer :: ambipolarSolveOption = 2
   integer :: NEr_ambipolarSolve = 20
   PetscScalar :: Er_search_tolerance_dx = 1.d-8
 	PetscScalar :: Er_search_tolerance_f = 1.d-10
@@ -405,11 +405,11 @@ module globalVariables
 
   !> @var ns Values of n to use for Fourier derivatives.
   !> @var ms Values of m to sue for Fourier derivatives.
-  integer, dimension(:), allocatable :: ns_sensitivity
-  integer, dimension(:), allocatable :: ms_sensitivity
+  integer, dimension(:), allocatable :: ns_sensitivity, ms_sensitivity, parity_sensitivity
   integer :: nMaxAdjoint = 0, mMaxAdjoint = 0
   integer :: nMinAdjoint = 0, mMinAdjoint = 0
   integer :: NModesAdjoint = 0, NLambdas = 6
+	logical :: asymAdjoint = .false.
   PetscScalar, dimension(:,:), allocatable :: dRadialCurrentdLambda,dTotalHeatFluxdLambda,dBootstrapdLambda
   PetscScalar, dimension(:,:,:), allocatable :: dParticleFluxdLambda, dHeatFluxdLambda, dParallelFlowdLambda
   PetscScalar, dimension(:,:), allocatable :: dPhidPsidLambda

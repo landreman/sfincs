@@ -34,8 +34,6 @@
       n = ns_sensitivity(whichMode)
     end if
 
-    call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, dRHSdLambda, ierr)
-
     if (pointAtX0) then
       ixMin = 2
     else

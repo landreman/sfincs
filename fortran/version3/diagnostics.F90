@@ -935,7 +935,6 @@
          end if
       end if
 
-
        deallocate(densityIntegralWeights)
        deallocate(flowIntegralWeights)
        deallocate(pressureIntegralWeights)
@@ -951,6 +950,7 @@
 
     end if
 
+		call VecScatterDestroy(VecScatterContext,ierr)
     call VecDestroy(solutionWithFullF, ierr)
     call VecDestroy(solutionWithFullFOnProc0, ierr)
     call VecDestroy(solutionWithDeltaFOnProc0, ierr)

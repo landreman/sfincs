@@ -48,7 +48,7 @@ subroutine testingAdjointOperator(forwardSolution,adjointSolution,whichAdjointRH
 
   ! Populate adjoint operator
   call preallocateMatrix(adjointMatrix, 1)
-  if (discreteAdjointOption == 1) then
+  if (discreteAdjointOption ) then
     call MatTranspose(matrix, MAT_INPLACE_MATRIX,adjointMatrix,ierr)
   else
     call populateMatrix(adjointMatrix, 4, dummy)

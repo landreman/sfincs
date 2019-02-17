@@ -14,6 +14,8 @@ module adjointDiagnostics
 
   contains
 
+
+
     subroutine computedRadialCurrentdEr(solutionVec,adjointSolutionJr)
 
       use globalVariables
@@ -180,11 +182,13 @@ module adjointDiagnostics
               ! Now add terms which sum over sources
               result = result + (two*pi*(THat**4)/((mHat**3)*nHat*VPrimeHat))*(sourcesF(ispecies,1)*sourcesG(ispecies,1) + sourcesF(ispecies,2)*sourcesG(ispecies,2))
             end do ! ispecies
+						call VecDestroy(deltaFOnProc0,ierr)
+						call VecDestroy(deltaGOnProc0,ierr)
           end if ! masterProc
-
 			else ! discrete
           call VecDot(deltaF, deltaG, result, ierr)
 			end if
+
     end subroutine
 
     !> Evaluates the term in the sensitivity derivative of the heat flux
@@ -356,7 +360,9 @@ module adjointDiagnostics
             end do
           end do
         end do
+				call VecDestroy(forwardSolutionOnProc0,ierr)
       end if !masterProc
+			call VecScatterDestroy(VecScatterContext,ierr)
 
     end subroutine
 
@@ -535,7 +541,9 @@ module adjointDiagnostics
             end do ! izeta
           end do ! itheta
         end do ! ispecies
+				call VecDestroy(deltaFOnProc0,ierr)
       end if !masterProc
+			call VecScatterDestroy(VecScatterContext,ierr)
     end subroutine
 
     !> Evaluates the term in the sensitivity derivative of the parallel flow
@@ -714,7 +722,10 @@ module adjointDiagnostics
             end do
           end do
         end do
+				call VecDestroy(deltaFOnProc0,ierr)
       end if !masterProc
+			call VecScatterDestroy(VecScatterContext,ierr)
+
     end subroutine
 
     !> Evaluates derivatives of inner products using the forwardSolution and adjointSolution.
@@ -765,7 +776,8 @@ module adjointDiagnostics
         do whichMode=1,NModesAdjoint
           call VecSet(adjointResidual,zero,ierr)
           ! Call function to perform (dLdlambdaf - dSdlambda), which calls populatedMatrixdLambda and populatedRHSdLambda
-          call evaluateAdjointInnerProductFactor(forwardSolution,adjointResidual,whichLambda,whichMode)
+
+					call evaluateAdjointInnerProductFactor(forwardSolution,adjointResidual,whichLambda,whichMode)
 
           if (RHSMode == 5) then
             call innerProduct(adjointSolutionJr,adjointResidual,innerProductResultEr3,0)
@@ -774,8 +786,7 @@ module adjointDiagnostics
             dPhidPsidLambda(whichLambda,whichMode) = (1/innerProductResultEr2)*(radialCurrentSensitivity-innerProductResultEr3)
           end if
 
-            call innerProduct(adjointSolution,adjointResidual,innerProductResult,0)
-
+					! call innerProduct(adjointSolution,adjointResidual,innerProductResult,0)
             ! Save to appropriate sensitivity array
             if (whichSpecies == 0) then
               select case (whichAdjointRHS)

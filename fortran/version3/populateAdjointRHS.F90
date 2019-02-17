@@ -55,7 +55,6 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies, fineGrid)
     this_dBHatdtheta => dBHatdtheta
     this_dBHatdzeta => dBHatdzeta
 
-  call VecCreateMPI(MPIComm, PETSC_DECIDE, this_matrixSize, rhs, ierr)
   call VecSet(rhs, zero, ierr)
 
   if (pointAtX0) then
@@ -134,7 +133,7 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies, fineGrid)
 
         do ix=ixMin,Nx
           if (discreteAdjointOption) then
-            xPartOfRHS = pi*Delta*x2(ix)*x2(ix)*x2(ix)*xweights(ix)*THat*THat*THat*sqrtTHat*ddrN2ddpsiHat/(2*Zs(ispecies)*VPrimeHat*mHat*sqrtMHat)
+            xPartOfRHS = pi*Delta*x2(ix)*x2(ix)*x2(ix)*xweights(ix)*THat*THat*THat*sqrtTHat*ddrN2ddpsiHat/(2*ZHat*VPrimeHat*mHat*sqrtMHat)
           else
             xPartOfRHS = exp(-x2(ix))*nHat*mHat*sqrtMHat*Delta*x2(ix)*x2(ix)/ &
               (2*pi*sqrtpi*sqrtTHat*ZHat)*ddrN2ddpsiHat
