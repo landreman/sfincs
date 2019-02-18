@@ -158,6 +158,10 @@ for directory in directories:
           xVariable = (f[xVariableName][()])[xArrayPosition - 1]
        else :
           xVariable = f[xVariableName][()]
+
+       if f["includePhi1"][()] == f["integerToRepresentTrue"][()] and xVariable.size > 1:
+          xVariable = xVariable[-1]
+
     except:
        print "Unable to read value of " + xVariableName + xArrayPositionString + " in " + filename + "."
        continue
@@ -168,6 +172,10 @@ for directory in directories:
           yVariable = (f[yVariableName][()])[yArrayPosition - 1]
        else :
           yVariable = f[yVariableName][()]
+
+       if f["includePhi1"][()] == f["integerToRepresentTrue"][()] and yVariable.size > 1:
+          yVariable = yVariable[-1]
+
     except:
        print "Unable to read value of " + yVariableName + yArrayPositionString + " in " + filename + "."
        continue
