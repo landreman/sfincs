@@ -778,7 +778,7 @@ module adjointDiagnostics
 				else
 					this_NmodesAdjoint = NModesAdjoint
 				end if
-        do whichMode=1,NModesAdjoint
+        do whichMode=1,this_NModesAdjoint
           call VecSet(adjointResidual,zero,ierr)
           ! Call function to perform (dLdlambdaf - dSdlambda), which calls populatedMatrixdLambda and populatedRHSdLambda
 
