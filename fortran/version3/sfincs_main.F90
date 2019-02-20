@@ -156,13 +156,17 @@ module sfincs_main
     ! at each iteration of the solver (i.e. save all quantities except diagnostics.)
     call initializeOutputFile()
 
+		if (debugAdjointEr) then
+			call testingErAdjointDiagnostics()
+		end if
+
     if (debugAdjoint) then
       call compareAdjointDiagnostics()
     end if
 
     ! Solve the main system, either linear or nonlinear.
     ! This step takes more time than everything else combined.
-		if (debugAdjoint .eqv. .false.) then
+		if ((debugAdjoint .eqv. .false.) .and. (debugAdjointEr .eqv. .false.)) then
 			if (ambipolarSolve) then
 				call mainAmbipolarSolver()
 			else

@@ -279,4 +279,58 @@ module testingAdjointDiagnostics
 
   end subroutine compareAdjointDiagnostics
 
+	subroutine testingErAdjointDiagnostics()
+
+		use globalVariables
+		use solver
+		use radialCoordinates
+
+		implicit none
+
+		PetscScalar :: time1, time2, radialCurrent_init, dRadialCurrentdEr_adjoint, &
+			radialCurrent_fin, dRadialCurrentdEr_fd, Er_init
+		PetscErrorCode :: ierr
+
+		! Change setting so dRadialCurrentdEr is computed
+		RHSMode = 1
+		ambipolarSolve = .true.
+		ambipolarSolveOption = 1
+		! Call mainSolver to perform adjoint solve
+   	call PetscTime(time1, ierr)
+		call mainSolverLoop()
+    call PetscTime(time2, ierr)
+    if (masterProc) then
+      print *,"Time for adjoint solve: ", time2-time1
+    end if
+		dRadialCurrentdEr_adjoint = dRadialCurrentdEr
+		radialCurrent_init = dot_product(Zs(1:Nspecies),particleFlux_vm_rN(1:Nspecies))
+		Er_init = Er
+
+		! Change settings so dRadialCurrentdEr is not computed
+		ambipolarSolve = .false.
+		RHSMode = 1
+		! Change Er for fd
+		Er = Er*(1.0+deltaLambda)
+		call setInputRadialCoordinate()
+		! Call mainSolver to perform adjoint solve
+		call PetscTime(time1, ierr)
+		call mainSolverLoop()
+		call PetscTime(time2, ierr)
+    if (masterProc) then
+      print *,"Time for adjoint solve: ", time2-time1
+    end if
+		radialCurrent_fin = dot_product(Zs(1:Nspecies),particleFlux_vm_rN(1:Nspecies))
+		dRadialCurrentdEr_fd = (radialCurrent_fin-radialCurrent_init)/(Er*deltaLambda)
+
+		if (masterProc) then
+			print *,"dRadialCurrentdEr_fd: ", dRadialCurrentdEr_fd
+			print *,"dRadialCurrentdEr_adjoint: ", dRadialCurrentdEr_adjoint
+			print *,"percentError: ", percentError(dRadialCurrentdEr_fd,dRadialCurrentdEr_adjoint)
+		end if
+
+		! Reset Er
+		Er = Er_init
+
+	end subroutine testingErAdjointDiagnostics
+
 end module testingAdjointDiagnostics

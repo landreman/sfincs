@@ -1258,5 +1258,12 @@ subroutine validateInput()
 			stop
 		end if
 	end if
+
+	if (debugAdjoint .and. debugAdjointEr) then
+		if (masterProc) then
+			print *,"Error! debugAdjoint cannot be used with debugAdjointEr."
+		end if
+		stop
+	end if
   
 end subroutine validateInput

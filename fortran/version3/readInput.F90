@@ -97,7 +97,7 @@ contains
       adjointTotalHeatFluxOption, adjointHeatFluxOption, adjointParticleFluxOption, &
       nMinAdjoint, mMinAdjoint, &
       nMaxAdjoint, mMaxAdjoint, adjointParallelFlowOption, discreteAdjointOption, &
-      debugAdjoint, deltaLambda
+      debugAdjoint, deltaLambda, debugAdjointEr
 
     Zs = speciesNotInitialized
     mHats = speciesNotInitialized

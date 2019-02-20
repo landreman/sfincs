@@ -113,6 +113,7 @@ module globalVariables
   ! ********************************************************
 
   logical :: debugAdjoint = .false.
+	logical :: debugAdjointEr = .false.
   PetscScalar :: deltaLambda = 1.d-4 ! for finite diff testing
   logical :: adjointBootstrapOption = .false.
   logical :: adjointRadialCurrentOption = .false.
