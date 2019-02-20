@@ -786,7 +786,7 @@ module adjointDiagnostics
             dPhidPsidLambda(whichLambda,whichMode) = (1/innerProductResultEr2)*(radialCurrentSensitivity-innerProductResultEr3)
           end if
 
-					! call innerProduct(adjointSolution,adjointResidual,innerProductResult,0)
+					call innerProduct(adjointSolution,adjointResidual,innerProductResult,0)
             ! Save to appropriate sensitivity array
             if (whichSpecies == 0) then
               select case (whichAdjointRHS)
