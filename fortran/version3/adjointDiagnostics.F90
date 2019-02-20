@@ -749,7 +749,7 @@ module adjointDiagnostics
       PetscScalar :: innerProductResult, sensitivityResult, ErTermToAdd
       Vec :: adjointResidualEr, adjointSolutionJr
       PetscScalar :: innerProductResultEr1, innerProductResultEr2, innerProductResultEr3
-      PetscScalar :: radialCurrentSensitivity
+      PetscScalar :: radialCurrentSensitivity, this_NModesAdjoint
 
       if (masterProc) then
         print *,"evaluateDiagnostics was called."
@@ -773,6 +773,11 @@ module adjointDiagnostics
       ! Loop over lambda's and perform inner product
       ! rethink this for Er
       do whichLambda=1,NLambdas
+				if ((coordinateSystem == COORDINATE_SYSTEM_BOOZER) .and. (whichLambda .ne. 1)) then
+					this_NmodesAdjoint = 1
+				else
+					this_NmodesAdjoint = NModesAdjoint
+				end if
         do whichMode=1,NModesAdjoint
           call VecSet(adjointResidual,zero,ierr)
           ! Call function to perform (dLdlambdaf - dSdlambda), which calls populatedMatrixdLambda and populatedRHSdLambda
