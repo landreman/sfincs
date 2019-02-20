@@ -745,11 +745,11 @@ module adjointDiagnostics
       PetscErrorCode :: ierr
       Vec :: forwardSolution, adjointSolution, adjointResidual, adjointRHSVec
       integer :: whichAdjointRHS, whichSpecies
-      integer :: whichLambda, whichMode
+      integer :: whichLambda, whichMode, this_NModesAdjoint
       PetscScalar :: innerProductResult, sensitivityResult, ErTermToAdd
       Vec :: adjointResidualEr, adjointSolutionJr
       PetscScalar :: innerProductResultEr1, innerProductResultEr2, innerProductResultEr3
-      PetscScalar :: radialCurrentSensitivity, this_NModesAdjoint
+      PetscScalar :: radialCurrentSensitivity
 
       if (masterProc) then
         print *,"evaluateDiagnostics was called."
