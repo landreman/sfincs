@@ -23,9 +23,10 @@ module ambipolarSolver
 
     PetscScalar :: time1, time2, ambipolarEr
     PetscErrorCode :: ierr
-		integer :: RHSMode_init = 1
+		integer :: RHSMode_init
 
 		! If RHSMode>3, perform ambipolarSolve with adjoint diagnostics
+		RHSMode_init = 1
 		if (RHSMode>3) then
 			RHSMode_init = RHSmode
 			RHSMode = 1
