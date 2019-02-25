@@ -1417,7 +1417,7 @@
         end if
       end if
       if (RHSMode==5) then
-        allocate(dPhidPsidLambda(NLambdas,NModesAdjoint))
+        if (.not. allocated(dPhidPsidLambda)) allocate(dPhidPsidLambda(NLambdas,NModesAdjoint))
       end if
     end if
 
