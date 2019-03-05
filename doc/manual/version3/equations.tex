@@ -16,15 +16,114 @@ Other terms generally can be turned on and off as desired using parameters in th
 {\ttfamily \hyperref[sec:physicsParameters]{physicsParameters}} namelist.
 
 Throughout this section, gradients and other partial derivatives are taken
-at constant $x_s = v/\sqrt{2T_s/m_s}$ and at constant $\xi = v_{||} / v$, unless denoted otherwise with subscripts.
+at constant $x_s = v/\sqrt{2T_s/m_s}$ and at constant $\xi = v_{||} / v$, unless denoted otherwise with subscripts. 
 We use $s$ to denote the species, $r$ to denote any radial coordinate, (expressions are independent
 of the specific radial coordinate used,)
-$C_s$ to denote the collision operator, and $S_s$ to denote the source-sink term.
+$C_s$ to denote the collision operator, and $S_s$ to denote the source-sink term. 
+The magnetic moment is $\mu = v_{\perp}^2/\left(2 B\right)$ and the total energy is $W_s = v^2 / 2 + Z_s e \Phi / m_s$, 
+with the electrostatic potential $\Phi$. 
 A more detailed discussion of the equations implemented in the code can be found
 in the technical documentation for \sfincs~version 3, available in the {\ttfamily /doc} directory
 of the repository.
 
-\section{Default: Full $\vect{E}\times\vect{B}$ trajectories; no poloidal or toroidal magnetic drifts; flux function potential}
+\section{System of equations}
+Although the prime function of \sfincs~is to solve the drift-kinetic equation, when run in its most general way (\parlink{includePhi1} = \true and \parlink{readExternalPhi1} = \false) it simultaneously also solves the following equations:
+\begin{align}
+%\begin{equation}
+%\begin{dcases}
+	& \lambda + \sum_s Z_s \int d^3 v \, \left(f_{s 0} + f_{s 1} \right) = 0 \;\;\; (\mathrm{quasineutrality}), \label{eq:QuasineutralityEq}\\ %\nonumber \\
+	%
+	& %\left\langle \int d^3 v \, f_s \right\rangle = n_{0 s} \left(\psi\right), 
+	\left\langle \int d^3 v \, f_{s 1} \right\rangle = 0, 
+	\label{eq:DensityEq}\\ %\nonumber \\
+	%
+	& %\left\langle \frac{m_s}{3} \int d^3 v \, v^2 \, f_s \right\rangle = n_{0 s} \left(\psi\right) T_s \left(\psi\right),  
+	\left\langle \int d^3 v \, v^2 \, f_{s 1} \right\rangle = 0,
+	\label{eq:EnergyEq}\\
+	& \left\langle \Phi_1 \right\rangle = 0. \label{eq:Phi1Eq} 
+%\label{eq:SystemOfEquations} 
+%\end{dcases}
+%\end{equation}
+\end{align}
+If $\Phi_1$ is not included (\parlink{includePhi1} = \false) or if it is read from a file (\parlink{readExternalPhi1} = \false) then Eqs.~\eqref{eq:QuasineutralityEq} and \eqref{eq:Phi1Eq} are not solved. 
+The unknowns in the system which are calculated are $\left\{f_{s1} \left(\theta, \zeta, x, \xi\right), \Phi_1 \left(\theta, \zeta\right), S_{s 1}, S_{s 2}, \lambda\right\}$ for the full system, and $\left\{f_{s1} \left(\theta, \zeta, x, \xi\right), S_{s 1}, S_{s 2}\right\}$ if $\Phi_1$ is not an unknown. 
+The potential variation is defined through $\Phi = \Phi_0 + \Phi_1$, where $\Phi_0 = \Phi_0\left(r\right) = \left\langle \Phi \right\rangle$ and $\Phi_1 = \Phi_1\left(\theta, \zeta\right)$ with $\left|\Phi_1\right| \ll \left|\Phi_0\right|$ (the variation of the electrostatic potential along flux-surfaces is also assumed to be small compared to the radial variation). 
+This implies that the radial electric field is $E_r = - d\Phi_0/dr$ (see \parlink{Er}).
+$S_{s 1}$ and $S_{s 2}$ represent the source-sink term (see section \ref{sec:source-sink}), and $\lambda$ (\parlink{lambda}) is a Lagrange multiplier which should come out as negligible in quasineutrality. 
+We note that the number of degrees of freedom for the system is\newline 
+\Ntheta~$\times$~\Nzeta~$\times$~\Nx~$\times$~\Nxi~$\times$~\parlink{Nspecies}~+~\Ntheta~$\times$~\Nzeta~+~2~$\times$~\parlink{Nspecies}~+~1\newline 
+when $\Phi_1$ is included as an unknown and otherwise\newline
+\Ntheta~$\times$~\Nzeta~$\times$~\Nx~$\times$~\Nxi~$\times$~\parlink{Nspecies}~+~2~$\times$~\parlink{Nspecies}. 
+
+\todo{It seems like Eqs.~\eqref{eq:DensityEq} and \eqref{eq:EnergyEq} are different for PAS}
+
+
+\section{$0^{\mathrm{th}}$ order distribution}
+The lowest-order distribution function is either a Maxwellian flux function $\displaystyle f_{s0}\left(r\right) = f_{sM}\left(r\right) = n_{s 0}\left(r\right) \left(\frac{m_s}{2 \pi T_s}\right)^{3/2} \exp \left(- x^2\right)$ if \parlink{includePhi1} = \false, 
+or contains the flux-surface variation $\displaystyle f_{s0}\left(r,\theta,\zeta\right) = f_{sM}\left(r\right) \exp \left[- Z_s e \Phi_1(\theta,\zeta) / T_s \right]$ if \parlink{includePhi1} = \true. 
+Here $n_{s 0}$ represents the input density given by \parlink{nHats}. 
+Note that in a calculation with \parlink{includePhi1} = \true, although $n_{s 0}\left(r\right)$ is a flux function it is not neccessarily equal to the flux-surface-averaged lowest-order density (given by $\left\langle \int f_{s 0} \, d^3v \right\rangle$) since the condition $\displaystyle \left\langle \Phi_1 \right\rangle = 0$ does not imply that $\displaystyle \left\langle \exp \left(- Z_s e \Phi_1 / T_s \right) \right\rangle = 1$.
+
+\section{Collision operator}
+\label{sec:CollisionOperator}
+The total collision operator is a sum of linearized collision operators with each species: 
+%\begin{equation}
+$ \displaystyle
+C_s\left[f_s\right] \equiv \sum_b C_{s b}^{l}\left[f_s, f_b\right],
+$
+%\label{eq:CollisionOperatorTot}
+%\end{equation}
+where 
+%\begin{equation}
+$ \displaystyle
+C_{sb}^{l}\left[f_s, f_b\right] \equiv C_{s b}\left[f_{s 1}, f_{b M}\right] + C_{s b}\left[f_{s M}, f_{b 1}\right]
+$
+%\label{eq:LinearizedCollisionOperator}
+%\end{equation}
+and $C_{s b}\left[f_{s}, f_{b}\right]$ is the Fokker-Planck collision operator. 
+$C_{s b}\left[f_{s 1}, f_{b M}\right]$ %in Eq.~\eqref{eq:LinearizedCollisionOperator} 
+is referred to as the test particle part 
+and $C_{a b}\left[f_{a M}, f_{b 1}\right]$ is the field particle part.
+The linearized collision operator may be written as 
+%\begin{equation}
+$ \displaystyle
+C_{a b}^{l} = C_{a b}^{L} + C_{a b}^{E} + C_{a b}^{F},
+$
+%\label{eq:LinearizedCollisionOperatorParts}
+%\end{equation}
+where $C_{a b}^{L} + C_{a b}^{E}$ together represent the test particle part and $C_{a b}^{F}$ the field particle part. 
+Running \sfincs~with \parlink{collisionOperator}~=~1 only the Lorentz part $C_{a b}^{L}$ is kept and $C_{a b}^{E} = C_{a b}^{F} = 0$, 
+whereas when \parlink{collisionOperator}~=~0 all three terms in $C_{a b}^{l}$ are kept. 
+A specification of the three terms and a more detailed description can be found in Appendix~A of \cite{Mollen2015} (and in the technical documentation). 
+
+Note that even if \parlink{includePhi1} = \true, the default collision operator is defined without the flux-surface variation, i.e. with respect to $f_{sM}\left(r\right)$ instead of $\displaystyle f_{s0}\left(r,\theta,\zeta\right) = f_{sM}\left(r\right) \exp \left[- Z_s e \Phi_1(\theta,\zeta) / T_s \right]$. 
+To include the variation, and use 
+$ \displaystyle
+C_{sb}^{l}\left[f_s, f_b\right] \equiv C_{s b}\left[f_{s 1}, f_{b 0}\right] + C_{s b}\left[f_{s 0}, f_{b 1}\right],
+$
+set\newline \parlink{includePhi1InCollisionOperator} = \true (this is not default in \sfincs~because the memory and time requirements can increase significantly but the effect is usually small). 
+It is also possible to include the temperature equilibration term $C_{ab}[ f_{aM}, f_{bM}]$ in the collision operator (or $C_{ab}[ f_{a0}, f_{b0}]$ if \parlink{includePhi1InCollisionOperator} = \true) by using\newline \parlink{includeTemperatureEquilibrationTerm} = \true, but this term does not directly give any parallel or radial transport. 
+
+\section{Source-sink term}
+\label{sec:source-sink}
+\todo{Can Matt check this section?}\newline
+The source-sink term $S_s$ is introduced together with the constraints given by Eqs.~\eqref{eq:DensityEq} and \eqref{eq:EnergyEq} to ensure that a steady-state solution exists. 
+This term is controlled by \parlink{constraintScheme}. 
+The default (recommended) setting \parlink{constraintScheme} = -1 implies that $S_s = \left(a_2 x^2 + a_0\right) e^{-x^2}$ represents a particle and heat source if the Fokker-Planck collision operator is used (\parlink{collisionOperator} = 0), where the coefficients $a_0$ and $a_2$ are calculated in the simulation (see \parlink{sources}).
+\newline\todo{Can Matt explain what is calculated when pitch-angle-scattering is used?}\newline
+Note that $\Phi_1$ is never included in the source-sink term irrespective of the type of calculation. 
+
+\section{Description of various drift-kinetic equations}
+\label{sec:DKequations}
+
+Here we describe the most common forms of the drift-kinetic equation and their settings in \sfincs. 
+A more detailed description of the different forms can be found in \cite{sfincsPaper}, and in \cite{Mollen2018} for calculations including $\Phi_1$. 
+The total drift velocity is $\vect{v}_{ds} = \vect{v}_{ms} + \vect{v}_{E}$, i.e. the sum of the magnetic drift velocity $\vect{v}_{ms}$ and the $\vect{E} \times \vect{B}$-drift velocity $\vect{v}_{E}$. 
+The radial magnetic drift is given by $\displaystyle \vect{v}_{ms} \cdot \nabla r = \left(m_s/Z_s e B^2\right) \left( v_{\perp}^2/2  + v_\|^2 \right) \vect{b}~\times~\nabla B~\cdot~\nabla r$. 
+The poloidal and toroidal magnetic drifts are set by \parlink{magneticDriftScheme}. 
+The $\vect{E} \times \vect{B}$-drift is $\vect{v}_E = \left(\vect{b} \times \nabla \Phi \right) / B$, and its radial part is only present if $\Phi_1$ is included $\displaystyle \vect{v}_{E} \cdot \nabla r = \left(\vect{b} \times \nabla \Phi_1 \cdot \nabla r\right) / B$
+
+\subsection{Default: Full $\vect{E}\times\vect{B}$ trajectories; no poloidal or toroidal magnetic drifts; flux function potential}
 
 \begin{eqnarray}
 &&\left(v_{||}\vect{b} + \frac{d\Phi_0}{dr} \frac{1}{B^2} \vect{B}\times\nabla r \right) \cdot \nabla f_{s1} \\
@@ -57,7 +156,7 @@ These equivalent forms of the kinetic equation are selected using \\
 
 
 
-\section{DKES $\vect{E}\times\vect{B}$ trajectories; no poloidal or toroidal magnetic drifts; flux function potential}
+\subsection{DKES $\vect{E}\times\vect{B}$ trajectories; no poloidal or toroidal magnetic drifts; flux function potential}
 
 This form of the kinetic equation is useful for benchmarking with DKES and other codes
 that use the same equation.
@@ -80,7 +179,7 @@ This form of the kinetic equation is selected using \\
 
 
 
-\section{Full $\vect{E}\times\vect{B}$ trajectories; including poloidal and toroidal magnetic drifts; flux function potential}
+\subsection{Full $\vect{E}\times\vect{B}$ trajectories; including poloidal and toroidal magnetic drifts; flux function potential}
 
 \begin{eqnarray}
 &&\left(v_{||}\vect{b} + \frac{d\Phi_0}{dr} \frac{1}{B^2} \vect{B}\times\nabla r  + \vect{v}_{ms}\right) \cdot \nabla \theta \frac{\partial f_{s1}}{\partial \theta} \\
@@ -110,51 +209,55 @@ This form of the kinetic equation is selected using \\
 
 
 
+%%THE EQUATIONS IN THE FOLLOWING SUBSECTION WAS BASED ON J M García-Regaña et al 2013 Plasma Phys. Control. Fusion 55 074008
+%%HOWEVER, THESE EQUATIONS ARE NOT COMPLETELY CORRECT, AND CAN NO LONGER BE USED IN SFINCS
+%\subsection{Full $\vect{E}\times\vect{B}$ trajectories; no poloidal or toroidal magnetic drifts; leading $\Phi_1$ term}
+%
+%In this form of the drift-kinetic equation, we include the largest term involving $\Phi_1$,
+%associated with the adiabatic response.
+%However, other terms considered in Ref \cite{Regana2017} are not included.
+%
+%\begin{eqnarray}
+%&&\left(v_{||}\vect{b} + \frac{d\Phi_0}{dr} \frac{1}{B^2} \vect{B}\times\nabla r \right) \cdot \nabla f_{s1} \\
+%&&+ \left[ - \frac{(1-\xi^2)v}{2B} \nabla_{||} B
+%+\frac{(1-\xi^2)\xi}{2B^3} \frac{d\Phi_0}{dr}\vect{B}\times\nabla r\cdot\nabla B \right]
+% \frac{\partial f_{s1}}{\partial \xi} \nonumber \\
+%&&-(\vect{v}_{ms} \cdot\nabla r) \frac{Z_s e}{2 T_s x_s} \frac{d\Phi_0}{dr} \frac{\partial f_{s1}}{\partial x_s} \nonumber \\
+%&&+\frac{Z_s e}{T_s} f_{sM} v_{||} \nabla_{||} \Phi_1 \nonumber \\
+%&&+ (\vect{v}_{ms} \cdot \nabla r) \left[ \frac{1}{n_s} \frac{dn_s}{dr} + \frac{Z_s e}{T_s} \frac{d\Phi_0}{dr} + \left(x_s^2-\frac{3}{2}\right) \frac{1}{T_s} \frac{dT_s}{dr}\right] f_{sM}
+% = C_s + S_s \nonumber
+%\end{eqnarray}
+%Note that this equation is equivalent to the following one, in which the independent variables
+%are $(\mu,v_{||})$ instead of $(\xi,x_s)$:
+%\begin{eqnarray}
+%&&\left(v_{||}\vect{b} + \frac{d\Phi_0}{dr} \frac{1}{B^2} \vect{B}\times\nabla r \right) \cdot (\nabla f_{s1})_{\mu, v_{||}} \\
+%&&+ \left[ - \mu \nabla_{||} B
+%-\frac{v_{||}}{B^2} \frac{d\Phi_0}{dr} \vect{b}\times\nabla B \times \nabla r \right]
+%\left( \frac{\partial f_{s1}}{\partial v_{||}} \right)_{\mu} \nonumber \\
+%&&+\frac{Z_s e}{T_s} f_{sM} v_{||} \nabla_{||} \Phi_1 \nonumber \\
+%&& + (\vect{v}_{ms} \cdot \nabla r) \left[ \frac{1}{n_s} \frac{dn_s}{dr} + \frac{Z_s e}{T_s} \frac{d\Phi_0}{dr} + \left(x_s^2-\frac{3}{2}\right) \frac{1}{T_s} \frac{dT_s}{dr}\right] f_{sM}
+%=C_s + S_s \nonumber
+%\end{eqnarray}
+%These equivalent forms of the kinetic equation are selected using \\
+%\parlink{includeXDotTerm} = \true  \;\;\; (Default) \\
+%\parlink{includeElectricFieldTermInXiDot} = \true \;\;\; (Default) \\
+%\parlink{useDKESExBDrift} = \false \;\;\; (Default) \\
+%\parlink{magneticDriftScheme} = 0 \;\;\; (Default) \\
+%\parlink{includePhi1} = \true \;\;\; (Not default) %\\
+%%\parlink{includeRadialExBDrive} = \false \;\;\; (Default) \\
+%%\parlink{nonlinear} = \false \;\;\; (Default)
 
-\section{Full $\vect{E}\times\vect{B}$ trajectories; no poloidal or toroidal magnetic drifts; leading $\Phi_1$ term}
-
-In this form of the drift-kinetic equation, we include the largest term involving $\Phi_1$,
-associated with the adiabatic response.
-However, other terms considered in Ref \cite{Regana2017} are not included.
-\todo{This is not valid anymore}
-
-\begin{eqnarray}
-&&\left(v_{||}\vect{b} + \frac{d\Phi_0}{dr} \frac{1}{B^2} \vect{B}\times\nabla r \right) \cdot \nabla f_{s1} \\
-&&+ \left[ - \frac{(1-\xi^2)v}{2B} \nabla_{||} B
-+\frac{(1-\xi^2)\xi}{2B^3} \frac{d\Phi_0}{dr}\vect{B}\times\nabla r\cdot\nabla B \right]
- \frac{\partial f_{s1}}{\partial \xi} \nonumber \\
-&&-(\vect{v}_{ms} \cdot\nabla r) \frac{Z_s e}{2 T_s x_s} \frac{d\Phi_0}{dr} \frac{\partial f_{s1}}{\partial x_s} \nonumber \\
-&&+\frac{Z_s e}{T_s} f_{sM} v_{||} \nabla_{||} \Phi_1 \nonumber \\
-&&+ (\vect{v}_{ms} \cdot \nabla r) \left[ \frac{1}{n_s} \frac{dn_s}{dr} + \frac{Z_s e}{T_s} \frac{d\Phi_0}{dr} + \left(x_s^2-\frac{3}{2}\right) \frac{1}{T_s} \frac{dT_s}{dr}\right] f_{sM}
- = C_s + S_s \nonumber
-\end{eqnarray}
-Note that this equation is equivalent to the following one, in which the independent variables
-are $(\mu,v_{||})$ instead of $(\xi,x_s)$:
-\begin{eqnarray}
-&&\left(v_{||}\vect{b} + \frac{d\Phi_0}{dr} \frac{1}{B^2} \vect{B}\times\nabla r \right) \cdot (\nabla f_{s1})_{\mu, v_{||}} \\
-&&+ \left[ - \mu \nabla_{||} B
--\frac{v_{||}}{B^2} \frac{d\Phi_0}{dr} \vect{b}\times\nabla B \times \nabla r \right]
-\left( \frac{\partial f_{s1}}{\partial v_{||}} \right)_{\mu} \nonumber \\
-&&+\frac{Z_s e}{T_s} f_{sM} v_{||} \nabla_{||} \Phi_1 \nonumber \\
-&& + (\vect{v}_{ms} \cdot \nabla r) \left[ \frac{1}{n_s} \frac{dn_s}{dr} + \frac{Z_s e}{T_s} \frac{d\Phi_0}{dr} + \left(x_s^2-\frac{3}{2}\right) \frac{1}{T_s} \frac{dT_s}{dr}\right] f_{sM}
-=C_s + S_s \nonumber
-\end{eqnarray}
-These equivalent forms of the kinetic equation are selected using \\
-\parlink{includeXDotTerm} = \true  \;\;\; (Default) \\
-\parlink{includeElectricFieldTermInXiDot} = \true \;\;\; (Default) \\
-\parlink{useDKESExBDrift} = \false \;\;\; (Default) \\
-\parlink{magneticDriftScheme} = 0 \;\;\; (Default) \\
-\parlink{includePhi1} = \true \;\;\; (Not default) %\\
-%\parlink{includeRadialExBDrive} = \false \;\;\; (Default) \\
-%\parlink{nonlinear} = \false \;\;\; (Default)
 
 
+\subsection{Full $\vect{E}\times\vect{B}$ trajectories; no poloidal or toroidal magnetic drifts; Garc\'{i}a-Rega\~{n}a $\Phi_1$ terms}
 
-\section{Full $\vect{E}\times\vect{B}$ trajectories; no poloidal or toroidal magnetic drifts; Garc\'{i}a-Rega\~{n}a $\Phi_1$ terms}
+%This form of the drift-kinetic equation is nearly identical to equation (11) in Ref \cite{Regana2017}.
+%The one difference (which should be small) is that at the end of (11), Garc\'{i}a-Rega\~{n}a
+%has a term $\propto \vect{v}_m \cdot \nabla \Phi_1$, which is not (yet) in \sfincs.
 
-This form of the drift-kinetic equation is nearly identical to equation (11) in Ref \cite{Regana2017}.
-The one difference (which should be small) is that at the end of (11), Garc\'{i}a-Rega\~{n}a
-has a term $\propto \vect{v}_m \cdot \nabla \Phi_1$, which is not (yet) in \sfincs.
+This form of the drift-kinetic equation is studied in Ref.~\cite{Mollen2018} (Eq.~(6)) and in Ref.~\cite{Regana2017} (Eq.~(16)). 
+
+\todo{In Eq. below check terms in left-hand-side multiplying $\frac{\partial f_{s1}}{\partial \xi}$ and $\frac{\partial f_{s1}}{\partial x_s}$. Define $v_s$?}\newline
 
 \begin{eqnarray}
 &&\left(v_{||}\vect{b} + \frac{d\Phi_0}{dr} \frac{1}{B^2} \vect{B}\times\nabla r \right) \cdot \nabla f_{s1} \\
@@ -167,22 +270,24 @@ has a term $\propto \vect{v}_m \cdot \nabla \Phi_1$, which is not (yet) in \sfin
 -(\vect{v}_{ms} \cdot\nabla r) \frac{Z_s e}{2 T_s x_s} \frac{d\Phi_0}{dr} 
 -\frac{Z_s e \xi}{v_s m_s}
 \right] \frac{\partial f_{s1}}{\partial x_s} \nonumber \\
-&&+\frac{Z_s e}{T_s} f_{sM} v_{||} \nabla_{||} \Phi_1 \nonumber \\
-&& + (\vect{v}_E \cdot \nabla r) \left[ \frac{1}{n_s} \frac{dn_s}{dr}  + \left(x_s^2-\frac{3}{2}\right) \frac{1}{T_s} \frac{dT_s}{dr}\right] f_{sM} \nonumber \\
-&&+ (\vect{v}_{ms} \cdot \nabla r) \left[ \frac{1}{n_s} \frac{dn_s}{dr} + \frac{Z_s e}{T_s} \frac{d\Phi_0}{dr} + \left(x_s^2-\frac{3}{2}\right) \frac{1}{T_s} \frac{dT_s}{dr}\right] f_{sM}
+%&&+\frac{Z_s e}{T_s} f_{sM} v_{||} \nabla_{||} \Phi_1 \nonumber \\
+%&& + (\vect{v}_E \cdot \nabla r) \left[ \frac{1}{n_s} \frac{dn_s}{dr}  + \left(x_s^2-\frac{3}{2}\right) \frac{1}{T_s} \frac{dT_s}{dr}\right] f_{sM} \nonumber \\
+&&+ \left(\vect{v}_{ms} + \vect{v}_E\right) \cdot \nabla r \left[ \frac{1}{n_{s 0}} \frac{dn_{s 0}}{dr} + \frac{Z_s e}{T_s} \frac{d\Phi_0}{dr} + \left(x_s^2 - \frac{3}{2} + \frac{Z_s e}{T_s}\Phi_1\right) \frac{1}{T_s} \frac{dT_s}{dr}\right] f_{s0}
  = C_s + S_s \nonumber
 \end{eqnarray}
+Here $\displaystyle f_{s0} = f_{s0}\left(r,\theta,\zeta\right) = f_{sM}\left(r\right) \exp \left[- Z_s e \Phi_1(\theta,\zeta) / T_s \right]$, 
+whereas $n_{s 0} = n_{s 0} \left(r\right)$ represents the input density given by \parlink{nHats}. 
 Note that this equation is equivalent to the following one, in which the independent variables
 are $(\mu,v_{||})$ instead of $(\xi,x_s)$:
 \begin{eqnarray}
 &&\left(v_{||}\vect{b} + \frac{d\Phi_0}{dr} \frac{1}{B^2} \vect{B}\times\nabla r \right) \cdot (\nabla f_{s1})_{\mu, v_{||}} \\
 &&+ \left[ -\frac{Z_s e}{m_s} \nabla_{||} \Phi_1
 - \mu \nabla_{||} B
--\frac{v_{||}}{B^2} \frac{d\Phi_0}{dr} \vect{b}\times\nabla B \times \nabla r \right]
+-\frac{v_{||}}{B^2} \frac{d\Phi_0}{dr} \vect{b}\times\nabla B \cdot \nabla r \right]
 \left( \frac{\partial f_{s1}}{\partial v_{||}} \right)_{\mu} \nonumber \\
-&&+\frac{Z_s e}{T_s} f_{sM} v_{||} \nabla_{||} \Phi_1 \nonumber \\
-&& + (\vect{v}_E \cdot \nabla r) \left[ \frac{1}{n_s} \frac{dn_s}{dr}  + \left(x_s^2-\frac{3}{2}\right) \frac{1}{T_s} \frac{dT_s}{dr}\right] f_{sM} \nonumber \\
-&& + (\vect{v}_{ms} \cdot \nabla r) \left[ \frac{1}{n_s} \frac{dn_s}{dr} + \frac{Z_s e}{T_s} \frac{d\Phi_0}{dr} + \left(x_s^2-\frac{3}{2}\right) \frac{1}{T_s} \frac{dT_s}{dr}\right] f_{sM}
+%&&+\frac{Z_s e}{T_s} f_{sM} v_{||} \nabla_{||} \Phi_1 \nonumber \\
+%&& + (\vect{v}_E \cdot \nabla r) \left[ \frac{1}{n_s} \frac{dn_s}{dr}  + \left(x_s^2-\frac{3}{2}\right) \frac{1}{T_s} \frac{dT_s}{dr}\right] f_{sM} \nonumber \\
+&& + \left(\vect{v}_{ms} + \vect{v}_E\right) \cdot \nabla r  \left[ \frac{1}{n_{s 0}} \frac{dn_{s 0}}{dr} + \frac{Z_s e}{T_s} \frac{d\Phi_0}{dr} + \left(x_s^2-\frac{3}{2} + \frac{Z_s e}{T_s}\Phi_1\right) \frac{1}{T_s} \frac{dT_s}{dr}\right] f_{s0}
 =C_s + S_s \nonumber
 \end{eqnarray}
 These equivalent forms of the kinetic equation are selected using \\
@@ -193,6 +298,14 @@ These equivalent forms of the kinetic equation are selected using \\
 \parlink{includePhi1} = \true \;\;\; (Not default) %\\
 %\parlink{includeRadialExBDrive} = \true \;\;\; (Not default) \\
 %\parlink{nonlinear} = \true \;\;\; (Not default)
+
+\section{Inductive electric field}
+\label{sec:Inductive-electric-field}
+Besides the terms described above, \sfincs~has the possibility to include an inductive parallel electric field in the drive part of the kinetic equation. There is typically no inductive electric field in a stellarator, but the term is retained since the transport driven by the inductive electric field is used for computing monoenergetic transport coefficients, and thus for comparison with other codes such as \dkes. This term has the form $\displaystyle \frac{Z_s e}{T_s} v_\| \frac{\left\langle \vect{E} \cdot \vect{B}\right\rangle B}{\left\langle B^2\right\rangle} f_{sM}$ and is set by \parlink{EParallelHat} (i.e. if non-zero than this term is added to the right-hand-side of all kinetic equations in Sec.~\ref{sec:DKequations}). 
+Also see the input parameter \parlink{EParallelHatSpec}. 
+
+
+
 
 
 

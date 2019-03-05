@@ -14,7 +14,8 @@ equation can be solved at the same time as the drift-kinetic equations, yielding
 The kinetic equations solved in \sfincs~have four independent variables: poloidal angle $\theta$, toroidal angle $\zeta$,
 normalized speed $x = v / v_{thermal}$, and pitch angle $\xi = v_{||}/v$.  The third velocity coordinate (gyro-angle) does not appear
 since gyro-averaged equations are solved.  The flux surface label (radius) coordinate is only a parameter, rather than a full independent variable,
-since a radially local approximation is made.
+since a radially local approximation is made. 
+The solution is the first-order distribution function $f_{s1} \left(\theta, \zeta, x, \xi\right)$ (where the full distribution is $f_s = f_{s0} + f_{s1}$) on the flux surface for all species $s$, and if quasi-neutrality is solved also the electrostatic potential variation on the flux surface $\Phi_1 \left(\theta, \zeta\right) = \Phi-\left<\Phi\right>$. 
 
 This document discusses the practical use and operation of the code.  For more details about the specific equations implemented,
 see the version 3 technical documentation available in the \path{sfincs/docs} directory.
@@ -72,6 +73,9 @@ The electrostatic potential can either be taken to be constant or non-constant o
 
 \item
 Optional nonlinear terms in the kinetic equation (involving both the non-Maxwellian distribution function and poloidal/toroidal electric field) can be included using Newton's method. 
+
+\item 
+The radial classical particle and heat fluxes are calculated.
 
 \end{itemize}
 
@@ -157,8 +161,10 @@ The variables which can be specified in {\ttfamily input.namelist} are detailed 
 For scans over minor radius, an additional file named {\ttfamily profiles} is used to specify the profiles of density and temperature
 for each species, as well as the range of radial electric field to consider.
 
-The output from a single \sfincs~computation is saved in \HDF~format in the file {\ttfamily sfincsOutput.h5}.
-To browse this file you can enter {\ttfamily h5dump sfincsOutput.h5|less} from the command line.
+The output from a single \sfincs~computation is saved in \HDF~format in the file %{\ttfamily sfincsOutput.h5}.
+specified by \parlink{outputFileName}.
+To browse this file you can enter {\ttfamily h5dump outputFileName|less} %{\ttfamily h5dump sfincsOutput.h5|less} 
+from the command line.
 Every array saved in this file is annotated with strings that describe the array dimensions,
 for example \Ntheta$\times$ \Nzeta. One of the array dimensions may be {\ttfamily iteration},
 which can either indicate the iteration of the Newton solver for a nonlinear calculation,
@@ -172,9 +178,5 @@ Some of the most frequently used output quantities are detailed in chapter~\ref{
 We enthusiastically welcome any contributions to the code or documentation.
 For write permission to the repository, or to report any bugs, provide feedback, or ask questions, contact Matt Landreman at
 \href{mailto:matt.landreman@gmail.com}{\nolinkurl{matt.landreman@gmail.com} }
-
-
-
-
 
 

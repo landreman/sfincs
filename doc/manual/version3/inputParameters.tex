@@ -2,7 +2,10 @@
 \label{ch:input}
 
 \newcommand{\param}[5]{{\setlength{\parindent}{0cm} {\ttfamily \bfseries \hypertarget{#1}{#1}}\\{\it Type}: #2\\{\it Default}: #3\\{\it When it matters}: #4\\{\it Meaning}: #5}}
+%%NOTE BY AM, the \param command does not work for defining parameters with an underscore in the name, for these parameters use \paramWithUnderscore.
+\newcommand{\paramWithUnderscore}[6]{{\setlength{\parindent}{0cm} {\ttfamily \bfseries \hypertarget{#2}{#1}}\\{\it Type}: #3\\{\it Default}: #4\\{\it When it matters}: #5\\{\it Meaning}: #6}}
 \newcommand{\ssparam}[4]{{\setlength{\parindent}{0cm} {\ttfamily \bfseries \hypertarget{#1}{#1}}\\{\it Type}: #2\\{\it When it matters}: #3\\{\it Meaning}: #4}}
+\newcommand{\ssparamWithUnderscore}[5]{{\setlength{\parindent}{0cm} {\ttfamily \bfseries \hypertarget{#2}{#1}}\\{\it Type}: #3\\{\it When it matters}: #4\\{\it Meaning}: #5}}
 \newcommand{\PETScParam}[2]{{\setlength{\parindent}{0cm} {\ttfamily \bfseries #1}\\{\it Meaning}: #2}}
 \newcommand{\myhrule}{{\setlength{\parindent}{0cm} \hrulefill }}
 
@@ -31,9 +34,9 @@ The default values are usually best for the parameters in this namelist.
 
 {\ttfamily RHSMode} = 1: Solve for a single right-hand side.\\
 
-{\ttfamily RHSMode} = 2: Solve for 3 right-hand sides to get the 3$\times$3 transport matrix. Presently implemented only for 1 species.\\
+{\ttfamily RHSMode} = 2: Solve for 3 right-hand sides to get the 3$\times$3 transport matrix. Presently implemented only for 1 species and \parlink{includePhi1} == \false\\
 
-{\ttfamily RHSMode} = 3: Solve for the 2$\times$2 monoenergetic transport coefficients. When this option is chosen, \Nx~is set to 1 and only 1 species is used.
+{\ttfamily RHSMode} = 3: Solve for the 2$\times$2 monoenergetic transport coefficients. When this option is chosen, \Nx~is set to 1, only 1 species is used and \parlink{includePhi1} is set to \false
 }
 
 \myhrule
@@ -131,10 +134,10 @@ The parameters in this namelist define the magnetic geometry, and so you will al
 \begin{eqnarray}
 \label{eq:Bmodel}
 B(\theta,\zeta)/\bar{B} 
-&=& (\mbox{\parlink{B0OverBBar}}) [1 + (\mbox{\parlink{epsilon\_t}}) \cos(\theta) \\
-&& + (\mbox{\parlink{epsilon\_h}}) \cos((\mbox{\parlink{helicity\_l}}) \theta - (\mbox{\parlink{helicity\_n}}) \zeta) \nonumber \\
-&&  + (\mbox{\parlink{epsilon\_antisymm}}) \nonumber \\
-&& \times \sin((\mbox{\parlink{helicity\_antisymm\_l}}) \theta - (\mbox{\parlink{helicity\_antisymm\_n}}) \zeta)] \nonumber
+&=& (\mbox{\parlink{B0OverBBar}}) [1 + (\mbox{\underscoreparlink{epsilon\_t}{epsilon_t}}) \cos(\theta) \\
+&& + (\mbox{\underscoreparlink{epsilon\_h}{epsilon_h}}) \cos((\mbox{\underscoreparlink{helicity\_l}{helicity_l}}) \theta - (\mbox{\underscoreparlink{helicity\_n}{helicity_n}}) \zeta) \nonumber \\
+&&  + (\mbox{\underscoreparlink{epsilon\_antisymm}{epsilon_antisymm}}) \nonumber \\
+&& \times \sin((\mbox{\underscoreparlink{helicity\_antisymm\_l}{helicity_antisymm_l}}) \theta - (\mbox{\underscoreparlink{helicity\_antisymm\_n}{helicity_antisymm_n}}) \zeta)] \nonumber
 \end{eqnarray}
 
 (All the variables in this formula are discussed later in this namelist.)\\
@@ -167,17 +170,17 @@ or to specify the range of flux surfaces for a radial scan.
 See section \ref{sec:radialCoordinates}
 for more information about radial coordinates.\\
 
-{\ttfamily inputRadialCoordinate}==0: Use the flux surface specified by \parlink{psiHat\_wish}
-for a single run, and use the range specified by \parlink{psiHat\_min} and \parlink{psiHat\_max} for radial scans.\\
+{\ttfamily inputRadialCoordinate}==0: Use the flux surface specified by \underscoreparlink{psiHat\_wish}{psiHat_wish}
+for a single run, and use the range specified by \underscoreparlink{psiHat\_min}{psiHat_min} and \underscoreparlink{psiHat\_max}{psiHat_max} for radial scans.\\
 
-{\ttfamily inputRadialCoordinate}==1: Use the flux surface specified by \parlink{psiN\_wish}
-for a single run, and use the range specified by \parlink{psiN\_min} and \parlink{psiN\_max} for radial scans.\\
+{\ttfamily inputRadialCoordinate}==1: Use the flux surface specified by \underscoreparlink{psiN\_wish}{psiN_wish}
+for a single run, and use the range specified by \underscoreparlink{psiN\_min}{psiN_min} and \underscoreparlink{psiN\_max}{psiN_max} for radial scans.\\
 
-{\ttfamily inputRadialCoordinate}==2: Use the flux surface specified by \parlink{rHat\_wish}
-for a single run, and use the range specified by \parlink{rHat\_min} and \parlink{rHat\_max} for radial scans.\\
+{\ttfamily inputRadialCoordinate}==2: Use the flux surface specified by \underscoreparlink{rHat\_wish}{rHat_wish}
+for a single run, and use the range specified by \underscoreparlink{rHat\_min}{rHat_min} and \underscoreparlink{rHat\_max}{rHat_max} for radial scans.\\
 
-{\ttfamily inputRadialCoordinate}==3: Use the flux surface specified by \parlink{rN\_wish}
-for a single run, and use the range specified by \parlink{rN\_min} and \parlink{rN\_max} for radial scans. \\
+{\ttfamily inputRadialCoordinate}==3: Use the flux surface specified by \underscoreparlink{rN\_wish}{rN_wish}
+for a single run, and use the range specified by \underscoreparlink{rN\_min}{rN_min} and \underscoreparlink{rN\_max}{rN_max} for radial scans. \\
 
 No matter which option you pick, the value of all 4 radial coordinates used will be saved in the output \HDF~file.
 }
@@ -220,7 +223,7 @@ No matter which option you pick, the gradients with respect to all radial coordi
 
 \myhrule
 
-\param{psiHat\_wish}
+\paramWithUnderscore{psiHat\_wish}{psiHat_wish}
 {real}
 {-1}
 {Only when \parlink{inputRadialCoordinate} == 0 and \parlink{geometryScheme} == 1, 5, 11, or 12.}
@@ -229,7 +232,7 @@ for more information about radial coordinates.}
 
 \myhrule
 
-\param{psiN\_wish}
+\paramWithUnderscore{psiN\_wish}{psiN_wish}
 {real}
 {0.25}
 {Only when \parlink{inputRadialCoordinate} == 1 and \parlink{geometryScheme} == 1, 5, 11, or 12.}
@@ -238,7 +241,7 @@ for more information about radial coordinates.}
 
 \myhrule
 
-\param{rHat\_wish}
+\paramWithUnderscore{rHat\_wish}{rHat_wish}
 {real}
 {-1}
 {Only when \parlink{inputRadialCoordinate} == 2 and \parlink{geometryScheme} == 1, 5, 11, or 12.}
@@ -247,7 +250,7 @@ for more information about radial coordinates.}
 
 \myhrule
 
-\param{rN\_wish}
+\paramWithUnderscore{rN\_wish}{rN_wish}
 {real}
 {0.5}
 {Only when \parlink{inputRadialCoordinate} == 3 and \parlink{geometryScheme} == 1, 5, 11, or 12.}
@@ -298,7 +301,7 @@ for more information about radial coordinates.}
 
 \myhrule
 
-\param{epsilon\_t}
+\paramWithUnderscore{epsilon\_t}{epsilon_t}
 {real}
 {-0.07053}
 {Only when \parlink{geometryScheme} == 1.}
@@ -306,7 +309,7 @@ for more information about radial coordinates.}
 
 \myhrule
 
-\param{epsilon\_h}
+\paramWithUnderscore{epsilon\_h}{epsilon_h}
 {real}
 {0.05067}
 {Only when \parlink{geometryScheme} == 1.}
@@ -314,7 +317,7 @@ for more information about radial coordinates.}
 
 \myhrule
 
-\param{epsilon\_antisymm}
+\paramWithUnderscore{epsilon\_antisymm}{epsilon_antisymm}
 {real}
 {0.0}
 {Only when \parlink{geometryScheme} == 1.}
@@ -322,23 +325,23 @@ for more information about radial coordinates.}
 
 \myhrule
 
-\param{helicity\_l}
+\paramWithUnderscore{helicity\_l}{helicity_l}
 {integer}
 {2}
-{Only when \parlink{geometryScheme} == 1.}
+{Only when \parlink{geometryScheme} == 1, or when simultaneously \parlink{geometryScheme} == 5 and \parlink{rippleScale} != 1.0.}
 {Poloidal mode number of the helical variation in $B$, as defined by (\ref{eq:Bmodel}).}
 
 \myhrule
 
-\param{helicity\_n}
+\paramWithUnderscore{helicity\_n}{helicity_n}
 {integer}
 {10}
-{Only when \parlink{geometryScheme} == 1.}
+{Only when \parlink{geometryScheme} == 1, or when simultaneously \parlink{geometryScheme} == 5 and \parlink{rippleScale} != 1.0.}
 {Toroidal mode number of the helical variation in $B$, as defined by (\ref{eq:Bmodel}).}
 
 \myhrule
 
-\param{helicity\_antisymm\_l}
+\paramWithUnderscore{helicity\_antisymm\_l}{helicity_antisymm_l}
 {integer}
 {1}
 {Only when \parlink{geometryScheme} == 1.}
@@ -346,13 +349,13 @@ for more information about radial coordinates.}
 
 \myhrule
 
-\param{helicity\_antisymm\_n}
+\paramWithUnderscore{helicity\_antisymm\_n}{helicity_antisymm_n}
 {integer}
 {0}
 {Only when \parlink{geometryScheme} == 1.}
 {Toroidal mode number of the stellarator-antisymmetric variation in $B$, as defined by (\ref{eq:Bmodel}).
-Note that you can create an up-down asymmetric tokamak by setting \parlink{helicity\_antisymm\_n}=0, \parlink{epsilon\_h}=0,
-and \parlink{epsilon\_antisymm}$>$0.}
+Note that you can create an up-down asymmetric tokamak by setting \underscoreparlink{helicity\_antisymm\_n}{helicity_antisymm_n}=0, \underscoreparlink{epsilon\_h}{epsilon_h}=0,
+and \underscoreparlink{epsilon\_antisymm}{epsilon_antisymm}$>$0.}
 
 \myhrule
 
@@ -404,7 +407,7 @@ I'm not sure why you would want this, but the feature is implemented for complet
 
 \myhrule
 
-\param{VMEC\_Nyquist\_option}
+\paramWithUnderscore{VMEC\_Nyquist\_option}{VMEC_Nyquist_option}
 {integer}
 {1}
 {Only when \parlink{geometryScheme} == 5.}
@@ -413,7 +416,7 @@ I'm not sure why you would want this, but the feature is implemented for complet
 The sfincs parameter {\ttfamily VMEC\_Nyquist\_option}
 controls whether or not to include mode numbers that exist in the {\ttfamily xm\_nyq} and {\ttfamily xn\_nyq}
 arrays but not in the {\ttfamily xm} and {\ttfamily xn} arrays.
-This this parameter only affects high-frequency components of the magnetic field, results of sfincs
+This parameter only affects high-frequency components of the magnetic field, results of sfincs
 should not be very sensitive to this parameter.
 \\
 
@@ -426,7 +429,7 @@ in the {\ttfamily xm\_nyq} and {\ttfamily xn\_nyq} arrays, where available.
 
 \myhrule
 
-\param{min\_Bmn\_to\_load}
+\paramWithUnderscore{min\_Bmn\_to\_load}{min_Bmn_to_load}
 {real}
 {0.0}
 {Only when \parlink{geometryScheme} == 5, 11, or 12.}
@@ -437,16 +440,16 @@ in the {\ttfamily xm\_nyq} and {\ttfamily xn\_nyq} arrays, where available.
 \param{rippleScale}
 {real}
 {1.0}
-{Only when \parlink{geometryScheme}==5. \parlink{helicity\_l} and \parlink{helicity\_n} must be specified.}
-{Scales the values of components of VMEC geometry (modes of $B$, $B^{u}$, $B_{u}$, $B^{v}$, $B_{v}$, $B_{s}$, and $\sqrt{g}$) that do not satisfy a desired symmetry. If \parlink{helicity\_n}$==0$, modes for which $n \neq 0$ or $m \neq$ \parlink{helicity\_l} are multiplied by \parlink{rippleScale}. If \parlink{helicity\_n}$\neq0$, modes for which $m/n \neq$ \parlink{helicity\_l}/\parlink{helicity\_n} or $n==0$ are multiplied by \parlink{rippleScale}. All other modes remain unchanged.}
+{Only when \parlink{geometryScheme} == 5. \underscoreparlink{helicity\_l}{helicity_l} and \underscoreparlink{helicity\_n}{helicity_n} must be specified.}
+{Scales the values of components of VMEC geometry (modes of $B$, $B^{u}$, $B_{u}$, $B^{v}$, $B_{v}$, $B_{s}$, and $\sqrt{g}$) that do not satisfy a desired symmetry. If \underscoreparlink{helicity\_n}{helicity_n}$==0$, modes for which $n \neq 0$ or $m \neq$ \underscoreparlink{helicity\_l}{helicity_l} are multiplied by \parlink{rippleScale}. If \underscoreparlink{helicity\_n}{helicity_n}$\neq0$, modes for which $m/n \neq$ \underscoreparlink{helicity\_l}{helicity_l}/\underscoreparlink{helicity\_n}{helicity_n} or $n==0$ are multiplied by \parlink{rippleScale}. All other modes remain unchanged.}
 
 \myhrule
 
-\param{EParallelHatSpec\_bcdatFile}
+\paramWithUnderscore{EParallelHatSpec\_bcdatFile}{EParallelHatSpec_bcdatFile}
 {string}
 {``''}
 {Only when \parlink{EParallelHatSpec} is non-zero
-  and \parlink{RHSmode}==1 \\and \parlink{EParallelHatSpec\_bcdatFile}
+  and \parlink{RHSmode}==1 \\and \underscoreparlink{EParallelHatSpec\_bcdatFile}{EParallelHatSpec_bcdatFile}
   is not == ``''}
 {When set this loads a file which looks like a bc file, but with the
   part which usually contains Fourier coefficients for
@@ -576,7 +579,7 @@ will be used.
 \param{withAdiabatic}
 {Boolean}
 {\false}
-{Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true}
+{Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true and\\ \parlink{readExternalPhi1} == \false}
 {If this parameter is \true, an adiabatic species is added into the quasineutrality equation (but has no other effect).}
 
 \myhrule
@@ -584,7 +587,7 @@ will be used.
 \param{adiabaticZ}
 {real}
 {-1.0}
-{Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true and \parlink{withAdiabatic} == \true}
+{Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true and\\ \parlink{readExternalPhi1} == \false and \parlink{withAdiabatic} == \true}
 {Charge of adiabatic species, in units of the proton charge $e$.}
 
 \myhrule
@@ -592,7 +595,7 @@ will be used.
 \param{adiabaticMHat}
 {real}
 {5.44617e-4}
-{Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true and \parlink{withAdiabatic} == \true}
+{Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true and\\ \parlink{readExternalPhi1} == \false and \parlink{withAdiabatic} == \true}
 {Mass of adiabatic species, in units of the reference mass $\bar{m}$.}
 
 \myhrule
@@ -600,7 +603,7 @@ will be used.
 \param{adiabaticNHat}
 {real}
 {1.0}
-{Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true and \parlink{withAdiabatic} == \true}
+{Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true and\\ \parlink{readExternalPhi1} == \false and \parlink{withAdiabatic} == \true}
 {Density of adiabatic species, in units of the reference density $\bar{n}$.}
 
 \myhrule
@@ -608,14 +611,14 @@ will be used.
 \param{adiabaticTHat}
 {real}
 {1.0}
-{Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true and \parlink{withAdiabatic} == \true}
+{Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true and\\ \parlink{readExternalPhi1} == \false and \parlink{withAdiabatic} == \true}
 {Temperature of adiabatic species, in units of the reference temperature $\bar{T}$.}
 
 \myhrule
 
 \param{withNBIspec} {Boolean} {\false} {Whenever \parlink{RHSMode} ==
-  1 and \parlink{includePhi1} == \true\\
-  ~and \parlink{quasineutralityOption} == 1} {When this is \true, an
+  1 and \parlink{includePhi1} == \true and\\
+  \parlink{readExternalPhi1} == \false and \parlink{quasineutralityOption} == 1} {When this is \true, an
   extra species (here called NBIspec) is added to the quasineutrality
   condition, but not as a species for which the DKE is solved. This is
   to mimic how the fast ions influence the other species via the
@@ -630,8 +633,8 @@ will be used.
 \param{NBIspecZ}
 {real}
 {1.0}
-{Whenever \parlink{withNBIspec}== \true~ and \parlink{RHSMode} == 1 \\
-  and \parlink{includePhi1} == \true~ and \parlink{quasineutralityOption} == 1}
+{Whenever \parlink{withNBIspec}== \true and \parlink{RHSMode} == 1 and \parlink{includePhi1}\\
+   == \true and \parlink{readExternalPhi1} == \false and \parlink{quasineutralityOption} == 1}
 {Charge of the fast ion species, in units of the proton charge $e$, see \parlink{withNBIspec}.}
 
 \myhrule
@@ -639,8 +642,8 @@ will be used.
 \param{NBIspecNHat}
 {real}
 {0.0}
-{Whenever \parlink{withNBIspec}== \true~ and \parlink{RHSMode} == 1 \\
-and \parlink{includePhi1} == \true~ and \parlink{quasineutralityOption} == 1}
+{Whenever \parlink{withNBIspec}== \true and \parlink{RHSMode} == 1 and \parlink{includePhi1} \\
+== \true and \parlink{readExternalPhi1} == \false and \parlink{quasineutralityOption} == 1}
 {Density of the fast ion species, in units of the reference density
   $\bar{n}$, see \parlink{withNBIspec}. \todo{Implement possibility to load a bcdat file with the
   fast ion density distribution on the flux surfaces}}
@@ -686,7 +689,9 @@ The default value {\ttfamily alpha} = 1.0 also corresponds to $\bar{T}$ = 1 eV a
 
 \myhrule
 
-\param{nu\_n}
+%\param{nu\_n}
+\paramWithUnderscore{nu\_n}
+{nu_n}
 {real}
 {8.330e-3}
 {Whenever \parlink{RHSMode} == 1}
@@ -705,6 +710,7 @@ where $e$ is the proton charge, $\bar{n}$, $\bar{m}$, and $\bar{T}$ are the norm
 and $\ln\Lambda$ is the Coulomb logarithm.
 The default value {\ttfamily nu\_n} = 8.330e-3 corresponds to $\bar{R}$ = 1 meter,
 $\bar{m}$ = proton mass, $\bar{n}$ = $10^{20}$ m$^{-3}$, $\bar{T}$ = 1 keV, and $\ln\Lambda = 17$.
+If $\text{\ttfamily nu\_n} < 0$ in {\ttfamily input.namelist} then {\ttfamily nu\_n} will be calculated automatically using the density and temperature of the first species with the assumption that it is electrons, and assuming $\bar{R}$ = 1 meter, $\bar{m}$ = proton mass, $\bar{n}$ = $10^{20}$ m$^{-3}$, $\bar{T}$ = 1 keV. 
 }
 
 \myhrule
@@ -713,7 +719,7 @@ $\bar{m}$ = proton mass, $\bar{n}$ = $10^{20}$ m$^{-3}$, $\bar{T}$ = 1 keV, and 
 {real}
 {1.0}
 {Only when \parlink{RHSMode} == 3.}
-{Dimensionless collisionality used in place of \parlink{nHats}, \parlink{THats}, \parlink{mHats}, \parlink{Zs}, and \parlink{nu\_n} for computing monoenergetic transport coefficients.
+{Dimensionless collisionality used in place of \parlink{nHats}, \parlink{THats}, \parlink{mHats}, \parlink{Zs}, and \underscoreparlink{nu\_n}{nu_n} for computing monoenergetic transport coefficients.
 See section \ref{sec:monoenergetic} for more details.}
 
 \myhrule
@@ -818,7 +824,9 @@ will be used, depending on\\
 {\ttfamily collisionOperator} = 0: Full linearized Fokker-Planck operator.\\
 
 {\ttfamily collisionOperator} = 1: Pitch-angle scattering operator (with no momentum-conserving field term).
-}}
+}\newline
+\newline
+See section~\ref{sec:CollisionOperator} for more details about the collision operator.}
 
 \myhrule
 
@@ -896,7 +904,7 @@ instead of
 
 \myhrule
 
-\param{include\_fDivVE\_term}
+\paramWithUnderscore{include\_fDivVE\_term}{include_fDivVE_term}
 {Boolean}
 {\false}
 {Never}
@@ -909,23 +917,53 @@ instead of
 {\false}
 {Whenever \parlink{RHSMode} == 1.}
 {If false, no terms involving $\Phi_1 = \Phi-\left<\Phi\right>$ are included in the kinetic equation,
-and the quasineutrality equation is not solved.  If true, then terms involving $\Phi_1$ are included
-in the kinetic equation if \parlink{includePhi1inKineticEquation} = \true, and the quasineutrality equation is solved at each point on the flux surface (make sure that your input densities fulfill quasineutrality, see \parlink{quasineutralityOption}). 
-In this latter case, many more quantities are computed and saved in the output file, such as radial fluxes
-associated with the radial $\vect{E}\times\vect{B}$ drift.\newline
-%%Text added by AM 2016-07
-If true, the system becomes nonlinear in the unknowns $f_{s1}$ and $\Phi_1$. 
-Newton's method will be used to solve the nonlinear system, meaning that the usual linear solve in \sfincs~must be iterated several times.
+and the quasineutrality equation is not solved.  
+
+If true, and \parlink{readExternalPhi1} == \false, then terms involving $\Phi_1$ are included
+in the kinetic equation if \parlink{includePhi1InKineticEquation} = \true, and the quasineutrality equation is solved at each point on the flux surface 
+(make sure that your input densities fulfill quasineutrality, see \parlink{quasineutralityOption}) together with the condition $\left<\Phi_1\right> = 0$. 
+In this latter case, the system becomes nonlinear in the unknowns $f_{s1}$ and $\Phi_1$. 
+Newton's method will be used to solve the nonlinear system, meaning that the usual linear solve in \sfincs~must be iterated several times. 
+
+If true, and \parlink{readExternalPhi1} == \true, then $\Phi_1$ is read from an input file (given by \parlink{externalPhi1Filename}), 
+the quasineutrality equation and the condition $\left<\Phi_1\right> = 0$ are ignored and the system is linear.\newline 
+
+If true, many more quantities are computed and saved in the output file, such as radial fluxes
+associated with the radial $\vect{E}\times\vect{B}$ drift caused by $\Phi_1$ (see section~\ref{sec:RadialFluxesAndFlows}).
+More details on runs including $\Phi_1$ are found in section~\ref{sec:qn}.
 }
 
 \myhrule
 
-\param{includePhi1inKineticEquation}
+\param{readExternalPhi1}
+{Boolean}
+{\false}
+{Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true}
+{If true, \parlink{Phi1Hat} is read from the HDF5 file specified by \parlink{externalPhi1Filename}, 
+the quasineutrality equation and the condition $\left<\Phi_1\right> = 0$ are ignored and the solved system is linear.
+If true, and \parlink{includePhi1InKineticEquation} = \false, then $\Phi_1$ does not appear anywhere in the system of equations, 
+and $f_{s1}$ is unaffected by $\Phi_1$. 
+However, the fluxes are still affected by $\Phi_1$ (see section~\ref{sec:RadialFluxesAndFlows}).
+}
+
+\myhrule
+
+\param{externalPhi1Filename}
+{string}
+{``externalPhi1.h5''}
+{Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true and\\ \parlink{readExternalPhi1} == \true}
+{Name of the HDF5 file from which \parlink{Phi1Hat} is read. The HDF5 file must contain the following fields specified in the same format as in the output file (\parlink{outputFileName}):
+\parlink{Ntheta}, \parlink{Nzeta}, \parlink{NIterations}, \parlink{NPeriods}, \parlink{theta}, \parlink{zeta}, \parlink{Phi1Hat}. 
+It is assumed that \parlink{theta} and \parlink{zeta} represent a 2D uniform grid on which \parlink{Phi1Hat} is given, but this grid can be different from the grid used in the calculation (i.e. \parlink{Ntheta}, \parlink{Nzeta} in the external HDF5 file do not have to be the same as specified in {\ttfamily input.namelist}). Linear interpolation is used to determine \parlink{Phi1Hat} in the calculation.}
+
+\myhrule
+
+\param{includePhi1InKineticEquation}
 {Boolean}
 {\true}
 {Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true}
 {If true, the terms containing $\Phi_1$ will be included in the kinetic equation. 
-If false, and \parlink{includePhi1} = \true, then $\Phi_1$ is only included in the quasineutrality equation. 
+If false, \parlink{includePhi1} == \true and \parlink{readExternalPhi1} == \false, then $\Phi_1$ is only included in the quasineutrality equation. 
 }
 
 \myhrule
@@ -933,10 +971,12 @@ If false, and \parlink{includePhi1} = \true, then $\Phi_1$ is only included in t
 \param{includePhi1InCollisionOperator}
 {Boolean}
 {\false}
-{Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true and\\ \parlink{includePhi1inKineticEquation} == \true}
+{Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true and\\ \parlink{includePhi1InKineticEquation} == \true}
 {If true, the terms containing $\Phi_1$ will be included in the collision operator. 
-If false or \parlink{includePhi1inKineticEquation} == \false, and \parlink{includePhi1} = \true, then $\Phi_1$ is not included in the collision operator. 
-The default is false since it remains to show if this effect is important, and the memory and time requirements can increase significantly with this parameter.
+If false (or \parlink{includePhi1InKineticEquation} == \false) %, or \parlink{includePhi1} == \false, 
+then $\Phi_1$ is not included in the collision operator. 
+The default is false since this setting has yet only had a minor impact on the results, and the memory and time requirements can increase significantly when it is true.
+\newline \warning{Setting this to true is not yet compatible with \parlink{readExternalPhi1} == \true}
 }
 
 \myhrule
@@ -944,8 +984,9 @@ The default is false since it remains to show if this effect is important, and t
 \param{quasineutralityOption}
 {integer}
 {1}
-{Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true}
-{This variable controls which quasineutrality equation is used, and must be set to either 1 or 2. Make sure that your input densities fulfill quasineutrality (also accounting for the adiabatic species if \parlink{withAdiabatic}=\true).\\
+{Whenever \parlink{RHSMode} == 1 and \parlink{includePhi1} == \true and\\ \parlink{readExternalPhi1} == \false}
+{This variable controls which quasineutrality equation is used, and must be set to either 1 or 2. 
+If including $\Phi_1$ and not reading it from an external file (\parlink{readExternalPhi1} == \true), then make sure that your input densities fulfill quasineutrality (also accounting for the adiabatic species if \parlink{withAdiabatic}=\true).\\
 
 {\ttfamily quasineutralityOption} = 1: Full quasineutrality equation. All species (kinetic and adiabatic if applicable) are included in the quasineutrality equation.\\
 
@@ -990,7 +1031,7 @@ The default is false since it remains to show if this effect is important, and t
 {Boolean}
 {\false}
 {Whenever \parlink{RHSMode} == 1.}
-{When true, the term $C_{ab}[ f_{Ma}, f_{Mb}]$ is included in the kinetic equation,
+{When true, the term $C_{ab}[ f_{aM}, f_{bM}]$ is included in the kinetic equation,
 i.e. collisions between the leading-order Maxwellians of different species.  This term is nonzero
 when the temperature is not the same for all species.  The resulting contribution to the non-Maxwellian
 distribution function is isotropic and so does not directly give any parallel or radial transport.}
@@ -1001,7 +1042,11 @@ distribution function is isotropic and so does not directly give any parallel or
 {integer}
 {0}
 {Whenever \parlink{RHSMode} == 1.}
-{This variable controls the poloidal and magnetic drifts, and does not affect the radial magnetic drift.\\
+{This variable controls the poloidal and toroidal magnetic drifts, and does not affect the radial magnetic drift.\\
+\warning{Some terms involving both $\Phi_1$ and the magnetic drifts have not yet been implemented, 
+and therefore using another setting than 0 is incompatible with \parlink{includePhi1} == \true. 
+However, for testing purposes it is still allowed to use a non-zero setting together with \parlink{includePhi1} == \true, 
+but the results may not be physical.}\\
 
 {\ttfamily magneticDriftScheme} = 0: No poloidal or toroidal magnetic drift.\\
 
@@ -1061,7 +1106,7 @@ forces from these collisions are different on the different species,
 this input must be given as an array of values corresponding to the different
 species. These effective electric fields are added to the physical one
 \parlink{EParallelHat} in the code. The electric field strength is
-proportional to $B$ unless explicitly specified using an input file \parlink{EParallelHatSpec\_bcdatFile}.}
+proportional to $B$ unless explicitly specified using an input file \underscoreparlink{EParallelHatSpec\_bcdatFile}{EParallelHatSpec_bcdatFile}.}
 
 
 
@@ -1341,7 +1386,7 @@ When {\ttfamily xGridScheme} = 5 or 6, then the following quantities do not matt
 
 \myhrule
 
-\param{xGrid\_k}
+\paramWithUnderscore{xGrid\_k}{xGrid_k}
 {integer}
 {0}
 {Whenever \parlink{RHSMode} is 1 or 2 and \parlink{xGridScheme} = 1, 2, 5, or 6.}
@@ -1433,7 +1478,7 @@ Use {\ttfamily PETSCPreallocationStrategy} = 1 unless you know what you are doin
 
 \myhrule
 
-\param{Nxi\_for\_x\_option}
+\paramWithUnderscore{Nxi\_for\_x\_option}{Nxi_for_x_option}
 {integer}
 {1}
 {Always}
@@ -1473,7 +1518,7 @@ parameter below, since full inter-species coupling will be retained in the real 
 
 \myhrule
 
-\param{preconditioner\_species}
+\paramWithUnderscore{preconditioner\_species}{preconditioner_species}
 {integer}
 {1}
 {Whenever \parlink{useIterativeLinearSolver} = \true~and there are 2 or more species.}
@@ -1486,7 +1531,7 @@ The default value of 1 is recommended, except perhaps at high collisionality whe
 
 \myhrule
 
-\param{preconditioner\_x}
+\paramWithUnderscore{preconditioner\_x}{preconditioner_x}
 {integer}
 {1}
 {Whenever \parlink{useIterativeLinearSolver} = \true~and \parlink{RHSMode} = 1 or 2.}
@@ -1505,17 +1550,17 @@ The default value of 1 is strongly recommended, except perhaps at high collision
 
 \myhrule
 
-\param{preconditioner\_x\_min\_L}
+\paramWithUnderscore{preconditioner\_x\_min\_L}{preconditioner_x_min_L}
 {integer}
 {0}
-{Whenever \parlink{useIterativeLinearSolver} = \true~and \parlink{RHSMode} = 1 or 2 and \parlink{preconditioner\_x} $>$ 0.}
+{Whenever \parlink{useIterativeLinearSolver} = \true~and \parlink{RHSMode} = 1 or 2 and \underscoreparlink{preconditioner\_x}{preconditioner_x} $>$ 0.}
 {The $x$ structure of the matrix will only be simplified for Legendre index $L$ is $\ge$ this value.
 Set {\ttfamily preconditioner\_x\_min\_L} = 0 to simplify the matrix for every $L$.
 Recommended values are 0, 1, or 2.}
 
 \myhrule
 
-\param{preconditioner\_theta}
+\paramWithUnderscore{preconditioner\_theta}{preconditioner_theta}
 {integer}
 {0}
 {Whenever \parlink{useIterativeLinearSolver} = \true}
@@ -1532,17 +1577,17 @@ The default value of 0 is strongly recommended.}
 
 \myhrule
 
-\param{preconditioner\_theta\_min\_L}
+\paramWithUnderscore{preconditioner\_theta\_min\_L}{preconditioner_theta_min_L}
 {integer}
 {0}
-{Whenever \parlink{useIterativeLinearSolver} = \true~and \parlink{preconditioner\_theta} $>$ 0.}
+{Whenever \parlink{useIterativeLinearSolver} = \true~and \underscoreparlink{preconditioner\_theta}{preconditioner_theta} $>$ 0.}
 {The $\theta$ structure of the matrix will only be simplified for Legendre index $L$ is $\ge$ this value.
 Set {\ttfamily preconditioner\_theta\_min\_L} = 0 to simplify the matrix for every $L$.
 }
 
 \myhrule
 
-\param{preconditioner\_zeta}
+\paramWithUnderscore{preconditioner\_zeta}{preconditioner_zeta}
 {integer}
 {0}
 {Whenever \parlink{useIterativeLinearSolver} = \true}
@@ -1559,17 +1604,17 @@ The default value of 0 is strongly recommended.}
 
 \myhrule
 
-\param{preconditioner\_zeta\_min\_L}
+\paramWithUnderscore{preconditioner\_zeta\_min\_L}{preconditioner_zeta_min_L}
 {integer}
 {0}
-{Whenever \parlink{useIterativeLinearSolver} = \true~and \parlink{preconditioner\_zeta} $>$ 0.}
+{Whenever \parlink{useIterativeLinearSolver} = \true~and \underscoreparlink{preconditioner\_zeta}{preconditioner_zeta} $>$ 0.}
 {The $\zeta$ structure of the matrix will only be simplified for Legendre index $L$ is $\ge$ this value.
 Set {\ttfamily preconditioner\_zeta\_min\_L} = 0 to simplify the matrix for every $L$.
 }
 
 \myhrule
 
-\param{preconditioner\_xi}
+\paramWithUnderscore{preconditioner\_xi}{preconditioner_xi}
 {integer}
 {1}
 {Whenever \parlink{useIterativeLinearSolver} = \true}
@@ -1584,7 +1629,7 @@ Either a setting of 0 or 1 can be good for this parameter.}
 
 \myhrule
 
-\param{preconditioner\_magnetic\_drifts\_max\_L}
+\paramWithUnderscore{preconditioner\_magnetic\_drifts\_max\_L}{preconditioner_magnetic_drifts_max_L}
 {integer}
 {2}
 {Whenever \parlink{useIterativeLinearSolver} = \true and \parlink{magneticDriftScheme}$>0$}
@@ -1599,7 +1644,7 @@ The default value should be good.}
 \param{reusePreconditioner}
 {Boolean}
 {\true}
-{Only when \parlink{includePhi1} = \true}
+{Only when \parlink{includePhi1} = \true  and \parlink{readExternalPhi1} == \false}
 {If true, the nonlinear term will not be included in the preconditioner matrix, meaning the preconditioner matrix is the same
 at every iteration, and so the preconditioner matrix only needs to be $LU$-factorized once.  If false, the preconditioner matrix
 for the Jacobian will be different at each iteration of the Newton solve, so the preconditioner needs to be $LU$-factorized at
@@ -1625,7 +1670,7 @@ For all available settings, the distribution function will be reported on a tens
 
 \myhrule
 
-\param{export\_full\_f}
+\paramWithUnderscore{export\_full\_f}{export_full_f}
 {Boolean}
 {\false}
 {Always}
@@ -1634,7 +1679,7 @@ in the output file.}
 
 \myhrule
 
-\param{export\_delta\_f}
+\paramWithUnderscore{export\_delta\_f}{export_delta_f}
 {Boolean}
 {\false}
 {Always}
@@ -1642,114 +1687,114 @@ in the output file.}
 
 \myhrule
 
-\param{export\_f\_theta\_option}
+\paramWithUnderscore{export\_f\_theta\_option}{export_f_theta_option}
 {integer}
 {2}
-{Whenever \parlink{export\_full\_f} or \parlink{export\_delta\_f} is \true}
+{Whenever \underscoreparlink{export\_full\_f}{export_full_f} or \underscoreparlink{export\_delta\_f}{export_delta_f} is \true}
 {Controls which grid in $\theta$ is used for exporting the distribution function.\\
 
 {\ttfamily export\_f\_theta\_option} = 0: Report the distribution function on the original $\theta$ grid (with \Ntheta~points) used for solving the kinetic equation.\\
 
-{\ttfamily export\_f\_theta\_option} = 1: Interpolate to a different grid, specified by \parlink{export\_f\_theta}. Linear interpolation will be used.
+{\ttfamily export\_f\_theta\_option} = 1: Interpolate to a different grid, specified by \underscoreparlink{export\_f\_theta}{export_f_theta}. Linear interpolation will be used.
 No sorting of the requested values is performed.\\
 
 {\ttfamily export\_f\_theta\_option} = 2: Do not interpolate. Use the
 values of the $\theta$ grid that are closest to the values requested
-in \parlink{export\_f\_theta}.  Values of $\theta$ will be in
+in \underscoreparlink{export\_f\_theta}{export_f_theta}.  Values of $\theta$ will be in
 increasing order. If multiple requested values are close to the same
 grid point, the number of points returned will be less than the number
 of points requested. \\
 
-For all of these options, you can see \parlink{export\_f\_theta} in {\ttfamily sfincsOutput.h5} for the actual grid used in the end.
+For all of these options, you can see \underscoreparlink{export\_f\_theta}{export_f_theta} in {\ttfamily sfincsOutput.h5} for the actual grid used in the end.
 }
 
 \myhrule
 
-\param{export\_f\_zeta\_option}
+\paramWithUnderscore{export\_f\_zeta\_option}{export_f_zeta_option}
 {integer}
 {2}
-{Whenever \parlink{export\_full\_f} or \parlink{export\_delta\_f} is \true}
+{Whenever \underscoreparlink{export\_full\_f}{export_full_f} or \underscoreparlink{export\_delta\_f}{export_delta_f} is \true}
 {Controls which grid in $\zeta$ is used for exporting the distribution function.\\
 
 {\ttfamily export\_f\_zeta\_option} = 0: Report the distribution function on the original $\zeta$ grid (with \Nzeta~points) used for solving the kinetic equation.\\
 
-{\ttfamily export\_f\_zeta\_option} = 1: Interpolate to a different grid, specified by \parlink{export\_f\_zeta}. Linear interpolation will be used.
+{\ttfamily export\_f\_zeta\_option} = 1: Interpolate to a different grid, specified by \underscoreparlink{export\_f\_zeta}{export_f_zeta}. Linear interpolation will be used.
 No sorting of the requested values is performed.\\
 
 {\ttfamily export\_f\_zeta\_option} = 2: Do not interpolate. Use the
 values of the $\zeta$ grid that are closest to the values requested
-in \parlink{export\_f\_zeta}.  Values of $\zeta$ will be in
+in \underscoreparlink{export\_f\_zeta}{export_f_zeta}.  Values of $\zeta$ will be in
 increasing order. If multiple requested values are close to the same
 grid point, the number of points returned will be less than the number
 of points requested. \\
 
-For all of these options, you can see \parlink{export\_f\_zeta} in {\ttfamily sfincsOutput.h5} for the actual grid used in the end.
+For all of these options, you can see \underscoreparlink{export\_f\_zeta}{export_f_zeta} in {\ttfamily sfincsOutput.h5} for the actual grid used in the end.
 }
 
 \myhrule
 
-\param{export\_f\_theta}
+\paramWithUnderscore{export\_f\_theta}{export_f_theta}
 {1D array of reals}
 {0.0}
-{Whenever \parlink{export\_full\_f} or \parlink{export\_delta\_f} is \true, and \parlink{export\_f\_theta\_option} $>0$.}
-{Values of $\theta$ on which you want to save the distribution function.  modulo$(\ldots, 2\pi)$ will be applied.  See \parlink{export\_f\_theta\_option} for details}
+{Whenever \underscoreparlink{export\_full\_f}{export_full_f} or \underscoreparlink{export\_delta\_f}{export_delta_f} is \true, and \underscoreparlink{export\_f\_theta\_option}{export_f_theta_option} $>0$.}
+{Values of $\theta$ on which you want to save the distribution function.  modulo$(\ldots, 2\pi)$ will be applied.  See \underscoreparlink{export\_f\_theta\_option}{export_f_theta_option} for details}
 
 
 \myhrule
 
-\param{export\_f\_zeta}
+\paramWithUnderscore{export\_f\_zeta}{export_f_zeta}
 {1D array of reals}
 {0.0}
-{Whenever \parlink{export\_full\_f} or \parlink{export\_delta\_f} is \true, and \parlink{export\_f\_zeta\_option} $>0$.}
-{Values of $\zeta$ on which you want to save the distribution function.  modulo$(\ldots, 2\pi/\mbox{\ttfamily NPeriods})$ will be applied.  See \parlink{export\_f\_zeta\_option} for details}
+{Whenever \underscoreparlink{export\_full\_f}{export_full_f} or \underscoreparlink{export\_delta\_f}{export_delta_f} is \true, and \underscoreparlink{export\_f\_zeta\_option}{export_f_zeta_option} $>0$.}
+{Values of $\zeta$ on which you want to save the distribution function.  modulo$(\ldots, 2\pi/\mbox{\ttfamily NPeriods})$ will be applied.  See \underscoreparlink{export\_f\_zeta\_option}{export_f_zeta_option} for details}
 
 \myhrule
 
-\param{export\_f\_xi\_option}
+\paramWithUnderscore{export\_f\_xi\_option}{export_f_xi_option}
 {integer}
 {1}
-{Whenever \parlink{export\_full\_f} or \parlink{export\_delta\_f} is \true}
+{Whenever \underscoreparlink{export\_full\_f}{export_full_f} or \underscoreparlink{export\_delta\_f}{export_delta_f} is \true}
 {Controls which discretization in $\xi$ is used for exporting the distribution function.\\
 
 {\ttfamily export\_f\_xi\_option} = 0: Report the distribution function as amplitudes of \Nxi~Legendre polynomials, as used internally by \sfincs~for solving the kinetic equation.\\
 
-{\ttfamily export\_f\_xi\_option} = 1: Report the distribution function on the values of $\xi$ specified by \parlink{export\_f\_xi}. No sorting of the requested values is performed.
+{\ttfamily export\_f\_xi\_option} = 1: Report the distribution function on the values of $\xi$ specified by \underscoreparlink{export\_f\_xi}{export_f_xi}. No sorting of the requested values is performed.
 }
 
 \myhrule
 
-\param{export\_f\_xi}
+\paramWithUnderscore{export\_f\_xi}{export_f_xi}
 {1D array of reals}
 {0.0}
-{Whenever \parlink{export\_full\_f} or \parlink{export\_delta\_f} is \true, and \parlink{export\_f\_xi\_option} = 1.}
+{Whenever \underscoreparlink{export\_full\_f}{export_full_f} or \underscoreparlink{export\_delta\_f}{export_delta_f} is \true, and \underscoreparlink{export\_f\_xi\_option}{export_f_xi_option} = 1.}
 {Values of $\xi$ on which you want to save the distribution function.  Values must lie in the range $[-1,1]$.}
 
 \myhrule
 
-\param{export\_f\_x\_option}
+\paramWithUnderscore{export\_f\_x\_option}{export_f_x_option}
 {integer}
 {0}
-{Whenever \parlink{export\_full\_f} or \parlink{export\_delta\_f} is \true}
+{Whenever \underscoreparlink{export\_full\_f}{export_full_f} or \underscoreparlink{export\_delta\_f}{export_delta_f} is \true}
 {Controls which grid in $x = v/\sqrt{2T/m}$ is used for exporting the distribution function.\\
 
 {\ttfamily export\_f\_x\_option} = 0: Report the distribution function on the original $x$ grid (with \Nx~points) used for solving the kinetic equation.\\
 
-{\ttfamily export\_f\_x\_option} = 1: Interpolate to a different grid, specified by \parlink{export\_f\_x}.  Polynomial spectral interpolation will be used.
+{\ttfamily export\_f\_x\_option} = 1: Interpolate to a different grid, specified by \underscoreparlink{export\_f\_x}{export_f_x}.  Polynomial spectral interpolation will be used.
   No sorting of the requested values is performed.\\
 
-{\ttfamily export\_f\_x\_option} = 2: Do not interpolate. Use the values of the internal $x$ grid that are closest to the values requested in \parlink{export\_f\_x}.
+{\ttfamily export\_f\_x\_option} = 2: Do not interpolate. Use the values of the internal $x$ grid that are closest to the values requested in \underscoreparlink{export\_f\_x}{export_f_x}.
   Values of $x$ will be in increasing order. If multiple requested values are close to the same grid point, the number of
   points returned will be less than the number of points requested.\\
 
-For all of these options, you can see \parlink{export\_f\_x} in {\ttfamily sfincsOutput.h5} for the actual grid used in the end.
+For all of these options, you can see \underscoreparlink{export\_f\_x}{export_f_x} in {\ttfamily sfincsOutput.h5} for the actual grid used in the end.
 }
 
 \myhrule
 
-\param{export\_f\_x}
+\paramWithUnderscore{export\_f\_x}{export_f_x}
 {1D array of reals}
 {1.0}
-{Whenever \parlink{export\_full\_f} or \parlink{export\_delta\_f} is \true, and \parlink{export\_f\_x\_option} $>0$.}
+{Whenever \underscoreparlink{export\_full\_f}{export_full_f} or \underscoreparlink{export\_delta\_f}{export_delta_f} is \true, and \underscoreparlink{export\_f\_x\_option}{export_f_x_option} $>0$.}
 {Values of $x$ on which you want to save the distribution function.  Values must be $\ge 0$.}
 
 
@@ -2155,11 +2200,11 @@ The settings `logarithmic' and `log' have identical behavior.}
 
 \subsection{Parameters related only to {\ttfamily scanType} = 4 or 5 (radial scans).}
 
-Notice that exactly 1 of the 4 variables \parlink{psiHat\_max}, \parlink{psiN\_max}, \parlink{rHat\_max}, and \parlink{rN\_max}
+Notice that exactly 1 of the 4 variables \underscoreparlink{psiHat\_max}{psiHat_max}, \underscoreparlink{psiN\_max}{psiN_max}, \underscoreparlink{rHat\_max}{rHat_max}, and \underscoreparlink{rN\_max}{rN_max}
 will be used, depending on
 \parlink{inputRadialCoordinate}.
 Similarly, exactly 1 of the 4 variables
-\parlink{psiHat\_min}, \parlink{psiN\_min}, \parlink{rHat\_min}, and \parlink{rN\_min}
+\underscoreparlink{psiHat\_min}{psiHat_min}, \underscoreparlink{psiN\_min}{psiN_min}, \underscoreparlink{rHat\_min}{rHat_min}, and \underscoreparlink{rN\_min}{rN_min}
 will be used.
 
 \myhrule
@@ -2187,56 +2232,56 @@ used, in which case fewer than {\ttfamily Nradius} radii may be used.}
 
 \myhrule
 
-\ssparam{psiHat\_max}
+\ssparamWithUnderscore{psiHat\_max}{psiHat_max}
 {real}
 {Only when \parlink{inputRadialCoordinate} = 0 and \sfincsScan~is run with \parlink{scanType} = 4 or 5.}
 {Maximum value of \parlink{psiHat} to use in the scan.}
 
 \myhrule
 
-\ssparam{psiHat\_min}
+\ssparamWithUnderscore{psiHat\_min}{psiHat_min}
 {real}
 {Only when \parlink{inputRadialCoordinate} = 0 and \sfincsScan~is run with \parlink{scanType} = 4 or 5.}
 {Minimum value of \parlink{psiHat} to use in the scan.}
 
 \myhrule
 
-\ssparam{psiN\_max}
+\ssparamWithUnderscore{psiN\_max}{psiN_max}
 {real}
 {Only when \parlink{inputRadialCoordinate} = 1 and \sfincsScan~is run with \parlink{scanType} = 4 or 5.}
 {Maximum value of \parlink{psiN} to use in the scan.}
 
 \myhrule
 
-\ssparam{psiN\_min}
+\ssparamWithUnderscore{psiN\_min}{psiN_min}
 {real}
 {Only when \parlink{inputRadialCoordinate} = 1 and \sfincsScan~is run with \parlink{scanType} = 4 or 5.}
 {Minimum value of \parlink{psiN} to use in the scan.}
 
 \myhrule
 
-\ssparam{rHat\_max}
+\ssparamWithUnderscore{rHat\_max}{rHat_max}
 {real}
 {Only when \parlink{inputRadialCoordinate} = 2 and \sfincsScan~is run with \parlink{scanType} = 4 or 5.}
 {Maximum value of \parlink{rHat} to use in the scan.}
 
 \myhrule
 
-\ssparam{rHat\_min}
+\ssparamWithUnderscore{rHat\_min}{rHat_min}
 {real}
 {Only when \parlink{inputRadialCoordinate} = 2 and \sfincsScan~is run with \parlink{scanType} = 4 or 5.}
 {Minimum value of \parlink{rHat} to use in the scan.}
 
 \myhrule
 
-\ssparam{rN\_max}
+\ssparamWithUnderscore{rN\_max}{rN_max}
 {real}
 {Only when \parlink{inputRadialCoordinate} = 3 and \sfincsScan~is run with \parlink{scanType} = 4 or 5.}
 {Maximum value of \parlink{rN} to use in the scan.}
 
 \myhrule
 
-\ssparam{rN\_min}
+\ssparamWithUnderscore{rN\_min}{rN_min}
 {real}
 {Only when \parlink{inputRadialCoordinate} = 3 and \sfincsScan~is run with \parlink{scanType} = 4 or 5.}
 {Minimum value of \parlink{rN} to use in the scan.}
