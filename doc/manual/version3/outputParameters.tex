@@ -215,8 +215,7 @@ For different options of $\textcolor{magenta}{Y}$ see flux-surface labels (secti
 {classicalHeatFlux_Y}
 {\parlink{Nspecies}~$\times$~\parlink{NIterations} matrix of reals}
 {\parlink{RHSMode} == 1 and \parlink{solveSystem} == \true}
-{\todo{Can Stefan update the text so it is correct?}\newline
-$\displaystyle \text{\ttfamily classicalHeatFlux\_\textcolor{magenta}{Y}} = \frac{\bar{R}}{\bar{n} \bar{v}} \frac{1}{Z_s e} \left\langle \frac{\vect{B} \times \nabla \textcolor{magenta}{Y}}{B^2} \cdot \vect{R}_s \right\rangle$ for all plasma species. $\displaystyle \vect{R}_s = m_s \sum_a \int d^3v \, \vect{v} C_s \left[f_s, f_a\right]$ is the friction force acting on the species. The final result is in the last index corresponding to the last nonlinear iteration.\newline
+{$\displaystyle \text{\ttfamily classicalHeatFlux\_\textcolor{magenta}{Y}} = \frac{\bar{R}}{\bar{n} \bar{v}^3 \bar{m}} \frac{1}{Z_s e} \left\langle \frac{\vect{B} \times \nabla \textcolor{magenta}{Y}}{B^2} \cdot \vect{G}_s \right\rangle$ for all plasma species. $\displaystyle \vect{G}_s = \frac{m_s^2}{2}\sum_a \int d^3v \, \vect{v} v^2 C_s \left[f_s, f_a\right]$ is the energy-weighted friction force acting on the species. The final result is in the last index corresponding to the last nonlinear iteration.\newline
 For different options of $\textcolor{magenta}{Y}$ see flux-surface labels (section~\ref{sec:radialCoordinates}).}
 
 \myhrule
@@ -225,8 +224,7 @@ For different options of $\textcolor{magenta}{Y}$ see flux-surface labels (secti
 {classicalHeatFluxNoPhi1_Y}
 {\parlink{Nspecies} array of reals}
 {\parlink{RHSMode} == 1}
-{\todo{Can Stefan update the text so it is correct?}\newline
-$\displaystyle \text{\ttfamily classicalHeatFluxNoPhi1\_\textcolor{magenta}{Y}} = \frac{\bar{R}}{\bar{n} \bar{v}} \frac{1}{Z_s e} \left\langle \frac{\vect{B} \times \nabla \textcolor{magenta}{Y}}{B^2} \cdot \vect{R}_{s,\,\mathrm{w/o}\,\Phi_1} \right\rangle$ for all plasma species. $\displaystyle \vect{R}_{s,\,\mathrm{w/o}\,\Phi_1} = m_s \sum_a \int d^3v \, \vect{v} C_s \left[f_{s,\,\mathrm{w/o}\,\Phi_1}, f_{a,\,\mathrm{w/o}\,\Phi_1}\right]$ is the friction force acting on the species, where the impact of $\Phi_1$ is neglected.\newline
+{$\displaystyle \text{\ttfamily classicalHeatFluxNoPhi1\_\textcolor{magenta}{Y}} = \frac{\bar{R}}{\bar{n} \bar{v}^3\bar{m}} \frac{1}{Z_s e} \left\langle \frac{\vect{B} \times \nabla \textcolor{magenta}{Y}}{B^2} \cdot \vect{G}_{s,\,\mathrm{w/o}\,\Phi_1} \right\rangle$ for all plasma species.  $\displaystyle \vect{G}_{s,\,\mathrm{w/o}\,\Phi_1} = \frac{m_s^2}{2}\sum_a \int d^3v \, \vect{v} v^2 C_s \left[f_{s,\,\mathrm{w/o}\,\Phi_1}, f_{a,\,\mathrm{w/o}\,\Phi_1}\right]$ is the energy-weighted friction force acting on the species, where the impact of $\Phi_1$ is neglected.\newline
 For different options of $\textcolor{magenta}{Y}$ see flux-surface labels (section~\ref{sec:radialCoordinates}).}
 
 \myhrule

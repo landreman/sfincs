@@ -89,9 +89,11 @@ contains
         
        end do       
        classicalPF(ispeciesA) = Zs(ispeciesA) * Delta**2 * nu_n * sqrt(mHats(ispeciesA)) * classicalPF(ispeciesA)/(2*THats(ispeciesA)**1.5) 
-       classicalHF(ispeciesA) = -Zs(ispeciesA)  * Delta**2 * nu_n * sqrt(mHats(ispeciesA)) * classicalHF(ispeciesA)/(2*sqrt(THats(ispeciesA)))
+       classicalHF(ispeciesA) = -Zs(ispeciesA)  * Delta**2 * nu_n * sqrt(mHats(ispeciesA)) * classicalHF(ispeciesA)/(4*sqrt(THats(ispeciesA)))
        ! The total heat flux: Q_a = q_a + 2.5 T_a Gamma_a
-       classicalHF(ispeciesA) = classicalHF(ispeciesA) + 2.5 * THats(ispeciesA) * classicalPF(ispeciesA)
+       ! With SFINCS heat-flux normalization, this is
+       ! QHat_a = qHat_a + 1.25 THat_a GammaHat_a
+       classicalHF(ispeciesA) = classicalHF(ispeciesA) + 1.25 * THats(ispeciesA) * classicalPF(ispeciesA)
 
 
        

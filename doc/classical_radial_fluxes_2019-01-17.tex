@@ -129,6 +129,8 @@
 
 %=================================================================
 \begin{document}
+\textcolor{red}{Update 2019-03-08: the normalized heat flux was a factor 2 too high due to using the wrong normalization. This has been corrected.}
+
 \section{Drift-kinetic classical transport}
 These notes derive the classical transport under the same set of assumptions as in the linearized drift-kinetic equation solved by the $\delta f$-code neoclassical code \textsc{Sfincs} (and probably most other neoclassical codes). 
 
@@ -313,7 +315,7 @@ and the heat-flux
 \textsc{Sfincs} uses normalized quantities (denoted with a hat), where the normalized radial fluxes are defined in terms of the physical fluxes as
 \begin{align}
   \hat{\Gamma}_a &= \frac{\bar{R}}{\bar{n}\bar{v}} \frac{1}{Z_a e} \lang B^{-2} \left(\vec{B} \times \nabla \hat{\psi}\right) \cdot \vec{R}_a \rang, \\
-  \hat{Q}_a &= \frac{\bar{R}}{\bar{n}\bar{v} \bar{T}} \frac{1}{Z_a e} \lang B^{-2} \left(\vec{B} \times \nabla \hat{\psi}\right) \cdot \vec{G}_a \rang,
+  \hat{Q}_a &= \frac{\bar{R}}{\bar{n}\bar{m}\bar{v}^3} \frac{1}{Z_a e} \lang B^{-2} \left(\vec{B} \times \nabla \hat{\psi}\right) \cdot \vec{G}_a \rang,
 \end{align}
 where $\hat{\psi} = \psi/(\bar{B}\hat{R}^2)$ is just a new choice of radial coordinate rather than a normalization -- see the \textsc{Sfincs} manual for more details. We also define the dimensionless parameters $\alpha = e\bar{\Phi}/\bar{T}$ and $\Delta = \frac{\sqrt{2\bar{m}\bar{T}}}{e\bar{R}\bar{B}}$, and the dimensionless collisionality $\nu_n$
 \begin{align}
@@ -337,7 +339,7 @@ With this, the normalized particle and conductive heat-flux becomes
 
 \begin{equation}
 \begin{aligned}
-  \hspace*{-10ex} \hat{q}_a =  -\frac{\Delta^2 \nu_n}{2} \frac{Z_a\hat{m}_a^{1/2}}{\hat{T}_a^{1/2}} \sum_b Z_b^2 &\left[
+  \hspace*{-10ex} \hat{q}_a =  -\frac{\Delta^2 \nu_n}{\textcolor{red}{4}} \frac{Z_a\hat{m}_a^{1/2}}{\hat{T}_a^{1/2}} \sum_b Z_b^2 &\left[
     \lang \hat{n}_a \hat{n}_b\frac{|\bar{R}\nabla \hat{\psi}|^2}{\hat{B}^2 } \rang M_{ab}^{01}\left(\frac{\hat{T}_a}{Z_a}  \frac{\d \ln\eta_a}{\d \hat{\psi}} - \frac{\hat{T}_b}{Z_b}\frac{\d \ln\eta_b}{\d \hat{\psi}}\right) \right.\\
     &\left.+\lang \hat{n}_a \hat{n}_b\frac{|\bar{R}\nabla \hat{\psi}|^2}{\hat{B}^2 }  \hat{\Phi}_1 \rang \alpha M_{ab}^{01} \left(\frac{\d \ln T_a}{\d \hat{\psi}}-\frac{\d \ln T_b}{\d \hat{\psi}}\right) \right.\\
     &\left.+ \lang \hat{n}_a \hat{n}_b\frac{|\bar{R}\nabla \hat{\psi}|^2}{\hat{B}^2 } \rang \left(\left(M_{ab}^{01} - M_{ab}^{11}\right)\frac{ \hat{T}_a}{Z_a} \frac{\d \ln T_a}{\d \hat{\psi}}
@@ -366,7 +368,7 @@ so that
 
 \begin{equation}
 \begin{aligned}
-  \hspace*{-10ex} \hat{q}_a =  -\frac{\Delta^2 \nu_n}{2} \frac{Z_a\hat{m}_a^{1/2} \hat{\eta}_a}{\hat{T}_a^{1/2}} \sum_b Z_b^2 \hat{\eta}_b &\left[
+  \hspace*{-10ex} \hat{q}_a =  -\frac{\Delta^2 \nu_n}{\textcolor{red}{4}} \frac{Z_a\hat{m}_a^{1/2} \hat{\eta}_a}{\hat{T}_a^{1/2}} \sum_b Z_b^2 \hat{\eta}_b &\left[
     G_{ab}^{(1)}  M_{ab}^{01}\left(\frac{\hat{T}_a}{Z_a}  \frac{\d \ln\eta_a}{\d \hat{\psi}} - \frac{\hat{T}_b}{Z_b}\frac{\d \ln\eta_b}{\d \hat{\psi}}\right) \right.\\
     &\left.+G_{ab}^{(2)} \alpha M_{ab}^{01} \left(\frac{\d \ln T_a}{\d \hat{\psi}}-\frac{\d \ln T_b}{\d \hat{\psi}}\right) \right.\\
     &\left.+ G_{ab}^{(1)} \left(\left(M_{ab}^{01} - M_{ab}^{11}\right)\frac{ \hat{T}_a}{Z_a} \frac{\d \ln T_a}{\d \hat{\psi}}
@@ -375,7 +377,7 @@ so that
 \end{equation}
 and
 \begin{equation}
-\hat{Q}_a = \hat{q}_a + \frac{5}{2} \hat{T}_a \hat{\Gamma}_a. 
+\hat{Q}_a = \hat{q}_a + \frac{5}{\textcolor{red}{4}} \hat{T}_a \hat{\Gamma}_a. 
 \end{equation}
 
 \paragraph{Thanks to Sarah Newton} for bringing to my attention that the classical transport can be calculated using the Braginskii matrices. 
