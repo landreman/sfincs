@@ -259,13 +259,20 @@ yAxisLabels.append(yVariableName + yArrayPositionString)
 logXaxis = False
 logYaxis = False
 
-inputXscale = raw_input("Scale on x-axis? [linear (default) / log] ")
+symlogXaxis = False
+symlogYaxis = False
+
+inputXscale = raw_input("Scale on x-axis? [linear (default) / log / symlog] ")
 if inputXscale.lower() == "log":
     logXaxis = True
+elif inputXscale.lower() == "symlog":
+   symlogXaxis = True
 
-inputYscale = raw_input("Scale on y-axis? [linear (default) / log] ")
+inputYscale = raw_input("Scale on y-axis? [linear (default) / log / symlog] ")
 if inputYscale.lower() == "log":
     logYaxis = True
+elif inputYscale.lower() == "symlog":
+   symlogYaxis = True
 
 
 # ***************************************************
@@ -291,12 +298,20 @@ linespec = '.-'
 plt.subplot(numRows,numCols,1)
 xdata = scanVariableValues_sorted
 
-if not logYaxis :
-   ydata = outputs_array
-   yscales.append('linear')
-else:
-   ydata = outputs_array
-   yscales.append('log') ##AM 2017-02 changed 'symlog' to 'log'
+#if not logYaxis :
+#   ydata = outputs_array
+#   yscales.append('linear')
+#else:
+#   ydata = outputs_array
+#   yscales.append('log') ##AM 2017-02 changed 'symlog' to 'log'
+
+ydata = outputs_array
+if logYaxis :
+   yscales.append('log')
+elif symlogYaxis :
+   yscales.append('symlog')
+else :
+   yscales.append('linear') 
    
 
 xlabels.append(xAxisLabels[0])
@@ -304,17 +319,25 @@ ylabels.append(yAxisLabels[0])
 
 if logXaxis : 
    xscales.append('log') ##AM 2017-02 changed 'symlog' to 'log' 
+elif symlogXaxis :
+   xscales.append('symlog')
 else:
    xscales.append('linear') 
    
 plt.plot(xdata,ydata,linespec)
-try: ##Added by AM 2017-02 
-   plt.xscale(xscales[-1])
+try: ##Added by AM 2017-02
+   if symlogXaxis :
+      plt.xscale(xscales[-1], linthreshx=numpy.amin(numpy.absolute(xdata)))
+   else :
+      plt.xscale(xscales[-1])
 except: ##Added by AM 2017-02  
    plt.xscale('symlog') ##Added by AM 2017-02  
 
 try: ##Added by AM 2017-02 
-   plt.yscale(yscales[-1])
+   if symlogYaxis :
+      plt.yscale(yscales[-1], linthreshy=numpy.amin(numpy.absolute(ydata)))
+   else :
+      plt.yscale(yscales[-1])
 except: ##Added by AM 2017-02
    plt.yscale('symlog') ##Added by AM 2017-02
 
