@@ -12,8 +12,7 @@
 #SBATCH --partition=express
 
 #SBATCH --nodes=1
-##SBATCH --ntasks-per-node=32
-#SBATCH --ntasks-per-node=1
+#SBATCH --ntasks-per-node=32
 # for OpenMP:
 #SBATCH --cpus-per-task=1
 export OMP_NUM_THREADS=1

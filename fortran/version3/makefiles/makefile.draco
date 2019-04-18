@@ -2,7 +2,7 @@
 #
 # To compile on draco, first load the following modules:
 #
-# module load netcdf-serial hdf5-serial petsc-real
+# module load hdf5-serial netcdf-serial hdf5-serial petsc-real-openmp
 #
 # Also set the following environment variables:
 #
@@ -11,9 +11,7 @@
 # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HDF5_HOME}/lib:${NETCDF_HOME}/lib
 #
 # (You might wish to put the above lines in your .bashrc file.)
-# These settings worked as of 2017-August-15. We are experiencing some problems
-# with the petsc-openmp-real module, and I'm not sure if/when these problems will be resolved. So for the
-# time being, sfincs is not able to take advantage of openMP on Draco.
+# These settings worked as of 2019-April-18.
 #
 # Then run 
 # make clean

@@ -158,7 +158,7 @@ contains
              call PCFactorSetMatSolverType(preconditionerContext, MATSOLVERSUPERLU_DIST, ierr)
 
              ! Turn on superlu_dist diagnostic output:
-             call PetscOptionsInsertString("-mat_superlu_dist_statprint", ierr)
+             !call PetscOptionsInsertString("-mat_superlu_dist_statprint", ierr)
           case default
              if (masterProc) then
                 print *,"Error: Invalid setting for whichParallelSolverToFactorPreconditioner"
