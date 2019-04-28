@@ -94,6 +94,7 @@ module testingAdjointDiagnostics
 
     call PetscTime(time1, ierr)
     if (constantJr) then
+			ambipolarSolve = .true.
       call mainAmbipolarSolver()
     else
       call mainSolverLoop()
@@ -171,6 +172,8 @@ module testingAdjointDiagnostics
 
         ! Compute solutionVec and diagnostics with new geometry
         if (ambipolarSolve) then
+					! Need to set this to true so adjoint things are called for ambipolar
+					ambipolarSolve = .true.
           call mainAmbipolarSolver()
         else
           call mainSolverLoop()
