@@ -36,8 +36,13 @@ The default values are usually best for the parameters in this namelist.
 
 {\ttfamily RHSMode} = 2: Solve for 3 right-hand sides to get the 3$\times$3 transport matrix. Presently implemented only for 1 species and \parlink{includePhi1} == \false\\
 
-{\ttfamily RHSMode} = 3: Solve for the 2$\times$2 monoenergetic transport coefficients. When this option is chosen, \Nx~is set to 1, only 1 species is used and \parlink{includePhi1} is set to \false
+{\ttfamily RHSMode} = 3: Solve for the 2$\times$2 monoenergetic transport coefficients. When this option is chosen, \Nx~is set to 1, only 1 species is used and \parlink{includePhi1} is set to \false \\
+
+{\ttfamily RHSMode} = 4: Solve the adjoint equation to compute derivatives at constant $E_r$. Options related to the adjoint solve are detailed in section \ref{sec:adjointOptions}. {\ttfamily RHSMode} = 4 must be used with \\ \parlink{includePhi1}=\false, \parlink{EParallelHat}\texttt{=0}, \parlink{magneticDriftScheme}\texttt{>0}, \\ \parlink{constraintScheme}\texttt{=-1} or 1, \parlink{collisionOperator}\texttt{=0}, and \parlink{geometryScheme}\texttt{/=5}. \\
+
+{\ttfamily RHSMode} = 5: Solve the adjoint equation to compute derivatives at the ambipolar $E_r$. Options related to the adjoint solve are detailed in section \ref{sec:adjointOptions}. {\ttfamily RHSMode} = 5 must be used with \\ \parlink{includePhi1}=\false, \parlink{EParallelHat}\texttt{=0}, \parlink{magneticDriftScheme}\texttt{>0}, \\ \parlink{constraintScheme}\texttt{=-1} or 1, \parlink{collisionOperator}\texttt{=0}, and \parlink{geometryScheme}\texttt{/=5}. \\ 
 }
+
 
 \myhrule
 
@@ -110,12 +115,72 @@ separate \HDF~file.
  Sometimes it can be useful to set this parameter to \false~when debugging.
 }
 
+\myhrule
 
+\param{ambipolarSolve}
+{Boolean}
+{\false}
+{When \parlink{RHSMode}==1, 4, or 5.}
+{When \true, a root finding method will be used to find the ambipolar \parlink{Er}. All output parameters will be included at the ambipolar \parlink{Er}. Options related to this parameter are \parlink{NEr\_ambipolarSolve}, \parlink{Er\_search\_tolerance\_dx}, \parlink{Er\_search\_tolerance\_f}, \\ \parlink{ambipolarSolveOption}, \parlink{Er\_min}, and \parlink{Er\_max}.}
 
+\myhrule
 
+\param{NEr\_ambipolarSolve}
+{integer}
+{20}
+{When \parlink{ambipolarSolve} == \true.}
+{Maximum number of solves to allow while finding the ambipolar \parlink{Er}.}
 
+\myhrule
 
+\param{Er\_search\_tolerance\_dx}
+{real}
+{1.d-8}
+{When \parlink{ambipolarSolve} == \true and \parlink{ambipolarSolveOption}/=2.}
+{Tolerance used for ambipolar solve. If step size in \parlink{Er} falls below \parlink{Er\_search\_tolerance\_dx}, the ambipolar solve completes successfully. Note that this is not used for \parlink{ambipolarSolveOption}==2.}
 
+\myhrule
+
+\param{Er\_search\_tolerance\_f}
+{real}
+{1.d-10}
+{When \parlink{ambipolarSolve} == \true.}
+{Tolerance used for ambipolar solve. If the radial current,
+\begin{gather}
+J_r = \sum_s \texttt{Zs}(s) \texttt{particleFlux\_vm\_rN}(s),
+\end{gather}
+falls below \parlink{Er\_search\_tolerance\_f}, the ambipolar solve completes successfully.}
+
+\myhrule
+
+\param{ambipolarSolveOption}
+{integer}
+{1}
+{When \parlink{ambipolarSolve} == \true}
+{Indicates which root solving algorithm to use for ambipolar solve. \\
+\parlink{ambipolarSolveOption}==1: a Newton bisection method is used \\ 
+\parlink{ambipolarSolveOption}==2: a Brent method is used \\
+\parlink{ambipolarSolveOption}==3: a Newton method is used. 
+
+If \parlink{ambipolarSolveOption}==1 or 3, an adjoint method will used to compute the $\partial J_r/\partial E_r$, so must be used with \parlink{includePhi1}==\false, \parlink{EParallelHat}==0, \parlink{magneticDriftScheme}$>0$, \parlink{constraintScheme}==-1 or 1, and \parlink{collisionOperator}==0.}
+
+\myhrule
+
+\param{Er\_min}
+{real}
+{-100}
+{When \parlink{ambipolarSolve} == \true and \parlink{ambipolarSolveOption} /= 3. }
+{Minimum value of \parlink{Er} used to bracket the ambipolar root. }
+
+\myhrule
+
+\param{Er\_max}
+{real}
+{100}
+{When \parlink{ambipolarSolve} == \true and \parlink{ambipolarSolveOption} /= 3. }
+{Maximum  value of \parlink{Er} used to bracket the ambipolar root. }
+
+\myhrule
 
 \section{The {\ttfamily geometryParameters} namelist}
 \label{sec:geometryParameters}
@@ -156,6 +221,8 @@ The file is assumed to be stellarator-symmetric.\\
 
 {\ttfamily geometryScheme}==12: Read the IPP {\ttfamily .bc} format Boozer-coordinate file specified in \parlink{equilibriumFile} below. 
 The file is assumed to be stellarator-\emph{asymmetric}.
+
+{\ttfamily geometryScheme}==13: Read Boozer geometry from the {\ttfamily geometryParamters} namelist. Here the geometry parameters are specified by \parlink{Nperiods}, \parlink{boozer\_bmnc}, \parlink{GHat}, \parlink{IHat}, and \parlink{iota}. This has been implemented for use with STELLOPT for direct optimization of the Boozer spectrum. 
 }
 
 \myhrule
@@ -456,8 +523,42 @@ in the {\ttfamily xm\_nyq} and {\ttfamily xn\_nyq} arrays, where available.
   $R$,$Z$,$B$,\ldots instead contains the coefficients for a function
   which will multiply the ``effective parallel electric fields'' \parlink{EParallelHatSpec}
   (otherwise just proportional to $B$).}
+  
+  \myhrule
 
+\param{boozer\_bmnc}
+{2D array of reals}
+{0}
+{Only when \parlink{geometryScheme} == 13. }
+{Fourier harmonics describing the magnetic field in Boozer coordinates,
+\begin{gather}
+B(\theta_B,\zeta_B) = \sum_{m,n}\mathrm{\texttt{boozer\_bmnc}}(m,n) \cos(m\theta_B-n\mathrm{\texttt{Nperiods}} \zeta_B) + \mathrm{\texttt{boozer\_bmnc}}(m,n) \sin(m\theta_B-n\mathrm{\texttt{Nperiods}} \zeta_B),
+\end{gather}
+The first index of \texttt{ Boozer\_bmnc} corresponds to $m \in $[0,40], and the second corresponds to $n \in $[-40,40]. Here \parlink{Nperiods} can be specified in the input file.
+}
 
+\myhrule
+
+\param{boozer\_bmns}
+{2D array of reals}
+{0}
+{Only when \parlink{geometryScheme} == 13. }
+{Fourier harmonics describing the magnetic field in Boozer coordinates,
+\begin{gather}
+B(\theta_B,\zeta_B) = \sum_{m,n}\mathrm{\texttt{boozer\_bmnc}}(m,n) \cos(m\theta_B-n\mathrm{\texttt{Nperiods}} \zeta_B) + \mathrm{\texttt{boozer\_bmnc}}(m,n) \sin(m\theta_B-n\mathrm{\texttt{Nperiods}} \zeta_B),
+\end{gather}
+The first index of \texttt{ Boozer\_bmns} corresponds to $m \in $[0,40], and the second corresponds to $n \in $[-40,40]. Here \parlink{Nperiods} can be specified in the input file.
+}
+
+\myhrule
+
+\param{Nperiods}
+{integer}
+{0}
+{Only when \parlink{geometryScheme} == 13.}
+{Boozer geometry will assume number of periods is \texttt{Nperiods}.}
+
+\myhrule
 
 
 \section{The {\ttfamily speciesParameters}~namelist}
@@ -1800,9 +1901,123 @@ For all of these options, you can see \underscoreparlink{export\_f\_x}{export_f_
 
 
 
+\section{The \texttt{adjointOptions} namelist}
+\label{sec:adjointOptions}
 
+This namelist allows for derivatives of the outputs to be computed with respect to geometric parameters. If \parlink{RHSMode}\texttt{<4}, this namelist will not be read. 
 
+\param{adjointBootstrapOption}
+{Boolean}
+{\false}
+{When \parlink{RHSMode} == 4 or 5}
+{If this parameter is \true, the derivative of the bootstrap current (\parlink{FSABjHatOverRootFSAB2}) is computed with respect to geometry parameters: \parlink{GHat}, \parlink{IHat}, \parlink{iota}, and \parlink{bmnc}.}
 
+\myhrule
+
+\param{adjointRadialCurrentOption}
+{Boolean}
+{\false}
+{When \parlink{RHSMode} == 4 or 5}
+{If this parameter is \true the derivative of the radial current,
+\begin{gather}
+J_r = \sum_s \texttt{Zs}(s) \texttt{particleFlux\_vm\_rN}(s),
+\end{gather}
+is computed with respect to geometry parameters: \parlink{GHat}, \parlink{IHat}, \parlink{iota}, and \parlink{bmnc}. Here \parlink{Zs} and \parlink{particleFlux\_vm\_rN} can be found elsewhere in this document.}
+
+\myhrule
+
+\param{adjointTotalHeatFluxOption}
+{Boolean}
+{\false}
+{When \parlink{RHSMode} == 4 or 5}
+{If this parameter is \true, the derivative of the total heat flux,
+\begin{gather}
+Q = \sum_s \texttt{heatFlux\_vm\_rN}(s),
+\end{gather}
+is computed with respect to geometry parameters: \parlink{GHat}, \parlink{IHat}, \parlink{iota}, and \parlink{bmnc}. Here \parlink{heatFlux\_vm\_rN} can be found elsewhere in this document.}
+
+\myhrule
+
+\param{adjointHeatFluxOption}
+{1D array of booleans}
+{\false}
+{When \parlink{RHSMode} == 4 or 5}
+{This array is the same length as {\ttfamily nHats} and other species parameters. If parameter is \true, the derivative of the heat flux (\parlink{heatFlux\_vm\_rN}) will be computed for this species with respect to geometry parameters: \parlink{GHat}, \parlink{IHat}, \parlink{iota}, and \parlink{bmnc}.}
+
+\myhrule
+
+\param{adjointParticleFluxOption}
+{1D array of booleans}
+{\false}
+{When \parlink{RHSMode} == 4 or 5}
+{This array is the same length as {\ttfamily nHats} and other species parameters. If parameter is \true, the derivative of the particle flux (\parlink{particleFlux\_vm\_rN}) will be computed for this species with respect to geometry parameters: \parlink{GHat}, \parlink{IHat}, \parlink{iota}, and \parlink{bmnc}.}
+
+\myhrule
+
+\param{adjointParallelFlowOption}
+{1D array of booleans}
+{\false}
+{When \parlink{RHSMode} == 4 or 5}
+{This array is the same length as {\ttfamily nHats} and other species parameters. If parameter is \true, the derivative of the parallel flow (\parlink{FSABVelocityUsingFSADensityOverRootFSAB2}) will be computed for this species with respect to geometry parameters: \parlink{GHat}, \parlink{IHat}, \parlink{iota}, and \parlink{bmnc}.}
+
+\myhrule
+
+\param{discreteAdjointOption}
+{boolean}
+{\true}
+{When \parlink{RHSMode} == 4 or 5}
+{When \parlink{RHSMode} is \true, the discrete adjoint technique is used. If \false, the continuous technique is used. Both should give the same result within discretization error, but the discrete approach should be slightly faster.
+}
+
+\myhrule
+
+\param{nMaxAdjoint}
+{integer}
+{0}
+{When \parlink{RHSMode} == 4 or 5}
+{Derivatives of outputs specified by \parlink{adjointBootstrapOption}, \\ \parlink{adjointRadialCurrentOption}, \parlink{adjointTotalHeatFluxOption}, \\ \parlink{adjointHeatFluxOption}, \parlink{adjointParticleFluxOption}, and \\ \parlink{adjointParallelFlowOption} will computed for Fourier modes $|n| \leq $ \texttt{nMaxAdjoint}. }
+
+\myhrule
+
+\param{mMaxAdjoint}
+{integer}
+{0}
+{When \parlink{RHSMode} == 4 or 5}
+{Derivatives of outputs specified by \parlink{adjointBootstrapOption}, \\ \parlink{adjointRadialCurrentOption}, \parlink{adjointTotalHeatFluxOption}, \\ \parlink{adjointHeatFluxOption}, \parlink{adjointParticleFluxOption}, and \\ \parlink{adjointParallelFlowOption} will computed with respect to \parlink{bmnc} for Fourier modes $m \leq $ \texttt{mMaxAdjoint}. }
+
+\myhrule
+
+\param{nMinAdjoint}
+{integer}
+{0}
+{When \parlink{RHSMode} == 4 or 5}
+{Derivatives of outputs specified by \parlink{adjointBootstrapOption}, \\ \parlink{adjointRadialCurrentOption}, \parlink{adjointTotalHeatFluxOption}, \\ \parlink{adjointHeatFluxOption}, \parlink{adjointParticleFluxOption}, and \\ \parlink{adjointParallelFlowOption} will computed with respect to \parlink{bmnc} for Fourier modes $|n| \geq $ \texttt{nMaxAdjoint}. }
+
+\myhrule
+
+\param{mMinAdjoint}
+{integer}
+{0}
+{When \parlink{RHSMode} == 4 or 5}
+{Derivatives of outputs specified by \parlink{adjointBootstrapOption}, \\ \parlink{adjointRadialCurrentOption}, \parlink{adjointTotalHeatFluxOption}, \\ \parlink{adjointHeatFluxOption}, \parlink{adjointParticleFluxOption}, and \\ \parlink{adjointParallelFlowOption} will computed with respect to \parlink{bmnc} for Fourier modes $m \geq $ \texttt{mMaxAdjoint}. }
+
+\myhrule
+
+\param{debugAdjoint}
+{boolean}
+{\false}
+{When \parlink{RHSMode} == 4 or 5. }
+{If \texttt{.true.}, then derivatives computed with the adjoint method will be compared with forward difference derivatives with step size set by \parlink{deltaLambda}.}
+
+\myhrule
+
+\param{deltaLambda}
+{real}
+{1.d-4}
+{When \parlink{deltaLamda} == \texttt{.true.}}
+{The step size used for forward difference derivatives will be \texttt{deltaLambda} multiplied by the quantity that is being varied. For example, the step size for a Boozer harmonic, $B_{mn}$, would be $\Delta B_{mn} = $\texttt{deltaLambda}$B_{mn}$.}
+
+\myhrule
 
 
 
