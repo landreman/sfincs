@@ -23,17 +23,19 @@ subroutine validateInput()
      stop
   end if
   
-  if (RHSMode>3) then
+  if (RHSMode>5) then
      if (masterProc) then
         print *,"Error! RHSMode must be no more than 3."
      end if
      stop
   end if
   
-  !!if (RHSMode == 2 .and. nonlinear) then !!Commented by AM 2016-02
+  !!if (RHSMode == 2 .and. nonlinear) then
+ !!Commented by AM 2016-02
   if (RHSMode == 2 .and. includePhi1) then !!Added by AM 2016-02
      if (masterProc) then
-        !!print *,"Error! RHSMode cannot be 2 for a nonlinear calculation." !!Commented by AM 2018-12
+        !!print *,"Error! RHSMode cannot be 2 for a nonlinear calculation."
+ !!Commented by AM 2018-12
         print *,"Error! RHSMode = 2 is incompatble with includePhi1 = .true.." !!Added by AM 2018-12
      end if
      stop
@@ -57,19 +59,23 @@ subroutine validateInput()
         Nxi_for_x_option=0
      end if
 
-     !!if (nonlinear) then !!Commented by AM 2016-02
+     !!if (nonlinear) then
+ !!Commented by AM 2016-02
      if (includePhi1) then !!Added by AM 2016-02
         if (masterProc) then
            print *,line
            print *,line
-!!           print *,"**   WARNING: You asked for RHSMode=3 (monoenergetic transport matrix) with nonlinear = .true., which is incompatble." !!Commented by AM 2016-02
-!!           print *,"**            Setting nonlinear = .false." !!Commented by AM 2016-02
+!!           print *,"**   WARNING: You asked for RHSMode=3 (monoenergetic transport matrix) with nonlinear = .true., which is incompatble."
+ !!Commented by AM 2016-02
+!!           print *,"**            Setting nonlinear = .false."
+ !!Commented by AM 2016-02
            print *,"**   WARNING: You asked for RHSMode=3 (monoenergetic transport matrix) with includePhi1 = .true., which is incompatble." !!Added by AM 2016-02
            print *,"**            Setting includePhi1 = .false." !!Added by AM 2016-02
            print *,line
            print *,line
         end if
-!!        nonlinear = .false. !!Commented by AM 2016-02
+!!        nonlinear = .false.
+ !!Commented by AM 2016-02
         includePhi1 = .false. !!Added by AM 2016-02
      end if
 
@@ -471,9 +477,12 @@ subroutine validateInput()
 !!$!!  if (includeRadialExBDrive .and. (.not. includePhi1)) then !!Commented by AM 2016-03
 !!$  if (includePhi1InKineticEquation .and. (.not. includePhi1)) then !!Added by AM 2016-03
 !!$     if (masterProc) then
-!!$!!        print *,"Error! You requested a calculation including the radial ExB drive term" !!Commented by AM 2016-03
-!!$!!        print *,"(includeRadialExBDrive=.true.) but you set includePhi1=.false." !!Commented by AM 2016-03
-!!$!!        print *,"These options are inconsistent since the radial ExB drive term involves Phi1." !!Commented by AM 2016-03
+!!$!!        print *,"Error! You requested a calculation including the radial ExB drive term"
+ !!Commented by AM 2016-03
+!!$!!        print *,"(includeRadialExBDrive=.true.) but you set includePhi1=.false."
+ !!Commented by AM 2016-03
+!!$!!        print *,"These options are inconsistent since the radial ExB drive term involves Phi1."
+ !!Commented by AM 2016-03
 !!$        print *,"Error! You requested a calculation including Phi1 in the kinetic equation" !!Added by AM 2016-03
 !!$        print *,"(includePhi1InKineticEquation=.true.) but you set includePhi1=.false." !!Added by AM 2016-03
 !!$        print *,"These options are inconsistent." !!Added by AM 2016-03
@@ -500,7 +509,8 @@ subroutine validateInput()
         if (masterProc) then
            print *,"Error! magneticDriftScheme 4 has only been implemented for geometryScheme 11 and 12."
         end if
-        stop        
+        stop
+        
      end if
   end if
 
@@ -509,17 +519,20 @@ subroutine validateInput()
         if (masterProc) then
            print *,"Error! magneticDriftSchemes 5 and 6 have only been implemented for geometryScheme 5, 6, 11, and 12."
         end if
-        stop        
+        stop
+        
      end if
   end if
 
   if (magneticDriftScheme>0 .and. includePhi1) then
      if (masterProc) then
-        !!print *,"**   ERROR! Some terms involving Phi1 and the magnetic drifts have not yet been implemented." !!Commented by AM 2018-02 
+        !!print *,"**   ERROR! Some terms involving Phi1 and the magnetic drifts have not yet been implemented."
+ !!Commented by AM 2018-02 
         print *,"**   WARNING! Some terms involving both Phi1 and the magnetic drifts have not yet been implemented." !!Added by AM 2018-02 
         print *,"**          Hence magneticDriftScheme>0 is incompatible with includePhi1."
      end if
-     !!stop !!Commented by AM 2018-02
+     !!stop
+ !!Commented by AM 2018-02
   end if
 
   if (magneticDriftScheme>0) then
@@ -1024,7 +1037,8 @@ subroutine validateInput()
   
   if (xDotDerivativeScheme<-2) then
      if (masterProc) then
-        !!print *,"Error! xGridScheme cannot be less than -2." !!Commented by AM 2018-12
+        !!print *,"Error! xGridScheme cannot be less than -2."
+ !!Commented by AM 2018-12
         print *,"Error! xDotDerivativeScheme cannot be less than -2." !!Added by AM 2018-12
      end if
      stop
@@ -1219,6 +1233,90 @@ subroutine validateInput()
      end if
      stop
   end if
+
+! Validate adjoint inputs
+  if (RHSMode>3 .or. (ambipolarSolve .and. ambipolarSolveOption /= 2)) then
+    if (RHSMode==5 .and. adjointRadialCurrentOption) then
+      if (masterProc) then
+        print *,"Error! RHSMode=5 cannot be used with adjointRadialCurrentOption."
+      end if
+      stop
+    end if
+		if (geometryScheme>4 .and. geometryScheme<8) then
+			if (masterProc) then
+				print *,"Error! RHSMode>3 must be used with a Boozer coordinate system."
+			end if
+		end if
+    ! Check for linear solve
+    if (includePhi1) then
+      if (masterProc) then
+        print *,"Error! RHSMode>3 cannot be used with Phi1."
+      endif
+      stop
+    endif
+    ! Check there is no inductive E
+    if (EParallelHat /= 0) then
+      if (masterProc) then
+        print *,"Error! RHSMode>3 cannot be used with inductive electric field."
+      end if
+      stop
+    end if
+    ! Check that tangential magnetic drifts are not used
+    if (magneticDriftScheme > 0) then
+      if (masterProc) then
+        print *,"Error! RHSMode>3 cannot be used with tangential magnetic drifts."
+      end if
+      stop
+    end if
+    ! Check constraintScheme
+    if (constraintScheme /= -1 .and. constraintScheme /= 1) then
+      if (masterProc) then
+        print *,"Error! RHSMode>3 must be used with constraintScheme=1 or constraintScheme=-1."
+      end if
+      stop
+    end if
+    ! Check collision operator
+    ! This must be true for continuous. Probably doesn't matter for discrete.
+    if (collisionOperator /= 0) then
+      if (masterProc) then
+        print *,"Error! RHSMode>3 must be used with collisionOperator=0."
+      end if
+      stop
+    end if
+    if ((discreteAdjointOption .eqv. .false.) .and. ((((includeXDotTerm .eqv. .true.) .and. &
+      (useDKESExBDrift .eqv. .false.) .and. (includeElectricFieldTermInXiDot .eqv. .true.)) &
+      .or. ((includeXDotTerm .eqv. .false.) .and. (useDKESExBDrift .eqv. .true.) .and. &
+      (includeElectricFieldTermInXiDot .eqv. .false.))) .eqv. .false.)) then
+      if (masterProc) then
+        print *,"Error! discreteAdjointOption=0 must be used with DKES trajectories or full trajectories."
+      end if
+      stop
+    end if
+  end if
+	! Check if stellopt bmnc specification used, required input given
+	if (geometryScheme == 13) then
+		if (count(boozer_bmnc>0)==0 .and. count(boozer_bmns>0)==0) then
+			if (masterProc) then
+				print *,"Error! Boozer_bmnc or Boozer_bmns must be specified with geometryScheme =13."
+			end if
+			stop
+		end if
+	end if
+	if (ambipolarSolve) then
+		if (includePhi1) then
+			if (masterProc) then
+				print *,"Error! ambipolarSolve cannot be used with includePhi1."
+			end if
+			stop
+		end if
+		if (RHSMode==2 .or. RHSMode==3) then
+			if (masterProc) then
+				print *,"Error! ambipolarSolve must be used with RHSMode==1, 4, or 5."
+			end if
+			stop
+		end if
+	end if
   
 end subroutine validateInput
 
+

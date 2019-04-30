@@ -67,7 +67,7 @@
     call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, rhs, ierr)
     call VecSet(rhs, zero, ierr)
 
-    if (RHSMode==1) then
+    if (RHSMode==1 .or. RHSMode>3) then
        dPhiHatdpsiHatToUseInRHS = dPhiHatdpsiHat
     else
        dPhiHatdpsiHatToUseInRHS = 0

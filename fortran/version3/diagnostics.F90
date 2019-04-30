@@ -562,7 +562,7 @@
 
                    pressureAnisotropy(ispecies,itheta,izeta) = pressureAnisotropy(ispecies,itheta,izeta) &
                         + pressureFactor*(-three/5)* &
-			xWeights(ix)*pressureIntegralWeights(ix)*solutionWithDeltaFArray(index)
+                        xWeights(ix)*pressureIntegralWeights(ix)*solutionWithDeltaFArray(index)
 
                    particleFlux_vm_psiHat_vs_x(ispecies,ix) &
                         = particleFlux_vm_psiHat_vs_x(ispecies,ix) &
@@ -886,6 +886,7 @@
        call VecRestoreArrayF90(f0OnProc0, f0Array, ierr)
        !!call VecRestoreArrayF90(expPhi1, expPhi1Array, ierr) !!Added by AM 2016-06
 
+    if (debugAdjoint .eqv. .false.) then
        do ispecies=1,Nspecies
           if (Nspecies>1) then
              print *,"Results for species ",ispecies,":"
@@ -939,12 +940,13 @@
           print *,"lambda: ", lambda
        end if
 
-       if (rhsMode > 1) then
+       if (rhsMode > 1 .and. RHSMode<4) then
           print *,"Transport matrix:"
           do i=1,transportMatrixSize
              print *,"   ", transportMatrix(i,:)
           end do
        end if
+    end if
 
 
        deallocate(densityIntegralWeights)
@@ -970,9 +972,9 @@
 
     ! updateOutputFile should be called by all procs since it contains MPI_Barrier
     ! (in order to be sure the HDF5 file is safely closed before moving on to the next computation.)
-    if (RHSMode >1 .and. whichRHS==transportMatrixSize) then
+    if (RHSMode >1 .and. whichRHS==transportMatrixSize .and. RHSMode<4) then
        call updateOutputFile(iterationNum, .true.)
-    else
+    else if (RHSMode==1 .and. (ambipolarSolve .eqv. .false.) .and. (debugAdjoint .eqv. .false.)) then
        call updateOutputFile(iterationNum, .false.)
     end if
 

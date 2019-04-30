@@ -132,13 +132,16 @@ module sfincs_main
     use writeHDF5Output
     use solver
     use classicalTransport
+    use ambipolarSolver
+    use testingAdjointDiagnostics
     
     implicit none
     
     PetscErrorCode ierr
 
     ! Compute a few quantities related to the magnetic field:
-    call computeBIntegrals()
+! This is already called from create_grids()
+    !call computeBIntegrals()
 
     if (RHSMode==3) then
        ! Monoenergetic coefficient computation.
@@ -166,9 +169,19 @@ module sfincs_main
     ! at each iteration of the solver (i.e. save all quantities except diagnostics.)
     call initializeOutputFile()
 
+    if (debugAdjoint) then
+      call compareAdjointDiagnostics()
+    end if
+
     ! Solve the main system, either linear or nonlinear.
     ! This step takes more time than everything else combined.
-    call mainSolverLoop()
+	if (debugAdjoint .eqv. .false.) then
+	    if (ambipolarSolve) then
+		    call mainAmbipolarSolver()
+		else
+			call mainSolverLoop()
+		end if
+	end if
     
     call finalizeHDF5()
     call PetscFinalize(ierr)

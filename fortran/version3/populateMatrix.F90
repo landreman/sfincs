@@ -22,6 +22,8 @@
     ! 1 = Jacobian
     ! 2 = matrix which multiplies f0 when evaluating the residual
     ! 3 = matrix which multiplies f1 when evaluating the residual
+		! 4 = Adjoint Jacobian
+		! 5 = preconditioner for adjoint Jacobian
 
     PetscErrorCode :: ierr
     PetscScalar :: Z, nHat, THat, mHat, sqrtTHat, sqrtMHat, speciesFactor, speciesFactor2
@@ -55,7 +57,8 @@
     PetscScalar, dimension(:,:), allocatable :: tempMatrix, tempMatrix2, extrapMatrix
     double precision :: myMatInfo(MAT_INFO_SIZE)
     integer :: NNZ, NNZAllocated, NMallocs
-    PetscScalar :: CHat_element, dfMdx, preFactor, preFactorJ,  CHat_elementJ !! preFactor, preFactorJ Added by AI (2017-09)  !! CHat_elementJ added by AM 2018-01
+    PetscScalar :: CHat_element, dfMdx, preFactor, preFactorJ,  CHat_elementJ !! preFactor, preFactorJ Added by AI (2017-09) 
+ !! CHat_elementJ added by AM 2018-01
     character(len=200) :: whichMatrixName, filename
     PetscViewer :: viewer
     integer :: ithetaRow, ithetaCol, izetaRow, izetaCol, ixMin, ixMinCol
@@ -69,6 +72,13 @@
 
 
     PetscScalar :: dPhiHatdpsiHatToUseInRHS, xPartOfRHS, xPartOfRHS2 !!Added by AM 2016-03
+		PetscScalar :: adjointFactor
+
+		if (whichMatrix==4 .or. whichMatrix==5 .or. whichMatrix>7) then
+       adjointFactor = -one
+		else
+       adjointFactor = one
+		end if
 
     ! *******************************************************************************
     ! Do a few sundry initialization tasks:
@@ -99,6 +109,13 @@
        ! This matrix is quite similar to the Jacobian matrix (whichMatrix=1), since most terms in the system of equations are linear.
        ! However there are a few differences related to the nonlinear terms.
        whichMatrixName = "residual f1"
+		case (4)
+      whichMatrixName = "adjoint Jacobian"
+      ! The matrix that is used for the adjoint solve for sensitivity computations
+      ! This is the same matrix used to evaluate the residual for the adjoint solve
+    case (5)
+       whichMatrixName = "adjoint Jacobian preconditioner"
+       ! The preconditioner for the matrix that is used for the adjoint solve for sensitivity computations
     case default
        if (masterProc) then
           print *,"Error! whichMatrix must be 0, 1, 2, or 3."
@@ -120,7 +137,7 @@
     ! (unlike mumps or superlu_dist), then if we're using this solver
     ! add some values to the diagonals of the preconditioner.  By trial-and-error, I found it works
     ! best to shift the diagonal of the quasineutrality and constraint blocks but not for the kinetic-equation block.
-    if ((.not. isAParallelDirectSolverInstalled) .and. masterProc .and. whichMatrix==0) then
+    if ((.not. isAParallelDirectSolverInstalled) .and. masterProc .and. (whichMatrix==0 .or. whichMatrix==5)) then
        print *,"Since PETSc's built-in solver is being used instead of superlu_dist or mumps, and this"
        print *,"   fragile solver often gives spurious error messages about zero pivots, the diagonal"
        print *,"   of the preconditioner is being shifted."
@@ -148,7 +165,8 @@
        case default
           stop "Invalid constraintScheme!"
        end select
-       !!if (includePhi1) then !!Commented by AM 2018-12
+       !!if (includePhi1) then
+ !!Commented by AM 2018-12
        if (includePhi1 .and. (.not. readExternalPhi1)) then !!Added by AM 2018-12
           index = getIndex(1,1,1,1,1,BLOCK_PHI1_CONSTRAINT)
           call MatSetValue(matrix, index, index, temp, ADD_VALUES, ierr)
@@ -161,8 +179,10 @@
        end if
     end if
 
-!!    useStateVec = (nonlinear .and. (whichMatrix==0 .or. whichMatrix==1)) !!Commented by AM 2016-02
-    !!useStateVec = (includePhi1 .and. (whichMatrix==0 .or. whichMatrix==1)) !!Added by AM 2016-02 !!Commented by AM 2018-12
+!!    useStateVec = (nonlinear .and. (whichMatrix==0 .or. whichMatrix==1))
+ !!Commented by AM 2016-02
+    !!useStateVec = (includePhi1 .and. (whichMatrix==0 .or. whichMatrix==1)) !!Added by AM 2016-02
+ !!Commented by AM 2018-12
     useStateVec = (includePhi1 .and. (.not. readExternalPhi1) .and. (whichMatrix==0 .or. whichMatrix==1)) !!Added by AM 2018-12
     if (useStateVec) then
        ! We need delta f to evaluate the Jacobian, so send a copy to every proc:
@@ -173,8 +193,10 @@
     end if
 
     ! In nonlinear runs, the Jacobian and residual require Phi1:
-    !!if (nonlinear .and. (whichMatrix .ne. 2)) then !!Commented by AM 2016-02
-    !!if (includePhi1 .and. (whichMatrix .ne. 2)) then !!Added by AM 2016-02 !!Commented by AM 2018-12
+    !!if (nonlinear .and. (whichMatrix .ne. 2)) then
+ !!Commented by AM 2016-02
+    !!if (includePhi1 .and. (whichMatrix .ne. 2)) then !!Added by AM 2016-02
+ !!Commented by AM 2018-12
     if (includePhi1 .and. (.not. readExternalPhi1) .and. (whichMatrix .ne. 2)) then !!Added by AM 2018-12
        call extractPhi1(stateVec)
     end if
@@ -256,7 +278,7 @@
           allocate(colIndices(Ntheta))
           do L=0,(Nxi-1)
 
-             if (whichMatrix>0 .or. L < preconditioner_theta_min_L) then
+             if (((whichMatrix>0) .and. (whichMatrix .ne. 5)) .or. L < preconditioner_theta_min_L) then
                 ddthetaToUse = ddtheta
              else
                 ddthetaToUse = ddtheta_preconditioner
@@ -264,7 +286,7 @@
 
              do izeta=izetaMin,izetaMax
                 do itheta=1,Ntheta
-                   thetaPartOfTerm(itheta,:) = BHat_sup_theta(itheta,izeta) &
+                   thetaPartOfTerm(itheta,:) = adjointFactor*BHat_sup_theta(itheta,izeta) &
                         * sqrtTHat/sqrtMHat * ddthetaToUse(itheta,:) &
                         / BHat(itheta,izeta)
                 end do
@@ -322,7 +344,7 @@
           allocate(colIndices(Nzeta))
           do L=0,(Nxi-1)
 
-             if (whichMatrix>0 .or. L < preconditioner_zeta_min_L) then
+             if (((whichMatrix>0) .and. (whichMatrix .ne. 5)) .or. L < preconditioner_zeta_min_L) then
                 ddzetaToUse = ddzeta
              else
                 ddzetaToUse = ddzeta_preconditioner
@@ -330,7 +352,7 @@
 
              do itheta=ithetaMin, ithetaMax
                 do izeta=1,Nzeta
-                   zetaPartOfTerm(izeta,:) = sqrtTHat/sqrtMHat * BHat_sup_zeta(itheta,izeta) &
+                   zetaPartOfTerm(izeta,:) = adjointFactor*sqrtTHat/sqrtMHat * BHat_sup_zeta(itheta,izeta) &
                         * ddzetaToUse(izeta,:) / BHat(itheta,izeta)
                 end do
                 
@@ -389,7 +411,7 @@
           do L=0,(Nxi-1)
 
              if (ExBDerivativeSchemeTheta==0) then
-                if (whichMatrix>0 .or. L < preconditioner_theta_min_L) then
+                if (((whichMatrix>0) .and. (whichMatrix .ne. 5)) .or. L < preconditioner_theta_min_L) then
                    ddthetaToUse = ddtheta
                 else
                    ddthetaToUse = ddtheta_preconditioner
@@ -407,12 +429,12 @@
              do izeta=izetaMin,izetaMax
                 if (useDKESExBDrift) then
                    do itheta=1,Ntheta
-                      thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / FSABHat2 &
+                      thetaPartOfTerm(itheta,:) = adjointFactor*ddthetaToUse(itheta,:) / FSABHat2 &
                            * DHat(itheta,izeta) * BHat_sub_zeta(itheta,izeta)
                    end do
                 else
                    do itheta=1,Ntheta
-                      thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2) &
+                      thetaPartOfTerm(itheta,:) = adjointFactor*ddthetaToUse(itheta,:) / (BHat(itheta,izeta) ** 2) &
                            * DHat(itheta,izeta) * BHat_sub_zeta(itheta,izeta)
                    end do
                 end if
@@ -454,7 +476,7 @@
           do L=0,(Nxi-1)
 
              if (ExBDerivativeSchemeZeta==0) then
-                if (whichMatrix>0 .or. L < preconditioner_zeta_min_L) then
+                if (((whichMatrix>0) .and. (whichMatrix .ne. 5)) .or. L < preconditioner_zeta_min_L) then
                    ddzetaToUse = ddzeta
                 else
                    ddzetaToUse = ddzeta_preconditioner
@@ -472,12 +494,12 @@
              do itheta=ithetaMin, ithetaMax
                 if (useDKESExBDrift) then
                    do izeta=1,Nzeta
-                      zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / FSABHat2 &
+                      zetaPartOfTerm(izeta,:) = adjointFactor*ddzetaToUse(izeta,:) / FSABHat2 &
                            * DHat(itheta,izeta) * BHat_sub_theta(itheta,izeta)
                    end do
                 else
                    do izeta=1,Nzeta
-                      zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2) &
+                      zetaPartOfTerm(izeta,:) = adjointFactor*ddzetaToUse(izeta,:) / (BHat(itheta,izeta) ** 2) &
                            * DHat(itheta,izeta) * BHat_sub_theta(itheta,izeta)
                    end do
                 end if
@@ -559,7 +581,7 @@
                    end if
 
                    if (magneticDriftDerivativeScheme==0) then
-                      if (whichMatrix>0 .or. L < preconditioner_theta_min_L) then
+                      if (((whichMatrix>0) .and. (whichMatrix .ne. 5)) .or. L < preconditioner_theta_min_L) then
                          ddthetaToUse = ddtheta
                       else
                          ddthetaToUse = ddtheta_preconditioner
@@ -787,7 +809,7 @@
        if (whichMatrix .ne. 2) then
           do itheta=ithetaMin,ithetaMax
              do izeta=izetaMin,izetaMax
-                factor = -sqrtTHat/(2*sqrtMHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
+                factor = -adjointFactor*sqrtTHat/(2*sqrtMHat*BHat(itheta,izeta)*BHat(itheta,izeta)) &
                      * (BHat_sup_theta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
                      + BHat_sup_zeta(itheta,izeta) * dBHatdzeta(itheta,izeta))
                 
@@ -824,8 +846,8 @@
           do itheta=ithetaMin,ithetaMax
              do izeta=izetaMin,izetaMax
 
-                temp = BHat_sub_zeta(itheta,izeta) * dBHatdtheta(itheta,izeta) &
-                     - BHat_sub_theta(itheta,izeta) * dBHatdzeta(itheta,izeta)
+                temp = adjointFactor*(BHat_sub_zeta(itheta,izeta) * dBHatdtheta(itheta,izeta) &
+                     - BHat_sub_theta(itheta,izeta) * dBHatdzeta(itheta,izeta))
 
                 if (.not. force0RadialCurrentInEquilibrium) then
                    temp = temp - 2 * BHat(itheta,izeta) &
@@ -845,7 +867,7 @@
 
                       ! Drop the off-by-2 diagonal terms in L if this is the preconditioner
                       ! and preconditioner_xi = 1:
-                      if (whichMatrix .ne. 0 .or. preconditioner_xi==0) then
+                      if (((whichMatrix .ne. 0) .and. (whichMatrix .ne. 5)) .or. preconditioner_xi==0) then
 
                          if (L<Nxi_for_x(ix)-2) then
                             ! Super-super-diagonal-in-L term:
@@ -947,7 +969,7 @@
           allocate(rowIndices(Nx))
           allocate(colIndices(Nx))
           !factor = alpha*Delta/(4*psiAHat)*dPhiHatdpsiN
-          factor = -alpha*Delta*dPhiHatdpsiHat/4
+          factor = -adjointFactor*alpha*Delta*dPhiHatdpsiHat/4
 
           do L=0,(Nxi-1)
              if (L>0 .and. pointAtX0) then
@@ -957,7 +979,7 @@
              end if
 
              ! Upwind in x
-             if (whichMatrix==0 .and. L >= preconditioner_x_min_L) then
+             if ((whichMatrix==0 .or. whichMatrix==5) .and. L >= preconditioner_x_min_L) then
                 ddxToUse_plus = ddx_xDot_preconditioner_plus
                 ddxToUse_minus = ddx_xDot_preconditioner_minus
              else
@@ -1019,7 +1041,7 @@
 
                    ! Drop the off-by-2 diagonal terms in L if this is the preconditioner
                    ! and preconditioner_xi = 1:
-                   if (whichMatrix>0 .or. preconditioner_xi==0) then
+                   if ((whichMatrix>0 .and. whichMatrix .ne. 5) .or. preconditioner_xi==0) then
 
                       ! Term that is super-super-diagonal in L:
                       if (L<(Nxi-2)) then
@@ -1060,6 +1082,44 @@
           deallocate(xPartOfXDot)
           deallocate(xPartOfXDot_plus)
           deallocate(xPartOfXDot_minus)
+       end if
+
+				! *********************************************************
+        ! Add the adjoint operator term associated with E_r and
+        ! full trajectories
+        ! *********************************************************
+       if (RHSMode>3 .and. (discreteAdjointOption .eqv. .false.) .and. (includeXDotTerm .eqv. .true.) .and. &
+          (useDKESExBDrift .eqv. .false.) .and. (includeElectricFieldTermInXiDot .eqv. .true.) .and. (whichMatrix>3)) then
+          do itheta=ithetaMin,ithetaMax
+             do izeta=izetaMin,izetaMax
+                factor = (alpha*delta/2)*(BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) - BHat_sub_zeta(itheta,izeta) &
+                    *dBHatdtheta(itheta,izeta))*dPhiHatdPsiHat*DHat(itheta,izeta)/BHat(itheta,izeta)**3
+                do ix=ixMin,Nx
+                   do L=0,(Nxi_for_x(ix)-1)
+                      rowIndex=getIndex(ispecies,ix,L+1,itheta,izeta,BLOCK_F)
+                      if (L<Nxi_for_x(ix)-2) then
+                         ! Super-super-diagonal-in-L term:
+                         ell = L+2
+                         colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
+                         call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                              (L+2)*(L+1)/((2*L+five)*(2*L+three))*x2(ix)*factor, ADD_VALUES, ierr)
+                      end if
+                      if (L>1) then
+                         ! Sub-sub-diagonal-in-L term:
+                         ell = L-2
+                         colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
+                         call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                              (L-one)*L/((two*L-three)*(two*L-one))*x2(ix)*factor, ADD_VALUES, ierr)
+                      end if
+                      ! diagonal-in-L term
+                      ell = L
+                      colIndex=getIndex(ispecies,ix,ell+1,itheta,izeta,BLOCK_F)
+                      call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                        two*(three*L*L+three*L-two)/((two*L+three)*(two*L-one))*x2(ix)*factor, ADD_VALUES, ierr)
+                   end do
+                end do
+             end do
+          end do
        end if
 
        ! *********************************************************
@@ -1225,7 +1285,8 @@
 
        !!THE includeRadialExBDrive FLAG IS NOT USED ANYMORE
        !!if ((whichMatrix .ne. 2) .and. includeRadialExBDrive) then !!Commented by AM 2016-02
-       !!if ((whichMatrix .ne. 2) .and. includePhi1 .and. includePhi1InKineticEquation) then !!Added by AM 2016-02 !!Commented by AM 2018-12
+       !!if ((whichMatrix .ne. 2) .and. includePhi1 .and. includePhi1InKineticEquation) then !!Added by AM 2016-02
+ !!Commented by AM 2018-12
        if ((whichMatrix .ne. 2) .and. includePhi1 .and. includePhi1InKineticEquation .and. (.not. readExternalPhi1)) then !!Added by AM 2018-12
           L=0
           L2=2 !!Added by AM 2016-03 to add extra P_2 terms
@@ -1440,9 +1501,11 @@
        !NOTE BY AM 2018-12: This term should be added even if readExternalPhi1 = .true.
 
        !if (nonlinear .and. (whichMatrix .ne. 2)) then
-       !!if (nonlinear .and. (whichMatrix == 1 .or. whichMatrix == 3 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Commented by AM 2016-02
+       !!if (nonlinear .and. (whichMatrix == 1 .or. whichMatrix == 3 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then
+ !!Commented by AM 2016-02
        !if (.false.) then
-       !!if (includePhi1 .and. includePhi1InKineticEquation .and. (whichMatrix == 1 .or. whichMatrix == 3 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Added by AM 2016-02 !! !!Commented by AM 2018-12
+       !!if (includePhi1 .and. includePhi1InKineticEquation .and. (whichMatrix == 1 .or. whichMatrix == 3 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Added by AM 2016-02
+ !! !!Commented by AM 2018-12
        if (includePhi1 .and. includePhi1InKineticEquation .and. (whichMatrix == 1 .or. whichMatrix == 3 .or. (whichMatrix==0 .and. ((.not. reusePreconditioner) .or. readExternalPhi1)))) then !!Added by AM 2018-12
 
           !print *,"@@@@@@ ",myRank," max(abs(dPhi1Hatdtheta)): ",maxval(abs(dPhi1Hatdtheta)),maxval(abs(dPhi1Hatdzeta))
@@ -1529,11 +1592,13 @@
 
        !NOTE BY AM 2018-12: This term should not be added if readExternalPhi1 = .true.
 
-       !!if (nonlinear .and. (whichMatrix==1 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Commented by AM 2016-02
+       !!if (nonlinear .and. (whichMatrix==1 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then
+ !!Commented by AM 2016-02
        
        ! This next line should be replaced with the line after!!!
        !if (.false.) then
-       !!if (includePhi1 .and. includePhi1InKineticEquation .and. (whichMatrix==1 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Added by AM 2016-02 !!Commented by AM 2018-12
+       !!if (includePhi1 .and. includePhi1InKineticEquation .and. (whichMatrix==1 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Added by AM 2016-02
+ !!Commented by AM 2018-12
        if (includePhi1 .and. includePhi1InKineticEquation .and. (.not. readExternalPhi1) .and. (whichMatrix==1 .or. (whichMatrix==0 .and. .not. reusePreconditioner))) then !!Added by AM 2018-12
        !if (nonlinear .and. (whichMatrix==1)) then
        !if (nonlinear .and. (whichMatrix==0 .or. whichMatrix==1)) then
@@ -1886,7 +1951,8 @@
                             * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
                             * nHats(iSpeciesB)*preFactorJ*(erfs - Psi_Chandra)/(x*x*x)
                             
-                            !! speciesFactor = 3*sqrtpi/four * nHats(iSpeciesB)* preFactor  & !!Commented by AM 2018-01
+                            !! speciesFactor = 3*sqrtpi/four * nHats(iSpeciesB)* preFactor  &
+ !!Commented by AM 2018-01
                             speciesFactor = 3*sqrtpi/four * nHats(iSpeciesB)* preFactorJ  & !!Added by AM 2018-01
                             * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) / T32m
                             
@@ -1949,9 +2015,11 @@
                                M11J = CECDpolJ(iSpeciesA, iSpeciesB,:,:,itheta,izeta)                     
                                if (iSpeciesA == iSpeciesB) then
                                   do i=1,Nx
-                                     !!M11(i,i) = M11(i,i) + (-oneHalf*nuDHatpol(iSpeciesA,i,itheta,izeta)*L*(L+1)) !!Commented by AM 2018-01
+                                     !!M11(i,i) = M11(i,i) + (-oneHalf*nuDHatpol(iSpeciesA,i,itheta,izeta)*L*(L+1))
+ !!Commented by AM 2018-01
                                      M11(i,i) = M11(i,i) + (-oneHalf*nuDHatpol(iSpeciesA,i,itheta,izeta)*L*(L+1)  + Krook*2) !!Added by AM 2018-01
-                                     !!M11J(i,i) = M11J(i,i) + (-oneHalf*nuDHatpolJ(iSpeciesA,i,itheta,izeta)*L*(L+1)) !!Commented by AM 2018-01
+                                     !!M11J(i,i) = M11J(i,i) + (-oneHalf*nuDHatpolJ(iSpeciesA,i,itheta,izeta)*L*(L+1))
+ !!Commented by AM 2018-01
                                      M11J(i,i) = M11J(i,i) + (-oneHalf*nuDHatpolJ(iSpeciesA,i,itheta,izeta)*L*(L+1)  + Krook*2) !!Added by AM 2018-01
                                   end do
                                end if
@@ -2026,7 +2094,7 @@
                                   CHatJ = M11J; ! This is with the preFactors for the Jacobian
                                end if
                                
-                               if (whichMatrix==0 .and. L >= preconditioner_x_min_L) then
+                               if ((whichMatrix==0 .or. whichMatrix==5).and. L >= preconditioner_x_min_L) then
                                   ! We're making the preconditioner, so simplify the x part of the matrix if desired.
                                   select case (preconditioner_x)
                                   case (0)
@@ -2089,7 +2157,8 @@
                                   rowIndex=getIndex(iSpeciesA,ix_row,L+1,itheta,izeta,BLOCK_F)
                                   do ix_col = max(ixMinCol,min_x_for_L(L)),Nx
                                      colIndex=getIndex(iSpeciesB,ix_col,L+1,itheta,izeta,BLOCK_F)
-                                     call MatSetValueSparse(matrix, rowIndex, colIndex, & 
+                                     call MatSetValueSparse(matrix, rowIndex, colIndex, &
+ 
 !!                                     call MatSetValue(matrix, rowIndex, colIndex, & 
                                      -nu_n*CHat(ix_row,ix_col), ADD_VALUES, ierr)
                                   end do ! ix_col
@@ -2137,7 +2206,8 @@
                                      ! Get column index for the d/dPhi1 terms
                                      colIndex=getIndex(1,1,1,itheta,izeta,BLOCK_QN)
                                      ! Save into the main matrix, note that here we only use ix_row since CHatTimesf is now a vector
-                                     call MatSetValue(matrix, rowIndex, colIndex, &  
+                                     call MatSetValue(matrix, rowIndex, colIndex, & 
+ 
                                      -nu_n*CHatTimesf(ix_row), ADD_VALUES, ierr) 
                                      ! need to use MatSetValue, otherwise petsc gives error
                                   end do ! ix_row
@@ -2301,7 +2371,7 @@
                 
                 do iSpeciesB = 1,Nspecies
                    do iSpeciesA = 1,Nspecies
-                      if (iSpeciesA==iSpeciesB .or. whichMatrix>0 .or. preconditioner_species==0) then
+                      if (iSpeciesA==iSpeciesB .or. (whichMatrix>0 .and. (whichMatrix .ne. 5)) .or. preconditioner_species==0) then
                          
                          speciesFactor = sqrt(THats(iSpeciesA)*mHats(iSpeciesB) &
                          / (THats(iSpeciesB) * mHats(iSpeciesA)))
@@ -2378,7 +2448,7 @@
                             CHat = M11;
                          end if
                          
-                         if (whichMatrix==0 .and. L >= preconditioner_x_min_L) then
+                         if ((whichMatrix==0 .or. whichMatrix==5) .and. L >= preconditioner_x_min_L) then
                             ! We're making the preconditioner, so simplify the x part of the matrix if desired.
                             select case (preconditioner_x)
                             case (0)
@@ -2572,7 +2642,8 @@
           ! *** WITH PHI1 *** !
           ! With Phi1 the deflection frequency is a function of (species, velocity, theta, zeta)
           if (includePhi1InCollisionOperator .and. includePhi1 .and. includePhi1InKineticEquation) then 
-             !nuDHat = zero !!Commented by AM 2018-01
+             !nuDHat = zero
+ !!Commented by AM 2018-01
              nuDHatpol = zero !!Added by AM 2018-01
              nuDHatpolJ = zero !!Added by AM 2018-01
              ! row is species A, column is species B
@@ -2597,9 +2668,12 @@
                    T32m = THats(iSpeciesA) * sqrt(THats(iSpeciesA)*mHats(ispeciesA))
                    
                    ! Build the pitch-angle scattering frequency:
-!!$                   nuDHat(iSpeciesA, :) =  nuDHat(iSpeciesA, :) & !!Commented by AM 2018-01
-!!$                   + (three*sqrtpi/four) / T32m & !!Commented by AM 2018-01
-!!$                   * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) & !!Commented by AM 2018-01
+!!$                   nuDHat(iSpeciesA, :) =  nuDHat(iSpeciesA, :) &
+ !!Commented by AM 2018-01
+!!$                   + (three*sqrtpi/four) / T32m &
+ !!Commented by AM 2018-01
+!!$                   * Zs(iSpeciesA)*Zs(iSpeciesA)*Zs(iSpeciesB)*Zs(iSpeciesB) &
+ !!Commented by AM 2018-01
 !!$                   * nHats(iSpeciesB)*(erfs - Psi_Chandra)/(x*x*x) !!Commented by AM 2018-01
 
                    ! Build the pitch-angle scattering frequencies:
@@ -2630,24 +2704,31 @@
                 do ix=ixMin,Nx
                    !do L=1, Nxi-1
                    do L=0, Nxi_for_x(ix)-1
-                      !! CHat_element = -oneHalf*nuDHat(iSpeciesA,ix)*(L*(L+1) + Krook*2) !!Commented by AM 2018-01
+                      !! CHat_element = -oneHalf*nuDHat(iSpeciesA,ix)*(L*(L+1) + Krook*2)
+ !!Commented by AM 2018-01
                       
                       ! At this point, CHat contains the collision operator normalized by
                       ! \bar{nu}, (the collision frequency at the reference mass, density, and temperature.)
                       
                       do itheta=ithetaMin,ithetaMax
                          do izeta=izetaMin,izetaMax
-!!$                            preFactor = 1.0 ! Initiate the preFactor used to multiply CHat before saving into the Main matrix  !!Commented by AM 2018-01
+!!$                            preFactor = 1.0 ! Initiate the preFactor used to multiply CHat before saving into the Main matrix 
+ !!Commented by AM 2018-01
 !!$                            
-!!$                            ! If Phi1 should be included, use the correct preFactor !!Commented by AM 2018-01
-!!$                            if (includePhi1InCollisionOperator .and. includePhi1 .and. includePhi1InKineticEquation) then  !!Commented by AM 2018-01
-!!$                               preFactor = exp(-Zs(iSpeciesA)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesA)) !!Commented by AM 2018-01
-!!$                            end if !!Commented by AM 2018-01
+!!$                            ! If Phi1 should be included, use the correct preFactor
+ !!Commented by AM 2018-01
+!!$                            if (includePhi1InCollisionOperator .and. includePhi1 .and. includePhi1InKineticEquation) then 
+ !!Commented by AM 2018-01
+!!$                               preFactor = exp(-Zs(iSpeciesA)*alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesA))
+ !!Commented by AM 2018-01
+!!$                            end if
+ !!Commented by AM 2018-01
                             
                             CHat_element = -oneHalf*nuDHatpol(iSpeciesA, ix,itheta,izeta)*(L*(L+1) + Krook*2) !!Added by AM 2018-01
 
                             index=getIndex(iSpeciesA,ix,L+1,itheta,izeta,BLOCK_F)
-                            call MatSetValueSparse(matrix, index, index, & 
+                            call MatSetValueSparse(matrix, index, index, &
+ 
                             !!call MatSetValue(matrix, index, index, & !!Test by AM 2018-01
                             !! -nu_n*CHat_element*preFactor, ADD_VALUES, ierr)!! Modified by AI (2017-09), multiply with preFactor before saving !!Commented by AM 2018-01
                             -nu_n*CHat_element, ADD_VALUES, ierr) !!Added by AM 2018-01
@@ -2662,20 +2743,25 @@
                             !  Required since we now have a Phi1Hat dependence in the collision operator
                             ! ************************************************************************************
                             
-                            !!if (includePhi1InCollisionOperator .and. includePhi1 .and. includePhi1InKineticEquation & !!Commented by AM 2018-01
-                            !!   .and. (whichMatrix == 1 .or. whichMatrix == 0)) then !!Commented by AM 2018-01
+                            !!if (includePhi1InCollisionOperator .and. includePhi1 .and. includePhi1InKineticEquation &
+ !!Commented by AM 2018-01
+                            !!   .and. (whichMatrix == 1 .or. whichMatrix == 0)) then
+ !!Commented by AM 2018-01
                             if (whichMatrix == 1 .or. whichMatrix == 0) then !!Added by AM 2018-01
                                
                                ! Generate pre-factor together with f1b from state vector
-                               !! preFactor = -Zs(iSpeciesA)*alpha/Thats(iSpeciesA)*exp(-Zs(iSpeciesA) & !!Commented by AM 2018-01
-                               !! *alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesA))*stateArray(index + 1) !!Commented by AM 2018-01
+                               !! preFactor = -Zs(iSpeciesA)*alpha/Thats(iSpeciesA)*exp(-Zs(iSpeciesA) &
+ !!Commented by AM 2018-01
+                               !! *alpha*Phi1Hat(itheta,izeta)/Thats(iSpeciesA))*stateArray(index + 1)
+ !!Commented by AM 2018-01
 
                                CHat_elementJ = (-oneHalf*nuDHatpolJ(iSpeciesA, ix,itheta,izeta)*(L*(L+1) + Krook*2))*stateArray(index + 1) !!Added by AM 2018-01
 
                                ! Now we need to use a different col index since we save in the phi1 part
                                colIndex=getIndex(1,1,1,itheta,izeta,BLOCK_QN)
                                call MatSetValue(matrix, index, colIndex, & 
-                               !! -nu_n*CHat_element*preFactor, ADD_VALUES, ierr) !! Modified by AI (2017-09), multiply with preFactor before saving  !!Commented by AM 2018-01
+                               !! -nu_n*CHat_element*preFactor, ADD_VALUES, ierr) !! Modified by AI (2017-09), multiply with preFactor before saving 
+ !!Commented by AM 2018-01
                                -nu_n*CHat_elementJ, ADD_VALUES, ierr) !!Added by AM 2018-01
                                ! use MatSetValue, otherwise petc error
                             end if
@@ -2783,7 +2869,7 @@
 
        ! For L=0 mode, impose regularity (df/dx=0) at x=0:
        L=0
-       if (whichMatrix==0 .and. L >= preconditioner_x_min_L) then
+       if ((whichMatrix==0 .or. whichMatrix==5) .and. L >= preconditioner_x_min_L) then
           ddxToUse = ddx_preconditioner
        else
           ddxToUse = ddx
@@ -2825,8 +2911,13 @@
              select case (constraintScheme)
              case (1)
                 ! Constant and quadratic terms:
-                xPartOfSource1 = (         -x2(ix) + 5/two) * exp(-x2(ix)) / (pi*sqrtpi) ! Provides particles but no heat
-                xPartOfSource2 = (two/three*x2(ix) -     1) * exp(-x2(ix)) / (pi*sqrtpi) ! Provides heat but no particles
+                if (whichMatrix == 4 .or. whichMatrix == 5) then
+                  xPartOfSource1 = exp(-x2(ix))/(pi*sqrtpi)
+                  xPartOfSource2 = x2(ix)*exp(-x2(ix))/(pi*sqrtpi)
+                else
+                  xPartOfSource1 = (         -x2(ix) + 5/two) * exp(-x2(ix)) / (pi*sqrtpi) ! Provides particles but no heat
+                  xPartOfSource2 = (two/three*x2(ix) -     1) * exp(-x2(ix)) / (pi*sqrtpi) ! Provides heat but no particles
+                end if
                 ! Definition prior to 2016-01-07, which differs just in the overall constant:
                 !xPartOfSource1 = (x2(ix)-5/two)*exp(-x2(ix)) ! Provides particles but no heat
                 !xPartOfSource2 = (x2(ix)-3/two)*exp(-x2(ix)) ! Provides heat but no particles
@@ -2897,15 +2988,27 @@
 
                 do ix=1,Nx
                    do ispecies=1,Nspecies
-                      colIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+                      if ((whichMatrix == 4) .or. (whichMatrix==5)) then
+                        colIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
 
-                      rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)
-                      call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                           x2(ix)*xWeights(ix)*factor, ADD_VALUES, ierr)
+                        rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)
+                        call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                             factor*xWeights(ix)*(x2(ix)*five/two-x2(ix)*x2(ix)), ADD_VALUES, ierr)
 
-                      rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)
-                      call MatSetValueSparse(matrix, rowIndex, colIndex, &
-                           x2(ix)*x2(ix)*xWeights(ix)*factor, ADD_VALUES, ierr)
+                        rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)
+                        call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                             factor*xWeights(ix)*(two/three*x2(ix)*x2(ix)-x2(ix)), ADD_VALUES, ierr)
+                      else
+                        colIndex = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+
+                        rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_DENSITY_CONSTRAINT)
+                        call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                             x2(ix)*xWeights(ix)*factor, ADD_VALUES, ierr)
+
+                        rowIndex = getIndex(ispecies, 1, 1, 1, 1, BLOCK_PRESSURE_CONSTRAINT)
+                        call MatSetValueSparse(matrix, rowIndex, colIndex, &
+                             x2(ix)*x2(ix)*xWeights(ix)*factor, ADD_VALUES, ierr)
+                    end if
                    end do
                 end do
              end do
@@ -2956,7 +3059,8 @@
     ! Add the quasineutrality equation
     ! *******************************************************************************
 
-    !!if (whichMatrix .ne. 2 .and. includePhi1) then !!Commented by AM 2018-12
+    !!if (whichMatrix .ne. 2 .and. includePhi1) then
+ !!Commented by AM 2018-12
     if (whichMatrix .ne. 2 .and. includePhi1  .and. (.not. readExternalPhi1)) then !!Added by AM 2018-12
        L=0
        do itheta = ithetaMin,ithetaMax
@@ -3019,7 +3123,8 @@
     ! Add the constraint < Phi_1 > = 0
     ! *******************************************************************************
 
-    !!if (whichMatrix .ne. 2 .and. procThatHandlesConstraints .and. includePhi1) then !!Commented by AM 2018-12
+    !!if (whichMatrix .ne. 2 .and. procThatHandlesConstraints .and. includePhi1) then
+ !!Commented by AM 2018-12
     if (whichMatrix .ne. 2 .and. procThatHandlesConstraints .and. includePhi1 .and. (.not. readExternalPhi1)) then !!Added by AM 2018-12
        allocate(rowIndices(1))
        allocate(colIndices(Nzeta))
