@@ -44,7 +44,7 @@ contains
     logical :: solve_heatFlux = .false.
     logical :: solve_parallelFlow = .false.
 
-    MatSolverType :: actualSolverPackage
+    MatSolverType :: actualSolverType
 
     PetscBool :: is_icntl_14_set
     logical :: doAnotherSolve
@@ -219,7 +219,7 @@ contains
           case (1)
              call PCFactorSetMatSolverType(preconditionerContext, MATSOLVERMUMPS, ierr)
 					 if (discreteAdjointOption .eqv. .false.) then
-							call PCFactorSetMatSolverPackage(preconditionerContext_adjoint, MATSOLVERMUMPS, ierr)
+							call PCFactorSetMatSolverType(preconditionerContext_adjoint, MATSOLVERMUMPS, ierr)
 					 end if
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
              ! The functions MatMumpsSetICNTL were introduced in PETSc 3.5.
@@ -229,7 +229,7 @@ contains
           case (2)
              call PCFactorSetMatSolverType(preconditionerContext, MATSOLVERSUPERLU_DIST, ierr)
 						 if (discreteAdjointOption .eqv. .false.) then
-								call PCFactorSetMatSolverPackage(preconditionerContext_adjoint, MATSOLVERSUPERLU_DIST, ierr)
+								call PCFactorSetMatSolverType(preconditionerContext_adjoint, MATSOLVERSUPERLU_DIST, ierr)
 						 end if
              ! Turn on superlu_dist diagnostic output:
              !call PetscOptionsInsertString("-mat_superlu_dist_statprint", ierr)
@@ -336,23 +336,23 @@ contains
        call SNESSetFromOptions(mysnes, ierr)
 #if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR >= 9))
        ! Version 3.9
-       call PCFactorGetMatSolverType(preconditionerContext, actualSolverPackage, ierr)
+       call PCFactorGetMatSolverType(preconditionerContext, actualSolverType, ierr)
 #else
-       call PCFactorGetMatSolverPackage(preconditionerContext, actualSolverPackage, ierr)
+       call PCFactorGetMatSolverType(preconditionerContext, actualSolverType, ierr)
 #endif
        if (masterProc) then
-          print *,"Solver package which will be used: ",actualSolverPackage
+          print *,"Solver package which will be used: ",actualSolverType
        end if
 			if (discreteAdjointOption .eqv. .false.) then
-					call PCFactorGetMatSolverPackage(preconditionerContext_adjoint, actualSolverPackage, ierr)
+					call PCFactorGetMatSolverType(preconditionerContext_adjoint, actualSolverType, ierr)
 					if (masterProc) then
-						print *,"Solver package which will be used for adjoint: ",actualSolverPackage
+						print *,"Solver package which will be used for adjoint: ",actualSolverType
 					end if
 			 end if
 
 
        !if (isAParallelDirectSolverInstalled .and. (whichParallelSolverToFactorPreconditioner==1)) then
-       if (actualSolverPackage == MATSOLVERMUMPS) then
+       if (actualSolverType == MATSOLVERMUMPS) then
           ! When mumps is the solver, it is very handy to set mumps's control parameter CNTL(1) to a number like 1e-6.
           ! CNTL(1) is a threshhold for pivoting. For the default value of 0.01, there is a lot of pivoting.
           ! This causes memory demands to increase beyond mumps's initial estimate, causing errors (INFO(1)=-9).
@@ -370,7 +370,7 @@ contains
           call PCFactorGetMatrix(preconditionerContext,factorMat,ierr)
 
 					if (discreteAdjointOption .eqv. .false.) then
-						call PCFactorSetUpMatSolverPackage(preconditionerContext_adjoint,ierr)
+						call PCFactorSetUpMatSolverType(preconditionerContext_adjoint,ierr)
 						call PCFactorGetMatrix(preconditionerContext_adjoint,factorMat_adjoint,ierr)
 					end if
 
@@ -446,7 +446,7 @@ contains
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
              ! No way to automatically control MUMPS for old versions of PETSC.
 #else
-             if (actualSolverPackage == MATSOLVERMUMPS .and. factor_err .ne. 0 .and. mumps_icntl_14<1024) then
+             if (actualSolverType == MATSOLVERMUMPS .and. factor_err .ne. 0 .and. mumps_icntl_14<1024) then
                 ! For now, assume all failures are due to MUMPS.  This might not always be true....
                 ! Try increasing the amount by which the mumps work array can expand due to near-0 pivots.
                 if (masterProc) then
@@ -1067,4 +1067,4 @@ contains
 
 end module solver
 
-
+

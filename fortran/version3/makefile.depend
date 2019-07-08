@@ -10,7 +10,7 @@ OBJ_FILES = adjointDiagnostics.o ambipolarSolver.o ChebyshevGrid.o ChebyshevInte
 
 # Dependencies:
 adjointDiagnostics.o: globalVariables.o indices.o writeHDF5Output.o
-ambipolarSolver.o: globalVariables.o solver.o writeHDF5Output.o
+ambipolarSolver.o: globalVariables.o solver.o writeHDF5Output.o radialCoordinates.o
 ChebyshevGrid.o: 
 ChebyshevInterpolationMatrix.o:
 classicalTransport.o: globalVariables.o
@@ -35,12 +35,12 @@ readInput.o: export_f.o globalVariables.o xGrid.o
 sfincs.o: sfincs_main.o
 sfincs_finalize.o: export_f.o indices.o globalVariables.o xGrid.o
 sfincs_main.o: geometry.o globalVariables.o writeHDF5Output.o readInput.o solver.o radialCoordinates.o classicalTransport.o readHDF5Input.o ambipolarSolver.o testingAdjointDiagnostics.o
-solver.o: globalVariables.o adjointDiagnostics.o
+solver.o: globalVariables.o adjointDiagnostics.o writeHDF5Output.o
 sparsify.o:
-testingAdjointDiagnostics.o: writeHDF5Output.o
+testingAdjointDiagnostics.o: adjointDiagnostics.o geometry.o solver.o ambipolarSolver.o writeHDF5Output.o
 uniformDiffMatrices.o: 
 uniformInterpolationMatrix.o: 
-updateBoozerGeometry.o:
+updateBoozerGeometry.o: geometry.o globalVariables.o
 validateInput.o: globalVariables.o xGrid.o
 writeHDF5Output.o: globalVariables.o export_f.o xGrid.o
 xGrid.o:
