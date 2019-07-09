@@ -53,7 +53,7 @@
             - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
             * DHat(itheta,izeta) * xPartOfRHS
 
-				! factor = (1/(BHat*(GHat+iota*IHat)))*(GHat*dBHatdtheta-IHat*dBHatdzeta)*xPartOfRHS
+        ! factor = (1/(BHat*(GHat+iota*IHat)))*(GHat*dBHatdtheta-IHat*dBHatdzeta)*xPartOfRHS
         do itheta = ithetaMin,ithetaMax
           do izeta = izetaMin,izetaMax
             angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
@@ -71,23 +71,23 @@
                 dBHatdLambda = cos_angle
                 dBHatdthetadLambda = -m*sin_angle
                 dBHatdzetadLambda = n*Nperiods*sin_angle
-								dFactordLambda = -dBHatdLambda/(BHat(itheta,izeta)*BHat(itheta,izeta)*(GHat+iota*IHat)) &
-									* (GHat*dBHatdtheta(itheta,izeta)-IHat*dBHatdzeta(itheta,izeta)) &
-									+ (GHat*dBHatdthetadLambda-IHat*dBHatdzetadLambda)/(BHat(itheta,izeta)*(GHat+iota*IHat))
-								stuffToAdd = dFactordLambda*xPartOfRHS
+                dFactordLambda = -dBHatdLambda/(BHat(itheta,izeta)*BHat(itheta,izeta)*(GHat+iota*IHat)) &
+                  * (GHat*dBHatdtheta(itheta,izeta)-IHat*dBHatdzeta(itheta,izeta)) &
+                  + (GHat*dBHatdthetadLambda-IHat*dBHatdzetadLambda)/(BHat(itheta,izeta)*(GHat+iota*IHat))
+                stuffToAdd = dFactordLambda*xPartOfRHS
               case (2) ! IHat
-								dFactordLambda = -iota/(BHat(itheta,izeta)*(GHat+iota*IHat)**2) &
-									*(GHat*dBHatdtheta(itheta,izeta)-IHat*dBHatdzeta(itheta,izeta)) &
-									-dBHatdzeta(itheta,izeta)/(BHat(itheta,izeta)*(GHat+iota*IHat))
+                dFactordLambda = -iota/(BHat(itheta,izeta)*(GHat+iota*IHat)**2) &
+                  *(GHat*dBHatdtheta(itheta,izeta)-IHat*dBHatdzeta(itheta,izeta)) &
+                  -dBHatdzeta(itheta,izeta)/(BHat(itheta,izeta)*(GHat+iota*IHat))
                 stuffToAdd = dFactordLambda*xPartOfRHS
               case (3) ! GHat
-								dFactordLambda = -1/(BHat(itheta,izeta)*(GHat+iota*IHat)**2) &
-									*(GHat*dBHatdtheta(itheta,izeta)-IHat*dBHatdzeta(itheta,izeta)) &
-									+ dBHatdtheta(itheta,izeta)/(BHat(itheta,izeta)*(GHat+iota*IHat))
+                dFactordLambda = -1/(BHat(itheta,izeta)*(GHat+iota*IHat)**2) &
+                  *(GHat*dBHatdtheta(itheta,izeta)-IHat*dBHatdzeta(itheta,izeta)) &
+                  + dBHatdtheta(itheta,izeta)/(BHat(itheta,izeta)*(GHat+iota*IHat))
                 stuffToAdd = dFactordLambda*xPartOfRHS
               case (4) ! iota
-								dFactordLambda = -IHat/(BHat(itheta,izeta)*(GHat+iota*IHat)**2) &
-									*(GHat*dBHatdtheta(itheta,izeta)-IHat*dBHatdzeta(itheta,izeta))
+                dFactordLambda = -IHat/(BHat(itheta,izeta)*(GHat+iota*IHat)**2) &
+                  *(GHat*dBHatdtheta(itheta,izeta)-IHat*dBHatdzeta(itheta,izeta))
                 stuffToAdd = dFactordLambda*xPartOfRHS
             end select
 

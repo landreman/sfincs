@@ -111,7 +111,7 @@ module writeHDF5Output
      module procedure writeHDF5Doubles
      module procedure writeHDF5Doubles2
      module procedure writeHDF5Boolean
-	 module procedure writeHDF5Booleans
+   module procedure writeHDF5Booleans
   end interface writeHDF5Field
 
   interface writeHDF5ExtensibleField
@@ -312,18 +312,18 @@ contains
        !!Added by AM 2016-01!!
        call writeHDF5Field("withAdiabatic", withAdiabatic, "Is an adiabatic species included in the quasineutrality equation? " // boolDescription)
        if (withAdiabatic) then
-       	  call writeHDF5Field("adiabaticZ", adiabaticZ, "Charge of adiabatic species, in units of the unit charge e (which is usually the proton charge.)")
-	  call writeHDF5Field("adiabaticMHat", adiabaticMHat, "Mass of adiabatic species, in units of mBar.")
-	  call writeHDF5Field("adiabaticNHat", adiabaticNHat, "Flux surface averaged density of adiabatic species, in units of nBar.")
-	  call writeHDF5Field("adiabaticTHat", adiabaticTHat, "Average temperature of adiabatic species, in units of TBar.")
+           call writeHDF5Field("adiabaticZ", adiabaticZ, "Charge of adiabatic species, in units of the unit charge e (which is usually the proton charge.)")
+    call writeHDF5Field("adiabaticMHat", adiabaticMHat, "Mass of adiabatic species, in units of mBar.")
+    call writeHDF5Field("adiabaticNHat", adiabaticNHat, "Flux surface averaged density of adiabatic species, in units of nBar.")
+    call writeHDF5Field("adiabaticTHat", adiabaticTHat, "Average temperature of adiabatic species, in units of TBar.")
        end if
        !!!!!!!!!!!!!!!!!!!!!!!
 
        !!Added by HS 2017-09!!
        call writeHDF5Field("withNBIspec", withNBIspec, "Is an NBI species included in the quasineutrality equation? " // boolDescription)
        if (withNBIspec) then
-       	  call writeHDF5Field("NBIspecZ", NBIspecZ, "Charge of NBI species, in units of the unit charge e (which is usually the proton charge.)")
-	  call writeHDF5Field("NBIspecNHat", NBIspecNHat, "Flux surface averaged density of the NBI species, in units of nBar.")
+           call writeHDF5Field("NBIspecZ", NBIspecZ, "Charge of NBI species, in units of the unit charge e (which is usually the proton charge.)")
+    call writeHDF5Field("NBIspecNHat", NBIspecNHat, "Flux surface averaged density of the NBI species, in units of nBar.")
        end if
        !!!!!!!!!!!!!!!!!!!!!!!
 
@@ -367,7 +367,7 @@ contains
        call writeHDF5Field("dnHatdrHat", dnHatdrHats, dspaceIDForSpecies, dimForSpecies, "")
        call writeHDF5Field("dnHatdrN", dnHatdrNs, dspaceIDForSpecies, dimForSpecies, "")
 
-			! Write output related to sensitivityOptions namelist
+      ! Write output related to sensitivityOptions namelist
       if (RHSMode > 3 .and. RHSMode < 6) then
         call writeHDF5Field("adjointHeatFluxOption", adjointHeatFluxOption, dspaceIDForSpecies, dimForSpecies, "")
         call writeHDF5Field("adjointParticleFluxOption", adjointParticleFluxOption,dspaceIDForSpecies,  dimForSpecies, "")
@@ -462,9 +462,9 @@ contains
        call h5sclose_f(dspaceIDForExport_f_x, HDF5Error)
        if (RHSMode > 3) then
             call h5sclose_f(dspaceIDForSpeciesLambdasModes, HDF5Error)
-			call h5sclose_f(dspaceIDForLambdasModes, HDF5Error)
-       		call h5sclose_f(dspaceIDForNModesAdjoint, HDF5Error)
-	   end if
+      call h5sclose_f(dspaceIDForLambdasModes, HDF5Error)
+           call h5sclose_f(dspaceIDForNModesAdjoint, HDF5Error)
+     end if
 
        call h5fclose_f(HDF5FileID, HDF5Error)
 
@@ -511,12 +511,12 @@ contains
        call h5dwrite_f(dsetID, H5T_NATIVE_INTEGER, iterationNum, dimForScalar, HDF5Error)
        call h5dclose_f(dsetID, HDF5Error)
 
-	   ! Over-write prevoius value for Er
+     ! Over-write prevoius value for Er
 
        if (ambipolarSolve) then
             call h5dopen_f(HDF5FileID, "Er", dsetID, HDF5Error)
-			call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, Er, dimForScalar, HDF5Error)
-			call h5dclose_f(dsetID, HDF5Error)
+      call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, Er, dimForScalar, HDF5Error)
+      call h5dclose_f(dsetID, HDF5Error)
        end if
 
        dimForIteration(1) = iterationNum
@@ -1736,7 +1736,7 @@ subroutine writeHDF5Doubles3(arrayName, data, dspaceID, dims, description)
        label1 = "x"
        label2 = "species"
        label3 = "iteration"
-		case (ARRAY_ITERATION_LAMBDAS_NMODES)
+    case (ARRAY_ITERATION_LAMBDAS_NMODES)
        originalDspaceID = dspaceIDForIterationLambdasNmodes
        dim = dimForIterationLambdasNmodes
        dimForChunk = dimForIterationLambdasNmodesChunk
@@ -1814,7 +1814,7 @@ subroutine writeHDF5Doubles3(arrayName, data, dspaceID, dims, description)
        label3 = "species"
        label4 = "iteration"
 
-		case (ARRAY_ITERATION_SPECIES_LAMBDAS_NMODES)
+    case (ARRAY_ITERATION_SPECIES_LAMBDAS_NMODES)
        originalDspaceID = dspaceIDForIterationSpeciesLambdasNmodes
        dim = dimForIterationSpeciesLambdasNmodes
        dimForChunk = dimForIterationSpeciesLambdasNmodesChunk

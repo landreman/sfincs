@@ -213,23 +213,23 @@ implicit none
       call VecGetArrayF90(forwardSolutionOnProc0, forwardSolutionArray, ierr)
     end if
 
-		if (whichLambda==1) then ! BHat
-				dVPrimeHatdLambda = zero
-				do itheta=1,Ntheta
-						do izeta=1,Nzeta
-								angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-								cos_angle = cos(angle)
+        if (whichLambda==1) then ! BHat
+                dVPrimeHatdLambda = zero
+                do itheta=1,Ntheta
+                        do izeta=1,Nzeta
+                                angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+                                cos_angle = cos(angle)
 
-								dVPrimeHatdLambda = dVPrimeHatdLambda - two*thetaWeights(itheta)*zetaWeights(izeta)*cos_angle/(DHat(itheta,izeta)*BHat(itheta,izeta))
-						end do
-				end do
-		else if (whichLambda==2) then ! IHat
-				dVPrimeHatdLambda = iota*VprimeHat/(GHat+iota*IHat)
-		else if (whichLambda==3) then ! GHat
-				dVPrimeHatdLambda = VPrimeHat/(GHat+iota*IHat)
-		else if (whichLambda==4) then ! iota
-				dVPrimeHatdLambda = IHat*VPrimeHat/(GHat+iota*IHat)
-		end if
+                                dVPrimeHatdLambda = dVPrimeHatdLambda - two*thetaWeights(itheta)*zetaWeights(izeta)*cos_angle/(DHat(itheta,izeta)*BHat(itheta,izeta))
+                        end do
+                end do
+        else if (whichLambda==2) then ! IHat
+                dVPrimeHatdLambda = iota*VprimeHat/(GHat+iota*IHat)
+        else if (whichLambda==3) then ! GHat
+                dVPrimeHatdLambda = VPrimeHat/(GHat+iota*IHat)
+        else if (whichLambda==4) then ! iota
+                dVPrimeHatdLambda = IHat*VPrimeHat/(GHat+iota*IHat)
+        end if
 
     if (masterProc) then
       allocate(xIntegralFactor(Nx))
@@ -252,7 +252,7 @@ implicit none
         xIntegralFactor = x*x*x*x*x*x*pi*THat*THat*THat*sqrtTHat*Delta/(2*mHat*sqrtmHat*Zs(ispecies))*ddrN2ddpsiHat
 
         ! factor = (BHat_sub_theta*dBHatdzeta-BHat_sub_zeta*dBHatdtheta)/(VPrimeHat*BHat**3)
-        !				 = (IHat*dBHatdzeta-GHat*dBHatdtheta)/(VPrimeHat*BHat**3)
+        !                 = (IHat*dBHatdzeta-GHat*dBHatdtheta)/(VPrimeHat*BHat**3)
         do itheta=1,Ntheta
           do izeta=1,Nzeta
             angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
@@ -267,19 +267,19 @@ implicit none
                     - BHat_sub_zeta(itheta,izeta)*dBHatdThetadLambda)/(VPrimeHat*BHat(itheta,izeta)**3) &
                     - 3*(BHat_sub_theta(itheta,izeta)*dBHatdZeta(itheta,izeta) &
                     - BHat_sub_zeta(itheta,izeta)*dBHatdTheta(itheta,izeta))*dBHatdLambda/(VPrimeHat*BHat(itheta,izeta)**4)
-				factor = factor - (IHat*dBHatdzeta(itheta,izeta) - GHat*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda/ &
-					(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
+                factor = factor - (IHat*dBHatdzeta(itheta,izeta) - GHat*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda/ &
+                    (VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
               case (2) ! IHat
-				factor = dBHatdzeta(itheta,izeta)/(VPrimeHat*BHat(itheta,izeta)**3) &
-					- dVPrimeHatdLambda*(IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta)) &
-				    /(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
+                factor = dBHatdzeta(itheta,izeta)/(VPrimeHat*BHat(itheta,izeta)**3) &
+                    - dVPrimeHatdLambda*(IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta)) &
+                    /(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
               case (3) ! GHat
-				factor = -dBHatdtheta(itheta,izeta)/(VPrimeHat*BHat(itheta,izeta)**3) &
-					- dVPrimeHatdLambda*(IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta)) &
-					/(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
+                factor = -dBHatdtheta(itheta,izeta)/(VPrimeHat*BHat(itheta,izeta)**3) &
+                    - dVPrimeHatdLambda*(IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta)) &
+                    /(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
               case (4) ! iota
-				factor = -dVPrimeHatdLambda*(IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta)) &
-					/(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
+                factor = -dVPrimeHatdLambda*(IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta)) &
+                    /(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
             end select
 
             if (abs(factor)>0) then
@@ -351,23 +351,23 @@ end do
       call VecGetArrayF90(deltaFOnProc0, deltaFArray, ierr)
     end if
 
-		if (whichLambda==1) then ! BHat
-			dVPrimeHatdLambda = zero
-			do itheta=1,Ntheta
-				do izeta=1,Nzeta
-					angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-					cos_angle = cos(angle)
+        if (whichLambda==1) then ! BHat
+            dVPrimeHatdLambda = zero
+            do itheta=1,Ntheta
+                do izeta=1,Nzeta
+                    angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+                    cos_angle = cos(angle)
 
-					dVPrimeHatdLambda = dVPrimeHatdLambda - two*thetaWeights(itheta)*zetaWeights(izeta)*cos_angle/(DHat(itheta,izeta)*BHat(itheta,izeta))
-				end do
-			end do
-		else if (whichLambda==2) then ! IHat
-			dVPrimeHatdLambda = iota*VprimeHat/(GHat+iota*IHat)
-		else if (whichLambda==3) then ! GHat
-			dVPrimeHatdLambda = VPrimeHat/(GHat+iota*IHat)
-		else if (whichLambda==4) then ! iota
-			dVPrimeHatdLambda = IHat*VPrimeHat/(GHat+iota*IHat)
-		end if
+                    dVPrimeHatdLambda = dVPrimeHatdLambda - two*thetaWeights(itheta)*zetaWeights(izeta)*cos_angle/(DHat(itheta,izeta)*BHat(itheta,izeta))
+                end do
+            end do
+        else if (whichLambda==2) then ! IHat
+            dVPrimeHatdLambda = iota*VprimeHat/(GHat+iota*IHat)
+        else if (whichLambda==3) then ! GHat
+            dVPrimeHatdLambda = VPrimeHat/(GHat+iota*IHat)
+        else if (whichLambda==4) then ! iota
+            dVPrimeHatdLambda = IHat*VPrimeHat/(GHat+iota*IHat)
+        end if
 
     if (masterProc) then
       allocate(xIntegralFactor(Nx))
@@ -380,7 +380,7 @@ end do
         maxSpecies = whichSpecies
       end if
 
-			! factor = (BHat_sub_theta*dBHatdzeta-BHat_sub_zeta*dBHatdtheta)/(VPrimeHat*BHat**3)
+            ! factor = (BHat_sub_theta*dBHatdzeta-BHat_sub_zeta*dBHatdtheta)/(VPrimeHat*BHat**3)
       do ispecies = minSpecies,maxSpecies
         THat = THats(ispecies)
         mHat = mHats(ispecies)
@@ -399,21 +399,21 @@ end do
                 dBHatdThetadLambda = -m*sin_angle
                 dBHatdZetadLambda = n*Nperiods*sin_angle
                 dBHatdLambda = cos_angle
-				factor = (IHat*dBHatdzetadLambda-GHat*dBHatdthetadLambda)/(VPrimeHat*BHat(itheta,izeta)**3) &
-				    - 3*(IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta))/(VprimeHat*BHat(itheta,izeta)**4) &
-					* dBHatdLambda - (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda &
-					/(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
+                factor = (IHat*dBHatdzetadLambda-GHat*dBHatdthetadLambda)/(VPrimeHat*BHat(itheta,izeta)**3) &
+                    - 3*(IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta))/(VprimeHat*BHat(itheta,izeta)**4) &
+                    * dBHatdLambda - (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda &
+                    /(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
               case (2) ! IHat
-				factor = dBHatdzeta(itheta,izeta)/(VPrimeHat*BHat(itheta,izeta)**3) &
-					- (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta)) &
-				    * dVPrimeHatdLambda/(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
+                factor = dBHatdzeta(itheta,izeta)/(VPrimeHat*BHat(itheta,izeta)**3) &
+                    - (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta)) &
+                    * dVPrimeHatdLambda/(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
               case (3) ! GHat
-				factor = -dBHatdtheta(itheta,izeta)/(VPrimeHat*BHat(itheta,izeta)**3) &
-					- (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda &
-					/ (VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
+                factor = -dBHatdtheta(itheta,izeta)/(VPrimeHat*BHat(itheta,izeta)**3) &
+                    - (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda &
+                    / (VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
               case (4) ! iota
-				factor = - (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda &
-				    / (VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
+                factor = - (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda &
+                    / (VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
             end select
 
             ! Summed quantity is weighted by charge
@@ -439,9 +439,9 @@ end do
             end do ! izeta
           end do ! itheta
         end do ! ispecies
-				call VecDestroy(deltaFOnProc0,ierr)
+                call VecDestroy(deltaFOnProc0,ierr)
       end if !masterProc
-			call VecScatterDestroy(VecScatterContext,ierr)
+            call VecScatterDestroy(VecScatterContext,ierr)
     end subroutine
 
     !> Evaluates the term in the sensitivity derivative of the parallel flow
@@ -500,24 +500,24 @@ end do
     if (masterProc) then
       result = zero
       dFSABHat2dLambda = zero
-			dVPrimeHatdLambda = zero
-			if (whichLambda==1) then ! BHat
-				do itheta=1,Ntheta
-					do izeta=1,Nzeta
-						angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-						cos_angle = cos(angle)
-						dVPrimeHatdLambda = dVPrimeHatdLambda - (two*(GHat+iota*IHat)) * thetaWeights(itheta) * zetaWeights(izeta) &
-					    * BHat(itheta,izeta)**(-3) * cos_angle
-					end do
-				end do
-				dFSABHat2dLambda = -4*pi*pi*(GHat+iota*IHat)*dVPrimeHatdLambda/(VPrimeHat**2)
-			else if (whichLambda==2) then ! IHat
-				dVPrimeHatdLambda = VPrimeHat*iota/(GHat+iota*IHat)
-			else if (whichLambda==3) then ! GHat
-				dVPrimeHatdLambda = VPrimeHat/(GHat+iota*IHat)
-			else if (whichLambda==4) then ! iota
-				dVPrimeHatdLambda = VPrimeHat*IHat/(GHat+iota*IHat)
-			end if
+            dVPrimeHatdLambda = zero
+            if (whichLambda==1) then ! BHat
+                do itheta=1,Ntheta
+                    do izeta=1,Nzeta
+                        angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+                        cos_angle = cos(angle)
+                        dVPrimeHatdLambda = dVPrimeHatdLambda - (two*(GHat+iota*IHat)) * thetaWeights(itheta) * zetaWeights(izeta) &
+                        * BHat(itheta,izeta)**(-3) * cos_angle
+                    end do
+                end do
+                dFSABHat2dLambda = -4*pi*pi*(GHat+iota*IHat)*dVPrimeHatdLambda/(VPrimeHat**2)
+            else if (whichLambda==2) then ! IHat
+                dVPrimeHatdLambda = VPrimeHat*iota/(GHat+iota*IHat)
+            else if (whichLambda==3) then ! GHat
+                dVPrimeHatdLambda = VPrimeHat/(GHat+iota*IHat)
+            else if (whichLambda==4) then ! iota
+                dVPrimeHatdLambda = VPrimeHat*IHat/(GHat+iota*IHat)
+            end if
 
       allocate(xIntegralFactor(Nx))
 
@@ -533,7 +533,7 @@ end do
           xIntegralFactor = xIntegralFactor*Zs(ispecies)
         end if
 
-				!factor = BHat/(DHat*VPrimeHat*sqrtFSAB2) = (GHat+iota*IHat)/(BHat*VPrimeHat*sqrtFSAB2)
+                !factor = BHat/(DHat*VPrimeHat*sqrtFSAB2) = (GHat+iota*IHat)/(BHat*VPrimeHat*sqrtFSAB2)
 
         do itheta=1,Ntheta
           do izeta=1,Nzeta
@@ -542,19 +542,19 @@ end do
             select case (whichLambda)
               case (1) ! BHat
                 dBHatdLambda = cos_angle
-				factor = -(GHat+iota*IHat)*dBHatdLambda/(BHat(itheta,izeta)*BHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) &
-				    - (GHat+iota*IHat)*dVPrimeHatdLambda/(BHat(itheta,izeta)*VPrimeHat*VPrimeHat*sqrtFSAB2) &
-					- 0.5*(GHat+iota*IHat)*dFSABHat2dLambda/(BHat(itheta,izeta)*VPrimeHat*sqrtFSAB2*FSABHat2)
-			  case (2) ! IHat
-				factor = iota/(BHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) &
-					- (GHat+iota*IHat)*dVPrimeHatdLambda/ &
-					(BHat(itheta,izeta)*sqrtFSAB2*VPrimeHat*VPrimeHat)
-			  case (3) ! GHat
-				factor = one/(BHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) &
-					- (GHat+iota*IHat)*dVPrimeHatdLambda/(BHat(itheta,izeta)*sqrtFSAB2*VPrimeHat*VPrimeHat)
+                factor = -(GHat+iota*IHat)*dBHatdLambda/(BHat(itheta,izeta)*BHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) &
+                    - (GHat+iota*IHat)*dVPrimeHatdLambda/(BHat(itheta,izeta)*VPrimeHat*VPrimeHat*sqrtFSAB2) &
+                    - 0.5*(GHat+iota*IHat)*dFSABHat2dLambda/(BHat(itheta,izeta)*VPrimeHat*sqrtFSAB2*FSABHat2)
+              case (2) ! IHat
+                factor = iota/(BHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) &
+                    - (GHat+iota*IHat)*dVPrimeHatdLambda/ &
+                    (BHat(itheta,izeta)*sqrtFSAB2*VPrimeHat*VPrimeHat)
+              case (3) ! GHat
+                factor = one/(BHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) &
+                    - (GHat+iota*IHat)*dVPrimeHatdLambda/(BHat(itheta,izeta)*sqrtFSAB2*VPrimeHat*VPrimeHat)
               case (4) ! iota
-				factor = IHat/(BHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) &
-					- (GHat+iota*IHat)*dVPrimeHatdLambda/(BHat(itheta,izeta)*sqrtFSAB2*VPrimeHat*VPrimeHat)
+                factor = IHat/(BHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) &
+                    - (GHat+iota*IHat)*dVPrimeHatdLambda/(BHat(itheta,izeta)*sqrtFSAB2*VPrimeHat*VPrimeHat)
             end select
 
             do ix=1,Nx
@@ -569,9 +569,9 @@ end do
             end do
           end do
         end do
-		call VecDestroy(deltaFOnProc0,ierr)
+        call VecDestroy(deltaFOnProc0,ierr)
       end if !masterProc
-	  call VecScatterDestroy(VecScatterContext,ierr)
+      call VecScatterDestroy(VecScatterContext,ierr)
 
     end subroutine
 
@@ -620,16 +620,16 @@ end do
       ! Loop over lambda's and perform inner product
       ! rethink this for Er
       do whichLambda=1,NLambdas
-				if (whichLambda .ne. 1) then
-					this_NmodesAdjoint = 1
-				else
-					this_NmodesAdjoint = NModesAdjoint
-				end if
+                if (whichLambda .ne. 1) then
+                    this_NmodesAdjoint = 1
+                else
+                    this_NmodesAdjoint = NModesAdjoint
+                end if
         do whichMode=1,this_NModesAdjoint
           call VecSet(adjointResidual,zero,ierr)
           ! Call function to perform (dLdlambdaf - dSdlambda), which calls populatedMatrixdLambda and populatedRHSdLambda
 
-		  call evaluateAdjointInnerProductFactor(forwardSolution,adjointResidual,whichLambda,whichMode)
+          call evaluateAdjointInnerProductFactor(forwardSolution,adjointResidual,whichLambda,whichMode)
 
           if (RHSMode == 5) then
             call innerProduct(adjointSolutionJr,adjointResidual,innerProductResultEr3,0)
@@ -638,7 +638,7 @@ end do
             dPhidPsidLambda(whichLambda,whichMode) = (1/innerProductResultEr2)*(radialCurrentSensitivity-innerProductResultEr3)
           end if
 
-		  call innerProduct(adjointSolution,adjointResidual,innerProductResult,0)
+          call innerProduct(adjointSolution,adjointResidual,innerProductResult,0)
           ! Save to appropriate sensitivity array
           if (whichSpecies == 0) then
             select case (whichAdjointRHS)

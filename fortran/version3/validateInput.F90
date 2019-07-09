@@ -278,30 +278,30 @@ subroutine validateInput()
   !!Added by AM 2015-11!!
   if (withAdiabatic) then
      if (adiabaticZ == 0) then
-     	if (masterProc) then
+       if (masterProc) then
            print *,"Error! Charge adiabaticZ cannot be zero."
         end if
         stop
      end if
 
      if (adiabaticMHat .le. 0) then
-     	if (masterProc) then
-   	   print *,"Error! Mass adiabaticMHat must be positive."
-	end if
+       if (masterProc) then
+        print *,"Error! Mass adiabaticMHat must be positive."
+  end if
         stop
      end if
 
      if (adiabaticNHat .le. 0) then
-     	if (masterProc) then
-     	   print *,"Error! Density adiabaticNHat must be positive."
-	end if
-	stop
+       if (masterProc) then
+          print *,"Error! Density adiabaticNHat must be positive."
+  end if
+  stop
      end if
 
      if (adiabaticTHat .le. 0) then
-     	if (masterProc) then
+       if (masterProc) then
            print *,"Error! Temperature adiabaticTHat must be positive."
-	end if
+  end if
         stop
      end if
 
@@ -332,16 +332,16 @@ subroutine validateInput()
   !!Added by HS 2017-09!!
   if (withNBIspec) then
      if (NBIspecZ == 0) then
-     	if (masterProc) then
+       if (masterProc) then
            print *,"Error! Charge NBIspecZ cannot be zero."
         end if
         stop
      end if
      if (NBIspecNHat < 0) then
-     	if (masterProc) then
-     	   print *,"Error! Density NBIspecNHat cannot be negative."
-	end if
-	stop
+       if (masterProc) then
+          print *,"Error! Density NBIspecNHat cannot be negative."
+  end if
+  stop
      end if
      
   end if
@@ -1242,11 +1242,11 @@ subroutine validateInput()
       end if
       stop
     end if
-		if (geometryScheme>4 .and. geometryScheme<8) then
-			if (masterProc) then
-				print *,"Error! RHSMode>3 must be used with a Boozer coordinate system."
-			end if
-		end if
+    if (geometryScheme>4 .and. geometryScheme<8) then
+      if (masterProc) then
+        print *,"Error! RHSMode>3 must be used with a Boozer coordinate system."
+      end if
+    end if
     ! Check for linear solve
     if (includePhi1) then
       if (masterProc) then
@@ -1293,30 +1293,30 @@ subroutine validateInput()
       stop
     end if
   end if
-	! Check if stellopt bmnc specification used, required input given
-	if (geometryScheme == 13) then
-		if (count(boozer_bmnc>0)==0 .and. count(boozer_bmns>0)==0) then
-			if (masterProc) then
-				print *,"Error! Boozer_bmnc or Boozer_bmns must be specified with geometryScheme =13."
-			end if
-			stop
-		end if
-	end if
-	if (ambipolarSolve) then
-		if (includePhi1) then
-			if (masterProc) then
-				print *,"Error! ambipolarSolve cannot be used with includePhi1."
-			end if
-			stop
-		end if
-		if (RHSMode==2 .or. RHSMode==3) then
-			if (masterProc) then
-				print *,"Error! ambipolarSolve must be used with RHSMode==1, 4, or 5."
-			end if
-			stop
-		end if
-	end if
+  ! Check if stellopt bmnc specification used, required input given
+  if (geometryScheme == 13) then
+    if (count(boozer_bmnc>0)==0 .and. count(boozer_bmns>0)==0) then
+      if (masterProc) then
+        print *,"Error! Boozer_bmnc or Boozer_bmns must be specified with geometryScheme =13."
+      end if
+      stop
+    end if
+  end if
+  if (ambipolarSolve) then
+    if (includePhi1) then
+      if (masterProc) then
+        print *,"Error! ambipolarSolve cannot be used with includePhi1."
+      end if
+      stop
+    end if
+    if (RHSMode==2 .or. RHSMode==3) then
+      if (masterProc) then
+        print *,"Error! ambipolarSolve must be used with RHSMode==1, 4, or 5."
+      end if
+      stop
+    end if
+  end if
   
 end subroutine validateInput
 
-
+

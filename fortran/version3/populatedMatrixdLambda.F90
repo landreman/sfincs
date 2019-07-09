@@ -58,16 +58,16 @@
     end if
 
     if (useDKESExBDrift) then
-			dVPrimeHatdBmn  = zero
-			do itheta=1,Ntheta
-				do izeta=1,Nzeta
-					angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-					cos_angle = cos(angle)
-					dVPrimeHatdBmn = dVPrimeHatdBmn - (two*(GHat+iota*IHat)) * thetaWeights(itheta) * zetaWeights(izeta) &
-						* BHat(itheta,izeta)**(-3) * cos_angle
-				end do
-			end do
-			dFSABHat2dBmn = -4*pi*pi*(GHat+iota*IHat)*dVPrimeHatdBmn/(VPrimeHat**2)
+      dVPrimeHatdBmn  = zero
+      do itheta=1,Ntheta
+        do izeta=1,Nzeta
+          angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+          cos_angle = cos(angle)
+          dVPrimeHatdBmn = dVPrimeHatdBmn - (two*(GHat+iota*IHat)) * thetaWeights(itheta) * zetaWeights(izeta) &
+            * BHat(itheta,izeta)**(-3) * cos_angle
+        end do
+      end do
+      dFSABHat2dBmn = -4*pi*pi*(GHat+iota*IHat)*dVPrimeHatdBmn/(VPrimeHat**2)
     end if
 
     ! *********************************************************
@@ -107,20 +107,20 @@
             cos_angle = cos(angle)
             sin_angle = sin(angle)
 
-						! geometricFactor = BHat_sup_theta/BHat = iota*BHat/(GHat+iota*IHat)
+            ! geometricFactor = BHat_sup_theta/BHat = iota*BHat/(GHat+iota*IHat)
             select case(whichLambda)
               case (0) ! Er
                 geometricFactor = zero
               case (1) ! BHat
                 dBHatdLambda = cos_angle
-								geometricFactor = dBHatdLambda*iota/(GHat+iota*IHat)
+                geometricFactor = dBHatdLambda*iota/(GHat+iota*IHat)
               case (2) ! IHat
-								geometricFactor = -iota*iota*BHat(itheta,izeta)/(GHat+iota*IHat)**2
+                geometricFactor = -iota*iota*BHat(itheta,izeta)/(GHat+iota*IHat)**2
               case (3) ! GHat
-								geometricFactor = -iota*BHat(itheta,izeta)/(GHat+iota*IHat)**2
+                geometricFactor = -iota*BHat(itheta,izeta)/(GHat+iota*IHat)**2
               case (4) ! iota
-								geometricFactor = BHat(itheta,izeta)/(GHat+iota*IHat) &
-									-iota*IHat*BHat(itheta,izeta)/(GHat+iota*IHat)**2
+                geometricFactor = BHat(itheta,izeta)/(GHat+iota*IHat) &
+                  -iota*IHat*BHat(itheta,izeta)/(GHat+iota*IHat)**2
             end select
             thetaPartOfTerm(itheta,:) = sqrtTHat/sqrtMHat * ddthetaToUse(itheta,:) * geometricFactor
           end do ! itheta
@@ -175,7 +175,7 @@
       allocate(rowIndices(localNzeta))
       allocate(colIndices(Nzeta))
 
-!			if (.false.) then
+!      if (.false.) then
 
       do L=0,(Nxi-1)
         ddzetaToUse = ddzeta
@@ -192,13 +192,13 @@
                 geometricFactor = zero
               case (1) ! BHat
                 dBHatdLambda = cos_angle
-							  geometricFactor = dBHatdLambda/(GHat+iota*IHat)
+                geometricFactor = dBHatdLambda/(GHat+iota*IHat)
               case (2) ! IHat
-								geometricFactor = -BHat(itheta,izeta)*iota/(GHat+iota*IHat)**2
+                geometricFactor = -BHat(itheta,izeta)*iota/(GHat+iota*IHat)**2
               case (3) ! GHat
-								geometricFactor = -BHat(itheta,izeta)/(GHat+iota*IHat)**2
+                geometricFactor = -BHat(itheta,izeta)/(GHat+iota*IHat)**2
               case (4) ! iota
-								geometricFactor = -IHat*BHat(itheta,izeta)/(GHat+iota*IHat)
+                geometricFactor = -IHat*BHat(itheta,izeta)/(GHat+iota*IHat)
             end select
             zetaPartOfTerm(izeta,:) = (sqrtTHat/sqrtMHat)*ddzetaToUse(izeta,:)*geometricFactor
           end do
@@ -284,10 +284,10 @@
             cos_angle = cos(angle)
             sin_angle = sin(angle)
 
-						! factor = alpha*Delta/two*dPhiHatdpsiHat
-						! geometricFactor = DHat(itheta,izeta)*BHat_sub_zeta(itheta,izeta)/(BHat*BHat) = GHat/(GHat + iota*IHat)
-						! useDKESExBDrift = .true.
-							! geometricFactor = DHat(itheta,izeta)*BHat_sub_zeta(itheta,izeta)/(FSABHat2) = (GHat/(GHat + iota*IHat))*(BHat*BHat/FSABHat2)
+            ! factor = alpha*Delta/two*dPhiHatdpsiHat
+            ! geometricFactor = DHat(itheta,izeta)*BHat_sub_zeta(itheta,izeta)/(BHat*BHat) = GHat/(GHat + iota*IHat)
+            ! useDKESExBDrift = .true.
+              ! geometricFactor = DHat(itheta,izeta)*BHat_sub_zeta(itheta,izeta)/(FSABHat2) = (GHat/(GHat + iota*IHat))*(BHat*BHat/FSABHat2)
             select case(whichLambda)
               case (0) ! Er
                 if (useDKESExBDrift) then
@@ -298,34 +298,34 @@
                 factor = alpha*Delta/two
               case (1) ! BHat
                 if (useDKESExBDrift) then
-									dBHatdLambda = cos_angle
-									geometricFactor = (GHat/(GHat + iota*IHat))*(two*BHat(itheta,izeta)*dBHatdLambda/FSABHat2 &
-										- BHat(itheta,izeta)*BHat(itheta,izeta)*dFSABHat2dBmn/(FSABHat2**2))
+                  dBHatdLambda = cos_angle
+                  geometricFactor = (GHat/(GHat + iota*IHat))*(two*BHat(itheta,izeta)*dBHatdLambda/FSABHat2 &
+                    - BHat(itheta,izeta)*BHat(itheta,izeta)*dFSABHat2dBmn/(FSABHat2**2))
                 else
-									geometricFactor = zero
+                  geometricFactor = zero
                 end if
                 factor = alpha*Delta/two*dPhiHatdpsiHat
               case (2) ! IHat
-								if (useDKESExBDrift) then
-									geometricFactor = -(GHat*iota/(GHat+iota*IHat)**2)*(BHat(itheta,izeta)*BHat(itheta,izeta)/FSABHat2)
-								else
-									geometricFactor = -GHat*iota/(GHat+iota*IHat)**2
-								end if
+                if (useDKESExBDrift) then
+                  geometricFactor = -(GHat*iota/(GHat+iota*IHat)**2)*(BHat(itheta,izeta)*BHat(itheta,izeta)/FSABHat2)
+                else
+                  geometricFactor = -GHat*iota/(GHat+iota*IHat)**2
+                end if
                 factor = alpha*Delta/two*dPhiHatdpsiHat
               case (3) ! GHat
-								if (useDKESExBDrift) then
-									geometricFactor = (one/(GHat+iota*IHat)-GHat/(GHat+iota*IHat)**2) &
-										* (BHat(itheta,izeta)*BHat(itheta,izeta)/FSABHat2)
-								else
-									geometricFactor = (one/(GHat+iota*IHat)-GHat/(GHat+iota*IHat)**2)
-								end if
+                if (useDKESExBDrift) then
+                  geometricFactor = (one/(GHat+iota*IHat)-GHat/(GHat+iota*IHat)**2) &
+                    * (BHat(itheta,izeta)*BHat(itheta,izeta)/FSABHat2)
+                else
+                  geometricFactor = (one/(GHat+iota*IHat)-GHat/(GHat+iota*IHat)**2)
+                end if
                 factor = alpha*Delta/two*dPhiHatdpsiHat
               case (4) ! iota
-								if (useDKESExBDrift) then
-									geometricFactor = (-GHat*IHat/(GHat+iota*IHat)**2)*(BHat(itheta,izeta)*BHat(itheta,izeta)/FSABHat2)
-								else
-									geometricFactor = (-GHat*IHat/(GHat+iota*IHat)**2)
-								end if
+                if (useDKESExBDrift) then
+                  geometricFactor = (-GHat*IHat/(GHat+iota*IHat)**2)*(BHat(itheta,izeta)*BHat(itheta,izeta)/FSABHat2)
+                else
+                  geometricFactor = (-GHat*IHat/(GHat+iota*IHat)**2)
+                end if
                 factor = alpha*Delta/two*dPhiHatdpsiHat
             end select
               thetaPartOfTerm(itheta,:) = ddthetaToUse(itheta,:)*geometricFactor*factor
@@ -383,8 +383,8 @@
             cos_angle = cos(angle)
             sin_angle = sin(angle)
 
-						! geometryFactor = DHat(itheta,izeta)*BHat_sub_theta(itheta,izeta)/(BHat(itheta,izeta)*BHat(itheta,izeta)) = IHat/(GHat+iota*IHat)
-						! geometryFactor = DHat(itheta,izeta)*BHat_sub_theta(itheta,izeta)/FSABHat2 = (IHat/(GHat+iota*IHat))*(BHat*BHat/FSABHat2)
+            ! geometryFactor = DHat(itheta,izeta)*BHat_sub_theta(itheta,izeta)/(BHat(itheta,izeta)*BHat(itheta,izeta)) = IHat/(GHat+iota*IHat)
+            ! geometryFactor = DHat(itheta,izeta)*BHat_sub_theta(itheta,izeta)/FSABHat2 = (IHat/(GHat+iota*IHat))*(BHat*BHat/FSABHat2)
             select case(whichLambda)
               case (0) ! Er
                 if (useDKESExBDrift) then
@@ -396,32 +396,32 @@
               case (1) ! BHat
                 dBHatdLambda = cos_angle
                 if (useDKESExBDrift) then
-									geometricFactor = (2*BHat(itheta,izeta)*dBHatdLambda/FSABHat2)*(IHat/(GHat+iota*IHat))
+                  geometricFactor = (2*BHat(itheta,izeta)*dBHatdLambda/FSABHat2)*(IHat/(GHat+iota*IHat))
                 else
-									geometricFactor = 0
+                  geometricFactor = 0
                 end if
                 factor = -alpha*Delta/two*dPhiHatdpsiHat
               case (2) ! BHat_sub_theta / IHat
                 if (useDKESExBDrift) then
-									geometricFactor = (one/(GHat+iota*IHat)-(IHat*iota/(GHat+iota*IHat)**2)) &
-										*(BHat(itheta,izeta)*BHat(itheta,izeta))/FSABHat2
+                  geometricFactor = (one/(GHat+iota*IHat)-(IHat*iota/(GHat+iota*IHat)**2)) &
+                    *(BHat(itheta,izeta)*BHat(itheta,izeta))/FSABHat2
                 else
-									geometricFactor = (one/(GHat+iota*IHat)-(IHat*iota/(GHat+iota*IHat)**2))
+                  geometricFactor = (one/(GHat+iota*IHat)-(IHat*iota/(GHat+iota*IHat)**2))
                 end if
                 factor = -alpha*Delta/two*dPhiHatdpsiHat
               case (3) ! BHat_sub_zeta / GHat
-								if (useDKESExBDrift) then
-									geometricFactor = -(IHat/(GHat+iota*IHat)**2)*(BHat(itheta,izeta)*BHat(itheta,izeta))/FSABHat2
-								else
-									geometricFactor = -(IHat/(GHat+iota*IHat)**2)
-								end if
+                if (useDKESExBDrift) then
+                  geometricFactor = -(IHat/(GHat+iota*IHat)**2)*(BHat(itheta,izeta)*BHat(itheta,izeta))/FSABHat2
+                else
+                  geometricFactor = -(IHat/(GHat+iota*IHat)**2)
+                end if
                 factor = -alpha*Delta/two*dPhiHatdpsiHat
               case (4) ! BHat_sup_theta / iota
-								if (useDKESExBDrift) then
-									geometricFactor = -(IHat*IHat/(GHat+iota*IHat)**2)*(BHat(itheta,izeta)*BHat(itheta,izeta)/FSABHat2)
-								else
-									geometricFactor = -(IHat*IHat/(GHat+iota*IHat)**2)
-								end if
+                if (useDKESExBDrift) then
+                  geometricFactor = -(IHat*IHat/(GHat+iota*IHat)**2)*(BHat(itheta,izeta)*BHat(itheta,izeta)/FSABHat2)
+                else
+                  geometricFactor = -(IHat*IHat/(GHat+iota*IHat)**2)
+                end if
                 factor = -alpha*Delta/two*dPhiHatdpsiHat
             end select
             zetaPartOfTerm(izeta,:) = ddzetaToUse(izeta,:)*geometricFactor*factor
@@ -453,8 +453,8 @@
        ! *********************************************************
        ! Add the sensitivity of the standard mirror term:
        ! *********************************************************
-			 ! (1/(BHat*BHat))*(BHat_sup_theta*dBHatdtheta+BHat_sup_zeta*dBHatdzeta)
-					! = (1/(GHat+iota*IHat))*(iota*dBHatdtheta + dBHatdzeta)
+       ! (1/(BHat*BHat))*(BHat_sup_theta*dBHatdtheta+BHat_sup_zeta*dBHatdzeta)
+          ! = (1/(GHat+iota*IHat))*(iota*dBHatdtheta + dBHatdzeta)
 
       do itheta=ithetaMin,ithetaMax
          do izeta=izetaMin,izetaMax
@@ -469,14 +469,14 @@
                 dBHatdLambda = cos_angle
                 dBHatdthetadLambda = -m*sin_angle
                 dBHatdzetadLambda = n*Nperiods*sin_angle
-			    geometricFactor = (1/(GHat+iota*IHat))*(iota*dBHatdthetadLambda + dBHatdzetadLambda)
+          geometricFactor = (1/(GHat+iota*IHat))*(iota*dBHatdthetadLambda + dBHatdzetadLambda)
               case (2) ! BHat_sub_theta / IHat
-			    geometricFactor = -(iota/(GHat+iota*IHat)**2)*(iota*dBHatdtheta(itheta,izeta) + dBHatdzeta(itheta,izeta))
+          geometricFactor = -(iota/(GHat+iota*IHat)**2)*(iota*dBHatdtheta(itheta,izeta) + dBHatdzeta(itheta,izeta))
               case (3) ! BHat_sub_zeta / GHat
-				geometricFactor = -(one/(GHat+iota*IHat)**2)*(iota*dBHatdtheta(itheta,izeta) + dBHatdzeta(itheta,izeta))
+        geometricFactor = -(one/(GHat+iota*IHat)**2)*(iota*dBHatdtheta(itheta,izeta) + dBHatdzeta(itheta,izeta))
               case (4) ! BHat_sup_theta / iota
-				geometricFactor = -IHat/(GHat+iota*IHat)**2*(iota*dBHatdtheta(itheta,izeta) + dBHatdzeta(itheta,izeta)) &
-				    + (dBHatdtheta(itheta,izeta)/(GHat+iota*IHat))
+        geometricFactor = -IHat/(GHat+iota*IHat)**2*(iota*dBHatdtheta(itheta,izeta) + dBHatdzeta(itheta,izeta)) &
+            + (dBHatdtheta(itheta,izeta)/(GHat+iota*IHat))
             end select
             factor = (-sqrtTHat/(two*sqrtMHat))*geometricFactor
 
@@ -508,9 +508,9 @@
        ! Add the sensitivity of the non-standard d/dxi term associated with E_r:
        ! *********************************************************
 
-			 ! (BHat_sub_zeta(itheta,izeta) * dBHatdtheta(itheta,izeta) &
+       ! (BHat_sub_zeta(itheta,izeta) * dBHatdtheta(itheta,izeta) &
        !   - BHat_sub_theta(itheta,izeta) * dBHatdzeta(itheta,izeta))*DHat/(BHat(itheta,izeta)**3)
-			 ! = (GHat*dBHatdtheta-IHat*dBHatdzeta)*(1/(BHat*(GHat+iota*IHat)))
+       ! = (GHat*dBHatdtheta-IHat*dBHatdzeta)*(1/(BHat*(GHat+iota*IHat)))
 
        if (includeElectricFieldTermInXiDot) then
           do itheta=ithetaMin,ithetaMax
@@ -530,22 +530,22 @@
                   dBHatdthetadLambda = -m*sin_angle
                   dBHatdzetadLambda = n*Nperiods*sin_angle
                   dBHatdLambda = cos_angle
-				  dTempdLambda = BHat_sub_zeta(itheta,izeta) * dBHatdthetadLambda &
-				    - BHat_sub_theta(itheta,izeta) * dBHatdzetadLambda
+          dTempdLambda = BHat_sub_zeta(itheta,izeta) * dBHatdthetadLambda &
+            - BHat_sub_theta(itheta,izeta) * dBHatdzetadLambda
 !                  factor = (alpha*Delta*dPhiHatdpsiHat/four)*geometricFactor
-				  geometricFactor = dTempdLambda/ (BHat(itheta,izeta)*(GHat+iota*IHat)) &
-				    - temp/(BHat(itheta,izeta)*BHat(itheta,izeta)*(GHat+iota*IHat))
-				  factor = (alpha*Delta*dPhiHatdpsiHat/four)*geometricFactor
+          geometricFactor = dTempdLambda/ (BHat(itheta,izeta)*(GHat+iota*IHat)) &
+            - temp/(BHat(itheta,izeta)*BHat(itheta,izeta)*(GHat+iota*IHat))
+          factor = (alpha*Delta*dPhiHatdpsiHat/four)*geometricFactor
                 case (2) ! BHat_sub_theta / IHat
-				  geometricFactor = -dBHatdzeta(itheta,izeta)/(BHat(itheta,izeta)*(GHat+iota*IHat)) &
-					- temp*iota/(BHat(itheta,izeta)*(GHat+iota*IHat)**2)
+          geometricFactor = -dBHatdzeta(itheta,izeta)/(BHat(itheta,izeta)*(GHat+iota*IHat)) &
+          - temp*iota/(BHat(itheta,izeta)*(GHat+iota*IHat)**2)
                   factor = (alpha*Delta*dPhiHatdpsiHat/four)*geometricFactor
                 case (3) ! BHat_sub_zeta / GHat
-				  geometricFactor = dBHatdtheta(itheta,izeta)/(BHat(itheta,izeta)*(GHat+iota*IHat)) &
-				    - temp/(BHat(itheta,izeta)*(GHat+iota*IHat)**2)
+          geometricFactor = dBHatdtheta(itheta,izeta)/(BHat(itheta,izeta)*(GHat+iota*IHat)) &
+            - temp/(BHat(itheta,izeta)*(GHat+iota*IHat)**2)
                   factor = (alpha*Delta*dPhiHatdpsiHat/four)*geometricFactor
                 case (4) ! BHat_sup_theta / iota
-				  geometricFactor = -IHat*temp/(BHat(itheta,izeta)*(GHat+iota*IHat)**2)
+          geometricFactor = -IHat*temp/(BHat(itheta,izeta)*(GHat+iota*IHat)**2)
                   factor = (alpha*Delta*dPhiHatdpsiHat/four)*geometricFactor
               end select
 
@@ -582,8 +582,8 @@
     ! Add the sensitivity of the collisionless d/dx term associated with E_r
     ! *********************************************************
 
-		! DHat/BHat**3 * (BHat_sub_theta*dBHatdzeta-BHat_sub_zeta*dBHatdtheta)
-		! = 1/(BHat*(GHat+iota*IHat)) * (IHat*dBHatdzeta-GHat*dBHatdtheta)
+    ! DHat/BHat**3 * (BHat_sub_theta*dBHatdzeta-BHat_sub_zeta*dBHatdtheta)
+    ! = 1/(BHat*(GHat+iota*IHat)) * (IHat*dBHatdzeta-GHat*dBHatdtheta)
     if (includeXDotTerm) then
 
       allocate(xPartOfXDot(Nx,Nx))
@@ -632,25 +632,25 @@
                       - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))
                   case (1) ! BHat
                     dBHatdLambda = cos_angle
-					dBHatdzetadLambda = n*Nperiods*sin_angle
-					dBHatdthetadLambda = -m*sin_angle
-					geometricFactor = -dBHatdLambda/(BHat(itheta,izeta)*BHat(itheta,izeta)*(GHat + iota*IHat)) &
-					    * (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta)) &
-						+ 1/(BHat(itheta,izeta)*(GHat+iota*IHat)) * (IHat*dBHatdzetadlambda-GHat*dBHatdthetadLambda)
+          dBHatdzetadLambda = n*Nperiods*sin_angle
+          dBHatdthetadLambda = -m*sin_angle
+          geometricFactor = -dBHatdLambda/(BHat(itheta,izeta)*BHat(itheta,izeta)*(GHat + iota*IHat)) &
+              * (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta)) &
+            + 1/(BHat(itheta,izeta)*(GHat+iota*IHat)) * (IHat*dBHatdzetadlambda-GHat*dBHatdthetadLambda)
                     factor = -alpha*Delta*dPhiHatdPsiHat/four
                   case (2) ! IHat
-					geometricFactor = -iota/(BHat(itheta,izeta)*(GHat+iota*IHat)**2) &
-						* (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta)) &
-						+ one/(BHat(itheta,izeta)*(GHat+iota*IHat)) * dBHatdzeta(itheta,izeta)
+          geometricFactor = -iota/(BHat(itheta,izeta)*(GHat+iota*IHat)**2) &
+            * (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta)) &
+            + one/(BHat(itheta,izeta)*(GHat+iota*IHat)) * dBHatdzeta(itheta,izeta)
                     factor = -alpha*Delta*dPhiHatdPsiHat/four
                   case (3) ! GHat
-					geometricFactor = -one/(BHat(itheta,izeta)*(GHat+iota*IHat)**2) &
-						* (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta)) &
-					    - dBHatdtheta(itheta,izeta)/(BHat(itheta,izeta)*(GHat+iota*IHat))
+          geometricFactor = -one/(BHat(itheta,izeta)*(GHat+iota*IHat)**2) &
+            * (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta)) &
+              - dBHatdtheta(itheta,izeta)/(BHat(itheta,izeta)*(GHat+iota*IHat))
                     factor = -alpha*Delta*dPhiHatdPsiHat/four
                   case (4) ! iota
-					geometricFactor = -IHat/(BHat(itheta,izeta)*(GHat+iota*IHat)**2) &
-						* (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta))
+          geometricFactor = -IHat/(BHat(itheta,izeta)*(GHat+iota*IHat)**2) &
+            * (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta))
                     factor = -alpha*Delta*dPhiHatdPsiHat/four
                 end select
 
@@ -705,7 +705,7 @@
       deallocate(xPartOfXDot_minus)
     end if
 
-!		end if ! comment out
+!    end if ! comment out
 
     end do ! ispecies
 
@@ -718,7 +718,7 @@
     ! Add the sensitivity of the density and pressure constraints:
     ! *******************************************************************************
 
-		! geometricFactor = 1/DHat = (GHat+iota*IHat)/(BHat*BHat)
+    ! geometricFactor = 1/DHat = (GHat+iota*IHat)/(BHat*BHat)
     if (procThatHandlesConstraints) then
       L=0
       do itheta=1,Ntheta
@@ -727,16 +727,16 @@
             cos_angle = cos(angle)
             sin_angle = sin(angle)
             geometricFactor = zero
-						if (whichLambda == 1) then  ! BHat
-							dBHatdLambda = cos_angle
-							geometricFactor = -two*dBHatdLambda*(GHat+iota*IHat)/(BHat(itheta,izeta)**3)
-						else if (whichLambda == 2) then ! IHat
-							geometricFactor = iota/(BHat(itheta,izeta)*BHat(itheta,izeta))
-						else if (whichLambda == 3) then ! GHat
-							geometricFactor = 1/(BHat(itheta,izeta)*BHat(itheta,izeta))
-						else if (whichLambda == 4) then ! iota
-							geometricFactor = IHat/(BHat(itheta,izeta)*BHat(itheta,izeta))
-						end if
+            if (whichLambda == 1) then  ! BHat
+              dBHatdLambda = cos_angle
+              geometricFactor = -two*dBHatdLambda*(GHat+iota*IHat)/(BHat(itheta,izeta)**3)
+            else if (whichLambda == 2) then ! IHat
+              geometricFactor = iota/(BHat(itheta,izeta)*BHat(itheta,izeta))
+            else if (whichLambda == 3) then ! GHat
+              geometricFactor = 1/(BHat(itheta,izeta)*BHat(itheta,izeta))
+            else if (whichLambda == 4) then ! iota
+              geometricFactor = IHat/(BHat(itheta,izeta)*BHat(itheta,izeta))
+            end if
             factor = thetaWeights(itheta)*zetaWeights(izeta)*geometricFactor
 
             do ix=1,Nx

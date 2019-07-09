@@ -60,8 +60,8 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies, fineGrid)
                 xPartOfRHS = exp(-x2(ix))*nHat*mHat*sqrtMHat*Delta*x2(ix)/ &
                     (pi*sqrtpi*THat*sqrtTHat*ZHat)*ddrN2ddpsiHat
             else
-				xPartOfRHS = pi*Delta*THat*THat*sqrtTHat*x2(ix)*x2(ix)*ddrN2ddpsiHat*xweights(ix)/(ZHat*VPrimeHat*mHat*sqrtMHat)
-			end if
+        xPartOfRHS = pi*Delta*THat*THat*sqrtTHat*x2(ix)*x2(ix)*ddrN2ddpsiHat*xweights(ix)/(ZHat*VPrimeHat*mHat*sqrtMHat)
+      end if
             if (whichSpecies == 0) then
                 xPartOfRHS = xPartOfRHS*ZHat
             end if
@@ -75,7 +75,7 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies, fineGrid)
                         factor = factor*DHat(itheta,izeta)
                         factor1 = four/three
                         factor2 = two/three
-					else
+          else
                         factor = factor*thetaWeights(itheta)*zetaWeights(izeta)
                     factor1 = 8/three
                     factor2 = four/15
@@ -124,7 +124,7 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies, fineGrid)
                     dBHatdtheta(itheta,izeta))
                     factor1 = four/three
                     factor2 = two/three
-								else
+                else
                     factor = xPartOfRHS*thetaWeights(itheta)*zetaWeights(izeta)*(BHat_sub_theta(itheta,izeta) &
                       *dBHatdzeta(itheta,izeta) - BHat_sub_zeta(itheta,izeta)* &
                     dBHatdtheta(itheta,izeta))/(BHat(itheta,izeta)**3)
@@ -158,7 +158,7 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies, fineGrid)
           ZHat = Zs(ispecies)
 
           do ix=ixMin,Nx
-						 if (discreteAdjointOption .eqv. .false.) then
+             if (discreteAdjointOption .eqv. .false.) then
                   xPartOfRHS = exp(-x2(ix))*x(ix)*2*mHat/(THat*THat*pi*sqrtPi*sqrtFSAB2)
              else
                   xPartOfRHS = 4*pi*THat*THat*x(ix)*x(ix)*x(ix)*xWeights(ix)/(three*mHat*mHat*sqrtFSAB2*VPrimeHat*nHat)

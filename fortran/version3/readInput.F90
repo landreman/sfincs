@@ -23,9 +23,9 @@ contains
     namelist / general / saveMatlabOutput, MatlabOutputFilename, &
          outputFilename, solveSystem, RHSMode, &
          saveMatricesAndVectorsInBinary, binaryOutputFilename, &
-				 ambipolarSolve, &
-				 NEr_ambipolarSolve, Er_search_tolerance_dx, Er_search_tolerance_f, ambipolarSolveOption, Er_min, &
-				 Er_max
+         ambipolarSolve, &
+         NEr_ambipolarSolve, Er_search_tolerance_dx, Er_search_tolerance_f, ambipolarSolveOption, Er_min, &
+         Er_max
 
 
     namelist / geometryParameters / GHat, IHat, iota, epsilon_t, epsilon_h, &
@@ -35,22 +35,22 @@ contains
          psiAHat, inputRadialCoordinate, inputRadialCoordinateForGradients, aHat, &
          psiHat_wish, psiN_wish, rHat_wish, rN_wish, &
          VMECRadialOption, VMEC_Nyquist_option, rippleScale, EParallelHatSpec_bcdatFile, Nperiods, &
-				 boozer_bmnc, boozer_bmns
+         boozer_bmnc, boozer_bmns
 
     namelist / speciesParameters / mHats, Zs, nHats, THats, &
          dNHatdpsiHats, dTHatdpsiHats, &
          dNHatdpsiNs,   dTHatdpsiNs, &
          dNHatdrHats,   dTHatdrHats, &
-	 !!Commented by AM 2015-11!!
+   !!Commented by AM 2015-11!!
 !!         dNHatdrNs,     dTHatdrNs
-	 !!!!!!!!!!!!!!!!!!!!!!!!!!!
-	 !!Added by AM 2015-11!!
-	 dNHatdrNs,     dTHatdrNs, &
-	 adiabaticZ, adiabaticMHat, &
-	 adiabaticNHat, adiabaticTHat, &
-	 withAdiabatic, &
-	 !!!!!!!!!!!!!!!!!!!!!!!  
-	 !!Added by HS 2017-09!!
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!
+   !!Added by AM 2015-11!!
+   dNHatdrNs,     dTHatdrNs, &
+   adiabaticZ, adiabaticMHat, &
+   adiabaticNHat, adiabaticTHat, &
+   withAdiabatic, &
+   !!!!!!!!!!!!!!!!!!!!!!!
+   !!Added by HS 2017-09!!
          NBIspecZ, NBIspecNHat, withNBIspec
 
 
@@ -62,8 +62,8 @@ contains
          includeTemperatureEquilibrationTerm, includePhi1, includePhi1InCollisionOperator, &
          !!Commented by AM 2016-02!!
          !!nuPrime, EStar, magneticDriftScheme, includeRadialExBDrive
-	 !!!!!!!!!!!!!!!!!!!!!!!!!!!
-	 !!Added by AM 2016-02!!         
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!
+   !!Added by AM 2016-02!!
 !=======
 !         includeTemperatureEquilibrationTerm, includePhi1, &
 !>>>>>>> origin/master
@@ -94,7 +94,7 @@ contains
     namelist / export_f / export_full_f, export_delta_f, export_f_theta, export_f_zeta, export_f_x, export_f_xi, &
          export_f_theta_option, export_f_zeta_option, export_f_xi_option, export_f_x_option
 
-		namelist / adjointOptions / adjointBootstrapOption, adjointRadialCurrentOption, &
+    namelist / adjointOptions / adjointBootstrapOption, adjointRadialCurrentOption, &
       adjointTotalHeatFluxOption, adjointHeatFluxOption, adjointParticleFluxOption, &
       nMinAdjoint, mMinAdjoint, &
       nMaxAdjoint, mMaxAdjoint, adjointParallelFlowOption, discreteAdjointOption, &
@@ -113,7 +113,7 @@ contains
     dNHatdrNs = speciesNotInitialized
     dTHatdrNs = speciesNotInitialized
 
-	
+
 
     export_f_theta = speciesNotInitialized
     export_f_zeta = speciesNotInitialized
@@ -436,7 +436,7 @@ contains
 
     Nspecies = NZs
 
-		! We have to wait until we know Nspecies to read adjoint namelist
+    ! We have to wait until we know Nspecies to read adjoint namelist
      if (RHSMode>3 .and. RHSMode<6) then
        allocate(adjointHeatFluxOption(Nspecies))
        allocate(adjointParticleFluxOption(NSpecies))
@@ -455,7 +455,7 @@ contains
        end if
      end if
 
-		close(unit = fileUnit)
+    close(unit = fileUnit)
 
     ! ----------------------------------------------------------------
 

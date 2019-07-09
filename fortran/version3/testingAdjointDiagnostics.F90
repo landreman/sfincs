@@ -39,7 +39,7 @@ module testingAdjointDiagnostics
     use geometry
     use solver
     use ambipolarSolver
-		use writeHDF5Output
+    use writeHDF5Output
 
     implicit none
 
@@ -91,7 +91,7 @@ module testingAdjointDiagnostics
 
     call PetscTime(time1, ierr)
     if (constantJr) then
-			ambipolarSolve = .true.
+      ambipolarSolve = .true.
       call mainAmbipolarSolver()
     else
       call mainSolverLoop()
@@ -123,31 +123,31 @@ module testingAdjointDiagnostics
     ! Set RHSMode = 1 so call to solver does not include adjoint solve
     RHSMode = 1
     call PetscTime(time1, ierr)
-		do whichLambda = 1, NLambdas
-			if (whichLambda .ne. 1) then
-				this_NmodesAdjoint = 1
-			else
-				this_NmodesAdjoint = NModesAdjoint
-			end if
-    	do whichMode = 1, this_NModesAdjoint
+    do whichLambda = 1, NLambdas
+      if (whichLambda .ne. 1) then
+        this_NmodesAdjoint = 1
+      else
+        this_NmodesAdjoint = NModesAdjoint
+      end if
+      do whichMode = 1, this_NModesAdjoint
         select case(whichLambda)
           case(1)
             deltaFactor = bmnc_init(whichMode)
           case(2)
-						deltaFactor = IHat_init
+            deltaFactor = IHat_init
           case(3)
-						deltaFactor = GHat_init
+            deltaFactor = GHat_init
           case(4)
-						deltaFactor = iota_init
+            deltaFactor = iota_init
         end select
 
         ! Update geometry
-		call updateBoozerGeometry(whichMode, whichLambda, .false.)
+    call updateBoozerGeometry(whichMode, whichLambda, .false.)
 
         ! Compute solutionVec and diagnostics with new geometry
         if (ambipolarSolve) then
-		    ! Need to set this to true so adjoint things are called for ambipolar
-		  ambipolarSolve = .true.
+        ! Need to set this to true so adjoint things are called for ambipolar
+      ambipolarSolve = .true.
           call mainAmbipolarSolver()
         else
           call mainSolverLoop()
@@ -160,8 +160,8 @@ module testingAdjointDiagnostics
         do ispecies = 1, Nspecies
           ! Compute finite difference derivatives
             dParticleFluxdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (particleFlux_vm_rN(iSpecies)-particleFluxInit(iSpecies))/(deltaLambda*deltaFactor)
-			dHeatFluxdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (heatFlux_vm_rN(iSpecies)-heatFluxInit(iSpecies))/(deltaLambda*deltaFactor)
-			dParallelFlowdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (FSABVelocityUsingFSADensityOverRootFSAB2(iSpecies)-parallelFlowInit(iSpecies))/(deltaLambda*deltaFactor)
+      dHeatFluxdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (heatFlux_vm_rN(iSpecies)-heatFluxInit(iSpecies))/(deltaLambda*deltaFactor)
+      dParallelFlowdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (FSABVelocityUsingFSADensityOverRootFSAB2(iSpecies)-parallelFlowInit(iSpecies))/(deltaLambda*deltaFactor)
         end do ! ispecies
         dTotalHeatFluxdLambda_finiteDiff(whichLambda,whichMode) = (sum(heatFlux_vm_rN(1:Nspecies))-sum(heatFluxInit(1:Nspecies)))/(deltaLambda*deltaFactor)
         if (constantJr .eqv. .false.) then
@@ -169,7 +169,7 @@ module testingAdjointDiagnostics
         end if
         dBootstrapdLambda_finiteDiff(whichLambda,whichMode) = (dot_product(Zs(1:Nspecies),FSABVelocityUsingFSADensityOverRootFSAB2(1:Nspecies))-dot_product(Zs(1:Nspecies),parallelFlowInit(1:Nspecies)))/(deltaLambda*deltaFactor)
         ! Reset geometry to original values
-		call updateBoozerGeometry(whichMode, whichLambda, .true.)
+    call updateBoozerGeometry(whichMode, whichLambda, .true.)
       end do ! whichMode
     end do ! whichLambda
     call PetscTime(time2, ierr)
@@ -177,23 +177,23 @@ module testingAdjointDiagnostics
       print *,"Time for finite difference: ", time2-time1
     end if
 
-	do whichLambda = 1, NLambdas
-		if (whichLambda .ne. 1) then
-			this_NmodesAdjoint = 1
-		else
-			this_NmodesAdjoint = NModesAdjoint
-		end if
-		do whichMode = 1, this_NModesAdjoint
+  do whichLambda = 1, NLambdas
+    if (whichLambda .ne. 1) then
+      this_NmodesAdjoint = 1
+    else
+      this_NmodesAdjoint = NModesAdjoint
+    end if
+    do whichMode = 1, this_NModesAdjoint
 
         select case(whichLambda)
           case(1)
             deltaFactor = bmnc_init(whichMode)
           case(2)
-						deltaFactor = IHat_init
+            deltaFactor = IHat_init
           case(3)
-						deltaFactor = GHat_init
+            deltaFactor = GHat_init
           case(4)
-						deltaFactor = iota_init
+            deltaFactor = iota_init
         end select
         ! If magnitude of fourier mode is nearly zero, don't use for benchmarking tests
         if (abs(deltaFactor) > 1.d-7) then
@@ -207,16 +207,16 @@ module testingAdjointDiagnostics
           bootstrapPercentError(whichLambda,whichMode) = percentError(dBootstrapdLambda_analytic(whichLambda, whichMode), dBootstrapdLambda_finitediff(whichLambda,whichMode))
           do ispecies = 1, NSpecies
             particleFluxPercentError(ispecies,whichLambda,whichMode) = &
-							percentError(dParticleFluxdLambda_analytic(ispecies,whichLambda,whichMode), &
-							dParticleFluxdLambda_finitediff(ispecies,whichLambda,whichMode))
+              percentError(dParticleFluxdLambda_analytic(ispecies,whichLambda,whichMode), &
+              dParticleFluxdLambda_finitediff(ispecies,whichLambda,whichMode))
 
             heatFluxPercentError(ispecies,whichLambda,whichMode) = &
-							percentError(dHeatFluxdLambda_analytic(ispecies,whichLambda,whichMode), &
-							dHeatFluxdLambda_finitediff(ispecies,whichLambda,whichMode))
+              percentError(dHeatFluxdLambda_analytic(ispecies,whichLambda,whichMode), &
+              dHeatFluxdLambda_finitediff(ispecies,whichLambda,whichMode))
 
             parallelFlowPercentError(ispecies,whichLambda,whichMode) = &
-							percentError(dParallelFlowdLambda_analytic(ispecies,whichLambda,whichMode), &
-							dParallelFlowdLambda_finitediff(ispecies,whichLambda,whichMode))
+              percentError(dParallelFlowdLambda_analytic(ispecies,whichLambda,whichMode), &
+              dParallelFlowdLambda_finitediff(ispecies,whichLambda,whichMode))
           end do ! ispecies
         end if
       end do ! whichMode

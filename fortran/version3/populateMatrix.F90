@@ -22,8 +22,8 @@
     ! 1 = Jacobian
     ! 2 = matrix which multiplies f0 when evaluating the residual
     ! 3 = matrix which multiplies f1 when evaluating the residual
-		! 4 = Adjoint Jacobian
-		! 5 = preconditioner for adjoint Jacobian
+    ! 4 = Adjoint Jacobian
+    ! 5 = preconditioner for adjoint Jacobian
 
     PetscErrorCode :: ierr
     PetscScalar :: Z, nHat, THat, mHat, sqrtTHat, sqrtMHat, speciesFactor, speciesFactor2
@@ -72,13 +72,13 @@
 
 
     PetscScalar :: dPhiHatdpsiHatToUseInRHS, xPartOfRHS, xPartOfRHS2 !!Added by AM 2016-03
-		PetscScalar :: adjointFactor
+    PetscScalar :: adjointFactor
 
-		if (whichMatrix==4 .or. whichMatrix==5 .or. whichMatrix>7) then
+    if (whichMatrix==4 .or. whichMatrix==5 .or. whichMatrix>7) then
        adjointFactor = -one
-		else
+    else
        adjointFactor = one
-		end if
+    end if
 
     ! *******************************************************************************
     ! Do a few sundry initialization tasks:
@@ -109,7 +109,7 @@
        ! This matrix is quite similar to the Jacobian matrix (whichMatrix=1), since most terms in the system of equations are linear.
        ! However there are a few differences related to the nonlinear terms.
        whichMatrixName = "residual f1"
-		case (4)
+    case (4)
       whichMatrixName = "adjoint Jacobian"
       ! The matrix that is used for the adjoint solve for sensitivity computations
       ! This is the same matrix used to evaluate the residual for the adjoint solve
@@ -1084,7 +1084,7 @@
           deallocate(xPartOfXDot_minus)
        end if
 
-				! *********************************************************
+        ! *********************************************************
         ! Add the adjoint operator term associated with E_r and
         ! full trajectories
         ! *********************************************************
@@ -3107,7 +3107,7 @@
                 call MatSetValueSparse(matrix, rowIndex, colIndex, &
                      - alpha * (Zs(1)*Zs(1)*NHats(1)/THats(1) + adiabaticZ*adiabaticZ*adiabaticNHat/adiabaticTHat), ADD_VALUES, ierr)                
              end if
-	     !!!!!!!!!!!!!!!!!!!!!!!
+       !!!!!!!!!!!!!!!!!!!!!!!
 
              ! Add the Lagrange multiplier lambda:
              colIndex = getIndex(1, 1, 1, 1, 1, BLOCK_PHI1_CONSTRAINT)

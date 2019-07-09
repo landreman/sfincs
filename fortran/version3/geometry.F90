@@ -1116,27 +1116,27 @@ contains
                         BHarmonics_n(imn) = n
                         BHarmonics_amplitudes(imn) = boozer_bmnc(m,n)
                         BHarmonics_parity(imn) = .true.
-					    imn = imn + 1
-				    end if
-			    end if
-		    end do
+              imn = imn + 1
+            end if
+          end if
         end do
-		! Now asymmetric
-		do m=0,mmax_boozer
-		    do n=-nmax_boozer,nmax_boozer
-			    if (m/=0 .or. n/=0) then ! exclude 00 mode
-				    if (boozer_bmns(m,n)/=zero) then
-					    BHarmonics_l(imn) = m
-						BHarmonics_n(imn) = n
-						BHarmonics_amplitudes(imn) = boozer_bmns(m,n)
-						BHarmonics_parity(imn) = .false.
-						imn = imn + 1
-					end if
-				end if
-			end do
-		end do
+        end do
+    ! Now asymmetric
+    do m=0,mmax_boozer
+        do n=-nmax_boozer,nmax_boozer
+          if (m/=0 .or. n/=0) then ! exclude 00 mode
+            if (boozer_bmns(m,n)/=zero) then
+              BHarmonics_l(imn) = m
+            BHarmonics_n(imn) = n
+            BHarmonics_amplitudes(imn) = boozer_bmns(m,n)
+            BHarmonics_parity(imn) = .false.
+            imn = imn + 1
+          end if
+        end if
+      end do
+    end do
 
-		B0OverBBar = boozer_bmnc(0,0)
+    B0OverBBar = boozer_bmnc(0,0)
         dGdpHat = 0 !Not implemented as an input for this case yet, could be put in namelist input if needed
         rN = rN_wish
 
@@ -1799,9 +1799,9 @@ contains
                 duHatdzeta(itheta,:) = duHatdzeta(itheta,:) &
                      + uHatHarmonics_amplitude * n * NPeriods * sin(m * theta(itheta) - n * NPeriods * zeta)
                 dBHat_sub_psi_dtheta(itheta,:) = dBHat_sub_psi_dtheta(itheta,:) &
-		     + dBHat_sub_psi_dthetaHarmonics_amplitude * cos(m * theta(itheta) - n * NPeriods * zeta)
+         + dBHat_sub_psi_dthetaHarmonics_amplitude * cos(m * theta(itheta) - n * NPeriods * zeta)
                 dBHat_sub_psi_dzeta(itheta,:) = dBHat_sub_psi_dzeta(itheta,:) &
-		     + dBHat_sub_psi_dzetaHarmonics_amplitude * cos(m * theta(itheta) - n * NPeriods * zeta)
+         + dBHat_sub_psi_dzetaHarmonics_amplitude * cos(m * theta(itheta) - n * NPeriods * zeta)
              end do
              if (n==0) then
                 do itheta = 1,Ntheta
@@ -1840,9 +1840,9 @@ contains
                 duHatdzeta(itheta,:) = duHatdzeta(itheta,:) &
                      - uHatHarmonics_amplitude * n * NPeriods * cos(m * theta(itheta) - n * NPeriods * zeta)
                 dBHat_sub_psi_dtheta(itheta,:) = dBHat_sub_psi_dtheta(itheta,:) &
-		     + dBHat_sub_psi_dthetaHarmonics_amplitude * sin(m * theta(itheta) - n * NPeriods * zeta)
+         + dBHat_sub_psi_dthetaHarmonics_amplitude * sin(m * theta(itheta) - n * NPeriods * zeta)
                 dBHat_sub_psi_dzeta(itheta,:) = dBHat_sub_psi_dzeta(itheta,:) &
-		     + dBHat_sub_psi_dzetaHarmonics_amplitude * sin(m * theta(itheta) - n * NPeriods * zeta)
+         + dBHat_sub_psi_dzetaHarmonics_amplitude * sin(m * theta(itheta) - n * NPeriods * zeta)
              end do
              if (n==0) then
                 do itheta = 1,Ntheta
@@ -1898,9 +1898,9 @@ contains
                 duHatdzeta(itheta,:) = duHatdzeta(itheta,:) &
                      + uHatHarmonics_amplitude * n * NPeriods * sin(m * theta(itheta) - n * NPeriods * zeta)
                 dBHat_sub_psi_dtheta(itheta,:) = dBHat_sub_psi_dtheta(itheta,:) &
-		     + dBHat_sub_psi_dthetaHarmonics_amplitude * cos(m * theta(itheta) - n * NPeriods * zeta)
+         + dBHat_sub_psi_dthetaHarmonics_amplitude * cos(m * theta(itheta) - n * NPeriods * zeta)
                 dBHat_sub_psi_dzeta(itheta,:) = dBHat_sub_psi_dzeta(itheta,:) &
-		     + dBHat_sub_psi_dzetaHarmonics_amplitude * cos(m * theta(itheta) - n * NPeriods * zeta)
+         + dBHat_sub_psi_dzetaHarmonics_amplitude * cos(m * theta(itheta) - n * NPeriods * zeta)
              end do
              if (n==0) then
                 do itheta = 1,Ntheta
@@ -2142,10 +2142,10 @@ contains
       BHat_sup_zeta_init = BHat_sup_zeta
       dBHat_sup_zeta_dtheta_init = dBHat_sup_zeta_dtheta
       BHat_sub_theta_init = BHat_sub_theta
-	  BHat_sub_zeta_init = BHat_sub_zeta
-	  GHat_init = GHat
-	  IHat_init = IHat
-	  iota_init = iota
+    BHat_sub_zeta_init = BHat_sub_zeta
+    GHat_init = GHat
+    IHat_init = IHat
+    iota_init = iota
     end if
 
     !possible double-check
@@ -2528,7 +2528,7 @@ contains
        ! Set scaleFactor to rippleScale for non-axisymmetric or non-quasisymmetric modes
        scaleFactor = setScaleFactor(n,m)
        b = b*scaleFactor
-	
+
        if (abs(b/b00) >= min_Bmn_to_load) then
           ! This (m,n) mode is sufficiently large to include.
           !if (masterProc) then

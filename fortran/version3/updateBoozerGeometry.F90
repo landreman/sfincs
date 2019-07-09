@@ -33,11 +33,11 @@ subroutine updateBoozerGeometry(whichMode, whichLambda, reset)
     dBHat_sup_theta_dzeta = dBHat_sup_theta_dzeta_init
     BHat_sup_zeta = BHat_sup_zeta_init
     dBHat_sup_zeta_dtheta = dBHat_sup_zeta_dtheta_init
-		GHat = GHat_init
-		IHat = IHat_init
-		iota = iota_init
-		BHat_sub_theta = BHat_sub_theta_init
-		BHat_sub_zeta = BHat_sub_zeta_init
+    GHat = GHat_init
+    IHat = IHat_init
+    iota = iota_init
+    BHat_sub_theta = BHat_sub_theta_init
+    BHat_sub_zeta = BHat_sub_zeta_init
   else
 
     allocate(deltaBHat(Ntheta,Nzeta))
@@ -49,52 +49,52 @@ subroutine updateBoozerGeometry(whichMode, whichLambda, reset)
     allocate(deltadBHat_sup_zeta_dtheta(Ntheta,Nzeta))
     allocate(deltaDHat(Ntheta,Nzeta))
 
-		select case (whichLambda)
-		case (1) ! BHat
-			do itheta = 1,Ntheta
-				do izeta = 1,Nzeta
-					angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-					cos_angle = cos(angle)
-					sin_angle = sin(angle)
-					deltaBHat(itheta,izeta) = deltaLambda*bmnc_init(whichMode)*cos_angle
-					deltadBHatdtheta(itheta,izeta) = -deltaLambda*bmnc_init(whichMode)*m*sin_angle
-					deltadBHatdzeta(itheta,izeta) = deltaLambda*bmnc_init(whichMode)*n*Nperiods*sin_angle
-					deltadBHat_sup_theta_dzeta(itheta,izeta) = dBHat_sup_theta_dzeta(itheta,izeta)*(deltaBHat(itheta,izeta)/BHat(itheta,izeta) + deltadBHatdzeta(itheta,izeta)/dBHatdzeta(itheta,izeta))
-					deltadBHat_sup_zeta_dtheta(itheta,izeta) = dBHat_sup_zeta_dtheta(itheta,izeta)*(deltaBHat(itheta,izeta)/BHat(itheta,izeta) + deltadBHatdtheta(itheta,izeta)/dBHatdtheta(itheta,izeta))
-				end do
-			end do
-			BHat = BHat + deltaBHat
-			dBHatdtheta = dBHatdtheta + deltadBHatdtheta
-			dBHatdzeta = dBHatdzeta + deltadBHatdzeta
-			DHat = BHat*BHat/(GHat+iota*IHat)
-			BHat_sup_theta = iota*DHat
-			BHat_sup_zeta = DHat
-			dBHat_sup_theta_dzeta = dBHat_sup_theta_dzeta + deltadBHat_sup_theta_dzeta
-			dBHat_sup_zeta_dtheta = dBHat_sup_zeta_dtheta + deltadBHat_sup_zeta_dtheta
-		case(2) ! IHat
-			IHat = IHat*(one+deltaLambda)
-			BHat_sub_theta = IHat
-			DHat = BHat*BHat/(GHat+iota*IHat)
-			BHat_sup_theta = iota*DHat
-			BHat_sup_zeta = DHat
-			dBHat_sup_theta_dzeta = iota*two*BHat*dBHatdzeta/(GHat+iota*IHat)
-			dBHat_sup_zeta_dtheta = two*BHat*dBHatdtheta/(GHat+iota*IHat)
-		case(3) ! GHat
-			GHat = GHat*(one+deltaLambda)
-			BHat_sub_zeta = GHat
-			DHat = BHat*BHat/(GHat+iota*IHat)
-			BHat_sup_theta = iota*DHat
-			BHat_sup_zeta = DHat
-			dBHat_sup_theta_dzeta = iota*two*BHat*dBHatdzeta/(GHat+iota*IHat)
-			dBHat_sup_zeta_dtheta = two*BHat*dBHatdtheta/(GHat+iota*IHat)
-		case(4) ! iota
-			iota = iota*(one+deltaLambda)
-			DHat = BHat*BHat/(GHat+iota*IHat)
-			BHat_sup_theta = iota*DHat
-			BHat_sup_zeta = DHat
-			dBHat_sup_theta_dzeta = iota*two*BHat*dBHatdzeta/(GHat+iota*IHat)
-			dBHat_sup_zeta_dtheta = two*BHat*dBHatdtheta/(GHat+iota*IHat)
-		end select
+    select case (whichLambda)
+    case (1) ! BHat
+      do itheta = 1,Ntheta
+        do izeta = 1,Nzeta
+          angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+          cos_angle = cos(angle)
+          sin_angle = sin(angle)
+          deltaBHat(itheta,izeta) = deltaLambda*bmnc_init(whichMode)*cos_angle
+          deltadBHatdtheta(itheta,izeta) = -deltaLambda*bmnc_init(whichMode)*m*sin_angle
+          deltadBHatdzeta(itheta,izeta) = deltaLambda*bmnc_init(whichMode)*n*Nperiods*sin_angle
+          deltadBHat_sup_theta_dzeta(itheta,izeta) = dBHat_sup_theta_dzeta(itheta,izeta)*(deltaBHat(itheta,izeta)/BHat(itheta,izeta) + deltadBHatdzeta(itheta,izeta)/dBHatdzeta(itheta,izeta))
+          deltadBHat_sup_zeta_dtheta(itheta,izeta) = dBHat_sup_zeta_dtheta(itheta,izeta)*(deltaBHat(itheta,izeta)/BHat(itheta,izeta) + deltadBHatdtheta(itheta,izeta)/dBHatdtheta(itheta,izeta))
+        end do
+      end do
+      BHat = BHat + deltaBHat
+      dBHatdtheta = dBHatdtheta + deltadBHatdtheta
+      dBHatdzeta = dBHatdzeta + deltadBHatdzeta
+      DHat = BHat*BHat/(GHat+iota*IHat)
+      BHat_sup_theta = iota*DHat
+      BHat_sup_zeta = DHat
+      dBHat_sup_theta_dzeta = dBHat_sup_theta_dzeta + deltadBHat_sup_theta_dzeta
+      dBHat_sup_zeta_dtheta = dBHat_sup_zeta_dtheta + deltadBHat_sup_zeta_dtheta
+    case(2) ! IHat
+      IHat = IHat*(one+deltaLambda)
+      BHat_sub_theta = IHat
+      DHat = BHat*BHat/(GHat+iota*IHat)
+      BHat_sup_theta = iota*DHat
+      BHat_sup_zeta = DHat
+      dBHat_sup_theta_dzeta = iota*two*BHat*dBHatdzeta/(GHat+iota*IHat)
+      dBHat_sup_zeta_dtheta = two*BHat*dBHatdtheta/(GHat+iota*IHat)
+    case(3) ! GHat
+      GHat = GHat*(one+deltaLambda)
+      BHat_sub_zeta = GHat
+      DHat = BHat*BHat/(GHat+iota*IHat)
+      BHat_sup_theta = iota*DHat
+      BHat_sup_zeta = DHat
+      dBHat_sup_theta_dzeta = iota*two*BHat*dBHatdzeta/(GHat+iota*IHat)
+      dBHat_sup_zeta_dtheta = two*BHat*dBHatdtheta/(GHat+iota*IHat)
+    case(4) ! iota
+      iota = iota*(one+deltaLambda)
+      DHat = BHat*BHat/(GHat+iota*IHat)
+      BHat_sup_theta = iota*DHat
+      BHat_sup_zeta = DHat
+      dBHat_sup_theta_dzeta = iota*two*BHat*dBHatdzeta/(GHat+iota*IHat)
+      dBHat_sup_zeta_dtheta = two*BHat*dBHatdtheta/(GHat+iota*IHat)
+    end select
 
     deallocate(deltaBHat)
     deallocate(deltadBHatdtheta)

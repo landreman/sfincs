@@ -1,8 +1,8 @@
 module solver
 
   use globalVariables
-	use adjointDiagnostics
-	use writeHDF5Output
+  use adjointDiagnostics
+  use writeHDF5Output
 
 #include "PETScVersions.F90"
 
@@ -32,7 +32,7 @@ contains
     PetscReal :: atol, rtol, stol, norm
     integer :: maxit, maxf, factor_err
 
-		! Related to adjoint solve
+    ! Related to adjoint solve
     integer :: whichAdjointRHS, iSpecies, whichLambda, whichMode, whichSpecies
     Vec :: adjointSolutionVec, summedSolutionVec, adjointRHSVec, adjointSolutionJr
     Mat :: adjointMatrix, adjointPreconditionerMatrix
@@ -50,7 +50,7 @@ contains
     logical :: doAnotherSolve
 #if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR > 6))
     PetscViewerAndFormat vf
-		PetscViewerAndFormat vf_adjoint
+    PetscViewerAndFormat vf_adjoint
 #endif
 
     external evaluateJacobian, evaluateResidual, diagnosticsMonitor
@@ -117,15 +117,15 @@ contains
        end if
 
        call SNESGetKSP(mysnes, KSPInstance, ierr)
- 			if (discreteAdjointOption .eqv. .false.) then
-					call KSPCreate(MPIComm,KSPInstance_adjoint, ierr)
-					call preallocateMatrix(adjointMatrix,1)
-					call populateMatrix(adjointMatrix,4,dummyVec)
-					if (useIterativeLinearSolver) then
-						call preallocateMatrix(adjointPreconditionerMatrix, 1)
-						call populateMatrix(adjointPreconditionerMatrix,5,dummyVec)
-					end if
-			 end if
+       if (discreteAdjointOption .eqv. .false.) then
+          call KSPCreate(MPIComm,KSPInstance_adjoint, ierr)
+          call preallocateMatrix(adjointMatrix,1)
+          call populateMatrix(adjointMatrix,4,dummyVec)
+          if (useIterativeLinearSolver) then
+            call preallocateMatrix(adjointPreconditionerMatrix, 1)
+            call populateMatrix(adjointPreconditionerMatrix,5,dummyVec)
+          end if
+       end if
 
        if (useIterativeLinearSolver) then
 !!$#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
@@ -135,16 +135,16 @@ contains
 !!$       ! Syntax for PETSc version 3.5 and later
 !!$       call KSPSetOperators(KSPInstance, matrix, preconditionerMatrix, ierr)
 !!$#endif
-					if (discreteAdjointOption .eqv. .false.) then
+          if (discreteAdjointOption .eqv. .false.) then
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
-				 ! Syntax for PETSc versions up through 3.4
-						 call KSPSetOperators(KSPInstance_adjoint, adjointMatrix, adjointPreconditionerMatrix, SAME_PRECONDITIONER, ierr)
+         ! Syntax for PETSc versions up through 3.4
+             call KSPSetOperators(KSPInstance_adjoint, adjointMatrix, adjointPreconditionerMatrix, SAME_PRECONDITIONER, ierr)
 #else
-				! Syntax for PETSc version 3.5 and later
-						 call KSPSetOperators(KSPInstance_adjoint, adjointMatrix, adjointPreconditionerMatrix, ierr)
-						 call KSPSetReusePreconditioner(KSPInstance_adjoint, PETSC_TRUE, ierr)
+        ! Syntax for PETSc version 3.5 and later
+             call KSPSetOperators(KSPInstance_adjoint, adjointMatrix, adjointPreconditionerMatrix, ierr)
+             call KSPSetReusePreconditioner(KSPInstance_adjoint, PETSC_TRUE, ierr)
 #endif
-					end if
+          end if
           call KSPGetPC(KSPInstance, preconditionerContext, ierr)
           call PCSetType(preconditionerContext, PCLU, ierr)
           call KSPSetType(KSPInstance, KSPGMRES, ierr)   ! Set the Krylov solver algorithm to GMRES
@@ -161,24 +161,24 @@ contains
           call KSPMonitorSet(KSPInstance, KSPMonitorDefault, vf, PetscViewerAndFormatDestroy, ierr) !!Added by AM 2016-07-06 
 #endif
 
-				if (discreteAdjointOption .eqv. .false.) then
-						call KSPGetPC(KSPInstance_adjoint, preconditionerContext_adjoint, ierr)
-						call PCSetType(preconditionerContext_adjoint, PCLU, ierr)
-						call KSPSetType(KSPInstance_adjoint, KSPGMRES, ierr)   ! Set the Krylov solver algorithm to GMRES
-						call KSPGMRESSetRestart(KSPInstance_adjoint, 2000, ierr)
-						call KSPSetTolerances(KSPInstance_adjoint, solverTolerance, PETSC_DEFAULT_REAL, &
-								 PETSC_DEFAULT_REAL, PETSC_DEFAULT_INTEGER, ierr)
+        if (discreteAdjointOption .eqv. .false.) then
+            call KSPGetPC(KSPInstance_adjoint, preconditionerContext_adjoint, ierr)
+            call PCSetType(preconditionerContext_adjoint, PCLU, ierr)
+            call KSPSetType(KSPInstance_adjoint, KSPGMRES, ierr)   ! Set the Krylov solver algorithm to GMRES
+            call KSPGMRESSetRestart(KSPInstance_adjoint, 2000, ierr)
+            call KSPSetTolerances(KSPInstance_adjoint, solverTolerance, PETSC_DEFAULT_REAL, &
+                 PETSC_DEFAULT_REAL, PETSC_DEFAULT_INTEGER, ierr)
 
-						! Allow options to be controlled using command-line flags:
-						call KSPSetFromOptions(KSPInstance_adjoint, ierr)
+            ! Allow options to be controlled using command-line flags:
+            call KSPSetFromOptions(KSPInstance_adjoint, ierr)
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 7))
-						call KSPMonitorSet(KSPInstance_adjoint, KSPMonitorDefault, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
+            call KSPMonitorSet(KSPInstance_adjoint, KSPMonitorDefault, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
 #else
-          	call PetscViewerAndFormatCreate(PETSC_VIEWER_STDOUT_WORLD, PETSC_VIEWER_DEFAULT, vf_adjoint, ierr) !!Added by AM 2016-07-06
-						call KSPMonitorSet(KSPInstance_adjoint, KSPMonitorDefault, vf_adjoint, PetscViewerAndFormatDestroy, ierr) !!Added by AM 2016-07-06
-						call PCSetReusePreconditioner(preconditionerContext_adjoint, PETSC_TRUE, ierr)
+            call PetscViewerAndFormatCreate(PETSC_VIEWER_STDOUT_WORLD, PETSC_VIEWER_DEFAULT, vf_adjoint, ierr) !!Added by AM 2016-07-06
+            call KSPMonitorSet(KSPInstance_adjoint, KSPMonitorDefault, vf_adjoint, PetscViewerAndFormatDestroy, ierr) !!Added by AM 2016-07-06
+            call PCSetReusePreconditioner(preconditionerContext_adjoint, PETSC_TRUE, ierr)
 #endif
-					end if
+          end if
 
        else
           ! Direct solver:
@@ -189,28 +189,28 @@ contains
 !!$       ! Syntax for PETSc version 3.5 and later
 !!$       call KSPSetOperators(KSPInstance, matrix, matrix, ierr)
 !!$#endif
-				if (discreteAdjointOption .eqv. .false.) then
+        if (discreteAdjointOption .eqv. .false.) then
           ! Direct solver:
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
        ! Syntax for PETSc versions up through 3.4
        call KSPSetOperators(KSPInstance_adjoint, adjointMatrix, adjointMatrix, SAME_PRECONDITIONER, ierr)
 #else
-			 ! Syntax for PETSc version 3.5 and later
+       ! Syntax for PETSc version 3.5 and later
        call KSPSetOperators(KSPInstance_adjoint, adjointMatrix, adjointMatrix, ierr)
 #endif
-			 end if
+       end if
           call KSPGetPC(KSPInstance, preconditionerContext, ierr)
           call PCSetType(preconditionerContext, PCLU, ierr)
           call KSPSetType(KSPInstance, KSPPREONLY, ierr)
           ! Allow options to be controlled using command-line flags:
           call KSPSetFromOptions(KSPInstance, ierr)
-					if (discreteAdjointOption .eqv. .false.) then
-						call KSPGetPC(KSPInstance_adjoint, preconditionerContext_adjoint, ierr)
-						call PCSetType(preconditionerContext_adjoint, PCLU, ierr)
-						call KSPSetType(KSPInstance_adjoint, KSPPREONLY, ierr)
-!						 Allow options to be controlled using command-line flags:
-						call KSPSetFromOptions(KSPInstance_adjoint, ierr)
-					end if
+          if (discreteAdjointOption .eqv. .false.) then
+            call KSPGetPC(KSPInstance_adjoint, preconditionerContext_adjoint, ierr)
+            call PCSetType(preconditionerContext_adjoint, PCLU, ierr)
+            call KSPSetType(KSPInstance_adjoint, KSPPREONLY, ierr)
+!             Allow options to be controlled using command-line flags:
+            call KSPSetFromOptions(KSPInstance_adjoint, ierr)
+          end if
 
        end if
 
@@ -218,9 +218,9 @@ contains
           select case (whichParallelSolverToFactorPreconditioner)
           case (1)
              call PCFactorSetMatSolverType(preconditionerContext, MATSOLVERMUMPS, ierr)
-					 if (discreteAdjointOption .eqv. .false.) then
-							call PCFactorSetMatSolverType(preconditionerContext_adjoint, MATSOLVERMUMPS, ierr)
-					 end if
+           if (discreteAdjointOption .eqv. .false.) then
+              call PCFactorSetMatSolverType(preconditionerContext_adjoint, MATSOLVERMUMPS, ierr)
+           end if
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
              ! The functions MatMumpsSetICNTL were introduced in PETSc 3.5.
              ! For earlier versions, we can achieve a similar result with the following hack:
@@ -228,9 +228,9 @@ contains
 #endif
           case (2)
              call PCFactorSetMatSolverType(preconditionerContext, MATSOLVERSUPERLU_DIST, ierr)
-						 if (discreteAdjointOption .eqv. .false.) then
-								call PCFactorSetMatSolverType(preconditionerContext_adjoint, MATSOLVERSUPERLU_DIST, ierr)
-						 end if
+             if (discreteAdjointOption .eqv. .false.) then
+                call PCFactorSetMatSolverType(preconditionerContext_adjoint, MATSOLVERSUPERLU_DIST, ierr)
+             end if
              ! Turn on superlu_dist diagnostic output:
              !call PetscOptionsInsertString("-mat_superlu_dist_statprint", ierr)
           case default
@@ -258,13 +258,13 @@ contains
           call PCFactorReorderForNonzeroDiagonal(preconditionerContext, 1d-12, ierr) 
 
           call PCFactorSetZeroPivot(preconditionerContext, 1d-200, ierr)
-					if (discreteAdjointOption .eqv. .false.) then
-						call PCFactorSetMatOrderingType(preconditionerContext_adjoint, MATORDERINGRCM, ierr)
+          if (discreteAdjointOption .eqv. .false.) then
+            call PCFactorSetMatOrderingType(preconditionerContext_adjoint, MATORDERINGRCM, ierr)
 
-						call PCFactorReorderForNonzeroDiagonal(preconditionerContext_adjoint, 1d-12, ierr)
+            call PCFactorReorderForNonzeroDiagonal(preconditionerContext_adjoint, 1d-12, ierr)
 
-						call PCFactorSetZeroPivot(preconditionerContext_adjoint, 1d-200, ierr)
-					end if
+            call PCFactorSetZeroPivot(preconditionerContext_adjoint, 1d-200, ierr)
+          end if
        end if
 
 
@@ -286,16 +286,16 @@ contains
           call PCSetReusePreconditioner(preconditionerContext, PETSC_TRUE, ierr)
 #endif
        end if
-			if (discreteAdjointOption .eqv. .false.) then
+      if (discreteAdjointOption .eqv. .false.) then
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
 ! Syntax for PETSc versions up through 3.4
 ! In this case the associated code appears in evaluateJacobian.F90
 #else
-			! Syntax for PETSc version 3.5 and later
-			call KSPSetReusePreconditioner(KSPInstance_adjoint, PETSC_TRUE, ierr)
-			call PCSetReusePreconditioner(preconditionerContext_adjoint, PETSC_TRUE, ierr)
+      ! Syntax for PETSc version 3.5 and later
+      call KSPSetReusePreconditioner(KSPInstance_adjoint, PETSC_TRUE, ierr)
+      call PCSetReusePreconditioner(preconditionerContext_adjoint, PETSC_TRUE, ierr)
 #endif
-			end if
+      end if
 
        ! In older versions of PETSC (either <3.5 or <3.4, I'm not certain)
        ! the monitor is never called when snes type = SNESKSPONLY.
@@ -343,12 +343,12 @@ contains
        if (masterProc) then
           print *,"Solver package which will be used: ",actualSolverType
        end if
-			if (discreteAdjointOption .eqv. .false.) then
-					call PCFactorGetMatSolverType(preconditionerContext_adjoint, actualSolverType, ierr)
-					if (masterProc) then
-						print *,"Solver package which will be used for adjoint: ",actualSolverType
-					end if
-			 end if
+      if (discreteAdjointOption .eqv. .false.) then
+          call PCFactorGetMatSolverType(preconditionerContext_adjoint, actualSolverType, ierr)
+          if (masterProc) then
+            print *,"Solver package which will be used for adjoint: ",actualSolverType
+          end if
+       end if
 
 
        !if (isAParallelDirectSolverInstalled .and. (whichParallelSolverToFactorPreconditioner==1)) then
@@ -369,10 +369,10 @@ contains
 
           call PCFactorGetMatrix(preconditionerContext,factorMat,ierr)
 
-					if (discreteAdjointOption .eqv. .false.) then
-						call PCFactorSetUpMatSolverType(preconditionerContext_adjoint,ierr)
-						call PCFactorGetMatrix(preconditionerContext_adjoint,factorMat_adjoint,ierr)
-					end if
+          if (discreteAdjointOption .eqv. .false.) then
+            call PCFactorSetUpMatSolverType(preconditionerContext_adjoint,ierr)
+            call PCFactorGetMatrix(preconditionerContext_adjoint,factorMat_adjoint,ierr)
+          end if
 
           ! All options set below can be over-ridden by command-line arguments, even though
           ! SNESSetFromOptions was called above rather than below.
@@ -380,16 +380,16 @@ contains
           mumps_which_cntl = 1
           mumps_value = 1.e-6
           call MatMumpsSetCntl(factorMat,mumps_which_cntl,mumps_value,ierr)
-					if (discreteAdjointOption .eqv. .false.) then
-						call MatMumpsSetCntl(factorMat_adjoint,mumps_which_cntl,mumps_value,ierr)
-					end if
+          if (discreteAdjointOption .eqv. .false.) then
+            call MatMumpsSetCntl(factorMat_adjoint,mumps_which_cntl,mumps_value,ierr)
+          end if
 
           ! Turn on mumps diagnostic output:
           mumps_which_cntl = 4
           call MatMumpsSetIcntl(factorMat,mumps_which_cntl,2,ierr)
-					if (discreteAdjointOption .eqv. .false.) then
-						call MatMumpsSetIcntl(factorMat_adjoint,mumps_which_cntl,2,ierr)
-					end if
+          if (discreteAdjointOption .eqv. .false.) then
+            call MatMumpsSetIcntl(factorMat_adjoint,mumps_which_cntl,2,ierr)
+          end if
 
 !!$       if (numProcs>1) then
 !!$          ! Turn on parallel ordering by default.
@@ -405,9 +405,9 @@ contains
           ! no significant cost in memory or time to increase this parameter.
           mumps_which_cntl = 14
           call MatMumpsSetIcntl(factorMat,mumps_which_cntl,mumps_icntl_14,ierr)
-					if (discreteAdjointOption .eqv. .false.) then
-					call MatMumpsSetIcntl(factorMat_adjoint,mumps_which_cntl,mumps_icntl_14,ierr)
-					end if
+          if (discreteAdjointOption .eqv. .false.) then
+          call MatMumpsSetIcntl(factorMat_adjoint,mumps_which_cntl,mumps_icntl_14,ierr)
+          end if
 #endif
        end if
 
@@ -422,7 +422,7 @@ contains
        select case (RHSMode)
        case (1,4,5)
           ! Single solve, either linear or nonlinear.
-					! In case of adjoint solve, perform forward solve first.
+          ! In case of adjoint solve, perform forward solve first.
 
 
           !  Set initial guess for the solution:
@@ -648,12 +648,12 @@ contains
 
       ! Forward matrix & preconditioner no longer needed
       if (discreteAdjointOption .eqv. .false.) then
-				call VecDestroy(residualVec,ierr)
-				if (useIterativeLinearSolver) then
-					call MatDestroy(preconditionerMatrix,ierr)
-				end if
+        call VecDestroy(residualVec,ierr)
+        if (useIterativeLinearSolver) then
+          call MatDestroy(preconditionerMatrix,ierr)
+        end if
         call MatDestroy(matrix,ierr)
-				call SNESDestroy(mysnes,ierr)
+        call SNESDestroy(mysnes,ierr)
       end if
 
       !> Allocate adjointRHSVec
@@ -692,10 +692,10 @@ contains
       if (solveSystem) then
         if (discreteAdjointOption .eqv. .false.) then
           call KSPSolve(KSPInstance_adjoint,adjointRHSVec,adjointSolutionJr, ierr)
-					call checkIfKSPConverged(KSPInstance_adjoint)
+          call checkIfKSPConverged(KSPInstance_adjoint)
         else
           call KSPSolveTranspose(KSPInstance,adjointRHSVec,adjointSolutionJr, ierr)
-					call checkIfKSPConverged(KSPInstance)
+          call checkIfKSPConverged(KSPInstance)
         end if
       end if
 
@@ -710,7 +710,7 @@ contains
         call VecDestroy(adjointRHSVec, ierr)
         if (discreteAdjointOption .eqv. .false.) then
           call MatDestroy(adjointMatrix, ierr)
-      	end if
+        end if
         call VecDestroy(adjointSolutionJr,ierr)
       end if
     end if
@@ -814,10 +814,10 @@ contains
           if (solveSystem) then
             if (discreteAdjointOption .eqv. .false.) then
               call KSPSolve(KSPInstance_adjoint,adjointRHSVec,adjointSolutionVec, ierr)
-							call checkIfKSPConverged(KSPInstance_adjoint)
-						else
+              call checkIfKSPConverged(KSPInstance_adjoint)
+            else
               call KSPSolveTranspose(KSPInstance,adjointRHSVec,adjointSolutionVec, ierr)
-							call checkIfKSPConverged(KSPInstance)
+              call checkIfKSPConverged(KSPInstance)
             end if
           end if
 
@@ -826,13 +826,13 @@ contains
              print *,"Done with the adjoint solve.  Time to solve: ", time2-time1, " seconds."
           end if
 
-					!> Compute diagnostics for species-specific fluxes
-					call PetscTime(time1, ierr)
-					call evaluateDiagnostics(solutionVec, adjointSolutionVec,adjointSolutionJr,whichAdjointRHS,ispecies)
-					call PetscTime(time2, ierr)
-					if (masterProc) then
-						print *,"Done with the adjoint diagnostics.  Time: ", time2-time1, " seconds."
-					end if
+          !> Compute diagnostics for species-specific fluxes
+          call PetscTime(time1, ierr)
+          call evaluateDiagnostics(solutionVec, adjointSolutionVec,adjointSolutionJr,whichAdjointRHS,ispecies)
+          call PetscTime(time2, ierr)
+          if (masterProc) then
+            print *,"Done with the adjoint diagnostics.  Time: ", time2-time1, " seconds."
+          end if
 
           select case (whichAdjointRHS)
             case (1) ! particle flux
@@ -853,14 +853,14 @@ contains
           call VecSet(adjointSolutionVec, zero, ierr)
         end do ! ispecies
 
-				! Now compute diagnostics for species-summed quantities
+        ! Now compute diagnostics for species-summed quantities
         if (useSummedSolutionVec) then
-						call PetscTime(time1, ierr)
-						call evaluateDiagnostics(solutionVec,summedSolutionVec,adjointSolutionJr,whichAdjointRHS,0)
-          	call PetscTime(time2, ierr)
-						if (masterProc) then
-							print *,"Done with the adjoint diagnostics.  Time: ", time2-time1, " seconds."
-						end if
+            call PetscTime(time1, ierr)
+            call evaluateDiagnostics(solutionVec,summedSolutionVec,adjointSolutionJr,whichAdjointRHS,0)
+            call PetscTime(time2, ierr)
+            if (masterProc) then
+              print *,"Done with the adjoint diagnostics.  Time: ", time2-time1, " seconds."
+            end if
           call VecSet(summedSolutionVec,zero,ierr)
         end if
 
@@ -887,16 +887,16 @@ contains
                 ! species-summed flux computed already
                 cycle
               end if
-							if (adjointTotalHeatFluxOption .eqv. .false.) then
-								cycle
-							end if
+              if (adjointTotalHeatFluxOption .eqv. .false.) then
+                cycle
+              end if
             case (3) ! bootstrap
               if (summedSolution_parallelFlow) then
                 cycle
               end if
-							if (adjointBootstrapOption .eqv. .false.) then
-								cycle
-							end if
+              if (adjointBootstrapOption .eqv. .false.) then
+                cycle
+              end if
           end select
 
           if (masterProc) then
@@ -917,10 +917,10 @@ contains
              if (discreteAdjointOption .eqv. .false.) then
              ! All the magic happens in this next line!
                 call KSPSolve(KSPInstance_adjoint,adjointRHSVec,adjointSolutionVec, ierr)
-								call checkIfKSPConverged(KSPInstance_adjoint)
+                call checkIfKSPConverged(KSPInstance_adjoint)
              else
                 call KSPSolveTranspose(KSPInstance,adjointRHSVec,adjointSolutionVec, ierr)
-								call checkIfKSPConverged(KSPInstance)
+                call checkIfKSPConverged(KSPInstance)
              end if
           end if
           call PetscTime(time2, ierr)
@@ -929,7 +929,7 @@ contains
           end if
 
           call PetscTime(time1, ierr)
-					call evaluateDiagnostics(solutionVec, adjointSolutionVec, adjointSolutionJr, whichAdjointRHS, ispecies)
+          call evaluateDiagnostics(solutionVec, adjointSolutionVec, adjointSolutionJr, whichAdjointRHS, ispecies)
           call PetscTime(time2, ierr)
           if (masterProc) then
             print *,"Done with the adjoint diagnostics.  Time: ", time2-time1, " seconds."
@@ -972,27 +972,27 @@ contains
 
        call VecDestroy(solutionVec, ierr)
        call VecDestroy(residualVec, ierr)
-			 if (RHSMode>3) then
-			 	call VecDestroy(f0,ierr)
-			 end if
+       if (RHSMode>3) then
+         call VecDestroy(f0,ierr)
+       end if
 
        ! A seg fault occurs in nonlinear runs if we call MatDestroy or KSPDestroy here, since the matrix was already destroyed (and a different Mat created) in evaluateJacobian().
 !!$    call MatDestroy(matrix, ierr)
 !!$    if (useIterativeLinearSolver) then
 !!$       call MatDestroy(preconditionerMatrix, ierr)
 !!$    end if
-		if ((discreteAdjointOption .eqv. .false.) .and. RHSMode>3) then
-				call KSPDestroy(KSPInstance_adjoint,ierr)
-		end if
+    if ((discreteAdjointOption .eqv. .false.) .and. RHSMode>3) then
+        call KSPDestroy(KSPInstance_adjoint,ierr)
+    end if
 
-		if ((includePhi1 .eqv. .false.) .and. ((discreteAdjointOption.eqv. .false.) .and. RHSMode>3) .eqv. .false.) then
-				call MatDestroy(matrix, ierr)
-				if (useIterativeLinearSolver) then
-				 call MatDestroy(preconditionerMatrix, ierr)
-				end if
-		end if
+    if ((includePhi1 .eqv. .false.) .and. ((discreteAdjointOption.eqv. .false.) .and. RHSMode>3) .eqv. .false.) then
+        call MatDestroy(matrix, ierr)
+        if (useIterativeLinearSolver) then
+         call MatDestroy(preconditionerMatrix, ierr)
+        end if
+    end if
 
-		call SNESDestroy(mysnes,ierr)
+    call SNESDestroy(mysnes,ierr)
 
     end do
 

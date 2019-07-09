@@ -2,10 +2,10 @@ module ambipolarSolver
 
 #include "PETScVersions.F90"
 
-	implicit none
+  implicit none
 
-	! Initial guess for Er
-	PetscScalar :: Er_init
+  ! Initial guess for Er
+  PetscScalar :: Er_init
 
   contains
 
@@ -20,24 +20,24 @@ module ambipolarSolver
 
     PetscScalar :: time1, time2, ambipolarEr
     PetscErrorCode :: ierr
-		integer :: RHSMode_init
+    integer :: RHSMode_init
 
-		! If RHSMode>3, perform ambipolarSolve with adjoint diagnostics
-		RHSMode_init = 1
-		if (RHSMode>3) then
-			RHSMode_init = RHSmode
-			RHSMode = 1
-		end if
+    ! If RHSMode>3, perform ambipolarSolve with adjoint diagnostics
+    RHSMode_init = 1
+    if (RHSMode>3) then
+      RHSMode_init = RHSmode
+      RHSMode = 1
+    end if
 
-		Er_init = Er
+    Er_init = Er
 
     call PetscTime(time1, ierr)
     if (ambipolarSolveOption==1) then
       call ambipolarSolverNewton_Bisection(ambipolarEr)
     else if (ambipolarSolveOption==2) then
       call ambipolarSolverBrent(ambipolarEr)
-		else if (ambipolarSolveOption==3) then
-			call ambipolarSolverNewton(ambipolarEr)
+    else if (ambipolarSolveOption==3) then
+      call ambipolarSolverNewton(ambipolarEr)
     end if
     call PetscTime(time2,ierr)
     if (masterProc) then
@@ -51,7 +51,7 @@ module ambipolarSolver
 
     ! If adjoint solve required, call solver again with Er solution
     if (RHSMode_init>3) then
-			RHSMode = RHSMode_init
+      RHSMode = RHSMode_init
       ambipolarSolve = .false.
       call mainSolverLoop()
       ambipolarSolve = .true.
@@ -61,7 +61,7 @@ module ambipolarSolver
 
   !> Ambipolar root is known to lie between x1 and x2 with radial current values
   !> f1 and f2
-	! Based on zbrent subroutine in Numerical Recipes, Chapber 9.3
+  ! Based on zbrent subroutine in Numerical Recipes, Chapber 9.3
   subroutine ambipolarSolverBrent(ambipolarEr)
 
     use globalVariables
@@ -85,21 +85,21 @@ module ambipolarSolver
 
     Brent_EPS = 1.d-15
 
-		! Evaluate at Er_min
-		Brent_a = Er_min
-		call updateEr(Brent_a,Brent_fa)
-		Er_search(1) = Brent_a
-		radialCurrent(1) = Brent_fa
-		! Evaluate at Er_max
-		Brent_c = Er_max
-		call updateEr(Brent_c,Brent_fc)
-		Er_search(2) = Brent_c
-		radialCurrent(2) = Brent_fc
-		! Evaluate at initial guess
-		Brent_b = Er_init
-		call updateEr(Brent_b,Brent_fb)
-		Er_search(3) = Brent_b
-		radialCurrent(3) = Brent_fb
+    ! Evaluate at Er_min
+    Brent_a = Er_min
+    call updateEr(Brent_a,Brent_fa)
+    Er_search(1) = Brent_a
+    radialCurrent(1) = Brent_fa
+    ! Evaluate at Er_max
+    Brent_c = Er_max
+    call updateEr(Brent_c,Brent_fc)
+    Er_search(2) = Brent_c
+    radialCurrent(2) = Brent_fc
+    ! Evaluate at initial guess
+    Brent_b = Er_init
+    call updateEr(Brent_b,Brent_fb)
+    Er_search(3) = Brent_b
+    radialCurrent(3) = Brent_fb
 
     if ((Brent_fa > zero .and. Brent_fc > zero) .or. (Brent_fa < zero .and. Brent_fc < zero)) then
       if (masterProc) then
@@ -107,13 +107,13 @@ module ambipolarSolver
       end if
       stop
     end if
-		if ((Brent_fa > zero) .eqv. (Brent_fb > zero)) then
-			Brent_fa = Brent_fb
-			Brent_a = Brent_b
-		else if ((Brent_fc > zero) .eqv. (Brent_fb > zero)) then
-			Brent_fc = Brent_fb
-			Brent_c = Brent_b
-		end if
+    if ((Brent_fa > zero) .eqv. (Brent_fb > zero)) then
+      Brent_fa = Brent_fb
+      Brent_a = Brent_b
+    else if ((Brent_fc > zero) .eqv. (Brent_fb > zero)) then
+      Brent_fc = Brent_fb
+      Brent_c = Brent_b
+    end if
 
     do iEr = 4, (NEr_ambipolarSolve)
       call PetscTime(time1, ierr)
@@ -135,7 +135,7 @@ module ambipolarSolver
       Brent_tol1 = two*Brent_EPS*abs(Brent_b)+0.5*Er_search_tolerance_f
       Brent_xm = 0.5*(Brent_c-Brent_b)
 
-			if (abs(Brent_xm) <= Brent_tol1 .or. (abs(Brent_fb) < Er_search_tolerance_f)) then
+      if (abs(Brent_xm) <= Brent_tol1 .or. (abs(Brent_fb) < Er_search_tolerance_f)) then
         ambipolarEr = Brent_b
         exit_code = 0
         exit
@@ -223,7 +223,7 @@ module ambipolarSolver
 
     implicit none
 
-		PetscScalar, intent(out) :: ambipolarEr
+    PetscScalar, intent(out) :: ambipolarEr
     PetscScalar :: Erl, Erh, fl, fh, xl, xh
     PetscScalar :: rts, dxold, dx, f, df, temp
     integer :: j, exit_code
@@ -237,22 +237,22 @@ module ambipolarSolver
     Er_search = zero
     radialCurrent = zero
 
-		! Evaluate at Er_min
-		Erl = Er_min
-		call updateEr(Erl,fl)
-		Er_search(1) = Erl
-		radialCurrent(1) = fl
-		! Evaluate at Er_max
-		Erh = Er_max
-		call updateEr(Erh,fh)
-		Er_search(2) = Erh
-		radialCurrent(2) = fh
-		! Evaluate at Er_init
-		rts = Er_init
-		call updateEr(rts,f)
-		df = dRadialCurrentdEr
-		Er_search(3) = rts
-		radialCurrent(3) = f
+    ! Evaluate at Er_min
+    Erl = Er_min
+    call updateEr(Erl,fl)
+    Er_search(1) = Erl
+    radialCurrent(1) = fl
+    ! Evaluate at Er_max
+    Erh = Er_max
+    call updateEr(Erh,fh)
+    Er_search(2) = Erh
+    radialCurrent(2) = fh
+    ! Evaluate at Er_init
+    rts = Er_init
+    call updateEr(rts,f)
+    df = dRadialCurrentdEr
+    Er_search(3) = rts
+    radialCurrent(3) = f
 
     if ((fl > zero  .and. fh > zero) .or. (fl < zero .and. fh < zero)) then
       if (masterProc) then
@@ -264,18 +264,18 @@ module ambipolarSolver
     if (fl < zero) then
       xl = Erl
       xh = Erh
-    else	
+    else
       xh = Erl
       xl = Erh
     end if
-		! Close interval using Er_init
-		if (rts < 0) then
-			xl = Er_init
-			fl = f
-		else
-			xh = Er_init
-			fh = f
-		end if
+    ! Close interval using Er_init
+    if (rts < 0) then
+      xl = Er_init
+      fl = f
+    else
+      xh = Er_init
+      fh = f
+    end if
 
     ! Initialize guess for root, "stepsize before last", and last step
     ! Initial guess it taken to be R1, and df is input parameter
@@ -358,54 +358,54 @@ module ambipolarSolver
 
   end subroutine ambipolarSolverNewton_Bisection
 
-	subroutine ambipolarSolverNewton(ambipolarEr)
+  subroutine ambipolarSolverNewton(ambipolarEr)
 
-		use globalVariables
-		use radialCoordinates
-		use solver
+    use globalVariables
+    use radialCoordinates
+    use solver
 
-		implicit none
+    implicit none
 
-		PetscScalar, intent(out) :: ambipolarEr
-		PetscScalar, dimension(:), allocatable :: Er_search, radialCurrent
-		integer :: j, exit_code
-		PetscErrorCode :: ierr
-		PetscScalar :: time1, time2, this_Er, this_RadialCurrent, dx
+    PetscScalar, intent(out) :: ambipolarEr
+    PetscScalar, dimension(:), allocatable :: Er_search, radialCurrent
+    integer :: j, exit_code
+    PetscErrorCode :: ierr
+    PetscScalar :: time1, time2, this_Er, this_RadialCurrent, dx
 
-		allocate(Er_search(NEr_ambipolarSolve))
-		allocate(radialCurrent(NEr_ambipolarSolve))
-		Er_search = zero
-		radialCurrent = zero
+    allocate(Er_search(NEr_ambipolarSolve))
+    allocate(radialCurrent(NEr_ambipolarSolve))
+    Er_search = zero
+    radialCurrent = zero
 
-		exit_code = -1
-		! Initial guess
-		this_Er = Er_init
+    exit_code = -1
+    ! Initial guess
+    this_Er = Er_init
 
-		do j = 1, NEr_ambipolarSolve
-			call PetscTime(time1,ierr)
-			! The one new function evaluation per iteration
-			call updateEr(this_Er,this_RadialCurrent)
-			Er_search(j) = this_Er
-			radialCurrent(j) = this_RadialCurrent
-			dx = this_RadialCurrent/dRadialCurrentdEr ! this comes from globalVariables
-			this_Er = this_Er - dx
-			if (this_Er < Er_min .or. this_Er > Er_max) then
-				print *,"Newton method iterate exceeded Er bounds!"
-				exit_code = -2
-				exit
-			end if
-			if ((abs(dx) < Er_search_tolerance_dx) .or. (abs(this_radialCurrent)< Er_search_tolerance_f)) then
-				ambipolarEr = this_Er
-				exit_code = 0
-				exit
-			end if
-			call PetscTime(time2,ierr)
-			if (masterProc) then
-				print *,"Time for one Newton loop: ", time2-time1," sec."
-			end if
-		end do ! j
+    do j = 1, NEr_ambipolarSolve
+      call PetscTime(time1,ierr)
+      ! The one new function evaluation per iteration
+      call updateEr(this_Er,this_RadialCurrent)
+      Er_search(j) = this_Er
+      radialCurrent(j) = this_RadialCurrent
+      dx = this_RadialCurrent/dRadialCurrentdEr ! this comes from globalVariables
+      this_Er = this_Er - dx
+      if (this_Er < Er_min .or. this_Er > Er_max) then
+        print *,"Newton method iterate exceeded Er bounds!"
+        exit_code = -2
+        exit
+      end if
+      if ((abs(dx) < Er_search_tolerance_dx) .or. (abs(this_radialCurrent)< Er_search_tolerance_f)) then
+        ambipolarEr = this_Er
+        exit_code = 0
+        exit
+      end if
+      call PetscTime(time2,ierr)
+      if (masterProc) then
+        print *,"Time for one Newton loop: ", time2-time1," sec."
+      end if
+    end do ! j
 
-		if (exit_code == 0) then
+    if (exit_code == 0) then
       if (masterProc) then
         print *,"Newton ambipolar solve was successful."
         print *,"Here are the Ers we used: "
@@ -445,7 +445,7 @@ module ambipolarSolver
       stop
     end if
 
-	end subroutine ambipolarSolverNewton
+  end subroutine ambipolarSolverNewton
 
   subroutine updateEr(thisEr,radialCurrent)
 
