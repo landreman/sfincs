@@ -37,6 +37,7 @@
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 9))
 #define MatSolverType MatSolverPackage
 #define PCFactorSetMatSolverType PCFactorSetMatSolverPackage
+#define PCFactorGetMatSolverType PCFactorGetMatSolverPackage
 #define PCFactorSetUpMatSolverType PCFactorSetUpMatSolverPackage
 #endif
 !Hereafter in this code, use MatSolverType.

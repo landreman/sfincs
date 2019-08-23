@@ -33,6 +33,7 @@
 
     integer :: tag, dummy(1)
     integer :: status(MPI_STATUS_SIZE)
+    integer :: im, imn, jn
 
 
     ! *******************************************************************************
@@ -1168,6 +1169,63 @@
     allocate(NTVKernel(Ntheta,Nzeta))
     allocate(bcdata(Ntheta,Nzeta))
 
+    if (RHSMode > 3) then
+      ! m = 0 : n goes from nMinAdjoint to nMaxAdjoint
+      if (mMinAdjoint==0) then
+        NModesAdjoint = (nMaxAdjoint-nMinAdjoint)+1
+      end if
+      ! m > 0 : n goes from -nMaxAdjoint to nMaxAdjoint
+      if (nMinAdjoint==0) then
+        if (mMinAdjoint==0) then
+          NModesAdjoint = NModesAdjoint + (mMaxAdjoint)*(2*nMaxAdjoint + 1)
+        else
+          NModesAdjoint = NModesAdjoint + ((mMaxAdjoint-mMinAdjoint)+1)*(2*nMaxAdjoint+1)
+        end if
+      else
+        if (mMinAdjoint==0) then
+          NModesAdjoint = NModesAdjoint + (mMaxAdjoint)*2*(nMaxAdjoint-nMinAdjoint+1)
+        else
+          NModesAdjoint = NModesAdjoint + ((mMaxAdjoint-mMinAdjoint)+1)*2*(nMaxAdjoint-nMinAdjoint+1)
+        end if
+      end if
+      ! This is necessary for stellopt
+      if (.not. allocated(ns_sensitivity)) then
+        allocate(ns_sensitivity(NModesAdjoint))
+      end if
+      if (.not. allocated(ms_sensitivity)) then
+        allocate(ms_sensitivity(NModesAdjoint))
+      end if
+
+      ! Now initialize ms and ns, starting with m = 0
+      ! Note that ns is multiplied by Nperiods for VMEC convention
+      imn = 1
+      if (mMinAdjoint == 0) then
+        do jn=nMinAdjoint,nMaxAdjoint
+          ms_sensitivity(imn) = 0
+          ns_sensitivity(imn) = jn
+          imn = imn+1
+        end do
+      end if
+      ! Now m>0 modes
+      do im = max(1,mMinAdjoint),mMaxAdjoint
+        do jn=nMinAdjoint, nMaxAdjoint
+          ms_sensitivity(imn) = im
+          ns_sensitivity(imn) = jn
+          imn = imn+1
+        end do
+        do jn=max(1,nMinAdjoint), nMaxAdjoint
+          ms_sensitivity(imn) = im
+          ns_sensitivity(imn) = -jn
+          imn = imn+1
+        end do
+      end do
+      if (masterProc) then
+        print *,"Here are the adjoint modes: "
+        print *,"ms_sensitivity: ", ms_sensitivity
+        print *,"ns_sensitivity: ", ns_sensitivity
+      end if
+    end if
+
     call computeBHat()
 
     ! *********************************************************
@@ -1328,7 +1386,53 @@
     allocate(heatFluxBeforeSurfaceIntegral_vm(Nspecies,Ntheta,Nzeta))
     allocate(heatFluxBeforeSurfaceIntegral_vE0(Nspecies,Ntheta,Nzeta))
     allocate(heatFluxBeforeSurfaceIntegral_vE(Nspecies,Ntheta,Nzeta))
-    allocate(NTVBeforeSurfaceIntegral(Nspecies,Ntheta,Nzeta)) 
+    allocate(NTVBeforeSurfaceIntegral(Nspecies,Ntheta,Nzeta))
+
+    if (RHSMode > 3 .and. RHSMode < 6) then
+      allocate(dRadialCurrentdLambda(NLambdas,NModesAdjoint))
+      allocate(dTotalHeatFluxdLambda(NLambdas,NModesAdjoint))
+      if (.not. allocated(dBootstrapdLambda)) then
+        allocate(dBootstrapdLambda(NLambdas,NModesAdjoint))
+      end if
+      allocate(dParticleFluxdLambda(NSpecies,NLambdas,NModesAdjoint))
+      allocate(dHeatFluxdLambda(NSpecies,NLambdas,NModesAdjoint))
+      allocate(dParallelFlowdLambda(Nspecies,NLambdas,NModesAdjoint))
+      if (debugAdjoint) then
+        allocate(dRadialCurrentdLambda_finitediff(NLambdas,NModesAdjoint))
+        allocate(dTotalHeatFluxdLambda_finitediff(NLambdas,NModesAdjoint))
+        allocate(dBootstrapdLambda_finitediff(NLambdas,NModesAdjoint))
+        allocate(dParticleFluxdLambda_finitediff(NSpecies,NLambdas,NModesAdjoint))
+        allocate(dHeatFluxdLambda_finitediff(NSpecies,NLambdas,NModesAdjoint))
+        allocate(dParallelFlowdLambda_finitediff(Nspecies,NLambdas,NModesAdjoint))
+
+        allocate(particleFluxPercentError(Nspecies,NLambdas,NModesAdjoint))
+        allocate(heatFluxPercentError(Nspecies,NLambdas,NModesAdjoint))
+        allocate(parallelFlowPercentError(Nspecies,NLambdas,NModesAdjoint))
+
+        allocate(radialCurrentPercentError(NLambdas,NModesAdjoint))
+        allocate(bootstrapPercentError(NLambdas,NModesAdjoint))
+        allocate(totalHeatFluxPercentError(NLambdas,NModesAdjoint))
+
+        particleFluxPercentError = zero
+        heatFluxPercentError = zero
+        parallelFlowPercentError = zero
+        radialCurrentPercentError = zero
+        bootstrapPercentError = zero
+        totalHeatFluxPercentError = zero
+
+        dRadialCurrentdLambda_finitediff = zero
+        dTotalHeatFluxdLambda_finitediff = zero
+        dBootstrapdLambda_finitediff = zero
+        dHeatFluxdLambda_finitediff = zero
+        dParallelFlowdLambda_finitediff = zero
+        if (RHSMode==5 .and. (.not. allocated(dPhidPsidLambda_finitediff))) then
+          allocate(dPhidPsidLambda_finitediff(NLambdas,NModesAdjoint))
+        end if
+      end if
+      if (RHSMode==5) then
+        if (.not. allocated(dPhidPsidLambda)) allocate(dPhidPsidLambda(NLambdas,NModesAdjoint))
+      end if
+    end if
 
     allocate(particleFlux_vm_psiHat_vs_x(Nspecies,Nx))
     allocate(heatFlux_vm_psiHat_vs_x(Nspecies,Nx))

@@ -1,14 +1,19 @@
 # -*- mode: makefile -*-
 
-OBJ_FILES = ChebyshevGrid.o ChebyshevInterpolationMatrix.o \
+OBJ_FILES = adjointDiagnostics.o ambipolarSolver.o ChebyshevGrid.o ChebyshevInterpolationMatrix.o classicalTransport.o \
 	  createGrids.o diagnostics.o evaluateJacobian.o evaluateResidual.o export_f.o geometry.o \
 	  globalVariables.o indices.o polynomialDiffMatrices.o polynomialInterpolationMatrix.o \
-	  populateMatrix.o preallocateMatrix.o quadpack.o radialCoordinates.o readHDF5Input.o readInput.o sfincs_finalize.o sfincs_main.o solver.o sparsify.o \
-	  uniformDiffMatrices.o uniformInterpolationMatrix.o validateInput.o writeHDF5Output.o xGrid.o classicalTransport.o
+      populateAdjointRHS.o populatedMatrixdLambda.o populatedRHSdLambda.o  \
+	  populateMatrix.o preallocateMatrix.o quadpack.o radialCoordinates.o readHDF5Input.o readInput.o sfincs_finalize.o  \
+      sfincs_main.o solver.o sparsify.o testingAdjointDiagnostics.o \
+	  uniformDiffMatrices.o uniformInterpolationMatrix.o updateBoozerGeometry.o validateInput.o writeHDF5Output.o xGrid.o  
 
 # Dependencies:
+adjointDiagnostics.o: globalVariables.o indices.o writeHDF5Output.o
+ambipolarSolver.o: globalVariables.o solver.o writeHDF5Output.o radialCoordinates.o
 ChebyshevGrid.o: 
 ChebyshevInterpolationMatrix.o:
+classicalTransport.o: globalVariables.o
 createGrids.o: globalVariables.o polynomialDiffMatrices.o xGrid.o geometry.o indices.o export_f.o
 diagnostics.o: globalVariables.o indices.o writeHDF5Output.o classicalTransport.o
 evaluateJacobian.o: globalVariables.o
@@ -19,6 +24,9 @@ indices.o: globalVariables.o
 polynomialDiffMatrices.o: xGrid.o
 polynomialInterpolationMatrix.o: 
 populateMatrix.o: globalVariables.o sparsify.o indices.o xGrid.o
+populateAdjointRHS.o: globalVariables.o indices.o
+populatedMatrixdLambda.o: globalVariables.o indices.o xGrid.o sparsify.o
+populatedRHSdLambda.o: globalVariables.o indices.o
 preallocateMatrix.o: indices.o globalVariables.o
 quadpack.o:
 radialCoordinates.o: globalVariables.o
@@ -26,12 +34,13 @@ readHDF5Input.o: globalVariables.o
 readInput.o: export_f.o globalVariables.o xGrid.o
 sfincs.o: sfincs_main.o
 sfincs_finalize.o: export_f.o indices.o globalVariables.o xGrid.o
-sfincs_main.o: geometry.o globalVariables.o writeHDF5Output.o readInput.o solver.o radialCoordinates.o classicalTransport.o readHDF5Input.o
-solver.o: globalVariables.o
+sfincs_main.o: geometry.o globalVariables.o writeHDF5Output.o readInput.o solver.o radialCoordinates.o classicalTransport.o readHDF5Input.o ambipolarSolver.o testingAdjointDiagnostics.o
+solver.o: globalVariables.o adjointDiagnostics.o writeHDF5Output.o
 sparsify.o:
+testingAdjointDiagnostics.o: adjointDiagnostics.o geometry.o solver.o ambipolarSolver.o writeHDF5Output.o
 uniformDiffMatrices.o: 
 uniformInterpolationMatrix.o: 
+updateBoozerGeometry.o: geometry.o globalVariables.o
 validateInput.o: globalVariables.o xGrid.o
 writeHDF5Output.o: globalVariables.o export_f.o xGrid.o
 xGrid.o:
-classicalTransport.o: globalVariables.o

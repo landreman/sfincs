@@ -33,6 +33,15 @@ module globalVariables
   integer :: RHSMode = 1, whichRHS
   logical :: isAParallelDirectSolverInstalled
 
+  ! Quantities related to ambipolar solve
+  logical :: ambipolarSolve = .false.
+  integer :: ambipolarSolveOption = 2
+  integer :: NEr_ambipolarSolve = 20
+  PetscScalar :: Er_search_tolerance_dx = 1.d-8
+  PetscScalar :: Er_search_tolerance_f = 1.d-10
+  PetscScalar :: Er_min = -100
+  PetscScalar :: Er_max = 100
+
   ! ********************************************************
   ! ********************************************************
   !
@@ -57,6 +66,12 @@ module globalVariables
   integer :: VMECRadialOption = 1
   integer :: VMEC_Nyquist_option = 1
   PetscScalar :: rippleScale = 1
+
+  ! For use in Boozer bmnc stellopt
+  integer, parameter :: mmax_boozer = 40
+  integer, parameter :: nmax_boozer = 40
+  PetscScalar, dimension(0:mmax_boozer,-nmax_boozer:nmax_boozer) :: boozer_bmnc
+  PetscScalar, dimension(0:mmax_boozer,-nmax_boozer:nmax_boozer) :: boozer_bmns
 
   ! ********************************************************
   ! ********************************************************
@@ -87,6 +102,23 @@ module globalVariables
   logical :: withNBIspec = .false.
   !!!!!!!!!!!!!!!!!!!!!!!
 
+  ! ********************************************************
+  ! ********************************************************
+  !
+  ! Sensitivity options:
+  !
+  ! ********************************************************
+  ! ********************************************************
+
+  logical :: debugAdjoint = .false.
+  PetscScalar :: deltaLambda = 1.d-4 ! for finite diff testing
+  logical :: adjointBootstrapOption = .false.
+  logical :: adjointRadialCurrentOption = .false.
+  logical :: adjointTotalHeatFluxOption = .false.
+  ! These are initialized to .false. in readInput
+  logical, dimension(:), allocatable :: adjointHeatFluxOption, adjointParticleFluxOption, adjointParallelFlowOption
+  logical :: discreteAdjointOption = .true.
+
 
   ! ********************************************************
   ! ********************************************************
@@ -96,7 +128,8 @@ module globalVariables
   ! ********************************************************
   ! ********************************************************
 
-!!  logical :: nonlinear = .false. !!Commented by AM 2016-02
+!!  logical :: nonlinear = .false.
+ !!Commented by AM 2016-02
   PetscScalar :: Delta = 4.5694d-3
   PetscScalar :: alpha = 1.0
   PetscScalar :: nu_n = 8.330d-3
@@ -380,6 +413,32 @@ module globalVariables
 
   Vec :: f0
 
+! ********************************************************
+  !
+  !  Variables related to sensitivity:
+  !
+  ! ********************************************************
+
+  !> @var ns Values of n to use for Fourier derivatives.
+  !> @var ms Values of m to sue for Fourier derivatives.
+  integer, dimension(:), allocatable :: ns_sensitivity, ms_sensitivity
+  integer :: nMaxAdjoint = 0, mMaxAdjoint = 0
+  integer :: nMinAdjoint = 0, mMinAdjoint = 0
+  integer :: NModesAdjoint = 0, NLambdas = 4
+  PetscScalar, dimension(:,:), allocatable :: dRadialCurrentdLambda,dTotalHeatFluxdLambda,dBootstrapdLambda
+  PetscScalar, dimension(:,:,:), allocatable :: dParticleFluxdLambda, dHeatFluxdLambda, dParallelFlowdLambda
+  PetscScalar, dimension(:,:), allocatable :: dPhidPsidLambda
+  ! Below are quantities related to finite diff testing
+  PetscScalar, dimension(:,:), allocatable :: dRadialCurrentdLambda_finitediff,dTotalHeatFluxdLambda_finitediff,dBootstrapdLambda_finitediff
+  PetscScalar, dimension(:,:,:), allocatable :: dParticleFluxdLambda_finitediff, dHeatFluxdLambda_finitediff, dParallelFlowdLambda_finitediff
+  PetscScalar, dimension(:,:,:), allocatable :: particleFluxPercentError, heatFluxPercentError, parallelFlowPercentError
+  PetscScalar, dimension(:,:), allocatable :: radialCurrentPercentError, totalHeatFluxPercentError, bootstrapPercentError
+  PetscScalar, dimension(:), allocatable :: bmnc_init
+  PetscScalar, dimension(:,:), allocatable :: DHat_init, BHat_init, dBHatdtheta_init, dBHatdzeta_init, BHat_sup_theta_init, dBHat_sup_theta_dzeta_init, BHat_sup_zeta_init, dBHat_sup_zeta_dtheta_init, BHat_sub_theta_init, dBHat_sub_theta_dzeta_init, BHat_sub_zeta_init, dBHat_sub_zeta_dtheta_init
+  PetscScalar :: GHat_init, IHat_init, iota_init
+  PetscScalar, dimension(:,:), allocatable :: dPhidPsidLambda_finitediff, dPhidPsiPercentError
+  ! Related to ambipolar solve
+  PetscScalar :: dRadialCurrentdEr
 
   ! ********************************************************
   !
