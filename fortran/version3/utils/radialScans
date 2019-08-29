@@ -11,6 +11,12 @@
 # If (geometryScheme=11 or geometryScheme=12 or (geometryScheme=5 and vmecRadialOption>0)) then the radii will be shifted to match
 # the radii available in the magnetic equilibrium file.
 # Profiles of density and temperature will be read in from the 'profiles' file.
+#
+# Programming Notes:
+#  - Parsing of array values input.namelist is fairly crude and may fail for strings:
+#    quotations are not respected.
+#    Values are separated just by using .replace(',',' ').split().  This will work fine
+#    for numerical values, but will fail for any strings that contain commas or spaces.
 
 profilesFilename = 'profiles'
 
@@ -326,11 +332,11 @@ radii_fine = convertRadiiFromPsiN(inputRadialCoordinate,psiN_fine)
 
 # Determine the number of species according to the input.namelist file:
 Zs = readVariable('Zs','string')
-Zs = Zs.split()
+Zs = Zs.replace(',',' ').split()
 Nspecies = len(Zs)
 for i in range(Nspecies):
     Zs[i] = float(Zs[i])
-if Nspecies != len(readVariable('mHats','string').split()):
+if Nspecies != len(readVariable('mHats','string').replace(',',' ').split()):
     print "Error! Number of species is not consistent among Zs and mHats in input.namelist."
     exit(1)
 print "Number of species determined from the input.namelist file: ",Nspecies
@@ -547,12 +553,12 @@ if profilesScheme == 1:
                 exit(1)
             profilesRadialCoordinate = int(line)
             continue
-        print line.split()
-        if Nspecies*2+4 != len(line.split()):
+        print line.replace(',',' ').split()
+        if Nspecies*2+4 != len(line.replace(',',' ').split()):
             print "Error! Each line in the profiles file should have 2*Nspecies+4 values. The following line seems to have the wrong number of values:"
             print line
             exit(1)
-        lineSplit = line.split()
+        lineSplit = line.replace(',',' ').split()
         try:
             data_oldRadius.append(float(lineSplit[0]))
             data_NErs.append(float(lineSplit[1]))
@@ -675,12 +681,12 @@ elif profilesScheme == 2:
                 exit(1)
             profilesRadialCoordinate = int(line)
             continue
-        print line.split()
-        if Nspecies*2+3 != len(line.split()):
+        print line.replace(',',' ').split()
+        if Nspecies*2+3 != len(line.replace(',',' ').split()):
             print "Error! Each line in the profiles file should have 2*Nspecies+3 values. The following line seems to have the wrong number of values:"
             print line
             exit(1)
-        lineSplit = line.split()
+        lineSplit = line.replace(',',' ').split()
         try:
             data_NErs.append(float(lineSplit[0]))
             data_generalEr_min.append(float(lineSplit[1]))
