@@ -34,6 +34,8 @@ import numpy as np
 import logging
 import os
 
+from collections import OrderedDict
+
 import mirscan_const
 import mirscan_util
 
@@ -96,6 +98,140 @@ def get_job_path(run):
     return path
     
     
+def generate_combined_jobfiles_rn(run_list, jobfile_orig):
+    # This routine is specific for SLURM.
+    #
+    # This is currently written so that all of the jobs will be run in series.
+    # It would be straight forward to modify this so that groups of jobs were
+    # run in parallel.
+    
+    
+    # First I need to split up the runs by radius.
+    
+    rN_list = list()
+    for run in run_list:
+        rN_list.append(mirscan_util.readVariable('rN_wish', 'float', run['inputfile']))
+              
+    rN_unique = np.unique(rN_list)
+                       
+    for ii_run, run in enumerate(run_list):
+        run['job_index'] = np.flatnonzero(rN_unique == rN_list[ii_run])[0]
+
+
+    jobfile_template = jobfile_orig.copy()                        
+                            
+    # Extract the line with the actual call to sfincs.
+    num_matches = 0
+    for ii_line, line in enumerate(jobfile_template):
+        # skip empty and commented lines.
+        if len(line.strip()) == 0:
+            continue
+        if line.strip()[0] in ('#', '!', '%'):
+            continue
+            
+        if 'sfincs' in line:
+            num_matches += 1
+            ii_insert = ii_line
+            sfincs_command = line
+            del(jobfile_template[ii_line])
+
+    if num_matches == 0:
+        raise Exception('No call to sfincs found in job file.')
+    if num_matches > 1:
+        raise Exception('More than one call to sfincs found in job file.')
+        
+    # Create a set of jobfiles.    
+    job_list = list()
+    for rN in rN_unique:
+        job_info = OrderedDict()
+        job_info['rN'] = rN
+        job_info['jobfile'] = jobfile_template.copy()
+        job_info['path'] = os.path.join(options['path_base'], 'rN_{:0.3f}'.format(rN))
+        job_info['filename'] = options['job_filename']+'_31'
+        
+        job_list.append(job_info)
+                            
+    
+    # Insert all of the new sfincs commands into the combined jobfile at
+    # the same location as the orginial command.
+    for ii_run, run in enumerate(run_list):
+        job_info = job_list[run['job_index']]
+        jobfile = job_info['jobfile']
+        
+        path_full = os.path.join(options['path_base'], run['path'])            
+
+        run_command = 'cd {} && {}\n'.format(path_full, sfincs_command)
+        jobfile.insert(ii_insert, run_command)
+        ii_insert += 1
+        
+        
+    # Now write the files to disk.
+    for job_info in job_list:
+        filepath = os.path.join(job_info['path'], job_info['filename'])
+        
+        with open(filepath, "w") as ff:
+            ff.writelines(job_info['jobfile'])
+        logging.info('Wrote: {}'.format(filepath))
+    
+    
+    return job_list
+
+    
+def generate_combined_jobfiles_all(run_list, jobfile):
+    # This routine is specific for SLURM.
+    #
+    # This is currently written so that all of the jobs will be run in series.
+    # It would be straight forward to modify this so that groups of jobs were
+    # run in parallel.
+    
+    jobfile_all = jobfile.copy()
+        
+    # Extract the line with the actual call to sfincs.
+    num_matches = 0
+    for ii_line, line in enumerate(jobfile_all):
+        # skip empty and commented lines.
+        if len(line.strip()) == 0:
+            continue
+        if line.strip()[0] in ('#', '!', '%'):
+            continue
+            
+        if 'sfincs' in line:
+            num_matches += 1
+            ii_insert = ii_line
+            sfincs_command = line
+            del(jobfile_all[ii_line])
+
+    if num_matches == 0:
+        raise Exception('No call to sfincs found in job file.')
+    if num_matches > 1:
+        raise Exception('More than one call to sfincs found in job file.')
+    
+    
+    # Insert all of the new sfincs commands into the combined jobfile at
+    # the same location as the orginial command.
+    for ii_run, run in enumerate(run_list): 
+        path_full = os.path.join(options['path_base'], run['path'])            
+
+        run_command = 'cd {} && {}\n'.format(path_full, sfincs_command)
+        jobfile_all.insert(ii_insert, run_command)
+        ii_insert += 1
+        
+    jobfile_all_filename = options['job_filename']+'_31'
+    jobfile_all_filepath = os.path.join(options['path_base'], jobfile_all_filename)
+    with open(jobfile_all_filepath, "w") as ff:
+        ff.writelines(jobfile_all)
+    logging.info('Wrote: {}'.format(jobfile_all_filepath))
+        
+    
+    output = list()
+    output.append({
+        'filepath':jobfile_all_filepath
+        ,'filename':jobfile_all_filename
+        })
+    
+    return output
+
+                
 def startscan(user_options=None):
     logging.debug('Entering mirscan_31.')
     
@@ -105,9 +241,9 @@ def startscan(user_options=None):
     
     # Load the input file:
     with open(options['input_filename'], 'r') as ff:
-        inputfile_list = ff.readlines()
+        inputfile = ff.readlines()
         
-    scan_type = mirscan_util.readScanVariable('scanType', 'int', inputfile_list)
+    scan_type = mirscan_util.readScanVariable('scanType', 'int', inputfile)
     
     if not scan_type == 31:
         raise Exception(
@@ -117,7 +253,7 @@ def startscan(user_options=None):
     options['runspec_filename'] = mirscan_util.readScanVariable(
         "runSpecFile"
         ,"string"
-        ,inputfile_list
+        ,inputfile
         ,required=False
         ,stringValueCaseSensitive=True)
     
@@ -125,7 +261,7 @@ def startscan(user_options=None):
         options['runspec_filename'] = "runspec.dat"
     
     runspec_list = mirscan_util.readRunspec(options['runspec_filename'], verbose=True)
-    mirscan_util.check_runspec_list(runspec_list, inputfile_list)
+    mirscan_util.check_runspec_list(runspec_list, inputfile)
     
     
     # Create a more general run list to use in generating our runs.
@@ -137,7 +273,7 @@ def startscan(user_options=None):
         
     # Read in the job.sfincsScan file:
     with open(options['job_filename'], 'r') as ff:
-        jobfile_list = ff.readlines()
+        jobfile = ff.readlines()
         
     # Loop over each entry found in the runspec.dat and generate new 
     # inputfile and jobfile lists. Also generate the paths for these runs. 
@@ -146,8 +282,8 @@ def startscan(user_options=None):
         
         logging.info("Beginning to handle job "+str(ii)+" of "+str(len(run_list))+": "+run['runspec']['name'])
                 
-        run['jobfile'] = mirscan_util.patch_jobfile_list(run['runspec'], jobfile_list)
-        run['inputfile'] = mirscan_util.patch_inputfile_list(run['runspec'], inputfile_list) 
+        run['jobfile'] = mirscan_util.patch_jobfile(run['runspec'], jobfile)
+        run['inputfile'] = mirscan_util.patch_inputfile(run['runspec'], inputfile) 
             
         run['path'] = get_job_path(run)
 
@@ -176,110 +312,32 @@ def startscan(user_options=None):
         logging.info('Wrote: {}'.format(jobfile_filepath))
 
             
-    # Now generate the combined job file.
-    # This is currently being written in-line and only for the SLURM manager.
-    # I should move this into separate functions and also make sure that it is
-    # general for all work managers.
-    #
-    # This is currently written so that all of the jobs will be run in series.
-    # It would be straight forward to modify this so that groups of jobs were
-    # run in parallel.
-                
-    jobfile_all = jobfile_list.copy()
+    # Now generate the combined all job file.
+    # jobfiles_all = generate_combined_jobfiles_all(run_list, jobfile)
+    
+    # Now generate the combined rN job files.
+    job_rn = generate_combined_jobfiles_rn(run_list, jobfile)
         
-    # Extract the line with the actual call to sfincs.
-    num_matches = 0
-    for ii_line, line in enumerate(jobfile_all):
-        # skip empty and commented lines.
-        if len(line.strip()) == 0:
-            continue
-        if line.strip()[0] in ('#', '!', '%'):
-            continue
-            
-        if 'sfincs' in line:
-            num_matches += 1
-            ii_insert = ii_line
-            sfincs_command = line
-            del(jobfile_all[ii_line])
+    
+    while True:
+        proceed = input("Should I go ahead and launch these "+str(len(job_rn))+" jobs? [y/n] ")
+        proceed = proceed.lower()
+        if proceed[0] == "y" or proceed[0] == "n":
+            break
+        print("You must enter either y or n.")
+    
+    if proceed == "n":
+        return None
 
-                
-    if num_matches == 0:
-        raise Exception('No call to sfincs found in job file.')
-    if num_matches > 1:
-        raise Exception('More than one call to sfincs found in job file.')
+    logging.info("launching jobs...")        
     
-    
-    # Insert all of the new sfincs commands into the combined jobfile at
-    # the same location as the orginial command.
-    for ii_run, run in enumerate(run_list): 
-        path_full = os.path.join(options['path_base'], run['path'])            
+    mirscan_util.submit_jobs(job_rn)
 
-        run_command = 'cd {} && {}\n'.format(path_full, sfincs_command)
-        jobfile_all.insert(ii_insert, run_command)
-        ii_insert += 1
-        
-    jobfile_all_filename = options['job_filename']+'_31'
-    jobfile_all_filepath = os.path.join(options['path_base'], jobfile_all_filename)
-    with open(jobfile_all_filepath, "w") as ff:
-        ff.writelines(jobfile_all)
-    logging.info('Wrote: {}'.format(jobfile_all_filepath))
-        
-            
-        
-        
-        
-        # Submit the sfincs job:
-        #try:
-        #    # We need to include .split(" ") to separate the command-line arguments into an array of strings.   
-        #    submissionResult = subprocess.call(submitCommand.split(" "))
-        #except:
-        #    logging.error("ERROR! Unable to submit run "+jobName+" for some reason.")
-        #    raise
-        #else:
-        #    if submissionResult==0:
-        #        logging.info("No errors submitting job "+jobName)
-        #    else:
-        #        logging.error("Nonzero exit code returned when trying to submit job "+jobName)
-        #
-        #os.chdir("..")
 
-        
-        
-        # dirNum = run_num - 1
-        # If run directory already exists then skip this parameter.
-        #
-        # TODO:  Here is where I want to create a new directory structure.
-        #while True:
-        #    dirNum += 1
-        #    job_name = str(dirNum)
-        #    if dirNum < 10:
-        #        job_name = "0" + job_name
-        #    if not os.path.exists(job_name):
-        #        break
-        #os.mkdir(job_name)
-        #os.chdir(job_name)
-    
-        #with open(options['job_filename'], "w") as ff:
-        #    f.write(jobfile_new)
-    
-        #with open(options['input_filename'], "w") as ff:
-        #    f.write(inputfile_new)        
-        
-    # I am going to separate the process of creating input files and launching jobs.
-    # This question should be moved to the point where the jobs are actually launched.
-    #while True:
-    #    proceed = input("Should I go ahead and launch these "+str(num_runs_in_scan)+" jobs? [y/n] ").lower()
-    #    if proceed[0] == "y" or proceed[0] == "n":
-    #        break
-    #    print("You must enter either y or n.")
-    #
-    #if proceed=="n":
-    #    exit(0)
-    #print("launching jobs...")
-    
-        
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
+    #logging.basicConfig(level=logging.INFO)
+    
     
     startscan()
     exit(0)

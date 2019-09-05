@@ -16,6 +16,7 @@ import numpy as np
 import logging
 import os
 import re
+import subprocess
 
 import mirscan_const
 from mirscan_const import options
@@ -95,6 +96,12 @@ def readScanVariable(
     """
     This subroutine reads the special scan commands in the input.namelist that 
     are hidden from fortran.
+
+    Todo:
+      This routine is exactly the same as readVariable, except that it is looking
+      lines that are preceded with '!ss'.  The readVariable routine should be
+      generalized to handle this, and then this routine removed (or modifed to
+      simply call readVariable with the right keywords.
     """
     if inputfile is None:
         raise NotImplementedError('Currently the input.namelist list must be given to this function.')
@@ -263,100 +270,11 @@ def readVariable(var_name, data_type, inputfile=None, required=True):
         else:
             output = values_list
         
-        logging.info("Read "+var_name+" = "+str(output))
+        logging.debug("Read "+var_name+" = "+str(output)+" from inputfile.")
     else:
         output = None
         
     return output
-
-
-def readVariableOld(varName, intOrFloatOrString, inputfile=None, required=True):
-    # This routine is no longer used, but kept for the moment to make sure that
-    # everythig is working with the new routine.
-    #
-    #
-    # This function reads normal fortran variables from the input.namelist file.
-    # It is assumed that the input.namelist file has been loaded into the variable "inputFile".
-
-    if (intOrFloatOrString != 'int') and (intOrFloatOrString != 'float') and (intOrFloatOrString != 'string'):
-        logging.error("intOrFloatOrString must be int, float, or string.")
-        exit(1)
-
-    originalVarName = varName
-    #varName = varName.lower()
-    returnValue = None
-    numValidLines = 0
-    for line in inputfile:
-        #line3 = line.strip().lower()
-        line3 = line.strip()
-        if len(line3) < 1:
-            continue
-
-        if line3[0] == '!':
-            continue
-
-        if len(line3) < len(varName)+2:
-            continue
-
-        if not line3[:len(varName)].lower() == varName.lower():
-            continue
-
-        line4 = line3[len(varName):].strip()
-
-        if not line4[0] == '=':
-            continue
-
-        line5 = line4[1:].strip()
-        
-        if intOrFloatOrString != 'string':
-            # python does not recognize fortran's 1d+0 scientific notation
-            line5 = line5.replace('d','e').replace('D','e')
-
-        # Remove any comments:
-        if '!' in line5:
-            line5 = line5[:string.find(line5,'!')]
-
-        if intOrFloatOrString=='int':
-            try:
-                returnValue = int(line5)
-                numValidLines += 1
-            except:
-                logging.warning(
-                    "Warning! I found a definition for the variable "
-                    +originalVarName+" in "+options['input_filename']
-                    +" but I was unable to parse the line to get an integer.")
-                logging.warning("Here is the line in question:")
-                logging.warning(line)
-        elif intOrFloatOrString=='float':
-            try:
-                returnValue = float(line5)
-                numValidLines += 1
-            except:
-                logging.warning(
-                    "Warning! I found a definition for the variable "
-                    +originalVarName+" in "+options['input_filename']
-                    +" but I was unable to parse the line to get a float.")
-                logging.warning("Here is the line in question:")
-                logging.warning(line)
-        elif intOrFloatOrString=='string':
-            returnValue = line5
-            numValidLines += 1
-
-    if required and returnValue==None:
-        logging.warning(
-            "Error! Unable to find a valid setting for the variable "
-            +originalVarName+" in "+options['input_filename']+"."
-            )
-##        raise #Commented by AM 2015-12
-        exit(1) #Added by AM 2015-12
-
-    if numValidLines > 1:
-        logging.warning(
-            "Warning! More than 1 valid definition was found for the variable "
-            +originalVarName+". The last one will be used."
-            )
-    logging.info("Read "+originalVarName+" = "+str(returnValue))
-    return returnValue
 
 
 def readDefault(varName, intOrFloatOrString, required=True):
@@ -621,7 +539,7 @@ def check_runspec_list(runspec_list, inputfile):
                 raise Exception('runlist param must be defined in the input namelist.')
         
 
-def patch_jobfile_list(params, jobfile_orig):
+def patch_jobfile(params, jobfile_orig):
     
     # WARNING! This routine is currently broken.
     
@@ -638,6 +556,11 @@ def patch_jobfile_list(params, jobfile_orig):
 
 
 def patch_jobfile_slurm(params, jobfile_orig):
+    """
+    todo
+    ----
+      This should accept either a list or a string.
+    """
         
     jobfile_new = jobfile_orig.copy()
     
@@ -676,6 +599,11 @@ def patch_jobfile_slurm(params, jobfile_orig):
 
 
 def patch_jobfile_loadleveler(params, jobfile_orig):
+    """
+    todo
+    ----
+      This should accept either a list or a string.
+    """
         
     jobfile_new = jobfile_orig.copy()
         
@@ -714,21 +642,18 @@ def patch_jobfile_loadleveler(params, jobfile_orig):
     return jobfile_new
 
 
-def patch_inputfile_list(params, inputfile_orig):
+def patch_inputfile(params, inputfile_orig):
     """
     Patch an inputfile list with a set of new parameters.
 
     ToDo:
-      - Fix how vectors are handled. Right now they must be in order, but it 
-        should be straight forward to make this work in any order.
-        I will probably want to use regular expressions here.
-      - Add the "set by sfincsScan" comment to the end of vectors.
+      - This should accept either a list or a string.
     """
     inputfile_new = inputfile_orig.copy()
     
     for ii_line, line in enumerate(inputfile_new):
         if line[-22:] == " ! Set by sfincsScan.\n":
-            #Remove this old scan note from the file. Only indicate the present scan variables.
+            # Remove this old scan note from the file. Only indicate the present scan variables.
             inputfile_new[ii_line] = line[:-22]+"\n"
             
         for key, value in params.items():
@@ -753,6 +678,49 @@ def patch_inputfile_list(params, inputfile_orig):
                 inputfile_new[ii_line] = line
 
     return inputfile_new
+
+
+def get_submit_command():
+    """
+    Return the appropriate command for the specified job manager.
+    """
+    
+    if options['job_manager'] == 'slurm':
+        command = 'sbatch'
+    elif options['job_manager'] == 'loadleveler':
+        command = 'llsubmit'
+    elif options['job_manager'] == 'bash':
+        command = 'bash'
+        
+    return command
+    
+
+def submit_jobs(job_list):
+    """
+    Submit the given jobs to the workload manager.
+
+    For now this is only written for SLURM, but should eventually work for the 
+    other options as well.
+    """
+    
+    submit_command = get_submit_command()
+
+    for job in job_list:
+        filepath = os.path.join(job['path'], job['filename'])
+        
+        command = [submit_command, filepath]
+        command_string = ' '.join(command)
+            
+        try:
+            command_string = 'echo "'+command_string+'"'
+            result = subprocess.run(command_string, shell=True)
+            
+            if result.returncode == 0:
+                logging.info('Successfuly submitted job: {}'.format(command_string))
+            else:
+                logging.info('Job submission had errors: {}'.format(command_string))                
+        except:
+            logging.error("ERROR! Unable to submit run "+command_string+" for some reason.")   
 
 
 def uniq(seq): 
