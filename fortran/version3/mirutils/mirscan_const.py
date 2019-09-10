@@ -15,6 +15,7 @@ description
 options = {}
 options['input_filename'] = 'input.namelist'
 options['job_filename'] = 'job.sfincsScan'
+options['jobarray_filename'] = 'job_array.sfincsScan'
 options['output_filename'] = 'sfincsOutput.h5'
 
 options['default_variables_filename'] = 'globalVariables.F90'

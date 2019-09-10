@@ -101,9 +101,10 @@ def get_job_path(run):
 def generate_combined_jobfiles_rn(run_list, jobfile_orig):
     # This routine is specific for SLURM.
     #
-    # This is currently written so that all of the jobs will be run in series.
-    # It would be straight forward to modify this so that groups of jobs were
-    # run in parallel.
+    # This is currently written so as to group all of the runs for a particular
+    # radial position into a single job file.   This is particularly useful
+    # for example when doing radial electric field scans.
+    
     
     
     # First I need to split up the runs by radius.
@@ -231,6 +232,48 @@ def generate_combined_jobfiles_all(run_list, jobfile):
     
     return output
 
+
+def generate_jobarrayfile(run_list, jobfile):
+    jobarrayfile_filename = options['jobarray_filename']
+    jobarrayfile_filepath = os.path.join(options['path_base'], jobarrayfile_filename)
+    
+    output = list()
+    output.append({
+        'filepath':jobarrayfile_filepath
+        ,'filename':jobarrayfile_filename
+        })
+    
+    return output
+
+
+def generate_jobarray_list(run_list):
+    # This routine is specific for SLURM.
+    #
+    # Create an file than can be used to start an produce a slurm array.
+
+    jobfile_out = []
+    
+    # Insert all of the new sfincs commands into the combined jobfile at
+    # the same location as the orginial command.
+    for ii_run, run in enumerate(run_list): 
+        path_full = os.path.join(options['path_base'], run['path'])            
+        jobfile_out.append(path_full+'\n')
+        
+    jobfile_out_filename = 'job_array.txt'
+    jobfile_out_filepath = os.path.join(options['path_base'], jobfile_out_filename)
+    with open(jobfile_out_filepath, "w") as ff:
+        ff.writelines(jobfile_out)
+    logging.info('Wrote: {}'.format(jobfile_out_filepath))
+        
+    
+    output = list()
+    output.append({
+        'filepath':jobfile_out_filepath
+        ,'filename':jobfile_out_filename
+        })
+    
+    return output
+
                 
 def startscan(user_options=None):
     logging.debug('Entering mirscan_31.')
@@ -275,6 +318,10 @@ def startscan(user_options=None):
     with open(options['job_filename'], 'r') as ff:
         jobfile = ff.readlines()
         
+    # Read in the job_array.sfincsScan file:
+    with open(options['jobarray_filename'], 'r') as ff:
+        jobarrayfile = ff.readlines()
+        
     # Loop over each entry found in the runspec.dat and generate new 
     # inputfile and jobfile lists. Also generate the paths for these runs. 
     for ii, run in enumerate(run_list):
@@ -310,17 +357,49 @@ def startscan(user_options=None):
         with open(jobfile_filepath, "w") as ff:
             ff.writelines(run['jobfile'])
         logging.info('Wrote: {}'.format(jobfile_filepath))
-
+    
+        
+    # Write the new jobarray file.
+    
+    # Setup the SLURM array command.
+    # This is not a good place for this. At the very least this needs to be
+    # in a separate function.
+    #
+    # WARNING: Number of steps per job current hardcoded.
+    #          I need to find a way to automate this in some reasonable way.
+    #
+    #          I should have a few ways to control this.
+    #            1. User option
+    #            2. Specified in the input file as a !ss directive.
+    #            3. Generated based on factorization of the total number
+    #               runs.  This bit of code will return all factors.
+    #               test = np.arange(n)+1
+    #               test[np.where(n%(test) == 0)[0]]
+    # 
+    #          I'll need to replace a second line in the job_array file where
+    #          number of runs per job is specified (RUNSPERJOB).
+    jobarray_options = {}
+    jobarray_options['array'] = '1-{:0d}'.format(len(run_list)//29)
+    jobarrayfile = mirscan_util.patch_jobfile(jobarray_options, jobarrayfile)    
+        
+    jobarrayfile_filepath = os.path.join(options['path_base'], options['jobarray_filename'])
+    with open(jobarrayfile_filepath, "w") as ff:
+        ff.writelines(jobarrayfile)
+    logging.info('Wrote: {}'.format(jobarrayfile_filepath))
             
+    
     # Now generate the combined all job file.
     # jobfiles_all = generate_combined_jobfiles_all(run_list, jobfile)
     
     # Now generate the combined rN job files.
-    job_rn = generate_combined_jobfiles_rn(run_list, jobfile)
-        
+    #job_rn = generate_combined_jobfiles_rn(run_list, jobfile)
+     
+    # Generate a files that can be used to create a slurm job array.
+    job_paths = generate_jobarray_list(run_list)
+    job_runs = generate_jobarrayfile(run_list, jobarrayfile)
     
     while True:
-        proceed = input("Should I go ahead and launch these "+str(len(job_rn))+" jobs? [y/n] ")
+        proceed = input("Should I go ahead and launch these "+str(len(job_runs))+" jobs? [y/n] ")
         proceed = proceed.lower()
         if proceed[0] == "y" or proceed[0] == "n":
             break

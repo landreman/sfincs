@@ -586,6 +586,11 @@ def patch_jobfile_slurm(params, jobfile_orig):
                 if "#SBATCH --ntasks-per-node" in line:
                     jobfile_new[ii] = "#SBATCH --ntasks-per-node="+str(value)+"\n"
                     
+        if key == "array":
+            for ii, line in enumerate(jobfile_new):
+                if "#SBATCH --array" in line:
+                    jobfile_new[ii] = "#SBATCH --array="+str(value)+"\n"
+                    
         if key == "time":
             hours = value//60
             minutes = value%60
