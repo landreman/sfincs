@@ -180,6 +180,9 @@
 
   subroutine all_species_collisionalities() ! MFM 08/20/18
     
+    ! Needs some work
+
+    
     ! Calculates nu_(j,k) and nu_(j) as a function of the reference nu_n value
     use globalVariables
 

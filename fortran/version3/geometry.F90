@@ -321,6 +321,7 @@ contains
           
   subroutine computeBHat_Boozer
 
+    use transforms
     ! Note that the BHarmonics_amplitudes in this subroutine are normalized by B0, not by BBar!
 
     implicit none
@@ -336,6 +337,20 @@ contains
     logical, dimension(:), allocatable :: BHarmonics_parity
     logical, dimension(:), allocatable :: BHarmonics_parityL, BHarmonics_parityH
     PetscScalar, dimension(:,:), allocatable :: hHat, duHatdtheta, duHatdzeta
+    !!!!!!!
+    ! MFM
+    logical :: include_zero, sine_term
+    integer :: nzeta_fft=200, ntheta_fft=200
+    PetscScalar :: zeta_fft_max, dzeta_fft, dtheta_fft
+    PetscScalar, dimension(200) :: theta_fft, zeta_fft
+    PetscScalar, dimension(:,:), allocatable :: hHat_temp, hHat_star, BHat_temp, BHat_temp2
+    PetscScalar, dimension(:), allocatable :: hHat_temp_k
+    PetscScalar, dimension(:,:), allocatable :: hHat_tempL, hHat_starL, BHat_tempL, BHat_temp2L
+    PetscScalar, dimension(:), allocatable :: hHat_temp_kL
+    PetscScalar, dimension(:,:), allocatable :: hHat_tempH, hHat_starH, BHat_tempH, BHat_temp2H
+    PetscScalar, dimension(:), allocatable :: hHat_temp_kH
+    PetscScalar, dimension(:), allocatable :: BHarmonics_amplitudes_temp, BHarmonics_amplitudesL_temp, BHarmonics_amplitudesH_temp
+    !!!!!!!
     PetscScalar :: R0
     PetscScalar, dimension(:,:), allocatable :: BHatL, dBHatdthetaL, dBHatdzetaL
     PetscScalar, dimension(:,:), allocatable :: BHatH, dBHatdthetaH, dBHatdzetaH
@@ -766,7 +781,12 @@ contains
        pPrimeHat = pPrimeHat_old*RadialWeight+pPrimeHat_new*(1.0-RadialWeight)
 
        B0OverBBarL=B0_old
+!       print *,"B0OverBBar = ",B0OverBBar
+!       print *,"B0OverBBarL = ",B0OverBBarL 
+!       print *,"rN_old = ",rN_old
        B0OverBBarH=B0_new
+!       print *,"B0OverBBarH = ",B0OverBBarH 
+!       print *,"rN_new = ",rN_new
        R0L=R0_old
        R0H=R0_new
        NHarmonicsL = no_of_modes_old
@@ -1082,6 +1102,7 @@ contains
        stop
     end select
 
+
     if (.not. nearbyRadiiGiven) then
        ! Initialize arrays:
        BHat = B0OverBBar ! This includes the (0,0) component.
@@ -1109,6 +1130,126 @@ contains
 !!$       d2Dzdthetadzeta= 0
 
        
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! MFM scaling of non-quasisymmetric terms
+       if (symm_breaking == 0) then
+          print *,"There will be no scaling of symmetry-breaking terms"
+
+       else if (symm_breaking == 1) then
+
+          if (symm_type == 0) then
+             print *,"The non-quasi-AXI-symmetric Boozer harmonics of |B| will be scaled"
+             do i = 1, NHarmonics
+                if (BHarmonics_n(i) == 0) then
+                   BHarmonics_amplitudes(i) = BHarmonics_amplitudes(i)
+                else
+                   BHarmonics_amplitudes(i) = BHarmonics_amplitudes(i)*epsilon_symmbreak
+                end if
+             end do
+
+          else if (symm_type == 1) then
+             print *,"The non-quasi-HELICALLY-symmetric Boozer harmonics of |B| will be scaled"
+             do i = 1, NHarmonics
+                if (qhs_poloidal*(-1)*BHarmonics_n(i) == qhs_toroidal*BHarmonics_l(i)) then
+                   BHarmonics_amplitudes(i) = BHarmonics_amplitudes(i)
+                else
+                   BHarmonics_amplitudes(i) = BHarmonics_amplitudes(i)*epsilon_symmbreak
+                end if
+             end do
+
+          else
+             print *,"The type of quasisymmetry-breaking must take integer values of either 0 (QAS) or 1 (QHS) ... Exiting"
+             stop
+          end if
+       else if (symm_breaking == 2) then
+          zeta_fft_max = 2*pi/NPeriods
+          dzeta_fft = zeta_fft_max/nzeta_fft
+          dtheta_fft = 2.*pi/ntheta_fft
+          allocate(hHat_temp(ntheta_fft,nzeta_fft))
+          allocate(hHat_temp_k(NHarmonics*2+1))
+          allocate(hHat_star(ntheta_fft,nzeta_fft))
+          allocate(BHat_temp(ntheta_fft,nzeta_fft))
+          allocate(BHat_temp2(ntheta_fft,nzeta_fft))
+          allocate(BHarmonics_amplitudes_temp(NHarmonics*2+1))
+          hHat_temp = 0
+          hHat_temp_k = 0
+          hHat_star = 0 !1.0/(B0OverBBar*B0OverBBar)
+          BHat_temp = 0
+          BHat_temp2 = 0
+          include_zero = 0
+          sine_term = 0
+          BHat = 0
+
+          zeta_fft(0) = 0
+          theta_fft(0) = 0
+          do i = 1, nzeta_fft
+             zeta_fft(i) = dzeta_fft + zeta_fft(i-1)
+          end do
+          do i = 1, ntheta_fft
+             theta_fft(i) = dtheta_fft + theta_fft(i-1)
+          end do
+
+          call inverse_b(BHarmonics_amplitudes, BHat_temp, BHarmonics_n, BHarmonics_l, NHarmonics, include_zero, sine_term, ntheta_fft, nzeta_fft, theta_fft, zeta_fft, dzeta_fft, dtheta_fft)
+          BHat_temp = BHat_temp + B0OverBBar
+          include_zero = 1
+          sine_term = 1
+
+          do itheta = 1, ntheta_fft
+             do izeta = 1, nzeta_fft
+                hHat_temp(itheta,izeta) = 1.0/(BHat_temp(itheta,izeta)*BHat_temp(itheta,izeta))
+             end do
+          end do
+          call forward_b(hHat_temp, hHat_temp_k, BHarmonics_n, BHarmonics_l, NHarmonics, sine_term, ntheta_fft, nzeta_fft, theta_fft, zeta_fft, dzeta_fft, dtheta_fft)
+
+          if (symm_type == 1) then ! QHS      
+             do i = 2, NHarmonics+1 ! The (0,0) mode is not be scaled
+                if (qhs_poloidal*(-1)*BHarmonics_n(i-1) == qhs_toroidal*BHarmonics_l(i-1)) then
+                   hHat_temp_k(i) = hHat_temp_k(i)
+                else
+                   hHat_temp_k(i) = epsilon_symmbreak*hHat_temp_k(i)
+                end if
+             end do
+          else
+             do i = 2, NHarmonics+1 ! The (0,0) mode is not be scaled
+                if (BHarmonics_n(i-1)==0) then ! if mode is QAS
+                   hHat_temp_k(i) = hHat_temp_k(i)
+                else
+                   hHat_temp_k(i) = epsilon_symmbreak*hHat_temp_k(i)
+                end if
+             end do
+          end if
+          
+          call inverse_b(hHat_temp_k, hHat_star, BHarmonics_n, BHarmonics_l, NHarmonics, include_zero, sine_term, ntheta_fft, nzeta_fft, theta_fft, zeta_fft, dzeta_fft, dtheta_fft)
+          do itheta = 1, ntheta_fft
+             do izeta = 1, nzeta_fft
+                BHat_temp2(itheta,izeta) = sqrt(1.0/hHat_star(itheta,izeta))
+             end do
+          end do
+          BHarmonics_amplitudes_temp = 0
+          BHarmonics_amplitudes = 0
+          sine_term = 0
+          call forward_b(BHat_temp2, BHarmonics_amplitudes_temp, BHarmonics_n, BHarmonics_l, NHarmonics, sine_term, ntheta_fft, nzeta_fft, theta_fft, zeta_fft, dzeta_fft, dtheta_fft)
+
+          BHat = BHarmonics_amplitudes_temp(1) ! (0,0) mode amplitude
+          do i = 2, NHarmonics+1
+             BHarmonics_amplitudes(i-1) = BHarmonics_amplitudes_temp(i)
+          end do
+
+          deallocate(hHat_temp)
+          deallocate(hHat_temp_k)
+          deallocate(hHat_star)
+          deallocate(BHat_temp)
+          deallocate(BHat_temp2)
+          deallocate(BHarmonics_amplitudes_temp)
+       else
+          print *,"You have selected an invalid integer for the method of scaling symmetry-breaking terms. Input must be 0 (no scaling), 1 (scaling through |B|), or 2 (scaling through invB^2) ... Exiting"
+          stop
+       end if
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
        do i = 1, NHarmonics
           if (BHarmonics_parity(i)) then   ! The cosine components of BHat
              include_mn = .false.
@@ -1120,63 +1261,14 @@ contains
              end if
              if (include_mn) then
                 do itheta = 1,Ntheta
-                   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                   !! Added by MFM - 07/31/18
-                   if (boozer_symmbreak_scaling) then
-                      if (symm_type == 1) then ! QHS
-                         if (qhs_poloidal*(-1)*BHarmonics_n(i) == qhs_toroidal*BHarmonics_l(i)) then
-                            BHat(itheta,:) = BHat(itheta,:) + BHarmonics_amplitudes(i) * &
-                                 cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-
-                            dBHatdtheta(itheta,:) = dBHatdtheta(itheta,:) - BHarmonics_amplitudes(i) * BHarmonics_l(i) * &
-                                 sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-
-                            dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) + BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
-                                 sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-                         else
-                            BHarmonics_amplitudes(i) = BHarmonics_amplitudes(i)*epsilon_symmbreak !! Set amplitude of symmetry-breaking term to epsilon
-                            BHat(itheta,:) = BHat(itheta,:) + BHarmonics_amplitudes(i) * &
-                                 cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-
-                            dBHatdtheta(itheta,:) = dBHatdtheta(itheta,:) - BHarmonics_amplitudes(i) * BHarmonics_l(i) * &
-                                 sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-
-                            dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) + BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
-                                 sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-                         end if
-                      else ! QAS
-                         if (BHarmonics_n(i)==0) then ! if mode is QAS
-                            BHat(itheta,:) = BHat(itheta,:) + BHarmonics_amplitudes(i) * &
-                                 cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-
-                            dBHatdtheta(itheta,:) = dBHatdtheta(itheta,:) - BHarmonics_amplitudes(i) * BHarmonics_l(i) * &
-                                 sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-
-                            dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) + BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
-                                 sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-                         else ! if mode is symmetry-breaking
-                            BHarmonics_amplitudes(i) = BHarmonics_amplitudes(i)*epsilon_symmbreak !! Set amplitude of symmetry-breaking term to epsilon
-                            BHat(itheta,:) = BHat(itheta,:) + BHarmonics_amplitudes(i) * &
-                                 cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-
-                            dBHatdtheta(itheta,:) = dBHatdtheta(itheta,:) - BHarmonics_amplitudes(i) * BHarmonics_l(i) * &
-                                 sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-
-                            dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) + BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
-                                 sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-                         end if
-                      end if
-                   else
-                   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                      BHat(itheta,:) = BHat(itheta,:) + BHarmonics_amplitudes(i) * &
-                      cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                   BHat(itheta,:) = BHat(itheta,:) + BHarmonics_amplitudes(i) * &
+                   cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                   
+                   dBHatdtheta(itheta,:) = dBHatdtheta(itheta,:) - BHarmonics_amplitudes(i) * BHarmonics_l(i) * &
+                   sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
                       
-                      dBHatdtheta(itheta,:) = dBHatdtheta(itheta,:) - BHarmonics_amplitudes(i) * BHarmonics_l(i) * &
-                      sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-                      
-                      dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) + BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
-                      sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-                   end if
+                   dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) + BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
+                   sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
                 end do
              end if
           else  ! The sine components of BHat
@@ -1194,65 +1286,15 @@ contains
              end if
              if (include_mn) then
                 do itheta = 1,Ntheta
-                   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                   !! Added by MFM - 07/31/18
-                   if (boozer_symmbreak_scaling) then
-                      if (symm_type == 1) then ! QHS
-                         if (qhs_poloidal*(-1)*BHarmonics_n(i) == qhs_toroidal*BHarmonics_l(i)) then
-                            BHat(itheta,:) = BHat(itheta,:) + BHarmonics_amplitudes(i) * &
-                                 sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-
-                            dBHatdtheta(itheta,:) = dBHatdtheta(itheta,:) + BHarmonics_amplitudes(i) * BHarmonics_l(i) * &
-                                 cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-
-                            dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) - BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
-                                 cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-                         else
-                            BHarmonics_amplitudes(i) = BHarmonics_amplitudes(i)*epsilon_symmbreak !! Set amplitude of symmetry-breaking term to epsilon                            
-                            BHat(itheta,:) = BHat(itheta,:) + BHarmonics_amplitudes(i) * &
-                                 sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-
-                            dBHatdtheta(itheta,:) = dBHatdtheta(itheta,:) + BHarmonics_amplitudes(i) * BHarmonics_l(i) * &
-                                 cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-
-                            dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) - BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
-                                 cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-
-                         end if
-                      else ! QAS
-                         if (BHarmonics_n(i)==0) then ! if mode is QAS
-                            BHat(itheta,:) = BHat(itheta,:) + BHarmonics_amplitudes(i) * &
-                                 sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-
-                            dBHatdtheta(itheta,:) = dBHatdtheta(itheta,:) + BHarmonics_amplitudes(i) * BHarmonics_l(i) * &
-                                 cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-
-                            dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) - BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
-                                 cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-                         else
-                            BHarmonics_amplitudes(i) = BHarmonics_amplitudes(i)*epsilon_symmbreak !! Set amplitude of symmetry-breaking term to epsilon                            
-                            BHat(itheta,:) = BHat(itheta,:) + BHarmonics_amplitudes(i) * &
-                                 sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-
-                            dBHatdtheta(itheta,:) = dBHatdtheta(itheta,:) + BHarmonics_amplitudes(i) * BHarmonics_l(i) * &
-                                 cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-
-                            dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) - BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
-                                 cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-                         end if
-                      end if
-                   else
-                   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                      BHat(itheta,:) = BHat(itheta,:) + BHarmonics_amplitudes(i) * &
-                      sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                   BHat(itheta,:) = BHat(itheta,:) + BHarmonics_amplitudes(i) * &
+                   sin(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
                       
-                      dBHatdtheta(itheta,:) = dBHatdtheta(itheta,:) + BHarmonics_amplitudes(i) * BHarmonics_l(i) * &
-                      cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                   dBHatdtheta(itheta,:) = dBHatdtheta(itheta,:) + BHarmonics_amplitudes(i) * BHarmonics_l(i) * &
+                   cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
                       
-                      dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) - BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
-                      cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
-                      
-                   end if
+                   dBHatdzeta(itheta,:) = dBHatdzeta(itheta,:) - BHarmonics_amplitudes(i) * Nperiods * BHarmonics_n(i) * &
+                   cos(BHarmonics_l(i) * theta(itheta) - NPeriods * BHarmonics_n(i) * zeta)
+                   
                 end do
              end if
           end if
@@ -1306,7 +1348,162 @@ contains
        d2Dzdzeta2L     = 0
        d2DzdthetadzetaL= 0
        
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! MFM scaling of non-quasisymmetric terms
+       if (symm_breaking == 0) then
+          print *,"There will be no scaling of symmetry-breaking terms"
+
+       else if (symm_breaking == 1) then
+
+          if (symm_type == 0) then
+             print *,"The non-quasi-AXI-symmetric Boozer harmonics of |B| will be scaled"
+             do i = 1, NHarmonicsL
+                if (BHarmonics_nL(i) == 0) then
+                   BHarmonics_amplitudesL(i) = BHarmonics_amplitudesL(i)
+                else
+                   BHarmonics_amplitudesL(i) = BHarmonics_amplitudesL(i)*epsilon_symmbreak
+                end if
+             end do
+
+          else if (symm_type == 1) then
+             print *,"The non-quasi-HELICALLY-symmetric Boozer harmonics of |B| will be scaled"
+             do i = 1, NHarmonicsL
+                if (qhs_poloidal*(-1)*BHarmonics_nL(i) == qhs_toroidal*BHarmonics_lL(i)) then
+                   BHarmonics_amplitudesL(i) = BHarmonics_amplitudesL(i)
+                else
+                   BHarmonics_amplitudesL(i) = BHarmonics_amplitudesL(i)*epsilon_symmbreak
+                end if
+             end do
+
+          else
+             print *,"The type of quasisymmetry-breaking must take integer values of either 0 (QAS) or 1 (QHS) ... Exiting"
+             stop
+          end if
+       else if (symm_breaking == 2) then
+          zeta_fft_max = 2*pi/NPeriods
+          dzeta_fft = zeta_fft_max/nzeta_fft
+          dtheta_fft = 2.*pi/ntheta_fft
+          allocate(hHat_tempL(ntheta_fft,nzeta_fft))
+          allocate(hHat_temp_kL(NHarmonicsL*2+1))
+          allocate(hHat_starL(ntheta_fft,nzeta_fft))
+          allocate(BHat_tempL(ntheta_fft,nzeta_fft))
+          allocate(BHat_temp2L(ntheta_fft,nzeta_fft))
+          allocate(BHarmonics_amplitudesL_temp(NHarmonicsL*2+1))
+          hHat_tempL = 0
+          hHat_temp_kL = 0
+          hHat_starL = 0
+          BHat_tempL = 0
+          BHat_temp2L = 0
+          include_zero = 0
+          sine_term = 0
+          BHatL = 0
+
+          zeta_fft(0) = 0
+          theta_fft(0) = 0
+          do i = 1, nzeta_fft
+             zeta_fft(i) = dzeta_fft + zeta_fft(i-1)
+          end do
+          do i = 1, ntheta_fft
+             theta_fft(i) = dtheta_fft + theta_fft(i-1)
+          end do
+
+          call inverse_b(BHarmonics_amplitudesL, BHat_tempL, BHarmonics_nL, BHarmonics_lL, NHarmonicsL, include_zero, sine_term, ntheta_fft, nzeta_fft, theta_fft, zeta_fft, dzeta_fft, dtheta_fft)
+          BHat_tempL = BHat_tempL + B0OverBBarL
+          include_zero = 1
+          sine_term = 1
+
+          do itheta = 1, ntheta_fft
+             do izeta = 1, nzeta_fft
+                hHat_tempL(itheta,izeta) = 1.0/(BHat_tempL(itheta,izeta)*BHat_tempL(itheta,izeta))
+!                if (zeta(izeta) == 0) then
+!                   print *,"BHat_tempL = ",BHat_tempL(itheta,izeta)
+!                   print *,"hHat_temp = ",hHat_tempL(itheta,izeta)
+!                end if
+
+             end do
+          end do
+          call forward_b(hHat_tempL, hHat_temp_kL, BHarmonics_nL, BHarmonics_lL, NHarmonicsL, sine_term, ntheta_fft, nzeta_fft, theta_fft, zeta_fft, dzeta_fft, dtheta_fft)
+!          do i = 2, NHarmonicsL+1
+!          end do
+
+          if (symm_type == 1) then ! QHS      
+             do i = 2, NHarmonicsL+1 ! The (0,0) mode is not scaled
+                if (qhs_poloidal*(-1)*BHarmonics_nL(i-1) == qhs_toroidal*BHarmonics_lL(i-1)) then
+!                   print *,"BHarmonics_nL = ",BHarmonics_nL(i-1),"BHarmonics_lL = ",BHarmonics_lL(i-1)
+                   hHat_temp_kL(i) = hHat_temp_kL(i)
+                else
+                   hHat_temp_kL(i) = epsilon_symmbreak*hHat_temp_kL(i)
+                end if
+             end do
+          else
+             do i = 2, NHarmonicsL+1 ! The (0,0) mode is not scaled
+!                print *,"hHat_temp_kL = ",hHat_temp_kL(i)
+                if (BHarmonics_nL(i-1)==0) then ! if mode is QAS
+                   hHat_temp_kL(i) = hHat_temp_kL(i)
+!                   print *,"n = ",BHarmonics_nL(i-1)
+!                   print *,"m = ",BHarmonics_lL(i-1)
+!                   print *,"hHat_temp_kL(i) ", hHat_temp_kL(i)
+                else
+                   hHat_temp_kL(i) = epsilon_symmbreak*hHat_temp_kL(i)
+!                   print *,"n = ",BHarmonics_nL(i-1)
+!                   print *,"m = ",BHarmonics_lL(i-1)
+!                   print *,"hHat_temp_kL(i) ", hHat_temp_kL(i)
+                end if
+             end do
+          end if
+
+          call inverse_b(hHat_temp_kL, hHat_starL, BHarmonics_nL, BHarmonics_lL, NHarmonicsL, include_zero, sine_term, ntheta_fft, nzeta_fft, theta_fft, zeta_fft, dzeta_fft, dtheta_fft)
+
+          do itheta = 1, ntheta_fft
+!             print *,"theta = ",theta(itheta)
+!             print *,"hHat_star = ",hHat_starL(itheta,1)
+             do izeta = 1, nzeta_fft
+!                print *,"zeta = ",zeta(izeta)
+                BHat_temp2L(itheta,izeta) = sqrt(1.0/hHat_starL(itheta,izeta))
+!                if (izeta == 5) then
+                !   print *,"hHat_starL(itheta,1) =",hHat_starL(itheta,izeta)
+                !   print *,"BHat_temp2L(itheta,1) = ",BHat_temp2L(itheta,izeta)
+!                end if
+!                print *,"hHat_star = ",hHat_starL(itheta,izeta)
+!                print *,"BHat_temp2 = ",BHat_temp2L(itheta,izeta)
+             end do
+          end do
+          BHarmonics_amplitudesL_temp = 0
+          BHarmonics_amplitudesL = 0
+          sine_term = 0
+
+          call forward_b(BHat_temp2L, BHarmonics_amplitudesL_temp, BHarmonics_nL, BHarmonics_lL, NHarmonicsL, sine_term, ntheta_fft, nzeta_fft, theta_fft, zeta_fft, dzeta_fft, dtheta_fft)
+
+          BHatL = BHarmonics_amplitudesL_temp(1) ! (0,0) mode amplitude                  
+          do i = 2, NHarmonicsL+1
+             if (abs(BHarmonics_amplitudesL_temp(i)) < 1.e-10) then
+                BHarmonics_amplitudesL(i-1) = 0
+             else
+                BHarmonics_amplitudesL(i-1) = BHarmonics_amplitudesL_temp(i)
+             end if
+!             print *,"n = ",BHarmonics_nL(i-1)
+!             print *,"m = ",BHarmonics_lL(i-1)
+!             print *,"BHarmonics_amplitudesL = ",BHarmonics_amplitudesL_temp(i)
+         end do
+
+          deallocate(hHat_tempL)
+          deallocate(hHat_temp_kL)
+          deallocate(hHat_starL)
+          deallocate(BHat_tempL)
+          deallocate(BHat_temp2L)
+          deallocate(BHarmonics_amplitudesL_temp)
+       else
+          print *,"You have selected an invalid integer for the method of scaling symmetry-breaking terms. Input must be 0 (no scaling), 1 (scaling through |B|), or 2 (scaling through invB^2) ... Exiting"
+          stop
+       end if
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
        do i = 1, NHarmonicsL
+!          print *,"BHarmonicsL(i) = ",BHarmonics_amplitudesL(i)
           if (BHarmonics_parityL(i)) then   ! The cosine components of BHat
              include_mn = .false.
              if ((abs(BHarmonics_nL(i))<=int(Nzeta/2.0)).and.(BHarmonics_lL(i)<=int(Ntheta/2.0))) then
@@ -1317,65 +1514,15 @@ contains
              end if
              if (include_mn) then
                 do itheta = 1,Ntheta
-                   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                   !! Added by MFM - 07/31/18
-                   if (boozer_symmbreak_scaling) then
-                      if (symm_type == 1) then ! QHS
-                         if (qhs_poloidal*(-1)*BHarmonics_nL(i) == qhs_toroidal*BHarmonics_lL(i)) then
-                            BHatL(itheta,:) = BHatL(itheta,:) + BHarmonics_amplitudesL(i) * &
-                                 cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                            dBHatdthetaL(itheta,:) = dBHatdthetaL(itheta,:) - BHarmonics_amplitudesL(i) * BHarmonics_lL(i) * &
-                                 sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                            dBHatdzetaL(itheta,:) = dBHatdzetaL(itheta,:) + BHarmonics_amplitudesL(i) * Nperiods * BHarmonics_nL(i) * &
-                                 sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-                         else
-                            BHarmonics_amplitudesL(i) = BHarmonics_amplitudesL(i)*epsilon_symmbreak !! Set amplitude of symmetry-breaking term to epsilon
-                            BHatL(itheta,:) = BHatL(itheta,:) + BHarmonics_amplitudesL(i) * &
-                                 cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                            dBHatdthetaL(itheta,:) = dBHatdthetaL(itheta,:) - BHarmonics_amplitudesL(i) * BHarmonics_lL(i) * &
-                                 sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                            dBHatdzetaL(itheta,:) = dBHatdzetaL(itheta,:) + BHarmonics_amplitudesL(i) * Nperiods * BHarmonics_nL(i) * &
-                                 sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-                         end if
-                      else ! QAS
-                         if (BHarmonics_nL(i)==0) then ! if mode is QAS
-                            BHatL(itheta,:) = BHatL(itheta,:) + BHarmonics_amplitudesL(i) * &
-                                 cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                            dBHatdthetaL(itheta,:) = dBHatdthetaL(itheta,:) - BHarmonics_amplitudesL(i) * BHarmonics_lL(i) * &
-                                 sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                            dBHatdzetaL(itheta,:) = dBHatdzetaL(itheta,:) + BHarmonics_amplitudesL(i) * Nperiods * BHarmonics_nL(i) * &
-                                 sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-                         else
-                            BHarmonics_amplitudesL(i) = BHarmonics_amplitudesL(i)*epsilon_symmbreak
-                            BHatL(itheta,:) = BHatL(itheta,:) + BHarmonics_amplitudesL(i) * &
-                                 cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                            dBHatdthetaL(itheta,:) = dBHatdthetaL(itheta,:) - BHarmonics_amplitudesL(i) * BHarmonics_lL(i) * &
-                                 sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                            dBHatdzetaL(itheta,:) = dBHatdzetaL(itheta,:) + BHarmonics_amplitudesL(i) * Nperiods * BHarmonics_nL(i) * &
-                                 sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-                         end if
-                      end if
-                   else
-                   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-                      BHatL(itheta,:) = BHatL(itheta,:) + BHarmonics_amplitudesL(i) * &
-                      cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+                   BHatL(itheta,:) = BHatL(itheta,:) + BHarmonics_amplitudesL(i) * &
+                   cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
                       
-                      dBHatdthetaL(itheta,:) = dBHatdthetaL(itheta,:) - BHarmonics_amplitudesL(i) * BHarmonics_lL(i) * &
-                      sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+                   dBHatdthetaL(itheta,:) = dBHatdthetaL(itheta,:) - BHarmonics_amplitudesL(i) * BHarmonics_lL(i) * &
+                   sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
                       
-                      dBHatdzetaL(itheta,:) = dBHatdzetaL(itheta,:) + BHarmonics_amplitudesL(i) * Nperiods * BHarmonics_nL(i) * &
-                      sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-                      
-                   end if
+                   dBHatdzetaL(itheta,:) = dBHatdzetaL(itheta,:) + BHarmonics_amplitudesL(i) * Nperiods * BHarmonics_nL(i) * &
+                   sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+                                       
                    !The following are only there to calculate Sugama's magnetic drift
                    RHatL(itheta,:) = RHatL(itheta,:) + RHarmonics_L(i) * &
                         cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
@@ -1431,7 +1578,6 @@ contains
                    d2DzdthetadzetaL(itheta,:) = d2DzdthetadzetaL(itheta,:) + DzHarmonics_L(i) * BHarmonics_lL(i)*Nperiods*BHarmonics_nL(i) * &
                         sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
 
-
                 end do
              end if
           else  ! The sine components of BHat
@@ -1449,64 +1595,15 @@ contains
              end if
              if (include_mn) then
                 do itheta = 1,Ntheta
-                   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                   !! Added by MFM - 07/31/18
-                   if (boozer_symmbreak_scaling) then
-                      if (symm_type == 1) then ! QHS
-                         if (qhs_poloidal*(-1)*BHarmonics_nL(i) == qhs_toroidal*BHarmonics_lL(i)) then
-                            BHatL(itheta,:) = BHatL(itheta,:) + BHarmonics_amplitudesL(i) * &
-                                 sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                            dBHatdthetaL(itheta,:) = dBHatdthetaL(itheta,:) + BHarmonics_amplitudesL(i) * BHarmonics_lL(i) * &
-                                 cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                            dBHatdzetaL(itheta,:) = dBHatdzetaL(itheta,:) - BHarmonics_amplitudesL(i) * Nperiods * BHarmonics_nL(i) * &
-                                 cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-                         else
-                            BHarmonics_amplitudesL(i) = BHarmonics_amplitudesL(i)*epsilon_symmbreak
-                            BHatL(itheta,:) = BHatL(itheta,:) + BHarmonics_amplitudesL(i) * &
-                                 cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                            dBHatdthetaL(itheta,:) = dBHatdthetaL(itheta,:) - BHarmonics_amplitudesL(i) * BHarmonics_lL(i) * &
-                                 sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                            dBHatdzetaL(itheta,:) = dBHatdzetaL(itheta,:) + BHarmonics_amplitudesL(i) * Nperiods * BHarmonics_nL(i) * &
-                                 sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-                         end if
-                      else
-                         if (BHarmonics_nL(i)==0) then ! if mode is QAS
-                            BHatL(itheta,:) = BHatL(itheta,:) + BHarmonics_amplitudesL(i) * &
-                                 cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                            dBHatdthetaL(itheta,:) = dBHatdthetaL(itheta,:) - BHarmonics_amplitudesL(i) * BHarmonics_lL(i) * &
-                                 sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                            dBHatdzetaL(itheta,:) = dBHatdzetaL(itheta,:) + BHarmonics_amplitudesL(i) * Nperiods * BHarmonics_nL(i) * &
-                                 sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-                         else
-                            BHarmonics_amplitudesL(i) = BHarmonics_amplitudesL(i)*epsilon_symmbreak
-                            BHatL(itheta,:) = BHatL(itheta,:) + BHarmonics_amplitudesL(i) * &
-                                 cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                            dBHatdthetaL(itheta,:) = dBHatdthetaL(itheta,:) - BHarmonics_amplitudesL(i) * BHarmonics_lL(i) * &
-                                 sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-
-                            dBHatdzetaL(itheta,:) = dBHatdzetaL(itheta,:) + BHarmonics_amplitudesL(i) * Nperiods * BHarmonics_nL(i) * &
-                                 sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-                         end if
-                      end if
-                   else
-                   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                      BHatL(itheta,:) = BHatL(itheta,:) + BHarmonics_amplitudesL(i) * &
-                      sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+                   BHatL(itheta,:) = BHatL(itheta,:) + BHarmonics_amplitudesL(i) * &
+                   sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+                   
+                   dBHatdthetaL(itheta,:) = dBHatdthetaL(itheta,:) + BHarmonics_amplitudesL(i) * BHarmonics_lL(i) * &
+                   cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
+                   
+                   dBHatdzetaL(itheta,:) = dBHatdzetaL(itheta,:) - BHarmonics_amplitudesL(i) * Nperiods * BHarmonics_nL(i) * &
+                   cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
                       
-                      dBHatdthetaL(itheta,:) = dBHatdthetaL(itheta,:) + BHarmonics_amplitudesL(i) * BHarmonics_lL(i) * &
-                      cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-                      
-                      dBHatdzetaL(itheta,:) = dBHatdzetaL(itheta,:) - BHarmonics_amplitudesL(i) * Nperiods * BHarmonics_nL(i) * &
-                      cos(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
-                      
-                   end if
                    !The following are only there to calculate Sugama's magnetic drift
                    RHatL(itheta,:) = RHatL(itheta,:) + RHarmonics_L(i) * &
                         sin(BHarmonics_lL(i) * theta(itheta) - NPeriods * BHarmonics_nL(i) * zeta)
@@ -1615,7 +1712,132 @@ contains
        d2Dzdzeta2H     = 0
        d2DzdthetadzetaH= 0
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! MFM scaling of non-quasisymmetric terms
+       if (symm_breaking == 0) then
+          print *,"There will be no scaling of symmetry-breaking terms"
+
+       else if (symm_breaking == 1) then
+
+          if (symm_type == 0) then
+             print *,"The non-quasi-AXI-symmetric Boozer harmonics of |B| will be scaled"
+             do i = 1, NHarmonicsH
+                if (BHarmonics_nH(i) == 0) then
+                   BHarmonics_amplitudesH(i) = BHarmonics_amplitudesH(i)
+                else
+                   BHarmonics_amplitudesH(i) = BHarmonics_amplitudesH(i)*epsilon_symmbreak
+                end if
+             end do
+
+          else if (symm_type == 1) then
+             print *,"The non-quasi-HELICALLY-symmetric Boozer harmonics of |B| will be scaled"
+             do i = 1, NHarmonicsH
+                if (qhs_poloidal*(-1)*BHarmonics_nH(i) == qhs_toroidal*BHarmonics_lH(i)) then
+                   BHarmonics_amplitudesH(i) = BHarmonics_amplitudesH(i)
+                else
+                   BHarmonics_amplitudesH(i) = BHarmonics_amplitudesH(i)*epsilon_symmbreak
+                end if
+             end do
+
+          else
+             print *,"The type of quasisymmetry-breaking must take integer values of either 0 (QAS) or 1 (QHS) ... Exiting"
+             stop
+          end if
+       else if (symm_breaking == 2) then
+          zeta_fft_max = 2*pi/NPeriods
+          dzeta_fft = zeta_fft_max/nzeta_fft
+          dtheta_fft = 2.*pi/ntheta_fft
+          allocate(hHat_tempH(ntheta_fft,nzeta_fft))
+          allocate(hHat_temp_kH(NHarmonicsH*2+1))
+          allocate(hHat_starH(ntheta_fft,nzeta_fft))
+          allocate(BHat_tempH(ntheta_fft,nzeta_fft))
+          allocate(BHat_temp2H(ntheta_fft,nzeta_fft))
+          allocate(BHarmonics_amplitudesH_temp(NHarmonicsH*2+1))
+          hHat_tempH = 0
+          hHat_temp_kH = 0
+          hHat_starH = 0 !1.0 / (B0OverBBar*B0OverBBar)
+          BHat_tempH = 0
+          BHat_temp2H = 0
+          include_zero = 0
+          sine_term = 0
+          BHatH = 0
+
+          zeta_fft(0) = 0
+          theta_fft(0) = 0
+          do i = 1, nzeta_fft
+             zeta_fft(i) = dzeta_fft + zeta_fft(i-1)
+          end do
+          do i = 1, ntheta_fft
+             theta_fft(i) = dtheta_fft + theta_fft(i-1)
+          end do
+
+          call inverse_b(BHarmonics_amplitudesH, BHat_tempH, BHarmonics_nH, BHarmonics_lH, NHarmonicsH, include_zero, sine_term, ntheta_fft, nzeta_fft, theta_fft, zeta_fft, dzeta_fft, dtheta_fft)
+          BHat_tempH = BHat_tempH + B0OverBBarH
+          include_zero = 1
+          sine_term = 1
+
+          do itheta = 1, ntheta_fft
+             do izeta = 1, nzeta_fft
+                hHat_tempH(itheta,izeta) = 1.0/(BHat_tempH(itheta,izeta)*BHat_tempH(itheta,izeta))
+             end do
+          end do
+          call forward_b(hHat_tempH, hHat_temp_kH, BHarmonics_nH, BHarmonics_lH, NHarmonicsH, sine_term, ntheta_fft, nzeta_fft, theta_fft, zeta_fft, dzeta_fft, dtheta_fft)
+
+          if (symm_type == 1) then ! QHS      
+             do i = 2, NHarmonicsH+1 ! The (0,0) mode is not scaled
+                if (qhs_poloidal*(-1)*BHarmonics_nH(i-1) == qhs_toroidal*BHarmonics_lH(i-1)) then
+                   hHat_temp_kH(i) = hHat_temp_kH(i)
+                else
+                   hHat_temp_kH(i) = epsilon_symmbreak*hHat_temp_kH(i)
+                end if
+             end do
+          else
+             do i = 2, NHarmonicsH+1 ! The (0,0) mode is not scaled
+                if (BHarmonics_nH(i-1)==0) then ! if mode is QAS
+                   hHat_temp_kH(i) = hHat_temp_kH(i)
+                else
+                   hHat_temp_kH(i) = epsilon_symmbreak*hHat_temp_kH(i)
+                end if
+             end do
+          end if
+          
+          call inverse_b(hHat_temp_kH, hHat_starH, BHarmonics_nH, BHarmonics_lH, NHarmonicsH, include_zero, sine_term, ntheta_fft, nzeta_fft, theta_fft, zeta_fft, dzeta_fft, dtheta_fft)
+          do itheta = 1, ntheta_fft
+             do izeta = 1, nzeta_fft
+                BHat_temp2H(itheta,izeta) = sqrt(1.0/hHat_starH(itheta,izeta))
+             end do
+          end do
+
+          BHarmonics_amplitudesH_temp = 0
+          BHarmonics_amplitudesH = 0
+          sine_term = 0
+          call forward_b(BHat_temp2H, BHarmonics_amplitudesH_temp, BHarmonics_nH, BHarmonics_lH, NHarmonicsH, sine_term, ntheta_fft, nzeta_fft, theta_fft, zeta_fft, dzeta_fft, dtheta_fft)
+          
+          BHatH = BHarmonics_amplitudesH_temp(1) ! (0,0) mode amplitude
+          do i = 2, NHarmonicsH+1
+             if (abs(BHarmonics_amplitudesH_temp(i)) < 1.e-10) then
+                BHarmonics_amplitudesH(i-1) = 0
+             else
+                BHarmonics_amplitudesH(i-1) = BHarmonics_amplitudesH_temp(i)
+             end if
+          end do
+
+          deallocate(hHat_tempH)
+          deallocate(hHat_temp_kH)
+          deallocate(hHat_starH)
+          deallocate(BHat_tempH)
+          deallocate(BHat_temp2H)
+          deallocate(BHarmonics_amplitudesH_temp)
+       else
+          print *,"You have selected an invalid integer for the method of scaling symmetry-breaking terms. Input must be 0 (no scaling), 1 (scaling through |B|), or 2 (scaling through invB^2) ... Exiting"
+          stop
+       end if
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
        do i = 1, NHarmonicsH
+!          print *,"BHarmonicsH(i) = ",BHarmonics_amplitudesH(i)
           if (BHarmonics_parityH(i)) then   ! The cosine components of BHat
              include_mn = .false.
              if ((abs(BHarmonics_nH(i))<=int(Nzeta/2.0)).and.(BHarmonics_lH(i)<=int(Ntheta/2.0))) then
@@ -1626,70 +1848,15 @@ contains
              end if
              if (include_mn) then
                 do itheta = 1,Ntheta
-                   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                   !! Added by MFM - 07/31/18
-                   if (boozer_symmbreak_scaling) then
-                      if (symm_type == 1) then ! QHS
-                         if (qhs_poloidal*(-1)*BHarmonics_nH(i) == qhs_toroidal*BHarmonics_lH(i)) then
-                            BHatH(itheta,:) = BHatH(itheta,:) + BHarmonics_amplitudesH(i) * &
-                                 cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                            dBHatdthetaH(itheta,:) = dBHatdthetaH(itheta,:) - BHarmonics_amplitudesH(i) * BHarmonics_lH(i) * &
-                                 sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                            dBHatdzetaH(itheta,:) = dBHatdzetaH(itheta,:) + BHarmonics_amplitudesH(i) * Nperiods * BHarmonics_nH(i) * &
-                                 sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-                         else
-                            BHarmonics_amplitudesH(i) = BHarmonics_amplitudesH(i)*epsilon_symmbreak
-                            BHatH(itheta,:) = BHatH(itheta,:) + BHarmonics_amplitudesH(i) * &
-                                 cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                            dBHatdthetaH(itheta,:) = dBHatdthetaH(itheta,:) - BHarmonics_amplitudesH(i) * BHarmonics_lH(i) * &
-                                 sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                            dBHatdzetaH(itheta,:) = dBHatdzetaH(itheta,:) + BHarmonics_amplitudesH(i) * Nperiods * BHarmonics_nH(i) * &
-                                 sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-                         end if
-                      else
-                         if (BHarmonics_nH(i)==0) then ! if mode is QAS
-!                            if (masterProc) then
-!                               print *,"n=",BHarmonics_nH(i)
-!                               print *,"m=",BHarmonics_lH(i)
-!                               print *,"bmag=",BHarmonics_amplitudesH(i)
-!                            end if
-                            !write(*,'(2I3)') "m=",BHarmonics_nH(i),"  n=",BHarmonics_lH(i)
-                            BHatH(itheta,:) = BHatH(itheta,:) + BHarmonics_amplitudesH(i) * &
-                                 cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                            dBHatdthetaH(itheta,:) = dBHatdthetaH(itheta,:) - BHarmonics_amplitudesH(i) * BHarmonics_lH(i) * &
-                                 sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                            dBHatdzetaH(itheta,:) = dBHatdzetaH(itheta,:) + BHarmonics_amplitudesH(i) * Nperiods * BHarmonics_nH(i) * &
-                                 sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-                         else
-                            BHarmonics_amplitudesH(i) = BHarmonics_amplitudesH(i)*epsilon_symmbreak
-                            BHatH(itheta,:) = BHatH(itheta,:) + BHarmonics_amplitudesH(i) * &
-                                 cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                            dBHatdthetaH(itheta,:) = dBHatdthetaH(itheta,:) - BHarmonics_amplitudesH(i) * BHarmonics_lH(i) * &
-                                 sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                            dBHatdzetaH(itheta,:) = dBHatdzetaH(itheta,:) + BHarmonics_amplitudesH(i) * Nperiods * BHarmonics_nH(i) * &
-                                 sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-                         end if
-                      end if
-                   else
-                   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                      BHatH(itheta,:) = BHatH(itheta,:) + BHarmonics_amplitudesH(i) * &
-                      cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+                   BHatH(itheta,:) = BHatH(itheta,:) + BHarmonics_amplitudesH(i) * &
+                   cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
                       
-                      dBHatdthetaH(itheta,:) = dBHatdthetaH(itheta,:) - BHarmonics_amplitudesH(i) * BHarmonics_lH(i) * &
-                      sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+                   dBHatdthetaH(itheta,:) = dBHatdthetaH(itheta,:) - BHarmonics_amplitudesH(i) * BHarmonics_lH(i) * &
+                   sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
                       
-                      dBHatdzetaH(itheta,:) = dBHatdzetaH(itheta,:) + BHarmonics_amplitudesH(i) * Nperiods * BHarmonics_nH(i) * &
-                      sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-                      
-                   end if
+                   dBHatdzetaH(itheta,:) = dBHatdzetaH(itheta,:) + BHarmonics_amplitudesH(i) * Nperiods * BHarmonics_nH(i) * &
+                   sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+
                    !The following are only there to calculate Sugama's magnetic drift
                    RHatH(itheta,:) = RHatH(itheta,:) + RHarmonics_H(i) * &
                         cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
@@ -1763,64 +1930,15 @@ contains
              end if
              if (include_mn) then
                 do itheta = 1,Ntheta
-                   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                   !! Added by MFM - 07/31/18
-                   if (boozer_symmbreak_scaling) then
-                      if (symm_type == 1) then ! QHS
-                         if (qhs_poloidal*(-1)*BHarmonics_nH(i) == qhs_toroidal*BHarmonics_lH(i)) then
-                            BHatH(itheta,:) = BHatH(itheta,:) + BHarmonics_amplitudesH(i) * &
-                                 sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                            dBHatdthetaH(itheta,:) = dBHatdthetaH(itheta,:) + BHarmonics_amplitudesH(i) * BHarmonics_lH(i) * &
-                                 cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                            dBHatdzetaH(itheta,:) = dBHatdzetaH(itheta,:) - BHarmonics_amplitudesH(i) * Nperiods * BHarmonics_nH(i) * &
-                                 cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-                         else
-                            BHarmonics_amplitudesH(i) = BHarmonics_amplitudesH(i)*epsilon_symmbreak
-BHatH(itheta,:) = BHatH(itheta,:) + BHarmonics_amplitudesH(i) * &
-                                 sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                            dBHatdthetaH(itheta,:) = dBHatdthetaH(itheta,:) + BHarmonics_amplitudesH(i) * BHarmonics_lH(i) * &
-                                 cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                            dBHatdzetaH(itheta,:) = dBHatdzetaH(itheta,:) - BHarmonics_amplitudesH(i) * Nperiods * BHarmonics_nH(i) * &
-                                 cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-                         end if
-                      else ! QAS
-                         if (BHarmonics_nH(i)==0) then ! if mode is QAS
-                            BHatH(itheta,:) = BHatH(itheta,:) + BHarmonics_amplitudesH(i) * &
-                                 sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                            dBHatdthetaH(itheta,:) = dBHatdthetaH(itheta,:) + BHarmonics_amplitudesH(i) * BHarmonics_lH(i) * &
-                                 cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                            dBHatdzetaH(itheta,:) = dBHatdzetaH(itheta,:) - BHarmonics_amplitudesH(i) * Nperiods * BHarmonics_nH(i) * &
-                                 cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-                         else
-                            BHarmonics_amplitudesH(i) = BHarmonics_amplitudesH(i)*epsilon_symmbreak
-BHatH(itheta,:) = BHatH(itheta,:) + BHarmonics_amplitudesH(i) * &
-                                 sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                            dBHatdthetaH(itheta,:) = dBHatdthetaH(itheta,:) + BHarmonics_amplitudesH(i) * BHarmonics_lH(i) * &
-                                 cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-
-                            dBHatdzetaH(itheta,:) = dBHatdzetaH(itheta,:) - BHarmonics_amplitudesH(i) * Nperiods * BHarmonics_nH(i) * &
-                                 cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-                         end if
-                      end if
-                   else
-                   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                      BHatH(itheta,:) = BHatH(itheta,:) + BHarmonics_amplitudesH(i) * &
-                      sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+                   BHatH(itheta,:) = BHatH(itheta,:) + BHarmonics_amplitudesH(i) * &
+                   sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
                       
-                      dBHatdthetaH(itheta,:) = dBHatdthetaH(itheta,:) + BHarmonics_amplitudesH(i) * BHarmonics_lH(i) * &
-                      cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+                   dBHatdthetaH(itheta,:) = dBHatdthetaH(itheta,:) + BHarmonics_amplitudesH(i) * BHarmonics_lH(i) * &
+                   cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
                       
-                      dBHatdzetaH(itheta,:) = dBHatdzetaH(itheta,:) - BHarmonics_amplitudesH(i) * Nperiods * BHarmonics_nH(i) * &
-                      cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
-                      
-                   end if
+                   dBHatdzetaH(itheta,:) = dBHatdzetaH(itheta,:) - BHarmonics_amplitudesH(i) * Nperiods * BHarmonics_nH(i) * &
+                   cos(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
+
                    !The following are only there to calculate Sugama's magnetic drift
                    RHatH(itheta,:) = RHatH(itheta,:) + RHarmonics_H(i) * &
                         sin(BHarmonics_lH(i) * theta(itheta) - NPeriods * BHarmonics_nH(i) * zeta)
@@ -3110,6 +3228,7 @@ BHatH(itheta,:) = BHatH(itheta,:) + BHarmonics_amplitudesH(i) * &
     VPrimeHat = 0
     FSABHat2 = 0
     FSABHat = 0
+    FSAInvB2_minusInvFSAB2 = 0
     do itheta=1,Ntheta
        do izeta=1,Nzeta
           VPrimeHat = VPrimeHat + thetaWeights(itheta) * zetaWeights(izeta) / DHat(itheta,izeta)
@@ -3122,6 +3241,16 @@ BHatH(itheta,:) = BHatH(itheta,:) + BHarmonics_amplitudesH(i) * &
 
     FSABHat2 = FSABHat2 / VPrimeHat
     FSABHat  = FSABHat  / VPrimeHat
+
+    ! MFM 03/25/19
+    do itheta=1,Ntheta
+       do izeta=1,Nzeta
+          FSAInvB2_minusInvFSAB2 = FSAInvB2_minusInvFSAB2 + thetaWeights(itheta) * zetaWeights(izeta) &
+               * ((1/(BHat(itheta,izeta)*BHat(itheta,izeta))) - (1/FSABHat2)) / DHat(itheta,izeta)
+       end do
+    end do
+          
+    FSAInvB2_minusInvFSAB2 = FSAInvB2_minusInvFSAB2 / VPrimeHat
 
     if (coordinateSystem .ne. COORDINATE_SYSTEM_BOOZER) then
        ! Compute B0, the (m=0,n=0) Boozer harmonic.
@@ -3780,6 +3909,5 @@ BHatH(itheta,:) = BHatH(itheta,:) + BHarmonics_amplitudesH(i) * &
 
   ! -----------------------------------------------------------------------------------------
 
-  
 end module geometry
 

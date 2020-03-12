@@ -57,8 +57,9 @@ module globalVariables
   integer :: VMEC_Nyquist_option = 1
   PetscScalar :: rippleScale = 1
   ! MFM boozer bmode scaling - 07/31/18
-  logical :: boozer_symmbreak_scaling = .false.
-  integer :: symm_type = 1
+  integer :: symm_breaking = 0
+  !logical :: boozer_symmbreak_scaling = .false.
+  integer :: symm_type = 0
   integer :: qhs_poloidal = 1
   integer :: qhs_toroidal = 1
   PetscScalar :: epsilon_symmbreak = 1.0
@@ -361,6 +362,7 @@ module globalVariables
 
   PetscScalar, dimension(:), allocatable :: NTV
   PetscScalar :: VPrimeHat, FSABHat2, FSABHat, FSABjHat, FSABjHatOverB0, FSABjHatOverRootFSAB2
+  PetscScalar :: FSAInvB2_minusInvFSAB2 ! MFM 03/25/19
   PetscScalar :: lambda
 
   PetscScalar :: ddpsiN2ddpsiHat, ddrHat2ddpsiHat, ddrN2ddpsiHat

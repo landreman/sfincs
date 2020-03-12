@@ -270,8 +270,9 @@ contains
        call writeHDF5Field("rippleScale", rippleScale, "Factor to scale non-axisymmetric or non-quasisymmetric modes of field.")
 
        !! MFM - 07/31/18
-       call writeHDF5Field("boozer_symmbreak_scaling", boozer_symmbreak_scaling, "Switch to turn on scaling of non-quasisymmetric modes of Boozer magnetic field.")
-       call writeHDF5Field("symm_type", symm_type, "Scaling of non-quasisymmetric modes for (1) quasihelically symmetric or (2) quasiaxisymmetric equilibria")
+       !call writeHDF5Field("boozer_symmbreak_scaling", boozer_symmbreak_scaling, "Switch to turn on scaling of non-quasisymmetric modes of Boozer magnetic field.")
+       call writeHDF5Field("symm_breaking", symm_breaking, "Method of scaling symmetry-breaking terms in the magnetic field: [No scaling (0), |B| (1), InvB^2 (2)]")
+       call writeHDF5Field("symm_type", symm_type, "Scaling of non-quasisymmetric modes for (0) quasi-axisymmetric or (1) quasihelically symmetric equilibria")
        call writeHDF5Field("qhs_poloidal", qhs_poloidal, "For quasihelical symmetry, the value of M in (M\theta - N\zeta)")
        call writeHDF5Field("qhs_toroidal", qhs_toroidal, "For quasihelical symmetry, the value of N in (M\theta - N\zeta)")
        call writeHDF5Field("epsilon_symmbreak", epsilon_symmbreak, "Magnitude of symmetry-breaking modes")
@@ -365,6 +366,7 @@ contains
        call writeHDF5Field("VPrimeHat", VPrimeHat, "")
        call writeHDF5Field("FSABHat2", FSABHat2, &
             "< B^2 >, the flux-surface-averaged squared magnitude of the magnetic field, in units of BBar^2")
+       call writeHDF5Field("FSAInvB2_minusInvFSAB2", FSAInvB2_minusInvFSAB2, "")
        call writeHDF5Field("useIterativeLinearSolver", useIterativeLinearSolver, "")
        call writeHDF5Field("NIterations", 0, "")
 
