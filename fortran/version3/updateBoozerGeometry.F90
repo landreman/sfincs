@@ -6,7 +6,7 @@
 !! @param deltaLambda Finite difference step size.
 subroutine updateBoozerGeometry(whichMode, whichLambda, reset)
 
-#include "../PETScVersions.F90"
+#include "PETScVersions.F90"
 
   use globalVariables
   use geometry
