@@ -378,9 +378,14 @@ def startscan(user_options=None):
     # 
     #          I'll need to replace a second line in the job_array file where
     #          number of runs per job is specified (RUNSPERJOB).
+    runsperjob = 29
+    numjobs = len(run_list)
+    numjobarrays = int(np.ceil(numjobs/runsperjob))
+    
     jobarray_options = {}
-    jobarray_options['array'] = '1-{:0d}'.format(len(run_list)//29)
-    jobarrayfile = mirscan_util.patch_jobfile(jobarray_options, jobarrayfile)    
+    jobarray_options['RUNSPERJOB'] = runsperjob
+    jobarray_options['array'] = '1-{:0d}'.format(numjobarrays)
+    jobarrayfile = mirscan_util.patch_jobfile(jobarray_options, jobarrayfile)
         
     jobarrayfile_filepath = os.path.join(options['path_base'], options['jobarray_filename'])
     with open(jobarrayfile_filepath, "w") as ff:
@@ -389,10 +394,10 @@ def startscan(user_options=None):
             
     
     # Now generate the combined all job file.
-    # jobfiles_all = generate_combined_jobfiles_all(run_list, jobfile)
+    # job_runs = generate_combined_jobfiles_all(run_list, jobfile)
     
     # Now generate the combined rN job files.
-    #job_rn = generate_combined_jobfiles_rn(run_list, jobfile)
+    #job_runs = generate_combined_jobfiles_rn(run_list, jobfile)
      
     # Generate a files that can be used to create a slurm job array.
     job_paths = generate_jobarray_list(run_list)
@@ -410,7 +415,7 @@ def startscan(user_options=None):
 
     logging.info("launching jobs...")        
     
-    mirscan_util.submit_jobs(job_rn)
+    mirscan_util.submit_jobs(job_runs)
 
 
 if __name__ == "__main__":

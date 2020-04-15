@@ -14,17 +14,60 @@ description
 
 import numpy as np
 import logging
+import os
+from collections import OrderedDict
 
 import mirhdf5
 import mirplot
 
-def start_plot():
+
+def options_default():
+    options = OrderedDict()
+
+    options['root'] = None
+    
+    options['xbound'] = [-0.1, 1.1]
+    
+    options['ybound_n'] = None
+    options['ybound_T'] = None
+    options['ybound_Er'] = None
+    
+    return options
+
+
+def create_root_mask(data, root=None, keepone=False):
+    rN = np.array(data['value']['rN']).round(6)
+
+    if root is not None:
+        mask = np.zeros(len(rN), dtype=bool)
+        rho_unique = np.unique(rN)
+        for ii, rho_dummy in enumerate(rho_unique):
+            temp = np.nonzero(rN == rho_dummy)[0]
+            if (len(temp) > 1) or (not keepone):
+                w = (data['value']['root_type'][temp] == root)
+                mask[temp[w]] = True
+            else:
+                mask[temp] = True
+    else:
+        mask = np.ones(len(rN), dtype=bool)
+    
+    return mask
+
+
+def start_plot(path=None, options=None):
     """
     Plot the results from a mirscan_31.
     """
+
+    if path is None: path = ''
+
+    opt = options_default()
+    if options is not None:
+        opt.update(options)        
     
     filename = 'ambipolarSolutions.h5'
-    output = mirhdf5.hdf5ToDict(filename)
+    filepath = os.path.join(path, filename)
+    output = mirhdf5.hdf5ToDict(filepath)
     logging.info('Reading ambipolar solutions from: {}'.format('ambipolarSolutions.h5'))
     
     
@@ -36,8 +79,9 @@ def start_plot():
             color.append('red')
         else:
             color.append('black')
-    
-    xbound = [-0.1, 1.1]
+
+
+    mask = create_root_mask(output, opt['root'])
     
     obj_plot = mirplot.MirPlot()
     obj_plot.append({
@@ -49,7 +93,8 @@ def start_plot():
         ,'ylabel':'n, T'
         ,'label':'nHats_1'
         ,'legend':True
-        ,'xbound':xbound
+        ,'xbound':opt['xbound']
+        ,'ybound':opt['ybound_n']
         ,'color':'black'
         })
     obj_plot.append({
@@ -68,7 +113,8 @@ def start_plot():
         ,'y':output['value']['THats_1']
         ,'xlabel':'rho'
         ,'label':'THats_1'
-        ,'xbound':xbound
+        ,'xbound':opt['xbound']
+        ,'ybound':opt['ybound_T']
         ,'color':'darkred'
         })
     obj_plot.append({
@@ -78,7 +124,6 @@ def start_plot():
         ,'y':output['value']['THats_2']
         ,'xlabel':'rho'
         ,'label':'THats_2'
-        ,'xbound':xbound
         ,'color':'darkblue'
         })
     obj_plot.append({
@@ -99,7 +144,8 @@ def start_plot():
         ,'markersize':50.0
         ,'xlabel':'rho'
         ,'ylabel':'Er'
-        ,'xbound':xbound
+        ,'xbound':opt['xbound']
+        ,'ybound':opt['ybound_Er']
         })
     obj_plot.append({
         'name':'Er'
@@ -109,7 +155,10 @@ def start_plot():
         ,'alpha':0.2
         ,'linestyle':'--'
         })
+    obj_plot.setFigureProperties({'figure_title':path})
     obj_plot.plotToScreen()
+
+    return obj_plot
     
     
 if __name__ == "__main__":

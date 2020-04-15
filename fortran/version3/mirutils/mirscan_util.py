@@ -591,6 +591,11 @@ def patch_jobfile_slurm(params, jobfile_orig):
                 if "#SBATCH --array" in line:
                     jobfile_new[ii] = "#SBATCH --array="+str(value)+"\n"
                     
+        if key == "RUNSPERJOB":
+            for ii, line in enumerate(jobfile_new):
+                if "RUNSPERJOB=" in line:
+                    jobfile_new[ii] = "RUNSPERJOB={:0d}\n".format(value)
+                    
         if key == "time":
             hours = value//60
             minutes = value%60
@@ -711,13 +716,13 @@ def submit_jobs(job_list):
     submit_command = get_submit_command()
 
     for job in job_list:
-        filepath = os.path.join(job['path'], job['filename'])
+        filepath = job['filepath']
         
         command = [submit_command, filepath]
         command_string = ' '.join(command)
             
         try:
-            command_string = 'echo "'+command_string+'"'
+            command_string = command_string
             result = subprocess.run(command_string, shell=True)
             
             if result.returncode == 0:
@@ -725,7 +730,7 @@ def submit_jobs(job_list):
             else:
                 logging.info('Job submission had errors: {}'.format(command_string))                
         except:
-            logging.error("ERROR! Unable to submit run "+command_string+" for some reason.")   
+            logging.exception("ERROR! Unable to submit run "+command_string+" for some reason.")   
 
 
 def uniq(seq): 
