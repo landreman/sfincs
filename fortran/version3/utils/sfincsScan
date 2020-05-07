@@ -74,6 +74,14 @@ elif sfincsSystem=="draco":
         original.insert(1,"#SBATCH -J "+name+"\n")
         return original
 
+elif sfincsSystem=="eddy":
+    submitCommand = "sbatch "+jobFilename
+    def nameJobFile(original,name):
+        # Modify the job.sfincsScan file to change the name that appears in the queue.
+        # Insert the new line after the original first line, since the first line is a shebang.
+        original.insert(1,"#SBATCH -J "+name+"\n")
+        return original
+
 elif sfincsSystem=="laptop" or sfincsSystem=="macports" or sfincsSystem=='ubuntu16.04':
     submitCommand = "bash "+jobFilename
     def nameJobFile(original,name):

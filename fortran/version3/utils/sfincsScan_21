@@ -186,7 +186,7 @@ for runNum in range(numRunsInScan):
                    if "# @ wall_clock_limit =" in line:
                        thisJobFile[thisJobFile.index(line)]="# @ wall_clock_limit = "+hour_str+":"+minute_str+":00\n"
 
-   if sfincsSystem=="draco":
+   if sfincsSystem=="draco" or sfincsSystem=="eddy":
        for parind in range(len(runparamnames)):
            #SLURM parameters:
            if runparamnames[parind]=="nodes":
