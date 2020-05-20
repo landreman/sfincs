@@ -66,6 +66,10 @@ def set_defaults_env():
         options['job_manager'] = 'loadleveler'
     elif options['sfincs_system'] == 'draco':
         options['job_manager'] = 'slurm'
+    elif options['sfincs_system'] == 'portal':
+        options['job_manager'] = 'slurm'
+    elif options['sfincs_system'] == 'eddy':
+        options['job_manager'] = 'slurm'  
     elif options['sfincs_system'] == 'laptop':
         options['job_manager'] = 'bash'
     elif options['sfincs_system'] == 'macports':
