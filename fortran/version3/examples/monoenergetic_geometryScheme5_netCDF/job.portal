@@ -1,0 +1,25 @@
+#!/bin/bash -l 
+
+#SBATCH --mem 2Gb
+# Job Name:
+#SBATCH -J sfincs
+
+# Wall clock limit:
+#SBATCH -t 00:10:00
+
+#SBATCH -N 1
+#SBATCH --ntasks-per-node=16
+# for OpenMP:
+#SBATCH --cpus-per-task=1
+
+# Standard output and error:
+#SBATCH -o ./sfincsJob.out.%j
+#SBATCH -e ./sfincsJob.err.%j
+# Initial working directory:
+#SBATCH -D ./
+##SBATCH -q debug
+export OMP_NUM_THREADS=1
+# For pinning threads correctly:
+export OMP_PLACES=cores
+
+srun ../../sfincs -ksp_view 
