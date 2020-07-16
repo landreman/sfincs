@@ -12,10 +12,20 @@ module readHDF5Input
     module procedure readVariable_1d
     module procedure readVariable_2d
     module procedure readVariable_3d
+    module procedure readVariable_4d
+    module procedure readVariable_5d
+    module procedure readVariable_6d
   end interface readVariable
 
-  integer(HID_T), private :: fileID, groupID
+  
+  private
+  integer(HID_T) :: fileID, groupID
+  integer :: externalNzeta, externalNtheta, externalNIterations, externalNPeriods, externalNE, externalNxi, externalNspecies 
+  PetscScalar, dimension(:), allocatable :: externalTheta, externalZeta
 
+  public :: setPhi1
+  public :: setExternalF
+  
 contains
 
   subroutine openInputFile(fileName, groupName)
@@ -241,78 +251,153 @@ contains
 
   end subroutine readVariable_3d
 
-  subroutine setPhi1()
-    !!Reads Phi1 from an external file and sets it globally
+   subroutine readVariable_4d(variable,varname)
 
-    use globalVariables, only: Phi1Hat, dPhi1Hatdtheta, dPhi1Hatdzeta, externalPhi1Filename, theta, zeta, ddtheta, ddzeta, Ntheta, Nzeta, NPeriods, pi, masterProc!, zetaMax
+    PetscScalar, intent(inout), dimension(:,:,:,:), allocatable :: variable
+    character(len=*), intent(in) :: varname
+    integer(HID_T) :: dataSetID
+    integer(HSIZE_T), dimension(4) :: dimensions
+    integer :: HDF5Error
 
-    integer :: externalNzeta, externalNtheta, externalNIterations, externalNPeriods
-    integer :: i, j
-    character(len=*), parameter :: line="******************************************************************"
-
-    integer :: itheta, izeta, indexZetaUpper, indexZetaLower, indexThetaUpper, indexThetaLower
-
-    PetscScalar, dimension(:), allocatable :: externalTheta, externalZeta
-
-    PetscScalar, dimension(:,:,:), allocatable :: externalPhi1Hat
-
-    PetscScalar :: intervalZeta, intervalTheta, deltaZetaUpper, deltaZetaLower, deltaThetaUpper, deltaThetaLower, intervalRelTol=1d-4, gridAbsTol=1d-8
-
-    if (masterProc) then
-       print *,""
-       print *,"-------------------------------------------------------"
-       print *,"Reading Phi1Hat from ",externalPhi1Filename
+    if (.not. allocated(variable)) then
+      print *,"Tried to read into unallocated array: ",varname
+      stop
     end if
 
-    call openInputFile(externalPhi1Filename, "/")
+    dimensions = shape(variable)
 
-    call readVariable(externalNzeta, "Nzeta")
-    call readVariable(externalNtheta, "Ntheta")
-    call readVariable(externalNIterations, "NIterations")
-    call readVariable(externalNPeriods, "NPeriods")
+    ! Open Dataset
+    call h5dopen_f(groupID, varname, dataSetID, HDF5Error)
+    if (HDF5Error < 0) then
+      print *,"Error opening dataset for variable: ",varname
+      stop
+    end if
 
-    allocate(externalZeta(externalNzeta))
-    allocate(externalTheta(externalNtheta))
+    ! Read variable
+    call h5dread_f(dataSetID, H5T_NATIVE_DOUBLE, variable, dimensions, HDF5Error)
+    if (HDF5Error < 0) then
+      print *,"Error reading variable: ",varname
+      stop
+    end if
 
-    call readVariable(externalZeta, "zeta")
-    call readVariable(externalTheta, "theta")
+    ! Close Dataset
+    call h5dclose_f(dataSetID, HDF5Error)
+    if (HDF5Error < 0) then
+      print *,"Error closing dataset for variable: ",varname
+      stop
+    end if
 
+  end subroutine readVariable_4d
+  
+  subroutine readVariable_5d(variable,varname)
 
-    ! *******************************************************************************
-    ! Validate the input data from the external file
-    ! ******************************************************************************* 
+    PetscScalar, intent(inout), dimension(:,:,:,:,:), allocatable :: variable
+    character(len=*), intent(in) :: varname
+    integer(HID_T) :: dataSetID
+    integer(HSIZE_T), dimension(5) :: dimensions
+    integer :: HDF5Error
 
+    if (.not. allocated(variable)) then
+      print *,"Tried to read into unallocated array: ",varname
+      stop
+    end if
+
+    dimensions = shape(variable)
+
+    ! Open Dataset
+    call h5dopen_f(groupID, varname, dataSetID, HDF5Error)
+    if (HDF5Error < 0) then
+      print *,"Error opening dataset for variable: ",varname
+      stop
+    end if
+
+    ! Read variable
+    call h5dread_f(dataSetID, H5T_NATIVE_DOUBLE, variable, dimensions, HDF5Error)
+    if (HDF5Error < 0) then
+      print *,"Error reading variable: ",varname
+      stop
+    end if
+
+    ! Close Dataset
+    call h5dclose_f(dataSetID, HDF5Error)
+    if (HDF5Error < 0) then
+      print *,"Error closing dataset for variable: ",varname
+      stop
+    end if
+
+  end subroutine readVariable_5d
+
+  subroutine readVariable_6d(variable,varname)
+
+    PetscScalar, intent(inout), dimension(:,:,:,:,:,:), allocatable :: variable
+    character(len=*), intent(in) :: varname
+    integer(HID_T) :: dataSetID
+    integer(HSIZE_T), dimension(6) :: dimensions
+    integer :: HDF5Error
+
+    if (.not. allocated(variable)) then
+      print *,"Tried to read into unallocated array: ",varname
+      stop
+    end if
+
+    dimensions = shape(variable)
+
+    ! Open Dataset
+    call h5dopen_f(groupID, varname, dataSetID, HDF5Error)
+    if (HDF5Error < 0) then
+      print *,"Error opening dataset for variable: ",varname
+      stop
+    end if
+
+    ! Read variable
+    call h5dread_f(dataSetID, H5T_NATIVE_DOUBLE, variable, dimensions, HDF5Error)
+    if (HDF5Error < 0) then
+      print *,"Error reading variable: ",varname
+      stop
+    end if
+
+    ! Close Dataset
+    call h5dclose_f(dataSetID, HDF5Error)
+    if (HDF5Error < 0) then
+      print *,"Error closing dataset for variable: ",varname
+      stop
+    end if
+
+  end subroutine readVariable_6d
+
+  subroutine validateExternalThetaZetaGrid(externalDataFilename)
+    !! Validate the theta and zeta grid read in from an external file
+    use globalVariables, only: NPeriods, pi, masterProc
+    character(len=*), intent(in) :: externalDataFilename
+    character(len=*), parameter :: line="******************************************************************"
+    integer :: i
+    PetscScalar :: intervalZeta, intervalTheta, intervalRelTol=1d-4
+
+    
     if (externalNzeta<1) then !!We allow Nzeta to be 1 in case of toroidal symmetry
        if (masterProc) then
-          print *,"Error! Nzeta must be at least 1 in ",externalPhi1Filename
+          print *,"Error! Nzeta must be at least 1 in ",externalDataFilename
        end if
        stop
     end if
 
     if (externalNtheta<2) then !!There must be at least two grid points in theta
        if (masterProc) then
-          print *,"Error! Ntheta must be at least 2 in ",externalPhi1Filename
-       end if
-       stop
-    end if
-
-    if (externalNIterations<1) then
-       if (masterProc) then
-          print *,"Error! NIterations must be positive in ",externalPhi1Filename
+          print *,"Error! Ntheta must be at least 2 in ",externalDataFilename
        end if
        stop
     end if
     
     if (externalNPeriods<1) then
        if (masterProc) then
-          print *,"Error! NPeriods must be positive in ",externalPhi1Filename
+          print *,"Error! NPeriods must be positive in ",externalDataFilename
        end if
        stop
     end if
 
     if ((size(externalZeta) .ne. externalNzeta) .or. (size(externalTheta) .ne. externalNtheta)) then
        if (masterProc) then
-          print *,"Error! The size of the zeta, theta arrays do not agree with the dimension Nzeta,Ntheta in ",externalPhi1Filename
+          print *,"Error! The size of the zeta, theta arrays do not agree with the dimension Nzeta,Ntheta in ",externalDataFilename
        end if
        stop
     end if
@@ -320,23 +405,23 @@ contains
     if ((NPeriods .ne. externalNPeriods) .and. masterProc) then
        print *,line
        print *,line
-       print *,"**   WARNING: You are reading an external Phi1Hat "
+       print *,"**   WARNING: You are reading an external data "
        print *,"**            from a file with a different number of toroidal periods."
-       print *,"**            Is the geometry correct for this Phi1?"
+       print *,"**            Is the geometry correct for this data?"
        print *,line
        print *,line
     end if
 
     if ((externalZeta(1) < 0) .or. (externalZeta(externalNzeta) > 2*pi/externalNPeriods)) then 
        if (masterProc) then
-          print *,"Error! All elements of the zeta array must be between 0 and 2*pi/NPeriods in ",externalPhi1Filename
+          print *,"Error! All elements of the zeta array must be between 0 and 2*pi/NPeriods in ",externalDataFilename
        end if
        stop
     end if
 
     if ((externalTheta(1) < 0) .or. (externalTheta(externalNtheta) > 2*pi)) then
        if (masterProc) then
-          print *,"Error! All elements of the theta array must be between 0 and 2*pi in ",externalPhi1Filename
+          print *,"Error! All elements of the theta array must be between 0 and 2*pi in ",externalDataFilename
        end if
        stop
     end if
@@ -351,21 +436,21 @@ contains
 
     if (intervalZeta == 0 .or. intervalTheta == 0) then
        if (masterProc) then
-          print *,"Error! The zeta, theta arrays should not contain duplicate numbers in ",externalPhi1Filename
+          print *,"Error! The zeta, theta arrays should not contain duplicate numbers in ",externalDataFilename
        end if
        stop
     end if
 
-    do j=2,externalNzeta
-       if (externalZeta(j-1) >= externalZeta(j)) then
+    do i=2,externalNzeta
+       if (externalZeta(i-1) >= externalZeta(i)) then
           if (masterProc) then
-             print *,"Error! zeta grid points are not sorted in increasing order in ",externalPhi1Filename
+             print *,"Error! zeta grid points are not sorted in increasing order in ",externalDataFilename
           end if
           stop
        end if
-       if (abs( (externalZeta(j)-externalZeta(j-1)-intervalZeta)/intervalZeta ) > intervalRelTol) then
+       if (abs( (externalZeta(i)-externalZeta(i-1)-intervalZeta)/intervalZeta ) > intervalRelTol) then
           if (masterProc) then
-             print *,"Error! zeta grid points must be uniformly spaced in ",externalPhi1Filename
+             print *,"Error! zeta grid points must be uniformly spaced in ",externalDataFilename
              print *,"Grid points:",externalZeta
           end if
           stop
@@ -375,33 +460,35 @@ contains
     do i=2,externalNtheta
        if (externalTheta(i-1) >= externalTheta(i)) then
           if (masterProc) then
-             print *,"Error! theta grid points are not sorted in increasing order in ",externalPhi1Filename
+             print *,"Error! theta grid points are not sorted in increasing order in ",externalDataFilename
           end if
           stop
        end if
        if (abs( (externalTheta(i)-externalTheta(i-1)-intervalTheta)/intervalTheta ) > intervalRelTol) then
           if (masterProc) then
-             print *,"Error! theta grid points must be uniformly spaced in ",externalPhi1Filename
+             print *,"Error! theta grid points must be uniformly spaced in ",externalDataFilename
              print *,"Grid points:",externalTheta
           end if
           stop
        end if
     end do
 
-    ! *******************************************************************************
-    ! Read Phi1 from the external file and interpolate to the current theta, zeta grid
-    ! *******************************************************************************
-
-    !!FOR SOME REASON READING THE HDF5 DATA HAS TO BE MADE IN REVERSE ORDER
-    !allocate(externalPhi1Hat(externalNzeta, externalNtheta, externalNIterations))
-    allocate(externalPhi1Hat(externalNIterations, externalNtheta, externalNzeta))
-
-    call readVariable(externalPhi1Hat, "Phi1Hat")
+  end subroutine validateExternalThetaZetaGrid
+  
+  subroutine interpolateToThetaZetaGrid(externalData, interpolatedData)
+    ! Interpolate from an external theta, zeta grid to the theta and zeta grid used in SFINCS
+    use globalVariables, only: theta, zeta, Ntheta, Nzeta, NPeriods, pi, masterProc!, zetaMax
+    
+    PetscScalar, dimension(:,:), intent(in) :: externalData
+    PetscScalar, dimension(:,:), intent(out) :: interpolatedData
+    integer :: i
+    integer :: itheta, izeta, indexZetaUpper, indexZetaLower, indexThetaUpper, indexThetaLower
+    PetscScalar :: deltaZetaUpper, deltaZetaLower, deltaThetaUpper, deltaThetaLower, gridAbsTol=1d-8
     
     if ((externalNzeta == Nzeta) .and. (externalNtheta == Ntheta) .and. ( abs(externalZeta(1) - zeta(1)) < gridAbsTol/externalNPeriods) .and. ( abs(externalTheta(1) - theta(1)) < gridAbsTol) .and. &
          ( abs(externalZeta(externalNzeta) - zeta(Nzeta)) < gridAbsTol/externalNPeriods) .and. ( abs(externalTheta(externalNtheta) - theta(Ntheta)) < gridAbsTol)) then !The grid is the same so we don't have to interpolate
        !Phi1Hat = transpose(externalPhi1Hat(externalNIterations, :, :))
-       Phi1Hat = externalPhi1Hat(externalNIterations, :, :)
+       interpolatedData = externalData
 
     else !!We have to interpolate using 2D linear interpolation
        !!Phi1Hat(Ntheta,Nzeta)
@@ -414,9 +501,9 @@ contains
           indexZetaUpper = 0
           indexZetaLower = 0
 
-          do j=1,externalNzeta 
-             if (externalZeta(j) >= zeta(izeta)) then
-                indexZetaUpper = j
+          do i=1,externalNzeta 
+             if (externalZeta(i) >= zeta(izeta)) then
+                indexZetaUpper = i
                 exit
              end if
           end do
@@ -487,19 +574,72 @@ contains
              !The corresponding is also true for zeta
 
              if (externalNzeta == 1) then !There is only one point in zeta, so we can only interpolate in theta
-                Phi1Hat(itheta,izeta) = deltaThetaLower*externalPhi1Hat(externalNIterations, indexThetaUpper, 1) + deltaThetaUpper*externalPhi1Hat(externalNIterations, indexThetaLower, 1)
+                interpolatedData(itheta,izeta) = deltaThetaLower*externalData(indexThetaUpper, 1) + deltaThetaUpper*externalData(indexThetaLower, 1)
 
              else !2D interpolation
-                Phi1Hat(itheta,izeta) = deltaZetaLower * deltaThetaLower * externalPhi1Hat(externalNIterations, indexThetaUpper, indexZetaUpper) &
-                     + deltaZetaUpper * deltaThetaLower * externalPhi1Hat(externalNIterations, indexThetaUpper, indexZetaLower) &
-                     + deltaZetaLower * deltaThetaUpper * externalPhi1Hat(externalNIterations, indexThetaLower, indexZetaUpper) &
-                     + deltaZetaUpper * deltaThetaUpper * externalPhi1Hat(externalNIterations, indexThetaLower, indexZetaLower)
+                interpolatedData(itheta,izeta) = deltaZetaLower * deltaThetaLower * externalData(indexThetaUpper, indexZetaUpper) &
+                     + deltaZetaUpper * deltaThetaLower * externalData(indexThetaUpper, indexZetaLower) &
+                     + deltaZetaLower * deltaThetaUpper * externalData(indexThetaLower, indexZetaUpper) &
+                     + deltaZetaUpper * deltaThetaUpper * externalData(indexThetaLower, indexZetaLower)
              end if
-             !Phi1Hat(itheta,izeta) = 0
           end do
        end do
     end if
 
+    
+  end subroutine interpolateToThetaZetaGrid
+  
+  
+  subroutine setPhi1()
+    !!Reads Phi1 from an external file and sets it globally
+
+    use globalVariables, only: Phi1Hat, dPhi1Hatdtheta, dPhi1Hatdzeta, externalPhi1Filename, ddtheta, ddzeta, masterProc
+    
+    PetscScalar, dimension(:,:,:), allocatable :: externalPhi1Hat
+
+    if (masterProc) then
+       print *,""
+       print *,"-------------------------------------------------------"
+       print *,"Reading Phi1Hat from ",externalPhi1Filename
+    end if
+
+    call openInputFile(externalPhi1Filename, "/")
+
+    call readVariable(externalNzeta, "Nzeta")
+    call readVariable(externalNtheta, "Ntheta")
+    call readVariable(externalNIterations, "NIterations")
+    call readVariable(externalNPeriods, "NPeriods")
+
+    allocate(externalZeta(externalNzeta))
+    allocate(externalTheta(externalNtheta))
+
+    call readVariable(externalZeta, "zeta")
+    call readVariable(externalTheta, "theta")
+    
+    
+    ! *******************************************************************************
+    ! Validate the input data from the external file
+    ! ******************************************************************************* 
+
+    if (externalNIterations<1) then
+       if (masterProc) then
+          print *,"Error! NIterations must be positive in ",externalPhi1Filename
+       end if
+       stop
+    end if
+
+    call validateExternalThetaZetaGrid(externalPhi1Filename)
+    
+    ! *******************************************************************************
+    ! Read Phi1 from the external file and interpolate to the current theta, zeta grid
+    ! *******************************************************************************
+    
+    allocate(externalPhi1Hat(externalNIterations, externalNtheta, externalNzeta))
+
+    call readVariable(externalPhi1Hat, "Phi1Hat")
+
+    call interpolateToThetaZetaGrid(externalPhi1Hat(externalNIterations,:,:), Phi1Hat)
+    
     dPhi1Hatdtheta = matmul(ddtheta,Phi1Hat)
     dPhi1Hatdzeta = transpose(matmul(ddzeta,transpose(Phi1Hat)))
 
@@ -517,5 +657,84 @@ contains
 
   end subroutine setPhi1
 
+  subroutine setExternalF()
+    !!Reads F from an external file and sets it globally
+
+    use globalVariables, only: externalF, externalXi, externalE, externalFFilename, externalFFormat, masterProc, Nzeta, Ntheta
+    
+    PetscScalar, dimension(:,:,:,:,:,:), allocatable :: this_externalF
+    integer iE, ixi, ispecies
+    
+    if (masterProc) then
+       print *,""
+       print *,"-------------------------------------------------------"
+       print *,"Reading externalF from ",externalFFilename
+    end if
+
+    call openInputFile(externalFFilename, "/")
+
+    call readVariable(externalNzeta, "Nzeta")
+    call readVariable(externalNtheta, "Ntheta")
+    call readVariable(externalNE, "NE")
+    call readVariable(externalNxi, "Nxi")
+    call readVariable(externalNspecies, "Nspecies")
+    
+    call readVariable(externalNPeriods, "NPeriods")
+    externalNIterations = 1 ! needs to be overriden if we want to read in f from SFINCS
+    
+    
+    allocate(externalZeta(externalNzeta))
+    allocate(externalTheta(externalNtheta))
+    if (.not. allocated(externalXi)) then
+       allocate(externalXi(externalNxi))
+    end if
+    if (.not. allocated(externalE)) then
+       allocate(externalE(externalNE))
+    end if
+    
+       
+    call readVariable(externalZeta, "zeta")
+    call readVariable(externalTheta, "theta")
+    call readVariable(externalE, "E")
+    call readVariable(externalXi, "xi")
+    
+    call validateExternalThetaZetaGrid(externalFFilename)
+    
+    ! *******************************************************************************
+    ! Read externalF from the external file and interpolate to the current theta, zeta grid
+    ! *******************************************************************************
+    
+    allocate(this_externalF(externalNE, externalNxi, externalNzeta, externalNtheta, externalNspecies, externalNIterations))
+
+    if (.not. allocated(externalF)) then
+       allocate(externalF(externalNE, externalNxi, Nzeta, Ntheta, externalNspecies))
+    end if
+ 
+    
+    call readVariable(this_externalF, "f")
+
+    do iE=1,externalNE
+       do ixi=1,externalNxi
+          do ispecies = 1,externalNspecies
+             call interpolateToThetaZetaGrid(this_externalF(iE,ixi,:,:,ispecies,externalNIterations), externalF(iE,ixi,:,:,ispecies))
+          end do
+       end do
+    end do
+    
+    call closeInputFile()
+
+    if(allocated(externalTheta))deallocate(externalTheta)
+    if(allocated(externalZeta))deallocate(externalZeta)
+    if(allocated(this_externalF))deallocate(this_externalF)
+
+    if (masterProc) then
+       !print *,""
+       print *,"-------------------------------------------------------" 
+       !print *,""
+    end if
+  
+  end subroutine setExternalF
+
+  
 end module readHDF5Input
 

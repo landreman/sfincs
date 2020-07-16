@@ -29,6 +29,10 @@ module globalVariables
   character(len=200) :: binaryOutputFilename = "sfincsBinary"
   character(len=200) :: outputFilename = "sfincsOutput.h5"
   character(len=200) :: externalPhi1Filename = "externalPhi1.h5" !!Added by AM 2018-12
+  character(len=200) :: externalFFilename = "externalF.h5"
+  character(len=200) :: externalFFormat = "ASCOT4Boozer"
+  
+  
   logical :: solveSystem = .true.
   integer :: RHSMode = 1, whichRHS
   logical :: isAParallelDirectSolverInstalled
@@ -151,6 +155,7 @@ module globalVariables
 !!  logical :: includeRadialExBDrive = .false. !!Commented by AM 2016-02
   logical :: includePhi1InKineticEquation = .true. !!Added by AM 2016-03
   logical :: readExternalPhi1 = .false. !!Added by AM 2018-12
+  logical :: readExternalF = .false. 
 
   PetscScalar :: nuPrime = 1, EStar = 0
 
@@ -411,6 +416,10 @@ module globalVariables
   integer :: transportMatrixSize = 3
   PetscScalar, dimension(:,:), allocatable :: transportMatrix
 
+  PetscScalar, dimension(:,:,:,:,:), allocatable :: externalF
+  PetscScalar, dimension(:), allocatable :: externalXi, externalE
+  
+  
   Vec :: f0
 
 ! ********************************************************
