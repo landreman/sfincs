@@ -61,11 +61,10 @@ module sfincs_main
     use geometry
     use radialCoordinates
     use readHDF5Input !!Added by AM 2018-12
+    use externalFCalculations
     
     implicit none
     
-    PetscErrorCode ierr
-
     call validateInput()
     
     ! If running with >1 proc,
@@ -121,6 +120,14 @@ module sfincs_main
        call setPhi1() !!Added by AM 2018-12
     end if !!Added by AM 2018-12
 
+    if (readExternalF) then
+       call setExternalF()
+       call calculateExternalN()
+       call computeExternalRosenbluthPotentialResponse()
+    end if
+    
+
+    
   end subroutine sfincs_prepare
 
   ! -----------------------------------------------------------------------------------

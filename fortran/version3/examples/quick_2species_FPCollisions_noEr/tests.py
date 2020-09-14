@@ -23,4 +23,8 @@ numFailures += shouldBe("heatFlux_vm_psiHat[1,0;;;]", 2.007511670631882E-011, de
 
 numFailures += shouldBe("FSABjHat[0;;;]", -1.018089398461633E-003, desiredTolerance)
 
+numFailures += shouldBe("full_f[0,0,2,3,1,0;;;]", 0.0122345, desiredTolerance)
+numFailures += shouldBe("full_f[0,0,6,4,1,0;;;]", 0.0122627, desiredTolerance)
+
+
 exit(numFailures > 0)

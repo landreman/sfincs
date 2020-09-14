@@ -22,18 +22,17 @@ contains
     PC :: preconditionerContext, preconditionerContext_adjoint
     integer :: numRHSs
     SNESConvergedReason :: reason
-    KSPConvergedReason :: KSPReason
     PetscLogDouble :: time1, time2
     integer :: userContext(1)
     Vec :: dummyVec
     Mat :: factorMat, factorMat_adjoint
     PetscInt :: mumps_which_cntl, mumps_icntl_14 = 50
     PetscReal :: mumps_value
-    PetscReal :: atol, rtol, stol, norm
+    PetscReal :: atol, rtol, stol
     integer :: maxit, maxf, factor_err
 
     ! Related to adjoint solve
-    integer :: whichAdjointRHS, iSpecies, whichLambda, whichMode, whichSpecies
+    integer :: whichAdjointRHS, iSpecies
     Vec :: adjointSolutionVec, summedSolutionVec, adjointRHSVec, adjointSolutionJr
     Mat :: adjointMatrix, adjointPreconditionerMatrix
     logical :: useSummedSolutionVec

@@ -57,6 +57,11 @@
        end if
     end if
 
+    if (readExternalF) then
+       externalNL = min(externalNL,Nxi)
+    end if
+    
+
     if (masterProc) then
        print *,"---- Numerical parameters: ----"
        print *,"Ntheta             = ", Ntheta

@@ -191,7 +191,7 @@ implicit none
     PetscScalar, pointer :: forwardSolutionArray(:)
     integer :: whichSpecies, whichLambda, whichMode, minSpecies, maxSpecies, itheta, izeta, L, ix, index, ispecies
     PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, dBHatdThetadLambda, dBHatdZetadLambda
-    PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dinvDHatdLambda, factor
+    PetscScalar :: factor
     PetscScalar, dimension(:), allocatable :: xIntegralFactor
     PetscScalar :: dBHatdLambda, dVPrimeHatdLambda
     integer :: m, n
@@ -329,7 +329,7 @@ end do
     PetscScalar, pointer :: deltaFArray(:)
     integer :: whichSpecies, whichLambda, whichMode, minSpecies, maxSpecies, itheta, izeta, L, ix, index, ispecies
     PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, dBHatdThetadLambda, dBHatdZetadLambda
-    PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dinvDHatdLambda, factor
+    PetscScalar :: factor
     PetscScalar, dimension(:), allocatable :: xIntegralFactor
     PetscScalar :: dBHatdLambda, dVPrimeHatdLambda
     integer :: m, n
@@ -466,15 +466,14 @@ end do
     Vec :: deltaFOnProc0
     PetscScalar, pointer :: deltaFArray(:)
     integer :: minSpecies, maxSpecies, itheta, izeta, L, ix, index, ispecies
-    PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, dBHatdThetadLambda, dBHatdZetadLambda
-    PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dinvDHatdLambda, factor, dVPrimeHatdLambda
+    PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat
+    PetscScalar ::  factor, dVPrimeHatdLambda
     PetscScalar, dimension(:), allocatable :: xIntegralFactor
     PetscScalar :: dBHatdLambda, dFSABHat2dLambda, nHat, sqrtFSAB2
-    PetscScalar :: angle, cos_angle, sin_angle
+    PetscScalar :: angle, cos_angle
     integer :: m, n
     VecScatter :: VecScatterContext
     PetscErrorCode :: ierr
-    PetscScalar :: dDHatdLambda
 
     sqrtFSAB2 = sqrt(FSABHat2)
     m = ms_sensitivity(whichMode)
@@ -590,7 +589,7 @@ end do
       implicit none
 
       PetscErrorCode :: ierr
-      Vec :: forwardSolution, adjointSolution, adjointResidual, adjointRHSVec
+      Vec :: forwardSolution, adjointSolution, adjointResidual
       integer :: whichAdjointRHS, whichSpecies
       integer :: whichLambda, whichMode, this_NModesAdjoint
       PetscScalar :: innerProductResult, sensitivityResult, ErTermToAdd

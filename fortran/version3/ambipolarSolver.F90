@@ -70,7 +70,7 @@ module ambipolarSolver
 
     PetscScalar :: ambipolarEr
     integer :: iEr, exit_code
-    PetscScalar :: thisRadialCurrent, Brent_EPS
+    PetscScalar :: Brent_EPS
     PetscScalar, dimension(:), allocatable :: Er_search, radialCurrent
     PetscScalar :: Brent_a, Brent_b, Brent_fa, Brent_fb, Brent_c, Brent_fc, Brent_d, Brent_e, Brent_tol1, Brent_p, Brent_q, Brent_r, Brent_s, Brent_xm
     PetscErrorCode :: ierr
@@ -457,7 +457,6 @@ module ambipolarSolver
     PetscScalar :: thisEr, radialCurrent
     PetscErrorCode :: ierr
     PetscScalar, dimension(:), allocatable :: array
-    integer :: rank, master_rank
 
     allocate(array(1))
 

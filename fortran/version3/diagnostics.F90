@@ -207,7 +207,7 @@
 
     PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, nHat
     PetscScalar, dimension(:), allocatable :: B2
-    integer :: i, j, ix, ispecies, itheta, izeta, L, index
+    integer :: i, ix, ispecies, itheta, izeta, L, index
     PetscScalar :: densityFactor, flowFactor, pressureFactor
     PetscScalar :: particleFluxFactor_vm, particleFluxFactor_vE
     PetscScalar :: momentumFluxFactor_vm, momentumFluxFactor_vE
@@ -225,7 +225,7 @@
     PetscScalar, dimension(:), allocatable :: NTVIntegralWeights
     PetscScalar :: factor, factor2, factor_vE, temp1, temp2, temp3
     integer :: itheta1, izeta1, ixi1, ix1
-    integer :: itheta2, izeta2, ixi2, ix2
+    integer :: itheta2, izeta2, ix2
     PetscLogDouble :: time1, time2
     PetscViewer :: viewer
     character(len=200) :: filename
@@ -876,6 +876,39 @@
              end do
           end do
        end if
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+       if (export_external_collision) then
+          external_collision = zero
+          do ispecies = 1,Nspecies
+             do itheta1 = 1,Ntheta
+                do izeta1 = 1,Nzeta
+                   do ix1 = 1,Nx
+                      do ixi1 = 1,min(Nxi_for_x(ix1),externalNL)
+                         temp1 = externalRosenPotentialTerms(ispecies,itheta1,izeta1,ixi1,ix1)
+                         do itheta2 = 1,N_export_f_theta
+                            temp2 = temp1 * map_theta_to_export_f_theta(itheta2, itheta1)
+                            do izeta2 = 1,N_export_f_zeta
+                               temp3 = temp2 * map_zeta_to_export_f_zeta(izeta2, izeta1)
+                               do ix2 = 1,N_export_f_x
+                                  ! I arbitrarily chose to replace the loop over export_f_xi with ":"
+                                  ! We could pick any of the 4 coordinates for this.
+                                  external_collision(ispecies, itheta2, izeta2, :, ix2) = &
+                                       external_collision(ispecies, itheta2, izeta2, :, ix2) + temp3 &
+                                       * map_x_to_export_f_x(ix2, ix1) &
+                                       * map_xi_to_external_collision(:, ixi1)
+                               end do
+                            end do
+                         end do
+                      end do
+                   end do
+                end do
+             end do
+          end do
+       end if
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+       
+       
        call PetscTime(time2, ierr)
        if (export_delta_f .or. export_full_f) then
           print *,"Time for exporting f: ", time2-time1, " seconds."

@@ -61,7 +61,7 @@ contains
          includeTemperatureEquilibrationTerm, includePhi1, includePhi1InCollisionOperator, &
          nuPrime, EStar, magneticDriftScheme, includePhi1InKineticEquation, &
          quasineutralityOption, Krook, externalPhi1Filename, readExternalPhi1, & 
-         externalFFilename, readExternalF, externalFFormat
+         externalFFilename, readExternalF, externalFFormat, externalNL, extrapolateExternalF
     
 
     namelist / resolutionParameters / forceOddNthetaAndNzeta, &
@@ -86,7 +86,7 @@ contains
          preconditioner_theta_min_L, preconditioner_zeta_min_L, preconditioner_magnetic_drifts_max_L
 
     namelist / export_f / export_full_f, export_delta_f, export_f_theta, export_f_zeta, export_f_x, export_f_xi, &
-         export_f_theta_option, export_f_zeta_option, export_f_xi_option, export_f_x_option
+         export_f_theta_option, export_f_zeta_option, export_f_xi_option, export_f_x_option, export_external_collision 
 
     namelist / adjointOptions / adjointBootstrapOption, adjointRadialCurrentOption, &
       adjointTotalHeatFluxOption, adjointHeatFluxOption, adjointParticleFluxOption, &

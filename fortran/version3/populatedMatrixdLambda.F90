@@ -12,13 +12,12 @@
     use globalVariables
     use sparsify
     use indices
-    use xGrid, only: xGrid_k
 
     implicit none
 
     Mat :: dMatrixdLambda
     integer :: whichLambda, whichMode
-    integer :: i, ixMin, ixMax, L, ispecies, izeta, itheta, ix, ixMinCol
+    integer :: i, ixMin, L, ispecies, izeta, itheta, ix, ixMinCol
     PetscScalar, dimension(:,:), allocatable :: thetaPartOfTerm, localThetaPartOfTerm, &
       zetaPartOfTerm, localZetaPartOfTerm
     integer, dimension(:), allocatable :: rowIndices, colIndices
@@ -29,14 +28,11 @@
     PetscScalar :: temp, xDotFactor, stuffToAdd, dTempdLambda
     PetscScalar, dimension(:,:), allocatable :: xPartOfXDot, xPartOfXDot_plus, xPartOfXDot_minus
     integer :: ix_row, ix_col, rowIndex, colIndex, ell
-    PetscLogDouble :: time1, time2
-    double precision :: myMatInfo(MAT_INFO_SIZE)
-    integer :: NNZ, NNZAllocated, NMallocs
-    PetscScalar :: dBHatdLambda, dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dBHat_sup_thetadLambda
-    PetscScalar :: dBHat_sup_zetadLambda, dBHatdthetadLambda, dBHatdzetadLambda, dDHatdLambda
-    PetscScalar :: geometricFactor, dFSABHat2dBmn, dFSABHat2dDmn, dVPrimeHatdDmn
+    PetscScalar :: dBHatdLambda
+    PetscScalar :: dBHatdthetadLambda, dBHatdzetadLambda
+    PetscScalar :: geometricFactor, dFSABHat2dBmn
     integer :: m,n
-    PetscScalar :: angle, cos_angle, sin_angle, dVPrimeHatdLambda, dFSABHat2dLambda, dVPrimeHatdBmn
+    PetscScalar :: angle, cos_angle, sin_angle, dVPrimeHatdLambda, dVPrimeHatdBmn
 
     if (whichLambda > 0) then
       m = ms_sensitivity(whichMode)

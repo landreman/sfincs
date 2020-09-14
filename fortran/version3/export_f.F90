@@ -16,14 +16,17 @@ module export_f
   PetscScalar, dimension(max_N_export_f) :: export_f_xi
   PetscScalar, dimension(max_N_export_f) :: export_f_x
   integer :: N_export_f_theta, N_export_f_zeta, N_export_f_xi, N_export_f_x
+  integer :: N_export_external_collision_xi
   PetscScalar, dimension(:,:), allocatable :: map_theta_to_export_f_theta
   PetscScalar, dimension(:,:), allocatable :: map_zeta_to_export_f_zeta
   PetscScalar, dimension(:,:), allocatable :: map_x_to_export_f_x
   PetscScalar, dimension(:,:), allocatable :: map_xi_to_export_f_xi
+  PetscScalar, dimension(:,:), allocatable :: map_xi_to_external_collision
+  integer :: N_external_collision_xi
   integer :: export_f_theta_option=2, export_f_zeta_option=2, export_f_xi_option=1, export_f_x_option=0
-  logical :: export_full_f = .false., export_delta_f = .false.
+  logical :: export_full_f = .false., export_delta_f = .false., export_external_collision
 
-  PetscScalar, dimension(:,:,:,:,:), allocatable :: delta_f, full_f
+  PetscScalar, dimension(:,:,:,:,:), allocatable :: delta_f, full_f, external_collision
 
   contains
 
@@ -36,7 +39,7 @@ module export_f
 
       implicit none
 
-      integer :: i, j, L, indexOfLeastError, index, index1, index2, scheme
+      integer :: i, j, indexOfLeastError, index, index1, index2
       logical, dimension(:), allocatable :: includeThisTheta
       logical, dimension(:), allocatable :: includeThisZeta
       logical, dimension(:), allocatable :: includeThisX
@@ -503,19 +506,7 @@ module export_f
          ! Form the matrix which transforms from amplitudes of Legendre polynomials to values on the requested grid.
          ! I.e., evaluate the Legendre polynomials on this grid.
          allocate(map_xi_to_export_f_xi(N_export_f_xi, Nxi))
-         L = 0
-         map_xi_to_export_f_xi(:,L+1) = one ! P_0(xi) = 1
-         if (Nxi>1) then
-            ! Hard to believe Nxi would ever be 1, but just in case...
-            L = 1
-            map_xi_to_export_f_xi(:,L+1) = export_f_xi(1:N_export_f_xi) ! P_1(xi) = xi
-         end if
-         do L=2,Nxi-1
-            ! Recursion relation for Legendre polynomials:
-            map_xi_to_export_f_xi(:,L+1) = ((2*L-1)*export_f_xi(1:N_export_f_xi) * map_xi_to_export_f_xi(:,L) &
-                 - (L-1)*map_xi_to_export_f_xi(:,L-1))/(one*L)
-         end do
-
+         call legendrePolynomials(map_xi_to_export_f_xi, export_f_xi(1:N_export_f_xi), N_export_f_xi, Nxi)
       case default
          if (masterProc) then
             print *,"Error! Invalid setting for export_f_xi_option"
@@ -523,7 +514,26 @@ module export_f
          stop
       end select
 
+      if (export_external_collision) then
+         ! This needs a special handling of the xi coordinate
+         select case (export_f_xi_option)
+         case(0)
+            N_export_external_collision_xi = externalNL
+            allocate(map_xi_to_external_collision(N_export_external_collision_xi, externalNL))
+            map_xi_to_external_collision = zero
+            do j=1,externalNL
+               map_xi_to_external_collision(j,j) = one
+            end do
 
+         case(1)
+            N_export_external_collision_xi = N_export_f_xi
+            allocate(map_xi_to_external_collision(N_export_external_collision_xi, externalNL))
+            call legendrePolynomials(map_xi_to_external_collision, export_f_xi(1:N_export_external_collision_xi), N_export_external_collision_xi, externalNL)
+               
+         end select
+
+      end if
+         
 
 
       if (masterProc) then
@@ -534,6 +544,14 @@ module export_f
          if (export_delta_f) then
             allocate(delta_f(Nspecies, N_export_f_theta, N_export_f_zeta, N_export_f_xi, N_export_f_x))
          end if
+
+         if (export_external_collision) then
+            allocate(external_collision(Nspecies, N_export_f_theta, N_export_f_zeta, N_export_external_collision_xi, N_export_f_x))
+
+         end if
+         
+           
+         
       end if
 
     end subroutine setup_grids_for_export_f

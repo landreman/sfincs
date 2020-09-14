@@ -145,7 +145,7 @@
       ! the output "global" index is 0-based, since PETSc uses 0-based indexing.
 
       !!use globalVariables, only: Nspecies, Nx, Nxi, Ntheta, Nzeta, matrixSize, constraintScheme, includePhi1, masterProc, Nxi_for_x !!Commented by AM 2018-12
-      use globalVariables, only: Nspecies, Nx, Nxi, Ntheta, Nzeta, matrixSize, constraintScheme, includePhi1, masterProc, Nxi_for_x, readExternalPhi1 !!Added by AM 2018-12
+      use globalVariables, only: Nspecies, Nx, Ntheta, Nzeta, matrixSize, constraintScheme, includePhi1, masterProc, Nxi_for_x, readExternalPhi1 !!Added by AM 2018-12
 
       implicit none
 
@@ -322,7 +322,7 @@
     subroutine computeMatrixSize()
 
       !!use globalVariables, only: Nspecies, Ntheta, Nzeta, Nx, Nxi, includePhi1, constraintScheme, masterProc, matrixSize, Nxi_for_x !!Commented by AM 2018-12
-      use globalVariables, only: Nspecies, Ntheta, Nzeta, Nx, Nxi, includePhi1, constraintScheme, masterProc, matrixSize, Nxi_for_x, readExternalPhi1 !!Added by AM 2018-12
+      use globalVariables, only: Nspecies, Ntheta, Nzeta, Nx, includePhi1, constraintScheme, masterProc, matrixSize, Nxi_for_x, readExternalPhi1 !!Added by AM 2018-12
 
       implicit none
 

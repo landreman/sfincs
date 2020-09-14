@@ -20,7 +20,7 @@ module readHDF5Input
   
   private
   integer(HID_T) :: fileID, groupID
-  integer :: externalNzeta, externalNtheta, externalNIterations, externalNPeriods, externalNE, externalNxi, externalNspecies 
+  integer :: externalNzeta, externalNtheta, externalNIterations, externalNPeriods
   PetscScalar, dimension(:), allocatable :: externalTheta, externalZeta
 
   public :: setPhi1
@@ -341,6 +341,7 @@ contains
     end if
 
     dimensions = shape(variable)
+    print *, dimensions
 
     ! Open Dataset
     call h5dopen_f(groupID, varname, dataSetID, HDF5Error)
@@ -387,7 +388,7 @@ contains
        end if
        stop
     end if
-    
+
     if (externalNPeriods<1) then
        if (masterProc) then
           print *,"Error! NPeriods must be positive in ",externalDataFilename
@@ -609,7 +610,7 @@ contains
     call readVariable(externalNtheta, "Ntheta")
     call readVariable(externalNIterations, "NIterations")
     call readVariable(externalNPeriods, "NPeriods")
-
+    
     allocate(externalZeta(externalNzeta))
     allocate(externalTheta(externalNtheta))
 
@@ -637,7 +638,7 @@ contains
     allocate(externalPhi1Hat(externalNIterations, externalNtheta, externalNzeta))
 
     call readVariable(externalPhi1Hat, "Phi1Hat")
-
+    
     call interpolateToThetaZetaGrid(externalPhi1Hat(externalNIterations,:,:), Phi1Hat)
     
     dPhi1Hatdtheta = matmul(ddtheta,Phi1Hat)
@@ -660,7 +661,7 @@ contains
   subroutine setExternalF()
     !!Reads F from an external file and sets it globally
 
-    use globalVariables, only: externalF, externalXi, externalE, externalFFilename, externalFFormat, masterProc, Nzeta, Ntheta
+    use globalVariables, only: externalF, externalXi, externalE, externalFFilename, masterProc, Nzeta, Ntheta, externalNspecies, externalNE, externalNxi, externalMasses, externalCharges, externalFFormat
     
     PetscScalar, dimension(:,:,:,:,:,:), allocatable :: this_externalF
     integer iE, ixi, ispecies
@@ -668,7 +669,7 @@ contains
     if (masterProc) then
        print *,""
        print *,"-------------------------------------------------------"
-       print *,"Reading externalF from ",externalFFilename
+       print *,"Reading externalF from ",externalFFilename," on format ",externalFFormat
     end if
 
     call openInputFile(externalFFilename, "/")
@@ -678,18 +679,29 @@ contains
     call readVariable(externalNE, "NE")
     call readVariable(externalNxi, "Nxi")
     call readVariable(externalNspecies, "Nspecies")
-    
     call readVariable(externalNPeriods, "NPeriods")
+    
     externalNIterations = 1 ! needs to be overriden if we want to read in f from SFINCS
     
     
     allocate(externalZeta(externalNzeta))
     allocate(externalTheta(externalNtheta))
+
+    ! global variables
     if (.not. allocated(externalXi)) then
        allocate(externalXi(externalNxi))
     end if
+
     if (.not. allocated(externalE)) then
        allocate(externalE(externalNE))
+    end if
+
+    if (.not. allocated(externalMasses)) then
+       allocate(externalMasses(externalNspecies))
+    end if
+
+    if (.not. allocated(externalCharges)) then
+       allocate(externalCharges(externalNspecies))
     end if
     
        
@@ -697,6 +709,9 @@ contains
     call readVariable(externalTheta, "theta")
     call readVariable(externalE, "E")
     call readVariable(externalXi, "xi")
+    call readVariable(externalMasses, "masses")
+    call readVariable(externalCharges, "charges")
+    
     
     call validateExternalThetaZetaGrid(externalFFilename)
     
@@ -704,10 +719,11 @@ contains
     ! Read externalF from the external file and interpolate to the current theta, zeta grid
     ! *******************************************************************************
     
-    allocate(this_externalF(externalNE, externalNxi, externalNzeta, externalNtheta, externalNspecies, externalNIterations))
+    allocate(this_externalF(externalNIterations,externalNspecies, externalNtheta, externalNzeta, externalNxi, externalNE))
 
+    ! global variable
     if (.not. allocated(externalF)) then
-       allocate(externalF(externalNE, externalNxi, Nzeta, Ntheta, externalNspecies))
+       allocate(externalF(externalNspecies, Ntheta, Nzeta, externalNxi, externalNE))
     end if
  
     
@@ -716,7 +732,7 @@ contains
     do iE=1,externalNE
        do ixi=1,externalNxi
           do ispecies = 1,externalNspecies
-             call interpolateToThetaZetaGrid(this_externalF(iE,ixi,:,:,ispecies,externalNIterations), externalF(iE,ixi,:,:,ispecies))
+             call interpolateToThetaZetaGrid(this_externalF(externalNIterations,ispecies,:,:,ixi,iE), externalF(ispecies,:,:,ixi,iE))
           end do
        end do
     end do

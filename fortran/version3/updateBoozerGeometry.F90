@@ -19,7 +19,7 @@ subroutine updateBoozerGeometry(whichMode, whichLambda, reset)
   PetscScalar :: angle, cos_angle, sin_angle
   logical :: reset
 
-  PetscScalar, dimension(:,:), allocatable :: deltaBHat, deltadBHatdtheta, deltadBHatdzeta, deltaBHat_sup_theta, deltadBHat_sup_theta_dzeta, deltaBHat_sup_zeta, deltadBHat_sup_zeta_dtheta, deltaBHat_sub_theta, deltadBHat_sub_theta_dzeta, deltaBHat_sub_zeta, deltadBHat_sub_zeta_dtheta, deltaDHat
+  PetscScalar, dimension(:,:), allocatable :: deltaBHat, deltadBHatdtheta, deltadBHatdzeta, deltaBHat_sup_theta, deltaBHat_sup_zeta, deltadBHat_sup_zeta_dtheta, deltaDHat, deltadBHat_sup_theta_dzeta
 
   m = ms_sensitivity(whichMode)
   n = ns_sensitivity(whichMode)

@@ -33,6 +33,9 @@ module writeHDF5Output
   integer(HSIZE_T), dimension(2) :: dimForLambdasModes
   integer(HSIZE_T), dimension(3) :: dimForSpeciesLambdasModes 
   integer(HSIZE_T), dimension(1) :: dimForNModesAdjoint
+  ! new
+  integer(HSIZE_T), dimension(3) :: dimForEXSpeciesThetaZeta
+
 
   integer(HID_T) :: dspaceIDForScalar
   integer(HID_T) :: dspaceIDForSpecies
@@ -48,7 +51,10 @@ module writeHDF5Output
   integer(HID_T) :: dspaceIDForLambdasModes
   integer(HID_T) :: dspaceIDForSpeciesLambdasModes
   integer(HID_T) :: dspaceIDForNModesAdjoint
+  ! new
+  integer(HID_T) :: dspaceIDForEXSpeciesThetaZeta
 
+  
   ! Dimension arrays related to arrays that expand with each iteration:
   integer(HSIZE_T), dimension(1) :: dimForIteration
   integer(HSIZE_T), dimension(1) :: maxDimForIteration
@@ -86,6 +92,7 @@ module writeHDF5Output
   integer(HID_T) :: pForIterationSpeciesThetaZeta
   integer(HID_T) :: dspaceIDForIterationSpeciesThetaZeta
 
+  
   integer(HSIZE_T), dimension(4) :: dimForIterationSpeciesLambdasNmodes
   integer(HSIZE_T), dimension(4) :: maxdimForIterationSpeciesLambdasNmodes
   integer(HSIZE_T), dimension(4) :: dimForIterationSpeciesLambdasNmodesChunk
@@ -110,8 +117,9 @@ module writeHDF5Output
      module procedure writeHDF5Double
      module procedure writeHDF5Doubles
      module procedure writeHDF5Doubles2
+     module procedure writeHDF5Doubles3
      module procedure writeHDF5Boolean
-   module procedure writeHDF5Booleans
+     module procedure writeHDF5Booleans
   end interface writeHDF5Field
 
   interface writeHDF5ExtensibleField
@@ -149,8 +157,6 @@ contains
     
     implicit none
 
-    integer(HID_T) :: dsetID
-    integer :: temp
     PetscErrorCode :: ierr
 
     if (masterProc) then
@@ -348,8 +354,16 @@ contains
        call writeHDF5Field("classicalHeatFluxNoPhi1_psiN", classicalHeatFluxNoPhi1_psiN, dspaceIDForSpecies, dimForSpecies, "Classical heat flux projected onto \nabla psiN, calculcated, with Phi1 = 0. Updated with correct normalization: 2019-03-08.")
        call writeHDF5Field("classicalHeatFluxNoPhi1_rHat", classicalHeatFluxNoPhi1_rHat, dspaceIDForSpecies, dimForSpecies, "Classical heat flux projected onto \nabla rHat, calculcated, with Phi1 = 0. Updated with correct normalization: 2019-03-08.")
        call writeHDF5Field("classicalHeatFluxNoPhi1_rN", classicalHeatFluxNoPhi1_rN, dspaceIDForSpecies, dimForSpecies, "Classical heat flux projected onto \nabla rN, calculcated, with Phi1 = 0. Updated with correct normalization: 2019-03-08.")
-       !!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!
+       
+       if (readExternalF) then
+          call writeHDF5Field("externalN", externalN, dspaceIDForEXSpeciesThetaZeta, dimForEXSpeciesThetaZeta, "The density of the externally read distribution functions.")
+          call writeHDF5Field("readExternalF", readExternalF, & 
+               "Read in an external distribution function, which can be used for the purpose of calculation Phi_1 and collisions against the main species." // boolDescription)
+       end if
+       
 
+       
        call writeHDF5Field("dPhiHatdpsiHat", dPhiHatdpsiHat, "")
        call writeHDF5Field("dPhiHatdpsiN", dPhiHatdpsiN, "")
        call writeHDF5Field("dPhiHatdrHat", dPhiHatdrHat, "")
@@ -414,7 +428,8 @@ contains
 
        call writeHDF5Field("export_full_f",  export_full_f,  "Save the full f distribution function in this file? " // boolDescription)
        call writeHDF5Field("export_delta_f", export_delta_f, "Save the delta f distribution function in this file? " // boolDescription)
-       if (export_full_f .or. export_delta_f) then
+       call writeHDF5Field("export_external_collision", export_external_collision, "Save the collision operator between an external species " // boolDescription)
+       if (export_full_f .or. export_delta_f .or. export_external_collision) then
           call writeHDF5Field("export_f_theta_option", export_f_theta_option, &
                "Which theta grid to use for exporting the distribution function.")
           call writeHDF5Field("export_f_zeta_option", export_f_zeta_option, &
@@ -486,7 +501,7 @@ contains
     ! For an example of how to create an extendible array in HDF5, see
     ! http://www.hdfgroup.org/ftp/HDF5/current/src/unpacked/fortran/examples/h5_extend.f90
 
-    use export_f, only : full_f, delta_f, export_full_f, export_delta_f
+    use export_f, only : full_f, delta_f, export_full_f, export_delta_f, external_collision, export_external_collision
 
     implicit none
 
@@ -762,6 +777,11 @@ contains
           call writeHDF5ExtensibleField(iterationNum,"delta_f", delta_f, ARRAY_EXPORT_F, &
                "Distribution function for each species, normalized by nBar / (vBar ^3), subtracting the leading-order Maxwellian")
        end if
+       if (export_external_collision) then
+          call writeHDF5ExtensibleField(iterationNum,"external_collision", external_collision, ARRAY_EXPORT_F, &
+               "The normalized collision operator between the bulk Maxwellians and the external species")
+       end if
+       
 
        if (constraintScheme .ne. 0) then
           call writeHDF5ExtensibleField(iterationNum, "sources", sources, ARRAY_ITERATION_SPECIES_SOURCES, "")
@@ -852,7 +872,7 @@ if (RHSMode > 3 .and. RHSMode < 6) then
 
     implicit none
 
-    integer :: i, rank
+    integer :: rank
 
     ! Create a dataspace for storing single numbers:
     rank = 0
@@ -917,6 +937,15 @@ if (RHSMode > 3 .and. RHSMode < 6) then
     dimForExport_f(4) = N_export_f_xi
     dimForExport_f(5) = N_export_f_x
     call h5screate_simple_f(rank, dimForExport_f, dspaceIDForExport_f, HDF5Error)
+
+    if (readExternalF) then
+       rank = 3
+       dimForEXSpeciesThetaZeta(1) = externalNspecies
+       dimForEXSpeciesThetaZeta(2) = Ntheta
+       dimForEXSpeciesThetaZeta(3) = Nzeta
+       call h5screate_simple_f(rank, dimForEXSpeciesThetaZeta, dspaceIDForEXSpeciesThetaZeta, HDF5Error)
+    end if
+    
 
     ! ------------------------------------------------------------------
     ! Next come the arrays that expand with each iteration of SNES.
@@ -1195,7 +1224,6 @@ if (RHSMode > 3 .and. RHSMode < 6) then
     character(1) :: oneCharacter
     integer :: fileunit, didFileAccessWork, fileSize, numRecords, ios
     integer :: numBytesRead, filePosition, iFileLine, rank
-    PetscErrorCode :: ierr
     integer(SIZE_T) :: fileSizeCopy
     integer(HID_T) :: dspaceIDForInputNamelist
     integer(HID_T) :: dtypeID_inputNamelist
@@ -1396,7 +1424,6 @@ if (RHSMode > 3 .and. RHSMode < 6) then
     integer(HSIZE_T), dimension(*) :: dims
     PetscScalar, dimension(:,:) :: data
     character(len=*) :: description
-    character(len=100) :: label
 
     call h5dcreate_f(HDF5FileID, arrayName, H5T_NATIVE_DOUBLE, dspaceID, dsetID, HDF5Error)
     
@@ -1430,7 +1457,6 @@ subroutine writeHDF5Doubles3(arrayName, data, dspaceID, dims, description)
     integer(HSIZE_T), dimension(*) :: dims
     PetscScalar, dimension(:,:,:) :: data
     character(len=*) :: description
-    character(len=100) :: label
 
     call h5dcreate_f(HDF5FileID, arrayName, H5T_NATIVE_DOUBLE, dspaceID, dsetID, HDF5Error)
 
@@ -1440,6 +1466,10 @@ subroutine writeHDF5Doubles3(arrayName, data, dspaceID, dims, description)
        call h5dsset_label_f(dsetID, 1, "NSpecies", HDF5Error)
        call h5dsset_label_f(dsetID, 2, "NLambdas", HDF5Error)
        call h5dsset_label_f(dsetID, 3, "NModesAdjoint", HDF5Error)
+    elseif (dspaceID == dspaceIDForEXSpeciesThetaZeta) then
+       call h5dsset_label_f(dsetID, 1, "externalNSpecies", HDF5Error)
+       call h5dsset_label_f(dsetID, 2, "Ntheta", HDF5Error)
+       call h5dsset_label_f(dsetID, 3, "Nzeta", HDF5Error)
     else
        print *,"WARNING: PROGRAM SHOULD NOT GET HERE. (writeHDF5Doubles3)"
     end if
@@ -1576,7 +1606,7 @@ subroutine writeHDF5Doubles3(arrayName, data, dspaceID, dims, description)
     character(len=*) :: arrayName
     integer(HID_T) :: dsetID
     integer(HID_T) :: dspaceID, memspaceID, originalDspaceID
-    integer :: temp, arrayType
+    integer :: arrayType
     character(len=*) :: description
     PetscScalar :: data
     integer(HSIZE_T) :: offset(rank)
@@ -1637,7 +1667,7 @@ subroutine writeHDF5Doubles3(arrayName, data, dspaceID, dims, description)
     character(len=*) :: arrayName
     integer(HID_T) :: dsetID
     integer(HID_T) :: dspaceID, memspaceID, originalDspaceID
-    integer :: temp, arrayType
+    integer :: arrayType
     character(len=*) :: description
     PetscScalar, dimension(:) :: data
     integer(HSIZE_T) :: offset(rank)
@@ -1701,7 +1731,7 @@ subroutine writeHDF5Doubles3(arrayName, data, dspaceID, dims, description)
     character(len=*) :: arrayName
     integer(HID_T) :: dsetID
     integer(HID_T) :: dspaceID, memspaceID, originalDspaceID
-    integer :: temp, arrayType
+    integer :: arrayType
     character(len=*) :: description
     PetscScalar, dimension(:,:) :: data
     integer(HSIZE_T) :: offset(rank)
@@ -1792,7 +1822,7 @@ subroutine writeHDF5Doubles3(arrayName, data, dspaceID, dims, description)
     character(len=*) :: arrayName
     integer(HID_T) :: dsetID
     integer(HID_T) :: dspaceID, memspaceID, originalDspaceID
-    integer :: temp, arrayType
+    integer :: arrayType
     character(len=*) :: description
     PetscScalar, dimension(:,:,:) :: data
     integer(HSIZE_T) :: offset(rank)
@@ -1875,7 +1905,7 @@ subroutine writeHDF5Doubles3(arrayName, data, dspaceID, dims, description)
     character(len=*) :: arrayName
     integer(HID_T) :: dsetID
     integer(HID_T) :: dspaceID, memspaceID, originalDspaceID
-    integer :: temp, arrayType
+    integer :: arrayType
     character(len=*) :: description
     PetscScalar, dimension(:,:,:,:,:) :: data
     integer(HSIZE_T) :: offset(rank)

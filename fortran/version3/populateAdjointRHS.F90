@@ -21,7 +21,7 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies, fineGrid)
   PetscErrorCode :: ierr
   integer :: ix, L, itheta, izeta, ispecies, index, ixMin
   PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, xPartOfRHS, factor, nHat, ZHat, sqrtFSAB2
-  PetscReal :: norm, factor1, factor2
+  PetscReal :: factor1, factor2
 
   ! Validate input
   if (whichAdjointRHS<1 .or. whichAdjointRHS>3 .or. whichSpecies<0 .or. whichSpecies>Nspecies) then

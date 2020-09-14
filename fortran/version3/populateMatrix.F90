@@ -27,13 +27,13 @@
 
     PetscErrorCode :: ierr
     PetscScalar :: Z, nHat, THat, mHat, sqrtTHat, sqrtMHat, speciesFactor, speciesFactor2
-    PetscScalar :: T32m, factor, LFactor, temp, temp1, temp2, xDotFactor, xDotFactor2, stuffToAdd
+    PetscScalar :: T32m, factor, temp, temp1, temp2, xDotFactor, xDotFactor2, stuffToAdd
     PetscScalar :: factor1, factor2, factorJ1, factorJ2, factorJ3, factorJ4, factorJ5  !!Added by AM 2016-03
     PetscScalar, dimension(:), allocatable :: xb, expxb2, fM,f1b, CHatTimesf !! fM,f1b, CHatTimesf Added by AI (2017-09) 
     PetscScalar, dimension(:,:), allocatable :: thetaPartOfTerm, localThetaPartOfTerm
     PetscScalar, dimension(:,:), allocatable :: xPartOfXDot_plus, xPartOfXDot_minus, xPartOfXDot
     PetscScalar, dimension(:,:), allocatable :: ddxToUse_plus, ddxToUse_minus
-    integer :: i, j, ix, ispecies, itheta, izeta, L, ixi, index, ix_row, ix_col
+    integer :: i, j, ix, ispecies, itheta, izeta, L, index, ix_row, ix_col
     integer :: rowIndex, colIndex
     integer :: rowIndex2, L2 !!Added by AM 2016-03
     integer :: ell, iSpeciesA, iSpeciesB, maxL
@@ -57,7 +57,7 @@
     PetscScalar, dimension(:,:), allocatable :: tempMatrix, tempMatrix2, extrapMatrix
     double precision :: myMatInfo(MAT_INFO_SIZE)
     integer :: NNZ, NNZAllocated, NMallocs
-    PetscScalar :: CHat_element, dfMdx, preFactor, preFactorJ,  CHat_elementJ !! preFactor, preFactorJ Added by AI (2017-09) 
+    PetscScalar :: CHat_element, preFactor, preFactorJ,  CHat_elementJ !! preFactor, preFactorJ Added by AI (2017-09) 
  !! CHat_elementJ added by AM 2018-01
     character(len=200) :: whichMatrixName, filename
     PetscViewer :: viewer

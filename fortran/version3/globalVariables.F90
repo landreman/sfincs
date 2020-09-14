@@ -31,6 +31,7 @@ module globalVariables
   character(len=200) :: externalPhi1Filename = "externalPhi1.h5" !!Added by AM 2018-12
   character(len=200) :: externalFFilename = "externalF.h5"
   character(len=200) :: externalFFormat = "ASCOT4Boozer"
+  logical :: extrapolateExternalF = .false.
   
   
   logical :: solveSystem = .true.
@@ -417,8 +418,11 @@ module globalVariables
   PetscScalar, dimension(:,:), allocatable :: transportMatrix
 
   PetscScalar, dimension(:,:,:,:,:), allocatable :: externalF
-  PetscScalar, dimension(:), allocatable :: externalXi, externalE
+  PetscScalar, dimension(:,:,:,:,:), allocatable :: externalRosenPotentialTerms
+  PetscScalar, dimension(:), allocatable :: externalXi, externalE, externalMasses, externalCharges
+  PetscScalar, dimension(:,:,:), allocatable :: externalN
   
+  integer :: externalNL, externalNspecies, externalNE, externalNxi
   
   Vec :: f0
 

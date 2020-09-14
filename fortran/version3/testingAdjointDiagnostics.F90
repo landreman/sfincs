@@ -44,16 +44,13 @@ module testingAdjointDiagnostics
     implicit none
 
     integer :: whichMode, whichLambda
-    integer :: iterationNum
     PetscScalar, dimension(:), allocatable :: particleFluxInit, heatFluxInit, parallelFlowInit
     PetscScalar :: dPhidPsiInit
-    PetscScalar :: finiteDiffDerivative
-    VecScatter :: VecScatterContext
     PetscErrorCode :: ierr
     PetscScalar, dimension(:,:,:), allocatable :: dParticleFluxdLambda_analytic, dHeatFluxdLambda_analytic, dParallelFlowdLambda_analytic
     PetscScalar, dimension(:,:), allocatable :: dRadialCurrentdLambda_analytic, dTotalHeatFluxdLambda_analytic, dBootstrapdLambda_analytic, dPhidPsidLambda_analytic
-    integer :: ispecies, whichQuantity, this_NmodesAdjoint
-    PetscScalar :: analyticResult, finiteDiffResult, deltaFactor
+    integer :: ispecies, this_NmodesAdjoint
+    PetscScalar :: deltaFactor
     PetscLogDouble :: time1, time2
     logical :: constantJr
 
