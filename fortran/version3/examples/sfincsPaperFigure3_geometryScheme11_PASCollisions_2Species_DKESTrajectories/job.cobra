@@ -12,14 +12,17 @@
 #SBATCH --partition=express
 
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=8
+#SBATCH --ntasks-per-node=10
 # for OpenMP:
 #SBATCH --cpus-per-task=4
+
+# Wall clock limit:
+#SBATCH --time=00:30:00
+
+
 export OMP_NUM_THREADS=4
 # For pinning threads correctly:
 export OMP_PLACES=cores
 
-# Wall clock limit:
-#SBATCH --time=00:30:00
 
 srun ../../sfincs -ksp_view

@@ -12,7 +12,7 @@
 #SBATCH --partition=express
 
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=16
+#SBATCH --ntasks-per-node=20
 
 # Wall clock limit:
 #SBATCH --time=00:10:00
