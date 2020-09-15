@@ -1,0 +1,82 @@
+#!/usr/bin/env python
+from __future__ import print_function
+
+import h5py
+
+def extract_Phi1(filename):
+    with h5py.File(filename,'r') as F:
+        itrue = F["integerToRepresentTrue"][()]
+        includePhi1 = F["includePhi1"][()] == itrue
+        if includePhi1:
+            Phi1Hat = F["Phi1Hat"][:,:,-1]
+        else:
+            Phi1Hat = None
+        #Nperiods = F["NPeriods"][()]
+        # theta, zeta
+        theta = F["theta"][()]
+        zeta = F["zeta"][()]
+    return Phi1Hat, theta, zeta
+
+
+def write_Phi1(outname, Phi1Hat, theta, zeta):
+    pi = 3.141592653589793
+    with h5py.File(outname,"w") as F:
+        F.create_dataset("Phi1Hat",data=Phi1Hat)
+        F.create_dataset("theta",data=theta)
+        F.create_dataset("zeta",data=zeta)
+        Ntheta = len(theta)
+        Nzeta = len(zeta)
+        NPeriods = int(round(2*pi/(zeta[-1] + zeta[1] - zeta[0])))
+        F.create_dataset("Ntheta",data=Ntheta)
+        F.create_dataset("Nzeta",data=Nzeta)
+        F.create_dataset("NPeriods",data=NPeriods)
+        
+        
+
+if __name__ == "__main__":
+    import sys
+    import os
+    # these defaults are in the SFINCS source code
+    default_filename = "./sfincsOutput.h5"
+    default_outname = "externalPhi1.h5"
+    argv = sys.argv
+    argc = len(argv)
+    if argc == 1:
+        # default filename (input name) and outname (output name)
+        filename = default_filename
+        outname = default_outname
+    elif argc == 2:
+        # default outname
+        filename = argv[1]
+        outname = default_outname
+    elif argc == 3:
+        # no defaults
+        filename = argv[1]
+        outname = argv[2]
+    else:
+        # warn for extra arguments, but proceed as if argc==3
+        print("Ignoring extra arguments " + str(argv[3:]))
+        filename = argv[1]
+        outname = argv[2]
+
+    # if the filename or outname are directories,
+    # create files under these dirs with
+    # default names for SFINCS.
+    # (This is likely the most common use case)
+    if os.path.isdir(filename):
+        filename = filename + "/sfincsOutput.h5"
+    if os.path.isdir(outname):
+        outname = outname + "/externalPhi1.h5"
+
+    # If the output file exists, automatically create a backup.
+    # This should not cause problems, as Phi1 files are only
+    # a few MB at most.
+    if os.path.isfile(outname):
+        os.rename(outname,outname+"~")
+    
+    Phi1Hat, theta, zeta = extract_Phi1(filename)
+    if Phi1Hat is None:
+        print("No Phi1Hat to extract!")
+        exit(1)
+    else:
+        write_Phi1(outname,Phi1Hat,theta,zeta)
