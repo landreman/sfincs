@@ -135,7 +135,7 @@ def readVariable(varName, intOrFloatOrString, required=True):
             continue
 
         line4 = line3[len(varName):].strip()
-
+        print(line4)
         if not line4[0] =="=":
             continue
 
@@ -150,7 +150,12 @@ def readVariable(varName, intOrFloatOrString, required=True):
 
         if intOrFloatOrString=="int":
             try:
-                returnValue = int(line5)
+                line5 = line5.strip()
+                split = line5.split()
+                if len(split) == 1:
+                    returnValue = int(line5)
+                else:
+                    returnValue = [int(x) for x in split]
                 numValidLines += 1
             except:
 ##                print "Warning! I found a definition for the variable "+originalVarName+" in "+filename+" but I was unable to parse the line to get an integer." #Commented by AM 2015-12
@@ -159,7 +164,13 @@ def readVariable(varName, intOrFloatOrString, required=True):
                 print line
         elif intOrFloatOrString=="float":
             try:
-                returnValue = float(line5)
+                print(line5)
+                line5 = line5.strip()
+                split = line5.split()
+                if len(split) == 1:
+                    returnValue = float(line5)
+                else:
+                    returnValue = [float(x) for x in split]
                 numValidLines += 1
             except:
 ##                print "Warning! I found a definition for the variable "+originalVarName+" in "+filename+" but I was unable to parse the line to get a float." #Commented by AM 2015-12
@@ -174,7 +185,7 @@ def readVariable(varName, intOrFloatOrString, required=True):
         ##if required: #Commented by AM 2015-12
     if required and returnValue==None:
         print "Error! Unable to find a valid setting for the variable "+originalVarName+" in "+inputFilename+"."
-##        raise #Commented by AM 2015-12
+        print returnValue
         exit(1) #Added by AM 2015-12
 
     if numValidLines > 1:

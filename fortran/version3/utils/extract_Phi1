@@ -30,6 +30,7 @@ def write_Phi1(outname, Phi1Hat, theta, zeta):
         F.create_dataset("Ntheta",data=Ntheta)
         F.create_dataset("Nzeta",data=Nzeta)
         F.create_dataset("NPeriods",data=NPeriods)
+        F.create_dataset("NIterations",data=1)
         
         
 
@@ -64,9 +65,9 @@ if __name__ == "__main__":
     # default names for SFINCS.
     # (This is likely the most common use case)
     if os.path.isdir(filename):
-        filename = filename + "/sfincsOutput.h5"
+        filename = filename + "/" + default_filename
     if os.path.isdir(outname):
-        outname = outname + "/externalPhi1.h5"
+        outname = outname + "/" + default_outname
 
     # If the output file exists, automatically create a backup.
     # This should not cause problems, as Phi1 files are only

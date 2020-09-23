@@ -1,0 +1,219 @@
+#!/usr/bin/env python
+
+# This script will not work if called directly.
+# From the command line, you should call sfincsScan instead.
+
+# To perform a scanType = 6, set
+#!ss relativeGradientChange = FLOAT
+# where suitable values are small relative changes to the gradients
+# in order to perform a transport coefficient scan.
+# Recommended values are 0.01 or smaller.
+# NOTE: script currently does not work well if a gradient is zero
+# To improve this, we could detect and ignore changing zero gradients, or
+# set an absoluteGradientChange parameter that is effective for gradients close to zero
+
+import os, inspect
+
+print "This is "+ inspect.getfile(inspect.currentframe())
+print "Beginning a scan of gradients."
+
+## inputRadialCoordinateForGradients = readVariable("inputRadialCoordinateForGradients","int") ##Commented by AM 2015-12
+
+##Added by AM 2015-12##
+inputRadialCoordinateForGradients = readVariable("inputRadialCoordinateForGradients","int", False)
+if inputRadialCoordinateForGradients == None :
+    inputRadialCoordinateForGradients = readDefault("inputRadialCoordinateForGradients","int")
+#######################
+
+relChange = readScanVariable("relativeGradientChange","float")
+if inputRadialCoordinateForGradients==0:
+    varNameEr = "dPhiHatdpsiHat"
+    varNameN = "dNHatdpsiHats"
+    varNameT = "dTHatdpsiHats"
+    
+elif inputRadialCoordinateForGradients==1:
+    varNameEr = "dPhiHatdpsiN"
+    varNameN = "dNHatdpsiNs"
+    varNameT = "dTHatdpsiNs"
+    
+elif inputRadialCoordinateForGradients==2:
+    varNameEr = "dPhiHatdrHat"
+    varNameN = "dNHatdrHats"
+    varNameT = "dTHatdrHats"
+    
+elif inputRadialCoordinateForGradients==3:
+    varNameEr = "dPhiHatdrN"
+    varNameN = "dNHatdrNs"
+    varNameT = "dTHatdrNs"
+    
+elif inputRadialCoordinateForGradients==4:
+    varNameEr = "Er"
+    varNameN = "dNHatdrHats"
+    varNameT = "dTHatdrHats"
+else:
+    print "Error! Invalid inputRadialCoordinateForGradients."
+    exit(1)
+
+# lists?
+Er = readVariable(varNameEr,"float")
+dNdr = readVariable(varNameN,"float")
+dTdr = readVariable(varNameT,"float")
+
+# convert species parameters to lists
+# so that single species simulations work (UNTESTED)
+if type(dNdr) != list:
+    dNdr =[dNdr]
+if type(dTdr) != list:
+    dTdr =[dTdr]
+
+
+NspeciesN = len(dNdr)
+NspeciesT = len(dTdr)
+
+if NspeciesN != NspeciesT:
+    print "Error! The input file " + inputFilename + " has a different number of temperature and density gradients"
+    print "Number of density gradients: " + NspeciesN
+    print "Number of temperature gradients: " + NspeciesT
+    exit(1)
+Nspecies = NspeciesN
+    
+
+ErNew = Er * (1 + relChange)
+
+dNdrNew = [_dNdr * (1 + relChange) for _dNdr in dNdr]
+dTdrNew = [_dTdr * (1 + relChange) for _dTdr in dTdr]
+
+print "Radial electric field is specified using "+varNameEr
+print "Density gradients are specified using "+varNameN
+print "Temperature gradients are specified using "+varNameT
+
+print "Here are the values we will use for these quantities:"
+print ErNew
+print dNdrNew
+print dTdrNew
+
+
+
+directories = [varNameEr+"{:.4g}".format(ErNew)]
+Ndirectories = []
+newNinputs = []
+for i,_dNdr in enumerate(dNdrNew):
+    Ndirectories.append(varNameN+"_" + str(i) +"_"+ "{:.4g}".format(_dNdr))
+    newNinputs.append(dNdr[:])
+    newNinputs[i][i] = dNdrNew[i]
+Tdirectories = []
+newTinputs = []
+for i,_dTdr in enumerate(dTdrNew):
+    Tdirectories.append(varNameT+"_" + str(i) +"{:.4g}".format(_dTdr))
+    newTinputs.append(dTdr[:])
+    newTinputs[i][i] = dTdrNew[i]
+    
+directories = directories + Ndirectories + Tdirectories
+varNames = [varNameEr] + [varNameN] * Nspecies + [varNameT] * Nspecies
+newInputs = [ErNew] + newNinputs + newTinputs
+
+newInputs_copy = list(newInputs)
+varNames_copy = list(varNames)
+directories_copy = list(directories)
+
+# See if any runs with the same description already exist.
+# This happens if you re-run sfincsScan more than once in the same directory.
+for i in range(len(directories)):
+    directory = directories_copy[i]
+    if os.path.exists(directory):
+        print "Warning: directory "+directory+" already exists, so skipping this run."
+        varNames.remove(varNames_copy[i])
+        newInputs.remove(newInputs_copy[i])
+        directories.remove(directory)
+
+print
+print "Here are the directories that will be created:"
+print directories
+
+if waitBeforeSubmitting:
+    while True:
+        proceed=raw_input("Should I go ahead and launch these "+str(len(directories))+" jobs? [y/n] ")
+        if proceed=="y" or proceed=="n":
+            break
+        print "You must enter either y or n."
+
+    if proceed=="n":
+        exit(0)
+
+print "launching jobs..."
+
+# Read in the job.sfincsScan file:
+with open(jobFilename, 'r') as f:
+    jobFile = f.readlines()
+
+for runNum in range(len(directories)):
+    varName = varNames[runNum]
+    directory = directories[runNum]
+    newInput = newInputs[runNum]
+    print "Beginning to handle job "+str(runNum+1)+" of "+str(len(directories))+": "+directory
+
+    # To be extra safe, check again to see if the directory exists.
+    if os.path.exists(directory):
+        print "Warning: directory "+directory+" already exists."
+        i = -1
+        while True:
+            i += 1
+            directory2 = directory+"_"+str(i)
+            if not os.path.exists(directory2):
+                break
+        directory = directory2
+    os.makedirs(directory)
+    os.chdir(directory)
+
+    # Copy the job.sfincsScan file:
+    thisJobFile = list(jobFile)
+    # This next function is defined separately for each system in sfincsScan
+    nameJobFile(thisJobFile,directory)
+    f = open(jobFilename,"w")
+    f.writelines(thisJobFile)
+    f.close()
+
+    # Now copy the input.namelist file:
+
+    ##The following section rewritten by AM 2015-12##
+    #################################################
+
+    ##Added by AM 2015-12##
+    if varName[1] == 'P' or varName[1] == 'r':
+        # dPhidX or Er
+        namelistGroupString = "&physicsParameters"
+    else:
+        # density or temperature gradients
+        namelistGroupString = "&speciesParameters"
+        tmp = [str(_newInput) for _newInput in newInput]
+        newInput = ' '.join(tmp)
+
+    f = open(filename,"w")
+    for line in inputFile:
+        if namelistLineContains(line,varName):
+##            line = "  "+varName+" = "+str(Ers[runNum])+" ! Set by sfincsScan_2.\n" ##Commented by AM
+            continue ##Added by AM    
+        if line.strip().find(namelistGroupString) == 0 :
+            line += "  "+varName+" = "+str(newInput)+" ! Set by sfincsScan_2.\n"
+        #######################
+
+        f.write(line)
+    f.close()
+
+    #################################################
+
+    # Submit the sfincs job:
+    try:
+        # We need to include .split(" ") to separate the command-line arguments into an array of strings.   
+        # I'm not sure why python requires this. 
+        submissionResult = subprocess.call(submitCommand.split(" "))
+    except:
+        print "ERROR! Unable to submit run "+directory+" for some reason."
+        raise
+    else:
+        if submissionResult==0:
+            print "No errors submitting job "+directory
+        else:
+            print "Nonzero exit code returned when trying to submit job "+directory
+
+    os.chdir("..")
