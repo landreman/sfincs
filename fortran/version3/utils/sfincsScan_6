@@ -94,17 +94,17 @@ print dTdrNew
 
 
 
-directories = [varNameEr+"{:.4g}".format(ErNew)]
+directories = [varNameEr +"_"+ "{:.4g}".format(ErNew)]
 Ndirectories = []
 newNinputs = []
 for i,_dNdr in enumerate(dNdrNew):
-    Ndirectories.append(varNameN+"_" + str(i) +"_"+ "{:.4g}".format(_dNdr))
+    Ndirectories.append(varNameN + str(i) +"_"+ "{:.4g}".format(_dNdr))
     newNinputs.append(dNdr[:])
     newNinputs[i][i] = dNdrNew[i]
 Tdirectories = []
 newTinputs = []
 for i,_dTdr in enumerate(dTdrNew):
-    Tdirectories.append(varNameT+"_" + str(i) +"{:.4g}".format(_dTdr))
+    Tdirectories.append(varNameT + str(i) +"_"+ "{:.4g}".format(_dTdr))
     newTinputs.append(dTdr[:])
     newTinputs[i][i] = dTdrNew[i]
     
