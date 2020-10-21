@@ -162,8 +162,17 @@ contains
     allocate(interpolatedFxix(externalNxi,Nx))
     allocate(interpolatedFLx(Nx))
 
-    ! Used for comparing 2 methods of calc
+    ! Used for comparing 2 methods of calc (NOT USED)
     ! allocate(FL2(externalNL,Nx))
+
+    ! print externalF
+    ! if ((itheta == 1) .and. (izeta == 1)) then
+    !    do ixi = 1,externalNxi
+    !       print *, externalF(ispeciesB,itheta,izeta,ixi,:)
+    !    end do
+    ! end if
+    
+    
     ! project on externalF on Legendre polynomials
     dxi = externalXi(2) - externalXi(1)
     do L=0,externalNL-1
@@ -274,15 +283,13 @@ contains
   end subroutine calculateFL
 
   subroutine calculateGL(d2GLdx2,ispeciesA,ispeciesB,itheta,izeta)
-    use globalVariables, only: externalNE, externalNL, externalE,  externalMasses, x, x2, mHats, THats, Nx, pi, extrapolateExternalF
+    use globalVariables, only: externalNE, externalNL, externalE,  externalMasses, x, x2, mHats, THats, Nx, pi!, extrapolateExternalF
     integer, intent(in) :: ispeciesA,ispeciesB,itheta,izeta
     PetscScalar, dimension(:,:), intent(out) :: d2GLdx2
     PetscScalar :: beta, mHatA, mHatB, THatA
-    integer :: indexLower, indexUpper, iE, ix, L, extIntCase
-    PetscScalar :: deltaELower, deltaEUpper
-    PetscScalar :: IL2Lower, IL4Lower, I1mLLower, I3mLLower
-    PetscScalar :: IL2Upper, IL4Upper, I1mLUpper, I3mLUpper
-    PetscScalar :: dE, ELower, EUpper
+    integer :: Nbins, iE, ix, L
+    PetscScalar :: remainder
+    PetscScalar :: dE, E0
     PetscScalar, dimension(:), allocatable :: Es
 
     allocate(Es(Nx))
@@ -292,126 +299,58 @@ contains
     THatA = THats(ispeciesA)
     Es = THatA * x2 * mHatB/mHatA
     dE = externalE(2) - externalE(1)
+    E0 = externalE(1) - dE/2
     
     ! calculate the relevant integrals interpolated/extrapolated
     ! to the x grid
-    ! First: Find the indices we need to calculate the integral for
-    ! NOTE: this is different from finding the
-    ! uppper indices in calculateFL
-    ! since "integration grid" is offset by dE/2
+    
+    ! NOTE: 
+    ! "integration limits grid" is offset by dE/2
     ! in our 1D cell-centered finite volume
     do ix=1,Nx
-       indexUpper = 0
-       do iE = 1,externalNE
-          if (externalE(iE) + dE/2>= Es(ix)) then
-             indexUpper = iE
-             exit
-          end if
-       end do
-
-       if (indexUpper == 1) then
-          indexLower = 1
-          indexUpper = 2
-          extIntCase = 1
-       else if (indexUpper == 0) then
-          indexLower = externalNE - 1
-          indexUpper = externalNE
-          extIntCase = 2
-       else
-          ! interpolation
-          indexLower = indexUpper - 1
-          extIntCase = 3
+       Nbins = floor((Es(ix)-E0)/dE)
+       remainder = (Es(ix)- E0)/dE - Nbins
+       if (Nbins > externalNE) then
+          Nbins = externalNE
+          remainder = 0.0
+       else if (Nbins < 0) then
+          Nbins = 0
+          remainder = 0.0
        end if
-
-       ELower = externalE(indexLower) + dE/2
-       EUpper = externalE(indexUpper)+ dE/2
        
-       
-       deltaEUpper = (EUpper - Es(ix)) / (EUpper - ELower)
-       deltaELower = (Es(ix) - ELower) / (EUpper - ELower)
-       
-       ! THERE WILL BE A LOT OF REDUNDANT CALCULATIONS HERE
-       ! SINCE IL2 AND IL4 HAS A LOT OF OVERLAPPING INTEGRALS
-       ! LIKEWISE FOR I1mL AND I3mL BELOW
-
+          
        do L=0,externalNL-1          
-          IL2Lower = 0.0
-          IL4Lower = 0.0
-          IL2Upper = 0.0
-          IL4Upper = 0.0
-
-          do iE = 1,indexLower
-             IL2Lower = IL2Lower + (externalFL(L+1,iE) * sqrt(externalE(iE) *mHatA/(mHatB * THatA)) ** (L+2))/(2 * sqrt(externalE(iE) * THatA * mHatB/mHatA))
-             IL4Lower = IL4Lower + (externalFL(L+1,iE) * sqrt(externalE(iE) *mHatA/(mHatB * THatA)) ** (L+4))/(2 * sqrt(externalE(iE) * THatA * mHatB/mHatA))
-          end do
-
-          do iE = 1,indexUpper
-             IL2Upper = IL2Upper + (externalFL(L+1,iE) * sqrt(externalE(iE) *mHatA/(mHatB * THatA)) ** (L+2))/(2 * sqrt(externalE(iE) * THatA * mHatB/mHatA))
-             IL4Upper = IL4Upper + (externalFL(L+1,iE) * sqrt(externalE(iE) *mHatA/(mHatB * THatA)) ** (L+4))/(2 * sqrt(externalE(iE) * THatA * mHatB/mHatA))
+          IL2(L+1,ix) = 0.0
+          IL4(L+1,ix) = 0.0
+          do iE = 1,Nbins
+             IL2(L+1,ix) = IL2(L+1,ix) + (externalFL(L+1,iE) * sqrt(externalE(iE) *mHatA/(mHatB * THatA)) ** (L+2))/(2 * sqrt(externalE(iE) * THatA * mHatB/mHatA))
+             IL4(L+1,ix) = IL4(L+1,ix) + (externalFL(L+1,iE) * sqrt(externalE(iE) *mHatA/(mHatB * THatA)) ** (L+4))/(2 * sqrt(externalE(iE) * THatA * mHatB/mHatA))
           end do
           
-          IL4Lower = IL4Lower * dE
-          IL2Lower = IL2Lower * dE
-          IL4Upper = IL4Upper * dE
-          IL2Upper = IL2Upper * dE
-          
-          I1mLLower = 0.0
-          I3mLLower = 0.0
-          I1mLUpper = 0.0
-          I3mLUpper = 0.0
-          
-          do iE = indexLower+1,externalNE
-             I1mLLower = I1mLLower + (externalFL(L+1,iE) * sqrt(externalE(iE) *mHatA/(mHatB * THatA)) ** (1-L))/(2 * sqrt(externalE(iE) * THatA * mHatB/mHatA))
-             I3mLLower = I3mLLower + (externalFL(L+1,iE) * sqrt(externalE(iE) *mHatA/(mHatB * THatA)) ** (3-L))/(2 * sqrt(externalE(iE) * THatA * mHatB/mHatA))
+          I1mL(L+1,ix) = 0.0
+          I3mL(L+1,ix) = 0.0
+          !print *,Nbins
+          !print *,"!!!!!!!!!!!!!"
+          do iE = Nbins+1,externalNE
+             !print *,iE
+             I1mL(L+1,ix) = I1mL(L+1,ix) + (externalFL(L+1,iE) * sqrt(externalE(iE) *mHatA/(mHatB * THatA)) ** (1-L))/(2 * sqrt(externalE(iE) * THatA * mHatB/mHatA))
+             I3mL(L+1,ix) = I3mL(L+1,ix) + (externalFL(L+1,iE) * sqrt(externalE(iE) *mHatA/(mHatB * THatA)) ** (3-L))/(2 * sqrt(externalE(iE) * THatA * mHatB/mHatA))
           end do
-                    
-          do iE = indexUpper+1,externalNE
-             I1mLUpper = I1mLUpper + (externalFL(L+1,iE) * sqrt(externalE(iE) *mHatA/(mHatB * THatA)) ** (1-L))/(2 * sqrt(externalE(iE) * THatA * mHatB/mHatA))
-             I3mLUpper = I3mLUpper + (externalFL(L+1,iE) * sqrt(externalE(iE) *mHatA/(mHatB * THatA)) ** (3-L))/(2 * sqrt(externalE(iE) * THatA * mHatB/mHatA))
-          end do
-          I1mLLower = I1mLLower * dE
-          I3mLLower = I3mLLower * dE
 
-          I1mLUpper = I1mLUpper * dE
-          I3mLUpper = I3mLUpper * dE
-
-          if (extIntCase == 1) then
-             if (extrapolateExternalF) then
-                ! extrapolation down
-                IL2(L+1,ix) = IL2Lower - (IL2Upper - IL2Lower) * deltaELower
-                IL4(L+1,ix) = IL4Lower - (IL4Upper - IL4Lower) * deltaELower
-                I1mL(L+1,ix) = I1mLLower - (I1mLUpper - I1mLLower) * deltaELower
-                I3mL(L+1,ix) = I3mLLower - (I3mLUpper - I3mLLower) * deltaELower
-             else
-                ! assume the integrand is zero below grid
-                IL2(L+1,ix) = IL2Lower
-                IL4(L+1,ix) = IL4Lower
-                I1mL(L+1,ix) = I1mLLower
-                I3mL(L+1,ix) = I3mLLower
-             end if
+          
+          if (remainder > 0) then
+             IL2(L+1,ix) = IL2(L+1,ix) + remainder * (externalFL(L+1,Nbins + 1) * sqrt(externalE(Nbins+1) *mHatA/(mHatB * THatA)) ** (L+2))/(2 * sqrt(externalE(Nbins+1) * THatA * mHatB/mHatA)) 
+             IL4(L+1,ix) = IL4(L+1,ix) + remainder * (externalFL(L+1,Nbins + 1) * sqrt(externalE(Nbins+1) *mHatA/(mHatB * THatA)) ** (L+4))/(2 * sqrt(externalE(Nbins+1) * THatA * mHatB/mHatA))
              
-          else if (extIntCase == 2) then
-             if (extrapolateExternalF) then
-                ! extrapolation up
-                IL2(L+1,ix) = IL2Upper + (IL2Upper - IL2Lower) * deltaEUpper
-                IL4(L+1,ix) = IL4Upper + (IL4Upper - IL4Lower) * deltaEUpper
-                I1mL(L+1,ix) = I1mLUpper + (I1mLUpper - I1mLLower) * deltaEUpper
-                I3mL(L+1,ix) = I3mLUpper + (I3mLUpper - I3mLLower) * deltaEUpper
-             else
-                ! assume the integrand is zero below grid
-                IL2(L+1,ix) = IL2Upper
-                IL4(L+1,ix) = IL4Upper
-                I1mL(L+1,ix) = I1mLUpper
-                I3mL(L+1,ix) = I3mLUpper
-             end if
-             
-          else if (extIntCase == 3) then
-             ! interpolation
-             IL2(L+1,ix) = IL2Upper * deltaELower + IL2Lower * deltaEUpper
-             IL4(L+1,ix) = IL4Upper * deltaELower + IL4Lower * deltaEUpper
-             I1mL(L+1,ix) = I1mLUpper * deltaELower + I1mLLower * deltaEUpper
-             I3mL(L+1,ix) = I3mLUpper * deltaELower + I3mLLower * deltaEUpper
+             I1mL(L+1,ix) = I1mL(L+1,ix) - remainder * (externalFL(L+1,Nbins+1) * sqrt(externalE(Nbins+1) *mHatA/(mHatB * THatA)) ** (1-L))/(2 * sqrt(externalE(Nbins+1) * THatA * mHatB/mHatA))
+             I3mL(L+1,ix) = I3mL(L+1,ix) - remainder * (externalFL(L+1,Nbins+1) * sqrt(externalE(Nbins+1) *mHatA/(mHatB * THatA)) ** (3-L))/(2 * sqrt(externalE(Nbins+1) * THatA * mHatB/mHatA))
           end if
+             
+          IL4(L+1,ix) = IL4(L+1,ix) * dE
+          IL2(L+1,ix) = IL2(L+1,ix) * dE
+          
+          I1mL(L+1,ix) = I1mL(L+1,ix) * dE
+          I3mL(L+1,ix) = I3mL(L+1,ix) * dE
           
           beta = (L+1) * (L+2) * (2*L-1)
           beta = beta/(2*L+3)
@@ -424,16 +363,22 @@ contains
        end do
     end do
 
-    
+    L = 2
+    ! print *,x(3)
     if ((itheta==1) .and. (izeta==1)) then
        print *,"!!!!!!!!!!!!!"
-       print *,x(3)
+       print *,L
+       print *,"!!!!!!!!!!!!!"
        print *,ispeciesB, ispeciesA
+       !print *,externalFL(L+1,:)
+       print *,Es(3)
+       print *,E0 + Nbins * dE  +remainder*dE
+       
        print *, "IL2, IL4, I1mL, I3mL"
-       print *,IL2(1,3)
-       print *,IL4(1,3)
-       print *,I1mL(1,3)
-       print *,I3mL(1,3)
+       print *,IL2(L+1,3)
+       print *,IL4(L+1,3)
+       print *,I1mL(L+1,3)
+       print *,I3mL(L+1,3)
        print *,"!!!!!!!!!!!!"
     end if
 

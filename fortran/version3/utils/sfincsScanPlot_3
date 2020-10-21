@@ -312,6 +312,7 @@ ax = fig.add_axes([0,0,1,1], frameon=False)
 ax.text(0.5,0.99,titleString,horizontalalignment='center',verticalalignment='top')
 
 # If this script was called with any command-line arguments, then do not actually display the plot:
+
 if len(sys.argv) == 1:
     plt.show()
 
