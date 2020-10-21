@@ -3007,8 +3007,10 @@ contains
     scale = 1
     if (helicity_n == 0 .and. n /= 0) then
       scale = rippleScale
-    else if ((n /= 0) .and. (helicity_l/helicity_n) /= (m/n)) then
-      scale = rippleScale
+    else if ((n /= 0)) then
+       if ((helicity_l/helicity_n) /= (m/n)) then
+          scale = rippleScale
+       end if
     else if (helicity_n /= 0 .and. n == 0) then
       scale = rippleScale
     end if
