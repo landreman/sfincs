@@ -54,6 +54,7 @@ contains
     PetscScalar :: externalZ, externalMHat
     PetscScalar, dimension(:), allocatable :: xFactor
     PetscScalar, dimension(:,:), allocatable :: FL, d2GLdx2, HL, dHLdx
+    PetscScalar :: debug1, debug2, debug3
 
     ! global variable
     if (.not. allocated(externalRosenPotentialTerms)) then
@@ -104,7 +105,10 @@ contains
                 call calculateFL(FL,ispeciesA,ispeciesB,itheta,izeta) ! this must be called first
                 call calculateGL(d2GLdx2,ispeciesA,ispeciesB,itheta,izeta) ! this must be called second
                 call calculateHL(HL,dHLdx,ispeciesA,ispeciesB,itheta,izeta) ! this must be called third
-                   
+
+                
+    
+                
                 do L=0,externalNL-1
                    do ix=1,Nx 
                       externalRosenPotentialTerms(ispeciesA,itheta,izeta,L+1,ix) &
@@ -116,11 +120,37 @@ contains
                    end do
                    externalRosenPotentialTerms(ispeciesA,itheta,izeta,L+1,:) = externalRosenPotentialTerms(ispeciesA,itheta,izeta,L+1,:) * xFactor
                 end do
+
+                L = 2
+                ix = 3
+                if ((itheta==1) .and. (izeta==1)) then
+                   print *,"!!!!!!!!!!!!!"
+                   print *,L
+                   print *,"!!!!!!!!!!!!!"
+                   print *,ispeciesB, ispeciesA
+                   
+                   print *, "d2GLdx2, dHLdx, HL"
+                   print *,d2GLdx2(L+1,ix)
+                   print *,dHLdx(L+1,ix)
+                   print *,HL(L+1,ix)
+                   print *,"!!!!!!!!!!!!"
+                   debug1 = externalZ**2 * x2(ix) * d2GLdx2(L+1,ix) 
+                   debug2 = - externalZ**2 * ((1 - mHats(ispeciesA)/externalMHat) * x(ix) * dHLdx(L+1,ix) + HL(L+1,ix))
+                   debug3 = externalZ**2 * 2 * pi  * (mHats(ispeciesA)/externalMHat) * FL(L+1,ix)
+                   debug1 = debug1 * xFactor(ix)
+                   debug2 = debug2 * xFactor(ix)
+                   debug3 = debug3 * xFactor(ix)
+                   print *,"col"
+                   print *,debug1
+                   print *,debug2
+                   print *,debug3
+                end if
+
              end do
           end do
        end do
     end do
-
+    
     ! locals
     deallocate(xFactor)
     deallocate(FL)
@@ -362,25 +392,6 @@ contains
           d2GLdx2(L+1,ix) = d2GLdx2(L+1,ix) * 4*pi/(1-4*L**2)
        end do
     end do
-
-    L = 2
-    ! print *,x(3)
-    if ((itheta==1) .and. (izeta==1)) then
-       print *,"!!!!!!!!!!!!!"
-       print *,L
-       print *,"!!!!!!!!!!!!!"
-       print *,ispeciesB, ispeciesA
-       !print *,externalFL(L+1,:)
-       print *,Es(3)
-       print *,E0 + Nbins * dE  +remainder*dE
-       
-       print *, "IL2, IL4, I1mL, I3mL"
-       print *,IL2(L+1,3)
-       print *,IL4(L+1,3)
-       print *,I1mL(L+1,3)
-       print *,I3mL(L+1,3)
-       print *,"!!!!!!!!!!!!"
-    end if
 
     deallocate(Es)
     
