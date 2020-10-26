@@ -11,7 +11,7 @@ module externalFCalculations
   integer, parameter :: debugzeta = 65
   integer, parameter :: debugix = 4
   integer, parameter :: debugL = 2
-  
+  logical, parameter :: printDebug = .false.
   
 contains
  
@@ -127,7 +127,7 @@ contains
 
                 L = debugL
                 ix = debugix
-                if ((itheta==debugtheta) .and. (izeta==debugzeta) .and. masterproc) then
+                if ((itheta==debugtheta) .and. (izeta==debugzeta) .and. masterproc .and. printDebug) then
                    print *,"!!!!!!!!!!!!!"
                    print *,L
                    print *,"!!!!!!!!!!!!!"
@@ -344,7 +344,7 @@ contains
     do ix=1,Nx
        Nbins = floor((Es(ix)-E0)/dE)
        remainder = (Es(ix)- E0)/dE - Nbins
-       if ((itheta==debugtheta) .and. (izeta==debugzeta) .and. masterProc) then
+       if ((itheta==debugtheta) .and. (izeta==debugzeta) .and. masterProc .and. printDebug) then
           print *,"Nbins,Es,E0"
           print *,Nbins,Es(ix),E0
        end if
@@ -408,7 +408,7 @@ contains
 
     L = debugL
     ix = debugix
-    if ((itheta==debugtheta) .and. (izeta==debugzeta) .and. masterproc) then
+    if ((itheta==debugtheta) .and. (izeta==debugzeta) .and. masterproc .and. printDebug) then
        print *, "!!!!!!!!!!!!!"
        print *, L
        print *, "!!!!!!!!!!!!!"
