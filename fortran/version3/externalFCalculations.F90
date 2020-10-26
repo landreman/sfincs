@@ -9,6 +9,9 @@ module externalFCalculations
   PetscScalar, dimension(:,:), allocatable :: IL2, IL4, I1mL, I3mL
   integer, parameter :: debugtheta = 80
   integer, parameter :: debugzeta = 65
+  integer, parameter :: debugix = 4
+  integer, parameter :: debugL = 2
+  
   
 contains
  
@@ -122,8 +125,8 @@ contains
                    externalRosenPotentialTerms(ispeciesA,itheta,izeta,L+1,:) = externalRosenPotentialTerms(ispeciesA,itheta,izeta,L+1,:) * xFactor
                 end do
 
-                L = 2
-                ix = 3
+                L = debugL
+                ix = debugix
                 if ((itheta==debugtheta) .and. (izeta==debugzeta) .and. masterproc) then
                    print *,"!!!!!!!!!!!!!"
                    print *,L
@@ -341,10 +344,10 @@ contains
     do ix=1,Nx
        Nbins = floor((Es(ix)-E0)/dE)
        remainder = (Es(ix)- E0)/dE - Nbins
-       ! if ((itheta==debugtheta) .and. (izeta==debugzeta)) then
-       !    print *,"Nbins,Es,E0"
-       !    print *,Nbins,Es(ix),E0
-       ! end if
+       if ((itheta==debugtheta) .and. (izeta==debugzeta) .and. masterProc) then
+          print *,"Nbins,Es,E0"
+          print *,Nbins,Es(ix),E0
+       end if
        
        if (Nbins > externalNE) then
           Nbins = externalNE
@@ -403,8 +406,8 @@ contains
           
     end do
 
-    L = 2
-    ix = 4
+    L = debugL
+    ix = debugix
     if ((itheta==debugtheta) .and. (izeta==debugzeta) .and. masterproc) then
        print *, "!!!!!!!!!!!!!"
        print *, L
@@ -412,18 +415,18 @@ contains
        print *, ispeciesB, ispeciesA
        print *, "IL2, IL4, I1mL, I3mL"
        print *, IL2(L+1,ix),IL4(L+1,ix),I1mL(L+1,ix),I3mL(L+1,ix)
-       !print *, externalFL(L+1,:)
+       print *, externalFL(L+1,:)
        ! recalculate for this ix
-       ! Nbins = floor((Es(ix)-E0)/dE)
-       ! remainder = (Es(ix)- E0)/dE - Nbins
-       ! if (Nbins > externalNE) then
-       !    Nbins = externalNE
-       !    remainder = 0.0
-       ! else if (Nbins < 0) then
-       !    Nbins = 0
-       !    remainder = 0.0
-       ! end if
-       ! print *,Es(ix), E0 + Nbins * dE + remainder * dE
+       Nbins = floor((Es(ix)-E0)/dE)
+       remainder = (Es(ix)- E0)/dE - Nbins
+       if (Nbins > externalNE) then
+          Nbins = externalNE
+          remainder = 0.0
+       else if (Nbins < 0) then
+          Nbins = 0
+          remainder = 0.0
+       end if
+       print *,Es(ix), E0 + Nbins * dE + remainder * dE
         
     end if
        
