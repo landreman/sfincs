@@ -341,7 +341,7 @@ contains
     end if
 
     dimensions = shape(variable)
-    print *, dimensions
+    ! print *, dimensions
 
     ! Open Dataset
     call h5dopen_f(groupID, varname, dataSetID, HDF5Error)
