@@ -50,7 +50,7 @@ contains
   end subroutine calculateExternalN
 
   subroutine computeExternalRosenbluthPotentialResponse()
-    use globalVariables, only: externalNspecies, externalNL, externalNE, externalNxi, externalXi, externalE, externalF, externalMasses, externalCharges, externalRosenPotentialTerms, nu_n, NHats, mHats, THats, Zs, x2, x, expx2, Ntheta, Nzeta, Nspecies, Nx, pi, zero
+    use globalVariables, only: externalNspecies, externalNL, externalNE, externalNxi, externalXi, externalE, externalF, externalMasses, externalCharges, externalRosenPotentialTerms, nu_n, NHats, mHats, THats, Zs, x2, x, expx2, Ntheta, Nzeta, Nspecies, Nx, pi, zero, masterproc    
     integer :: ispeciesA, ispeciesB, itheta, izeta, L,  ix
     PetscScalar :: externalZ, externalMHat
     PetscScalar, dimension(:), allocatable :: xFactor
@@ -124,7 +124,7 @@ contains
 
                 L = 2
                 ix = 3
-                if ((itheta==1) .and. (izeta==1)) then
+                if ((itheta==debugtheta) .and. (izeta==debugzeta) .and. masterproc) then
                    print *,"!!!!!!!!!!!!!"
                    print *,L
                    print *,"!!!!!!!!!!!!!"
@@ -314,7 +314,7 @@ contains
   end subroutine calculateFL
 
   subroutine calculateGL(d2GLdx2,ispeciesA,ispeciesB,itheta,izeta)
-    use globalVariables, only: externalNE, externalNL, externalE,  externalMasses, x, x2, mHats, THats, Nx, pi!, extrapolateExternalF
+    use globalVariables, only: externalNE, externalNL, externalE,  externalMasses, x, x2, mHats, THats, Nx, pi, masterproc!, extrapolateExternalF
     integer, intent(in) :: ispeciesA,ispeciesB,itheta,izeta
     PetscScalar, dimension(:,:), intent(out) :: d2GLdx2
     PetscScalar :: beta, mHatA, mHatB, THatA
@@ -405,7 +405,7 @@ contains
 
     L = 2
     ix = 4
-    if ((itheta==debugtheta) .and. (izeta==debugzeta)) then
+    if ((itheta==debugtheta) .and. (izeta==debugzeta) .and. masterproc) then
        print *, "!!!!!!!!!!!!!"
        print *, L
        print *, "!!!!!!!!!!!!!"
