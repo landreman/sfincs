@@ -7,7 +7,8 @@ module externalFCalculations
   PetscScalar, dimension(:,:), allocatable :: externalFL
   PetscScalar, dimension(:,:), allocatable :: P
   PetscScalar, dimension(:,:), allocatable :: IL2, IL4, I1mL, I3mL
-
+  integer, parameter :: debugtheta = 80
+  integer, parameter :: debugzeta = 65
   
 contains
  
@@ -196,7 +197,7 @@ contains
     ! allocate(FL2(externalNL,Nx))
 
     ! print externalF
-    ! if ((itheta == 1) .and. (izeta == 1)) then
+    ! if ((itheta == debugtheta) .and. (izeta == debugzeta)) then
     !    do ixi = 1,externalNxi
     !       print *, externalF(ispeciesB,itheta,izeta,ixi,:)
     !    end do
@@ -340,6 +341,11 @@ contains
     do ix=1,Nx
        Nbins = floor((Es(ix)-E0)/dE)
        remainder = (Es(ix)- E0)/dE - Nbins
+       ! if ((itheta==debugtheta) .and. (izeta==debugzeta)) then
+       !    print *,"Nbins,Es,E0"
+       !    print *,Nbins,Es(ix),E0
+       ! end if
+       
        if (Nbins > externalNE) then
           Nbins = externalNE
           remainder = 0.0
@@ -381,6 +387,8 @@ contains
           
           I1mL(L+1,ix) = I1mL(L+1,ix) * dE
           I3mL(L+1,ix) = I3mL(L+1,ix) * dE
+
+          
           
           beta = (L+1) * (L+2) * (2*L-1)
           beta = beta/(2*L+3)
@@ -391,8 +399,35 @@ contains
             + L*(L-1) * x(ix)**(-L-1) * IL2(L+1,ix)
           d2GLdx2(L+1,ix) = d2GLdx2(L+1,ix) * 4*pi/(1-4*L**2)
        end do
+          
+          
     end do
 
+    L = 2
+    ix = 4
+    if ((itheta==debugtheta) .and. (izeta==debugzeta)) then
+       print *, "!!!!!!!!!!!!!"
+       print *, L
+       print *, "!!!!!!!!!!!!!"
+       print *, ispeciesB, ispeciesA
+       print *, "IL2, IL4, I1mL, I3mL"
+       print *, IL2(L+1,ix),IL4(L+1,ix),I1mL(L+1,ix),I3mL(L+1,ix)
+       !print *, externalFL(L+1,:)
+       ! recalculate for this ix
+       ! Nbins = floor((Es(ix)-E0)/dE)
+       ! remainder = (Es(ix)- E0)/dE - Nbins
+       ! if (Nbins > externalNE) then
+       !    Nbins = externalNE
+       !    remainder = 0.0
+       ! else if (Nbins < 0) then
+       !    Nbins = 0
+       !    remainder = 0.0
+       ! end if
+       ! print *,Es(ix), E0 + Nbins * dE + remainder * dE
+        
+    end if
+       
+    
     deallocate(Es)
     
   end subroutine calculateGL
