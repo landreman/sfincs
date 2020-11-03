@@ -66,118 +66,121 @@ contains
     end if
     externalRosenPotentialTerms = zero 
 
-    ! module globals
-    if (.not. allocated(P)) then
-       allocate(P(externalNxi,externalNL))
-    end if
-    if (.not. allocated(externalFL)) then
-       allocate(externalFL(externalNL,externalNE))
-    end if
-    if (.not. allocated(IL2)) then
-       allocate(IL2(externalNL,Nx))
-    end if
-    if (.not. allocated(IL4)) then
-       allocate(IL4(externalNL,Nx))
-    end if
-    if (.not. allocated(I1mL)) then
-       allocate(I1mL(externalNL,Nx))
-    end if
-    if (.not. allocated(I3mL)) then
-       allocate(I3mL(externalNL,Nx))
-    end if
-    
-    
-    allocate(xFactor(Nx))
-    allocate(FL(externalNL,Nx))
-    allocate(d2GLdx2(externalNL,Nx))
-    allocate(HL(externalNL,Nx))
-    allocate(dHLdx(externalNL,Nx))
+    if (externalNL > 0) then
+       
+       ! module globals
+       if (.not. allocated(P)) then
+          allocate(P(externalNxi,externalNL))
+       end if
+       if (.not. allocated(externalFL)) then
+          allocate(externalFL(externalNL,externalNE))
+       end if
+       if (.not. allocated(IL2)) then
+          allocate(IL2(externalNL,Nx))
+       end if
+       if (.not. allocated(IL4)) then
+          allocate(IL4(externalNL,Nx))
+       end if
+       if (.not. allocated(I1mL)) then
+          allocate(I1mL(externalNL,Nx))
+       end if
+       if (.not. allocated(I3mL)) then
+          allocate(I3mL(externalNL,Nx))
+       end if
 
-    ! calculate the  Legendre polynomial on the
-    ! external xi grid
-    call legendrePolynomials(P, externalXi, externalNxi, externalNL)
-    ! P is verified to work here
-    
-    do ispeciesA=1,Nspecies
-       xFactor = 3 * nu_n * nHats(ispeciesA) * Zs(ispeciesA)**2 * expx2/(2*pi*THats(ispeciesA) * sqrt(THats(ispeciesA) * mHats(ispeciesA)))
-       do itheta=1,Ntheta
-          do izeta=1,Nzeta
-             do ispeciesB =1,externalNspecies
-                externalZ = externalCharges(ispeciesB)
-                externalMHat = externalMasses(ispeciesB)
-                
-                call calculateFL(FL,ispeciesA,ispeciesB,itheta,izeta) ! this must be called first
-                call calculateGL(d2GLdx2,ispeciesA,ispeciesB,itheta,izeta) ! this must be called second
-                call calculateHL(HL,dHLdx,ispeciesA,ispeciesB,itheta,izeta) ! this must be called third
 
-                
-    
-                
-                do L=0,externalNL-1
-                   do ix=1,Nx 
-                      externalRosenPotentialTerms(ispeciesA,itheta,izeta,L+1,ix) &
-                           = externalRosenPotentialTerms(ispeciesA,itheta,izeta,L+1,ix) &
-                           + externalZ**2 * 2 * pi  * (mHats(ispeciesA)/externalMHat) * FL(L+1,ix) &
-                           + externalZ**2 * x2(ix) * d2GLdx2(L+1,ix) &
-                           - externalZ**2 * ((1 - mHats(ispeciesA)/externalMHat) * x(ix) * dHLdx(L+1,ix) + HL(L+1,ix))
+       allocate(xFactor(Nx))
+       allocate(FL(externalNL,Nx))
+       allocate(d2GLdx2(externalNL,Nx))
+       allocate(HL(externalNL,Nx))
+       allocate(dHLdx(externalNL,Nx))
 
+       ! calculate the  Legendre polynomial on the
+       ! external xi grid
+       call legendrePolynomials(P, externalXi, externalNxi, externalNL)
+       ! P is verified to work here
+
+       do ispeciesA=1,Nspecies
+          xFactor = 3 * nu_n * nHats(ispeciesA) * Zs(ispeciesA)**2 * expx2/(2*pi*THats(ispeciesA) * sqrt(THats(ispeciesA) * mHats(ispeciesA)))
+          do itheta=1,Ntheta
+             do izeta=1,Nzeta
+                do ispeciesB =1,externalNspecies
+                   externalZ = externalCharges(ispeciesB)
+                   externalMHat = externalMasses(ispeciesB)
+
+                   call calculateFL(FL,ispeciesA,ispeciesB,itheta,izeta) ! this must be called first
+                   call calculateGL(d2GLdx2,ispeciesA,ispeciesB,itheta,izeta) ! this must be called second
+                   call calculateHL(HL,dHLdx,ispeciesA,ispeciesB,itheta,izeta) ! this must be called third
+
+
+
+
+                   do L=0,externalNL-1
+                      do ix=1,Nx 
+                         externalRosenPotentialTerms(ispeciesA,itheta,izeta,L+1,ix) &
+                              = externalRosenPotentialTerms(ispeciesA,itheta,izeta,L+1,ix) &
+                              + externalZ**2 * 2 * pi  * (mHats(ispeciesA)/externalMHat) * FL(L+1,ix) &
+                              + externalZ**2 * x2(ix) * d2GLdx2(L+1,ix) &
+                              - externalZ**2 * ((1 - mHats(ispeciesA)/externalMHat) * x(ix) * dHLdx(L+1,ix) + HL(L+1,ix))
+
+                      end do
+                      externalRosenPotentialTerms(ispeciesA,itheta,izeta,L+1,:) = externalRosenPotentialTerms(ispeciesA,itheta,izeta,L+1,:) * xFactor
                    end do
-                   externalRosenPotentialTerms(ispeciesA,itheta,izeta,L+1,:) = externalRosenPotentialTerms(ispeciesA,itheta,izeta,L+1,:) * xFactor
+
+                   L = debugL
+                   ix = debugix
+                   if ((itheta==debugtheta) .and. (izeta==debugzeta) .and. masterproc .and. printDebug) then
+                      print *,"!!!!!!!!!!!!!"
+                      print *,L
+                      print *,"!!!!!!!!!!!!!"
+                      print *,ispeciesB, ispeciesA
+
+                      print *, "d2GLdx2, dHLdx, HL"
+                      print *,d2GLdx2(L+1,ix)
+                      print *,dHLdx(L+1,ix)
+                      print *,HL(L+1,ix)
+                      print *,"!!!!!!!!!!!!"
+                      debug1 = externalZ**2 * x2(ix) * d2GLdx2(L+1,ix) 
+                      debug2 = - externalZ**2 * ((1 - mHats(ispeciesA)/externalMHat) * x(ix) * dHLdx(L+1,ix) + HL(L+1,ix))
+                      debug3 = externalZ**2 * 2 * pi  * (mHats(ispeciesA)/externalMHat) * FL(L+1,ix)
+                      debug1 = debug1 * xFactor(ix)
+                      debug2 = debug2 * xFactor(ix)
+                      debug3 = debug3 * xFactor(ix)
+                      print *,"col"
+                      print *,debug1
+                      print *,debug2
+                      print *,debug3
+                   end if
+
                 end do
-
-                L = debugL
-                ix = debugix
-                if ((itheta==debugtheta) .and. (izeta==debugzeta) .and. masterproc .and. printDebug) then
-                   print *,"!!!!!!!!!!!!!"
-                   print *,L
-                   print *,"!!!!!!!!!!!!!"
-                   print *,ispeciesB, ispeciesA
-                   
-                   print *, "d2GLdx2, dHLdx, HL"
-                   print *,d2GLdx2(L+1,ix)
-                   print *,dHLdx(L+1,ix)
-                   print *,HL(L+1,ix)
-                   print *,"!!!!!!!!!!!!"
-                   debug1 = externalZ**2 * x2(ix) * d2GLdx2(L+1,ix) 
-                   debug2 = - externalZ**2 * ((1 - mHats(ispeciesA)/externalMHat) * x(ix) * dHLdx(L+1,ix) + HL(L+1,ix))
-                   debug3 = externalZ**2 * 2 * pi  * (mHats(ispeciesA)/externalMHat) * FL(L+1,ix)
-                   debug1 = debug1 * xFactor(ix)
-                   debug2 = debug2 * xFactor(ix)
-                   debug3 = debug3 * xFactor(ix)
-                   print *,"col"
-                   print *,debug1
-                   print *,debug2
-                   print *,debug3
-                end if
-
              end do
           end do
        end do
-    end do
-    
-    ! locals
-    deallocate(xFactor)
-    deallocate(FL)
-    deallocate(d2GLdx2)
-    deallocate(HL)
-    deallocate(dHLdx)    
-    
-    ! module globals
-    deallocate(P)
-    deallocate(externalFL)
-    deallocate(IL2)
-    deallocate(IL4)
-    deallocate(I1mL)
-    deallocate(I3mL)
-    
-    
-    ! These global variables are not needed any more
-    if(allocated(externalF))deallocate(externalF)
-    if(allocated(externalXi))deallocate(externalXi)
-    if(allocated(externalE))deallocate(externalE)
-    if(allocated(externalMasses))deallocate(externalMasses)
-        
-    
+
+       ! locals
+       deallocate(xFactor)
+       deallocate(FL)
+       deallocate(d2GLdx2)
+       deallocate(HL)
+       deallocate(dHLdx)    
+
+       ! module globals
+       deallocate(P)
+       deallocate(externalFL)
+       deallocate(IL2)
+       deallocate(IL4)
+       deallocate(I1mL)
+       deallocate(I3mL)
+
+
+       ! These global variables are not needed any more
+       if(allocated(externalF))deallocate(externalF)
+       if(allocated(externalXi))deallocate(externalXi)
+       if(allocated(externalE))deallocate(externalE)
+       if(allocated(externalMasses))deallocate(externalMasses)
+
+    end if
+ 
   end subroutine computeExternalRosenbluthPotentialResponse
   
   subroutine calculateFL(FL,ispeciesA,ispeciesB,itheta,izeta)
