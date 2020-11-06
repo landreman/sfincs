@@ -35,7 +35,7 @@ module writeHDF5Output
   integer(HSIZE_T), dimension(1) :: dimForNModesAdjoint
   ! new
   integer(HSIZE_T), dimension(3) :: dimForEXSpeciesThetaZeta
-
+  integer(HSIZE_T), dimension(1) :: dimForEXSpecies
 
   integer(HID_T) :: dspaceIDForScalar
   integer(HID_T) :: dspaceIDForSpecies
@@ -53,6 +53,7 @@ module writeHDF5Output
   integer(HID_T) :: dspaceIDForNModesAdjoint
   ! new
   integer(HID_T) :: dspaceIDForEXSpeciesThetaZeta
+  integer(HID_T) :: dspaceIDForEXSpecies
 
   
   ! Dimension arrays related to arrays that expand with each iteration:
@@ -360,6 +361,8 @@ contains
           call writeHDF5Field("externalN", externalN, dspaceIDForEXSpeciesThetaZeta, dimForEXSpeciesThetaZeta, "The density of the externally read distribution functions.")
           call writeHDF5Field("readExternalF", readExternalF, & 
                "Read in an external distribution function, which can be used for the purpose of calculation Phi_1 and collisions against the main species." // boolDescription)
+          call writeHDF5Field("externalFlow", externalFlow, dspaceIDForEXSpeciesThetaZeta, dimForEXSpeciesThetaZeta, "The flow of the externally read distribution functions.")
+          call writeHDF5Field("externalBFlow", FSABExternalFlow, dspaceIDForEXSpecies, dimForEXSpecies, "FSA(B externalFlow).")
        end if
        
 
@@ -944,6 +947,10 @@ if (RHSMode > 3 .and. RHSMode < 6) then
        dimForEXSpeciesThetaZeta(2) = Ntheta
        dimForEXSpeciesThetaZeta(3) = Nzeta
        call h5screate_simple_f(rank, dimForEXSpeciesThetaZeta, dspaceIDForEXSpeciesThetaZeta, HDF5Error)
+       
+       rank = 1
+       dimForEXSpecies(1) = externalNspecies
+       call h5screate_simple_f(rank, dimForEXSpecies, dspaceIDForEXSpecies, HDF5Error)
     end if
     
 
@@ -1470,6 +1477,8 @@ subroutine writeHDF5Doubles3(arrayName, data, dspaceID, dims, description)
        call h5dsset_label_f(dsetID, 1, "externalNSpecies", HDF5Error)
        call h5dsset_label_f(dsetID, 2, "Ntheta", HDF5Error)
        call h5dsset_label_f(dsetID, 3, "Nzeta", HDF5Error)
+    elseif (dspaceID == dspaceIDForEXSpecies) then
+       call h5dsset_label_f(dsetID, 1, "externalNSpecies", HDF5Error)
     else
        print *,"WARNING: PROGRAM SHOULD NOT GET HERE. (writeHDF5Doubles3)"
     end if

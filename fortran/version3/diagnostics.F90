@@ -604,6 +604,7 @@
              FSABFlow(ispecies) = FSABFlow(ispecies) + zetaWeights(izeta) &
                   * dot_product(thetaWeights, flow(ispecies,:,izeta)*BHat(:,izeta)/DHat(:,izeta))
 
+             
              FSAPressurePerturbation(ispecies) = FSAPressurePerturbation(ispecies) + zetaWeights(izeta) &
                   * dot_product(thetaWeights, pressurePerturbation(ispecies,:,izeta)/DHat(:,izeta))
 
@@ -659,7 +660,6 @@
           MachUsingFSAThermalSpeed(ispecies,:,:) = velocityUsingFSADensity(ispecies,:,:) * sqrtMHat/sqrtTHat
 
        end do
-
 
        particleFlux_vd_psiHat = particleFlux_vm_psiHat + particleFlux_vE_psiHat
        momentumFlux_vd_psiHat = momentumFlux_vm_psiHat + momentumFlux_vE_psiHat
@@ -751,6 +751,17 @@
        FSABVelocityUsingFSADensityOverB0 = FSABVelocityUsingFSADensity / B0OverBBar
        FSABVelocityUsingFSADensityOverRootFSAB2 = FSABVelocityUsingFSADensity / sqrt(FSABHat2)
 
+
+       if (readExternalF) then
+          externalFlow = 0
+          do ispecies=1,externalNspecies
+             do izeta=1,Nzeta
+                FSABExternalFlow(ispecies) = FSABExternalFlow(ispecies) + zetaWeights(izeta) &
+                     * dot_product(thetaWeights, externalFlow(ispecies,:,izeta)*BHat(:,izeta)/DHat(:,izeta))
+             end do
+          end do
+       end if
+       
        if (RHSMode==2) then
           ispecies = 1
           nHat = nHats(ispecies)

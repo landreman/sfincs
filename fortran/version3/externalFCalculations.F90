@@ -49,9 +49,46 @@ contains
     externalN = externalN * dE * dxi
 
     deallocate(velocityJacobian)
-    
   end subroutine calculateExternalN
 
+  subroutine calculateExternalFlow()
+    use globalVariables, only: pi, Ntheta, Nzeta, externalNspecies, externalNE, externalNxi, externalXi, externalE, externalF, externalMasses, externalFlow
+    integer :: ispecies, itheta, izeta, ixi
+    PetscScalar :: dE, dxi
+    PetscScalar, dimension(:), allocatable :: velocityJacobian
+
+    ! Global variable
+    if (.not. allocated(externalFlow)) then
+       allocate(externalFlow(externalNspecies, Ntheta, Nzeta))
+    end if
+    
+    allocate(velocityJacobian(externalNE))
+    
+    
+
+    dE = externalE(2) - externalE(1)
+    dxi = externalXi(2) - externalXi(1)
+    
+    do ispecies=1,externalNspecies
+       velocityJacobian = pi * sqrt(externalE) / &
+            (externalMasses(ispecies) * sqrt(externalMasses(ispecies)))
+       do itheta = 1,Ntheta
+          do izeta = 1,Nzeta
+             externalFlow(ispecies,itheta,izeta) = 0
+             do ixi = 1,externalNxi
+                externalFlow(ispecies,itheta,izeta) = externalFlow(ispecies,itheta,izeta) &
+                     + sum(externalXi(ixi) * sqrt(externalE/externalMasses(ispecies)) * velocityJacobian * externalF(ispecies, itheta, izeta, ixi, :))
+             end do
+          end do
+       end do
+    end do
+    externalFlow = externalFlow * dE * dxi
+
+    deallocate(velocityJacobian)
+
+  end subroutine calculateExternalFlow
+  
+ 
   subroutine computeExternalRosenbluthPotentialResponse()
     use globalVariables, only: externalNspecies, externalNL, externalNE, externalNxi, externalXi, externalE, externalF, externalMasses, externalCharges, externalRosenPotentialTerms, nu_n, NHats, mHats, THats, Zs, x2, x, expx2, Ntheta, Nzeta, Nspecies, Nx, pi, zero, masterproc    
     integer :: ispeciesA, ispeciesB, itheta, izeta, L,  ix

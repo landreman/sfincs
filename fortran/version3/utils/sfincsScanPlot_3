@@ -242,11 +242,15 @@ else:
 # Now make the plot
 # ***************************************************
 
-fig = plt.figure()
+
+numCols = int(math.ceil(math.sqrt(numQuantities*1.0)))
+numRows = int(math.ceil(numQuantities*1.0/numCols))
+fig, axes  = plt.subplots(numRows, numCols,sharex=True)
+axes = axes.flatten()
 fig.patch.set_facecolor('white')
 
-numCols = math.ceil(math.sqrt(numQuantities*1.0))
-numRows = math.ceil(numQuantities*1.0/numCols)
+
+
 
 xdata = []
 ydata = []
@@ -259,7 +263,7 @@ ymaxs = []
 linespec = '.-'
 
 for iQuantity in range(numQuantities):
-   plt.subplot(numRows,numCols,iQuantity+1)
+   plt.sca(axes[iQuantity])
    xdata.append(scanVariableValues_sorted)
    if "FSA" in yAxisLabels[iQuantity]:
       # Use linear scale for flows
@@ -268,7 +272,7 @@ for iQuantity in range(numQuantities):
    else:
       # Use log scale for fluxes
       ydata.append(abs(outputs_array[:,iQuantity]))
-      yscales.append('log')
+      yscales.append('linear')
    
    xlabels.append(scanVariable)
    ylabels.append(yAxisLabels[iQuantity])

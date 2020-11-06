@@ -420,7 +420,8 @@ module globalVariables
   PetscScalar, dimension(:,:,:,:,:), allocatable :: externalF
   PetscScalar, dimension(:,:,:,:,:), allocatable :: externalRosenPotentialTerms
   PetscScalar, dimension(:), allocatable :: externalXi, externalE, externalMasses, externalCharges
-  PetscScalar, dimension(:,:,:), allocatable :: externalN
+  PetscScalar, dimension(:,:,:), allocatable :: externalN, externalFlow
+  PetscScalar, dimension(:), allocatable :: FSABExternalFlow
   
   integer :: externalNL, externalNspecies, externalNE, externalNxi
   

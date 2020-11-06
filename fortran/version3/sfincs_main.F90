@@ -123,6 +123,7 @@ module sfincs_main
     if (readExternalF) then
        call setExternalF()
        call calculateExternalN()
+       call calculateExternalFlow()
        call computeExternalRosenbluthPotentialResponse()
     end if
     
