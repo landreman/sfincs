@@ -753,7 +753,7 @@
 
 
        if (readExternalF) then
-          externalFlow = 0
+          FSABExternalFlow = 0
           do ispecies=1,externalNspecies
              do izeta=1,Nzeta
                 FSABExternalFlow(ispecies) = FSABExternalFlow(ispecies) + zetaWeights(izeta) &
