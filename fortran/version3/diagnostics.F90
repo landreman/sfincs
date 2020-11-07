@@ -753,6 +753,9 @@
 
 
        if (readExternalF) then
+          if (.not. allocated(FSABExternalFlow)) then
+             allocate(FSABExternalFlow(externalNspecies))
+          end if
           FSABExternalFlow = 0
           do ispecies=1,externalNspecies
              do izeta=1,Nzeta
