@@ -1393,10 +1393,6 @@
     allocate(heatFluxBeforeSurfaceIntegral_vE(Nspecies,Ntheta,Nzeta))
     allocate(NTVBeforeSurfaceIntegral(Nspecies,Ntheta,Nzeta))
 
-    ! if (readExternalF) then
-    !    allocate(FSABExternalFlow(externalNspecies))
-    ! end if
-    
     
     if (RHSMode > 3 .and. RHSMode < 6) then
       allocate(dRadialCurrentdLambda(NLambdas,NModesAdjoint))

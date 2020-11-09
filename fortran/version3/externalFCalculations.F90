@@ -52,14 +52,19 @@ contains
   end subroutine calculateExternalN
 
   subroutine calculateExternalFlow()
-    use globalVariables, only: pi, Ntheta, Nzeta, externalNspecies, externalNE, externalNxi, externalXi, externalE, externalF, externalMasses, externalFlow
+    use globalVariables, only: pi, Ntheta, Nzeta, externalNspecies, externalNE, externalNxi, externalXi, externalE, externalF, externalMasses, externalFlow, FSABExternalFlow
     integer :: ispecies, itheta, izeta, ixi
     PetscScalar :: dE, dxi
     PetscScalar, dimension(:), allocatable :: velocityJacobian
 
-    ! Global variable
+    ! Global variables
     if (.not. allocated(externalFlow)) then
        allocate(externalFlow(externalNspecies, Ntheta, Nzeta))
+    end if
+    if (.not. allocated(FSABExternalFlow)) then
+       print *," FSABExternalFlow allocate"
+       print *,externalNspecies
+       allocate(FSABExternalFlow(externalNspecies))
     end if
     
     allocate(velocityJacobian(externalNE))
