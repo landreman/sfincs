@@ -52,7 +52,7 @@ contains
   end subroutine calculateExternalN
 
   subroutine calculateExternalFlow()
-    use globalVariables, only: pi, Ntheta, Nzeta, externalNspecies, externalNE, externalNxi, externalXi, externalE, externalF, externalMasses, externalFlow, FSABExternalFlow
+    use globalVariables, only: pi, Ntheta, Nzeta, externalNspecies, externalNE, externalNxi, externalXi, externalE, externalF, externalMasses, externalFlow, FSABExternalFlow, VPrimeHat, BHat, DHat, thetaWeights, zetaWeights
     integer :: ispecies, itheta, izeta, ixi
     PetscScalar :: dE, dxi
     PetscScalar, dimension(:), allocatable :: velocityJacobian
@@ -88,7 +88,16 @@ contains
        end do
     end do
     externalFlow = externalFlow * dE * dxi
-
+    FSABExternalFlow = 0
+    do ispecies=1,externalNspecies
+       do izeta=1,Nzeta
+          FSABExternalFlow(ispecies) = FSABExternalFlow(ispecies) + zetaWeights(izeta) &
+               * dot_product(thetaWeights, externalFlow(ispecies,:,izeta)*BHat(:,izeta)/DHat(:,izeta))
+       end do
+    end do
+    FSABExternalFlow = FSABExternalFlow / VPrimeHat
+    print *,FSABExternalFlow
+    
     deallocate(velocityJacobian)
 
   end subroutine calculateExternalFlow

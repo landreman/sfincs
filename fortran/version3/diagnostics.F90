@@ -750,26 +750,6 @@
        end do
        FSABVelocityUsingFSADensityOverB0 = FSABVelocityUsingFSADensity / B0OverBBar
        FSABVelocityUsingFSADensityOverRootFSAB2 = FSABVelocityUsingFSADensity / sqrt(FSABHat2)
-
-
-       if (readExternalF) then
-          if (.not. allocated(FSABExternalFlow)) then
-             print *,"FSABExternalFlow: weird alloc"
-             allocate(FSABExternalFlow(externalNspecies))
-          end if
-          print *,"FSABExternalFlow calc"
-          FSABExternalFlow = 0
-          print *,FSABExternalFlow
-          do ispecies=1,externalNspecies
-             do izeta=1,Nzeta
-                FSABExternalFlow(ispecies) = FSABExternalFlow(ispecies) + zetaWeights(izeta) &
-                     * dot_product(thetaWeights, externalFlow(ispecies,:,izeta)*BHat(:,izeta)/DHat(:,izeta))
-             end do
-          end do
-          FSABExternalFlow = FSABExternalFlow / VPrimeHat
-          print *,"FSABExternalFlow"
-          print *,FSABExternalFlow
-       end if
        
        if (RHSMode==2) then
           ispecies = 1
