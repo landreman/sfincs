@@ -165,6 +165,7 @@ subroutine sfincs_finalize()
   if(allocated(externalRosenPotentialTerms))deallocate(externalRosenPotentialTerms)
   if(allocated(externalN))deallocate(externalN)
   if(allocated(externalCharges))deallocate(externalCharges)
+  if(allocated(externalMasses))deallocate(externalMasses)
   if(allocated(FSABExternalFlow)) deallocate(FSABExternalFlow)
   if(allocated(externalFlow)) deallocate(externalFlow)
   

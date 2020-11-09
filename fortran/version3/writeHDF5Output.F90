@@ -363,6 +363,8 @@ contains
                "Read in an external distribution function, which can be used for the purpose of calculation Phi_1 and collisions against the main species." // boolDescription)
           call writeHDF5Field("externalFlow", externalFlow, dspaceIDForEXSpeciesThetaZeta, dimForEXSpeciesThetaZeta, "The flow of the externally read distribution functions.")
           call writeHDF5Field("externalFSABFlow", FSABExternalFlow, dspaceIDForEXSpecies, dimForEXSpecies, "FSA(B externalFlow).")
+          call writeHDF5Field("externalZs", externalCharges, dspaceIDForEXSpecies, dimForEXSpecies, "external Zs")
+          call writeHDF5Field("externalMHats", externalMasses, dspaceIDForEXSpecies, dimForEXSpecies, "external mHats")
        end if
        
 

@@ -219,7 +219,8 @@ contains
        if(allocated(externalF))deallocate(externalF)
        if(allocated(externalXi))deallocate(externalXi)
        if(allocated(externalE))deallocate(externalE)
-       if(allocated(externalMasses))deallocate(externalMasses)
+       ! not needed, but convenient for output
+       !if(allocated(externalMasses))deallocate(externalMasses)
 
     end if
  
