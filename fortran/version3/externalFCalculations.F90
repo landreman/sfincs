@@ -16,14 +16,18 @@ module externalFCalculations
 contains
  
   subroutine calculateExternalN()
-    use globalVariables, only: pi, Ntheta, Nzeta, externalNspecies, externalNE, externalNxi, externalXi, externalE, externalF, externalMasses, externalN
+    use globalVariables, only: pi, Ntheta, Nzeta, externalNspecies, externalNE, externalNxi, externalXi, externalE, externalF, externalMasses, externalCharges, externalN, externalNQN, FSAExternalN, VPrimeHat, DHat, thetaWeights, zetaWeights, Nspecies, Zs, nHats
     integer :: ispecies, itheta, izeta, ixi
     PetscScalar :: dE, dxi
     PetscScalar, dimension(:), allocatable :: velocityJacobian
-
+    integer :: ispecies2
+    
     ! Global variable
     if (.not. allocated(externalN)) then
        allocate(externalN(externalNspecies, Ntheta, Nzeta))
+    end if
+    if (.not. allocated(FSAExternalN)) then
+       allocate(FSAExternalN(externalNspecies))
     end if
     
     allocate(velocityJacobian(externalNE))
@@ -47,8 +51,41 @@ contains
        end do
     end do
     externalN = externalN * dE * dxi
-
+    FSAExternalN = 0
+    do ispecies=1,externalNspecies
+       do izeta=1,Nzeta
+          FSAExternalN(ispecies) = FSAExternalN(ispecies) + zetaWeights(izeta) &
+               * dot_product(thetaWeights, externalN(ispecies,:,izeta)/DHat(:,izeta))
+       end do
+    end do
+    FSAExternalN = FSAExternalN / VPrimeHat
+    print *,FSAExternalN
+   
     deallocate(velocityJacobian)
+
+    select case (externalNQN)
+    case (0)
+       ! nothing to be done
+    case (1)
+       ! subtract the FSA from externalN
+       do ispecies=1,externalNspecies
+          externalN(ispecies,:,:) = externalN(ispecies,:,:) - FSAExternalN(ispecies)
+       end do
+       
+    case (2)
+       ! add the FSA of externalN to the electron density
+       ! in a manner that ensures quasi-neutrality
+       do ispecies2 = 1,Nspecies
+          if (Zs(ispecies2) < 0) then
+             do ispecies=1,externalNspecies
+                nHats(ispecies2) = nHats(ispecies2) - externalCharges(ispecies) * FSAExternalN(ispecies)/Zs(ispecies2)
+             end do
+             exit
+          end if
+       end do
+    end select
+    
+    
   end subroutine calculateExternalN
 
   subroutine calculateExternalFlow()

@@ -61,7 +61,7 @@ contains
          includeTemperatureEquilibrationTerm, includePhi1, includePhi1InCollisionOperator, &
          nuPrime, EStar, magneticDriftScheme, includePhi1InKineticEquation, &
          quasineutralityOption, Krook, externalPhi1Filename, readExternalPhi1, & 
-         externalFFilename, readExternalF, externalFFormat, externalNL, extrapolateExternalF
+         externalFFilename, readExternalF, externalFFormat, externalNL, extrapolateExternalF, externalNQN
     
 
     namelist / resolutionParameters / forceOddNthetaAndNzeta, &

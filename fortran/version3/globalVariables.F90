@@ -29,10 +29,6 @@ module globalVariables
   character(len=200) :: binaryOutputFilename = "sfincsBinary"
   character(len=200) :: outputFilename = "sfincsOutput.h5"
   character(len=200) :: externalPhi1Filename = "externalPhi1.h5" !!Added by AM 2018-12
-  character(len=200) :: externalFFilename = "externalF.h5"
-  character(len=200) :: externalFFormat = "ASCOT4Boozer"
-  logical :: extrapolateExternalF = .false.
-  
   
   logical :: solveSystem = .true.
   integer :: RHSMode = 1, whichRHS
@@ -417,13 +413,18 @@ module globalVariables
   integer :: transportMatrixSize = 3
   PetscScalar, dimension(:,:), allocatable :: transportMatrix
 
+
+  character(len=200) :: externalFFilename = "externalF.h5"
+  character(len=200) :: externalFFormat = "ASCOT4Boozer"
+  logical :: extrapolateExternalF = .false.
   PetscScalar, dimension(:,:,:,:,:), allocatable :: externalF
   PetscScalar, dimension(:,:,:,:,:), allocatable :: externalRosenPotentialTerms
   PetscScalar, dimension(:), allocatable :: externalXi, externalE, externalMasses, externalCharges
   PetscScalar, dimension(:,:,:), allocatable :: externalN, externalFlow
-  PetscScalar, dimension(:), allocatable :: FSABExternalFlow
+  PetscScalar, dimension(:), allocatable :: FSABExternalFlow, FSAExternalN
   
   integer :: externalNL, externalNspecies, externalNE, externalNxi
+  integer :: externalNQN = 0
   
   Vec :: f0
 
