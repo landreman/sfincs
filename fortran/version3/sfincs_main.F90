@@ -60,8 +60,6 @@ module sfincs_main
     use solver
     use geometry
     use radialCoordinates
-    use readHDF5Input !!Added by AM 2018-12
-    use externalFCalculations
     
     implicit none
     
@@ -116,18 +114,6 @@ module sfincs_main
     ! the magnetic field and its derivatives on the spatial grid.
     call createGrids()
     
-    if (includePhi1 .and. readExternalPhi1) then !!Added by AM 2018-12
-       call setPhi1() !!Added by AM 2018-12
-    end if !!Added by AM 2018-12
-
-    if (readExternalF) then
-       call setExternalF()
-       call calculateExternalN()
-       call calculateExternalFlow()
-       call computeExternalRosenbluthPotentialResponse()
-    end if
-    
-
     
   end subroutine sfincs_prepare
 

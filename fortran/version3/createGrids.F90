@@ -8,6 +8,8 @@
     use geometry
     use indices
     use export_f
+    use readHDF5Input !!Added by AM 2018-12
+    use externalFCalculations
 
     implicit none
 
@@ -1002,6 +1004,20 @@
        stop
     end select
 
+
+    if (includePhi1 .and. readExternalPhi1) then !!Added by AM 2018-12
+       call setPhi1() !!Added by AM 2018-12
+    end if !!Added by AM 2018-12
+
+    
+    if (readExternalF) then
+       call setExternalF()
+       call calculateExternalN()
+       call calculateExternalFlow()
+       call computeExternalRosenbluthPotentialResponse()
+    end if
+
+    
     if ((xGridScheme==5 .or. xGridScheme==6) .and. (RHSMode .ne. 3)) then
        allocate(RosenbluthPotentialTerms(Nspecies,Nspecies,NL,Nx,Nx))
        call computeRosenbluthPotentialResponse(Nx, x, xWeights, Nspecies, mHats, THats, nHats, Zs, NL, &
