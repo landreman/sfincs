@@ -1005,6 +1005,13 @@
     end select
 
 
+    allocate(Phi1Hat(Ntheta,Nzeta))
+    allocate(dPhi1Hatdtheta(Ntheta,Nzeta))
+    allocate(dPhi1Hatdzeta(Ntheta,Nzeta))
+    Phi1Hat = zero
+    dPhi1Hatdtheta = zero
+    dPhi1Hatdzeta = zero
+
     if (includePhi1 .and. readExternalPhi1) then !!Added by AM 2018-12
        call setPhi1() !!Added by AM 2018-12
     end if !!Added by AM 2018-12
@@ -1461,13 +1468,7 @@
     allocate(FSABFlow_vs_x(Nspecies,Nx))
 
     allocate(jHat(Ntheta,Nzeta))
-    allocate(Phi1Hat(Ntheta,Nzeta))
-    allocate(dPhi1Hatdtheta(Ntheta,Nzeta))
-    allocate(dPhi1Hatdzeta(Ntheta,Nzeta))
-    Phi1Hat = zero
-    dPhi1Hatdtheta = zero
-    dPhi1Hatdzeta = zero
-
+    
     select case (constraintScheme)
     case (0)
        ! No allocation needed in this case.
