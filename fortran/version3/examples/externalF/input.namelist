@@ -41,7 +41,7 @@
   includeElectricFieldTermInXiDot = .true.
   useDKESExBDrift = .false.
 
-  includePhi1 = .true.
+  includePhi1 = .false.
   readExternalPhi1 = .false.
   externalPhi1Filename = "externalPhi1.h5"
   
