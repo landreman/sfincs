@@ -1005,32 +1005,6 @@
     end select
 
 
-    allocate(Phi1Hat(Ntheta,Nzeta))
-    allocate(dPhi1Hatdtheta(Ntheta,Nzeta))
-    allocate(dPhi1Hatdzeta(Ntheta,Nzeta))
-    Phi1Hat = zero
-    dPhi1Hatdtheta = zero
-    dPhi1Hatdzeta = zero
-
-    if (includePhi1 .and. readExternalPhi1) then !!Added by AM 2018-12
-       call setPhi1() !!Added by AM 2018-12
-    end if !!Added by AM 2018-12
-
-    
-    if (readExternalF) then
-       call setExternalF()
-       call calculateExternalN()
-       call calculateExternalFlow()
-       call computeExternalRosenbluthPotentialResponse()
-    end if
-
-    
-    if ((xGridScheme==5 .or. xGridScheme==6) .and. (RHSMode .ne. 3)) then
-       allocate(RosenbluthPotentialTerms(Nspecies,Nspecies,NL,Nx,Nx))
-       call computeRosenbluthPotentialResponse(Nx, x, xWeights, Nspecies, mHats, THats, nHats, Zs, NL, &
-         RosenbluthPotentialTerms,.false.)
-    end if
-
 !    if (masterProc) then
     if (.false.) then
        print *,"xGridScheme:",xGridScheme
@@ -1261,6 +1235,33 @@
     ! *********************************************************
 
     call computeBIntegrals()
+
+        allocate(Phi1Hat(Ntheta,Nzeta))
+    allocate(dPhi1Hatdtheta(Ntheta,Nzeta))
+    allocate(dPhi1Hatdzeta(Ntheta,Nzeta))
+    Phi1Hat = zero
+    dPhi1Hatdtheta = zero
+    dPhi1Hatdzeta = zero
+
+    if (includePhi1 .and. readExternalPhi1) then !!Added by AM 2018-12
+       call setPhi1() !!Added by AM 2018-12
+    end if !!Added by AM 2018-12
+
+    
+    if (readExternalF) then
+       call setExternalF()
+       call calculateExternalN()
+       call calculateExternalFlow()
+       call computeExternalRosenbluthPotentialResponse()
+    end if
+
+    
+    if ((xGridScheme==5 .or. xGridScheme==6) .and. (RHSMode .ne. 3)) then
+       allocate(RosenbluthPotentialTerms(Nspecies,Nspecies,NL,Nx,Nx))
+       call computeRosenbluthPotentialResponse(Nx, x, xWeights, Nspecies, mHats, THats, nHats, Zs, NL, &
+         RosenbluthPotentialTerms,.false.)
+    end if
+
 
     if (masterProc) then
        print *,"---- Geometry parameters: ----"
