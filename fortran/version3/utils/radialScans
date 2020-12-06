@@ -365,7 +365,7 @@ def plotProposedProfiles():
     fig = plt.figure()
     fig.patch.set_facecolor('white')
     # Set the default color cycle:
-    matplotlib.rcParams['axes.color_cycle'] = ['b', 'r', 'c','y','g','k']
+    #matplotlib.rcParams['axes.color_cycle'] = ['b', 'r', 'c','y','g','k']
 
     if Nspecies>1:
         numQuantities = 2*(2*Nspecies+2)+2

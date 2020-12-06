@@ -52,7 +52,7 @@ for whichFile in range(1,len(sys.argv)):
         this_script = os.path.abspath(__file__)
         # The "1" below is just an arbitrary command-line argument, which suppresses plotting:
         submitCommand = this_script[:-8] + " noplot"
-        subprocess.call(submitCommand.split(" "))
+        #subprocess.call(submitCommand.split(" "))
         os.chdir(originalDirectory)
 
         inputFile = open(filename,'rb')
@@ -119,7 +119,7 @@ fig = plt.figure(figsize=(16,8.5))
 fig.patch.set_facecolor('white')
 
 # Set the default color cycle:
-matplotlib.rcParams['axes.color_cycle'] = ['r', 'b', 'c','y','g','k']
+#matplotlib.rcParams['axes.color_cycle'] = ['r', 'b', 'c','y','g','k']
 
 for iQuantity in range(numQuantities[0]):
    plt.subplot(numRows[0],numCols[0],iQuantity+1)

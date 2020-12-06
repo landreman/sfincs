@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+import time
+
+start_time_common = time.time()
+
 # This python file contains several subroutines that are used both in launching and processing parameter scans in sfincs.
 
 inputFilename = "input.namelist"
@@ -293,3 +297,5 @@ def readDefault(varName, intOrFloatOrString, required=True):
 
     print "Read "+originalVarName+" = "+str(returnValue)
     return returnValue
+
+print "Time to run sfincsScan_common: ", time.time() - start_time_common

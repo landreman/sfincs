@@ -7,7 +7,7 @@
 
 ##FILE MODIFIED BY AM 2015-12 TO CALL SCRIPTS WITH "PDF" ARGUMENT##
 
-import os, inspect, sys, subprocess
+import os, inspect, sys, subprocess, time
 
 print "This is "+ inspect.getfile(inspect.currentframe())
 
@@ -18,7 +18,9 @@ if len(sys.argv)>1 and (sys.argv[1] != "noplot") and (sys.argv[1].lower() != "pd
     scriptName =  os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScanPlot_combine"
     command = sys.argv
     command[0] = scriptName
+    start_time = time.time()
     subprocess.call(command)
+    print "Time for subprocess call to sfincsScanPlot_combine: ", time.time() - start_time
     exit(0)
 
 inputFilename = "input.namelist"
@@ -29,7 +31,9 @@ if not os.path.isfile(inputFilename):
     exit(1)
 
 # Load some other required subroutines:
+start_time = time.time()
 execfile(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_common")
+print "Time for execfile call to sfincsScanPlot_common: ", time.time() - start_time
 
 # Load the input file:
 with open(inputFilename, 'r') as f:
@@ -109,7 +113,9 @@ if len(sys.argv)>1 and (sys.argv[1].lower() == "pdf"): ##By AM
     try:
         command = sys.argv
         command[0] = scriptName
+        start_time = time.time()
         subprocess.call(command)
+        print "Time for subprocess call to sfincsScanPlot_x: ", time.time() - start_time
         exit(0)
     except IOError:
         print "Unable to run "+scriptName+" even though the file exists."
