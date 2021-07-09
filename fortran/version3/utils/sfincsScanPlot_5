@@ -3,6 +3,9 @@
 # This python script plots the output of a SFINCS scan for scanType = 5.
 # This is a scan of radius, with a scan of Er at each radius.
 
+from __future__ import division, print_function
+
+
 #import matplotlib.pyplot as plt
 import matplotlib
 import h5py
@@ -12,7 +15,7 @@ import subprocess
 import pickle
 import sys
 
-print "This is "+ inspect.getfile(inspect.currentframe())
+print("This is "+ inspect.getfile(inspect.currentframe()))
 
 ##Added by AM 2015-12##
 makePDF = False
@@ -40,7 +43,7 @@ radiiWithDuplicates = []
 ydata = []
 
 # Load some other required subroutines:
-execfile(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_common")
+exec(compile(open(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_common", "rb").read(), os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_common", 'exec'))
 
 # Determine which variable was scanned by looking at input.namelist in the main directory:
 with open(inputFilename, 'r') as f:
@@ -62,7 +65,7 @@ elif inputRadialCoordinate==2:
 elif inputRadialCoordinate==3:
     radiusName = "rN"
 else:
-    print "Error! Invalid inputRadialCoordinate."
+    print("Error! Invalid inputRadialCoordinate.")
     exit(1)
 
 #######################
@@ -81,7 +84,7 @@ elif inputRadialCoordinateForGradients==3:
 elif inputRadialCoordinateForGradients==4:
     generalErName = "Er"
 else:
-    print "Error! Invalid inputRadialCoordinateForGradients."
+    print("Error! Invalid inputRadialCoordinateForGradients.")
     exit(1)
 
 originalDirectory = os.getcwd()
@@ -92,9 +95,9 @@ directories = sorted(filter(os.path.isdir, os.listdir(".")))
 isThisTheFirstRadius = True
 for directory in directories:
     try:
-        print "*************************************************"
-        print "Processing directory "+directory
-        print "*************************************************"
+        print("*************************************************")
+        print("Processing directory "+directory)
+        print("*************************************************")
 
         fullDirectory = originalDirectory + "/" + directory
 
@@ -112,7 +115,7 @@ for directory in directories:
         filename = "ambipolarSolutions.dat"
         fullFilename = fullDirectory+"/"+filename
         if not os.path.isfile(fullFilename):
-            print "Directory "+directory+" does not have a "+filename+" file. This may mean a solution has not (yet) been found for ambipolarity."
+            print("Directory "+directory+" does not have a "+filename+" file. This may mean a solution has not (yet) been found for ambipolarity.")
             continue
 
         inputFile = open(fullFilename,'rb')
@@ -141,17 +144,17 @@ for directory in directories:
     for i in range(oldNumQuantities):
         ydata[i+1] = ydata[i+1] + list(latestOutputs[i])
 
-    print "*************************************************"
-    print "Finished with directory "+directory
-    print "*************************************************"
+    print("*************************************************")
+    print("Finished with directory "+directory)
+    print("*************************************************")
 
 if Nradii<1:
-    print "Unable to read data for an ambipolar solution at any radius. Stopping."
+    print("Unable to read data for an ambipolar solution at any radius. Stopping.")
     exit(0)
 
-print "Successfully read data for the ambipolar solutions at "+str(Nradii)+" radii."
+print("Successfully read data for the ambipolar solutions at "+str(Nradii)+" radii.")
 if Nradii<2:
-    print "Since fewer than 2 radii are available, a plot to summarize results vs radius will not be generated."
+    print("Since fewer than 2 radii are available, a plot to summarize results vs radius will not be generated.")
     exit(0)
 
 ylabels = ["Ambipolar "+generalErName] + data["ylabels"]
@@ -246,9 +249,9 @@ if len(sys.argv) == 1:
 ##Added by AM 2015-12##
 if makePDF:
    if len(sys.argv)>2 : #Use the substituted name as file name
-      print "Writing plot to " + os.getcwd() + "/" + sys.argv[2] + ".pdf."
+      print("Writing plot to " + os.getcwd() + "/" + sys.argv[2] + ".pdf.")
       plt.savefig(sys.argv[2] + ".pdf")
    else: #Use script name as file name
-      print "Writing plot to " + os.getcwd() + "/" + os.path.basename(__file__) + ".pdf."
+      print("Writing plot to " + os.getcwd() + "/" + os.path.basename(__file__) + ".pdf.")
       plt.savefig(os.path.basename(__file__) + ".pdf")
 #######################

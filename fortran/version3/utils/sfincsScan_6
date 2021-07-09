@@ -12,10 +12,16 @@
 # To improve this, we could detect and ignore changing zero gradients, or
 # set an absoluteGradientChange parameter that is effective for gradients close to zero
 
-import os, inspect
+from __future__ import print_function, division
 
-print "This is "+ inspect.getfile(inspect.currentframe())
-print "Beginning a scan of gradients."
+import os, inspect, sys
+
+if sys.version_info >= (3, 0):
+    raw_input = input
+
+
+print("This is "+ inspect.getfile(inspect.currentframe()))
+print("Beginning a scan of gradients.")
 
 ## inputRadialCoordinateForGradients = readVariable("inputRadialCoordinateForGradients","int") ##Commented by AM 2015-12
 
@@ -51,7 +57,7 @@ elif inputRadialCoordinateForGradients==4:
     varNameN = "dNHatdrHats"
     varNameT = "dTHatdrHats"
 else:
-    print "Error! Invalid inputRadialCoordinateForGradients."
+    print("Error! Invalid inputRadialCoordinateForGradients.")
     exit(1)
 
 # lists?
@@ -71,9 +77,9 @@ NspeciesN = len(dNdr)
 NspeciesT = len(dTdr)
 
 if NspeciesN != NspeciesT:
-    print "Error! The input file " + inputFilename + " has a different number of temperature and density gradients"
-    print "Number of density gradients: " + NspeciesN
-    print "Number of temperature gradients: " + NspeciesT
+    print("Error! The input file " + inputFilename + " has a different number of temperature and density gradients")
+    print("Number of density gradients: " + NspeciesN)
+    print("Number of temperature gradients: " + NspeciesT)
     exit(1)
 Nspecies = NspeciesN
     
@@ -83,14 +89,14 @@ ErNew = Er * (1 + relChange)
 dNdrNew = [_dNdr * (1 + relChange) for _dNdr in dNdr]
 dTdrNew = [_dTdr * (1 + relChange) for _dTdr in dTdr]
 
-print "Radial electric field is specified using "+varNameEr
-print "Density gradients are specified using "+varNameN
-print "Temperature gradients are specified using "+varNameT
+print("Radial electric field is specified using "+varNameEr)
+print("Density gradients are specified using "+varNameN)
+print("Temperature gradients are specified using "+varNameT)
 
-print "Here are the values we will use for these quantities:"
-print ErNew
-print dNdrNew
-print dTdrNew
+print("Here are the values we will use for these quantities:")
+print(ErNew)
+print(dNdrNew)
+print(dTdrNew)
 
 
 
@@ -121,26 +127,26 @@ directories_copy = list(directories)
 for i in range(len(directories)):
     directory = directories_copy[i]
     if os.path.exists(directory):
-        print "Warning: directory "+directory+" already exists, so skipping this run."
+        print("Warning: directory "+directory+" already exists, so skipping this run.")
         varNames.remove(varNames_copy[i])
         newInputs.remove(newInputs_copy[i])
         directories.remove(directory)
 
-print
-print "Here are the directories that will be created:"
-print directories
+print()
+print("Here are the directories that will be created:")
+print(directories)
 
 if waitBeforeSubmitting:
     while True:
         proceed=raw_input("Should I go ahead and launch these "+str(len(directories))+" jobs? [y/n] ")
         if proceed=="y" or proceed=="n":
             break
-        print "You must enter either y or n."
+        print("You must enter either y or n.")
 
     if proceed=="n":
         exit(0)
 
-print "launching jobs..."
+print("launching jobs...")
 
 # Read in the job.sfincsScan file:
 with open(jobFilename, 'r') as f:
@@ -150,11 +156,11 @@ for runNum in range(len(directories)):
     varName = varNames[runNum]
     directory = directories[runNum]
     newInput = newInputs[runNum]
-    print "Beginning to handle job "+str(runNum+1)+" of "+str(len(directories))+": "+directory
+    print("Beginning to handle job "+str(runNum+1)+" of "+str(len(directories))+": "+directory)
 
     # To be extra safe, check again to see if the directory exists.
     if os.path.exists(directory):
-        print "Warning: directory "+directory+" already exists."
+        print("Warning: directory "+directory+" already exists.")
         i = -1
         while True:
             i += 1
@@ -208,12 +214,12 @@ for runNum in range(len(directories)):
         # I'm not sure why python requires this. 
         submissionResult = subprocess.call(submitCommand.split(" "))
     except:
-        print "ERROR! Unable to submit run "+directory+" for some reason."
+        print("ERROR! Unable to submit run "+directory+" for some reason.")
         raise
     else:
         if submissionResult==0:
-            print "No errors submitting job "+directory
+            print("No errors submitting job "+directory)
         else:
-            print "Nonzero exit code returned when trying to submit job "+directory
+            print("Nonzero exit code returned when trying to submit job "+directory)
 
     os.chdir("..")

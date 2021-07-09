@@ -3,28 +3,34 @@
 # This script will not work if called directly.
 # From the command line, you should call sfincsScan instead.
 
+from __future__ import print_function, division
+
 profilesFilename = 'profiles'
 
-import os, inspect
+import os, inspect, sys
 
-print "This is "+ inspect.getfile(inspect.currentframe())
-print "Beginning a scan of Er inside a scan over radius."
+if sys.version_info >= (3, 0):
+    raw_input = input
+
+
+print("This is "+ inspect.getfile(inspect.currentframe()))
+print("Beginning a scan of Er inside a scan over radius.")
 
 # Determine radii to use, and n & T at those radii:
 skipExistingDirectories = False
-execfile(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/radialScans")
+exec(compile(open(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/radialScans", "rb").read(), os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/radialScans", 'exec'))
 
 if waitBeforeSubmitting:
     while True:
         proceed=raw_input("Should I go ahead and launch Er scans at these "+str(len(radii))+" radii? [y/n] ")
         if proceed=="y" or proceed=="n":
             break
-        print "You must enter either y or n."
+        print("You must enter either y or n.")
 
     if proceed=="n":
         exit(0)
 
-print "launching jobs..."
+print("launching jobs...")
 
 # Read in the job.sfincsScan file:
 with open(jobFilename, 'r') as f:
@@ -32,13 +38,13 @@ with open(jobFilename, 'r') as f:
 
 for runNum in range(len(radii)):
     directory = directories[runNum]
-    print "Beginning to handle radius "+str(runNum+1)+" of "+str(len(radii))+": "+directory
+    print("Beginning to handle radius "+str(runNum+1)+" of "+str(len(radii))+": "+directory)
 
     # To be extra safe, check again to see if the directory exists.
     if os.path.exists(directory):
-        print "Directory "+directory+" already exists."
+        print("Directory "+directory+" already exists.")
     else:
-        print "Creating directory "+directory
+        print("Creating directory "+directory)
         os.makedirs(directory)
     os.chdir(directory)
 
@@ -150,13 +156,13 @@ for runNum in range(len(radii)):
         submissionResult = subprocess.call(submitCommand.split(" "))
         #submissionResult=0
     except:
-        print "ERROR! Unable to submit run "+directory+" for some reason."
+        print("ERROR! Unable to submit run "+directory+" for some reason.")
         raise
     else:
         if submissionResult==0:
-            print "No errors submitting job "+directory
+            print("No errors submitting job "+directory)
         else:
-            print "Nonzero exit code returned when trying to submit job "+directory
+            print("Nonzero exit code returned when trying to submit job "+directory)
 
     os.chdir("..")
 

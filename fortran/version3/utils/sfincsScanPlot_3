@@ -3,6 +3,9 @@
 # This python script plots the output of a SFINCS scan for scanType = 3
 # This is a scan in which any 1 numeric input parameter is varied.
 
+from __future__ import division, print_function
+
+
 outputFilename = "sfincsOutput.h5"
 
 #import matplotlib.pyplot as plt
@@ -13,7 +16,8 @@ import inspect, math, os
 import pickle
 import sys
 
-print "This is "+ inspect.getfile(inspect.currentframe())
+
+print("This is "+ inspect.getfile(inspect.currentframe()))
 
 ##Added by AM 2015-12##
 makePDF = False
@@ -39,7 +43,7 @@ scanVariableValues = []
 outputs = []
 
 ## Load some other required subroutines:
-execfile(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_common")
+exec(compile(open(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_common", "rb").read(), os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_common", 'exec'))
 
 # Determine which variable was scanned by looking at input.namelist in the main directory:
 inputFilename = "input.namelist"
@@ -54,7 +58,7 @@ if scanVariableScale == "log" or scanVariableScale == "logarithmic":
 elif scanVariableScale == "lin" or scanVariableScale == "linear":
    scanScale = "linear"
 else:
-   print "ERROR: You must set scanVariableScale to either linear or log."
+   print("ERROR: You must set scanVariableScale to either linear or log.")
    exit(1)
 
 def uniq(seq):
@@ -65,36 +69,36 @@ def uniq(seq):
    return checked
 
 # Get a list of the subdirectories:                                                                        
-directories = filter(os.path.isdir, os.listdir("."))
+directories = list(filter(os.path.isdir, os.listdir(".")))
 
 atLeastOneDirectorySucceeded = False
 
 for directory in directories:
     filename = directory+"/"+outputFilename
     if not os.path.isfile(filename):
-        print "Directory "+directory+" does not have a "+outputFilename+" file (yet)."
+        print("Directory "+directory+" does not have a "+outputFilename+" file (yet).")
         continue
 
     try:
         f = h5py.File(filename,'r')
     except IOError:
-        print "Unable to open "+filename+" even though this file exists."
+        print("Unable to open "+filename+" even though this file exists.")
         continue
 
     try:
         # Try reading a field that should definitely be present in the output file for any run that completed.
         dummy = f["FSABFlow"][()]
     except:
-        print "Unable to read "+filename+" even though this file exists."
+        print("Unable to read "+filename+" even though this file exists.")
         continue
 
     try:
         finished = f["finished"]
     except KeyError:
-        print "Run in directory "+directory+" does not appear to have finished."
+        print("Run in directory "+directory+" does not appear to have finished.")
         continue
 
-    print "Processing directory "+directory
+    print("Processing directory "+directory)
 
     # The expression [()] converts from an h5py dataset to a numpy ndarray:
     integerToRepresentTrue = (f["integerToRepresentTrue"][()])
@@ -110,20 +114,20 @@ for directory in directories:
        includePhi1 = includePhi1_new
     else:
        if inputRadialCoordinateForGradients != inputRadialCoordinateForGradients_new:
-          print "Error! inputRadialCoordinateForGradients is not consistent among runs."
+          print("Error! inputRadialCoordinateForGradients is not consistent among runs.")
           exit(1)
        if RHSMode != RHSMode_new:
-          print "Error! RHSMode is not consistent among runs."
+          print("Error! RHSMode is not consistent among runs.")
           exit(1)
        if Nspecies != Nspecies_new:
-          print "Error! Nspecies is not consistent among runs."
+          print("Error! Nspecies is not consistent among runs.")
           exit(1)
        if includePhi1 != includePhi1_new:
-          print "Error! includePhi1 is not consistent among runs."
+          print("Error! includePhi1 is not consistent among runs.")
           exit(1)
 
     if RHSMode != 1 and RHSMode != 2 and RHSMode != 3:
-        print "Error! sfincsScanPlot is not yet set up for RHSMode = "+str(RHSMode)
+        print("Error! sfincsScanPlot is not yet set up for RHSMode = "+str(RHSMode))
         exit(1)
 
     # Read the variable that was scanned from input.namelist rather than from the hdf5 file.
@@ -184,10 +188,10 @@ for directory in directories:
 
     numRuns += 1
 
-    print "Successfully read run in directory "+directory
+    print("Successfully read run in directory "+directory)
 
 if not atLeastOneDirectorySucceeded:
-   print "Error! There do not seem to be any completed sfincs jobs in subdirectories of this directory."
+   print("Error! There do not seem to be any completed sfincs jobs in subdirectories of this directory.")
    exit(1)
 
 
@@ -324,10 +328,10 @@ if len(sys.argv) == 1:
 ##Added by AM 2015-12##
 if makePDF:
    if len(sys.argv)>2 : #Use the substituted name as file name
-      print "Writing plot to " + os.getcwd() + "/" + sys.argv[2] + ".pdf."
+      print("Writing plot to " + os.getcwd() + "/" + sys.argv[2] + ".pdf.")
       plt.savefig(sys.argv[2] + ".pdf")
    else: #Use script name as file name
-      print "Writing plot to " + os.getcwd() + "/" + os.path.basename(__file__) + ".pdf."
+      print("Writing plot to " + os.getcwd() + "/" + os.path.basename(__file__) + ".pdf.")
       plt.savefig(os.path.basename(__file__) + ".pdf")
 #######################
 

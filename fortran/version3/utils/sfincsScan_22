@@ -24,11 +24,15 @@
 #      0.2     1.5       1.3          0.7               60
 #      0.2     2.0       1.7         2.04               90
  
+from __future__ import print_function, division
 
-import os, inspect
+import os, inspect, sys
 
-print "This is "+ inspect.getfile(inspect.currentframe())
-print "Beginning a runspec.dat scan."
+if sys.version_info >= (3, 0):
+    raw_input = input
+
+print("This is "+ inspect.getfile(inspect.currentframe()))
+print("Beginning a runspec.dat scan.")
 
 ################## Subroutine to read the runspec file #################################
 def readRunspec(therunspecFilename):
@@ -42,7 +46,7 @@ def readRunspec(therunspecFilename):
         return thenumb
 
     if not os.path.isfile(therunspecFilename):
-        print "Error! The file "+therunspecFilename+" must be present in the directory from which you call sfincsScan, or the full path must be given."
+        print("Error! The file "+therunspecFilename+" must be present in the directory from which you call sfincsScan, or the full path must be given.")
         exit(1)
     # Load the runspec file:
     with open(therunspecFilename, 'r') as rsf:
@@ -60,7 +64,7 @@ def readRunspec(therunspecFilename):
     for datalineind in range(len(datalines)):
         thesplittedstring=datalines[datalineind].split()
         if not len(thesplittedstring)==noElems:
-            print "Error! In the runspec file, the number of variable names does not match the number of variables!"
+            print("Error! In the runspec file, the number of variable names does not match the number of variables!")
             exit(1)
         for parind in range(noElems):
            thestring=thesplittedstring[parind]
@@ -109,30 +113,30 @@ for paramname in runparamnames:
     testReadName = readVariable(paramname, "string", False)
     testReadScanName = readScanVariable(paramname, "string", False)
     if testReadName == None and testReadScanName == None:
-        print "The variable " + paramname + " you wish to scan must be explicitly assigned some value in the appropriate namelist,"
-        print "even though the value will be ignored in the scan."
+        print("The variable " + paramname + " you wish to scan must be explicitly assigned some value in the appropriate namelist,")
+        print("even though the value will be ignored in the scan.")
         exit(1)
 #######################
 
 # First, print the data from runspec.dat to the screen
-print ' '+' '.join('%9s' % v for v in runparamnames)
+print(' '+' '.join('%9s' % v for v in runparamnames))
 for lind in range(numErscans):
     oneline=""
     for parind in range(len(runparamnames)):
         theformat= "%"+str(max(9,len(runparamnames[parind])))+".3e"
         oneline=oneline+' '+theformat % runparams[lind][parind]
-    print oneline
+    print(oneline)
 
 
 while True:
     proceed=raw_input("Should I go ahead and launch these "+str(numErscans)+" scans? [y/n] ")
     if proceed=="y" or proceed=="n":
         break
-    print "You must enter either y or n."
+    print("You must enter either y or n.")
 
 if proceed=="n":
     exit(0)
-print "launching scans..."
+print("launching scans...")
 
 
 # Read in the job.sfincsScan file:
@@ -152,7 +156,7 @@ for runNum in range(numErscans):
    os.chdir(dirName)
 
    jobName="Sfnx."+dirName
-   print "Beginning to handle Er scan "+str(runNum+1)+" of "+str(numErscans)+": "+dirName
+   print("Beginning to handle Er scan "+str(runNum+1)+" of "+str(numErscans)+": "+dirName)
 
    # Copy the job.sfincsScan file:
    thisJobFile = list(jobFile)
@@ -216,20 +220,20 @@ for runNum in range(numErscans):
    # Submit the Er scan:
    submitCommand = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan -f" 
    #############################
-   print 'submitCommand = '+submitCommand
+   print('submitCommand = '+submitCommand)
    try:
        # We need to include .split(" ") to separate the command-line arguments into an array of strings.   
        # I'm not sure why python requires this. 
        submissionResult = subprocess.call(submitCommand.split(" "))
        #submissionResult=0
    except:
-       print "ERROR! Unable to submit run "+dirName+" for some reason."
+       print("ERROR! Unable to submit run "+dirName+" for some reason.")
        raise
    else:
        if submissionResult==0:
-           print "No errors submitting job "+dirName
+           print("No errors submitting job "+dirName)
        else:
-           print "Nonzero exit code returned when trying to submit job "+dirName
+           print("Nonzero exit code returned when trying to submit job "+dirName)
 
    os.chdir("..")
 

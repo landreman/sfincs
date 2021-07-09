@@ -2,6 +2,9 @@
 
 # This python script plots the output of a SFINCS E_r scan.
 
+from __future__ import division, print_function
+
+
 inputFilename = "input.namelist"
 outputFilename = "sfincsOutput.h5"
 
@@ -25,7 +28,7 @@ from scipy.optimize import brentq
 import pickle
 from sys import argv
 
-print "This is "+ inspect.getfile(inspect.currentframe())
+print("This is "+ inspect.getfile(inspect.currentframe()))
 
 ##Added by AM 2015-12##
 makePDF = False
@@ -48,9 +51,9 @@ import matplotlib.pyplot as plt
 
 # Load some other required subroutines:
 startTime = timer()
-execfile(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_common")
+exec(compile(open(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_common", "rb").read(), os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_common", 'exec'))
 endTime = timer()
-print "Time for execfile:",endTime-startTime
+print("Time for execfile:",endTime-startTime)
 
 numRuns = 0
 Ers = []
@@ -79,7 +82,7 @@ elif inputRadialCoordinate==2:
 elif inputRadialCoordinate==3:
     radiusName = "rN"
 else:
-    print "Error! Invalid inputRadialCoordinate."
+    print("Error! Invalid inputRadialCoordinate.")
     exit(1)
 # Finally get the radius requested:
 ##radius_wish = readVariable(radiusName+"_wish","float") ##Commented by AM 2015-12
@@ -91,33 +94,33 @@ if radius_wish == None:
 #######################
 
 # Get a list of the subdirectories:                                                                        
-directories = filter(os.path.isdir, os.listdir("."))
+directories = list(filter(os.path.isdir, os.listdir(".")))
 
 atLeastOneDirectorySucceeded = False
 
 for directory in directories:
     filename = directory+"/"+outputFilename
     if not os.path.isfile(filename):
-        print "Directory "+directory+" does not have a "+outputFilename+" file (yet)."
+        print("Directory "+directory+" does not have a "+outputFilename+" file (yet).")
         continue
 
     try:
         f = h5py.File(filename,'r')
     except IOError:
-        print "Unable to open "+filename+" even though this file exists."
+        print("Unable to open "+filename+" even though this file exists.")
         continue
 
     try:
         # Try reading a field that should definitely be present in the output file for any run that completed.
         dummy = f["FSABFlow"][()]
     except:
-        print "Unable to read "+filename+" even though this file exists."
+        print("Unable to read "+filename+" even though this file exists.")
         continue
 
     try:
         finished = f["finished"]
     except KeyError:
-        print "Run in directory "+directory+" does not appear to have finished."
+        print("Run in directory "+directory+" does not appear to have finished.")
         continue
 
     ##Section added by AM 2017-05 to check for nonlinear convergence##
@@ -126,14 +129,14 @@ for directory in directories:
     if Check_includePhi1 :
         try:
             if (f["didNonlinearCalculationConverge"][()] != Check_integerToRepresentTrue):
-                print "The nonlinear solver in directory "+directory+" does not appear to have converged." 
+                print("The nonlinear solver in directory "+directory+" does not appear to have converged.") 
                 continue
         except KeyError:
-            print "The nonlinear solver in directory "+directory+" does not appear to have finished."
+            print("The nonlinear solver in directory "+directory+" does not appear to have finished.")
             continue
     ##################################################################
 
-    print "Processing directory "+directory
+    print("Processing directory "+directory)
 
     # The expression [()] converts from an h5py dataset to a numpy ndarray:
     integerToRepresentTrue = (f["integerToRepresentTrue"][()])
@@ -149,16 +152,16 @@ for directory in directories:
        includePhi1 = includePhi1_new
     else:
        if inputRadialCoordinateForGradients != inputRadialCoordinateForGradients_new:
-          print "Error! inputRadialCoordinateForGradients is not consistent among runs."
+          print("Error! inputRadialCoordinateForGradients is not consistent among runs.")
           exit(1)
        if RHSMode != RHSMode_new:
-          print "Error! RHSMode is not consistent among runs."
+          print("Error! RHSMode is not consistent among runs.")
           exit(1)
        if Nspecies != Nspecies_new:
-          print "Error! Nspecies is not consistent among runs."
+          print("Error! Nspecies is not consistent among runs.")
           exit(1)
        if includePhi1 != includePhi1_new:
-          print "Error! includePhi1 is not consistent among runs."
+          print("Error! includePhi1 is not consistent among runs.")
           exit(1)
 
     if inputRadialCoordinateForGradients==0:
@@ -172,11 +175,11 @@ for directory in directories:
     elif inputRadialCoordinateForGradients==4:
        varName = "Er"
     else:
-       print "Error! Invalid inputRadialCoordinateForGradients."
+       print("Error! Invalid inputRadialCoordinateForGradients.")
        exit(1)
 
     if RHSMode != 1 and RHSMode != 2 and RHSMode != 3:
-        print "Error! sfincsScanPlot is not yet set up for RHSMode = "+str(RHSMode)
+        print("Error! sfincsScanPlot is not yet set up for RHSMode = "+str(RHSMode))
         exit(1)
 
     doAmbipolaritySolve = (RHSMode==1)
@@ -244,10 +247,10 @@ for directory in directories:
 
     numRuns += 1
 
-    print "Successfully read run in directory "+directory
+    print("Successfully read run in directory "+directory)
 
 if not atLeastOneDirectorySucceeded:
-   print "Error! There do not seem to be any completed sfincs jobs in subdirectories of this directory."
+   print("Error! There do not seem to be any completed sfincs jobs in subdirectories of this directory.")
    exit(1)
 
 conversionFactorToddpsiHat = f['dPhiHatdpsiHat'][()] / f[varName][()]
@@ -261,8 +264,8 @@ conversionFactorToEr       = f['Er'][()]             / f[varName][()]
 Ers_sorted = sorted(Ers)
 outputs_sorted = []
 radialCurrents_sorted = []
-print "Here comes radialCurrents"
-print radialCurrents
+print("Here comes radialCurrents")
+print(radialCurrents)
 for Er in Ers_sorted:
    outputs_sorted.append(outputs[Ers.index(Er)])
    radialCurrents_sorted.append(radialCurrents[Ers.index(Er)])
@@ -328,7 +331,7 @@ if doAmbipolaritySolve:
    if max(radialCurrents)>0 and min(radialCurrents)<0:
       try:
          # We have runs that straddle j_psi = 0, so we can find at least 1 ambipolar solution.
-         print "Solving for E_r."
+         print("Solving for E_r.")
          # Note: For interpolation it does not work well to use scipy's "interp1d" function, since this tends to give
          # large overshoots for the typical data we get in an Er scan (with sharp structure near Er=0).
          if whichInterpolator==0:
@@ -348,7 +351,7 @@ if doAmbipolaritySolve:
          positiveCurrent = (radialCurrent_fine>0)
          signFlips = (positiveCurrent[:-1] != positiveCurrent[1:])
          numRoots = sum(1 for x in signFlips if x)
-         print "Number of roots found for E_r: ",numRoots
+         print("Number of roots found for E_r: ",numRoots)
          roots = []
          #for i in range(numRoots):
          for index,value in enumerate(signFlips):
@@ -369,16 +372,16 @@ if doAmbipolaritySolve:
              # If the number of roots is not 1 or 3, then flag the case as complicated:
              root_types=['unknown']*len(roots)
 
-         print "Roots found for the radial derivative of the electrostatic potential, for various radial coordinates:"
-         print "d PhiHat / d psiHat = ",roots * conversionFactorToddpsiHat
-         print "d PhiHat / d psiN   = ",roots * conversionFactorToddpsiN
-         print "d PhiHat / d rHat   = ",roots * conversionFactorToddrHat
-         print "d PhiHat / d rN     = ",roots * conversionFactorToddrN
-         print "Er                  = ",roots * conversionFactorToEr
+         print("Roots found for the radial derivative of the electrostatic potential, for various radial coordinates:")
+         print("d PhiHat / d psiHat = ",roots * conversionFactorToddpsiHat)
+         print("d PhiHat / d psiN   = ",roots * conversionFactorToddpsiN)
+         print("d PhiHat / d rHat   = ",roots * conversionFactorToddrHat)
+         print("d PhiHat / d rN     = ",roots * conversionFactorToddrN)
+         print("Er                  = ",roots * conversionFactorToEr)
 
-         print "Root types:",root_types
+         print("Root types:",root_types)
          # Interpolate the other results onto the ambipolar Er(s):
-         print "**** Output quantities at these ambipolar E_r value(s) ****"
+         print("**** Output quantities at these ambipolar E_r value(s) ****")
          outputs_ambipolar = []
          for iQuantity in range(numQuantities):
             if whichInterpolator==0:
@@ -387,18 +390,18 @@ if doAmbipolaritySolve:
                 quantityInterpolator = interp1d(Ers_sorted, outputs_array[:,iQuantity])
             thisOutput_ambipolar = quantityInterpolator(roots)
             outputs_ambipolar.append(thisOutput_ambipolar)
-            print yAxisLabels[iQuantity],": ",thisOutput_ambipolar
+            print(yAxisLabels[iQuantity],": ",thisOutput_ambipolar)
 
          ambipolaritySolveSucceeded = True
       except Exception as e:
-         print "For some reason, the ambipolarity solve failed. Here is the error message:"
-         print e
+         print("For some reason, the ambipolarity solve failed. Here is the error message:")
+         print(e)
          # Eventually remove this next line:
          raise
    else:
-      print "All runs have the same sign of radial current, so we cannot solve for the ambipolar E_r."
+      print("All runs have the same sign of radial current, so we cannot solve for the ambipolar E_r.")
 else:
-   print "Not doing an ambipolarity solve since RHSMode > 1."
+   print("Not doing an ambipolarity solve since RHSMode > 1.")
 
 # ***************************************************
 # Now make the plot
@@ -490,10 +493,10 @@ if len(argv) == 1:
 ##Added by AM 2015-12##
 if makePDF:
    if len(sys.argv)>2 : #Use the substituted name as file name                                                                                      
-      print "Writing plot to " + os.getcwd() + "/" + sys.argv[2] + ".pdf."
+      print("Writing plot to " + os.getcwd() + "/" + sys.argv[2] + ".pdf.")
       plt.savefig(sys.argv[2] + ".pdf")
    else: #Use script name as file name                                                                                                              
-      print "Writing plot to " + os.getcwd() + "/" + os.path.basename(__file__) + ".pdf."
+      print("Writing plot to " + os.getcwd() + "/" + os.path.basename(__file__) + ".pdf.")
       plt.savefig(os.path.basename(__file__) + ".pdf")
 #######################
 
