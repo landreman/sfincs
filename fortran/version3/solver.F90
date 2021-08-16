@@ -157,8 +157,12 @@ contains
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 7))
           call KSPMonitorSet(KSPInstance, KSPMonitorDefault, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
 #else
-          call PetscViewerAndFormatCreate(PETSC_VIEWER_STDOUT_WORLD, PETSC_VIEWER_DEFAULT, vf, ierr) !!Added by AM 2016-07-06
-          call KSPMonitorSet(KSPInstance, KSPMonitorDefault, vf, PetscViewerAndFormatDestroy, ierr) !!Added by AM 2016-07-06 
+          call PetscViewerAndFormatCreate(PETSC_VIEWER_STDOUT_WORLD, PETSC_VIEWER_DEFAULT, vf, ierr)
+#if ((PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR > 14))
+          call KSPMonitorSet(KSPInstance, KSPMonitorResidual, vf, PetscViewerAndFormatDestroy, ierr)
+#else
+          call KSPMonitorSet(KSPInstance, KSPMonitorDefault, vf, PetscViewerAndFormatDestroy, ierr)
+#endif
 #endif
 
         if (discreteAdjointOption .eqv. .false.) then
@@ -174,8 +178,12 @@ contains
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 7))
             call KSPMonitorSet(KSPInstance_adjoint, KSPMonitorDefault, PETSC_NULL_OBJECT, PETSC_NULL_FUNCTION, ierr)
 #else
-            call PetscViewerAndFormatCreate(PETSC_VIEWER_STDOUT_WORLD, PETSC_VIEWER_DEFAULT, vf_adjoint, ierr) !!Added by AM 2016-07-06
-            call KSPMonitorSet(KSPInstance_adjoint, KSPMonitorDefault, vf_adjoint, PetscViewerAndFormatDestroy, ierr) !!Added by AM 2016-07-06
+            call PetscViewerAndFormatCreate(PETSC_VIEWER_STDOUT_WORLD, PETSC_VIEWER_DEFAULT, vf_adjoint, ierr)
+#if ((PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR > 14))
+            call KSPMonitorSet(KSPInstance_adjoint, KSPMonitorResidual, vf_adjoint, PetscViewerAndFormatDestroy, ierr)
+#else
+            call KSPMonitorSet(KSPInstance_adjoint, KSPMonitorDefault, vf_adjoint, PetscViewerAndFormatDestroy, ierr)
+#endif
             call PCSetReusePreconditioner(preconditionerContext_adjoint, PETSC_TRUE, ierr)
 #endif
           end if
