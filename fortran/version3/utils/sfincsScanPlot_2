@@ -28,13 +28,14 @@ from scipy.optimize import brentq
 import pickle
 from sys import argv
 
-print "This is "+ inspect.getfile(inspect.currentframe())
-print "Time for imports: ", time.time() - start_time
+#print ("This is "+ inspect.getfile(inspect.currentframe()))
+this_filename = "sfincsScanPlot_2"
+print ("This is "+ this_filename)
+print ("Time for imports: ", time.time() - start_time)
 
 # If this script was called with any command-line arguments, then do not actually display the plot:
 display_plot = (len(argv) == 1)
 
-##Added by AM 2015-12##
 makePDF = False
 for arg in sys.argv:
    if arg.lower()=='pdf':
@@ -55,9 +56,10 @@ import matplotlib.pyplot as plt
 
 # Load some other required subroutines:
 startTime = timer()
-execfile(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_common")
+#execfile(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_common")
+exec(open(os.path.dirname(os.path.abspath(__file__))+"/sfincsScan_common").read())
 endTime = timer()
-print "Time for execfile in sfincsScanPlot_2:",endTime-startTime
+print ("Time for exec in sfincsScanPlot_2:",endTime-startTime)
 
 numRuns = 0
 Ers = []
@@ -69,15 +71,13 @@ radialCurrents = []
 with open(inputFilename, 'r') as f:
     inputFile = f.readlines()
 
-print "Time after input file is opened: ", time.time() - start_time
+print ("Time after input file is opened: ", time.time() - start_time)
 
-#inputRadialCoordinate = readVariable("inputRadialCoordinate","int") ##Commented by AM 2015-12
-inputRadialCoordinate = readVariable("inputRadialCoordinate","int", False) ##Added by AM 2015-12
+#inputRadialCoordinate = readVariable("inputRadialCoordinate","int")
+inputRadialCoordinate = readVariable("inputRadialCoordinate","int", False)
 
-##Added by AM 2015-12##
 if inputRadialCoordinate == None:
   inputRadialCoordinate = readDefault("inputRadialCoordinate","int")
-#######################
 
 if inputRadialCoordinate==0:
     radiusName = "psiHat"
@@ -88,63 +88,60 @@ elif inputRadialCoordinate==2:
 elif inputRadialCoordinate==3:
     radiusName = "rN"
 else:
-    print "Error! Invalid inputRadialCoordinate."
+    print ("Error! Invalid inputRadialCoordinate.")
     exit(1)
 # Finally get the radius requested:
-##radius_wish = readVariable(radiusName+"_wish","float") ##Commented by AM 2015-12
-radius_wish = readVariable(radiusName+"_wish","float", False) ##Added by AM 2015-12
-
-##Added by AM 2015-12##                                                                                                                             
+##radius_wish = readVariable(radiusName+"_wish","float")
+radius_wish = readVariable(radiusName+"_wish","float", False)                                                                                                                           
 if radius_wish == None:
     radius_wish = readDefault(radiusName+"_wish","float")
-#######################
 
 # Get a list of the subdirectories:                                                                        
-print "Time before listdir: ", time.time() - start_time
+print ("Time before listdir: ", time.time() - start_time)
 directories = filter(os.path.isdir, os.listdir("."))
-print "Time after listdir: ", time.time() - start_time
+print ("Time after listdir: ", time.time() - start_time)
 
 atLeastOneDirectorySucceeded = False
 
 for directory in directories:
     filename = directory+"/"+outputFilename
     if not os.path.isfile(filename):
-        print "Directory "+directory+" does not have a "+outputFilename+" file (yet)."
+        print ("Directory "+directory+" does not have a "+outputFilename+" file (yet).")
         continue
 
     try:
         f = h5py.File(filename,'r')
     except IOError:
-        print "Unable to open "+filename+" even though this file exists."
+        print ("Unable to open "+filename+" even though this file exists.")
         continue
 
     try:
         # Try reading a field that should definitely be present in the output file for any run that completed.
         dummy = f["FSABFlow"][()]
     except:
-        print "Unable to read "+filename+" even though this file exists."
+        print ("Unable to read "+filename+" even though this file exists.")
         continue
 
     try:
         finished = f["finished"]
     except KeyError:
-        print "Run in directory "+directory+" does not appear to have finished."
+        print ("Run in directory "+directory+" does not appear to have finished.")
         continue
 
-    ##Section added by AM 2017-05 to check for nonlinear convergence##
+    ##check for nonlinear convergence##
     Check_integerToRepresentTrue = (f["integerToRepresentTrue"][()])
     Check_includePhi1 = (f["includePhi1"][()] == Check_integerToRepresentTrue)
     if Check_includePhi1 :
         try:
             if (f["didNonlinearCalculationConverge"][()] != Check_integerToRepresentTrue):
-                print "The nonlinear solver in directory "+directory+" does not appear to have converged." 
+                print ("The nonlinear solver in directory "+directory+" does not appear to have converged.")
                 continue
         except KeyError:
-            print "The nonlinear solver in directory "+directory+" does not appear to have finished."
+            print ("The nonlinear solver in directory "+directory+" does not appear to have finished.")
             continue
     ##################################################################
 
-    print "Processing directory "+directory
+    print ("Processing directory "+directory)
 
     # The expression [()] converts from an h5py dataset to a numpy ndarray:
     integerToRepresentTrue = (f["integerToRepresentTrue"][()])
@@ -160,16 +157,16 @@ for directory in directories:
        includePhi1 = includePhi1_new
     else:
        if inputRadialCoordinateForGradients != inputRadialCoordinateForGradients_new:
-          print "Error! inputRadialCoordinateForGradients is not consistent among runs."
+          print ("Error! inputRadialCoordinateForGradients is not consistent among runs.")
           exit(1)
        if RHSMode != RHSMode_new:
-          print "Error! RHSMode is not consistent among runs."
+          print ("Error! RHSMode is not consistent among runs.")
           exit(1)
        if Nspecies != Nspecies_new:
-          print "Error! Nspecies is not consistent among runs."
+          print ("Error! Nspecies is not consistent among runs.")
           exit(1)
        if includePhi1 != includePhi1_new:
-          print "Error! includePhi1 is not consistent among runs."
+          print ("Error! includePhi1 is not consistent among runs.")
           exit(1)
 
     if inputRadialCoordinateForGradients==0:
@@ -183,11 +180,11 @@ for directory in directories:
     elif inputRadialCoordinateForGradients==4:
        varName = "Er"
     else:
-       print "Error! Invalid inputRadialCoordinateForGradients."
+       print ("Error! Invalid inputRadialCoordinateForGradients.")
        exit(1)
 
     if RHSMode != 1 and RHSMode != 2 and RHSMode != 3:
-        print "Error! sfincsScanPlot is not yet set up for RHSMode = "+str(RHSMode)
+        print ("Error! sfincsScanPlot is not yet set up for RHSMode = "+str(RHSMode))
         exit(1)
 
     doAmbipolaritySolve = (RHSMode==1)
@@ -200,7 +197,10 @@ for directory in directories:
     particleFlux_vm = f["particleFlux_vm_rHat"][()]
     heatFlux_vm = f["heatFlux_vm_rHat"][()]
     elapsedTime = f["elapsed time (s)"][()]
-    sources = f["sources"][()]
+    try:
+        sources = f["sources"][()]
+    except:
+        sources = numpy.array([0,0])
     nHats = f["nHats"][()]
     THats = f["THats"][()]
     atLeastOneDirectorySucceeded = True
@@ -227,7 +227,10 @@ for directory in directories:
              outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],particleFlux_vd[0,0],heatFlux_vm[0,0],heatFlux_withoutPhi1[0,0]])
           else:
              radialCurrents.append(Zs[0]*particleFlux_vm[0,-1])
-             outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],heatFlux_vm[0,0],sources[0,0,0],sources[1,0,0]])
+             try:
+                 outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],heatFlux_vm[0,0],sources[0,0,0],sources[1,0,0]])
+             except:
+                 outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],heatFlux_vm[0,0],sources[0],sources[1]])
              #outputs.append([FSABFlow[0,0],particleFlux_vm[0,0],heatFlux_vm[0,0],elapsedTime])
        else:
           results = []
@@ -255,10 +258,10 @@ for directory in directories:
 
     numRuns += 1
 
-    print "Successfully read run in directory "+directory
+    print ("Successfully read run in directory "+directory)
 
 if not atLeastOneDirectorySucceeded:
-   print "Error! There do not seem to be any completed sfincs jobs in subdirectories of this directory."
+   print ("Error! There do not seem to be any completed sfincs jobs in subdirectories of this directory.")
    exit(1)
 
 conversionFactorToddpsiHat = f['dPhiHatdpsiHat'][()] / f[varName][()]
@@ -272,8 +275,8 @@ conversionFactorToEr       = f['Er'][()]             / f[varName][()]
 Ers_sorted = sorted(Ers)
 outputs_sorted = []
 radialCurrents_sorted = []
-print "Here comes radialCurrents"
-print radialCurrents
+print ("Here comes radialCurrents")
+print (radialCurrents)
 for Er in Ers_sorted:
    outputs_sorted.append(outputs[Ers.index(Er)])
    radialCurrents_sorted.append(radialCurrents[Ers.index(Er)])
@@ -307,8 +310,8 @@ else:
             #yAxisLabels.append("heatFlux vd_rHat (species "+str(i)+")")
             #yAxisLabels.append("heatFlux withoutPhi1_rHat (species "+str(i)+")")
             yAxisLabels.append("heatFlux rHat (species "+str(i)+")")
-##         yAxisLabels.append("FSABjHatOverRootFSAB2") ##Commented by AM 2017-11
-         yAxisLabels.append("FSABjHat") ##Added by AM 2017-11
+##         yAxisLabels.append("FSABjHatOverRootFSAB2")
+         yAxisLabels.append("FSABjHat")
          yAxisLabels.append(radialCurrentLabel)
         
       else:
@@ -339,17 +342,17 @@ if doAmbipolaritySolve:
    if max(radialCurrents)>0 and min(radialCurrents)<0:
       try:
          # We have runs that straddle j_psi = 0, so we can find at least 1 ambipolar solution.
-         print "Solving for E_r."
+         print ("Solving for E_r.")
          # Note: For interpolation it does not work well to use scipy's "interp1d" function, since this tends to give
          # large overshoots for the typical data we get in an Er scan (with sharp structure near Er=0).
          if whichInterpolator==0:
-             ##Added a try/except because PchipInterpolator seem to raise an error if there are only two points in the interpolation data ##AM 2016-12
-             try: ##Added by AM 2016-12
+             ##Added a try/except because PchipInterpolator seem to raise an error if there are only two points in the interpolation data
+             try:
                  interpolator = PchipInterpolator(Ers_sorted, radialCurrents_sorted)
-             except: ##Added by AM 2016-12 
-                 from scipy.interpolate import interp1d ##Added by AM 2016-12
-                 whichInterpolator = 1 ##Added by AM 2016-12
-                 interpolator = interp1d(Ers_sorted, radialCurrents_sorted) ##Added by AM 2016-12
+             except:
+                 from scipy.interpolate import interp1d
+                 whichInterpolator = 1
+                 interpolator = interp1d(Ers_sorted, radialCurrents_sorted)
          else:
              interpolator = interp1d(Ers_sorted, radialCurrents_sorted)
          # In the next line, 500 is arbitrary, and could be replaced by another large integer.
@@ -359,7 +362,7 @@ if doAmbipolaritySolve:
          positiveCurrent = (radialCurrent_fine>0)
          signFlips = (positiveCurrent[:-1] != positiveCurrent[1:])
          numRoots = sum(1 for x in signFlips if x)
-         print "Number of roots found for E_r: ",numRoots
+         print ("Number of roots found for E_r: ",numRoots)
          roots = []
          #for i in range(numRoots):
          for index,value in enumerate(signFlips):
@@ -380,16 +383,16 @@ if doAmbipolaritySolve:
              # If the number of roots is not 1 or 3, then flag the case as complicated:
              root_types=['unknown']*len(roots)
 
-         print "Roots found for the radial derivative of the electrostatic potential, for various radial coordinates:"
-         print "d PhiHat / d psiHat = ",roots * conversionFactorToddpsiHat
-         print "d PhiHat / d psiN   = ",roots * conversionFactorToddpsiN
-         print "d PhiHat / d rHat   = ",roots * conversionFactorToddrHat
-         print "d PhiHat / d rN     = ",roots * conversionFactorToddrN
-         print "Er                  = ",roots * conversionFactorToEr
+         print ("Roots found for the radial derivative of the electrostatic potential, for various radial coordinates:")
+         print ("d PhiHat / d psiHat = ",roots * conversionFactorToddpsiHat)
+         print ("d PhiHat / d psiN   = ",roots * conversionFactorToddpsiN)
+         print ("d PhiHat / d rHat   = ",roots * conversionFactorToddrHat)
+         print ("d PhiHat / d rN     = ",roots * conversionFactorToddrN)
+         print ("Er                  = ",roots * conversionFactorToEr)
 
-         print "Root types:",root_types
+         print ("Root types:",root_types)
          # Interpolate the other results onto the ambipolar Er(s):
-         print "**** Output quantities at these ambipolar E_r value(s) ****"
+         print ("**** Output quantities at these ambipolar E_r value(s) ****")
          outputs_ambipolar = []
          for iQuantity in range(numQuantities):
             if whichInterpolator==0:
@@ -398,20 +401,20 @@ if doAmbipolaritySolve:
                 quantityInterpolator = interp1d(Ers_sorted, outputs_array[:,iQuantity])
             thisOutput_ambipolar = quantityInterpolator(roots)
             outputs_ambipolar.append(thisOutput_ambipolar)
-            print yAxisLabels[iQuantity],": ",thisOutput_ambipolar
+            print (yAxisLabels[iQuantity],": ",thisOutput_ambipolar)
 
          ambipolaritySolveSucceeded = True
       except Exception as e:
-         print "For some reason, the ambipolarity solve failed. Here is the error message:"
-         print e
+         print ("For some reason, the ambipolarity solve failed. Here is the error message:")
+         print (e)
          # Eventually remove this next line:
          raise
    else:
-      print "All runs have the same sign of radial current, so we cannot solve for the ambipolar E_r."
+      print ("All runs have the same sign of radial current, so we cannot solve for the ambipolar E_r.")
 else:
-   print "Not doing an ambipolarity solve since RHSMode > 1."
+   print ("Not doing an ambipolarity solve since RHSMode > 1.")
 
-print "Time at end of ambipolarity calculations: ", time.time() - start_time
+print ("Time at end of ambipolarity calculations: ", time.time() - start_time)
 
 # ***************************************************
 # Organize all the data that will be plotted, or saved in the pickle file
@@ -463,10 +466,11 @@ if display_plot:
              plt.plot(Er_fine,radialCurrent_fine,'-g')   
 
     plt.tight_layout()
-    titleString = "Plot generated by "+ inspect.getfile(inspect.currentframe()) + "\nRun in "+os.getcwd()
+    #titleString = "Plot generated by "+ inspect.getfile(inspect.currentframe()) + "\nRun in "+os.getcwd()
+    titleString = "Plot generated by "+ this_filename + "\nRun in "+os.getcwd()
     ax = fig.add_axes([0,0,1,1], frameon=False)
     ax.text(0.5,0.99,titleString,horizontalalignment='center',verticalalignment='top')
-print "Time at end of plotting: ", time.time() - start_time
+print ("Time at end of plotting: ", time.time() - start_time)
 
 # Save info which may be used by sfincsScan_combine:
 scanType=2
@@ -489,7 +493,7 @@ outputFile = open('sfincsScan.dat','wb')
 # pickle.dump(ymaxs,outputFile)
 pickle.dump(data,outputFile)
 outputFile.close()
-print "Time at end of first dat file close: ", time.time() - start_time
+print ("Time at end of first dat file close: ", time.time() - start_time)
 
 filename = 'ambipolarSolutions.dat'
 try:
@@ -505,21 +509,19 @@ if ambipolaritySolveSucceeded:
    outputFile = open(filename,'wb')
    pickle.dump(data,outputFile)
    outputFile.close()
-print "Time at end of second dat file close: ", time.time() - start_time
+print ("Time at end of second dat file close: ", time.time() - start_time)
 
 if display_plot:
    plt.show()
 
-##Added by AM 2015-12##
 if makePDF:
    if len(sys.argv)>2 : #Use the substituted name as file name                                                                                      
-      print "Writing plot to " + os.getcwd() + "/" + sys.argv[2] + ".pdf."
+      print ("Writing plot to " + os.getcwd() + "/" + sys.argv[2] + ".pdf.")
       plt.savefig(sys.argv[2] + ".pdf")
    else: #Use script name as file name                                                                                                              
-      print "Writing plot to " + os.getcwd() + "/" + os.path.basename(__file__) + ".pdf."
+      print ("Writing plot to " + os.getcwd() + "/" + os.path.basename(__file__) + ".pdf.")
       plt.savefig(os.path.basename(__file__) + ".pdf")
-#######################
 
 
 
-print "Time to run sfincsScanPlot_2: ", time.time() - start_time
+print ("Time to run sfincsScanPlot_2: ", time.time() - start_time)

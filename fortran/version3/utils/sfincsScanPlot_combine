@@ -13,10 +13,10 @@ import inspect, os
 import pickle
 import sys, subprocess
 
-print "This is "+ inspect.getfile(inspect.currentframe())
+print ("This is "+ inspect.getfile(inspect.currentframe()))
 
 if len(sys.argv)<2:
-    print "Error! You must call this script with command-line arguments to indicate the directories to plot."
+    print ("Error! You must call this script with command-line arguments to indicate the directories to plot.")
     exit(1)
 
 matplotlib.rcParams.update({'font.size': 8})
@@ -43,9 +43,9 @@ originalDirectory = os.getcwd()
 for whichFile in range(1,len(sys.argv)):
     try:
         filename = sys.argv[whichFile]+'/sfincsScan.dat'
-        print "*************************************************"
-        print "Processing directory "+sys.argv[whichFile]
-        print "*************************************************"
+        print ("*************************************************")
+        print ("Processing directory "+sys.argv[whichFile])
+        print ("*************************************************")
 
         os.chdir(sys.argv[whichFile])
         directories.append(os.getcwd())
@@ -95,20 +95,20 @@ for whichFile in range(1,len(sys.argv)):
 
     if whichFile>1:
         if scanTypes[-1] != scanTypes[0]:
-            print "ERROR: scanType is not consistent among the directories you requested."
+            print ("ERROR: scanType is not consistent among the directories you requested.")
             exit(1)
         if numQuantities[-1] != numQuantities[0]:
-            print "ERROR: numQuantities is not consistent among the directories you requested."
+            print ("ERROR: numQuantities is not consistent among the directories you requested.")
             exit(1)
         if numRows[-1] != numRows[0]:
-            print "ERROR: numRows is not consistent among the directories you requested."
+            print ("ERROR: numRows is not consistent among the directories you requested.")
             exit(1)
         if numCols[-1] != numCols[0]:
-            print "ERROR: numCols is not consistent among the directories you requested."
+            print ("ERROR: numCols is not consistent among the directories you requested.")
             exit(1)
         for i in range(numQuantities[0]):
             if xlabels[-1][i] != xlabels[0][i]:
-                print "ERROR: xlabels are not consistent among the directories you requested."
+                print ("ERROR: xlabels are not consistent among the directories you requested.")
                 exit(1)
 
 # ***************************************************
