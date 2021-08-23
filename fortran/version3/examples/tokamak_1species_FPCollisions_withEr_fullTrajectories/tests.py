@@ -5,7 +5,9 @@
 # run directly, and it is also called when "make test" is run from the
 # main SFINCS directory.
 
-execfile('../testsCommon.py')
+#execfile('../testsCommon.py')
+exec(open('../testsCommon.py').read())
+
 
 desiredTolerance = 0.001
 
