@@ -4,17 +4,18 @@
 # From the command line, you should call sfincsScan instead.
 
 import os, inspect
+from builtins import input
 
-print "This is "+ inspect.getfile(inspect.currentframe())
-print "Beginning a scan of E_r."
+#print ("This is "+ inspect.getfile(inspect.currentframe()))
+this_filename = "sfincsScan_2"
+print ("This is "+ this_filename)
+print ("Beginning a scan of E_r.")
 
-## inputRadialCoordinateForGradients = readVariable("inputRadialCoordinateForGradients","int") ##Commented by AM 2015-12
+## inputRadialCoordinateForGradients = readVariable("inputRadialCoordinateForGradients","int")
 
-##Added by AM 2015-12##
 inputRadialCoordinateForGradients = readVariable("inputRadialCoordinateForGradients","int", False)
 if inputRadialCoordinateForGradients == None :
     inputRadialCoordinateForGradients = readDefault("inputRadialCoordinateForGradients","int")
-#######################
 
 NErs = readScanVariable("NErs","int")
 if inputRadialCoordinateForGradients==0:
@@ -28,7 +29,7 @@ elif inputRadialCoordinateForGradients==3:
 elif inputRadialCoordinateForGradients==4:
     varName = "Er"
 else:
-    print "Error! Invalid inputRadialCoordinateForGradients."
+    print ("Error! Invalid inputRadialCoordinateForGradients.")
     exit(1)
 
 generalEr_min = readScanVariable(varName+"Min","float")
@@ -36,9 +37,9 @@ generalEr_max = readScanVariable(varName+"Max","float")
 
 generalErs = linspace(generalEr_max, generalEr_min, NErs)
 
-print "Radial electric field is specified using "+varName
-print "Here are the "+str(len(generalErs))+" values we will use for this quantity:"
-print generalErs
+print ("Radial electric field is specified using "+varName)
+print ("Here are the "+str(len(generalErs))+" values we will use for this quantity:")
+print (generalErs)
 
 directories = [varName+"{:.4g}".format(generalEr) for generalEr in generalErs]
 generalErs_copy = list(generalErs)
@@ -49,25 +50,26 @@ directories_copy = list(directories)
 for i in range(len(generalErs_copy)):
     directory = directories_copy[i]
     if os.path.exists(directory):
-        print "Warning: directory "+directory+" already exists, so skipping this run."
+        print ("Warning: directory "+directory+" already exists, so skipping this run.")
         generalErs.remove(generalErs_copy[i])
         directories.remove(directory)
 
-print
-print "Here are the directories that will be created:"
-print directories
+print ()
+print ("Here are the directories that will be created:")
+print (directories)
 
 if waitBeforeSubmitting:
     while True:
-        proceed=raw_input("Should I go ahead and launch these "+str(len(generalErs))+" jobs? [y/n] ")
+        #proceed=raw_input("Should I go ahead and launch these "+str(len(generalErs))+" jobs? [y/n] ")
+        proceed=input("Should I go ahead and launch these "+str(len(generalErs))+" jobs? [y/n] ")
         if proceed=="y" or proceed=="n":
             break
-        print "You must enter either y or n."
+        print ("You must enter either y or n.")
 
     if proceed=="n":
         exit(0)
 
-print "launching jobs..."
+print ("launching jobs...")
 
 # Read in the job.sfincsScan file:
 with open(jobFilename, 'r') as f:
@@ -75,11 +77,11 @@ with open(jobFilename, 'r') as f:
 
 for runNum in range(len(generalErs)):
     directory = directories[runNum]
-    print "Beginning to handle job "+str(runNum+1)+" of "+str(len(generalErs))+": "+directory
+    print ("Beginning to handle job "+str(runNum+1)+" of "+str(len(generalErs))+": "+directory)
 
     # To be extra safe, check again to see if the directory exists.
     if os.path.exists(directory):
-        print "Warning: directory "+directory+" already exists."
+        print ("Warning: directory "+directory+" already exists.")
         i = -1
         while True:
             i += 1
@@ -100,19 +102,16 @@ for runNum in range(len(generalErs)):
 
     # Now copy the input.namelist file:
 
-    ##The following section rewritten by AM 2015-12##
     #################################################
 
     f = open(filename,"w")
     for line in inputFile:
         if namelistLineContains(line,varName):
-##            line = "  "+varName+" = "+str(Ers[runNum])+" ! Set by sfincsScan_2.\n" ##Commented by AM
-            continue ##Added by AM
+##            line = "  "+varName+" = "+str(Ers[runNum])+" ! Set by sfincsScan_2.\n" 
+            continue
 
-        ##Added by AM 2015-12##
         if line.strip().find("&physicsParameters") == 0 :
             line += "  "+varName+" = "+str(generalErs[runNum])+" ! Set by sfincsScan_2.\n"
-        #######################
 
         f.write(line)
     f.close()
@@ -125,12 +124,12 @@ for runNum in range(len(generalErs)):
         # I'm not sure why python requires this. 
         submissionResult = subprocess.call(submitCommand.split(" "))
     except:
-        print "ERROR! Unable to submit run "+directory+" for some reason."
+        print ("ERROR! Unable to submit run "+directory+" for some reason.")
         raise
     else:
         if submissionResult==0:
-            print "No errors submitting job "+directory
+            print ("No errors submitting job "+directory)
         else:
-            print "Nonzero exit code returned when trying to submit job "+directory
+            print ("Nonzero exit code returned when trying to submit job "+directory)
 
     os.chdir("..")

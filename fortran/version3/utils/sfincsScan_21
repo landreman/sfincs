@@ -26,23 +26,26 @@
  
 
 import os, inspect
+from builtins import input
 
-print "This is "+ inspect.getfile(inspect.currentframe())
-print "Beginning a runspec.dat scan."
+#print ("This is "+ inspect.getfile(inspect.currentframe()))
+this_filename = "sfincsScan_21"
+print ("This is "+ this_filename)
+print ("Beginning a runspec.dat scan.")
 
 ################## Subroutine to read the runspec file #################################
 def readRunspec(therunspecFilename):
     def numberatend(strng):
         thenumb=0
         if strng[-2]=="_":
-            try: #Added by AM 2017-01
+            try:
                 thenumb=int(strng[-1])
-            except: #Added by AM 2017-01
-                thenumb=0 #Added by AM 2017-01
+            except:
+                thenumb=0
         return thenumb
 
     if not os.path.isfile(therunspecFilename):
-        print "Error! The file "+therunspecFilename+" must be present in the directory from which you call sfincsScan, or the full path must be given."
+        print ("Error! The file "+therunspecFilename+" must be present in the directory from which you call sfincsScan, or the full path must be given.")
         exit(1)
     # Load the runspec file:
     with open(therunspecFilename, 'r') as rsf:
@@ -60,7 +63,7 @@ def readRunspec(therunspecFilename):
     for datalineind in range(len(datalines)):
         thesplittedstring=datalines[datalineind].split()
         if not len(thesplittedstring)==noElems:
-            print "Error! In the runspec file, the number of variable names does not match the number of variables!"
+            print ("Error! In the runspec file, the number of variable names does not match the number of variables!")
             exit(1)
         for parind in range(noElems):
            thestring=thesplittedstring[parind]
@@ -84,11 +87,11 @@ def readRunspec(therunspecFilename):
 
 ##############################################################################
 
-##try: ##Commented by AM 2015-12
-##    runspecFilename = readScanVariable("runSpecFile","string",required=False,stringValueCaseSensitive=True) ##Commented by AM 2015-12
-runspecFilename = readScanVariable("runSpecFile","string",required=False,stringValueCaseSensitive=True) ##Added by AM 2015-12
-#except: ##Commented by AM 2015-12
-if runspecFilename == None : ##Added by AM 2015-12
+##try: 
+##    runspecFilename = readScanVariable("runSpecFile","string",required=False,stringValueCaseSensitive=True) 
+runspecFilename = readScanVariable("runSpecFile","string",required=False,stringValueCaseSensitive=True) 
+#except: 
+if runspecFilename == None : 
     # Default
     runspecFilename = "runspec.dat"
 
@@ -97,7 +100,6 @@ runparamnames, runparams, runnumbersatend, runvectorlength=readRunspec(runspecFi
 
 numRunsInScan=len(runparams)
 
-##Added by AM 2015-12##
 ##Check that variables are defined in SFINCS input file
 for paramname in runparamnames:
     if len(str(paramname).split("_")) != 1 :
@@ -116,23 +118,24 @@ for paramname in runparamnames:
 #######################
 
 # First, print the data from runspec.dat to the screen
-print ' '+' '.join('%9s' % v for v in runparamnames)
+print (' '+' '.join('%9s' % v for v in runparamnames))
 for lind in range(numRunsInScan):
     oneline=""
     for parind in range(len(runparamnames)):
         theformat= "%"+str(max(9,len(runparamnames[parind])))+".3e"
         oneline=oneline+' '+theformat % runparams[lind][parind]
-    print oneline
+    print (oneline)
 
 while True:
-    proceed=raw_input("Should I go ahead and launch these "+str(numRunsInScan)+" jobs? [y/n] ")
+    #proceed=raw_input("Should I go ahead and launch these "+str(numRunsInScan)+" jobs? [y/n] ")
+    proceed=input("Should I go ahead and launch these "+str(numRunsInScan)+" jobs? [y/n] ")
     if proceed=="y" or proceed=="n":
         break
-    print "You must enter either y or n."
+    print ("You must enter either y or n.")
 
 if proceed=="n":
     exit(0)
-print "launching jobs..."
+print ("launching jobs...")
 
 
 # Read in the job.sfincsScan file:
@@ -152,7 +155,7 @@ for runNum in range(numRunsInScan):
    os.chdir(dirName)
 
    jobName="Sfnx."+dirName
-   print "Beginning to handle job "+str(runNum+1)+" of "+str(numRunsInScan)+": "+dirName
+   print ("Beginning to handle job "+str(runNum+1)+" of "+str(numRunsInScan)+": "+dirName)
 
    # Copy the job.sfincsScan file:
    thisJobFile = list(jobFile)
@@ -242,12 +245,12 @@ for runNum in range(numRunsInScan):
         # I'm not sure why python requires this. 
         submissionResult = subprocess.call(submitCommand.split(" "))
    except:
-        print "ERROR! Unable to submit run "+jobName+" for some reason."
+        print ("ERROR! Unable to submit run "+jobName+" for some reason.")
         raise
    else:
         if submissionResult==0:
-            print "No errors submitting job "+jobName
+            print ("No errors submitting job "+jobName)
         else:
-            print "Nonzero exit code returned when trying to submit job "+jobName
+            print ("Nonzero exit code returned when trying to submit job "+jobName)
 
    os.chdir("..")

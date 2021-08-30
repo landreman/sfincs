@@ -12,9 +12,10 @@ import subprocess
 import pickle
 import sys
 
-print "This is "+ inspect.getfile(inspect.currentframe())
+#print ("This is "+ inspect.getfile(inspect.currentframe()))
+this_filename = "sfincsScanPlot_5"
+print ("This is "+ this_filename)
 
-##Added by AM 2015-12##
 makePDF = False
 for arg in sys.argv:
    if arg.lower()=='pdf':
@@ -42,18 +43,17 @@ root_types = []
 FSABHat2s = []
 
 # Load some other required subroutines:
-execfile(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_common")
+#execfile(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_common")
+exec(open(os.path.dirname(os.path.abspath(__file__))+"/sfincsScan_common").read())
 
 # Determine which variable was scanned by looking at input.namelist in the main directory:
 with open(inputFilename, 'r') as f:
     inputFile = f.readlines()
 
-## inputRadialCoordinate = readVariable("inputRadialCoordinate","int") ##Commented by AM 2015-12
-##Added by AM 2015-12##
+## inputRadialCoordinate = readVariable("inputRadialCoordinate","int") 
 inputRadialCoordinate = readVariable("inputRadialCoordinate","int", False) 
 if inputRadialCoordinate == None :
    inputRadialCoordinate = readDefault("inputRadialCoordinate","int")
-#######################
 
 if inputRadialCoordinate==0:
     radiusName = "psiHat"
@@ -64,7 +64,7 @@ elif inputRadialCoordinate==2:
 elif inputRadialCoordinate==3:
     radiusName = "rN"
 else:
-    print "Error! Invalid inputRadialCoordinate."
+    print ("Error! Invalid inputRadialCoordinate.")
     exit(1)
 
 #######################
@@ -83,7 +83,7 @@ elif inputRadialCoordinateForGradients==3:
 elif inputRadialCoordinateForGradients==4:
     generalErName = "Er"
 else:
-    print "Error! Invalid inputRadialCoordinateForGradients."
+    print ("Error! Invalid inputRadialCoordinateForGradients.")
     exit(1)
 
 originalDirectory = os.getcwd()
@@ -94,9 +94,9 @@ directories = sorted(filter(os.path.isdir, os.listdir(".")))
 isThisTheFirstRadius = True
 for directory in directories:
     try:
-        print "*************************************************"
-        print "Processing directory "+directory
-        print "*************************************************"
+        print ("*************************************************")
+        print ("Processing directory "+directory)
+        print ("*************************************************")
 
         fullDirectory = originalDirectory + "/" + directory
 
@@ -105,8 +105,8 @@ for directory in directories:
         # Call sfincsScan in the subdirectory.
         # The "noplot" below is just an arbitrary command-line argument, which suppresses plotting:
         #submitCommand = "sfincsScanPlot noplot"
-##        submitCommand = "sfincsScanPlot_2 noplot" ##Commented by AM 2015-12
-        submitCommand = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScanPlot_2 noplot" ##Added by AM 2015-12
+        #submitCommand = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScanPlot_2 noplot"
+        submitCommand = os.path.dirname(os.path.abspath(__file__))+"/sfincsScanPlot_2 noplot"
         subprocess.call(submitCommand.split(" "))
         os.chdir(originalDirectory)
 
@@ -114,7 +114,7 @@ for directory in directories:
         filename = "ambipolarSolutions.dat"
         fullFilename = fullDirectory+"/"+filename
         if not os.path.isfile(fullFilename):
-            print "Directory "+directory+" does not have a "+filename+" file. This may mean a solution has not (yet) been found for ambipolarity."
+            print ("Directory "+directory+" does not have a "+filename+" file. This may mean a solution has not (yet) been found for ambipolarity.")
             continue
 
         inputFile = open(fullFilename,'rb')
@@ -153,15 +153,15 @@ for directory in directories:
     for i in range(oldNumQuantities):
         ydata[i+1+2*Nspecies] = ydata[i+1+2*Nspecies] + list(latestOutputs[i])
 
-    print "*************************************************"
-    print "Finished with directory "+directory
-    print "*************************************************"
+    print ("*************************************************")
+    print ("Finished with directory "+directory)
+    print ("*************************************************")
 
 if Nradii<1:
-    print "Unable to read data for an ambipolar solution at any radius. Stopping."
+    print ("Unable to read data for an ambipolar solution at any radius. Stopping.")
     exit(0)
 
-print "Successfully read data for the ambipolar solutions at "+str(Nradii)+" radii."
+print ("Successfully read data for the ambipolar solutions at "+str(Nradii)+" radii.")
 #if Nradii<2:
 #    print "Since fewer than 2 radii are available, a plot to summarize results vs radius will not be generated."
 #    exit(0)
@@ -174,7 +174,7 @@ for i in range(Nspecies):
 
 ylabels += ["Ambipolar "+generalErName] + data["ylabels"]
 
-print "root_types:",root_types
+print ("root_types:",root_types)
 
 # ***************************************************
 # Plot actual vs "wish" radii
@@ -288,7 +288,8 @@ data = {'scanType':scanType, 'numQuantities':numQuantities, 'numRows':numRows,'n
 pickle.dump(data,outputFile)
 outputFile.close()
 
-titleString = "Plot generated by "+ inspect.getfile(inspect.currentframe()) + "\nRun in "+os.getcwd()
+#titleString = "Plot generated by "+ inspect.getfile(inspect.currentframe()) + "\nRun in "+os.getcwd()
+titleString = "Plot generated by "+ this_filename + "\nRun in "+os.getcwd()
 ax = fig.add_axes([0,0,1,1], frameon=False)
 ax.text(0.5,0.99,titleString,horizontalalignment='center',verticalalignment='top')
 plt.tight_layout()
@@ -297,12 +298,10 @@ plt.tight_layout()
 if len(sys.argv) == 1:
     plt.show()
 
-##Added by AM 2015-12##
 if makePDF:
    if len(sys.argv)>2 : #Use the substituted name as file name
-      print "Writing plot to " + os.getcwd() + "/" + sys.argv[2] + ".pdf."
+      print ("Writing plot to " + os.getcwd() + "/" + sys.argv[2] + ".pdf.")
       plt.savefig(sys.argv[2] + ".pdf")
    else: #Use script name as file name
-      print "Writing plot to " + os.getcwd() + "/" + os.path.basename(__file__) + ".pdf."
+      print ("Writing plot to " + os.getcwd() + "/" + os.path.basename(__file__) + ".pdf.")
       plt.savefig(os.path.basename(__file__) + ".pdf")
-#######################

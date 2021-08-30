@@ -20,8 +20,10 @@ from scipy import interpolate
 from scipy.io import netcdf
 import matplotlib.pyplot as plt
 import matplotlib
-import sys ##Added by AM 2016-12
+import sys
 from math import pi, sqrt
+
+this_filename = "radialScans"
 
 #######################################################################################
 # There are 2 main parts to this script:
@@ -42,7 +44,7 @@ def getRadialCoordinateName(coordinate):
     elif coordinate == 3:
         return "rN"
     else:
-        print "Error! Invalid radial coordinate"
+        print ("Error! Invalid radial coordinate")
         exit(1)
 
 def convertRadiiToPsiN(coordinate, oldRadii):
@@ -62,7 +64,7 @@ def convertRadiiToPsiN(coordinate, oldRadii):
         # rN
         return [x*x for x in oldRadii]
     else:
-        print "ERROR! Should not get here."
+        print ("ERROR! Should not get here.")
         exit(1)
 
 def convertRadiiFromPsiN(coordinate, oldRadii):
@@ -82,7 +84,7 @@ def convertRadiiFromPsiN(coordinate, oldRadii):
         # rN
         return [sqrt(x) for x in oldRadii]
     else:
-        print "ERROR! Should not get here."
+        print ("ERROR! Should not get here.")
         exit(1)
 
 def convertGradientFromddpsiN(coordinate, radii_psiN):
@@ -100,7 +102,7 @@ def convertGradientFromddpsiN(coordinate, radii_psiN):
         # rN
         return [2*sqrt(psiN) for psiN in radii_psiN]
     else:
-        print "ERROR! Should not get here."
+        print ("ERROR! Should not get here.")
         exit(1)
 
 def convertGradientToddpsiN(coordinate, radii_psiN):
@@ -115,22 +117,22 @@ def convertGradientToddpsiN(coordinate, radii_psiN):
 #######################################################################################
 
 def roundRadii(radii,available_psiN):
-    print "Rounding requested radii to match available radii in the magnetic equilibrium file."
+    print ("Rounding requested radii to match available radii in the magnetic equilibrium file.")
     # Both VMEC and .bc formats provide a grid of psiN.
     availableRadii = convertRadiiFromPsiN(inputRadialCoordinate,available_psiN)
     if inputRadialCoordinate != 1:
-        print "Available radii for the selected inputRadialCoordinate:"
-        print availableRadii
+        print ("Available radii for the selected inputRadialCoordinate:")
+        print (availableRadii)
     roundedRadii = []
     for radius in radii:
         errors = [(radius-x)**2 for x in availableRadii]
         roundedRadii.append(availableRadii[errors.index(min(errors))])
-    print "Radii before rounding:"
-    print radii
+    print ("Radii before rounding:")
+    print (radii)
     # Eliminate any duplicates:
     radii = sorted(list(set(roundedRadii)))
-    print "Radii after rounding:"
-    print radii
+    print ("Radii after rounding:")
+    print (radii)
     return radii
         
 
@@ -138,23 +140,19 @@ geometryScheme = readVariable("geometryScheme","int")
 if geometryScheme==5 or geometryScheme==11 or geometryScheme==12:
     pass
 else:
-    print "Error! For scans over radius, you must use geometryScheme = 5, 11, or 12."
+    print ("Error! For scans over radius, you must use geometryScheme = 5, 11, or 12.")
     exit(1)
 
 Nradius = readScanVariable("Nradius","int")
-##inputRadialCoordinate = readVariable("inputRadialCoordinate","int") ##Commented by AM 2015-12
-##Added by AM 2015-12##
+##inputRadialCoordinate = readVariable("inputRadialCoordinate","int")
 inputRadialCoordinate = readVariable("inputRadialCoordinate","int", False)
 if inputRadialCoordinate == None :
     inputRadialCoordinate = readDefault("inputRadialCoordinate","int")
-#######################
 
-##inputRadialCoordinateForGradients = readVariable("inputRadialCoordinateForGradients","int") ##Commented by AM 2015-12
-##Added by AM 2015-12## 
+##inputRadialCoordinateForGradients = readVariable("inputRadialCoordinateForGradients","int")
 inputRadialCoordinateForGradients = readVariable("inputRadialCoordinateForGradients","int", False)
 if inputRadialCoordinateForGradients == None :
     inputRadialCoordinateForGradients = readDefault("inputRadialCoordinateForGradients","int")
-#######################
 
 radiusName             = getRadialCoordinateName(inputRadialCoordinate)
 radiusNameForGradients = getRadialCoordinateName(inputRadialCoordinateForGradients)
@@ -166,27 +164,27 @@ else:
 radius_min = readScanVariable(radiusName+"_min","float")
 radius_max = readScanVariable(radiusName+"_max","float")
 if radius_max < radius_min:
-    print "Error! Minimum requested radius must be <= maximum requested radius."
+    print ("Error! Minimum requested radius must be <= maximum requested radius.")
     exit(1)
 
 # Do some basic validation:
 if Nradius < 1:
-    print "Error! Nradius must be >= 1"
+    print ("Error! Nradius must be >= 1")
     exit(1)
 if inputRadialCoordinate==1 and radius_min<0:
-    print "Error! psiN_min must be >= 0."
+    print ("Error! psiN_min must be >= 0.")
     exit(1)
 elif inputRadialCoordinate==1 and radius_max > 1:
-    print "Error! psiN_max must be <= 1."
+    print ("Error! psiN_max must be <= 1.")
     exit(1)
 elif inputRadialCoordinate==2 and radius_min<0:
-    print "Error! rHat_min must be >= 0."
+    print ("Error! rHat_min must be >= 0.")
     exit(1)
 elif inputRadialCoordinate==3 and radius_min<0:
-    print "Error! rN_min must be >= 0."
+    print ("Error! rN_min must be >= 0.")
     exit(1)
 elif inputRadialCoordinate==3 and radius_max > 1:
-    print "Error! rN_max must be <= 1."
+    print ("Error! rN_max must be <= 1.")
     exit(1)
 
 # First set up a simple uniformly spaced grid.  We may shift these points later.
@@ -212,22 +210,20 @@ if geometryScheme==11 or geometryScheme==12:
     header = equilibriumFileLines[lineNum+1].split()
     psiAHat = float(header[4])/(2*pi)
     aHat = float(header[5])
-    print "psiAHat = ",psiAHat
-    print "aHat = ",aHat
+    print ("psiAHat = ",psiAHat)
+    print ("aHat = ",aHat)
     for whichLine in range(lineNum+2,len(equilibriumFileLines)):
         if "iota" in equilibriumFileLines[whichLine]:
             available_psiN.append(float(equilibriumFileLines[whichLine+2].split()[0]))
-    print "available_psiN:"
-    print available_psiN
+    print ("available_psiN:")
+    print (available_psiN)
     try:
         vmecRadialOption = readVariable('vmecRadialOption','int',required=False)
-        ##Added by AM 2015-12##
         if vmecRadialOption == None :
-            print "Unable to read vmecRadialOption from input.namelist, so using the default value 1"
+            print ("Unable to read vmecRadialOption from input.namelist, so using the default value 1")
             vmecRadialOption = 1
-        #######################
     except:
-        print "Unable to read vmecRadialOption from input.namelist, so using the default value 1"
+        print ("Unable to read vmecRadialOption from input.namelist, so using the default value 1")
         vmecRadialOption = 1
 
     if vmecRadialOption==0:
@@ -241,9 +237,9 @@ if geometryScheme==5:
     try:
         f = netcdf.netcdf_file(equilibriumFile,'r',mmap=False)
     except:
-        print "ERROR! Unable to read VMEC wout equilibrium file."
-        print "Presently this script assumes the VMEC file is netCDF format rather than ASCII format,"
-        print "so this error may arise if you are using an ASCII wout file."
+        print ("ERROR! Unable to read VMEC wout equilibrium file.")
+        print ("Presently this script assumes the VMEC file is netCDF format rather than ASCII format,")
+        print ("so this error may arise if you are using an ASCII wout file.")
         raise
 
     vmec_phi = f.variables['phi'][()]
@@ -251,18 +247,16 @@ if geometryScheme==5:
     aHat = f.variables['Aminor_p'][()]
     f.close()
     psiAHat = vmec_phi[-1]/(2*pi)
-    print "vmec-derived aHat: ",aHat
-    print "vmec-derived psiAHat: ",psiAHat
+    print ("vmec-derived aHat: ",aHat)
+    print ("vmec-derived psiAHat: ",psiAHat)
 
     try:
         vmecRadialOption = readVariable('vmecRadialOption','int',required=False)
-        ##Added by AM 2015-12##
         if vmecRadialOption == None :
-            print "Unable to read vmecRadialOption from input.namelist, so using the default value 1"
+            print ("Unable to read vmecRadialOption from input.namelist, so using the default value 1")
             vmecRadialOption = 1
-        #######################
     except:
-        print "Unable to read vmecRadialOption from input.namelist, so using the default value 1"
+        print ("Unable to read vmecRadialOption from input.namelist, so using the default value 1")
         vmecRadialOption = 1
 
     if vmecRadialOption==0:
@@ -272,26 +266,26 @@ if geometryScheme==5:
         # Force use of vmec's half mesh
         dpsi = vmec_phi[1]-vmec_phi[0]
         available_psiN = [(x - dpsi/2)/vmec_phi[-1] for x in vmec_phi[1:]]
-        print "available_psiN:"
-        print available_psiN
+        print ("available_psiN:")
+        print (available_psiN)
         radii = roundRadii(radii, available_psiN)
     elif vmecRadialOption==2:
         # Force use of vmec's full mesh
         available_psiN = [x / vmec_phi[-1] for x in vmec_phi]
-        print "available_psiN:"
-        print available_psiN
+        print ("available_psiN:")
+        print (available_psiN)
         radii = roundRadii(radii, available_psiN)
     else:
-        print "Error! Invalid vmecRadialOption"
+        print ("Error! Invalid vmecRadialOption")
 
 
 # More validation:
 if inputRadialCoordinate==2 and radius_max > aHat:
-    print "Error! rHat_max must be <= aHat."
+    print ("Error! rHat_max must be <= aHat.")
     exit(1)
 
-print "Here are the values of "+radiusName+" we will use for this scan:"
-print radii
+print ("Here are the values of "+radiusName+" we will use for this scan:")
+print (radii)
 
 directories = [radiusName+"_"+"{:.4g}".format(radius) for radius in radii]
 
@@ -308,7 +302,7 @@ if skipExistingDirectories:
     for i in range(len(radii_copy)):
         directory = directories_copy[i]
         if os.path.exists(directory):
-            print "Warning: directory "+directory+" already exists, so skipping this run."
+            print ("Warning: directory "+directory+" already exists, so skipping this run.")
             radii.remove(radii_copy[i])
             directories.remove(directory)
 
@@ -331,9 +325,9 @@ Nspecies = len(Zs)
 for i in range(Nspecies):
     Zs[i] = float(Zs[i])
 if Nspecies != len(readVariable('mHats','string').split()):
-    print "Error! Number of species is not consistent among Zs and mHats in input.namelist."
+    print ("Error! Number of species is not consistent among Zs and mHats in input.namelist.")
     exit(1)
-print "Number of species determined from the input.namelist file: ",Nspecies
+print ("Number of species determined from the input.namelist file: ",Nspecies)
 
 def convertGradients():
     # Given d(n or T)HatdpsiN, multiply by gradientFactor to convert to dnHatd(inputRadialCoordinateForGradients) 
@@ -484,7 +478,8 @@ def plotProposedProfiles():
         plt.xlabel(radiusName)
         plt.title("dTHatd"+radiusNameForGradients+", species "+str(ispecies+1)+" (Z="+str(Zs[ispecies])+")")
 
-    titleString = "Profiles to use for radial scan.\nPlot generated by "+ inspect.getfile(inspect.currentframe()) + "\nRun in "+os.getcwd()
+    #titleString = "Profiles to use for radial scan.\nPlot generated by "+ inspect.getfile(inspect.currentframe()) + "\nRun in "+os.getcwd()
+    titleString = "Profiles to use for radial scan.\nPlot generated by "+ this_filename + "\nRun in "+os.getcwd()
     ax = fig.add_axes([0,0,1,1], frameon=False)
     ax.text(0.5,0.99,titleString,horizontalalignment='center',verticalalignment='top')
     plt.show(block=False)
@@ -494,8 +489,9 @@ try:
     with open(profilesFilename, 'r') as f:
         profilesFile = f.readlines()
 except:
-    print "ERROR! Unable to read profiles file."
-    raise
+    print ("ERROR! Unable to read profiles file.")
+    #raise
+    sys.exit(1)
 
 dnHatdradii = []
 dTHatdradii = []
@@ -517,8 +513,8 @@ generalEr_max_fine = []
 generalEr_min = []
 generalEr_min_fine = []
 
-MinFloat_array = pow(10, sys.float_info.min_10_exp)*numpy.ones(len(radii_psiN)) ##Added by AM 2016-12
-MinFloat_array_fine = pow(10, sys.float_info.min_10_exp)*numpy.ones(len(psiN_fine)) ##Added by AM 2016-12
+MinFloat_array = pow(10, sys.float_info.min_10_exp)*numpy.ones(len(radii_psiN))
+MinFloat_array_fine = pow(10, sys.float_info.min_10_exp)*numpy.ones(len(psiN_fine))
 
 profilesScheme = readScanVariable("profilesScheme","int")
 if profilesScheme == 1:
@@ -543,14 +539,14 @@ if profilesScheme == 1:
             # This must be the first non-comment line in the file.
             readRadialCoordinateYet = True
             if line != '0' and line != '1' and line != '2' and line != '3':
-                print "ERROR!  The first non-comment line in the 'profiles' file must be an integer corresponding to the radial coordinate (0=psiHat, 1=psiN, 2=rHat, or 3=rN)"
+                print ("ERROR!  The first non-comment line in the 'profiles' file must be an integer corresponding to the radial coordinate (0=psiHat, 1=psiN, 2=rHat, or 3=rN)")
                 exit(1)
             profilesRadialCoordinate = int(line)
             continue
-        print line.split()
+        print (line.split())
         if Nspecies*2+4 != len(line.split()):
-            print "Error! Each line in the profiles file should have 2*Nspecies+4 values. The following line seems to have the wrong number of values:"
-            print line
+            print ("Error! Each line in the profiles file should have 2*Nspecies+4 values. The following line seems to have the wrong number of values:")
+            print (line)
             exit(1)
         lineSplit = line.split()
         try:
@@ -562,17 +558,17 @@ if profilesScheme == 1:
                 data_nHats[i].append(float(lineSplit[2*i+4]))
                 data_THats[i].append(float(lineSplit[2*i+5]))
         except:
-            print "Error parsing the following line of the profiles file:"
-            print line
+            print ("Error parsing the following line of the profiles file:")
+            print (line)
             raise
 
-    print "Here are the radial coordinates read from the profiles file:"
-    print data_oldRadius
+    print ("Here are the radial coordinates read from the profiles file:")
+    print (data_oldRadius)
     for i in range(Nspecies):
-        print "Here comes the data for nHat of species "+str(i+1)+" read from the profiles file:"
-        print data_nHats[i]
-        print "Here comes the data for THat of species "+str(i+1)+" read from the profiles file:"
-        print data_THats[i]
+        print ("Here comes the data for nHat of species "+str(i+1)+" read from the profiles file:")
+        print (data_nHats[i])
+        print ("Here comes the data for THat of species "+str(i+1)+" read from the profiles file:")
+        print (data_THats[i])
 
     # Convert the radii used in the profiles file into inputRadialCoordinate.
     # (We do this in 2 steps, via psiN)
@@ -600,27 +596,27 @@ if profilesScheme == 1:
         interpolator = interpolate.splrep(data_psiN, data_nHats[ispecies])
         if len(radii)>0:
             # The if/else block is here because interpolate.splev fails if new grid is empty.
-            ##nHats.append(interpolate.splev(radii_psiN,interpolator, der=0)) ##Commented by AM 2016-12
-            nHats.append(numpy.maximum(interpolate.splev(radii_psiN,interpolator, der=0), MinFloat_array)) ##Added by AM 2016-12 (to avoid negative density)
+            ##nHats.append(interpolate.splev(radii_psiN,interpolator, der=0))
+            nHats.append(numpy.maximum(interpolate.splev(radii_psiN,interpolator, der=0), MinFloat_array)) ##(to avoid negative density)
             dnHatdpsiN.append(interpolate.splev(radii_psiN,interpolator, der=1))
         else:
             nHats.append([]) 
             dnHatdradii.append([])
-        ##nHats_fine.append(interpolate.splev(psiN_fine,interpolator, der=0)) ##Commented by AM 2016-12
-        nHats_fine.append(numpy.maximum(interpolate.splev(psiN_fine,interpolator, der=0), MinFloat_array_fine)) ##Added by AM 2016-12 (to avoid negative density)
+        ##nHats_fine.append(interpolate.splev(psiN_fine,interpolator, der=0))
+        nHats_fine.append(numpy.maximum(interpolate.splev(psiN_fine,interpolator, der=0), MinFloat_array_fine)) ##(to avoid negative density)
         dnHatdpsiN_fine.append(interpolate.splev(psiN_fine,interpolator, der=1))
 
         interpolator = interpolate.splrep(data_psiN, data_THats[ispecies])
         if len(radii)>0:
             # The if/else block is here because interpolate.splev fails if new grid is empty.
-            ##THats.append(interpolate.splev(radii_psiN,interpolator, der=0)) ##Commented by AM 2016-12
-            THats.append(numpy.maximum(interpolate.splev(radii_psiN,interpolator, der=0), MinFloat_array)) ##Added by AM 2016-12 (to avoid negative temperature)
+            ##THats.append(interpolate.splev(radii_psiN,interpolator, der=0))
+            THats.append(numpy.maximum(interpolate.splev(radii_psiN,interpolator, der=0), MinFloat_array)) ##(to avoid negative temperature)
             dTHatdpsiN.append(interpolate.splev(radii_psiN,interpolator, der=1))
         else:
             THats.append([])
             dTHatdpsiN.append([])
-        ##THats_fine.append(interpolate.splev(psiN_fine,interpolator, der=0)) ##Commented by AM 2016-12
-        THats_fine.append(numpy.maximum(interpolate.splev(psiN_fine,interpolator, der=0), MinFloat_array_fine)) ##Added by AM 2016-12 (to avoid negative temperature)
+        ##THats_fine.append(interpolate.splev(psiN_fine,interpolator, der=0))
+        THats_fine.append(numpy.maximum(interpolate.splev(psiN_fine,interpolator, der=0), MinFloat_array_fine)) ##(to avoid negative temperature)
         dTHatdpsiN_fine.append(interpolate.splev(psiN_fine,interpolator, der=1))
 
     interpolator = interpolate.splrep(data_psiN, data_NErs)
@@ -671,14 +667,14 @@ elif profilesScheme == 2:
             # This must be the first non-comment line in the file.
             readRadialCoordinateYet = True
             if line != '0' and line != '1' and line != '2' and line != '3':
-                print "ERROR!  The first non-comment line in the 'profiles' file must be an integer corresponding to the radial coordinate (0=psiHat, 1=psiN, 2=rHat, or 3=rN)"
+                print ("ERROR!  The first non-comment line in the 'profiles' file must be an integer corresponding to the radial coordinate (0=psiHat, 1=psiN, 2=rHat, or 3=rN)")
                 exit(1)
             profilesRadialCoordinate = int(line)
             continue
-        print line.split()
+        print (line.split())
         if Nspecies*2+3 != len(line.split()):
-            print "Error! Each line in the profiles file should have 2*Nspecies+3 values. The following line seems to have the wrong number of values:"
-            print line
+            print ("Error! Each line in the profiles file should have 2*Nspecies+3 values. The following line seems to have the wrong number of values:")
+            print (line)
             exit(1)
         lineSplit = line.split()
         try:
@@ -689,15 +685,15 @@ elif profilesScheme == 2:
                 data_nHats[i].append(float(lineSplit[2*i+3]))
                 data_THats[i].append(float(lineSplit[2*i+4]))
         except:
-            print "Error parsing the following line of the profiles file:"
-            print line
+            print ("Error parsing the following line of the profiles file:")
+            print (line)
             raise
 
     for i in range(Nspecies):
-        print "Here comes the polynomial coefficients for nHat of species "+str(i+1)+" read from the profiles file:"
-        print data_nHats[i]
-        print "Here comes the polynomial coefficients for THat of species "+str(i+1)+" read from the profiles file:"
-        print data_THats[i]
+        print ("Here comes the polynomial coefficients for nHat of species "+str(i+1)+" read from the profiles file:")
+        print (data_nHats[i])
+        print ("Here comes the polynomial coefficients for THat of species "+str(i+1)+" read from the profiles file:")
+        print (data_THats[i])
 
     # We need the regular and fine radius arrays in the coordinate used by the 'profiles' file:
     profilesRadii      = convertRadiiFromPsiN(profilesRadialCoordinate, radii_psiN)
@@ -750,11 +746,11 @@ elif profilesScheme == 2:
     plotProposedProfiles()
 
 else:
-    print "Error! profilesScheme must be set to 1 or 2."
+    print ("Error! profilesScheme must be set to 1 or 2.")
     exit(1)
 
 
-print
-print "Here are the directories that will be created:"
-print directories
+print ()
+print ("Here are the directories that will be created:")
+print (directories)
 

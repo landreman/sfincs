@@ -7,7 +7,7 @@
 import os, inspect, math, subprocess
 from sys import argv
 
-print "This is "+ inspect.getfile(inspect.currentframe())
+print ("This is "+ inspect.getfile(inspect.currentframe()))
 
 filename = "input.namelist"
 jobFilename = "job.sfincsScan"
@@ -16,9 +16,9 @@ commentCode = "!ss"
 try:
     sfincsSystem = os.environ["SFINCS_SYSTEM"]
 except:
-    print "Error! Unable to read the SFINCS_SYSTEM environment variable. Make sure you have set it."
+    print ("Error! Unable to read the SFINCS_SYSTEM environment variable. Make sure you have set it.")
     raise
-print "I detect SFINCS_SYSTEM = "+sfincsSystem
+print ("I detect SFINCS_SYSTEM = "+sfincsSystem)
 
 # If there are any command-line arguments, sfincsScan interprets this to mean it should not ask for permission before submitting jobs.
 if len(argv)>1:
@@ -27,7 +27,7 @@ else:
     waitBeforeSubmitting = True
 
 if not os.path.isfile(filename):
-    print "Error! The file "+filename+" must be present in the directory from which you call sfincsScan."
+    print ("Error! The file "+filename+" must be present in the directory from which you call sfincsScan.")
     exit(1)
 
 # For each system, 
@@ -84,7 +84,7 @@ elif sfincsSystem=="cobra":
         return original
 
 
-elif sfincsSystem=="eddy":
+elif sfincsSystem in ["eddy", "stellar"]:
     submitCommand = "sbatch "+jobFilename
     def nameJobFile(original,name):
         # Modify the job.sfincsScan file to change the name that appears in the queue.
@@ -99,8 +99,8 @@ elif sfincsSystem=="laptop" or sfincsSystem=="macports" or sfincsSystem=='ubuntu
         return original
 
 else:
-    print "Error! SFINCS_SYSTEM="+sfincsSystem+" is not yet recognized by sfincsScan"
-    print "You will need to edit sfincsScan to specify a few things for this system."
+    print ("Error! SFINCS_SYSTEM="+sfincsSystem+" is not yet recognized by sfincsScan")
+    print ("You will need to edit sfincsScan to specify a few things for this system.")
     exit(1)
 
 #if sfincsSystem=='edison':
@@ -117,8 +117,8 @@ else:
 
 #if jobfileRequired:
 if not os.path.isfile(jobFilename):
-    print "Error! A "+jobFilename+" file must be present in the directory from which you call sfincsScan (even for systems with no queue)."
-    print "Examples are available in /fortran/version3/utils/job.sfincsScan.xxx"
+    print ("Error! A "+jobFilename+" file must be present in the directory from which you call sfincsScan (even for systems with no queue).")
+    print ("Examples are available in /fortran/version3/utils/job.sfincsScan.xxx")
     exit(1)
 
 # Load the input file:
@@ -141,10 +141,10 @@ def logspace(min,max,nn):
         return [min]
 
     if min <= 0:
-        print "Error in logspace! min must be positive."
+        print ("Error in logspace! min must be positive.")
         exit(1)
     if max <= 0:
-        print "Error in logspace! max must be positive."
+        print ("Error in logspace! max must be positive.")
         exit(1)
     return [math.exp(x/(nn-1.0)*(math.log(max)-math.log(min))+math.log(min)) for x in range(nn)]
 
@@ -211,20 +211,22 @@ def namelistLineContainsSS(line,varName):
         return False
 
 # Load some other required subroutines:
-execfile(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_common")
+#execfile(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_common")
+exec(open(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_common").read())
 
 scanType = readScanVariable("scanType","int")
 
 scriptName =  os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_"+str(scanType) 
 
 if not os.path.isfile(scriptName):
-    print "Error! The file "+scriptName+" does not exist, meaning that plots for scanType = "+str(scanType)+ " are not yet supported."
+    print ("Error! The file "+scriptName+" does not exist, meaning that plots for scanType = "+str(scanType)+ " are not yet supported.")
     exit(1)
 
 try:
-    execfile(scriptName)
+    #execfile(scriptName)
+    exec(open(scriptName).read())
 except IOError:
-    print "Unable to run "+scriptName+" even though the file exists."
+    print ("Unable to run "+scriptName+" even though the file exists.")
     raise
 
-print "Good bye!"
+print ("Good bye!")
