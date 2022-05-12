@@ -98,11 +98,11 @@ module writeHDF5Output
   integer(HID_T) :: dspaceIDForIterationLambdasNmodes
   integer(HID_T) :: pForIterationLambdasNmodes
 
-  integer(HSIZE_T), dimension(6) :: dimForExport_f
-  integer(HSIZE_T), dimension(6) :: maxDimForExport_f
-  integer(HSIZE_T), dimension(6) :: dimForExport_fChunk
-  integer(HID_T) :: pForExport_f
-  integer(HID_T) :: dspaceIDForExport_f
+  integer(HSIZE_T), dimension(6) :: dimForIterationExport_f
+  integer(HSIZE_T), dimension(6) :: maxDimForIterationExport_f
+  integer(HSIZE_T), dimension(6) :: dimForIterationExport_fChunk
+  integer(HID_T) :: pForIterationExport_f
+  integer(HID_T) :: dspaceIDForIterationExport_f
 
   interface writeHDF5Field
      module procedure writeHDF5Integer
@@ -127,7 +127,7 @@ module writeHDF5Output
   integer, parameter :: ARRAY_ITERATION_THETA_ZETA = 102
   integer, parameter :: ARRAY_ITERATION_SPECIES_THETA_ZETA = 103
   integer, parameter :: ARRAY_ITERATION_SPECIES_SOURCES = 104
-  integer, parameter :: ARRAY_EXPORT_F = 105
+  integer, parameter :: ARRAY_ITERATION_EXPORT_F = 105
   integer, parameter :: ARRAY_ITERATION_SPECIES_X = 106
   integer, parameter :: ARRAY_ITERATION_SPECIES_LAMBDAS_NMODES = 107
   integer, parameter :: ARRAY_ITERATION_LAMBDAS_NMODES = 108
@@ -527,7 +527,7 @@ contains
        dimForIterationLambdasNmodes(1) = iterationNum
        dimForIterationSpeciesSources(1) = iterationNum
        dimForIterationSpeciesX(1) = iterationNum
-       dimForExport_f(1) = iterationNum
+       dimForIterationExport_f(1) = iterationNum
 
        call writeHDF5ExtensibleField(iterationNum, "densityPerturbation", densityPerturbation, &
             ARRAY_ITERATION_SPECIES_THETA_ZETA, &
@@ -755,11 +755,11 @@ contains
        call writeHDF5ExtensibleField(iterationNum, "elapsed time (s)", elapsedTime, ARRAY_ITERATION, "")
 
        if (export_full_f) then
-          call writeHDF5ExtensibleField(iterationNum,"full_f", full_f, ARRAY_EXPORT_F, &
+          call writeHDF5ExtensibleField(iterationNum,"full_f", full_f, ARRAY_ITERATION_EXPORT_F, &
                "Full distribution function for each species, normalized by nBar / (vBar ^3)")
        end if
        if (export_delta_f) then
-          call writeHDF5ExtensibleField(iterationNum,"delta_f", delta_f, ARRAY_EXPORT_F, &
+          call writeHDF5ExtensibleField(iterationNum,"delta_f", delta_f, ARRAY_ITERATION_EXPORT_F, &
                "Distribution function for each species, normalized by nBar / (vBar ^3), subtracting the leading-order Maxwellian")
        end if
 
@@ -909,14 +909,6 @@ if (RHSMode > 3 .and. RHSMode < 6) then
       dimForSpeciesLambdasModes(3) = NModesAdjoint
       call h5screate_simple_f(rank, dimForSpeciesLambdasModes, dspaceIDForSpeciesLambdasModes, HDF5Error)
     end if
-
-    rank = 5
-    dimForExport_f(1) = Nspecies
-    dimForExport_f(2) = N_export_f_theta
-    dimForExport_f(3) = N_export_f_zeta
-    dimForExport_f(4) = N_export_f_xi
-    dimForExport_f(5) = N_export_f_x
-    call h5screate_simple_f(rank, dimForExport_f, dspaceIDForExport_f, HDF5Error)
 
     ! ------------------------------------------------------------------
     ! Next come the arrays that expand with each iteration of SNES.
@@ -1096,34 +1088,34 @@ if (RHSMode > 3 .and. RHSMode < 6) then
     ! -------------------------------------
 
     rank = 6
-    dimForExport_f(1)      = 1
-    maxDimForExport_f(1)   = H5S_UNLIMITED_F
-    dimForExport_fChunk(1) = 1
+    dimForIterationExport_f(1)      = 1
+    maxDimForIterationExport_f(1)   = H5S_UNLIMITED_F
+    dimForIterationExport_fChunk(1) = 1
 
-    dimForExport_f(2)      = Nspecies
-    maxDimForExport_f(2)   = Nspecies
-    dimForExport_fChunk(2) = Nspecies
+    dimForIterationExport_f(2)      = Nspecies
+    maxDimForIterationExport_f(2)   = Nspecies
+    dimForIterationExport_fChunk(2) = Nspecies
 
-    dimForExport_f(3)      = N_export_f_theta
-    maxDimForExport_f(3)   = N_export_f_theta
-    dimForExport_fChunk(3) = N_export_f_theta
+    dimForIterationExport_f(3)      = N_export_f_theta
+    maxDimForIterationExport_f(3)   = N_export_f_theta
+    dimForIterationExport_fChunk(3) = N_export_f_theta
 
-    dimForExport_f(4)      = N_export_f_zeta
-    maxDimForExport_f(4)   = N_export_f_zeta
-    dimForExport_fChunk(4) = N_export_f_zeta
+    dimForIterationExport_f(4)      = N_export_f_zeta
+    maxDimForIterationExport_f(4)   = N_export_f_zeta
+    dimForIterationExport_fChunk(4) = N_export_f_zeta
 
-    dimForExport_f(5)      = N_export_f_xi
-    maxDimForExport_f(5)   = N_export_f_xi
-    dimForExport_fChunk(5) = N_export_f_xi
+    dimForIterationExport_f(5)      = N_export_f_xi
+    maxDimForIterationExport_f(5)   = N_export_f_xi
+    dimForIterationExport_fChunk(5) = N_export_f_xi
 
-    dimForExport_f(6)      = N_export_f_x
-    maxDimForExport_f(6)   = N_export_f_x
-    dimForExport_fChunk(6) = N_export_f_x
+    dimForIterationExport_f(6)      = N_export_f_x
+    maxDimForIterationExport_f(6)   = N_export_f_x
+    dimForIterationExport_fChunk(6) = N_export_f_x
 
-    call h5screate_simple_f(rank, dimForExport_f, dspaceIDForExport_f, &
-         HDF5Error, maxDimForExport_f)
-    call h5pcreate_f(H5P_DATASET_CREATE_F, pForExport_f, HDF5Error)
-    call h5pset_chunk_f(pForExport_f, rank, dimForExport_fChunk, HDF5Error)
+    call h5screate_simple_f(rank, dimForIterationExport_f, dspaceIDForIterationExport_f, &
+         HDF5Error, maxDimForIterationExport_f)
+    call h5pcreate_f(H5P_DATASET_CREATE_F, pForIterationExport_f, HDF5Error)
+    call h5pset_chunk_f(pForIterationExport_f, rank, dimForIterationExport_fChunk, HDF5Error)
 
   end subroutine createHDF5Structures
 
@@ -1173,7 +1165,7 @@ if (RHSMode > 3 .and. RHSMode < 6) then
        call h5pclose_f(pForIterationSpeciesX, HDF5Error)
        call h5pclose_f(pForIterationSpeciesLambdasNmodes, HDF5Error)
        call h5pclose_f(pForIterationLambdasNmodes, HDF5Error)
-       call h5pclose_f(pForExport_f, HDF5Error)
+       call h5pclose_f(pForIterationExport_f, HDF5Error)
 
        call h5close_f(HDF5Error)
 
@@ -1886,11 +1878,11 @@ subroutine writeHDF5Doubles3(arrayName, data, dspaceID, dims, description)
     offset = (/ iterationNum-1, 0, 0, 0, 0, 0 /)
 
     select case (arrayType)
-    case (ARRAY_EXPORT_F)
-       originalDspaceID = dspaceIDForExport_f
-       dim = dimForExport_f
-       dimForChunk = dimForExport_fChunk
-       chunkProperties = pForExport_f
+    case (ARRAY_ITERATION_EXPORT_F)
+       originalDspaceID = dspaceIDForIterationExport_f
+       dim = dimForIterationExport_f
+       dimForChunk = dimForIterationExport_fChunk
+       chunkProperties = pForIterationExport_f
 
        label1 = "export_f_x"
        if (export_f_xi_option==0) then

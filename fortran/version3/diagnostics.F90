@@ -972,8 +972,10 @@
 
     ! updateOutputFile should be called by all procs since it contains MPI_Barrier
     ! (in order to be sure the HDF5 file is safely closed before moving on to the next computation.)
-    if (RHSMode >1 .and. whichRHS==transportMatrixSize .and. RHSMode<4) then
-       call updateOutputFile(iterationNum, .true.)
+    ! if (RHSMode >1 .and. whichRHS==transportMatrixSize .and. RHSMode<4) then !This caused hdf5 outputs not to be initiated
+    !   call updateOutputFile(iterationNum, .true.)                            !because it is done only at iterationNum=1
+    if (RHSMode >1 .and. RHSMode<4) then                                    !HS new version 20220512
+       call updateOutputFile(iterationNum, (whichRHS==transportMatrixSize)) !HS new version 20220512
     else if (RHSMode==1 .and. (ambipolarSolve .eqv. .false.) .and. (debugAdjoint .eqv. .false.)) then
        call updateOutputFile(iterationNum, .false.)
     end if
