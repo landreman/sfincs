@@ -40,6 +40,8 @@ implicit none
       use globalVariables
       use petscmat
       use petscvec
+      use DKEMatrix, only : populateMatrix
+      use residual, only : DKERHS
 
       implicit none
 
@@ -48,16 +50,26 @@ implicit none
       Mat :: dMatrixdLambda
       Vec :: dRHSdLambda
       PetscErrorCode :: ierr
+      Vec :: dummyVec
 
       ! Allocate and populate dMatrixdLambda
-      call preallocateMatrix(dMatrixdLambda, 3)
-      call populatedMatrixdLambda(dMatrixdLambda, whichLambda, whichMode)
+      call preallocateMatrix(dMatrixdLambda, 6)
+      call populateMatrix(dMatrixdLambda, 6, dummyVec, whichLambda, whichMode)
+      ! call populatedMatrixdLambda(dMatrixdLambda, whichLambda, whichMode)
+      if (masterProc) then
+         print *,"Exited populateMatrix"
+      end if
+    
 
       ! Allocate and populate dRHSdLambda
       call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, dRHSdLambda, ierr)
       call VecSet(dRHSdLambda,zero,ierr)
-      call populatedRHSdLambda(dRHSdLambda, whichLambda, whichMode)
 
+      !!!!!!!!!!!!!!!!!!!
+      call DKERHS(dRHSdLambda, whichLambda, whichMode)
+      call VecAssemblyBegin(dRHSdLambda, ierr)
+      call VecAssemblyEnd(dRHSdLambda, ierr)
+      
       ! Multiply dRHSdLambda by -1
       call VecScale(dRHSdLambda, -1.0d+0, ierr)
       ! Performs adjointResidual = dMatrixdLambda*forwardSolution - dRHSdLambda
@@ -65,6 +77,13 @@ implicit none
 
       call VecDestroy(dRHSdLambda, ierr)
       call MatDestroy(dMatrixdLambda, ierr)
+      !!!!!!!!!!!!!!!!!!!
+
+      if (masterProc) then
+         print *,"set values, will exit evaluateAdjointInnerProductFactor"
+      end if
+    
+
 
     end subroutine
 
@@ -164,11 +183,12 @@ implicit none
             call VecDestroy(deltaFOnProc0,ierr)
             call VecDestroy(deltaGOnProc0,ierr)
           end if ! masterProc
-        else ! discrete
+       else ! discrete
           call VecDot(deltaF, deltaG, result, ierr)
-        end if
+       end if
 
-    end subroutine
+      end subroutine innerProduct
+      
 
     !> Evaluates the term in the sensitivity derivative of the heat flux
     !! which arise due to the sensitivity of the inner product and the integrating factor,
@@ -191,7 +211,7 @@ implicit none
     PetscScalar, pointer :: forwardSolutionArray(:)
     integer :: whichSpecies, whichLambda, whichMode, minSpecies, maxSpecies, itheta, izeta, L, ix, index, ispecies
     PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, dBHatdThetadLambda, dBHatdZetadLambda
-    PetscScalar :: factor
+    PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dinvDHatdLambda, factor
     PetscScalar, dimension(:), allocatable :: xIntegralFactor
     PetscScalar :: dBHatdLambda, dVPrimeHatdLambda
     integer :: m, n
@@ -329,7 +349,7 @@ end do
     PetscScalar, pointer :: deltaFArray(:)
     integer :: whichSpecies, whichLambda, whichMode, minSpecies, maxSpecies, itheta, izeta, L, ix, index, ispecies
     PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, dBHatdThetadLambda, dBHatdZetadLambda
-    PetscScalar :: factor
+    PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dinvDHatdLambda, factor
     PetscScalar, dimension(:), allocatable :: xIntegralFactor
     PetscScalar :: dBHatdLambda, dVPrimeHatdLambda
     integer :: m, n
@@ -439,10 +459,277 @@ end do
             end do ! izeta
           end do ! itheta
         end do ! ispecies
-                call VecDestroy(deltaFOnProc0,ierr)
+        call VecDestroy(deltaFOnProc0,ierr)
       end if !masterProc
-            call VecScatterDestroy(VecScatterContext,ierr)
-    end subroutine
+      call VecScatterDestroy(VecScatterContext,ierr)
+    end subroutine particleFluxSensitivity
+
+    !> Evaluates the term in the sensitivity derivative of the particle fluxes
+    !! which arise due to the sensitivity of the inner product and the integrating factor,
+    !! not f1 itself, hence this is not called with the adjoint variable
+    !! @param result Output of sensitivity calculation.
+    !! @param deltaF \f$\hat{F}\f$ solution from forward equation.
+    !! @param whichSpecies If = 0, summed over species. If nonzero, indicates species number. In this case should always be 0.
+    !! @param whichLambda Indicates which component of magnetic field derivative is respect to. If = 0 \f$E_r\f$, = 1 \f$\hat{B}\f$, = 2 \f$\hat{B}^{\theta}\f$, = 3 \f$\hat{B}^{\zeta}\f$, = 4 \f$\hat{B}_{\theta}\f$, = 5 \f$\hat{B}_{\zeta}\f$, = 6 \f$\hat{D}\f$
+    !! @param whichMode Indicates index of ms and ns for derivative.
+    subroutine particleFlux_vd_Sensitivity(result, deltaF, whichSpecies, whichLambda, whichMode)
+
+      use globalVariables
+      use indices
+      use petscvec
+
+      implicit none
+
+      PetscScalar :: result
+      Vec :: deltaF, deltaFOnProc0, f0OnProc0
+      PetscScalar, pointer :: deltaFArray(:), f0Array(:)
+      integer :: whichSpecies, whichLambda, whichMode, minSpecies, maxSpecies, itheta, izeta, L, ix, index, ispecies
+      PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, Z
+      PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dinvDHatdLambda, factor, factorExB
+      PetscScalar :: dfactordLambda, dfactorExBdLambda, df0dLambda
+      PetscScalar, dimension(:), allocatable :: xIntegralFactor,  xIntegralFactorExB
+      PetscScalar :: dBHatdLambda, dVPrimeHatdLambda, dBHatdThetadLambda, dBHatdZetadLambda
+      PetscScalar :: dPhi1HatdLambda, dPhi1HatdThetadLambda, dPhi1HatdZetadLambda
+      integer :: m, n
+      PetscScalar :: angle, cos_angle, sin_angle
+      VecScatter :: VecScatterContext, VecScatterContext0 !MAYBE REMOVE SECOND
+      PetscErrorCode :: ierr
+
+      PetscScalar :: result3
+      PetscScalar, dimension(:,:), allocatable :: results2
+
+      result = zero
+      allocate(results2(Ntheta,Nzeta))
+      results2 = zero
+      result3 = zero
+
+      m = ms_sensitivity(whichMode)
+      n = ns_sensitivity(whichMode)
+
+      ! Scatter deltaF to master proc
+      call VecScatterCreateToZero(deltaF, VecScatterContext, deltaFOnProc0, ierr)
+      call VecScatterBegin(VecScatterContext, deltaF, deltaFOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
+      call VecScatterEnd(VecScatterContext, deltaF, deltaFOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
+      if (masterProc) then
+         ! Convert the PETSc vector into a normal Fortran array
+         call VecGetArrayF90(deltaFOnProc0, deltaFArray, ierr)
+      end if
+
+      if (includePhi1) then
+         ! f0 is defined in global
+         call VecScatterCreateToZero(f0, VecScatterContext0, f0OnProc0, ierr)
+         call VecScatterBegin(VecScatterContext0, f0, f0OnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
+         call VecScatterEnd(VecScatterContext0, f0, f0OnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
+         if (masterProc) then
+            call VecGetArrayF90(f0OnProc0, f0Array, ierr)
+         end if
+      end if
+
+
+      if (whichLambda==1) then ! BHat
+         dVPrimeHatdLambda = zero
+         do itheta=1,Ntheta
+            do izeta=1,Nzeta
+               angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+               cos_angle = cos(angle)
+
+               dVPrimeHatdLambda = dVPrimeHatdLambda - two*thetaWeights(itheta)*zetaWeights(izeta)*cos_angle/(DHat(itheta,izeta)*BHat(itheta,izeta))
+            end do
+         end do
+      else if (whichLambda==2) then ! IHat
+         dVPrimeHatdLambda = iota*VprimeHat/(GHat+iota*IHat)
+      else if (whichLambda==3) then ! GHat
+         dVPrimeHatdLambda = VPrimeHat/(GHat+iota*IHat)
+      else if (whichLambda==4) then ! iota
+         dVPrimeHatdLambda = IHat*VPrimeHat/(GHat+iota*IHat)
+      end if
+
+      if (masterProc) then
+         allocate(xIntegralFactor(Nx))
+         allocate(xIntegralFactorExB(Nx))
+
+         if (whichSpecies == 0) then
+            minSpecies = 1
+            maxSpecies = NSpecies
+         else
+            minSpecies = whichSpecies
+            maxSpecies = whichSpecies
+         end if
+
+         ! factor = (BHat_sub_theta*dBHatdzeta-BHat_sub_zeta*dBHatdtheta)/(VPrimeHat*BHat**3)
+         ! factorExB = (BHat_sub_theta*dPhi1Hatdzeta-BHat_sub_zeta*dPhi1Hatdtheta)/(VPrimeHat*BHat**2)
+         do ispecies = minSpecies,maxSpecies
+            THat = THats(ispecies)
+            mHat = mHats(ispecies)
+            Z = Zs(ispecies)
+            sqrtTHat = sqrt(THats(ispecies))
+            sqrtmHat = sqrt(mHats(ispecies))
+
+            xIntegralFactor = x*x*x*x*THat*THat*sqrtTHat*pi*Delta/(mHat*sqrtmHat*Z)*ddrN2ddpsiHat
+            xIntegralFactorExB = x*x*THat*sqrtTHat*2*pi*Delta*alpha/(mHat*sqrtmHat)*ddrN2ddpsiHat
+
+            do itheta=1,Ntheta
+               do izeta=1,Nzeta
+                  angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+                  cos_angle = cos(angle)
+                  sin_angle = sin(angle)
+                  select case (whichLambda)
+                  case (1) ! BHat cos
+                     dBHatdThetadLambda = -m*sin_angle
+                     dBHatdZetadLambda = n*Nperiods*sin_angle
+                     dBHatdLambda = cos_angle
+                     dfactordLambda = (IHat*dBHatdzetadLambda-GHat*dBHatdthetadLambda)/(VPrimeHat*BHat(itheta,izeta)**3) &
+                          - 3*(IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta))/(VprimeHat*BHat(itheta,izeta)**4) &
+                          * dBHatdLambda - (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda &
+                          /(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
+                     dfactorExBdLambda = - 2*(IHat*dPhi1Hatdzeta(itheta,izeta)-GHat*dPhi1Hatdtheta(itheta,izeta))/(VprimeHat*BHat(itheta,izeta)**3) &
+                          * dBHatdLambda - (IHat*dPhi1Hatdzeta(itheta,izeta)-GHat*dPhi1Hatdtheta(itheta,izeta))*dVPrimeHatdLambda &
+                          /(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**2)
+                  case (2) ! IHat
+                     dfactordLambda = dBHatdzeta(itheta,izeta)/(VPrimeHat*BHat(itheta,izeta)**3) &
+                          - (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta)) &
+                          * dVPrimeHatdLambda/(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
+                     dfactorExBdLambda = dPhi1Hatdzeta(itheta,izeta)/(VPrimeHat*BHat(itheta,izeta)**2) &
+                          - (IHat*dPhi1Hatdzeta(itheta,izeta)-GHat*dPhi1Hatdtheta(itheta,izeta)) &
+                          * dVPrimeHatdLambda/(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**2)
+                  case (3) ! GHat
+                     dfactordLambda = -dBHatdtheta(itheta,izeta)/(VPrimeHat*BHat(itheta,izeta)**3) &
+                          - (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda &
+                          / (VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
+                     dfactorExBdLambda = -dPhi1Hatdtheta(itheta,izeta)/(VPrimeHat*BHat(itheta,izeta)**2) &
+                          - (IHat*dPhi1Hatdzeta(itheta,izeta)-GHat*dPhi1Hatdtheta(itheta,izeta))*dVPrimeHatdLambda &
+                          /(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**2)
+                  case (4) ! iota
+                     dfactordLambda = - (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda &
+                          / (VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
+                     dfactorExBdLambda = - (IHat*dPhi1Hatdzeta(itheta,izeta)-GHat*dPhi1Hatdtheta(itheta,izeta))*dVPrimeHatdLambda &
+                          / (VPrimeHat*VPrimeHat*BHat(itheta,izeta)**2)
+                  case (5) ! Phi1Hat cos
+                     dPhi1HatdLambda = cos_angle
+                     dPhi1HatdThetadLambda = -m*sin_angle
+                     dPhi1HatdZetadLambda = n*Nperiods*sin_angle
+                     factor = (IHat * dBHatdzeta(itheta,izeta) - GHat * dBHatdtheta(itheta,izeta))/(VPrimeHat*BHat(itheta,izeta)**3)
+                     dfactordLambda = 0
+                     factorExB = (IHat*dPhi1HatdZeta(itheta,izeta)-GHat*dPhi1HatdTheta(itheta,izeta))/(VPrimeHat*BHat(itheta,izeta)**2)
+                     dfactorExBdLambda = (IHat*dPhi1HatdZetadLambda-GHat*dPhi1HatdThetadLambda)/(VPrimeHat * BHat(itheta,izeta)**2)
+                  case (6) ! Phi1Hat sin
+                     dPhi1HatdLambda = sin_angle
+                     dPhi1HatdThetadLambda = m*cos_angle
+                     dPhi1HatdZetadLambda = -n*Nperiods * cos_angle
+                     factor = (IHat * dBHatdzeta(itheta,izeta) - GHat * dBHatdtheta(itheta,izeta))/(VPrimeHat*BHat(itheta,izeta)**3)
+                     dfactordLambda = 0
+                     factorExB = (IHat*dPhi1HatdZeta(itheta,izeta)-GHat*dPhi1HatdTheta(itheta,izeta))/(VPrimeHat*BHat(itheta,izeta)**2)
+                     dfactorExBdLambda = (IHat*dPhi1HatdZetadLambda-GHat*dPhi1HatdThetadLambda)/(VPrimeHat*BHat(itheta,izeta)**2)
+                  end select
+
+                  ! Summed quantity is weighted by charge
+                  if (whichSpecies == 0) then
+                     factor = factor * Z
+                     dfactordLambda = dfactordLambda * Z
+                     factorExB = factorExB * Z
+                     dfactorExBdLambda = dfactorExBdLambda * Z
+                  end if
+
+
+                  do ix=1,Nx
+
+                     L = 0
+                     index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+                     ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
+                     
+                     ! Add magnetic drift contribution from deltaF
+                     if (.false.) then
+                        result = result + &
+                             (8/three)*dfactordLambda*xWeights(ix)*deltaFArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
+                     end if
+                  
+
+                     ! Add ExB drift contribution from deltaF
+                     if (.false.) then
+                        result = result + &
+                             dfactorExBdLambda*xWeights(ix)*deltaFArray(index)*xIntegralFactorExB(ix)*thetaWeights(itheta)*zetaWeights(izeta) ! 
+                     end if
+
+                     if (.true.) then
+                     ! Add magnetic drift contribution from f0
+                     if((whichLambda .eq. 5) .or. (whichLambda .eq. 6)) then
+                        df0dLambda = -(Z*alpha/THat) *  f0Array(index) * dPhi1HatdLambda                 
+                        result = result + &
+                             (8/three)*factor*xWeights(ix)*df0dLambda*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
+                        results2(itheta,izeta) =  results2(itheta,izeta) + &
+                             (8/three)*factor*xWeights(ix)*df0dLambda*xIntegralFactor(ix)
+                     else
+                        result = result + &
+                             (8/three)*dfactordLambda*xWeights(ix)*f0Array(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
+                     end if
+                     end if
+                     
+                     
+                     ! Add ExB drift contribution from f0
+                     if (.false.) then
+                     
+                     if((whichLambda .eq. 5) .or. (whichLambda .eq. 6)) then
+                        result = result + &
+                             xWeights(ix)*xIntegralFactorExB(ix)*thetaWeights(itheta)*zetaWeights(izeta)* (dfactorExBdLambda * f0Array(index) + factorExB * df0dLambda)
+                     else
+                        result = result + &
+                             dfactorExBdLambda*xWeights(ix)*f0Array(index)*xIntegralFactorExB(ix)*thetaWeights(itheta)*zetaWeights(izeta)  ! *2
+                     end if
+                     end if
+                  
+                     
+                     L = 2
+                     index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+                     ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
+                     ! Add the magnetic drift contribution from DeltaF
+                     if (.false.) then
+                        result = result + &
+                             (four/15)*dfactordLambda*xWeights(ix)*deltaFArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
+                     end if
+                  
+                     ! Add the magnetic drift contribution from f0 for L=2
+                     ! This is zero if f0 is Maxwellian
+                     ! (which is always the case 2020-06)
+                     ! but it is added for feature parity with 'diagnotics'
+                     if (.true.) then
+                        if((whichLambda .eq. 5) .or. (whichLambda .eq. 6)) then
+                           df0dLambda = -(Z*alpha/THat) *  f0Array(index) * dPhi1HatdLambda
+                           result = result + &
+                                (four/15)*factor*xWeights(ix)*df0dLambda*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
+                        else
+                           result = result + &
+                                (four/15)*dfactordLambda*xWeights(ix)*f0Array(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
+                        end if
+                     
+                     end if
+                  
+
+                  end do ! ix
+               end do ! izeta
+            end do ! itheta
+            
+            do izeta=1,Nzeta
+               result3 = result3 + zetaWeights(izeta) &
+                  * dot_product(thetaWeights, results2(:,izeta))
+            end do
+            
+            if (masterProc) then
+               print *, "!!!!!!!!!!!!!!!!!"
+               print *, result
+               print *, result3
+               print *, "!!!!!!!!!!!!!!!!!"
+            end if
+            
+
+         end do ! ispecies
+         call VecDestroy(deltaFOnProc0,ierr)
+         call VecDestroy(f0OnProc0,ierr)
+         ! TODO: maybe destroy f0onProc0??
+      end if !masterProc
+      call VecScatterDestroy(VecScatterContext,ierr)
+      call VecScatterDestroy(VecScatterContext0,ierr)
+    end subroutine particleFlux_vd_Sensitivity
+
 
     !> Evaluates the term in the sensitivity derivative of the parallel flow
     !! which arise due to the sensitivity of the inner product and the integrating factor,
@@ -466,14 +753,15 @@ end do
     Vec :: deltaFOnProc0
     PetscScalar, pointer :: deltaFArray(:)
     integer :: minSpecies, maxSpecies, itheta, izeta, L, ix, index, ispecies
-    PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat
-    PetscScalar ::  factor, dVPrimeHatdLambda
+    PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, dBHatdThetadLambda, dBHatdZetadLambda
+    PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dinvDHatdLambda, factor, dVPrimeHatdLambda
     PetscScalar, dimension(:), allocatable :: xIntegralFactor
     PetscScalar :: dBHatdLambda, dFSABHat2dLambda, nHat, sqrtFSAB2
-    PetscScalar :: angle, cos_angle
+    PetscScalar :: angle, cos_angle, sin_angle
     integer :: m, n
     VecScatter :: VecScatterContext
     PetscErrorCode :: ierr
+    PetscScalar :: dDHatdLambda
 
     sqrtFSAB2 = sqrt(FSABHat2)
     m = ms_sensitivity(whichMode)
@@ -589,7 +877,7 @@ end do
       implicit none
 
       PetscErrorCode :: ierr
-      Vec :: forwardSolution, adjointSolution, adjointResidual
+      Vec :: forwardSolution, adjointSolution, adjointResidual, adjointRHSVec
       integer :: whichAdjointRHS, whichSpecies
       integer :: whichLambda, whichMode, this_NModesAdjoint
       PetscScalar :: innerProductResult, sensitivityResult, ErTermToAdd
@@ -598,8 +886,8 @@ end do
       PetscScalar :: radialCurrentSensitivity
 
       if (masterProc) then
-        print *,"evaluateDiagnostics was called."
-        print *,"Computing adjoint diagnostics for RHS ", whichAdjointRHS, " and species ", whichSpecies
+         print *,"evaluateDiagnostics was called."
+         print *,"Computing adjoint diagnostics for RHS ", whichAdjointRHS, " and species ", whichSpecies
       end if
 
       ! Allocate adjointResidual
@@ -607,67 +895,81 @@ end do
       call VecSet(adjointResidual, zero, ierr)
 
       if (RHSMode == 5) then
-        call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointResidualEr, ierr)
-        call VecSet(adjointResidualEr,zero,ierr)
-        ! compute (dLdEr f - dSdEr)
-        call evaluateAdjointInnerProductFactor(forwardSolution,adjointResidualEr,0,0)
-        call innerProduct(adjointSolution,adjointResidualEr,innerProductResultEr1,0)
-        call innerProduct(adjointSolutionJr,adjointResidualEr,innerProductResultEr2,0)
+         call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, adjointResidualEr, ierr)
+         call VecSet(adjointResidualEr,zero,ierr)
+         ! compute (dLdEr f - dSdEr)
+         call evaluateAdjointInnerProductFactor(forwardSolution,adjointResidualEr,0,0)
+         call innerProduct(adjointSolution,adjointResidualEr,innerProductResultEr1,0)
+         call innerProduct(adjointSolutionJr,adjointResidualEr,innerProductResultEr2,0)
       end if
 
       ! Same inner product is formed regardless of whichAdjointMatrix and whichSpecies
       ! Loop over lambda's and perform inner product
       ! rethink this for Er
       do whichLambda=1,NLambdas
-                if (whichLambda .ne. 1) then
-                    this_NmodesAdjoint = 1
-                else
-                    this_NmodesAdjoint = NModesAdjoint
-                end if
-        do whichMode=1,this_NModesAdjoint
-          call VecSet(adjointResidual,zero,ierr)
-          ! Call function to perform (dLdlambdaf - dSdlambda), which calls populatedMatrixdLambda and populatedRHSdLambda
+         if ((whichLambda .eq. 1) .or. (whichLambda .eq. 5) .or. (whichLambda .eq. 6)) then
+            this_NmodesAdjoint = NModesAdjoint
+         else
+            this_NmodesAdjoint = 1
+         end if
+         do whichMode=1,this_NModesAdjoint
+            call VecSet(adjointResidual,zero,ierr)
+            ! Call function to perform (dLdlambdaf - dSdlambda), which calls populatedMatrixdLambda and populatedRHSdLambda
 
-          call evaluateAdjointInnerProductFactor(forwardSolution,adjointResidual,whichLambda,whichMode)
+            call evaluateAdjointInnerProductFactor(forwardSolution,adjointResidual,whichLambda,whichMode)
 
-          if (RHSMode == 5) then
-            call innerProduct(adjointSolutionJr,adjointResidual,innerProductResultEr3,0)
-            call particleFluxSensitivity(radialCurrentSensitivity,forwardSolution,0,whichLambda,whichMode)
-            ErTermToAdd = -(innerProductResultEr1/innerProductResultEr2)*(radialCurrentSensitivity-innerProductResultEr3)
-            dPhidPsidLambda(whichLambda,whichMode) = (1/innerProductResultEr2)*(radialCurrentSensitivity-innerProductResultEr3)
-          end if
+            if (RHSMode == 5) then
+               call innerProduct(adjointSolutionJr,adjointResidual,innerProductResultEr3,0)
+               if (.not. includePhi1) then
+                  call particleFluxSensitivity(radialCurrentSensitivity,forwardSolution,0,whichLambda,whichMode)
+               else
+                  call particleFlux_vd_Sensitivity(radialCurrentSensitivity,forwardSolution,0,whichLambda,whichMode)
+               end if
+               ErTermToAdd = -(innerProductResultEr1/innerProductResultEr2)*(radialCurrentSensitivity-innerProductResultEr3)
+               dPhidPsidLambda(whichLambda,whichMode) = (1/innerProductResultEr2)*(radialCurrentSensitivity-innerProductResultEr3)
+            end if
 
           call innerProduct(adjointSolution,adjointResidual,innerProductResult,0)
           ! Save to appropriate sensitivity array
           if (whichSpecies == 0) then
-            select case (whichAdjointRHS)
-                case (1) ! Particle flux
-                    call particleFluxSensitivity(sensitivityResult, forwardSolution, whichSpecies, whichLambda, whichMode)
-                    dRadialCurrentdLambda(whichLambda,whichMode) = -innerProductResult + sensitivityResult
-                case (2) ! Heat Flux
-                    call heatFluxSensitivity(sensitivityResult, forwardSolution, whichSpecies, whichLambda, whichMode)
-                    dTotalHeatFluxdLambda(whichLambda,whichMode) = -innerProductResult + sensitivityResult
-                    if (RHSMode == 5) then
-                        dTotalHeatFluxdLambda(whichLambda,whichMode) = dTotalHeatFluxdLambda(whichLambda,whichMode) + ErTermToAdd
-                    end if
-                case (3) ! Bootstrap
-                  call parallelFlowSensitivity(sensitivityResult, forwardSolution, whichSpecies, whichLambda, whichMode)
-                  dBootstrapdLambda(whichLambda,whichMode) = -innerProductResult + sensitivityResult
-                  if (RHSMode == 5) then
-                    dBootstrapdLambda(whichLambda,whichMode) = dBootstrapdLambda(whichLambda,whichMode) + ErTermToAdd
-                  end if
-              end select
-            else
-              select case (whichAdjointRHS)
-                case (1) ! Particle flux
-                  call particleFluxSensitivity(sensitivityResult, forwardSolution, whichSpecies, whichLambda, whichMode)
-                  dParticleFluxdLambda(whichSpecies,whichLambda,whichMode) = sensitivityResult - innerProductResult
-                  if (RHSMode == 5) then
-                    dParticleFluxdLambda(whichSpecies,whichLambda,whichMode) = dParticleFluxdLambda(whichSpecies,whichLambda,whichMode) + ErTermToAdd
-                  end if
-                case (2) ! Heat Flux
-                  call heatFluxSensitivity(sensitivityResult, forwardSolution, whichSpecies, whichLambda, whichMode)
-                  dHeatFluxdLambda(whichSpecies,whichLambda,whichMode) = sensitivityResult - innerProductResult
+             select case (whichAdjointRHS)
+             case (1) ! Particle flux
+                if (.not. includePhi1) then
+                   call particleFluxSensitivity(sensitivityResult, forwardSolution, whichSpecies, whichLambda, whichMode)
+                else
+                   call particleFlux_vd_Sensitivity(sensitivityResult, forwardSolution, whichSpecies, whichLambda, whichMode)
+                end if
+                
+                dRadialCurrentdLambda(whichLambda,whichMode) = -innerProductResult + sensitivityResult
+             case (2) ! Heat Flux
+                call heatFluxSensitivity(sensitivityResult, forwardSolution, whichSpecies, whichLambda, whichMode)
+                dTotalHeatFluxdLambda(whichLambda,whichMode) = -innerProductResult + sensitivityResult
+                if (RHSMode == 5) then
+                   dTotalHeatFluxdLambda(whichLambda,whichMode) = dTotalHeatFluxdLambda(whichLambda,whichMode) + ErTermToAdd
+                end if
+             case (3) ! Bootstrap
+                call parallelFlowSensitivity(sensitivityResult, forwardSolution, whichSpecies, whichLambda, whichMode)
+                dBootstrapdLambda(whichLambda,whichMode) = -innerProductResult + sensitivityResult
+                if (RHSMode == 5) then
+                   dBootstrapdLambda(whichLambda,whichMode) = dBootstrapdLambda(whichLambda,whichMode) + ErTermToAdd
+                end if
+             end select
+          else
+             select case (whichAdjointRHS)
+             case (1) ! Particle flux
+                if (.not. includePhi1) then
+                   call particleFluxSensitivity(sensitivityResult, forwardSolution, whichSpecies, whichLambda, whichMode)
+                else
+                   call particleFlux_vd_Sensitivity(sensitivityResult, forwardSolution, whichSpecies, whichLambda, whichMode)
+                   
+                end if
+                dParticleFluxdLambda(whichSpecies,whichLambda,whichMode) = sensitivityResult - innerProductResult
+                if (RHSMode == 5) then
+                   dParticleFluxdLambda(whichSpecies,whichLambda,whichMode) = dParticleFluxdLambda(whichSpecies,whichLambda,whichMode) + ErTermToAdd
+                end if
+             case (2) ! Heat Flux
+                call heatFluxSensitivity(sensitivityResult, forwardSolution, whichSpecies, whichLambda, whichMode)
+                dHeatFluxdLambda(whichSpecies,whichLambda,whichMode) = sensitivityResult - innerProductResult
                   if (RHSMode == 5) then
                     dHeatFluxdLambda(whichSpecies,whichLambda,whichMode) = dHeatFluxdLambda(whichSpecies,whichLambda,whichMode) + ErTermToAdd
                   end if

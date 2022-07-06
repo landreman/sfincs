@@ -29,7 +29,6 @@ module globalVariables
   character(len=200) :: binaryOutputFilename = "sfincsBinary"
   character(len=200) :: outputFilename = "sfincsOutput.h5"
   character(len=200) :: externalPhi1Filename = "externalPhi1.h5" !!Added by AM 2018-12
-  
   logical :: solveSystem = .true.
   integer :: RHSMode = 1, whichRHS
   logical :: isAParallelDirectSolverInstalled
@@ -152,7 +151,6 @@ module globalVariables
 !!  logical :: includeRadialExBDrive = .false. !!Commented by AM 2016-02
   logical :: includePhi1InKineticEquation = .true. !!Added by AM 2016-03
   logical :: readExternalPhi1 = .false. !!Added by AM 2018-12
-  logical :: readExternalF = .false. 
 
   PetscScalar :: nuPrime = 1, EStar = 0
 
@@ -190,6 +188,7 @@ module globalVariables
   integer :: Nxi = 16
   integer :: NL = 4
   integer :: Nx = 5
+  integer :: ixMin = 0
   PetscScalar  :: NxPotentialsPerVth = 40.0
   PetscScalar :: xMax = 5.0
   PetscScalar :: solverTolerance = 1d-6
@@ -264,6 +263,10 @@ module globalVariables
   PetscScalar, dimension(:,:,:), allocatable :: flow, velocityUsingFSADensity, velocityUsingTotalDensity
   PetscScalar, dimension(:,:,:), allocatable :: MachUsingFSAThermalSpeed
   PetscScalar, dimension(:,:,:), allocatable :: particleFluxBeforeSurfaceIntegral_vm0
+  
+  PetscScalar, dimension(:,:,:), allocatable :: adjointParticleFluxBeforeSurfaceIntegral_vm0
+  
+
   PetscScalar, dimension(:,:,:), allocatable :: particleFluxBeforeSurfaceIntegral_vm
   PetscScalar, dimension(:,:,:), allocatable :: particleFluxBeforeSurfaceIntegral_vE0
   PetscScalar, dimension(:,:,:), allocatable :: particleFluxBeforeSurfaceIntegral_vE
@@ -286,6 +289,10 @@ module globalVariables
   PetscScalar, dimension(:), allocatable :: particleFlux_vm0_psiN
   PetscScalar, dimension(:), allocatable :: particleFlux_vm0_rHat
   PetscScalar, dimension(:), allocatable :: particleFlux_vm0_rN
+
+  PetscScalar, dimension(:), allocatable :: adjointParticleFlux_vm0_rHat
+  PetscScalar, dimension(:), allocatable :: adjointParticleFlux_vm0_psiHat
+  
 
   PetscScalar, dimension(:), allocatable :: particleFlux_vm_psiHat
   PetscScalar, dimension(:), allocatable :: particleFlux_vm_psiN
@@ -413,19 +420,6 @@ module globalVariables
   integer :: transportMatrixSize = 3
   PetscScalar, dimension(:,:), allocatable :: transportMatrix
 
-
-  character(len=200) :: externalFFilename = "externalF.h5"
-  character(len=200) :: externalFFormat = "ASCOT4Boozer"
-  logical :: extrapolateExternalF = .false.
-  PetscScalar, dimension(:,:,:,:,:), allocatable :: externalF
-  PetscScalar, dimension(:,:,:,:,:), allocatable :: externalRosenPotentialTerms
-  PetscScalar, dimension(:), allocatable :: externalXi, externalE, externalMasses, externalCharges
-  PetscScalar, dimension(:,:,:), allocatable :: externalN, externalFlow
-  PetscScalar, dimension(:), allocatable :: FSABExternalFlow, FSAExternalN
-  
-  integer :: externalNL, externalNspecies, externalNE, externalNxi
-  integer :: externalNQN = 0
-  
   Vec :: f0
 
 ! ********************************************************

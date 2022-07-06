@@ -58,11 +58,17 @@ contains
          collisionOperator, constraintScheme, includeXDotTerm, &
          includeElectricFieldTermInXiDot, useDKESExBDrift, include_fDivVE_term, &
          dPhiHatdpsiHat, dPhiHatdpsiN, dPhiHatdrHat, dPhiHatdrN, Er, &
+!<<<<<<< HEAD
          includeTemperatureEquilibrationTerm, includePhi1, includePhi1InCollisionOperator, &
+         !!Commented by AM 2016-02!!
+         !!nuPrime, EStar, magneticDriftScheme, includeRadialExBDrive
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!
+   !!Added by AM 2016-02!!
+!=======
+!         includeTemperatureEquilibrationTerm, includePhi1, &
+!>>>>>>> origin/master
          nuPrime, EStar, magneticDriftScheme, includePhi1InKineticEquation, &
-         quasineutralityOption, Krook, externalPhi1Filename, readExternalPhi1, & 
-         externalFFilename, readExternalF, externalFFormat, externalNL, extrapolateExternalF, externalNQN
-    
+         quasineutralityOption, Krook, externalPhi1Filename, readExternalPhi1 !!AM added externalPhi1Filename, readExternalPhi1 2018-12
 
     namelist / resolutionParameters / forceOddNthetaAndNzeta, &
          Ntheta, &
@@ -86,13 +92,14 @@ contains
          preconditioner_theta_min_L, preconditioner_zeta_min_L, preconditioner_magnetic_drifts_max_L
 
     namelist / export_f / export_full_f, export_delta_f, export_f_theta, export_f_zeta, export_f_x, export_f_xi, &
-         export_f_theta_option, export_f_zeta_option, export_f_xi_option, export_f_x_option, export_external_collision 
+         export_f_theta_option, export_f_zeta_option, export_f_xi_option, export_f_x_option
 
     namelist / adjointOptions / adjointBootstrapOption, adjointRadialCurrentOption, &
       adjointTotalHeatFluxOption, adjointHeatFluxOption, adjointParticleFluxOption, &
       nMinAdjoint, mMinAdjoint, &
       nMaxAdjoint, mMaxAdjoint, adjointParallelFlowOption, discreteAdjointOption, &
-      debugAdjoint, deltaLambda
+      debugAdjoint, deltaLambda, &
+      NLambdas
 
     Zs = speciesNotInitialized
     mHats = speciesNotInitialized
@@ -442,6 +449,11 @@ contains
        if (didFileAccessWork /= 0) then
           print *,"Proc ",myRank,": Error!  I was able to open the file ", trim(filename), &
                " but not read data from the adjointOptions namelist in it."
+          if (masterProc) then
+             print *, adjointParticleFluxOption
+             print *, mMaxAdjoint
+             print *, nMaxAdjoint
+          end if
           stop
        end if
        if (masterProc) then

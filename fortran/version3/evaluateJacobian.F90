@@ -9,6 +9,7 @@
 
 #include "PETScVersions.F90"
     use globalVariables, only: masterProc, useIterativeLinearSolver, firstMatrixCreation, reusePreconditioner
+    use DKEMatrix
 
     implicit none
 
@@ -44,10 +45,10 @@
        ! If reusePreconditioner = true, then we only need to assemble the preconditioner in the first iteration.
        ! If reusePreconditioner = false, then we need to assemble the preconditioner in every iteration.
        if (firstMatrixCreation .or. .not. reusePreconditioner) then
-          call populateMatrix(jacobianPC, 0, stateVec)
+          call populateMatrix(jacobianPC, 0, stateVec, 0, 0)
        end if
     end if
-    call populateMatrix(jacobian, 1, stateVec)
+    call populateMatrix(jacobian, 1, stateVec, 0, 0)
 
     firstMatrixCreation = .false.
 

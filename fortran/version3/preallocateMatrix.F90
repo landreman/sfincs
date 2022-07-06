@@ -2,7 +2,7 @@ subroutine preallocateMatrix(matrix, whichMatrix)
 
 #include "PETScVersions.F90"
 
-  use globalVariables, only: Nx, Ntheta, Nzeta, Nspecies, matrixSize, includePhi1, &
+  use globalVariables, only: Nx, Nxi, Ntheta, Nzeta, Nspecies, matrixSize, includePhi1, &
        !!constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, nonlinear, & !!Commented by AM 2016-02
        constraintScheme, PETSCPreallocationStrategy, MPIComm, numProcs, masterProc, & !!Added by AM 2016-02
        !!thetaDerivativeScheme, zetaDerivativeScheme, includeRadialExBDrive !!Commented by AM 2016-03

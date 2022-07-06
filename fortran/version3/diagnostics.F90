@@ -192,6 +192,7 @@
     use writeHDF5Output
     use export_f
     use classicalTransport
+    use DKEMatrix
 
     implicit none
 
@@ -244,29 +245,6 @@
     ! Form the full f:
     call VecDuplicate(solutionWithDeltaF, solutionWithFullF, ierr)
     call VecCopy(solutionWithDeltaF, solutionWithFullF, ierr)
-
-    !!!!!!!!!!!!!!!!!!!!!!!
-    !!Added by AM 2016-06!!
-    !!!!!!!!!!!!!!!!!!!!!!!
-    !!!call VecDuplicate(f0, expPhi1, ierr)
-    !!!call VecSet(expPhi1, zero, ierr)
-    !!!L = 0
-    !!!do ispecies = 1,Nspecies
-    !!!   do ix = 1,Nx
-    !!!      do itheta = ithetaMin,ithetaMax
-    !!!         do izeta = izetaMin,izetaMax
-    !!!            index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-    !!!            call VecSetValue(expPhi1, index, &
-    !!!                 exp(-Zs(ispecies)*alpha*Phi1Hat(itheta,izeta)/THats(ispecies)), INSERT_VALUES, ierr)
-    !!!         end do
-    !!!      end do
-    !!!   end do
-    !!!end do
-
-    !!!call VecAssemblyBegin(expPhi1, ierr)
-    !!!call VecAssemblyEnd(expPhi1, ierr)
-
-    !!!call VecPointwiseMult(f0, f0, expPhi1, ierr)
     
 
     call init_f0()
@@ -307,6 +285,7 @@
        pressurePerturbation=0
        pressureAnisotropy=0
        particleFluxBeforeSurfaceIntegral_vm0=0
+       adjointParticleFluxBeforeSurfaceIntegral_vm0=0
        particleFluxBeforeSurfaceIntegral_vm=0
        particleFluxBeforeSurfaceIntegral_vE0=0
        particleFluxBeforeSurfaceIntegral_vE=0
@@ -416,7 +395,7 @@
           do itheta=1,Ntheta
              do izeta=1,Nzeta
 
-                !factor = (GHat*dBHatdtheta(itheta,izeta) - IHat*dBHatdzeta(itheta,izeta))/(BHat(itheta,izeta) ** 3)
+                !factor = (IHat*dBHatdzeta(itheta,izeta) - GHat*dBHatdtheta(itheta,izeta) )/(BHat(itheta,izeta) ** 3)
 
                 factor = (BHat_sub_theta(itheta,izeta) * dBHatdzeta(itheta,izeta) &
                      - BHat_sub_zeta(itheta,izeta) * dBHatdtheta(itheta,izeta)) / (BHat(itheta,izeta) ** 3)
@@ -429,6 +408,8 @@
                         / (BHat(itheta,izeta) ** 2)
                 end if
 
+                !factor_vE = (IHat*dPhi1Hatdzeta(itheta,izeta) - GHat*dPhi1Hatdtheta(itheta,izeta) )/(BHat(itheta,izeta) ** 2)
+                
                 factor_vE = (BHat_sub_theta(itheta,izeta) * dPhi1Hatdzeta(itheta,izeta) &
                      -BHat_sub_zeta(itheta,izeta) * dPhi1Hatdtheta(itheta,izeta)) &
                      / (BHat(itheta,izeta) ** 2)
@@ -448,7 +429,8 @@
                         = particleFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
                         + (factor * (8/three) + factor2 * (two/three)) * particleFluxFactor_vm &
                         * xWeights(ix)*particleFluxIntegralWeights_vm(ix)*f0Array(index)
-
+                   
+                   
                    particleFluxBeforeSurfaceIntegral_vm(ispecies,itheta,izeta) &
                         = particleFluxBeforeSurfaceIntegral_vm(ispecies,itheta,izeta) &
                         + (factor * (8/three) + factor2 * (two/three)) * particleFluxFactor_vm &
@@ -540,6 +522,10 @@
                         + (factor+factor2) * (four/15) * particleFluxFactor_vm &
                         * xWeights(ix)*particleFluxIntegralWeights_vm(ix)*f0Array(index)
 
+                   adjointParticleFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
+                        = -Zs(ispecies) * alpha * cos(theta(itheta) - Nperiods * zeta(izeta)) * particleFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta)/THats(ispecies)
+                   
+
                    particleFluxBeforeSurfaceIntegral_vm(ispecies,itheta,izeta) &
                         = particleFluxBeforeSurfaceIntegral_vm(ispecies,itheta,izeta) &
                         + (factor+factor2) * (four/15) * particleFluxFactor_vm &
@@ -604,12 +590,15 @@
              FSABFlow(ispecies) = FSABFlow(ispecies) + zetaWeights(izeta) &
                   * dot_product(thetaWeights, flow(ispecies,:,izeta)*BHat(:,izeta)/DHat(:,izeta))
 
-             
              FSAPressurePerturbation(ispecies) = FSAPressurePerturbation(ispecies) + zetaWeights(izeta) &
                   * dot_product(thetaWeights, pressurePerturbation(ispecies,:,izeta)/DHat(:,izeta))
 
              particleFlux_vm0_psiHat(ispecies) = particleFlux_vm0_psiHat(ispecies) + zetaWeights(izeta) &
                   * dot_product(thetaWeights, particleFluxBeforeSurfaceIntegral_vm0(ispecies,:,izeta))
+
+             adjointParticleFlux_vm0_psiHat(ispecies) = adjointParticleFlux_vm0_psiHat(ispecies) + zetaWeights(izeta) &
+                  * dot_product(thetaWeights, adjointParticleFluxBeforeSurfaceIntegral_vm0(ispecies,:,izeta))
+
 
              particleFlux_vm_psiHat(ispecies) = particleFlux_vm_psiHat(ispecies) + zetaWeights(izeta) &
                   * dot_product(thetaWeights, particleFluxBeforeSurfaceIntegral_vm(ispecies,:,izeta))
@@ -648,7 +637,7 @@
                   * dot_product(thetaWeights, NTVBeforeSurfaceIntegral(ispecies,:,izeta)) 
 
           end do
-
+          ! particleFlux_vm_psiHat(ispecies) = particleFlux_vm_psiHat(ispecies) + particleFlux_vm0_psiHat(ispecies)
           jHat = jHat + Zs(ispecies)*flow(ispecies,:,:)
 
           !!totalDensity(ispecies,:,:) = nHats(ispecies) + densityPerturbation(ispecies,:,:) !!Commented by AM 2016-06
@@ -660,6 +649,7 @@
           MachUsingFSAThermalSpeed(ispecies,:,:) = velocityUsingFSADensity(ispecies,:,:) * sqrtMHat/sqrtTHat
 
        end do
+
 
        particleFlux_vd_psiHat = particleFlux_vm_psiHat + particleFlux_vE_psiHat
        momentumFlux_vd_psiHat = momentumFlux_vm_psiHat + momentumFlux_vE_psiHat
@@ -692,6 +682,8 @@
        heatFlux_withoutPhi1_psiN = ddpsiN2ddpsiHat * heatFlux_withoutPhi1_psiHat
        classicalParticleFlux_psiN = ddpsiN2ddpsiHat * classicalParticleFlux_psiHat
        classicalHeatFlux_psiN = ddpsiN2ddpsiHat * classicalHeatFlux_psiHat
+
+       adjointParticleFlux_vm0_rHat = ddrHat2ddpsiHat * adjointParticleFlux_vm0_psiHat
 
        particleFlux_vm0_rHat = ddrHat2ddpsiHat * particleFlux_vm0_psiHat
        particleFlux_vm_rHat = ddrHat2ddpsiHat * particleFlux_vm_psiHat
@@ -750,7 +742,7 @@
        end do
        FSABVelocityUsingFSADensityOverB0 = FSABVelocityUsingFSADensity / B0OverBBar
        FSABVelocityUsingFSADensityOverRootFSAB2 = FSABVelocityUsingFSADensity / sqrt(FSABHat2)
-       
+
        if (RHSMode==2) then
           ispecies = 1
           nHat = nHats(ispecies)
@@ -876,39 +868,6 @@
              end do
           end do
        end if
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-       if (export_external_collision) then
-          external_collision = zero
-          do ispecies = 1,Nspecies
-             do itheta1 = 1,Ntheta
-                do izeta1 = 1,Nzeta
-                   do ix1 = 1,Nx
-                      do ixi1 = 1,min(Nxi_for_x(ix1),externalNL)
-                         temp1 = externalRosenPotentialTerms(ispecies,itheta1,izeta1,ixi1,ix1)
-                         do itheta2 = 1,N_export_f_theta
-                            temp2 = temp1 * map_theta_to_export_f_theta(itheta2, itheta1)
-                            do izeta2 = 1,N_export_f_zeta
-                               temp3 = temp2 * map_zeta_to_export_f_zeta(izeta2, izeta1)
-                               do ix2 = 1,N_export_f_x
-                                  ! I arbitrarily chose to replace the loop over export_f_xi with ":"
-                                  ! We could pick any of the 4 coordinates for this.
-                                  external_collision(ispecies, itheta2, izeta2, :, ix2) = &
-                                       external_collision(ispecies, itheta2, izeta2, :, ix2) + temp3 &
-                                       * map_x_to_export_f_x(ix2, ix1) &
-                                       * map_xi_to_external_collision(:, ixi1)
-                               end do
-                            end do
-                         end do
-                      end do
-                   end do
-                end do
-             end do
-          end do
-       end if
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-       
-       
        call PetscTime(time2, ierr)
        if (export_delta_f .or. export_full_f) then
           print *,"Time for exporting f: ", time2-time1, " seconds."
@@ -1001,7 +960,6 @@
     call VecDestroy(solutionWithFullFOnProc0, ierr)
     call VecDestroy(solutionWithDeltaFOnProc0, ierr)
     call VecDestroy(f0OnProc0, ierr)
-    !!!call VecDestroy(expPhi1, ierr) !!Added by AM 2016-06
 
     ! updateOutputFile should be called by all procs since it contains MPI_Barrier
     ! (in order to be sure the HDF5 file is safely closed before moving on to the next computation.)

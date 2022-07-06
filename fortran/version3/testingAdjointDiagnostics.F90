@@ -99,7 +99,12 @@ module testingAdjointDiagnostics
     end if
 
     ! Get initial values of fluxes
-    particleFluxInit = particleFlux_vm_rN
+    if (.not. includePhi1) then
+       particleFluxInit = particleFlux_vm_rN
+    else
+       particleFluxInit = particleFlux_vd_rN
+       !particleFluxInit = particleFlux_vm_rN - particleFlux_vm0_rN
+    end if
     heatFluxInit = heatFlux_vm_rN
     parallelFlowInit = FSABVelocityUsingFSADensityOverRootFSAB2
 
@@ -121,10 +126,10 @@ module testingAdjointDiagnostics
     RHSMode = 1
     call PetscTime(time1, ierr)
     do whichLambda = 1, NLambdas
-      if (whichLambda .ne. 1) then
-        this_NmodesAdjoint = 1
+       if ((whichLambda .eq. 1) .or. (whichLambda .eq. 5) .or. (whichLambda .eq. 6)) then
+          this_NmodesAdjoint = NModesAdjoint
       else
-        this_NmodesAdjoint = NModesAdjoint
+         this_NmodesAdjoint = 1
       end if
       do whichMode = 1, this_NModesAdjoint
         select case(whichLambda)
@@ -135,7 +140,11 @@ module testingAdjointDiagnostics
           case(3)
             deltaFactor = GHat_init
           case(4)
-            deltaFactor = iota_init
+             deltaFactor = iota_init
+          case(5)
+             ! TODO?
+          case(6)
+             ! TODO?
         end select
 
         ! Update geometry
@@ -155,14 +164,25 @@ module testingAdjointDiagnostics
         end if
 
         do ispecies = 1, Nspecies
-          ! Compute finite difference derivatives
-            dParticleFluxdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (particleFlux_vm_rN(iSpecies)-particleFluxInit(iSpecies))/(deltaLambda*deltaFactor)
-      dHeatFluxdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (heatFlux_vm_rN(iSpecies)-heatFluxInit(iSpecies))/(deltaLambda*deltaFactor)
-      dParallelFlowdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (FSABVelocityUsingFSADensityOverRootFSAB2(iSpecies)-parallelFlowInit(iSpecies))/(deltaLambda*deltaFactor)
+           ! Compute finite difference derivatives
+           if (.not. includePhi1) then
+              dParticleFluxdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (particleFlux_vm_rN(iSpecies)-particleFluxInit(iSpecies))/(deltaLambda*deltaFactor)
+           else
+              ! dParticleFluxdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (particleFlux_vm_rN(iSpecies) - particleFlux_vm0_rN(iSpecies)-particleFluxInit(iSpecies))/(deltaLambda*deltaFactor)
+              dParticleFluxdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (particleFlux_vd_rN(iSpecies)-particleFluxInit(iSpecies))/(deltaLambda*deltaFactor)
+           end if
+           dHeatFluxdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (heatFlux_vm_rN(iSpecies)-heatFluxInit(iSpecies))/(deltaLambda*deltaFactor)
+           dParallelFlowdLambda_finiteDiff(ispecies,whichLambda,whichMode) = (FSABVelocityUsingFSADensityOverRootFSAB2(iSpecies)-parallelFlowInit(iSpecies))/(deltaLambda*deltaFactor)
         end do ! ispecies
         dTotalHeatFluxdLambda_finiteDiff(whichLambda,whichMode) = (sum(heatFlux_vm_rN(1:Nspecies))-sum(heatFluxInit(1:Nspecies)))/(deltaLambda*deltaFactor)
+        
         if (constantJr .eqv. .false.) then
-            dRadialCurrentdLambda_finiteDiff(whichLambda,whichMode) = (dot_product(Zs(1:Nspecies),particleFlux_vm_rN(1:Nspecies))-dot_product(Zs(1:Nspecies),particleFluxInit(1:Nspecies)))/(deltaLambda*deltaFactor)
+           if (.not. includePhi1) then
+              dRadialCurrentdLambda_finiteDiff(whichLambda,whichMode) = (dot_product(Zs(1:Nspecies),particleFlux_vm_rN(1:Nspecies))-dot_product(Zs(1:Nspecies),particleFluxInit(1:Nspecies)))/(deltaLambda*deltaFactor)
+           else
+              !dRadialCurrentdLambda_finiteDiff(whichLambda,whichMode) = (dot_product(Zs(1:Nspecies),particleFlux_vm_rN(1:Nspecies)- particleFlux_vm0_rN(iSpecies))-dot_product(Zs(1:Nspecies),particleFluxInit(1:Nspecies)))/(deltaLambda*deltaFactor)
+              dRadialCurrentdLambda_finiteDiff(whichLambda,whichMode) = (dot_product(Zs(1:Nspecies),particleFlux_vd_rN(1:Nspecies))-dot_product(Zs(1:Nspecies),particleFluxInit(1:Nspecies)))/(deltaLambda*deltaFactor)
+           end if
         end if
         dBootstrapdLambda_finiteDiff(whichLambda,whichMode) = (dot_product(Zs(1:Nspecies),FSABVelocityUsingFSADensityOverRootFSAB2(1:Nspecies))-dot_product(Zs(1:Nspecies),parallelFlowInit(1:Nspecies)))/(deltaLambda*deltaFactor)
         ! Reset geometry to original values
@@ -175,10 +195,10 @@ module testingAdjointDiagnostics
     end if
 
   do whichLambda = 1, NLambdas
-    if (whichLambda .ne. 1) then
-      this_NmodesAdjoint = 1
+     if ((whichLambda .eq. 1) .or. (whichLambda .eq. 5) .or. (whichLambda .eq. 6)) then
+        this_NmodesAdjoint = NModesAdjoint
     else
-      this_NmodesAdjoint = NModesAdjoint
+       this_NmodesAdjoint = 1
     end if
     do whichMode = 1, this_NModesAdjoint
 
@@ -190,7 +210,11 @@ module testingAdjointDiagnostics
           case(3)
             deltaFactor = GHat_init
           case(4)
-            deltaFactor = iota_init
+             deltaFactor = iota_init
+          case(5)
+             ! TODO implement
+          case(6)
+             ! TODO implement
         end select
         ! If magnitude of fourier mode is nearly zero, don't use for benchmarking tests
         if (abs(deltaFactor) > 1.d-7) then

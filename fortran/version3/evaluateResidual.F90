@@ -4,6 +4,7 @@
 
     use globalVariables
     use indices
+    use DKEMatrix
 
     implicit none
 
@@ -12,7 +13,6 @@
     PetscErrorCode :: ierr
     integer :: userContext(*)
     Vec :: rhs
-!!    PetscScalar :: scalar, xPartOfRHS, factor !!Commented by AM 2016-03
     PetscScalar :: scalar, xPartOfRHS, factor, xPartOfRHS2 !!Added by AM 2016-03
     PetscScalar :: factorExternalPhi1 !!Added by AM 2018-12
     integer :: ix, L, itheta, izeta, ispecies, index
@@ -20,7 +20,7 @@
     Mat :: residualMatrix
     PetscScalar :: dPhiHatdpsiHatToUseInRHS
     PetscReal :: norm
-    integer :: ixMin, LMax
+    integer :: ixMin
     PetscViewer :: viewer
     character(len=200) :: filename
 
@@ -36,7 +36,7 @@
        ! Some terms in the residual are computed by calling populateMatrix(...,3)
        ! and multiplying the result by the state vector:
        call preallocateMatrix(residualMatrix, 3)
-       call populateMatrix(residualMatrix, 3, stateVec)
+       call populateMatrix(residualMatrix, 3, stateVec, 0, 0)
        call MatMult(residualMatrix, stateVec, residualVec, ierr)
        call MatDestroy(residualMatrix, ierr)
 
@@ -51,7 +51,7 @@
     ! any multiplying the result by the Vec f0:
     if (includeTemperatureEquilibrationTerm) then
        call preallocateMatrix(residualMatrix, 2)
-       call populateMatrix(residualMatrix, 2, stateVec)
+       call populateMatrix(residualMatrix, 2, stateVec, 0, 0)
        call MatMultAdd(residualMatrix, f0, residualVec, residualVec, ierr)
        call MatDestroy(residualMatrix, ierr)
     end if
@@ -67,7 +67,7 @@
     call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, rhs, ierr)
     call VecSet(rhs, zero, ierr)
 
-    if (RHSMode==1 .or. RHSMode>3) then
+    if (RHSMode==1 .or. RHSMode==4 .or. RHSMode==5) then
        dPhiHatdpsiHatToUseInRHS = dPhiHatdpsiHat
     else
        dPhiHatdpsiHatToUseInRHS = 0
@@ -152,12 +152,12 @@
                 
                 L = 0
                 index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                !!call VecSetValue(rhs, index, (4/three)*factor, ADD_VALUES, ierr) !!Commented by AM 2018-12
-                call VecSetValue(rhs, index, (4/three)*factor + factorExternalPhi1, ADD_VALUES, ierr) !!Added by AM 2018-12
+                !!call VecSetValue(rhs, index, (4/three)*factor, INSERT_VALUES, ierr) !!Commented by AM 2018-12
+                call VecSetValue(rhs, index, (4/three)*factor + factorExternalPhi1, INSERT_VALUES, ierr) !!Added by AM 2018-12
                 
                 L = 2
                 index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                call VecSetValue(rhs, index, (two/three)*factor, ADD_VALUES, ierr)
+                call VecSetValue(rhs, index, (two/three)*factor, INSERT_VALUES, ierr)
              end do
           end do
        end do
@@ -197,14 +197,7 @@
                 factor = factor - NBIspecZ * NBIspecNHat * BHat(itheta,izeta)/FSABHat
              end if
 
-             if (readExternalF) then
-                do ispecies = 1,externalNspecies
-                   factor = factor - externalCharges(ispecies) * externalN(ispecies, itheta,izeta)
-                end do
-             end if
-             
-
-             call VecSetValue(rhs, index, factor, ADD_VALUES, ierr)
+             call VecSetValue(rhs, index, factor, INSERT_VALUES, ierr)
           end do
        end do
     end if
@@ -231,11 +224,11 @@
 !!$
 !!$                L = 0
 !!$                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-!!$                call VecSetValue(rhs, index, (4/three)*factor, ADD_VALUES, ierr)
+!!$                call VecSetValue(rhs, index, (4/three)*factor, INSERT_VALUES, ierr)
 !!$                
 !!$                L = 2
 !!$                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-!!$                call VecSetValue(rhs, index, (two/three)*factor, ADD_VALUES, ierr)
+!!$                call VecSetValue(rhs, index, (two/three)*factor, INSERT_VALUES, ierr)
 !!$             end do
 !!$          end do
 !!$       end do
@@ -252,8 +245,8 @@
                 do izeta = izetaMin,izetaMax
                    index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
                    call VecSetValue(rhs, index, &
-                        factor * BHat(itheta,izeta), ADD_VALUES, ierr)
-                   !factor/BHat(itheta,izeta), ADD_VALUES, ierr)
+                        factor * BHat(itheta,izeta), INSERT_VALUES, ierr)
+                   !factor/BHat(itheta,izeta), INSERT_VALUES, ierr)
                 end do
              end do
           end do
@@ -268,48 +261,19 @@
                    index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
                    call VecSetValue(rhs, index, &
                         factor * (EParallelHat+EParallelHatSpec(ispecies)*bcdata(itheta,izeta)) &
-                        *BHat(itheta,izeta), ADD_VALUES, ierr)
-                   !factor/BHat(itheta,izeta), ADD_VALUES, ierr)
+                        *BHat(itheta,izeta), INSERT_VALUES, ierr)
+                   !factor/BHat(itheta,izeta), INSERT_VALUES, ierr)
                 end do
              end do
           end do
        end do 
     end if
-
     
     ! Done inserting values.
     ! Finally, assemble the RHS vector:
-    ! call VecAssemblyBegin(rhs, ierr)
-    ! call VecAssemblyEnd(rhs, ierr)
-
-    ! After assembling, we can add values
-    if (readExternalF) then
-       do ispecies = 1,Nspecies
-          do ix=ixMin,Nx
-             LMax = min(Nxi_for_x(ix),externalNL) -1
-             do L=0,Lmax
-                do itheta=ithetaMin,ithetaMax
-                   do izeta = izetaMin,izetaMax
-                      index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                      if (isnan(externalRosenPotentialTerms(ispecies,itheta,izeta,L+1,ix))) then
-                         print *,"NANANANANA"
-                      end if
-                      
-                      call VecSetValue(rhs, index, &
-                          externalRosenPotentialTerms(ispecies,itheta,izeta,L+1,ix), ADD_VALUES, ierr)
-                   end do
-               
-                end do
-             end do
-          end do
-       end do
-    end if
-    
-    ! Done adding values
     call VecAssemblyBegin(rhs, ierr)
     call VecAssemblyEnd(rhs, ierr)
 
-    
     ! Subtract the RHS from the residual:
     scalar = -1
     call VecAXPY(residualVec, scalar, rhs, ierr)

@@ -16,22 +16,16 @@
     integer :: whichLambda, whichMode
 
     integer :: ix, L, itheta, izeta, ispecies, index
-    integer :: ixMin
     PetscScalar :: THat, mHat, sqrtTHat, sqrtmHat, xPartOfRHS, dFactordLambda
     PetscErrorCode :: ierr
-    PetscScalar :: dBHatdLambda, dBHatdthetadLambda, dBHatdzetadLambda
-    PetscScalar :: angle, cos_angle, sin_angle, stuffToAdd
+    PetscScalar :: dBHatdLambda, dBHatdthetadLambda, dBHatdzetadLambda, dDHatdLambda
+    PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda
+    PetscScalar :: angle, cos_angle, sin_angle, stuffToAdd, factor
     integer :: m,n
 
     if (whichLambda > 0) then
       m = ms_sensitivity(whichMode)
       n = ns_sensitivity(whichMode)
-    end if
-
-    if (pointAtX0) then
-      ixMin = 2
-    else
-      ixMin = 1
     end if
 
     do ispecies = 1, Nspecies
@@ -47,16 +41,14 @@
           + (x2(ix) - three/two)*dTHatdpsiHats(ispecies)/THats(ispecies))) &
           *(Delta*nHats(ispecies)*mHat*sqrtMHat/(two*pi*sqrtpi*Zs(ispecies)*sqrtTHat))
 
-         ! factor = 1/(BHat(itheta,izeta)**3) &
-         !    *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
-         !    - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
-         !    * DHat(itheta,izeta) * xPartOfRHS
+       factor = 1/(BHat(itheta,izeta)**3) &
+            *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
+            - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
+            * DHat(itheta,izeta) * xPartOfRHS
 
         ! factor = (1/(BHat*(GHat+iota*IHat)))*(GHat*dBHatdtheta-IHat*dBHatdzeta)*xPartOfRHS
         do itheta = ithetaMin,ithetaMax
-           do izeta = izetaMin,izetaMax
-            
-              
+          do izeta = izetaMin,izetaMax
             angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
             cos_angle = cos(angle)
             sin_angle = sin(angle)

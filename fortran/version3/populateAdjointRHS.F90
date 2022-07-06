@@ -19,9 +19,12 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies, fineGrid)
   integer :: whichAdjointRHS, whichSpecies, fineGrid
 
   PetscErrorCode :: ierr
-  integer :: ix, L, itheta, izeta, ispecies, index, ixMin
-  PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, xPartOfRHS, factor, nHat, ZHat, sqrtFSAB2
-  PetscReal :: factor1, factor2
+  integer :: ix, L, itheta, izeta, ispecies, index
+  PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, xPartOfRHS, factor, nHat, Z, sqrtFSAB2
+  PetscScalar :: xPartOfRHSExB, factorExB
+  PetscReal :: norm, factor1, factor2
+  logical, parameter :: localUsePhi1 = .true.
+
 
   ! Validate input
   if (whichAdjointRHS<1 .or. whichAdjointRHS>3 .or. whichSpecies<0 .or. whichSpecies>Nspecies) then
@@ -35,11 +38,6 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies, fineGrid)
 
   call VecSet(rhs, zero, ierr)
 
-  if (pointAtX0) then
-     ixMin = 2
-  else
-     ixMin = 1
-  end if
 
   select case (whichAdjointRHS)
 
@@ -53,38 +51,57 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies, fineGrid)
         nHat = nHats(ispecies)
         sqrtTHat = sqrt(THat)
         sqrtMHat = sqrt(mHat)
-        ZHat = Zs(ispecies)
+        Z = Zs(ispecies)
 
         do ix=ixMin,Nx
             if (discreteAdjointOption .eqv. .false.) then
                 xPartOfRHS = exp(-x2(ix))*nHat*mHat*sqrtMHat*Delta*x2(ix)/ &
-                    (pi*sqrtpi*THat*sqrtTHat*ZHat)*ddrN2ddpsiHat
+                    (pi*sqrtpi*THat*sqrtTHat*Z)*ddrN2ddpsiHat
             else
-        xPartOfRHS = pi*Delta*THat*THat*sqrtTHat*x2(ix)*x2(ix)*ddrN2ddpsiHat*xweights(ix)/(ZHat*VPrimeHat*mHat*sqrtMHat)
-      end if
+               xPartOfRHS = pi*Delta*THat*THat*sqrtTHat*x2(ix)*x2(ix)*ddrN2ddpsiHat*xweights(ix)/(Z*VPrimeHat*mHat*sqrtMHat)
+               if (includePhi1 .and. localUsePhi1) then
+                  xPartOfRHSExB = 2*pi*Delta*alpha*THat*sqrtTHat*x2(ix)*ddrN2ddpsiHat*xweights(ix)/(VPrimeHat*mHat*sqrtMHat)
+               else
+                  xPartOfRHSExB = 0
+               end if
+            end if
             if (whichSpecies == 0) then
-                xPartOfRHS = xPartOfRHS*ZHat
+               xPartOfRHS = xPartOfRHS*Z
+               xPartOfRHSExB = xPartOfRHSExB*Z
             end if
 
             do itheta = ithetaMin,ithetaMax
                 do izeta = izetaMin,izetaMax
+                   if (.false.) then
                     factor = xPartOfRHS/(BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)) &
                         *(BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) &
                         - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))
+                 else
+                    factor = 0
+                 end if
+                 
+                    if (includePhi1 .and. localUsePhi1) then
+                       factorExB = xPartOfRHSExB/(BHat(itheta,izeta)*BHat(itheta,izeta)) &
+                            *(BHat_sub_theta(itheta,izeta)*dPhi1Hatdzeta(itheta,izeta) &
+                            - BHat_sub_zeta(itheta,izeta)*dPhi1Hatdtheta(itheta,izeta))
+                    else
+                       factorExB = 0
+                    end if
                     if (discreteAdjointOption .eqv. .false.) then
                         factor = factor*DHat(itheta,izeta)
                         factor1 = four/three
                         factor2 = two/three
-          else
+                     else
                         factor = factor*thetaWeights(itheta)*zetaWeights(izeta)
-                    factor1 = 8/three
-                    factor2 = four/15
+                        factorExB = factorExB*thetaWeights(itheta)*zetaWeights(izeta)
+                        factor1 = 8/three
+                        factor2 = four/15
                 end if
 
                 L = 0
 
                 index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                call VecSetValue(rhs, index, factor1*factor, INSERT_VALUES, ierr)
+                call VecSetValue(rhs, index, factor1*factor + factorExB, INSERT_VALUES, ierr) ! *2
 
                 L = 2
 
@@ -107,14 +124,14 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies, fineGrid)
         nHat = nHats(ispecies)
         sqrtTHat = sqrt(THat)
         sqrtMHat = sqrt(mHat)
-        ZHat = Zs(ispecies)
+        Z = Zs(ispecies)
 
         do ix=ixMin,Nx
           if (discreteAdjointOption) then
-            xPartOfRHS = pi*Delta*x2(ix)*x2(ix)*x2(ix)*xweights(ix)*THat*THat*THat*sqrtTHat*ddrN2ddpsiHat/(2*ZHat*VPrimeHat*mHat*sqrtMHat)
+            xPartOfRHS = pi*Delta*x2(ix)*x2(ix)*x2(ix)*xweights(ix)*THat*THat*THat*sqrtTHat*ddrN2ddpsiHat/(2*Z*VPrimeHat*mHat*sqrtMHat)
           else
             xPartOfRHS = exp(-x2(ix))*nHat*mHat*sqrtMHat*Delta*x2(ix)*x2(ix)/ &
-              (2*pi*sqrtpi*sqrtTHat*ZHat)*ddrN2ddpsiHat
+              (2*pi*sqrtpi*sqrtTHat*Z)*ddrN2ddpsiHat
           end if
           do itheta = ithetaMin,ithetaMax
              do izeta = izetaMin,izetaMax
@@ -155,7 +172,7 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies, fineGrid)
           THat = THats(ispecies)
           mHat = mHats(ispecies)
           nHat = nHats(ispecies)
-          ZHat = Zs(ispecies)
+          Z = Zs(ispecies)
 
           do ix=ixMin,Nx
              if (discreteAdjointOption .eqv. .false.) then
@@ -165,7 +182,7 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies, fineGrid)
              end if
 
             if (whichSpecies == 0) then
-              xPartOfRHS = xPartOfRHS*ZHat
+              xPartOfRHS = xPartOfRHS*Z
             end if
             do itheta = ithetaMin,ithetaMax
                do izeta = izetaMin,izetaMax

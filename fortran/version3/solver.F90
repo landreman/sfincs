@@ -3,7 +3,9 @@ module solver
   use globalVariables
   use adjointDiagnostics
   use writeHDF5Output
-
+  use DKEMatrix
+  use residual
+  
 #include "PETScVersions.F90"
 
   implicit none
@@ -52,7 +54,7 @@ contains
     PetscViewerAndFormat vf_adjoint
 #endif
 
-    external evaluateJacobian, evaluateResidual, diagnosticsMonitor
+    external evaluateJacobian, diagnosticsMonitor
 
     ! If mumps ICNTL(14) was set via the command line, we need to clear it, or else
     ! the auto-increase feature will not work.
@@ -119,10 +121,10 @@ contains
        if (discreteAdjointOption .eqv. .false.) then
           call KSPCreate(MPIComm,KSPInstance_adjoint, ierr)
           call preallocateMatrix(adjointMatrix,1)
-          call populateMatrix(adjointMatrix,4,dummyVec)
+          call populateMatrix(adjointMatrix, 4, dummyVec, 0, 0)
           if (useIterativeLinearSolver) then
             call preallocateMatrix(adjointPreconditionerMatrix, 1)
-            call populateMatrix(adjointPreconditionerMatrix,5,dummyVec)
+            call populateMatrix(adjointPreconditionerMatrix, 5, dummyVec, 0, 0)
           end if
        end if
 
@@ -301,8 +303,6 @@ contains
        ! Therefore, it is preferable to always have snes type = SNESNEWTONLS but set the 
        ! number of iterations to 1 for a linear run.
        call SNESSetType(mysnes, SNESNEWTONLS, ierr)
-       !!if (nonlinear) then !!Commented by AM 2016-02
-       !!if (includePhi1) then !!Added by AM 2016-02 !!Commented by AM 2018-12
        if (includePhi1 .and. (.not. readExternalPhi1)) then !!Added by AM 2018-12
           if (masterProc) then
              print *,"Since this is a nonlinear run, we will use Newton's method."
@@ -315,22 +315,6 @@ contains
              print *,"Since this is a linear run, we will only take a single step, and not iterate Newton's method."
           end if
        end if
-       ! Below is the old way of setting linear vs nonlinear, which does not work for linear runs in petsc 3.3:
-!!$    ! Set the algorithm to use for the nonlinear solver:
-!!$    if (nonlinear) then
-!!$       ! SNESNEWTONLS = Newton's method with an optional line search.
-!!$       ! As of PETSc version 3.5, this is the default algorithm, but I'll set it manually here anyway to be safe.
-!!$       call SNESSetType(mysnes, SNESNEWTONLS, ierr)
-!!$       if (masterProc) then
-!!$          print *,"Since this is a nonlinear run, we will use Newton's method."
-!!$       end if
-!!$    else
-!!$       ! SNESKSPONLY = Only do 1 linear step.
-!!$       call SNESSetType(mysnes, SNESKSPONLY, ierr)
-!!$       if (masterProc) then
-!!$          print *,"Since this is a linear run, we will only take a single step, and not iterate Newton's method."
-!!$       end if
-!!$    end if
 
        call SNESSetFromOptions(mysnes, ierr)
 #if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR >= 9))
@@ -349,8 +333,6 @@ contains
           end if
        end if
 
-
-       !if (isAParallelDirectSolverInstalled .and. (whichParallelSolverToFactorPreconditioner==1)) then
        if (actualSolverType == MATSOLVERMUMPS) then
           ! When mumps is the solver, it is very handy to set mumps's control parameter CNTL(1) to a number like 1e-6.
           ! CNTL(1) is a threshhold for pivoting. For the default value of 0.01, there is a lot of pivoting.
@@ -389,13 +371,6 @@ contains
           if (discreteAdjointOption .eqv. .false.) then
             call MatMumpsSetIcntl(factorMat_adjoint,mumps_which_cntl,2,ierr)
           end if
-
-!!$       if (numProcs>1) then
-!!$          ! Turn on parallel ordering by default.
-!!$          ! Only do this if >1 procs, to avoid confusing warning message otherwise.
-!!$          mumps_which_cntl = 28
-!!$          call MatMumpsSetIcntl(factorMat,mumps_which_cntl,2,ierr)
-!!$       end if
 
           ! Increase amount by which the mumps work array can expand due to near-0 pivots.
           ! (The default value of icntl(14) is 25.)
@@ -524,12 +499,12 @@ contains
           call VecSet(solutionVec, zero, ierr)
 
           ! Build the main linear system matrix:
-          call populateMatrix(matrix,1,dummyVec)
+          call populateMatrix(matrix, 1, dummyVec, 0, 0)
 
           if (useIterativeLinearSolver) then
 
              ! Build the preconditioner:
-             call populateMatrix(preconditionerMatrix,0,dummyVec)
+             call populateMatrix(preconditionerMatrix, 0, dummyVec, 0, 0)
 
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
              ! Syntax for PETSc versions up through 3.4

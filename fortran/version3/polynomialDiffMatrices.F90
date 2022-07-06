@@ -113,7 +113,7 @@ contains
     PetscScalar, intent(in), dimension(:) :: x
     PetscScalar, intent(out) :: ddx(:,:), d2dx2(:,:)
     integer :: i, N
-    PetscScalar, dimension(:,:), allocatable :: XX, DX, CC, CCC, Z, XXX, Y, oldY, repmatDiagD
+    PetscScalar, dimension(:,:), allocatable :: XX, DX, CC, CCC, Z, XXX, Y, D, oldY, repmatDiagD
     PetscScalar, dimension(:), allocatable :: c
     ! XXX in this subroutine corresponds to X in the DMSuite version of poldif
 

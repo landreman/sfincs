@@ -8,8 +8,6 @@
     use geometry
     use indices
     use export_f
-    use readHDF5Input !!Added by AM 2018-12
-    use externalFCalculations
 
     implicit none
 
@@ -58,11 +56,6 @@
           Nzeta = Nzeta + 1
        end if
     end if
-
-    if (readExternalF) then
-       externalNL = min(externalNL,Nxi)
-    end if
-    
 
     if (masterProc) then
        print *,"---- Numerical parameters: ----"
@@ -649,6 +642,11 @@
     x2=x*x
     allocate(expx2(Nx))
     expx2 = exp(-x*x)
+    if (pointAtX0) then
+       ixMin = 2
+    else
+       ixMin = 1
+    end if
 
 
     allocate(ddx(Nx,Nx))
@@ -1004,6 +1002,11 @@
        stop
     end select
 
+    if ((xGridScheme==5 .or. xGridScheme==6) .and. (RHSMode .ne. 3)) then
+       allocate(RosenbluthPotentialTerms(Nspecies,Nspecies,NL,Nx,Nx))
+       call computeRosenbluthPotentialResponse(Nx, x, xWeights, Nspecies, mHats, THats, nHats, Zs, NL, &
+         RosenbluthPotentialTerms,.false.)
+    end if
 
 !    if (masterProc) then
     if (.false.) then
@@ -1236,33 +1239,6 @@
 
     call computeBIntegrals()
 
-        allocate(Phi1Hat(Ntheta,Nzeta))
-    allocate(dPhi1Hatdtheta(Ntheta,Nzeta))
-    allocate(dPhi1Hatdzeta(Ntheta,Nzeta))
-    Phi1Hat = zero
-    dPhi1Hatdtheta = zero
-    dPhi1Hatdzeta = zero
-
-    if (includePhi1 .and. readExternalPhi1) then !!Added by AM 2018-12
-       call setPhi1() !!Added by AM 2018-12
-    end if !!Added by AM 2018-12
-
-    
-    if (readExternalF) then
-       call setExternalF()
-       call calculateExternalN()
-       call calculateExternalFlow()
-       call computeExternalRosenbluthPotentialResponse()
-    end if
-
-    
-    if ((xGridScheme==5 .or. xGridScheme==6) .and. (RHSMode .ne. 3)) then
-       allocate(RosenbluthPotentialTerms(Nspecies,Nspecies,NL,Nx,Nx))
-       call computeRosenbluthPotentialResponse(Nx, x, xWeights, Nspecies, mHats, THats, nHats, Zs, NL, &
-         RosenbluthPotentialTerms,.false.)
-    end if
-
-
     if (masterProc) then
        print *,"---- Geometry parameters: ----"
        print *,"Geometry scheme = ", geometryScheme
@@ -1404,6 +1380,10 @@
     allocate(totalPressure(Nspecies,Ntheta,Nzeta))
 
     allocate(particleFluxBeforeSurfaceIntegral_vm0(Nspecies,Ntheta,Nzeta))
+    allocate(adjointParticleFluxBeforeSurfaceIntegral_vm0(Nspecies,Ntheta,Nzeta))
+    allocate(adjointParticleFlux_vm0_psiHat(Nspecies))
+    allocate(adjointParticleFlux_vm0_rHat(Nspecies))
+
     allocate(particleFluxBeforeSurfaceIntegral_vm(Nspecies,Ntheta,Nzeta))
     allocate(particleFluxBeforeSurfaceIntegral_vE0(Nspecies,Ntheta,Nzeta))
     allocate(particleFluxBeforeSurfaceIntegral_vE(Nspecies,Ntheta,Nzeta))
@@ -1417,59 +1397,76 @@
     allocate(heatFluxBeforeSurfaceIntegral_vE(Nspecies,Ntheta,Nzeta))
     allocate(NTVBeforeSurfaceIntegral(Nspecies,Ntheta,Nzeta))
 
-    
-    if (RHSMode > 3 .and. RHSMode < 6) then
-      allocate(dRadialCurrentdLambda(NLambdas,NModesAdjoint))
-      allocate(dTotalHeatFluxdLambda(NLambdas,NModesAdjoint))
-      if (.not. allocated(dBootstrapdLambda)) then
-        allocate(dBootstrapdLambda(NLambdas,NModesAdjoint))
-      end if
-      allocate(dParticleFluxdLambda(NSpecies,NLambdas,NModesAdjoint))
-      allocate(dHeatFluxdLambda(NSpecies,NLambdas,NModesAdjoint))
-      allocate(dParallelFlowdLambda(Nspecies,NLambdas,NModesAdjoint))
-      if (debugAdjoint) then
-        allocate(dRadialCurrentdLambda_finitediff(NLambdas,NModesAdjoint))
-        allocate(dTotalHeatFluxdLambda_finitediff(NLambdas,NModesAdjoint))
-        allocate(dBootstrapdLambda_finitediff(NLambdas,NModesAdjoint))
-        allocate(dParticleFluxdLambda_finitediff(NSpecies,NLambdas,NModesAdjoint))
-        allocate(dHeatFluxdLambda_finitediff(NSpecies,NLambdas,NModesAdjoint))
-        allocate(dParallelFlowdLambda_finitediff(Nspecies,NLambdas,NModesAdjoint))
+    if (RHSMode == 4 .or. RHSMode == 5) then
+       allocate(dRadialCurrentdLambda(NLambdas,NModesAdjoint))
+       dRadialCurrentdLambda = zero
+       allocate(dTotalHeatFluxdLambda(NLambdas,NModesAdjoint))
+       dTotalHeatFluxdLambda = zero
+       if (.not. allocated(dBootstrapdLambda)) then
+          allocate(dBootstrapdLambda(NLambdas,NModesAdjoint))
+          dBootstrapdLambda = zero
+       end if
+       allocate(dParticleFluxdLambda(NSpecies,NLambdas,NModesAdjoint))
+       dParticleFluxdLambda = zero
+       allocate(dHeatFluxdLambda(NSpecies,NLambdas,NModesAdjoint))
+       dHeatFluxdLambda = zero
+       allocate(dParallelFlowdLambda(Nspecies,NLambdas,NModesAdjoint))
+       dParallelFlowdLambda = zero
 
-        allocate(particleFluxPercentError(Nspecies,NLambdas,NModesAdjoint))
-        allocate(heatFluxPercentError(Nspecies,NLambdas,NModesAdjoint))
-        allocate(parallelFlowPercentError(Nspecies,NLambdas,NModesAdjoint))
+       if (debugAdjoint) then
+          allocate(dRadialCurrentdLambda_finitediff(NLambdas,NModesAdjoint))
+          dRadialCurrentdLambda_finitediff = zero
+          allocate(dTotalHeatFluxdLambda_finitediff(NLambdas,NModesAdjoint))
+          dTotalHeatFluxdLambda_finitediff = zero
+          allocate(dBootstrapdLambda_finitediff(NLambdas,NModesAdjoint))
+          dBootstrapdLambda_finitediff = zero
+          allocate(dParticleFluxdLambda_finitediff(NSpecies,NLambdas,NModesAdjoint))
+          dParticleFluxdLambda_finitediff = zero
+          allocate(dHeatFluxdLambda_finitediff(NSpecies,NLambdas,NModesAdjoint))
+          dHeatFluxdLambda_finitediff = zero
+          allocate(dParallelFlowdLambda_finitediff(Nspecies,NLambdas,NModesAdjoint))
+          dParallelFlowdLambda_finitediff = zero
 
-        allocate(radialCurrentPercentError(NLambdas,NModesAdjoint))
-        allocate(bootstrapPercentError(NLambdas,NModesAdjoint))
-        allocate(totalHeatFluxPercentError(NLambdas,NModesAdjoint))
+          allocate(particleFluxPercentError(Nspecies,NLambdas,NModesAdjoint))
+          particleFluxPercentError = zero
+          allocate(heatFluxPercentError(Nspecies,NLambdas,NModesAdjoint))
+          heatFluxPercentError = zero
+          allocate(parallelFlowPercentError(Nspecies,NLambdas,NModesAdjoint))
+          parallelFlowPercentError = zero
 
-        particleFluxPercentError = zero
-        heatFluxPercentError = zero
-        parallelFlowPercentError = zero
-        radialCurrentPercentError = zero
-        bootstrapPercentError = zero
-        totalHeatFluxPercentError = zero
+          allocate(radialCurrentPercentError(NLambdas,NModesAdjoint))
+          radialCurrentPercentError = zero
+          allocate(bootstrapPercentError(NLambdas,NModesAdjoint))
+          bootstrapPercentError = zero
+          allocate(totalHeatFluxPercentError(NLambdas,NModesAdjoint))
+          totalHeatFluxPercentError = zero
 
-        dRadialCurrentdLambda_finitediff = zero
-        dTotalHeatFluxdLambda_finitediff = zero
-        dBootstrapdLambda_finitediff = zero
-        dHeatFluxdLambda_finitediff = zero
-        dParallelFlowdLambda_finitediff = zero
-        if (RHSMode==5 .and. (.not. allocated(dPhidPsidLambda_finitediff))) then
-          allocate(dPhidPsidLambda_finitediff(NLambdas,NModesAdjoint))
-        end if
-      end if
-      if (RHSMode==5) then
-        if (.not. allocated(dPhidPsidLambda)) allocate(dPhidPsidLambda(NLambdas,NModesAdjoint))
-      end if
+          if (RHSMode==5 .and. (.not. allocated(dPhidPsidLambda_finitediff))) then
+             allocate(dPhidPsidLambda_finitediff(NLambdas,NModesAdjoint))
+             dPhidPsidLambda_finitediff = zero
+          end if
+       end if
     end if
-
+    
+    if (RHSMode==5) then
+       if (.not. allocated(dPhidPsidLambda)) then
+          allocate(dPhidPsidLambda(NLambdas,NModesAdjoint))
+          dPhidPsidLambda = zero
+       end if
+    end if
+    
     allocate(particleFlux_vm_psiHat_vs_x(Nspecies,Nx))
     allocate(heatFlux_vm_psiHat_vs_x(Nspecies,Nx))
     allocate(FSABFlow_vs_x(Nspecies,Nx))
 
     allocate(jHat(Ntheta,Nzeta))
-    
+    allocate(Phi1Hat(Ntheta,Nzeta))
+    allocate(dPhi1Hatdtheta(Ntheta,Nzeta))
+    allocate(dPhi1Hatdzeta(Ntheta,Nzeta))
+    Phi1Hat = zero
+    dPhi1Hatdtheta = zero
+    dPhi1Hatdzeta = zero
+
     select case (constraintScheme)
     case (0)
        ! No allocation needed in this case.

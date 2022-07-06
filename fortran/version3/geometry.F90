@@ -2176,6 +2176,7 @@ contains
     PetscScalar, dimension(:,:), allocatable :: dXdtheta, dXdzeta, dXdpsiHat, dYdtheta, dYdzeta, dYdpsiHat
     PetscScalar, dimension(:,:), allocatable :: g_sub_theta_theta, g_sub_theta_zeta, g_sub_zeta_zeta, g_sub_psi_theta, g_sub_psi_zeta, g_sub_psi_psi
     logical :: non_Nyquist_mode_available, found_imn
+    integer :: iMode
 
 
     ! This subroutine is written so that only psiN_wish is used, not the other *_wish quantities.
@@ -3006,8 +3007,8 @@ contains
     PetscScalar :: scale 
     scale = 1
     if (helicity_n == 0 .and. n /= 0) then
-      scale = rippleScale
-    else if ((n /= 0)) then
+       scale = rippleScale
+    else if (n /= 0) then
        if ((helicity_l/helicity_n) /= (m/n)) then
           scale = rippleScale
        end if
@@ -3022,7 +3023,7 @@ contains
 
     implicit none
 
-    integer :: itheta,  NHarmonics, NHarmonicsL, NHarmonicsH, i
+    integer :: itheta, izeta, NHarmonics, NHarmonicsL, NHarmonicsH, i, m, n
     integer, dimension(:), allocatable :: BHarmonics_l, BHarmonics_n
     integer, dimension(:), allocatable :: BHarmonics_lL, BHarmonics_nL, BHarmonics_lH, BHarmonics_nH
     PetscScalar, dimension(:), allocatable :: BHarmonics_amplitudes
@@ -3042,10 +3043,10 @@ contains
     PetscScalar :: dataNumbers
     PetscScalar, dimension(2) :: data2Numbers
     integer, dimension(2) :: dataIntegers
-    integer :: no_of_modes_old, no_of_modes_new, modeind, numB0s
+    integer :: no_of_modes_old, no_of_modes_new, modeind, numB0s, startn, stopn
     PetscScalar :: iota_old, iota_new, GHat_old, GHat_new, IHat_old, IHat_new
-    PetscScalar :: pPrimeHat_old, pPrimeHat_new
-    logical :: end_of_file, proceed, include_mn, nearbyRadiiGiven
+    PetscScalar :: pPrimeHat_old, pPrimeHat_new, invFSA_BHat2
+    logical :: end_of_file, proceed, include_mn, nearbyRadiiGiven, nonStelSym
     integer, parameter :: max_no_of_modes = 10000
     integer, dimension(max_no_of_modes) :: modesm_old, modesm_new, modesn_old, modesn_new
     PetscScalar, dimension(max_no_of_modes) :: modesb_old, modesb_new

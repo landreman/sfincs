@@ -38,8 +38,18 @@ subroutine sfincs_finalize()
   if(allocated(pressurePerturbation)) deallocate( pressurePerturbation, totalPressure, pressureAnisotropy)
   if(allocated(flow)) deallocate( flow, velocityUsingFSADensity, velocityUsingTotalDensity)
   if(allocated(MachUsingFSAThermalSpeed)) deallocate( MachUsingFSAThermalSpeed)
+
   if(allocated(particleFluxBeforeSurfaceIntegral_vm0)) deallocate( particleFluxBeforeSurfaceIntegral_vm0)
-  if(allocated(particleFluxBeforeSurfaceIntegral_vm)) deallocate( particleFluxBeforeSurfaceIntegral_vm)
+    
+  if(allocated(adjointParticleFluxBeforeSurfaceIntegral_vm0)) deallocate( adjointParticleFluxBeforeSurfaceIntegral_vm0)
+  if(allocated(adjointParticleFlux_vm0_rHat)) deallocate( adjointParticleFlux_vm0_rHat)
+  if(allocated(adjointParticleFlux_vm0_psiHat)) deallocate( adjointParticleFlux_vm0_psiHat)
+  
+
+  if(allocated(adjointParticleFluxBeforeSurfaceIntegral_vm0)) deallocate( particleFluxBeforeSurfaceIntegral_vm0)
+
+  
+if(allocated(particleFluxBeforeSurfaceIntegral_vm)) deallocate( particleFluxBeforeSurfaceIntegral_vm)
   if(allocated(particleFluxBeforeSurfaceIntegral_vE0)) deallocate( particleFluxBeforeSurfaceIntegral_vE0)
   if(allocated(particleFluxBeforeSurfaceIntegral_vE)) deallocate( particleFluxBeforeSurfaceIntegral_vE)
   if(allocated(momentumFluxBeforeSurfaceIntegral_vm0)) deallocate( momentumFluxBeforeSurfaceIntegral_vm0)
@@ -162,14 +172,6 @@ subroutine sfincs_finalize()
   if(allocated(delta_f))deallocate(delta_f)
   if(allocated(full_f))deallocate(full_f)
 
-  if(allocated(externalRosenPotentialTerms))deallocate(externalRosenPotentialTerms)
-  if(allocated(externalN))deallocate(externalN)
-  if(allocated(externalCharges))deallocate(externalCharges)
-  if(allocated(externalMasses))deallocate(externalMasses)
-  if(allocated(FSABExternalFlow)) deallocate(FSABExternalFlow)
-  if(allocated(externalFlow)) deallocate(externalFlow)
-  
-  
   call xGrid_finalize()
   call indices_finalize()
 

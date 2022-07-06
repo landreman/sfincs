@@ -8,16 +8,16 @@
 
 #include "PETScVersions.F90"
 
-    use petscmat
     use globalVariables
     use sparsify
     use indices
+    use xGrid, only: xGrid_k
 
     implicit none
 
     Mat :: dMatrixdLambda
-    integer :: whichLambda, whichMode
-    integer :: i, ixMin, L, ispecies, izeta, itheta, ix, ixMinCol
+    integer, intent(in)  :: whichLambda, whichMode
+    integer :: i, ixMax, L, ispecies, izeta, itheta, ix, ixMinCol
     PetscScalar, dimension(:,:), allocatable :: thetaPartOfTerm, localThetaPartOfTerm, &
       zetaPartOfTerm, localZetaPartOfTerm
     integer, dimension(:), allocatable :: rowIndices, colIndices
@@ -28,11 +28,14 @@
     PetscScalar :: temp, xDotFactor, stuffToAdd, dTempdLambda
     PetscScalar, dimension(:,:), allocatable :: xPartOfXDot, xPartOfXDot_plus, xPartOfXDot_minus
     integer :: ix_row, ix_col, rowIndex, colIndex, ell
-    PetscScalar :: dBHatdLambda
-    PetscScalar :: dBHatdthetadLambda, dBHatdzetadLambda
-    PetscScalar :: geometricFactor, dFSABHat2dBmn
+    PetscLogDouble :: time1, time2
+    double precision :: myMatInfo(MAT_INFO_SIZE)
+    integer :: NNZ, NNZAllocated, NMallocs
+    PetscScalar :: dBHatdLambda, dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dBHat_sup_thetadLambda
+    PetscScalar :: dBHat_sup_zetadLambda, dBHatdthetadLambda, dBHatdzetadLambda, dDHatdLambda
+    PetscScalar :: geometricFactor, dFSABHat2dBmn, dFSABHat2dDmn, dVPrimeHatdDmn
     integer :: m,n
-    PetscScalar :: angle, cos_angle, sin_angle, dVPrimeHatdLambda, dVPrimeHatdBmn
+    PetscScalar :: angle, cos_angle, sin_angle, dVPrimeHatdLambda, dFSABHat2dLambda, dVPrimeHatdBmn
 
     if (whichLambda > 0) then
       m = ms_sensitivity(whichMode)
@@ -45,12 +48,6 @@
       do i=1,matrixSize
         call MatSetValue(dMatrixdLambda, i-1, i-1, zero, ADD_VALUES, ierr)
       end do
-    end if
-
-    if (pointAtX0) then
-      ixMin = 2
-    else
-      ixMin = 1
     end if
 
     if (useDKESExBDrift) then
@@ -758,5 +755,6 @@
 
     call MatAssemblyBegin(dMatrixdLambda, MAT_FINAL_ASSEMBLY, ierr)
     call MatAssemblyEnd(dMatrixdLambda, MAT_FINAL_ASSEMBLY, ierr)
+    
 
   end subroutine populatedMatrixdLambda

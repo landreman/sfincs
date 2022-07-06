@@ -25,7 +25,7 @@ subroutine validateInput()
   
   if (RHSMode>5) then
      if (masterProc) then
-        print *,"Error! RHSMode must be no more than 3."
+        print *,"Error! RHSMode must be no more than 5."
      end if
      stop
   end if
@@ -601,19 +601,7 @@ subroutine validateInput()
      print *,line
   end if
 
-  !!Check added by AM 2018-01!! 
-  !!This warning message is not useful because includePhi1 = .true. is not the default but includePhi1InKineticEquation = .true. is default, so removed it !!AM 2018-08
-!  if (includePhi1InKineticEquation .and. (.not. includePhi1) .and. masterProc) then 
-!     print *,line 
-!     print *,line 
-!     print *,"**   WARNING: You are including Phi1 in the kinetic equation"
-!     print *,"**            but this has no effect since includePhi1 = .false."
-!     print *,line
-!     print *,line
-!  end if
 
-  !!Check modified by AM 2018-01!!
-  !if (includePhi1InCollisionOperator .and. (.not. includePhi1InKineticEquation) .and. masterProc) then
   if (includePhi1InCollisionOperator .and. ((.not. includePhi1) .or. (.not. includePhi1InKineticEquation)) .and. masterProc) then
      print *,line
      print *,line
@@ -633,7 +621,6 @@ subroutine validateInput()
      print *,line
   end if
 
-  !!if ((.not. withAdiabatic) .and. includePhi1 .and. quasineutralityOption == 1 .and. (Nspecies < 2)) then !!Commented by AM 2018-12
   if ((.not. withAdiabatic) .and. includePhi1 .and. (.not. readExternalPhi1) .and. quasineutralityOption == 1 .and. (Nspecies < 2)) then !!Added by AM 2018-12
       if (masterProc) then
         print *,"Error! In a nonlinear run (includePhi1 = .true.) you must use at least two species, to be able to fulfill quasi-neutrality."
@@ -641,20 +628,12 @@ subroutine validateInput()
       stop
   end if 
 
-  !!if ((.not. withAdiabatic) .and. includePhi1 .and. quasineutralityOption == 2) then !!Commented by AM 2018-12
   if ((.not. withAdiabatic) .and. includePhi1 .and. (.not. readExternalPhi1) .and. quasineutralityOption == 2) then !!Added by AM 2018-12
       if (masterProc) then
         print *,"Error! If running with EUTERPE quasi-neutrality equations (quasineutralityOption = 2) in a nonlinear run (includePhi1 = .true.) you must use an adiabatic species (withAdiabatic = .true.)."
       end if
       stop
   end if 
-
-!!$  if ((Nspecies .ne. 1) .and. includePhi1 .and. quasineutralityOption == 2) then 
-!!$      if (masterProc) then
-!!$        print *,"Error! If running with EUTERPE quasi-neutrality equations (quasineutralityOption = 2) in a nonlinear run (includePhi1 = .true.) you must use ONE kinetic species only."
-!!$      end if
-!!$      stop
-!!$  end if 
 
 
   !!Temporary check added by AM 2018-12!!
@@ -1235,7 +1214,7 @@ subroutine validateInput()
   end if
 
 ! Validate adjoint inputs
-  if (RHSMode>3 .or. (ambipolarSolve .and. ambipolarSolveOption /= 2)) then
+  if ((RHSMode == 4 .or. RHSMode == 5) .or. (ambipolarSolve .and. ambipolarSolveOption /= 2)) then
     if (RHSMode==5 .and. adjointRadialCurrentOption) then
       if (masterProc) then
         print *,"Error! RHSMode=5 cannot be used with adjointRadialCurrentOption."
@@ -1248,9 +1227,10 @@ subroutine validateInput()
       end if
     end if
     ! Check for linear solve
-    if (includePhi1) then
+    if (includePhi1 .and. (.not. readExternalPhi1) .and. (.not. discreteAdjointOption)) then
       if (masterProc) then
-        print *,"Error! RHSMode>3 cannot be used with Phi1."
+         print *,"Error! RHSMode>3 cannot be used with Phi1."
+         print *,"unless Phi1 is read in from an external file and discrete adjoint is used."
       endif
       stop
     endif
