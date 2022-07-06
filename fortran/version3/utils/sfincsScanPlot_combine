@@ -15,10 +15,17 @@ import inspect, os
 import pickle
 import sys, subprocess
 
+<<<<<<< HEAD
 print("This is "+ inspect.getfile(inspect.currentframe()))
 
 if len(sys.argv)<2:
     print("Error! You must call this script with command-line arguments to indicate the directories to plot.")
+=======
+print ("This is "+ inspect.getfile(inspect.currentframe()))
+
+if len(sys.argv)<2:
+    print ("Error! You must call this script with command-line arguments to indicate the directories to plot.")
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
     exit(1)
 
 matplotlib.rcParams.update({'font.size': 8})
@@ -45,16 +52,22 @@ originalDirectory = os.getcwd()
 for whichFile in range(1,len(sys.argv)):
     try:
         filename = sys.argv[whichFile]+'/sfincsScan.dat'
+<<<<<<< HEAD
         print("*************************************************")
         print("Processing directory "+sys.argv[whichFile])
         print("*************************************************")
+=======
+        print ("*************************************************")
+        print ("Processing directory "+sys.argv[whichFile])
+        print ("*************************************************")
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
 
         os.chdir(sys.argv[whichFile])
         directories.append(os.getcwd())
         this_script = os.path.abspath(__file__)
         # The "1" below is just an arbitrary command-line argument, which suppresses plotting:
         submitCommand = this_script[:-8] + " noplot"
-        subprocess.call(submitCommand.split(" "))
+        #subprocess.call(submitCommand.split(" "))
         os.chdir(originalDirectory)
 
         inputFile = open(filename,'rb')
@@ -97,6 +110,7 @@ for whichFile in range(1,len(sys.argv)):
 
     if whichFile>1:
         if scanTypes[-1] != scanTypes[0]:
+<<<<<<< HEAD
             print("ERROR: scanType is not consistent among the directories you requested.")
             exit(1)
         if numQuantities[-1] != numQuantities[0]:
@@ -111,6 +125,22 @@ for whichFile in range(1,len(sys.argv)):
         for i in range(numQuantities[0]):
             if xlabels[-1][i] != xlabels[0][i]:
                 print("ERROR: xlabels are not consistent among the directories you requested.")
+=======
+            print ("ERROR: scanType is not consistent among the directories you requested.")
+            exit(1)
+        if numQuantities[-1] != numQuantities[0]:
+            print ("ERROR: numQuantities is not consistent among the directories you requested.")
+            exit(1)
+        if numRows[-1] != numRows[0]:
+            print ("ERROR: numRows is not consistent among the directories you requested.")
+            exit(1)
+        if numCols[-1] != numCols[0]:
+            print ("ERROR: numCols is not consistent among the directories you requested.")
+            exit(1)
+        for i in range(numQuantities[0]):
+            if xlabels[-1][i] != xlabels[0][i]:
+                print ("ERROR: xlabels are not consistent among the directories you requested.")
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
                 exit(1)
 
 # ***************************************************
@@ -121,7 +151,7 @@ fig = plt.figure(figsize=(16,8.5))
 fig.patch.set_facecolor('white')
 
 # Set the default color cycle:
-matplotlib.rcParams['axes.color_cycle'] = ['r', 'b', 'c','y','g','k']
+#matplotlib.rcParams['axes.color_cycle'] = ['r', 'b', 'c','y','g','k']
 
 for iQuantity in range(numQuantities[0]):
    plt.subplot(numRows[0],numCols[0],iQuantity+1)

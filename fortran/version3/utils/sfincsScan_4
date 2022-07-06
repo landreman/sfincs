@@ -3,37 +3,33 @@
 # This script will not work if called directly.
 # From the command line, you should call sfincsScan instead.
 
-from __future__ import print_function, division
-
 profilesFilename = 'profiles'
 
-import os, inspect, sys
+import os, inspect
+from builtins import input
 
-# raw_input was renamed to input in python3
-if sys.version_info >= (3, 0):
-    raw_input = input
-
-
-print("This is "+ inspect.getfile(inspect.currentframe()))
-print("Beginning a scan over radius.")
-
-
+#print ("This is " + os.path.abspath(inspect.getfile(inspect.currentframe())))
+this_filename = "sfincsScan_4"
+print ("This is "+ this_filename)
+print ("Beginning a scan over radius.")
 
 # Determine radii to use, and n & T at those radii:
 skipExistingDirectories = True
-exec(compile(open(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/radialScans", "rb").read(), os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/radialScans", 'exec'))
+#execfile(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/radialScans")
+exec(open(os.path.dirname(os.path.abspath(__file__))+"/radialScans").read())
 
 if waitBeforeSubmitting:
     while True:
-        proceed=raw_input("Should I go ahead and launch these "+str(len(radii))+" jobs? [y/n] ")
+        #proceed=raw_input("Should I go ahead and launch these "+str(len(radii))+" jobs? [y/n] ")
+        proceed=input("Should I go ahead and launch these "+str(len(radii))+" jobs? [y/n] ")
         if proceed=="y" or proceed=="n":
             break
-        print("You must enter either y or n.")
+        print ("You must enter either y or n.")
 
     if proceed=="n":
         exit(0)
 
-print("launching jobs...")
+print ("launching jobs...")
 
 # Read in the job.sfincsScan file:
 with open(jobFilename, 'r') as f:
@@ -41,11 +37,11 @@ with open(jobFilename, 'r') as f:
 
 for runNum in range(len(radii)):
     directory = directories[runNum]
-    print("Beginning to handle job "+str(runNum+1)+" of "+str(len(radii))+": "+directory)
+    print ("Beginning to handle job "+str(runNum+1)+" of "+str(len(radii))+": "+directory)
 
     # To be extra safe, check again to see if the directory exists.
     if os.path.exists(directory):
-        print("Warning: directory "+directory+" already exists.")
+        print ("Warning: directory "+directory+" already exists.")
         i = -1
         while True:
             i += 1
@@ -66,46 +62,42 @@ for runNum in range(len(radii)):
 
     # Now copy the input.namelist file:
 
-    ##The following section rewritten by AM 2015-12##
-    #################################################
-
     f = open(filename,"w")
     for line in inputFile: ##This loop now just removes the lines which are going to be set later (if they exist in the input file)
         if namelistLineContains(line,radiusName+"_wish"):
-##            line = "  "+radiusName+"_wish = "+str(radii[runNum])+" ! Set by sfincsScan_4.\n" ##Commented by AM
-            continue ##Added by AM
+##            line = "  "+radiusName+"_wish = "+str(radii[runNum])+" ! Set by sfincsScan_4.\n"
+            continue
 
         if namelistLineContains(line,"nHats"):
-##            line = "  nHats =" ##Commented by AM 
-##            for ispecies in range(Nspecies): ##Commented by AM 
-##                line += " "+str(nHats[ispecies][runNum]) ##Commented by AM 
-##            line += " ! Set by sfincsScan_4.\n" ##Commented by AM 
-            continue ##Added by AM
+##            line = "  nHats =" 
+##            for ispecies in range(Nspecies): 
+##                line += " "+str(nHats[ispecies][runNum]) 
+##            line += " ! Set by sfincsScan_4.\n" 
+            continue 
 
         if namelistLineContains(line,"dnHatd"+radiusNameForGradients+"s"):
-##            line = "  dnHatd"+radiusNameForGradients+"s =" ##Commented by AM 
-##            for ispecies in range(Nspecies): ##Commented by AM 
-##                line += " "+str(dnHatdradii[ispecies][runNum]) ##Commented by AM 
-##            line += " ! Set by sfincsScan_4.\n" ##Commented by AM 
-            continue ##Added by AM
+##            line = "  dnHatd"+radiusNameForGradients+"s =" 
+##            for ispecies in range(Nspecies): 
+##                line += " "+str(dnHatdradii[ispecies][runNum]) 
+##            line += " ! Set by sfincsScan_4.\n" 
+            continue 
 
         if namelistLineContains(line,"THats"):
-##            line = "  THats =" ##Commented by AM 
-##            for ispecies in range(Nspecies): ##Commented by AM 
-##                line += " "+str(THats[ispecies][runNum]) ##Commented by AM 
-##            line += " ! Set by sfincsScan_4.\n" ##Commented by AM 
-            continue ##Added by AM
+##            line = "  THats =" 
+##            for ispecies in range(Nspecies): 
+##                line += " "+str(THats[ispecies][runNum]) 
+##            line += " ! Set by sfincsScan_4.\n" 
+            continue 
 
         if namelistLineContains(line,"dTHatd"+radiusNameForGradients+"s"):
-##            line = "  dTHatd"+radiusNameForGradients+"s =" ##Commented by AM 
-##            for ispecies in range(Nspecies): ##Commented by AM 
-##                line += " "+str(dTHatdradii[ispecies][runNum]) ##Commented by AM 
-##            line += " ! Set by sfincsScan_4.\n" ##Commented by AM 
-            continue ##Added by AM
+##            line = "  dTHatd"+radiusNameForGradients+"s =" 
+##            for ispecies in range(Nspecies): 
+##                line += " "+str(dTHatdradii[ispecies][runNum]) 
+##            line += " ! Set by sfincsScan_4.\n" 
+            continue 
 
 #        f.write(line)
 
-        ##Added by AM 2015-12##
 #        if namelistLineContains(line,"&geometryParameters") :
         if line.strip().find("&geometryParameters") == 0 :
 #            f.write("  "+radiusName+"_wish = "+str(radii[runNum])+" ! Set by sfincsScan_4.\n")
@@ -161,13 +153,13 @@ for runNum in range(len(radii)):
         submissionResult = subprocess.call(submitCommand.split(" "))
         #submissionResult=0
     except:
-        print("ERROR! Unable to submit run "+directory+" for some reason.")
+        print ("ERROR! Unable to submit run "+directory+" for some reason.")
         raise
     else:
         if submissionResult==0:
-            print("No errors submitting job "+directory)
+            print ("No errors submitting job "+directory)
         else:
-            print("Nonzero exit code returned when trying to submit job "+directory)
+            print ("Nonzero exit code returned when trying to submit job "+directory)
 
     os.chdir("..")
 

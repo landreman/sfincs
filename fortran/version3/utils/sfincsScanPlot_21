@@ -15,12 +15,19 @@ import inspect, math, os
 import pickle
 import sys
 from subprocess import call
+from builtins import input
 
+<<<<<<< HEAD
 # raw_input was renamed to input in python3
 if sys.version_info >= (3, 0):
     raw_input = input
 
 print("This is "+ inspect.getfile(inspect.currentframe()))
+=======
+#print ("This is "+ inspect.getfile(inspect.currentframe()))
+this_filename = "sfincsScanPlot_21"
+print ("This is "+ this_filename)
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
 
 makePDF = False
 for arg in sys.argv:
@@ -76,14 +83,19 @@ def print_options() :
    
    
    if not atLeastOneOutputExists:
+<<<<<<< HEAD
       print("Error! Cannot read any sfincs output file in subdirectories of this directory.")
+=======
+      print ("Error! Cannot read any sfincs output file in subdirectories of this directory.")
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
       exit(1)
 
 
 
 
 while True:
-    xVariableName = raw_input("Which variable on x-axis? [to quit write quit; to get a list of datasets (quantities to plot) in the output .h5 files write options] ")
+    #xVariableName = raw_input("Which variable on x-axis? [to quit write quit; to get a list of datasets (quantities to plot) in the output .h5 files write options] ")
+    xVariableName = input("Which variable on x-axis? [to quit write quit; to get a list of datasets (quantities to plot) in the output .h5 files write options] ")
     if xVariableName.lower() == "quit":
         exit(0)
     elif xVariableName.lower() == "options":
@@ -97,14 +109,19 @@ if len(str(xVariableName).split("_")) != 1 :
       xArrayPosition = int(str(xVariableName).split("_")[-1])
       xVariableName = '_'.join(str(xVariableName).split("_")[:-1])
       if xArrayPosition < 1 :
+<<<<<<< HEAD
          print("WARNING: Index has to be larger than 0, using 1 instead.")
+=======
+         print ("WARNING: Index has to be larger than 0, using 1 instead.")
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
          xArrayPosition = 1
    except ValueError:
       xArrayPosition = -1
 
     
 while True:
-    yVariableName = raw_input("Which variable on y-axis? [to quit write quit; to get a list of datasets (quantities to plot) in the output .h5 files write options] ")
+    #yVariableName = raw_input("Which variable on y-axis? [to quit write quit; to get a list of datasets (quantities to plot) in the output .h5 files write options] ")
+    yVariableName = input("Which variable on y-axis? [to quit write quit; to get a list of datasets (quantities to plot) in the output .h5 files write options] ")
     if yVariableName.lower() == "quit":
         exit(0)
     elif yVariableName.lower() == "options":
@@ -117,7 +134,11 @@ if len(str(yVariableName).split("_")) != 1 :
       yArrayPosition = int(str(yVariableName).split("_")[-1])
       yVariableName = '_'.join(str(yVariableName).split("_")[:-1])
       if yArrayPosition < 1:
+<<<<<<< HEAD
          print("WARNING: Index has to be larger than 0, using 1 instead.")
+=======
+         print ("WARNING: Index has to be larger than 0, using 1 instead.")
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
          yArrayPosition = 1
    except ValueError:
       yArrayPosition = -1
@@ -131,7 +152,11 @@ if xArrayPosition != -1 :
 if yArrayPosition != -1 :
    yArrayPositionString = "[" + str(yArrayPosition) + "]"
 
+<<<<<<< HEAD
 print("Plot " + yVariableName + yArrayPositionString + " as a function of " + xVariableName + xArrayPositionString + ".") 
+=======
+print ("Plot " + yVariableName + yArrayPositionString + " as a function of " + xVariableName + xArrayPositionString + ".")
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
 
 
 def uniq(seq):
@@ -149,13 +174,21 @@ atLeastOneDirectorySucceeded = False
 for directory in directories:
     filename = directory+"/"+outputFilename
     if not os.path.isfile(filename):
+<<<<<<< HEAD
         print("Directory "+directory+" does not have a "+outputFilename+" file (yet).")
+=======
+        print ("Directory "+directory+" does not have a "+outputFilename+" file (yet).")
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
         continue
 
     try:
         f = h5py.File(filename,'r')
     except IOError:
+<<<<<<< HEAD
         print("Unable to open "+filename+" even though this file exists.")
+=======
+        print ("Unable to open "+filename+" even though this file exists.")
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
         continue
 
     try:
@@ -169,9 +202,15 @@ for directory in directories:
           xVariable = xVariable[-1]
 
     except:
+<<<<<<< HEAD
        print("Unable to read value of " + xVariableName + xArrayPositionString + " in " + filename + ".")
        continue
     print("Read " + xVariableName + xArrayPositionString + " = " + str(xVariable) + " from " + filename + ".")  
+=======
+       print ("Unable to read value of " + xVariableName + xArrayPositionString + " in " + filename + ".")
+       continue
+    print ("Read " + xVariableName + xArrayPositionString + " = " + str(xVariable) + " from " + filename + ".") 
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
     try:
        # Try reading the y variable
        if yArrayPosition != -1:
@@ -183,24 +222,41 @@ for directory in directories:
           yVariable = yVariable[-1]
 
     except:
+<<<<<<< HEAD
        print("Unable to read value of " + yVariableName + yArrayPositionString + " in " + filename + ".")
        continue
     print("Read " + yVariableName + yArrayPositionString + " = " + str(yVariable) + " from " + filename + ".")
+=======
+       print ("Unable to read value of " + yVariableName + yArrayPositionString + " in " + filename + ".")
+       continue
+    print ("Read " + yVariableName + yArrayPositionString + " = " + str(yVariable) + " from " + filename + ".")
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
     
     try:
         # Try reading a field that should definitely be present in the output file for any run that completed.
         dummy = f["FSABFlow"][()]
     except:
+<<<<<<< HEAD
         print("Unable to read "+filename+" even though this file exists.")
+=======
+        print ("Unable to read "+filename+" even though this file exists.")
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
         continue
 
     try:
         finished = f["finished"]
     except KeyError:
+<<<<<<< HEAD
         print("Run in directory "+directory+" does not appear to have finished.")
         continue
 
     print("Processing directory "+directory)
+=======
+        print ("Run in directory "+directory+" does not appear to have finished.")
+        continue
+
+    print ("Processing directory "+directory)
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
 
     # The expression [()] converts from an h5py dataset to a numpy ndarray:
     integerToRepresentTrue = (f["integerToRepresentTrue"][()])
@@ -216,6 +272,7 @@ for directory in directories:
        includePhi1 = includePhi1_new
     else:
        if inputRadialCoordinateForGradients != inputRadialCoordinateForGradients_new:
+<<<<<<< HEAD
           print("Error! inputRadialCoordinateForGradients is not consistent among runs.")
           exit(1)
        if RHSMode != RHSMode_new:
@@ -230,6 +287,22 @@ for directory in directories:
 
     if RHSMode != 1 and RHSMode != 2 and RHSMode != 3:
         print("Error! sfincsScanPlot is not yet set up for RHSMode = "+str(RHSMode))
+=======
+          print ("Error! inputRadialCoordinateForGradients is not consistent among runs.")
+          exit(1)
+       if RHSMode != RHSMode_new:
+          print ("Error! RHSMode is not consistent among runs.")
+          exit(1)
+       if Nspecies != Nspecies_new:
+          print ("Error! Nspecies is not consistent among runs.")
+          exit(1)
+       if includePhi1 != includePhi1_new:
+          print ("Error! includePhi1 is not consistent among runs.")
+          exit(1)
+
+    if RHSMode != 1 and RHSMode != 2 and RHSMode != 3:
+        print ("Error! sfincsScanPlot is not yet set up for RHSMode = "+str(RHSMode))
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
         exit(1)
 
     scanVariableValues.append(xVariable)
@@ -239,10 +312,17 @@ for directory in directories:
 
     numRuns += 1
 
+<<<<<<< HEAD
     print("Successfully read run in directory "+directory)
 
 if not atLeastOneDirectorySucceeded:
    print("Error! There do not seem to be any completed sfincs jobs in subdirectories of this directory or none of the output files contain both " + xVariableName + xArrayPositionString +  " and " + yVariableName + yArrayPositionString + ".")
+=======
+    print ("Successfully read run in directory "+directory)
+
+if not atLeastOneDirectorySucceeded:
+   print ("Error! There do not seem to be any completed sfincs jobs in subdirectories of this directory or none of the output files contain both " + xVariableName + xArrayPositionString +  " and " + yVariableName + yArrayPositionString + ".")
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
    exit(1)
 
 
@@ -268,13 +348,15 @@ logYaxis = False
 symlogXaxis = False
 symlogYaxis = False
 
-inputXscale = raw_input("Scale on x-axis? [linear (default) / log / symlog] ")
+#inputXscale = raw_input("Scale on x-axis? [linear (default) / log / symlog] ")
+inputXscale = input("Scale on x-axis? [linear (default) / log / symlog] ")
 if inputXscale.lower() == "log":
     logXaxis = True
 elif inputXscale.lower() == "symlog":
    symlogXaxis = True
 
-inputYscale = raw_input("Scale on y-axis? [linear (default) / log / symlog] ")
+#inputYscale = raw_input("Scale on y-axis? [linear (default) / log / symlog] ")
+inputYscale = input("Scale on y-axis? [linear (default) / log / symlog] ")
 if inputYscale.lower() == "log":
     logYaxis = True
 elif inputYscale.lower() == "symlog":
@@ -309,7 +391,7 @@ xdata = scanVariableValues_sorted
 #   yscales.append('linear')
 #else:
 #   ydata = outputs_array
-#   yscales.append('log') ##AM 2017-02 changed 'symlog' to 'log'
+#   yscales.append('log')
 
 ydata = outputs_array
 if logYaxis :
@@ -324,28 +406,28 @@ xlabels.append(xAxisLabels[0])
 ylabels.append(yAxisLabels[0]) 
 
 if logXaxis : 
-   xscales.append('log') ##AM 2017-02 changed 'symlog' to 'log' 
+   xscales.append('log') 
 elif symlogXaxis :
    xscales.append('symlog')
 else:
    xscales.append('linear') 
    
 plt.plot(xdata,ydata,linespec)
-try: ##Added by AM 2017-02
+try: 
    if symlogXaxis :
       plt.xscale(xscales[-1], linthreshx=numpy.amin(numpy.absolute(xdata)))
    else :
       plt.xscale(xscales[-1])
-except: ##Added by AM 2017-02  
-   plt.xscale('symlog') ##Added by AM 2017-02  
+except: 
+   plt.xscale('symlog')  
 
-try: ##Added by AM 2017-02 
+try: 
    if symlogYaxis :
       plt.yscale(yscales[-1], linthreshy=numpy.amin(numpy.absolute(ydata)))
    else :
       plt.yscale(yscales[-1])
-except: ##Added by AM 2017-02
-   plt.yscale('symlog') ##Added by AM 2017-02
+except: 
+   plt.yscale('symlog') 
 
 
 plt.xlabel(xlabels[-1])
@@ -375,7 +457,8 @@ data = {'scanType':scanType, 'numQuantities':numQuantities, 'numRows':numRows,'n
 pickle.dump(data,outputFile)
 outputFile.close()
 
-titleString = "Plot generated by "+ inspect.getfile(inspect.currentframe()) + "\nRun in "+os.getcwd()
+#titleString = "Plot generated by "+ inspect.getfile(inspect.currentframe()) + "\nRun in "+os.getcwd()
+titleString = "Plot generated by "+ this_filename + "\nRun in "+os.getcwd()
 ax = fig.add_axes([0,0,1,1], frameon=False)
 ax.text(0.5,0.99,titleString,horizontalalignment='center',verticalalignment='top')
 
@@ -385,9 +468,16 @@ if len(sys.argv) == 1:
 
 if makePDF:
    if len(sys.argv)>2 : #Use the substituted name as file name
+<<<<<<< HEAD
       print("Writing plot to " + os.getcwd() + "/" + sys.argv[2] + ".pdf.")
       plt.savefig(sys.argv[2] + ".pdf")
    else: #Use script name as file name
       print("Writing plot to " + os.getcwd() + "/" + os.path.basename(__file__) + ".pdf.")
+=======
+      print ("Writing plot to " + os.getcwd() + "/" + sys.argv[2] + ".pdf.")
+      plt.savefig(sys.argv[2] + ".pdf")
+   else: #Use script name as file name
+      print ("Writing plot to " + os.getcwd() + "/" + os.path.basename(__file__) + ".pdf.")
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
       plt.savefig(os.path.basename(__file__) + ".pdf")
 

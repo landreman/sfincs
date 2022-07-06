@@ -3,6 +3,7 @@
 # This script will not work if called directly.
 # From the command line, you should call sfincsScan instead.
 
+<<<<<<< HEAD
 from __future__ import print_function, division
 
 
@@ -16,12 +17,18 @@ if sys.version_info >= (3, 0):
 
 print("This is "+ inspect.getfile(inspect.currentframe()))
 print("Beginning a convergence scan.")
+=======
+import os, inspect
+from builtins import input
+
+#print ("This is "+ inspect.getfile(inspect.currentframe()))
+this_filename = "sfincsScan_1"
+print ("This is "+ this_filename)
+print ("Beginning a convergence scan.")
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
 
 #####################################################################################################################3
 
-###############################################################
-##In section below try/except structure removed by AM 2015-12##
-###############################################################
 #try:
 Ntheta = readVariable("Ntheta","int",required=False)
 
@@ -50,6 +57,7 @@ else:
     scanPresent = False
 
 if scanPresent and (not baseValuePresent):
+<<<<<<< HEAD
     print("Error! If scanning Ntheta, you must set the base value for Ntheta.")
     exit(1)
 
@@ -61,13 +69,30 @@ if NthetaMaxFactor<0:
     exit(1)
 if NthetaMinFactor<0:
     print("Error! NthetaMinFactor must be positive")
+=======
+    print ("Error! If scanning Ntheta, you must set the base value for Ntheta.")
+    exit(1)
+
+if Ntheta<0:
+    print ("Error! Ntheta must be positive")
+    exit(1)
+if NthetaMaxFactor<0:
+    print ("Error! NthetaMaxFactor must be positive")
+    exit(1)
+if NthetaMinFactor<0:
+    print ("Error! NthetaMinFactor must be positive")
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
     exit(1)
 Nthetas = logspace_odd(NthetaMinFactor*Ntheta,NthetaMaxFactor*Ntheta,NthetaNumRuns)
 try:
     Nthetas.remove(Ntheta)
 except ValueError:
     pass
+<<<<<<< HEAD
 print("Nthetas:",Nthetas)
+=======
+print ("Nthetas:",Nthetas)
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
 
 #####################################################################################################################3
 
@@ -95,6 +120,7 @@ else:
     scanPresent = False
 
 if scanPresent and (not baseValuePresent):
+<<<<<<< HEAD
     print("Error! If scanning Nzeta, you must set the base value for Nzeta.")
     exit(1)
 
@@ -106,13 +132,30 @@ if NzetaMaxFactor<0:
     exit(1)
 if NzetaMinFactor<0:
     print("Error! NzetaMinFactor must be positive")
+=======
+    print ("Error! If scanning Nzeta, you must set the base value for Nzeta.")
+    exit(1)
+
+if Nzeta<0:
+    print ("Error! Nzeta must be positive")
+    exit(1)
+if NzetaMaxFactor<0:
+    print ("Error! NzetaMaxFactor must be positive")
+    exit(1)
+if NzetaMinFactor<0:
+    print ("Error! NzetaMinFactor must be positive")
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
     exit(1)
 Nzetas = logspace_odd(NzetaMinFactor*Nzeta,NzetaMaxFactor*Nzeta,NzetaNumRuns)
 try:
     Nzetas.remove(Nzeta)
 except ValueError:
     pass
+<<<<<<< HEAD
 print("Nzetas:",Nzetas)
+=======
+print ("Nzetas:",Nzetas)
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
 
 #####################################################################################################################3
 
@@ -140,6 +183,7 @@ else:
     scanPresent = False
 
 if scanPresent and (not baseValuePresent):
+<<<<<<< HEAD
     print("Error! If scanning Nxi you must set the base value for Nxi.")
     exit(1)
 
@@ -151,13 +195,30 @@ if NxiMaxFactor<0:
     exit(1)
 if NxiMinFactor<0:
     print("Error! NxiMinFactor must be positive")
+=======
+    print ("Error! If scanning Nxi you must set the base value for Nxi.")
+    exit(1)
+
+if Nxi<0:
+    print ("Error! Nxi must be positive")
+    exit(1)
+if NxiMaxFactor<0:
+    print ("Error! NxiMaxFactor must be positive")
+    exit(1)
+if NxiMinFactor<0:
+    print ("Error! NxiMinFactor must be positive")
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
     exit(1)
 Nxis = logspace_int(NxiMinFactor*Nxi,NxiMaxFactor*Nxi,NxiNumRuns)
 try:
     Nxis.remove(Nxi)
 except ValueError:
     pass
+<<<<<<< HEAD
 print("Nxis:",Nxis)
+=======
+print ("Nxis:",Nxis)
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
 
 #####################################################################################################################3
 
@@ -185,6 +246,7 @@ else:
     scanPresent = False
 
 if scanPresent and (not baseValuePresent):
+<<<<<<< HEAD
     print("Error! If scanning NL, you must set the base value for NL.")
     exit(1)
 
@@ -196,13 +258,30 @@ if NLMaxFactor<0:
     exit(1)
 if NLMinFactor<0:
     print("Error! NLMinFactor must be positive")
+=======
+    print ("Error! If scanning NL, you must set the base value for NL.")
+    exit(1)
+
+if NL<0:
+    print ("Error! NL must be positive")
+    exit(1)
+if NLMaxFactor<0:
+    print ("Error! NLMaxFactor must be positive")
+    exit(1)
+if NLMinFactor<0:
+    print ("Error! NLMinFactor must be positive")
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
     exit(1)
 NLs = logspace_int(NLMinFactor*NL,NLMaxFactor*NL,NLNumRuns)
 try:
     NLs.remove(NL)
 except ValueError:
     pass
+<<<<<<< HEAD
 print("NLs:",NLs)
+=======
+print ("NLs:",NLs)
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
 
 #####################################################################################################################3
 
@@ -230,6 +309,7 @@ else:
     scanPresent = False
 
 if scanPresent and (not baseValuePresent):
+<<<<<<< HEAD
     print("Error! If scanning Nx, you must set the base value for Nx.")
     exit(1)
 
@@ -241,13 +321,30 @@ if NxMaxFactor<0:
     exit(1)
 if NxMinFactor<0:
     print("Error! NxMinFactor must be positive")
+=======
+    print ("Error! If scanning Nx, you must set the base value for Nx.")
+    exit(1)
+
+if Nx<0:
+    print ("Error! Nx must be positive")
+    exit(1)
+if NxMaxFactor<0:
+    print ("Error! NxMaxFactor must be positive")
+    exit(1)
+if NxMinFactor<0:
+    print ("Error! NxMinFactor must be positive")
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
     exit(1)
 Nxs = logspace_int(NxMinFactor*Nx,NxMaxFactor*Nx,NxNumRuns)
 try:
     Nxs.remove(Nx)
 except ValueError:
     pass
+<<<<<<< HEAD
 print("Nxs:",Nxs)
+=======
+print ("Nxs:",Nxs)
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
 
 #####################################################################################################################3
 
@@ -275,6 +372,7 @@ else:
     scanPresent = False
 
 if scanPresent and (not baseValuePresent):
+<<<<<<< HEAD
     print("Error! If scanning NxPotentialsPerVth, you must set the base value for NxPotentialsPerVth.")
     exit(1)
 
@@ -286,12 +384,29 @@ if NxPotentialsPerVthMaxFactor<0:
     exit(1)
 if NxPotentialsPerVthMinFactor<0:
     print("Error! NxPotentialsPerVthMinFactor must be positive")
+=======
+    print ("Error! If scanning NxPotentialsPerVth, you must set the base value for NxPotentialsPerVth.")
+    exit(1)
+
+if NxPotentialsPerVth<0:
+    print ("Error! NxPotentialsPerVth must be positive")
+    exit(1)
+if NxPotentialsPerVthMaxFactor<0:
+    print ("Error! NxPotentialsPerVthMaxFactor must be positive")
+    exit(1)
+if NxPotentialsPerVthMinFactor<0:
+    print ("Error! NxPotentialsPerVthMinFactor must be positive")
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
     exit(1)
 NxPotentialsPerVths = logspace(NxPotentialsPerVthMinFactor*NxPotentialsPerVth,NxPotentialsPerVthMaxFactor*NxPotentialsPerVth,NxPotentialsPerVthNumRuns)
 for value in NxPotentialsPerVths:
     if abs(value-NxPotentialsPerVth)/value < 1e-6:
         NxPotentialsPerVths.remove(value)
+<<<<<<< HEAD
 print("NxPotentialsPerVths:",NxPotentialsPerVths)
+=======
+print ("NxPotentialsPerVths:",NxPotentialsPerVths)
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
 
 #####################################################################################################################3
 
@@ -319,6 +434,7 @@ else:
     scanPresent = False
 
 if scanPresent and (not baseValuePresent):
+<<<<<<< HEAD
     print("Error! If scanning xMax, you must set the base value for xMax.")
     exit(1)
 
@@ -330,12 +446,29 @@ if xMaxMaxFactor<0:
     exit(1)
 if xMaxMinFactor<0:
     print("Error! xMaxMinFactor must be positive")
+=======
+    print ("Error! If scanning xMax, you must set the base value for xMax.")
+    exit(1)
+
+if xMax<0:
+    print ("Error! xMax must be positive")
+    exit(1)
+if xMaxMaxFactor<0:
+    print ("Error! xMaxMaxFactor must be positive")
+    exit(1)
+if xMaxMinFactor<0:
+    print ("Error! xMaxMinFactor must be positive")
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
     exit(1)
 xMaxs = logspace(xMaxMinFactor*xMax,xMaxMaxFactor*xMax,xMaxNumRuns)
 for value in xMaxs:
     if abs(value-xMax)/value < 1e-6:
         xMaxs.remove(value)
+<<<<<<< HEAD
 print("xMaxs:",xMaxs)
+=======
+print ("xMaxs:",xMaxs)
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
 
 #####################################################################################################################3
 
@@ -363,6 +496,7 @@ else:
     scanPresent = False
 
 if scanPresent and (not baseValuePresent):
+<<<<<<< HEAD
     print("Error! If scanning solverTolerance, you must set the base value for solverTolerance.")
     exit(1)
 
@@ -374,12 +508,29 @@ if solverToleranceMaxFactor<0:
     exit(1)
 if solverToleranceMinFactor<0:
     print("Error! solverToleranceMinFactor must be positive")
+=======
+    print ("Error! If scanning solverTolerance, you must set the base value for solverTolerance.")
+    exit(1)
+
+if solverTolerance<0:
+    print ("Error! solverTolerance must be positive")
+    exit(1)
+if solverToleranceMaxFactor<0:
+    print ("Error! solverToleranceMaxFactor must be positive")
+    exit(1)
+if solverToleranceMinFactor<0:
+    print ("Error! solverToleranceMinFactor must be positive")
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
     exit(1)
 solverTolerances = logspace(solverToleranceMinFactor*solverTolerance,solverToleranceMaxFactor*solverTolerance,solverToleranceNumRuns)
 for value in solverTolerances:
     if abs((math.log(value)-math.log(solverTolerance))/math.log(value)) < 1e-6:
         solverTolerances.remove(value)
+<<<<<<< HEAD
 print("solverTolerances:",solverTolerances)
+=======
+print ("solverTolerances:",solverTolerances)
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
 
 #####################################################################################################################3
 
@@ -435,11 +586,19 @@ for i in range(len(solverTolerances)):
     currentIndex += 1
 
 if currentIndex != numRunsInScan:
+<<<<<<< HEAD
     print("Error! Something went wrong.")
     exit(1)
 
 if len(parametersForScan) != len(descriptions):
     print("Error! Something went wrong.")
+=======
+    print ("Error! Something went wrong.")
+    exit(1)
+
+if len(parametersForScan) != len(descriptions):
+    print ("Error! Something went wrong.")
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
     exit(1)
 
 # See if any runs with the same description already exist.
@@ -448,7 +607,11 @@ runNum = 0
 while runNum < numRunsInScan:
     directory = descriptions[runNum]
     if os.path.exists(directory):
+<<<<<<< HEAD
         print("Warning: directory "+directory+" already exists, so skipping this run.")
+=======
+        print ("Warning: directory "+directory+" already exists, so skipping this run.")
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
         numRunsInScan -= 1
         descriptions.pop(runNum)
         parametersForScan.pop(runNum)
@@ -456,6 +619,7 @@ while runNum < numRunsInScan:
     runNum += 1
         
 
+<<<<<<< HEAD
 print()
 print("Here are the parameters for the "+str(numRunsInScan)+" runs we will launch:")
 print("[Ntheta, Nzeta, Nxi, NL, Nx, NxPotentialsPerVth, xMax, solverTolerance]")
@@ -466,18 +630,39 @@ for line in parametersForScan:
 print()
 print("Here are the directories that will be created:")
 print(descriptions[minRun:])
+=======
+print ()
+print ("Here are the parameters for the "+str(numRunsInScan)+" runs we will launch:")
+print ("[Ntheta, Nzeta, Nxi, NL, Nx, NxPotentialsPerVth, xMax, solverTolerance]")
+print ("-----------------------------------------------------------------------")
+for line in parametersForScan:
+    print (line)
+
+print ()
+print ("Here are the directories that will be created:")
+print (descriptions)
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
 
 if waitBeforeSubmitting:
     while True:
-        proceed=raw_input("Should I go ahead and launch these "+str(numRunsInScan)+" jobs? [y/n] ")
+        #proceed=raw_input("Should I go ahead and launch these "+str(numRunsInScan)+" jobs? [y/n] ")
+        proceed=input("Should I go ahead and launch these "+str(numRunsInScan)+" jobs? [y/n] ")
         if proceed=="y" or proceed=="n":
             break
+<<<<<<< HEAD
         print("You must enter either y or n.")
+=======
+        print ("You must enter either y or n.")
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
 
     if proceed=="n":
         exit(0)
 
+<<<<<<< HEAD
 print("launching jobs...")
+=======
+print ("launching jobs...")
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
 
 # Read in the job.sfincsScan file:
 with open(jobFilename, 'r') as f:
@@ -485,11 +670,19 @@ with open(jobFilename, 'r') as f:
 
 for runNum in range(minRun,numRunsInScan):
     directory = descriptions[runNum]
+<<<<<<< HEAD
     print("Beginning to handle job "+str(runNum+1)+" of "+str(numRunsInScan)+": "+directory)
 
     # To be extra safe, check again to see if the directory exists.
     if os.path.exists(directory):
         print("Warning: directory "+directory+" already exists.")
+=======
+    print ("Beginning to handle job "+str(runNum+1)+" of "+str(numRunsInScan)+": "+directory)
+
+    # To be extra safe, check again to see if the directory exists.
+    if os.path.exists(directory):
+        print ("Warning: directory "+directory+" already exists.")
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
         i = -1
         while True:
             i += 1
@@ -536,6 +729,7 @@ for runNum in range(minRun,numRunsInScan):
         # I'm not sure why python requires this. 
         submissionResult = subprocess.call(submitCommand.split(" "))
     except:
+<<<<<<< HEAD
         print("ERROR! Unable to submit run "+directory+" for some reason.")
         raise
     else:
@@ -543,5 +737,14 @@ for runNum in range(minRun,numRunsInScan):
             print("No errors submitting job "+directory)
         else:
             print("Nonzero exit code returned when trying to submit job "+directory)
+=======
+        print ("ERROR! Unable to submit run "+directory+" for some reason.")
+        raise
+    else:
+        if submissionResult==0:
+            print ("No errors submitting job "+directory)
+        else:
+            print ("Nonzero exit code returned when trying to submit job "+directory)
+>>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
 
     os.chdir("..")

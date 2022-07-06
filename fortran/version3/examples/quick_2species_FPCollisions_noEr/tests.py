@@ -5,7 +5,8 @@
 # run directly, and it is also called when "make test" is run from the
 # main SFINCS directory.
 
-exec(compile(open('../testsCommon.py', "rb").read(), '../testsCommon.py', 'exec'))
+#execfile('../testsCommon.py')
+exec(open('../testsCommon.py').read())
 
 desiredTolerance = 0.001
 
@@ -22,9 +23,5 @@ numFailures += shouldBe("particleFlux_vm_psiHat[1,0;;;]", 9.012860128087754E-011
 numFailures += shouldBe("heatFlux_vm_psiHat[1,0;;;]", 2.007511670631882E-011, desiredTolerance)
 
 numFailures += shouldBe("FSABjHat[0;;;]", -1.018089398461633E-003, desiredTolerance)
-
-numFailures += shouldBe("full_f[0,0,2,3,1,0;;;]", 0.0122345, desiredTolerance)
-numFailures += shouldBe("full_f[0,0,6,4,1,0;;;]", 0.0122627, desiredTolerance)
-
 
 exit(numFailures > 0)
