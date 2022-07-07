@@ -964,6 +964,12 @@ end do
                    
                 end if
                 dParticleFluxdLambda(whichSpecies,whichLambda,whichMode) = sensitivityResult - innerProductResult
+                if ((whichLambda == 1) .and. (whichMode == 1) .and. masterProc) then
+                   print *,"sensitivity and inner !!!"
+                   print *, sensitivityResult
+                   print *, innerProductResult
+                end if
+
                 if (RHSMode == 5) then
                    dParticleFluxdLambda(whichSpecies,whichLambda,whichMode) = dParticleFluxdLambda(whichSpecies,whichLambda,whichMode) + ErTermToAdd
                 end if
@@ -986,6 +992,17 @@ end do
         end do
       end do
 
+      if (masterProc) then
+         print *,dParticleFluxdLambda(1,1,1)
+         print *,dParticleFluxdLambda(2,1,1)
+         print *,dParticleFluxdLambda(1,2,1)
+         print *,dParticleFluxdLambda(2,2,1)
+         print *,dParticleFluxdLambda(1,3,1)
+         print *,dParticleFluxdLambda(2,3,1)
+         print *,dParticleFluxdLambda(1,4,1)
+         print *,dParticleFluxdLambda(2,4,1)
+      end if
+          
       call VecDestroy(adjointResidual,ierr)
       if (RHSMode==5) then
         call VecDestroy(adjointResidualEr,ierr)
