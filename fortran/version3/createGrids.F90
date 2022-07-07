@@ -1393,18 +1393,10 @@
       allocate(dTotalHeatFluxdLambda(NLambdas,NModesAdjoint))
       if (.not. allocated(dBootstrapdLambda)) then
         allocate(dBootstrapdLambda(NLambdas,NModesAdjoint))
-        dBootstrapdLambda = zero
       end if
       allocate(dParticleFluxdLambda(NSpecies,NLambdas,NModesAdjoint))
       allocate(dHeatFluxdLambda(NSpecies,NLambdas,NModesAdjoint))
       allocate(dParallelFlowdLambda(Nspecies,NLambdas,NModesAdjoint))
-
-      dRadialCurrentdLambda = zero
-      dTotalHeatFluxdLambda = zero
-      dParticleFluxdLambda = zero
-      dHeatFluxdLambda = zero
-      dParallelFlowdLambda = zero
-
       if (debugAdjoint) then
         allocate(dRadialCurrentdLambda_finitediff(NLambdas,NModesAdjoint))
         allocate(dTotalHeatFluxdLambda_finitediff(NLambdas,NModesAdjoint))

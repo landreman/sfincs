@@ -17,7 +17,7 @@ numFailures = 0
 numFailures += shouldBe("dHeatFluxdLambda[0,0,0,0;;;]", -2.91416e-07, desiredTolerance)
 numFailures += shouldBe("dHeatFluxdLambda[0,1,0,0;;;]", 1.45988e-08, desiredTolerance)
 numFailures += shouldBe("dHeatFluxdLambda[0,2,0,0;;;]", -1.63331e-08, desiredTolerance)
-numFailures += shouldBe("dHeatFluxdLambda[0,3,0,0;;;]", 1.56912e-07, desiredTolerance)
+numFailures += shouldBe("dHeatFluxdLambda[0,3,0,0;;;]", 4.79669e-09, desiredTolerance)
 numFailures += shouldBe("dHeatFluxdLambda[4,0,0,0;;;]", -2.74338e-06, desiredTolerance)
 
 numFailures += shouldBe("dParallelFlowdLambda[0,0,0,0;;;]", -0.000397396, desiredTolerance)
