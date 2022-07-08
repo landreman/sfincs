@@ -72,13 +72,9 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies, fineGrid)
 
             do itheta = ithetaMin,ithetaMax
                 do izeta = izetaMin,izetaMax
-                   if (.false.) then
                     factor = xPartOfRHS/(BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta)) &
                         *(BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) &
                         - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))
-                 else
-                    factor = 0
-                 end if
                  
                     if (includePhi1 .and. localUsePhi1) then
                        factorExB = xPartOfRHSExB/(BHat(itheta,izeta)*BHat(itheta,izeta)) &

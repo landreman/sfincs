@@ -885,6 +885,10 @@ end do
       PetscScalar :: innerProductResultEr1, innerProductResultEr2, innerProductResultEr3
       PetscScalar :: radialCurrentSensitivity
 
+      PetscScalar :: temp
+      integer :: itemp
+
+
       if (masterProc) then
          print *,"evaluateDiagnostics was called."
          print *,"Computing adjoint diagnostics for RHS ", whichAdjointRHS, " and species ", whichSpecies
@@ -915,7 +919,6 @@ end do
          do whichMode=1,this_NModesAdjoint
             call VecSet(adjointResidual,zero,ierr)
             ! Call function to perform (dLdlambdaf - dSdlambda), which calls populatedMatrixdLambda and populatedRHSdLambda
-
             call evaluateAdjointInnerProductFactor(forwardSolution,adjointResidual,whichLambda,whichMode)
 
             if (RHSMode == 5) then
@@ -928,8 +931,19 @@ end do
                ErTermToAdd = -(innerProductResultEr1/innerProductResultEr2)*(radialCurrentSensitivity-innerProductResultEr3)
                dPhidPsidLambda(whichLambda,whichMode) = (1/innerProductResultEr2)*(radialCurrentSensitivity-innerProductResultEr3)
             end if
+         
+            call innerProduct(adjointSolution,adjointResidual,innerProductResult,0)
+            if ((whichLambda == 1) .and. (whichMode == 1) .and. masterProc) then
+                   print *,"inner, max(adjSol), max(adjRes)!!!!"
+                   print *, innerProductResult
+                   call VecMax(adjointSolution,itemp,temp,ierr)
+                   print *, temp
+                   call VecMax(adjointResidual,itemp,temp,ierr)
+                   print *, temp
+                   
+                end if
 
-          call innerProduct(adjointSolution,adjointResidual,innerProductResult,0)
+
           ! Save to appropriate sensitivity array
           if (whichSpecies == 0) then
              select case (whichAdjointRHS)
