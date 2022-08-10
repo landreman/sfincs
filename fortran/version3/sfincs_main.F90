@@ -116,30 +116,7 @@ module sfincs_main
     ! iteration, such as setting up the coordinate grids and evaluating
     ! the magnetic field and its derivatives on the spatial grid.
     call createGrids()
-    
-    if (includePhi1 .and. readExternalPhi1) then !!Added by AM 2018-12
-       call setPhi1() !!Added by AM 2018-12
-       ! ! cos(m * theta - Nperiods * n * zeta)
-       ! Phi1Hat = zero
-       ! do itheta=1,Ntheta
-       !    do izeta=1,Nzeta
-       !       Phi1Hat(itheta,izeta) = Phi1Hat(itheta,izeta) + 0.87 * cos(3 * theta(itheta) - 5 * 2* zeta(izeta))
-       !       dPhi1Hatdtheta(itheta,izeta) = dPhi1Hatdtheta(itheta,izeta) -3 * 0.87 * sin(3 * theta(itheta) - 5 * 2* zeta(izeta))
-       !       dPhi1Hatdzeta(itheta,izeta)  = dPhi1Hatdzeta(itheta,izeta) + 5 *2 * 0.87 * sin(3 * theta(itheta) - 5 * 2* zeta(izeta))
-       !    end do
-       ! end do
-       ! ! sin(m * theta - Nperiods * n * zeta)
-       ! do itheta=1,Ntheta
-       !    do izeta=1,Nzeta
-       !       Phi1Hat(itheta,izeta) = Phi1Hat(itheta,izeta)+ sin(1 * theta(itheta) - 5 * 1* zeta(izeta))
-       !       dPhi1Hatdtheta(itheta,izeta) = dPhi1Hatdtheta(itheta,izeta) + 1 * cos(1 * theta(itheta) - 5 * 1 * zeta(izeta))
-       !       dPhi1Hatdzeta(itheta,izeta)  = dPhi1Hatdzeta(itheta,izeta)  - 5 * 1 * cos(1 * theta(itheta) - 5 * 1 * zeta(izeta))
-       !    end do
-       ! end do
-       
-       
-    end if !!Added by AM 2018-12
-
+        
   end subroutine sfincs_prepare
 
   ! -----------------------------------------------------------------------------------

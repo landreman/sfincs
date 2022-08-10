@@ -216,7 +216,7 @@ contains
                       print *,"externalF calculation debug output"
                       print *, "L = ",L
                       print *, "ispeciesB = ",ispeciesB, "ispeciesA = ", ispeciesA
-                      print *, "d2GLdx2 = ",d2GLdx2(L+1,ix) dHLdx, HL
+                      print *, "d2GLdx2 = ",d2GLdx2(L+1,ix)
                       print *, "dHLdx = ", dHLdx(L+1,ix)
                       print *, "HL = ", HL(L+1,ix)
                       debug1 = externalZ**2 * x2(ix) * d2GLdx2(L+1,ix) 

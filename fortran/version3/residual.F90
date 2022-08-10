@@ -29,7 +29,7 @@ subroutine evaluateResidual(mysnes, stateVec, residualVec, userContext, ierr)
     PetscScalar :: THat, mHat, sqrtTHat, sqrtmHat
     Mat :: residualMatrix
     PetscReal :: norm
-    
+    integer :: ixMin, LMax
     PetscViewer :: viewer
     character(len=200) :: filename
 
@@ -192,8 +192,32 @@ subroutine evaluateResidual(mysnes, stateVec, residualVec, userContext, ierr)
           end do
        end do 
     end if
-    
+
     ! Done inserting values.
+
+     ! After inserting, we can add values
+    if (readExternalF) then
+       do ispecies = 1,Nspecies
+          do ix=ixMin,Nx
+             LMax = min(Nxi_for_x(ix),externalNL) -1
+             do L=0,Lmax
+                do itheta=ithetaMin,ithetaMax
+                   do izeta = izetaMin,izetaMax
+                      index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+                      if (isnan(externalRosenPotentialTerms(ispecies,itheta,izeta,L+1,ix))) then
+                         print *,"NANANANANA"
+                      end if
+
+                      call VecSetValue(rhs, index, &
+                          externalRosenPotentialTerms(ispecies,itheta,izeta,L+1,ix), ADD_VALUES, ierr)
+                   end do
+
+                end do
+             end do
+          end do
+       end do
+    end if
+    
     ! Finally, assemble the RHS vector:
     call VecAssemblyBegin(rhs, ierr)
     call VecAssemblyEnd(rhs, ierr)

@@ -33,7 +33,10 @@ module writeHDF5Output
   integer(HSIZE_T), dimension(2) :: dimForLambdasModes
   integer(HSIZE_T), dimension(3) :: dimForSpeciesLambdasModes 
   integer(HSIZE_T), dimension(1) :: dimForNModesAdjoint
-
+  ! new
+  integer(HSIZE_T), dimension(3) :: dimForEXSpeciesThetaZeta
+  integer(HSIZE_T), dimension(1) :: dimForEXSpecies
+  
   integer(HID_T) :: dspaceIDForScalar
   integer(HID_T) :: dspaceIDForSpecies
   integer(HID_T) :: dspaceIDForTheta
@@ -48,7 +51,10 @@ module writeHDF5Output
   integer(HID_T) :: dspaceIDForLambdasModes
   integer(HID_T) :: dspaceIDForSpeciesLambdasModes
   integer(HID_T) :: dspaceIDForNModesAdjoint
-
+  ! new
+  integer(HID_T) :: dspaceIDForEXSpeciesThetaZeta
+  integer(HID_T) :: dspaceIDForEXSpecies
+  
   ! Dimension arrays related to arrays that expand with each iteration:
   integer(HSIZE_T), dimension(1) :: dimForIteration
   integer(HSIZE_T), dimension(1) :: maxDimForIteration
@@ -110,8 +116,9 @@ module writeHDF5Output
      module procedure writeHDF5Double
      module procedure writeHDF5Doubles
      module procedure writeHDF5Doubles2
+     module procedure writeHDF5Doubles3
      module procedure writeHDF5Boolean
-   module procedure writeHDF5Booleans
+     module procedure writeHDF5Booleans
   end interface writeHDF5Field
 
   interface writeHDF5ExtensibleField
@@ -350,6 +357,16 @@ contains
        call writeHDF5Field("classicalHeatFluxNoPhi1_rN", classicalHeatFluxNoPhi1_rN, dspaceIDForSpecies, dimForSpecies, "Classical heat flux projected onto \nabla rN, calculcated, with Phi1 = 0. Updated with correct normalization: 2019-03-08.")
        !!!!!!!!!!!!!!!!!!!!!!!
 
+       if (readExternalF) then
+          call writeHDF5Field("externalN", externalN, dspaceIDForEXSpeciesThetaZeta, dimForEXSpeciesThetaZeta, "The density of the externally read distribution functions.")
+          call writeHDF5Field("readExternalF", readExternalF, & 
+               "Read in an external distribution function, which can be used for the purpose of calculation Phi_1 and collisions against the main species." // boolDescription)
+          call writeHDF5Field("externalFlow", externalFlow, dspaceIDForEXSpeciesThetaZeta, dimForEXSpeciesThetaZeta, "The flow of the externally read distribution functions.")
+          call writeHDF5Field("externalFSABFlow", FSABExternalFlow, dspaceIDForEXSpecies, dimForEXSpecies, "FSA(B externalFlow).")
+          call writeHDF5Field("externalZs", externalCharges, dspaceIDForEXSpecies, dimForEXSpecies, "external Zs")
+          call writeHDF5Field("externalMHats", externalMasses, dspaceIDForEXSpecies, dimForEXSpecies, "external mHats")
+       end if
+       
        call writeHDF5Field("dPhiHatdpsiHat", dPhiHatdpsiHat, "")
        call writeHDF5Field("dPhiHatdpsiN", dPhiHatdpsiN, "")
        call writeHDF5Field("dPhiHatdrHat", dPhiHatdrHat, "")
@@ -414,7 +431,8 @@ contains
 
        call writeHDF5Field("export_full_f",  export_full_f,  "Save the full f distribution function in this file? " // boolDescription)
        call writeHDF5Field("export_delta_f", export_delta_f, "Save the delta f distribution function in this file? " // boolDescription)
-       if (export_full_f .or. export_delta_f) then
+       call writeHDF5Field("export_external_collision", export_external_collision, "Save the collision operator between an external species " // boolDescription)
+       if (export_full_f .or. export_delta_f .or. export_external_collision) then
           call writeHDF5Field("export_f_theta_option", export_f_theta_option, &
                "Which theta grid to use for exporting the distribution function.")
           call writeHDF5Field("export_f_zeta_option", export_f_zeta_option, &
@@ -486,7 +504,7 @@ contains
     ! For an example of how to create an extendible array in HDF5, see
     ! http://www.hdfgroup.org/ftp/HDF5/current/src/unpacked/fortran/examples/h5_extend.f90
 
-    use export_f, only : full_f, delta_f, export_full_f, export_delta_f
+    use export_f, only : full_f, delta_f, export_full_f, export_delta_f, external_collision, export_external_collision
 
     implicit none
 
@@ -765,6 +783,11 @@ contains
                "Distribution function for each species, normalized by nBar / (vBar ^3), subtracting the leading-order Maxwellian")
        end if
 
+       if (export_external_collision) then
+          call writeHDF5ExtensibleField(iterationNum,"external_collision", external_collision, ARRAY_ITERATION_EXPORT_F, &
+               "The normalized collision operator between the bulk Maxwellians and the external species")
+       end if
+       
        if (constraintScheme .ne. 0) then
           call writeHDF5ExtensibleField(iterationNum, "sources", sources, ARRAY_ITERATION_SPECIES_SOURCES, "")
        end if
@@ -912,6 +935,18 @@ if (RHSMode > 3 .and. RHSMode < 6) then
       call h5screate_simple_f(rank, dimForSpeciesLambdasModes, dspaceIDForSpeciesLambdasModes, HDF5Error)
     end if
 
+     if (readExternalF) then
+       rank = 3
+       dimForEXSpeciesThetaZeta(1) = externalNspecies
+       dimForEXSpeciesThetaZeta(2) = Ntheta
+       dimForEXSpeciesThetaZeta(3) = Nzeta
+       call h5screate_simple_f(rank, dimForEXSpeciesThetaZeta, dspaceIDForEXSpeciesThetaZeta, HDF5Error)
+
+       rank = 1
+       dimForEXSpecies(1) = externalNspecies
+       call h5screate_simple_f(rank, dimForEXSpecies, dspaceIDForEXSpecies, HDF5Error)
+    end if
+    
     ! ------------------------------------------------------------------
     ! Next come the arrays that expand with each iteration of SNES.
     ! These are more complicated.
@@ -1402,6 +1437,12 @@ if (RHSMode > 3 .and. RHSMode < 6) then
     elseif (dspaceID == dspaceIDForLambdasModes) then
        call h5dsset_label_f(dsetID, 1, "NLambdas", HDF5Error)
        call h5dsset_label_f(dsetID, 2, "NModesAdjoint", HDF5Error)
+    elseif (dspaceID == dspaceIDForEXSpeciesThetaZeta) then
+       call h5dsset_label_f(dsetID, 1, "externalNSpecies", HDF5Error)
+       call h5dsset_label_f(dsetID, 2, "Ntheta", HDF5Error)
+       call h5dsset_label_f(dsetID, 3, "Nzeta", HDF5Error)
+    elseif (dspaceID == dspaceIDForEXSpecies) then
+       call h5dsset_label_f(dsetID, 1, "externalNSpecies", HDF5Error)
     elseif (dspaceID == dspaceIDForTransportMatrix) then
        ! No labels applied in this case.
     else

@@ -4,7 +4,7 @@ subroutine legendrePolynomials(P, xi, Nxi, NL)
 
   implicit none
 
-  integer, intent(in) :: NL, Nxi
+  integer, intent(in) :: Nxi, NL
   PetscScalar, dimension(Nxi,NL), intent(out) :: P
   PetscScalar, intent(in), dimension(Nxi) :: xi
   integer :: L

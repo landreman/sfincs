@@ -172,6 +172,13 @@ if(allocated(particleFluxBeforeSurfaceIntegral_vm)) deallocate( particleFluxBefo
   if(allocated(delta_f))deallocate(delta_f)
   if(allocated(full_f))deallocate(full_f)
 
+  if(allocated(externalRosenPotentialTerms))deallocate(externalRosenPotentialTerms)
+  if(allocated(externalN))deallocate(externalN)
+  if(allocated(externalCharges))deallocate(externalCharges)
+  if(allocated(externalMasses))deallocate(externalMasses)
+  if(allocated(FSABExternalFlow)) deallocate(FSABExternalFlow)
+  if(allocated(externalFlow)) deallocate(externalFlow)
+  
   call xGrid_finalize()
   call indices_finalize()
 
