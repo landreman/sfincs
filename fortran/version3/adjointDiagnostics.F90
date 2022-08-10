@@ -56,10 +56,7 @@ implicit none
       call preallocateMatrix(dMatrixdLambda, 6)
       call populateMatrix(dMatrixdLambda, 6, dummyVec, whichLambda, whichMode)
       ! call populatedMatrixdLambda(dMatrixdLambda, whichLambda, whichMode)
-      if (masterProc) then
-         print *,"Exited populateMatrix"
-      end if
-    
+      
 
       ! Allocate and populate dRHSdLambda
       call VecCreateMPI(MPIComm, PETSC_DECIDE, matrixSize, dRHSdLambda, ierr)
@@ -78,13 +75,7 @@ implicit none
       call VecDestroy(dRHSdLambda, ierr)
       call MatDestroy(dMatrixdLambda, ierr)
       !!!!!!!!!!!!!!!!!!!
-
-      if (masterProc) then
-         print *,"set values, will exit evaluateAdjointInnerProductFactor"
-      end if
     
-
-
     end subroutine
 
     !> Computes inner product associated with free energy norm for deltaF and deltaG
@@ -239,7 +230,6 @@ implicit none
                         do izeta=1,Nzeta
                                 angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
                                 cos_angle = cos(angle)
-
                                 dVPrimeHatdLambda = dVPrimeHatdLambda - two*thetaWeights(itheta)*zetaWeights(izeta)*cos_angle/(DHat(itheta,izeta)*BHat(itheta,izeta))
                         end do
                 end do
@@ -275,11 +265,11 @@ implicit none
         !                 = (IHat*dBHatdzeta-GHat*dBHatdtheta)/(VPrimeHat*BHat**3)
         do itheta=1,Ntheta
           do izeta=1,Nzeta
-            angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-            cos_angle = cos(angle)
-            sin_angle = sin(angle)
             select case (whichLambda)
               case (1) ! BHat
+                angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+                cos_angle = cos(angle)
+                sin_angle = sin(angle)
                 dBHatdThetadLambda = -m*sin_angle
                 dBHatdZetadLambda = n*Nperiods*sin_angle
                 dBHatdLambda = cos_angle
@@ -377,7 +367,6 @@ end do
                 do izeta=1,Nzeta
                     angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
                     cos_angle = cos(angle)
-
                     dVPrimeHatdLambda = dVPrimeHatdLambda - two*thetaWeights(itheta)*zetaWeights(izeta)*cos_angle/(DHat(itheta,izeta)*BHat(itheta,izeta))
                 end do
             end do
@@ -411,11 +400,11 @@ end do
 
         do itheta=1,Ntheta
           do izeta=1,Nzeta
-            angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-            cos_angle = cos(angle)
-            sin_angle = sin(angle)
             select case (whichLambda)
               case (1) ! BHat
+                angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+                cos_angle = cos(angle)
+                sin_angle = sin(angle)            
                 dBHatdThetadLambda = -m*sin_angle
                 dBHatdZetadLambda = n*Nperiods*sin_angle
                 dBHatdLambda = cos_angle
@@ -464,9 +453,11 @@ end do
       call VecScatterDestroy(VecScatterContext,ierr)
     end subroutine particleFluxSensitivity
 
-    !> Evaluates the term in the sensitivity derivative of the particle fluxes
+    !> Evaluates the term in the sensitivity derivative of the particle fluxes with Phi1
     !! which arise due to the sensitivity of the inner product and the integrating factor,
     !! not f1 itself, hence this is not called with the adjoint variable
+    !! NOTE: not thoroughly tested,
+    !! do not use in production without comparing to finite difference sensitivty.
     !! @param result Output of sensitivity calculation.
     !! @param deltaF \f$\hat{F}\f$ solution from forward equation.
     !! @param whichSpecies If = 0, summed over species. If nonzero, indicates species number. In this case should always be 0.
@@ -532,7 +523,6 @@ end do
             do izeta=1,Nzeta
                angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
                cos_angle = cos(angle)
-
                dVPrimeHatdLambda = dVPrimeHatdLambda - two*thetaWeights(itheta)*zetaWeights(izeta)*cos_angle/(DHat(itheta,izeta)*BHat(itheta,izeta))
             end do
          end do
@@ -570,11 +560,11 @@ end do
 
             do itheta=1,Ntheta
                do izeta=1,Nzeta
-                  angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-                  cos_angle = cos(angle)
-                  sin_angle = sin(angle)
                   select case (whichLambda)
                   case (1) ! BHat cos
+                     angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+                     cos_angle = cos(angle)
+                     sin_angle = sin(angle)                  
                      dBHatdThetadLambda = -m*sin_angle
                      dBHatdZetadLambda = n*Nperiods*sin_angle
                      dBHatdLambda = cos_angle
@@ -604,22 +594,6 @@ end do
                           / (VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
                      dfactorExBdLambda = - (IHat*dPhi1Hatdzeta(itheta,izeta)-GHat*dPhi1Hatdtheta(itheta,izeta))*dVPrimeHatdLambda &
                           / (VPrimeHat*VPrimeHat*BHat(itheta,izeta)**2)
-                  case (5) ! Phi1Hat cos
-                     dPhi1HatdLambda = cos_angle
-                     dPhi1HatdThetadLambda = -m*sin_angle
-                     dPhi1HatdZetadLambda = n*Nperiods*sin_angle
-                     factor = (IHat * dBHatdzeta(itheta,izeta) - GHat * dBHatdtheta(itheta,izeta))/(VPrimeHat*BHat(itheta,izeta)**3)
-                     dfactordLambda = 0
-                     factorExB = (IHat*dPhi1HatdZeta(itheta,izeta)-GHat*dPhi1HatdTheta(itheta,izeta))/(VPrimeHat*BHat(itheta,izeta)**2)
-                     dfactorExBdLambda = (IHat*dPhi1HatdZetadLambda-GHat*dPhi1HatdThetadLambda)/(VPrimeHat * BHat(itheta,izeta)**2)
-                  case (6) ! Phi1Hat sin
-                     dPhi1HatdLambda = sin_angle
-                     dPhi1HatdThetadLambda = m*cos_angle
-                     dPhi1HatdZetadLambda = -n*Nperiods * cos_angle
-                     factor = (IHat * dBHatdzeta(itheta,izeta) - GHat * dBHatdtheta(itheta,izeta))/(VPrimeHat*BHat(itheta,izeta)**3)
-                     dfactordLambda = 0
-                     factorExB = (IHat*dPhi1HatdZeta(itheta,izeta)-GHat*dPhi1HatdTheta(itheta,izeta))/(VPrimeHat*BHat(itheta,izeta)**2)
-                     dfactorExBdLambda = (IHat*dPhi1HatdZetadLambda-GHat*dPhi1HatdThetadLambda)/(VPrimeHat*BHat(itheta,izeta)**2)
                   end select
 
                   ! Summed quantity is weighted by charge
@@ -638,46 +612,15 @@ end do
                      ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
                      
                      ! Add magnetic drift contribution from deltaF
-                     if (.false.) then
-                        result = result + &
-                             (8/three)*dfactordLambda*xWeights(ix)*deltaFArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
-                     end if
-                  
+                     result = result + &
+                          (8/three)*dfactordLambda*xWeights(ix)*deltaFArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
+                     
 
                      ! Add ExB drift contribution from deltaF
-                     if (.false.) then
-                        result = result + &
-                             dfactorExBdLambda*xWeights(ix)*deltaFArray(index)*xIntegralFactorExB(ix)*thetaWeights(itheta)*zetaWeights(izeta) ! 
-                     end if
-
-                     if (.true.) then
-                     ! Add magnetic drift contribution from f0
-                     if((whichLambda .eq. 5) .or. (whichLambda .eq. 6)) then
-                        df0dLambda = -(Z*alpha/THat) *  f0Array(index) * dPhi1HatdLambda                 
-                        result = result + &
-                             (8/three)*factor*xWeights(ix)*df0dLambda*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
-                        results2(itheta,izeta) =  results2(itheta,izeta) + &
-                             (8/three)*factor*xWeights(ix)*df0dLambda*xIntegralFactor(ix)
-                     else
-                        result = result + &
-                             (8/three)*dfactordLambda*xWeights(ix)*f0Array(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
-                     end if
-                     end if
+                     result = result + &
+                          dfactorExBdLambda*xWeights(ix)*deltaFArray(index)*xIntegralFactorExB(ix)*thetaWeights(itheta)*zetaWeights(izeta) ! 
                      
-                     
-                     ! Add ExB drift contribution from f0
-                     if (.false.) then
-                     
-                     if((whichLambda .eq. 5) .or. (whichLambda .eq. 6)) then
-                        result = result + &
-                             xWeights(ix)*xIntegralFactorExB(ix)*thetaWeights(itheta)*zetaWeights(izeta)* (dfactorExBdLambda * f0Array(index) + factorExB * df0dLambda)
-                     else
-                        result = result + &
-                             dfactorExBdLambda*xWeights(ix)*f0Array(index)*xIntegralFactorExB(ix)*thetaWeights(itheta)*zetaWeights(izeta)  ! *2
-                     end if
-                     end if
-                  
-                     
+                        
                      L = 2
                      index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
                      ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
@@ -691,18 +634,7 @@ end do
                      ! This is zero if f0 is Maxwellian
                      ! (which is always the case 2020-06)
                      ! but it is added for feature parity with 'diagnotics'
-                     if (.true.) then
-                        if((whichLambda .eq. 5) .or. (whichLambda .eq. 6)) then
-                           df0dLambda = -(Z*alpha/THat) *  f0Array(index) * dPhi1HatdLambda
-                           result = result + &
-                                (four/15)*factor*xWeights(ix)*df0dLambda*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
-                        else
-                           result = result + &
-                                (four/15)*dfactordLambda*xWeights(ix)*f0Array(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
-                        end if
                      
-                     end if
-                  
 
                   end do ! ix
                end do ! izeta
@@ -713,14 +645,6 @@ end do
                   * dot_product(thetaWeights, results2(:,izeta))
             end do
             
-            if (masterProc) then
-               print *, "!!!!!!!!!!!!!!!!!"
-               print *, result
-               print *, result3
-               print *, "!!!!!!!!!!!!!!!!!"
-            end if
-            
-
          end do ! ispecies
          call VecDestroy(deltaFOnProc0,ierr)
          call VecDestroy(f0OnProc0,ierr)
@@ -757,7 +681,7 @@ end do
     PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dinvDHatdLambda, factor, dVPrimeHatdLambda
     PetscScalar, dimension(:), allocatable :: xIntegralFactor
     PetscScalar :: dBHatdLambda, dFSABHat2dLambda, nHat, sqrtFSAB2
-    PetscScalar :: angle, cos_angle, sin_angle
+    PetscScalar :: angle, cos_angle
     integer :: m, n
     VecScatter :: VecScatterContext
     PetscErrorCode :: ierr
@@ -824,10 +748,10 @@ end do
 
         do itheta=1,Ntheta
           do izeta=1,Nzeta
-            angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-            cos_angle = cos(angle)
             select case (whichLambda)
               case (1) ! BHat
+                angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+                cos_angle = cos(angle)            
                 dBHatdLambda = cos_angle
                 factor = -(GHat+iota*IHat)*dBHatdLambda/(BHat(itheta,izeta)*BHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) &
                     - (GHat+iota*IHat)*dVPrimeHatdLambda/(BHat(itheta,izeta)*VPrimeHat*VPrimeHat*sqrtFSAB2) &
@@ -911,7 +835,7 @@ end do
       ! Loop over lambda's and perform inner product
       ! rethink this for Er
       do whichLambda=1,NLambdas
-         if ((whichLambda .eq. 1) .or. (whichLambda .eq. 5) .or. (whichLambda .eq. 6)) then
+         if ((whichLambda .eq. 1)) then
             this_NmodesAdjoint = NModesAdjoint
          else
             this_NmodesAdjoint = 1
@@ -933,17 +857,7 @@ end do
             end if
          
             call innerProduct(adjointSolution,adjointResidual,innerProductResult,0)
-            if ((whichLambda == 1) .and. (whichMode == 1) .and. masterProc) then
-                   print *,"inner, max(adjSol), max(adjRes)!!!!"
-                   print *, innerProductResult
-                   call VecMax(adjointSolution,itemp,temp,ierr)
-                   print *, temp
-                   call VecMax(adjointResidual,itemp,temp,ierr)
-                   print *, temp
-                   
-                end if
-
-
+      
           ! Save to appropriate sensitivity array
           if (whichSpecies == 0) then
              select case (whichAdjointRHS)
@@ -978,12 +892,7 @@ end do
                    
                 end if
                 dParticleFluxdLambda(whichSpecies,whichLambda,whichMode) = sensitivityResult - innerProductResult
-                if ((whichLambda == 1) .and. (whichMode == 1) .and. masterProc) then
-                   print *,"sensitivity and inner !!!"
-                   print *, sensitivityResult
-                   print *, innerProductResult
-                end if
-
+                
                 if (RHSMode == 5) then
                    dParticleFluxdLambda(whichSpecies,whichLambda,whichMode) = dParticleFluxdLambda(whichSpecies,whichLambda,whichMode) + ErTermToAdd
                 end if
@@ -1005,17 +914,6 @@ end do
 
         end do
       end do
-
-      if (masterProc) then
-         print *,dParticleFluxdLambda(1,1,1)
-         print *,dParticleFluxdLambda(2,1,1)
-         print *,dParticleFluxdLambda(1,2,1)
-         print *,dParticleFluxdLambda(2,2,1)
-         print *,dParticleFluxdLambda(1,3,1)
-         print *,dParticleFluxdLambda(2,3,1)
-         print *,dParticleFluxdLambda(1,4,1)
-         print *,dParticleFluxdLambda(2,4,1)
-      end if
           
       call VecDestroy(adjointResidual,ierr)
       if (RHSMode==5) then

@@ -22,7 +22,7 @@ export OMP_NUM_THREADS=2
 # For pinning threads correctly:
 export OMP_PLACES=cores
 
-
+. ~/ready_sfincs.sh
 #/usr/bin/X11/time -v srun ../../sfincs -ksp_view
 #srun /usr/bin/X11/time -v ../../sfincs -ksp_view
 #memusg srun ../../sfincs -ksp_view

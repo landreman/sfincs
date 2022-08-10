@@ -141,10 +141,6 @@ module testingAdjointDiagnostics
             deltaFactor = GHat_init
           case(4)
              deltaFactor = iota_init
-          case(5)
-             ! TODO?
-          case(6)
-             ! TODO?
         end select
 
         ! Update geometry
@@ -211,10 +207,6 @@ module testingAdjointDiagnostics
             deltaFactor = GHat_init
           case(4)
              deltaFactor = iota_init
-          case(5)
-             ! TODO implement
-          case(6)
-             ! TODO implement
         end select
         ! If magnitude of fourier mode is nearly zero, don't use for benchmarking tests
         if (abs(deltaFactor) > 1.d-7) then

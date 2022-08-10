@@ -59,8 +59,7 @@ contains
        end do
     end do
     FSAExternalN = FSAExternalN / VPrimeHat
-    print *,FSAExternalN
-   
+
     deallocate(velocityJacobian)
 
     select case (externalNQN)
@@ -99,8 +98,6 @@ contains
        allocate(externalFlow(externalNspecies, Ntheta, Nzeta))
     end if
     if (.not. allocated(FSABExternalFlow)) then
-       print *," FSABExternalFlow allocate"
-       print *,externalNspecies
        allocate(FSABExternalFlow(externalNspecies))
     end if
     
@@ -133,8 +130,6 @@ contains
        end do
     end do
     FSABExternalFlow = FSABExternalFlow / VPrimeHat
-    print *,FSABExternalFlow
-    
     deallocate(velocityJacobian)
 
   end subroutine calculateExternalFlow
@@ -218,26 +213,21 @@ contains
                    L = debugL
                    ix = debugix
                    if ((itheta==debugtheta) .and. (izeta==debugzeta) .and. masterproc .and. printDebug) then
-                      print *,"!!!!!!!!!!!!!"
-                      print *,L
-                      print *,"!!!!!!!!!!!!!"
-                      print *,ispeciesB, ispeciesA
-
-                      print *, "d2GLdx2, dHLdx, HL"
-                      print *,d2GLdx2(L+1,ix)
-                      print *,dHLdx(L+1,ix)
-                      print *,HL(L+1,ix)
-                      print *,"!!!!!!!!!!!!"
+                      print *,"externalF calculation debug output"
+                      print *, "L = ",L
+                      print *, "ispeciesB = ",ispeciesB, "ispeciesA = ", ispeciesA
+                      print *, "d2GLdx2 = ",d2GLdx2(L+1,ix) dHLdx, HL
+                      print *, "dHLdx = ", dHLdx(L+1,ix)
+                      print *, "HL = ", HL(L+1,ix)
                       debug1 = externalZ**2 * x2(ix) * d2GLdx2(L+1,ix) 
                       debug2 = - externalZ**2 * ((1 - mHats(ispeciesA)/externalMHat) * x(ix) * dHLdx(L+1,ix) + HL(L+1,ix))
                       debug3 = externalZ**2 * 2 * pi  * (mHats(ispeciesA)/externalMHat) * FL(L+1,ix)
                       debug1 = debug1 * xFactor(ix)
                       debug2 = debug2 * xFactor(ix)
                       debug3 = debug3 * xFactor(ix)
-                      print *,"col"
-                      print *,debug1
-                      print *,debug2
-                      print *,debug3
+                      print *, "debug1 = ", debug1
+                      print *, "debug2 = ", debug2
+                      print *, "debug3 = ", debug3
                    end if
 
                 end do
@@ -437,8 +427,9 @@ contains
        Nbins = floor((Es(ix)-E0)/dE)
        remainder = (Es(ix)- E0)/dE - Nbins
        if ((itheta==debugtheta) .and. (izeta==debugzeta) .and. masterProc .and. printDebug) then
-          print *,"Nbins,Es,E0"
-          print *,Nbins,Es(ix),E0
+          print *,"Nbins = ",Nbins
+          print *, "Es = ", Es(ix)
+          print *, "E0 = ", E0
        end if
        
        if (Nbins > externalNE) then
@@ -460,10 +451,7 @@ contains
           
           I1mL(L+1,ix) = 0.0
           I3mL(L+1,ix) = 0.0
-          !print *,Nbins
-          !print *,"!!!!!!!!!!!!!"
           do iE = Nbins+1,externalNE
-             !print *,iE
              I1mL(L+1,ix) = I1mL(L+1,ix) + (externalFL(L+1,iE) * sqrt(externalE(iE) *mHatA/(mHatB * THatA)) ** (1-L))/(2 * sqrt(externalE(iE) * THatA * mHatB/mHatA))
              I3mL(L+1,ix) = I3mL(L+1,ix) + (externalFL(L+1,iE) * sqrt(externalE(iE) *mHatA/(mHatB * THatA)) ** (3-L))/(2 * sqrt(externalE(iE) * THatA * mHatB/mHatA))
           end do
@@ -501,13 +489,13 @@ contains
     L = debugL
     ix = debugix
     if ((itheta==debugtheta) .and. (izeta==debugzeta) .and. masterproc .and. printDebug) then
-       print *, "!!!!!!!!!!!!!"
-       print *, L
-       print *, "!!!!!!!!!!!!!"
-       print *, ispeciesB, ispeciesA
+       print *, "L = ", L
+       print *, "ispeciesB = ",ispeciesB, "ispeciesA = ", ispeciesA
        print *, "IL2, IL4, I1mL, I3mL"
-       print *, IL2(L+1,ix),IL4(L+1,ix),I1mL(L+1,ix),I3mL(L+1,ix)
-       print *, externalFL(L+1,:)
+       print *, "IL2 = ", IL2(L+1,ix)
+       print *, "IL4 = ", IL4(L+1,ix)
+       print *, "I1mL = ", I1mL(L+1,ix)
+       print *, "I3mL = ", I3mL(L+1,ix)
        ! recalculate for this ix
        Nbins = floor((Es(ix)-E0)/dE)
        remainder = (Es(ix)- E0)/dE - Nbins
@@ -518,8 +506,8 @@ contains
           Nbins = 0
           remainder = 0.0
        end if
-       print *,Es(ix), E0 + Nbins * dE + remainder * dE
-        
+       print *, "Es = ", Es(ix)
+       print *, "E0 + Nbins * dE + remainder * dE = ", E0 + Nbins * dE + remainder * dE
     end if
        
     

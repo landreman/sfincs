@@ -134,7 +134,7 @@ contains
     call setDiagonalsToZero(matrix)
 
     if (whichMatrix == 6) then
-       if (whichLambda > 0) then
+       if (whichLambda == 1) then
           m = ms_sensitivity(whichMode)
           n = ns_sensitivity(whichMode)
        end if
@@ -444,7 +444,7 @@ contains
     integer :: ispecies, ix, itheta, izeta, L, ell 
     PetscScalar, dimension(:,:), allocatable :: thetaPartOfTerm, localThetaPartOfTerm
     integer, dimension(:), allocatable :: rowIndices, colIndices
-    PetscScalar :: geometricFactor, angle, cos_angle, sin_angle, dBHatdLambda
+    PetscScalar :: geometricFactor, angle, cos_angle, dBHatdLambda
 
     do ispecies = 1,Nspecies
        nHat = nHats(ispecies)
@@ -473,13 +473,12 @@ contains
                       geometricFactor = BHat_sup_theta(itheta,izeta)/BHat(itheta,izeta)
                    else
                       ! d matrix /d lambda
-                      angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-                      cos_angle = cos(angle)
-                      sin_angle = sin(angle)
                       select case(whichLambda)
                       case (0) ! Er
                          geometricFactor = zero
                       case (1) ! BHat
+                         angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+                         cos_angle = cos(angle)
                          dBHatdLambda = cos_angle
                          geometricFactor = dBHatdLambda*iota/(GHat+iota*IHat)
                       case (2) ! IHat
@@ -549,7 +548,7 @@ contains
     integer :: ispecies, ix, itheta, izeta, L, ell 
     PetscScalar, dimension(:,:), allocatable :: zetaPartOfTerm, localZetaPartOfTerm
     integer, dimension(:), allocatable :: rowIndices, colIndices
-    PetscScalar :: geometricFactor, angle, cos_angle, sin_angle, dBHatdLambda
+    PetscScalar :: geometricFactor, angle, cos_angle, dBHatdLambda
 
     do ispecies = 1,Nspecies
        nHat = nHats(ispecies)
@@ -579,13 +578,12 @@ contains
                       geometricFactor = BHat_sup_zeta(itheta,izeta)/BHat(itheta,izeta)
                    else
                       ! d matrix /d lambda
-                      angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-                      cos_angle = cos(angle)
-                      sin_angle = sin(angle)
                       select case(whichLambda)
                       case (0) ! Er
                          geometricFactor = zero
                       case (1) ! BHat
+                         angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+                         cos_angle = cos(angle)                         
                          dBHatdLambda = cos_angle
                          geometricFactor = dBHatdLambda/(GHat+iota*IHat)
                       case (2) ! IHat
@@ -666,7 +664,6 @@ contains
           do izeta=1,Nzeta
             angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
             cos_angle = cos(angle)
-
             dVPrimeHatdLambda = dVPrimeHatdLambda - two*thetaWeights(itheta)*zetaWeights(izeta)*cos_angle/(DHat(itheta,izeta)*BHat(itheta,izeta))
             if (useDKESExBDrift) then
             dVPrimeHatdBmn = dVPrimeHatdBmn - (two*(GHat+iota*IHat)) * thetaWeights(itheta) * zetaWeights(izeta) &
@@ -720,14 +717,13 @@ contains
                          geometricFactor = DHat(itheta,izeta) * BHat_sub_zeta(itheta,izeta)/ FSABHat2
                          factor = alpha*Delta/two * dPhiHatdpsiHat
                       else
-                         angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-                         cos_angle = cos(angle)
-                         sin_angle = sin(angle)
                          select case(whichLambda)
                          case (0) ! Er
                             geometricFactor = DHat(itheta,izeta)*BHat_sub_zeta(itheta,izeta)/(FSABHat2)
                             factor = alpha*Delta/two
                          case (1) ! BHat
+                            angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+                            cos_angle = cos(angle)                                                     
                             dBHatdLambda = cos_angle
                             geometricFactor = (GHat/(GHat + iota*IHat))*(two*BHat(itheta,izeta)*dBHatdLambda/FSABHat2 &
                                  - BHat(itheta,izeta)*BHat(itheta,izeta)*dFSABHat2dBmn/(FSABHat2**2))
@@ -754,9 +750,6 @@ contains
                          geometricFactor = DHat(itheta,izeta)*BHat_sub_zeta(itheta,izeta)/(BHat(itheta,izeta)*BHat(itheta,izeta))
                          factor = alpha*Delta/two*dPhiHatdpsiHat
                       else
-                         angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-                         cos_angle = cos(angle)
-                         sin_angle = sin(angle)
                          select case(whichLambda)
                          case (0) ! Er
                             geometricFactor = DHat(itheta,izeta)*BHat_sub_zeta(itheta,izeta)/(BHat(itheta,izeta)*BHat(itheta,izeta))
@@ -818,7 +811,7 @@ contains
     integer :: ispecies, ix, itheta, izeta, L
     PetscScalar, dimension(:,:), allocatable :: zetaPartOfTerm, localZetaPartOfTerm
     integer, dimension(:), allocatable :: rowIndices, colIndices
-    PetscScalar :: geometricFactor, angle, cos_angle, sin_angle, dBHatdLambda, dVPrimeHatdLambda, dVPrimeHatdBmn, dFSABHat2dBmn
+    PetscScalar :: geometricFactor, angle, cos_angle, dBHatdLambda, dVPrimeHatdLambda, dVPrimeHatdBmn, dFSABHat2dBmn
 
     do ispecies = 1,Nspecies
        nHat = nHats(ispecies)
@@ -862,9 +855,6 @@ contains
                          geometricFactor = DHat(itheta,izeta) * BHat_sub_theta(itheta,izeta) / FSABHat2
                          factor = -alpha*Delta/two * dPhiHatdpsiHat
                       else
-                         angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-                         cos_angle = cos(angle)
-                         sin_angle = sin(angle)
                          select case(whichLambda)
                          case (0) ! Er
                             geometricFactor = DHat(itheta,izeta)*BHat_sub_theta(itheta,izeta)/FSABHat2
@@ -895,9 +885,6 @@ contains
                          geometricFactor = DHat(itheta,izeta) * BHat_sub_theta(itheta,izeta)/ (BHat(itheta,izeta) ** 2)
                          factor = alpha*Delta/two * dPhiHatdpsiHat
                       else
-                         angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-                         cos_angle = cos(angle)
-                         sin_angle = sin(angle)
                          select case(whichLambda)
                          case (0) ! Er
                             geometricFactor = DHat(itheta,izeta)*BHat_sub_theta(itheta,izeta)/(BHat(itheta,izeta)*BHat(itheta,izeta))
@@ -1283,13 +1270,13 @@ contains
                         /(BHat(itheta,izeta)*BHat(itheta,izeta))
                 else
                    ! d matrix /d lambda
-                   angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-                   cos_angle = cos(angle)
-                   sin_angle = sin(angle)
                    select case(whichLambda)
                    case (0) ! Er
                       geometricFactor = zero
                    case (1) ! BHat
+                      angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+                      cos_angle = cos(angle)
+                      sin_angle = sin(angle)                   
                       dBHatdLambda = cos_angle
                       dBHatdthetadLambda = -m*sin_angle
                       dBHatdzetadLambda = n*Nperiods*sin_angle
@@ -1380,14 +1367,14 @@ contains
                    geometricFactor = DHat(itheta,izeta)*temp/(BHat(itheta,izeta)**3)
                    factor = (alpha*Delta/four) * dPhiHatdpsiHat * geometricFactor
                 else
-                   angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-                   cos_angle = cos(angle)
-                   sin_angle = sin(angle)
                    select case(whichLambda)
                    case (0) ! Er
                       geometricFactor = DHat(itheta,izeta)*temp/(BHat(itheta,izeta)**3)
                       factor = (alpha*Delta/four)*geometricFactor
                    case (1) ! BHat
+                      angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+                      cos_angle = cos(angle)
+                      sin_angle = sin(angle)                   
                       dBHatdthetadLambda = -m*sin_angle
                       dBHatdzetadLambda = n*Nperiods*sin_angle
                       dBHatdLambda = cos_angle
@@ -1615,9 +1602,6 @@ contains
                       - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))
                       factor = -adjointFactor*alpha*Delta*dPhiHatdpsiHat/4
                    else
-                      angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-                      cos_angle = cos(angle)
-                      sin_angle = sin(angle)
                       select case(whichLambda)
                       case (0) ! Er
                          geometricFactor = DHat(itheta,izeta)/(BHat(itheta,izeta)**3) &
@@ -1625,6 +1609,9 @@ contains
                               - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta))
                          factor = -alpha*Delta/four
                       case (1) ! BHat
+                         angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+                         cos_angle = cos(angle)
+                         sin_angle = sin(angle)                      
                          dBHatdLambda = cos_angle
                          dBHatdzetadLambda = n*Nperiods*sin_angle
                          dBHatdthetadLambda = -m*sin_angle
@@ -1972,7 +1959,7 @@ contains
     integer :: ispecies, ix, itheta, izeta, L, ell, colIndex, rowIndex, ixMinCol, ix_row, ix_col
     PetscScalar :: factor, geometricFactor, geometricFactor2
     PetscScalar, dimension(:,:), allocatable :: nonlinearTerm_Lp1, nonlinearTerm_Lm1
-    PetscScalar :: angle, sin_angle, cos_angle, dBHatdLambda, dPhi1HatdzetadLambda, dPhi1HatdthetadLambda
+    PetscScalar :: angle, cos_angle, dBHatdLambda, dPhi1HatdzetadLambda, dPhi1HatdthetadLambda
 
     do ispecies = 1,Nspecies
        nHat = nHats(ispecies)
@@ -2021,13 +2008,12 @@ contains
                       geometricFactor2 = BHat(itheta,izeta)*(iota * dPhi1Hatdtheta(itheta,izeta) + dPhi1Hatdzeta(itheta,izeta))/(GHat + iota * IHat) 
                    else
                       ! dMatrix/dlambda
-                      angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-                      cos_angle = cos(angle)
-                      sin_angle = sin(angle)
                       select case(whichLambda)
                       case (0) ! Er
                          geometricFactor = 0
                       case (1) ! BHat cos
+                         angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+                         cos_angle = cos(angle)                      
                          dBHatdLambda = cos_angle
                          ! dBHatdzetadLambda = n*Nperiods*sin_angle
                          ! dBHatdthetadLambda = -m*sin_angle
@@ -2040,16 +2026,6 @@ contains
                       case (4) ! iota
                          geometricFactor = dPhi1Hatdtheta(itheta,izeta) * BHat(itheta,izeta)/(GHat + iota * IHat) &
                               - (iota * dPhi1Hatdtheta(itheta,izeta) + dPhi1Hatdzeta(itheta,izeta)) * BHat(itheta,izeta) * IHat/((GHat + iota * IHat)**2)
-                      case (5) ! Phi1Hat cos
-                         dPhi1HatdzetadLambda = Nperiods*n * sin_angle
-                         dPhi1HatdthetadLambda = -m * sin_angle
-                         geometricFactor = (BHat_sup_theta(itheta,izeta)*dPhi1HatdthetadLambda &
-                              + BHat_sup_zeta(itheta,izeta)*dPhi1HatdzetadLambda)/BHat(itheta,izeta)
-                      case (6) ! Phi1Hat sin
-                         dPhi1HatdzetadLambda = -Nperiods*n * cos_angle
-                         dPhi1HatdthetadLambda =   m * cos_angle
-                         geometricFactor = (BHat_sup_theta(itheta,izeta)*dPhi1HatdthetadLambda &
-                              + BHat_sup_zeta(itheta,izeta)*dPhi1HatdzetadLambda)/BHat(itheta,izeta)
                       end select
                    end if
                    
@@ -3440,7 +3416,7 @@ contains
     PetscErrorCode :: ierr
     integer :: iSpecies, ix, itheta, izeta, L, rowIndex, colIndex
     PetscScalar :: factor, geometricFactor
-    PetscScalar :: angle, cos_angle, sin_angle, dBHatdLambda
+    PetscScalar :: angle, cos_angle, dBHatdLambda
     
     if (whichMatrix .ne. 2 .and. procThatHandlesConstraints) then
        select case (constraintScheme)
@@ -3459,13 +3435,12 @@ contains
                    ! normal matrix
                    geometricFactor = 1/DHat(itheta,izeta)
                 else
-                   angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-                   cos_angle = cos(angle)
-                   sin_angle = sin(angle)
                    select case (whichLambda)
                    case (0)
                       geometricFactor = zero
                    case (1)
+                      angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+                      cos_angle = cos(angle)                   
                       dBHatdLambda = cos_angle
                       geometricFactor = -two*dBHatdLambda*(GHat+iota*IHat)/(BHat(itheta,izeta)**3)
                    case (2)

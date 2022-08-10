@@ -294,10 +294,6 @@ subroutine evaluateResidual(mysnes, stateVec, residualVec, userContext, ierr)
           do itheta = ithetaMin,ithetaMax
              do izeta = izetaMin,izetaMax
                 if (whichLambda >= 0) then
-                   angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-                   cos_angle = cos(angle)
-                   sin_angle = sin(angle)
-
                    select case(whichLambda)
                    case (0) ! Er
                       factor =  1/(BHat(itheta,izeta)**3) &
@@ -318,6 +314,9 @@ subroutine evaluateResidual(mysnes, stateVec, residualVec, userContext, ierr)
                       
                          
                    case (1) ! BHat cos
+                      angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+                      cos_angle = cos(angle)
+                      sin_angle = sin(angle)                   
                       dBHatdLambda = cos_angle
                       dBHatdthetadLambda = -m*sin_angle
                       dBHatdzetadLambda = n*Nperiods*sin_angle
@@ -391,71 +390,6 @@ subroutine evaluateResidual(mysnes, stateVec, residualVec, userContext, ierr)
                       else
                          xPartOfRHS = xPartOfRHS1
                       end if
-
-                   case (5) ! Phi1Hat cos
-                      if (includePhi1 .and. includePhi1InKineticEquation .and. localUsePhi1) then
-
-                         dPhi1HatdLambda = cos_angle
-                         dPhi1HatdthetadLambda = -m*sin_angle
-                         dPhi1HatdzetadLambda = n*Nperiods*sin_angle
-                         factor =  1/(BHat(itheta,izeta)**3) &
-                              *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
-                              - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
-                              * DHat(itheta,izeta)
-                         ! this is really dxPartOfRHSdLambda
-                         xPartOfRHS = dPhi1HatdLambda * (Z * alpha/THat) &
-                              * (xPartOfRHS2 * THat -xPartOfRHS1 - Z*alpha * xPartOfRHS2 * Phi1Hat(itheta,izeta)) &
-                              * exp(-Z*alpha*Phi1Hat(itheta,izeta)/THat)
-                         
-                         xPartOfRHSExternalPhi1 = (xPartOfRHS1 + xPartOfRHS2*Z*alpha*Phi1Hat(itheta,izeta))  & 
-                              * exp(-Z*alpha*Phi1Hat(itheta,izeta)/THat)/x2(ix)
-                         if (readExternalPhi1) then
-                            dxPartOfRHSExternalPhi1dLambda = xPartOfRHS/x2(ix)
-                            factorExternalPhi1 = (alpha*Z/THat) &
-                                 *1/(BHat(itheta,izeta)**2) & 
-                                 *(BHat_sub_zeta(itheta,izeta)*dPhi1Hatdtheta(itheta,izeta) & 
-                                 - BHat_sub_theta(itheta,izeta)*dPhi1Hatdzeta(itheta,izeta))& 
-                                 * DHat(itheta,izeta)
-                            dfactorExternalPhi1dLambda = (alpha*Z/THat) &
-                                 * (1/(GHat + iota * IHat)) * (IHat * dPhi1HatdthetadLambda + GHat * dPhi1HatdzetadLambda)
-                            stuffToAddExternalPhi1 = scalar &
-                                 * (dfactorExternalPhi1dLambda * xPartOfRHSExternalPhi1 &
-                                 + factorExternalPhi1 * dxPartOfRHSExternalPhi1dLambda) 
-                         end if
-                      end if
-
-                   case (6) ! Phi1Hat sin
-                      if (includePhi1 .and. includePhi1InKineticEquation .and. localUsePhi1) then
-
-                         dPhi1HatdLambda = sin_angle
-                         dPhi1HatdthetadLambda = m*cos_angle
-                         dPhi1HatdzetadLambda = -n*Nperiods*cos_angle
-                         factor =  1/(BHat(itheta,izeta)**3) &
-                              *(BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta) &
-                              - BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta))&
-                              * DHat(itheta,izeta)
-                         ! this is really dxPartOfRHSdLambda
-                         xPartOfRHS = dPhi1HatdLambda * (Z * alpha/THat) &
-                              * (xPartOfRHS2 * THat -xPartOfRHS1 - Z*alpha * xPartOfRHS2 * Phi1Hat(itheta,izeta)) &
-                              * exp(-Z*alpha*Phi1Hat(itheta,izeta)/THat)
-
-                         if (readExternalPhi1) then
-                            xPartOfRHSExternalPhi1 = (xPartOfRHS1 + xPartOfRHS2*Z*alpha*Phi1Hat(itheta,izeta))  & 
-                              * exp(-Z*alpha*Phi1Hat(itheta,izeta)/THat)/x2(ix)
-                            dxPartOfRHSExternalPhi1dLambda = xPartOfRHS/x2(ix)
-                            factorExternalPhi1 = (alpha*Z/THat) &
-                                 *1/(BHat(itheta,izeta)**2) & 
-                                 *(BHat_sub_zeta(itheta,izeta)*dPhi1Hatdtheta(itheta,izeta) & 
-                                 - BHat_sub_theta(itheta,izeta)*dPhi1Hatdzeta(itheta,izeta))& 
-                                 * DHat(itheta,izeta)
-                            dfactorExternalPhi1dLambda = (alpha*Z/THat) &
-                                 * (1/(GHat + iota * IHat)) * (IHat * dPhi1HatdthetadLambda + GHat * dPhi1HatdzetadLambda)
-                            stuffToAddExternalPhi1 = scalar &
-                                 * (dfactorExternalPhi1dLambda * xPartOfRHSExternalPhi1 &
-                                 + factorExternalPhi1 * dxPartOfRHSExternalPhi1dLambda) 
-                         end if
-                      end if
-
                    end select
                 
                 else
