@@ -147,6 +147,8 @@ module sfincs_main
        dPhiHatdpsiHat = 2 / (alpha * Delta) * EStar * iota * B0OverBBar / GHat
     end if
 
+    print *, "In run1"
+    
     ! For input quantities that depend on the radial coordinate, pick out the values for the selected
     ! radial coordinate, and use these values to over-write values for the other radial coordinates.
     call setInputRadialCoordinate()
@@ -165,6 +167,9 @@ module sfincs_main
     ! at each iteration of the solver (i.e. save all quantities except diagnostics.)
     call initializeOutputFile()
 
+    print *, "In run2"
+    
+    
     if (debugAdjoint) then
       call compareAdjointDiagnostics()
     end if

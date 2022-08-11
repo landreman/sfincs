@@ -1010,12 +1010,6 @@
        stop
     end select
 
-    if ((xGridScheme==5 .or. xGridScheme==6) .and. (RHSMode .ne. 3)) then
-       allocate(RosenbluthPotentialTerms(Nspecies,Nspecies,NL,Nx,Nx))
-       call computeRosenbluthPotentialResponse(Nx, x, xWeights, Nspecies, mHats, THats, nHats, Zs, NL, &
-         RosenbluthPotentialTerms,.false.)
-    end if
-
 !    if (masterProc) then
     if (.false.) then
        print *,"xGridScheme:",xGridScheme
@@ -1266,12 +1260,16 @@
        call computeExternalRosenbluthPotentialResponse()
     end if
 
+    print *, "done external^^"
 
     if ((xGridScheme==5 .or. xGridScheme==6) .and. (RHSMode .ne. 3)) then
        allocate(RosenbluthPotentialTerms(Nspecies,Nspecies,NL,Nx,Nx))
        call computeRosenbluthPotentialResponse(Nx, x, xWeights, Nspecies, mHats, THats, nHats, Zs, NL, &
-         RosenbluthPotentialTerms,.false.)
+         RosenbluthPotentialTerms,.true.)
     end if
+
+    print *, "done rosenbluth^^"
+
     
     if (masterProc) then
        print *,"---- Geometry parameters: ----"
@@ -1293,6 +1291,9 @@
        call load_bcdat_file()
     end if
 
+
+    print *,"Starting allocate^^"
+    
     ! *********************************************************
     ! Allocate some arrays that will be used later for output quantities:
     ! *********************************************************

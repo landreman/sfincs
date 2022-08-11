@@ -82,6 +82,12 @@ subroutine evaluateResidual(mysnes, stateVec, residualVec, userContext, ierr)
        dPhiHatdpsiHatToUseInRHS = 0
     end if
 
+    if (pointAtX0) then
+       ixMin = 2
+    else
+       ixMin = 1
+    end if
+    
     if (includePhi1 .and. (.not. readExternalPhi1)) then !!Added by AM 2018-12
        call extractPhi1(stateVec)
     end if

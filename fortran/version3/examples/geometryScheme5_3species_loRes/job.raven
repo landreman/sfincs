@@ -16,5 +16,8 @@
 #SBATCH --time=00:10:00
 
 #SBATCH --mem 50000
+. ~/ready_sfincs.sh
+echo $LD_LIBRARY_PATH
+module list
 
 srun ../../sfincs -ksp_view

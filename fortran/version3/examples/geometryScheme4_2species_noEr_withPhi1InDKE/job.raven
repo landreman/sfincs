@@ -23,5 +23,9 @@ export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 # For pinning threads correctly:
 export OMP_PLACES=cores 
 
+. ~/ready_sfincs.sh
+echo $LD_LIBRARY_PATH
+module list
+
 # Run the program:
 srun ../../sfincs -ksp_view

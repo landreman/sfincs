@@ -23,6 +23,9 @@ export OMP_NUM_THREADS=2
 export OMP_PLACES=cores
 
 . ~/ready_sfincs.sh
+echo $LD_LIBRARY_PATH
+module list
+
 #/usr/bin/X11/time -v srun ../../sfincs -ksp_view
 #srun /usr/bin/X11/time -v ../../sfincs -ksp_view
 #memusg srun ../../sfincs -ksp_view

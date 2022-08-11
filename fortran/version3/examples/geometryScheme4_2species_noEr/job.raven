@@ -23,5 +23,8 @@ export OMP_NUM_THREADS=2
 # For pinning threads correctly:
 export OMP_PLACES=cores
 
+. ~/ready_sfincs.sh
+echo $LD_LIBRARY_PATH
+module list
 
 srun -n 24 ../../sfincs -ksp_view

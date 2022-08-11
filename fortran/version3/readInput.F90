@@ -58,17 +58,9 @@ contains
          collisionOperator, constraintScheme, includeXDotTerm, &
          includeElectricFieldTermInXiDot, useDKESExBDrift, include_fDivVE_term, &
          dPhiHatdpsiHat, dPhiHatdpsiN, dPhiHatdrHat, dPhiHatdrN, Er, &
-!<<<<<<< HEAD
          includeTemperatureEquilibrationTerm, includePhi1, includePhi1InCollisionOperator, &
-         !!Commented by AM 2016-02!!
-         !!nuPrime, EStar, magneticDriftScheme, includeRadialExBDrive
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!
-   !!Added by AM 2016-02!!
-!=======
-!         includeTemperatureEquilibrationTerm, includePhi1, &
-!>>>>>>> origin/master
          nuPrime, EStar, magneticDriftScheme, includePhi1InKineticEquation, &
-         quasineutralityOption, Krook, externalPhi1Filename, readExternalPhi1, & !!AM added externalPhi1Filename, readExternalPhi1 2018-12
+         quasineutralityOption, Krook, externalPhi1Filename, readExternalPhi1, & 
          externalFFilename, readExternalF, externalFFormat, externalNL, extrapolateExternalF, externalNQN
     
     namelist / resolutionParameters / forceOddNthetaAndNzeta, &
