@@ -1831,7 +1831,6 @@ contains
                    do ithetaCol = 1,Ntheta
                       colIndex = getIndex(1,1,1,ithetaCol, izeta, BLOCK_QN)
 
-                      !!TEST BY AM 2016-04-11!!
                       call MatSetValueSparse(matrix, rowIndex, colIndex,& !!Added by AM 2016-03
                            (factor1 + factor2)*ddtheta(ithetaRow, ithetaCol), ADD_VALUES, ierr) !!Added by AM 2016-03
                      !!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1861,7 +1860,7 @@ contains
 
                    do izetaCol = 1,Nzeta
                       colIndex = getIndex(1,1,1,itheta, izetaCol, BLOCK_QN)
-                      
+
                       call MatSetValueSparse(matrix, rowIndex, colIndex,& !!Added by AM 2016-03
                            (factor1 + factor2)*ddzeta(izetaRow, izetaCol), ADD_VALUES, ierr) !!Added by AM 2016-03
                    !!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2029,8 +2028,9 @@ contains
                       end select
                    end if
                    
-                   ! factor = -adjointFactor * alpha * Z * geometricFactor/(2 * sqrtTHat * sqrtMHat)
-                   factor = -1.5*adjointFactor * alpha * Z * geometricFactor/(2 * sqrtTHat) 
+                   factor = -adjointFactor * alpha * Z * geometricFactor/(2 * sqrtTHat * sqrtMHat)
+                   ! what is this factor?
+                   !factor = -1.5*adjointFactor * alpha * Z * geometricFactor/(2 * sqrtTHat) 
                        
 
                    !do ix_row=ixMin,Nx

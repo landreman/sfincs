@@ -100,5 +100,5 @@
 
 &export_f
 !  export_full_f = .f.
-!  export_delta_f = .f.
+  export_delta_f = .t.
 /

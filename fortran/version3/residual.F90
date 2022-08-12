@@ -446,7 +446,7 @@ subroutine evaluateResidual(mysnes, stateVec, residualVec, userContext, ierr)
                    end if 
                 end if
                 stuffToAdd = scalar * factor * xPartOfRHS
-                
+
                 L = 0
                 index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
                 call VecSetValue(rhs, index, (four/three)*stuffToAdd + stuffToAddExternalPhi1, INSERT_VALUES, ierr) 
