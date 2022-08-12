@@ -9,7 +9,7 @@
 #SBATCH -J sfincs
 
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=24
+#SBATCH --ntasks-per-node=18
 # for OpenMP:
 #SBATCH --cpus-per-task=4
 
