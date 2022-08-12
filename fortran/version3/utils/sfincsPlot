@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 
-
-
 # This python script plots the output of a single SFINCS run.
-
-from __future__ import division, print_function
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -12,20 +8,12 @@ import h5py
 import numpy
 import inspect, os
 
-<<<<<<< HEAD
-print("This is "+ inspect.getfile(inspect.currentframe()))
-=======
 print ("This is "+ inspect.getfile(inspect.currentframe()))
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
 
 try:
     f = h5py.File('sfincsOutput.h5','r')
 except:
-<<<<<<< HEAD
-    print("Unable to open sfincsOutput.h5")
-=======
     print ("Unable to open sfincsOutput.h5")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
     raise
 
 matplotlib.rcParams.update({'font.size': 8})
@@ -60,11 +48,7 @@ integerToRepresentTrue = int(f['integerToRepresentTrue'][()])
 includePhi1 = int(f['includePhi1'][()])
 geometryScheme = int(f['geometryScheme'][()])
 
-<<<<<<< HEAD
-print("Successfully read data from sfincsOutput.h5")
-=======
 print ("Successfully read data from sfincsOutput.h5")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
 
 zeta2D,theta2D = numpy.meshgrid(zeta,theta)
 
@@ -136,11 +120,7 @@ if Nzeta < 2:
     try:
         totalDensity = f['totalDensity'][()]
     except KeyError:
-<<<<<<< HEAD
-        print("No physics output detected in .h5 file, so stopping here.")
-=======
         print ("No physics output detected in .h5 file, so stopping here.")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
         plt.show()
         exit(0)
 
@@ -246,11 +226,7 @@ if Nzeta < 2:
         plt.plot(x,particleFlux_vm_psiHat_vs_x[:,ispecies,iteration],'.-')
         plt.ylabel('particleFlux_vm_psiHat_vs_x for species {} (Z={})'.format(ispecies+1,Zs[ispecies]))
         plt.xlabel('x')
-<<<<<<< HEAD
-        print("Species ",ispecies+1,"particleFlux_vm_psiHat=",particleFlux_vm_psiHat[ispecies,iteration],", sum(particleFlux_vm_psiHAt_vs_x)=",sum(particleFlux_vm_psiHat_vs_x[:,ispecies,iteration]))
-=======
         print ("Species ",ispecies+1,"particleFlux_vm_psiHat=",particleFlux_vm_psiHat[ispecies,iteration],", sum(particleFlux_vm_psiHAt_vs_x)=",sum(particleFlux_vm_psiHat_vs_x[:,ispecies,iteration]))
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
         if NIterations>1:
             plt.plot(x,particleFlux_vm_psiHat_vs_x[:,ispecies,NIterations-1],'.-r')
 
@@ -258,11 +234,7 @@ if Nzeta < 2:
         plt.plot(x,FSABFlow_vs_x[:,ispecies,iteration],'.-')
         plt.ylabel('FSABFlow_vs_x for species {} (Z={})'.format(ispecies+1,Zs[ispecies]))
         plt.xlabel('x')
-<<<<<<< HEAD
-        print("Species ",ispecies+1,"FSABFlow=",FSABFlow[ispecies,iteration],", sum(FSABFlow_vs_x)=",sum(FSABFlow_vs_x[:,ispecies,iteration]))
-=======
         print ("Species ",ispecies+1,"FSABFlow=",FSABFlow[ispecies,iteration],", sum(FSABFlow_vs_x)=",sum(FSABFlow_vs_x[:,ispecies,iteration]))
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
         if NIterations>1:
             plt.plot(x,FSABFlow_vs_x[:,ispecies,NIterations-1],'.-r')
 
@@ -270,11 +242,7 @@ if Nzeta < 2:
         plt.plot(x,heatFlux_vm_psiHat_vs_x[:,ispecies,iteration],'.-')
         plt.ylabel('heatFlux_vm_psiHat_vs_x for species {} (Z={})'.format(ispecies+1,Zs[ispecies]))
         plt.xlabel('x')
-<<<<<<< HEAD
-        print("Species ",ispecies+1,"heatFlux_vm_psiHat=",heatFlux_vm_psiHat[ispecies,iteration],", sum(heatFlux_vm_psiHAt_vs_x)=",sum(heatFlux_vm_psiHat_vs_x[:,ispecies,iteration]))
-=======
         print ("Species ",ispecies+1,"heatFlux_vm_psiHat=",heatFlux_vm_psiHat[ispecies,iteration],", sum(heatFlux_vm_psiHAt_vs_x)=",sum(heatFlux_vm_psiHat_vs_x[:,ispecies,iteration]))
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
         if NIterations>1:
             plt.plot(x,heatFlux_vm_psiHat_vs_x[:,ispecies,NIterations-1],'.-r')
 
@@ -507,11 +475,7 @@ else:
     try:
         totalDensity = f['totalDensity'][()]
     except KeyError:
-<<<<<<< HEAD
-        print("No physics output detected in .h5 file, so stopping here.")
-=======
         print ("No physics output detected in .h5 file, so stopping here.")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
         plt.show()
         exit(0)
 
@@ -548,11 +512,7 @@ else:
             iteration=0
         else:
             iteration = NIterations-1
-<<<<<<< HEAD
-        print("Plotting iteration ",iteration+1)
-=======
         print ("Plotting iteration ",iteration+1)
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
         temp = totalDensity[:,:,ispecies,iteration].transpose()
 
         for ispecies in range(0,NspeciesToPlot):
@@ -643,33 +603,21 @@ else:
         plt.xlabel('x')
         if ispecies==0:
             plt.legend(prop={'size':7})
-<<<<<<< HEAD
-        print("Species ",ispecies+1,"particleFlux_vm_psiHat=",particleFlux_vm_psiHat[ispecies,iteration],", sum(particleFlux_vm_psiHAt_vs_x)=",sum(particleFlux_vm_psiHat_vs_x[:,ispecies,iteration]))
-=======
         print ("Species ",ispecies+1,"particleFlux_vm_psiHat=",particleFlux_vm_psiHat[ispecies,iteration],", sum(particleFlux_vm_psiHAt_vs_x)=",sum(particleFlux_vm_psiHat_vs_x[:,ispecies,iteration]))
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
 
         plt.subplot(numRows, numCols, ispecies*numCols+2)
         for iteration in range(NIterations):
             plt.plot(x,FSABFlow_vs_x[:,ispecies,iteration],'.-')
         plt.ylabel('FSABFlow_vs_x for species {} (Z={})'.format(ispecies+1,Zs[ispecies]))
         plt.xlabel('x')
-<<<<<<< HEAD
-        print("Species ",ispecies+1,"FSABFlow=",FSABFlow[ispecies,iteration],", sum(FSABFlow_vs_x)=",sum(FSABFlow_vs_x[:,ispecies,iteration]))
-=======
         print ("Species ",ispecies+1,"FSABFlow=",FSABFlow[ispecies,iteration],", sum(FSABFlow_vs_x)=",sum(FSABFlow_vs_x[:,ispecies,iteration]))
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
 
         plt.subplot(numRows, numCols, ispecies*numCols+3)
         for iteration in range(NIterations):
             plt.plot(x,heatFlux_vm_psiHat_vs_x[:,ispecies,iteration],'.-')
         plt.ylabel('heatFlux_vm_psiHat_vs_x for species {} (Z={})'.format(ispecies+1,Zs[ispecies]))
         plt.xlabel('x')
-<<<<<<< HEAD
-        print("Species ",ispecies+1,"heatFlux_vm_psiHat=",heatFlux_vm_psiHat[ispecies,iteration],", sum(heatFlux_vm_psiHAt_vs_x)=",sum(heatFlux_vm_psiHat_vs_x[:,ispecies,iteration]))
-=======
         print ("Species ",ispecies+1,"heatFlux_vm_psiHat=",heatFlux_vm_psiHat[ispecies,iteration],", sum(heatFlux_vm_psiHAt_vs_x)=",sum(heatFlux_vm_psiHat_vs_x[:,ispecies,iteration]))
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
 
     ax = fig.add_axes([0,0,1,1], frameon=False)
     ax.text(0.5,0.99,"Figure 4 - "+titleString,horizontalalignment='center',verticalalignment='top')

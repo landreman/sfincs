@@ -935,7 +935,7 @@ if (RHSMode > 3 .and. RHSMode < 6) then
       call h5screate_simple_f(rank, dimForSpeciesLambdasModes, dspaceIDForSpeciesLambdasModes, HDF5Error)
     end if
 
-     if (readExternalF) then
+    if (readExternalF) then
        rank = 3
        dimForEXSpeciesThetaZeta(1) = externalNspecies
        dimForEXSpeciesThetaZeta(2) = Ntheta

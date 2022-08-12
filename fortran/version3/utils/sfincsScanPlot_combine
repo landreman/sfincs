@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import division, print_function
-
 # This python script combines several the results of multiple sfincsScans,
 # plotting the results on the same axes.
 # You can either call this script directly, or else call sfincsScanPlot with arguments.
@@ -15,17 +13,10 @@ import inspect, os
 import pickle
 import sys, subprocess
 
-<<<<<<< HEAD
-print("This is "+ inspect.getfile(inspect.currentframe()))
-
-if len(sys.argv)<2:
-    print("Error! You must call this script with command-line arguments to indicate the directories to plot.")
-=======
 print ("This is "+ inspect.getfile(inspect.currentframe()))
 
 if len(sys.argv)<2:
     print ("Error! You must call this script with command-line arguments to indicate the directories to plot.")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
     exit(1)
 
 matplotlib.rcParams.update({'font.size': 8})
@@ -52,15 +43,9 @@ originalDirectory = os.getcwd()
 for whichFile in range(1,len(sys.argv)):
     try:
         filename = sys.argv[whichFile]+'/sfincsScan.dat'
-<<<<<<< HEAD
-        print("*************************************************")
-        print("Processing directory "+sys.argv[whichFile])
-        print("*************************************************")
-=======
         print ("*************************************************")
         print ("Processing directory "+sys.argv[whichFile])
         print ("*************************************************")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
 
         os.chdir(sys.argv[whichFile])
         directories.append(os.getcwd())
@@ -110,22 +95,6 @@ for whichFile in range(1,len(sys.argv)):
 
     if whichFile>1:
         if scanTypes[-1] != scanTypes[0]:
-<<<<<<< HEAD
-            print("ERROR: scanType is not consistent among the directories you requested.")
-            exit(1)
-        if numQuantities[-1] != numQuantities[0]:
-            print("ERROR: numQuantities is not consistent among the directories you requested.")
-            exit(1)
-        if numRows[-1] != numRows[0]:
-            print("ERROR: numRows is not consistent among the directories you requested.")
-            exit(1)
-        if numCols[-1] != numCols[0]:
-            print("ERROR: numCols is not consistent among the directories you requested.")
-            exit(1)
-        for i in range(numQuantities[0]):
-            if xlabels[-1][i] != xlabels[0][i]:
-                print("ERROR: xlabels are not consistent among the directories you requested.")
-=======
             print ("ERROR: scanType is not consistent among the directories you requested.")
             exit(1)
         if numQuantities[-1] != numQuantities[0]:
@@ -140,7 +109,6 @@ for whichFile in range(1,len(sys.argv)):
         for i in range(numQuantities[0]):
             if xlabels[-1][i] != xlabels[0][i]:
                 print ("ERROR: xlabels are not consistent among the directories you requested.")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
                 exit(1)
 
 # ***************************************************

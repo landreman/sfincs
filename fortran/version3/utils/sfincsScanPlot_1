@@ -2,11 +2,7 @@
 
 # This python script plots the output of a SFINCS convergence scan.
 
-<<<<<<< HEAD
-from __future__ import division, print_function
-=======
 from builtins import input
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
 
 outputFilename = "sfincsOutput.h5"
 
@@ -25,17 +21,9 @@ from matplotlib.offsetbox import AnchoredText
 
 import matplotlib.ticker as ticker
 
-<<<<<<< HEAD
-# raw_input was renamed to input in python3
-if sys.version_info >= (3, 0):
-    raw_input = input
-
-print("This is "+ inspect.getfile(inspect.currentframe()))
-=======
 #print ("This is "+ inspect.getfile(inspect.currentframe()))
 this_filename = "sfincsScanPlot_1"
 print ("This is "+ this_filename)
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
 
 makePDF = False
 for arg in sys.argv:
@@ -77,55 +65,35 @@ def uniq(seq):
    return checked
 
 # Get a list of the subdirectories:                                                                        
-directories = list(filter(os.path.isdir, os.listdir(".")))
+directories = filter(os.path.isdir, os.listdir("."))
 
 for directory in directories:
     filename = directory+"/"+outputFilename
     if not os.path.isfile(filename):
-<<<<<<< HEAD
-        print("Directory "+directory+" does not have a "+outputFilename+" file (yet).")
-=======
         print ("Directory "+directory+" does not have a "+outputFilename+" file (yet).")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
         continue
 
     try:
         f = h5py.File(filename,'r')
     except IOError:
-<<<<<<< HEAD
-        print("Unable to open "+filename+" even though this file exists.")
-=======
         print ("Unable to open "+filename+" even though this file exists.")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
         continue
 
     try:
         # Try reading a field that should definitely be present in the output file for any run that completed.
         dummy = f["FSABFlow"][()]
     except:
-<<<<<<< HEAD
-        print("Unable to read "+filename+" even though this file exists.")
-=======
         print ("Unable to read "+filename+" even though this file exists.")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
         continue
 
     try:
         finished = f["finished"]
     except KeyError:
-<<<<<<< HEAD
-        print("Run in directory "+directory+" does not appear to have finished.")
-        continue
-
-    if math.isnan(dummy[0,0]):
-       print("Run in directory "+directory+" has NaNs, so skipping it.")
-=======
         print ("Run in directory "+directory+" does not appear to have finished.")
         continue
 
     if math.isnan(dummy[0,0]):
        print ("Run in directory "+directory+" has NaNs, so skipping it.")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
        continue
 
     integerToRepresentTrue = (f["integerToRepresentTrue"][()])
@@ -134,15 +102,6 @@ for directory in directories:
     if includePhi1_new:
        try:
           if f["didNonlinearCalculationConverge"][()] != integerToRepresentTrue:
-<<<<<<< HEAD
-             print("The nonlinear iteration in directory "+directory+" does not appear to have converged.")
-             continue
-       except:
-          print("WARNING! Cannot read didNonlinearCalculationConverge in directory "+directory+" even though this is a nonlinear calculation.")
-          print("You should manually check if the nonlinear iteration has converged!")
-
-    print("Processing directory "+directory)
-=======
              print ("The nonlinear iteration in directory "+directory+" does not appear to have converged.")
              continue
        except:
@@ -150,7 +109,6 @@ for directory in directories:
           print ("You should manually check if the nonlinear iteration has converged!")
 
     print ("Processing directory "+directory)
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
 
     # The expression [()] converts from an h5py dataset to a numpy ndarray:
     #integerToRepresentTrue = (f["integerToRepresentTrue"][()])
@@ -173,19 +131,6 @@ for directory in directories:
         includePhi1 = includePhi1_new
     else:
         if RHSMode != RHSMode_new:
-<<<<<<< HEAD
-            print("Error! RHSMode is not consistent among runs.")
-            exit(1)
-        if Nspecies != Nspecies_new:
-            print("Error! Nspecies is not consistent among runs.")
-            exit(1)
-        if includePhi1 != includePhi1_new:
-            print("Error! includePhi1 is not consistent among runs.")
-            exit(1)
-
-    if RHSMode != 1 and RHSMode != 2 and RHSMode != 3:
-        print("Error! sfincsScanPlot is not yet set up for RHSMode = "+str(RHSMode))
-=======
             print ("Error! RHSMode is not consistent among runs.")
             exit(1)
         if Nspecies != Nspecies_new:
@@ -197,7 +142,6 @@ for directory in directories:
 
     if RHSMode != 1 and RHSMode != 2 and RHSMode != 3:
         print ("Error! sfincsScanPlot is not yet set up for RHSMode = "+str(RHSMode))
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
         exit(1)
 
     FSABFlow = f["FSABFlow"][()]
@@ -267,19 +211,11 @@ for directory in directories:
         baseCaseIndex=numRuns
     numRuns += 1
 
-<<<<<<< HEAD
-    print("Successfully read run in directory "+directory)
- 
-
-if baseCaseIndex<0:
-    print("Error! No baseCase run available.")
-=======
     print ("Successfully read run in directory "+directory)
  
 
 if baseCaseIndex<0:
     print ("Error! No baseCase run available.")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
     exit(1)
 
 if RHSMode>1:
@@ -308,11 +244,7 @@ else:
          yAxisLabels.append("FSABjHat")
          yAxisLabels.append("J_net\nvm_psiHat")
          yAxisLabels.append("J_net\nvd_psiHat")
-<<<<<<< HEAD
-         yAxisLabels.append("Phi1Hat\n[0,0]") ##Added by AM 2016-04
-=======
          yAxisLabels.append("Phi1Hat\n[0,0]")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
         
       else:
          yAxisLabels=[]
@@ -322,10 +254,6 @@ else:
             yAxisLabels.append("heatFlux\nvm_psiHat\n(species "+str(i)+")")
          yAxisLabels.append("FSABjHat")
          yAxisLabels.append("Radial Current")
-<<<<<<< HEAD
-
-=======
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
 
 
 
@@ -339,20 +267,12 @@ if includePhi1:
 
 if PlotPhi1Bool and includePhi1:
     if not os.path.isfile("baseCase/" + outputFilename):
-<<<<<<< HEAD
-        print("Directory " + "baseCase" + " does not have a " + outputFilename + " file (yet). Will not plot Phi1!")
-=======
         print ("Directory " + "baseCase" + " does not have a " + outputFilename + " file (yet). Will not plot Phi1!")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
         PlotPhi1Bool = False
     try:
         f = h5py.File("baseCase/" + outputFilename, 'r')
     except IOError:
-<<<<<<< HEAD
-        print("Unable to open " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!")
-=======
         print ("Unable to open " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
         PlotPhi1Bool = False
 
     try:
@@ -360,11 +280,7 @@ if PlotPhi1Bool and includePhi1:
         thetaBaseCase = f["theta"][()]
         zetaBaseCase = f["zeta"][()]
     except:
-<<<<<<< HEAD
-        print("Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!")
-=======
         print ("Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
         PlotPhi1Bool = False
     Phi1_Array = []
     Phi1_Theta_Array = []
@@ -393,11 +309,7 @@ if len(values)>1:
             numRepeatedValues += 1
             convergedValue = value
     if numRepeatedValues>1:
-<<<<<<< HEAD
-        print("Error! Multiple values of "+parametersToVary[-1]+" were repeated.")
-=======
         print ("Error! Multiple values of "+parametersToVary[-1]+" were repeated.")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
         exit(1)
     if numRepeatedValues==0:
        convergedValue = data[baseCaseIndex]
@@ -408,13 +320,8 @@ if len(values)>1:
         else:
             index = data.index(value)
         thisScanResults.append(outputs[index])
-<<<<<<< HEAD
-    print("A scan was performed in "+parametersToVary[-1]+", and the repeated value was "+str(convergedValue))
-    print("Values of the scanned parameter: ",abscissae[-1])
-=======
     print ("A scan was performed in "+parametersToVary[-1]+", and the repeated value was "+str(convergedValue))
     print ("Values of the scanned parameter: ",abscissae[-1])
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
     convergeds.append(convergedValue)
     quantities.append(numpy.array(thisScanResults))
 
@@ -435,11 +342,7 @@ if len(values)>1:
           fmin = h5py.File(minScanValue + "/" + outputFilename, 'r')
           fmax = h5py.File(maxScanValue + "/" + outputFilename, 'r')
        except IOError:
-<<<<<<< HEAD
-          print("Unable to open " + minScanValue + "/" + outputFilename + " or " + maxScanValue + "/" + outputFilename + ". Will not plot Phi1!")
-=======
           print ("Unable to open " + minScanValue + "/" + outputFilename + " or " + maxScanValue + "/" + outputFilename + ". Will not plot Phi1!")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
           PlotPhi1Bool = False
           
        try:
@@ -450,11 +353,7 @@ if len(values)>1:
           Phi1_Zeta_Array.append( fmin["zeta"][()] )
           Phi1_Zeta_Array.append( fmax["zeta"][()] )
        except:
-<<<<<<< HEAD
-          print("Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!")
-=======
           print ("Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
           PlotPhi1Bool = False
     ########################
 
@@ -473,11 +372,7 @@ if len(values)>1:
             numRepeatedValues += 1
             convergedValue = value
     if numRepeatedValues>1:
-<<<<<<< HEAD
-        print("Error! Multiple values of "+parametersToVary[-1]+" were repeated.")
-=======
         print ("Error! Multiple values of "+parametersToVary[-1]+" were repeated.")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
         exit(1)
     if numRepeatedValues==0:
        convergedValue = data[baseCaseIndex]
@@ -488,13 +383,8 @@ if len(values)>1:
         else:
             index = data.index(value)
         thisScanResults.append(outputs[index])
-<<<<<<< HEAD
-    print("A scan was performed in "+parametersToVary[-1]+", and the repeated value was "+str(convergedValue))
-    print("Values of the scanned parameter: ",abscissae[-1])
-=======
     print ("A scan was performed in "+parametersToVary[-1]+", and the repeated value was "+str(convergedValue))
     print ("Values of the scanned parameter: ",abscissae[-1])
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
     convergeds.append(convergedValue)
     quantities.append(numpy.array(thisScanResults))
 
@@ -515,11 +405,7 @@ if len(values)>1:
           fmin = h5py.File(minScanValue + "/" + outputFilename, 'r')
           fmax = h5py.File(maxScanValue + "/" + outputFilename, 'r')
        except IOError:
-<<<<<<< HEAD
-          print("Unable to open " + minScanValue + "/" + outputFilename + " or " + maxScanValue + "/" + outputFilename + ". Will not plot Phi1!")
-=======
           print ("Unable to open " + minScanValue + "/" + outputFilename + " or " + maxScanValue + "/" + outputFilename + ". Will not plot Phi1!")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
           PlotPhi1Bool = False
           
        try:
@@ -530,11 +416,7 @@ if len(values)>1:
           Phi1_Zeta_Array.append( fmin["zeta"][()] )
           Phi1_Zeta_Array.append( fmax["zeta"][()] )
        except:
-<<<<<<< HEAD
-          print("Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!")
-=======
           print ("Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
           PlotPhi1Bool = False
     ########################
 
@@ -553,11 +435,7 @@ if len(values)>1:
             numRepeatedValues += 1
             convergedValue = value
     if numRepeatedValues>1:
-<<<<<<< HEAD
-        print("Error! Multiple values of "+parametersToVary[-1]+" were repeated.")
-=======
         print ("Error! Multiple values of "+parametersToVary[-1]+" were repeated.")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
         exit(1)
     if numRepeatedValues==0:
        convergedValue = data[baseCaseIndex]
@@ -568,13 +446,8 @@ if len(values)>1:
         else:
             index = data.index(value)
         thisScanResults.append(outputs[index])
-<<<<<<< HEAD
-    print("A scan was performed in "+parametersToVary[-1]+", and the repeated value was "+str(convergedValue))
-    print("Values of the scanned parameter: ",abscissae[-1])
-=======
     print ("A scan was performed in "+parametersToVary[-1]+", and the repeated value was "+str(convergedValue))
     print ("Values of the scanned parameter: ",abscissae[-1])
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
     convergeds.append(convergedValue)
     quantities.append(numpy.array(thisScanResults))
 
@@ -595,11 +468,7 @@ if len(values)>1:
           fmin = h5py.File(minScanValue + "/" + outputFilename, 'r')
           fmax = h5py.File(maxScanValue + "/" + outputFilename, 'r')
        except IOError:
-<<<<<<< HEAD
-          print("Unable to open " + minScanValue + "/" + outputFilename + " or " + maxScanValue + "/" + outputFilename + ". Will not plot Phi1!")
-=======
           print ("Unable to open " + minScanValue + "/" + outputFilename + " or " + maxScanValue + "/" + outputFilename + ". Will not plot Phi1!")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
           PlotPhi1Bool = False
           
        try:
@@ -610,11 +479,7 @@ if len(values)>1:
           Phi1_Zeta_Array.append( fmin["zeta"][()] )
           Phi1_Zeta_Array.append( fmax["zeta"][()] )
        except:
-<<<<<<< HEAD
-          print("Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!")
-=======
           print ("Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
           PlotPhi1Bool = False
     ########################
 
@@ -633,11 +498,7 @@ if len(values)>1:
             numRepeatedValues += 1
             convergedValue = value
     if numRepeatedValues>1:
-<<<<<<< HEAD
-        print("Error! Multiple values of "+parametersToVary[-1]+" were repeated.")
-=======
         print ("Error! Multiple values of "+parametersToVary[-1]+" were repeated.")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
         exit(1)
     if numRepeatedValues==0:
        convergedValue = data[baseCaseIndex]
@@ -648,13 +509,8 @@ if len(values)>1:
         else:
             index = data.index(value)
         thisScanResults.append(outputs[index])
-<<<<<<< HEAD
-    print("A scan was performed in "+parametersToVary[-1]+", and the repeated value was "+str(convergedValue))
-    print("Values of the scanned parameter: ",abscissae[-1])
-=======
     print ("A scan was performed in "+parametersToVary[-1]+", and the repeated value was "+str(convergedValue))
     print ("Values of the scanned parameter: ",abscissae[-1])
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
     convergeds.append(convergedValue)
     quantities.append(numpy.array(thisScanResults))
 
@@ -675,11 +531,7 @@ if len(values)>1:
           fmin = h5py.File(minScanValue + "/" + outputFilename, 'r')
           fmax = h5py.File(maxScanValue + "/" + outputFilename, 'r')
        except IOError:
-<<<<<<< HEAD
-          print("Unable to open " + minScanValue + "/" + outputFilename + " or " + maxScanValue + "/" + outputFilename + ". Will not plot Phi1!")
-=======
           print ("Unable to open " + minScanValue + "/" + outputFilename + " or " + maxScanValue + "/" + outputFilename + ". Will not plot Phi1!")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
           PlotPhi1Bool = False
           
        try:
@@ -690,11 +542,7 @@ if len(values)>1:
           Phi1_Zeta_Array.append( fmin["zeta"][()] )
           Phi1_Zeta_Array.append( fmax["zeta"][()] )
        except:
-<<<<<<< HEAD
-          print("Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!")
-=======
           print ("Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
           PlotPhi1Bool = False
     ########################
 
@@ -713,11 +561,7 @@ if len(values)>1:
             numRepeatedValues += 1
             convergedValue = value
     if numRepeatedValues>1:
-<<<<<<< HEAD
-        print("Error! Multiple values of "+parametersToVary[-1]+" were repeated.")
-=======
         print ("Error! Multiple values of "+parametersToVary[-1]+" were repeated.")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
         exit(1)
     if numRepeatedValues==0:
        convergedValue = data[baseCaseIndex]
@@ -728,13 +572,8 @@ if len(values)>1:
        else:
           index = data.index(value)
        thisScanResults.append(outputs[index])
-<<<<<<< HEAD
-    print("A scan was performed in "+parametersToVary[-1]+", and the repeated value was "+str(convergedValue))
-    print("Values of the scanned parameter: ",abscissae[-1])
-=======
     print ("A scan was performed in "+parametersToVary[-1]+", and the repeated value was "+str(convergedValue))
     print ("Values of the scanned parameter: ",abscissae[-1])
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
     convergeds.append(convergedValue)
     quantities.append(numpy.array(thisScanResults))
 
@@ -756,11 +595,7 @@ if len(values)>1:
           fmin = h5py.File(minScanValue + "/" + outputFilename, 'r')
           fmax = h5py.File(maxScanValue + "/" + outputFilename, 'r')
        except IOError:
-<<<<<<< HEAD
-          print("Unable to open " + minScanValue + "/" + outputFilename + " or " + maxScanValue + "/" + outputFilename + ". Will not plot Phi1!")
-=======
           print ("Unable to open " + minScanValue + "/" + outputFilename + " or " + maxScanValue + "/" + outputFilename + ". Will not plot Phi1!")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
           PlotPhi1Bool = False
           
        try:
@@ -771,11 +606,7 @@ if len(values)>1:
           Phi1_Zeta_Array.append( fmin["zeta"][()] )
           Phi1_Zeta_Array.append( fmax["zeta"][()] )
        except:
-<<<<<<< HEAD
-          print("Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!")
-=======
           print ("Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
           PlotPhi1Bool = False
     ########################
 
@@ -794,11 +625,7 @@ if len(values)>1:
             numRepeatedValues += 1
             convergedValue = value
     if numRepeatedValues>1:
-<<<<<<< HEAD
-        print("Error! Multiple values of "+parametersToVary[-1]+" were repeated.")
-=======
         print ("Error! Multiple values of "+parametersToVary[-1]+" were repeated.")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
         exit(1)
     if numRepeatedValues==0:
        convergedValue = data[baseCaseIndex]
@@ -809,13 +636,8 @@ if len(values)>1:
         else:
             index = data.index(value)
         thisScanResults.append(outputs[index])
-<<<<<<< HEAD
-    print("A scan was performed in "+parametersToVary[-1]+", and the repeated value was "+str(convergedValue))
-    print("Values of the scanned parameter: ",abscissae[-1])
-=======
     print ("A scan was performed in "+parametersToVary[-1]+", and the repeated value was "+str(convergedValue))
     print ("Values of the scanned parameter: ",abscissae[-1])
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
     convergeds.append(convergedValue)
     quantities.append(numpy.array(thisScanResults))
 
@@ -836,11 +658,7 @@ if len(values)>1:
           fmin = h5py.File(minScanValue + "/" + outputFilename, 'r')
           fmax = h5py.File(maxScanValue + "/" + outputFilename, 'r')
        except IOError:
-<<<<<<< HEAD
-          print("Unable to open " + minScanValue + "/" + outputFilename + " or " + maxScanValue + "/" + outputFilename + ". Will not plot Phi1!")
-=======
           print ("Unable to open " + minScanValue + "/" + outputFilename + " or " + maxScanValue + "/" + outputFilename + ". Will not plot Phi1!")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
           PlotPhi1Bool = False
           
        try:
@@ -851,11 +669,7 @@ if len(values)>1:
           Phi1_Zeta_Array.append( fmin["zeta"][()] )
           Phi1_Zeta_Array.append( fmax["zeta"][()] )
        except:
-<<<<<<< HEAD
-          print("Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!")
-=======
           print ("Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
           PlotPhi1Bool = False
     ########################
 
@@ -874,11 +688,7 @@ if len(values)>1:
             numRepeatedValues += 1
             convergedValue = value
     if numRepeatedValues>1:
-<<<<<<< HEAD
-        print("Error! Multiple values of "+parametersToVary[-1]+" were repeated.")
-=======
         print ("Error! Multiple values of "+parametersToVary[-1]+" were repeated.")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
         exit(1)
     if numRepeatedValues==0:
        convergedValue = data[baseCaseIndex]
@@ -889,13 +699,8 @@ if len(values)>1:
         else:
             index = data.index(value)
         thisScanResults.append(outputs[index])
-<<<<<<< HEAD
-    print("A scan was performed in "+parametersToVary[-1]+", and the repeated value was "+str(convergedValue))
-    print("Values of the scanned parameter: ",abscissae[-1])
-=======
     print ("A scan was performed in "+parametersToVary[-1]+", and the repeated value was "+str(convergedValue))
     print ("Values of the scanned parameter: ",abscissae[-1])
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
     convergeds.append(convergedValue)
     quantities.append(numpy.array(thisScanResults))
 
@@ -916,11 +721,7 @@ if len(values)>1:
           fmin = h5py.File(minScanValue + "/" + outputFilename, 'r')
           fmax = h5py.File(maxScanValue + "/" + outputFilename, 'r')
        except IOError:
-<<<<<<< HEAD
-          print("Unable to open " + minScanValue + "/" + outputFilename + " or " + maxScanValue + "/" + outputFilename + ". Will not plot Phi1!")
-=======
           print ("Unable to open " + minScanValue + "/" + outputFilename + " or " + maxScanValue + "/" + outputFilename + ". Will not plot Phi1!")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
           PlotPhi1Bool = False
           
        try:
@@ -931,11 +732,7 @@ if len(values)>1:
           Phi1_Zeta_Array.append( fmin["zeta"][()] )
           Phi1_Zeta_Array.append( fmax["zeta"][()] )
        except:
-<<<<<<< HEAD
-          print("Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!")
-=======
           print ("Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
           PlotPhi1Bool = False
     ########################
 
@@ -954,11 +751,7 @@ if len(values)>1:
             numRepeatedValues += 1
             convergedValue = value
     if numRepeatedValues>1:
-<<<<<<< HEAD
-        print("Error! Multiple values of "+parametersToVary[-1]+" were repeated.")
-=======
         print ("Error! Multiple values of "+parametersToVary[-1]+" were repeated.")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
         exit(1)
     if numRepeatedValues==0:
        convergedValue = data[baseCaseIndex]
@@ -969,13 +762,8 @@ if len(values)>1:
         else:
             index = data.index(value)
         thisScanResults.append(outputs[index])
-<<<<<<< HEAD
-    print("A scan was performed in "+parametersToVary[-1]+", and the repeated value was "+str(convergedValue))
-    print("Values of the scanned parameter: ",abscissae[-1])
-=======
     print ("A scan was performed in "+parametersToVary[-1]+", and the repeated value was "+str(convergedValue))
     print ("Values of the scanned parameter: ",abscissae[-1])
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
     convergeds.append(convergedValue)
     quantities.append(numpy.array(thisScanResults))
 
@@ -996,11 +784,7 @@ if len(values)>1:
           fmin = h5py.File(minScanValue + "/" + outputFilename, 'r')
           fmax = h5py.File(maxScanValue + "/" + outputFilename, 'r')
        except IOError:
-<<<<<<< HEAD
-          print("Unable to open " + minScanValue + "/" + outputFilename + " or " + maxScanValue + "/" + outputFilename + ". Will not plot Phi1!")
-=======
           print ("Unable to open " + minScanValue + "/" + outputFilename + " or " + maxScanValue + "/" + outputFilename + ". Will not plot Phi1!")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
           PlotPhi1Bool = False
           
        try:
@@ -1011,11 +795,7 @@ if len(values)>1:
           Phi1_Zeta_Array.append( fmin["zeta"][()] )
           Phi1_Zeta_Array.append( fmax["zeta"][()] )
        except:
-<<<<<<< HEAD
-          print("Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!")
-=======
           print ("Unable to read Phi1Hat from " + "baseCase/" + outputFilename + " even though this file exists. Will not plot Phi1!")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
           PlotPhi1Bool = False
     ########################
 
@@ -1274,17 +1054,10 @@ if makePDF:
    fig = plt.figure(1)
    ##plt.savefig('sfincsScanPlot_1.pdf', orientation = 'landscape', papertype='letter')
    if len(sys.argv)>2 : #Use the substituted name as file name                                                                                      
-<<<<<<< HEAD
-      print("Writing plot to " + os.getcwd() + "/" + sys.argv[2] + ".pdf.")
-      plt.savefig(sys.argv[2] + ".pdf", orientation = 'landscape', papertype='letter')
-   else: #Use script name as file name                                                                                                              
-      print("Writing plot to " + os.getcwd() + "/" + os.path.basename(__file__) + ".pdf.")
-=======
       print ("Writing plot to " + os.getcwd() + "/" + sys.argv[2] + ".pdf.")
       plt.savefig(sys.argv[2] + ".pdf", orientation = 'landscape', papertype='letter')
    else: #Use script name as file name                                                                                                              
       print ("Writing plot to " + os.getcwd() + "/" + os.path.basename(__file__) + ".pdf.")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
       plt.savefig(os.path.basename(__file__) + ".pdf", orientation = 'landscape', papertype='letter')
    #######################
  
@@ -1294,15 +1067,8 @@ if makePDF:
       fig2 = plt.figure(2)
       fig2.set_size_inches(numColsPlot2*3, numRowsPlot2*2.5)
       if len(sys.argv)>2 : #Use the substituted name as file name                                                                                      
-<<<<<<< HEAD
-         print("Writing plot to " + os.getcwd() + "/" + sys.argv[2] + "_Phi1" + ".pdf.")
-         plt.savefig(sys.argv[2] + "_Phi1" + ".pdf", orientation = 'landscape', papertype='letter')
-      else: #Use script name as file name                                                                                                              
-         print("Writing plot to " + os.getcwd() + "/" + os.path.basename(__file__) + "_Phi1" + ".pdf.")
-=======
          print ("Writing plot to " + os.getcwd() + "/" + sys.argv[2] + "_Phi1" + ".pdf.")
          plt.savefig(sys.argv[2] + "_Phi1" + ".pdf", orientation = 'landscape', papertype='letter')
       else: #Use script name as file name                                                                                                              
          print ("Writing plot to " + os.getcwd() + "/" + os.path.basename(__file__) + "_Phi1" + ".pdf.")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
          plt.savefig(os.path.basename(__file__) + "_Phi1" + ".pdf", orientation = 'landscape', papertype='letter')

@@ -7,18 +7,8 @@
 
 import os, inspect, sys, subprocess, time
 
-<<<<<<< HEAD
-from __future__ import division, print_function
-
-import os, inspect, sys, subprocess
-
-print("This is "+ inspect.getfile(inspect.currentframe()))
-
-##By AM 2015-12##
-=======
 print ("This is "+ inspect.getfile(inspect.currentframe()))
 
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
 # If called with any command-line arguments other than 'noplot' or 'pdf', then redirect to sfincsScanPlot_combine.
 #if len(sys.argv)>1 and (sys.argv[1] != "noplot"):
 if len(sys.argv)>1 and (sys.argv[1] != "noplot") and (sys.argv[1].lower() != "pdf"):
@@ -34,13 +24,6 @@ inputFilename = "input.namelist"
 #commentCode = "!ss"
 
 if not os.path.isfile(inputFilename):
-<<<<<<< HEAD
-    print("Error! The file "+inputFilename+" must be present in the directory from which you call sfincsScanPlot.")
-    exit(1)
-
-# Load some other required subroutines:
-exec(compile(open(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_common", "rb").read(), os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_common", 'exec'))
-=======
     print ("Error! The file "+inputFilename+" must be present in the directory from which you call sfincsScanPlot.")
     exit(1)
 
@@ -49,7 +32,6 @@ start_time = time.time()
 #execfile(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_common")
 exec(open(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScan_common").read())
 print ("Time for exec call to sfincsScanPlot_common: ", time.time() - start_time)
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
 
 # Load the input file:
 with open(inputFilename, 'r') as f:
@@ -121,11 +103,7 @@ scanType = readScanVariable("scanType","int")
 scriptName =  os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/sfincsScanPlot_"+str(scanType) 
 
 if not os.path.isfile(scriptName):
-<<<<<<< HEAD
-    print("Error! The file "+scriptName+" does not exist, meaning that plots for scanType = "+str(scanType)+ " are not yet supported.")
-=======
     print ("Error! The file "+scriptName+" does not exist, meaning that plots for scanType = "+str(scanType)+ " are not yet supported.")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
     exit(1)
 
 if len(sys.argv)>1 and (sys.argv[1].lower() == "pdf"):
@@ -137,24 +115,11 @@ if len(sys.argv)>1 and (sys.argv[1].lower() == "pdf"):
         print ("Time for subprocess call to sfincsScanPlot_x: ", time.time() - start_time)
         exit(0)
     except IOError:
-<<<<<<< HEAD
-        print("Unable to run "+scriptName+" even though the file exists.")
-=======
         print ("Unable to run "+scriptName+" even though the file exists.")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
         raise
 ##
 
 try:
-<<<<<<< HEAD
-    exec(compile(open(scriptName, "rb").read(), scriptName, 'exec'))
-except IOError:
-    print("Unable to run "+scriptName+" even though the file exists.")
-    raise
-
-
-print("Good bye!")
-=======
     #execfile(scriptName)
     exec(open(scriptName).read())
 except IOError:
@@ -163,4 +128,3 @@ except IOError:
 
 
 print ("Good bye!")
->>>>>>> a56aa0dc4c9497dbc95f3f9df762f5620545696d
