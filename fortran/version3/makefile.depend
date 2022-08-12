@@ -3,7 +3,7 @@
 OBJ_FILES = adjointDiagnostics.o ambipolarSolver.o ChebyshevGrid.o ChebyshevInterpolationMatrix.o classicalTransport.o \
 	  createGrids.o diagnostics.o evaluateJacobian.o residual.o export_f.o geometry.o \
 	  globalVariables.o indices.o polynomialDiffMatrices.o polynomialInterpolationMatrix.o \
-      populateAdjointRHS.o populatedMatrixdLambda.o populatedRHSdLambda.o  \
+      populateAdjointRHS.o \
 	  DKEMatrix.o preallocateMatrix.o quadpack.o radialCoordinates.o readHDF5Input.o readInput.o sfincs_finalize.o  \
       sfincs_main.o solver.o sparsify.o testingAdjointDiagnostics.o \
 	  uniformDiffMatrices.o uniformInterpolationMatrix.o updateBoozerGeometry.o validateInput.o writeHDF5Output.o xGrid.o  \
@@ -27,8 +27,6 @@ indices.o: globalVariables.o
 polynomialDiffMatrices.o: xGrid.o
 polynomialInterpolationMatrix.o: 
 populateAdjointRHS.o: globalVariables.o indices.o
-populatedMatrixdLambda.o: globalVariables.o indices.o xGrid.o sparsify.o
-populatedRHSdLambda.o: globalVariables.o indices.o
 preallocateMatrix.o: indices.o globalVariables.o
 quadpack.o:
 radialCoordinates.o: globalVariables.o
@@ -37,7 +35,7 @@ readInput.o: export_f.o globalVariables.o xGrid.o
 sfincs.o: sfincs_main.o
 sfincs_finalize.o: export_f.o indices.o globalVariables.o xGrid.o
 sfincs_main.o: geometry.o globalVariables.o writeHDF5Output.o readInput.o solver.o radialCoordinates.o classicalTransport.o readHDF5Input.o ambipolarSolver.o testingAdjointDiagnostics.o
-solver.o: globalVariables.o adjointDiagnostics.o writeHDF5Output.o DKEMatrix.o residual.o
+solver.o: globalVariables.o adjointDiagnostics.o writeHDF5Output.o DKEMatrix.o residual.o populateAdjointRHS.o
 sparsify.o:
 testingAdjointDiagnostics.o: adjointDiagnostics.o geometry.o solver.o ambipolarSolver.o writeHDF5Output.o
 uniformDiffMatrices.o: 
