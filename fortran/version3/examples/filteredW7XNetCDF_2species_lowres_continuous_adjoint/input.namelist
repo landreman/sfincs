@@ -1,0 +1,112 @@
+! Input file for SFINCS version 3.
+! See the user manual for documentation of the parameters in this file.
+!----------------------------------------------------------------------
+
+!ss scanType = 1
+
+! Settings specific to scanType = 2:
+!ss NErs = 41
+!ss ErMin = -10.0d+0
+!ss ErMax =  10.0d+0
+
+! Settings specific to scanType = 3:
+!ss scanVariable = min_Bmn_to_load
+!ss scanVariableMin = 1e-6
+!ss scanVariableMax = 1e-3
+!ss scanVariableN = 5
+!ss scanVariableScale = log
+
+&general
+  RHSMode = 5
+  ambipolarSolve = .true.
+  Er_min = -10
+  Er_max = 10
+/
+
+&geometryParameters
+  geometryScheme = 11
+
+  inputRadialCoordinate = 3   ! rN
+  rN_wish = 0.5
+
+  VMECRadialOption = 0
+  equilibriumFile = "../../../../equilibria/w7x_standardConfig.bc"
+  min_Bmn_to_load = 1e-3
+
+/
+
+&speciesParameters
+  Zs = 1 -1
+  mHats = 1 0.000545509d+0
+  nHats = 0.5d+0 0.5d+0
+  THats = 2.0d+0 2.0d+0
+  dNHatdrHats = -0.5d+0 -0.5d+0
+  dTHatdrHats = -2.0d+0 -2.0d+0
+/
+
+&physicsParameters
+  Delta = 4.5694d-3
+  alpha = 1d+0
+  nu_n = 0.00831565d+0
+
+  Er   = 1.0d+0
+
+  collisionOperator = 0
+
+  includeXDotTerm = .true.
+  includeElectricFieldTermInXiDot = .true.
+  useDKESExBDrift = .false.
+
+  includePhi1 = .false.
+/
+
+&resolutionParameters
+  Ntheta = 13
+!ss NthetaMinFactor = 0.6
+!ss NthetaMaxFactor = 2.5
+!ss NthetaNumRuns = 15
+
+  Nzeta = 17
+!ss NzetaMinFactor = 0.8
+!ss NzetaMaxFactor = 2.5
+!ss NzetaNumRuns = 15
+
+  Nxi = 14
+!ss NxiMinFactor = 0.7
+!ss NxiMaxFactor = 2
+!ss NxiNumRuns = 20
+  
+  Nx = 5
+!ss NxMinFactor = 1.0
+!ss NxMaxFactor = 1.6
+!ss NxNumRuns = 200
+
+  solverTolerance = 1d-6
+!ss solverToleranceMinFactor = 0.1
+!ss solverToleranceMaxFactor = 10
+!ss solverToleranceNumRuns = 3
+
+NL=4
+/
+
+&otherNumericalParameters
+/
+
+&preconditionerOptions
+/
+
+&export_f
+  export_full_f = .false.
+  export_delta_f = .false.
+/
+
+&adjointOptions
+  nMaxAdjoint = 1
+  mMaxAdjoint = 1
+  debugAdjoint = .false.
+  discreteAdjointOption = .false.
+  adjointParticleFluxOption = .true. .true.
+  adjointHeatFluxOption = .true. .true.
+  adjointParallelFlowOption = .true. .true.
+/
+
