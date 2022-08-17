@@ -341,7 +341,6 @@ end do
     integer :: whichSpecies, whichLambda, whichMode, minSpecies, maxSpecies, itheta, izeta, L, ix, index, ispecies
     PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, dBHatdThetadLambda, dBHatdZetadLambda
     PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dinvDHatdLambda, factor
-    PetscScalar, dimension(:), allocatable :: xIntegralFactor
     PetscScalar :: dBHatdLambda, dVPrimeHatdLambda
     integer :: m, n
     PetscScalar :: angle, cos_angle, sin_angle
@@ -365,7 +364,6 @@ end do
     end if
 
     if (masterProc) then
-      allocate(xIntegralFactor(Nx))
       allocate(R(matrixSize))
       
       if (whichSpecies == 0) then
@@ -406,8 +404,6 @@ end do
           end do ! itheta
         end do ! ispecies
         call VecDestroy(deltaFOnProc0,ierr)
-        
-        deallocate(xIntegralFactor)
         deallocate(R)
 
       end if !masterProc
@@ -425,12 +421,13 @@ end do
     !! @param whichSpecies If = 0, summed over species. If nonzero, indicates species number. In this case should always be 0.
     !! @param whichLambda Indicates which component of magnetic field derivative is respect to. If = 0 \f$E_r\f$, = 1 \f$\hat{B}\f$, = 2 \f$\hat{B}^{\theta}\f$, = 3 \f$\hat{B}^{\zeta}\f$, = 4 \f$\hat{B}_{\theta}\f$, = 5 \f$\hat{B}_{\zeta}\f$, = 6 \f$\hat{D}\f$
     !! @param whichMode Indicates index of ms and ns for derivative.
-    subroutine particleFlux_vd_Sensitivity(result, deltaF, whichSpecies, whichLambda, whichMode)
+    subroutine particleFlux_vE_Sensitivity(result, deltaF, whichSpecies, whichLambda, whichMode)
 
       use globalVariables
       use indices
       use petscvec
-
+      use diagnostics
+      
       implicit none
 
       PetscScalar :: result
@@ -440,7 +437,6 @@ end do
       PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, Z
       PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dinvDHatdLambda, factor, factorExB
       PetscScalar :: dfactordLambda, dfactorExBdLambda, df0dLambda
-      PetscScalar, dimension(:), allocatable :: xIntegralFactor,  xIntegralFactorExB
       PetscScalar :: dBHatdLambda, dVPrimeHatdLambda, dBHatdThetadLambda, dBHatdZetadLambda
       PetscScalar :: dPhi1HatdLambda, dPhi1HatdThetadLambda, dPhi1HatdZetadLambda
       integer :: m, n
@@ -448,14 +444,10 @@ end do
       VecScatter :: VecScatterContext, VecScatterContext0 !MAYBE REMOVE SECOND
       PetscErrorCode :: ierr
 
-      PetscScalar :: result3
-      PetscScalar, dimension(:,:), allocatable :: results2
-
+      PetscScalar, dimension(:), allocatable :: R
+      
       result = zero
-      allocate(results2(Ntheta,Nzeta))
-      results2 = zero
-      result3 = zero
-
+      
       m = ms_sensitivity(whichMode)
       n = ns_sensitivity(whichMode)
 
@@ -478,28 +470,10 @@ end do
          end if
       end if
 
-
-      if (whichLambda==1) then ! BHat
-         dVPrimeHatdLambda = zero
-         do itheta=1,Ntheta
-            do izeta=1,Nzeta
-               angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-               cos_angle = cos(angle)
-               dVPrimeHatdLambda = dVPrimeHatdLambda - two*thetaWeights(itheta)*zetaWeights(izeta)*cos_angle/(DHat(itheta,izeta)*BHat(itheta,izeta))
-            end do
-         end do
-      else if (whichLambda==2) then ! IHat
-         dVPrimeHatdLambda = iota*VprimeHat/(GHat+iota*IHat)
-      else if (whichLambda==3) then ! GHat
-         dVPrimeHatdLambda = VPrimeHat/(GHat+iota*IHat)
-      else if (whichLambda==4) then ! iota
-         dVPrimeHatdLambda = IHat*VPrimeHat/(GHat+iota*IHat)
-      end if
-
       if (masterProc) then
-         allocate(xIntegralFactor(Nx))
-         allocate(xIntegralFactorExB(Nx))
-
+         allocate(R(matrixSize))
+    
+         
          if (whichSpecies == 0) then
             minSpecies = 1
             maxSpecies = NSpecies
@@ -508,113 +482,38 @@ end do
             maxSpecies = whichSpecies
          end if
 
-         ! factor = (BHat_sub_theta*dBHatdzeta-BHat_sub_zeta*dBHatdtheta)/(VPrimeHat*BHat**3)
-         ! factorExB = (BHat_sub_theta*dPhi1Hatdzeta-BHat_sub_zeta*dPhi1Hatdtheta)/(VPrimeHat*BHat**2)
          do ispecies = minSpecies,maxSpecies
-            THat = THats(ispecies)
-            mHat = mHats(ispecies)
-            Z = Zs(ispecies)
-            sqrtTHat = sqrt(THats(ispecies))
-            sqrtmHat = sqrt(mHats(ispecies))
 
-            xIntegralFactor = x*x*x*x*THat*THat*sqrtTHat*pi*Delta/(mHat*sqrtmHat*Z)*ddrN2ddpsiHat
-            xIntegralFactorExB = x*x*THat*sqrtTHat*2*pi*Delta*alpha/(mHat*sqrtmHat)*ddrN2ddpsiHat
+            ! most of the work is now done here
+            call particleFlux_vE(R, 1, ispecies, whichLambda, whichMode)
+            R = R * ddrN2ddpsiHat
 
+            ! Summed quantity is weighted by charge
+            if (whichSpecies == 0) then
+               R = R * Zs(ispecies)
+            end if
+            
             do itheta=1,Ntheta
                do izeta=1,Nzeta
-                  select case (whichLambda)
-                  case (1) ! BHat cos
-                     angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-                     cos_angle = cos(angle)
-                     sin_angle = sin(angle)                  
-                     dBHatdThetadLambda = -m*sin_angle
-                     dBHatdZetadLambda = n*Nperiods*sin_angle
-                     dBHatdLambda = cos_angle
-                     dfactordLambda = (IHat*dBHatdzetadLambda-GHat*dBHatdthetadLambda)/(VPrimeHat*BHat(itheta,izeta)**3) &
-                          - 3*(IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta))/(VprimeHat*BHat(itheta,izeta)**4) &
-                          * dBHatdLambda - (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda &
-                          /(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
-                     dfactorExBdLambda = - 2*(IHat*dPhi1Hatdzeta(itheta,izeta)-GHat*dPhi1Hatdtheta(itheta,izeta))/(VprimeHat*BHat(itheta,izeta)**3) &
-                          * dBHatdLambda - (IHat*dPhi1Hatdzeta(itheta,izeta)-GHat*dPhi1Hatdtheta(itheta,izeta))*dVPrimeHatdLambda &
-                          /(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**2)
-                  case (2) ! IHat
-                     dfactordLambda = dBHatdzeta(itheta,izeta)/(VPrimeHat*BHat(itheta,izeta)**3) &
-                          - (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta)) &
-                          * dVPrimeHatdLambda/(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
-                     dfactorExBdLambda = dPhi1Hatdzeta(itheta,izeta)/(VPrimeHat*BHat(itheta,izeta)**2) &
-                          - (IHat*dPhi1Hatdzeta(itheta,izeta)-GHat*dPhi1Hatdtheta(itheta,izeta)) &
-                          * dVPrimeHatdLambda/(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**2)
-                  case (3) ! GHat
-                     dfactordLambda = -dBHatdtheta(itheta,izeta)/(VPrimeHat*BHat(itheta,izeta)**3) &
-                          - (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda &
-                          / (VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
-                     dfactorExBdLambda = -dPhi1Hatdtheta(itheta,izeta)/(VPrimeHat*BHat(itheta,izeta)**2) &
-                          - (IHat*dPhi1Hatdzeta(itheta,izeta)-GHat*dPhi1Hatdtheta(itheta,izeta))*dVPrimeHatdLambda &
-                          /(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**2)
-                  case (4) ! iota
-                     dfactordLambda = - (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda &
-                          / (VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
-                     dfactorExBdLambda = - (IHat*dPhi1Hatdzeta(itheta,izeta)-GHat*dPhi1Hatdtheta(itheta,izeta))*dVPrimeHatdLambda &
-                          / (VPrimeHat*VPrimeHat*BHat(itheta,izeta)**2)
-                  end select
-
-                  ! Summed quantity is weighted by charge
-                  if (whichSpecies == 0) then
-                     factor = factor * Z
-                     dfactordLambda = dfactordLambda * Z
-                     factorExB = factorExB * Z
-                     dfactorExBdLambda = dfactorExBdLambda * Z
-                  end if
-
-
                   do ix=1,Nx
 
                      L = 0
                      index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
                      ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
-                     
-                     ! Add magnetic drift contribution from deltaF
-                     result = result + &
-                          (8/three)*dfactordLambda*xWeights(ix)*deltaFArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
-                     
-
-                     ! Add ExB drift contribution from deltaF
-                     result = result + &
-                          dfactorExBdLambda*xWeights(ix)*deltaFArray(index)*xIntegralFactorExB(ix)*thetaWeights(itheta)*zetaWeights(izeta) ! 
-                     
-                        
-                     L = 2
-                     index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
-                     ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
-                     ! Add the magnetic drift contribution from DeltaF
-                     if (.false.) then
-                        result = result + &
-                             (four/15)*dfactordLambda*xWeights(ix)*deltaFArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
-                     end if
-                  
-                     ! Add the magnetic drift contribution from f0 for L=2
-                     ! This is zero if f0 is Maxwellian
-                     ! (which is always the case 2020-06)
-                     ! but it is added for feature parity with 'diagnotics'
-                     
+                     result = result + R(index)*deltaFArray(index)
 
                   end do ! ix
                end do ! izeta
             end do ! itheta
-            
-            do izeta=1,Nzeta
-               result3 = result3 + zetaWeights(izeta) &
-                  * dot_product(thetaWeights, results2(:,izeta))
-            end do
-            
          end do ! ispecies
          call VecDestroy(deltaFOnProc0,ierr)
          call VecDestroy(f0OnProc0,ierr)
+         deallocate(R)
          ! TODO: maybe destroy f0onProc0??
       end if !masterProc
       call VecScatterDestroy(VecScatterContext,ierr)
       call VecScatterDestroy(VecScatterContext0,ierr)
-    end subroutine particleFlux_vd_Sensitivity
+    end subroutine particleFlux_vE_Sensitivity
 
 
     !> Evaluates the term in the sensitivity derivative of the parallel flow
@@ -766,10 +665,10 @@ end do
       Vec :: forwardSolution, adjointSolution, adjointResidual, adjointRHSVec
       integer :: whichAdjointRHS, whichSpecies
       integer :: whichLambda, whichMode, this_NModesAdjoint
-      PetscScalar :: innerProductResult, sensitivityResult, ErTermToAdd
+      PetscScalar :: innerProductResult, sensitivityResult, sensitivityResult2, ErTermToAdd
       Vec :: adjointResidualEr, adjointSolutionJr
       PetscScalar :: innerProductResultEr1, innerProductResultEr2, innerProductResultEr3
-      PetscScalar :: radialCurrentSensitivity
+      PetscScalar :: radialCurrentSensitivity, radialCurrentSensitivity2
 
       PetscScalar :: temp
       integer :: itemp
@@ -809,10 +708,10 @@ end do
 
             if (RHSMode == 5) then
                call innerProduct(adjointSolutionJr,adjointResidual,innerProductResultEr3,0)
-               if (.not. includePhi1) then
-                  call particleFluxSensitivity(radialCurrentSensitivity,forwardSolution,0,whichLambda,whichMode)
-               else
-                  call particleFlux_vd_Sensitivity(radialCurrentSensitivity,forwardSolution,0,whichLambda,whichMode)
+               call particleFluxSensitivity(radialCurrentSensitivity,forwardSolution,0,whichLambda,whichMode)
+               if (includePhi1) then
+                  call particleFlux_vE_Sensitivity(radialCurrentSensitivity2,forwardSolution,0,whichLambda,whichMode)
+                  radialCurrentSensitivity = radialCurrentSensitivity + radialCurrentSensitivity2
                end if
                ErTermToAdd = -(innerProductResultEr1/innerProductResultEr2)*(radialCurrentSensitivity-innerProductResultEr3)
                dPhidPsidLambda(whichLambda,whichMode) = (1/innerProductResultEr2)*(radialCurrentSensitivity-innerProductResultEr3)
@@ -824,10 +723,10 @@ end do
           if (whichSpecies == 0) then
              select case (whichAdjointRHS)
              case (1) ! Particle flux
-                if (.not. includePhi1) then
-                   call particleFluxSensitivity(sensitivityResult, forwardSolution, whichSpecies, whichLambda, whichMode)
-                else
-                   call particleFlux_vd_Sensitivity(sensitivityResult, forwardSolution, whichSpecies, whichLambda, whichMode)
+                call particleFluxSensitivity(sensitivityResult, forwardSolution, whichSpecies, whichLambda, whichMode)
+                if (includePhi1) then
+                   call particleFlux_vE_Sensitivity(sensitivityResult2, forwardSolution, whichSpecies, whichLambda, whichMode)
+                   sensitivityResult = sensitivityResult + sensitivityResult2
                 end if
                 
                 dRadialCurrentdLambda(whichLambda,whichMode) = -innerProductResult + sensitivityResult
@@ -847,11 +746,10 @@ end do
           else
              select case (whichAdjointRHS)
              case (1) ! Particle flux
-                if (.not. includePhi1) then
-                   call particleFluxSensitivity(sensitivityResult, forwardSolution, whichSpecies, whichLambda, whichMode)
-                else
-                   call particleFlux_vd_Sensitivity(sensitivityResult, forwardSolution, whichSpecies, whichLambda, whichMode)
-                   
+                call particleFluxSensitivity(sensitivityResult, forwardSolution, whichSpecies, whichLambda, whichMode)
+                if (includePhi1) then
+                   call particleFlux_vE_Sensitivity(sensitivityResult2, forwardSolution, whichSpecies, whichLambda, whichMode)
+                   sensitivityResult = sensitivityResult + sensitivityResult2
                 end if
                 dParticleFluxdLambda(whichSpecies,whichLambda,whichMode) = sensitivityResult - innerProductResult
                 

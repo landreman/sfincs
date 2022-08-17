@@ -10,7 +10,7 @@ OBJ_FILES = adjointDiagnostics.o ambipolarSolver.o ChebyshevGrid.o ChebyshevInte
 legendrePolynomials.o  externalFCalculations.o init_f0.o
 
 # Dependencies:
-adjointDiagnostics.o: globalVariables.o indices.o writeHDF5Output.o DKEMatrix.o residual.o
+adjointDiagnostics.o: globalVariables.o indices.o writeHDF5Output.o DKEMatrix.o residual.o diagnostics.o
 ambipolarSolver.o: globalVariables.o solver.o writeHDF5Output.o radialCoordinates.o
 ChebyshevGrid.o: 
 ChebyshevInterpolationMatrix.o:

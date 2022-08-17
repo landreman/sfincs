@@ -26,7 +26,7 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies, fineGrid)
   PetscScalar :: xPartCont
   logical, parameter :: localUsePhi1 = .true.
 
-  PetscScalar, dimension(:), allocatable :: R 
+  PetscScalar, dimension(:), allocatable :: R, RExB
 
   ! Validate input
   if (whichAdjointRHS<1 .or. whichAdjointRHS>3 .or. whichSpecies<0 .or. whichSpecies>Nspecies) then
@@ -39,6 +39,8 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies, fineGrid)
   end if
 
   allocate(R(matrixSize))
+  allocate(RExB(matrixSize))
+  
   call VecSet(rhs, zero, ierr)
 
   
@@ -58,12 +60,16 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies, fineGrid)
         sqrtMHat = sqrt(mHat)
         Z = Zs(ispecies)
 
-        ! TODO: this might be zero outside master
         R = adjoint_particleFlux_vm_RHSs(:,ispecies)
         R = R * ddrN2ddpsiHat
-        ! ^^ add ExB
+
+        RExB = adjoint_particleFlux_vE_RHSs(:,ispecies)
+        RExB = RExB * ddrN2ddpsiHat
+        
+        
         if (whichSpecies == 0) then
            R = R*Z
+           RExB = RExB*Z
         end if
 
         
@@ -71,49 +77,30 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies, fineGrid)
            if (discreteAdjointOption .eqv. .false.) then
               xPartCont = expx2(ix) * nHat * mHat**3 * VprimeHat/(xWeights(ix) * x2(ix) * pi*pi*sqrtpi * THat**4)
            end if
-           xPartOfRHS = exp(-x2(ix))*nHat*mHat*sqrtMHat*Delta*x2(ix)/ &
-                                       (pi*sqrtpi*THat*sqrtTHat*Z)*ddrN2ddpsiHat
-            do itheta = ithetaMin,ithetaMax
-               do izeta = izetaMin,izetaMax
-                  if (discreteAdjointOption .eqv. .false.) then
-                     L = 0
-                     index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                     R(index + 1) = R(index + 1) * xPartCont * DHat(itheta,izeta)/(thetaWeights(itheta)*zetaWeights(izeta))/two
+           do itheta = ithetaMin,ithetaMax
+              do izeta = izetaMin,izetaMax
+                 if (discreteAdjointOption .eqv. .false.) then
 
-                     L = 2
-                     index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                     R(index + 1) = R(index + 1) * xPartCont * DHat(itheta,izeta)/(thetaWeights(itheta)*zetaWeights(izeta)) * five/two    
-                  end if
+                    ! TODO
+                    ! Here is where RExB would be tweaked
+                    ! if continuous adjoint was supported with Phi1.
+                    
+                    L = 0
+                    index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+                    R(index + 1) = R(index + 1) * xPartCont * DHat(itheta,izeta)/(thetaWeights(itheta)*zetaWeights(izeta))/two
 
+                    L = 2
+                    index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+                    R(index + 1) = R(index + 1) * xPartCont * DHat(itheta,izeta)/(thetaWeights(itheta)*zetaWeights(izeta)) * five/two    
+                 end if
 
-                  factor = xPartOfRHS*thetaWeights(itheta)*zetaWeights(izeta)*(BHat_sub_theta(itheta,izeta) &
-                       *dBHatdzeta(itheta,izeta) - BHat_sub_zeta(itheta,izeta)* &
-                       dBHatdtheta(itheta,izeta))/(BHat(itheta,izeta)**3)
-                  factor = factor*DHat(itheta,izeta)
-                  factor1 = four/three
-                  
-                  ! ^^^ TODO separate
-                  if (includePhi1 .and. localUsePhi1) then
-                     factorExB = xPartOfRHSExB/(BHat(itheta,izeta)*BHat(itheta,izeta)) &
-                          *(BHat_sub_theta(itheta,izeta)*dPhi1Hatdzeta(itheta,izeta) &
-                          - BHat_sub_zeta(itheta,izeta)*dPhi1Hatdtheta(itheta,izeta))
-                  else
-                     factorExB = 0
-                  end if
-                  !    factorExB = factorExB*thetaWeights(itheta)*zetaWeights(izeta)
-                  
-                  L = 0
-                  index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                  call VecSetValue(rhs, index, R(index + 1), INSERT_VALUES, ierr) ! *2
-
-                  print *,"^^^^^^^^^^^^^^^^^^^^^"
-                  print *, index
-                  print *, R(index+1)
-                  print *, factor1*factor
-                  
-                  L = 2
-                  index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                  call VecSetValue(rhs, index, R(index + 1), INSERT_VALUES, ierr)
+                 L = 0
+                 index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+                 call VecSetValue(rhs, index, R(index + 1) + RExB(index+1), INSERT_VALUES, ierr) ! *2
+                 
+                 L = 2
+                 index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+                 call VecSetValue(rhs, index, R(index + 1), INSERT_VALUES, ierr)
              enddo
             enddo
           enddo
