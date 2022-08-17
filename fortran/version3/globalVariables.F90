@@ -432,6 +432,9 @@ module globalVariables
 
   integer :: externalNL, externalNspecies, externalNE, externalNxi
   integer :: externalNQN = 0
+
+  ! new
+  PetscScalar, dimension(:,:), allocatable :: adjoint_particleFlux_vm_RHSs, adjoint_particleFlux_vE_RHSs
   
   Vec :: f0
 

@@ -5,6 +5,7 @@ module solver
   use writeHDF5Output
   use DKEMatrix
   use residual
+  use diagnostics
   
 #include "PETScVersions.F90"
 
@@ -54,7 +55,7 @@ contains
     PetscViewerAndFormat vf_adjoint
 #endif
 
-    external evaluateJacobian, diagnosticsMonitor
+    external evaluateJacobian
 
     ! If mumps ICNTL(14) was set via the command line, we need to clear it, or else
     ! the auto-increase feature will not work.
@@ -97,8 +98,11 @@ contains
        call VecDuplicate(solutionVec, residualVec, ierr)
 
        call VecDuplicate(solutionVec, f0, ierr)
-       call init_f0()
 
+       call init_f0()
+       ! new
+       call initializeDiagnostics()
+       
        call SNESCreate(MPIComm, mysnes, ierr)
 #if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR >= 8))
 #define PETSC_NULL_OBJECT_OR_INTEGER 0
@@ -616,7 +620,7 @@ contains
              call checkIfKSPConverged(KSPInstance)
 
              ! Compute flows, fluxes, etc.:
-             call diagnostics(solutionVec, whichRHS)
+             call do_diagnostics(solutionVec, whichRHS)
 
           end do
 

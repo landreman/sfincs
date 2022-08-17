@@ -5,7 +5,8 @@ module residual
   use globalVariables
   use indices
   use DKEMatrix
-
+  use diagnostics
+  
   implicit none
 
   private

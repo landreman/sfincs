@@ -178,6 +178,11 @@ if(allocated(particleFluxBeforeSurfaceIntegral_vm)) deallocate( particleFluxBefo
   if(allocated(externalMasses))deallocate(externalMasses)
   if(allocated(FSABExternalFlow)) deallocate(FSABExternalFlow)
   if(allocated(externalFlow)) deallocate(externalFlow)
+
+  ! New
+  if(allocated(adjoint_particleFlux_vm_RHSs)) deallocate(adjoint_particleFlux_vm_RHSs)
+  if(allocated(adjoint_particleFlux_vE_RHSs)) deallocate(adjoint_particleFlux_vE_RHSs)
+  
   
   call xGrid_finalize()
   call indices_finalize()

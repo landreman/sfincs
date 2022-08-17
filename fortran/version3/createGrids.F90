@@ -1519,6 +1519,12 @@
        transportMatrix = 0
     end select
 
+    ! New
+    allocate(adjoint_particleFlux_vm_RHSs(matrixSize,Nspecies))
+    allocate(adjoint_particleFlux_vE_RHSs(matrixSize,Nspecies))
+    adjoint_particleFlux_vm_RHSs = zero
+    adjoint_particleFlux_vE_RHSs = zero
+    
     if (masterProc) then
        print *,"------------------------------------------------------"
        print *,"Done creating grids."

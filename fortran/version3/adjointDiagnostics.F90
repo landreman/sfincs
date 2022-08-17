@@ -331,6 +331,7 @@ end do
     use globalVariables
     use indices
     use petscvec
+    use diagnostics
 
     implicit none
 
@@ -347,6 +348,8 @@ end do
     VecScatter :: VecScatterContext
     PetscErrorCode :: ierr
 
+    PetscScalar, dimension(:), allocatable :: R
+    
     result = zero
 
     m = ms_sensitivity(whichMode)
@@ -361,26 +364,10 @@ end do
       call VecGetArrayF90(deltaFOnProc0, deltaFArray, ierr)
     end if
 
-        if (whichLambda==1) then ! BHat
-            dVPrimeHatdLambda = zero
-            do itheta=1,Ntheta
-                do izeta=1,Nzeta
-                    angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-                    cos_angle = cos(angle)
-                    dVPrimeHatdLambda = dVPrimeHatdLambda - two*thetaWeights(itheta)*zetaWeights(izeta)*cos_angle/(DHat(itheta,izeta)*BHat(itheta,izeta))
-                end do
-            end do
-        else if (whichLambda==2) then ! IHat
-            dVPrimeHatdLambda = iota*VprimeHat/(GHat+iota*IHat)
-        else if (whichLambda==3) then ! GHat
-            dVPrimeHatdLambda = VPrimeHat/(GHat+iota*IHat)
-        else if (whichLambda==4) then ! iota
-            dVPrimeHatdLambda = IHat*VPrimeHat/(GHat+iota*IHat)
-        end if
-
     if (masterProc) then
       allocate(xIntegralFactor(Nx))
-
+      allocate(R(matrixSize))
+      
       if (whichSpecies == 0) then
         minSpecies = 1
         maxSpecies = NSpecies
@@ -389,68 +376,43 @@ end do
         maxSpecies = whichSpecies
       end if
 
-            ! factor = (BHat_sub_theta*dBHatdzeta-BHat_sub_zeta*dBHatdtheta)/(VPrimeHat*BHat**3)
       do ispecies = minSpecies,maxSpecies
-        THat = THats(ispecies)
-        mHat = mHats(ispecies)
-        sqrtTHat = sqrt(THats(ispecies))
-        sqrtmHat = sqrt(mHats(ispecies))
 
-        xIntegralFactor = x*x*x*x*THat*THat*sqrtTHat*pi*Delta/(mHat*sqrtmHat*Zs(ispecies))*ddrN2ddpsiHat
+         ! most of the work is now done here
+         call particleFlux_vm(R, 1, ispecies, whichLambda, whichMode)
+         R = R * ddrN2ddpsiHat
+         
+         ! Summed quantity is weighted by charge
+         if (whichSpecies == 0) then
+            R = R * Zs(ispecies)
+         end if
 
-        do itheta=1,Ntheta
-          do izeta=1,Nzeta
-            select case (whichLambda)
-              case (1) ! BHat
-                angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-                cos_angle = cos(angle)
-                sin_angle = sin(angle)            
-                dBHatdThetadLambda = -m*sin_angle
-                dBHatdZetadLambda = n*Nperiods*sin_angle
-                dBHatdLambda = cos_angle
-                factor = (IHat*dBHatdzetadLambda-GHat*dBHatdthetadLambda)/(VPrimeHat*BHat(itheta,izeta)**3) &
-                    - 3*(IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta))/(VprimeHat*BHat(itheta,izeta)**4) &
-                    * dBHatdLambda - (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda &
-                    /(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
-              case (2) ! IHat
-                factor = dBHatdzeta(itheta,izeta)/(VPrimeHat*BHat(itheta,izeta)**3) &
-                    - (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta)) &
-                    * dVPrimeHatdLambda/(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
-              case (3) ! GHat
-                factor = -dBHatdtheta(itheta,izeta)/(VPrimeHat*BHat(itheta,izeta)**3) &
-                    - (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda &
-                    / (VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
-              case (4) ! iota
-                factor = - (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda &
-                    / (VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
-            end select
+         do itheta=1,Ntheta
+            do izeta=1,Nzeta
+               do ix=1,Nx
+                  
+                  L = 0
+                  index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+                  ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
+                  result = result + R(index)*deltaFArray(index)
 
-            ! Summed quantity is weighted by charge
-            if (whichSpecies == 0) then
-              factor = factor*Zs(ispecies)
-            end if
-
-            do ix=1,Nx
-
-                L = 0
-                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
-                ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
-                result = result + &
-                  (8/three)*factor*xWeights(ix)*deltaFArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
-
-                L = 2
-                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
-                ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
-                result = result + &
-                  (four/15)*factor*xWeights(ix)*deltaFArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
-
+                  L = 2
+                  index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+                  ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
+                  result = result + R(index)*deltaFArray(index)
+                  
               end do ! ix
             end do ! izeta
           end do ! itheta
         end do ! ispecies
         call VecDestroy(deltaFOnProc0,ierr)
+        
+        deallocate(xIntegralFactor)
+        deallocate(R)
+
       end if !masterProc
       call VecScatterDestroy(VecScatterContext,ierr)
+      
     end subroutine particleFluxSensitivity
 
     !> Evaluates the term in the sensitivity derivative of the particle fluxes with Phi1
