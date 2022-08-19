@@ -95,10 +95,9 @@
       integer :: key = 6
       integer :: i, info, N_copy
       PetscScalar :: oldc = 1d+0, amountToAdd
-      PetscScalar :: absTol = 1d-5, relTol = 1d-13
       PetscScalar, allocatable :: a_copy(:), sqrtb(:), d(:), eigenvectors(:,:), LAPACKWorkspace(:)
 
-      PetscScalar :: abserr,finiteBound,EPSABS,EPSREL,WORK,LAPACK_abstol
+      PetscScalar :: abserr,finiteBound,EPSABS,EPSREL,LAPACK_abstol
       integer :: ier, inf, last, limit, neval
       PetscScalar, dimension(workspaceSize) :: alist, blist, rlist, elist
       integer, dimension(workspaceSize) :: iord
@@ -271,7 +270,7 @@
       PetscScalar, dimension(:,:), allocatable :: tempMatrix_d2Gdxb2
       PetscScalar, dimension(:,:), allocatable :: tempMatrix_combined
       PetscScalar, dimension(:), allocatable :: expx2
-      integer :: i, L, iSpeciesA, iSpeciesB, ix, imode
+      integer :: i, L, iSpeciesA, iSpeciesB, ix
       PetscScalar :: alpha, speciesFactor, speciesFactor2, xb
       PetscScalar :: I_2pL, I_4pL, I_1mL, I_3mL
       PetscScalar, parameter :: pi = 3.14159265358979d+0

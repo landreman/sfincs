@@ -39,7 +39,7 @@ module export_f
 
       implicit none
 
-      integer :: i, j, L, indexOfLeastError, index, index1, index2, scheme
+      integer :: i, j, indexOfLeastError, index, index1, index2
       logical, dimension(:), allocatable :: includeThisTheta
       logical, dimension(:), allocatable :: includeThisZeta
       logical, dimension(:), allocatable :: includeThisX

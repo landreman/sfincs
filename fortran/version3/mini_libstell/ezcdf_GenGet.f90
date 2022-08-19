@@ -57,8 +57,8 @@ SUBROUTINE cdfr_3i(ncid,varnam,varval,ier)
   integer, dimension(:,:,:), intent(inout) :: varval
   integer, optional,         intent(out) :: ier
   ! Local
-  integer, dimension(3)   :: st,     cnt,    ldim
-  integer                 :: varid,  status, j,  k
+  integer, dimension(3)   :: ldim
+  integer                 :: varid,  status
   integer, dimension(3)   :: dimlens
 
   integer, dimension(:,:,:), allocatable :: temp
@@ -146,8 +146,8 @@ SUBROUTINE cdfr_3d(ncid,varnam,varval,ier)
   REAL(KIND=r8), dimension(:,:,:), intent(inout) ::  varval
   integer, optional,               intent(out) :: ier
   ! Local
-  integer, dimension(3)   :: st,     cnt,    ldim
-  integer                 :: varid,  status, j,  k
+  integer, dimension(3)   :: ldim
+  integer                 :: varid,  status
   integer, dimension(3)   :: dimlens
 
   real(r8), dimension(:,:,:), allocatable :: temp
@@ -209,8 +209,8 @@ SUBROUTINE cdfr_3c16(ncid,varnam,varval,ier)
   COMPLEX(KIND=r8), dimension(:,:,:), intent(inout) ::  varval
   integer, optional,               intent(out) :: ier
   ! Local
-  integer, dimension(3)   :: st,     cnt,    ldim
-  integer                 :: varid,  status, j,  k, i
+  integer, dimension(3)   :: ldim
+  integer                 :: varid,  status, i
   integer, dimension(3)   :: dimlens
 
   real(r8), dimension(:,:,:), allocatable :: temp
@@ -274,8 +274,8 @@ SUBROUTINE cdfr_3f(ncid,varnam,varval,ier)
   REAL(KIND=r4), dimension(:,:,:), intent(inout) ::  varval
   integer, optional,               intent(out) :: ier
   ! Local
-  integer, dimension(3)   :: st,     cnt,    ldim
-  integer                 :: varid,  status, j,  k
+  integer, dimension(3)   :: ldim
+  integer                 :: varid,  status
   integer, dimension(3)   :: dimlens
 
   real, dimension(:,:,:), allocatable :: temp
@@ -335,8 +335,8 @@ SUBROUTINE cdfr_3c8(ncid,varnam,varval,ier)
   COMPLEX(KIND=r4), dimension(:,:,:), intent(inout) ::  varval
   integer, optional,               intent(out) :: ier
   ! Local
-  integer, dimension(3)   :: st,     cnt,    ldim
-  integer                 :: varid,  status, j,  k
+  integer, dimension(3)   :: ldim
+  integer                 :: varid,  status
   integer, dimension(3)   :: dimlens
 
   real, dimension(:,:,:), allocatable :: temp
@@ -402,8 +402,8 @@ SUBROUTINE cdfr_2i(ncid,varnam,varval,ier)
   integer, dimension(:,:), intent(inout) :: varval
   integer, optional,       intent(out) :: ier
   ! Local
-  integer, dimension(2)   :: st,     cnt,    ldim
-  integer                 :: varid,  status, j
+  integer, dimension(2)   :: ldim
+  integer                 :: varid,  status
   integer, dimension(2)   :: dimlens
 
   integer, dimension(:,:), allocatable :: temp
@@ -486,8 +486,8 @@ SUBROUTINE cdfr_2d(ncid,varnam,varval,ier)
   REAL(KIND=r8), dimension(:,:), intent(inout) ::  varval
   integer, optional,             intent(out) :: ier
   ! Local
-  integer, dimension(2)   :: st,     cnt,    ldim
-  integer                 :: varid,  status, j
+  integer, dimension(2)   :: ldim
+  integer                 :: varid,  status
   integer, dimension(2)   :: dimlens
 
   real(r8), dimension(:,:), allocatable :: temp
@@ -542,8 +542,8 @@ SUBROUTINE cdfr_2c16(ncid,varnam,varval,ier)
   COMPLEX(KIND=r8), dimension(:,:), intent(inout) ::  varval
   integer, optional,             intent(out) :: ier
   ! Local
-  integer, dimension(2)   :: st,     cnt,    ldim
-  integer                 :: varid,  status, j, i
+  integer, dimension(2)   :: ldim
+  integer                 :: varid,  status, i
   integer, dimension(2)   :: dimlens
 
   real(r8), dimension(:,:), allocatable :: temp
@@ -601,8 +601,8 @@ SUBROUTINE cdfr_2f(ncid,varnam,varval,ier)
   REAL(KIND=r4), dimension(:,:), intent(inout) ::  varval
   integer, optional,             intent(out) :: ier
   ! Local
-  integer, dimension(2)   :: st,     cnt,    ldim
-  integer                 :: varid,  status, j
+  integer, dimension(2)   :: ldim
+  integer                 :: varid,  status
   integer, dimension(2)   :: dimlens
 
   real, dimension(:,:), allocatable :: temp
@@ -657,8 +657,8 @@ SUBROUTINE cdfr_2c8(ncid,varnam,varval,ier)
   COMPLEX(KIND=r4), dimension(:,:), intent(inout) ::  varval
   integer, optional,             intent(out) :: ier
   ! Local
-  integer, dimension(2)   :: st,     cnt,    ldim
-  integer                 :: varid,  status, j, i
+  integer, dimension(2)   :: ldim
+  integer                 :: varid,  status, i
   integer, dimension(2)   :: dimlens
 
   real(r8), dimension(:,:), allocatable :: temp
@@ -717,7 +717,7 @@ SUBROUTINE cdfr_2c(ncid,varnam,varval,ier)
   integer, optional,          intent(out) :: ier
   ! Local
   integer, dimension(2)   :: st,     cnt,    ldim
-  integer                 :: varid,  status, charlen, j
+  integer                 :: varid,  status, j
   integer, dimension(2)   :: dimlens
   if (PRESENT (ier)) ier = 1
   ldim(1) = len(varval)

@@ -223,7 +223,7 @@
       
 !  Local variable declarations
       CHARACTER(LEN=*), PARAMETER :: fmt='(1x,a,/,1x,a)'
-      INTEGER(iprec) :: ntot, nfalse, ifirst, i
+      INTEGER(iprec) :: ntot, nfalse, i
       CHARACTER(LEN=1) :: first_char
       LOGICAL :: lfatal
 

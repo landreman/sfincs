@@ -64,8 +64,6 @@ module sfincs_main
     
     implicit none
 
-    integer :: itheta, izeta
-    
     call validateInput()
     
     ! If running with >1 proc,

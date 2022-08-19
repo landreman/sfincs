@@ -25,9 +25,8 @@ subroutine evaluateResidual(mysnes, stateVec, residualVec, userContext, ierr)
     PetscErrorCode :: ierr
     integer :: userContext(*)
     Vec :: rhs
-    PetscScalar :: scalar, xPartOfRHS, factor, xPartOfRHS2 !!Added by AM 2016-03
+    PetscScalar :: scalar, factor !!Added by AM 2016-03
     integer :: ix, L, itheta, izeta, ispecies, index
-    PetscScalar :: THat, mHat, sqrtTHat, sqrtmHat
     Mat :: residualMatrix
     PetscReal :: norm
     integer :: ixMin, LMax
@@ -276,8 +275,6 @@ subroutine evaluateResidual(mysnes, stateVec, residualVec, userContext, ierr)
     PetscScalar :: scalar, xPartOfRHS, factor, xPartOfRHS1, xPartOfRHS2, stuffToAdd
     PetscScalar :: factorExternalPhi1, xPartOfRHSExternalPhi1, stuffToAddExternalPhi1
     PetscScalar :: angle, cos_angle, sin_angle, dBHatdLambda, dBHatdthetadLambda, dBHatdzetadLambda
-    PetscScalar :: dPhi1HatdLambda, dPhi1HatdthetadLambda, dPhi1HatdzetadLambda
-    PetscScalar :: dxPartOfRHSExternalPhi1dLambda, dfactorExternalPhi1dLambda
     integer :: m,n
 
     if (whichLambda > 0) then

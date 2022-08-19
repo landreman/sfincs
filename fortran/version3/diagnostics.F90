@@ -218,16 +218,15 @@ contains
   
   subroutine particleFlux_vm(R, whichVec, whichSpecies, whichLambda, whichMode)
 
-    use globalVariables, only: Nspecies, Zs, mHats, THats, nHats, x2, VPrimeHat, xWeights, DHat, BHat_sub_theta, BHat_sub_zeta, Delta, alpha, zero, two, three, four, pi, matrixSize, zeta, zetaWeights,  Nzeta, theta, thetaWeights, Ntheta, Nx, BHat, dBHatdtheta, dBHatdzeta, IHat, GHat, iota, Nperiods, ms_sensitivity, ns_sensitivity, force0RadialCurrentInEquilibrium, dBHat_sub_zeta_dtheta, dBHat_sub_theta_dzeta
+    use globalVariables, only: Nspecies, Zs, mHats, THats, nHats, x2, VPrimeHat, xWeights, DHat, BHat_sub_theta, BHat_sub_zeta, Delta, zero, two, three, four, pi, matrixSize, zeta, zetaWeights,  Nzeta, theta, thetaWeights, Ntheta, Nx, BHat, dBHatdtheta, dBHatdzeta, IHat, GHat, iota, Nperiods, ms_sensitivity, ns_sensitivity, force0RadialCurrentInEquilibrium, dBHat_sub_zeta_dtheta, dBHat_sub_theta_dzeta
     use indices
     use petscvec
 
     PetscScalar, dimension(matrixSize), intent(out) :: R
     integer, intent(in) :: whichVec, whichSpecies, whichLambda, whichMode
 
-    PetscErrorCode :: ierr
     integer :: ix, L, itheta, izeta, ispecies, index
-    PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, xPartOfRHS, nHat, Z, sqrtFSAB2
+    PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, xPartOfRHS, nHat, Z
     PetscScalar :: Lfactor1, Lfactor2, geometricFactor, geometricFactor2, factor, factor2
 
     PetscScalar :: dBHatdLambda, dVPrimeHatdLambda
@@ -235,7 +234,6 @@ contains
     PetscScalar :: angle, cos_angle, sin_angle
     
     PetscScalar :: dBHatdThetadLambda, dBHatdZetadLambda
-    PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda
 
     R = zero
     
@@ -349,16 +347,15 @@ contains
   
   subroutine particleFlux_vE(R, whichVec, whichSpecies, whichLambda, whichMode)
 
-    use globalVariables, only: Nspecies, Zs, mHats, THats, nHats, x2, VPrimeHat, xWeights, DHat, BHat_sub_theta, BHat_sub_zeta, dPhi1Hatdzeta, dPhi1Hatdtheta, Delta, alpha, zero, two, three, four, pi, matrixSize, zeta, zetaWeights,  Nzeta, theta, thetaWeights, Ntheta, Nx, includePhi1, BHat, dBHatdtheta, dBHatdzeta, IHat, GHat, iota, Nperiods, ms_sensitivity, ns_sensitivity
+    use globalVariables, only: Nspecies, Zs, mHats, THats, nHats, x2, VPrimeHat, xWeights, DHat, BHat_sub_theta, BHat_sub_zeta, dPhi1Hatdzeta, dPhi1Hatdtheta, Delta, alpha, zero, two, three, four, pi, matrixSize, zeta, zetaWeights,  Nzeta, theta, thetaWeights, Ntheta, Nx, includePhi1, BHat, IHat, GHat, iota, Nperiods, ms_sensitivity, ns_sensitivity
     use indices
     use petscvec
 
     PetscScalar, dimension(matrixSize), intent(out) :: R
     integer, intent(in) :: whichVec, whichSpecies, whichLambda, whichMode
 
-    PetscErrorCode :: ierr
     integer :: ix, L, itheta, izeta, ispecies, index
-    PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, xPartOfRHS, nHat, Z, sqrtFSAB2
+    PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, xPartOfRHS, nHat, Z
     PetscScalar :: geometricFactor, factor
 
     PetscScalar :: dBHatdLambda, dVPrimeHatdLambda
@@ -366,7 +363,6 @@ contains
     PetscScalar :: angle, cos_angle, sin_angle
     
     PetscScalar :: dBHatdThetadLambda, dBHatdZetadLambda
-    PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda
 
     R = zero
 
@@ -469,16 +465,15 @@ contains
   
   subroutine heatFlux_vm(R, whichVec, whichSpecies, whichLambda, whichMode)
 
-    use globalVariables, only: Nspecies, Zs, mHats, THats, nHats, x2, VPrimeHat, xWeights, DHat, BHat_sub_theta, BHat_sub_zeta, Delta, alpha, zero, two, three, four, pi, matrixSize, zeta, zetaWeights,  Nzeta, theta, thetaWeights, Ntheta, Nx, BHat, dBHatdtheta, dBHatdzeta, IHat, GHat, iota, Nperiods, ms_sensitivity, ns_sensitivity, force0RadialCurrentInEquilibrium, dBHat_sub_zeta_dtheta, dBHat_sub_theta_dzeta
+    use globalVariables, only: Nspecies, Zs, mHats, THats, nHats, x2, VPrimeHat, xWeights, DHat, BHat_sub_theta, BHat_sub_zeta, Delta, zero, two, three, four, pi, matrixSize, zeta, zetaWeights,  Nzeta, theta, thetaWeights, Ntheta, Nx, BHat, dBHatdtheta, dBHatdzeta, IHat, GHat, iota, Nperiods, ms_sensitivity, ns_sensitivity, force0RadialCurrentInEquilibrium, dBHat_sub_zeta_dtheta, dBHat_sub_theta_dzeta
     use indices
     use petscvec
 
     PetscScalar, dimension(matrixSize), intent(out) :: R
     integer, intent(in) :: whichVec, whichSpecies, whichLambda, whichMode
 
-    PetscErrorCode :: ierr
     integer :: ix, L, itheta, izeta, ispecies, index
-    PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, xPartOfRHS, nHat, Z, sqrtFSAB2
+    PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, xPartOfRHS, nHat, Z
     PetscScalar :: Lfactor1, Lfactor2, geometricFactor, geometricFactor2, factor, factor2
 
     PetscScalar :: dBHatdLambda, dVPrimeHatdLambda
@@ -486,7 +481,6 @@ contains
     PetscScalar :: angle, cos_angle, sin_angle
     
     PetscScalar :: dBHatdThetadLambda, dBHatdZetadLambda
-    PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda
 
     R = zero
     
@@ -598,16 +592,15 @@ contains
   
   subroutine heatFlux_vE(R, whichVec, whichSpecies, whichLambda, whichMode)
 
-    use globalVariables, only: Nspecies, Zs, mHats, THats, nHats, x2, VPrimeHat, xWeights, DHat, BHat_sub_theta, BHat_sub_zeta, dPhi1Hatdzeta, dPhi1Hatdtheta, Delta, alpha, zero, two, three, four, pi, matrixSize, zeta, zetaWeights,  Nzeta, theta, thetaWeights, Ntheta, Nx, includePhi1, BHat, dBHatdtheta, dBHatdzeta, IHat, GHat, iota, Nperiods, ms_sensitivity, ns_sensitivity
+    use globalVariables, only: Nspecies, Zs, mHats, THats, nHats, x2, VPrimeHat, xWeights, DHat, BHat_sub_theta, BHat_sub_zeta, dPhi1Hatdzeta, dPhi1Hatdtheta, Delta, alpha, zero, two, three, four, pi, matrixSize, zeta, zetaWeights,  Nzeta, theta, thetaWeights, Ntheta, Nx, includePhi1, BHat, IHat, GHat, iota, Nperiods, ms_sensitivity, ns_sensitivity
     use indices
     use petscvec
 
     PetscScalar, dimension(matrixSize), intent(out) :: R
     integer, intent(in) :: whichVec, whichSpecies, whichLambda, whichMode
 
-    PetscErrorCode :: ierr
     integer :: ix, L, itheta, izeta, ispecies, index
-    PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, xPartOfRHS, nHat, Z, sqrtFSAB2
+    PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, xPartOfRHS, nHat, Z
     PetscScalar :: geometricFactor, factor
 
     PetscScalar :: dBHatdLambda, dVPrimeHatdLambda
@@ -615,7 +608,6 @@ contains
     PetscScalar :: angle, cos_angle, sin_angle
     
     PetscScalar :: dBHatdThetadLambda, dBHatdZetadLambda
-    PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda
 
     R = zero
 
@@ -713,14 +705,13 @@ contains
     ! FSABVelocityUsingFSADensityOverRootFSAB2
     ! Not strictly the parallel flow.
     
-    use globalVariables, only: Nspecies, Zs, mHats, THats, nHats, x, x2, VPrimeHat, xWeights, DHat, BHat_sub_theta, BHat_sub_zeta, FSABHat2, dPhi1Hatdzeta, dPhi1Hatdtheta, Delta, alpha, zero, one, two, three, four, pi, matrixSize, zeta, zetaWeights,  Nzeta, theta, thetaWeights, Ntheta, Nx, includePhi1, BHat, dBHatdtheta, dBHatdzeta, IHat, GHat, iota, Nperiods, ms_sensitivity, ns_sensitivity
+    use globalVariables, only: Nspecies, Zs, mHats, THats, nHats, x, x2, VPrimeHat, xWeights, DHat, FSABHat2, zero, one, two, three, four, pi, matrixSize, zeta, zetaWeights,  Nzeta, theta, thetaWeights, Ntheta, Nx, BHat, IHat, GHat, iota, Nperiods, ms_sensitivity, ns_sensitivity
     use indices
     use petscvec
 
     PetscScalar, dimension(matrixSize), intent(out) :: R
     integer, intent(in) :: whichVec, whichSpecies, whichLambda, whichMode
 
-    PetscErrorCode :: ierr
     integer :: ix, L, itheta, izeta, ispecies, index
     PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, xPartOfRHS, nHat, Z, sqrtFSAB2
     PetscScalar :: geometricFactor, factor
@@ -730,8 +721,7 @@ contains
     PetscScalar :: angle, cos_angle, sin_angle
     
     PetscScalar :: dBHatdThetadLambda, dBHatdZetadLambda
-    PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda
-
+    
     R = zero
     sqrtFSAB2 = sqrt(FSABHat2)
     if (whichLambda == 1 .and. whichVec == 1) then ! BHat

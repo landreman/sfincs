@@ -156,8 +156,6 @@ contains
     
     implicit none
 
-    integer(HID_T) :: dsetID
-    integer :: temp
     PetscErrorCode :: ierr
 
     if (masterProc) then
@@ -877,7 +875,7 @@ if (RHSMode > 3 .and. RHSMode < 6) then
 
     implicit none
 
-    integer :: i, rank
+    integer :: rank
 
     ! Create a dataspace for storing single numbers:
     rank = 0
@@ -1224,7 +1222,6 @@ if (RHSMode > 3 .and. RHSMode < 6) then
     character(1) :: oneCharacter
     integer :: fileunit, didFileAccessWork, fileSize, numRecords, ios
     integer :: numBytesRead, filePosition, iFileLine, rank
-    PetscErrorCode :: ierr
     integer(SIZE_T) :: fileSizeCopy
     integer(HID_T) :: dspaceIDForInputNamelist
     integer(HID_T) :: dtypeID_inputNamelist
@@ -1425,7 +1422,6 @@ if (RHSMode > 3 .and. RHSMode < 6) then
     integer(HSIZE_T), dimension(*) :: dims
     PetscScalar, dimension(:,:) :: data
     character(len=*) :: description
-    character(len=100) :: label
 
     call h5dcreate_f(HDF5FileID, arrayName, H5T_NATIVE_DOUBLE, dspaceID, dsetID, HDF5Error)
     
@@ -1465,8 +1461,7 @@ subroutine writeHDF5Doubles3(arrayName, data, dspaceID, dims, description)
     integer(HSIZE_T), dimension(*) :: dims
     PetscScalar, dimension(:,:,:) :: data
     character(len=*) :: description
-    character(len=100) :: label
-
+    
     call h5dcreate_f(HDF5FileID, arrayName, H5T_NATIVE_DOUBLE, dspaceID, dsetID, HDF5Error)
 
     call h5dwrite_f(dsetID, H5T_NATIVE_DOUBLE, data, dims, HDF5Error)
@@ -1611,7 +1606,7 @@ subroutine writeHDF5Doubles3(arrayName, data, dspaceID, dims, description)
     character(len=*) :: arrayName
     integer(HID_T) :: dsetID
     integer(HID_T) :: dspaceID, memspaceID, originalDspaceID
-    integer :: temp, arrayType
+    integer :: arrayType
     character(len=*) :: description
     PetscScalar :: data
     integer(HSIZE_T) :: offset(rank)
@@ -1672,7 +1667,7 @@ subroutine writeHDF5Doubles3(arrayName, data, dspaceID, dims, description)
     character(len=*) :: arrayName
     integer(HID_T) :: dsetID
     integer(HID_T) :: dspaceID, memspaceID, originalDspaceID
-    integer :: temp, arrayType
+    integer :: arrayType
     character(len=*) :: description
     PetscScalar, dimension(:) :: data
     integer(HSIZE_T) :: offset(rank)
@@ -1736,7 +1731,7 @@ subroutine writeHDF5Doubles3(arrayName, data, dspaceID, dims, description)
     character(len=*) :: arrayName
     integer(HID_T) :: dsetID
     integer(HID_T) :: dspaceID, memspaceID, originalDspaceID
-    integer :: temp, arrayType
+    integer :: arrayType
     character(len=*) :: description
     PetscScalar, dimension(:,:) :: data
     integer(HSIZE_T) :: offset(rank)
@@ -1827,7 +1822,7 @@ subroutine writeHDF5Doubles3(arrayName, data, dspaceID, dims, description)
     character(len=*) :: arrayName
     integer(HID_T) :: dsetID
     integer(HID_T) :: dspaceID, memspaceID, originalDspaceID
-    integer :: temp, arrayType
+    integer :: arrayType
     character(len=*) :: description
     PetscScalar, dimension(:,:,:) :: data
     integer(HSIZE_T) :: offset(rank)
@@ -1910,7 +1905,7 @@ subroutine writeHDF5Doubles3(arrayName, data, dspaceID, dims, description)
     character(len=*) :: arrayName
     integer(HID_T) :: dsetID
     integer(HID_T) :: dspaceID, memspaceID, originalDspaceID
-    integer :: temp, arrayType
+    integer :: arrayType
     character(len=*) :: description
     PetscScalar, dimension(:,:,:,:,:) :: data
     integer(HSIZE_T) :: offset(rank)

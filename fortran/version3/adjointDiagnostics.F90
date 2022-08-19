@@ -202,21 +202,12 @@ implicit none
     Vec :: forwardSolution, forwardSolutionOnProc0
     PetscScalar, pointer :: forwardSolutionArray(:)
     integer :: whichSpecies, whichLambda, whichMode, minSpecies, maxSpecies, itheta, izeta, L, ix, index, ispecies
-    PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, dBHatdThetadLambda, dBHatdZetadLambda
-    PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dinvDHatdLambda, factor
-    PetscScalar, dimension(:), allocatable :: xIntegralFactor
-    PetscScalar :: dBHatdLambda, dVPrimeHatdLambda
-    integer :: m, n
-    PetscScalar :: cos_angle, sin_angle, angle
     VecScatter :: VecScatterContext
     PetscErrorCode :: ierr
 
     PetscScalar, dimension(:), allocatable :: R
 
     result = zero
-    
-    m = ms_sensitivity(whichMode)
-    n = ns_sensitivity(whichMode)
     
     ! Scatter deltaF to master proc
     call VecScatterCreateToZero(forwardSolution, VecScatterContext, forwardSolutionOnProc0, ierr)
@@ -279,22 +270,12 @@ implicit none
       Vec :: deltaF, deltaFOnProc0, f0OnProc0
       PetscScalar, pointer :: deltaFArray(:), f0Array(:)
       integer :: whichSpecies, whichLambda, whichMode, minSpecies, maxSpecies, itheta, izeta, L, ix, index, ispecies
-      PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, Z
-      PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dinvDHatdLambda, factor, factorExB
-      PetscScalar :: dfactordLambda, dfactorExBdLambda, df0dLambda
-      PetscScalar :: dBHatdLambda, dVPrimeHatdLambda, dBHatdThetadLambda, dBHatdZetadLambda
-      PetscScalar :: dPhi1HatdLambda, dPhi1HatdThetadLambda, dPhi1HatdZetadLambda
-      integer :: m, n
-      PetscScalar :: angle, cos_angle, sin_angle
       VecScatter :: VecScatterContext, VecScatterContext0 !MAYBE REMOVE SECOND
       PetscErrorCode :: ierr
 
       PetscScalar, dimension(:), allocatable :: R
       
       result = zero
-      
-      m = ms_sensitivity(whichMode)
-      n = ns_sensitivity(whichMode)
 
       ! Scatter deltaF to master proc
       call VecScatterCreateToZero(deltaF, VecScatterContext, deltaFOnProc0, ierr)
@@ -381,20 +362,12 @@ implicit none
     Vec :: deltaF, deltaFOnProc0
     PetscScalar, pointer :: deltaFArray(:)
     integer :: whichSpecies, whichLambda, whichMode, minSpecies, maxSpecies, itheta, izeta, L, ix, index, ispecies
-    PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, dBHatdThetadLambda, dBHatdZetadLambda
-    PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dinvDHatdLambda, factor
-    PetscScalar :: dBHatdLambda, dVPrimeHatdLambda
-    integer :: m, n
-    PetscScalar :: angle, cos_angle, sin_angle
     VecScatter :: VecScatterContext
     PetscErrorCode :: ierr
 
     PetscScalar, dimension(:), allocatable :: R
     
     result = zero
-
-    m = ms_sensitivity(whichMode)
-    n = ns_sensitivity(whichMode)
 
     ! Scatter deltaF to master proc
     call VecScatterCreateToZero(deltaF, VecScatterContext, deltaFOnProc0, ierr)
@@ -476,13 +449,6 @@ implicit none
       Vec :: deltaF, deltaFOnProc0, f0OnProc0
       PetscScalar, pointer :: deltaFArray(:), f0Array(:)
       integer :: whichSpecies, whichLambda, whichMode, minSpecies, maxSpecies, itheta, izeta, L, ix, index, ispecies
-      PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, Z
-      PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dinvDHatdLambda, factor, factorExB
-      PetscScalar :: dfactordLambda, dfactorExBdLambda, df0dLambda
-      PetscScalar :: dBHatdLambda, dVPrimeHatdLambda, dBHatdThetadLambda, dBHatdZetadLambda
-      PetscScalar :: dPhi1HatdLambda, dPhi1HatdThetadLambda, dPhi1HatdZetadLambda
-      integer :: m, n
-      PetscScalar :: angle, cos_angle, sin_angle
       VecScatter :: VecScatterContext, VecScatterContext0 !MAYBE REMOVE SECOND
       PetscErrorCode :: ierr
 
@@ -490,9 +456,6 @@ implicit none
       
       result = zero
       
-      m = ms_sensitivity(whichMode)
-      n = ns_sensitivity(whichMode)
-
       ! Scatter deltaF to master proc
       call VecScatterCreateToZero(deltaF, VecScatterContext, deltaFOnProc0, ierr)
       call VecScatterBegin(VecScatterContext, deltaF, deltaFOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
@@ -580,20 +543,12 @@ implicit none
     Vec :: deltaFOnProc0
     PetscScalar, pointer :: deltaFArray(:)
     integer :: minSpecies, maxSpecies, itheta, izeta, L, ix, index, ispecies
-    PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, dBHatdThetadLambda, dBHatdZetadLambda
-    PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dinvDHatdLambda, factor, dVPrimeHatdLambda
-    PetscScalar, dimension(:), allocatable :: xIntegralFactor
-    PetscScalar :: dBHatdLambda, dFSABHat2dLambda, nHat, sqrtFSAB2
-    PetscScalar :: angle, cos_angle
     integer :: m, n
     VecScatter :: VecScatterContext
     PetscErrorCode :: ierr
  
     PetscScalar, dimension(:), allocatable :: R
 
-    
-    sqrtFSAB2 = sqrt(FSABHat2)
-    
     result = zero
 
     m = ms_sensitivity(whichMode)
@@ -662,17 +617,13 @@ implicit none
       implicit none
 
       PetscErrorCode :: ierr
-      Vec :: forwardSolution, adjointSolution, adjointResidual, adjointRHSVec
+      Vec :: forwardSolution, adjointSolution, adjointResidual
       integer :: whichAdjointRHS, whichSpecies
       integer :: whichLambda, whichMode, this_NModesAdjoint
       PetscScalar :: innerProductResult, sensitivityResult, sensitivityResult2, ErTermToAdd
       Vec :: adjointResidualEr, adjointSolutionJr
       PetscScalar :: innerProductResultEr1, innerProductResultEr2, innerProductResultEr3
       PetscScalar :: radialCurrentSensitivity, radialCurrentSensitivity2
-
-      PetscScalar :: temp
-      integer :: itemp
-
 
       if (masterProc) then
          print *,"evaluateDiagnostics was called."

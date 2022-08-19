@@ -53,20 +53,7 @@ contains
     logical :: useStateVec
 
     !!!!!!!!!!!!! from dMatrixdlambda !!!!!!!!!!!!
-    integer :: i, ixMax, L, ispecies, izeta, itheta, ix, ixMinCol
-    PetscScalar, dimension(:,:), allocatable :: thetaPartOfTerm, localThetaPartOfTerm, &
-      zetaPartOfTerm, localZetaPartOfTerm
-    integer, dimension(:), allocatable :: rowIndices, colIndices
-    PetscScalar :: Z, nHat, THat, mHat, sqrtTHat, sqrtMHat, factor
-    PetscScalar, dimension(:,:), allocatable :: ddthetaToUse, ddzetaToUse, ddxToUse, ddxToUse_plus, &
-      ddxToUse_minus
-    PetscScalar :: temp, xDotFactor, stuffToAdd
-    PetscScalar, dimension(:,:), allocatable :: xPartOfXDot, xPartOfXDot_plus, xPartOfXDot_minus
-    integer :: ix_row, ix_col, rowIndex, colIndex, ell
-    PetscScalar :: dBHatdLambda, dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dBHat_sup_thetadLambda
-    PetscScalar :: dBHat_sup_zetadLambda, dBHatdthetadLambda, dBHatdzetadLambda, dDHatdLambda
-    PetscScalar :: geometricFactor, dFSABHat2dDmn, dVPrimeHatdDmn
-    PetscScalar :: angle, cos_angle, sin_angle, dFSABHat2dLambda
+    PetscScalar, dimension(:,:), allocatable :: ddthetaToUse, ddzetaToUse, ddxToUse
     !!!!!!!!!!!!! END from dMatrixdlambda END !!!!!!!!!!!!
 
 
@@ -615,7 +602,7 @@ contains
     integer :: ispecies, ix, itheta, izeta, L
     PetscScalar, dimension(:,:), allocatable :: thetaPartOfTerm, localThetaPartOfTerm
     integer, dimension(:), allocatable :: rowIndices, colIndices
-    PetscScalar :: geometricFactor, angle, cos_angle, sin_angle, dBHatdLambda, dVPrimeHatdLambda, dVPrimeHatdBmn, dFSABHat2dBmn
+    PetscScalar :: geometricFactor, angle, cos_angle, dBHatdLambda, dVPrimeHatdLambda, dVPrimeHatdBmn, dFSABHat2dBmn
 
     if (whichMatrix == 6 .and. whichLambda==1) then ! BHat sensitivity
        dVPrimeHatdLambda = zero
@@ -771,7 +758,7 @@ contains
     integer :: ispecies, ix, itheta, izeta, L
     PetscScalar, dimension(:,:), allocatable :: zetaPartOfTerm, localZetaPartOfTerm
     integer, dimension(:), allocatable :: rowIndices, colIndices
-    PetscScalar :: geometricFactor, angle, cos_angle, dBHatdLambda, dVPrimeHatdLambda, dVPrimeHatdBmn, dFSABHat2dBmn
+    PetscScalar :: geometricFactor, dBHatdLambda
 
     do ispecies = 1,Nspecies
        nHat = nHats(ispecies)
@@ -1918,7 +1905,7 @@ contains
     integer :: ispecies, ix, itheta, izeta, L, ell, colIndex, rowIndex, ixMinCol, ix_row, ix_col
     PetscScalar :: factor, geometricFactor, geometricFactor2
     PetscScalar, dimension(:,:), allocatable :: nonlinearTerm_Lp1, nonlinearTerm_Lm1
-    PetscScalar :: angle, cos_angle, dBHatdLambda, dPhi1HatdzetadLambda, dPhi1HatdthetadLambda
+    PetscScalar :: angle, cos_angle, dBHatdLambda
 
     do ispecies = 1,Nspecies
        nHat = nHats(ispecies)

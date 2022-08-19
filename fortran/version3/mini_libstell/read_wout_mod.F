@@ -294,7 +294,7 @@ C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER, PARAMETER :: iunit_init = 10
-      INTEGER :: iunit, i
+      INTEGER :: iunit
       LOGICAL :: isnc
       CHARACTER(len=LEN_TRIM(file_or_extension)+10) :: filename
 C-----------------------------------------------
@@ -1403,7 +1403,7 @@ C-----------------------------------------------
 !------------------------------------------------
 !   L o c a l   V a r i a b l e s
 !------------------------------------------------
-      INTEGER              :: iounit, js, mn, i, j, k, m, n, iasymm
+      INTEGER              :: iounit, js, mn, i, j, k, n, iasymm
       LOGICAL              :: lcurr
 !------------------------------------------------
 !

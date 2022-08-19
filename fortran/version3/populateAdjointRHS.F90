@@ -20,9 +20,7 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies, fineGrid)
 
   PetscErrorCode :: ierr
   integer :: ix, L, itheta, izeta, ispecies, index
-  PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, xPartOfRHS, factor, nHat, Z, sqrtFSAB2
-  PetscScalar :: xPartOfRHSExB, factorExB
-  PetscReal :: norm, factor1, factor2
+  PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, nHat, Z, sqrtFSAB2
   PetscScalar :: xPartCont
   logical, parameter :: localUsePhi1 = .true.
 
