@@ -435,6 +435,9 @@ module globalVariables
 
   ! new
   PetscScalar, dimension(:,:), allocatable :: adjoint_particleFlux_vm_RHSs, adjoint_particleFlux_vE_RHSs
+  PetscScalar, dimension(:,:), allocatable :: adjoint_heatFlux_vm_RHSs, adjoint_heatFlux_vE_RHSs
+  PetscScalar, dimension(:,:), allocatable :: adjoint_parallelFlow_RHSs
+  
   
   Vec :: f0
 

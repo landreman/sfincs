@@ -119,37 +119,45 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies, fineGrid)
         sqrtMHat = sqrt(mHat)
         Z = Zs(ispecies)
 
+        R = adjoint_heatFlux_vm_RHSs(:,ispecies)
+        R = R * ddrN2ddpsiHat
+
+        RExB = adjoint_heatFlux_vE_RHSs(:,ispecies)
+        RExB = RExB * ddrN2ddpsiHat
+        
         do ix=ixMin,Nx
-          if (discreteAdjointOption) then
-            xPartOfRHS = pi*Delta*x2(ix)*x2(ix)*x2(ix)*xweights(ix)*THat*THat*THat*sqrtTHat*ddrN2ddpsiHat/(2*Z*VPrimeHat*mHat*sqrtMHat)
-          else
-            xPartOfRHS = exp(-x2(ix))*nHat*mHat*sqrtMHat*Delta*x2(ix)*x2(ix)/ &
-              (2*pi*sqrtpi*sqrtTHat*Z)*ddrN2ddpsiHat
-          end if
-          do itheta = ithetaMin,ithetaMax
+           if (discreteAdjointOption .eqv. .false.) then
+              xPartCont = expx2(ix) * nHat * mHat**3 * VprimeHat/(xWeights(ix) * x2(ix) * pi*pi*sqrtpi * THat**4)
+              !xPartOfRHS = exp(-x2(ix))*nHat*mHat*sqrtMHat*Delta*x2(ix)*x2(ix)/ &
+              !     (2*pi*sqrtpi*sqrtTHat*Z)*ddrN2ddpsiHta
+           end if
+           !xPartOfRHS = pi*Delta*x2(ix)*x2(ix)*x2(ix)*xweights(ix)*THat*THat*THat*sqrtTHat*ddrN2ddpsiHat/(2*Z*VPrimeHat*mHat*sqrtMHat)
+           do itheta = ithetaMin,ithetaMax
              do izeta = izetaMin,izetaMax
                 if (discreteAdjointOption .eqv. .false.) then
-                    factor = xPartOfRHS*DHat(itheta,izeta)/(BHat(itheta,izeta)**3)*(BHat_sub_theta(itheta,izeta) &
-                      *dBHatdzeta(itheta,izeta) - BHat_sub_zeta(itheta,izeta)* &
-                    dBHatdtheta(itheta,izeta))
-                    factor1 = four/three
-                    factor2 = two/three
-                else
-                    factor = xPartOfRHS*thetaWeights(itheta)*zetaWeights(izeta)*(BHat_sub_theta(itheta,izeta) &
-                      *dBHatdzeta(itheta,izeta) - BHat_sub_zeta(itheta,izeta)* &
-                    dBHatdtheta(itheta,izeta))/(BHat(itheta,izeta)**3)
-                    factor1 = 8/three
-                    factor2 = four/15
+
+                    ! TODO
+                    ! Here is where RExB would be tweaked
+                    ! if continuous adjoint was supported with Phi1.
+                    
+                    L = 0
+                    index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+                    R(index + 1) = R(index + 1) * xPartCont * DHat(itheta,izeta)/(thetaWeights(itheta)*zetaWeights(izeta))/two
+
+                    L = 2
+                    index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+                    R(index + 1) = R(index + 1) * xPartCont * DHat(itheta,izeta)/(thetaWeights(itheta)*zetaWeights(izeta)) * five/two
+                    
                 end if
-                ! factor is the samed for species-summed heat flux
+                ! factor is the same for species-summed heat flux
 
                 L = 0
                 index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                call VecSetValue(rhs, index, factor1*factor, INSERT_VALUES, ierr)
+                call VecSetValue(rhs, index, R(index + 1), INSERT_VALUES, ierr)
 
                 L = 2
                 index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                call VecSetValue(rhs, index, factor2*factor, INSERT_VALUES, ierr)
+                call VecSetValue(rhs, index, R(index + 1), INSERT_VALUES, ierr)
 
              end do
             end do
@@ -167,27 +175,35 @@ subroutine populateAdjointRHS(rhs, whichAdjointRHS, whichSpecies, fineGrid)
           nHat = nHats(ispecies)
           Z = Zs(ispecies)
 
+          R = adjoint_parallelFlow_RHSs(:,ispecies)
+          
+          if (whichSpecies == 0) then
+             R = R*Z            
+          end if
+        
           do ix=ixMin,Nx
              if (discreteAdjointOption .eqv. .false.) then
-                  xPartOfRHS = exp(-x2(ix))*x(ix)*2*mHat/(THat*THat*pi*sqrtPi*sqrtFSAB2)
+                ! xPartCont = xPartOfRHS (continuous) / xPartOfRHS (discrete)
+                ! Since xPartCont (discrete) is now baked into R
+                xPartCont = 3* expx2(ix) * nHat * mHat**3 * VPrimeHat/(2* x2(ix) * xWeights(ix) * THat**4 * pi*pi*sqrtpi)
+                ! xPartOfRHS = expx2(ix)*x(ix)*2*mHat/(THat*THat*pi*sqrtPi*sqrtFSAB2)
              else
-                  xPartOfRHS = 4*pi*THat*THat*x(ix)*x(ix)*x(ix)*xWeights(ix)/(three*mHat*mHat*sqrtFSAB2*VPrimeHat*nHat)
+                ! xPartOfRHS = 4*pi*THat*THat*x(ix)*x(ix)*x(ix)*xWeights(ix)/(three*mHat*mHat*sqrtFSAB2*VPrimeHat*nHat)
              end if
-
-            if (whichSpecies == 0) then
-              xPartOfRHS = xPartOfRHS*Z
-            end if
-            do itheta = ithetaMin,ithetaMax
-               do izeta = izetaMin,izetaMax
-                  if (discreteAdjointOption .eqv. .false.) then
-                      factor = xPartOfRHS*BHat(itheta,izeta)
-                  else
-                      factor = xPartOfRHS*thetaWeights(itheta)*zetaWeights(izeta)*BHat(itheta,izeta)/DHat(itheta,izeta)
+             do itheta = ithetaMin,ithetaMax
+                do izeta = izetaMin,izetaMax
+                   L = 1
+                   index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+                  
+                   if (discreteAdjointOption .eqv. .false.) then
+                      ! multiply by (factor (continuous) / factor (discrete))
+                      R(index + 1) = R(index + 1) * xPartCont * DHat(itheta,izeta)/(thetaWeights(itheta)*zetaWeights(izeta))
+                      !factor = xPartOfRHS*BHat(itheta,izeta)
+                   else
+                      !factor = xPartOfRHS*thetaWeights(itheta)*zetaWeights(izeta)*BHat(itheta,izeta)/DHat(itheta,izeta)
                   end if 
 
-                  L = 1
-                  index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
-                  call VecSetValue(rhs, index, factor, INSERT_VALUES, ierr)
+                  call VecSetValue(rhs, index, R(index + 1), INSERT_VALUES, ierr)
 
                enddo
             enddo

@@ -194,6 +194,7 @@ implicit none
     use globalVariables
     use indices
     use petscvec
+    use diagnostics
 
     implicit none
 
@@ -210,11 +211,13 @@ implicit none
     VecScatter :: VecScatterContext
     PetscErrorCode :: ierr
 
-    m = ms_sensitivity(whichMode)
-    n = ns_sensitivity(whichMode)
+    PetscScalar, dimension(:), allocatable :: R
 
     result = zero
-
+    
+    m = ms_sensitivity(whichMode)
+    n = ns_sensitivity(whichMode)
+    
     ! Scatter deltaF to master proc
     call VecScatterCreateToZero(forwardSolution, VecScatterContext, forwardSolutionOnProc0, ierr)
     call VecScatterBegin(VecScatterContext, forwardSolution, forwardSolutionOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
@@ -224,100 +227,139 @@ implicit none
       call VecGetArrayF90(forwardSolutionOnProc0, forwardSolutionArray, ierr)
     end if
 
-        if (whichLambda==1) then ! BHat
-                dVPrimeHatdLambda = zero
-                do itheta=1,Ntheta
-                        do izeta=1,Nzeta
-                                angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-                                cos_angle = cos(angle)
-                                dVPrimeHatdLambda = dVPrimeHatdLambda - two*thetaWeights(itheta)*zetaWeights(izeta)*cos_angle/(DHat(itheta,izeta)*BHat(itheta,izeta))
-                        end do
-                end do
-        else if (whichLambda==2) then ! IHat
-                dVPrimeHatdLambda = iota*VprimeHat/(GHat+iota*IHat)
-        else if (whichLambda==3) then ! GHat
-                dVPrimeHatdLambda = VPrimeHat/(GHat+iota*IHat)
-        else if (whichLambda==4) then ! iota
-                dVPrimeHatdLambda = IHat*VPrimeHat/(GHat+iota*IHat)
-        end if
-
     if (masterProc) then
-      allocate(xIntegralFactor(Nx))
+       allocate(R(matrixSize))
 
-      if (whichSpecies == 0) then
-        minSpecies = 1
-        maxSpecies = NSpecies
-      else
-        minSpecies = whichSpecies
-        maxSpecies = whichSpecies
-      end if
+       if (whichSpecies == 0) then
+          minSpecies = 1
+          maxSpecies = NSpecies
+       else
+          minSpecies = whichSpecies
+          maxSpecies = whichSpecies
+       end if
 
-      do ispecies = minSpecies,maxSpecies
-        THat = THats(ispecies)
-        mHat = mHats(ispecies)
-        sqrtTHat = sqrt(THats(ispecies))
-        sqrtmHat = sqrt(mHats(ispecies))
-
-        ! This is everything independent of geometry
-        xIntegralFactor = x*x*x*x*x*x*pi*THat*THat*THat*sqrtTHat*Delta/(2*mHat*sqrtmHat*Zs(ispecies))*ddrN2ddpsiHat
-
-        ! factor = (BHat_sub_theta*dBHatdzeta-BHat_sub_zeta*dBHatdtheta)/(VPrimeHat*BHat**3)
-        !                 = (IHat*dBHatdzeta-GHat*dBHatdtheta)/(VPrimeHat*BHat**3)
-        do itheta=1,Ntheta
-          do izeta=1,Nzeta
-            select case (whichLambda)
-              case (1) ! BHat
-                angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-                cos_angle = cos(angle)
-                sin_angle = sin(angle)
-                dBHatdThetadLambda = -m*sin_angle
-                dBHatdZetadLambda = n*Nperiods*sin_angle
-                dBHatdLambda = cos_angle
-                factor = (BHat_sub_theta(itheta,izeta)*dBHatdZetadLambda &
-                    - BHat_sub_zeta(itheta,izeta)*dBHatdThetadLambda)/(VPrimeHat*BHat(itheta,izeta)**3) &
-                    - 3*(BHat_sub_theta(itheta,izeta)*dBHatdZeta(itheta,izeta) &
-                    - BHat_sub_zeta(itheta,izeta)*dBHatdTheta(itheta,izeta))*dBHatdLambda/(VPrimeHat*BHat(itheta,izeta)**4)
-                factor = factor - (IHat*dBHatdzeta(itheta,izeta) - GHat*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda/ &
-                    (VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
-              case (2) ! IHat
-                factor = dBHatdzeta(itheta,izeta)/(VPrimeHat*BHat(itheta,izeta)**3) &
-                    - dVPrimeHatdLambda*(IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta)) &
-                    /(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
-              case (3) ! GHat
-                factor = -dBHatdtheta(itheta,izeta)/(VPrimeHat*BHat(itheta,izeta)**3) &
-                    - dVPrimeHatdLambda*(IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta)) &
-                    /(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
-              case (4) ! iota
-                factor = -dVPrimeHatdLambda*(IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta)) &
-                    /(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
-            end select
-
-            if (abs(factor)>0) then
+       do ispecies = minSpecies,maxSpecies
+          call heatFlux_vm(R, 1, ispecies, whichLambda, whichMode)
+          R = R * ddrN2ddpsiHat
+          do itheta=1,Ntheta
+             do izeta=1,Nzeta
                 do ix=1,Nx
 
-                    L = 0
-                    index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
-                    ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
-                    result = result + &
-                    (8/three)*factor*xWeights(ix)*forwardSolutionArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
+                   L = 0
+                   index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+                   ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
+                   result = result + R(index)*forwardSolutionArray(index)
 
-                    L = 2
-                    index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
-                    ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
-                    result = result + &
-                    (four/15)*factor*xWeights(ix)*forwardSolutionArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
+                   L = 2
+                   index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+                   ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
+                   result = result + R(index)*forwardSolutionArray(index)
 
                 end do
-            end if
-        end do
-    end do
-end do
-        call VecDestroy(forwardSolutionOnProc0,ierr)
-      end if !masterProc
-        call VecScatterDestroy(VecScatterContext,ierr)
+             end do
+          end do
+       end do
+       call VecDestroy(forwardSolutionOnProc0,ierr)
+       deallocate(R)
+    end if !masterProc
+    call VecScatterDestroy(VecScatterContext,ierr)
 
     end subroutine
 
+    subroutine heatFlux_vE_Sensitivity(result, deltaF, whichSpecies, whichLambda, whichMode)
+
+      use globalVariables
+      use indices
+      use petscvec
+      use diagnostics
+      
+      implicit none
+
+      PetscScalar :: result
+      Vec :: deltaF, deltaFOnProc0, f0OnProc0
+      PetscScalar, pointer :: deltaFArray(:), f0Array(:)
+      integer :: whichSpecies, whichLambda, whichMode, minSpecies, maxSpecies, itheta, izeta, L, ix, index, ispecies
+      PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, Z
+      PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dinvDHatdLambda, factor, factorExB
+      PetscScalar :: dfactordLambda, dfactorExBdLambda, df0dLambda
+      PetscScalar :: dBHatdLambda, dVPrimeHatdLambda, dBHatdThetadLambda, dBHatdZetadLambda
+      PetscScalar :: dPhi1HatdLambda, dPhi1HatdThetadLambda, dPhi1HatdZetadLambda
+      integer :: m, n
+      PetscScalar :: angle, cos_angle, sin_angle
+      VecScatter :: VecScatterContext, VecScatterContext0 !MAYBE REMOVE SECOND
+      PetscErrorCode :: ierr
+
+      PetscScalar, dimension(:), allocatable :: R
+      
+      result = zero
+      
+      m = ms_sensitivity(whichMode)
+      n = ns_sensitivity(whichMode)
+
+      ! Scatter deltaF to master proc
+      call VecScatterCreateToZero(deltaF, VecScatterContext, deltaFOnProc0, ierr)
+      call VecScatterBegin(VecScatterContext, deltaF, deltaFOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
+      call VecScatterEnd(VecScatterContext, deltaF, deltaFOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
+      if (masterProc) then
+         ! Convert the PETSc vector into a normal Fortran array
+         call VecGetArrayF90(deltaFOnProc0, deltaFArray, ierr)
+      end if
+
+      if (includePhi1) then
+         ! f0 is defined in global
+         call VecScatterCreateToZero(f0, VecScatterContext0, f0OnProc0, ierr)
+         call VecScatterBegin(VecScatterContext0, f0, f0OnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
+         call VecScatterEnd(VecScatterContext0, f0, f0OnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
+         if (masterProc) then
+            call VecGetArrayF90(f0OnProc0, f0Array, ierr)
+         end if
+      end if
+
+      if (masterProc) then
+         allocate(R(matrixSize))
+    
+         
+         if (whichSpecies == 0) then
+            minSpecies = 1
+            maxSpecies = NSpecies
+         else
+            minSpecies = whichSpecies
+            maxSpecies = whichSpecies
+         end if
+
+         do ispecies = minSpecies,maxSpecies
+
+            ! most of the work is now done here
+            call heatFlux_vE(R, 1, ispecies, whichLambda, whichMode)
+            R = R * ddrN2ddpsiHat
+
+            ! Summed quantity is weighted by charge
+            if (whichSpecies == 0) then
+               R = R * Zs(ispecies)
+            end if
+            
+            do itheta=1,Ntheta
+               do izeta=1,Nzeta
+                  do ix=1,Nx
+
+                     L = 0
+                     index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+                     ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
+                     result = result + R(index)*deltaFArray(index)
+
+                  end do ! ix
+               end do ! izeta
+            end do ! itheta
+         end do ! ispecies
+         call VecDestroy(deltaFOnProc0,ierr)
+         call VecDestroy(f0OnProc0,ierr)
+         deallocate(R)
+      end if !masterProc
+      call VecScatterDestroy(VecScatterContext,ierr)
+      call VecScatterDestroy(VecScatterContext0,ierr)
+    end subroutine heatFlux_vE_Sensitivity
+
+    
     !> Evaluates the term in the sensitivity derivative of the particle fluxes
     !! which arise due to the sensitivity of the inner product and the integrating factor,
     !! not f1 itself, hence this is not called with the adjoint variable
@@ -509,7 +551,6 @@ end do
          call VecDestroy(deltaFOnProc0,ierr)
          call VecDestroy(f0OnProc0,ierr)
          deallocate(R)
-         ! TODO: maybe destroy f0onProc0??
       end if !masterProc
       call VecScatterDestroy(VecScatterContext,ierr)
       call VecScatterDestroy(VecScatterContext0,ierr)
@@ -529,6 +570,7 @@ end do
     use globalVariables
     use indices
     use petscvec
+    use diagnostics
 
     implicit none
 
@@ -546,12 +588,17 @@ end do
     integer :: m, n
     VecScatter :: VecScatterContext
     PetscErrorCode :: ierr
-    PetscScalar :: dDHatdLambda
+ 
+    PetscScalar, dimension(:), allocatable :: R
 
+    
     sqrtFSAB2 = sqrt(FSABHat2)
+    
+    result = zero
+
     m = ms_sensitivity(whichMode)
     n = ns_sensitivity(whichMode)
-
+        
     ! Scatter deltaF to master proc
     call VecScatterCreateToZero(deltaF, VecScatterContext, deltaFOnProc0, ierr)
     call VecScatterBegin(VecScatterContext, deltaF, deltaFOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
@@ -561,87 +608,40 @@ end do
       call VecGetArrayF90(deltaFOnProc0, deltaFArray, ierr)
     end if
 
-    if (whichSpecies == 0) then
-      minSpecies = 1
-      maxSpecies = NSpecies
-    else
-      minSpecies = whichSpecies
-      maxSpecies = whichSpecies
-    end if
-
     if (masterProc) then
-      result = zero
-      dFSABHat2dLambda = zero
-            dVPrimeHatdLambda = zero
-            if (whichLambda==1) then ! BHat
-                do itheta=1,Ntheta
-                    do izeta=1,Nzeta
-                        angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-                        cos_angle = cos(angle)
-                        dVPrimeHatdLambda = dVPrimeHatdLambda - (two*(GHat+iota*IHat)) * thetaWeights(itheta) * zetaWeights(izeta) &
-                        * BHat(itheta,izeta)**(-3) * cos_angle
-                    end do
-                end do
-                dFSABHat2dLambda = -4*pi*pi*(GHat+iota*IHat)*dVPrimeHatdLambda/(VPrimeHat**2)
-            else if (whichLambda==2) then ! IHat
-                dVPrimeHatdLambda = VPrimeHat*iota/(GHat+iota*IHat)
-            else if (whichLambda==3) then ! GHat
-                dVPrimeHatdLambda = VPrimeHat/(GHat+iota*IHat)
-            else if (whichLambda==4) then ! iota
-                dVPrimeHatdLambda = VPrimeHat*IHat/(GHat+iota*IHat)
-            end if
+       allocate(R(matrixSize))
+       
+       if (whichSpecies == 0) then
+          minSpecies = 1
+          maxSpecies = NSpecies
+       else
+          minSpecies = whichSpecies
+          maxSpecies = whichSpecies
+       end if
 
-      allocate(xIntegralFactor(Nx))
 
       do ispecies = minSpecies,maxSpecies
-        THat = THats(ispecies)
-        mHat = mHats(ispecies)
-        sqrtTHat = sqrt(THats(ispecies))
-        sqrtmHat = sqrt(mHats(ispecies))
-        nHat = nHats(ispecies)
+         ! most of the work is now done here
+         call parallelFlow(R, 1, ispecies, whichLambda, whichMode)
 
-        xIntegralFactor = x*x*x*THat*THat*pi/(mHat*mHat*nHat)
-        if (whichSpecies == 0) then
-          xIntegralFactor = xIntegralFactor*Zs(ispecies)
-        end if
-
-                !factor = BHat/(DHat*VPrimeHat*sqrtFSAB2) = (GHat+iota*IHat)/(BHat*VPrimeHat*sqrtFSAB2)
-
-        do itheta=1,Ntheta
-          do izeta=1,Nzeta
-            select case (whichLambda)
-              case (1) ! BHat
-                angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
-                cos_angle = cos(angle)            
-                dBHatdLambda = cos_angle
-                factor = -(GHat+iota*IHat)*dBHatdLambda/(BHat(itheta,izeta)*BHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) &
-                    - (GHat+iota*IHat)*dVPrimeHatdLambda/(BHat(itheta,izeta)*VPrimeHat*VPrimeHat*sqrtFSAB2) &
-                    - 0.5*(GHat+iota*IHat)*dFSABHat2dLambda/(BHat(itheta,izeta)*VPrimeHat*sqrtFSAB2*FSABHat2)
-              case (2) ! IHat
-                factor = iota/(BHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) &
-                    - (GHat+iota*IHat)*dVPrimeHatdLambda/ &
-                    (BHat(itheta,izeta)*sqrtFSAB2*VPrimeHat*VPrimeHat)
-              case (3) ! GHat
-                factor = one/(BHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) &
-                    - (GHat+iota*IHat)*dVPrimeHatdLambda/(BHat(itheta,izeta)*sqrtFSAB2*VPrimeHat*VPrimeHat)
-              case (4) ! iota
-                factor = IHat/(BHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) &
-                    - (GHat+iota*IHat)*dVPrimeHatdLambda/(BHat(itheta,izeta)*sqrtFSAB2*VPrimeHat*VPrimeHat)
-            end select
-
-            do ix=1,Nx
-
-                L = 1
-                index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
-                ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
-                result = result + &
-                  (four/three)*factor*xWeights(ix)*deltaFArray(index)*xIntegralFactor(ix)*thetaWeights(itheta)*zetaWeights(izeta)
-
-              end do
-            end do
-          end do
-        end do
+         ! Summed quantity is weighted by charge
+         if (whichSpecies == 0) then
+            R = R * Zs(ispecies)
+         end if
+         
+         do itheta=1,Ntheta
+            do izeta=1,Nzeta
+               do ix=1,Nx
+                  L = 1
+                  index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
+                  ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
+                  result = result + R(index)*deltaFArray(index)
+              end do ! ix
+            end do ! izeta
+          end do ! itheta
+        end do ! ispecies
         call VecDestroy(deltaFOnProc0,ierr)
+        deallocate(R)
       end if !masterProc
       call VecScatterDestroy(VecScatterContext,ierr)
 
@@ -732,6 +732,12 @@ end do
                 dRadialCurrentdLambda(whichLambda,whichMode) = -innerProductResult + sensitivityResult
              case (2) ! Heat Flux
                 call heatFluxSensitivity(sensitivityResult, forwardSolution, whichSpecies, whichLambda, whichMode)
+                if (includePhi1) then
+                   call heatFlux_vE_Sensitivity(sensitivityResult2, forwardSolution, whichSpecies, whichLambda, whichMode)
+                   sensitivityResult = sensitivityResult + sensitivityResult2
+                end if
+                
+                
                 dTotalHeatFluxdLambda(whichLambda,whichMode) = -innerProductResult + sensitivityResult
                 if (RHSMode == 5) then
                    dTotalHeatFluxdLambda(whichLambda,whichMode) = dTotalHeatFluxdLambda(whichLambda,whichMode) + ErTermToAdd
@@ -758,6 +764,11 @@ end do
                 end if
              case (2) ! Heat Flux
                 call heatFluxSensitivity(sensitivityResult, forwardSolution, whichSpecies, whichLambda, whichMode)
+                if (includePhi1) then
+                   call heatFlux_vE_Sensitivity(sensitivityResult2, forwardSolution, whichSpecies, whichLambda, whichMode)
+                   sensitivityResult = sensitivityResult + sensitivityResult2
+                end if
+                
                 dHeatFluxdLambda(whichSpecies,whichLambda,whichMode) = sensitivityResult - innerProductResult
                   if (RHSMode == 5) then
                     dHeatFluxdLambda(whichSpecies,whichLambda,whichMode) = dHeatFluxdLambda(whichSpecies,whichLambda,whichMode) + ErTermToAdd

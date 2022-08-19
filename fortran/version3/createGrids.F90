@@ -1524,6 +1524,12 @@
     allocate(adjoint_particleFlux_vE_RHSs(matrixSize,Nspecies))
     adjoint_particleFlux_vm_RHSs = zero
     adjoint_particleFlux_vE_RHSs = zero
+    allocate(adjoint_heatFlux_vm_RHSs(matrixSize,Nspecies))
+    allocate(adjoint_heatFlux_vE_RHSs(matrixSize,Nspecies))
+    adjoint_heatFlux_vm_RHSs = zero
+    adjoint_heatFlux_vE_RHSs = zero
+    allocate(adjoint_parallelFlow_RHSs(matrixSize,Nspecies))
+    adjoint_parallelFlow_RHSs = zero
     
     if (masterProc) then
        print *,"------------------------------------------------------"

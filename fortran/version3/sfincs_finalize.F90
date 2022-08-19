@@ -182,6 +182,10 @@ if(allocated(particleFluxBeforeSurfaceIntegral_vm)) deallocate( particleFluxBefo
   ! New
   if(allocated(adjoint_particleFlux_vm_RHSs)) deallocate(adjoint_particleFlux_vm_RHSs)
   if(allocated(adjoint_particleFlux_vE_RHSs)) deallocate(adjoint_particleFlux_vE_RHSs)
+  if(allocated(adjoint_heatFlux_vm_RHSs)) deallocate(adjoint_heatFlux_vm_RHSs)
+  if(allocated(adjoint_heatFlux_vE_RHSs)) deallocate(adjoint_heatFlux_vE_RHSs)
+  if(allocated(adjoint_parallelFlow_RHSs)) deallocate(adjoint_parallelFlow_RHSs)
+  
   
   
   call xGrid_finalize()

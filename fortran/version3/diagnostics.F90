@@ -206,6 +206,10 @@ contains
     do ispecies = 1,Nspecies
        call particleFlux_vm(adjoint_particleFlux_vm_RHSs(:,ispecies), 0, ispecies, 0, 0)
        call particleFlux_vE(adjoint_particleFlux_vE_RHSs(:,ispecies), 0, ispecies, 0, 0)
+       call heatFlux_vm(adjoint_heatFlux_vm_RHSs(:,ispecies), 0, ispecies, 0, 0)
+       call heatFlux_vE(adjoint_heatFlux_vE_RHSs(:,ispecies), 0, ispecies, 0, 0)
+       call parallelFlow(adjoint_parallelFlow_RHSs(:,ispecies), 0, ispecies, 0, 0)
+       
        ! add more here
     end do
     
@@ -341,7 +345,7 @@ contains
 
 
   end subroutine particleFlux_vm
-  
+
   
   subroutine particleFlux_vE(R, whichVec, whichSpecies, whichLambda, whichMode)
 
@@ -367,6 +371,7 @@ contains
     R = zero
 
     ! it is zero unless Phi1 is included
+    ! Note: this has never been tested for whichVec == 1 (adjoint)
     if (includePhi1) then
        if (whichLambda == 1 .and. whichVec == 1) then ! BHat
           m = ms_sensitivity(whichMode)
@@ -460,8 +465,358 @@ contains
     end if
     
   end subroutine particleFlux_vE
+
+  
+  subroutine heatFlux_vm(R, whichVec, whichSpecies, whichLambda, whichMode)
+
+    use globalVariables, only: Nspecies, Zs, mHats, THats, nHats, x2, VPrimeHat, xWeights, DHat, BHat_sub_theta, BHat_sub_zeta, Delta, alpha, zero, two, three, four, pi, matrixSize, zeta, zetaWeights,  Nzeta, theta, thetaWeights, Ntheta, Nx, BHat, dBHatdtheta, dBHatdzeta, IHat, GHat, iota, Nperiods, ms_sensitivity, ns_sensitivity, force0RadialCurrentInEquilibrium, dBHat_sub_zeta_dtheta, dBHat_sub_theta_dzeta
+    use indices
+    use petscvec
+
+    PetscScalar, dimension(matrixSize), intent(out) :: R
+    integer, intent(in) :: whichVec, whichSpecies, whichLambda, whichMode
+
+    PetscErrorCode :: ierr
+    integer :: ix, L, itheta, izeta, ispecies, index
+    PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, xPartOfRHS, nHat, Z, sqrtFSAB2
+    PetscScalar :: Lfactor1, Lfactor2, geometricFactor, geometricFactor2, factor, factor2
+
+    PetscScalar :: dBHatdLambda, dVPrimeHatdLambda
+    integer :: m, n
+    PetscScalar :: angle, cos_angle, sin_angle
+    
+    PetscScalar :: dBHatdThetadLambda, dBHatdZetadLambda
+    PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda
+
+    R = zero
+    
+    if (whichLambda == 1 .and. whichVec == 1) then ! BHat
+       m = ms_sensitivity(whichMode)
+       n = ns_sensitivity(whichMode)
+       dVPrimeHatdLambda = zero
+       do itheta=1,Ntheta
+          do izeta=1,Nzeta
+             angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+             cos_angle = cos(angle)
+             dVPrimeHatdLambda = dVPrimeHatdLambda - two*thetaWeights(itheta)*zetaWeights(izeta)*cos_angle/(DHat(itheta,izeta)*BHat(itheta,izeta))
+          end do
+       end do
+    end if
+    
+    do ispecies=1,Nspecies
+       ! For whichSpecies == 0, RHS corresponds to radial current - species summed weighted by Zs
+       ! ^^
+       if (whichSpecies == ispecies .or. whichSpecies == 0) then
+          THat = THats(ispecies)
+          mHat = mHats(ispecies)
+          nHat = nHats(ispecies)
+          sqrtTHat = sqrt(THat)
+          sqrtMHat = sqrt(mHat)
+          Z = Zs(ispecies)
+
+          do ix=1,Nx
+             xPartOfRHS = pi*Delta*THat*THat*THat*sqrtTHat*x2(ix)*x2(ix)*x2(ix)*xweights(ix)/(2*Z*mHat*sqrtMHat)
+             ! Below is the same code as for the particle flux
+             do itheta = 1,Ntheta
+                do izeta = 1,Nzeta
+                   if (whichVec == 0) then
+                      ! R
+                      geometricFactor = &
+                           (BHat_sub_theta(itheta,izeta)*dBHatdzeta(itheta,izeta) &
+                           - BHat_sub_zeta(itheta,izeta)*dBHatdtheta(itheta,izeta)) &
+                           /(VPrimeHat*BHat(itheta,izeta)*BHat(itheta,izeta)*BHat(itheta,izeta))
+                      if (force0RadialCurrentInEquilibrium) then
+                         geometricFactor2 = 0
+                      else
+                         ! Note: this next line has not been tested, since I haven't used eqilibria with a radial current.
+                         geometricFactor2 = 2 * (dBHat_sub_zeta_dtheta(itheta,izeta) - dBHat_sub_theta_dzeta(itheta,izeta)) &
+                              / (VPrimeHat* BHat(itheta,izeta)*BHat(itheta,izeta))
+                      end if                      
+                   else
+                      ! d R/d lambda
+                      geometricFactor2 = 0
+                      ! geometricFactor2 is always zero in Boozer coordinates,
+                      ! which we assume in the adjoint solver.
+                      select case(whichLambda)
+                      case (0) ! Er
+                         geometricFactor = zero
+                      case (1) ! BHat
+                         angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+                         cos_angle = cos(angle)
+                         sin_angle = sin(angle)            
+                         dBHatdThetadLambda = -m*sin_angle
+                         dBHatdZetadLambda = n*Nperiods*sin_angle
+                         dBHatdLambda = cos_angle
+                         geometricFactor = (IHat*dBHatdzetadLambda-GHat*dBHatdthetadLambda)/(VPrimeHat*BHat(itheta,izeta)**3) &
+                              - 3*(IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta))/(VprimeHat*BHat(itheta,izeta)**4) &
+                              * dBHatdLambda - (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda &
+                              /(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
+                      case (2) ! IHat
+                         dVPrimeHatdLambda = iota*VprimeHat/(GHat+iota*IHat)
+                         geometricFactor = dBHatdzeta(itheta,izeta)/(VPrimeHat*BHat(itheta,izeta)**3) &
+                              - (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta)) &
+                              * dVPrimeHatdLambda/(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
+                      case (3) ! GHat
+                         dVPrimeHatdLambda = VPrimeHat/(GHat+iota*IHat)
+                         geometricFactor = -dBHatdtheta(itheta,izeta)/(VPrimeHat*BHat(itheta,izeta)**3) &
+                              - (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda &
+                              / (VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
+                      case (4) ! iota
+                         dVPrimeHatdLambda = IHat*VPrimeHat/(GHat+iota*IHat)
+                         geometricFactor = - (IHat*dBHatdzeta(itheta,izeta)-GHat*dBHatdtheta(itheta,izeta))*dVPrimeHatdLambda &
+                              / (VPrimeHat*VPrimeHat*BHat(itheta,izeta)**3)
+                      end select
+                   end if
+
+                   factor  = geometricFactor  * xPartOfRHS * thetaWeights(itheta)*zetaWeights(izeta)
+                   factor2 = geometricFactor2 * xPartOfRHS * thetaWeights(itheta)*zetaWeights(izeta)
+                   Lfactor1 = 8/three
+                   Lfactor2 = four/15
+                   
+                   L = 0
+                   index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F) + 1
+                   ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
+                   R(index) = Lfactor1*factor + (two/three) * factor2
+                   ! index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F) 
+                   ! call VecSetValue(R, index, factor1*factor + factorExB, INSERT_VALUES, ierr) ! *2
+
+                   L = 2
+                   index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F) + 1
+                   ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
+                   R(index) = Lfactor2*(factor + factor2)
+                   ! index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)
+                   ! call VecSetValue(R, index, factor2*factor, INSERT_VALUES, ierr)
+                enddo
+             enddo
+          enddo
+       end if
+    end do
+
+
+  end subroutine heatFlux_vm
   
   
+  subroutine heatFlux_vE(R, whichVec, whichSpecies, whichLambda, whichMode)
+
+    use globalVariables, only: Nspecies, Zs, mHats, THats, nHats, x2, VPrimeHat, xWeights, DHat, BHat_sub_theta, BHat_sub_zeta, dPhi1Hatdzeta, dPhi1Hatdtheta, Delta, alpha, zero, two, three, four, pi, matrixSize, zeta, zetaWeights,  Nzeta, theta, thetaWeights, Ntheta, Nx, includePhi1, BHat, dBHatdtheta, dBHatdzeta, IHat, GHat, iota, Nperiods, ms_sensitivity, ns_sensitivity
+    use indices
+    use petscvec
+
+    PetscScalar, dimension(matrixSize), intent(out) :: R
+    integer, intent(in) :: whichVec, whichSpecies, whichLambda, whichMode
+
+    PetscErrorCode :: ierr
+    integer :: ix, L, itheta, izeta, ispecies, index
+    PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, xPartOfRHS, nHat, Z, sqrtFSAB2
+    PetscScalar :: geometricFactor, factor
+
+    PetscScalar :: dBHatdLambda, dVPrimeHatdLambda
+    integer :: m, n
+    PetscScalar :: angle, cos_angle, sin_angle
+    
+    PetscScalar :: dBHatdThetadLambda, dBHatdZetadLambda
+    PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda
+
+    R = zero
+
+    ! it is zero unless Phi1 is included
+    ! Note: this has never been tested for whichVec == 1 (adjoint)
+    if (includePhi1) then
+       if (whichLambda == 1 .and. whichVec == 1) then ! BHat
+          m = ms_sensitivity(whichMode)
+          n = ns_sensitivity(whichMode)
+          dVPrimeHatdLambda = zero
+          do itheta=1,Ntheta
+             do izeta=1,Nzeta
+                angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+                cos_angle = cos(angle)
+                dVPrimeHatdLambda = dVPrimeHatdLambda - two*thetaWeights(itheta)*zetaWeights(izeta)*cos_angle/(DHat(itheta,izeta)*BHat(itheta,izeta))
+             end do
+          end do
+       end if
+
+       do ispecies=1,Nspecies
+          ! For whichSpecies == 0, RHS corresponds to radial current - species summed weighted by Zs
+          ! ^^
+          if (whichSpecies == ispecies .or. whichSpecies == 0) then
+             THat = THats(ispecies)
+             mHat = mHats(ispecies)
+             nHat = nHats(ispecies)
+             sqrtTHat = sqrt(THat)
+             sqrtMHat = sqrt(mHat)
+             Z = Zs(ispecies)
+
+             do ix=1,Nx
+                xPartOfRHS = 2*pi*Delta*alpha*THat*THat*sqrtTHat*x2(ix)*x2(ix)*xweights(ix)/(2*mHat*sqrtMHat)
+                ! Below is the same as in particleFlux_vE
+                do itheta = 1,Ntheta
+                   do izeta = 1,Nzeta
+                      if (whichVec == 0) then
+                         ! R
+                         geometricFactor = (BHat_sub_theta(itheta,izeta)*dPhi1Hatdzeta(itheta,izeta) &
+                              - BHat_sub_zeta(itheta,izeta)*dPhi1Hatdtheta(itheta,izeta)) &
+                              /(VPrimeHat*BHat(itheta,izeta)*BHat(itheta,izeta)) 
+                      else
+                         ! d R/d lambda
+                         select case(whichLambda)
+                         case (0) ! Er
+                            geometricFactor = zero
+                         case (1) ! BHat
+                            angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+                            cos_angle = cos(angle)
+                            sin_angle = sin(angle)            
+                            dBHatdThetadLambda = -m*sin_angle
+                            dBHatdZetadLambda = n*Nperiods*sin_angle
+                            dBHatdLambda = cos_angle
+                            geometricFactor = &
+                                 - 2*(IHat*dPhi1Hatdzeta(itheta,izeta)-GHat*dPhi1Hatdtheta(itheta,izeta))/(VprimeHat*BHat(itheta,izeta)**3) &
+                                 * dBHatdLambda - (IHat*dPhi1Hatdzeta(itheta,izeta)-GHat*dPhi1Hatdtheta(itheta,izeta))*dVPrimeHatdLambda &
+                                 /(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**2)
+                         case (2) ! IHat
+                            dVPrimeHatdLambda = iota*VprimeHat/(GHat+iota*IHat)
+                            geometricFactor = dPhi1Hatdzeta(itheta,izeta)/(VPrimeHat*BHat(itheta,izeta)**2) &
+                                 - (IHat*dPhi1Hatdzeta(itheta,izeta)-GHat*dPhi1Hatdtheta(itheta,izeta)) &
+                                 * dVPrimeHatdLambda/(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**2)
+                         case (3) ! GHat
+                            dVPrimeHatdLambda = VPrimeHat/(GHat+iota*IHat)
+                            geometricFactor = -dPhi1Hatdtheta(itheta,izeta)/(VPrimeHat*BHat(itheta,izeta)**2) &
+                                 - (IHat*dPhi1Hatdzeta(itheta,izeta)-GHat*dPhi1Hatdtheta(itheta,izeta))*dVPrimeHatdLambda &
+                                 /(VPrimeHat*VPrimeHat*BHat(itheta,izeta)**2)
+                         case (4) ! iota
+                            dVPrimeHatdLambda = IHat*VPrimeHat/(GHat+iota*IHat)
+                            geometricFactor = - (IHat*dPhi1Hatdzeta(itheta,izeta)-GHat*dPhi1Hatdtheta(itheta,izeta))*dVPrimeHatdLambda &
+                                 / (VPrimeHat*VPrimeHat*BHat(itheta,izeta)**2)
+                         end select
+                      end if
+
+                      factor = geometricFactor*xPartOfRHS * thetaWeights(itheta)*zetaWeights(izeta)
+                      
+                      L = 0
+                      index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F) + 1
+                      ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
+                      R(index) = factor
+                      ! index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F) 
+                      ! call VecSetValue(R, index, factor1*factor + factorExB, INSERT_VALUES, ierr) ! *2
+                   enddo
+                enddo
+             enddo
+          end if
+       end do
+    end if
+    
+  end subroutine heatFlux_vE
+
+  
+  subroutine parallelFlow(R, whichVec, whichSpecies, whichLambda, whichMode)
+
+    ! This gives the adjoint RHS for
+    ! FSABVelocityUsingFSADensityOverRootFSAB2
+    ! Not strictly the parallel flow.
+    
+    use globalVariables, only: Nspecies, Zs, mHats, THats, nHats, x, x2, VPrimeHat, xWeights, DHat, BHat_sub_theta, BHat_sub_zeta, FSABHat2, dPhi1Hatdzeta, dPhi1Hatdtheta, Delta, alpha, zero, one, two, three, four, pi, matrixSize, zeta, zetaWeights,  Nzeta, theta, thetaWeights, Ntheta, Nx, includePhi1, BHat, dBHatdtheta, dBHatdzeta, IHat, GHat, iota, Nperiods, ms_sensitivity, ns_sensitivity
+    use indices
+    use petscvec
+
+    PetscScalar, dimension(matrixSize), intent(out) :: R
+    integer, intent(in) :: whichVec, whichSpecies, whichLambda, whichMode
+
+    PetscErrorCode :: ierr
+    integer :: ix, L, itheta, izeta, ispecies, index
+    PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, xPartOfRHS, nHat, Z, sqrtFSAB2
+    PetscScalar :: geometricFactor, factor
+
+    PetscScalar :: dBHatdLambda, dVPrimeHatdLambda, dFSABHat2dLambda
+    integer :: m, n
+    PetscScalar :: angle, cos_angle, sin_angle
+    
+    PetscScalar :: dBHatdThetadLambda, dBHatdZetadLambda
+    PetscScalar :: dBHat_sub_thetadLambda, dBHat_sub_zetadLambda
+
+    R = zero
+    sqrtFSAB2 = sqrt(FSABHat2)
+    if (whichLambda == 1 .and. whichVec == 1) then ! BHat
+       m = ms_sensitivity(whichMode)
+       n = ns_sensitivity(whichMode)
+       dVPrimeHatdLambda = zero
+       do itheta=1,Ntheta
+          do izeta=1,Nzeta
+             angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+             cos_angle = cos(angle)
+             dVPrimeHatdLambda = dVPrimeHatdLambda - two*thetaWeights(itheta)*zetaWeights(izeta)*cos_angle/(DHat(itheta,izeta)*BHat(itheta,izeta))
+          end do
+       end do
+    end if
+
+    do ispecies=1,Nspecies
+       ! For whichSpecies == 0, RHS corresponds to radial current - species summed weighted by Zs
+       ! ^^
+       if (whichSpecies == ispecies .or. whichSpecies == 0) then
+          THat = THats(ispecies)
+          mHat = mHats(ispecies)
+          nHat = nHats(ispecies)
+          sqrtTHat = sqrt(THat)
+          sqrtMHat = sqrt(mHat)
+          Z = Zs(ispecies)
+
+          do ix=1,Nx
+             xPartOfRHS = four*pi*x2(ix)*x(ix)*THat*THat*xweights(ix)/(three*mHat*mHat*nHat)
+             if (whichSpecies == 0) then
+                xPartOfRHS = xPartOfRHS*Z
+             end if
+             do itheta = 1,Ntheta
+                do izeta = 1,Nzeta
+                   if (whichVec == 0) then
+                      ! R
+                      geometricFactor = BHat(itheta,izeta)/(DHat(itheta,izeta) * VPrimeHat * sqrtFSAB2)
+                   else
+                      ! d R/d lambda
+                      select case(whichLambda)
+                      case (0) ! Er
+                         geometricFactor = zero
+                      case (1) ! BHat
+                         angle = m * theta(itheta) - n * NPeriods * zeta(izeta)
+                         cos_angle = cos(angle)
+                         sin_angle = sin(angle)            
+                         dBHatdThetadLambda = -m*sin_angle
+                         dBHatdZetadLambda = n*Nperiods*sin_angle
+                         dBHatdLambda = cos_angle
+                         dFSABHat2dLambda = -4*pi*pi*(GHat+iota*IHat)*dVPrimeHatdLambda/(VPrimeHat**2)
+                         geometricFactor = &
+                              -(GHat+iota*IHat)*dBHatdLambda/(BHat(itheta,izeta)*BHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) &
+                              - (GHat+iota*IHat)*dVPrimeHatdLambda/(BHat(itheta,izeta)*VPrimeHat*VPrimeHat*sqrtFSAB2) &
+                              - 0.5*(GHat+iota*IHat)*dFSABHat2dLambda/(BHat(itheta,izeta)*VPrimeHat*sqrtFSAB2*FSABHat2)
+                      case (2) ! IHat
+                         dVPrimeHatdLambda = iota*VprimeHat/(GHat+iota*IHat)
+                         geometricFactor = iota/(BHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) &
+                              - (GHat+iota*IHat)*dVPrimeHatdLambda/ &
+                              (BHat(itheta,izeta)*sqrtFSAB2*VPrimeHat*VPrimeHat)
+                      case (3) ! GHat
+                         dVPrimeHatdLambda = VPrimeHat/(GHat+iota*IHat)
+                         geometricFactor = one/(BHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) &
+                              - (GHat+iota*IHat)*dVPrimeHatdLambda/(BHat(itheta,izeta)*sqrtFSAB2*VPrimeHat*VPrimeHat)
+                      case (4) ! iota
+                         dVPrimeHatdLambda = IHat*VPrimeHat/(GHat+iota*IHat)
+                         geometricFactor = IHat/(BHat(itheta,izeta)*VPrimeHat*sqrtFSAB2) &
+                    - (GHat+iota*IHat)*dVPrimeHatdLambda/(BHat(itheta,izeta)*sqrtFSAB2*VPrimeHat*VPrimeHat)
+                      end select
+                   end if
+
+                   factor = geometricFactor * xPartOfRHS * thetaWeights(itheta) * zetaWeights(izeta)
+
+                   L = 1
+                   index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F) + 1
+                   ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
+                   R(index) = factor
+                   ! index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F) 
+                   ! call VecSetValue(R, index, factor1*factor + factorExB, INSERT_VALUES, ierr) ! *2
+                enddo
+             enddo
+          enddo
+       end if
+    end do
+    
+  end subroutine parallelFlow
+
   
   subroutine do_diagnostics(solutionWithDeltaF, iterationNum)
 
@@ -485,7 +840,7 @@ contains
     PetscScalar, pointer :: solutionWithFullFArray(:), solutionWithDeltaFArray(:), f0Array(:)
     !!PetscScalar, pointer :: expPhi1Array(:) !!Added by AM 2016-06
 
-    PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, nHat
+    PetscScalar :: THat, mHat, sqrtTHat, sqrtMHat, nHat, sqrtFSABHat2
     PetscScalar, dimension(:), allocatable :: B2
     integer :: i, ix, ispecies, itheta, izeta, L, index
     PetscScalar :: densityFactor, flowFactor, pressureFactor
@@ -521,7 +876,8 @@ contains
        ! Update vectors used to calculate vE fluxes
        do ispecies = 1,Nspecies
           call particleFlux_vE(adjoint_particleFlux_vE_RHSs(:,ispecies), 0, ispecies, 0, 0)
-          ! add more here
+          call heatFlux_vE(adjoint_heatFlux_vE_RHSs(:,ispecies), 0, ispecies, 0, 0)
+          ! add more here if they depend on Phi1
        end do
     end if
     
@@ -621,6 +977,8 @@ contains
        heatFluxIntegralWeights_vE = x*x*x*x
        NTVIntegralWeights = x*x*x*x 
 
+       sqrtFSABHat2 = sqrt(FSABHat2)
+       
        ! Convert the PETSc vectors into normal Fortran arrays:
        call VecGetArrayF90(solutionWithFullFOnProc0, solutionWithFullFArray, ierr)
        call VecGetArrayF90(solutionWithDeltaFOnProc0, solutionWithDeltaFArray, ierr)
@@ -657,6 +1015,7 @@ contains
 
        do ispecies = 1,Nspecies
           THat = THats(ispecies)
+          nHat = nHats(ispecies)
           mHat = mHats(ispecies)
           sqrtTHat = sqrt(THat)
           sqrtMHat = sqrt(mHat)
@@ -763,26 +1122,50 @@ contains
                    
                    !print *,particleFluxBeforeSurfaceIntegral_vE0(ispecies,itheta,izeta),particleFluxBeforeSurfaceIntegral_vE(ispecies,itheta,izeta)
 
+                   ! heatFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
+                   !      = heatFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
+                   !      + (factor * (8/three) + factor2 * (two/three)) * heatFluxFactor_vm &
+                   !      * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*f0Array(index)
+
+
                    heatFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
                         = heatFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
-                        + (factor * (8/three) + factor2 * (two/three)) * heatFluxFactor_vm &
-                        * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*f0Array(index)
+                        + adjoint_heatFlux_vm_RHSs(index,ispecies) *f0Array(index) &
+                        /(thetaWeights(itheta) * zetaWeights(izeta))
+
+                   
+                   ! heatFluxBeforeSurfaceIntegral_vm(ispecies,itheta,izeta) &
+                   !      = heatFluxBeforeSurfaceIntegral_vm(ispecies,itheta,izeta) &
+                   !      + (factor * (8/three) + factor2 * (two/three)) * heatFluxFactor_vm &
+                   !      * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index)
 
                    heatFluxBeforeSurfaceIntegral_vm(ispecies,itheta,izeta) &
                         = heatFluxBeforeSurfaceIntegral_vm(ispecies,itheta,izeta) &
-                        + (factor * (8/three) + factor2 * (two/three)) * heatFluxFactor_vm &
-                        * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index)
-
+                        + adjoint_heatFlux_vm_RHSs(index,ispecies) *solutionWithFullFArray(index) &
+                        /(thetaWeights(itheta) * zetaWeights(izeta))
+                   
+                   ! heatFluxBeforeSurfaceIntegral_vE0(ispecies,itheta,izeta) &
+                   !      = heatFluxBeforeSurfaceIntegral_vE0(ispecies,itheta,izeta) &
+                   !      + factor_vE * heatFluxFactor_vE &
+                   !      * xWeights(ix)*heatFluxIntegralWeights_vE(ix)*f0Array(index)
+                   
                    heatFluxBeforeSurfaceIntegral_vE0(ispecies,itheta,izeta) &
                         = heatFluxBeforeSurfaceIntegral_vE0(ispecies,itheta,izeta) &
-                        + factor_vE * heatFluxFactor_vE &
-                        * xWeights(ix)*heatFluxIntegralWeights_vE(ix)*f0Array(index)
+                        + adjoint_heatFlux_vE_RHSs(index,ispecies) * f0Array(index) &
+                        /(thetaWeights(itheta) * zetaWeights(izeta))
+                   
+                   
+                   ! heatFluxBeforeSurfaceIntegral_vE(ispecies,itheta,izeta) &
+                   !      = heatFluxBeforeSurfaceIntegral_vE(ispecies,itheta,izeta) &
+                   !      + factor_vE * heatFluxFactor_vE &
+                   !      * xWeights(ix)*heatFluxIntegralWeights_vE(ix)*solutionWithFullFArray(index)
 
                    heatFluxBeforeSurfaceIntegral_vE(ispecies,itheta,izeta) &
                         = heatFluxBeforeSurfaceIntegral_vE(ispecies,itheta,izeta) &
-                        + factor_vE * heatFluxFactor_vE &
-                        * xWeights(ix)*heatFluxIntegralWeights_vE(ix)*solutionWithFullFArray(index)
-
+                        + adjoint_heatFlux_vE_RHSs(index,ispecies) * solutionWithFullFArray(index) &
+                        /(thetaWeights(itheta) * zetaWeights(izeta))
+                   
+                   
                    ! particleFlux_vm_psiHat_vs_x(ispecies,ix) &
                    !      = particleFlux_vm_psiHat_vs_x(ispecies,ix) &
                    !      + (factor * (8/three) + factor2 * (two/three)) * particleFluxFactor_vm &
@@ -794,24 +1177,35 @@ contains
                         + adjoint_particleFlux_vm_RHSs(index,ispecies) * solutionWithFullFArray(index)
                    
                    
+                   ! heatFlux_vm_psiHat_vs_x(ispecies,ix) &
+                   !      = heatFlux_vm_psiHat_vs_x(ispecies,ix) &
+                   !      + (factor * (8/three) + factor2 * (two/three)) * heatFluxFactor_vm &
+                   !      * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index) &
+                   !      * thetaWeights(itheta) * zetaWeights(izeta)
+
                    heatFlux_vm_psiHat_vs_x(ispecies,ix) &
                         = heatFlux_vm_psiHat_vs_x(ispecies,ix) &
-                        + (factor * (8/three) + factor2 * (two/three)) * heatFluxFactor_vm &
-                        * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index) &
-                        * thetaWeights(itheta) * zetaWeights(izeta)
-
-
+                        + adjoint_heatFlux_vm_RHSs(index,ispecies) * solutionWithFullFArray(index)
+                   
+                   
 
                    L = 1
                    index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
                    ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
 
+                   ! flow(ispecies,itheta,izeta) = flow(ispecies,itheta,izeta) &
+                   !      + flowFactor*xWeights(ix)*flowIntegralWeights(ix)*solutionWithDeltaFArray(index)
+
                    flow(ispecies,itheta,izeta) = flow(ispecies,itheta,izeta) &
-                        + flowFactor*xWeights(ix)*flowIntegralWeights(ix)*solutionWithDeltaFArray(index)
+                        + adjoint_parallelFlow_RHSs(index,ispecies) * (nHat * VPrimeHat * sqrtFSABHat2 * DHat(itheta,izeta)/(thetaWeights(itheta) * zetaWeights(izeta) *BHat(itheta,izeta))) * solutionWithDeltaFArray(index)
+                   
+                   
+                   ! FSABFlow_vs_x(ispecies,ix) = FSABFlow_vs_x(ispecies,ix) &
+                   !      + flowFactor*xWeights(ix)*flowIntegralWeights(ix)*solutionWithDeltaFArray(index) &
+                   !      * thetaWeights(itheta) * zetaWeights(izeta) * BHat(itheta,izeta) / DHat(itheta,izeta)
 
                    FSABFlow_vs_x(ispecies,ix) = FSABFlow_vs_x(ispecies,ix) &
-                        + flowFactor*xWeights(ix)*flowIntegralWeights(ix)*solutionWithDeltaFArray(index) &
-                        * thetaWeights(itheta) * zetaWeights(izeta) * BHat(itheta,izeta) / DHat(itheta,izeta)
+                        + adjoint_parallelFlow_RHSs(index,ispecies) * (nHat * VPrimeHat * sqrtFSABHat2) * solutionWithDeltaFArray(index)
 
                    momentumFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
                         = momentumFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
@@ -861,16 +1255,28 @@ contains
                         + adjoint_particleFlux_vm_RHSs(index,ispecies) *solutionWithFullFArray(index) &
                         /(thetaWeights(itheta) * zetaWeights(izeta))
                    
+                   ! heatFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
+                   !      = heatFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
+                   !      + (factor+factor2) * (four/15) * heatFluxFactor_vm &
+                   !      * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*f0Array(index)
+
                    heatFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
                         = heatFluxBeforeSurfaceIntegral_vm0(ispecies,itheta,izeta) &
-                        + (factor+factor2) * (four/15) * heatFluxFactor_vm &
-                        * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*f0Array(index)
+                        + adjoint_heatFlux_vm_RHSs(index,ispecies) *f0Array(index) &
+                        /(thetaWeights(itheta) * zetaWeights(izeta))
+                   
+                        
+                   ! heatFluxBeforeSurfaceIntegral_vm(ispecies,itheta,izeta) &
+                   !      = heatFluxBeforeSurfaceIntegral_vm(ispecies,itheta,izeta) &
+                   !      + (factor+factor2) * (four/15) * heatFluxFactor_vm &
+                   !      * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index)
 
                    heatFluxBeforeSurfaceIntegral_vm(ispecies,itheta,izeta) &
                         = heatFluxBeforeSurfaceIntegral_vm(ispecies,itheta,izeta) &
-                        + (factor+factor2) * (four/15) * heatFluxFactor_vm &
-                        * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index)
-
+                        + adjoint_heatFlux_vm_RHSs(index,ispecies)*solutionWithFullFArray(index) &
+                        /(thetaWeights(itheta) * zetaWeights(izeta))
+                   
+                   
                    NTVBeforeSurfaceIntegral(ispecies,itheta,izeta) &
                         = NTVBeforeSurfaceIntegral(ispecies,itheta,izeta) &
                         + NTVFactor * NTVKernel(itheta,izeta)&
@@ -880,19 +1286,26 @@ contains
                         + pressureFactor*(-three/5)* &
                         xWeights(ix)*pressureIntegralWeights(ix)*solutionWithDeltaFArray(index)
 
+                   ! particleFlux_vm_psiHat_vs_x(ispecies,ix) &
+                   !      = particleFlux_vm_psiHat_vs_x(ispecies,ix) &
+                   !      + (factor+factor2) * (four/15) * particleFluxFactor_vm &
+                   !      * xWeights(ix)*particleFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index) &
+                   !      * thetaWeights(itheta) * zetaWeights(izeta)
+
                    particleFlux_vm_psiHat_vs_x(ispecies,ix) &
                         = particleFlux_vm_psiHat_vs_x(ispecies,ix) &
-                        + (factor+factor2) * (four/15) * particleFluxFactor_vm &
-                        * xWeights(ix)*particleFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index) &
-                        * thetaWeights(itheta) * zetaWeights(izeta)
-                   
+                        + adjoint_particleFlux_vm_RHSs(index,ispecies) * solutionWithFullFArray(index)
+                                      
+                   ! heatFlux_vm_psiHat_vs_x(ispecies,ix) &
+                   !      = heatFlux_vm_psiHat_vs_x(ispecies,ix) &
+                   !      + (factor+factor2) * (four/15) * heatFluxFactor_vm &
+                   !      * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index) &
+                   !      * thetaWeights(itheta) * zetaWeights(izeta)
+
                    heatFlux_vm_psiHat_vs_x(ispecies,ix) &
                         = heatFlux_vm_psiHat_vs_x(ispecies,ix) &
-                        + (factor+factor2) * (four/15) * heatFluxFactor_vm &
-                        * xWeights(ix)*heatFluxIntegralWeights_vm(ix)*solutionWithFullFArray(index) &
-                        * thetaWeights(itheta) * zetaWeights(izeta)
-
-
+                        + adjoint_heatFlux_vm_RHSs(index,ispecies) * solutionWithFullFArray(index)
+                   
                    L = 3
                    index = getIndex(ispecies, ix, L+1, itheta, izeta, BLOCK_F)+1
                    ! Add 1 to index to convert from PETSc 0-based index to fortran 1-based index.
@@ -1065,13 +1478,13 @@ contains
        FSAPressurePerturbation = FSAPressurePerturbation / VPrimeHat
        FSABjHat = dot_product(Zs(1:Nspecies), FSABFlow)
        FSABjHatOverB0 = FSABjHat / B0OverBBar
-       FSABjHatOverRootFSAB2 = FSABjHat / sqrt(FSABHat2)
+       FSABjHatOverRootFSAB2 = FSABjHat / sqrtFSABHat2
 
        do ispecies = 1,Nspecies
           FSABVelocityUsingFSADensity(ispecies) = FSABFlow(ispecies) / nHats(ispecies)
        end do
        FSABVelocityUsingFSADensityOverB0 = FSABVelocityUsingFSADensity / B0OverBBar
-       FSABVelocityUsingFSADensityOverRootFSAB2 = FSABVelocityUsingFSADensity / sqrt(FSABHat2)
+       FSABVelocityUsingFSADensityOverRootFSAB2 = FSABVelocityUsingFSADensity / sqrtFSABHat2
 
        if (RHSMode==2) then
           ispecies = 1
