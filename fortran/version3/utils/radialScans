@@ -17,7 +17,7 @@ profilesFilename = 'profiles'
 import os, inspect
 import numpy
 from scipy import interpolate
-from scipy.io import netcdf
+from scipy.io import netcdf_file
 import matplotlib.pyplot as plt
 import matplotlib
 import sys
@@ -197,7 +197,7 @@ radii = linspace(radius_min, radius_max, Nradius)
 # is available.
 
 equilibriumFile = readVariable("equilibriumFile","string")
-equilibriumFile = equilibriumFile[1:-1]
+equilibriumFile = equilibriumFile[1:-2]
 
 if geometryScheme==11 or geometryScheme==12:
     # Parse Joachim Geiger's .bc file format to determine psiAHat, aHat, and the available psiN.
@@ -235,7 +235,7 @@ if geometryScheme==11 or geometryScheme==12:
 if geometryScheme==5:
     # Read VMEC file to determine psiAHat, aHat, and the available psiN.
     try:
-        f = netcdf.netcdf_file(equilibriumFile,'r',mmap=False)
+        f = netcdf_file(equilibriumFile,'r',mmap=False)
     except:
         print ("ERROR! Unable to read VMEC wout equilibrium file.")
         print ("Presently this script assumes the VMEC file is netCDF format rather than ASCII format,")
