@@ -197,7 +197,7 @@ radii = linspace(radius_min, radius_max, Nradius)
 # is available.
 
 equilibriumFile = readVariable("equilibriumFile","string")
-equilibriumFile = equilibriumFile[1:-2]
+equilibriumFile = equilibriumFile[1:-1]
 
 if geometryScheme==11 or geometryScheme==12:
     # Parse Joachim Geiger's .bc file format to determine psiAHat, aHat, and the available psiN.
