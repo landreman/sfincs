@@ -152,6 +152,7 @@ def readVariable(varName, intOrFloatOrString, required=True):
                 line5 = line5[:string.find(line5,"!")] #python2
             except:
                 line5 = line5[:line5.find("!")] #python3
+                line5 = line5.strip()
 
         if intOrFloatOrString=="int":
             try:

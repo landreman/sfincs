@@ -4,6 +4,9 @@
 #
 # module load hdf5-serial netcdf-serial petsc-real-openmp
 #
+# The following modules worked as of 2024-February-07:
+# 1) intel/19.1.2   2) impi/2019.8   3) hdf5-serial/1.8.21   4) netcdf-serial/4.4.1   5) petsc-real/3.13.5
+#
 # Also set the following environment variables:
 #
 # export SFINCS_SYSTEM=cobra
@@ -18,7 +21,8 @@
 # make -j
 #
 # To use the plotting routines in utils/ you also need to load the following modules:
-# module load anaconda/2
+# module load anaconda/3/2023.03
+# (This worked as of 2024-February-07)
 
 # These next 2 includes set FC, FLINKER, and PETSC_LIB:
 # For PETSc version 3.6.0 and later, use the following 2 lines:
