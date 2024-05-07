@@ -1,0 +1,42 @@
+# -*- mode: makefile -*-
+#
+# The following steps worked on Perlmutter as of 2024-May-7
+#
+# module load conda cray-hdf5/1.12.2.9 cray-netcdf/4.9.0.9
+#
+# I had to build petsc because there was not a petsc module available that was built with non-complex numbers and with mumps.
+# I used petsc 3.21.1 and configured it using
+# ./configure  --with-cc=cc --with-cxx=CC --with-fc=ftn --download-mumps --download-scalapack --download-metis --download-scotch --with-debugging=0 --download-parmetis --download-ptscotch COPTFLAGS="-O3 -Ofast" CXXOPTFLAGS="-O3 -Ofast" FOPTFLAGS="-O3 -Ofast" --with-openmp
+#
+# You can use the petsc build in the next 2 lines, or if you don't have access to this directory, comment out these 2 lines and build your own petsc:
+PETSC_DIR=/global/cfs/cdirs/m4505/mattland/petsc/petsc-3.21.1
+PETSC_ARCH=arch-linux-c-opt
+
+# These next 2 includes set FC, FLINKER, and PETSC_LIB:
+# For PETSc version 3.6.0 and later, use the following 2 lines:
+include ${PETSC_DIR}/lib/petsc/conf/variables
+include ${PETSC_DIR}/lib/petsc/conf/rules
+
+# The variable LIBSTELL_DIR should either be "mini_libstell", if you use this reduced version of libstell                                              
+# that comes packaged with SFINCS, or else it should point to a directory containing libstell .mod files
+# elsewhere on your system.
+LIBSTELL_DIR=mini_libstell
+
+# The variable LIBSTELL_FOR_SFINCS should either be "mini_libstell/mini_libstell.a", if you use this reduced version of libstell
+# that comes packaged with SFINCS, or else it should point to a libstell.a library elsewhere on your system.
+LIBSTELL_FOR_SFINCS=mini_libstell/mini_libstell.a
+
+# Any other flags for compiling, such as -I include flags:
+EXTRA_COMPILE_FLAGS = -I${PETSC_DIR}/include -I${PETSC_DIR}/${PETSC_ARCH}/include -ffree-line-length-none -I${CRAY_NETCDF_DIR}/include -fallow-argument-mismatch
+
+# Any other flags for linking, such as -l library flags:
+#EXTRA_LINK_FLAGS = 
+
+# The next parameters are used only for running selected examples "make test"
+
+# For "make test", are runs submitted using a batch system (such as PBS)?  
+# The value of this variable must be "yes" or "no".
+SFINCS_IS_A_BATCH_SYSTEM_USED=yes
+
+# This next line matters only if a batch system is used:
+SFINCS_COMMAND_TO_SUBMIT_JOB=sbatch job.perlmutter
