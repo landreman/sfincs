@@ -90,6 +90,8 @@ contains
     case (5)
        ! Read VMEC file, defining the effective minor radius aHat to be the quantity called Aminor_p in vmec's wout file, which is called just Aminor in read_wout_mod.F.
        ! Libstell does not allow multiple procs to open an ASCII wout file simultaneously, so have each proc read it 1 at a time.
+       tag=0
+       dummy=0
        if (masterProc) then
           call read_wout_file(equilibriumfile, ierr, iopen)
           if (iopen .ne. 0) then
@@ -101,8 +103,6 @@ contains
              stop
           end if
 
-          tag=0
-          dummy=0
           do i = 1,numProcs-1
              ! Ping each proc 1 at a time by sending a dummy value:
              call MPI_SEND(dummy,1,MPI_INT,i,tag,MPIComm,ierr)
@@ -2478,7 +2478,7 @@ contains
     ! First, get the (m=0,n=0) component of |B|, which will be used for testing whether
     ! other harmonics of |B| are large enough to include. Note that bmnc(1,:) represents the m=n=0 component.
     b00 = bmnc(1,vmecRadialIndex_half(1)) * vmecRadialWeight_half(1) &
-               + bmnc(1,vmecRadialIndex_half(2)) * vmecRadialWeight_half(2)
+         + bmnc(1,vmecRadialIndex_half(2)) * vmecRadialWeight_half(2)
 
     ! --------------------------------------------------------------------------------
     ! At last, we are now ready to
@@ -2688,7 +2688,6 @@ contains
        ! Now consider the stellarator-asymmetric terms.
        ! NOTE: This functionality has not been tested as thoroughly !!!
        ! -----------------------------------------------------
-
        if (lasym) then
 
           if (RHSMode>3 .and. RHSMode<6) then
@@ -3008,7 +3007,7 @@ contains
     scale = 1
     if (helicity_n == 0 .and. n /= 0) then
       scale = rippleScale
-    else if ((n /= 0) .and. (helicity_l/helicity_n) /= (m/n)) then
+    else if ((n /= 0) .and. (n * helicity_l) /= (m * helicity_n)) then
       scale = rippleScale
     else if (helicity_n /= 0 .and. n == 0) then
       scale = rippleScale
