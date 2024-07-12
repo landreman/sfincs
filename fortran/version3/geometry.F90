@@ -18,7 +18,7 @@ module geometry
   use petscsysdef
   use read_wout_mod, only: read_wout_file, Aminor, phi, nfp, ns, xm, xn, xm_nyq, xn_nyq, mpol, ntor, mnmax, mnmax_nyq, lasym, presf, phip, iotas, &
        bmnc, bmns, gmnc, gmns, bsubumnc, bsubumns, bsubvmnc, bsubvmns, bsubsmnc, bsubsmns, bsupumnc, bsupumns, bsupvmnc, bsupvmns, &
-       rmnc, rmns, zmnc, zmns
+       rmnc, rmns, zmnc, zmns, version_
 
   implicit none
 
@@ -90,8 +90,6 @@ contains
     case (5)
        ! Read VMEC file, defining the effective minor radius aHat to be the quantity called Aminor_p in vmec's wout file, which is called just Aminor in read_wout_mod.F.
        ! Libstell does not allow multiple procs to open an ASCII wout file simultaneously, so have each proc read it 1 at a time.
-       tag=0
-       dummy=0
        if (masterProc) then
           call read_wout_file(equilibriumfile, ierr, iopen)
           if (iopen .ne. 0) then
@@ -103,6 +101,8 @@ contains
              stop
           end if
 
+          tag=0
+          dummy=0
           do i = 1,numProcs-1
              ! Ping each proc 1 at a time by sending a dummy value:
              call MPI_SEND(dummy,1,MPI_INT,i,tag,MPIComm,ierr)
@@ -2165,13 +2165,14 @@ contains
     integer :: vmecRadialIndex_half(2)
     PetscScalar :: vmecRadialWeight_full(2)
     PetscScalar :: vmecRadialWeight_half(2)
-    PetscScalar, dimension(:), allocatable :: dr2, psiN_full, psiN_half
+    PetscScalar, dimension(:), allocatable :: dr2, psiN_full, psiN_half, dpsi_irregular
     PetscScalar, dimension(:), allocatable :: vmec_dBHatdpsiHat, vmec_dBHat_sub_theta_dpsiHat, vmec_dBHat_sub_zeta_dpsiHat
     PetscScalar, dimension(:), allocatable :: vmec_dRdpsiHat, vmec_dZdpsiHat, vmec_dpdpsiHat
     integer :: i, j, index, isurf, itheta, izeta, m, n, imn, imn_nyq
     PetscScalar :: min_dr2, angle, sin_angle, cos_angle, b, b00, temp, dphi, dpsi
     integer :: numSymmetricModesIncluded, numAntisymmetricModesIncluded
     PetscScalar :: scaleFactor
+    PetscScalar :: imitation = -2.0
     PetscScalar, dimension(:,:), allocatable :: R, dRdtheta, dRdzeta, dRdpsiHat, dZdtheta, dZdzeta, dZdpsiHat
     PetscScalar, dimension(:,:), allocatable :: dXdtheta, dXdzeta, dXdpsiHat, dYdtheta, dYdzeta, dYdpsiHat
     PetscScalar, dimension(:,:), allocatable :: g_sub_theta_theta, g_sub_theta_zeta, g_sub_zeta_zeta, g_sub_psi_theta, g_sub_psi_zeta, g_sub_psi_psi
@@ -2215,7 +2216,7 @@ contains
     allocate(g_sub_psi_theta(Ntheta,Nzeta))
     allocate(g_sub_psi_zeta(Ntheta,Nzeta))
     allocate(g_sub_psi_psi(Ntheta,Nzeta))
-
+    
     ! There is a bug in libstell read_wout_file for ASCII-format wout files, in which the xm_nyq and xn_nyq arrays are sometimes
     ! not populated. The next few lines here provide a workaround:
     if (maxval(abs(xm_nyq)) < 1 .and. maxval(abs(xn_nyq)) < 1) then
@@ -2233,33 +2234,35 @@ contains
     ! Do some sanity checking to ensure the VMEC arrays have some expected properties.
     ! --------------------------------------------------------------------------------
 
-    if (abs(phi(1)) > 1d-14) then
-       if (masterProc) then
-          print *,"Error! VMEC phi array does not begin with 0."
+    if (version_ .ne. imitation) then ! If using imitation VMEC file, skip sanity checks
+       if (abs(phi(1)) > 1d-14) then
+          if (masterProc) then
+             print *,"Error! VMEC phi array does not begin with 0."
+          end if
+          stop
        end if
-       stop
+
+       dphi = phi(2) - phi(1)
+       do j=3,ns
+          if (abs(phi(j)-phi(j-1)-dphi) > 1d-11) then
+             if (masterProc) then
+                print *,"Error! VMEC phi array is not uniformly spaced."
+             end if
+             stop
+          end if
+       end do
+
+       ! The variable called 'phips' in the wout file is called just 'phip' in read_wout_mod.F.
+       ! phips is on the half-mesh, so skip first point.
+       do j=2,ns
+          if (abs(phip(j)+phi(ns)/(2*pi)) > 1d-11) then
+             if (masterProc) then
+                print *,"Error! VMEC phips array is not constant and equal to -phi(ns)/(2*pi)."
+             end if
+             stop
+          end if
+       end do
     end if
-
-    dphi = phi(2) - phi(1)
-    do j=3,ns
-       if (abs(phi(j)-phi(j-1)-dphi) > 1d-11) then
-          if (masterProc) then
-             print *,"Error! VMEC phi array is not uniformly spaced."
-          end if
-          stop
-       end if
-    end do
-
-    ! The variable called 'phips' in the wout file is called just 'phip' in read_wout_mod.F.
-    ! phips is on the half-mesh, so skip first point.
-    do j=2,ns
-       if (abs(phip(j)+phi(ns)/(2*pi)) > 1d-11) then
-          if (masterProc) then
-             print *,"Error! VMEC phips array is not constant and equal to -phi(ns)/(2*pi)."
-          end if
-          stop
-       end if
-    end do
 
     ! The first mode in the m and n arrays should be m=n=0:
     if (xm(1) .ne. 0) stop "First element of xm in the wout file should be 0."
@@ -2280,6 +2283,12 @@ contains
        psiN_half(i) = (psiN_full(i) + psiN_full(i+1))/two
     end do
 
+    if (version_ .eq. imitation) then ! Added 01-31-24 by MFM
+       allocate(dpsi_irregular(ns-1))
+       dpsi_irregular = ( phi(2:ns-1) - phi(1:ns-1) ) / (2*pi)
+       print *, "This SFINCS run is using data from an imitation VMEC wout file"
+    end if
+    
     ! --------------------------------------------------------------------------------
     ! Now choose the "actual" radius to use, based on psiN_wish:
     ! --------------------------------------------------------------------------------
@@ -2422,7 +2431,7 @@ contains
        vmecRadialWeight_half(1) = vmecRadialIndex_half(1) - psiN*(ns-one) - (0.5d+0)
     end if
     vmecRadialWeight_half(2) = one-vmecRadialWeight_half(1)
-
+    
     if (masterProc) then
 !!$       print *,"vmecRadialIndex_full:",vmecRadialIndex_full
 !!$       print *,"vmecRadialWeight_full:",vmecRadialWeight_full
@@ -2449,7 +2458,13 @@ contains
 
     dpsi = phi(2)/(2*pi)
     vmec_dpdpsiHat = 0
-    vmec_dpdpsiHat(2:ns) = (presf(2:ns) - presf(1:ns-1)) / dpsi
+    if (version_ .eq. imitation) then
+       ! -- Note that phi(0)=0.0 is artificial in imitation VMEC wout file
+       vmec_dpdpsiHat(3:ns) = (presf(2:ns) - presf(2:ns-1)) / dpsi_irregular(1:ns-1) ! Added 2024-01-31 MFM
+    else
+       vmec_dpdpsiHat(2:ns) = (presf(2:ns) - presf(1:ns-1)) / dpsi
+    end if
+
     pPrimeHat = (4*pi*1.0d-7) * ( &
          vmec_dpdpsiHat(vmecRadialIndex_half(1)) * vmecRadialWeight_half(1) &
          + vmec_dpdpsiHat(vmecRadialIndex_half(2)) * vmecRadialWeight_half(2))
@@ -2475,10 +2490,11 @@ contains
     BHat_sup_theta = zero
     BHat_sup_zeta = zero
 
+    
     ! First, get the (m=0,n=0) component of |B|, which will be used for testing whether
     ! other harmonics of |B| are large enough to include. Note that bmnc(1,:) represents the m=n=0 component.
     b00 = bmnc(1,vmecRadialIndex_half(1)) * vmecRadialWeight_half(1) &
-         + bmnc(1,vmecRadialIndex_half(2)) * vmecRadialWeight_half(2)
+               + bmnc(1,vmecRadialIndex_half(2)) * vmecRadialWeight_half(2)
 
     ! --------------------------------------------------------------------------------
     ! At last, we are now ready to
@@ -2542,24 +2558,44 @@ contains
           ! B, B_sub_theta, and B_sub_zeta are on the half mesh, so their radial derivatives are on the full mesh.
           ! R and Z are on the full mesh, so their radial derivatives are on the half mesh.
 
-          vmec_dBHatdpsiHat(2:ns-1) = (bmnc(imn_nyq,3:ns) - bmnc(imn_nyq,2:ns-1)) / dpsi
+          if (version_ .eq. imitation) then
+             vmec_dBHatdpsiHat(2:ns-1) = (bmnc(imn_nyq,3:ns) - bmnc(imn_nyq,2:ns-1)) / dpsi_irregular(2:ns-1)
+          else
+             vmec_dBHatdpsiHat(2:ns-1) = (bmnc(imn_nyq,3:ns) - bmnc(imn_nyq,2:ns-1)) / dpsi
+          end if
           ! Simplistic "extrapolation" at the endpoints:
           vmec_dBHatdpsiHat(1) = vmec_dBHatdpsiHat(2)
           vmec_dBHatdpsiHat(ns) = vmec_dBHatdpsiHat(ns-1)
 
-          vmec_dBHat_sub_theta_dpsiHat(2:ns-1) = (bsubumnc(imn_nyq,3:ns) - bsubumnc(imn_nyq,2:ns-1)) / dpsi
+          if (version_ .eq. imitation) then
+             vmec_dBHat_sub_theta_dpsiHat(2:ns-1) = (bsubumnc(imn_nyq,3:ns) - bsubumnc(imn_nyq,2:ns-1)) / dpsi_irregular(2:ns-1)
+          else
+             vmec_dBHat_sub_theta_dpsiHat(2:ns-1) = (bsubumnc(imn_nyq,3:ns) - bsubumnc(imn_nyq,2:ns-1)) / dpsi
+          end if
           vmec_dBHat_sub_theta_dpsiHat(1) = vmec_dBHat_sub_theta_dpsiHat(2)
           vmec_dBHat_sub_theta_dpsiHat(ns) = vmec_dBHat_sub_theta_dpsiHat(ns-1)
 
-          vmec_dBHat_sub_zeta_dpsiHat(2:ns-1) = (bsubvmnc(imn_nyq,3:ns) - bsubvmnc(imn_nyq,2:ns-1)) / dpsi
+          if (version_ .eq. imitation) then
+             vmec_dBHat_sub_zeta_dpsiHat(2:ns-1) = (bsubvmnc(imn_nyq,3:ns) - bsubvmnc(imn_nyq,2:ns-1)) / dpsi_irregular(2:ns-1)
+          else
+             vmec_dBHat_sub_zeta_dpsiHat(2:ns-1) = (bsubvmnc(imn_nyq,3:ns) - bsubvmnc(imn_nyq,2:ns-1)) / dpsi
+          end if
           vmec_dBHat_sub_zeta_dpsiHat(1) = vmec_dBHat_sub_zeta_dpsiHat(2)
           vmec_dBHat_sub_zeta_dpsiHat(ns) = vmec_dBHat_sub_zeta_dpsiHat(ns-1)
 
           if (non_Nyquist_mode_available) then
-             vmec_dRdpsiHat(2:ns) = (rmnc(imn,2:ns) - rmnc(imn,1:ns-1)) / dpsi
+             if (version_ .eq. imitation) then
+                vmec_dRdpsiHat(2:ns) = (rmnc(imn,2:ns) - rmnc(imn,1:ns-1)) / dpsi_irregular(1:ns-1)
+             else
+                vmec_dRdpsiHat(2:ns) = (rmnc(imn,2:ns) - rmnc(imn,1:ns-1)) / dpsi
+             end if
              vmec_dRdpsiHat(1) = 0
 
-             vmec_dZdpsiHat(2:ns) = (zmns(imn,2:ns) - zmns(imn,1:ns-1)) / dpsi
+             if (version_ .eq. imitation) then
+                vmec_dZdpsiHat(2:ns) = (zmns(imn,2:ns) - zmns(imn,1:ns-1)) / dpsi_irregular(1:ns-1)
+             else
+                vmec_dZdpsiHat(2:ns) = (zmns(imn,2:ns) - zmns(imn,1:ns-1)) / dpsi
+             end if
              vmec_dZdpsiHat(1) = 0
           else
              vmec_dRdpsiHat = 0
@@ -2688,6 +2724,7 @@ contains
        ! Now consider the stellarator-asymmetric terms.
        ! NOTE: This functionality has not been tested as thoroughly !!!
        ! -----------------------------------------------------
+
        if (lasym) then
 
           if (RHSMode>3 .and. RHSMode<6) then
@@ -2716,25 +2753,45 @@ contains
              
              ! B, B_sub_theta, and B_sub_zeta are on the half mesh, so their radial derivatives are on the full mesh.
              ! R and Z are on the full mesh, so their radial derivatives are on the half mesh.
-             
-             vmec_dBHatdpsiHat(2:ns-1) = (bmns(imn_nyq,3:ns) - bmns(imn_nyq,2:ns-1)) / dpsi
+
+             if (version_ .eq. imitation) then
+                vmec_dBHatdpsiHat(2:ns-1) = (bmns(imn_nyq,3:ns) - bmns(imn_nyq,2:ns-1)) / dpsi_irregular(2:ns-1)
+             else
+                vmec_dBHatdpsiHat(2:ns-1) = (bmns(imn_nyq,3:ns) - bmns(imn_nyq,2:ns-1)) / dpsi
+             end if
              ! Simplistic "extrapolation" at the endpoints:
              vmec_dBHatdpsiHat(1) = vmec_dBHatdpsiHat(2)
              vmec_dBHatdpsiHat(ns) = vmec_dBHatdpsiHat(ns-1)
-             
-             vmec_dBHat_sub_theta_dpsiHat(2:ns-1) = (bsubumns(imn_nyq,3:ns) - bsubumns(imn_nyq,2:ns-1)) / dpsi
+
+             if (version_ .eq. imitation) then
+                vmec_dBHat_sub_theta_dpsiHat(2:ns-1) = (bsubumns(imn_nyq,3:ns) - bsubumns(imn_nyq,2:ns-1)) / dpsi_irregular(2:ns-1)
+             else
+                vmec_dBHat_sub_theta_dpsiHat(2:ns-1) = (bsubumns(imn_nyq,3:ns) - bsubumns(imn_nyq,2:ns-1)) / dpsi
+             end if
              vmec_dBHat_sub_theta_dpsiHat(1) = vmec_dBHat_sub_theta_dpsiHat(2)
              vmec_dBHat_sub_theta_dpsiHat(ns) = vmec_dBHat_sub_theta_dpsiHat(ns-1)
-             
-             vmec_dBHat_sub_zeta_dpsiHat(2:ns-1) = (bsubvmns(imn_nyq,3:ns) - bsubvmns(imn_nyq,2:ns-1)) / dpsi
+
+             if (version_ .eq. imitation) then
+                vmec_dBHat_sub_zeta_dpsiHat(2:ns-1) = (bsubvmns(imn_nyq,3:ns) - bsubvmns(imn_nyq,2:ns-1)) / dpsi_irregular(2:ns-1)
+             else
+                vmec_dBHat_sub_zeta_dpsiHat(2:ns-1) = (bsubvmns(imn_nyq,3:ns) - bsubvmns(imn_nyq,2:ns-1)) / dpsi
+             end if
              vmec_dBHat_sub_zeta_dpsiHat(1) = vmec_dBHat_sub_zeta_dpsiHat(2)
              vmec_dBHat_sub_zeta_dpsiHat(ns) = vmec_dBHat_sub_zeta_dpsiHat(ns-1)
              
              if (non_Nyquist_mode_available) then
-                vmec_dRdpsiHat(2:ns) = (rmns(imn,2:ns) - rmns(imn,1:ns-1)) / dpsi
+                if (version_ .eq. imitation) then
+                   vmec_dRdpsiHat(2:ns) = (rmns(imn,2:ns) - rmns(imn,1:ns-1)) / dpsi_irregular(1:ns-1)
+                else
+                   vmec_dRdpsiHat(2:ns) = (rmns(imn,2:ns) - rmns(imn,1:ns-1)) / dpsi
+                end if
                 vmec_dRdpsiHat(1) = 0
-             
-                vmec_dZdpsiHat(2:ns) = (zmnc(imn,2:ns) - zmnc(imn,1:ns-1)) / dpsi
+
+                if (version_ .eq. imitation) then
+                   vmec_dZdpsiHat(2:ns) = (zmnc(imn,2:ns) - zmnc(imn,1:ns-1)) / dpsi_irregular(1:ns-1)
+                else
+                   vmec_dZdpsiHat(2:ns) = (zmnc(imn,2:ns) - zmnc(imn,1:ns-1)) / dpsi
+                end if
                 vmec_dZdpsiHat(1) = 0
              else
                 vmec_dRdpsiHat = 0
@@ -3007,7 +3064,7 @@ contains
     scale = 1
     if (helicity_n == 0 .and. n /= 0) then
       scale = rippleScale
-    else if ((n /= 0) .and. (n * helicity_l) /= (m * helicity_n)) then
+    else if ((n /= 0) .and. (helicity_l/helicity_n) /= (m/n)) then
       scale = rippleScale
     else if (helicity_n /= 0 .and. n == 0) then
       scale = rippleScale
