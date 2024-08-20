@@ -66,16 +66,7 @@ elif sfincsSystem=="hydra":
             original.insert(1,"# @ job_name = "+name+"\n")
         return original
 
-elif sfincsSystem in ["draco", "raven"]:
-    submitCommand = "sbatch "+jobFilename
-    def nameJobFile(original,name):
-        # Modify the job.sfincsScan file to change the name that appears in the queue.
-        # Insert the new line after the original first line, since the first line is a shebang.
-        original.insert(1,"#SBATCH -J "+name+"\n")
-        return original
-
-
-elif sfincsSystem=="cobra":
+elif sfincsSystem in ["draco", "cobra","raven", "viper"]:
     submitCommand = "sbatch "+jobFilename
     def nameJobFile(original,name):
         # Modify the job.sfincsScan file to change the name that appears in the queue.
