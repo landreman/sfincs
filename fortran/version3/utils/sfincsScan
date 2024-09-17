@@ -75,7 +75,7 @@ elif sfincsSystem in ["draco", "cobra","raven", "viper"]:
         return original
 
 
-elif sfincsSystem in ["eddy", "stellar", "perlmutter"]:
+elif sfincsSystem in ["eddy", "stellar", "perlmutter", "marconi"]:
     submitCommand = "sbatch "+jobFilename
     def nameJobFile(original,name):
         # Modify the job.sfincsScan file to change the name that appears in the queue.

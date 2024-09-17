@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# Standard output and error:
+#SBATCH -o ./sfincsJob.out.%j
+#SBATCH -e ./sfincsJob.err.%j
+# Initial working directory:
+#SBATCH -D ./
+# Job Name:
+#SBATCH -J sfincs
+
+# Queue (Partition):
+#SBATCH -p skl_fua_prod
+#SBATCH -A FUA38_STELTURB
+
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=8
+# for OpenMP:
+#SBATCH --cpus-per-task=6
+export OMP_NUM_THREADS=6
+# For pinning threads correctly:
+export OMP_PLACES=cores
+
+# Wall clock limit:
+#SBATCH --time=00:30:00
+
+srun ../../sfincs -ksp_view
