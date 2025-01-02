@@ -88,11 +88,25 @@ module ambipolarSolver
     ! Evaluate at Er_min
     Brent_a = Er_min
     call updateEr(Brent_a,Brent_fa)
-    Er_search(1) = Brent_a
-    radialCurrent(1) = Brent_fa
     ! Evaluate at Er_max
     Brent_c = Er_max
     call updateEr(Brent_c,Brent_fc)
+    ! Expand bounds until the root is bracketed
+    do while (Brent_fa * Brent_fc > 0.0)
+      if (masterProc) then
+        print *,"Warning: root not bracketed in Brent solve! Expanding search bounds..."
+      end if
+      if (abs(Brent_fa) < abs(Brent_fc)) then
+        Brent_a = Brent_a - (Brent_c - Brent_a)
+        call updateEr(Brent_a, Brent_fa)
+      else
+        Brent_c = Brent_c + (Brent_c - Brent_a)
+        call updateEr(Brent_c, Brent_fc)
+      end if
+    end do
+
+    Er_search(1) = Brent_a
+    radialCurrent(1) = Brent_fa
     Er_search(2) = Brent_c
     radialCurrent(2) = Brent_fc
     ! Evaluate at initial guess
@@ -101,12 +115,6 @@ module ambipolarSolver
     Er_search(3) = Brent_b
     radialCurrent(3) = Brent_fb
 
-    if ((Brent_fa > zero .and. Brent_fc > zero) .or. (Brent_fa < zero .and. Brent_fc < zero)) then
-      if (masterProc) then
-        print *,"Root must be bracketed in Brent solve!"
-      end if
-      stop
-    end if
     if ((Brent_fa > zero) .eqv. (Brent_fb > zero)) then
       Brent_fa = Brent_fb
       Brent_a = Brent_b
@@ -462,6 +470,9 @@ module ambipolarSolver
     allocate(array(1))
 
     Er = thisEr
+    if (masterProc) then
+      print *, "Solving with Er = ", Er
+    end if
 
     ! Update dPhiHatdpsiHat, dPhiHatdpsiN, dPhiHatdrHat, dPhiHatdrN
     dPhiHatdpsiHat = ddrHat2ddpsiHat * (-Er)
