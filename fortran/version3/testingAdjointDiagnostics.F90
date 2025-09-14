@@ -89,14 +89,14 @@ module testingAdjointDiagnostics
       adjointRadialCurrentOption = .true.
     end if
 
-    call PetscTime(time1, ierr)
+    !call petsctime(time1, ierr)
     if (constantJr) then
       ambipolarSolve = .true.
       call mainAmbipolarSolver()
     else
       call mainSolverLoop()
     end if
-    call PetscTime(time2, ierr)
+    !call petsctime(time2, ierr)
     if (masterProc) then
       print *,"Time for adjoint solve: ", time2-time1
     end if
@@ -122,7 +122,7 @@ module testingAdjointDiagnostics
 
     ! Set RHSMode = 1 so call to solver does not include adjoint solve
     RHSMode = 1
-    call PetscTime(time1, ierr)
+    !call petsctime(time1, ierr)
     do whichLambda = 1, NLambdas
       if (whichLambda .ne. 1) then
         this_NmodesAdjoint = 1
@@ -172,7 +172,7 @@ module testingAdjointDiagnostics
     call updateBoozerGeometry(whichMode, whichLambda, .true.)
       end do ! whichMode
     end do ! whichLambda
-    call PetscTime(time2, ierr)
+    !call petsctime(time2, ierr)
     if (masterProc) then
       print *,"Time for finite difference: ", time2-time1
     end if

@@ -49,15 +49,17 @@
 
     KSP :: myKSP
     KSPConvergedReason :: reason
+    integer :: reason_int
     integer :: ierr
     integer :: didLinearCalculationConverge
 
     if (useIterativeLinearSolver) then
        call KSPGetConvergedReason(myKSP, reason, ierr)
-       if (reason>0) then
+       reason_int = reason%v
+       if (reason_int>0) then
           if (masterProc) then
              print *,"Linear iteration (KSP) converged.  KSPConvergedReason = ", reason
-             select case (reason)
+             select case (reason_int)
              case (1)
                 print *,"  KSP_CONVERGED_RTOL_NORMAL: "
              case (9)
@@ -82,7 +84,7 @@
        else
           if (masterProc) then
              print *,"Linear iteration (KSP) did not converge :(   KSPConvergedReason = ", reason
-             select case (reason)
+             select case (reason_int)
              case (-2)
                 print *,"  KSP_DIVERGED_NULL: "
              case (-3)
@@ -151,7 +153,7 @@
        
        if (masterProc) then
           ! Convert the PETSc vector into a normal Fortran array:
-          call VecGetArrayF90(solnOnProc0, solnArray, ierr)
+          call VecGetArray(solnOnProc0, solnArray, ierr)
           
           do itheta = 1,Ntheta
              do izeta = 1,Nzeta
@@ -161,7 +163,7 @@
              end do
           end do
           
-          call VecRestoreArrayF90(solnOnProc0, solnArray, ierr)
+          call VecRestoreArray(solnOnProc0, solnArray, ierr)
        end if
 
        ! Send Phi1Hat from the masterProc to all procs:
@@ -354,10 +356,10 @@
        NTVIntegralWeights = x*x*x*x 
 
        ! Convert the PETSc vectors into normal Fortran arrays:
-       call VecGetArrayF90(solutionWithFullFOnProc0, solutionWithFullFArray, ierr)
-       call VecGetArrayF90(solutionWithDeltaFOnProc0, solutionWithDeltaFArray, ierr)
-       call VecGetArrayF90(f0OnProc0, f0Array, ierr)
-       !!call VecGetArrayF90(expPhi1, expPhi1Array, ierr) !!Added by AM 2016-06
+       call VecGetArray(solutionWithFullFOnProc0, solutionWithFullFArray, ierr)
+       call VecGetArray(solutionWithDeltaFOnProc0, solutionWithDeltaFArray, ierr)
+       call VecGetArray(f0OnProc0, f0Array, ierr)
+       !!call VecGetArray(expPhi1, expPhi1Array, ierr) !!Added by AM 2016-06
 
 !!$    if (whichRHS == numRHSs) then
        select case (constraintScheme)
@@ -816,7 +818,7 @@
        ! matrix in each of the 4 coordinates (theta, zeta, x, xi).  This is not the fastest way to do what we want,
        ! but it is relatively simple, and the time required (up to a few seconds) is negligible compared to the time
        ! required for solving the kinetic equation.
-       call PetscTime(time1, ierr)
+       !call petsctime(time1, ierr)
        if (export_full_f) then
           full_f = zero
           do ispecies = 1,Nspecies
@@ -876,15 +878,15 @@
              end do
           end do
        end if
-       call PetscTime(time2, ierr)
+       !call petsctime(time2, ierr)
        if (export_delta_f .or. export_full_f) then
           print *,"Time for exporting f: ", time2-time1, " seconds."
        end if
 
-       call VecRestoreArrayF90(solutionWithFullFOnProc0, solutionWithFullFArray, ierr)
-       call VecRestoreArrayF90(solutionWithDeltaFOnProc0, solutionWithDeltaFArray, ierr)
-       call VecRestoreArrayF90(f0OnProc0, f0Array, ierr)
-       !!call VecRestoreArrayF90(expPhi1, expPhi1Array, ierr) !!Added by AM 2016-06
+       call VecRestoreArray(solutionWithFullFOnProc0, solutionWithFullFArray, ierr)
+       call VecRestoreArray(solutionWithDeltaFOnProc0, solutionWithDeltaFArray, ierr)
+       call VecRestoreArray(f0OnProc0, f0Array, ierr)
+       !!call VecRestoreArray(expPhi1, expPhi1Array, ierr) !!Added by AM 2016-06
 
     if (debugAdjoint .eqv. .false.) then
        do ispecies=1,Nspecies
@@ -987,7 +989,8 @@
           print *,"Saving state vector in matlab format: ",trim(filename)
        end if
        call PetscViewerASCIIOpen(MPIComm, trim(filename), viewer, ierr)
-       call PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB, ierr)
+       !call PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB, ierr) ! Depricated
+       call PetscViewerPushFormat(viewer, PETSC_VIEWER_ASCII_MATLAB, ierr)
 
        call PetscObjectSetName(solutionWithDeltaF, "stateVector", ierr)
        call VecView(solutionWithDeltaF, viewer, ierr)

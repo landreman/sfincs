@@ -286,7 +286,8 @@
           print *,"Saving residual in matlab format: ",trim(filename)
        end if
        call PetscViewerASCIIOpen(MPIComm, trim(filename), viewer, ierr)
-       call PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB, ierr)
+       !call PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB, ierr) ! Depricated
+       call PetscViewerPushFormat(viewer, PETSC_VIEWER_ASCII_MATLAB, ierr)
 
        call PetscObjectSetName(residualVec, "residual", ierr)
        call VecView(residualVec, viewer, ierr)

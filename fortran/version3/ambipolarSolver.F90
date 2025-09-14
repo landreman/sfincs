@@ -31,7 +31,7 @@ module ambipolarSolver
 
     Er_init = Er
 
-    call PetscTime(time1, ierr)
+    !call petsctime(time1, ierr)
     if (ambipolarSolveOption==1) then
       call ambipolarSolverNewton_Bisection(ambipolarEr)
     else if (ambipolarSolveOption==2) then
@@ -39,7 +39,7 @@ module ambipolarSolver
     else if (ambipolarSolveOption==3) then
       call ambipolarSolverNewton(ambipolarEr)
     end if
-    call PetscTime(time2,ierr)
+    !call petsctime(time2,ierr)
     if (masterProc) then
       print *,"Time for ambipolar solve: ",time2-time1, " seconds."
     end if
@@ -88,25 +88,11 @@ module ambipolarSolver
     ! Evaluate at Er_min
     Brent_a = Er_min
     call updateEr(Brent_a,Brent_fa)
+    Er_search(1) = Brent_a
+    radialCurrent(1) = Brent_fa
     ! Evaluate at Er_max
     Brent_c = Er_max
     call updateEr(Brent_c,Brent_fc)
-    ! Expand bounds until the root is bracketed
-    do while (Brent_fa * Brent_fc > 0.0)
-      if (masterProc) then
-        print *,"Warning: root not bracketed in Brent solve! Expanding search bounds..."
-      end if
-      if (abs(Brent_fa) < abs(Brent_fc)) then
-        Brent_a = Brent_a - (Brent_c - Brent_a)
-        call updateEr(Brent_a, Brent_fa)
-      else
-        Brent_c = Brent_c + (Brent_c - Brent_a)
-        call updateEr(Brent_c, Brent_fc)
-      end if
-    end do
-
-    Er_search(1) = Brent_a
-    radialCurrent(1) = Brent_fa
     Er_search(2) = Brent_c
     radialCurrent(2) = Brent_fc
     ! Evaluate at initial guess
@@ -115,6 +101,12 @@ module ambipolarSolver
     Er_search(3) = Brent_b
     radialCurrent(3) = Brent_fb
 
+    if ((Brent_fa > zero .and. Brent_fc > zero) .or. (Brent_fa < zero .and. Brent_fc < zero)) then
+      if (masterProc) then
+        print *,"Root must be bracketed in Brent solve!"
+      end if
+      stop
+    end if
     if ((Brent_fa > zero) .eqv. (Brent_fb > zero)) then
       Brent_fa = Brent_fb
       Brent_a = Brent_b
@@ -124,7 +116,7 @@ module ambipolarSolver
     end if
 
     do iEr = 4, (NEr_ambipolarSolve)
-      call PetscTime(time1, ierr)
+      !call petsctime(time1, ierr)
       if ((Brent_fb > zero .and. Brent_fc > zero) .or. (Brent_fb < zero .and. Brent_fc < zero)) then
         Brent_c = Brent_a
         Brent_fc = Brent_fa
@@ -189,7 +181,7 @@ module ambipolarSolver
       call updateEr(Brent_b, Brent_fb)
       radialCurrent(iEr) = Brent_fb
       Er_search(iEr) = Brent_b
-      call PetscTime(time2,ierr)
+      !call petsctime(time2,ierr)
       if (masterProc) then
         print *,"One Brent loop: ", time2-time1, " sec."
       end if
@@ -293,7 +285,7 @@ module ambipolarSolver
     exit_code = -1
     ! Loop over allowed iterations
     do j = 4, NEr_ambipolarSolve
-      call PetscTime(time1,ierr)
+      !call petsctime(time1,ierr)
       ! Bisect if Newton out of range or not decreasing fast enough
       if ((((rts-xh)*df-f)*((rts-xl)*df-f) > 0.0) .or. (abs(two*f) > abs(dxold*df))) then
         dxold = dx
@@ -333,7 +325,7 @@ module ambipolarSolver
       else
         xh = rts
       end if
-      call PetscTime(time2,ierr)
+      !call petsctime(time2,ierr)
       if (masterProc) then
         print *,"Time for one Newton bisection loop: ", time2-time1," sec."
       end if
@@ -390,7 +382,7 @@ module ambipolarSolver
     this_Er = Er_init
 
     do j = 1, NEr_ambipolarSolve
-      call PetscTime(time1,ierr)
+      !call petsctime(time1,ierr)
       ! The one new function evaluation per iteration
       call updateEr(this_Er,this_RadialCurrent)
       Er_search(j) = this_Er
@@ -407,7 +399,7 @@ module ambipolarSolver
         exit_code = 0
         exit
       end if
-      call PetscTime(time2,ierr)
+      !call petsctime(time2,ierr)
       if (masterProc) then
         print *,"Time for one Newton loop: ", time2-time1," sec."
       end if
@@ -470,9 +462,6 @@ module ambipolarSolver
     allocate(array(1))
 
     Er = thisEr
-    if (masterProc) then
-      print *, "Solving with Er = ", Er
-    end if
 
     ! Update dPhiHatdpsiHat, dPhiHatdpsiN, dPhiHatdrHat, dPhiHatdrN
     dPhiHatdpsiHat = ddrHat2ddpsiHat * (-Er)

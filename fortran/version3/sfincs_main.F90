@@ -44,7 +44,7 @@ module sfincs_main
        end if
     end if
     
-    call PetscTime(time1, ierr)
+    !call petsctime(time1, ierr)
     startTime = time1
     
     call readNamelistInput()

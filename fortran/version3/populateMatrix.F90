@@ -55,7 +55,11 @@
     PetscLogDouble :: time1, time2
     PetscScalar, dimension(:,:), allocatable :: ddthetaToUse, ddzetaToUse
     PetscScalar, dimension(:,:), allocatable :: tempMatrix, tempMatrix2, extrapMatrix
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 23))
     double precision :: myMatInfo(MAT_INFO_SIZE)
+#else
+    MatInfo :: myMatInfo
+#endif
     integer :: NNZ, NNZAllocated, NMallocs
     PetscScalar :: CHat_element, dfMdx, preFactor, preFactorJ,  CHat_elementJ !! preFactor, preFactorJ Added by AI (2017-09) 
  !! CHat_elementJ added by AM 2018-01
@@ -123,7 +127,7 @@
        stop
     end select
 
-    call PetscTime(time1, ierr)
+    !call petsctime(time1, ierr)
 
     ! Sometimes PETSc complains if any of the diagonal elements are not set.
     ! Therefore, set the entire diagonal to 0 to be safe.
@@ -189,7 +193,7 @@
        call VecScatterCreateToAll(stateVec, vecScatterContext, vecOnEveryProc, ierr)
        call VecScatterBegin(vecScatterContext, stateVec, vecOnEveryProc, INSERT_VALUES, SCATTER_FORWARD, ierr)
        call VecScatterEnd(vecScatterContext, stateVec, vecOnEveryProc, INSERT_VALUES, SCATTER_FORWARD, ierr)
-       call VecGetArrayF90(vecOnEveryProc, stateArray, ierr)
+       call VecGetArray(vecOnEveryProc, stateArray, ierr)
     end if
 
     ! In nonlinear runs, the Jacobian and residual require Phi1:
@@ -3149,26 +3153,32 @@
     ! Now finalize the matrix
     ! *******************************************************************************
 
-    call PetscTime(time2, ierr)
+    !call petsctime(time2, ierr)
     if (masterProc) then
        print *,"Time to pre-assemble ",trim(whichMatrixName)," matrix: ", time2-time1, " seconds."
     end if
-    call PetscTime(time1, ierr)
+    !call petsctime(time1, ierr)
 
     call MatAssemblyBegin(matrix, MAT_FINAL_ASSEMBLY, ierr)
     call MatAssemblyEnd(matrix, MAT_FINAL_ASSEMBLY, ierr)
 
-    call PetscTime(time2, ierr)
+    !call petsctime(time2, ierr)
     if (masterProc) then
        print *,"Time to assemble ",trim(whichMatrixName)," matrix: ", time2-time1, " seconds."
     end if
-    call PetscTime(time1, ierr)
+    !call petsctime(time1, ierr)
 
 
     call MatGetInfo(matrix, MAT_GLOBAL_SUM, myMatInfo, ierr)
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 23))
     NNZ = nint(myMatInfo(MAT_INFO_NZ_USED))
     NNZAllocated = nint(myMatInfo(MAT_INFO_NZ_ALLOCATED))
     NMallocs = nint(myMatInfo(MAT_INFO_MALLOCS))
+#else
+    NNZ = nint(myMatInfo%nz_used)
+    NNZAllocated = nint(myMatInfo%nz_allocated)
+    NMallocs = nint(myMatInfo%mallocs)
+#endif
     if (masterProc) then
        print *,"# of nonzeros in ",trim(whichMatrixName)," matrix:",NNZ, ", allocated:",NNZAllocated, &
             ", mallocs:",NMallocs," (should be 0)"
@@ -3181,7 +3191,8 @@
           print *,"Saving matrix in matlab format: ",trim(filename)
        end if
        call PetscViewerASCIIOpen(MPIComm, trim(filename), viewer, ierr)
-       call PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB, ierr)
+       !call PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB, ierr) ! deprecated
+       call PetscViewerPushFormat(viewer, PETSC_VIEWER_ASCII_MATLAB, ierr)
 
        call PetscObjectSetName(matrix, "matrix", ierr)
        call MatView(matrix, viewer, ierr)
@@ -3201,7 +3212,7 @@
     end if
 
     if (useStateVec) then
-       call VecRestoreArrayF90(vecOnEveryProc, stateArray, ierr)
+       call VecRestoreArray(vecOnEveryProc, stateArray, ierr)
        call VecScatterDestroy(vecScatterContext, ierr)
        call VecDestroy(vecOnEveryProc, ierr)
     end if

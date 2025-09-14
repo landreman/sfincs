@@ -2,6 +2,7 @@
 ! has changed from version to version.
   
 #include <petscversion.h>
+#include <petsc/finclude/petsctime.h>
 
 ! For PETSc versions prior to 3.3, the MatCreateAIJ subroutine was called MatCreateMPIAIJ.
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 3))
@@ -41,6 +42,21 @@
 #define PCFactorSetUpMatSolverType PCFactorSetUpMatSolverPackage
 #endif
 !Hereafter in this code, use MatSolverType.
+
+! For PETSc versions prior to 3.19, the VecRestoreArray subroutine was called VecRestoreArrayF90.
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 19))
+#define VecRestoreArray VecRestoreArrayF90
+#endif
+! Hereafter in this code, use VecRestoreArray.
+
+! For PETSc versions prior to 3.23, the VecGetArray subroutine was called VecGetArrayF90.
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 23))
+#define VecGetArray VecGetArrayF90
+#define PETSC_NULL_INTEGER_ARRAY PETSC_NULL_INTEGER
+#define PETSC_NULL_SCALAR_ARRAY PETSC_NULL_SCALAR
+#define PETSC_NULL_REAL_ARRAY PETSC_NULL_REAL
+#endif
+! Hereafter in this code, use VecGetArray.
 
 ! The remaining code ensures that the proper PETSc include files and modules are included in every subroutine by including just one line:
 ! #include "PETScVersions.F90"

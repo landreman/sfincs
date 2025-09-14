@@ -22,6 +22,7 @@ contains
     PC :: preconditionerContext, preconditionerContext_adjoint
     integer :: numRHSs
     SNESConvergedReason :: reason
+    integer :: reason_int
     KSPConvergedReason :: KSPReason
     PetscLogDouble :: time1, time2
     integer :: userContext(1)
@@ -442,7 +443,7 @@ contains
              print *,"Beginning the main solve.  This could take a while ..."
           end if
 
-          call PetscTime(time1, ierr)
+          !call petsctime(time1, ierr)
           if (solveSystem) then
 #if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR >= 8))
              call SNESSolve(mysnes,PETSC_NULL_VEC, solutionVec, ierr)
@@ -468,19 +469,20 @@ contains
 #endif
           end if
 
-          call PetscTime(time2, ierr)
+          !call petsctime(time2, ierr)
           if (masterProc) then
              print *,"Done with the main solve.  Time to solve: ", time2-time1, " seconds."
           end if
-          call PetscTime(time1, ierr)
+          !call petsctime(time1, ierr)
 
-          !!if (includePhi1) then !!Commented by AM 2018-12
+          !if (includePhi1) then !!Commented by AM 2018-12
           if (includePhi1 .and. (.not. readExternalPhi1)) then !!Added by AM 2018-12
              call SNESGetConvergedReason(mysnes, reason, ierr)
-             if (reason>0) then
+             reason_int = reason%v
+             if (reason_int>0) then
                 if (masterProc) then
                    print *,"Nonlinear iteration (SNES) converged!  SNESConvergedReason = ", reason
-                   select case (reason)
+                   select case (reason_int)
                    case (2)
                       print *,"  SNES_CONVERGED_FNORM_ABS: ||F|| < atol"
                    case (3)
@@ -497,7 +499,7 @@ contains
              else
                 if (masterProc) then
                    print *,"Nonlinear iteration (SNES) did not converge :(   SNESConvergedReason = ", reason
-                   select case (reason)
+                   select case (reason_int)
                    case (-1)
                       print *,"  SNES_DIVERGED_FUNCTION_DOMAIN: The new x location passed the function is not in the domain of F"
                    case (-2)
@@ -627,17 +629,17 @@ contains
                 print *,"Beginning the main solve.  This could take a while ..."
              end if
 
-             call PetscTime(time1, ierr)
+             !call petsctime(time1, ierr)
              if (solveSystem) then
                 ! All the magic happens in this next line!
                 call KSPSolve(KSPInstance,residualVec, solutionVec, ierr)
              end if
 
-             call PetscTime(time2, ierr)
+             !call petsctime(time2, ierr)
              if (masterProc) then
                 print *,"Done with the main solve.  Time to solve: ", time2-time1, " seconds."
              end if
-             call PetscTime(time1, ierr)
+             !call petsctime(time1, ierr)
 
              call checkIfKSPConverged(KSPInstance)
 
@@ -696,7 +698,7 @@ contains
          print *,"Beginning the adjoint solve.  This could take a while ..."
       end if
 
-      call PetscTime(time1, ierr)
+      !call petsctime(time1, ierr)
       if (solveSystem) then
         if (discreteAdjointOption .eqv. .false.) then
           call KSPSolve(KSPInstance_adjoint,adjointRHSVec,adjointSolutionJr, ierr)
@@ -707,11 +709,11 @@ contains
         end if
       end if
 
-      call PetscTime(time2, ierr)
+      !call petsctime(time2, ierr)
       if (masterProc) then
          print *,"Done with the adjoint solve.  Time to solve: ", time2-time1, " seconds."
       end if
-      call PetscTime(time1, ierr)
+      !call petsctime(time1, ierr)
 
       if (ambipolarSolve .and. (ambipolarSolveOption == 1 .or. ambipolarSolveOption == 3) .and. RHSMode < 3) then
         call computedRadialCurrentdEr(solutionVec,adjointSolutionJr)
@@ -818,7 +820,7 @@ contains
              print *,"Beginning the adjoint solve.  This could take a while ..."
           end if
 
-          call PetscTime(time1, ierr)
+          !call petsctime(time1, ierr)
           if (solveSystem) then
             if (discreteAdjointOption .eqv. .false.) then
               call KSPSolve(KSPInstance_adjoint,adjointRHSVec,adjointSolutionVec, ierr)
@@ -829,15 +831,15 @@ contains
             end if
           end if
 
-          call PetscTime(time2, ierr)
+          !call petsctime(time2, ierr)
           if (masterProc) then
              print *,"Done with the adjoint solve.  Time to solve: ", time2-time1, " seconds."
           end if
 
           !> Compute diagnostics for species-specific fluxes
-          call PetscTime(time1, ierr)
+          !call petsctime(time1, ierr)
           call evaluateDiagnostics(solutionVec, adjointSolutionVec,adjointSolutionJr,whichAdjointRHS,ispecies)
-          call PetscTime(time2, ierr)
+          !call petsctime(time2, ierr)
           if (masterProc) then
             print *,"Done with the adjoint diagnostics.  Time: ", time2-time1, " seconds."
           end if
@@ -863,9 +865,9 @@ contains
 
         ! Now compute diagnostics for species-summed quantities
         if (useSummedSolutionVec) then
-            call PetscTime(time1, ierr)
+            !call petsctime(time1, ierr)
             call evaluateDiagnostics(solutionVec,summedSolutionVec,adjointSolutionJr,whichAdjointRHS,0)
-            call PetscTime(time2, ierr)
+            !call petsctime(time2, ierr)
             if (masterProc) then
               print *,"Done with the adjoint diagnostics.  Time: ", time2-time1, " seconds."
             end if
@@ -920,7 +922,7 @@ contains
              print *,"Beginning the adjoint solve.  This could take a while ..."
           end if
 
-          call PetscTime(time1, ierr)
+          !call petsctime(time1, ierr)
           if (solveSystem) then
              if (discreteAdjointOption .eqv. .false.) then
              ! All the magic happens in this next line!
@@ -931,14 +933,14 @@ contains
                 call checkIfKSPConverged(KSPInstance)
              end if
           end if
-          call PetscTime(time2, ierr)
+          !call petsctime(time2, ierr)
           if (masterProc) then
              print *,"Done with the adjoint solve.  Time to solve: ", time2-time1, " seconds."
           end if
 
-          call PetscTime(time1, ierr)
+          !call petsctime(time1, ierr)
           call evaluateDiagnostics(solutionVec, adjointSolutionVec, adjointSolutionJr, whichAdjointRHS, ispecies)
-          call PetscTime(time2, ierr)
+          !call petsctime(time2, ierr)
           if (masterProc) then
             print *,"Done with the adjoint diagnostics.  Time: ", time2-time1, " seconds."
           end if
