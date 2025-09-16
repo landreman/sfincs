@@ -151,7 +151,7 @@
        
        if (masterProc) then
           ! Convert the PETSc vector into a normal Fortran array:
-          call VecGetArrayF90(solnOnProc0, solnArray, ierr)
+          call VecGetArray(solnOnProc0, solnArray, ierr)
           
           do itheta = 1,Ntheta
              do izeta = 1,Nzeta
@@ -161,7 +161,7 @@
              end do
           end do
           
-          call VecRestoreArrayF90(solnOnProc0, solnArray, ierr)
+          call VecRestoreArray(solnOnProc0, solnArray, ierr)
        end if
 
        ! Send Phi1Hat from the masterProc to all procs:
@@ -354,10 +354,10 @@
        NTVIntegralWeights = x*x*x*x 
 
        ! Convert the PETSc vectors into normal Fortran arrays:
-       call VecGetArrayF90(solutionWithFullFOnProc0, solutionWithFullFArray, ierr)
-       call VecGetArrayF90(solutionWithDeltaFOnProc0, solutionWithDeltaFArray, ierr)
-       call VecGetArrayF90(f0OnProc0, f0Array, ierr)
-       !!call VecGetArrayF90(expPhi1, expPhi1Array, ierr) !!Added by AM 2016-06
+       call VecGetArray(solutionWithFullFOnProc0, solutionWithFullFArray, ierr)
+       call VecGetArray(solutionWithDeltaFOnProc0, solutionWithDeltaFArray, ierr)
+       call VecGetArray(f0OnProc0, f0Array, ierr)
+       !!call VecGetArray(expPhi1, expPhi1Array, ierr) !!Added by AM 2016-06
 
 !!$    if (whichRHS == numRHSs) then
        select case (constraintScheme)
@@ -881,10 +881,10 @@
           print *,"Time for exporting f: ", time2-time1, " seconds."
        end if
 
-       call VecRestoreArrayF90(solutionWithFullFOnProc0, solutionWithFullFArray, ierr)
-       call VecRestoreArrayF90(solutionWithDeltaFOnProc0, solutionWithDeltaFArray, ierr)
-       call VecRestoreArrayF90(f0OnProc0, f0Array, ierr)
-       !!call VecRestoreArrayF90(expPhi1, expPhi1Array, ierr) !!Added by AM 2016-06
+       call VecRestoreArray(solutionWithFullFOnProc0, solutionWithFullFArray, ierr)
+       call VecRestoreArray(solutionWithDeltaFOnProc0, solutionWithDeltaFArray, ierr)
+       call VecRestoreArray(f0OnProc0, f0Array, ierr)
+       !!call VecRestoreArray(expPhi1, expPhi1Array, ierr) !!Added by AM 2016-06
 
     if (debugAdjoint .eqv. .false.) then
        do ispecies=1,Nspecies

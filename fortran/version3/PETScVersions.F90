@@ -48,6 +48,13 @@
 #endif
 !Hereafter in this code, use PETSC_NULL_INTEGER_ARRAY.
 
+! For PETSc versions prior to 3.23, the VecGetArray subroutine was called VecGetArrayF90.
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 23))
+#define VecGetArray VecGetArrayF90
+#define VecRestoreArray VecRestoreArrayF90
+#endif
+! Hereafter in this code, use VecGetArray.
+
 ! The remaining code ensures that the proper PETSc include files and modules are included in every subroutine by including just one line:
 ! #include "PETScVersions.F90"
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))

@@ -19,6 +19,8 @@ jobs:
             python-version: "3.12"
           - petsc-version: "3.22.5"
             python-version: "3.13"
+          - petsc-version: "3.23.6"
+            python-version: "3.13"
 
     env:
       SFINCS_SYSTEM: CI

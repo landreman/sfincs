@@ -189,7 +189,7 @@
        call VecScatterCreateToAll(stateVec, vecScatterContext, vecOnEveryProc, ierr)
        call VecScatterBegin(vecScatterContext, stateVec, vecOnEveryProc, INSERT_VALUES, SCATTER_FORWARD, ierr)
        call VecScatterEnd(vecScatterContext, stateVec, vecOnEveryProc, INSERT_VALUES, SCATTER_FORWARD, ierr)
-       call VecGetArrayF90(vecOnEveryProc, stateArray, ierr)
+       call VecGetArray(vecOnEveryProc, stateArray, ierr)
     end if
 
     ! In nonlinear runs, the Jacobian and residual require Phi1:
@@ -3201,7 +3201,7 @@
     end if
 
     if (useStateVec) then
-       call VecRestoreArrayF90(vecOnEveryProc, stateArray, ierr)
+       call VecRestoreArray(vecOnEveryProc, stateArray, ierr)
        call VecScatterDestroy(vecScatterContext, ierr)
        call VecDestroy(vecOnEveryProc, ierr)
     end if
