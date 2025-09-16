@@ -79,13 +79,14 @@ jobs:
           CXXOPTFLAGS="-O3 -march=native" \
           FOPTFLAGS="-O3 -march=native"
         make all
+        make check
         cd ..
 
     - name: Build sfincs
       run: |
-        cd sfincs/fortran/version3
+        cd fortran/version3
         make -j
-        cd ../../..
+        cd ../..
 
     - name: Install python packages
       run: |
@@ -94,7 +95,7 @@ jobs:
 
     - name: Run tests
       run: |
-        cd sfincs/fortran/version3
+        cd fortran/version3
         make test
-        cd ../../..
+        cd ../..
   
