@@ -20,7 +20,7 @@ LIBSTELL_FOR_SFINCS=mini_libstell/mini_libstell.a
 EXTRA_COMPILE_FLAGS = -I${PETSC_DIR}/include -I${PETSC_DIR}/${PETSC_ARCH}/include -I/usr/include -I/usr/include/hdf5/serial -ffree-line-length-none -fallow-argument-mismatch
 
 # Any other flags for linking, such as -l library flags:
-EXTRA_LINK_FLAGS = -lnetcdff -lnetcdf -lhdf5_fortran -lhdf5 -lhdf5_hl -lhdf5hl_fortran
+EXTRA_LINK_FLAGS = -lnetcdff -lnetcdf -L/usr/lib/x86_64-linux-gnu/hdf5/serial -lhdf5_fortran -lhdf5 -lhdf5_hl -lhdf5hl_fortran
 
 # The next parameters are used only for running and testing selected examples using "make test".
 
