@@ -3,8 +3,8 @@
 # This makefile is used for the GitHub Actions CI.
 
 # These next 2 includes set FC, FLINKER, and PETSC_LIB:
-include ${PETSC_DIR}/lib/petsc/conf/petscvariables
-include ${PETSC_DIR}/lib/petsc/conf/petscrules
+include ${PETSC_DIR}/lib/petsc/conf/variables
+include ${PETSC_DIR}/lib/petsc/conf/rules
 FLINKER = mpif90
 
 # The variable LIBSTELL_DIR should either be "mini_libstell", if you use this reduced version of libstell                                              
