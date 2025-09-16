@@ -148,13 +148,13 @@ subroutine preallocateMatrix(matrix, whichMatrix)
      ! This method is simpler and works consistently but uses unnecessary memory.
      if (whichMatrix==0) then
         call MatCreateAIJ(MPIComm, PETSC_DECIDE, PETSC_DECIDE, matrixSize, matrixSize, &
-             predictedNNZForEachRowOfPreconditioner, PETSC_NULL_INTEGER, &
-             predictedNNZForEachRowOfPreconditioner, PETSC_NULL_INTEGER, &
+             predictedNNZForEachRowOfPreconditioner, PETSC_NULL_INTEGER_ARRAY, &
+             predictedNNZForEachRowOfPreconditioner, PETSC_NULL_INTEGER_ARRAY, &
              matrix, ierr)
      else
         call MatCreateAIJ(MPIComm, PETSC_DECIDE, PETSC_DECIDE, matrixSize, matrixSize, &
-             predictedNNZForEachRowOfTotalMatrix, PETSC_NULL_INTEGER, &
-             predictedNNZForEachRowOfTotalMatrix, PETSC_NULL_INTEGER, &
+             predictedNNZForEachRowOfTotalMatrix, PETSC_NULL_INTEGER_ARRAY, &
+             predictedNNZForEachRowOfTotalMatrix, PETSC_NULL_INTEGER_ARRAY, &
              matrix, ierr)
      end if
      
@@ -174,9 +174,9 @@ subroutine preallocateMatrix(matrix, whichMatrix)
      ! We first pre-allocate assuming number-of-nonzeros = 0, because due to a quirk in PETSc,
      ! MatGetOwnershipRange only works after MatXXXSetPreallocation is called:
      if (numProcs == 1) then
-        call MatSeqAIJSetPreallocation(matrix, 0, PETSC_NULL_INTEGER, ierr)
+        call MatSeqAIJSetPreallocation(matrix, 0, PETSC_NULL_INTEGER_ARRAY, ierr)
      else
-        call MatMPIAIJSetPreallocation(matrix, 0, PETSC_NULL_INTEGER, 0, PETSC_NULL_INTEGER, ierr)
+        call MatMPIAIJSetPreallocation(matrix, 0, PETSC_NULL_INTEGER_ARRAY, 0, PETSC_NULL_INTEGER_ARRAY, ierr)
      end if
      
      call MatGetOwnershipRange(matrix, firstRowThisProcOwns, lastRowThisProcOwns, ierr)

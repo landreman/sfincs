@@ -42,6 +42,12 @@
 #endif
 !Hereafter in this code, use MatSolverType.
 
+! For PETSc versions prior to 3.22, PETSC_NULL_INTEGER was used in place of PETSC_NULL_INTEGER_ARRAY.
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 22))
+#define PETSC_NULL_INTEGER_ARRAY PETSC_NULL_INTEGER
+#endif
+!Hereafter in this code, use PETSC_NULL_INTEGER_ARRAY.
+
 ! The remaining code ensures that the proper PETSc include files and modules are included in every subroutine by including just one line:
 ! #include "PETScVersions.F90"
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 6))
@@ -51,7 +57,7 @@
   ! Version 3.6-3.7
 #include <petsc/finclude/petscsnesdef.h>
 #else
-  ! Version 3.8
+  ! Version >= 3.8
 #include <petsc/finclude/petscsnes.h>
 #endif
   use petscsnes

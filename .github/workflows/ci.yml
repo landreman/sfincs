@@ -1,0 +1,109 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    name: "Petsc ${{ matrix.petsc-version }}, Python ${{ matrix.python-version }}"
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # petsc-version: ["3.21.6", "3.22.5"]
+        # python-version: ["3.13"]
+        include:
+          - petsc-version: "3.20.6"
+            python-version: "3.12"
+          - petsc-version: "3.21.6"
+            python-version: "3.12"
+          - petsc-version: "3.22.5"
+            python-version: "3.13"
+
+    env:
+      SFINCS_SYSTEM: CI
+      PETSC_DIR: ${{ github.workspace }}/petsc-${{ matrix.petsc-version }}
+      PETSC_ARCH: arch-linux-c-opt
+
+    steps:
+
+    - name: apt-get required packages
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          gfortran \
+          openmpi-bin \
+          libopenmpi-dev \
+          cmake \
+          liblapack-dev \
+          libmetis-dev \
+          libscotch-dev \
+          libmumps-dev \
+          libnetcdf-dev \
+          libnetcdff-dev \
+          libhdf5-dev \
+          hdf5-tools
+
+    - uses: actions/checkout@v5
+
+    - name: env
+      run: env
+
+    - name: pwd
+      run: pwd
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Download and unzip petsc source
+      run: |
+        wget https://web.cels.anl.gov/projects/petsc/download/release-snapshots/petsc-lite-${{ matrix.petsc-version }}.tar.gz
+        tar -xvzf petsc-lite-${{ matrix.petsc-version }}.tar.gz
+
+    - name: ls
+      run: ls -l
+
+    - name: Print petsc configure options
+      run: |
+        cd petsc-${{ matrix.petsc-version }}
+        ./configure --help
+
+    - name: Build petsc
+      run: |
+        cd petsc-${{ matrix.petsc-version }}
+        ./configure \
+          --with-cc=mpicc \
+          --with-cxx=mpicxx \
+          --with-fc=mpif90 \
+          --download-scalapack \
+          --with-mumps \
+          --with-metis \
+          --with-scotch \
+          --with-debugging=0 \
+          COPTFLAGS="-O3 -march=native" \
+          CXXOPTFLAGS="-O3 -march=native" \
+          FOPTFLAGS="-O3 -march=native"
+        make all
+        make check
+        cd ..
+
+    - name: Build sfincs
+      run: |
+        cd fortran/version3
+        make -j
+        cd ../..
+
+    - name: Install python packages
+      run: |
+        python -m pip install --upgrade pip
+        pip install numpy matplotlib scipy
+
+    - name: Run tests
+      run: |
+        cd fortran/version3
+        make test
+        cd ../..
+  
