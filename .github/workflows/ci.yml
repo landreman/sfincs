@@ -10,8 +10,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        petsc-version: ["3.21.6", "3.22.5"]
-        python-version: ["3.13"]
+        # petsc-version: ["3.21.6", "3.22.5"]
+        # python-version: ["3.13"]
+        include:
+          - petsc-version: "3.21.6"
+            python-version: "3.12"
+          - petsc-version: "3.22.5"
+            python-version: "3.13"
 
     env:
       SFINCS_SYSTEM: CI
