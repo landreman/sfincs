@@ -40,7 +40,8 @@ jobs:
           libmumps-dev \
           libnetcdf-dev \
           libnetcdff-dev \
-          libhdf5-dev
+          libhdf5-dev \
+          hdf5-tools
 
     - uses: actions/checkout@v5
 
