@@ -23,7 +23,7 @@ contains
     integer :: numRHSs
     SNESConvergedReason :: reason
     integer :: reason_int
-    PetscLogDouble :: time1, time2
+    double precision :: time1, time2
     integer :: userContext(1)
     Vec :: dummyVec
     Mat :: factorMat, factorMat_adjoint
@@ -442,7 +442,7 @@ contains
              print *,"Beginning the main solve.  This could take a while ..."
           end if
 
-          call PetscTime(time1, ierr)
+          time1 = MPI_Wtime()
           if (solveSystem) then
 #if (PETSC_VERSION_MAJOR > 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR >= 8))
              call SNESSolve(mysnes,PETSC_NULL_VEC, solutionVec, ierr)
@@ -468,11 +468,11 @@ contains
 #endif
           end if
 
-          call PetscTime(time2, ierr)
+          time2 = MPI_Wtime()
           if (masterProc) then
              print *,"Done with the main solve.  Time to solve: ", time2-time1, " seconds."
           end if
-          call PetscTime(time1, ierr)
+          time1 = MPI_Wtime()
 
           !!if (includePhi1) then !!Commented by AM 2018-12
           if (includePhi1 .and. (.not. readExternalPhi1)) then !!Added by AM 2018-12
@@ -632,17 +632,17 @@ contains
                 print *,"Beginning the main solve.  This could take a while ..."
              end if
 
-             call PetscTime(time1, ierr)
+             time1 = MPI_Wtime()
              if (solveSystem) then
                 ! All the magic happens in this next line!
                 call KSPSolve(KSPInstance,residualVec, solutionVec, ierr)
              end if
 
-             call PetscTime(time2, ierr)
+             time2 = MPI_Wtime()
              if (masterProc) then
                 print *,"Done with the main solve.  Time to solve: ", time2-time1, " seconds."
              end if
-             call PetscTime(time1, ierr)
+             time1 = MPI_Wtime()
 
              call checkIfKSPConverged(KSPInstance)
 
@@ -701,7 +701,7 @@ contains
          print *,"Beginning the adjoint solve.  This could take a while ..."
       end if
 
-      call PetscTime(time1, ierr)
+      time1 = MPI_Wtime()
       if (solveSystem) then
         if (discreteAdjointOption .eqv. .false.) then
           call KSPSolve(KSPInstance_adjoint,adjointRHSVec,adjointSolutionJr, ierr)
@@ -712,11 +712,11 @@ contains
         end if
       end if
 
-      call PetscTime(time2, ierr)
+      time2 = MPI_Wtime()
       if (masterProc) then
          print *,"Done with the adjoint solve.  Time to solve: ", time2-time1, " seconds."
       end if
-      call PetscTime(time1, ierr)
+      time1 = MPI_Wtime()
 
       if (ambipolarSolve .and. (ambipolarSolveOption == 1 .or. ambipolarSolveOption == 3) .and. RHSMode < 3) then
         call computedRadialCurrentdEr(solutionVec,adjointSolutionJr)
@@ -823,7 +823,7 @@ contains
              print *,"Beginning the adjoint solve.  This could take a while ..."
           end if
 
-          call PetscTime(time1, ierr)
+          time1 = MPI_Wtime()
           if (solveSystem) then
             if (discreteAdjointOption .eqv. .false.) then
               call KSPSolve(KSPInstance_adjoint,adjointRHSVec,adjointSolutionVec, ierr)
@@ -834,15 +834,15 @@ contains
             end if
           end if
 
-          call PetscTime(time2, ierr)
+          time2 = MPI_Wtime()
           if (masterProc) then
              print *,"Done with the adjoint solve.  Time to solve: ", time2-time1, " seconds."
           end if
 
           !> Compute diagnostics for species-specific fluxes
-          call PetscTime(time1, ierr)
+          time1 = MPI_Wtime()
           call evaluateDiagnostics(solutionVec, adjointSolutionVec,adjointSolutionJr,whichAdjointRHS,ispecies)
-          call PetscTime(time2, ierr)
+          time2 = MPI_Wtime()
           if (masterProc) then
             print *,"Done with the adjoint diagnostics.  Time: ", time2-time1, " seconds."
           end if
@@ -868,9 +868,9 @@ contains
 
         ! Now compute diagnostics for species-summed quantities
         if (useSummedSolutionVec) then
-            call PetscTime(time1, ierr)
+            time1 = MPI_Wtime()
             call evaluateDiagnostics(solutionVec,summedSolutionVec,adjointSolutionJr,whichAdjointRHS,0)
-            call PetscTime(time2, ierr)
+            time2 = MPI_Wtime()
             if (masterProc) then
               print *,"Done with the adjoint diagnostics.  Time: ", time2-time1, " seconds."
             end if
@@ -925,7 +925,7 @@ contains
              print *,"Beginning the adjoint solve.  This could take a while ..."
           end if
 
-          call PetscTime(time1, ierr)
+          time1 = MPI_Wtime()
           if (solveSystem) then
              if (discreteAdjointOption .eqv. .false.) then
              ! All the magic happens in this next line!
@@ -936,14 +936,14 @@ contains
                 call checkIfKSPConverged(KSPInstance)
              end if
           end if
-          call PetscTime(time2, ierr)
+          time2 = MPI_Wtime()
           if (masterProc) then
              print *,"Done with the adjoint solve.  Time to solve: ", time2-time1, " seconds."
           end if
 
-          call PetscTime(time1, ierr)
+          time1 = MPI_Wtime()
           call evaluateDiagnostics(solutionVec, adjointSolutionVec, adjointSolutionJr, whichAdjointRHS, ispecies)
-          call PetscTime(time2, ierr)
+          time2 = MPI_Wtime()
           if (masterProc) then
             print *,"Done with the adjoint diagnostics.  Time: ", time2-time1, " seconds."
           end if

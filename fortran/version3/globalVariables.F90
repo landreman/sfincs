@@ -403,7 +403,7 @@ module globalVariables
   PetscScalar :: ddpsiN2ddpsiHat, ddrHat2ddpsiHat, ddrN2ddpsiHat
   PetscScalar :: ddpsiHat2ddpsiN, ddpsiHat2ddrHat, ddpsiHat2ddrN
 
-  PetscLogDouble :: elapsedTime
+  double precision :: elapsedTime
   integer :: didLinearCalculationConverge, didNonlinearCalculationConverge
   integer :: iterationForMatrixOutput, iterationForResidualOutput = 0, iterationForStateVectorOutput = 0
   logical :: firstMatrixCreation

@@ -54,7 +54,7 @@ module testingAdjointDiagnostics
     PetscScalar, dimension(:,:), allocatable :: dRadialCurrentdLambda_analytic, dTotalHeatFluxdLambda_analytic, dBootstrapdLambda_analytic, dPhidPsidLambda_analytic
     integer :: ispecies, whichQuantity, this_NmodesAdjoint
     PetscScalar :: analyticResult, finiteDiffResult, deltaFactor
-    PetscLogDouble :: time1, time2
+    double precision :: time1, time2
     logical :: constantJr
 
     allocate(particleFluxInit(Nspecies))
@@ -89,14 +89,14 @@ module testingAdjointDiagnostics
       adjointRadialCurrentOption = .true.
     end if
 
-    call PetscTime(time1, ierr)
+    time1 = MPI_Wtime()
     if (constantJr) then
       ambipolarSolve = .true.
       call mainAmbipolarSolver()
     else
       call mainSolverLoop()
     end if
-    call PetscTime(time2, ierr)
+    time2 = MPI_Wtime()
     if (masterProc) then
       print *,"Time for adjoint solve: ", time2-time1
     end if
@@ -122,7 +122,7 @@ module testingAdjointDiagnostics
 
     ! Set RHSMode = 1 so call to solver does not include adjoint solve
     RHSMode = 1
-    call PetscTime(time1, ierr)
+    time1 = MPI_Wtime()
     do whichLambda = 1, NLambdas
       if (whichLambda .ne. 1) then
         this_NmodesAdjoint = 1
@@ -172,7 +172,7 @@ module testingAdjointDiagnostics
     call updateBoozerGeometry(whichMode, whichLambda, .true.)
       end do ! whichMode
     end do ! whichLambda
-    call PetscTime(time2, ierr)
+    time2 = MPI_Wtime()
     if (masterProc) then
       print *,"Time for finite difference: ", time2-time1
     end if

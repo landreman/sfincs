@@ -52,7 +52,7 @@
     PetscScalar, dimension(:,:,:), allocatable :: M22BackslashM21s, M33BackslashM32s
     integer, dimension(:), allocatable :: IPIV  ! Needed by LAPACK
     integer :: LAPACKInfo
-    PetscLogDouble :: time1, time2
+    double precision :: time1, time2
     PetscScalar, dimension(:,:), allocatable :: ddthetaToUse, ddzetaToUse
     PetscScalar, dimension(:,:), allocatable :: tempMatrix, tempMatrix2, extrapMatrix
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 23))
@@ -127,7 +127,7 @@
        stop
     end select
 
-    call PetscTime(time1, ierr)
+    time1 = MPI_Wtime()
 
     ! Sometimes PETSc complains if any of the diagonal elements are not set.
     ! Therefore, set the entire diagonal to 0 to be safe.
@@ -3153,20 +3153,20 @@
     ! Now finalize the matrix
     ! *******************************************************************************
 
-    call PetscTime(time2, ierr)
+    time2 = MPI_Wtime()
     if (masterProc) then
        print *,"Time to pre-assemble ",trim(whichMatrixName)," matrix: ", time2-time1, " seconds."
     end if
-    call PetscTime(time1, ierr)
+    time1 = MPI_Wtime()
 
     call MatAssemblyBegin(matrix, MAT_FINAL_ASSEMBLY, ierr)
     call MatAssemblyEnd(matrix, MAT_FINAL_ASSEMBLY, ierr)
 
-    call PetscTime(time2, ierr)
+    time2 = MPI_Wtime()
     if (masterProc) then
        print *,"Time to assemble ",trim(whichMatrixName)," matrix: ", time2-time1, " seconds."
     end if
-    call PetscTime(time1, ierr)
+    time1 = MPI_Wtime()
 
 
     call MatGetInfo(matrix, MAT_GLOBAL_SUM, myMatInfo, ierr)

@@ -29,7 +29,6 @@
     PetscScalar :: temp, xDotFactor, stuffToAdd, dTempdLambda
     PetscScalar, dimension(:,:), allocatable :: xPartOfXDot, xPartOfXDot_plus, xPartOfXDot_minus
     integer :: ix_row, ix_col, rowIndex, colIndex, ell
-    PetscLogDouble :: time1, time2
     integer :: NNZ, NNZAllocated, NMallocs
     PetscScalar :: dBHatdLambda, dBHat_sub_thetadLambda, dBHat_sub_zetadLambda, dBHat_sup_thetadLambda
     PetscScalar :: dBHat_sup_zetadLambda, dBHatdthetadLambda, dBHatdzetadLambda, dDHatdLambda

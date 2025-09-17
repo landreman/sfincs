@@ -232,7 +232,7 @@
     PetscScalar :: factor, factor2, factor_vE, temp1, temp2, temp3
     integer :: itheta1, izeta1, ixi1, ix1
     integer :: itheta2, izeta2, ixi2, ix2
-    PetscLogDouble :: time1, time2
+    double precision :: time1, time2
     PetscViewer :: viewer
     character(len=200) :: filename
 
@@ -822,7 +822,7 @@
        ! matrix in each of the 4 coordinates (theta, zeta, x, xi).  This is not the fastest way to do what we want,
        ! but it is relatively simple, and the time required (up to a few seconds) is negligible compared to the time
        ! required for solving the kinetic equation.
-       call PetscTime(time1, ierr)
+       time1 = MPI_Wtime()
        if (export_full_f) then
           full_f = zero
           do ispecies = 1,Nspecies
@@ -882,7 +882,7 @@
              end do
           end do
        end if
-       call PetscTime(time2, ierr)
+       time2 = MPI_Wtime()
        if (export_delta_f .or. export_full_f) then
           print *,"Time for exporting f: ", time2-time1, " seconds."
        end if
