@@ -49,15 +49,21 @@
 
     KSP :: myKSP
     KSPConvergedReason :: reason
+    integer :: reason_int
     integer :: ierr
     integer :: didLinearCalculationConverge
 
     if (useIterativeLinearSolver) then
        call KSPGetConvergedReason(myKSP, reason, ierr)
-       if (reason>0) then
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 23))
+         reason_int = reason
+#else
+         reason_int = reason%v
+#endif
+       if (reason_int > 0) then
           if (masterProc) then
-             print *,"Linear iteration (KSP) converged.  KSPConvergedReason = ", reason
-             select case (reason)
+             print *,"Linear iteration (KSP) converged.  KSPConvergedReason = ", reason_int
+             select case (reason_int)
              case (1)
                 print *,"  KSP_CONVERGED_RTOL_NORMAL: "
              case (9)
@@ -81,8 +87,8 @@
           didLinearCalculationConverge = integerToRepresentTrue
        else
           if (masterProc) then
-             print *,"Linear iteration (KSP) did not converge :(   KSPConvergedReason = ", reason
-             select case (reason)
+             print *,"Linear iteration (KSP) did not converge :(   KSPConvergedReason = ", reason_int
+             select case (reason_int)
              case (-2)
                 print *,"  KSP_DIVERGED_NULL: "
              case (-3)

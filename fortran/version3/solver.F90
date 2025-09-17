@@ -22,7 +22,7 @@ contains
     PC :: preconditionerContext, preconditionerContext_adjoint
     integer :: numRHSs
     SNESConvergedReason :: reason
-    KSPConvergedReason :: KSPReason
+    integer :: reason_int
     PetscLogDouble :: time1, time2
     integer :: userContext(1)
     Vec :: dummyVec
@@ -477,10 +477,15 @@ contains
           !!if (includePhi1) then !!Commented by AM 2018-12
           if (includePhi1 .and. (.not. readExternalPhi1)) then !!Added by AM 2018-12
              call SNESGetConvergedReason(mysnes, reason, ierr)
-             if (reason>0) then
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 23))
+             reason_int = reason
+#else
+             reason_int = reason%v
+#endif   
+             if (reason_int > 0) then
                 if (masterProc) then
-                   print *,"Nonlinear iteration (SNES) converged!  SNESConvergedReason = ", reason
-                   select case (reason)
+                   print *,"Nonlinear iteration (SNES) converged!  SNESConvergedReason = ", reason_int
+                   select case (reason_int)
                    case (2)
                       print *,"  SNES_CONVERGED_FNORM_ABS: ||F|| < atol"
                    case (3)
@@ -496,8 +501,8 @@ contains
                 didNonlinearCalculationConverge = integerToRepresentTrue
              else
                 if (masterProc) then
-                   print *,"Nonlinear iteration (SNES) did not converge :(   SNESConvergedReason = ", reason
-                   select case (reason)
+                   print *,"Nonlinear iteration (SNES) did not converge :(   SNESConvergedReason = ", reason_int
+                   select case (reason_int)
                    case (-1)
                       print *,"  SNES_DIVERGED_FUNCTION_DOMAIN: The new x location passed the function is not in the domain of F"
                    case (-2)
