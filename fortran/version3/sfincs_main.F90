@@ -17,8 +17,8 @@ module sfincs_main
     !MPI_COMM :: MPI_comm_to_use
     integer :: MPI_comm_to_use
     PetscErrorCode ierr
-    PetscLogDouble :: startTime, time1
-    
+    double precision :: startTime, time1
+
     PETSC_COMM_WORLD = MPI_comm_to_use
     MPIComm = PETSC_COMM_WORLD
     call PetscInitialize(PETSC_NULL_CHARACTER, ierr)
@@ -44,7 +44,7 @@ module sfincs_main
        end if
     end if
     
-    call PetscTime(time1, ierr)
+    time1 = MPI_Wtime()
     startTime = time1
     
     call readNamelistInput()

@@ -103,7 +103,7 @@ implicit none
           call VecScatterEnd(VecScatterContext, deltaF, deltaFOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
           if (masterProc) then
             ! Convert the PETSc vector into a normal Fortran array
-            call VecGetArrayF90(deltaFOnProc0, deltaFArray, ierr)
+            call VecGetArray(deltaFOnProc0, deltaFArray, ierr)
           end if
 
           ! Scatter deltaG to master proc
@@ -112,7 +112,7 @@ implicit none
           call VecScatterEnd(VecScatterContext, deltaG, deltaGOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
           if (masterProc) then
             ! Convert the PETSc vector into a normal Fortran array
-            call VecGetArrayF90(deltaGOnProc0, deltaGArray, ierr)
+            call VecGetArray(deltaGOnProc0, deltaGArray, ierr)
           end if
 
           if (masterProc) then
@@ -210,7 +210,7 @@ implicit none
     call VecScatterEnd(VecScatterContext, forwardSolution, forwardSolutionOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
     if (masterProc) then
       ! Convert the PETSc vector into a normal Fortran array
-      call VecGetArrayF90(forwardSolutionOnProc0, forwardSolutionArray, ierr)
+      call VecGetArray(forwardSolutionOnProc0, forwardSolutionArray, ierr)
     end if
 
         if (whichLambda==1) then ! BHat
@@ -348,7 +348,7 @@ end do
     call VecScatterEnd(VecScatterContext, deltaF, deltaFOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
     if (masterProc) then
       ! Convert the PETSc vector into a normal Fortran array
-      call VecGetArrayF90(deltaFOnProc0, deltaFArray, ierr)
+      call VecGetArray(deltaFOnProc0, deltaFArray, ierr)
     end if
 
         if (whichLambda==1) then ! BHat
@@ -486,7 +486,7 @@ end do
     call VecScatterEnd(VecScatterContext, deltaF, deltaFOnProc0, INSERT_VALUES, SCATTER_FORWARD, ierr)
     if (masterProc) then
       ! Convert the PETSc vector into a normal Fortran array
-      call VecGetArrayF90(deltaFOnProc0, deltaFArray, ierr)
+      call VecGetArray(deltaFOnProc0, deltaFArray, ierr)
     end if
 
     if (whichSpecies == 0) then

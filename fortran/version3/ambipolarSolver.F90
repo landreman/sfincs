@@ -18,7 +18,8 @@ module ambipolarSolver
 
     implicit none
 
-    PetscScalar :: time1, time2, ambipolarEr
+    double precision :: time1, time2
+    PetscScalar :: ambipolarEr
     PetscErrorCode :: ierr
     integer :: RHSMode_init
 
@@ -31,7 +32,7 @@ module ambipolarSolver
 
     Er_init = Er
 
-    call PetscTime(time1, ierr)
+    time1 = MPI_Wtime()
     if (ambipolarSolveOption==1) then
       call ambipolarSolverNewton_Bisection(ambipolarEr)
     else if (ambipolarSolveOption==2) then
@@ -39,7 +40,7 @@ module ambipolarSolver
     else if (ambipolarSolveOption==3) then
       call ambipolarSolverNewton(ambipolarEr)
     end if
-    call PetscTime(time2,ierr)
+    time2 = MPI_Wtime()
     if (masterProc) then
       print *,"Time for ambipolar solve: ",time2-time1, " seconds."
     end if
@@ -124,7 +125,7 @@ module ambipolarSolver
     end if
 
     do iEr = 4, (NEr_ambipolarSolve)
-      call PetscTime(time1, ierr)
+      time1 = MPI_Wtime()
       if ((Brent_fb > zero .and. Brent_fc > zero) .or. (Brent_fb < zero .and. Brent_fc < zero)) then
         Brent_c = Brent_a
         Brent_fc = Brent_fa
@@ -189,7 +190,7 @@ module ambipolarSolver
       call updateEr(Brent_b, Brent_fb)
       radialCurrent(iEr) = Brent_fb
       Er_search(iEr) = Brent_b
-      call PetscTime(time2,ierr)
+      time2 = MPI_Wtime()
       if (masterProc) then
         print *,"One Brent loop: ", time2-time1, " sec."
       end if
@@ -293,7 +294,7 @@ module ambipolarSolver
     exit_code = -1
     ! Loop over allowed iterations
     do j = 4, NEr_ambipolarSolve
-      call PetscTime(time1,ierr)
+      time1 = MPI_Wtime()
       ! Bisect if Newton out of range or not decreasing fast enough
       if ((((rts-xh)*df-f)*((rts-xl)*df-f) > 0.0) .or. (abs(two*f) > abs(dxold*df))) then
         dxold = dx
@@ -333,7 +334,7 @@ module ambipolarSolver
       else
         xh = rts
       end if
-      call PetscTime(time2,ierr)
+      time2 = MPI_Wtime()
       if (masterProc) then
         print *,"Time for one Newton bisection loop: ", time2-time1," sec."
       end if
@@ -390,7 +391,7 @@ module ambipolarSolver
     this_Er = Er_init
 
     do j = 1, NEr_ambipolarSolve
-      call PetscTime(time1,ierr)
+      time1 = MPI_Wtime()
       ! The one new function evaluation per iteration
       call updateEr(this_Er,this_RadialCurrent)
       Er_search(j) = this_Er
@@ -407,7 +408,7 @@ module ambipolarSolver
         exit_code = 0
         exit
       end if
-      call PetscTime(time2,ierr)
+      time2 = MPI_Wtime()
       if (masterProc) then
         print *,"Time for one Newton loop: ", time2-time1," sec."
       end if

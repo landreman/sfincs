@@ -49,15 +49,21 @@
 
     KSP :: myKSP
     KSPConvergedReason :: reason
+    integer :: reason_int
     integer :: ierr
     integer :: didLinearCalculationConverge
 
     if (useIterativeLinearSolver) then
        call KSPGetConvergedReason(myKSP, reason, ierr)
-       if (reason>0) then
+#if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 23))
+         reason_int = reason
+#else
+         reason_int = reason%v
+#endif
+       if (reason_int > 0) then
           if (masterProc) then
-             print *,"Linear iteration (KSP) converged.  KSPConvergedReason = ", reason
-             select case (reason)
+             print *,"Linear iteration (KSP) converged.  KSPConvergedReason = ", reason_int
+             select case (reason_int)
              case (1)
                 print *,"  KSP_CONVERGED_RTOL_NORMAL: "
              case (9)
@@ -81,8 +87,8 @@
           didLinearCalculationConverge = integerToRepresentTrue
        else
           if (masterProc) then
-             print *,"Linear iteration (KSP) did not converge :(   KSPConvergedReason = ", reason
-             select case (reason)
+             print *,"Linear iteration (KSP) did not converge :(   KSPConvergedReason = ", reason_int
+             select case (reason_int)
              case (-2)
                 print *,"  KSP_DIVERGED_NULL: "
              case (-3)
@@ -151,7 +157,7 @@
        
        if (masterProc) then
           ! Convert the PETSc vector into a normal Fortran array:
-          call VecGetArrayF90(solnOnProc0, solnArray, ierr)
+          call VecGetArray(solnOnProc0, solnArray, ierr)
           
           do itheta = 1,Ntheta
              do izeta = 1,Nzeta
@@ -161,7 +167,7 @@
              end do
           end do
           
-          call VecRestoreArrayF90(solnOnProc0, solnArray, ierr)
+          call VecRestoreArray(solnOnProc0, solnArray, ierr)
        end if
 
        ! Send Phi1Hat from the masterProc to all procs:
@@ -226,7 +232,7 @@
     PetscScalar :: factor, factor2, factor_vE, temp1, temp2, temp3
     integer :: itheta1, izeta1, ixi1, ix1
     integer :: itheta2, izeta2, ixi2, ix2
-    PetscLogDouble :: time1, time2
+    double precision :: time1, time2
     PetscViewer :: viewer
     character(len=200) :: filename
 
@@ -354,10 +360,10 @@
        NTVIntegralWeights = x*x*x*x 
 
        ! Convert the PETSc vectors into normal Fortran arrays:
-       call VecGetArrayF90(solutionWithFullFOnProc0, solutionWithFullFArray, ierr)
-       call VecGetArrayF90(solutionWithDeltaFOnProc0, solutionWithDeltaFArray, ierr)
-       call VecGetArrayF90(f0OnProc0, f0Array, ierr)
-       !!call VecGetArrayF90(expPhi1, expPhi1Array, ierr) !!Added by AM 2016-06
+       call VecGetArray(solutionWithFullFOnProc0, solutionWithFullFArray, ierr)
+       call VecGetArray(solutionWithDeltaFOnProc0, solutionWithDeltaFArray, ierr)
+       call VecGetArray(f0OnProc0, f0Array, ierr)
+       !!call VecGetArray(expPhi1, expPhi1Array, ierr) !!Added by AM 2016-06
 
 !!$    if (whichRHS == numRHSs) then
        select case (constraintScheme)
@@ -816,7 +822,7 @@
        ! matrix in each of the 4 coordinates (theta, zeta, x, xi).  This is not the fastest way to do what we want,
        ! but it is relatively simple, and the time required (up to a few seconds) is negligible compared to the time
        ! required for solving the kinetic equation.
-       call PetscTime(time1, ierr)
+       time1 = MPI_Wtime()
        if (export_full_f) then
           full_f = zero
           do ispecies = 1,Nspecies
@@ -876,15 +882,15 @@
              end do
           end do
        end if
-       call PetscTime(time2, ierr)
+       time2 = MPI_Wtime()
        if (export_delta_f .or. export_full_f) then
           print *,"Time for exporting f: ", time2-time1, " seconds."
        end if
 
-       call VecRestoreArrayF90(solutionWithFullFOnProc0, solutionWithFullFArray, ierr)
-       call VecRestoreArrayF90(solutionWithDeltaFOnProc0, solutionWithDeltaFArray, ierr)
-       call VecRestoreArrayF90(f0OnProc0, f0Array, ierr)
-       !!call VecRestoreArrayF90(expPhi1, expPhi1Array, ierr) !!Added by AM 2016-06
+       call VecRestoreArray(solutionWithFullFOnProc0, solutionWithFullFArray, ierr)
+       call VecRestoreArray(solutionWithDeltaFOnProc0, solutionWithDeltaFArray, ierr)
+       call VecRestoreArray(f0OnProc0, f0Array, ierr)
+       !!call VecRestoreArray(expPhi1, expPhi1Array, ierr) !!Added by AM 2016-06
 
     if (debugAdjoint .eqv. .false.) then
        do ispecies=1,Nspecies
