@@ -1,0 +1,12 @@
+#!/bin/bash -l
+
+#SBATCH -q regular
+#SBATCH -N 1
+#SBATCH --ntasks-per-node 128
+#SBATCH -t 00:30:00
+#SBATCH -J sfincs
+#SBATCH -C cpu
+
+# -mat_mumps_icntl_28 2 invokes the PSCOTCH parallel ordering
+srun ../../sfincs -ksp_view -mat_mumps_icntl_28 1
+
