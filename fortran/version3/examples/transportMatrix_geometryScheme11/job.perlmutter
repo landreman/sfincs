@@ -1,0 +1,14 @@
+#!/bin/bash -l
+
+#SBATCH -q debug
+#SBATCH -N 1
+#SBATCH --ntasks-per-node 128
+# #SBATCH --ntasks-per-node 32
+# #SBATCH --cpus-per-task 4
+#SBATCH -t 00:30:00
+#SBATCH -J sfincs
+#SBATCH -C cpu
+
+srun ../../sfincs -ksp_view -mat_mumps_icntl_28 1
+
+

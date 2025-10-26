@@ -1,0 +1,14 @@
+#!/bin/bash -l
+
+#SBATCH -q regular
+#SBATCH -N 1
+#SBATCH --ntasks-per-node 128
+#SBATCH -t 00:30:00
+#SBATCH -J sfincs
+#SBATCH -C cpu
+
+# Default ordering on edison is PORD, which gives mumps error -9.
+# We use -mat_mumps_icntl_7 3 to switch to the SCOTCH ordering, which seems more robust.
+srun ../../sfincs -ksp_view -mat_mumps_icntl_7 3
+
+

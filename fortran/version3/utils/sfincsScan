@@ -31,51 +31,7 @@ if not os.path.isfile(filename):
     exit(1)
 
 # For each system, 
-if sfincsSystem=="edison":
-    submitCommand = "sbatch "+jobFilename
-    def nameJobFile(original,name):
-        # Modify the job.sfincsScan file to change the name that appears in the queue.
-        # Insert the new line after the original first line, since the first line is a shebang.
-        original.insert(1,"#SBATCH -J "+name+"\n")
-        return original
-
-elif sfincsSystem=="cori":
-    submitCommand = "sbatch "+jobFilename
-    def nameJobFile(original,name):
-        # Modify the job.sfincsScan file to change the name that appears in the queue.
-        # Insert the new line after the original first line, since the first line is a shebang.
-        original.insert(1,"#SBATCH -J "+name+"\n")
-        return original
-
-elif sfincsSystem=="cori":
-    submitCommand = "sbatch "+jobFilename
-    def nameJobFile(original,name):
-        # Modify the job.sfincsScan file to change the name that appears in the queue.
-        # Insert the new line after the original first line, since the first line is a shebang.
-        original.insert(1,"#SBATCH -J "+name+"\n")
-        return original
-
-elif sfincsSystem=="hydra":
-    submitCommand = "llsubmit "+jobFilename
-    def nameJobFile(original,name):
-        # Modify the job.sfincsScan file to change the name that appears in the queue.
-        # Insert the new line after the original first line, since the first line is a shebang.
-        if "# @ job_name =" in original[1]:
-            original[1]="# @ job_name = "+name+"\n"
-        else:
-            original.insert(1,"# @ job_name = "+name+"\n")
-        return original
-
-elif sfincsSystem in ["draco", "cobra","raven", "viper"]:
-    submitCommand = "sbatch "+jobFilename
-    def nameJobFile(original,name):
-        # Modify the job.sfincsScan file to change the name that appears in the queue.
-        # Insert the new line after the original first line, since the first line is a shebang.
-        original.insert(1,"#SBATCH -J "+name+"\n")
-        return original
-
-
-elif sfincsSystem in ["eddy", "stellar", "perlmutter", "marconi"]:
+if sfincsSystem in ["raven", "viper", "eddy", "stellar", "perlmutter", "marconi"]:
     submitCommand = "sbatch "+jobFilename
     def nameJobFile(original,name):
         # Modify the job.sfincsScan file to change the name that appears in the queue.

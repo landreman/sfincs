@@ -1,8 +1,8 @@
 # -*- mode: makefile -*-
 #
-# The following steps worked on Perlmutter as of 2024-May-7
+# The following steps worked on Perlmutter as of 2025-Oct-26
 #
-# module load conda cray-hdf5/1.12.2.9 cray-netcdf/4.9.0.9
+# module load python cray-hdf5/1.14.3.1 cray-netcdf/4.9.0.13
 #
 # I had to build petsc because there was not a petsc module available that was built with non-complex numbers and with mumps.
 # I used petsc 3.21.1 and configured it using
