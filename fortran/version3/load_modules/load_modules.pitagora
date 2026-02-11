@@ -1,0 +1,12 @@
+
+
+module load intel-oneapi-compilers/2024.1.0
+module load intel-oneapi-mpi/2021.12.1
+module load intel-oneapi-mkl/2024.0.0--intel-oneapi-mpi--2021.12.1
+
+module load hdf5/1.14.3--intel-oneapi-mpi--2021.12.1--oneapi--2024.1.0
+module load netcdf-c/4.9.2--intel-oneapi-mpi--2021.12.1--oneapi--2024.1.0
+module load netcdf-fortran/4.6.1--intel-oneapi-mpi--2021.12.1--oneapi--2024.1.0
+module load parallel-netcdf/1.12.3--intel-oneapi-mpi--2021.12.1--oneapi--2024.1.0
+
+module load petsc/3.22.0--intel-oneapi-mpi--2021.12.1--oneapi--2024.1.0-mumps
