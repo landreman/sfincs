@@ -382,7 +382,9 @@ if doAmbipolaritySolve:
          else:
              # If the number of roots is not 1 or 3, then flag the case as complicated:
              root_types=['unknown']*len(roots)
-
+             
+         num_roots = [len(root_types)]
+         
          print ("Roots found for the radial derivative of the electrostatic potential, for various radial coordinates:")
          print ("d PhiHat / d psiHat = ",roots * conversionFactorToddpsiHat)
          print ("d PhiHat / d psiN   = ",roots * conversionFactorToddpsiN)
@@ -505,7 +507,7 @@ except:
 
 if ambipolaritySolveSucceeded:
    # Save info which may be used by sfincsScanPlot_5 (radial scan):
-   data.update({'roots':roots, 'outputs_ambipolar':outputs_ambipolar, 'radius_wish':radius_wish, 'radius_actual':radius_actual, 'root_types':root_types, 'nHats':nHats, 'THats':THats})
+   data.update({'roots':roots, 'outputs_ambipolar':outputs_ambipolar, 'radius_wish':radius_wish, 'radius_actual':radius_actual, 'root_types':root_types, 'num_roots': num_roots, 'nHats':nHats, 'THats':THats})
    outputFile = open(filename,'wb')
    pickle.dump(data,outputFile)
    outputFile.close()

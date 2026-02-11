@@ -40,6 +40,7 @@ radii_actual = []
 radiiWithDuplicates = []
 ydata = []
 root_types = []
+num_roots = []
 FSABHat2s = []
 
 # Load some other required subroutines:
@@ -149,6 +150,7 @@ for directory in directories:
        ydata[i+Nspecies] = ydata[i+Nspecies] + ([THats[i]]*numRoots)
     ydata[2*Nspecies] = ydata[2*Nspecies] + list(data["roots"])
     root_types += data["root_types"]
+    num_roots += data["num_roots"]
     latestOutputs = data["outputs_ambipolar"]
     for i in range(oldNumQuantities):
         ydata[i+1+2*Nspecies] = ydata[i+1+2*Nspecies] + list(latestOutputs[i])
@@ -174,6 +176,7 @@ for i in range(Nspecies):
 
 ylabels += ["Ambipolar "+generalErName] + data["ylabels"]
 
+print ("num_roots :",numRoots)
 print ("root_types:",root_types)
 
 # ***************************************************
@@ -206,10 +209,12 @@ if False:
 perm = numpy.argsort(radii_actual)
 radii = list(numpy.array(radii_actual)[perm])
 FSABHat2s = list(numpy.array(FSABHat2s)[perm])
+num_roots = numpy.array(num_roots)[perm]
 
 perm = numpy.argsort(radiiWithDuplicates)
 radiiWithDuplicates = list(numpy.array(radiiWithDuplicates)[perm])
 root_types = numpy.array(root_types)[perm]
+
 for iQuantity in range(numQuantities):
    ydata[iQuantity] = list(numpy.array(ydata[iQuantity])[perm])
 
@@ -272,7 +277,7 @@ scanType=5
 data = {'scanType':scanType, 'numQuantities':numQuantities, 'numRows':numRows,'numCols':numCols,
         'xdata':xdata, 'ydata':ydata, 'xlabels':xlabels, 'ylabels':ylabels,
         'xscales':xscales, 'yscales':yscales, 'ymins':ymins, 'ymaxs':ymaxs,
-        'linespec':linespec, 'radii':radii, 'FSABHat2':FSABHat2s, 'Nspecies':Nspecies, 'root_types':root_types}
+        'linespec':linespec, 'radii':radii, 'FSABHat2':FSABHat2s, 'Nspecies':Nspecies, 'root_types':root_types, 'num_roots':num_roots}
 # pickle.dump(scanType,outputFile)
 # pickle.dump(numQuantities,outputFile)
 # pickle.dump(numRows,outputFile)
