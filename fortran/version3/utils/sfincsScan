@@ -31,7 +31,7 @@ if not os.path.isfile(filename):
     exit(1)
 
 # For each system, 
-if sfincsSystem in ["raven", "viper", "eddy", "stellar", "perlmutter", "marconi"]:
+if sfincsSystem in ["raven", "viper", "eddy", "stellar", "perlmutter", "pitagora", "marenostrum"]:
     submitCommand = "sbatch "+jobFilename
     def nameJobFile(original,name):
         # Modify the job.sfincsScan file to change the name that appears in the queue.
