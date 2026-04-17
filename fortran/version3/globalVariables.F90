@@ -2,6 +2,8 @@ module globalVariables
 
 #include "PETScVersions.F90"
 
+  use mpi_f08
+
   implicit none
 
 
@@ -446,7 +448,7 @@ module globalVariables
   !
   ! ********************************************************
 
-  MPI_Comm :: MPIComm
+  type(MPI_Comm) :: MPIComm
   integer :: numProcs, myRank 
   logical :: masterProc
 

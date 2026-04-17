@@ -2,6 +2,7 @@
 
 #include "PETScVersions.F90"
 
+    use mpi_f08
     use globalVariables
     use polynomialDiffMatrices
     use xGrid
@@ -32,7 +33,7 @@
     character(len=bufferLength) :: procAssignments
 
     integer :: tag, dummy(1)
-    integer :: status(MPI_STATUS_SIZE)
+    type(MPI_Status) :: status
     integer :: im, imn, jn
 
 

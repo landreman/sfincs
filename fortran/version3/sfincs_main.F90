@@ -14,8 +14,7 @@ module sfincs_main
     
     implicit none
     
-    !MPI_COMM :: MPI_comm_to_use
-    integer :: MPI_comm_to_use
+    type(MPI_Comm) :: MPI_comm_to_use
     PetscErrorCode ierr
     double precision :: startTime, time1
 

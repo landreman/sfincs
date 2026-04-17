@@ -1,7 +1,7 @@
 program sfincs
 
-  use sfincs_main
-  use mpi
+  use sfincs_main, only: sfincs_init, sfincs_prepare, sfincs_run
+  use mpi_f08
 
   ! If you want to alter input parameters like Ntheta, you can use a line like the one commented out here:
   !use globalVariables, only: Ntheta
