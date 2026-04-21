@@ -449,21 +449,29 @@ contains
 #else
              call SNESSolve(mysnes,PETSC_NULL_OBJECT, solutionVec, ierr)
 #endif
-             call MatMumpsGetInfog(factorMat, 1, factor_err, ierr)
 
 #if (PETSC_VERSION_MAJOR < 3 || (PETSC_VERSION_MAJOR==3 && PETSC_VERSION_MINOR < 5))
              ! No way to automatically control MUMPS for old versions of PETSC.
 #else
-             if (actualSolverType == MATSOLVERMUMPS .and. factor_err .ne. 0 .and. mumps_icntl_14<1024) then
-                ! For now, assume all failures are due to MUMPS.  This might not always be true....
-                ! Try increasing the amount by which the mumps work array can expand due to near-0 pivots.
-                if (masterProc) then
-                   print *,"Mumps INFOG(1) = ",factor_err
-                   print *,"Solve failed, so doubling MUMPS icntl(14), which had been ",mumps_icntl_14
+             ! factorMat is only populated by PCFactorGetMatrix when the selected
+             ! parallel direct solver is MUMPS (see the actualSolverType == MATSOLVERMUMPS
+             ! branch earlier in this routine).  Querying MatMumpsGetInfog on a factorMat
+             ! that belongs to a different solver (e.g. superlu_dist) dereferences
+             ! uninitialised state and segfaults.  Gate the whole MUMPS retry block on
+             ! the actual solver type.
+             if (actualSolverType == MATSOLVERMUMPS) then
+                call MatMumpsGetInfog(factorMat, 1, factor_err, ierr)
+                if (factor_err .ne. 0 .and. mumps_icntl_14 < 1024) then
+                   ! For now, assume all failures are due to MUMPS.  This might not always be true....
+                   ! Try increasing the amount by which the mumps work array can expand due to near-0 pivots.
+                   if (masterProc) then
+                      print *,"Mumps INFOG(1) = ",factor_err
+                      print *,"Solve failed, so doubling MUMPS icntl(14), which had been ",mumps_icntl_14
+                   end if
+                   mumps_icntl_14 = mumps_icntl_14 * 2
+                   ierr = 0
+                   doAnotherSolve = .true.
                 end if
-                mumps_icntl_14 = mumps_icntl_14 * 2
-                ierr = 0
-                doAnotherSolve = .true.
              end if
 #endif
           end if
