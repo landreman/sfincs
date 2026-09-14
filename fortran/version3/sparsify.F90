@@ -2,15 +2,15 @@ module sparsify
 
   ! This module provides wrappers for Petsc's MatSetValue and MatSetValues subroutines.
   ! The wrappers act exactly the same as the original Petsc subroutines, except that
-  ! values are only added when they exceed a small positive threshhold. This threshholding
-  ! prevents zero entries from being added to the nonzero structure of the matrix, increasing
-  ! sparsity.
+  ! exact zeros are not added, which keeps them out of the nonzero structure of the matrix.
+  ! The threshold is zero: an absolute cutoff is not scale invariant and can delete physical
+  ! couplings, such as the ion-electron collision terms when T_e/T_i is large.
 
 #include "PETScVersions.F90"
 
   implicit none
 
-  PetscScalar :: threshholdForInclusion = 1d-12
+  PetscScalar :: threshholdForInclusion = 0d0
 
 contains
 
